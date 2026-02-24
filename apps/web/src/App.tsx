@@ -5,6 +5,7 @@ import { Register } from "./pages/Register";
 import { Watch } from "./pages/Watch";
 import { MediaDetail } from "./pages/MediaDetail";
 import { Search } from "./pages/Search";
+import { Admin } from "./pages/Admin";
 
 export function App() {
   const isAuthenticated = !!localStorage.getItem("tentacle_token");
@@ -17,6 +18,7 @@ export function App() {
       <Route path="/watch/:itemId" element={auth(<Watch />)} />
       <Route path="/media/:itemId" element={auth(<MediaDetail />)} />
       <Route path="/search" element={auth(<Search />)} />
+      <Route path="/admin" element={auth(<Admin />)} />
       <Route path="/" element={auth(<Home />)} />
     </Routes>
   );

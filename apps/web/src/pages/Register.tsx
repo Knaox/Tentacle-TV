@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { GlassCard } from "@tentacle/ui";
 
 // En prod VITE_BACKEND_URL="" → URLs relatives (/api/...) sur le meme domaine
@@ -7,7 +7,8 @@ import { GlassCard } from "@tentacle/ui";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 export function Register() {
-  const [inviteKey, setInviteKey] = useState("");
+  const [searchParams] = useSearchParams();
+  const [inviteKey, setInviteKey] = useState(searchParams.get("invite") ?? "");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

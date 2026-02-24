@@ -91,15 +91,18 @@ export class JellyfinClient {
     params.set("api_key", this.accessToken ?? "");
     if (options?.maxBitrate) {
       params.set("Static", "false");
+      params.set("Container", "mp4");
       params.set("MaxStreamingBitrate", String(options.maxBitrate));
       params.set("VideoCodec", "h264");
       params.set("AudioCodec", "aac");
+      params.set("TranscodingProtocol", "http");
     } else {
       params.set("Static", "true");
     }
     if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
     if (options?.mediaSourceId) params.set("MediaSourceId", options.mediaSourceId);
-    return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
+    const ext = options?.maxBitrate ? ".mp4" : "";
+    return `${this.baseUrl}/Videos/${itemId}/stream${ext}?${params}`;
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number): string {
