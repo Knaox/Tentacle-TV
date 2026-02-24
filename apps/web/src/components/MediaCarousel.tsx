@@ -93,7 +93,7 @@ function CarouselCard({ item }: { item: MediaItem }) {
 
   const handleClick = () => {
     if (item.Type === "Series") {
-      // TODO: navigate to series detail page
+      navigate(`/series/${item.Id}`);
       return;
     }
     navigate(`/watch/${item.Id}`);

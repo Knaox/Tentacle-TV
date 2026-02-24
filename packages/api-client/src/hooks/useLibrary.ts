@@ -47,6 +47,41 @@ export function useLibraryItems(libraryId: string | undefined) {
   });
 }
 
+export function useSeasons(seriesId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = getUserId();
+
+  return useQuery({
+    queryKey: ["seasons", seriesId],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Shows/${seriesId}/Seasons?userId=${userId}&Fields=PrimaryImageAspectRatio`
+        )
+        .then((r) => r.Items),
+    enabled: !!userId && !!seriesId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useEpisodes(seriesId: string | undefined, seasonId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = getUserId();
+
+  return useQuery({
+    queryKey: ["episodes", seriesId, seasonId],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Shows/${seriesId}/Episodes?SeasonId=${seasonId}&userId=${userId}` +
+            `&Fields=Overview,PrimaryImageAspectRatio,MediaSources,MediaStreams`
+        )
+        .then((r) => r.Items),
+    enabled: !!userId && !!seriesId && !!seasonId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useMediaItem(itemId: string | undefined) {
   const client = useJellyfinClient();
   const userId = getUserId();
