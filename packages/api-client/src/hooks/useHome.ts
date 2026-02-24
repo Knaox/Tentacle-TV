@@ -1,23 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
-
-function getUserId(): string | null {
-  try {
-    const raw = localStorage.getItem("tentacle_user");
-    if (!raw) return null;
-    return JSON.parse(raw).Id ?? null;
-  } catch {
-    return null;
-  }
-}
+import { useUserId } from "./useUserId";
 
 const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 
 export function useResumeItems() {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["resume-items"],
@@ -34,7 +25,7 @@ export function useResumeItems() {
 
 export function useLatestItems(parentId: string | undefined) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["latest-items", parentId],
@@ -49,7 +40,7 @@ export function useLatestItems(parentId: string | undefined) {
 
 export function useNextUp() {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["next-up"],
@@ -66,7 +57,7 @@ export function useNextUp() {
 
 export function useWatchedItems() {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["watched-items"],
@@ -84,7 +75,7 @@ export function useWatchedItems() {
 
 export function useFeaturedItems() {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["featured"],

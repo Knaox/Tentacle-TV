@@ -16,6 +16,23 @@ export function verifyToken(token: string): TokenPayload {
   return jwt.verify(token, JWT_SECRET) as TokenPayload;
 }
 
+export async function requireAuth(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authHeader = request.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return reply.status(401).send({ message: "Unauthorized" });
+  }
+
+  try {
+    const payload = verifyToken(authHeader.slice(7));
+    (request as any).user = payload;
+  } catch {
+    return reply.status(401).send({ message: "Invalid token" });
+  }
+}
+
 export async function requireAdmin(
   request: FastifyRequest,
   reply: FastifyReply

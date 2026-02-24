@@ -31,3 +31,38 @@ model InviteUsage {
 
   @@map("invite_usages")
 }
+
+model MediaRequest {
+  id              String    @id @default(cuid())
+  jellyfinUserId  String    @db.VarChar(255)
+  username        String    @db.VarChar(255)
+  mediaType       String    @db.VarChar(10)   // "movie" | "tv"
+  tmdbId          Int
+  title           String    @db.VarChar(500)
+  posterPath      String?   @db.VarChar(500)
+  status          String    @default("pending") @db.VarChar(20) // pending | submitted | approved | available | failed | declined
+  seerrRequestId  Int?
+  seerrMediaId    Int?
+  retryCount      Int       @default(0)
+  lastError       String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([jellyfinUserId])
+  @@index([status])
+  @@index([tmdbId, mediaType])
+  @@map("media_requests")
+}
+
+model LibraryPreference {
+  id              String  @id @default(cuid())
+  jellyfinUserId  String  @db.VarChar(255)
+  libraryId       String  @db.VarChar(255)
+  audioLang       String? @db.VarChar(10)   // ISO 639-2/B code
+  subtitleLang    String? @db.VarChar(10)
+  subtitleMode    String  @default("none") @db.VarChar(20) // "none" | "always" | "forced" | "signs"
+
+  @@unique([jellyfinUserId, libraryId])
+  @@index([jellyfinUserId])
+  @@map("library_preferences")
+}

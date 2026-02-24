@@ -4,15 +4,25 @@ import {
   JELLYFIN_AUTH_HEADER,
   JELLYFIN_TOKEN_HEADER,
 } from "@tentacle/shared";
+import type { StorageAdapter, UuidGenerator } from "./storage";
 
 export class JellyfinClient {
   private baseUrl: string;
   private accessToken: string | null = null;
   private deviceId: string;
+  private storage: StorageAdapter;
+  private deviceName: string;
 
-  constructor(baseUrl: string) {
+  constructor(
+    baseUrl: string,
+    storage: StorageAdapter,
+    uuid: UuidGenerator,
+    deviceName = "Web"
+  ) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
-    this.deviceId = this.getOrCreateDeviceId();
+    this.storage = storage;
+    this.deviceName = deviceName;
+    this.deviceId = this.getOrCreateDeviceId(uuid);
   }
 
   setAccessToken(token: string | null) {
@@ -23,18 +33,18 @@ export class JellyfinClient {
     return this.accessToken;
   }
 
-  private getOrCreateDeviceId(): string {
-    const stored = localStorage.getItem("tentacle_device_id");
+  private getOrCreateDeviceId(uuid: UuidGenerator): string {
+    const stored = this.storage.getItem("tentacle_device_id");
     if (stored) return stored;
-    const id = crypto.randomUUID();
-    localStorage.setItem("tentacle_device_id", id);
+    const id = uuid.randomUUID();
+    this.storage.setItem("tentacle_device_id", id);
     return id;
   }
 
   private getAuthHeader(): string {
     const parts = [
       `MediaBrowser Client="${APP_NAME}"`,
-      `Device="Web"`,
+      `Device="${this.deviceName}"`,
       `DeviceId="${this.deviceId}"`,
       `Version="${APP_VERSION}"`,
     ];

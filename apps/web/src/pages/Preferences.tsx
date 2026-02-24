@@ -1,0 +1,174 @@
+import { useState } from "react";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference } from "@tentacle/api-client";
+import type { LibraryPreference } from "@tentacle/api-client";
+import { Navbar } from "../components/Navbar";
+
+const LANGUAGES = [
+  { code: "fre", label: "Français" },
+  { code: "eng", label: "English" },
+  { code: "jpn", label: "日本語" },
+  { code: "ger", label: "Deutsch" },
+  { code: "spa", label: "Español" },
+  { code: "ita", label: "Italiano" },
+  { code: "por", label: "Português" },
+  { code: "kor", label: "한국어" },
+  { code: "chi", label: "中文" },
+  { code: "rus", label: "Русский" },
+  { code: "ara", label: "العربية" },
+];
+
+const SUBTITLE_MODES = [
+  { value: "none", label: "Désactivés" },
+  { value: "always", label: "Toujours affichés" },
+  { value: "forced", label: "Forcés uniquement" },
+  { value: "signs", label: "Signs & Songs" },
+] as const;
+
+export function Preferences() {
+  const { data: libraries } = useLibraries();
+  const { data: prefs } = useLibraryPreferences();
+  const setMut = useSetLibraryPreference();
+  const deleteMut = useDeleteLibraryPreference();
+
+  const prefsMap = new Map(prefs?.map((p) => [p.libraryId, p]) ?? []);
+
+  return (
+    <div className="min-h-screen bg-tentacle-bg">
+      <Navbar />
+      <main className="mx-auto max-w-4xl px-6 pt-24 pb-12">
+        <h1 className="mb-2 text-2xl font-bold text-white">Préférences de langues</h1>
+        <p className="mb-8 text-sm text-white/50">
+          Configurez les pistes audio et sous-titres par défaut pour chaque bibliothèque.
+        </p>
+
+        {!libraries && (
+          <div className="flex justify-center py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {libraries?.map((lib: any) => (
+            <LibraryPrefCard
+              key={lib.Id}
+              libraryId={lib.Id}
+              libraryName={lib.Name}
+              pref={prefsMap.get(lib.Id) ?? null}
+              onSave={(data) => setMut.mutate(data)}
+              onDelete={() => deleteMut.mutate(lib.Id)}
+            />
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function LibraryPrefCard({ libraryId, libraryName, pref, onSave, onDelete }: {
+  libraryId: string;
+  libraryName: string;
+  pref: LibraryPreference | null;
+  onSave: (data: { libraryId: string; audioLang?: string | null; subtitleLang?: string | null; subtitleMode?: "none" | "always" | "forced" | "signs" }) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [audioLang, setAudioLang] = useState(pref?.audioLang ?? "");
+  const [subtitleLang, setSubtitleLang] = useState(pref?.subtitleLang ?? "");
+  const [subtitleMode, setSubtitleMode] = useState<"none" | "always" | "forced" | "signs">(pref?.subtitleMode ?? "none");
+
+  const handleSave = () => {
+    onSave({
+      libraryId,
+      audioLang: audioLang || null,
+      subtitleLang: subtitleLang || null,
+      subtitleMode,
+    });
+    setEditing(false);
+  };
+
+  const handleReset = () => {
+    onDelete();
+    setAudioLang("");
+    setSubtitleLang("");
+    setSubtitleMode("none");
+    setEditing(false);
+  };
+
+  return (
+    <div className="rounded-xl border border-white/5 bg-white/5 p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white">{libraryName}</h3>
+        <div className="flex items-center gap-2">
+          {pref && !editing && (
+            <div className="flex items-center gap-2 text-xs text-white/50">
+              {pref.audioLang && (
+                <span className="rounded bg-purple-500/20 px-2 py-0.5 text-purple-300">
+                  Audio: {LANGUAGES.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
+                </span>
+              )}
+              {pref.subtitleLang && pref.subtitleMode !== "none" && (
+                <span className="rounded bg-blue-500/20 px-2 py-0.5 text-blue-300">
+                  ST: {LANGUAGES.find((l) => l.code === pref.subtitleLang)?.label ?? pref.subtitleLang}
+                  ({SUBTITLE_MODES.find((m) => m.value === pref.subtitleMode)?.label})
+                </span>
+              )}
+            </div>
+          )}
+          <button onClick={() => setEditing(!editing)}
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/70 hover:bg-white/20">
+            {editing ? "Annuler" : "Modifier"}
+          </button>
+        </div>
+      </div>
+
+      {editing && (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs text-white/50">Audio</label>
+            <select value={audioLang} onChange={(e) => setAudioLang(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+              <option value="">Par défaut</option>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-white/50">Sous-titres</label>
+            <select value={subtitleLang} onChange={(e) => setSubtitleLang(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+              <option value="">Aucun</option>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-white/50">Mode sous-titres</label>
+            <select value={subtitleMode} onChange={(e) => setSubtitleMode(e.target.value as any)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+              {SUBTITLE_MODES.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-2 sm:col-span-3">
+            <button onClick={handleSave}
+              className="rounded-lg bg-tentacle-accent px-4 py-2 text-xs font-semibold text-white hover:bg-tentacle-accent/80">
+              Enregistrer
+            </button>
+            {pref && (
+              <button onClick={handleReset}
+                className="rounded-lg bg-red-500/10 px-4 py-2 text-xs text-red-400 hover:bg-red-500/25">
+                Réinitialiser
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

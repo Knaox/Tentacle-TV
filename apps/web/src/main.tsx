@@ -2,18 +2,31 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
-import { JellyfinClient, JellyfinClientContext, setSeerrBackendUrl } from "@tentacle/api-client";
+import {
+  JellyfinClient,
+  JellyfinClientContext,
+  WebStorageAdapter,
+  WebUuidGenerator,
+  TentacleConfigContext,
+  setSeerrBackendUrl,
+  setRequestsBackendUrl,
+  setPreferencesBackendUrl,
+} from "@tentacle/api-client";
 import { App } from "./App";
 import "./index.css";
 
 const jellyfinUrl = import.meta.env.VITE_JELLYFIN_URL || "http://localhost:8096";
 const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 setSeerrBackendUrl(backendUrl);
+setRequestsBackendUrl(backendUrl);
+setPreferencesBackendUrl(backendUrl);
 
-const jellyfinClient = new JellyfinClient(jellyfinUrl);
+const storage = new WebStorageAdapter();
+const uuid = new WebUuidGenerator();
+const jellyfinClient = new JellyfinClient(jellyfinUrl, storage, uuid, "Web");
 
 // Restore token from storage
-const savedToken = localStorage.getItem("tentacle_token");
+const savedToken = storage.getItem("tentacle_token");
 if (savedToken) {
   jellyfinClient.setAccessToken(savedToken);
 }
@@ -31,11 +44,13 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <JellyfinClientContext.Provider value={jellyfinClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </JellyfinClientContext.Provider>
+      <TentacleConfigContext.Provider value={{ storage, uuid }}>
+        <JellyfinClientContext.Provider value={jellyfinClient}>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </JellyfinClientContext.Provider>
+      </TentacleConfigContext.Provider>
     </QueryClientProvider>
   </StrictMode>
 );
