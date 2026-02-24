@@ -13,11 +13,14 @@ build/
 # Tauri
 apps/desktop/src-tauri/target/
 
-# Environment
+# Environment (secrets — never commit)
 .env
 .env.local
 .env.*.local
 *.local
+# .env.production is NOT ignored: it only contains public VITE_* URLs
+!.env.production
+!.env.example
 
 # IDE
 .vscode/*
