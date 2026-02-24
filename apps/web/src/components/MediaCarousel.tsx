@@ -92,11 +92,11 @@ function CarouselCard({ item }: { item: MediaItem }) {
     : client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
 
   const handleClick = () => {
-    if (item.Type === "Series") {
-      navigate(`/series/${item.Id}`);
+    if (item.Type === "Episode") {
+      navigate(`/watch/${item.Id}`);
       return;
     }
-    navigate(`/watch/${item.Id}`);
+    navigate(`/media/${item.Id}`);
   };
 
   return (

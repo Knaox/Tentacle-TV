@@ -32,12 +32,22 @@ export function Navbar() {
         </span>
       </h1>
 
-      <button
-        onClick={handleLogout}
-        className="rounded-lg bg-white/10 px-4 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/20 hover:text-white"
-      >
-        Déconnexion
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate("/search")}
+          className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+        <button
+          onClick={handleLogout}
+          className="rounded-lg bg-white/10 px-4 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+        >
+          Déconnexion
+        </button>
+      </div>
     </nav>
   );
 }

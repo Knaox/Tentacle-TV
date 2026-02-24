@@ -42,6 +42,8 @@ export function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const playbackTimeRef = useRef(0);
+  const hasStartedRef = useRef(false);
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
@@ -67,11 +69,17 @@ export function VideoPlayer({
     hideTimer.current = setTimeout(() => { if (playing) setShowControls(false); }, 3000);
   }, [playing]);
 
-  // Seek to start position
+  // Seek to correct position on source change (quality/audio switch) or initial load
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !startPositionSeconds) return;
-    const onLoaded = () => { v.currentTime = startPositionSeconds; };
+    if (!v) return;
+    // If already playing, resume from last known position; otherwise use initial start
+    const seekTo = hasStartedRef.current ? playbackTimeRef.current : startPositionSeconds;
+    if (!seekTo) return;
+    const onLoaded = () => {
+      v.currentTime = seekTo;
+      if (hasStartedRef.current) v.play().catch(() => {});
+    };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
     return () => v.removeEventListener("loadedmetadata", onLoaded);
   }, [src, startPositionSeconds]);
@@ -108,6 +116,7 @@ export function VideoPlayer({
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const t = e.currentTarget.currentTime;
     setCurrentTime(t);
+    playbackTimeRef.current = t;
     onProgress?.(t, e.currentTarget.paused);
   };
 
@@ -125,7 +134,7 @@ export function VideoPlayer({
       <video ref={videoRef} src={src} className="h-full w-full"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        onPlay={() => { setPlaying(true); onStarted?.(); }}
+        onPlay={() => { setPlaying(true); hasStartedRef.current = true; onStarted?.(); }}
         onPause={() => setPlaying(false)}
         onEnded={() => navigate(-1)} autoPlay crossOrigin="anonymous"
       >

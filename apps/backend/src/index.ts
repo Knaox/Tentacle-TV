@@ -4,6 +4,7 @@ import rateLimit from "@fastify/rate-limit";
 import { authRoutes } from "./routes/auth";
 import { inviteRoutes } from "./routes/invites";
 import { healthRoutes } from "./routes/health";
+import { seerrRoutes } from "./routes/seerr";
 
 const PORT = Number(process.env.PORT) || 3001;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
@@ -18,6 +19,7 @@ async function main() {
 
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(inviteRoutes, { prefix: "/api/invites" });
+  await app.register(seerrRoutes, { prefix: "/api/seerr" });
   await app.register(healthRoutes, { prefix: "/api" });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });

@@ -36,10 +36,22 @@ export interface MediaItem {
   MediaSources?: MediaSource[];
   UserData?: UserItemData;
 
+  // External IDs
+  ProviderIds?: Record<string, string>;
+
   // Folder
   IsFolder?: boolean;
   ChildCount?: number;
   CollectionType?: string;
+
+  // People
+  People?: Array<{
+    Name: string;
+    Id: string;
+    Role?: string;
+    Type: string;
+    PrimaryImageTag?: string;
+  }>;
 }
 
 export interface MediaSource {

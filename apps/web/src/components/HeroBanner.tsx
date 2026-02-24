@@ -101,7 +101,9 @@ export function HeroBanner({ items }: HeroBannerProps) {
               >
                 <PlayIcon /> Lecture
               </button>
-              <button className="flex items-center gap-2 rounded-lg bg-white/15 px-6 py-2.5 font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/25">
+              <button
+                onClick={() => navigate(`/media/${item.Id}`)}
+                className="flex items-center gap-2 rounded-lg bg-white/15 px-6 py-2.5 font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/25">
                 Plus d'infos
               </button>
             </div>

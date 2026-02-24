@@ -90,8 +90,26 @@ export function useMediaItem(itemId: string | undefined) {
     queryKey: ["item", itemId],
     queryFn: () =>
       client.fetch<MediaItem>(
-        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios`
+        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds`
       ),
+    enabled: !!userId && !!itemId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSimilarItems(itemId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = getUserId();
+
+  return useQuery({
+    queryKey: ["similar", itemId],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Items/${itemId}/Similar?userId=${userId}&Limit=12&Fields=Overview,PrimaryImageAspectRatio` +
+            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
+        )
+        .then((r) => r.Items),
     enabled: !!userId && !!itemId,
     staleTime: 5 * 60 * 1000,
   });
