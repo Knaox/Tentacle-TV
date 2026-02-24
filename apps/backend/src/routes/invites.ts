@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
-import { nanoid } from "nanoid";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -16,7 +16,7 @@ export const inviteRoutes: FastifyPluginAsync = async (app) => {
   app.post("/", async (request, reply) => {
     const body = createInviteSchema.parse(request.body);
 
-    const key = nanoid(16);
+    const key = crypto.randomBytes(8).toString("hex");
     const expiresAt = body.expiresInHours
       ? new Date(Date.now() + body.expiresInHours * 60 * 60 * 1000)
       : undefined;
