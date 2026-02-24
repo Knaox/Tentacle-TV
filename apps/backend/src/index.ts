@@ -8,6 +8,8 @@ import { seerrRoutes } from "./routes/seerr";
 import { requestRoutes } from "./routes/requests";
 import { preferenceRoutes } from "./routes/preferences";
 import { updateRoutes } from "./routes/update";
+import { ticketRoutes } from "./routes/tickets";
+import { notificationRoutes } from "./routes/notifications";
 import { startRequestWorker } from "./services/requestWorker";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -27,6 +29,8 @@ async function main() {
   await app.register(requestRoutes, { prefix: "/api/requests" });
   await app.register(preferenceRoutes, { prefix: "/api/preferences" });
   await app.register(updateRoutes, { prefix: "/api/update" });
+  await app.register(ticketRoutes, { prefix: "/api/tickets" });
+  await app.register(notificationRoutes, { prefix: "/api/notifications" });
   await app.register(healthRoutes, { prefix: "/api" });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });

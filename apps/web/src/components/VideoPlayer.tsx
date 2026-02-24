@@ -21,6 +21,11 @@ interface VideoPlayerProps {
   onQualityChange: (bitrate: number | null) => void;
   onProgress?: (seconds: number, paused: boolean) => void;
   onStarted?: () => void;
+  hasNextEpisode?: boolean;
+  hasPreviousEpisode?: boolean;
+  nextEpisodeTitle?: string;
+  onNextEpisode?: () => void;
+  onPreviousEpisode?: () => void;
 }
 
 export function VideoPlayer({
@@ -29,6 +34,8 @@ export function VideoPlayer({
   currentAudio, currentSubtitle, currentQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted,
+  hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
+  onNextEpisode, onPreviousEpisode,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,6 +49,9 @@ export function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [buffered, setBuffered] = useState(0);
+  const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
+  const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const playbackTimeRef = useRef(0);
   const hasStartedRef = useRef(false);
 
@@ -103,6 +113,32 @@ export function VideoPlayer({
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
 
+  // Auto-play countdown cleanup
+  useEffect(() => {
+    return () => { clearInterval(autoPlayTimerRef.current); };
+  }, []);
+
+  const startAutoPlayCountdown = useCallback(() => {
+    if (!hasNextEpisode || !onNextEpisode) return;
+    setAutoPlayCountdown(10);
+    clearInterval(autoPlayTimerRef.current);
+    autoPlayTimerRef.current = setInterval(() => {
+      setAutoPlayCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(autoPlayTimerRef.current);
+          onNextEpisode();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [hasNextEpisode, onNextEpisode]);
+
+  const cancelAutoPlay = useCallback(() => {
+    clearInterval(autoPlayTimerRef.current);
+    setAutoPlayCountdown(null);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
@@ -110,16 +146,27 @@ export function VideoPlayer({
       if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else navigate(-1); }
       if (e.code === "ArrowRight") { const v = videoRef.current; if (v) v.currentTime += 10; }
       if (e.code === "ArrowLeft") { const v = videoRef.current; if (v) v.currentTime -= 10; }
+      if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
+      if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay, toggleFullscreen, navigate]);
+  }, [togglePlay, toggleFullscreen, navigate, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const t = e.currentTarget.currentTime;
     setCurrentTime(t);
     playbackTimeRef.current = t;
     onProgress?.(t, e.currentTarget.paused);
+  };
+
+  const handleProgress = () => {
+    const v = videoRef.current;
+    if (!v || !v.duration) return;
+    const buf = v.buffered;
+    if (buf.length > 0) {
+      setBuffered(buf.end(buf.length - 1) / v.duration);
+    }
   };
 
   const fmt = (s: number) => {
@@ -135,10 +182,12 @@ export function VideoPlayer({
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} src={src} className="h-full w-full"
         onTimeUpdate={handleTimeUpdate}
+        onProgress={handleProgress}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         onPlay={() => { setPlaying(true); hasStartedRef.current = true; onStarted?.(); }}
         onPause={() => setPlaying(false)}
-        onEnded={() => navigate(-1)} autoPlay crossOrigin="anonymous"
+        onEnded={() => { if (hasNextEpisode) startAutoPlayCountdown(); else navigate(-1); }}
+        autoPlay crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (
           <track key={t.index} kind="subtitles" src={t.url} label={t.label} />
@@ -169,15 +218,32 @@ export function VideoPlayer({
             )}
           </AnimatePresence>
           {/* Progress bar */}
-          <div className="group/bar mb-3 flex h-1.5 cursor-pointer items-center rounded-full bg-white/20 transition-all hover:h-2.5"
+          <div className="group/bar relative mb-3 h-1.5 cursor-pointer rounded-full bg-white/20 transition-all hover:h-2.5"
             onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seek((e.clientX - r.left) / r.width); }}>
+            {/* Buffer bar */}
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${buffered * 100}%` }} />
+            {/* Playback bar */}
             <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${progress * 100}%` }}>
               <div className="absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100" />
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {hasPreviousEpisode && (
+                <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="Épisode précédent (P)"><PrevEpIcon /></button>
+              )}
+              <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, v.currentTime - 10); }}
+                className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
+                <span className="text-xs font-bold text-white/70">-10</span>
+              </button>
               <button onClick={togglePlay} className="rounded-full p-2 hover:bg-white/10">{playing ? <PauseIcon /> : <PlayIcon />}</button>
+              <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.min(v.duration, v.currentTime + 30); }}
+                className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
+                <span className="text-xs font-bold text-white/70">+30</span>
+              </button>
+              {hasNextEpisode && (
+                <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title="Épisode suivant (N)"><NextEpIcon /></button>
+              )}
               <div className="group/vol flex items-center gap-2">
                 <button onClick={() => { const v = videoRef.current; if (v) { v.muted = !v.muted; setVolume(v.muted ? 0 : 1); } }}
                   className="rounded-full p-2 hover:bg-white/10">{volume === 0 ? <MuteIcon /> : <VolumeIcon />}</button>
@@ -196,6 +262,35 @@ export function VideoPlayer({
           </div>
         </div>
       </div>
+
+      {/* Auto-play next episode overlay */}
+      {autoPlayCountdown !== null && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col items-center gap-6 text-center">
+            <p className="text-lg text-white/70">Prochain épisode dans</p>
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-tentacle-accent">
+              <span className="text-4xl font-bold text-white">{autoPlayCountdown}</span>
+            </div>
+            {nextEpisodeTitle && (
+              <p className="text-sm text-white/50">{nextEpisodeTitle}</p>
+            )}
+            <div className="flex gap-4">
+              <button
+                onClick={() => onNextEpisode?.()}
+                className="rounded-lg bg-tentacle-accent px-6 py-2.5 text-sm font-semibold text-white hover:bg-tentacle-accent/80"
+              >
+                Lire maintenant
+              </button>
+              <button
+                onClick={cancelAutoPlay}
+                className="rounded-lg bg-white/10 px-6 py-2.5 text-sm text-white/70 hover:bg-white/20"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -208,3 +303,5 @@ function MuteIcon() { return <svg className="h-5 w-5 text-white" fill="none" vie
 function GearIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>; }
 function FsIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" /></svg>; }
 function ExitFsIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 4v4H4M16 4v4h4M8 20v-4H4M16 20v-4h4" /></svg>; }
+function PrevEpIcon() { return <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>; }
+function NextEpIcon() { return <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>; }

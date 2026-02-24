@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@tentacle/api-client";
+import { NotificationBell } from "./NotificationBell";
 
 function isAdmin(): boolean {
   try {
@@ -33,34 +34,18 @@ export function Navbar() {
         scrolled ? "bg-tentacle-bg/95 backdrop-blur-md" : "bg-transparent"
       }`}
     >
-      <h1
+      <div
         onClick={() => navigate("/")}
-        className="cursor-pointer text-2xl font-bold tracking-tight"
+        className="flex cursor-pointer items-center gap-3"
       >
-        <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <img src="/tentacle-logo-pirate.svg" alt="Tentacle" className="h-9 w-9" />
+        <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
           Tentacle
         </span>
-      </h1>
+      </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate("/search")}
-          className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-          title="Rechercher"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
-        <button
-          onClick={() => navigate("/requests")}
-          className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-          title="Mes demandes"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+        <NotificationBell />
         <button
           onClick={() => navigate("/preferences")}
           className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"

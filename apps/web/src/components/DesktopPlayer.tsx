@@ -20,6 +20,11 @@ interface DesktopPlayerProps {
   onQualityChange: (bitrate: number | null) => void;
   onProgress?: (seconds: number, paused: boolean) => void;
   onStarted?: () => void;
+  hasNextEpisode?: boolean;
+  hasPreviousEpisode?: boolean;
+  nextEpisodeTitle?: string;
+  onNextEpisode?: () => void;
+  onPreviousEpisode?: () => void;
 }
 
 export function DesktopPlayer({
@@ -28,12 +33,16 @@ export function DesktopPlayer({
   currentAudio, currentSubtitle, currentQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted,
+  hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
+  onNextEpisode, onPreviousEpisode,
 }: DesktopPlayerProps) {
   const navigate = useNavigate();
   const { state, ready, error, play, togglePause, seek, seekRelative, setVolume, toggleMute, stop } = useDesktopPlayer();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const hasStartedRef = useRef(false);
 
   // Load media when ready
@@ -58,16 +67,38 @@ export function DesktopPlayer({
     onProgress?.(state.position, state.paused);
   }, [state.position, state.paused, state.playing]);
 
-  // Navigate back on EOF
+  const startAutoPlayCountdown = useCallback(() => {
+    if (!hasNextEpisode || !onNextEpisode) return;
+    setAutoPlayCountdown(10);
+    clearInterval(autoPlayTimerRef.current);
+    autoPlayTimerRef.current = setInterval(() => {
+      setAutoPlayCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(autoPlayTimerRef.current);
+          onNextEpisode();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [hasNextEpisode, onNextEpisode]);
+
+  const cancelAutoPlay = useCallback(() => {
+    clearInterval(autoPlayTimerRef.current);
+    setAutoPlayCountdown(null);
+  }, []);
+
+  // Navigate back or auto-play on EOF
   useEffect(() => {
     if (state.eof && hasStartedRef.current) {
-      navigate(-1);
+      if (hasNextEpisode) startAutoPlayCountdown();
+      else navigate(-1);
     }
-  }, [state.eof, navigate]);
+  }, [state.eof, navigate, hasNextEpisode, startAutoPlayCountdown]);
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => { stop(); };
+    return () => { stop(); clearInterval(autoPlayTimerRef.current); };
   }, [stop]);
 
   const scheduleHide = useCallback(() => {
@@ -85,10 +116,12 @@ export function DesktopPlayer({
       if (e.code === "Escape") navigate(-1);
       if (e.code === "ArrowRight") seekRelative(10);
       if (e.code === "ArrowLeft") seekRelative(-10);
+      if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
+      if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, navigate, seekRelative]);
+  }, [togglePause, navigate, seekRelative, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   const fmt = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -176,10 +209,22 @@ export function DesktopPlayer({
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {hasPreviousEpisode && (
+                <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="Épisode précédent (P)"><PrevEpIcon /></button>
+              )}
+              <button onClick={() => seekRelative(-10)} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
+                <span className="text-xs font-bold text-white/70">-10</span>
+              </button>
               <button onClick={() => togglePause()} className="rounded-full p-2 hover:bg-white/10">
                 {state.paused ? <PlayIcon /> : <PauseIcon />}
               </button>
+              <button onClick={() => seekRelative(30)} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
+                <span className="text-xs font-bold text-white/70">+30</span>
+              </button>
+              {hasNextEpisode && (
+                <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title="Épisode suivant (N)"><NextEpIcon /></button>
+              )}
               <div className="group/vol flex items-center gap-2">
                 <button onClick={() => toggleMute()} className="rounded-full p-2 hover:bg-white/10">
                   {state.muted || state.volume === 0 ? <MuteIcon /> : <VolumeIcon />}
@@ -202,6 +247,27 @@ export function DesktopPlayer({
           </div>
         </div>
       </div>
+
+      {/* Auto-play next episode overlay */}
+      {autoPlayCountdown !== null && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col items-center gap-6 text-center">
+            <p className="text-lg text-white/70">Prochain épisode dans</p>
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-tentacle-accent">
+              <span className="text-4xl font-bold text-white">{autoPlayCountdown}</span>
+            </div>
+            {nextEpisodeTitle && <p className="text-sm text-white/50">{nextEpisodeTitle}</p>}
+            <div className="flex gap-4">
+              <button onClick={() => onNextEpisode?.()} className="rounded-lg bg-tentacle-accent px-6 py-2.5 text-sm font-semibold text-white hover:bg-tentacle-accent/80">
+                Lire maintenant
+              </button>
+              <button onClick={cancelAutoPlay} className="rounded-lg bg-white/10 px-6 py-2.5 text-sm text-white/70 hover:bg-white/20">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -212,3 +278,5 @@ function PauseIcon() { return <svg className="h-7 w-7 text-white" viewBox="0 0 2
 function VolumeIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6l-4 4H4v4h4l4 4V6z" /></svg>; }
 function MuteIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5.586v12.828a1 1 0 01-1.707.707L5.586 15z" /><path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>; }
 function GearIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>; }
+function PrevEpIcon() { return <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>; }
+function NextEpIcon() { return <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>; }
