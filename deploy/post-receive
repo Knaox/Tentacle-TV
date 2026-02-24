@@ -48,8 +48,13 @@ else
     echo "  ATTENTION: $BACKEND_ENV introuvable ! Le build utilisera les valeurs par défaut."
 fi
 
-# ─── 5. Build du frontend Web ───
-echo "[5/7] Compilation du frontend Web..."
+# ─── 5. Génération Prisma + Build ───
+echo "[5/7] Compilation du frontend Web + backend..."
+# Prisma generate doit tourner AVANT le build backend (types)
+cd "$SOURCE_DIR/apps/backend"
+npx prisma generate
+cd "$SOURCE_DIR"
+
 pnpm build:web
 
 # Déploiement des fichiers statiques
