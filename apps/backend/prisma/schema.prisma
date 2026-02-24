@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model InviteKey {
+  id          String    @id @default(cuid())
+  key         String    @unique @db.VarChar(32)
+  maxUses     Int       @default(1)
+  currentUses Int       @default(0)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  createdBy   String?   @db.VarChar(255)
+  usages      InviteUsage[]
+
+  @@index([key])
+  @@map("invite_keys")
+}
+
+model InviteUsage {
+  id            String    @id @default(cuid())
+  inviteKeyId   String
+  inviteKey     InviteKey @relation(fields: [inviteKeyId], references: [id])
+  jellyfinUserId String   @db.VarChar(255)
+  username      String    @db.VarChar(255)
+  usedAt        DateTime  @default(now())
+
+  @@map("invite_usages")
+}
