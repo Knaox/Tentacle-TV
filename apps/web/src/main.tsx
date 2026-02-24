@@ -2,8 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
-import { JellyfinClient } from "@tentacle/api-client";
-import { JellyfinClientContext } from "@tentacle/api-client/src/hooks/useJellyfinClient";
+import { JellyfinClient, JellyfinClientContext } from "@tentacle/api-client";
 import { App } from "./App";
 import "./index.css";
 
