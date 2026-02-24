@@ -24,6 +24,13 @@ mkdir -p "$SOURCE_DIR"
 git --work-tree="$SOURCE_DIR" --git-dir="$GIT_REPO" checkout -f main
 cd "$SOURCE_DIR"
 
+# Auto-update: copie la dernière version du hook depuis le repo
+if [ -f "$SOURCE_DIR/deploy/post-receive" ]; then
+    cp "$SOURCE_DIR/deploy/post-receive" "$GIT_REPO/hooks/post-receive"
+    chmod +x "$GIT_REPO/hooks/post-receive"
+    echo "  Hook post-receive mis à jour depuis le repo"
+fi
+
 # ─── 2. Vérification pnpm ───
 if ! command -v pnpm &> /dev/null; then
     echo "[2/7] Installation de pnpm..."
