@@ -73,12 +73,14 @@ export function VideoPlayer({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    // If already playing, resume from last known position; otherwise use initial start
-    const seekTo = hasStartedRef.current ? playbackTimeRef.current : startPositionSeconds;
+    const isSourceChange = hasStartedRef.current;
+    const seekTo = isSourceChange ? playbackTimeRef.current : startPositionSeconds;
+    // Force reload when source changes mid-playback
+    if (isSourceChange) v.load();
     if (!seekTo) return;
     const onLoaded = () => {
       v.currentTime = seekTo;
-      if (hasStartedRef.current) v.play().catch(() => {});
+      if (isSourceChange) v.play().catch(() => {});
     };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
     return () => v.removeEventListener("loadedmetadata", onLoaded);

@@ -97,6 +97,25 @@ export function useMediaItem(itemId: string | undefined) {
   });
 }
 
+export function useSearchItems(query: string) {
+  const client = useJellyfinClient();
+  const userId = getUserId();
+
+  return useQuery({
+    queryKey: ["search", query],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?searchTerm=${encodeURIComponent(query)}&Recursive=true` +
+            `&IncludeItemTypes=Movie,Series&Limit=24&Fields=Overview,PrimaryImageAspectRatio` +
+            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
+        )
+        .then((r) => r.Items),
+    enabled: !!userId && query.length >= 2,
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useSimilarItems(itemId: string | undefined) {
   const client = useJellyfinClient();
   const userId = getUserId();
