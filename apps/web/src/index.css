@@ -45,3 +45,20 @@
     overflow: hidden;
   }
 }
+
+/* Subtitle styling: white text with black outline, no background */
+video::cue {
+  background: transparent !important;
+  color: white;
+  font-size: 1.3em;
+  line-height: 1.4;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+    -2px  0   0 #000,
+     2px  0   0 #000,
+     0   -2px 0 #000,
+     0    2px 0 #000;
+}
