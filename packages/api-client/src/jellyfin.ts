@@ -69,14 +69,17 @@ export class JellyfinClient {
 
   getImageUrl(
     itemId: string,
-    imageType: "Primary" | "Backdrop" | "Logo" = "Primary",
-    options?: { width?: number; quality?: number; tag?: string }
+    imageType: "Primary" | "Backdrop" | "Logo" | "Thumb" = "Primary",
+    options?: { width?: number; height?: number; quality?: number; tag?: string; index?: number }
   ): string {
     const params = new URLSearchParams();
     if (options?.width) params.set("maxWidth", String(options.width));
+    if (options?.height) params.set("maxHeight", String(options.height));
     if (options?.quality) params.set("quality", String(options.quality));
     if (options?.tag) params.set("tag", options.tag);
-    return `${this.baseUrl}/Items/${itemId}/Images/${imageType}?${params}`;
+    const idx = options?.index ?? 0;
+    const suffix = imageType === "Backdrop" && idx > 0 ? `/${idx}` : "";
+    return `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${params}`;
   }
 
   getStreamUrl(itemId: string): string {

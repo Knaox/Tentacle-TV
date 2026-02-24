@@ -1,21 +1,45 @@
 export interface MediaItem {
   Id: string;
   Name: string;
-  Type: "Movie" | "Series" | "Episode" | "Audio" | "MusicAlbum";
+  Type: "Movie" | "Series" | "Episode" | "Season" | "BoxSet" | "Audio" | "MusicAlbum";
   Overview?: string;
+  Taglines?: string[];
+  Genres?: string[];
   ProductionYear?: number;
+  PremiereDate?: string;
+  DateCreated?: string;
   CommunityRating?: number;
+  CriticRating?: number;
   OfficialRating?: string;
   RunTimeTicks?: number;
+  Container?: string;
+  MediaType?: string;
+
+  // Images
   ImageTags?: Record<string, string>;
   BackdropImageTags?: string[];
+  ParentBackdropImageTags?: string[];
+  ParentBackdropItemId?: string;
+  SeriesPrimaryImageTag?: string;
+  PrimaryImageAspectRatio?: number;
+
+  // Series / Episode
   SeriesName?: string;
   SeriesId?: string;
   SeasonId?: string;
+  SeasonName?: string;
   IndexNumber?: number;
   ParentIndexNumber?: number;
+  Status?: string;
+
+  // Media
   MediaSources?: MediaSource[];
   UserData?: UserItemData;
+
+  // Folder
+  IsFolder?: boolean;
+  ChildCount?: number;
+  CollectionType?: string;
 }
 
 export interface MediaSource {
@@ -25,6 +49,7 @@ export interface MediaSource {
   Container: string;
   Size?: number;
   Bitrate?: number;
+  RunTimeTicks?: number;
   SupportsDirectPlay: boolean;
   SupportsDirectStream: boolean;
   SupportsTranscoding: boolean;
@@ -38,6 +63,9 @@ export interface MediaStream {
   DisplayTitle?: string;
   IsDefault: boolean;
   Index: number;
+  Width?: number;
+  Height?: number;
+  BitRate?: number;
 }
 
 export interface UserItemData {
@@ -46,11 +74,13 @@ export interface UserItemData {
   IsFavorite: boolean;
   Played: boolean;
   PlayedPercentage?: number;
+  UnplayedItemCount?: number;
+  LastPlayedDate?: string;
 }
 
 export interface LibraryView {
   Id: string;
   Name: string;
-  CollectionType: "movies" | "tvshows" | "music" | "mixed";
+  CollectionType?: string;
   ImageTags?: Record<string, string>;
 }
