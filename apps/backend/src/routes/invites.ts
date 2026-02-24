@@ -43,14 +43,14 @@ export const inviteRoutes: FastifyPluginAsync = async (app) => {
       orderBy: { createdAt: "desc" },
     });
 
-    return invites.map((inv) => ({
+    return invites.map((inv: any) => ({
       id: inv.id,
       key: inv.key,
       maxUses: inv.maxUses,
       currentUses: inv.currentUses,
       expiresAt: inv.expiresAt,
       createdAt: inv.createdAt,
-      usages: inv.usages.map((u) => ({
+      usages: inv.usages.map((u: any) => ({
         username: u.username,
         usedAt: u.usedAt,
       })),
