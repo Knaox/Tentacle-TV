@@ -5,5 +5,5 @@ export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeatured
 export { useStream } from "./hooks/useStream";
 export { useAuth } from "./hooks/useAuth";
 export { usePlaybackReporting } from "./hooks/usePlayback";
-export { useSeerrSearch, useSeerrRequest, setSeerrBackendUrl } from "./hooks/useSeerr";
-export type { SeerrSearchResult, SeerrSearchResponse } from "./hooks/useSeerr";
+export { useSeerrSearch, useSeerrRequest, useSeerrDeleteRequest, useSeerrRetryRequest, useSeerrDiscover, useSeerrRequests, useSeerrRequestCount, setSeerrBackendUrl } from "./hooks/useSeerr";
+export type { SeerrSearchResult, SeerrSearchResponse, SeerrPagedResponse, SeerrMediaRequest, SeerrRequestsResponse } from "./hooks/useSeerr";
