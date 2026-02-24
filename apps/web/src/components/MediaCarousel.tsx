@@ -85,6 +85,7 @@ function CarouselCard({ item }: { item: MediaItem }) {
   const year = item.ProductionYear;
   const rating = item.CommunityRating?.toFixed(1);
   const progress = item.UserData?.PlayedPercentage;
+  const watched = item.UserData?.Played === true;
   const isEpisode = item.Type === "Episode";
 
   const imageUrl = isEpisode && item.SeriesId
@@ -142,13 +143,28 @@ function CarouselCard({ item }: { item: MediaItem }) {
         </div>
       </div>
 
+      {/* Watched badge */}
+      {watched && (
+        <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-tentacle-accent shadow">
+          <CheckIcon />
+        </div>
+      )}
+
       {/* Progress bar */}
-      {progress != null && progress > 0 && (
+      {!watched && progress != null && progress > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-1 overflow-hidden rounded-b-lg bg-white/10">
           <div className="h-full bg-tentacle-accent" style={{ width: `${progress}%` }} />
         </div>
       )}
     </motion.div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+    </svg>
   );
 }
 

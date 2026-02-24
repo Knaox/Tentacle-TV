@@ -64,24 +64,27 @@ export async function getMediaStatus(
 }
 
 /**
- * Get a specific request status from Overseerr/Seerr.
+ * Get a specific request + media status from Overseerr/Seerr.
  */
-export async function getRequestStatus(requestId: number): Promise<{ status: number } | null> {
+export async function getRequestStatus(requestId: number): Promise<{ status: number; mediaStatus: number } | null> {
   const res = await fetch(`${SEERR_URL}/api/v1/request/${requestId}`, { headers });
 
   if (res.status === 404) return null;
   if (!res.ok) return null;
 
   const data = await res.json();
-  return { status: data.status };
+  return { status: data.status, mediaStatus: data.media?.status ?? 0 };
 }
 
 /**
- * Map Seerr status code to our internal status string.
+ * Map Seerr request status code to our internal status string.
+ * Request: 1=PENDING, 2=APPROVED, 3=DECLINED
+ * Media:   1=UNKNOWN, 2=PENDING, 3=PROCESSING, 4=PARTIAL, 5=AVAILABLE
  */
-export function mapSeerrStatus(seerrStatus: number): string {
-  switch (seerrStatus) {
-    case 1: return "submitted";   // pending in Seerr
+export function mapSeerrStatus(requestStatus: number, mediaStatus = 0): string {
+  if (mediaStatus >= 5) return "available";
+  switch (requestStatus) {
+    case 1: return "submitted";
     case 2: return "approved";
     case 3: return "declined";
     default: return "submitted";

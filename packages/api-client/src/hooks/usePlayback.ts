@@ -6,12 +6,22 @@ const REPORT_INTERVAL_MS = 10_000;
 
 export function usePlaybackReporting(
   itemId: string | undefined,
-  mediaSourceId: string | undefined
+  mediaSourceId: string | undefined,
+  isDirectPlay = true
 ) {
   const client = useJellyfinClient();
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
   const startedRef = useRef(false);
+  const playMethod = isDirectPlay ? "DirectPlay" : "Transcode";
+
+  // Keep refs for unmount cleanup (avoids premature Stop events on dep changes)
+  const clientRef = useRef(client);
+  const itemIdRef = useRef(itemId);
+  const msIdRef = useRef(mediaSourceId);
+  clientRef.current = client;
+  itemIdRef.current = itemId;
+  msIdRef.current = mediaSourceId;
 
   const reportStart = useCallback(() => {
     if (!itemId || startedRef.current) return;
@@ -22,13 +32,13 @@ export function usePlaybackReporting(
         ItemId: itemId,
         MediaSourceId: mediaSourceId ?? itemId,
         CanSeek: true,
-        PlayMethod: "DirectPlay",
+        PlayMethod: playMethod,
       }),
     }).catch(() => {});
-  }, [client, itemId, mediaSourceId]);
+  }, [client, itemId, mediaSourceId, playMethod]);
 
   const reportProgress = useCallback(() => {
-    if (!itemId) return;
+    if (!itemId || !startedRef.current) return;
     client.fetch("/Sessions/Playing/Progress", {
       method: "POST",
       body: JSON.stringify({
@@ -36,23 +46,10 @@ export function usePlaybackReporting(
         MediaSourceId: mediaSourceId ?? itemId,
         PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
         IsPaused: pausedRef.current,
-        PlayMethod: "DirectPlay",
+        PlayMethod: playMethod,
       }),
     }).catch(() => {});
-  }, [client, itemId, mediaSourceId]);
-
-  const reportStop = useCallback(() => {
-    if (!itemId || !startedRef.current) return;
-    startedRef.current = false;
-    client.fetch("/Sessions/Playing/Stopped", {
-      method: "POST",
-      body: JSON.stringify({
-        ItemId: itemId,
-        MediaSourceId: mediaSourceId ?? itemId,
-        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
-      }),
-    }).catch(() => {});
-  }, [client, itemId, mediaSourceId]);
+  }, [client, itemId, mediaSourceId, playMethod]);
 
   const updatePosition = useCallback((seconds: number, isPaused: boolean) => {
     positionRef.current = seconds;
@@ -66,10 +63,38 @@ export function usePlaybackReporting(
     return () => clearInterval(interval);
   }, [itemId, reportProgress]);
 
-  // Report stop on unmount
+  // Report stop on unmount only — refs ensure we use latest values without
+  // triggering cleanup on every dependency change
   useEffect(() => {
-    return () => { reportStop(); };
-  }, [reportStop]);
+    return () => {
+      const id = itemIdRef.current;
+      if (!id || !startedRef.current) return;
+      startedRef.current = false;
+      clientRef.current.fetch("/Sessions/Playing/Stopped", {
+        method: "POST",
+        body: JSON.stringify({
+          ItemId: id,
+          MediaSourceId: msIdRef.current ?? id,
+          PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        }),
+      }).catch(() => {});
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Explicit stop for platforms that call it manually (TV, mobile)
+  const reportStop = useCallback(() => {
+    const id = itemIdRef.current;
+    if (!id || !startedRef.current) return;
+    startedRef.current = false;
+    clientRef.current.fetch("/Sessions/Playing/Stopped", {
+      method: "POST",
+      body: JSON.stringify({
+        ItemId: id,
+        MediaSourceId: msIdRef.current ?? id,
+        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      }),
+    }).catch(() => {});
+  }, []);
 
   return { reportStart, reportStop, updatePosition };
 }

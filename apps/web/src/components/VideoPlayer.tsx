@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "./TrackSelector";
+import type { SegmentTimestamps } from "@tentacle/shared";
 
 export interface SubtitleTrack { index: number; label: string; url: string }
 export interface AudioTrack { index: number; label: string }
@@ -11,6 +12,7 @@ interface VideoPlayerProps {
   title: string;
   subtitle?: string;
   startPositionSeconds?: number;
+  jellyfinDuration?: number;
   subtitleTracks?: SubtitleTrack[];
   audioTracks?: AudioTrack[];
   currentAudio: number;
@@ -26,16 +28,19 @@ interface VideoPlayerProps {
   nextEpisodeTitle?: string;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
+  introSegment?: SegmentTimestamps | null;
+  creditsSegment?: SegmentTimestamps | null;
 }
 
 export function VideoPlayer({
-  src, title, subtitle, startPositionSeconds,
+  src, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
   currentAudio, currentSubtitle, currentQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   onNextEpisode, onPreviousEpisode,
+  introSegment, creditsSegment,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +49,9 @@ export function VideoPlayer({
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  // Prefer Jellyfin metadata duration, fallback to video element duration
+  const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
   const [showControls, setShowControls] = useState(true);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
@@ -177,13 +184,22 @@ export function VideoPlayer({
   const progress = duration > 0 ? currentTime / duration : 0;
   const hasSettings = audioTracks.length > 0 || subtitleTracks.length > 0;
 
+  // Skip intro/credits detection
+  const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
+  const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
+
+  const handleSkip = (endTime: number) => {
+    const v = videoRef.current;
+    if (v) v.currentTime = endTime;
+  };
+
   return (
     <div ref={containerRef} onMouseMove={scheduleHide} onClick={() => { togglePlay(); setShowSettings(false); }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} src={src} className="h-full w-full"
         onTimeUpdate={handleTimeUpdate}
         onProgress={handleProgress}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
         onPlay={() => { setPlaying(true); hasStartedRef.current = true; onStarted?.(); }}
         onPause={() => setPlaying(false)}
         onEnded={() => { if (hasNextEpisode) startAutoPlayCountdown(); else navigate(-1); }}
@@ -193,6 +209,20 @@ export function VideoPlayer({
           <track key={t.index} kind="subtitles" src={t.url} label={t.label} />
         ))}
       </video>
+
+      {/* Skip intro/credits buttons */}
+      {showSkipIntro && introSegment && (
+        <button onClick={(e) => { e.stopPropagation(); handleSkip(introSegment.end); }}
+          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
+          Passer l'intro
+        </button>
+      )}
+      {showSkipCredits && creditsSegment && (
+        <button onClick={(e) => { e.stopPropagation(); handleSkip(creditsSegment.end); }}
+          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
+          Passer le générique
+        </button>
+      )}
 
       {/* Controls */}
       <div className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}

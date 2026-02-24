@@ -6,15 +6,7 @@ import { Navbar } from "../components/Navbar";
 const LANGUAGES = [
   { code: "fre", label: "Français" },
   { code: "eng", label: "English" },
-  { code: "jpn", label: "日本語" },
-  { code: "ger", label: "Deutsch" },
-  { code: "spa", label: "Español" },
-  { code: "ita", label: "Italiano" },
-  { code: "por", label: "Português" },
-  { code: "kor", label: "한국어" },
-  { code: "chi", label: "中文" },
-  { code: "rus", label: "Русский" },
-  { code: "ara", label: "العربية" },
+  { code: "jpn", label: "Japonais"},
 ];
 
 const SUBTITLE_MODES = [

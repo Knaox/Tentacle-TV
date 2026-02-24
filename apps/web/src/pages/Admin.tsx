@@ -185,6 +185,7 @@ function AdminTicketSection() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{t.subject}</p>
                   <p className="text-xs text-white/40">{t.username} — {new Date(t.updatedAt).toLocaleDateString("fr-FR")}</p>
+                  {t.mediaItemName && <p className="mt-0.5 text-xs text-purple-400 truncate">{t.mediaItemName}</p>}
                 </div>
                 {st && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${st.color}`}>{st.label}</span>}
               </div>
@@ -220,6 +221,9 @@ function AdminTicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () 
         <h3 className="text-base font-semibold text-white">{ticket.subject}</h3>
         {st && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${st.color}`}>{st.label}</span>}
       </div>
+      {ticket.mediaItemName && (
+        <p className="mb-3 text-xs text-purple-400">{ticket.mediaItemName}</p>
+      )}
 
       <div className="mb-4 flex gap-2">
         {(["open", "in_progress", "resolved", "closed"] as const).map((s) => (

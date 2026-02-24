@@ -133,6 +133,17 @@ export function useSeerrRetryRequest() {
   });
 }
 
+export function useSeerrMediaDetail(mediaType: "movie" | "tv" | undefined, tmdbId: number | undefined) {
+  return useQuery({
+    queryKey: ["seerr-media-detail", mediaType, tmdbId],
+    queryFn: () => seerrFetch<{ title?: string; name?: string; posterPath?: string }>(
+      `/${mediaType}/${tmdbId}`
+    ),
+    enabled: !!mediaType && !!tmdbId,
+    staleTime: 24 * 60 * 60_000,
+  });
+}
+
 function invalidateAll(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["seerr-search"] });
   qc.invalidateQueries({ queryKey: ["seerr-discover"] });

@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation } from "@tentacle/api-client";
+import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
+import { ticksToSeconds } from "@tentacle/shared";
 import type { MediaStream as JfStream } from "@tentacle/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
@@ -10,7 +11,15 @@ const DesktopPlayer = lazy(() =>
   import("../components/DesktopPlayer").then((m) => ({ default: m.DesktopPlayer }))
 );
 
-const TICKS_PER_SEC = 10_000_000;
+import { TICKS_PER_SECOND } from "@tentacle/shared";
+
+function formatTrackLabel(s: JfStream): string {
+  const title = s.DisplayTitle || s.Title || s.Language || `Piste ${s.Index}`;
+  const codec = s.Codec?.toUpperCase();
+  const parts = [title];
+  if (codec && !title.toUpperCase().includes(codec)) parts.push(codec);
+  return parts.join(" - ");
+}
 
 export function Watch() {
   const { itemId } = useParams<{ itemId: string }>();
@@ -32,7 +41,19 @@ export function Watch() {
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
 
-  const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId);
+  // Detect unsupported codecs (AC3/EAC3/DTS not playable in Chrome/Firefox)
+  const selectedAudioCodec = streams.find(
+    (s) => s.Type === "Audio" && s.Index === audioIndex
+  )?.Codec?.toLowerCase();
+  const needsAudioTranscode = !!selectedAudioCodec && /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec);
+
+  // Direct play only when default audio + no quality + browser-compatible codec
+  const isDirectPlay = audioIndex === defaultAudio && quality == null && !needsAudioTranscode;
+
+  // Skip intro/outro detection
+  const skipSegments = useIntroSkipper(itemId, item);
+
+  const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
 
   // Resolve preferred tracks from user preferences
   const resolveTracks = useResolveMediaTracks();
@@ -64,15 +85,16 @@ export function Watch() {
       audioIndex,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
+      directPlay: isDirectPlay,
     });
-  }, [client, itemId, audioIndex, mediaSourceId, quality]);
+  }, [client, itemId, audioIndex, mediaSourceId, quality, isDirectPlay]);
 
   const audioTracks: AudioTrack[] = useMemo(() =>
     streams
       .filter((s) => s.Type === "Audio")
       .map((s) => ({
         index: s.Index,
-        label: [s.DisplayTitle || s.Language || `Audio ${s.Index}`, s.Codec?.toUpperCase()].filter(Boolean).join(" - "),
+        label: formatTrackLabel(s),
       })),
     [streams]
   );
@@ -82,19 +104,20 @@ export function Watch() {
       .filter((s) => s.Type === "Subtitle")
       .map((s) => ({
         index: s.Index,
-        label: s.DisplayTitle || s.Language || `Sous-titre ${s.Index}`,
+        label: formatTrackLabel(s),
         url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index),
       })),
     [streams, client, itemId, mediaSourceId]
   );
 
+  const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
-    return ticks ? ticks / TICKS_PER_SEC : undefined;
+    return ticks ? ticks / TICKS_PER_SECOND : undefined;
   }, [item]);
 
   const handleAudioChange = useCallback((idx: number) => {
-    positionRef.current = 0; // Will be set by progress callback before rebuild
     setAudioIndex(idx);
   }, []);
 
@@ -136,6 +159,7 @@ export function Watch() {
     title,
     subtitle,
     startPositionSeconds,
+    jellyfinDuration,
     audioTracks,
     subtitleTracks,
     currentAudio: audioIndex,
@@ -151,6 +175,8 @@ export function Watch() {
     nextEpisodeTitle: nextEpTitle,
     onNextEpisode: handleNextEpisode,
     onPreviousEpisode: handlePreviousEpisode,
+    introSegment: skipSegments.intro,
+    creditsSegment: skipSegments.credits,
   };
 
   // Use mpv player on desktop (Tauri), HTML5 player on web
