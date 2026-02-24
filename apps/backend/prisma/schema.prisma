@@ -54,6 +54,50 @@ model MediaRequest {
   @@map("media_requests")
 }
 
+model SupportTicket {
+  id              String    @id @default(cuid())
+  jellyfinUserId  String    @db.VarChar(255)
+  username        String    @db.VarChar(255)
+  subject         String    @db.VarChar(300)
+  category        String    @default("general") @db.VarChar(30) // general | bug | feature | account
+  status          String    @default("open") @db.VarChar(20)     // open | in_progress | resolved | closed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  messages        TicketMessage[]
+
+  @@index([jellyfinUserId])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id              String    @id @default(cuid())
+  ticketId        String
+  ticket          SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  jellyfinUserId  String    @db.VarChar(255)
+  username        String    @db.VarChar(255)
+  isAdmin         Boolean   @default(false)
+  body            String    @db.Text
+  createdAt       DateTime  @default(now())
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+model Notification {
+  id              String    @id @default(cuid())
+  jellyfinUserId  String    @db.VarChar(255)
+  type            String    @db.VarChar(30)  // ticket_reply | ticket_status | request_status
+  title           String    @db.VarChar(300)
+  body            String?   @db.Text
+  refId           String?   @db.VarChar(255) // ticket or request ID
+  read            Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@index([jellyfinUserId, read])
+  @@map("notifications")
+}
+
 model LibraryPreference {
   id              String  @id @default(cuid())
   jellyfinUserId  String  @db.VarChar(255)

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSeerrDiscover, useSeerrRequest } from "@tentacle/api-client";
+import { useSeerrDiscover, useRequestMedia } from "@tentacle/api-client";
 import { SeerrCard } from "./SeerrCard";
 
 type Category = "movies" | "tv" | "anime";
@@ -14,9 +14,19 @@ export function DiscoverGrid() {
   const [category, setCategory] = useState<Category>("movies");
   const [page, setPage] = useState(1);
   const { data, isLoading } = useSeerrDiscover(category, page);
-  const requestMutation = useSeerrRequest();
+  const requestMutation = useRequestMedia();
 
   const results = (data?.results ?? []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
+
+  const handleRequest = (body: { mediaType: "movie" | "tv"; mediaId: number }) => {
+    const item = results.find((r) => r.id === body.mediaId && r.mediaType === body.mediaType);
+    requestMutation.mutate({
+      mediaType: body.mediaType,
+      tmdbId: body.mediaId,
+      title: item?.title || item?.name || "Unknown",
+      posterPath: item?.posterPath,
+    });
+  };
   const totalPages = data?.totalPages ?? 1;
 
   return (
@@ -47,7 +57,7 @@ export function DiscoverGrid() {
       {!isLoading && results.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {results.map((item) => (
-            <SeerrCard key={`${item.mediaType}-${item.id}`} item={item} onRequest={requestMutation.mutate} />
+            <SeerrCard key={`${item.mediaType}-${item.id}`} item={item} onRequest={handleRequest} />
           ))}
         </div>
       )}

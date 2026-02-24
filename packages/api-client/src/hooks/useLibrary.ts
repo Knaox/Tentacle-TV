@@ -18,21 +18,27 @@ export function useLibraries() {
   });
 }
 
-export function useLibraryItems(libraryId: string | undefined) {
+export function useLibraryItems(
+  libraryId: string | undefined,
+  options?: { search?: string; limit?: number; sortBy?: string; sortOrder?: string }
+) {
   const client = useJellyfinClient();
   const userId = useUserId();
+  const limit = options?.limit ?? 50;
+  const sortBy = options?.sortBy ?? "SortName";
+  const sortOrder = options?.sortOrder ?? "Ascending";
+  const search = options?.search?.trim() ?? "";
 
   return useQuery({
-    queryKey: ["library", libraryId, "items"],
-    queryFn: () =>
-      client
-        .fetch<{ Items: MediaItem[] }>(
-          `/Users/${userId}/Items?ParentId=${libraryId}` +
-            `&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Movie,Series` +
-            `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio&Limit=50` +
-            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
-        )
-        .then((r) => r.Items),
+    queryKey: ["library", libraryId, "items", search, limit, sortBy, sortOrder],
+    queryFn: () => {
+      let url = `/Users/${userId}/Items?ParentId=${libraryId}` +
+        `&SortBy=${sortBy}&SortOrder=${sortOrder}&IncludeItemTypes=Movie,Series` +
+        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio&Limit=${limit}` +
+        `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`;
+      if (search.length >= 2) url += `&searchTerm=${encodeURIComponent(search)}`;
+      return client.fetch<{ Items: MediaItem[] }>(url).then((r) => r.Items);
+    },
     enabled: !!userId && !!libraryId,
     staleTime: 2 * 60 * 1000,
   });

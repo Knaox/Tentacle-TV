@@ -126,7 +126,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, onSave, onDelete }: {
           <div>
             <label className="mb-1 block text-xs text-white/50">Audio</label>
             <select value={audioLang} onChange={(e) => setAudioLang(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+              className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
               <option value="">Par défaut</option>
               {LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -137,7 +137,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, onSave, onDelete }: {
           <div>
             <label className="mb-1 block text-xs text-white/50">Sous-titres</label>
             <select value={subtitleLang} onChange={(e) => setSubtitleLang(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+              className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
               <option value="">Aucun</option>
               {LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -148,7 +148,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, onSave, onDelete }: {
           <div>
             <label className="mb-1 block text-xs text-white/50">Mode sous-titres</label>
             <select value={subtitleMode} onChange={(e) => setSubtitleMode(e.target.value as any)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+              className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
               {SUBTITLE_MODES.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}

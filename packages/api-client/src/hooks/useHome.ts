@@ -47,7 +47,7 @@ export function useNextUp() {
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
-          `/Shows/NextUp?userId=${userId}&Limit=12&Fields=${FIELDS}&${IMAGE_OPTS}`
+          `/Shows/NextUp?userId=${userId}&Limit=12&DisableFirstEpisode=true&Fields=${FIELDS}&${IMAGE_OPTS}`
         )
         .then((r) => r.Items),
     enabled: !!userId,

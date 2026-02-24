@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
-import { useParams } from "react-router-dom";
-import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks } from "@tentacle/api-client";
+import { useParams, useNavigate } from "react-router-dom";
+import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation } from "@tentacle/api-client";
 import type { MediaStream as JfStream } from "@tentacle/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
@@ -14,8 +14,10 @@ const TICKS_PER_SEC = 10_000_000;
 
 export function Watch() {
   const { itemId } = useParams<{ itemId: string }>();
+  const navigate = useNavigate();
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
+  const { nextEpisode, previousEpisode } = useEpisodeNavigation(item);
 
   const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
@@ -100,6 +102,14 @@ export function Watch() {
     setQuality(bitrate);
   }, []);
 
+  const handleNextEpisode = useCallback(() => {
+    if (nextEpisode) navigate(`/watch/${nextEpisode.Id}`, { replace: true });
+  }, [nextEpisode, navigate]);
+
+  const handlePreviousEpisode = useCallback(() => {
+    if (previousEpisode) navigate(`/watch/${previousEpisode.Id}`, { replace: true });
+  }, [previousEpisode, navigate]);
+
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
     updatePosition(seconds, paused);
@@ -117,6 +127,10 @@ export function Watch() {
   const subtitle = item?.Type === "Episode"
     ? `S${item.ParentIndexNumber}E${item.IndexNumber} — ${item.Name}` : undefined;
 
+  const nextEpTitle = nextEpisode
+    ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}`
+    : undefined;
+
   const playerProps = {
     src: streamUrl,
     title,
@@ -132,6 +146,11 @@ export function Watch() {
     onQualityChange: handleQualityChange,
     onProgress: handleProgress,
     onStarted: reportStart,
+    hasNextEpisode: !!nextEpisode,
+    hasPreviousEpisode: !!previousEpisode,
+    nextEpisodeTitle: nextEpTitle,
+    onNextEpisode: handleNextEpisode,
+    onPreviousEpisode: handlePreviousEpisode,
   };
 
   // Use mpv player on desktop (Tauri), HTML5 player on web

@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   useLibraries,
   useResumeItems,
@@ -10,6 +11,14 @@ import { Shimmer } from "@tentacle/ui";
 import { Navbar } from "../components/Navbar";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
+import { TabBar } from "../components/TabBar";
+import type { Tab } from "../components/TabBar";
+import { LibraryGrid } from "../components/LibraryGrid";
+import { DiscoverGrid } from "../components/DiscoverGrid";
+import { RequestSearch } from "../components/RequestSearch";
+import { MyRequestsList } from "../components/MyRequestsList";
+import { DownloadList } from "../components/DownloadList";
+import { SupportPanel } from "../components/SupportPanel";
 
 export function Home() {
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
@@ -17,40 +26,86 @@ export function Home() {
   const { data: nextUp } = useNextUp();
   const { data: watchedItems } = useWatchedItems();
   const { data: libraries } = useLibraries();
+  const [activeTab, setActiveTab] = useState("home");
+
+  // Build dynamic tabs from Jellyfin libraries
+  const tabs: Tab[] = useMemo(() => {
+    const list: Tab[] = [{ key: "home", label: "Accueil" }];
+    if (libraries) {
+      for (const lib of libraries) {
+        list.push({ key: `lib-${lib.Id}`, label: lib.Name });
+      }
+    }
+    list.push(
+      { key: "discover", label: "Découvrir" },
+      { key: "request", label: "Faire une demande" },
+      { key: "requests", label: "Demandes en cours" },
+      { key: "downloads", label: "Téléchargements" },
+      { key: "support", label: "Aide" },
+    );
+    return list;
+  }, [libraries]);
+
+  const isHome = activeTab === "home";
+  const libraryMatch = activeTab.startsWith("lib-") ? activeTab.slice(4) : null;
+  const libraryName = libraryMatch
+    ? libraries?.find((l) => l.Id === libraryMatch)?.Name ?? ""
+    : "";
 
   return (
     <div className="min-h-screen bg-tentacle-bg">
       <Navbar />
 
-      {/* Hero Banner */}
-      {featuredLoading ? (
-        <div className="h-[70vh] animate-pulse bg-tentacle-surface" />
-      ) : (
-        <HeroBanner items={featured ?? []} />
+      {/* Hero Banner — only on Accueil */}
+      {isHome && (
+        <>
+          {featuredLoading ? (
+            <div className="h-[70vh] animate-pulse bg-tentacle-surface" />
+          ) : (
+            <HeroBanner items={featured ?? []} />
+          )}
+        </>
       )}
 
-      {/* Carousels */}
-      <div className="-mt-16 relative z-10 space-y-2 pb-20">
-        {/* Reprendre la lecture */}
-        {resumeItems && resumeItems.length > 0 && (
-          <MediaCarousel title="Reprendre la lecture" items={resumeItems} />
-        )}
-
-        {/* Prochains épisodes */}
-        {nextUp && nextUp.length > 0 && (
-          <MediaCarousel title="Prochains épisodes" items={nextUp} />
-        )}
-
-        {/* Déjà visionné */}
-        {watchedItems && watchedItems.length > 0 && (
-          <MediaCarousel title="Déjà visionné" items={watchedItems} />
-        )}
-
-        {/* Derniers ajouts par bibliothèque */}
-        {libraries?.map((lib) => (
-          <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} />
-        ))}
+      {/* Tab bar */}
+      <div className={isHome ? "-mt-16 relative z-10" : "pt-20"}>
+        <TabBar tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
       </div>
+
+      {/* Tab content */}
+      <div className="pb-20">
+        {isHome && <HomeContent resumeItems={resumeItems} nextUp={nextUp} watchedItems={watchedItems} libraries={libraries} />}
+        {libraryMatch && <LibraryGrid libraryId={libraryMatch} libraryName={libraryName} />}
+        {activeTab === "discover" && <div className="px-12 pt-4"><DiscoverGrid /></div>}
+        {activeTab === "request" && <div className="pt-4"><RequestSearch /></div>}
+        {activeTab === "requests" && <div className="pt-4"><MyRequestsList /></div>}
+        {activeTab === "downloads" && <div className="px-12 pt-4"><DownloadList /></div>}
+        {activeTab === "support" && <div className="pt-4"><SupportPanel /></div>}
+      </div>
+    </div>
+  );
+}
+
+function HomeContent({ resumeItems, nextUp, watchedItems, libraries }: {
+  resumeItems: any[] | undefined;
+  nextUp: any[] | undefined;
+  watchedItems: any[] | undefined;
+  libraries: any[] | undefined;
+}) {
+  return (
+    <div className="space-y-2 pt-4">
+      {resumeItems && resumeItems.length > 0 && (
+        <MediaCarousel title="Reprendre la lecture" items={resumeItems} />
+      )}
+      {nextUp && nextUp.length > 0 && (
+        <MediaCarousel title="Prochains épisodes" items={nextUp} />
+      )}
+      {watchedItems && watchedItems.length > 0 && (
+        <MediaCarousel title="Déjà visionné" items={watchedItems} />
+      )}
+      {libraries?.map((lib) => (
+        <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} />
+      ))}
     </div>
   );
 }

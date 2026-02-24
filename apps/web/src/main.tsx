@@ -11,6 +11,8 @@ import {
   setSeerrBackendUrl,
   setRequestsBackendUrl,
   setPreferencesBackendUrl,
+  setTicketsBackendUrl,
+  setNotificationsBackendUrl,
 } from "@tentacle/api-client";
 import { App } from "./App";
 import "./index.css";
@@ -20,6 +22,8 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 setSeerrBackendUrl(backendUrl);
 setRequestsBackendUrl(backendUrl);
 setPreferencesBackendUrl(backendUrl);
+setTicketsBackendUrl(backendUrl);
+setNotificationsBackendUrl(backendUrl);
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();

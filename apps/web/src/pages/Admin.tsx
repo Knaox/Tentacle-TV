@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus } from "@tentacle/api-client";
+import type { SupportTicket } from "@tentacle/api-client";
 import { Navbar } from "../components/Navbar";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
@@ -72,6 +74,9 @@ export function Admin() {
           </div>
         </div>
 
+        {/* Support tickets */}
+        <AdminTicketSection />
+
         {/* Invite list */}
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
           <h2 className="mb-4 text-lg font-semibold text-white">Invitations existantes</h2>
@@ -117,6 +122,151 @@ export function Admin() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+const TICKET_STATUS: Record<string, { label: string; color: string }> = {
+  open: { label: "Ouvert", color: "bg-green-500/20 text-green-400" },
+  in_progress: { label: "En cours", color: "bg-blue-500/20 text-blue-400" },
+  resolved: { label: "Résolu", color: "bg-purple-500/20 text-purple-400" },
+  closed: { label: "Fermé", color: "bg-white/10 text-white/40" },
+};
+
+function AdminTicketSection() {
+  const [filter, setFilter] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { data } = useAllTickets(filter || undefined);
+  const tickets = data?.results ?? [];
+
+  if (selectedId) {
+    return (
+      <div className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6">
+        <AdminTicketDetail ticketId={selectedId} onBack={() => setSelectedId(null)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6">
+      <h2 className="mb-4 text-lg font-semibold text-white">Tickets de support</h2>
+
+      <div className="mb-4 flex gap-2">
+        {[
+          { key: "", label: "Tous" },
+          { key: "open", label: "Ouverts" },
+          { key: "in_progress", label: "En cours" },
+          { key: "resolved", label: "Résolus" },
+        ].map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              filter === f.key ? "bg-purple-600 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {tickets.length === 0 ? (
+        <p className="text-sm text-white/40">Aucun ticket</p>
+      ) : (
+        <div className="space-y-2">
+          {tickets.map((t: SupportTicket) => {
+            const st = TICKET_STATUS[t.status];
+            return (
+              <div
+                key={t.id}
+                onClick={() => setSelectedId(t.id)}
+                className="flex cursor-pointer items-center gap-4 rounded-lg border border-white/5 p-3 transition-colors hover:bg-white/5"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{t.subject}</p>
+                  <p className="text-xs text-white/40">{t.username} — {new Date(t.updatedAt).toLocaleDateString("fr-FR")}</p>
+                </div>
+                {st && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${st.color}`}>{st.label}</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminTicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => void }) {
+  const { data: ticket } = useTicketDetail(ticketId);
+  const [reply, setReply] = useState("");
+  const replyMut = useReplyTicket();
+  const statusMut = useUpdateTicketStatus();
+
+  if (!ticket) return <p className="text-white/40">Chargement...</p>;
+
+  const handleReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reply.trim()) return;
+    replyMut.mutate({ ticketId, body: reply.trim() }, { onSuccess: () => setReply("") });
+  };
+
+  const st = TICKET_STATUS[ticket.status];
+
+  return (
+    <div>
+      <button onClick={onBack} className="mb-3 text-sm text-white/50 hover:text-white">← Retour</button>
+
+      <div className="mb-4 flex items-center gap-3">
+        <h3 className="text-base font-semibold text-white">{ticket.subject}</h3>
+        {st && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${st.color}`}>{st.label}</span>}
+      </div>
+
+      <div className="mb-4 flex gap-2">
+        {(["open", "in_progress", "resolved", "closed"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => statusMut.mutate({ ticketId, status: s })}
+            disabled={ticket.status === s}
+            className={`rounded-lg px-3 py-1 text-xs transition-colors ${
+              ticket.status === s ? "bg-purple-600 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
+            } disabled:opacity-50`}
+          >
+            {TICKET_STATUS[s].label}
+          </button>
+        ))}
+      </div>
+
+      <div className="max-h-80 space-y-2 overflow-y-auto">
+        {ticket.messages?.map((msg) => (
+          <div key={msg.id} className={`rounded-lg p-3 ${msg.isAdmin ? "border border-purple-500/20 bg-purple-500/10" : "bg-white/5"}`}>
+            <div className="mb-1 flex items-center gap-2 text-xs">
+              <span className={msg.isAdmin ? "font-medium text-purple-400" : "text-white/70"}>{msg.username}</span>
+              {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1 py-0.5 text-[10px] text-purple-300">Admin</span>}
+              <span className="text-white/30">{new Date(msg.createdAt).toLocaleString("fr-FR")}</span>
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-white/80">{msg.body}</p>
+          </div>
+        ))}
+      </div>
+
+      {ticket.status !== "closed" && (
+        <form onSubmit={handleReply} className="mt-4">
+          <textarea
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            placeholder="Répondre en tant qu'admin..."
+            rows={3}
+            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white placeholder-white/30 outline-none resize-none"
+          />
+          <button
+            type="submit"
+            disabled={replyMut.isPending || !reply.trim()}
+            className="mt-2 rounded-lg bg-tentacle-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-tentacle-accent/80 disabled:opacity-50"
+          >
+            {replyMut.isPending ? "Envoi..." : "Répondre"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
