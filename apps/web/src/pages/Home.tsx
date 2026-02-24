@@ -13,10 +13,10 @@ import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { LibraryGrid } from "../components/LibraryGrid";
 import { DiscoverGrid } from "../components/DiscoverGrid";
-import { RequestSearch } from "../components/RequestSearch";
 import { MyRequestsList } from "../components/MyRequestsList";
 import { DownloadList } from "../components/DownloadList";
 import { SupportPanel } from "../components/SupportPanel";
+import { GlobalSearch } from "../components/GlobalSearch";
 
 export function Home() {
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
@@ -38,6 +38,11 @@ export function Home() {
 
       {/* Main content — offset for sidebar */}
       <div className="pl-16">
+        {/* Search bar — fixed top right */}
+        <div className="fixed right-6 top-4 z-30">
+          <GlobalSearch />
+        </div>
+
         {/* Hero Banner — only on Accueil */}
         {isHome && (
           <>
@@ -54,7 +59,6 @@ export function Home() {
           {isHome && <HomeContent resumeItems={resumeItems} nextUp={nextUp} watchedItems={watchedItems} libraries={libraries} />}
           {libraryMatch && <LibraryGrid libraryId={libraryMatch} libraryName={libraryName} />}
           {activeTab === "discover" && <div className="px-12 pt-4"><DiscoverGrid /></div>}
-          {activeTab === "request" && <div className="pt-4"><RequestSearch /></div>}
           {activeTab === "requests" && <div className="pt-4"><MyRequestsList /></div>}
           {activeTab === "downloads" && <div className="px-12 pt-4"><DownloadList /></div>}
           {activeTab === "support" && <div className="pt-4"><SupportPanel /></div>}

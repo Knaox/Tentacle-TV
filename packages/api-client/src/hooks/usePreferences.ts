@@ -101,6 +101,7 @@ export function useResolveMediaTracks() {
   return useMutation({
     mutationFn: async (data: {
       libraryId: string;
+      libraryIds?: string[];
       audioTracks: Array<{ index: number; language?: string; isDefault?: boolean }>;
       subtitleTracks: Array<{ index: number; language?: string; isForced?: boolean; title?: string }>;
     }) => prefFetch<TrackResolution>("/resolve", {

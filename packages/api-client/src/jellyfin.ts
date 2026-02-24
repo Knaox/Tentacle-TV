@@ -99,12 +99,15 @@ export class JellyfinClient {
     maxBitrate?: number;
     /** false = force transcode/remux (e.g. audio track change) */
     directPlay?: boolean;
+    /** Seek position for transcoded streams (in Jellyfin ticks) */
+    startTimeTicks?: number;
   }): string {
     const params = new URLSearchParams();
     params.set("api_key", this.accessToken ?? "");
     if (options?.mediaSourceId) params.set("MediaSourceId", options.mediaSourceId);
     if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
     if (options?.subtitleIndex != null) params.set("SubtitleStreamIndex", String(options.subtitleIndex));
+    if (options?.startTimeTicks) params.set("StartTimeTicks", String(options.startTimeTicks));
 
     // Direct play — raw file, browser handles codec/track selection
     if (options?.directPlay !== false && !options?.maxBitrate) {

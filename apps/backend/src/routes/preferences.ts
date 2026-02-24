@@ -118,18 +118,28 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const body = request.body as {
       libraryId: string;
+      libraryIds?: string[];
       audioTracks: Array<{ index: number; language?: string; isDefault?: boolean }>;
       subtitleTracks: Array<{ index: number; language?: string; isForced?: boolean; title?: string }>;
     };
 
-    const pref = await prisma.libraryPreference.findUnique({
-      where: {
-        jellyfinUserId_libraryId: {
-          jellyfinUserId: user.userId,
-          libraryId: body.libraryId,
-        },
-      },
-    });
+    // Try exact match first, then any of the provided IDs, then any user preference
+    const candidates = [body.libraryId, ...(body.libraryIds ?? [])].filter(Boolean);
+    let pref = null;
+
+    for (const lid of candidates) {
+      pref = await prisma.libraryPreference.findUnique({
+        where: { jellyfinUserId_libraryId: { jellyfinUserId: user.userId, libraryId: lid } },
+      });
+      if (pref) break;
+    }
+
+    // Fallback: use any preference the user has set
+    if (!pref) {
+      pref = await prisma.libraryPreference.findFirst({
+        where: { jellyfinUserId: user.userId },
+      });
+    }
 
     // No preference set — use defaults
     if (!pref) {

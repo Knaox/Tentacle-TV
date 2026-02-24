@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
-import { ticksToSeconds } from "@tentacle/shared";
+import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle/shared";
 import type { MediaStream as JfStream } from "@tentacle/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
@@ -10,8 +10,6 @@ import { isTauri } from "../hooks/useDesktopPlayer";
 const DesktopPlayer = lazy(() =>
   import("../components/DesktopPlayer").then((m) => ({ default: m.DesktopPlayer }))
 );
-
-import { TICKS_PER_SECOND } from "@tentacle/shared";
 
 function formatTrackLabel(s: JfStream): string {
   const title = s.DisplayTitle || s.Title || s.Language || `Piste ${s.Index}`;
@@ -38,38 +36,34 @@ export function Watch() {
   const [audioIndex, setAudioIndex] = useState<number>(defaultAudio);
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
   const [quality, setQuality] = useState<number | null>(null);
+  const [startTicks, setStartTicks] = useState<number>(0);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
 
-  // Detect unsupported codecs (AC3/EAC3/DTS not playable in Chrome/Firefox)
   const selectedAudioCodec = streams.find(
     (s) => s.Type === "Audio" && s.Index === audioIndex
   )?.Codec?.toLowerCase();
   const needsAudioTranscode = !!selectedAudioCodec && /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec);
-
-  // Direct play only when default audio + no quality + browser-compatible codec
   const isDirectPlay = audioIndex === defaultAudio && quality == null && !needsAudioTranscode;
 
-  // Skip intro/outro detection
   const skipSegments = useIntroSkipper(itemId, item);
-
   const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
 
-  // Resolve preferred tracks from user preferences
+  // Resolve preferred tracks
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
     if (prefsApplied.current || streams.length === 0 || !item) return;
-    const libraryId = (item as any).ParentId || (item as any).SeriesId;
+    const parentId = (item as any).ParentId;
+    const seriesId = (item as any).SeriesId;
+    const libraryId = parentId || seriesId;
     if (!libraryId) return;
-
     prefsApplied.current = true;
     resolveTracks.mutate({
       libraryId,
-      audioTracks: streams
-        .filter((s) => s.Type === "Audio")
+      libraryIds: [parentId, seriesId].filter(Boolean) as string[],
+      audioTracks: streams.filter((s) => s.Type === "Audio")
         .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
-      subtitleTracks: streams
-        .filter((s) => s.Type === "Subtitle")
+      subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
     }, {
       onSuccess: (result) => {
@@ -77,7 +71,7 @@ export function Watch() {
         if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
       },
     });
-  }, [streams, item]);
+  }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
@@ -86,43 +80,49 @@ export function Watch() {
       mediaSourceId,
       maxBitrate: quality ?? undefined,
       directPlay: isDirectPlay,
+      startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
     });
-  }, [client, itemId, audioIndex, mediaSourceId, quality, isDirectPlay]);
+  }, [client, itemId, audioIndex, mediaSourceId, quality, isDirectPlay, startTicks]);
+
+  // Stream offset in seconds (for transcoded seeking)
+  const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
 
   const audioTracks: AudioTrack[] = useMemo(() =>
-    streams
-      .filter((s) => s.Type === "Audio")
-      .map((s) => ({
-        index: s.Index,
-        label: formatTrackLabel(s),
-      })),
+    streams.filter((s) => s.Type === "Audio")
+      .map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
     [streams]
   );
 
   const subtitleTracks: SubtitleTrack[] = useMemo(() =>
-    streams
-      .filter((s) => s.Type === "Subtitle")
-      .map((s) => ({
-        index: s.Index,
-        label: formatTrackLabel(s),
-        url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index),
-      })),
+    streams.filter((s) => s.Type === "Subtitle")
+      .map((s) => ({ index: s.Index, label: formatTrackLabel(s), url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index) })),
     [streams, client, itemId, mediaSourceId]
   );
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
-
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
     return ticks ? ticks / TICKS_PER_SECOND : undefined;
   }, [item]);
 
+  // Audio change: save current position for transcoded streams
   const handleAudioChange = useCallback((idx: number) => {
+    if (positionRef.current > 0) {
+      setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+    }
     setAudioIndex(idx);
   }, []);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
+    if (positionRef.current > 0) {
+      setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+    }
     setQuality(bitrate);
+  }, []);
+
+  // Transcoded seeking: update startTicks to recompute stream URL
+  const handleSeekRequest = useCallback((targetSeconds: number) => {
+    setStartTicks(Math.floor(targetSeconds * TICKS_PER_SECOND));
   }, []);
 
   const handleNextEpisode = useCallback(() => {
@@ -147,46 +147,30 @@ export function Watch() {
   }
 
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
-  const subtitle = item?.Type === "Episode"
+  const epSubtitle = item?.Type === "Episode"
     ? `S${item.ParentIndexNumber}E${item.IndexNumber} — ${item.Name}` : undefined;
-
   const nextEpTitle = nextEpisode
-    ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}`
-    : undefined;
+    ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}` : undefined;
 
   const playerProps = {
-    src: streamUrl,
-    title,
-    subtitle,
-    startPositionSeconds,
-    jellyfinDuration,
-    audioTracks,
-    subtitleTracks,
-    currentAudio: audioIndex,
-    currentSubtitle: subtitleIndex,
-    currentQuality: quality,
-    onAudioChange: handleAudioChange,
-    onSubtitleChange: setSubtitleIndex,
-    onQualityChange: handleQualityChange,
-    onProgress: handleProgress,
-    onStarted: reportStart,
-    hasNextEpisode: !!nextEpisode,
-    hasPreviousEpisode: !!previousEpisode,
+    src: streamUrl, title, subtitle: epSubtitle,
+    startPositionSeconds, jellyfinDuration,
+    audioTracks, subtitleTracks,
+    currentAudio: audioIndex, currentSubtitle: subtitleIndex, currentQuality: quality,
+    isDirectPlay, streamOffset,
+    onAudioChange: handleAudioChange, onSubtitleChange: setSubtitleIndex, onQualityChange: handleQualityChange,
+    onProgress: handleProgress, onStarted: reportStart, onSeekRequest: handleSeekRequest,
+    hasNextEpisode: !!nextEpisode, hasPreviousEpisode: !!previousEpisode,
     nextEpisodeTitle: nextEpTitle,
-    onNextEpisode: handleNextEpisode,
-    onPreviousEpisode: handlePreviousEpisode,
-    introSegment: skipSegments.intro,
-    creditsSegment: skipSegments.credits,
+    onNextEpisode: handleNextEpisode, onPreviousEpisode: handlePreviousEpisode,
+    introSegment: skipSegments.intro, creditsSegment: skipSegments.credits,
   };
 
-  // Use mpv player on desktop (Tauri), HTML5 player on web
   if (isTauri()) {
     return (
-      <Suspense fallback={
-        <div className="flex h-screen w-screen items-center justify-center bg-black">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-        </div>
-      }>
+      <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-black">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+      </div>}>
         <DesktopPlayer {...playerProps} />
       </Suspense>
     );

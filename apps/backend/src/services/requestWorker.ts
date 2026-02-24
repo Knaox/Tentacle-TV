@@ -6,6 +6,14 @@ const POLL_INTERVAL = 60_000; // 60 seconds
 const MAX_RETRIES = 3;
 const SUBMIT_DELAY = 15_000; // 15s between Seerr API calls
 
+const STATUS_LABEL: Record<string, string> = {
+  submitted: "Soumise",
+  approved: "Approuvée",
+  available: "Disponible",
+  failed: "Échouée",
+  declined: "Refusée",
+};
+
 let timer: ReturnType<typeof setInterval> | null = null;
 let processing = false;
 
@@ -39,6 +47,16 @@ async function processQueue(): Promise<void> {
             lastError: null,
           },
         });
+
+        await prisma.notification.create({
+          data: {
+            jellyfinUserId: pending.jellyfinUserId,
+            type: "request_status",
+            title: "Demande : Soumise",
+            body: `Votre demande « ${pending.title} » a été soumise avec succès.`,
+            refId: pending.id,
+          },
+        }).catch(() => {});
 
         // Delay before next API call
         await sleep(SUBMIT_DELAY);
@@ -79,6 +97,18 @@ async function processQueue(): Promise<void> {
             where: { id: req.id },
             data: { status: newStatus },
           });
+
+          // Create notification for user
+          const label = STATUS_LABEL[newStatus] ?? newStatus;
+          await prisma.notification.create({
+            data: {
+              jellyfinUserId: req.jellyfinUserId,
+              type: "request_status",
+              title: `Demande : ${label}`,
+              body: `Votre demande « ${req.title} » est maintenant ${label.toLowerCase()}.`,
+              refId: req.id,
+            },
+          }).catch(() => {});
         }
       } catch {
         // Silently continue — will retry next cycle
