@@ -1,25 +1,22 @@
 [Unit]
 Description=Tentacle Backend API
-After=network.target mariadb.service
-Wants=mariadb.service
+After=network.target
 
 [Service]
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/tentacle-backend
-EnvironmentFile=/opt/tentacle-backend/.env
+WorkingDirectory=/var/repo/tentacle-source/apps/backend
+EnvironmentFile=/var/repo/tentacle-source/apps/backend/.env
 ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=tentacle-backend
-
-# Securite
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/opt/tentacle-backend
+ReadWritePaths=/var/repo/tentacle-source
 
 [Install]
 WantedBy=multi-user.target

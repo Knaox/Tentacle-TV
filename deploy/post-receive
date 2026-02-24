@@ -14,107 +14,80 @@ echo "================================================="
 GIT_REPO="/var/repo/tentacle.git"
 SOURCE_DIR="/var/repo/tentacle-source"
 WEB_DIR="/var/www/tentacle"
-BACKEND_DIR="/opt/tentacle-backend"
-BACKEND_ENV="/opt/tentacle-backend/.env"
+BACKEND_ENV="/var/repo/tentacle-source/apps/backend/.env"
 BACKEND_SERVICE="tentacle-backend"
 
 # ─── 1. Extraction du code ───
-echo "[1/7] Extraction du code source..."
+echo "[1/6] Extraction du code source..."
 mkdir -p "$SOURCE_DIR"
 git --work-tree="$SOURCE_DIR" --git-dir="$GIT_REPO" checkout -f main
 cd "$SOURCE_DIR"
 
-# Auto-update: copie la dernière version du hook depuis le repo
+# Auto-update du hook
 if [ -f "$SOURCE_DIR/deploy/post-receive" ]; then
     cp "$SOURCE_DIR/deploy/post-receive" "$GIT_REPO/hooks/post-receive"
     chmod +x "$GIT_REPO/hooks/post-receive"
-    echo "  Hook post-receive mis à jour depuis le repo"
+    echo "  Hook mis à jour"
 fi
 
 # ─── 2. Vérification pnpm ───
 if ! command -v pnpm &> /dev/null; then
-    echo "[2/7] Installation de pnpm..."
+    echo "[2/6] Installation de pnpm..."
     npm install -g pnpm
 else
-    echo "[2/7] pnpm OK ($(pnpm -v))"
+    echo "[2/6] pnpm OK ($(pnpm -v))"
 fi
 
 # ─── 3. Installation des dépendances ───
-echo "[3/7] Installation des dépendances monorepo..."
+echo "[3/6] Installation des dépendances monorepo..."
 pnpm install --frozen-lockfile
 
-# ─── 4. Chargement du .env de production pour le build frontend ───
-# Les variables VITE_ doivent être présentes au moment du build
-echo "[4/7] Chargement de la config production..."
+# ─── 4. Chargement du .env + Prisma generate ───
+echo "[4/6] Configuration production + Prisma..."
 if [ -f "$BACKEND_ENV" ]; then
-    set -a
-    source "$BACKEND_ENV"
-    set +a
-    echo "  .env chargé depuis $BACKEND_ENV"
+    set -a && source "$BACKEND_ENV" && set +a
+    echo "  .env chargé"
 else
-    echo "  ATTENTION: $BACKEND_ENV introuvable ! Le build utilisera les valeurs par défaut."
+    echo "  ATTENTION: $BACKEND_ENV introuvable !"
 fi
 
-# ─── 5. Génération Prisma + Build ───
-echo "[5/7] Compilation du frontend Web + backend..."
-# Prisma generate doit tourner AVANT le build backend (types)
 cd "$SOURCE_DIR/apps/backend"
 npx prisma generate
+npx prisma db push --accept-data-loss 2>/dev/null || echo "  (Prisma push skipped — vérifier connexion DB)"
 cd "$SOURCE_DIR"
 
+# ─── 5. Build frontend + backend ───
+echo "[5/6] Compilation..."
 pnpm build:web
+pnpm build:backend
 
-# Déploiement des fichiers statiques
+# Déploiement frontend
 mkdir -p "$WEB_DIR"
 rm -rf "${WEB_DIR:?}"/*
 cp -r apps/web/dist/* "$WEB_DIR"/
 chown -R www-data:www-data "$WEB_DIR"
 echo "  Frontend déployé dans $WEB_DIR"
 
-# ─── 6. Build du Backend ───
-echo "[6/7] Compilation et déploiement du backend..."
-pnpm build:backend
+# Permissions monorepo (le backend tourne depuis ici)
+chown -R www-data:www-data "$SOURCE_DIR"
 
-# Copie des fichiers compilés
-mkdir -p "$BACKEND_DIR"
-rsync -a --delete apps/backend/dist/ "$BACKEND_DIR/dist/"
-rsync -a apps/backend/prisma/ "$BACKEND_DIR/prisma/"
-cp apps/backend/package.json "$BACKEND_DIR/package.json"
-cp pnpm-lock.yaml "$BACKEND_DIR/pnpm-lock.yaml" 2>/dev/null || true
-
-# Installer les dépendances de production du backend
-cd "$BACKEND_DIR"
-npm install --omit=dev --ignore-scripts 2>/dev/null || true
-
-# Générer le client Prisma
-npx prisma generate 2>/dev/null || echo "  (Prisma generate skipped)"
-
-# Appliquer le schéma à la DB
-if [ -f "$BACKEND_ENV" ]; then
-    set -a && source "$BACKEND_ENV" && set +a
-    npx prisma db push --accept-data-loss 2>/dev/null || echo "  (Prisma push skipped — vérifier la connexion DB)"
-fi
-
-chown -R www-data:www-data "$BACKEND_DIR"
-
-# ─── 7. Redémarrage du service backend ───
-echo "[7/7] Redémarrage du backend..."
+# ─── 6. Redémarrage du backend ───
+echo "[6/6] Redémarrage du backend..."
 if systemctl is-enabled --quiet "$BACKEND_SERVICE" 2>/dev/null; then
     systemctl restart "$BACKEND_SERVICE"
     sleep 2
     if systemctl is-active --quiet "$BACKEND_SERVICE"; then
-        echo "  Backend démarré avec succès !"
+        echo "  Backend démarré !"
     else
-        echo "  ERREUR: Le backend n'a pas démarré. Vérifier avec:"
-        echo "  journalctl -u $BACKEND_SERVICE -n 50"
+        echo "  ERREUR: journalctl -u $BACKEND_SERVICE -n 50"
     fi
 else
-    echo "  Service $BACKEND_SERVICE pas encore activé. Premier déploiement ?"
-    echo "  Exécuter: sudo systemctl enable --now $BACKEND_SERVICE"
+    echo "  Service pas encore activé."
+    echo "  sudo systemctl enable --now $BACKEND_SERVICE"
 fi
 
 echo "================================================="
-echo "  Déploiement terminé ! Tentacle est en ligne."
+echo "  Déploiement terminé !"
 echo "  Frontend: https://tentacle.rouge-informatique.ch"
 echo "  Backend:  https://tentacle.rouge-informatique.ch/api/health"
 echo "================================================="
