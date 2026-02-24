@@ -1,19 +1,32 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+const JELLYFIN_URL = (process.env.JELLYFIN_URL || "http://localhost:8096").replace(/\/$/, "");
 
-export interface TokenPayload {
+export interface JellyfinUser {
   userId: string;
-  role: "admin" | "user";
+  username: string;
+  isAdmin: boolean;
 }
 
-export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
-}
-
-export function verifyToken(token: string): TokenPayload {
-  return jwt.verify(token, JWT_SECRET) as TokenPayload;
+/**
+ * Validate a Jellyfin access token by calling /Users/Me.
+ * Returns user info if valid, null otherwise.
+ */
+async function validateJellyfinToken(token: string): Promise<JellyfinUser | null> {
+  try {
+    const res = await fetch(`${JELLYFIN_URL}/Users/Me`, {
+      headers: { "X-Emby-Token": token },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return {
+      userId: user.Id,
+      username: user.Name,
+      isAdmin: user.Policy?.IsAdministrator === true,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function requireAuth(
@@ -25,12 +38,13 @@ export async function requireAuth(
     return reply.status(401).send({ message: "Unauthorized" });
   }
 
-  try {
-    const payload = verifyToken(authHeader.slice(7));
-    (request as any).user = payload;
-  } catch {
+  const token = authHeader.slice(7);
+  const user = await validateJellyfinToken(token);
+  if (!user) {
     return reply.status(401).send({ message: "Invalid token" });
   }
+
+  (request as any).user = user;
 }
 
 export async function requireAdmin(
@@ -42,13 +56,15 @@ export async function requireAdmin(
     return reply.status(401).send({ message: "Unauthorized" });
   }
 
-  try {
-    const payload = verifyToken(authHeader.slice(7));
-    if (payload.role !== "admin") {
-      return reply.status(403).send({ message: "Forbidden" });
-    }
-    (request as any).user = payload;
-  } catch {
+  const token = authHeader.slice(7);
+  const user = await validateJellyfinToken(token);
+  if (!user) {
     return reply.status(401).send({ message: "Invalid token" });
   }
+
+  if (!user.isAdmin) {
+    return reply.status(403).send({ message: "Forbidden" });
+  }
+
+  (request as any).user = user;
 }

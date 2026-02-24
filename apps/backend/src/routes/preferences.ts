@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
-import { requireAuth, type TokenPayload } from "../middleware/auth";
+import { requireAuth, type JellyfinUser } from "../middleware/auth";
 
 const prisma = new PrismaClient();
 
@@ -17,7 +17,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/preferences — List all user preferences
   app.get("/", async (request) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
 
     const prefs = await prisma.libraryPreference.findMany({
       where: { jellyfinUserId: user.userId },
@@ -28,7 +28,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/preferences/:libraryId — Get preference for a specific library
   app.get("/:libraryId", async (request, reply) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const { libraryId } = request.params as { libraryId: string };
 
     const pref = await prisma.libraryPreference.findUnique({
@@ -49,7 +49,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // PUT /api/preferences — Upsert a library preference
   app.put("/", async (request) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const body = upsertSchema.parse(request.body);
 
     const pref = await prisma.libraryPreference.upsert({
@@ -78,7 +78,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // DELETE /api/preferences/:libraryId — Delete a library preference
   app.delete("/:libraryId", async (request, reply) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const { libraryId } = request.params as { libraryId: string };
 
     try {
@@ -98,7 +98,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/preferences/resolve — Resolve best tracks for a media item
   app.post("/resolve", async (request) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const body = request.body as {
       libraryId: string;
       audioTracks: Array<{ index: number; language?: string; isDefault?: boolean }>;
