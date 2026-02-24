@@ -10,4 +10,4 @@
 ///   import { listen } from '@tauri-apps/api/event';
 ///   const unlisten = await listen<MpvState>('mpv:state', (event) => { ... });
 
-pub const MPV_STATE_EVENT: &str = "mpv:state";
+pub const _MPV_STATE_EVENT: &str = "mpv:state";

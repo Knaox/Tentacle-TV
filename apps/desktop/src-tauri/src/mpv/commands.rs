@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use serde_json::json;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, State};
 
 use super::player::{MpvPlayer, MpvState, MpvTrack};
 use std::sync::Mutex;
@@ -184,18 +184,11 @@ pub fn mpv_get_state(state: State<'_, MpvPlayerState>) -> Result<MpvState, Strin
 #[tauri::command]
 pub fn mpv_get_tracks(state: State<'_, MpvPlayerState>) -> Result<Vec<MpvTrack>, String> {
     let player = state.lock().map_err(|e| e.to_string())?;
-    let result = player.send_command(json!({
+    let _result = player.send_command(json!({
         "command": ["get_property", "track-list"]
     }))?;
 
-    // The actual track list comes from the event reader; return from state
-    // For now, we need to query it directly
-    let resp = player.send_command(json!({
-        "command": ["get_property", "track-list"]
-    }))?;
-
-    // Parse will happen asynchronously; return empty for now
-    // Tracks are better obtained via the mpv:tracks event
+    // Tracks are better obtained via the mpv:state event
     Ok(vec![])
 }
 
