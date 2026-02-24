@@ -8,9 +8,13 @@
     "dev:backend": "pnpm --filter @tentacle/backend dev",
     "dev:desktop": "pnpm --filter @tentacle/desktop dev",
     "dev:mobile": "pnpm --filter @tentacle/mobile start",
+    "dev:tv": "pnpm --filter @tentacle/tv start",
     "build:web": "pnpm --filter @tentacle/web build",
     "build:backend": "pnpm --filter @tentacle/backend build",
     "build:desktop": "pnpm --filter @tentacle/desktop build",
+    "build:tv:android": "pnpm --filter @tentacle/tv android",
+    "build:mobile:android": "pnpm --filter @tentacle/mobile android",
+    "build:mobile:ios": "pnpm --filter @tentacle/mobile ios",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "clean": "pnpm -r exec rm -rf node_modules dist .turbo && rm -rf node_modules"

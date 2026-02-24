@@ -74,10 +74,14 @@ export interface MediaStream {
   Language?: string;
   DisplayTitle?: string;
   IsDefault: boolean;
+  IsForced?: boolean;
+  IsExternal?: boolean;
   Index: number;
   Width?: number;
   Height?: number;
   BitRate?: number;
+  Channels?: number;
+  SampleRate?: number;
 }
 
 export interface UserItemData {

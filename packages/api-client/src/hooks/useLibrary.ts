@@ -1,20 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import type { LibraryView, MediaItem } from "@tentacle/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
-
-function getUserId(): string | null {
-  try {
-    const raw = localStorage.getItem("tentacle_user");
-    if (!raw) return null;
-    return JSON.parse(raw).Id ?? null;
-  } catch {
-    return null;
-  }
-}
+import { useUserId } from "./useUserId";
 
 export function useLibraries() {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["libraries"],
@@ -29,7 +20,7 @@ export function useLibraries() {
 
 export function useLibraryItems(libraryId: string | undefined) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["library", libraryId, "items"],
@@ -49,7 +40,7 @@ export function useLibraryItems(libraryId: string | undefined) {
 
 export function useSeasons(seriesId: string | undefined) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["seasons", seriesId],
@@ -66,7 +57,7 @@ export function useSeasons(seriesId: string | undefined) {
 
 export function useEpisodes(seriesId: string | undefined, seasonId: string | undefined) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["episodes", seriesId, seasonId],
@@ -84,7 +75,7 @@ export function useEpisodes(seriesId: string | undefined, seasonId: string | und
 
 export function useMediaItem(itemId: string | undefined) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["item", itemId],
@@ -99,7 +90,7 @@ export function useMediaItem(itemId: string | undefined) {
 
 export function useSearchItems(query: string) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["search", query],
@@ -118,7 +109,7 @@ export function useSearchItems(query: string) {
 
 export function useSimilarItems(itemId: string | undefined) {
   const client = useJellyfinClient();
-  const userId = getUserId();
+  const userId = useUserId();
 
   return useQuery({
     queryKey: ["similar", itemId],

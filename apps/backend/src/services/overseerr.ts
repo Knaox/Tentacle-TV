@@ -1,0 +1,89 @@
+const SEERR_URL = (process.env.SEERR_URL || "http://localhost:5055").replace(/\/$/, "");
+const SEERR_API_KEY = process.env.SEERR_API_KEY || "";
+
+const headers: Record<string, string> = {
+  "X-Api-Key": SEERR_API_KEY,
+  "Content-Type": "application/json",
+};
+
+export interface SeerrRequestResult {
+  id: number;
+  mediaId: number;
+  status: number; // 1=pending, 2=approved, 3=declined, 4=available
+}
+
+export interface SeerrMediaStatus {
+  id: number;
+  status: number;
+  status4k: number;
+}
+
+/**
+ * Submit a media request to Overseerr/Seerr.
+ */
+export async function submitRequest(
+  mediaType: "movie" | "tv",
+  tmdbId: number
+): Promise<SeerrRequestResult> {
+  const res = await fetch(`${SEERR_URL}/api/v1/request`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ mediaType, mediaId: tmdbId }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`Seerr request failed (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Check the media status in Overseerr/Seerr.
+ */
+export async function getMediaStatus(
+  mediaType: "movie" | "tv",
+  tmdbId: number
+): Promise<SeerrMediaStatus | null> {
+  const endpoint = mediaType === "movie" ? "movie" : "tv";
+  const res = await fetch(`${SEERR_URL}/api/v1/${endpoint}/${tmdbId}`, { headers });
+
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`Seerr media check failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  return {
+    id: data.id,
+    status: data.mediaInfo?.status ?? 0,
+    status4k: data.mediaInfo?.status4k ?? 0,
+  };
+}
+
+/**
+ * Get a specific request status from Overseerr/Seerr.
+ */
+export async function getRequestStatus(requestId: number): Promise<{ status: number } | null> {
+  const res = await fetch(`${SEERR_URL}/api/v1/request/${requestId}`, { headers });
+
+  if (res.status === 404) return null;
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  return { status: data.status };
+}
+
+/**
+ * Map Seerr status code to our internal status string.
+ */
+export function mapSeerrStatus(seerrStatus: number): string {
+  switch (seerrStatus) {
+    case 1: return "submitted";   // pending in Seerr
+    case 2: return "approved";
+    case 3: return "declined";
+    default: return "submitted";
+  }
+}

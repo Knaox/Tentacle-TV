@@ -10,7 +10,6 @@
     "beforeBuildCommand": "pnpm --filter @tentacle/web build"
   },
   "app": {
-    "title": "Tentacle",
     "windows": [
       {
         "title": "Tentacle",
@@ -36,5 +35,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://tentacle.rouge-informatique.ch/api/update/{{target}}/{{arch}}/{{current_version}}"
+      ],
+      "pubkey": ""
+    }
   }
 }

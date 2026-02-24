@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AuthResponse, LoginRequest } from "@tentacle/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
+import { useTentacleConfig } from "../context";
 
 export function useAuth() {
   const client = useJellyfinClient();
+  const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
 
   const login = useMutation({
@@ -19,8 +21,8 @@ export function useAuth() {
         }
       );
       client.setAccessToken(response.AccessToken);
-      localStorage.setItem("tentacle_token", response.AccessToken);
-      localStorage.setItem("tentacle_user", JSON.stringify(response.User));
+      storage.setItem("tentacle_token", response.AccessToken);
+      storage.setItem("tentacle_user", JSON.stringify(response.User));
       return response;
     },
     onSuccess: () => {
@@ -31,8 +33,8 @@ export function useAuth() {
   const logout = useMutation({
     mutationFn: async () => {
       client.setAccessToken(null);
-      localStorage.removeItem("tentacle_token");
-      localStorage.removeItem("tentacle_user");
+      storage.removeItem("tentacle_token");
+      storage.removeItem("tentacle_user");
       queryClient.clear();
     },
   });
