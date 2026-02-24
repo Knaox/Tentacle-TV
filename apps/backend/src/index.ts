@@ -10,13 +10,7 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 async function main() {
   const app = Fastify({
-    logger: {
-      level: "info",
-      transport: {
-        target: "pino-pretty",
-        options: { colorize: true },
-      },
-    },
+    logger: true,
   });
 
   await app.register(cors, { origin: CORS_ORIGIN });
