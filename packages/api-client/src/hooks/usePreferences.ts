@@ -48,9 +48,12 @@ export interface TrackResolution {
 // ---------- Hooks ----------
 
 export function useLibraryPreferences() {
+  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+
   return useQuery({
     queryKey: ["library-preferences"],
     queryFn: () => prefFetch<LibraryPreference[]>("/"),
+    enabled: hasToken,
     staleTime: 5 * 60_000,
   });
 }

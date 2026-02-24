@@ -77,10 +77,12 @@ export function useRequestMedia() {
 export function useMyRequests(status?: string, page = 1, limit = 20) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set("status", status);
+  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
 
   return useQuery({
     queryKey: ["media-requests", "mine", status, page],
     queryFn: () => reqFetch<RequestsPage>(`/?${params}`),
+    enabled: hasToken,
     staleTime: 30_000,
   });
 }
@@ -88,10 +90,12 @@ export function useMyRequests(status?: string, page = 1, limit = 20) {
 export function useAllRequests(status?: string, page = 1, limit = 20) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set("status", status);
+  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
 
   return useQuery({
     queryKey: ["media-requests", "all", status, page],
     queryFn: () => reqFetch<RequestsPage>(`/all?${params}`),
+    enabled: hasToken,
     staleTime: 30_000,
   });
 }

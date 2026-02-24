@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
-import { requireAuth, requireAdmin, type TokenPayload } from "../middleware/auth";
+import { requireAuth, requireAdmin, type JellyfinUser } from "../middleware/auth";
 
 const prisma = new PrismaClient();
 
@@ -18,7 +18,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/requests — Create a new media request
   app.post("/", async (request, reply) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const body = createRequestSchema.parse(request.body);
 
     // Check for duplicate
@@ -54,7 +54,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/requests — List user's own requests
   app.get("/", async (request) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
@@ -101,7 +101,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // DELETE /api/requests/:id — Cancel own request (or admin can cancel any)
   app.delete("/:id", async (request, reply) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
 
     const req = await prisma.mediaRequest.findUnique({ where: { id } });
@@ -110,7 +110,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Only owner or admin can cancel
-    if (req.jellyfinUserId !== user.userId && user.role !== "admin") {
+    if (req.jellyfinUserId !== user.userId && !user.isAdmin) {
       return reply.status(403).send({ message: "Forbidden" });
     }
 
@@ -125,7 +125,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/requests/:id/retry — Retry a failed request
   app.post("/:id/retry", async (request, reply) => {
-    const user = (request as any).user as TokenPayload;
+    const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
 
     const req = await prisma.mediaRequest.findUnique({ where: { id } });
@@ -133,7 +133,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(404).send({ message: "Demande introuvable" });
     }
 
-    if (req.jellyfinUserId !== user.userId && user.role !== "admin") {
+    if (req.jellyfinUserId !== user.userId && !user.isAdmin) {
       return reply.status(403).send({ message: "Forbidden" });
     }
 
