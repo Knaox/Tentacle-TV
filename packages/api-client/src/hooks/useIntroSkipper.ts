@@ -8,6 +8,19 @@ interface IntroSkipperSegments {
   Credits?: { Start: number; End: number };
 }
 
+interface MediaSegmentDto {
+  Id: string;
+  ItemId: string;
+  Type: string; // "Intro" | "Outro" | "Commercial" | "Preview" | "Recap"
+  StartTicks: number;
+  EndTicks: number;
+}
+
+interface MediaSegmentsResponse {
+  Items: MediaSegmentDto[];
+  TotalRecordCount: number;
+}
+
 export interface SkipSegments {
   intro: SegmentTimestamps | null;
   credits: SegmentTimestamps | null;
@@ -15,8 +28,10 @@ export interface SkipSegments {
 
 /**
  * Detect skip intro/outro segments.
- * 1. Try IntroSkipper plugin API (if installed)
- * 2. Fallback to chapter markers named "Intro" / "Credits"
+ * Priority order:
+ * 1. Jellyfin 10.9+ MediaSegments API (native)
+ * 2. IntroSkipper plugin API (community plugin)
+ * 3. Chapter markers named "Intro" / "Credits"
  */
 export function useIntroSkipper(
   itemId: string | undefined,
@@ -24,6 +39,24 @@ export function useIntroSkipper(
 ): SkipSegments {
   const client = useJellyfinClient();
 
+  // Try Jellyfin 10.9+ native MediaSegments API
+  const { data: segmentsData } = useQuery({
+    queryKey: ["media-segments", itemId],
+    queryFn: async () => {
+      try {
+        return await client.fetch<MediaSegmentsResponse>(
+          `/MediaSegments/${itemId}?includeSegmentTypes=Intro,Outro`
+        );
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!itemId,
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  // Fallback: try IntroSkipper community plugin API
   const { data: pluginData } = useQuery({
     queryKey: ["intro-skipper", itemId],
     queryFn: async () => {
@@ -35,12 +68,22 @@ export function useIntroSkipper(
         return null;
       }
     },
-    enabled: !!itemId && item?.Type === "Episode",
+    enabled: !!itemId && !segmentsData?.Items?.length && item?.Type === "Episode",
     staleTime: Infinity,
     retry: false,
   });
 
-  // Plugin data takes priority
+  // Priority 1: Native MediaSegments
+  if (segmentsData?.Items?.length) {
+    const intro = segmentsData.Items.find((s) => s.Type === "Intro");
+    const outro = segmentsData.Items.find((s) => s.Type === "Outro");
+    return {
+      intro: intro ? { start: intro.StartTicks / TICKS_PER_SECOND, end: intro.EndTicks / TICKS_PER_SECOND } : null,
+      credits: outro ? { start: outro.StartTicks / TICKS_PER_SECOND, end: outro.EndTicks / TICKS_PER_SECOND } : null,
+    };
+  }
+
+  // Priority 2: IntroSkipper plugin
   if (pluginData?.Introduction || pluginData?.Credits) {
     return {
       intro: pluginData.Introduction
@@ -52,7 +95,7 @@ export function useIntroSkipper(
     };
   }
 
-  // Fallback: parse chapter names
+  // Priority 3: Chapter markers
   return parseChapters(item?.Chapters);
 }
 
