@@ -64,6 +64,24 @@ export function useNextUp() {
   });
 }
 
+export function useWatchedItems() {
+  const client = useJellyfinClient();
+  const userId = getUserId();
+
+  return useQuery({
+    queryKey: ["watched-items"],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?SortBy=DatePlayed&SortOrder=Descending&Limit=16` +
+            `&Recursive=true&IncludeItemTypes=Movie,Episode&Filters=IsPlayed&Fields=${FIELDS}&${IMAGE_OPTS}`
+        )
+        .then((r) => r.Items),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useFeaturedItems() {
   const client = useJellyfinClient();
   const userId = getUserId();

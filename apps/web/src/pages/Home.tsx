@@ -3,6 +3,7 @@ import {
   useResumeItems,
   useLatestItems,
   useNextUp,
+  useWatchedItems,
   useFeaturedItems,
 } from "@tentacle/api-client";
 import { Shimmer } from "@tentacle/ui";
@@ -14,6 +15,7 @@ export function Home() {
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
   const { data: nextUp } = useNextUp();
+  const { data: watchedItems } = useWatchedItems();
   const { data: libraries } = useLibraries();
 
   return (
@@ -37,6 +39,11 @@ export function Home() {
         {/* Prochains épisodes */}
         {nextUp && nextUp.length > 0 && (
           <MediaCarousel title="Prochains épisodes" items={nextUp} />
+        )}
+
+        {/* Déjà visionné */}
+        {watchedItems && watchedItems.length > 0 && (
+          <MediaCarousel title="Déjà visionné" items={watchedItems} />
         )}
 
         {/* Derniers ajouts par bibliothèque */}

@@ -3,6 +3,7 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Watch } from "./pages/Watch";
+import { SeriesDetail } from "./pages/SeriesDetail";
 
 export function App() {
   const isAuthenticated = !!localStorage.getItem("tentacle_token");
@@ -14,6 +15,10 @@ export function App() {
       <Route
         path="/watch/:itemId"
         element={isAuthenticated ? <Watch /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/series/:seriesId"
+        element={isAuthenticated ? <SeriesDetail /> : <Navigate to="/login" replace />}
       />
       <Route
         path="/"

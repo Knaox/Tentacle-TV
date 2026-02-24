@@ -82,8 +82,28 @@ export class JellyfinClient {
     return `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${params}`;
   }
 
-  getStreamUrl(itemId: string): string {
-    return `${this.baseUrl}/Videos/${itemId}/stream?Static=true&api_key=${this.accessToken}`;
+  getStreamUrl(itemId: string, options?: {
+    audioIndex?: number;
+    mediaSourceId?: string;
+    maxBitrate?: number;
+  }): string {
+    const params = new URLSearchParams();
+    params.set("api_key", this.accessToken ?? "");
+    if (options?.maxBitrate) {
+      params.set("Static", "false");
+      params.set("MaxStreamingBitrate", String(options.maxBitrate));
+      params.set("VideoCodec", "h264");
+      params.set("AudioCodec", "aac");
+    } else {
+      params.set("Static", "true");
+    }
+    if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
+    if (options?.mediaSourceId) params.set("MediaSourceId", options.mediaSourceId);
+    return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
+  }
+
+  getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number): string {
+    return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.vtt?api_key=${this.accessToken}`;
   }
 }
 
