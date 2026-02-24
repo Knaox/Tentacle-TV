@@ -71,10 +71,8 @@ async function processQueue(): Promise<void> {
         const status = await getRequestStatus(req.seerrRequestId);
         if (!status) continue;
 
-        const mapped = mapSeerrStatus(status.status);
-
-        // Check if media is now available (status 5 in Seerr = available)
-        const newStatus = status.status === 5 ? "available" : mapped;
+        // Use both request + media status for accurate mapping
+        const newStatus = mapSeerrStatus(status.status, status.mediaStatus);
 
         if (newStatus !== req.status) {
           await prisma.mediaRequest.update({

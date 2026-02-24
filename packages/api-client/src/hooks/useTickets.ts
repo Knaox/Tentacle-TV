@@ -48,6 +48,8 @@ export interface SupportTicket {
   subject: string;
   category: "general" | "bug" | "feature" | "account";
   status: "open" | "in_progress" | "resolved" | "closed";
+  mediaItemId?: string | null;
+  mediaItemName?: string | null;
   createdAt: string;
   updatedAt: string;
   messages?: TicketMessage[];
@@ -70,6 +72,8 @@ export function useCreateTicket() {
       subject: string;
       category?: "general" | "bug" | "feature" | "account";
       body: string;
+      mediaItemId?: string;
+      mediaItemName?: string;
     }) => ticketFetch<SupportTicket>("/", {
       method: "POST",
       body: JSON.stringify(body),

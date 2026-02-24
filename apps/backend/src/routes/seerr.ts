@@ -52,22 +52,41 @@ export const seerrRoutes: FastifyPluginAsync = async (app) => {
     reply.status(status).send({ message: error.message });
   });
 
-  // Search
+  // Search — manually construct URL to avoid encoding issues
   app.get("/search", async (req, reply) => {
-    const q = (req.query as Record<string, string>).query;
+    const query = req.query as Record<string, string>;
+    const q = query.query;
     if (!q) return reply.status(400).send({ message: "query required" });
-    return proxyGet(`/search?${qs(req.query)}`);
+    const page = query.page || "1";
+    const language = query.language || "en";
+    return proxyGet(`/search?query=${encodeURIComponent(q)}&page=${page}&language=${language}`);
   });
 
   // Discover
-  app.get("/discover/movies", async (req) => proxyGet(`/discover/movies?${qs(req.query)}`));
-  app.get("/discover/tv", async (req) => proxyGet(`/discover/tv?${qs(req.query)}`));
-  app.get("/discover/anime", async (req) => {
-    const params = new URLSearchParams(req.query as Record<string, string>);
-    params.set("keywords", "210024");
-    return proxyGet(`/discover/tv?${params}`);
+  app.get("/discover/movies", async (req) => {
+    const query = req.query as Record<string, string>;
+    const page = query.page || "1";
+    const language = query.language || "en";
+    return proxyGet(`/discover/movies?page=${page}&language=${language}`);
   });
-  app.get("/discover/trending", async (req) => proxyGet(`/discover/trending?${qs(req.query)}`));
+  app.get("/discover/tv", async (req) => {
+    const query = req.query as Record<string, string>;
+    const page = query.page || "1";
+    const language = query.language || "en";
+    return proxyGet(`/discover/tv?page=${page}&language=${language}`);
+  });
+  app.get("/discover/anime", async (req) => {
+    const query = req.query as Record<string, string>;
+    const page = query.page || "1";
+    const language = query.language || "en";
+    return proxyGet(`/discover/tv?page=${page}&language=${language}&keywords=210024`);
+  });
+  app.get("/discover/trending", async (req) => {
+    const query = req.query as Record<string, string>;
+    const page = query.page || "1";
+    const language = query.language || "en";
+    return proxyGet(`/discover/trending?page=${page}&language=${language}`);
+  });
 
   // Create a request (with 15s cooldown)
   app.post("/request", async (req, reply) => {

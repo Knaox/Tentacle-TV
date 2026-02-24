@@ -12,6 +12,23 @@ const upsertSchema = z.object({
   subtitleMode: z.enum(["none", "always", "forced", "signs"]).default("none"),
 });
 
+// ISO 639-2 bibliographic ↔ terminological aliases
+const ISO_ALIASES: Record<string, string[]> = {
+  fre: ["fra"], fra: ["fre"],
+  ger: ["deu"], deu: ["ger"],
+  chi: ["zho"], zho: ["chi"],
+  cze: ["ces"], ces: ["cze"],
+  dut: ["nld"], nld: ["dut"],
+};
+
+function langMatches(trackLang: string | undefined, prefLang: string): boolean {
+  if (!trackLang) return false;
+  const tl = trackLang.toLowerCase();
+  const pl = prefLang.toLowerCase();
+  if (tl === pl) return true;
+  return ISO_ALIASES[pl]?.includes(tl) ?? false;
+}
+
 export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
@@ -125,14 +142,14 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     // Resolve audio: prefer matching language, fallback to default
     let audioIndex = body.audioTracks.find((t) => t.isDefault)?.index ?? body.audioTracks[0]?.index ?? null;
     if (pref.audioLang) {
-      const match = body.audioTracks.find((t) => t.language === pref.audioLang);
+      const match = body.audioTracks.find((t) => langMatches(t.language, pref.audioLang!));
       if (match) audioIndex = match.index;
     }
 
     // Resolve subtitle based on mode
     let subtitleIndex: number | null = null;
     if (pref.subtitleMode !== "none" && pref.subtitleLang) {
-      const subs = body.subtitleTracks.filter((t) => t.language === pref.subtitleLang);
+      const subs = body.subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
 
       if (pref.subtitleMode === "forced") {
         const forced = subs.find((t) => t.isForced);

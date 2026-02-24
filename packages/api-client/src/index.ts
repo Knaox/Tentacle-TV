@@ -7,7 +7,9 @@ export { useAuth } from "./hooks/useAuth";
 export { usePlaybackReporting } from "./hooks/usePlayback";
 export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
-export { useSeerrSearch, useSeerrRequest, useSeerrDeleteRequest, useSeerrRetryRequest, useSeerrDiscover, useSeerrRequests, useSeerrRequestCount, setSeerrBackendUrl } from "./hooks/useSeerr";
+export { useIntroSkipper } from "./hooks/useIntroSkipper";
+export type { SkipSegments } from "./hooks/useIntroSkipper";
+export { useSeerrSearch, useSeerrRequest, useSeerrDeleteRequest, useSeerrRetryRequest, useSeerrDiscover, useSeerrRequests, useSeerrRequestCount, useSeerrMediaDetail, setSeerrBackendUrl } from "./hooks/useSeerr";
 export type { SeerrSearchResult, SeerrSearchResponse, SeerrPagedResponse, SeerrMediaRequest, SeerrRequestsResponse } from "./hooks/useSeerr";
 
 // Media request system

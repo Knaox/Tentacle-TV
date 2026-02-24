@@ -1,11 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
+import { formatDuration } from "@tentacle/shared";
 import { Navbar } from "../components/Navbar";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaCarousel } from "../components/MediaCarousel";
-
-const TICKS_PER_MIN = 600_000_000;
 
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
@@ -30,11 +29,7 @@ export function MediaDetail() {
     ? client.getImageUrl(item.Id, "Primary", { height: 500, quality: 90 })
     : null;
 
-  const runtime = item.RunTimeTicks
-    ? item.RunTimeTicks >= TICKS_PER_MIN * 60
-      ? `${Math.floor(item.RunTimeTicks / TICKS_PER_MIN / 60)}h ${Math.floor((item.RunTimeTicks / TICKS_PER_MIN) % 60)}min`
-      : `${Math.floor(item.RunTimeTicks / TICKS_PER_MIN)}min`
-    : null;
+  const runtime = formatDuration(item.RunTimeTicks);
 
   const progress = item.UserData?.PlayedPercentage;
   const hasResume = progress != null && progress > 0 && progress < 100;

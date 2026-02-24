@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   useLibraries,
   useResumeItems,
@@ -8,11 +8,9 @@ import {
   useFeaturedItems,
 } from "@tentacle/api-client";
 import { Shimmer } from "@tentacle/ui";
-import { Navbar } from "../components/Navbar";
+import { Sidebar } from "../components/Sidebar";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
-import { TabBar } from "../components/TabBar";
-import type { Tab } from "../components/TabBar";
 import { LibraryGrid } from "../components/LibraryGrid";
 import { DiscoverGrid } from "../components/DiscoverGrid";
 import { RequestSearch } from "../components/RequestSearch";
@@ -28,24 +26,6 @@ export function Home() {
   const { data: libraries } = useLibraries();
   const [activeTab, setActiveTab] = useState("home");
 
-  // Build dynamic tabs from Jellyfin libraries
-  const tabs: Tab[] = useMemo(() => {
-    const list: Tab[] = [{ key: "home", label: "Accueil" }];
-    if (libraries) {
-      for (const lib of libraries) {
-        list.push({ key: `lib-${lib.Id}`, label: lib.Name });
-      }
-    }
-    list.push(
-      { key: "discover", label: "Découvrir" },
-      { key: "request", label: "Faire une demande" },
-      { key: "requests", label: "Demandes en cours" },
-      { key: "downloads", label: "Téléchargements" },
-      { key: "support", label: "Aide" },
-    );
-    return list;
-  }, [libraries]);
-
   const isHome = activeTab === "home";
   const libraryMatch = activeTab.startsWith("lib-") ? activeTab.slice(4) : null;
   const libraryName = libraryMatch
@@ -54,33 +34,31 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-tentacle-bg">
-      <Navbar />
+      <Sidebar activeKey={activeTab} onChange={setActiveTab} />
 
-      {/* Hero Banner — only on Accueil */}
-      {isHome && (
-        <>
-          {featuredLoading ? (
-            <div className="h-[70vh] animate-pulse bg-tentacle-surface" />
-          ) : (
-            <HeroBanner items={featured ?? []} />
-          )}
-        </>
-      )}
+      {/* Main content — offset for sidebar */}
+      <div className="pl-16">
+        {/* Hero Banner — only on Accueil */}
+        {isHome && (
+          <>
+            {featuredLoading ? (
+              <div className="h-[70vh] animate-pulse bg-tentacle-surface" />
+            ) : (
+              <HeroBanner items={featured ?? []} />
+            )}
+          </>
+        )}
 
-      {/* Tab bar */}
-      <div className={isHome ? "-mt-16 relative z-10" : "pt-20"}>
-        <TabBar tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
-      </div>
-
-      {/* Tab content */}
-      <div className="pb-20">
-        {isHome && <HomeContent resumeItems={resumeItems} nextUp={nextUp} watchedItems={watchedItems} libraries={libraries} />}
-        {libraryMatch && <LibraryGrid libraryId={libraryMatch} libraryName={libraryName} />}
-        {activeTab === "discover" && <div className="px-12 pt-4"><DiscoverGrid /></div>}
-        {activeTab === "request" && <div className="pt-4"><RequestSearch /></div>}
-        {activeTab === "requests" && <div className="pt-4"><MyRequestsList /></div>}
-        {activeTab === "downloads" && <div className="px-12 pt-4"><DownloadList /></div>}
-        {activeTab === "support" && <div className="pt-4"><SupportPanel /></div>}
+        {/* Tab content */}
+        <div className={`pb-20 ${isHome ? "" : "pt-8"}`}>
+          {isHome && <HomeContent resumeItems={resumeItems} nextUp={nextUp} watchedItems={watchedItems} libraries={libraries} />}
+          {libraryMatch && <LibraryGrid libraryId={libraryMatch} libraryName={libraryName} />}
+          {activeTab === "discover" && <div className="px-12 pt-4"><DiscoverGrid /></div>}
+          {activeTab === "request" && <div className="pt-4"><RequestSearch /></div>}
+          {activeTab === "requests" && <div className="pt-4"><MyRequestsList /></div>}
+          {activeTab === "downloads" && <div className="px-12 pt-4"><DownloadList /></div>}
+          {activeTab === "support" && <div className="pt-4"><SupportPanel /></div>}
+        </div>
       </div>
     </div>
   );

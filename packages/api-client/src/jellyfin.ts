@@ -94,25 +94,36 @@ export class JellyfinClient {
 
   getStreamUrl(itemId: string, options?: {
     audioIndex?: number;
+    subtitleIndex?: number;
     mediaSourceId?: string;
     maxBitrate?: number;
+    /** false = force transcode/remux (e.g. audio track change) */
+    directPlay?: boolean;
   }): string {
     const params = new URLSearchParams();
     params.set("api_key", this.accessToken ?? "");
-    if (options?.maxBitrate) {
-      params.set("Static", "false");
-      params.set("Container", "mp4");
-      params.set("MaxStreamingBitrate", String(options.maxBitrate));
-      params.set("VideoCodec", "h264");
-      params.set("AudioCodec", "aac");
-      params.set("TranscodingProtocol", "http");
-    } else {
-      params.set("Static", "true");
-    }
-    if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
     if (options?.mediaSourceId) params.set("MediaSourceId", options.mediaSourceId);
-    const ext = options?.maxBitrate ? ".mp4" : "";
-    return `${this.baseUrl}/Videos/${itemId}/stream${ext}?${params}`;
+    if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
+    if (options?.subtitleIndex != null) params.set("SubtitleStreamIndex", String(options.subtitleIndex));
+
+    // Direct play — raw file, browser handles codec/track selection
+    if (options?.directPlay !== false && !options?.maxBitrate) {
+      params.set("Static", "true");
+      return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
+    }
+
+    // Transcode or remux via progressive MP4
+    params.set("Static", "false");
+    params.set("Container", "mp4");
+    params.set("VideoCodec", "h264,hevc");
+    params.set("AudioCodec", "aac,mp3,ac3");
+    if (options?.maxBitrate) {
+      params.set("MaxStreamingBitrate", String(options.maxBitrate));
+    } else {
+      // Remux: very high cap to preserve original quality
+      params.set("MaxStreamingBitrate", "150000000");
+    }
+    return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${params}`;
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number): string {

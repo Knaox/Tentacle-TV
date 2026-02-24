@@ -10,6 +10,7 @@ interface DesktopPlayerProps {
   title: string;
   subtitle?: string;
   startPositionSeconds?: number;
+  jellyfinDuration?: number;
   audioTracks?: AudioTrack[];
   subtitleTracks?: SubtitleTrack[];
   currentAudio: number;
@@ -28,7 +29,7 @@ interface DesktopPlayerProps {
 }
 
 export function DesktopPlayer({
-  src, title, subtitle, startPositionSeconds,
+  src, title, subtitle, startPositionSeconds, jellyfinDuration,
   audioTracks = [], subtitleTracks = [],
   currentAudio, currentSubtitle, currentQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
@@ -132,7 +133,8 @@ export function DesktopPlayer({
       : `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const progress = state.duration > 0 ? state.position / state.duration : 0;
+  const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
+  const progress = displayDuration > 0 ? state.position / displayDuration : 0;
   const hasSettings = audioTracks.length > 0 || subtitleTracks.length > 0;
 
   if (error) {
@@ -201,7 +203,7 @@ export function DesktopPlayer({
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
               const pct = (e.clientX - r.left) / r.width;
-              seek(pct * state.duration);
+              seek(pct * displayDuration);
             }}>
             <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${progress * 100}%` }}>
               <div className="absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100" />
@@ -234,7 +236,7 @@ export function DesktopPlayer({
                   className="hidden w-20 accent-tentacle-accent group-hover/vol:block" />
               </div>
               <span className="text-sm text-white/60">
-                {fmt(state.position)} / {fmt(state.duration)}
+                {fmt(state.position)} / {fmt(displayDuration)}
               </span>
             </div>
             <div className="flex items-center gap-2">

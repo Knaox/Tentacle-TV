@@ -9,6 +9,8 @@ const createTicketSchema = z.object({
   subject: z.string().min(1).max(300),
   category: z.enum(["general", "bug", "feature", "account"]).default("general"),
   body: z.string().min(1).max(5000),
+  mediaItemId: z.string().max(255).optional(),
+  mediaItemName: z.string().max(500).optional(),
 });
 
 const replySchema = z.object({
@@ -33,6 +35,8 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
         username: user.username,
         subject: body.subject,
         category: body.category,
+        mediaItemId: body.mediaItemId,
+        mediaItemName: body.mediaItemName,
         messages: {
           create: {
             jellyfinUserId: user.userId,

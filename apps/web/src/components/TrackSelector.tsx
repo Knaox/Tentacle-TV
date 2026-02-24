@@ -34,7 +34,7 @@ export function TrackSelector({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 w-72 rounded-xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl"
+      className="absolute bottom-20 right-6 z-50 w-80 rounded-xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -42,46 +42,45 @@ export function TrackSelector({
         <button onClick={onClose} className="text-white/40 hover:text-white">&times;</button>
       </div>
 
-      {/* Audio tracks */}
-      {audioTracks.length > 0 && (
-        <Section title="Audio">
-          {audioTracks.map((t) => (
-            <Option
-              key={t.index}
-              label={t.label}
-              active={currentAudio === t.index}
-              onClick={() => onAudioChange(t.index)}
+      <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
+        {audioTracks.length > 0 && (
+          <Section title="Audio">
+            {audioTracks.map((t) => (
+              <TrackOption
+                key={t.index}
+                label={t.label}
+                active={currentAudio === t.index}
+                onClick={() => onAudioChange(t.index)}
+              />
+            ))}
+          </Section>
+        )}
+
+        {subtitleTracks.length > 0 && (
+          <Section title="Sous-titres">
+            <TrackOption label="Désactivés" active={currentSubtitle === null} onClick={() => onSubtitleChange(null)} />
+            {subtitleTracks.map((t) => (
+              <TrackOption
+                key={t.index}
+                label={t.label}
+                active={currentSubtitle === t.index}
+                onClick={() => onSubtitleChange(t.index)}
+              />
+            ))}
+          </Section>
+        )}
+
+        <Section title="Qualité">
+          {QUALITIES.map((q) => (
+            <TrackOption
+              key={q.label}
+              label={q.label}
+              active={currentQuality === q.bitrate}
+              onClick={() => onQualityChange(q.bitrate)}
             />
           ))}
         </Section>
-      )}
-
-      {/* Subtitle tracks */}
-      {subtitleTracks.length > 0 && (
-        <Section title="Sous-titres">
-          <Option label="Désactivés" active={currentSubtitle === null} onClick={() => onSubtitleChange(null)} />
-          {subtitleTracks.map((t) => (
-            <Option
-              key={t.index}
-              label={t.label}
-              active={currentSubtitle === t.index}
-              onClick={() => onSubtitleChange(t.index)}
-            />
-          ))}
-        </Section>
-      )}
-
-      {/* Quality */}
-      <Section title="Qualité">
-        {QUALITIES.map((q) => (
-          <Option
-            key={q.label}
-            label={q.label}
-            active={currentQuality === q.bitrate}
-            onClick={() => onQualityChange(q.bitrate)}
-          />
-        ))}
-      </Section>
+      </div>
     </motion.div>
   );
 }
@@ -95,7 +94,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Option({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function TrackOption({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  const { lang, codec, title } = parseTrackLabel(label);
+
   return (
     <button
       onClick={onClick}
@@ -103,8 +104,51 @@ function Option({ label, active, onClick }: { label: string; active: boolean; on
         active ? "bg-tentacle-accent/20 text-tentacle-accent-light" : "text-white/70 hover:bg-white/5 hover:text-white"
       }`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-tentacle-accent" : "bg-transparent"}`} />
-      {label}
+      <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${active ? "bg-tentacle-accent" : "bg-transparent"}`} />
+      <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
+        <span className="truncate">{title}</span>
+        {lang && <Badge color="purple">{lang}</Badge>}
+        {codec && <Badge color="zinc">{codec}</Badge>}
+      </span>
     </button>
   );
+}
+
+function Badge({ color, children }: { color: "purple" | "zinc"; children: React.ReactNode }) {
+  const cls = color === "purple"
+    ? "bg-purple-500/20 text-purple-300"
+    : "bg-white/10 text-white/50";
+  return <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>{children}</span>;
+}
+
+/** Extract language, codec, and title from track label like "French - AAC" */
+function parseTrackLabel(raw: string) {
+  const parts = raw.split(" - ");
+  if (parts.length >= 2) {
+    const last = parts[parts.length - 1].trim();
+    const isCodec = /^[A-Z0-9]{2,8}$/i.test(last);
+    return {
+      title: parts.slice(0, isCodec ? -1 : undefined).join(" - "),
+      codec: isCodec ? last : null,
+      lang: extractLang(parts[0]),
+    };
+  }
+  return { title: raw, codec: null, lang: extractLang(raw) };
+}
+
+const LANG_MAP: Record<string, string> = {
+  french: "FR", français: "FR", francais: "FR", fre: "FR", fra: "FR",
+  english: "EN", anglais: "EN", eng: "EN",
+  japanese: "JP", japonais: "JP", jpn: "JP",
+  german: "DE", allemand: "DE", ger: "DE", deu: "DE",
+  spanish: "ES", espagnol: "ES", spa: "ES",
+  undetermined: "", und: "",
+};
+
+function extractLang(text: string): string | null {
+  const lower = text.toLowerCase().trim();
+  for (const [key, code] of Object.entries(LANG_MAP)) {
+    if (lower.includes(key)) return code || null;
+  }
+  return null;
 }

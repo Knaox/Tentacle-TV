@@ -15,11 +15,13 @@ export function useResumeItems() {
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
-          `/Users/${userId}/Items/Resume?Limit=12&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}`
+          `/Users/${userId}/Items/Resume?Limit=12&Recursive=true` +
+            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 30 * 1000,
+    staleTime: 10_000,
+    refetchOnMount: "always",
   });
 }
 
@@ -47,11 +49,13 @@ export function useNextUp() {
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
-          `/Shows/NextUp?userId=${userId}&Limit=12&DisableFirstEpisode=true&Fields=${FIELDS}&${IMAGE_OPTS}`
+          `/Shows/NextUp?userId=${userId}&Limit=12&DisableFirstEpisode=true` +
+            `&EnableResumable=false&Fields=${FIELDS}&${IMAGE_OPTS}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30_000,
+    refetchOnMount: "always",
   });
 }
 

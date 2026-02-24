@@ -35,6 +35,7 @@ export interface MediaItem {
   // Media
   MediaSources?: MediaSource[];
   UserData?: UserItemData;
+  Chapters?: ChapterInfo[];
 
   // External IDs
   ProviderIds?: Record<string, string>;
@@ -72,6 +73,7 @@ export interface MediaStream {
   Type: "Video" | "Audio" | "Subtitle";
   Codec: string;
   Language?: string;
+  Title?: string;
   DisplayTitle?: string;
   IsDefault: boolean;
   IsForced?: boolean;
@@ -92,6 +94,16 @@ export interface UserItemData {
   PlayedPercentage?: number;
   UnplayedItemCount?: number;
   LastPlayedDate?: string;
+}
+
+export interface ChapterInfo {
+  StartPositionTicks: number;
+  Name: string;
+}
+
+export interface SegmentTimestamps {
+  start: number;
+  end: number;
 }
 
 export interface LibraryView {

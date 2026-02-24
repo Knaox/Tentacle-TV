@@ -83,10 +83,8 @@ impl MpvPlayer {
             return Ok(());
         }
 
-        let mpv_path = config::mpv_binary_path();
-        if !mpv_path.exists() {
-            return Err(format!("mpv binary not found at {:?}", mpv_path));
-        }
+        let mpv_path = config::mpv_binary_path()
+            .ok_or_else(|| "mpv not found. Install mpv or place it in the binaries/ folder.".to_string())?;
 
         let args = config::default_mpv_args(&self.ipc_path);
 
