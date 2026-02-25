@@ -10,6 +10,8 @@ const SKIP_REQUEST_HEADERS = new Set([
 
 const SKIP_RESPONSE_HEADERS = new Set([
   "transfer-encoding", "connection", "keep-alive",
+  // Node fetch auto-decompresses — don't tell browser content is still compressed
+  "content-encoding", "content-length",
 ]);
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
