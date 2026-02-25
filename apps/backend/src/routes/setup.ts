@@ -37,9 +37,21 @@ const createAdminSchema = z.object({
 });
 
 export const setupRoutes: FastifyPluginAsync = async (app) => {
-  /** GET /api/setup/status — Current setup state. */
+  /** GET /api/setup/status — Current setup state (auto-recovers if DB is reachable). */
   app.get("/status", async () => {
-    const state = getAppState();
+    let state = getAppState();
+
+    // Auto-recovery: if we have a DB URL but aren't connected (transient startup failure),
+    // try to reconnect and re-detect state so the setup wizard doesn't re-appear.
+    if (state !== "running" && hasDatabaseUrl()) {
+      if (!hasPrisma()) {
+        await initPrisma();
+      }
+      if (hasPrisma()) {
+        state = await detectAppState();
+      }
+    }
+
     const hasDbUrl = hasDatabaseUrl();
     return { state, hasDbUrl, dbFromEnv: !!process.env.DATABASE_URL, dbConnected: hasPrisma() };
   });

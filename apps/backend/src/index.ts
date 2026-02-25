@@ -118,14 +118,20 @@ async function main() {
     });
   }
 
-  // ── Initialize database ──
+  // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
   if (hasDatabaseUrl()) {
-    const connected = await initPrisma();
+    let connected = false;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      connected = await initPrisma();
+      if (connected) break;
+      console.warn(`[DB] Connection attempt ${attempt}/5 failed — retrying in 2s`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
     if (connected) {
       console.log("[DB] Connected successfully");
       await detectAppState();
     } else {
-      console.warn("[DB] Connection failed — entering setup mode");
+      console.warn("[DB] All connection attempts failed — entering setup mode");
     }
   } else {
     console.log("[DB] No DATABASE_URL — entering setup mode");
