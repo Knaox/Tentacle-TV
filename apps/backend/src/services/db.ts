@@ -4,6 +4,7 @@ import { resolve } from "path";
 
 const DATA_DIR = resolve(__dirname, "../../data");
 const DB_CONFIG_FILE = resolve(DATA_DIR, "database.json");
+const ENV_FILE = resolve(__dirname, "../../.env");
 
 let prisma: PrismaClient | null = null;
 
@@ -21,10 +22,28 @@ export function getDatabaseUrl(): string | null {
   return null;
 }
 
-/** Persist a DATABASE_URL so it survives restarts. */
+/** Persist a DATABASE_URL so it survives restarts (both .env and fallback file). */
 export function saveDatabaseUrl(url: string): void {
+  // Fallback JSON file
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
   writeFileSync(DB_CONFIG_FILE, JSON.stringify({ url }), "utf-8");
+
+  // Update .env so systemd/docker picks it up on restart
+  try {
+    let content = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, "utf-8") : "";
+    const line = `DATABASE_URL=${url}`;
+    if (/^DATABASE_URL=.*/m.test(content)) {
+      content = content.replace(/^DATABASE_URL=.*/m, line);
+    } else {
+      content = content.trimEnd() + "\n" + line + "\n";
+    }
+    writeFileSync(ENV_FILE, content, "utf-8");
+  } catch (err) {
+    console.warn("[DB] Could not update .env file:", err);
+  }
+
+  // Also update current process
+  process.env.DATABASE_URL = url;
 }
 
 /** True when DATABASE_URL is available from env or config file. */
