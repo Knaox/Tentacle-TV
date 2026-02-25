@@ -48,7 +48,7 @@ export async function getMediaStatus(
   tmdbId: number
 ): Promise<SeerrMediaStatus | null> {
   const endpoint = mediaType === "movie" ? "movie" : "tv";
-  const res = await fetch(`${getBaseUrl()}/api/v1/${endpoint}/${tmdbId}`, { headers });
+  const res = await fetch(`${getBaseUrl()}/api/v1/${endpoint}/${tmdbId}`, { headers: getHeaders() });
 
   if (res.status === 404) return null;
   if (!res.ok) {
@@ -68,7 +68,7 @@ export async function getMediaStatus(
  * Get a specific request + media status from Overseerr/Seerr.
  */
 export async function getRequestStatus(requestId: number): Promise<{ status: number; mediaStatus: number } | null> {
-  const res = await fetch(`${getBaseUrl()}/api/v1/request/${requestId}`, { headers });
+  const res = await fetch(`${getBaseUrl()}/api/v1/request/${requestId}`, { headers: getHeaders() });
 
   if (res.status === 404) return null;
   if (!res.ok) return null;
