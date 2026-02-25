@@ -42,6 +42,24 @@ export function Watch() {
   const prefsApplied = useRef(false);
   const [mpvFailed, setMpvFailed] = useState(false);
 
+  // Reset state when switching episodes
+  useEffect(() => {
+    setStartTicks(0);
+    setQuality(null);
+    setSubtitleIndex(null);
+    positionRef.current = 0;
+    prefsApplied.current = false;
+  }, [itemId]);
+
+  // Sync audioIndex when streams change (new episode loaded)
+  useEffect(() => {
+    if (streams.length > 0) {
+      const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
+        ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
+      setAudioIndex(defAudio);
+    }
+  }, [streams]);
+
   const selectedAudioCodec = streams.find(
     (s) => s.Type === "Audio" && s.Index === audioIndex
   )?.Codec?.toLowerCase();

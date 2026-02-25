@@ -62,6 +62,13 @@ export function VideoPlayer({
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const hasStartedRef = useRef(false);
+  const [transitionMuted, setTransitionMuted] = useState(true);
+
+  // Unmute after transition animation completes (prevents sound before image)
+  useEffect(() => {
+    const t = setTimeout(() => setTransitionMuted(false), 900);
+    return () => clearTimeout(t);
+  }, []);
 
   // Real playback time = offset (from transcoded seek) + video element time
   const currentTime = streamOffset + rawTime;
@@ -197,7 +204,7 @@ export function VideoPlayer({
         onPlay={() => { setPlaying(true); if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); } }}
         onPause={() => setPlaying(false)}
         onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
-        autoPlay crossOrigin="anonymous"
+        autoPlay muted={transitionMuted} crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (
           <track key={t.index} kind="subtitles" src={t.url} label={t.label} />

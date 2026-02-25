@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference } from "@tentacle/api-client";
 import type { LibraryPreference } from "@tentacle/api-client";
-import { Navbar } from "../components/Navbar";
 
 const LANGUAGES = [
   { code: "fre", label: "Français" },
@@ -25,9 +24,8 @@ export function Preferences() {
   const prefsMap = new Map(prefs?.map((p) => [p.libraryId, p]) ?? []);
 
   return (
-    <div className="min-h-screen bg-tentacle-bg">
-      <Navbar />
-      <main className="mx-auto max-w-4xl px-6 pt-24 pb-12">
+    <div className="px-4 pt-6 pb-12 md:px-12">
+      <main className="mx-auto max-w-4xl">
         <h1 className="mb-2 text-2xl font-bold text-white">Préférences de langues</h1>
         <p className="mb-8 text-sm text-white/50">
           Configurez les pistes audio et sous-titres par défaut pour chaque bibliothèque.

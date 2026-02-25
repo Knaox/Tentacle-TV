@@ -43,6 +43,13 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Mobile tab bar integration
+  useEffect(() => {
+    const handler = () => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 50); };
+    window.addEventListener("open-global-search", handler);
+    return () => window.removeEventListener("open-global-search", handler);
+  }, []);
+
   const handleSelect = (item: MediaItem) => {
     setOpen(false);
     setInput("");
