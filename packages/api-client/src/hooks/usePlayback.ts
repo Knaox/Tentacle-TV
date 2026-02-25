@@ -5,6 +5,42 @@ const TICKS_PER_SEC = 10_000_000;
 const REPORT_INTERVAL_MS = 10_000;
 const DBG = "[Tentacle:Playback]";
 
+/**
+ * Fire-and-forget POST to Jellyfin session endpoint.
+ * Logs errors instead of silently swallowing them.
+ * Uses raw fetch as fallback if client.fetch fails (to rule out client issues).
+ */
+async function sessionPost(
+  client: { fetch: <T>(path: string, init?: RequestInit) => Promise<T>; getBaseUrl: () => string; getToken: () => string | null },
+  path: string,
+  body: Record<string, unknown>,
+  label: string
+): Promise<void> {
+  const bodyStr = JSON.stringify(body);
+  try {
+    await client.fetch(path, { method: "POST", body: bodyStr });
+    console.debug(DBG, `${label} OK`);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(DBG, `${label} FAILED via client.fetch:`, msg);
+    // Fallback: try raw fetch (bypasses JellyfinClient wrapper to rule out client-side issues)
+    try {
+      const baseUrl = client.getBaseUrl();
+      const token = client.getToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["X-Emby-Token"] = token;
+        headers["X-Emby-Authorization"] = `MediaBrowser Token="${token}"`;
+      }
+      console.debug(DBG, `${label} retrying with raw fetch →`, `${baseUrl}${path}`);
+      const res = await fetch(`${baseUrl}${path}`, { method: "POST", body: bodyStr, headers });
+      console.debug(DBG, `${label} raw fetch result:`, res.status, res.statusText);
+    } catch (err2: unknown) {
+      console.error(DBG, `${label} raw fetch also FAILED:`, err2 instanceof Error ? err2.message : String(err2));
+    }
+  }
+}
+
 export function usePlaybackReporting(
   itemId: string | undefined,
   mediaSourceId: string | undefined,
@@ -31,14 +67,11 @@ export function usePlaybackReporting(
     prevItemIdRef.current = itemId;
     if (prevId && prevId !== itemId && startedRef.current) {
       console.debug(DBG, "episode switch — stopping old session", { prevId, newId: itemId, position: positionRef.current });
-      clientRef.current.fetch("/Sessions/Playing/Stopped", {
-        method: "POST",
-        body: JSON.stringify({
-          ItemId: prevId,
-          MediaSourceId: prevId,
-          PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
-        }),
-      }).catch(() => {});
+      sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
+        ItemId: prevId,
+        MediaSourceId: prevId,
+        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      }, "stopOldEpisode");
       startedRef.current = false;
       positionRef.current = 0;
     }
@@ -46,32 +79,33 @@ export function usePlaybackReporting(
 
   const reportStart = useCallback(() => {
     if (!itemId || startedRef.current) return;
-    console.debug(DBG, "reportStart", { itemId, playMethod });
+    console.debug(DBG, "reportStart", { itemId, mediaSourceId, playMethod, hasToken: !!client.getToken() });
     startedRef.current = true;
-    client.fetch("/Sessions/Playing", {
-      method: "POST",
-      body: JSON.stringify({
-        ItemId: itemId,
-        MediaSourceId: mediaSourceId ?? itemId,
-        CanSeek: true,
-        PlayMethod: playMethod,
-      }),
-    }).catch(() => {});
+    sessionPost(client, "/Sessions/Playing", {
+      ItemId: itemId,
+      MediaSourceId: mediaSourceId ?? itemId,
+      CanSeek: true,
+      PlayMethod: playMethod,
+    }, "reportStart");
   }, [client, itemId, mediaSourceId, playMethod]);
 
   const reportProgress = useCallback(() => {
     if (!itemId || !startedRef.current) return;
-    console.debug(DBG, "progress", { itemId: itemId.substring(0, 8), position: Math.floor(positionRef.current), paused: pausedRef.current });
+    const pos = positionRef.current;
+    const paused = pausedRef.current;
+    console.debug(DBG, "progress", { itemId: itemId.substring(0, 8), position: Math.floor(pos), paused });
     client.fetch("/Sessions/Playing/Progress", {
       method: "POST",
       body: JSON.stringify({
         ItemId: itemId,
         MediaSourceId: mediaSourceId ?? itemId,
-        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
-        IsPaused: pausedRef.current,
+        PositionTicks: Math.floor(pos * TICKS_PER_SEC),
+        IsPaused: paused,
         PlayMethod: playMethod,
       }),
-    }).catch(() => {});
+    }).catch((err: unknown) => {
+      console.error(DBG, "progress FAILED:", err instanceof Error ? err.message : String(err));
+    });
   }, [client, itemId, mediaSourceId, playMethod]);
 
   const updatePosition = useCallback((seconds: number, isPaused: boolean) => {
@@ -93,14 +127,11 @@ export function usePlaybackReporting(
       const id = itemIdRef.current;
       if (!id || !startedRef.current) return;
       startedRef.current = false;
-      clientRef.current.fetch("/Sessions/Playing/Stopped", {
-        method: "POST",
-        body: JSON.stringify({
-          ItemId: id,
-          MediaSourceId: msIdRef.current ?? id,
-          PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
-        }),
-      }).catch(() => {});
+      sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
+        ItemId: id,
+        MediaSourceId: msIdRef.current ?? id,
+        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      }, "stopOnUnmount");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,14 +140,11 @@ export function usePlaybackReporting(
     const id = itemIdRef.current;
     if (!id || !startedRef.current) return;
     startedRef.current = false;
-    clientRef.current.fetch("/Sessions/Playing/Stopped", {
-      method: "POST",
-      body: JSON.stringify({
-        ItemId: id,
-        MediaSourceId: msIdRef.current ?? id,
-        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
-      }),
-    }).catch(() => {});
+    sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
+      ItemId: id,
+      MediaSourceId: msIdRef.current ?? id,
+      PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+    }, "reportStop");
   }, []);
 
   return { reportStart, reportStop, updatePosition };

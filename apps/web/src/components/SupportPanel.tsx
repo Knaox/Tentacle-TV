@@ -57,7 +57,7 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
           Nouveau ticket
         </button>
       </div>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {[
           { key: "", label: "Tous" },
           { key: "open", label: "Ouverts" },
@@ -66,7 +66,7 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
           { key: "closed", label: "Fermés" },
         ].map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.key ? "bg-purple-600 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}>{f.label}</button>
+            className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.key ? "bg-purple-600 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}>{f.label}</button>
         ))}
       </div>
       {isLoading && <Spinner />}

@@ -67,13 +67,8 @@ export function VideoPlayer({
   const hasStartedRef = useRef(false);
   const sourceChangingRef = useRef(false);
   const currentTimeRef = useRef(0);
-  const [transitionMuted, setTransitionMuted] = useState(true);
-
-  // Unmute after transition animation completes (prevents sound before image)
-  useEffect(() => {
-    const t = setTimeout(() => setTransitionMuted(false), 900);
-    return () => clearTimeout(t);
-  }, []);
+  const userInteractedRef = useRef(false);
+  const [showPlayButton, setShowPlayButton] = useState(false);
 
   // Real playback time = offset (from transcoded seek) + video element time
   const currentTime = streamOffset + rawTime;
@@ -121,15 +116,38 @@ export function VideoPlayer({
     const seekTo = isSourceChange ? (isDirectPlay ? savedTime : 0) : (startPositionSeconds ?? 0);
     console.debug(DBG, "will seek to", { seekTo });
     if (isSourceChange) v.load();
+
+    // Safety timeout: if loadedmetadata never fires (stream fails to load), recover after 15s
+    const failsafe = setTimeout(() => {
+      if (sourceChangingRef.current) {
+        console.error(DBG, "loadedmetadata timeout — source change recovery");
+        sourceChangingRef.current = false;
+        setLoading(false);
+        setShowPlayButton(true);
+      }
+    }, 15_000);
+
     const onLoaded = () => {
+      clearTimeout(failsafe);
       console.debug(DBG, "loadedmetadata fired", { seekTo, videoDuration: v.duration });
       if (seekTo > 0) v.currentTime = seekTo;
       sourceChangingRef.current = false;
       setLoading(false);
-      if (isSourceChange) v.play().catch(() => {});
+      if (isSourceChange) {
+        // Always play muted first to satisfy browser autoplay policy,
+        // then unmute — avoids "Unmuting failed" pause.
+        v.muted = true;
+        v.play().then(() => {
+          console.debug(DBG, "source change play OK, unmuting");
+          v.muted = false;
+        }).catch((err) => {
+          console.error(DBG, "source change play FAILED:", err.message);
+          setShowPlayButton(true);
+        });
+      }
     };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
-    return () => v.removeEventListener("loadedmetadata", onLoaded);
+    return () => { v.removeEventListener("loadedmetadata", onLoaded); clearTimeout(failsafe); };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subtitle track visibility
@@ -200,7 +218,9 @@ export function VideoPlayer({
   }, []);
 
   return (
-    <div ref={containerRef} onMouseMove={scheduleHide} onClick={togglePlay}
+    <div ref={containerRef} onMouseMove={scheduleHide}
+      onClick={() => { userInteractedRef.current = true; togglePlay(); }}
+      onTouchStart={() => { userInteractedRef.current = true; }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} src={src} className="h-full w-full"
         onTimeUpdate={(e) => {
@@ -216,13 +236,23 @@ export function VideoPlayer({
           if (buf.length > 0) setBuffered(buf.end(buf.length - 1) / v.duration);
         }}
         onLoadedMetadata={(e) => { console.debug(DBG, "metadata", { duration: e.currentTarget.duration }); setVideoDuration(e.currentTarget.duration); }}
-        onPlay={() => { console.debug(DBG, "play event"); setPlaying(true); setLoading(false); if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); } }}
+        onPlay={() => {
+          console.debug(DBG, "play event", { muted: videoRef.current?.muted, hasStarted: hasStartedRef.current });
+          setPlaying(true); setLoading(false); setShowPlayButton(false);
+          if (!hasStartedRef.current) {
+            hasStartedRef.current = true;
+            // Unmute after short delay (lets transition animation finish before audio)
+            const v = videoRef.current;
+            if (v?.muted) setTimeout(() => { if (v) v.muted = false; }, 800);
+            onStarted?.();
+          }
+        }}
         onPause={() => { console.debug(DBG, "pause event"); setPlaying(false); }}
         onWaiting={() => { console.debug(DBG, "waiting/buffering"); setLoading(true); }}
         onCanPlay={() => { console.debug(DBG, "canplay"); setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message, e.currentTarget.error?.code); }}
         onEnded={() => { console.debug(DBG, "ended"); if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
-        autoPlay muted={transitionMuted} crossOrigin="anonymous"
+        autoPlay muted crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (
           <track key={t.index} kind="subtitles" src={t.url} label={t.label} />
@@ -233,6 +263,22 @@ export function VideoPlayer({
       {loading && playing && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+        </div>
+      )}
+
+      {/* Play button overlay — shown when autoplay is blocked by browser policy */}
+      {showPlayButton && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60"
+          onClick={(e) => {
+            e.stopPropagation();
+            userInteractedRef.current = true;
+            const v = videoRef.current;
+            if (v) { v.muted = false; v.play().then(() => setShowPlayButton(false)).catch(() => {}); }
+          }}>
+          <div className="flex flex-col items-center gap-3">
+            <svg className="h-20 w-20 text-white/90" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <span className="text-sm text-white/70">Appuyez pour lire</span>
+          </div>
         </div>
       )}
 

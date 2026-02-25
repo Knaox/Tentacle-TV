@@ -97,7 +97,15 @@ export function Watch() {
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
     }, {
       onSuccess: (result) => {
-        if (result.audioIndex != null) setAudioIndex(result.audioIndex);
+        console.debug(DBG, "preferences resolved", { audio: result.audioIndex, subtitle: result.subtitleIndex, currentPosition: positionRef.current });
+        if (result.audioIndex != null) {
+          // Preserve current position when preferences switch to a non-default audio track
+          // (this will trigger transcode mode which needs startTicks for the stream URL)
+          if (positionRef.current > 0) {
+            setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+          }
+          setAudioIndex(result.audioIndex);
+        }
         if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
       },
     });
