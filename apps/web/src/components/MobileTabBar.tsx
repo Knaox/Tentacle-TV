@@ -23,8 +23,9 @@ export function MobileTabBar() {
         match: (p) => p === "/",
       },
       {
-        path: "/search", label: "Recherche",
+        path: "##search", label: "Recherche",
         icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+        match: () => false,
       },
     ];
     if (features?.discover) {
@@ -57,7 +58,13 @@ export function MobileTabBar() {
       {tabs.map((tab) => {
         const active = isActive(tab);
         return (
-          <button key={tab.path} onClick={() => navigate(tab.path)}
+          <button key={tab.path} onClick={() => {
+              if (tab.path === "##search") {
+                window.dispatchEvent(new Event("open-global-search"));
+              } else {
+                navigate(tab.path);
+              }
+            }}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
               active ? "text-purple-400" : "text-white/40"
             }`}>

@@ -12,9 +12,10 @@ export const STATUS_LABELS: Record<number, { label: string; color: string }> = {
 interface SeerrCardProps {
   item: SeerrSearchResult;
   onRequest: (body: { mediaType: "movie" | "tv"; mediaId: number }) => void;
+  onWatch?: (title: string) => void;
 }
 
-export function SeerrCard({ item, onRequest }: SeerrCardProps) {
+export function SeerrCard({ item, onRequest, onWatch }: SeerrCardProps) {
   const title = item.title || item.name || "";
   const year = (item.releaseDate || item.firstAirDate || "").slice(0, 4);
   const poster = item.posterPath ? `${TMDB_IMG}/w300${item.posterPath}` : null;
@@ -40,7 +41,15 @@ export function SeerrCard({ item, onRequest }: SeerrCardProps) {
               {item.mediaType === "movie" ? "Film" : "Série"}
             </span>
           </div>
-          {statusInfo ? (
+          {status === 5 ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onWatch?.(title); }}
+              className="mt-2 flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition-transform hover:scale-105"
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+              Regarder
+            </button>
+          ) : statusInfo ? (
             <span className={`mt-2 inline-block rounded-lg px-2.5 py-1 text-xs font-medium ${statusInfo.color}`}>
               {statusInfo.label}
             </span>

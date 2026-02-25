@@ -13,7 +13,7 @@ export function PlayerTransition({ children }: PlayerTransitionProps) {
   const [phase, setPhase] = useState<"curtain" | "done">("curtain");
 
   useEffect(() => {
-    const t = setTimeout(() => setPhase("done"), 1400);
+    const t = setTimeout(() => setPhase("done"), 800);
     return () => clearTimeout(t);
   }, []);
 
@@ -30,7 +30,7 @@ export function PlayerTransition({ children }: PlayerTransitionProps) {
               className="fixed inset-y-0 left-0 z-50 w-1/2 bg-gradient-to-r from-[#0a0a0a] to-[#121212]"
               initial={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ duration: 0.7, ease: [0.65, 0, 0.35, 1], delay: 0.5 }}
+              transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1], delay: 0.2 }}
             >
               <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-purple-500/30 to-transparent" />
             </motion.div>
@@ -41,7 +41,7 @@ export function PlayerTransition({ children }: PlayerTransitionProps) {
               className="fixed inset-y-0 right-0 z-50 w-1/2 bg-gradient-to-l from-[#0a0a0a] to-[#121212]"
               initial={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ duration: 0.7, ease: [0.65, 0, 0.35, 1], delay: 0.5 }}
+              transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1], delay: 0.2 }}
             >
               <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-purple-500/30 to-transparent" />
             </motion.div>

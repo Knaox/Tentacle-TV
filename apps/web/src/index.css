@@ -44,6 +44,16 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  /* Safe area insets for notch / Dynamic Island */
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-top {
+    top: env(safe-area-inset-top, 0px);
+  }
 }
 
 /* Subtitle styling: white text with black outline, no background */

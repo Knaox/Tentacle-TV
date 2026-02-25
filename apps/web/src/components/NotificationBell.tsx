@@ -47,8 +47,8 @@ export function NotificationBell() {
             <span className="text-sm font-semibold text-white">Notifications</span>
             {count > 0 && (
               <button
-                onClick={() => markAllMut.mutate()}
-                className="text-xs text-purple-400 hover:text-purple-300"
+                onClick={(e) => { e.stopPropagation(); markAllMut.mutate(); }}
+                className="rounded-lg px-2 py-1 text-xs text-purple-400 hover:bg-white/10 hover:text-purple-300"
               >
                 Tout marquer lu
               </button>

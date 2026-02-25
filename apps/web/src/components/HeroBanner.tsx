@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle/api-client";
+import { formatDuration } from "@tentacle/shared";
 import type { MediaItem } from "@tentacle/shared";
 
 interface HeroBannerProps {
@@ -33,9 +34,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
     ? client.getImageUrl(item.Id, "Logo", { width: 500, quality: 90 })
     : null;
 
-  const runtime = item.RunTimeTicks
-    ? `${Math.floor(item.RunTimeTicks / 600_000_000)}h ${Math.floor((item.RunTimeTicks % 600_000_000) / 10_000_000)}min`
-    : null;
+  const runtime = formatDuration(item.RunTimeTicks);
 
   return (
     <div className="relative h-[70vh] w-full overflow-hidden">

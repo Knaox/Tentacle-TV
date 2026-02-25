@@ -51,9 +51,9 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-white">Mes tickets</h2>
-        <button onClick={onNew} className="rounded-lg bg-tentacle-accent px-4 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80">
+        <button onClick={onNew} className="flex-shrink-0 rounded-lg bg-tentacle-accent px-4 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80">
           Nouveau ticket
         </button>
       </div>

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { useSeerrDiscover, useSeerrSearch, useRequestMedia } from "@tentacle/api-client";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSeerrDiscover, useSeerrSearch, useRequestMedia, useSearchItems } from "@tentacle/api-client";
 import { SeerrCard } from "./SeerrCard";
 
 type Category = "movies" | "tv" | "anime";
@@ -11,11 +12,26 @@ const CATEGORIES: { key: Category; label: string }[] = [
 ];
 
 export function DiscoverGrid() {
+  const navigate = useNavigate();
   const [category, setCategory] = useState<Category>("movies");
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [watchQuery, setWatchQuery] = useState("");
+  const { data: watchResults } = useSearchItems(watchQuery);
+
+  // When Jellyfin search returns results for "Regarder", navigate to the first match
+  useEffect(() => {
+    if (watchQuery && watchResults && watchResults.length > 0) {
+      navigate(`/media/${watchResults[0].Id}`);
+      setWatchQuery("");
+    }
+  }, [watchResults, watchQuery, navigate]);
+
+  const handleWatch = useCallback((title: string) => {
+    setWatchQuery(title);
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounced(searchInput.trim()), 400);
@@ -87,7 +103,7 @@ export function DiscoverGrid() {
           {!searchLoading && searchResults.length > 0 && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {searchResults.map((item) => (
-                <SeerrCard key={`${item.mediaType}-${item.id}`} item={item} onRequest={handleRequest} />
+                <SeerrCard key={`${item.mediaType}-${item.id}`} item={item} onRequest={handleRequest} onWatch={handleWatch} />
               ))}
             </div>
           )}
@@ -119,7 +135,7 @@ export function DiscoverGrid() {
           {!isLoading && discoverResults.length > 0 && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {discoverResults.map((item) => (
-                <SeerrCard key={`${item.mediaType}-${item.id}`} item={item} onRequest={handleRequest} />
+                <SeerrCard key={`${item.mediaType}-${item.id}`} item={item} onRequest={handleRequest} onWatch={handleWatch} />
               ))}
             </div>
           )}

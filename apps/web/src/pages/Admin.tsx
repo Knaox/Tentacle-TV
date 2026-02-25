@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus } from "@tentacle/api-client";
 import type { SupportTicket } from "@tentacle/api-client";
-import { Navbar } from "../components/Navbar";
+import { getServerUrls } from "../hooks/useServerConfig";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -48,10 +48,12 @@ export function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-tentacle-bg">
-      <Navbar />
-      <div className="mx-auto max-w-4xl px-6 pt-24 pb-16">
-        <h1 className="mb-8 text-3xl font-bold text-white">Administration</h1>
+    <div className="px-4 pt-6 pb-16 md:px-12">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="mb-8 text-2xl font-bold text-white">Administration</h1>
+
+        {/* Server configuration */}
+        <ServerConfigSection />
 
         {/* Create invite */}
         <div className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6">
@@ -119,6 +121,60 @@ export function Admin() {
                 );
               })}
             </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ServerConfigSection() {
+  const saved = getServerUrls();
+  const [jellyfinUrl, setJellyfinUrl] = useState(saved.jellyfinUrl || import.meta.env.VITE_JELLYFIN_URL || "");
+  const [backendUrl, setBackendUrl] = useState(saved.backendUrl || import.meta.env.VITE_BACKEND_URL || "");
+  const [testing, setTesting] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const handleSave = async () => {
+    setTesting(true);
+    setStatus(null);
+    try {
+      const cleanUrl = jellyfinUrl.replace(/\/+$/, "");
+      const res = await fetch(`${cleanUrl}/System/Info/Public`);
+      if (!res.ok) throw new Error("Serveur inaccessible");
+      localStorage.setItem("tentacle_jellyfin_url", cleanUrl);
+      if (backendUrl) localStorage.setItem("tentacle_backend_url", backendUrl.replace(/\/+$/, ""));
+      else localStorage.removeItem("tentacle_backend_url");
+      setStatus({ ok: true, msg: "Sauvegardé. Rechargez pour appliquer." });
+    } catch {
+      setStatus({ ok: false, msg: "Serveur Jellyfin inaccessible" });
+    }
+    setTesting(false);
+  };
+
+  return (
+    <div className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6">
+      <h2 className="mb-4 text-lg font-semibold text-white">Configuration serveur</h2>
+      <div className="space-y-3 max-w-lg">
+        <div>
+          <label className="mb-1 block text-xs text-white/40">URL Jellyfin</label>
+          <input value={jellyfinUrl} onChange={(e) => setJellyfinUrl(e.target.value)}
+            placeholder="https://jellyfin.example.com"
+            className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none ring-1 ring-white/10 focus:ring-tentacle-accent" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-white/40">URL Backend (optionnel)</label>
+          <input value={backendUrl} onChange={(e) => setBackendUrl(e.target.value)}
+            placeholder="https://backend.example.com"
+            className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none ring-1 ring-white/10 focus:ring-tentacle-accent" />
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={handleSave} disabled={testing || !jellyfinUrl.trim()}
+            className="rounded-lg bg-tentacle-accent px-5 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80 disabled:opacity-50">
+            {testing ? "Test..." : "Tester et sauvegarder"}
+          </button>
+          {status && (
+            <span className={`text-xs ${status.ok ? "text-green-400" : "text-red-400"}`}>{status.msg}</span>
           )}
         </div>
       </div>

@@ -59,7 +59,7 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
 
   const progress = ep.UserData?.PlayedPercentage;
   const played = ep.UserData?.Played;
-  const runtime = ep.RunTimeTicks ? Math.floor(ep.RunTimeTicks / 600_000_000 * 60) : null;
+  const runtime = ep.RunTimeTicks ? Math.floor(ep.RunTimeTicks / 600_000_000) : null;
 
   return (
     <div onClick={onPlay}
