@@ -61,7 +61,11 @@ export function Login() {
           />
 
           {login.error && (
-            <p className="text-sm text-red-400">Invalid credentials</p>
+            <p className="text-sm text-red-400">
+              {login.error.message?.includes("401")
+                ? "Invalid credentials"
+                : login.error.message || "Login failed"}
+            </p>
           )}
 
           <button type="submit" disabled={login.isPending}

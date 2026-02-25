@@ -16,6 +16,7 @@
     "@tentacle/shared": "workspace:*",
     "@tentacle/ui": "workspace:*",
     "framer-motion": "^11.15.0",
+    "hls.js": "^1.6.15",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0",

@@ -34,17 +34,22 @@ pub fn mpv_play(
 ) -> Result<(), String> {
     let player = state.lock().map_err(|e| e.to_string())?;
 
-    // Load the file
-    player.send_command(json!({
-        "command": ["loadfile", options.url, "replace"]
-    }))?;
-
-    // Set start position if provided
+    // Set start position BEFORE loadfile (mpv's `start` affects the NEXT file load)
     if let Some(pos) = options.start_position {
         player.send_command(json!({
             "command": ["set_property", "start", format!("{:.1}", pos)]
         }))?;
+    } else {
+        // Reset start to beginning if no position provided
+        player.send_command(json!({
+            "command": ["set_property", "start", "none"]
+        }))?;
     }
+
+    // Load the file
+    player.send_command(json!({
+        "command": ["loadfile", options.url, "replace"]
+    }))?;
 
     // Set audio track
     if let Some(aid) = options.audio_track {

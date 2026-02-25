@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Pressable, Animated, Dimensions, ScrollView, Modal } from "react-native";
+import type { SegmentTimestamps } from "@tentacle/shared";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-interface Track {
-  index: number;
-  label: string;
-}
+interface Track { index: number; label: string }
 
 interface Props {
   title: string;
@@ -17,6 +15,8 @@ interface Props {
   subtitleTracks: Track[];
   selectedAudio: number;
   selectedSubtitle: number;
+  introSegment?: SegmentTimestamps | null;
+  creditsSegment?: SegmentTimestamps | null;
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
@@ -25,6 +25,7 @@ interface Props {
 }
 
 function formatTime(s: number): string {
+  if (!isFinite(s) || s < 0) s = 0;
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = Math.floor(s % 60);
@@ -35,6 +36,7 @@ function formatTime(s: number): string {
 export function MobilePlayerOverlay({
   title, currentTime, duration, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
+  introSegment, creditsSegment,
   onPlayPause, onSeek, onBack, onSelectAudio, onSelectSubtitle,
 }: Props) {
   const [visible, setVisible] = useState(true);
@@ -72,6 +74,9 @@ export function MobilePlayerOverlay({
     resetHideTimer();
   };
 
+  const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
+  const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
+
   return (
     <>
       <Pressable onPress={handleTap} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
@@ -102,6 +107,24 @@ export function MobilePlayerOverlay({
                 <Text style={{ color: "#fff", fontSize: 20 }}>+30s</Text>
               </Pressable>
             </View>
+
+            {/* Skip intro / credits buttons */}
+            {showSkipIntro && introSegment && (
+              <View style={{ position: "absolute", bottom: 120, right: 16 }}>
+                <Pressable onPress={() => onSeek(introSegment.end)}
+                  style={{ backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 }}>
+                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>Passer l'intro</Text>
+                </Pressable>
+              </View>
+            )}
+            {showSkipCredits && creditsSegment && (
+              <View style={{ position: "absolute", bottom: 120, right: 16 }}>
+                <Pressable onPress={() => onSeek(creditsSegment.end)}
+                  style={{ backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 }}>
+                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>Passer le générique</Text>
+                </Pressable>
+              </View>
+            )}
 
             {/* Progress bar */}
             <View style={{ paddingHorizontal: 16, paddingBottom: 36 }}>

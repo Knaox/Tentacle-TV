@@ -6,12 +6,23 @@ const BACKEND_KEY = "tentacle_backend_url";
 const listeners = new Set<() => void>();
 function notify() { listeners.forEach((cb) => cb()); }
 
+/** Detect Tauri desktop environment */
+const isTauriEnv = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 /** Read saved server URLs (or env defaults) */
 function getSnapshot() {
   const envJellyfin = import.meta.env.VITE_JELLYFIN_URL || "";
   const envBackend = import.meta.env.VITE_BACKEND_URL || "";
-  const jellyfin = localStorage.getItem(JELLYFIN_KEY) || envJellyfin;
-  const backend = localStorage.getItem(BACKEND_KEY) || envBackend;
+  const savedJellyfin = localStorage.getItem(JELLYFIN_KEY);
+  const savedBackend = localStorage.getItem(BACKEND_KEY);
+  // In Tauri desktop, require explicit config (don't fall back to env vars
+  // meant for web dev — the desktop app may connect to a different server)
+  const jellyfin = isTauriEnv
+    ? savedJellyfin || ""
+    : savedJellyfin || envJellyfin;
+  const backend = isTauriEnv
+    ? savedBackend || ""
+    : savedBackend || envBackend;
   return { jellyfinUrl: jellyfin, backendUrl: backend, configured: !!jellyfin };
 }
 
