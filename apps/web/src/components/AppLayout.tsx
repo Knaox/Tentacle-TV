@@ -12,7 +12,7 @@ export function AppLayout() {
     <div className="min-h-screen bg-tentacle-bg">
       {!isMobile && <Sidebar />}
 
-      <div className={isMobile ? "pb-20" : "pl-16"}>
+      <div className={isMobile ? "pb-20 pt-14" : "pl-16"}>
         {/* Top bar: search + notifications */}
         <div className="fixed right-4 z-30 flex items-center gap-2 safe-area-top" style={{ top: "max(1rem, env(safe-area-inset-top, 1rem))" }}>
           {isMobile && <NotificationBell />}

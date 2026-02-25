@@ -72,7 +72,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-white/5 px-2 py-3 space-y-0.5">
-        <div className="flex items-center justify-center"><NotificationBell /></div>
+        <div className="flex items-center justify-center"><NotificationBell dropdownPosition="right" /></div>
         <NavButton item={{ key: "settings", label: "Préférences", icon: <LangIcon />, path: "/settings" }}
           active={location.pathname === "/settings"} expanded={expanded}
           onClick={() => navigate("/settings")} />
