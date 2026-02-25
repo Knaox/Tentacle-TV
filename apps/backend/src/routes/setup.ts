@@ -165,7 +165,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
 
       return {
         success: true,
-        user: { id: user.Id, name: user.Name },
+        user: { Id: user.Id, Name: user.Name },
         token: authData.AccessToken,
       };
     } catch (err) {

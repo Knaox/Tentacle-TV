@@ -28,12 +28,12 @@ export function Admin() {
   const [creating, setCreating] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const fetchInvites = useCallback(async () => {
-    const r = await fetch(`${BACKEND}/api/invites`); if (r.ok) setInvites(await r.json());
+    const r = await fetch(`${BACKEND}/api/invites`, { headers: hdrs() }); if (r.ok) setInvites(await r.json());
   }, []);
   useEffect(() => { fetchInvites(); }, [fetchInvites]);
   const createInvite = async () => {
     setCreating(true);
-    const r = await fetch(`${BACKEND}/api/invites`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ maxUses, expiresInHours: expiresHours }) });
+    const r = await fetch(`${BACKEND}/api/invites`, { method: "POST", headers: hdrs(), body: JSON.stringify({ maxUses, expiresInHours: expiresHours }) });
     if (r.ok) await fetchInvites(); setCreating(false);
   };
   const copyLink = (key: string) => { navigator.clipboard.writeText(`${window.location.origin}/register?invite=${key}`); setCopiedKey(key); setTimeout(() => setCopiedKey(null), 2000); };
