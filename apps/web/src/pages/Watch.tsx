@@ -41,6 +41,7 @@ export function Watch() {
   const prefsApplied = useRef(false);
   const audioOverrideRef = useRef(false);
   const [transitionDone, setTransitionDone] = useState(false);
+  const resumeApplied = useRef(false);
 
   // Reset state when switching episodes
   useEffect(() => {
@@ -51,6 +52,7 @@ export function Watch() {
     positionRef.current = 0;
     prefsApplied.current = false;
     audioOverrideRef.current = false;
+    resumeApplied.current = false;
   }, [itemId]);
 
   // Sync audioIndex when streams change (new episode loaded)
@@ -74,8 +76,42 @@ export function Watch() {
     quality, streamCount: streams.length,
   });
 
+  // BUG 5: when starting in transcode mode (e.g. default audio is DTS/TrueHD) with
+  // a resume position, initialize startTicks so HLS URL includes StartTimeTicks.
+  // Only on first load per episode — not on subsequent audio/quality changes.
+  useEffect(() => {
+    if (resumeApplied.current || isDirectPlay || startTicks > 0) return;
+    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+    if (resumeTicks && resumeTicks > 0) {
+      console.debug(DBG, "init startTicks from resume (transcode mode)", { resumeTicks });
+      resumeApplied.current = true;
+      setStartTicks(resumeTicks);
+    }
+  }, [isDirectPlay, item, startTicks]);
+
   const skipSegments = useIntroSkipper(itemId, item);
-  const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
+
+  // Best-effort position in ticks: prefer live positionRef, fallback to resume data
+  const getPositionTicks = useCallback((): number => {
+    if (positionRef.current > 0) return Math.floor(positionRef.current * TICKS_PER_SECOND);
+    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+    return resumeTicks && resumeTicks > 0 ? resumeTicks : 0;
+  }, [item]);
+
+  // Unique ID per transcode session — lets Jellyfin's segment handler find
+  // the correct transcode started by master.m3u8 (not needed for direct play).
+  const playSessionId = useMemo(() => {
+    if (isDirectPlay) return undefined;
+    return crypto.randomUUID();
+  }, [audioIndex, quality, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Playback reporting — now sends PlaySessionId, audio/subtitle indices to Jellyfin
+  const { reportStart, updatePosition } = usePlaybackReporting({
+    itemId, mediaSourceId, isDirectPlay,
+    playSessionId,
+    audioStreamIndex: audioIndex,
+    subtitleStreamIndex: subtitleIndex,
+  });
 
   // Resolve preferred tracks
   const resolveTracks = useResolveMediaTracks();
@@ -97,11 +133,9 @@ export function Watch() {
       onSuccess: (result) => {
         console.debug(DBG, "preferences resolved", { audio: result.audioIndex, subtitle: result.subtitleIndex, currentPosition: positionRef.current });
         if (result.audioIndex != null) {
-          // Preserve current position when preferences switch to a non-default audio track
-          // (this will trigger transcode mode which needs startTicks for the stream URL)
-          if (positionRef.current > 0) {
-            setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-          }
+          // BUG 3 fix: fallback to resume position when positionRef is still 0
+          const ticks = getPositionTicks();
+          if (ticks > 0) setStartTicks(ticks);
           setAudioIndex(result.audioIndex);
         }
         // -1 = explicitly disabled, positive = specific track, null = no preference
@@ -111,13 +145,6 @@ export function Watch() {
       },
     });
   }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Unique ID per transcode session — lets Jellyfin's segment handler find
-  // the correct transcode started by master.m3u8 (not needed for direct play).
-  const playSessionId = useMemo(() => {
-    if (isDirectPlay) return undefined;
-    return crypto.randomUUID();
-  }, [audioIndex, quality, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
@@ -150,6 +177,7 @@ export function Watch() {
   );
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  // BUG 5: resume position from Jellyfin UserData
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
     return ticks ? ticks / TICKS_PER_SECOND : undefined;
@@ -159,21 +187,19 @@ export function Watch() {
   // as that kills the Jellyfin transcode before the new one is ready (causing 400 on first .ts).
   // Jellyfin naturally cleans up old sessions when a new one starts.
   const handleAudioChange = useCallback((idx: number) => {
-    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current });
-    if (positionRef.current > 0) {
-      setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-    }
+    const ticks = getPositionTicks();
+    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current, ticks });
+    if (ticks > 0) setStartTicks(ticks);
     audioOverrideRef.current = true;
     setAudioIndex(idx);
-  }, []);
+  }, [getPositionTicks]);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
-    console.debug(DBG, "quality change", { bitrate, position: positionRef.current });
-    if (positionRef.current > 0) {
-      setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-    }
+    const ticks = getPositionTicks();
+    console.debug(DBG, "quality change", { bitrate, position: positionRef.current, ticks });
+    if (ticks > 0) setStartTicks(ticks);
     setQuality(bitrate);
-  }, []);
+  }, [getPositionTicks]);
 
   // Transcoded seeking: update startTicks to recompute stream URL
   const handleSeekRequest = useCallback((targetSeconds: number) => {
@@ -231,4 +257,3 @@ export function Watch() {
     </PlayerTransition>
   );
 }
-
