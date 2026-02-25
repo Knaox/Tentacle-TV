@@ -22,7 +22,9 @@ import "./index.css";
 const { jellyfinUrl: savedJellyfin, backendUrl: savedBackend } = getServerUrls();
 // getServerUrls() already handles Tauri vs web env var fallback
 const jellyfinUrl = savedJellyfin || import.meta.env.VITE_JELLYFIN_URL || "http://localhost:8096";
-const backendUrl = savedBackend || import.meta.env.VITE_BACKEND_URL || "";
+// Desktop (Tauri): if no backend URL configured, fall back to the Jellyfin URL
+// (backend typically runs behind the same reverse proxy)
+const backendUrl = savedBackend || import.meta.env.VITE_BACKEND_URL || jellyfinUrl;
 const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const deviceName = isTauriApp ? "Desktop" : "Web";
 setSeerrBackendUrl(backendUrl);
