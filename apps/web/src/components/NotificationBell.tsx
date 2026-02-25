@@ -47,10 +47,10 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
       </button>
 
       {open && (
-        <div className={`absolute z-50 w-80 rounded-xl border border-white/10 bg-tentacle-surface shadow-2xl ${
+        <div className={`absolute z-50 rounded-xl border border-white/10 bg-tentacle-surface shadow-2xl ${
           dropdownPosition === "right"
-            ? "bottom-0 left-full ml-2"
-            : "right-0 top-full mt-2"
+            ? "bottom-0 left-full ml-2 w-80"
+            : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-80"
         }`}>
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="text-sm font-semibold text-white">Notifications</span>

@@ -33,6 +33,15 @@ export class JellyfinClient {
     return this.accessToken;
   }
 
+  /** Alias for getAccessToken — used by playback reporting diagnostics */
+  getToken() {
+    return this.accessToken;
+  }
+
+  getBaseUrl() {
+    return this.baseUrl;
+  }
+
   private getOrCreateDeviceId(uuid: UuidGenerator): string {
     const stored = this.storage.getItem("tentacle_device_id");
     if (stored) return stored;
@@ -73,8 +82,11 @@ export class JellyfinClient {
       throw new JellyfinError(response.status, response.statusText, path);
     }
 
+    // 204 No Content or empty body — return undefined
     if (response.status === 204) return undefined as T;
-    return response.json();
+    const text = await response.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text);
   }
 
   getImageUrl(
