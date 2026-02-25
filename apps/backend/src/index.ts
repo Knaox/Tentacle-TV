@@ -29,12 +29,15 @@ import { startPairingCleanup } from "./services/pairingCleanup";
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
+const RATE_LIMIT = Number(process.env.RATE_LIMIT) || 1000;
 
 async function main() {
   const app = Fastify({
     logger: true,
     // Allow large bodies for proxied requests (images, etc.)
     bodyLimit: 50 * 1024 * 1024,
+    // Trust X-Forwarded-* headers from reverse proxy (nginx) for real client IP
+    trustProxy: true,
   });
 
   // CORS: "*" reflects any origin (needed for Desktop/Mobile apps).
@@ -43,7 +46,7 @@ async function main() {
     ? true
     : CORS_ORIGIN.includes(",") ? CORS_ORIGIN.split(",").map((s) => s.trim()) : CORS_ORIGIN;
   await app.register(cors, { origin: corsOrigin });
-  await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
+  await app.register(rateLimit, { max: RATE_LIMIT, timeWindow: "1 minute" });
 
   // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)
   app.removeContentTypeParser("application/json");

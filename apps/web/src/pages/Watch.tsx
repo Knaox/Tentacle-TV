@@ -75,7 +75,7 @@ export function Watch() {
   });
 
   const skipSegments = useIntroSkipper(itemId, item);
-  const { reportStart, reportStop, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
+  const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
 
   // Resolve preferred tracks
   const resolveTracks = useResolveMediaTracks();
@@ -147,26 +147,25 @@ export function Watch() {
     return ticks ? ticks / TICKS_PER_SECOND : undefined;
   }, [item]);
 
-  // Audio change: stop old session, save position, then start new stream
+  // Audio change: save position and switch — don't reportStop() beforehand,
+  // as that kills the Jellyfin transcode before the new one is ready (causing 400 on first .ts).
+  // Jellyfin naturally cleans up old sessions when a new one starts.
   const handleAudioChange = useCallback((idx: number) => {
     console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current });
-    // Stop current Jellyfin session so the old transcode is cleaned up
-    reportStop();
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
     audioOverrideRef.current = true;
     setAudioIndex(idx);
-  }, [reportStop]);
+  }, []);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
     console.debug(DBG, "quality change", { bitrate, position: positionRef.current });
-    reportStop();
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
     setQuality(bitrate);
-  }, [reportStop]);
+  }, []);
 
   // Transcoded seeking: update startTicks to recompute stream URL
   const handleSeekRequest = useCallback((targetSeconds: number) => {

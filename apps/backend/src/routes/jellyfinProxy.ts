@@ -67,6 +67,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
+      // Log Jellyfin error responses for debugging
+      if (response.status >= 400) {
+        const body = await response.text();
+        request.log.warn({ status: response.status, path: wildcardPath, body: body.substring(0, 500) }, "Jellyfin error");
+        return reply.send(body);
+      }
+
       // Pipe response body
       if (!response.body) {
         return reply.send();

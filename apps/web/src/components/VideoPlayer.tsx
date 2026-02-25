@@ -178,7 +178,20 @@ export function VideoPlayer({
     };
 
     if (isHlsUrl && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, startPosition: seekTo > 0 ? seekTo : -1 });
+      const hls = new Hls({
+        enableWorker: true,
+        startPosition: seekTo > 0 ? seekTo : -1,
+        // Jellyfin transcodes may take a few seconds to produce the first segment.
+        // Retry aggressively so HLS.js doesn't give up before it's ready.
+        fragLoadPolicy: {
+          default: {
+            maxTimeToFirstByteMs: 20_000,
+            maxLoadTimeMs: 60_000,
+            timeoutRetry: { maxNumRetry: 5, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
+            errorRetry: { maxNumRetry: 8, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
+          },
+        },
+      });
       hlsRef.current = hls;
       // Register handlers BEFORE loading to prevent missing fast/cached manifests
       hls.on(Hls.Events.MANIFEST_PARSED, onReady);
