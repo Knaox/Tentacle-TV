@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle/shared";
@@ -6,11 +6,6 @@ import type { MediaStream as JfStream } from "@tentacle/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
-import { isTauri } from "../hooks/useDesktopPlayer";
-
-const DesktopPlayer = lazy(() =>
-  import("../components/DesktopPlayer").then((m) => ({ default: m.DesktopPlayer }))
-);
 
 function formatTrackLabel(s: JfStream): string {
   const title = s.DisplayTitle || s.Title || s.Language || `Piste ${s.Index}`;
@@ -44,7 +39,6 @@ export function Watch() {
   const [startTicks, setStartTicks] = useState<number>(0);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
-  const [mpvFailed, setMpvFailed] = useState(false);
   const [transitionDone, setTransitionDone] = useState(false);
 
   // Reset state when switching episodes
@@ -214,38 +208,10 @@ export function Watch() {
     readyToPlay: transitionDone,
   };
 
-  // TODO: mpv desktop player disabled — needs --wid embedding + transparent WebView2
-  // to render inside the Tauri window. For now, always use the web (HTML5) player.
-  // if (isTauri() && !mpvFailed) {
-  //   return (
-  //     <PlayerTransition onComplete={() => setTransitionDone(true)}>
-  //       <Suspense fallback={<div className="flex h-full w-full items-center justify-center">
-  //         <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-  //       </div>}>
-  //         <DesktopPlayer {...playerProps} onFallbackToWeb={() => setMpvFailed(true)} />
-  //       </Suspense>
-  //     </PlayerTransition>
-  //   );
-  // }
-
   return (
     <PlayerTransition onComplete={() => setTransitionDone(true)}>
-      {mpvFailed && <MpvFallbackBanner />}
       <VideoPlayer {...playerProps} />
     </PlayerTransition>
   );
 }
 
-function MpvFallbackBanner() {
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 5000);
-    return () => clearTimeout(t);
-  }, []);
-  if (!visible) return null;
-  return (
-    <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 animate-fade-in rounded-lg bg-yellow-600/90 px-5 py-2.5 text-sm text-white shadow-lg backdrop-blur">
-      mpv indisponible — lecture via le lecteur web
-    </div>
-  );
-}
