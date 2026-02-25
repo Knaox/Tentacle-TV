@@ -74,7 +74,6 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const prismaDir = resolve(__dirname, "../../prisma");
       const dbUrl = getDatabaseUrl();
       execSync("npx prisma db push --accept-data-loss", {
         cwd: resolve(__dirname, "../.."),
