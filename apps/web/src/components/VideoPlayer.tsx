@@ -40,37 +40,25 @@ interface VideoPlayerProps {
 
 const DBG = "[Tentacle:VideoPlayer]";
 
-/** Safely play video respecting browser autoplay policy */
+/** Safely play video — always tries unmuted first (SPA navigation counts as user interaction) */
 function attemptPlay(
   v: HTMLVideoElement,
-  userInteracted: boolean,
   onPolicyMuted: () => void,
   onPlayFailed: () => void,
 ) {
-  if (userInteracted) {
-    v.muted = false;
-    v.play().then(() => {
-      console.debug(DBG, "play OK (unmuted)");
-    }).catch(() => {
-      console.debug(DBG, "unmuted play rejected, retrying muted");
-      v.muted = true;
-      v.play().then(() => {
-        onPolicyMuted();
-      }).catch((err) => {
-        console.error(DBG, "muted play also failed:", err);
-        onPlayFailed();
-      });
-    });
-  } else {
+  v.muted = false;
+  v.play().then(() => {
+    console.debug(DBG, "play OK (unmuted)");
+  }).catch(() => {
+    console.debug(DBG, "unmuted play rejected, retrying muted");
     v.muted = true;
     v.play().then(() => {
-      console.debug(DBG, "play OK (muted, no user interaction yet)");
       onPolicyMuted();
     }).catch((err) => {
-      console.error(DBG, "muted play failed:", err);
+      console.error(DBG, "muted play also failed:", err);
       onPlayFailed();
     });
-  }
+  });
 }
 
 export function VideoPlayer({
@@ -178,7 +166,6 @@ export function VideoPlayer({
       if (isSourceChange || readyToPlayRef.current) {
         attemptPlay(
           v,
-          userInteractedRef.current,
           () => setPolicyMuted(true),
           () => setShowPlayButton(true),
         );
@@ -204,7 +191,6 @@ export function VideoPlayer({
         console.debug(DBG, "animation done — starting playback");
         attemptPlay(
           v,
-          userInteractedRef.current,
           () => setPolicyMuted(true),
           () => setShowPlayButton(true),
         );
