@@ -60,6 +60,7 @@ export function App() {
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
+  const [backendDown, setBackendDown] = useState(false);
   // Desktop app: need server URL before anything else
   const [needsServerUrl, setNeedsServerUrl] = useState(
     isTauriApp && !localStorage.getItem("tentacle_server_url")
@@ -73,12 +74,17 @@ export function App() {
     let attempts = 0;
     const check = () => {
       fetch(`${base}/api/setup/status`)
-        .then((r) => r.json())
-        .then((data) => setSetupRequired(data.state !== "running"))
+        .then((r) => {
+          if (r.status >= 500) throw new Error(`backend ${r.status}`);
+          return r.json();
+        })
+        .then((data) => { setBackendDown(false); setSetupRequired(data.state !== "running"); })
         .catch(() => {
           attempts++;
-          if (attempts < 3) { setTimeout(check, 1500); return; }
-          setSetupRequired(!isTauriApp);
+          if (attempts < 5) { setTimeout(check, 2000); return; }
+          // After 5 failed attempts: backend is unreachable — don't show setup wizard
+          if (isTauriApp) { setSetupRequired(false); }
+          else { setBackendDown(true); setSetupRequired(false); }
         });
     };
     check();
@@ -90,6 +96,25 @@ export function App() {
   }
 
   if (setupRequired === null) return <PageSpinner />;
+
+  // Backend unreachable (502/503/crash) — show error, not setup wizard
+  if (backendDown) {
+    return (
+      <div className="flex h-screen items-center justify-center p-4">
+        <div className="max-w-md text-center">
+          <div className="mb-4 text-5xl">&#x26A0;</div>
+          <h1 className="mb-2 text-xl font-bold text-white">Serveur indisponible</h1>
+          <p className="mb-6 text-sm text-white/50">
+            Le backend Tentacle ne repond pas. Verifiez que le service est demarre et consultez les logs du serveur.
+          </p>
+          <button onClick={() => window.location.reload()}
+            className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-700">
+            Reessayer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Web deployment: show full setup wizard (DB → Jellyfin → Admin)
   if (setupRequired) {
