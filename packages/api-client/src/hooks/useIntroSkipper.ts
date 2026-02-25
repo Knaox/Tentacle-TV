@@ -61,7 +61,7 @@ export function useIntroSkipper(
   const client = useJellyfinClient();
 
   // Try Jellyfin 10.9+ native MediaSegments API
-  const { data: segmentsData } = useQuery({
+  const { data: segmentsData, isFetched: segmentsFetched } = useQuery({
     queryKey: ["media-segments", itemId],
     queryFn: async () => {
       try {
@@ -91,13 +91,14 @@ export function useIntroSkipper(
         return null;
       }
     },
-    enabled: !!itemId && !hasNativeSegments && item?.Type === "Episode",
+    enabled: !!itemId && segmentsFetched && !hasNativeSegments && item?.Type === "Episode",
     staleTime: Infinity,
     retry: false,
   });
 
   const hasPluginDict = pluginDict &&
     Object.values(pluginDict).some((v) => v && ((v.end ?? v.End ?? 0) > 0));
+  const pluginDictDone = pluginDict !== undefined;
 
   // Fallback 2: intro-skipper plugin — Timestamps endpoint (named-property format)
   const { data: pluginTs } = useQuery({
@@ -111,7 +112,7 @@ export function useIntroSkipper(
         return null;
       }
     },
-    enabled: !!itemId && !hasNativeSegments && !hasPluginDict && item?.Type === "Episode",
+    enabled: !!itemId && segmentsFetched && !hasNativeSegments && pluginDictDone && !hasPluginDict && item?.Type === "Episode",
     staleTime: Infinity,
     retry: false,
   });

@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface PlayerTransitionProps {
   children: ReactNode;
+  /** Called when the entire transition animation has finished */
+  onComplete?: () => void;
 }
 
 /**
  * Cinematic "lights out → curtain open → reveal" animation
  * when entering the video player.
  */
-export function PlayerTransition({ children }: PlayerTransitionProps) {
+export function PlayerTransition({ children, onComplete }: PlayerTransitionProps) {
   const [phase, setPhase] = useState<"curtain" | "done">("curtain");
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export function PlayerTransition({ children }: PlayerTransitionProps) {
     <div className="relative h-screen w-screen bg-black">
       {children}
 
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={onComplete}>
         {phase === "curtain" && (
           <>
             {/* Left curtain panel */}

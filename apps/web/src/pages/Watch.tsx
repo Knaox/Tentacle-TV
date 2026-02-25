@@ -45,6 +45,7 @@ export function Watch() {
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
   const [mpvFailed, setMpvFailed] = useState(false);
+  const [transitionDone, setTransitionDone] = useState(false);
 
   // Reset state when switching episodes
   useEffect(() => {
@@ -209,11 +210,12 @@ export function Watch() {
     nextEpisodeTitle: nextEpTitle,
     onNextEpisode: handleNextEpisode, onPreviousEpisode: handlePreviousEpisode,
     introSegment: skipSegments.intro, creditsSegment: skipSegments.credits,
+    readyToPlay: transitionDone,
   };
 
   if (isTauri() && !mpvFailed) {
     return (
-      <PlayerTransition>
+      <PlayerTransition onComplete={() => setTransitionDone(true)}>
         <Suspense fallback={<div className="flex h-full w-full items-center justify-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
         </div>}>
@@ -224,7 +226,7 @@ export function Watch() {
   }
 
   return (
-    <PlayerTransition>
+    <PlayerTransition onComplete={() => setTransitionDone(true)}>
       {mpvFailed && <MpvFallbackBanner />}
       <VideoPlayer {...playerProps} />
     </PlayerTransition>

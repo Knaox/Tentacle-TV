@@ -34,6 +34,8 @@ interface VideoPlayerProps {
   onPreviousEpisode?: () => void;
   introSegment?: SegmentTimestamps | null;
   creditsSegment?: SegmentTimestamps | null;
+  /** When false, video loads but waits to play until this becomes true (e.g., transition animation) */
+  readyToPlay?: boolean;
 }
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -81,6 +83,7 @@ export function VideoPlayer({
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment,
+  readyToPlay = true,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,6 +106,9 @@ export function VideoPlayer({
   const userInteractedRef = useRef(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const [policyMuted, setPolicyMuted] = useState(false);
+  const pendingPlayRef = useRef(false);
+  const readyToPlayRef = useRef(readyToPlay);
+  readyToPlayRef.current = readyToPlay;
 
   // Real playback time = offset (from transcoded seek) + video element time
   const currentTime = streamOffset + rawTime;
@@ -167,13 +173,18 @@ export function VideoPlayer({
       if (seekTo > 0) v.currentTime = seekTo;
       sourceChangingRef.current = false;
       setLoading(false);
-      // Play using policy-safe helper: unmuted if user has interacted, muted otherwise
-      attemptPlay(
-        v,
-        userInteractedRef.current,
-        () => setPolicyMuted(true),
-        () => setShowPlayButton(true),
-      );
+      // Source changes (seek, audio switch) play immediately.
+      // Initial load waits for the transition animation to finish.
+      if (isSourceChange || readyToPlayRef.current) {
+        attemptPlay(
+          v,
+          userInteractedRef.current,
+          () => setPolicyMuted(true),
+          () => setShowPlayButton(true),
+        );
+      } else {
+        pendingPlayRef.current = true;
+      }
     };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
     // If metadata already loaded (cached source on first load), trigger immediately
@@ -183,6 +194,23 @@ export function VideoPlayer({
     }
     return () => { v.removeEventListener("loadedmetadata", onLoaded); clearTimeout(failsafe); };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When transition animation finishes, start deferred playback
+  useEffect(() => {
+    if (readyToPlay && pendingPlayRef.current) {
+      pendingPlayRef.current = false;
+      const v = videoRef.current;
+      if (v) {
+        console.debug(DBG, "animation done — starting playback");
+        attemptPlay(
+          v,
+          userInteractedRef.current,
+          () => setPolicyMuted(true),
+          () => setShowPlayButton(true),
+        );
+      }
+    }
+  }, [readyToPlay]);
 
   // Subtitle track visibility
   useEffect(() => {
