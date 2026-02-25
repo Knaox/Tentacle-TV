@@ -57,7 +57,7 @@ export function useDesktopPlayer() {
   const [state, setState] = useState<MpvState>(defaultState);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const unlistenRef = useRef<(() => void) | null>(null);
+  const unlistenRefs = useRef<(() => void)[]>([]);
 
   // Initialize mpv on mount
   useEffect(() => {
@@ -78,20 +78,35 @@ export function useDesktopPlayer() {
       }
 
       // Listen for state updates from Rust
-      const unlisten = await listen("mpv:state", (event) => {
+      const unlistenState = await listen("mpv:state", (event) => {
         if (!cancelled) {
           setState(event.payload as MpvState);
         }
       });
-      unlistenRef.current = unlisten;
+      unlistenRefs.current.push(unlistenState);
+
+      // Listen for mpv errors (process died, IPC broke)
+      const unlistenError = await listen("mpv:error", (event) => {
+        if (!cancelled) {
+          console.error("[DesktopPlayer] mpv error:", event.payload);
+          setError(String(event.payload));
+        }
+      });
+      unlistenRefs.current.push(unlistenError);
+
+      // Listen for mpv stderr logs (for debugging)
+      const unlistenLog = await listen("mpv:log", (event) => {
+        console.debug("[mpv]", event.payload);
+      });
+      unlistenRefs.current.push(unlistenLog);
     })();
 
     return () => {
       cancelled = true;
-      if (unlistenRef.current) {
-        unlistenRef.current();
-        unlistenRef.current = null;
+      for (const unlisten of unlistenRefs.current) {
+        unlisten();
       }
+      unlistenRefs.current = [];
       // Stop mpv when unmounting
       if (invoke) {
         invoke("mpv_stop").catch(() => {});

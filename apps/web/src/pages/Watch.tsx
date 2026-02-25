@@ -116,6 +116,7 @@ export function Watch() {
     if (!itemId) return null;
     const url = client.getStreamUrl(itemId, {
       audioIndex,
+      subtitleIndex: subtitleIndex ?? undefined,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
       directPlay: isDirectPlay,
@@ -123,7 +124,7 @@ export function Watch() {
     });
     console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks });
     return url;
-  }, [client, itemId, audioIndex, mediaSourceId, quality, isDirectPlay, startTicks]);
+  }, [client, itemId, audioIndex, subtitleIndex, mediaSourceId, quality, isDirectPlay, startTicks]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
@@ -213,17 +214,19 @@ export function Watch() {
     readyToPlay: transitionDone,
   };
 
-  if (isTauri() && !mpvFailed) {
-    return (
-      <PlayerTransition onComplete={() => setTransitionDone(true)}>
-        <Suspense fallback={<div className="flex h-full w-full items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-        </div>}>
-          <DesktopPlayer {...playerProps} onFallbackToWeb={() => setMpvFailed(true)} />
-        </Suspense>
-      </PlayerTransition>
-    );
-  }
+  // TODO: mpv desktop player disabled — needs --wid embedding + transparent WebView2
+  // to render inside the Tauri window. For now, always use the web (HTML5) player.
+  // if (isTauri() && !mpvFailed) {
+  //   return (
+  //     <PlayerTransition onComplete={() => setTransitionDone(true)}>
+  //       <Suspense fallback={<div className="flex h-full w-full items-center justify-center">
+  //         <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+  //       </div>}>
+  //         <DesktopPlayer {...playerProps} onFallbackToWeb={() => setMpvFailed(true)} />
+  //       </Suspense>
+  //     </PlayerTransition>
+  //   );
+  // }
 
   return (
     <PlayerTransition onComplete={() => setTransitionDone(true)}>

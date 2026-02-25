@@ -127,9 +127,7 @@ export class JellyfinClient {
       return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
     }
 
-    // Transcode or remux via progressive MP4
-    params.set("Static", "false");
-    params.set("Container", "mp4");
+    // Transcode / remux via HLS — enables proper seeking with StartTimeTicks
     params.set("VideoCodec", "h264,hevc");
     params.set("AudioCodec", "aac,mp3,ac3");
     if (options?.maxBitrate) {
@@ -138,7 +136,7 @@ export class JellyfinClient {
       // Remux: very high cap to preserve original quality
       params.set("MaxStreamingBitrate", "150000000");
     }
-    return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${params}`;
+    return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number): string {

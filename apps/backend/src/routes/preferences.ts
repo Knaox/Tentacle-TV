@@ -12,21 +12,47 @@ const upsertSchema = z.object({
   subtitleMode: z.enum(["none", "always", "forced", "signs"]).default("none"),
 });
 
-// ISO 639-2 bibliographic ↔ terminological aliases
-const ISO_ALIASES: Record<string, string[]> = {
-  fre: ["fra"], fra: ["fre"],
-  ger: ["deu"], deu: ["ger"],
-  chi: ["zho"], zho: ["chi"],
-  cze: ["ces"], ces: ["cze"],
-  dut: ["nld"], nld: ["dut"],
-};
+// Language alias groups — ISO 639-1 (2-letter), ISO 639-2/B and /T (3-letter), display names.
+// Jellyfin uses inconsistent language codes; this ensures robust matching.
+const LANG_GROUPS: string[][] = [
+  ["fr", "fre", "fra", "french", "français", "francais"],
+  ["en", "eng", "english"],
+  ["ja", "jp", "jpn", "jap", "japanese", "japonais"],
+  ["de", "ger", "deu", "german", "allemand"],
+  ["es", "spa", "spanish", "espagnol"],
+  ["it", "ita", "italian", "italien"],
+  ["pt", "por", "portuguese", "portugais"],
+  ["ru", "rus", "russian", "russe"],
+  ["ko", "kor", "korean", "coréen"],
+  ["zh", "chi", "zho", "chinese", "chinois"],
+  ["ar", "ara", "arabic", "arabe"],
+  ["pl", "pol", "polish", "polonais"],
+  ["nl", "dut", "nld", "dutch", "néerlandais"],
+  ["cs", "cze", "ces", "czech", "tchèque"],
+  ["hi", "hin", "hindi"],
+  ["th", "tha", "thai"],
+  ["sv", "swe", "swedish", "suédois"],
+  ["no", "nor", "nob", "nno", "norwegian", "norvégien"],
+  ["fi", "fin", "finnish", "finnois"],
+  ["tr", "tur", "turkish", "turc"],
+  ["hu", "hun", "hungarian", "hongrois"],
+  ["ro", "ron", "rum", "romanian", "roumain"],
+  ["el", "gre", "ell", "greek", "grec"],
+];
+
+const ALIAS_MAP = new Map<string, Set<string>>();
+for (const group of LANG_GROUPS) {
+  const s = new Set(group);
+  for (const code of group) ALIAS_MAP.set(code, s);
+}
 
 function langMatches(trackLang: string | undefined, prefLang: string): boolean {
   if (!trackLang) return false;
   const tl = trackLang.toLowerCase();
   const pl = prefLang.toLowerCase();
   if (tl === pl) return true;
-  return ISO_ALIASES[pl]?.includes(tl) ?? false;
+  const group = ALIAS_MAP.get(pl);
+  return group?.has(tl) ?? false;
 }
 
 export const preferenceRoutes: FastifyPluginAsync = async (app) => {
