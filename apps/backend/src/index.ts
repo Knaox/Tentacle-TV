@@ -38,6 +38,18 @@ async function main() {
   await app.register(cors, { origin: CORS_ORIGIN });
   await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
 
+  // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)
+  app.removeContentTypeParser("application/json");
+  app.addContentTypeParser(
+    "application/json",
+    { parseAs: "string" },
+    (_req, body, done) => {
+      const str = typeof body === "string" ? body : "";
+      if (!str.trim()) { done(null, undefined); return; }
+      try { done(null, JSON.parse(str)); } catch (err) { done(err as Error, undefined); }
+    }
+  );
+
   // Content type parser for raw binary (proxied bodies)
   app.addContentTypeParser(
     "application/octet-stream",

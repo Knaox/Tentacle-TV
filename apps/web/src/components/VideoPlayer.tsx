@@ -171,13 +171,29 @@ export function VideoPlayer({
     };
 
     if (isHlsUrl && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true });
+      const hls = new Hls({ enableWorker: true, startPosition: seekTo > 0 ? seekTo : -1 });
       hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(v);
       hls.on(Hls.Events.MANIFEST_PARSED, onReady);
       hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) console.error(DBG, "HLS fatal error:", data.type, data.details);
+        if (data.fatal) {
+          console.error(DBG, "HLS fatal error:", data.type, data.details);
+          // Attempt recovery based on error type
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            console.debug(DBG, "attempting HLS network recovery");
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            console.debug(DBG, "attempting HLS media recovery");
+            hls.recoverMediaError();
+          } else {
+            // Unrecoverable — stop loading spinner
+            clearTimeout(failsafe);
+            sourceChangingRef.current = false;
+            setLoading(false);
+            setShowPlayButton(true);
+          }
+        }
       });
     } else {
       // Direct play or native HLS (Safari)
@@ -326,7 +342,7 @@ export function VideoPlayer({
         ))}
       </video>
 
-      {loading && playing && (
+      {loading && (playing || sourceChangingRef.current) && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
         </div>
