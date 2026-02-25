@@ -146,6 +146,11 @@ export function Watch() {
     });
   }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Map quality bitrate to max video height for Jellyfin resolution scaling
+  const qualityMaxHeight = quality != null
+    ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined)
+    : undefined;
+
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
     const url = client.getStreamUrl(itemId, {
@@ -153,13 +158,14 @@ export function Watch() {
       subtitleIndex: subtitleIndex ?? -1,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
+      maxHeight: qualityMaxHeight,
       directPlay: isDirectPlay,
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
       playSessionId,
     });
-    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, playSessionId });
+    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight });
     return url;
-  }, [client, itemId, audioIndex, subtitleIndex, mediaSourceId, quality, isDirectPlay, startTicks, playSessionId]);
+  }, [client, itemId, audioIndex, subtitleIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
