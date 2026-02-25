@@ -3,7 +3,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { ServerSetup } from "./pages/ServerSetup";
+import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle/api-client";
+import { isTauriApp } from "./main";
 
 /* -- Lazy-loaded pages (code-split) -- */
 const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
@@ -57,18 +59,30 @@ export function App() {
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
+  // Desktop app: need server URL before anything else
+  const [needsServerUrl, setNeedsServerUrl] = useState(
+    isTauriApp && !localStorage.getItem("tentacle_server_url")
+  );
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
 
-  // Check backend setup status on mount
+  // Check backend setup status on mount (web deployment only)
   useEffect(() => {
-    fetch("/api/setup/status")
+    if (needsServerUrl) { setSetupRequired(false); return; }
+    const base = isTauriApp ? (localStorage.getItem("tentacle_server_url") || "") : "";
+    fetch(`${base}/api/setup/status`)
       .then((r) => r.json())
       .then((data) => setSetupRequired(data.state !== "running"))
-      .catch(() => setSetupRequired(true));
-  }, []);
+      .catch(() => setSetupRequired(!isTauriApp));
+  }, [needsServerUrl]);
+
+  // Desktop app: show simple server URL input
+  if (needsServerUrl) {
+    return <AppConnect onConnected={() => { setNeedsServerUrl(false); window.location.reload(); }} />;
+  }
 
   if (setupRequired === null) return <PageSpinner />;
 
+  // Web deployment: show full setup wizard (DB → Jellyfin → Admin)
   if (setupRequired) {
     return (
       <ServerSetup

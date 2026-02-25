@@ -18,27 +18,34 @@ import {
 import { App } from "./App";
 import "./index.css";
 
-// Unified architecture: everything goes through the same origin.
-// Dev: Vite proxies /api/* to backend (localhost:3001)
-// Prod: Fastify serves both frontend and API on the same port
-const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// Detect Tauri (desktop app) vs web deployment
+export const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const deviceName = isTauriApp ? "Desktop" : "Web";
 
-// All backend services share the same server URL
-setSeerrBackendUrl(backendUrl);
-setRequestsBackendUrl(backendUrl);
-setPreferencesBackendUrl(backendUrl);
-setTicketsBackendUrl(backendUrl);
-setNotificationsBackendUrl(backendUrl);
-setConfigBackendUrl(backendUrl);
+// Web: same-origin (or VITE_BACKEND_URL for dev).
+// Desktop: saved Tentacle server URL from localStorage.
+const backendUrl = isTauriApp
+  ? (localStorage.getItem("tentacle_server_url") || "")
+  : (import.meta.env.VITE_BACKEND_URL || "");
+
+/** Reconfigure all backend service URLs for a given base URL */
+export function configureBackendUrls(url: string) {
+  setSeerrBackendUrl(url);
+  setRequestsBackendUrl(url);
+  setPreferencesBackendUrl(url);
+  setTicketsBackendUrl(url);
+  setNotificationsBackendUrl(url);
+  setConfigBackendUrl(url);
+}
+
+configureBackendUrls(backendUrl);
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
 
-// JellyfinClient now routes through the Tentacle proxy at /api/jellyfin/*
+// JellyfinClient routes through the Tentacle proxy at /api/jellyfin/*
 const jellyfinClient = new JellyfinClient(
-  `${backendUrl}/api/jellyfin`,
+  backendUrl ? `${backendUrl}/api/jellyfin` : "/api/jellyfin",
   storage,
   uuid,
   deviceName
