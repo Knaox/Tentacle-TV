@@ -18,15 +18,30 @@ export function AppConnect({ onConnected }: AppConnectProps) {
     setError("");
     setTesting(true);
     try {
-      const normalized = url.replace(/\/+$/, "");
-      const res = await fetch(`${normalized}/api/health`);
+      let normalized = url.trim().replace(/\/+$/, "");
+      // Add protocol if missing (prefer https)
+      if (normalized && !/^https?:\/\//i.test(normalized)) {
+        normalized = "https://" + normalized;
+      }
+      // Strip redundant default ports
+      normalized = normalized.replace(/^(https:\/\/[^/:]+):443\b/, "$1");
+      normalized = normalized.replace(/^(http:\/\/[^/:]+):80\b/, "$1");
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10_000);
+      const res = await fetch(`${normalized}/api/health`, { signal: controller.signal });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error("Serveur introuvable");
       const data = await res.json();
       if (data.status !== "ok") throw new Error("Reponse invalide du serveur");
       localStorage.setItem("tentacle_server_url", normalized);
       onConnected();
-    } catch {
-      setError("Serveur introuvable. Verifiez l'URL et reessayez.");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Delai de connexion depasse. Le serveur ne repond pas.");
+      } else {
+        setError("Serveur introuvable. Verifiez l'URL et reessayez.");
+      }
     } finally {
       setTesting(false);
     }

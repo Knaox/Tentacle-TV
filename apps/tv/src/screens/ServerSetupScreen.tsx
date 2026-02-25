@@ -14,11 +14,14 @@ export function ServerSetupScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const normalizeUrl = (url: string): string => {
-    let normalized = url.trim().replace(/\/+$/, "");
-    if (normalized && !normalized.startsWith("http://") && !normalized.startsWith("https://")) {
-      normalized = "http://" + normalized;
+  const normalizeUrl = (raw: string): string => {
+    let normalized = raw.trim().replace(/\/+$/, "");
+    if (normalized && !/^https?:\/\//i.test(normalized)) {
+      normalized = "https://" + normalized;
     }
+    // Strip redundant default ports
+    normalized = normalized.replace(/^(https:\/\/[^/:]+):443\b/, "$1");
+    normalized = normalized.replace(/^(http:\/\/[^/:]+):80\b/, "$1");
     return normalized;
   };
 
@@ -31,20 +34,25 @@ export function ServerSetupScreen({ navigation }: Props) {
     setSuccess(false);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10_000);
       const response = await fetch(`${url}/api/health`, {
         method: "GET",
         headers: { "Accept": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!response.ok) {
         throw new Error(`Erreur HTTP ${response.status}`);
       }
 
-      // Health check passed — save the URL and show choice
       storage.setItem("tentacle_server_url", url);
       setSuccess(true);
     } catch (err) {
-      if (err instanceof TypeError && err.message.includes("Network")) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Delai de connexion depasse. Le serveur ne repond pas.");
+      } else if (err instanceof TypeError && err.message.includes("Network")) {
         setError("Impossible de joindre le serveur. Verifiez l'adresse et votre connexion reseau.");
       } else if (err instanceof Error) {
         setError(err.message);

@@ -39,6 +39,7 @@ export function Watch() {
   const [startTicks, setStartTicks] = useState<number>(0);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
+  const audioOverrideRef = useRef(false);
   const [transitionDone, setTransitionDone] = useState(false);
 
   // Reset state when switching episodes
@@ -49,11 +50,13 @@ export function Watch() {
     setSubtitleIndex(null);
     positionRef.current = 0;
     prefsApplied.current = false;
+    audioOverrideRef.current = false;
   }, [itemId]);
 
   // Sync audioIndex when streams change (new episode loaded)
+  // Skip if user explicitly changed audio to prevent refetch from resetting their choice
   useEffect(() => {
-    if (streams.length > 0) {
+    if (streams.length > 0 && !audioOverrideRef.current) {
       const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
         ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
       setAudioIndex(defAudio);
@@ -152,6 +155,7 @@ export function Watch() {
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
+    audioOverrideRef.current = true;
     setAudioIndex(idx);
   }, [reportStop]);
 
