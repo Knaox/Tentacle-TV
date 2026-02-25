@@ -68,6 +68,15 @@ cp -r apps/web/dist/* "$WEB_DIR"/
 chown -R www-data:www-data "$WEB_DIR"
 echo "  Frontend déployé dans $WEB_DIR"
 
+# Nginx : config avec cache-control (index.html jamais caché, assets immutables)
+NGINX_CONF="/etc/nginx/sites-available/tentacle"
+if [ -f "$SOURCE_DIR/deploy/nginx-tentacle.conf" ]; then
+    cp "$SOURCE_DIR/deploy/nginx-tentacle.conf" "$NGINX_CONF"
+    ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/tentacle
+    nginx -t 2>/dev/null && systemctl reload nginx && echo "  Nginx rechargé (cache-control actif)" \
+        || echo "  ATTENTION: config Nginx invalide, vérifier $NGINX_CONF"
+fi
+
 # Permissions monorepo (le backend tourne depuis ici)
 chown -R www-data:www-data "$SOURCE_DIR"
 
