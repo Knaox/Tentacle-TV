@@ -75,9 +75,12 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Jellyfin duration — accurate, not from player
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
-  const { reportStart, reportStop, updatePosition } = usePlaybackReporting(
-    itemId, mediaSourceId, isDirectPlay
-  );
+  const { reportStart, reportStop, updatePosition } = usePlaybackReporting({
+    itemId, mediaSourceId, isDirectPlay,
+    playSessionId: undefined,
+    audioStreamIndex: audioIndex,
+    subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
+  });
 
   // Resolve preferred audio/subtitle tracks
   const resolveTracks = useResolveMediaTracks();

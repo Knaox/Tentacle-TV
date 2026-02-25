@@ -23,7 +23,6 @@ async function sessionPost(
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(DBG, `${label} FAILED via client.fetch:`, msg);
-    // Fallback: try raw fetch (bypasses JellyfinClient wrapper to rule out client-side issues)
     try {
       const baseUrl = client.getBaseUrl();
       const token = client.getToken();
@@ -41,25 +40,42 @@ async function sessionPost(
   }
 }
 
-export function usePlaybackReporting(
-  itemId: string | undefined,
-  mediaSourceId: string | undefined,
-  isDirectPlay = true
-) {
+export interface PlaybackReportingOptions {
+  itemId: string | undefined;
+  mediaSourceId: string | undefined;
+  isDirectPlay: boolean;
+  playSessionId: string | undefined;
+  audioStreamIndex: number;
+  subtitleStreamIndex: number | null;
+}
+
+export function usePlaybackReporting({
+  itemId, mediaSourceId, isDirectPlay,
+  playSessionId, audioStreamIndex, subtitleStreamIndex,
+}: PlaybackReportingOptions) {
   const client = useJellyfinClient();
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
   const startedRef = useRef(false);
   const playMethod = isDirectPlay ? "DirectPlay" : "Transcode";
 
-  // Keep refs for unmount cleanup (avoids premature Stop events on dep changes)
+  // Refs for unmount cleanup (avoids premature Stop events on dep changes)
   const clientRef = useRef(client);
   const itemIdRef = useRef(itemId);
   const msIdRef = useRef(mediaSourceId);
+  const playSessionIdRef = useRef(playSessionId);
+  const audioIdxRef = useRef(audioStreamIndex);
+  const subIdxRef = useRef(subtitleStreamIndex);
   const prevItemIdRef = useRef(itemId);
+  const playMethodRef = useRef(playMethod);
+
   clientRef.current = client;
   itemIdRef.current = itemId;
   msIdRef.current = mediaSourceId;
+  playSessionIdRef.current = playSessionId;
+  audioIdxRef.current = audioStreamIndex;
+  subIdxRef.current = subtitleStreamIndex;
+  playMethodRef.current = playMethod;
 
   // When itemId changes (episode switch), stop the old session and reset state
   useEffect(() => {
@@ -71,6 +87,7 @@ export function usePlaybackReporting(
         ItemId: prevId,
         MediaSourceId: prevId,
         PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        PlaySessionId: playSessionIdRef.current ?? undefined,
       }, "stopOldEpisode");
       startedRef.current = false;
       positionRef.current = 0;
@@ -78,35 +95,40 @@ export function usePlaybackReporting(
   }, [itemId]);
 
   const reportStart = useCallback(() => {
-    if (!itemId || startedRef.current) return;
-    console.debug(DBG, "reportStart", { itemId, mediaSourceId, playMethod, hasToken: !!client.getToken() });
+    if (!itemId) return;
+    // Allow re-reporting start (e.g. after audio/quality change rebuilds the stream)
+    console.debug(DBG, "reportStart", { itemId, mediaSourceId, playMethod, playSessionId });
     startedRef.current = true;
     sessionPost(client, "/Sessions/Playing", {
       ItemId: itemId,
       MediaSourceId: mediaSourceId ?? itemId,
+      PlaySessionId: playSessionId ?? undefined,
       CanSeek: true,
       PlayMethod: playMethod,
+      AudioStreamIndex: audioStreamIndex,
+      SubtitleStreamIndex: subtitleStreamIndex ?? -1,
+      PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      IsPaused: false,
     }, "reportStart");
-  }, [client, itemId, mediaSourceId, playMethod]);
+  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex]);
 
   const reportProgress = useCallback(() => {
     if (!itemId || !startedRef.current) return;
     const pos = positionRef.current;
     const paused = pausedRef.current;
     console.debug(DBG, "progress", { itemId: itemId.substring(0, 8), position: Math.floor(pos), paused });
-    client.fetch("/Sessions/Playing/Progress", {
-      method: "POST",
-      body: JSON.stringify({
-        ItemId: itemId,
-        MediaSourceId: mediaSourceId ?? itemId,
-        PositionTicks: Math.floor(pos * TICKS_PER_SEC),
-        IsPaused: paused,
-        PlayMethod: playMethod,
-      }),
-    }).catch((err: unknown) => {
-      console.error(DBG, "progress FAILED:", err instanceof Error ? err.message : String(err));
-    });
-  }, [client, itemId, mediaSourceId, playMethod]);
+    sessionPost(client, "/Sessions/Playing/Progress", {
+      ItemId: itemId,
+      MediaSourceId: mediaSourceId ?? itemId,
+      PlaySessionId: playSessionId ?? undefined,
+      PositionTicks: Math.floor(pos * TICKS_PER_SEC),
+      IsPaused: paused,
+      CanSeek: true,
+      PlayMethod: playMethod,
+      AudioStreamIndex: audioStreamIndex,
+      SubtitleStreamIndex: subtitleStreamIndex ?? -1,
+    }, "progress");
+  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex]);
 
   const updatePosition = useCallback((seconds: number, isPaused: boolean) => {
     positionRef.current = seconds;
@@ -130,6 +152,7 @@ export function usePlaybackReporting(
       sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
         ItemId: id,
         MediaSourceId: msIdRef.current ?? id,
+        PlaySessionId: playSessionIdRef.current ?? undefined,
         PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
       }, "stopOnUnmount");
     };
@@ -143,6 +166,7 @@ export function usePlaybackReporting(
     sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
       ItemId: id,
       MediaSourceId: msIdRef.current ?? id,
+      PlaySessionId: playSessionIdRef.current ?? undefined,
       PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
     }, "reportStop");
   }, []);

@@ -72,9 +72,12 @@ export function PlayerScreen({ itemId }: Props) {
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const isDirectPlay = audioIndex === defaultAudio;
-  const { reportStart, reportStop, updatePosition } = usePlaybackReporting(
-    itemId, mediaSourceId, isDirectPlay
-  );
+  const { reportStart, reportStop, updatePosition } = usePlaybackReporting({
+    itemId, mediaSourceId, isDirectPlay,
+    playSessionId: undefined,
+    audioStreamIndex: audioIndex,
+    subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
+  });
 
   // Resolve preferred audio/subtitle tracks
   const resolveTracks = useResolveMediaTracks();
