@@ -1,15 +1,15 @@
 import type { FastifyPluginAsync } from "fastify";
+import { getSeerrUrl, getSeerrApiKey } from "../services/configStore";
 
-const SEERR_URL = process.env.SEERR_URL || "";
-const SEERR_API_KEY = process.env.SEERR_API_KEY || "";
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
-/** Check if Seerr/Overseerr is reachable. */
 async function isSeerrAvailable(): Promise<boolean> {
-  if (!SEERR_URL || !SEERR_API_KEY) return false;
+  const url = getSeerrUrl();
+  const key = getSeerrApiKey();
+  if (!url || !key) return false;
   try {
-    const res = await fetch(`${SEERR_URL}/api/v1/status`, {
-      headers: { "X-Api-Key": SEERR_API_KEY },
+    const res = await fetch(`${url}/api/v1/status`, {
+      headers: { "X-Api-Key": key },
       signal: AbortSignal.timeout(3000),
     });
     return res.ok;
@@ -18,7 +18,6 @@ async function isSeerrAvailable(): Promise<boolean> {
   }
 }
 
-// Cache Seerr status for 60 seconds
 let seerrCache: { available: boolean; ts: number } = { available: false, ts: 0 };
 
 async function getSeerrStatus(): Promise<boolean> {
@@ -33,13 +32,13 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     const seerrEnabled = await getSeerrStatus();
 
     return {
-      version: process.env.npm_package_version || "0.3.0",
+      version: process.env.npm_package_version || "0.5.0",
       brandName: "Tentacle",
       features: {
         seerr: seerrEnabled,
         requests: seerrEnabled,
         discover: seerrEnabled,
-        downloads: false, // future feature
+        downloads: false,
         demo: DEMO_MODE,
       },
     };

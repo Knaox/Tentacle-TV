@@ -3,8 +3,6 @@ import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert,
 import { useRouter } from "expo-router";
 import { useAuth, useTentacleConfig } from "@tentacle/api-client";
 
-const BACKEND_URL = "https://tentacle.rouge-informatique.ch";
-
 interface InviteKey {
   id: number;
   key: string;
@@ -69,21 +67,25 @@ export function ProfileScreen() {
 }
 
 function AdminSection() {
+  const { storage } = useTentacleConfig();
+  const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const [invites, setInvites] = useState<InviteKey[]>([]);
   const [maxUses, setMaxUses] = useState("1");
   const [expiresHours, setExpiresHours] = useState("72");
   const [creating, setCreating] = useState(false);
 
   const fetchInvites = useCallback(async () => {
-    const res = await fetch(`${BACKEND_URL}/api/invites`);
+    if (!serverUrl) return;
+    const res = await fetch(`${serverUrl}/api/invites`);
     if (res.ok) setInvites(await res.json());
-  }, []);
+  }, [serverUrl]);
 
   useEffect(() => { fetchInvites(); }, [fetchInvites]);
 
   const createInvite = async () => {
+    if (!serverUrl) return;
     setCreating(true);
-    const res = await fetch(`${BACKEND_URL}/api/invites`, {
+    const res = await fetch(`${serverUrl}/api/invites`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ maxUses: Number(maxUses), expiresInHours: Number(expiresHours) }),
@@ -93,7 +95,7 @@ function AdminSection() {
   };
 
   const shareInvite = (key: string) => {
-    const url = `https://tentacle.rouge-informatique.ch/register?invite=${key}`;
+    const url = `${serverUrl}/register?invite=${key}`;
     Share.share({ message: `Rejoins Tentacle: ${url}` });
   };
 

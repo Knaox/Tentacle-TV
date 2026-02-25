@@ -1,6 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-
-const JELLYFIN_URL = (process.env.JELLYFIN_URL || "http://localhost:8096").replace(/\/$/, "");
+import { getJellyfinUrl } from "../services/configStore";
 
 export interface JellyfinUser {
   userId: string;
@@ -21,7 +20,6 @@ function getCachedUser(token: string): JellyfinUser | null {
 
 function cacheUser(token: string, user: JellyfinUser): void {
   tokenCache.set(token, { user, expiresAt: Date.now() + CACHE_TTL });
-  // Evict old entries if cache gets too large
   if (tokenCache.size > 500) {
     const now = Date.now();
     for (const [k, v] of tokenCache) { if (now > v.expiresAt) tokenCache.delete(k); }
@@ -32,8 +30,11 @@ async function validateJellyfinToken(token: string): Promise<JellyfinUser | null
   const cached = getCachedUser(token);
   if (cached) return cached;
 
+  const jellyfinUrl = getJellyfinUrl();
+  if (!jellyfinUrl) return null;
+
   try {
-    const res = await fetch(`${JELLYFIN_URL}/Users/Me`, {
+    const res = await fetch(`${jellyfinUrl}/Users/Me`, {
       headers: { "X-Emby-Token": token },
     });
     if (!res.ok) return null;

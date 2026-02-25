@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.env
+.env.local
+*.md
+apps/desktop
+apps/mobile
+apps/tv
+.turbo
+.expo
+.next
+*.tsbuildinfo
+apps/desktop/src-tauri/target

@@ -1,5 +1,4 @@
-const JELLYFIN_URL = process.env.JELLYFIN_URL || "http://localhost:8096";
-const JELLYFIN_ADMIN_API_KEY = process.env.JELLYFIN_ADMIN_API_KEY;
+import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 
 interface JellyfinUserResponse {
   Id: string;
@@ -10,45 +9,43 @@ export async function createJellyfinUser(
   username: string,
   password: string
 ): Promise<JellyfinUserResponse> {
-  if (!JELLYFIN_ADMIN_API_KEY) {
-    throw new Error("JELLYFIN_ADMIN_API_KEY is not configured");
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+
+  if (!jellyfinUrl || !apiKey) {
+    throw new Error("Jellyfin n'est pas configuré");
   }
 
-  // Create the user
-  const createRes = await fetch(`${JELLYFIN_URL}/Users/New`, {
+  const createRes = await fetch(`${jellyfinUrl}/Users/New`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Emby-Token": JELLYFIN_ADMIN_API_KEY,
+      "X-Emby-Token": apiKey,
     },
     body: JSON.stringify({ Name: username }),
   });
 
   if (!createRes.ok) {
     const errorText = await createRes.text();
-    throw new Error(`Failed to create user: ${errorText}`);
+    throw new Error(`Échec de création: ${errorText}`);
   }
 
   const user: JellyfinUserResponse = await createRes.json();
 
-  // Set the user's password
   const passwordRes = await fetch(
-    `${JELLYFIN_URL}/Users/${user.Id}/Password`,
+    `${jellyfinUrl}/Users/${user.Id}/Password`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Emby-Token": JELLYFIN_ADMIN_API_KEY,
+        "X-Emby-Token": apiKey,
       },
-      body: JSON.stringify({
-        NewPw: password,
-        ResetPassword: false,
-      }),
+      body: JSON.stringify({ NewPw: password, ResetPassword: false }),
     }
   );
 
   if (!passwordRes.ok) {
-    throw new Error("User created but failed to set password");
+    throw new Error("Utilisateur créé mais impossible de définir le mot de passe");
   }
 
   return user;

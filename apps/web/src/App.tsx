@@ -1,11 +1,11 @@
-import { useSyncExternalStore, useCallback, lazy, Suspense } from "react";
+import { useSyncExternalStore, useCallback, useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { ServerSetup } from "./pages/ServerSetup";
-import { useServerConfig } from "./hooks/useServerConfig";
+import { useJellyfinClient, useTentacleConfig } from "@tentacle/api-client";
 
-/* ── Lazy-loaded pages (code-split) ── */
+/* -- Lazy-loaded pages (code-split) -- */
 const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
 const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
 const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m.Register })));
@@ -29,7 +29,7 @@ function PageSpinner() {
   );
 }
 
-/* ── Reactive auth state ── */
+/* -- Reactive auth state -- */
 const authListeners = new Set<() => void>();
 function notifyAuthChange() { authListeners.forEach((cb) => cb()); }
 
@@ -54,12 +54,32 @@ function useIsAuthenticated(): boolean {
 
 export function App() {
   const authed = useIsAuthenticated();
-  const { configured, save } = useServerConfig();
+  const client = useJellyfinClient();
+  const { storage } = useTentacleConfig();
+  const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
 
-  // Show server setup if no Jellyfin URL is configured (no env var + no saved URL)
-  if (!configured) {
-    return <ServerSetup onComplete={(jUrl, bUrl) => { save(jUrl, bUrl); window.location.reload(); }} />;
+  // Check backend setup status on mount
+  useEffect(() => {
+    fetch("/api/setup/status")
+      .then((r) => r.json())
+      .then((data) => setSetupRequired(data.state !== "running"))
+      .catch(() => setSetupRequired(true));
+  }, []);
+
+  if (setupRequired === null) return <PageSpinner />;
+
+  if (setupRequired) {
+    return (
+      <ServerSetup
+        onComplete={(token, user) => {
+          client.setAccessToken(token);
+          storage.setItem("tentacle_token", token);
+          storage.setItem("tentacle_user", JSON.stringify(user));
+          setSetupRequired(false);
+        }}
+      />
+    );
   }
 
   return (
@@ -88,7 +108,6 @@ export function App() {
             <Route path="credits" element={<Credits />} />
           </Route>
 
-          {/* Legacy redirects + fallback */}
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

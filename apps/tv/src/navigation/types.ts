@@ -1,4 +1,5 @@
 export type RootStackParamList = {
+  ServerSetup: undefined;
   Login: undefined;
   Home: undefined;
   MediaDetail: { itemId: string };

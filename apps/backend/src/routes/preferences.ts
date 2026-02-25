@@ -1,9 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
+import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-
-const prisma = new PrismaClient();
 
 const upsertSchema = z.object({
   libraryId: z.string().min(1),
@@ -82,6 +80,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/preferences — List all user preferences
   app.get("/", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
 
     const prefs = await prisma.libraryPreference.findMany({
@@ -93,6 +92,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/preferences/:libraryId — Get preference for a specific library
   app.get("/:libraryId", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { libraryId } = request.params as { libraryId: string };
 
@@ -114,6 +114,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // PUT /api/preferences — Upsert a library preference
   app.put("/", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const body = upsertSchema.parse(request.body);
 
@@ -143,6 +144,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // DELETE /api/preferences/:libraryId — Delete a library preference
   app.delete("/:libraryId", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { libraryId } = request.params as { libraryId: string };
 
@@ -163,6 +165,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/preferences/resolve — Resolve best tracks for a media item
   app.post("/resolve", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const body = request.body as {
       libraryId: string;

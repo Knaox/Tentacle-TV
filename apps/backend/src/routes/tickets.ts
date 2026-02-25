@@ -1,9 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
+import { getPrisma } from "../services/db";
 import { requireAuth, requireAdmin, type JellyfinUser } from "../middleware/auth";
-
-const prisma = new PrismaClient();
 
 const createTicketSchema = z.object({
   subject: z.string().min(1).max(300),
@@ -26,6 +24,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/tickets — Create ticket with initial message
   app.post("/", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const body = createTicketSchema.parse(request.body);
 
@@ -54,6 +53,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/tickets — User's own tickets
   app.get("/", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
@@ -78,6 +78,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/tickets/all — Admin: all tickets
   app.get("/all", { preHandler: [requireAdmin] }, async (request) => {
+    const prisma = getPrisma();
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
@@ -101,6 +102,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/tickets/:id — Get ticket detail + messages
   app.get("/:id", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
 
@@ -123,6 +125,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/tickets/:id/reply — Add a message
   app.post("/:id/reply", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
     const body = replySchema.parse(request.body);
@@ -175,6 +178,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
 
   // PATCH /api/tickets/:id/status — Admin: update ticket status
   app.patch("/:id/status", { preHandler: [requireAdmin] }, async (request, reply) => {
+    const prisma = getPrisma();
     const { id } = request.params as { id: string };
     const body = statusSchema.parse(request.body);
 

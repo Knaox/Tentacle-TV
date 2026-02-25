@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,9 +15,6 @@ import {
 } from "@tentacle/api-client";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 
-const JELLYFIN_URL = "https://jelly.rouge-informatique.ch";
-const BACKEND_URL = "https://tentacle.rouge-informatique.ch";
-
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
 
@@ -27,19 +24,54 @@ const queryClient = new QueryClient({
   },
 });
 
+/* ── Server URL context ── */
+interface ServerUrlContextValue {
+  serverUrl: string | null;
+  setServerUrl: (url: string) => void;
+}
+
+const ServerUrlContext = createContext<ServerUrlContextValue>({
+  serverUrl: null,
+  setServerUrl: () => {},
+});
+
+export function useServerUrl() {
+  return useContext(ServerUrlContext);
+}
+
+/* ── Configure all backend URLs from a Tentacle server URL ── */
+function configureBackendUrls(tentacleUrl: string) {
+  setSeerrBackendUrl(tentacleUrl);
+  setPreferencesBackendUrl(tentacleUrl);
+  setRequestsBackendUrl(tentacleUrl);
+  setTicketsBackendUrl(tentacleUrl);
+  setNotificationsBackendUrl(tentacleUrl);
+  setConfigBackendUrl(tentacleUrl);
+}
+
+/* ── Auth & server guard ── */
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
+  const { serverUrl } = useServerUrl();
   const token = storage.getItem("tentacle_token");
 
   useEffect(() => {
     const inAuth = segments[0] === "(auth)";
-    if (!token && !inAuth) {
+
+    if (!serverUrl) {
+      // No server URL configured → send to server setup
+      if (!(inAuth && segments[1] === "server-setup")) {
+        router.replace("/(auth)/server-setup");
+      }
+    } else if (!token && !inAuth) {
+      // Server configured but not logged in → send to login
       router.replace("/(auth)/login");
     } else if (token && inAuth) {
+      // Logged in but still in auth flow → go to main app
       router.replace("/(tabs)");
     }
-  }, [token, segments]);
+  }, [token, segments, serverUrl]);
 
   return <>{children}</>;
 }
@@ -47,20 +79,59 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
+  const [serverUrl, setServerUrlState] = useState<string | null>(null);
+
+  // Callback to save the server URL and initialize the client
+  const setServerUrl = useCallback((url: string) => {
+    const trimmed = url.replace(/\/+$/, "");
+    storage.setItem("tentacle_server_url", trimmed);
+    setServerUrlState(trimmed);
+
+    // Configure all backend service URLs
+    configureBackendUrls(trimmed);
+
+    // Create / update JellyfinClient with baseUrl = {tentacleUrl}/api/jellyfin
+    const jfClient = new JellyfinClient(
+      `${trimmed}/api/jellyfin`,
+      storage,
+      uuid,
+      "Mobile",
+    );
+    const savedToken = storage.getItem("tentacle_token");
+    if (savedToken) jfClient.setAccessToken(savedToken);
+    setClient(jfClient);
+  }, []);
 
   useEffect(() => {
     (async () => {
       await storage.hydrate();
-      setSeerrBackendUrl(BACKEND_URL);
-      setPreferencesBackendUrl(BACKEND_URL);
-      setRequestsBackendUrl(BACKEND_URL);
-      setTicketsBackendUrl(BACKEND_URL);
-      setNotificationsBackendUrl(BACKEND_URL);
-      setConfigBackendUrl(BACKEND_URL);
-      const jfClient = new JellyfinClient(JELLYFIN_URL, storage, uuid, "Mobile");
-      const savedToken = storage.getItem("tentacle_token");
-      if (savedToken) jfClient.setAccessToken(savedToken);
-      setClient(jfClient);
+
+      const savedUrl = storage.getItem("tentacle_server_url");
+
+      if (savedUrl) {
+        // Server URL already configured — initialize everything
+        configureBackendUrls(savedUrl);
+        const jfClient = new JellyfinClient(
+          `${savedUrl}/api/jellyfin`,
+          storage,
+          uuid,
+          "Mobile",
+        );
+        const savedToken = storage.getItem("tentacle_token");
+        if (savedToken) jfClient.setAccessToken(savedToken);
+        setClient(jfClient);
+        setServerUrlState(savedUrl);
+      } else {
+        // No server URL — create a placeholder client (will be replaced after setup)
+        const jfClient = new JellyfinClient(
+          "https://placeholder.invalid",
+          storage,
+          uuid,
+          "Mobile",
+        );
+        setClient(jfClient);
+      }
+
       setReady(true);
     })();
   }, []);
@@ -75,13 +146,15 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TentacleConfigContext.Provider value={{ storage, uuid }}>
-        <JellyfinClientContext.Provider value={client}>
-          <AuthGuard>
-            <Slot />
-          </AuthGuard>
-        </JellyfinClientContext.Provider>
-      </TentacleConfigContext.Provider>
+      <ServerUrlContext.Provider value={{ serverUrl, setServerUrl }}>
+        <TentacleConfigContext.Provider value={{ storage, uuid }}>
+          <JellyfinClientContext.Provider value={client}>
+            <AuthGuard>
+              <Slot />
+            </AuthGuard>
+          </JellyfinClientContext.Provider>
+        </TentacleConfigContext.Provider>
+      </ServerUrlContext.Provider>
     </QueryClientProvider>
   );
 }

@@ -112,3 +112,10 @@ model LibraryPreference {
   @@index([jellyfinUserId])
   @@map("library_preferences")
 }
+
+model ServerConfig {
+  key   String @id @db.VarChar(100)
+  value String @db.Text
+
+  @@map("server_config")
+}

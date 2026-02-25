@@ -16,10 +16,6 @@ import {
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 
-// TODO: Make these configurable via a settings screen
-const JELLYFIN_URL = "https://jelly.rouge-informatique.ch";
-const BACKEND_URL = "https://tentacle.rouge-informatique.ch";
-
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
 
@@ -47,6 +43,34 @@ const darkTheme = {
   },
 };
 
+/**
+ * Configure all backend URL singletons and create the JellyfinClient
+ * based on the saved tentacle_server_url.
+ *
+ * If no URL is saved yet (first launch), a placeholder JellyfinClient
+ * is created — the ServerSetupScreen will set the real URL and the
+ * LoginScreen will reconfigure before authenticating.
+ */
+function initializeBackend(tentacleUrl: string | null): JellyfinClient {
+  const baseUrl = tentacleUrl || "http://localhost";
+
+  setSeerrBackendUrl(baseUrl);
+  setPreferencesBackendUrl(baseUrl);
+  setRequestsBackendUrl(baseUrl);
+  setTicketsBackendUrl(baseUrl);
+  setNotificationsBackendUrl(baseUrl);
+  setConfigBackendUrl(baseUrl);
+
+  // Jellyfin API is proxied through the Tentacle backend at /api/jellyfin
+  const jellyfinUrl = `${baseUrl}/api/jellyfin`;
+  const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV");
+
+  const savedToken = storage.getItem("tentacle_token");
+  if (savedToken) jfClient.setAccessToken(savedToken);
+
+  return jfClient;
+}
+
 export function App() {
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
@@ -54,15 +78,8 @@ export function App() {
   useEffect(() => {
     (async () => {
       await storage.hydrate();
-      setSeerrBackendUrl(BACKEND_URL);
-      setPreferencesBackendUrl(BACKEND_URL);
-      setRequestsBackendUrl(BACKEND_URL);
-      setTicketsBackendUrl(BACKEND_URL);
-      setNotificationsBackendUrl(BACKEND_URL);
-      setConfigBackendUrl(BACKEND_URL);
-      const jfClient = new JellyfinClient(JELLYFIN_URL, storage, uuid, "AndroidTV");
-      const savedToken = storage.getItem("tentacle_token");
-      if (savedToken) jfClient.setAccessToken(savedToken);
+      const tentacleUrl = storage.getItem("tentacle_server_url");
+      const jfClient = initializeBackend(tentacleUrl);
       setClient(jfClient);
       setReady(true);
     })();

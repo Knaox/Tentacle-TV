@@ -1,25 +1,61 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@tentacle/api-client";
+import { useJellyfinClient, useTentacleConfig } from "@tentacle/api-client";
 
 export function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const client = useJellyfinClient();
+  const { storage } = useTentacleConfig();
   const router = useRouter();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username || !password) return;
     setError(null);
-    login.mutate(
-      { username, password },
-      {
-        onSuccess: () => router.replace("/(tabs)"),
-        onError: (err) => setError(err instanceof Error ? err.message : "Connexion échouée"),
-      },
-    );
+    setLoading(true);
+
+    try {
+      const serverUrl = storage.getItem("tentacle_server_url");
+      if (!serverUrl) {
+        setError("URL du serveur non configurée");
+        return;
+      }
+
+      const response = await fetch(`${serverUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.message || "Identifiants invalides");
+      }
+
+      const data = await response.json();
+
+      // Set the token on the JellyfinClient and persist in storage
+      client.setAccessToken(data.AccessToken);
+      storage.setItem("tentacle_token", data.AccessToken);
+      storage.setItem("tentacle_user", JSON.stringify(data.User));
+
+      router.replace("/(tabs)");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connexion échouée");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,14 +101,14 @@ export function LoginScreen() {
 
           <Pressable
             onPress={handleLogin}
-            disabled={login.isPending}
+            disabled={loading}
             style={{
               marginTop: 24, backgroundColor: "#8b5cf6", borderRadius: 10,
               paddingVertical: 14, alignItems: "center",
-              opacity: login.isPending ? 0.6 : 1,
+              opacity: loading ? 0.6 : 1,
             }}
           >
-            {login.isPending ? (
+            {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Se connecter</Text>

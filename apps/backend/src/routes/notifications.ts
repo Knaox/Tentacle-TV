@@ -1,14 +1,13 @@
 import type { FastifyPluginAsync } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-
-const prisma = new PrismaClient();
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
   // GET /api/notifications — User's notifications
   app.get("/", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
@@ -24,6 +23,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/notifications/unread-count
   app.get("/unread-count", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
 
     const count = await prisma.notification.count({
@@ -35,6 +35,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/notifications/read-all — Mark all as read
   app.post("/read-all", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
 
     await prisma.notification.updateMany({
@@ -47,6 +48,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/notifications/:id/read — Mark one as read
   app.post("/:id/read", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
 

@@ -38,3 +38,11 @@ export type { StorageAdapter, UuidGenerator } from "./storage";
 export { WebStorageAdapter, WebUuidGenerator } from "./storage";
 export { TentacleConfigContext, useTentacleConfig } from "./context";
 export type { TentacleConfig } from "./context";
+
+// Watch state & continue watching
+export { useSeriesWatchState, useContinueWatching } from "./hooks/useWatchState";
+export type { NextEpisodeResult } from "./hooks/useWatchState";
+
+// App mode (standalone vs backend)
+export { AppModeProvider, useAppMode, saveSeerrConfig, clearSeerrConfig } from "./appMode";
+export type { AppMode, SeerrConfig, AppModeProviderProps } from "./appMode";
