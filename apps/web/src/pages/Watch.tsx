@@ -20,12 +20,16 @@ function formatTrackLabel(s: JfStream): string {
   return parts.join(" - ");
 }
 
+const DBG = "[Tentacle:Player]";
+
 export function Watch() {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
   const { nextEpisode, previousEpisode } = useEpisodeNavigation(item);
+
+  console.debug(DBG, "render", { itemId, isLoading, hasItem: !!item, itemName: item?.Name });
 
   const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
@@ -44,6 +48,7 @@ export function Watch() {
 
   // Reset state when switching episodes
   useEffect(() => {
+    console.debug(DBG, "episode switch — resetting state", { itemId });
     setStartTicks(0);
     setQuality(null);
     setSubtitleIndex(null);
@@ -65,6 +70,11 @@ export function Watch() {
   )?.Codec?.toLowerCase();
   const needsAudioTranscode = !!selectedAudioCodec && /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec);
   const isDirectPlay = audioIndex === defaultAudio && quality == null && !needsAudioTranscode;
+
+  console.debug(DBG, "playback mode", {
+    isDirectPlay, audioIndex, defaultAudio, selectedAudioCodec, needsAudioTranscode,
+    quality, streamCount: streams.length,
+  });
 
   const skipSegments = useIntroSkipper(itemId, item);
   const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
@@ -95,13 +105,15 @@ export function Watch() {
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
-    return client.getStreamUrl(itemId, {
+    const url = client.getStreamUrl(itemId, {
       audioIndex,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
       directPlay: isDirectPlay,
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
     });
+    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks });
+    return url;
   }, [client, itemId, audioIndex, mediaSourceId, quality, isDirectPlay, startTicks]);
 
   // Stream offset in seconds (for transcoded seeking)
@@ -127,6 +139,7 @@ export function Watch() {
 
   // Audio change: save current position for transcoded streams
   const handleAudioChange = useCallback((idx: number) => {
+    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current });
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
@@ -134,6 +147,7 @@ export function Watch() {
   }, []);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
+    console.debug(DBG, "quality change", { bitrate, position: positionRef.current });
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
@@ -142,6 +156,7 @@ export function Watch() {
 
   // Transcoded seeking: update startTicks to recompute stream URL
   const handleSeekRequest = useCallback((targetSeconds: number) => {
+    console.debug(DBG, "seek request (transcoded)", { targetSeconds, ticks: Math.floor(targetSeconds * TICKS_PER_SECOND) });
     setStartTicks(Math.floor(targetSeconds * TICKS_PER_SECOND));
   }, []);
 

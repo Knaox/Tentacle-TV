@@ -14,14 +14,13 @@ function getAuthHeader(): Record<string, string> {
 }
 
 async function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${_backendBase}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeader(),
-      ...(init?.headers as Record<string, string>),
-    },
-  });
+  const headers: Record<string, string> = {
+    ...getAuthHeader(),
+    ...(init?.headers as Record<string, string>),
+  };
+  // Only set Content-Type when there's a body (Fastify rejects empty JSON bodies with 400)
+  if (init?.body) headers["Content-Type"] = "application/json";
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);

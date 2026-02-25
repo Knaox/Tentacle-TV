@@ -7,7 +7,12 @@ import {
 } from "@tentacle/api-client";
 import type { AppNotification } from "@tentacle/api-client";
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  /** Open dropdown to the right (for sidebar placement) */
+  dropdownPosition?: "below" | "right";
+}
+
+export function NotificationBell({ dropdownPosition = "below" }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { data: unread } = useUnreadCount();
@@ -42,7 +47,11 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-white/10 bg-tentacle-surface shadow-2xl">
+        <div className={`absolute z-50 w-80 rounded-xl border border-white/10 bg-tentacle-surface shadow-2xl ${
+          dropdownPosition === "right"
+            ? "bottom-0 left-full ml-2"
+            : "right-0 top-full mt-2"
+        }`}>
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="text-sm font-semibold text-white">Notifications</span>
             {count > 0 && (

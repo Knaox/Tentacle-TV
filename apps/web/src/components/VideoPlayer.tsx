@@ -36,6 +36,8 @@ interface VideoPlayerProps {
   creditsSegment?: SegmentTimestamps | null;
 }
 
+const DBG = "[Tentacle:VideoPlayer]";
+
 export function VideoPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
@@ -84,11 +86,11 @@ export function VideoPlayer({
   }, []);
 
   const handleSeek = useCallback((targetSeconds: number) => {
+    console.debug(DBG, "seek", { targetSeconds, isDirectPlay });
     if (isDirectPlay) {
       const v = videoRef.current;
       if (v) v.currentTime = targetSeconds;
     } else {
-      // Transcoded: request new stream from target position
       onSeekRequest?.(targetSeconds);
     }
   }, [isDirectPlay, onSeekRequest]);
@@ -111,15 +113,16 @@ export function VideoPlayer({
     if (!v) return;
     const isSourceChange = hasStartedRef.current;
     const savedTime = rawTime;
+    console.debug(DBG, "src changed", { src: src.substring(0, 100), isSourceChange, savedTime, isDirectPlay, startPositionSeconds, streamOffset });
     // Block progress reporting during source transition to prevent position=0 corruption
     sourceChangingRef.current = true;
     setLoading(true);
-    // Reset raw time immediately so display reflects new streamOffset (no stale flicker)
     if (isSourceChange) setRawTime(0);
-    // Direct play: restore position after reload. Transcoded: server starts at startTicks.
     const seekTo = isSourceChange ? (isDirectPlay ? savedTime : 0) : (startPositionSeconds ?? 0);
+    console.debug(DBG, "will seek to", { seekTo });
     if (isSourceChange) v.load();
     const onLoaded = () => {
+      console.debug(DBG, "loadedmetadata fired", { seekTo, videoDuration: v.duration });
       if (seekTo > 0) v.currentTime = seekTo;
       sourceChangingRef.current = false;
       setLoading(false);
@@ -212,12 +215,13 @@ export function VideoPlayer({
           const buf = v.buffered;
           if (buf.length > 0) setBuffered(buf.end(buf.length - 1) / v.duration);
         }}
-        onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
-        onPlay={() => { setPlaying(true); setLoading(false); if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); } }}
-        onPause={() => setPlaying(false)}
-        onWaiting={() => setLoading(true)}
-        onCanPlay={() => setLoading(false)}
-        onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
+        onLoadedMetadata={(e) => { console.debug(DBG, "metadata", { duration: e.currentTarget.duration }); setVideoDuration(e.currentTarget.duration); }}
+        onPlay={() => { console.debug(DBG, "play event"); setPlaying(true); setLoading(false); if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); } }}
+        onPause={() => { console.debug(DBG, "pause event"); setPlaying(false); }}
+        onWaiting={() => { console.debug(DBG, "waiting/buffering"); setLoading(true); }}
+        onCanPlay={() => { console.debug(DBG, "canplay"); setLoading(false); }}
+        onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message, e.currentTarget.error?.code); }}
+        onEnded={() => { console.debug(DBG, "ended"); if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
         autoPlay muted={transitionMuted} crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (

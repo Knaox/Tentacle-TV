@@ -14,14 +14,12 @@ function getAuthHeader(): Record<string, string> {
 }
 
 async function reqFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${_backendBase}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeader(),
-      ...(init?.headers as Record<string, string>),
-    },
-  });
+  const headers: Record<string, string> = {
+    ...getAuthHeader(),
+    ...(init?.headers as Record<string, string>),
+  };
+  if (init?.body) headers["Content-Type"] = "application/json";
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers });
   // 409 = duplicate request — treat as success (return existing)
   if (!res.ok && res.status !== 409) {
     const msg = await res.text().catch(() => `${res.status}`);
@@ -71,6 +69,11 @@ export function useRequestMedia() {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["media-requests"] });
+      // Also refresh Seerr data so card status updates without page reload
+      qc.invalidateQueries({ queryKey: ["seerr-search"] });
+      qc.invalidateQueries({ queryKey: ["seerr-discover"] });
+      qc.invalidateQueries({ queryKey: ["seerr-requests"] });
+      qc.invalidateQueries({ queryKey: ["seerr-request-count"] });
     },
   });
 }

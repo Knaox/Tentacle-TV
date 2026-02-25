@@ -3,6 +3,7 @@ import { useJellyfinClient } from "./useJellyfinClient";
 
 const TICKS_PER_SEC = 10_000_000;
 const REPORT_INTERVAL_MS = 10_000;
+const DBG = "[Tentacle:Playback]";
 
 export function usePlaybackReporting(
   itemId: string | undefined,
@@ -29,6 +30,7 @@ export function usePlaybackReporting(
     const prevId = prevItemIdRef.current;
     prevItemIdRef.current = itemId;
     if (prevId && prevId !== itemId && startedRef.current) {
+      console.debug(DBG, "episode switch — stopping old session", { prevId, newId: itemId, position: positionRef.current });
       clientRef.current.fetch("/Sessions/Playing/Stopped", {
         method: "POST",
         body: JSON.stringify({
@@ -44,6 +46,7 @@ export function usePlaybackReporting(
 
   const reportStart = useCallback(() => {
     if (!itemId || startedRef.current) return;
+    console.debug(DBG, "reportStart", { itemId, playMethod });
     startedRef.current = true;
     client.fetch("/Sessions/Playing", {
       method: "POST",
@@ -58,6 +61,7 @@ export function usePlaybackReporting(
 
   const reportProgress = useCallback(() => {
     if (!itemId || !startedRef.current) return;
+    console.debug(DBG, "progress", { itemId: itemId.substring(0, 8), position: Math.floor(positionRef.current), paused: pausedRef.current });
     client.fetch("/Sessions/Playing/Progress", {
       method: "POST",
       body: JSON.stringify({
