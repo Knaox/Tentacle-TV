@@ -1,0 +1,28 @@
+import { Outlet } from "react-router-dom";
+import { Sidebar } from "./Sidebar";
+import { MobileTabBar } from "./MobileTabBar";
+import { GlobalSearch } from "./GlobalSearch";
+import { NotificationBell } from "./NotificationBell";
+import { useIsMobile } from "../hooks/useIsMobile";
+
+export function AppLayout() {
+  const isMobile = useIsMobile();
+
+  return (
+    <div className="min-h-screen bg-tentacle-bg">
+      {!isMobile && <Sidebar />}
+
+      <div className={isMobile ? "pb-20" : "pl-16"}>
+        {/* Top bar: search + notifications */}
+        <div className="fixed right-4 top-4 z-30 flex items-center gap-2">
+          {isMobile && <NotificationBell />}
+          <GlobalSearch />
+        </div>
+
+        <Outlet />
+      </div>
+
+      {isMobile && <MobileTabBar />}
+    </div>
+  );
+}

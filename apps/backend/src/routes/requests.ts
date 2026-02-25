@@ -32,10 +32,8 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
     });
 
     if (existing) {
-      return reply.status(409).send({
-        message: "Vous avez déjà une demande en cours pour ce média",
-        request: existing,
-      });
+      // Idempotent: return existing request as 200 (not 409)
+      return reply.status(200).send(existing);
     }
 
     const req = await prisma.mediaRequest.create({

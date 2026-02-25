@@ -59,7 +59,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
       <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg/80 via-transparent to-transparent" />
 
       {/* Content */}
-      <div className="absolute bottom-16 left-12 right-1/3 z-10">
+      <div className="absolute bottom-16 left-4 right-4 z-10 md:left-12 md:right-1/3">
         <AnimatePresence mode="wait">
           <motion.div
             key={item.Id}
@@ -71,12 +71,12 @@ export function HeroBanner({ items }: HeroBannerProps) {
             {logoUrl ? (
               <img src={logoUrl} alt={item.Name} className="mb-4 h-16 object-contain object-left" draggable={false} />
             ) : (
-              <h2 className="mb-4 text-4xl font-bold tracking-tight text-white drop-shadow-lg">
+              <h2 className="mb-4 text-2xl font-bold tracking-tight text-white drop-shadow-lg md:text-4xl">
                 {item.Name}
               </h2>
             )}
 
-            <div className="mb-3 flex items-center gap-3 text-sm text-white/70">
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-white/70 md:gap-3">
               {item.ProductionYear && <span>{item.ProductionYear}</span>}
               {item.OfficialRating && (
                 <span className="rounded border border-white/30 px-1.5 py-0.5 text-xs">{item.OfficialRating}</span>
@@ -89,21 +89,21 @@ export function HeroBanner({ items }: HeroBannerProps) {
             </div>
 
             {item.Overview && (
-              <p className="mb-5 max-w-xl text-sm leading-relaxed text-white/70 line-clamp-3">
+              <p className="mb-5 hidden max-w-xl text-sm leading-relaxed text-white/70 line-clamp-3 sm:block">
                 {item.Overview}
               </p>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => navigate(`/watch/${item.Id}`)}
-                className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg transition-transform hover:scale-105"
+                className="flex items-center gap-2 rounded-lg bg-white px-5 py-2 text-sm font-semibold text-tentacle-bg transition-transform hover:scale-105 md:px-6 md:py-2.5 md:text-base"
               >
                 <PlayIcon /> Lecture
               </button>
               <button
                 onClick={() => navigate(`/media/${item.Id}`)}
-                className="flex items-center gap-2 rounded-lg bg-white/15 px-6 py-2.5 font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/25">
+                className="flex items-center gap-2 rounded-lg bg-white/15 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/25 md:px-6 md:py-2.5 md:text-base">
                 Plus d'infos
               </button>
             </div>
@@ -113,7 +113,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
 
       {/* Dots indicator */}
       {items.length > 1 && (
-        <div className="absolute bottom-6 left-12 z-10 flex gap-2">
+        <div className="absolute bottom-6 left-4 z-10 flex gap-2 md:left-12">
           {items.map((_, i) => (
             <button
               key={i}

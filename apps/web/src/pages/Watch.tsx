@@ -5,6 +5,7 @@ import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle/shared";
 import type { MediaStream as JfStream } from "@tentacle/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
+import { PlayerTransition } from "../components/PlayerTransition";
 import { isTauri } from "../hooks/useDesktopPlayer";
 
 const DesktopPlayer = lazy(() =>
@@ -39,6 +40,7 @@ export function Watch() {
   const [startTicks, setStartTicks] = useState<number>(0);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
+  const [mpvFailed, setMpvFailed] = useState(false);
 
   const selectedAudioCodec = streams.find(
     (s) => s.Type === "Audio" && s.Index === audioIndex
@@ -140,9 +142,11 @@ export function Watch() {
 
   if (isLoading || !streamUrl) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-black">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-      </div>
+      <PlayerTransition>
+        <div className="flex h-full w-full items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+        </div>
+      </PlayerTransition>
     );
   }
 
@@ -166,15 +170,36 @@ export function Watch() {
     introSegment: skipSegments.intro, creditsSegment: skipSegments.credits,
   };
 
-  if (isTauri()) {
+  if (isTauri() && !mpvFailed) {
     return (
-      <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-black">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-      </div>}>
-        <DesktopPlayer {...playerProps} />
-      </Suspense>
+      <PlayerTransition>
+        <Suspense fallback={<div className="flex h-full w-full items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+        </div>}>
+          <DesktopPlayer {...playerProps} onFallbackToWeb={() => setMpvFailed(true)} />
+        </Suspense>
+      </PlayerTransition>
     );
   }
 
-  return <VideoPlayer {...playerProps} />;
+  return (
+    <PlayerTransition>
+      {mpvFailed && <MpvFallbackBanner />}
+      <VideoPlayer {...playerProps} />
+    </PlayerTransition>
+  );
+}
+
+function MpvFallbackBanner() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 animate-fade-in rounded-lg bg-yellow-600/90 px-5 py-2.5 text-sm text-white shadow-lg backdrop-blur">
+      mpv indisponible — lecture via le lecteur web
+    </div>
+  );
 }

@@ -100,11 +100,14 @@ export function VideoPlayer({
     const v = videoRef.current;
     if (!v) return;
     const isSourceChange = hasStartedRef.current;
-    // For transcoded with offset, start from 0 (server already seeked)
-    const seekTo = isSourceChange ? (isDirectPlay ? rawTime : 0) : (startPositionSeconds ?? 0);
+    const savedTime = rawTime;
+    // Reset raw time immediately so display reflects new streamOffset (no stale flicker)
+    if (isSourceChange) setRawTime(0);
+    // Direct play: restore position after reload. Transcoded: server starts at startTicks.
+    const seekTo = isSourceChange ? (isDirectPlay ? savedTime : 0) : (startPositionSeconds ?? 0);
     if (isSourceChange) v.load();
     const onLoaded = () => {
-      if (isDirectPlay && seekTo > 0) v.currentTime = seekTo;
+      if (seekTo > 0) v.currentTime = seekTo;
       if (isSourceChange) v.play().catch(() => {});
     };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
@@ -176,11 +179,9 @@ export function VideoPlayer({
   }, []);
 
   return (
-    <div ref={containerRef} onMouseMove={scheduleHide}
+    <div ref={containerRef} onMouseMove={scheduleHide} onClick={togglePlay}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
-      {/* Video element — click to toggle pause */}
       <video ref={videoRef} src={src} className="h-full w-full"
-        onClick={togglePlay}
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);

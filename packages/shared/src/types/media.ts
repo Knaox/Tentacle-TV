@@ -45,6 +45,9 @@ export interface MediaItem {
   ChildCount?: number;
   CollectionType?: string;
 
+  // Studios
+  Studios?: Array<{ Name: string; Id: string }>;
+
   // People
   People?: Array<{
     Name: string;

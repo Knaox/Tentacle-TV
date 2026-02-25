@@ -22,7 +22,8 @@ async function reqFetch<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers as Record<string, string>),
     },
   });
-  if (!res.ok) {
+  // 409 = duplicate request — treat as success (return existing)
+  if (!res.ok && res.status !== 409) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
   }

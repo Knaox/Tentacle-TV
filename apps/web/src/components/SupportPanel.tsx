@@ -36,7 +36,7 @@ export function SupportPanel() {
   };
 
   return (
-    <div className="px-12">
+    <div className="px-4 md:px-12">
       {view === "list" && <TicketList onNew={() => setView("new")} onOpen={openTicket} />}
       {view === "new" && <NewTicketForm onBack={() => setView("list")} onCreated={(id) => openTicket(id)} />}
       {view === "detail" && selectedId && <TicketDetail ticketId={selectedId} onBack={() => setView("list")} />}

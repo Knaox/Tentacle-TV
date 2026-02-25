@@ -41,7 +41,7 @@ export function MyRequestsList() {
   const totalPages = data?.totalPages ?? 1;
 
   return (
-    <div className="px-12">
+    <div className="px-4 md:px-12">
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
@@ -112,24 +112,26 @@ function RequestRow({ req, onCancel, onRetry }: {
   const canRetry = req.status === "failed";
 
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-white/5 px-5 py-4">
-      {poster ? (
-        <img src={poster} alt={req.title} className="h-16 w-11 rounded-lg object-cover" />
-      ) : (
-        <div className="flex h-16 w-11 items-center justify-center rounded-lg bg-white/10 text-xs text-white/30">
-          N/A
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{req.title}</p>
-        <p className="mt-0.5 text-xs text-white/40">
-          {req.mediaType === "movie" ? "Film" : "Série"} — {date}
-        </p>
-        {req.lastError && (
-          <p className="mt-1 text-xs text-red-400 truncate">{req.lastError}</p>
+    <div className="flex flex-col gap-3 rounded-xl bg-white/5 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
+      <div className="flex items-center gap-3 sm:gap-4">
+        {poster ? (
+          <img src={poster} alt={req.title} className="h-16 w-11 flex-shrink-0 rounded-lg object-cover" />
+        ) : (
+          <div className="flex h-16 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs text-white/30">
+            N/A
+          </div>
         )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-white truncate">{req.title}</p>
+          <p className="mt-0.5 text-xs text-white/40">
+            {req.mediaType === "movie" ? "Film" : "Série"} — {date}
+          </p>
+          {req.lastError && (
+            <p className="mt-1 text-xs text-red-400 truncate">{req.lastError}</p>
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:ml-auto sm:flex-shrink-0">
         <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[req.status] ?? ""}`}>
           {STATUS_LABELS[req.status] ?? req.status}
         </span>

@@ -25,7 +25,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   return (
     <div>
       {/* Search bar */}
-      <div className="mb-6 px-12">
+      <div className="mb-6 px-4 md:px-12">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -35,7 +35,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
       </div>
 
       {/* Grid */}
-      <div className="px-12">
+      <div className="px-4 md:px-12">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
             {Array.from({ length: 24 }).map((_, i) => (

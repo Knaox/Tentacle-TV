@@ -50,11 +50,7 @@ export function DiscoverGrid() {
         onSuccess: () => setFeedback({ type: "success", msg: "Demande ajoutée à la file d'attente" }),
         onError: (err) => {
           const msg = err instanceof Error ? err.message : String(err);
-          if (msg.includes("409") || msg.includes("déjà")) {
-            setFeedback({ type: "error", msg: "Vous avez déjà une demande en cours pour ce média" });
-          } else {
-            setFeedback({ type: "error", msg: `Erreur : ${msg}` });
-          }
+          setFeedback({ type: "error", msg: `Erreur : ${msg}` });
         },
       }
     );
