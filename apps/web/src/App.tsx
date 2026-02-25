@@ -22,6 +22,7 @@ const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ defa
 const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
 const MyRequestsList = lazy(() => import("./components/MyRequestsList").then((m) => ({ default: m.MyRequestsList })));
+const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
 
 function PageSpinner() {
   return (
@@ -117,6 +118,7 @@ export function App() {
             <Route path="downloads" element={<Downloads />} />
             <Route path="support" element={<Support />} />
             <Route path="settings" element={<Preferences />} />
+            <Route path="pair-device" element={<PairDevice />} />
             <Route path="admin" element={<Admin />} />
             <Route path="about" element={<About />} />
             <Route path="credits" element={<Credits />} />

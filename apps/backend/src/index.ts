@@ -22,7 +22,9 @@ import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
 import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
 import { adminRoutes } from "./routes/admin";
+import { pairRoutes } from "./routes/pair";
 import { startRequestWorker } from "./services/requestWorker";
+import { startPairingCleanup } from "./services/pairingCleanup";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -87,6 +89,7 @@ async function main() {
   await app.register(ticketRoutes, { prefix: "/api/tickets" });
   await app.register(notificationRoutes, { prefix: "/api/notifications" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
+  await app.register(pairRoutes, { prefix: "/api/pair" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
 
@@ -129,6 +132,7 @@ async function main() {
   // Start background workers only when fully configured
   if (state === "running") {
     startRequestWorker();
+    startPairingCleanup();
   }
 
   await app.listen({ port: PORT, host: HOST });

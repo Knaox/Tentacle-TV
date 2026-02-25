@@ -40,14 +40,9 @@ export function ServerSetupScreen({ navigation }: Props) {
         throw new Error(`Erreur HTTP ${response.status}`);
       }
 
-      // Health check passed — save the URL and navigate to login
+      // Health check passed — save the URL and show choice
       storage.setItem("tentacle_server_url", url);
       setSuccess(true);
-
-      // Short delay so the user sees the success state
-      setTimeout(() => {
-        navigation.replace("Login");
-      }, 800);
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("Network")) {
         setError("Impossible de joindre le serveur. Verifiez l'adresse et votre connexion reseau.");
@@ -101,31 +96,53 @@ export function ServerSetupScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* Connect button */}
-        <View style={{ marginTop: 24 }}>
-          <Focusable onPress={handleTest} hasTVPreferredFocus>
-            <View
-              style={[
-                styles.button,
-                (testing || !serverUrl.trim()) && styles.buttonDisabled,
-                success && styles.buttonSuccess,
-              ]}
-            >
-              {testing ? (
-                <ActivityIndicator color="#fff" />
-              ) : success ? (
-                <Text style={styles.buttonText}>Connexion reussie</Text>
-              ) : (
-                <Text style={styles.buttonText}>Se connecter au serveur</Text>
-              )}
+        {!success ? (
+          <>
+            {/* Connect button */}
+            <View style={{ marginTop: 24 }}>
+              <Focusable onPress={handleTest} hasTVPreferredFocus>
+                <View
+                  style={[
+                    styles.button,
+                    (testing || !serverUrl.trim()) && styles.buttonDisabled,
+                  ]}
+                >
+                  {testing ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>Verifier le serveur</Text>
+                  )}
+                </View>
+              </Focusable>
             </View>
-          </Focusable>
-        </View>
-
-        {/* Help text */}
-        <Text style={styles.helpText}>
-          Utilisez la telecommande pour saisir l'adresse de votre serveur.
-        </Text>
+            <Text style={styles.helpText}>
+              Utilisez la telecommande pour saisir l'adresse de votre serveur.
+            </Text>
+          </>
+        ) : (
+          <>
+            {/* After successful health check: choose auth method */}
+            <Text style={styles.choiceTitle}>Comment souhaitez-vous vous connecter ?</Text>
+            <View style={{ marginTop: 16 }}>
+              <Focusable onPress={() => navigation.replace("PairCode")} hasTVPreferredFocus>
+                <View style={styles.button}>
+                  <Text style={styles.buttonText}>Jumeler avec un code</Text>
+                  <Text style={styles.choiceHint}>
+                    Entrez un code sur votre telephone ou ordinateur
+                  </Text>
+                </View>
+              </Focusable>
+            </View>
+            <View style={{ marginTop: 12 }}>
+              <Focusable onPress={() => navigation.replace("Login")}>
+                <View style={styles.buttonOutline}>
+                  <Text style={styles.buttonText}>Se connecter manuellement</Text>
+                  <Text style={styles.choiceHint}>Saisir identifiant et mot de passe</Text>
+                </View>
+              </Focusable>
+            </View>
+          </>
+        )}
       </View>
     </View>
   );
@@ -215,10 +232,30 @@ const styles = {
   buttonSuccess: {
     backgroundColor: "#22c55e",
   },
+  buttonOutline: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center" as const,
+    borderWidth: 1,
+    borderColor: "#8b5cf6",
+    backgroundColor: "transparent",
+  },
   buttonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700" as const,
+  },
+  choiceTitle: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 16,
+    textAlign: "center" as const,
+    marginTop: 24,
+    fontWeight: "600" as const,
+  },
+  choiceHint: {
+    color: "rgba(255,255,255,0.35)",
+    fontSize: 13,
+    marginTop: 4,
   },
   helpText: {
     color: "rgba(255,255,255,0.25)",

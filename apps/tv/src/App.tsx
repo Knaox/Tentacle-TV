@@ -12,6 +12,7 @@ import {
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
+  setPairingBackendUrl,
 } from "@tentacle/api-client";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -60,6 +61,7 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setTicketsBackendUrl(baseUrl);
   setNotificationsBackendUrl(baseUrl);
   setConfigBackendUrl(baseUrl);
+  setPairingBackendUrl(baseUrl);
 
   // Jellyfin API is proxied through the Tentacle backend at /api/jellyfin
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;

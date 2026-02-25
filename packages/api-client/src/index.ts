@@ -33,6 +33,10 @@ export type { AppNotification } from "./hooks/useNotifications";
 export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
 export type { AppConfig, AppFeatures } from "./hooks/useConfig";
 
+// Device pairing
+export { useGeneratePairingCode, usePairingStatus, useConfirmPairing, usePairedDevices, useRevokePairedDevice, setPairingBackendUrl } from "./hooks/usePairing";
+export type { PairingCodeResponse, PairingStatusResponse, PairedDevice } from "./hooks/usePairing";
+
 // Storage abstraction for cross-platform support
 export type { StorageAdapter, UuidGenerator } from "./storage";
 export { WebStorageAdapter, WebUuidGenerator } from "./storage";
