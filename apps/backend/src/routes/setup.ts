@@ -68,9 +68,8 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ message: "Impossible de se connecter à la base de données" });
     }
 
-    // Persist so it survives restarts and set in current process
+    // Persist to .env + data/database.json + current process
     saveDatabaseUrl(url);
-    process.env.DATABASE_URL = url;
     return { success: true };
   });
 
