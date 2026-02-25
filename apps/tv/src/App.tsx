@@ -7,6 +7,11 @@ import {
   JellyfinClientContext,
   TentacleConfigContext,
   setSeerrBackendUrl,
+  setPreferencesBackendUrl,
+  setRequestsBackendUrl,
+  setTicketsBackendUrl,
+  setNotificationsBackendUrl,
+  setConfigBackendUrl,
 } from "@tentacle/api-client";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -50,6 +55,11 @@ export function App() {
     (async () => {
       await storage.hydrate();
       setSeerrBackendUrl(BACKEND_URL);
+      setPreferencesBackendUrl(BACKEND_URL);
+      setRequestsBackendUrl(BACKEND_URL);
+      setTicketsBackendUrl(BACKEND_URL);
+      setNotificationsBackendUrl(BACKEND_URL);
+      setConfigBackendUrl(BACKEND_URL);
       const jfClient = new JellyfinClient(JELLYFIN_URL, storage, uuid, "AndroidTV");
       const savedToken = storage.getItem("tentacle_token");
       if (savedToken) jfClient.setAccessToken(savedToken);

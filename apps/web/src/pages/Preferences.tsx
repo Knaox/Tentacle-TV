@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference } from "@tentacle/api-client";
 import type { LibraryPreference } from "@tentacle/api-client";
 
@@ -65,6 +65,15 @@ function LibraryPrefCard({ libraryId, libraryName, pref, onSave, onDelete }: {
   const [audioLang, setAudioLang] = useState(pref?.audioLang ?? "");
   const [subtitleLang, setSubtitleLang] = useState(pref?.subtitleLang ?? "");
   const [subtitleMode, setSubtitleMode] = useState<"none" | "always" | "forced" | "signs">(pref?.subtitleMode ?? "none");
+
+  // Sync state when pref loads/changes (e.g. after query completes)
+  useEffect(() => {
+    if (!editing) {
+      setAudioLang(pref?.audioLang ?? "");
+      setSubtitleLang(pref?.subtitleLang ?? "");
+      setSubtitleMode(pref?.subtitleMode ?? "none");
+    }
+  }, [pref]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = () => {
     onSave({
