@@ -15,8 +15,8 @@ export function ServerSetup({ onComplete }: SetupProps) {
     fetch("/api/setup/status")
       .then((r) => r.json())
       .then((data) => {
-        if (data.dbFromEnv && data.state === "setup_db") {
-          // DATABASE_URL from env but tables not created → auto-migrate
+        if (data.state === "setup_db" && (data.dbConnected || data.hasDbUrl)) {
+          // DB URL available (env or config file) but tables missing → auto-migrate
           fetch("/api/setup/migrate", { method: "POST" })
             .then((r) => r.json())
             .then((res) => {
@@ -24,13 +24,13 @@ export function ServerSetup({ onComplete }: SetupProps) {
               setStep(s); setLoading(false);
             })
             .catch(() => { setStep("db"); setLoading(false); });
-        } else if (data.dbFromEnv && data.dbConnected) {
-          // DATABASE_URL from env and DB connected → skip DB step
+        } else if (data.dbConnected && data.state !== "setup_db") {
+          // DB connected and tables exist → skip to correct step
           const map: Record<string, SetupStep> = { setup_jellyfin: "jellyfin", setup_admin: "admin" };
           setStep(map[data.state] || "db");
           setLoading(false);
         } else {
-          // No DATABASE_URL from env OR connection failed → always show DB step
+          // No DB URL at all → show DB step
           setStep("db");
           setLoading(false);
         }

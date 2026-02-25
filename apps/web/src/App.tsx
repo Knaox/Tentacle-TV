@@ -70,10 +70,18 @@ export function App() {
   useEffect(() => {
     if (needsServerUrl) { setSetupRequired(false); return; }
     const base = isTauriApp ? (localStorage.getItem("tentacle_server_url") || "") : "";
-    fetch(`${base}/api/setup/status`)
-      .then((r) => r.json())
-      .then((data) => setSetupRequired(data.state !== "running"))
-      .catch(() => setSetupRequired(!isTauriApp));
+    let attempts = 0;
+    const check = () => {
+      fetch(`${base}/api/setup/status`)
+        .then((r) => r.json())
+        .then((data) => setSetupRequired(data.state !== "running"))
+        .catch(() => {
+          attempts++;
+          if (attempts < 3) { setTimeout(check, 1500); return; }
+          setSetupRequired(!isTauriApp);
+        });
+    };
+    check();
   }, [needsServerUrl]);
 
   // Desktop app: show simple server URL input
