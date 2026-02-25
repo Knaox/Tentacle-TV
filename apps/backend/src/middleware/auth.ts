@@ -1,5 +1,7 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
+import { verifyDeviceToken, hashToken } from "../services/jwt";
+import { getPrisma, hasPrisma } from "../services/db";
 
 export interface JellyfinUser {
   userId: string;
@@ -51,6 +53,38 @@ async function validateJellyfinToken(token: string): Promise<JellyfinUser | null
   }
 }
 
+async function validateToken(token: string): Promise<JellyfinUser | null> {
+  // 1. Try Jellyfin token first (most common path)
+  const jellyfinUser = await validateJellyfinToken(token);
+  if (jellyfinUser) return jellyfinUser;
+
+  // 2. Try custom JWT (paired device tokens)
+  const payload = await verifyDeviceToken(token);
+  if (!payload) return null;
+
+  // 3. Verify device hasn't been revoked
+  if (!hasPrisma()) return null;
+  try {
+    const prisma = getPrisma();
+    const hash = hashToken(token);
+    const device = await prisma.pairedDevice.findUnique({ where: { tokenHash: hash } });
+    if (!device) return null;
+
+    // Update lastSeen (fire and forget)
+    prisma.pairedDevice
+      .update({ where: { id: device.id }, data: { lastSeen: new Date() } })
+      .catch(() => {});
+
+    return {
+      userId: payload.userId,
+      username: payload.username,
+      isAdmin: payload.isAdmin,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
   const authHeader = request.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -58,7 +92,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 
   const token = authHeader.slice(7);
-  const user = await validateJellyfinToken(token);
+  const user = await validateToken(token);
   if (!user) {
     return reply.status(401).send({ message: "Invalid token" });
   }
@@ -73,7 +107,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   }
 
   const token = authHeader.slice(7);
-  const user = await validateJellyfinToken(token);
+  const user = await validateToken(token);
   if (!user) {
     return reply.status(401).send({ message: "Invalid token" });
   }

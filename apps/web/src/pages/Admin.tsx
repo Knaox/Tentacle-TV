@@ -118,6 +118,8 @@ function ServicesSection() {
   const saveS = async () => { setBusy("ss"); setSMsg(null); const r = await aFetch("/seerr", "PUT", { url: sUrl, apiKey: sKey }); setSMsg({ ok: r.ok, t: r.ok ? "Sauvegarde" : r.msg }); if (r.ok) await load(); setBusy(""); };
   const delS = async () => { if (!confirm("Supprimer Seerr ? Decouverte/requetes seront desactivees.")) return; setBusy("ds"); setSMsg(null); const r = await aFetch("/seerr", "DELETE"); setSMsg({ ok: r.ok, t: r.ok ? "Supprime" : r.msg }); if (r.ok) { setSUrl(""); setSKey(""); await load(); } setBusy(""); };
   const saveDb = async () => { setBusy("sdb"); setDbMsg(null); const r = await aFetch("/database", "PUT", { host: dbHost, port: Number(dbPort), database: dbName, user: dbUser, password: dbPass }); setDbMsg({ ok: r.ok, t: r.ok ? "Sauvegarde. Redemarrez le serveur pour appliquer." : r.msg }); setBusy(""); };
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const resetServer = async () => { setBusy("rst"); const r = await aFetch("/reset-server", "POST", {}); if (r.ok) { localStorage.removeItem("tentacle_token"); localStorage.removeItem("tentacle_user"); window.location.reload(); } else { setDbMsg({ ok: false, t: r.msg }); } setBusy(""); setResetConfirm(false); };
 
   if (!d) return <div className={cls.card}><h2 className="text-lg font-semibold text-white">Services</h2><p className="mt-2 text-sm text-white/40">Chargement...</p></div>;
   const Msg = ({ m }: { m: { ok: boolean; t: string } | null }) => m ? <span className={`text-xs ${m.ok ? "text-green-400" : "text-red-400"}`}>{m.t}</span> : null;
@@ -162,6 +164,29 @@ function ServicesSection() {
           <Msg m={dbMsg} />
         </div>
         <p className="text-xs text-amber-400/70">La nouvelle configuration sera appliquee au prochain redemarrage du serveur.</p>
+        <div className="mt-4 border-t border-white/10 pt-4">
+          {!resetConfirm ? (
+            <button onClick={() => setResetConfirm(true)} disabled={!!busy}
+              className="rounded-lg bg-red-600/20 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-600/30 transition">
+              Reinitialiser le serveur
+            </button>
+          ) : (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 space-y-3">
+              <p className="text-sm font-medium text-red-400">Etes-vous sur ?</p>
+              <p className="text-xs text-white/50">Cette action va supprimer toute la configuration du serveur (Jellyfin, Seerr, admin) et relancer le setup. La base de donnees sera nettoyee.</p>
+              <div className="flex gap-2">
+                <button onClick={resetServer} disabled={!!busy}
+                  className="rounded-lg bg-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-40 transition">
+                  {busy === "rst" ? "Reinitialisation..." : "Confirmer la reinitialisation"}
+                </button>
+                <button onClick={() => setResetConfirm(false)} disabled={!!busy}
+                  className="rounded-lg bg-white/10 px-4 py-1.5 text-xs font-medium text-white/70 hover:bg-white/20 transition">
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

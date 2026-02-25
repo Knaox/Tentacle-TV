@@ -8,7 +8,9 @@ import {
   getJellyfinApiKey,
   getSeerrUrl,
   getSeerrApiKey,
+  setAppState,
 } from "../services/configStore";
+import { getPrisma } from "../services/db";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
 const jellyfinConfigSchema = z.object({
@@ -188,10 +190,25 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** PUT /api/admin/database — Update database connection (requires restart). */
-  app.put("/database", async (request, reply) => {
+  app.put("/database", async (request, _reply) => {
     const body = dbConfigSchema.parse(request.body);
     const url = `mysql://${body.user}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
     saveDatabaseUrl(url);
     return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
+  });
+
+  /** POST /api/admin/reset-server — Wipe all config and reset to setup mode. */
+  app.post("/reset-server", async (_request, reply) => {
+    try {
+      const prisma = getPrisma();
+      // Wipe all server config rows
+      await prisma.serverConfig.deleteMany({});
+      // Reset in-memory state to setup mode
+      setAppState(process.env.DATABASE_URL ? "setup_jellyfin" : "setup_db");
+      return { success: true, message: "Serveur réinitialisé. Rechargez la page." };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erreur";
+      return reply.status(500).send({ message: msg });
+    }
   });
 };
