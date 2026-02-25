@@ -59,9 +59,12 @@ export function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const hasStartedRef = useRef(false);
+  const sourceChangingRef = useRef(false);
+  const currentTimeRef = useRef(0);
   const [transitionMuted, setTransitionMuted] = useState(true);
 
   // Unmute after transition animation completes (prevents sound before image)
@@ -108,6 +111,9 @@ export function VideoPlayer({
     if (!v) return;
     const isSourceChange = hasStartedRef.current;
     const savedTime = rawTime;
+    // Block progress reporting during source transition to prevent position=0 corruption
+    sourceChangingRef.current = true;
+    setLoading(true);
     // Reset raw time immediately so display reflects new streamOffset (no stale flicker)
     if (isSourceChange) setRawTime(0);
     // Direct play: restore position after reload. Transcoded: server starts at startTicks.
@@ -115,6 +121,8 @@ export function VideoPlayer({
     if (isSourceChange) v.load();
     const onLoaded = () => {
       if (seekTo > 0) v.currentTime = seekTo;
+      sourceChangingRef.current = false;
+      setLoading(false);
       if (isSourceChange) v.play().catch(() => {});
     };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
@@ -139,20 +147,23 @@ export function VideoPlayer({
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
 
-  // Keyboard shortcuts
+  // Keep currentTimeRef in sync (avoids putting currentTime in keyboard effect deps)
+  currentTimeRef.current = currentTime;
+
+  // Keyboard shortcuts — uses ref to avoid re-attaching listener every 250ms
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
       if (e.code === "KeyF") toggleFullscreen();
       if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else navigate(-1); }
-      if (e.code === "ArrowRight") handleSeek(currentTime + 10);
-      if (e.code === "ArrowLeft") handleSeek(Math.max(0, currentTime - 10));
+      if (e.code === "ArrowRight") handleSeek(currentTimeRef.current + 10);
+      if (e.code === "ArrowLeft") handleSeek(Math.max(0, currentTimeRef.current - 10));
       if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
       if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay, toggleFullscreen, navigate, currentTime, handleSeek, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [togglePlay, toggleFullscreen, navigate, handleSeek, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   // Auto-play cleanup
   useEffect(() => () => { clearInterval(autoPlayTimerRef.current); }, []);
@@ -192,7 +203,8 @@ export function VideoPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);
-          onProgress?.(streamOffset + t, e.currentTarget.paused);
+          // Block progress reporting during source transitions to prevent position=0 corruption
+          if (!sourceChangingRef.current) onProgress?.(streamOffset + t, e.currentTarget.paused);
         }}
         onProgress={() => {
           const v = videoRef.current;
@@ -201,8 +213,10 @@ export function VideoPlayer({
           if (buf.length > 0) setBuffered(buf.end(buf.length - 1) / v.duration);
         }}
         onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
-        onPlay={() => { setPlaying(true); if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); } }}
+        onPlay={() => { setPlaying(true); setLoading(false); if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); } }}
         onPause={() => setPlaying(false)}
+        onWaiting={() => setLoading(true)}
+        onCanPlay={() => setLoading(false)}
         onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
         autoPlay muted={transitionMuted} crossOrigin="anonymous"
       >
@@ -210,6 +224,13 @@ export function VideoPlayer({
           <track key={t.index} kind="subtitles" src={t.url} label={t.label} />
         ))}
       </video>
+
+      {/* Loading/buffering spinner */}
+      {loading && playing && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+        </div>
+      )}
 
       {/* Skip intro/credits buttons */}
       {showSkipIntro && introSegment && (
