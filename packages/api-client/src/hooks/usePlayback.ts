@@ -19,9 +19,28 @@ export function usePlaybackReporting(
   const clientRef = useRef(client);
   const itemIdRef = useRef(itemId);
   const msIdRef = useRef(mediaSourceId);
+  const prevItemIdRef = useRef(itemId);
   clientRef.current = client;
   itemIdRef.current = itemId;
   msIdRef.current = mediaSourceId;
+
+  // When itemId changes (episode switch), stop the old session and reset state
+  useEffect(() => {
+    const prevId = prevItemIdRef.current;
+    prevItemIdRef.current = itemId;
+    if (prevId && prevId !== itemId && startedRef.current) {
+      clientRef.current.fetch("/Sessions/Playing/Stopped", {
+        method: "POST",
+        body: JSON.stringify({
+          ItemId: prevId,
+          MediaSourceId: prevId,
+          PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        }),
+      }).catch(() => {});
+      startedRef.current = false;
+      positionRef.current = 0;
+    }
+  }, [itemId]);
 
   const reportStart = useCallback(() => {
     if (!itemId || startedRef.current) return;
