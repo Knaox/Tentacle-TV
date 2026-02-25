@@ -112,6 +112,13 @@ export function Watch() {
     });
   }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Unique ID per transcode session — lets Jellyfin's segment handler find
+  // the correct transcode started by master.m3u8 (not needed for direct play).
+  const playSessionId = useMemo(() => {
+    if (isDirectPlay) return undefined;
+    return crypto.randomUUID();
+  }, [audioIndex, quality, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
     const url = client.getStreamUrl(itemId, {
@@ -121,10 +128,11 @@ export function Watch() {
       maxBitrate: quality ?? undefined,
       directPlay: isDirectPlay,
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
+      playSessionId,
     });
-    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks });
+    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, playSessionId });
     return url;
-  }, [client, itemId, audioIndex, subtitleIndex, mediaSourceId, quality, isDirectPlay, startTicks]);
+  }, [client, itemId, audioIndex, subtitleIndex, mediaSourceId, quality, isDirectPlay, startTicks, playSessionId]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
