@@ -8,6 +8,7 @@ import {
   saveDatabaseUrl,
   initPrisma,
   reinitPrisma,
+  reconnectPrisma,
   hasPrisma,
 } from "../services/db";
 import {
@@ -41,14 +42,15 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   app.get("/status", async () => {
     let state = getAppState();
 
-    // Auto-recovery: if we have a DB URL but aren't connected (transient startup failure),
-    // try to reconnect and re-detect state so the setup wizard doesn't re-appear.
+    // Auto-recovery: if we have a DB URL but state isn't "running",
+    // force a fresh reconnect (handles stale connections too).
     if (state !== "running" && hasDatabaseUrl()) {
-      if (!hasPrisma()) {
-        await initPrisma();
-      }
-      if (hasPrisma()) {
+      const ok = await reconnectPrisma();
+      if (ok) {
         state = await detectAppState();
+        if (state === "running") {
+          console.log("[Setup] Auto-recovery via /status succeeded — state is now running");
+        }
       }
     }
 
