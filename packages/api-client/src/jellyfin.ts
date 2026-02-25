@@ -42,6 +42,10 @@ export class JellyfinClient {
     return this.baseUrl;
   }
 
+  getDeviceId() {
+    return this.deviceId;
+  }
+
   private getOrCreateDeviceId(uuid: UuidGenerator): string {
     const stored = this.storage.getItem("tentacle_device_id");
     if (stored) return stored;
@@ -113,6 +117,9 @@ export class JellyfinClient {
     directPlay?: boolean;
     /** Seek position for transcoded streams (in Jellyfin ticks) */
     startTimeTicks?: number;
+    /** Unique ID per transcode session — lets Jellyfin's segment handler
+     *  find the correct transcode started by master.m3u8. */
+    playSessionId?: string;
   }): string {
     const params = new URLSearchParams();
     params.set("api_key", this.accessToken ?? "");
@@ -127,7 +134,9 @@ export class JellyfinClient {
       return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
     }
 
-    // Transcode / remux via HLS — enables proper seeking with StartTimeTicks
+    // Transcode / remux via HLS
+    params.set("DeviceId", this.deviceId);
+    if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
     params.set("VideoCodec", "h264,hevc");
     params.set("AudioCodec", "aac,mp3,ac3");
     if (options?.maxBitrate) {

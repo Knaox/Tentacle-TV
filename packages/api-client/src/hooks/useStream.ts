@@ -8,6 +8,7 @@ export interface StreamOptions {
   maxBitrate?: number;
   directPlay?: boolean;
   startTimeTicks?: number;
+  playSessionId?: string;
 }
 
 export function useStream(itemId: string | undefined, options?: StreamOptions) {

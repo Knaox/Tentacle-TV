@@ -73,6 +73,16 @@ export function VideoPlayer({
 
   const [playing, setPlaying] = useState(false);
   const [rawTime, setRawTime] = useState(0);
+  const lastKnownPositionRef = useRef(0);
+
+  // Synchronously reset rawTime when src changes to prevent one-frame glitch
+  // where currentTime = newStreamOffset + oldRawTime (double-counted).
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (prevSrc !== src) {
+    setPrevSrc(src);
+    setRawTime(0);
+  }
+
   const [videoDuration, setVideoDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [volume, setVolume] = useState(1);
@@ -137,12 +147,15 @@ export function VideoPlayer({
     if (!v) return;
 
     const isSourceChange = hasStartedRef.current;
-    const savedTime = rawTime;
     const isHlsUrl = src.includes(".m3u8");
     sourceChangingRef.current = true;
     setLoading(true);
-    if (isSourceChange) { setRawTime(0); hasStartedRef.current = false; }
-    const seekTo = isSourceChange ? (isDirectPlay ? savedTime : 0) : (startPositionSeconds ?? 0);
+    if (isSourceChange) { hasStartedRef.current = false; }
+    // rawTime is already synchronously reset to 0 by the prevSrc check above.
+    // Use lastKnownPositionRef for direct-play seek restore (holds absolute position).
+    const seekTo = isSourceChange
+      ? (isDirectPlay ? lastKnownPositionRef.current : 0)
+      : (startPositionSeconds ?? 0);
     console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo });
 
     // Cleanup previous HLS instance
@@ -333,7 +346,9 @@ export function VideoPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);
-          if (!sourceChangingRef.current) onProgress?.(streamOffset + t, e.currentTarget.paused);
+          const absoluteTime = streamOffset + t;
+          lastKnownPositionRef.current = absoluteTime;
+          if (!sourceChangingRef.current) onProgress?.(absoluteTime, e.currentTarget.paused);
         }}
         onProgress={() => {
           const v = videoRef.current;
