@@ -141,7 +141,7 @@ export function VideoPlayer({
     const isHlsUrl = src.includes(".m3u8");
     sourceChangingRef.current = true;
     setLoading(true);
-    if (isSourceChange) setRawTime(0);
+    if (isSourceChange) { setRawTime(0); hasStartedRef.current = false; }
     const seekTo = isSourceChange ? (isDirectPlay ? savedTime : 0) : (startPositionSeconds ?? 0);
     console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo });
 

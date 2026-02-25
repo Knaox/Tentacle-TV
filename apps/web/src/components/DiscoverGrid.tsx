@@ -55,21 +55,23 @@ export function DiscoverGrid() {
     const pool = isSearching ? searchResults : discoverResults;
     const item = pool.find((r) => r.id === body.mediaId && r.mediaType === body.mediaType);
     setFeedback(null);
-    requestMutation.mutate(
-      {
-        mediaType: body.mediaType,
-        tmdbId: body.mediaId,
-        title: item?.title || item?.name || "Unknown",
-        posterPath: item?.posterPath,
-      },
-      {
-        onSuccess: () => setFeedback({ type: "success", msg: "Demande ajoutée à la file d'attente" }),
-        onError: (err) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          setFeedback({ type: "error", msg: `Erreur : ${msg}` });
+    return new Promise<void>((resolve, reject) => {
+      requestMutation.mutate(
+        {
+          mediaType: body.mediaType,
+          tmdbId: body.mediaId,
+          title: item?.title || item?.name || "Unknown",
+          posterPath: item?.posterPath,
         },
-      }
-    );
+        {
+          onSuccess: () => { setFeedback({ type: "success", msg: "Demande ajoutee a la file d'attente" }); resolve(); },
+          onError: (err) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            setFeedback({ type: "error", msg: `Erreur : ${msg}` }); reject(err);
+          },
+        }
+      );
+    });
   };
 
   return (

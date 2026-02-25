@@ -72,7 +72,7 @@ export function Watch() {
   });
 
   const skipSegments = useIntroSkipper(itemId, item);
-  const { reportStart, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
+  const { reportStart, reportStop, updatePosition } = usePlaybackReporting(itemId, mediaSourceId, isDirectPlay);
 
   // Resolve preferred tracks
   const resolveTracks = useResolveMediaTracks();
@@ -101,7 +101,10 @@ export function Watch() {
           }
           setAudioIndex(result.audioIndex);
         }
-        if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
+        // -1 = explicitly disabled, positive = specific track, null = no preference
+        if (result.subtitleIndex != null) {
+          setSubtitleIndex(result.subtitleIndex === -1 ? null : result.subtitleIndex);
+        }
       },
     });
   }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -110,7 +113,7 @@ export function Watch() {
     if (!itemId) return null;
     const url = client.getStreamUrl(itemId, {
       audioIndex,
-      subtitleIndex: subtitleIndex ?? undefined,
+      subtitleIndex: subtitleIndex ?? -1,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
       directPlay: isDirectPlay,
@@ -141,22 +144,25 @@ export function Watch() {
     return ticks ? ticks / TICKS_PER_SECOND : undefined;
   }, [item]);
 
-  // Audio change: save current position for transcoded streams
+  // Audio change: stop old session, save position, then start new stream
   const handleAudioChange = useCallback((idx: number) => {
     console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current });
+    // Stop current Jellyfin session so the old transcode is cleaned up
+    reportStop();
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
     setAudioIndex(idx);
-  }, []);
+  }, [reportStop]);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
     console.debug(DBG, "quality change", { bitrate, position: positionRef.current });
+    reportStop();
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }
     setQuality(bitrate);
-  }, []);
+  }, [reportStop]);
 
   // Transcoded seeking: update startTicks to recompute stream URL
   const handleSeekRequest = useCallback((targetSeconds: number) => {

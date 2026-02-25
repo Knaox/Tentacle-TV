@@ -16,7 +16,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const admin = useMemo(isAdmin, []);
+  const admin = isAdmin();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
