@@ -19,25 +19,40 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
   const [error, setError] = useState<string | null>(null);
 
   const handleConnect = async () => {
-    const trimmed = url.trim().replace(/\/+$/, "");
-    if (!trimmed) return;
+    let normalized = url.trim().replace(/\/+$/, "");
+    if (!normalized) return;
+    // Add protocol if missing (prefer https)
+    if (!/^https?:\/\//i.test(normalized)) {
+      normalized = "https://" + normalized;
+    }
+    // Strip redundant default ports
+    normalized = normalized.replace(/^(https:\/\/[^/:]+):443\b/, "$1");
+    normalized = normalized.replace(/^(http:\/\/[^/:]+):80\b/, "$1");
 
     setError(null);
     setLoading(true);
 
     try {
-      const response = await fetch(`${trimmed}/api/health`, {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10_000);
+      const response = await fetch(`${normalized}/api/health`, {
         method: "GET",
         headers: { Accept: "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!response.ok) {
         throw new Error("not ok");
       }
 
-      onServerValidated(trimmed);
-    } catch {
-      setError("Serveur introuvable. V\u00e9rifiez l'URL.");
+      onServerValidated(normalized);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Delai de connexion depasse. Le serveur ne repond pas.");
+      } else {
+        setError("Serveur introuvable. Verifiez l'URL.");
+      }
     } finally {
       setLoading(false);
     }

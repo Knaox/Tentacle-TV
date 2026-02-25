@@ -28,7 +28,7 @@ import { startPairingCleanup } from "./services/pairingCleanup";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 
 async function main() {
   const app = Fastify({
@@ -37,7 +37,12 @@ async function main() {
     bodyLimit: 50 * 1024 * 1024,
   });
 
-  await app.register(cors, { origin: CORS_ORIGIN });
+  // CORS: "*" reflects any origin (needed for Desktop/Mobile apps).
+  // Set CORS_ORIGIN to a specific URL or comma-separated list to restrict.
+  const corsOrigin = CORS_ORIGIN === "*"
+    ? true
+    : CORS_ORIGIN.includes(",") ? CORS_ORIGIN.split(",").map((s) => s.trim()) : CORS_ORIGIN;
+  await app.register(cors, { origin: corsOrigin });
   await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
 
   // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)

@@ -148,6 +148,13 @@ export function VideoPlayer({
     // Cleanup previous HLS instance
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
 
+    // Fully reset the video element on source change to prevent stale MSE/src state
+    if (isSourceChange) {
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    }
+
     const failsafe = setTimeout(() => {
       if (sourceChangingRef.current) {
         console.error(DBG, "loadedmetadata timeout — recovery");
@@ -173,13 +180,11 @@ export function VideoPlayer({
     if (isHlsUrl && Hls.isSupported()) {
       const hls = new Hls({ enableWorker: true, startPosition: seekTo > 0 ? seekTo : -1 });
       hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(v);
+      // Register handlers BEFORE loading to prevent missing fast/cached manifests
       hls.on(Hls.Events.MANIFEST_PARSED, onReady);
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           console.error(DBG, "HLS fatal error:", data.type, data.details);
-          // Attempt recovery based on error type
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             console.debug(DBG, "attempting HLS network recovery");
             hls.startLoad();
@@ -187,7 +192,6 @@ export function VideoPlayer({
             console.debug(DBG, "attempting HLS media recovery");
             hls.recoverMediaError();
           } else {
-            // Unrecoverable — stop loading spinner
             clearTimeout(failsafe);
             sourceChangingRef.current = false;
             setLoading(false);
@@ -195,6 +199,8 @@ export function VideoPlayer({
           }
         }
       });
+      hls.loadSource(src);
+      hls.attachMedia(v);
     } else {
       // Direct play or native HLS (Safari)
       v.src = src;
