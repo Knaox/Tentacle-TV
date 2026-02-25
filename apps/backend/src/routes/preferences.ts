@@ -38,6 +38,28 @@ const LANG_GROUPS: string[][] = [
   ["hu", "hun", "hungarian", "hongrois"],
   ["ro", "ron", "rum", "romanian", "roumain"],
   ["el", "gre", "ell", "greek", "grec"],
+  ["da", "dan", "danish", "danois"],
+  ["he", "heb", "hebrew", "hébreu"],
+  ["vi", "vie", "vietnamese", "vietnamien"],
+  ["id", "ind", "indonesian", "indonésien"],
+  ["ms", "may", "msa", "malay", "malais"],
+  ["uk", "ukr", "ukrainian", "ukrainien"],
+  ["bg", "bul", "bulgarian", "bulgare"],
+  ["hr", "hrv", "croatian", "croate"],
+  ["sr", "srp", "scc", "serbian", "serbe"],
+  ["ca", "cat", "catalan"],
+  ["ta", "tam", "tamil", "tamoul"],
+  ["te", "tel", "telugu", "télougou"],
+  ["fa", "per", "fas", "persian", "persan"],
+  ["sk", "slo", "slk", "slovak", "slovaque"],
+  ["sl", "slv", "slovenian", "slovène"],
+  ["lt", "lit", "lithuanian", "lituanien"],
+  ["lv", "lav", "latvian", "letton"],
+  ["et", "est", "estonian", "estonien"],
+  ["ml", "mal", "malayalam"],
+  ["bn", "ben", "bengali"],
+  ["ur", "urd", "urdu"],
+  ["tl", "fil", "tagalog", "filipino"],
 ];
 
 const ALIAS_MAP = new Map<string, Set<string>>();
@@ -186,22 +208,23 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     let subtitleIndex: number | null = null;
     if (pref.subtitleMode !== "none" && pref.subtitleLang) {
       const subs = body.subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
+      const nonForced = subs.filter((t) => !t.isForced);
+      const forced = subs.filter((t) => t.isForced);
 
       if (pref.subtitleMode === "forced") {
-        const forced = subs.find((t) => t.isForced);
-        if (forced) subtitleIndex = forced.index;
+        // ONLY forced subs — if none exist, no subtitle at all
+        if (forced.length > 0) subtitleIndex = forced[0].index;
       } else if (pref.subtitleMode === "signs") {
         const signs = subs.find((t) =>
           t.title?.toLowerCase().includes("sign") ||
           t.title?.toLowerCase().includes("songs")
         );
         if (signs) subtitleIndex = signs.index;
-        else {
-          const forced = subs.find((t) => t.isForced);
-          if (forced) subtitleIndex = forced.index;
-        }
+        else if (forced.length > 0) subtitleIndex = forced[0].index;
       } else if (pref.subtitleMode === "always") {
-        subtitleIndex = subs[0]?.index ?? null;
+        // Prefer non-forced (full) subs; only use forced as last resort
+        if (nonForced.length > 0) subtitleIndex = nonForced[0].index;
+        else if (forced.length > 0) subtitleIndex = forced[0].index;
       }
     }
 
