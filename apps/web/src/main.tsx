@@ -14,6 +14,7 @@ import {
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
+  setPairingBackendUrl,
 } from "@tentacle/api-client";
 import { App } from "./App";
 import "./index.css";
@@ -36,6 +37,7 @@ export function configureBackendUrls(url: string) {
   setTicketsBackendUrl(url);
   setNotificationsBackendUrl(url);
   setConfigBackendUrl(url);
+  setPairingBackendUrl(url);
 }
 
 configureBackendUrls(backendUrl);

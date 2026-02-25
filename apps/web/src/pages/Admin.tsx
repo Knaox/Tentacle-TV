@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus } from "@tentacle/api-client";
+import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, usePairedDevices, useRevokePairedDevice } from "@tentacle/api-client";
 import type { SupportTicket } from "@tentacle/api-client";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
@@ -42,6 +42,7 @@ export function Admin() {
     <div className="px-4 pt-6 pb-16 md:px-12"><div className="mx-auto max-w-4xl">
       <h1 className="mb-8 text-2xl font-bold text-white">Administration</h1>
       <ServicesSection />
+      <PairedDevicesSection />
       <div className={cls.card}>
         <h2 className="mb-4 text-lg font-semibold text-white">Generer un lien d'invitation</h2>
         <div className="flex flex-wrap items-end gap-4">
@@ -188,6 +189,43 @@ function ServicesSection() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Paired Devices ── */
+function PairedDevicesSection() {
+  const { data: devices } = usePairedDevices();
+  const revokeMut = useRevokePairedDevice();
+
+  return (
+    <div className={cls.card}>
+      <h2 className="mb-4 text-lg font-semibold text-white">Appareils jumeles</h2>
+      {!devices || devices.length === 0 ? (
+        <p className="text-sm text-white/40">Aucun appareil jumele</p>
+      ) : (
+        <div className="space-y-3">
+          {devices.map((device) => (
+            <div key={device.id} className="flex items-center justify-between rounded-lg border border-white/10 p-4">
+              <div>
+                <p className="text-sm font-medium text-white">{device.name}</p>
+                <div className="mt-1 flex items-center gap-3 text-xs text-white/40">
+                  <span>{device.username}</span>
+                  <span>Derniere activite : {new Date(device.lastSeen).toLocaleDateString("fr-FR")}</span>
+                  <span>Jumele le {new Date(device.createdAt).toLocaleDateString("fr-FR")}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => { if (confirm("Revoquer cet appareil ?")) revokeMut.mutate(device.id); }}
+                disabled={revokeMut.isPending}
+                className={cls.bd}
+              >
+                Revoquer
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

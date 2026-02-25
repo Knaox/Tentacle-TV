@@ -7,6 +7,7 @@ import { HomeScreen } from "../screens/HomeScreen";
 import { MediaDetailScreen } from "../screens/MediaDetailScreen";
 import { PlayerScreen } from "../screens/PlayerScreen";
 import { SearchScreen } from "../screens/SearchScreen";
+import { PairCodeScreen } from "../screens/PairCodeScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -31,6 +32,7 @@ export function AppNavigator() {
       }}
     >
       <Stack.Screen name="ServerSetup" component={ServerSetupScreen} />
+      <Stack.Screen name="PairCode" component={PairCodeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
