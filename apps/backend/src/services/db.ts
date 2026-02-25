@@ -69,3 +69,12 @@ export function getPrisma(): PrismaClient {
 export function hasPrisma(): boolean {
   return prisma !== null;
 }
+
+/** Disconnect and reconnect (handles stale connections). */
+export async function reconnectPrisma(): Promise<boolean> {
+  if (prisma) {
+    await prisma.$disconnect().catch(() => {});
+    prisma = null;
+  }
+  return initPrisma();
+}

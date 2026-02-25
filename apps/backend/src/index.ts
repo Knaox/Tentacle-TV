@@ -5,7 +5,7 @@ import fastifyStatic from "@fastify/static";
 import { resolve } from "path";
 import { existsSync } from "fs";
 
-import { initPrisma, hasDatabaseUrl } from "./services/db";
+import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
 import { detectAppState, getAppState } from "./services/configStore";
 
 import { setupRoutes } from "./routes/setup";
@@ -69,18 +69,39 @@ async function main() {
   await app.register(healthRoutes, { prefix: "/api" });
 
   // ── Setup guard: block most API routes until setup is complete ──
+  let lastRecoveryAttempt = 0;
   app.addHook("onRequest", async (request, reply) => {
     const url = request.url;
     // Always allow: setup, health, static files
     if (url.startsWith("/api/setup") || url.startsWith("/api/health") || !url.startsWith("/api/")) {
       return;
     }
-    const state = getAppState();
+    let state = getAppState();
     if (state !== "running") {
-      return reply.status(503).send({
-        message: "Setup required",
-        setupState: state,
-      });
+      // Try auto-recovery (at most once per 10s to avoid hammering)
+      const now = Date.now();
+      if (now - lastRecoveryAttempt > 10_000 && hasDatabaseUrl()) {
+        lastRecoveryAttempt = now;
+        try {
+          const ok = await reconnectPrisma();
+          if (ok) {
+            state = await detectAppState();
+            if (state === "running") {
+              console.log("[Guard] Auto-recovery succeeded — state is now running");
+              startRequestWorker();
+              startPairingCleanup();
+            }
+          }
+        } catch (err) {
+          console.warn("[Guard] Auto-recovery failed:", err);
+        }
+      }
+      if (state !== "running") {
+        return reply.status(503).send({
+          message: "Setup required",
+          setupState: state,
+        });
+      }
     }
   });
 
@@ -119,7 +140,16 @@ async function main() {
   }
 
   // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
-  if (hasDatabaseUrl()) {
+  const dbUrl = getDatabaseUrl();
+  const dbSource = process.env.DATABASE_URL ? "env" : dbUrl ? "file (data/database.json)" : "none";
+  console.log(`[DB] DATABASE_URL source: ${dbSource}`);
+  if (dbUrl) {
+    // Log masked URL for debugging
+    const masked = dbUrl.replace(/:([^@]+)@/, ":***@");
+    console.log(`[DB] URL: ${masked}`);
+  }
+
+  if (dbUrl) {
     let connected = false;
     for (let attempt = 1; attempt <= 5; attempt++) {
       connected = await initPrisma();
@@ -134,7 +164,7 @@ async function main() {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }
   } else {
-    console.log("[DB] No DATABASE_URL — entering setup mode");
+    console.log("[DB] No DATABASE_URL (env or data/database.json) — entering setup mode");
   }
 
   const state = getAppState();
