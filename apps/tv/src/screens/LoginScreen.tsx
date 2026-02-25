@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, ActivityIndicator } from "react-native";
-import { useAuth } from "@tentacle/api-client";
+import { useTentacleConfig, useJellyfinClient } from "@tentacle/api-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
@@ -11,28 +11,63 @@ export function LoginScreen({ navigation }: Props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { storage } = useTentacleConfig();
+  const jellyfinClient = useJellyfinClient();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username || !password) return;
     setError(null);
-    login.mutate(
-      { username, password },
-      {
-        onSuccess: () => navigation.replace("Home"),
-        onError: (err) => setError(err instanceof Error ? err.message : "Connexion échouée"),
+    setLoading(true);
+
+    const serverUrl = storage.getItem("tentacle_server_url");
+    if (!serverUrl) {
+      navigation.replace("ServerSetup");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${serverUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.message || "Identifiants invalides");
       }
-    );
+
+      const data = await response.json();
+
+      // Save auth data
+      jellyfinClient.setAccessToken(data.AccessToken);
+      storage.setItem("tentacle_token", data.AccessToken);
+      storage.setItem("tentacle_user", JSON.stringify(data.User));
+
+      navigation.replace("Home");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connexion echouee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangeServer = () => {
+    storage.removeItem("tentacle_server_url");
+    storage.removeItem("tentacle_token");
+    storage.removeItem("tentacle_user");
+    navigation.replace("ServerSetup");
   };
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0a0a0f" }}>
-      <View style={{ width: 400, padding: 40, backgroundColor: "#12121a", borderRadius: 16, borderWidth: 1, borderColor: "#1e1e2e" }}>
-        <Text style={{ color: "#8b5cf6", fontSize: 32, fontWeight: "800", textAlign: "center", marginBottom: 8 }}>
+      <View style={{ width: 450, padding: 48, backgroundColor: "#12121a", borderRadius: 20, borderWidth: 1, borderColor: "#1e1e2e" }}>
+        <Text style={{ color: "#8b5cf6", fontSize: 36, fontWeight: "800", textAlign: "center", marginBottom: 8 }}>
           Tentacle
         </Text>
-        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, textAlign: "center", marginBottom: 32 }}>
-          Connectez-vous à votre serveur
+        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, textAlign: "center", marginBottom: 32 }}>
+          Connectez-vous a votre compte
         </Text>
 
         <TextInput
@@ -52,19 +87,36 @@ export function LoginScreen({ navigation }: Props) {
           style={[inputStyle, { marginTop: 12 }]}
         />
 
-        {error && <Text style={{ color: "#ef4444", fontSize: 13, marginTop: 12 }}>{error}</Text>}
+        {error && (
+          <View style={{ marginTop: 12, backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" }}>
+            <Text style={{ color: "#ef4444", fontSize: 14, textAlign: "center" }}>{error}</Text>
+          </View>
+        )}
 
         <View style={{ marginTop: 24 }}>
           <Focusable onPress={handleLogin} hasTVPreferredFocus>
             <View style={{
-              backgroundColor: "#8b5cf6", borderRadius: 10, paddingVertical: 14,
-              alignItems: "center", opacity: login.isPending ? 0.6 : 1,
+              backgroundColor: "#8b5cf6", borderRadius: 12, paddingVertical: 16,
+              alignItems: "center", opacity: loading ? 0.6 : 1,
             }}>
-              {login.isPending ? (
+              {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Se connecter</Text>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>Se connecter</Text>
               )}
+            </View>
+          </Focusable>
+        </View>
+
+        <View style={{ marginTop: 16 }}>
+          <Focusable onPress={handleChangeServer}>
+            <View style={{
+              backgroundColor: "transparent", borderRadius: 12, paddingVertical: 12,
+              alignItems: "center",
+            }}>
+              <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>
+                Changer de serveur
+              </Text>
             </View>
           </Focusable>
         </View>
@@ -77,9 +129,9 @@ const inputStyle = {
   backgroundColor: "rgba(255,255,255,0.05)",
   borderWidth: 1,
   borderColor: "#1e1e2e",
-  borderRadius: 10,
-  paddingHorizontal: 16,
-  paddingVertical: 14,
+  borderRadius: 12,
+  paddingHorizontal: 20,
+  paddingVertical: 16,
   color: "#fff",
-  fontSize: 16,
+  fontSize: 18,
 };

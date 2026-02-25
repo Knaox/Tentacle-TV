@@ -1,30 +1,71 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import fastifyStatic from "@fastify/static";
+import { resolve } from "path";
+import { existsSync } from "fs";
+
+import { initPrisma, hasDatabaseUrl } from "./services/db";
+import { detectAppState, getAppState } from "./services/configStore";
+
+import { setupRoutes } from "./routes/setup";
 import { authRoutes } from "./routes/auth";
 import { inviteRoutes } from "./routes/invites";
 import { healthRoutes } from "./routes/health";
+import { configRoutes } from "./routes/config";
+import { demoRoutes } from "./routes/demo";
 import { seerrRoutes } from "./routes/seerr";
 import { requestRoutes } from "./routes/requests";
 import { preferenceRoutes } from "./routes/preferences";
 import { updateRoutes } from "./routes/update";
 import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
-import { configRoutes } from "./routes/config";
-import { demoRoutes } from "./routes/demo";
+import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
+import { adminRoutes } from "./routes/admin";
 import { startRequestWorker } from "./services/requestWorker";
 
 const PORT = Number(process.env.PORT) || 3001;
+const HOST = process.env.HOST || "0.0.0.0";
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 async function main() {
   const app = Fastify({
     logger: true,
+    // Allow large bodies for proxied requests (images, etc.)
+    bodyLimit: 50 * 1024 * 1024,
   });
 
   await app.register(cors, { origin: CORS_ORIGIN });
-  await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+  await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
 
+  // Content type parser for raw binary (proxied bodies)
+  app.addContentTypeParser(
+    "application/octet-stream",
+    { parseAs: "buffer" },
+    (_req, body, done) => done(null, body)
+  );
+
+  // ── Setup routes (always available) ──
+  await app.register(setupRoutes, { prefix: "/api/setup" });
+  await app.register(healthRoutes, { prefix: "/api" });
+
+  // ── Setup guard: block most API routes until setup is complete ──
+  app.addHook("onRequest", async (request, reply) => {
+    const url = request.url;
+    // Always allow: setup, health, static files
+    if (url.startsWith("/api/setup") || url.startsWith("/api/health") || !url.startsWith("/api/")) {
+      return;
+    }
+    const state = getAppState();
+    if (state !== "running") {
+      return reply.status(503).send({
+        message: "Setup required",
+        setupState: state,
+      });
+    }
+  });
+
+  // ── Application routes (active only after setup) ──
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(inviteRoutes, { prefix: "/api/invites" });
   await app.register(seerrRoutes, { prefix: "/api/seerr" });
@@ -33,15 +74,53 @@ async function main() {
   await app.register(updateRoutes, { prefix: "/api/update" });
   await app.register(ticketRoutes, { prefix: "/api/tickets" });
   await app.register(notificationRoutes, { prefix: "/api/notifications" });
+  await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
-  await app.register(healthRoutes, { prefix: "/api" });
 
-  await app.listen({ port: PORT, host: "0.0.0.0" });
-  console.log(`Tentacle Backend running on http://localhost:${PORT}`);
+  // ── Jellyfin proxy (all Jellyfin API calls go through here) ──
+  await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
 
-  // Start background worker for media request queue
-  startRequestWorker();
+  // ── Serve frontend static files in production ──
+  const webDistPath = resolve(__dirname, "../../../web/dist");
+  if (existsSync(webDistPath)) {
+    await app.register(fastifyStatic, {
+      root: webDistPath,
+      prefix: "/",
+      wildcard: false,
+    });
+    // SPA fallback: serve index.html for all non-API routes
+    app.setNotFoundHandler(async (request, reply) => {
+      if (request.url.startsWith("/api/")) {
+        return reply.status(404).send({ message: "Not found" });
+      }
+      return reply.sendFile("index.html");
+    });
+  }
+
+  // ── Initialize database ──
+  if (hasDatabaseUrl()) {
+    const connected = await initPrisma();
+    if (connected) {
+      console.log("[DB] Connected successfully");
+      await detectAppState();
+    } else {
+      console.warn("[DB] Connection failed — entering setup mode");
+    }
+  } else {
+    console.log("[DB] No DATABASE_URL — entering setup mode");
+  }
+
+  const state = getAppState();
+  console.log(`[App] State: ${state}`);
+
+  // Start background workers only when fully configured
+  if (state === "running") {
+    startRequestWorker();
+  }
+
+  await app.listen({ port: PORT, host: HOST });
+  console.log(`Tentacle running on http://localhost:${PORT} (state: ${state})`);
 }
 
 main().catch((err) => {

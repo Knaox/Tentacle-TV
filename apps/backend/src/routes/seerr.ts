@@ -1,12 +1,11 @@
 import type { FastifyPluginAsync } from "fastify";
+import { getSeerrUrl, getSeerrApiKey } from "../services/configStore";
 
-const SEERR_URL = (process.env.SEERR_URL || "http://localhost:5055").replace(/\/$/, "");
-const SEERR_API_KEY = process.env.SEERR_API_KEY || "";
-
-const headers = { "X-Api-Key": SEERR_API_KEY };
+function seerrHeaders() { return { "X-Api-Key": getSeerrApiKey() || "" }; }
+function seerrBase() { return (getSeerrUrl() || "").replace(/\/$/, ""); }
 
 async function proxyGet(path: string) {
-  const res = await fetch(`${SEERR_URL}/api/v1${path}`, { headers });
+  const res = await fetch(`${seerrBase()}/api/v1${path}`, { headers: seerrHeaders() });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw Object.assign(new Error(`Service error ${res.status}: ${text}`), { statusCode: res.status });
@@ -15,9 +14,9 @@ async function proxyGet(path: string) {
 }
 
 async function proxyPost(path: string, body: unknown) {
-  const res = await fetch(`${SEERR_URL}/api/v1${path}`, {
+  const res = await fetch(`${seerrBase()}/api/v1${path}`, {
     method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
+    headers: { ...seerrHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -28,7 +27,7 @@ async function proxyPost(path: string, body: unknown) {
 }
 
 async function proxyDelete(path: string) {
-  const res = await fetch(`${SEERR_URL}/api/v1${path}`, { method: "DELETE", headers });
+  const res = await fetch(`${seerrBase()}/api/v1${path}`, { method: "DELETE", headers: seerrHeaders() });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw Object.assign(new Error(`Service error ${res.status}: ${text}`), { statusCode: res.status });

@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { getPrisma } from "./db";
 import { submitRequest, getRequestStatus, mapSeerrStatus } from "./overseerr";
-
-const prisma = new PrismaClient();
 const POLL_INTERVAL = 60_000; // 60 seconds
 const MAX_RETRIES = 3;
 const SUBMIT_DELAY = 15_000; // 15s between Seerr API calls
@@ -25,6 +23,7 @@ async function processQueue(): Promise<void> {
   processing = true;
 
   try {
+    const prisma = getPrisma();
     // 1. Submit pending requests to Seerr
     const pending = await prisma.mediaRequest.findFirst({
       where: { status: "pending" },

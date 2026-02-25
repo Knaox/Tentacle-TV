@@ -1,7 +1,7 @@
 {
   "name": "tentacle",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "Premium multi-platform media client",
   "scripts": {
     "dev:web": "pnpm --filter @tentacle/web dev",
@@ -17,7 +17,12 @@
     "build:mobile:ios": "pnpm --filter @tentacle/mobile ios",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "clean": "pnpm -r exec rm -rf node_modules dist .turbo && rm -rf node_modules"
+    "clean": "pnpm -r exec rm -rf node_modules dist .turbo && rm -rf node_modules",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:rebuild": "docker compose up -d --build",
+    "docker:reset": "docker compose down -v && docker compose up -d --build"
   },
   "engines": {
     "node": ">=20.0.0",

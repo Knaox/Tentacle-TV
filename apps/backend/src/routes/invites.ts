@@ -1,9 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
+import { getPrisma } from "../services/db";
+import { requireAdmin } from "../middleware/auth";
 
 const createInviteSchema = z.object({
   maxUses: z.number().int().min(1).max(100).default(1),
@@ -11,9 +10,10 @@ const createInviteSchema = z.object({
 });
 
 export const inviteRoutes: FastifyPluginAsync = async (app) => {
-  // TODO: Add admin authentication middleware
+  app.addHook("preHandler", requireAdmin);
 
   app.post("/", async (request, reply) => {
+    const prisma = getPrisma();
     const body = createInviteSchema.parse(request.body);
 
     const key = crypto.randomBytes(8).toString("hex");
@@ -38,6 +38,7 @@ export const inviteRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get("/", async () => {
+    const prisma = getPrisma();
     const invites = await prisma.inviteKey.findMany({
       include: { usages: true },
       orderBy: { createdAt: "desc" },

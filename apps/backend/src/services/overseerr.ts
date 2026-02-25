@@ -1,10 +1,11 @@
-const SEERR_URL = (process.env.SEERR_URL || "http://localhost:5055").replace(/\/$/, "");
-const SEERR_API_KEY = process.env.SEERR_API_KEY || "";
+import { getSeerrUrl, getSeerrApiKey } from "./configStore";
 
-const headers: Record<string, string> = {
-  "X-Api-Key": SEERR_API_KEY,
-  "Content-Type": "application/json",
-};
+function getHeaders(): Record<string, string> {
+  return { "X-Api-Key": getSeerrApiKey() || "", "Content-Type": "application/json" };
+}
+function getBaseUrl(): string {
+  return (getSeerrUrl() || "").replace(/\/$/, "");
+}
 
 export interface SeerrRequestResult {
   id: number;
@@ -25,9 +26,9 @@ export async function submitRequest(
   mediaType: "movie" | "tv",
   tmdbId: number
 ): Promise<SeerrRequestResult> {
-  const res = await fetch(`${SEERR_URL}/api/v1/request`, {
+  const res = await fetch(`${getBaseUrl()}/api/v1/request`, {
     method: "POST",
-    headers,
+    headers: getHeaders(),
     body: JSON.stringify({ mediaType, mediaId: tmdbId }),
   });
 
@@ -47,7 +48,7 @@ export async function getMediaStatus(
   tmdbId: number
 ): Promise<SeerrMediaStatus | null> {
   const endpoint = mediaType === "movie" ? "movie" : "tv";
-  const res = await fetch(`${SEERR_URL}/api/v1/${endpoint}/${tmdbId}`, { headers });
+  const res = await fetch(`${getBaseUrl()}/api/v1/${endpoint}/${tmdbId}`, { headers });
 
   if (res.status === 404) return null;
   if (!res.ok) {
@@ -67,7 +68,7 @@ export async function getMediaStatus(
  * Get a specific request + media status from Overseerr/Seerr.
  */
 export async function getRequestStatus(requestId: number): Promise<{ status: number; mediaStatus: number } | null> {
-  const res = await fetch(`${SEERR_URL}/api/v1/request/${requestId}`, { headers });
+  const res = await fetch(`${getBaseUrl()}/api/v1/request/${requestId}`, { headers });
 
   if (res.status === 404) return null;
   if (!res.ok) return null;

@@ -16,17 +16,16 @@ import {
   setConfigBackendUrl,
 } from "@tentacle/api-client";
 import { App } from "./App";
-import { getServerUrls } from "./hooks/useServerConfig";
 import "./index.css";
 
-const { jellyfinUrl: savedJellyfin, backendUrl: savedBackend } = getServerUrls();
-// getServerUrls() already handles Tauri vs web env var fallback
-const jellyfinUrl = savedJellyfin || import.meta.env.VITE_JELLYFIN_URL || "http://localhost:8096";
-// Desktop (Tauri): if no backend URL configured, fall back to the Jellyfin URL
-// (backend typically runs behind the same reverse proxy)
-const backendUrl = savedBackend || import.meta.env.VITE_BACKEND_URL || jellyfinUrl;
+// Unified architecture: everything goes through the same origin.
+// Dev: Vite proxies /api/* to backend (localhost:3001)
+// Prod: Fastify serves both frontend and API on the same port
+const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const deviceName = isTauriApp ? "Desktop" : "Web";
+
+// All backend services share the same server URL
 setSeerrBackendUrl(backendUrl);
 setRequestsBackendUrl(backendUrl);
 setPreferencesBackendUrl(backendUrl);
@@ -36,7 +35,14 @@ setConfigBackendUrl(backendUrl);
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
-const jellyfinClient = new JellyfinClient(jellyfinUrl, storage, uuid, deviceName);
+
+// JellyfinClient now routes through the Tentacle proxy at /api/jellyfin/*
+const jellyfinClient = new JellyfinClient(
+  `${backendUrl}/api/jellyfin`,
+  storage,
+  uuid,
+  deviceName
+);
 
 // Restore token from storage
 const savedToken = storage.getItem("tentacle_token");
@@ -49,8 +55,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,   // 5 minutes — data rarely changes
-      gcTime: 30 * 60 * 1000,     // 30 minutes in garbage collection
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
     },
     mutations: {
       retry: false,

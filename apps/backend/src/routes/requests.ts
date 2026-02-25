@@ -1,9 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
+import { getPrisma } from "../services/db";
 import { requireAuth, requireAdmin, type JellyfinUser } from "../middleware/auth";
-
-const prisma = new PrismaClient();
 
 const createRequestSchema = z.object({
   mediaType: z.enum(["movie", "tv"]),
@@ -18,6 +16,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/requests — Create a new media request
   app.post("/", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const body = createRequestSchema.parse(request.body);
 
@@ -52,6 +51,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/requests — List user's own requests
   app.get("/", async (request) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
@@ -76,6 +76,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /api/requests/all — Admin: list all requests
   app.get("/all", { preHandler: [requireAdmin] }, async (request) => {
+    const prisma = getPrisma();
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
@@ -99,6 +100,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // DELETE /api/requests/:id — Cancel own request (or admin can cancel any)
   app.delete("/:id", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
 
@@ -123,6 +125,7 @@ export const requestRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/requests/:id/retry — Retry a failed request
   app.post("/:id/retry", async (request, reply) => {
+    const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
 
