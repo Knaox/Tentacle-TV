@@ -24,7 +24,21 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // Build target URL: strip the prefix that Fastify already consumed
     const wildcardPath = (request.params as Record<string, string>)["*"] || "";
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
-    const targetUrl = `${jellyfinUrl}/${wildcardPath}${qs}`;
+    let targetUrl = `${jellyfinUrl}/${wildcardPath}${qs}`;
+
+    // Jellyfin bug workaround: its playlist generator (DynamicHlsPlaylistGenerator)
+    // propagates the full query string — including StartTimeTicks — from the
+    // main.m3u8 request into every segment URL.  But its segment handler
+    // (GetDynamicSegment) explicitly rejects StartTimeTicks > 0 with a 400.
+    // Strip it from HLS segment requests so transcoded playback works.
+    if (/\/hls1\//.test(wildcardPath) && !wildcardPath.endsWith(".m3u8")) {
+      try {
+        const u = new URL(targetUrl);
+        u.searchParams.delete("StartTimeTicks");
+        u.searchParams.delete("startTimeTicks");
+        targetUrl = u.toString();
+      } catch { /* leave targetUrl unchanged */ }
+    }
 
     // Forward request headers
     const headers: Record<string, string> = {};
