@@ -38,6 +38,39 @@ interface VideoPlayerProps {
 
 const DBG = "[Tentacle:VideoPlayer]";
 
+/** Safely play video respecting browser autoplay policy */
+function attemptPlay(
+  v: HTMLVideoElement,
+  userInteracted: boolean,
+  onPolicyMuted: () => void,
+  onPlayFailed: () => void,
+) {
+  if (userInteracted) {
+    v.muted = false;
+    v.play().then(() => {
+      console.debug(DBG, "play OK (unmuted)");
+    }).catch(() => {
+      console.debug(DBG, "unmuted play rejected, retrying muted");
+      v.muted = true;
+      v.play().then(() => {
+        onPolicyMuted();
+      }).catch((err) => {
+        console.error(DBG, "muted play also failed:", err);
+        onPlayFailed();
+      });
+    });
+  } else {
+    v.muted = true;
+    v.play().then(() => {
+      console.debug(DBG, "play OK (muted, no user interaction yet)");
+      onPolicyMuted();
+    }).catch((err) => {
+      console.error(DBG, "muted play failed:", err);
+      onPlayFailed();
+    });
+  }
+}
+
 export function VideoPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
@@ -69,6 +102,7 @@ export function VideoPlayer({
   const currentTimeRef = useRef(0);
   const userInteractedRef = useRef(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
+  const [policyMuted, setPolicyMuted] = useState(false);
 
   // Real playback time = offset (from transcoded seek) + video element time
   const currentTime = streamOffset + rawTime;
@@ -133,20 +167,20 @@ export function VideoPlayer({
       if (seekTo > 0) v.currentTime = seekTo;
       sourceChangingRef.current = false;
       setLoading(false);
-      if (isSourceChange) {
-        // Always play muted first to satisfy browser autoplay policy,
-        // then unmute — avoids "Unmuting failed" pause.
-        v.muted = true;
-        v.play().then(() => {
-          console.debug(DBG, "source change play OK, unmuting");
-          v.muted = false;
-        }).catch((err) => {
-          console.error(DBG, "source change play FAILED:", err.message);
-          setShowPlayButton(true);
-        });
-      }
+      // Play using policy-safe helper: unmuted if user has interacted, muted otherwise
+      attemptPlay(
+        v,
+        userInteractedRef.current,
+        () => setPolicyMuted(true),
+        () => setShowPlayButton(true),
+      );
     };
     v.addEventListener("loadedmetadata", onLoaded, { once: true });
+    // If metadata already loaded (cached source on first load), trigger immediately
+    if (!isSourceChange && v.readyState >= 1) {
+      v.removeEventListener("loadedmetadata", onLoaded);
+      onLoaded();
+    }
     return () => { v.removeEventListener("loadedmetadata", onLoaded); clearTimeout(failsafe); };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -170,6 +204,17 @@ export function VideoPlayer({
 
   // Keep currentTimeRef in sync (avoids putting currentTime in keyboard effect deps)
   currentTimeRef.current = currentTime;
+
+  // Track any user interaction globally — needed for browser autoplay policy
+  useEffect(() => {
+    const mark = () => { userInteractedRef.current = true; };
+    document.addEventListener("pointerdown", mark, { once: true, capture: true });
+    document.addEventListener("keydown", mark, { once: true, capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", mark, { capture: true });
+      document.removeEventListener("keydown", mark, { capture: true });
+    };
+  }, []);
 
   // Keyboard shortcuts — uses ref to avoid re-attaching listener every 250ms
   useEffect(() => {
@@ -214,12 +259,23 @@ export function VideoPlayer({
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
+    if (!v.muted) setPolicyMuted(false);
     setVolume(v.muted ? 0 : 1);
   }, []);
 
   return (
     <div ref={containerRef} onMouseMove={scheduleHide}
-      onClick={() => { userInteractedRef.current = true; togglePlay(); }}
+      onClick={() => {
+        userInteractedRef.current = true;
+        const v = videoRef.current;
+        // If muted by browser policy and playing, first click unmutes instead of pausing
+        if (policyMuted && v && !v.paused) {
+          v.muted = false;
+          setPolicyMuted(false);
+          return;
+        }
+        togglePlay();
+      }}
       onTouchStart={() => { userInteractedRef.current = true; }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} src={src} className="h-full w-full"
@@ -237,13 +293,10 @@ export function VideoPlayer({
         }}
         onLoadedMetadata={(e) => { console.debug(DBG, "metadata", { duration: e.currentTarget.duration }); setVideoDuration(e.currentTarget.duration); }}
         onPlay={() => {
-          console.debug(DBG, "play event", { muted: videoRef.current?.muted, hasStarted: hasStartedRef.current });
+          console.debug(DBG, "play event", { muted: videoRef.current?.muted });
           setPlaying(true); setLoading(false); setShowPlayButton(false);
           if (!hasStartedRef.current) {
             hasStartedRef.current = true;
-            // Unmute after short delay (lets transition animation finish before audio)
-            const v = videoRef.current;
-            if (v?.muted) setTimeout(() => { if (v) v.muted = false; }, 800);
             onStarted?.();
           }
         }}
@@ -252,7 +305,7 @@ export function VideoPlayer({
         onCanPlay={() => { console.debug(DBG, "canplay"); setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message, e.currentTarget.error?.code); }}
         onEnded={() => { console.debug(DBG, "ended"); if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
-        autoPlay muted crossOrigin="anonymous"
+        crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (
           <track key={t.index} kind="subtitles" src={t.url} label={t.label} />
@@ -273,13 +326,32 @@ export function VideoPlayer({
             e.stopPropagation();
             userInteractedRef.current = true;
             const v = videoRef.current;
-            if (v) { v.muted = false; v.play().then(() => setShowPlayButton(false)).catch(() => {}); }
+            if (v) { v.muted = false; v.play().then(() => { setShowPlayButton(false); setPolicyMuted(false); }).catch(() => {}); }
           }}>
           <div className="flex flex-col items-center gap-3">
             <svg className="h-20 w-20 text-white/90" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             <span className="text-sm text-white/70">Appuyez pour lire</span>
           </div>
         </div>
+      )}
+
+      {/* Unmute indicator — shown when browser policy forced muted playback */}
+      {policyMuted && playing && !showPlayButton && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            userInteractedRef.current = true;
+            const v = videoRef.current;
+            if (v) { v.muted = false; setPolicyMuted(false); }
+          }}
+          className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm text-white/80 ring-1 ring-white/20 backdrop-blur-sm transition-all hover:bg-black/80"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+          Appuyez pour le son
+        </button>
       )}
 
       {/* Skip intro/credits buttons */}
