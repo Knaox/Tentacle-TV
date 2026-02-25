@@ -33,7 +33,7 @@ export function MediaCarousel({ title, items }: MediaCarouselProps) {
 
   return (
     <section className="relative mb-10">
-      <h2 className="mb-3 px-12 text-lg font-semibold tracking-wide text-white/90">
+      <h2 className="mb-3 px-4 md:px-12 text-lg font-semibold tracking-wide text-white/90">
         {title}
       </h2>
 
@@ -43,7 +43,7 @@ export function MediaCarousel({ title, items }: MediaCarouselProps) {
         <div
           ref={scrollRef}
           onScroll={updateScrollState}
-          className="flex gap-2 overflow-x-auto scroll-smooth px-12 pb-4 scrollbar-hide"
+          className="flex gap-2 overflow-x-auto scroll-smooth px-4 md:px-12 pb-4 scrollbar-hide"
         >
           {items.map((item) => (
             <CarouselCard key={item.Id} item={item} />

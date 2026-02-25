@@ -30,7 +30,7 @@ export function Navbar() {
 
   return (
     <nav
-      className={`fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-12 py-4 transition-colors duration-300 ${
+      className={`fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-4 py-4 transition-colors duration-300 md:px-12 ${
         scrolled ? "bg-tentacle-bg/95 backdrop-blur-md" : "bg-transparent"
       }`}
     >

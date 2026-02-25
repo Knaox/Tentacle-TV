@@ -26,7 +26,7 @@ export async function createJellyfinUser(
 
   if (!createRes.ok) {
     const errorText = await createRes.text();
-    throw new Error(`Failed to create Jellyfin user: ${errorText}`);
+    throw new Error(`Failed to create user: ${errorText}`);
   }
 
   const user: JellyfinUserResponse = await createRes.json();

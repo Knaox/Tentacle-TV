@@ -1,11 +1,11 @@
 {
   "name": "@tentacle/desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
-    "build": "tauri build",
+    "build": "node ./scripts/sign-build.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

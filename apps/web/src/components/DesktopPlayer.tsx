@@ -26,6 +26,8 @@ interface DesktopPlayerProps {
   nextEpisodeTitle?: string;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
+  /** Called when mpv fails — parent can fall back to web player */
+  onFallbackToWeb?: () => void;
 }
 
 export function DesktopPlayer({
@@ -35,7 +37,7 @@ export function DesktopPlayer({
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, onFallbackToWeb,
 }: DesktopPlayerProps) {
   const navigate = useNavigate();
   const { state, ready, error, play, togglePause, seek, seekRelative, setVolume, toggleMute, stop } = useDesktopPlayer();
@@ -136,6 +138,11 @@ export function DesktopPlayer({
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
   const progress = displayDuration > 0 ? state.position / displayDuration : 0;
   const hasSettings = audioTracks.length > 0 || subtitleTracks.length > 0;
+
+  // If mpv fails and fallback is available, switch to web player
+  useEffect(() => {
+    if (error && onFallbackToWeb) onFallbackToWeb();
+  }, [error, onFallbackToWeb]);
 
   if (error) {
     return (

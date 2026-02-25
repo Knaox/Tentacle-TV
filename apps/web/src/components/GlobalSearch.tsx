@@ -63,7 +63,7 @@ export function GlobalSearch() {
 
       {/* Expanded: input + dropdown */}
       {open && (
-        <div className="w-80">
+        <div className="w-64 sm:w-80">
           <input
             ref={inputRef}
             value={input}

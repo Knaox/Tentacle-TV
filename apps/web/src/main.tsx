@@ -13,17 +13,21 @@ import {
   setPreferencesBackendUrl,
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
+  setConfigBackendUrl,
 } from "@tentacle/api-client";
 import { App } from "./App";
+import { getServerUrls } from "./hooks/useServerConfig";
 import "./index.css";
 
-const jellyfinUrl = import.meta.env.VITE_JELLYFIN_URL || "http://localhost:8096";
-const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+const { jellyfinUrl: savedJellyfin, backendUrl: savedBackend } = getServerUrls();
+const jellyfinUrl = savedJellyfin || import.meta.env.VITE_JELLYFIN_URL || "http://localhost:8096";
+const backendUrl = savedBackend || import.meta.env.VITE_BACKEND_URL || "";
 setSeerrBackendUrl(backendUrl);
 setRequestsBackendUrl(backendUrl);
 setPreferencesBackendUrl(backendUrl);
 setTicketsBackendUrl(backendUrl);
 setNotificationsBackendUrl(backendUrl);
+setConfigBackendUrl(backendUrl);
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
@@ -41,6 +45,9 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 60 * 1000,
+    },
+    mutations: {
+      retry: false,
     },
   },
 });

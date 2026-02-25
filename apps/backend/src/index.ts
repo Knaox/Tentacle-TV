@@ -10,6 +10,8 @@ import { preferenceRoutes } from "./routes/preferences";
 import { updateRoutes } from "./routes/update";
 import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
+import { configRoutes } from "./routes/config";
+import { demoRoutes } from "./routes/demo";
 import { startRequestWorker } from "./services/requestWorker";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -31,6 +33,8 @@ async function main() {
   await app.register(updateRoutes, { prefix: "/api/update" });
   await app.register(ticketRoutes, { prefix: "/api/tickets" });
   await app.register(notificationRoutes, { prefix: "/api/notifications" });
+  await app.register(configRoutes, { prefix: "/api" });
+  await app.register(demoRoutes, { prefix: "/api" });
   await app.register(healthRoutes, { prefix: "/api" });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });

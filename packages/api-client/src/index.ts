@@ -28,6 +28,10 @@ export type { SupportTicket, TicketMessage, TicketsPage } from "./hooks/useTicke
 export { useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, setNotificationsBackendUrl } from "./hooks/useNotifications";
 export type { AppNotification } from "./hooks/useNotifications";
 
+// App config & feature flags
+export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
+export type { AppConfig, AppFeatures } from "./hooks/useConfig";
+
 // Storage abstraction for cross-platform support
 export type { StorageAdapter, UuidGenerator } from "./storage";
 export { WebStorageAdapter, WebUuidGenerator } from "./storage";

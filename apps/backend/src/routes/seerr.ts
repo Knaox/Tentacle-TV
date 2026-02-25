@@ -9,7 +9,7 @@ async function proxyGet(path: string) {
   const res = await fetch(`${SEERR_URL}/api/v1${path}`, { headers });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw Object.assign(new Error(`Seerr ${res.status}: ${text}`), { statusCode: res.status });
+    throw Object.assign(new Error(`Service error ${res.status}: ${text}`), { statusCode: res.status });
   }
   return res.json();
 }
@@ -22,7 +22,7 @@ async function proxyPost(path: string, body: unknown) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw Object.assign(new Error(`Seerr ${res.status}: ${text}`), { statusCode: res.status });
+    throw Object.assign(new Error(`Service error ${res.status}: ${text}`), { statusCode: res.status });
   }
   return res.json();
 }
@@ -31,7 +31,7 @@ async function proxyDelete(path: string) {
   const res = await fetch(`${SEERR_URL}/api/v1${path}`, { method: "DELETE", headers });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw Object.assign(new Error(`Seerr ${res.status}: ${text}`), { statusCode: res.status });
+    throw Object.assign(new Error(`Service error ${res.status}: ${text}`), { statusCode: res.status });
   }
   // DELETE may return 204 No Content
   if (res.status === 204) return { success: true };

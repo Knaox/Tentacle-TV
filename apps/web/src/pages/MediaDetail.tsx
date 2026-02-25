@@ -1,10 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
 import { formatDuration } from "@tentacle/shared";
 import { Navbar } from "../components/Navbar";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaCarousel } from "../components/MediaCarousel";
+
+const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
+const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
 
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
@@ -30,12 +34,11 @@ export function MediaDetail() {
     : null;
 
   const runtime = formatDuration(item.RunTimeTicks);
-
   const progress = item.UserData?.PlayedPercentage;
   const hasResume = progress != null && progress > 0 && progress < 100;
 
   const handlePlay = () => {
-    if (isSeries) return; // Can't directly play a series
+    if (isSeries) return;
     navigate(`/watch/${item.Id}`);
   };
 
@@ -43,40 +46,59 @@ export function MediaDetail() {
     <div className="min-h-screen bg-tentacle-bg">
       <Navbar />
 
-      {/* Hero backdrop */}
+      {/* Hero backdrop — Ken Burns zoom-out + fade */}
       <div className="relative h-[55vh] w-full overflow-hidden">
-        <img src={backdropUrl} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+        <motion.img
+          src={backdropUrl} alt="" draggable={false}
+          initial={{ opacity: 0, scale: 1.15 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.6, ease: "easeOut" }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg/80 to-transparent" />
       </div>
 
-      {/* Content */}
-      <div className="-mt-48 relative z-10 px-12">
+      {/* Content — staggered cascade */}
+      <motion.div
+        className="-mt-48 relative z-10 px-4 md:px-12"
+        initial="hidden" animate="show"
+        variants={{ show: { transition: { staggerChildren: 0.1, delayChildren: 0.3 } } }}
+      >
         <div className="flex gap-8">
-          {/* Poster */}
+          {/* Poster — slide in from left */}
           {posterUrl && (
-            <div className="hidden flex-shrink-0 md:block">
-              <img src={posterUrl} alt={item.Name} className="w-56 rounded-xl shadow-2xl" draggable={false} />
-            </div>
+            <motion.div
+              className="hidden flex-shrink-0 md:block"
+              initial={{ opacity: 0, x: -40, rotateY: 12 }}
+              animate={{ opacity: 1, x: 0, rotateY: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+            >
+              <img src={posterUrl} alt={item.Name}
+                className="w-56 rounded-xl shadow-2xl ring-1 ring-white/10" draggable={false} />
+            </motion.div>
           )}
 
-          {/* Info */}
+          {/* Info column */}
           <div className="flex-1 pt-4">
-            <h1 className="text-4xl font-bold text-white">{item.Name}</h1>
+            <motion.h1 variants={fadeUp} className="text-2xl font-bold text-white md:text-4xl">
+              {item.Name}
+            </motion.h1>
+
             {isEpisode && item.SeriesName && (
-              <p className="mt-1 text-lg text-white/50">{item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}</p>
+              <motion.p variants={fadeUp} className="mt-1 text-lg text-white/50">
+                {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}
+              </motion.p>
             )}
 
             {/* Metadata row */}
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white/60">
+            <motion.div variants={fadeUp} className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white/60">
               {item.ProductionYear && <span>{item.ProductionYear}</span>}
               {item.OfficialRating && (
                 <span className="rounded border border-white/30 px-1.5 py-0.5 text-xs">{item.OfficialRating}</span>
               )}
               {item.CommunityRating && (
-                <span className="flex items-center gap-1">
-                  <StarIcon /> {item.CommunityRating.toFixed(1)}
-                </span>
+                <span className="flex items-center gap-1"><StarIcon /> {item.CommunityRating.toFixed(1)}</span>
               )}
               {runtime && <span>{runtime}</span>}
               {isSeries && item.ChildCount && <span>{item.ChildCount} saisons</span>}
@@ -85,65 +107,79 @@ export function MediaDetail() {
                   {item.Status === "Continuing" ? "En cours" : "Terminée"}
                 </span>
               )}
-            </div>
+            </motion.div>
 
             {/* Genres */}
             {item.Genres && item.Genres.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <motion.div variants={fadeUp} className="mt-3 flex flex-wrap gap-2">
                 {item.Genres.map((g) => (
                   <span key={g} className="rounded-full bg-white/5 px-3 py-1 text-xs text-white/60">{g}</span>
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {/* Tagline */}
             {item.Taglines?.[0] && (
-              <p className="mt-4 text-sm italic text-white/40">« {item.Taglines[0]} »</p>
+              <motion.p variants={fadeUp} className="mt-4 text-sm italic text-white/40">
+                « {item.Taglines[0]} »
+              </motion.p>
             )}
 
             {/* Overview */}
             {item.Overview && (
-              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/70">{item.Overview}</p>
+              <motion.p variants={fadeUp} className="mt-3 max-w-3xl text-sm leading-relaxed text-white/70">
+                {item.Overview}
+              </motion.p>
             )}
 
             {/* Action buttons */}
-            <div className="mt-5 flex gap-3">
+            <motion.div variants={fadeUp} className="mt-5 flex gap-3">
               {!isSeries && (
-                <button onClick={handlePlay}
-                  className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg transition-transform hover:scale-105">
+                <motion.button
+                  onClick={handlePlay}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg shadow-lg shadow-white/10"
+                >
                   <PlayIcon /> {hasResume ? "Reprendre" : "Lecture"}
-                </button>
+                </motion.button>
               )}
               {hasResume && !isSeries && (
                 <div className="flex items-center text-sm text-white/40">
                   {Math.round(progress)}% visionné
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Episodes (Series only) */}
+      {/* Episodes */}
       {isSeries && itemId && (
-        <div className="mt-8">
-          <h2 className="px-12 text-xl font-semibold text-white">Saisons & Épisodes</h2>
+        <motion.div className="mt-8" variants={fadeIn}
+          initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}>
+          <h2 className="px-4 text-xl font-semibold text-white md:px-12">Saisons & Épisodes</h2>
           <EpisodeList seriesId={itemId} />
-        </div>
+        </motion.div>
       )}
 
-      {/* Cast */}
-      {item.People && item.People.length > 0 && (
-        <div className="mt-6">
-          <CastRow people={item.People} />
-        </div>
+      {/* Credits & Cast */}
+      {(item.People?.length || item.Studios?.length) && (
+        <motion.div className="mt-6" variants={fadeIn}
+          initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}>
+          <CastRow people={item.People ?? []} studios={item.Studios} />
+        </motion.div>
       )}
 
       {/* Similar items */}
       {similar && similar.length > 0 && (
-        <div className="mt-6 pb-16">
+        <motion.div className="mt-6 pb-16" variants={fadeIn}
+          initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}>
           <MediaCarousel title="Titres similaires" items={similar} />
-        </div>
+        </motion.div>
       )}
     </div>
   );

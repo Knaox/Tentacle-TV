@@ -16,7 +16,7 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
   }, [seasons, selectedSeasonId]);
 
   return (
-    <div className="px-12 py-4">
+    <div className="px-4 md:px-12 py-4">
       {/* Season tabs */}
       {seasonsLoading ? (
         <div className="flex gap-3">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="100px" height="36px" />)}</div>
@@ -65,7 +65,7 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
     <div onClick={onPlay}
       className="group flex cursor-pointer gap-4 rounded-xl bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.07]">
       {/* Thumbnail */}
-      <div className="relative w-44 flex-shrink-0 overflow-hidden rounded-lg bg-tentacle-surface">
+      <div className="relative w-28 flex-shrink-0 overflow-hidden rounded-lg bg-tentacle-surface sm:w-44">
         <div className="aspect-video">
           {thumbUrl && <img src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
         </div>

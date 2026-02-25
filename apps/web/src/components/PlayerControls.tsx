@@ -66,9 +66,9 @@ export function PlayerControls({
   }, [duration]);
 
   return (
-    <div className="absolute inset-0 flex flex-col justify-between" onClick={(e) => e.stopPropagation()}>
-      {/* Top bar */}
-      <div className="bg-gradient-to-b from-black/70 to-transparent px-6 pb-10 pt-5">
+    <div className="absolute inset-0 flex flex-col">
+      {/* Top bar — stops propagation so clicks don't toggle play */}
+      <div className="bg-gradient-to-b from-black/70 to-transparent px-6 pb-10 pt-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
           <div>
@@ -78,8 +78,11 @@ export function PlayerControls({
         </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="relative bg-gradient-to-t from-black/70 to-transparent px-6 pb-5 pt-10">
+      {/* Middle spacer — clicks pass through to parent (toggle play) */}
+      <div className="flex-1" />
+
+      {/* Bottom bar — stops propagation */}
+      <div className="relative bg-gradient-to-t from-black/70 to-transparent px-6 pb-5 pt-10" onClick={(e) => e.stopPropagation()}>
         <AnimatePresence>
           {showSettings && hasSettings && (
             <TrackSelector
@@ -92,18 +95,13 @@ export function PlayerControls({
         </AnimatePresence>
 
         {/* Progress bar */}
-        <div
-          ref={barRef}
+        <div ref={barRef}
           className="group/bar relative mb-3 h-1.5 cursor-pointer rounded-full bg-white/20 transition-all hover:h-2.5"
-          onClick={handleBarClick}
-          onMouseMove={handleBarHover}
-          onMouseLeave={() => setHoverTime(null)}
-        >
+          onClick={handleBarClick} onMouseMove={handleBarHover} onMouseLeave={() => setHoverTime(null)}>
           <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${buffered * 100}%` }} />
           <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${progress * 100}%` }}>
             <div className="absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100" />
           </div>
-          {/* Hover tooltip */}
           {hoverTime !== null && (
             <div className="absolute -top-8 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-xs text-white" style={{ left: hoverX }}>
               {fmt(hoverTime)}
@@ -152,6 +150,7 @@ export function PlayerControls({
 }
 
 function fmt(s: number) {
+  if (!isFinite(s) || s < 0) s = 0;
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = Math.floor(s % 60);

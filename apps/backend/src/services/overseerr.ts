@@ -33,7 +33,7 @@ export async function submitRequest(
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(`Seerr request failed (${res.status}): ${text}`);
+    throw new Error(`Request service error (${res.status}): ${text}`);
   }
 
   return res.json();
@@ -52,7 +52,7 @@ export async function getMediaStatus(
   if (res.status === 404) return null;
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(`Seerr media check failed (${res.status}): ${text}`);
+    throw new Error(`Media status check failed (${res.status}): ${text}`);
   }
 
   const data = await res.json();
