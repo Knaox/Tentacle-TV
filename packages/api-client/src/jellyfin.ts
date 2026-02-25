@@ -113,6 +113,8 @@ export class JellyfinClient {
     subtitleIndex?: number;
     mediaSourceId?: string;
     maxBitrate?: number;
+    /** Max video height for quality switching (e.g. 720 for 720p) */
+    maxHeight?: number;
     /** false = force transcode/remux (e.g. audio track change) */
     directPlay?: boolean;
     /** Seek position for transcoded streams (in Jellyfin ticks) */
@@ -144,6 +146,10 @@ export class JellyfinClient {
     } else {
       // Remux: very high cap to preserve original quality
       params.set("MaxStreamingBitrate", "150000000");
+    }
+    // Resolution constraint — tells Jellyfin to scale the video
+    if (options?.maxHeight) {
+      params.set("MaxHeight", String(options.maxHeight));
     }
     return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;
   }

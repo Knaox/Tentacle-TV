@@ -75,12 +75,19 @@ export function VideoPlayer({
   const [rawTime, setRawTime] = useState(0);
   const lastKnownPositionRef = useRef(0);
 
-  // Synchronously reset rawTime when src changes to prevent one-frame glitch
-  // where currentTime = newStreamOffset + oldRawTime (double-counted).
+  // Auto-detect whether Jellyfin HLS uses absolute or relative timestamps.
+  // Jellyfin often preserves original PTS (absolute), making v.currentTime ≈ streamOffset
+  // instead of starting from 0.  effectiveOffset corrects for this.
+  const effectiveOffsetRef = useRef(0);
+  const offsetDetectedRef = useRef(false);
+
+  // Synchronously reset state when src changes
   const [prevSrc, setPrevSrc] = useState(src);
   if (prevSrc !== src) {
     setPrevSrc(src);
     setRawTime(0);
+    offsetDetectedRef.current = false;
+    effectiveOffsetRef.current = streamOffset; // will be corrected on first timeupdate
   }
 
   const [videoDuration, setVideoDuration] = useState(0);
@@ -102,7 +109,7 @@ export function VideoPlayer({
   const readyToPlayRef = useRef(readyToPlay);
   readyToPlayRef.current = readyToPlay;
 
-  const currentTime = streamOffset + rawTime;
+  const currentTime = effectiveOffsetRef.current + rawTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
 
   const togglePlay = useCallback(() => {
@@ -111,21 +118,25 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
-  // Unified seek — native v.currentTime for both Direct Play and HLS.
-  // HLS.js handles segment-based seeking natively; only fall back to URL
-  // rebuild when the target is before the current stream start (rare).
+  // Unified seek — uses effectiveOffset to handle both absolute and relative HLS timestamps
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
-    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, streamOffset });
+    const eo = effectiveOffsetRef.current;
+    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, eo, streamOffset });
     if (isDirectPlay) {
       v.currentTime = targetSeconds;
-    } else if (targetSeconds >= streamOffset) {
-      // Seek within current HLS stream — no URL rebuild
-      v.currentTime = targetSeconds - streamOffset;
-    } else {
-      // Target is before stream start — need URL rebuild
+    } else if (eo > 0 && targetSeconds >= eo) {
+      // Relative timestamps — subtract offset
+      v.currentTime = targetSeconds - eo;
+    } else if (eo === 0 && streamOffset > 0) {
+      // Absolute timestamps — seek directly
+      v.currentTime = targetSeconds;
+    } else if (targetSeconds < streamOffset) {
+      // Target before stream start — rebuild URL
       onSeekRequest?.(targetSeconds);
+    } else {
+      v.currentTime = targetSeconds;
     }
   }, [isDirectPlay, streamOffset, onSeekRequest]);
 
@@ -151,17 +162,13 @@ export function VideoPlayer({
     sourceChangingRef.current = true;
     setLoading(true);
     if (isSourceChange) { hasStartedRef.current = false; }
-    // rawTime is already synchronously reset to 0 by the prevSrc check above.
-    // Use lastKnownPositionRef for direct-play seek restore (holds absolute position).
     const seekTo = isSourceChange
       ? (isDirectPlay ? lastKnownPositionRef.current : 0)
       : (startPositionSeconds ?? 0);
-    console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo });
+    console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo, streamOffset });
 
-    // Cleanup previous HLS instance
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
 
-    // Fully reset the video element on source change to prevent stale MSE/src state
     if (isSourceChange) {
       v.pause();
       v.removeAttribute("src");
@@ -194,8 +201,6 @@ export function VideoPlayer({
       const hls = new Hls({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1,
-        // Jellyfin transcodes may take a few seconds to produce the first segment.
-        // Retry aggressively so HLS.js doesn't give up before it's ready.
         fragLoadPolicy: {
           default: {
             maxTimeToFirstByteMs: 20_000,
@@ -206,29 +211,18 @@ export function VideoPlayer({
         },
       });
       hlsRef.current = hls;
-      // Register handlers BEFORE loading to prevent missing fast/cached manifests
       hls.on(Hls.Events.MANIFEST_PARSED, onReady);
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           console.error(DBG, "HLS fatal error:", data.type, data.details);
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            console.debug(DBG, "attempting HLS network recovery");
-            hls.startLoad();
-          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            console.debug(DBG, "attempting HLS media recovery");
-            hls.recoverMediaError();
-          } else {
-            clearTimeout(failsafe);
-            sourceChangingRef.current = false;
-            setLoading(false);
-            setShowPlayButton(true);
-          }
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+          else { clearTimeout(failsafe); sourceChangingRef.current = false; setLoading(false); setShowPlayButton(true); }
         }
       });
       hls.loadSource(src);
       hls.attachMedia(v);
     } else {
-      // Direct play or native HLS (Safari)
       v.src = src;
       if (isSourceChange) v.load();
       v.addEventListener("loadedmetadata", onReady, { once: true });
@@ -238,37 +232,35 @@ export function VideoPlayer({
       }
     }
 
-    return () => {
-      clearTimeout(failsafe);
-      v.removeEventListener("loadedmetadata", onReady);
-    };
+    return () => { clearTimeout(failsafe); v.removeEventListener("loadedmetadata", onReady); };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Cleanup HLS on unmount
   useEffect(() => () => { hlsRef.current?.destroy(); }, []);
 
-  // When transition animation finishes, start deferred playback
   useEffect(() => {
     if (readyToPlay && pendingPlayRef.current) {
       pendingPlayRef.current = false;
       const v = videoRef.current;
-      if (v) {
-        console.debug(DBG, "animation done — starting playback");
-        attemptPlay(v, () => setPolicyMuted(true), () => setShowPlayButton(true));
-      }
+      if (v) attemptPlay(v, () => setPolicyMuted(true), () => setShowPlayButton(true));
     }
   }, [readyToPlay]);
 
-  // Subtitle track visibility
+  // Subtitle track visibility — re-apply after source change and when tracks load
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    for (let i = 0; i < v.textTracks.length; i++) v.textTracks[i].mode = "hidden";
-    if (currentSubtitle != null) {
-      const idx = subtitleTracks.findIndex((s) => s.index === currentSubtitle);
-      if (idx >= 0 && v.textTracks[idx]) v.textTracks[idx].mode = "showing";
-    }
-  }, [currentSubtitle, subtitleTracks]);
+    const apply = () => {
+      for (let i = 0; i < v.textTracks.length; i++) v.textTracks[i].mode = "hidden";
+      if (currentSubtitle != null) {
+        const idx = subtitleTracks.findIndex((s) => s.index === currentSubtitle);
+        if (idx >= 0 && v.textTracks[idx]) v.textTracks[idx].mode = "showing";
+      }
+    };
+    apply();
+    // Re-apply when browser finishes loading <track> elements after source change
+    v.textTracks.addEventListener("addtrack", apply);
+    return () => v.textTracks.removeEventListener("addtrack", apply);
+  }, [currentSubtitle, subtitleTracks, src]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -346,7 +338,18 @@ export function VideoPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);
-          const absoluteTime = streamOffset + t;
+          // Auto-detect absolute vs relative HLS timestamps on first timeupdate
+          if (!offsetDetectedRef.current && !isDirectPlay && streamOffset > 0) {
+            offsetDetectedRef.current = true;
+            if (t > streamOffset * 0.5) {
+              // Timestamps are absolute — v.currentTime already includes the seek position
+              effectiveOffsetRef.current = 0;
+              console.debug(DBG, "detected ABSOLUTE HLS timestamps", { t, streamOffset });
+            } else {
+              console.debug(DBG, "detected RELATIVE HLS timestamps", { t, streamOffset });
+            }
+          }
+          const absoluteTime = effectiveOffsetRef.current + t;
           lastKnownPositionRef.current = absoluteTime;
           if (!sourceChangingRef.current) onProgress?.(absoluteTime, e.currentTarget.paused);
         }}
@@ -372,7 +375,7 @@ export function VideoPlayer({
         crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (
-          <track key={t.index} kind="subtitles" src={t.url} label={t.label} />
+          <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
         ))}
       </video>
 
