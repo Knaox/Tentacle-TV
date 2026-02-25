@@ -71,7 +71,8 @@ export function Admin() {
 }
 
 /* ── Services ── */
-interface SvcData { jellyfin: { status: string; url: string; version: string }; seerr: { status: string; url: string }; database: { status: string; fromEnv: boolean }; }
+interface DbFields { host: string; port: number; database: string; user: string }
+interface SvcData { jellyfin: { status: string; url: string; version: string }; seerr: { status: string; url: string }; database: { status: string; fromEnv: boolean; fields?: DbFields }; }
 const dot = (s: string) => `inline-block h-2 w-2 rounded-full mr-1.5 ${s === "connected" ? "bg-green-400" : s === "error" ? "bg-red-400" : "bg-white/30"}`;
 const sLabel = (s: string) => s === "connected" ? "Connecte" : s === "error" ? "Erreur" : s === "not_configured" ? "Non configure" : "Deconnecte";
 
@@ -79,17 +80,36 @@ function ServicesSection() {
   const [d, setD] = useState<SvcData | null>(null);
   const [jUrl, setJUrl] = useState(""); const [jKey, setJKey] = useState("");
   const [sUrl, setSUrl] = useState(""); const [sKey, setSKey] = useState("");
+  const [dbHost, setDbHost] = useState("localhost"); const [dbPort, setDbPort] = useState("3306");
+  const [dbName, setDbName] = useState("tentacle"); const [dbUser, setDbUser] = useState("");
+  const [dbPass, setDbPass] = useState("");
   const [jMsg, setJMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [sMsg, setSMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const [dbMsg, setDbMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
-    try { const r = await fetch(`${BACKEND}/api/admin/services`, { headers: hdrs() }); if (r.ok) { const j: SvcData = await r.json(); setD(j); if (j.jellyfin.url) setJUrl(j.jellyfin.url); if (j.seerr.url) setSUrl(j.seerr.url); } } catch {}
+    try {
+      const r = await fetch(`${BACKEND}/api/admin/services`, { headers: hdrs() });
+      if (r.ok) {
+        const j: SvcData = await r.json(); setD(j);
+        if (j.jellyfin.url) setJUrl(j.jellyfin.url);
+        if (j.seerr.url) setSUrl(j.seerr.url);
+        if (j.database.fields) {
+          setDbHost(j.database.fields.host); setDbPort(String(j.database.fields.port));
+          setDbName(j.database.fields.database); setDbUser(j.database.fields.user);
+        }
+      }
+    } catch {}
   }, []);
   useEffect(() => { load(); }, [load]);
 
   const aFetch = async (path: string, method: string, body?: object) => {
-    const r = await fetch(`${BACKEND}/api/admin${path}`, { method, headers: hdrs(), ...(body ? { body: JSON.stringify(body) } : {}) });
+    const h: Record<string, string> = {};
+    const t = localStorage.getItem("tentacle_token");
+    if (t) h["Authorization"] = `Bearer ${t}`;
+    if (body) h["Content-Type"] = "application/json";
+    const r = await fetch(`${BACKEND}/api/admin${path}`, { method, headers: h, ...(body ? { body: JSON.stringify(body) } : {}) });
     const j = await r.json().catch(() => ({})); return { ok: r.ok, d: j, msg: j.message || (r.ok ? "OK" : "Erreur") };
   };
   const testJ = async () => { setBusy("tj"); setJMsg(null); const r = await aFetch("/test-jellyfin", "POST", { url: jUrl, apiKey: jKey }); setJMsg({ ok: r.ok, t: r.ok ? `Jellyfin ${r.d.version || ""} - ${r.d.serverName || ""}` : r.msg }); setBusy(""); };
@@ -97,6 +117,7 @@ function ServicesSection() {
   const testS = async () => { setBusy("ts"); setSMsg(null); const r = await aFetch("/test-seerr", "POST", { url: sUrl, apiKey: sKey }); setSMsg({ ok: r.ok, t: r.ok ? "Connexion reussie" : r.msg }); setBusy(""); };
   const saveS = async () => { setBusy("ss"); setSMsg(null); const r = await aFetch("/seerr", "PUT", { url: sUrl, apiKey: sKey }); setSMsg({ ok: r.ok, t: r.ok ? "Sauvegarde" : r.msg }); if (r.ok) await load(); setBusy(""); };
   const delS = async () => { if (!confirm("Supprimer Seerr ? Decouverte/requetes seront desactivees.")) return; setBusy("ds"); setSMsg(null); const r = await aFetch("/seerr", "DELETE"); setSMsg({ ok: r.ok, t: r.ok ? "Supprime" : r.msg }); if (r.ok) { setSUrl(""); setSKey(""); await load(); } setBusy(""); };
+  const saveDb = async () => { setBusy("sdb"); setDbMsg(null); const r = await aFetch("/database", "PUT", { host: dbHost, port: Number(dbPort), database: dbName, user: dbUser, password: dbPass }); setDbMsg({ ok: r.ok, t: r.ok ? "Sauvegarde. Redemarrez le serveur pour appliquer." : r.msg }); setBusy(""); };
 
   if (!d) return <div className={cls.card}><h2 className="text-lg font-semibold text-white">Services</h2><p className="mt-2 text-sm text-white/40">Chargement...</p></div>;
   const Msg = ({ m }: { m: { ok: boolean; t: string } | null }) => m ? <span className={`text-xs ${m.ok ? "text-green-400" : "text-red-400"}`}>{m.t}</span> : null;
@@ -125,10 +146,22 @@ function ServicesSection() {
           {d.seerr.status !== "not_configured" && <button onClick={delS} disabled={!!busy} className={cls.bd}>{busy === "ds" ? "..." : "Supprimer"}</button>}<Msg m={sMsg} /></div>
         <p className="text-xs text-white/30">Si supprime, decouverte et requetes seront desactivees.</p>
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
+      <div className={cls.sub}>
         <div className="flex items-center gap-2"><span className={dot(d.database.status)} /><span className="text-sm font-medium text-white">Base de donnees (MariaDB)</span><span className="text-xs text-white/40">{sLabel(d.database.status)}</span></div>
-        {d.database.fromEnv && <p className="mt-2 text-xs text-white/40">Configure via variable d'environnement DATABASE_URL.</p>}
-        <p className="mt-1 text-xs text-amber-400/70">Modifications necessitent un redemarrage du serveur.</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="sm:col-span-2"><label className={cls.lbl}>Hote</label><input value={dbHost} onChange={e => setDbHost(e.target.value)} placeholder="localhost" className={cls.inp} /></div>
+          <div><label className={cls.lbl}>Port</label><input value={dbPort} onChange={e => setDbPort(e.target.value)} placeholder="3306" className={cls.inp} /></div>
+        </div>
+        <div><label className={cls.lbl}>Nom de la base</label><input value={dbName} onChange={e => setDbName(e.target.value)} placeholder="tentacle" className={cls.inp} /></div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div><label className={cls.lbl}>Utilisateur</label><input value={dbUser} onChange={e => setDbUser(e.target.value)} className={cls.inp} /></div>
+          <div><label className={cls.lbl}>Mot de passe</label><input value={dbPass} onChange={e => setDbPass(e.target.value)} type="password" className={cls.inp} /></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={saveDb} disabled={!!busy || !dbHost || !dbUser || !dbPass} className={cls.bp}>{busy === "sdb" ? "..." : "Sauvegarder"}</button>
+          <Msg m={dbMsg} />
+        </div>
+        <p className="text-xs text-amber-400/70">La nouvelle configuration sera appliquee au prochain redemarrage du serveur.</p>
       </div>
     </div>
   );

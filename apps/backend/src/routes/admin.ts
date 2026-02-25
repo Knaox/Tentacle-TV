@@ -9,7 +9,7 @@ import {
   getSeerrUrl,
   getSeerrApiKey,
 } from "../services/configStore";
-import { getDatabaseUrl } from "../services/db";
+import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
 const jellyfinConfigSchema = z.object({
   url: z.string().url(),
@@ -20,6 +20,26 @@ const seerrConfigSchema = z.object({
   url: z.string().url(),
   apiKey: z.string().min(1),
 });
+
+const dbConfigSchema = z.object({
+  host: z.string().min(1),
+  port: z.number().int().min(1).max(65535).default(3306),
+  database: z.string().min(1),
+  user: z.string().min(1),
+  password: z.string().min(1),
+});
+
+function parseDbUrl(url: string): { host: string; port: number; database: string; user: string } | null {
+  try {
+    const u = new URL(url);
+    return {
+      host: u.hostname,
+      port: Number(u.port) || 3306,
+      database: u.pathname.replace(/^\//, ""),
+      user: decodeURIComponent(u.username),
+    };
+  } catch { return null; }
+}
 
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAdmin);
@@ -76,6 +96,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       database: {
         status: dbUrl ? "connected" : "disconnected",
         fromEnv: !!process.env.DATABASE_URL,
+        ...(dbUrl ? { fields: parseDbUrl(dbUrl) } : {}),
       },
     };
   });
@@ -164,5 +185,13 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     } catch {
       return reply.status(400).send({ message: "Serveur injoignable" });
     }
+  });
+
+  /** PUT /api/admin/database — Update database connection (requires restart). */
+  app.put("/database", async (request, reply) => {
+    const body = dbConfigSchema.parse(request.body);
+    const url = `mysql://${body.user}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
+    saveDatabaseUrl(url);
+    return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
   });
 };

@@ -20,7 +20,7 @@ export function Sidebar() {
   const { logout } = useAuth();
   const { data: libraries } = useLibraries();
   const { data: config } = useAppConfig();
-  const isAdmin = useMemo(checkIsAdmin, []);
+  const isAdmin = checkIsAdmin();
   const features = config?.features;
 
   const navItems: NavItem[] = useMemo(() => {

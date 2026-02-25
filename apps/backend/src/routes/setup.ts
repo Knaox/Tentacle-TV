@@ -41,7 +41,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   app.get("/status", async () => {
     const state = getAppState();
     const hasDbUrl = hasDatabaseUrl();
-    return { state, hasDbUrl, dbFromEnv: !!process.env.DATABASE_URL };
+    return { state, hasDbUrl, dbFromEnv: !!process.env.DATABASE_URL, dbConnected: hasPrisma() };
   });
 
   /** POST /api/setup/test-db — Test DB connection with provided credentials. */
@@ -54,30 +54,33 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ message: "Impossible de se connecter à la base de données" });
     }
 
-    // Persist so it survives restarts
+    // Persist so it survives restarts and set in current process
     saveDatabaseUrl(url);
+    process.env.DATABASE_URL = url;
     return { success: true };
   });
 
   /** POST /api/setup/migrate — Run Prisma migrations to create tables. */
   app.post("/migrate", async (_request, reply) => {
-    if (!hasPrisma() && !hasDatabaseUrl()) {
+    const dbUrl = getDatabaseUrl();
+    if (!dbUrl) {
       return reply.status(400).send({ message: "Base de données non configurée" });
     }
 
     // If Prisma isn't initialized yet (had a DB URL but not connected)
     if (!hasPrisma()) {
-      const ok = await initPrisma();
+      const ok = await initPrisma(dbUrl);
       if (!ok) {
         return reply.status(400).send({ message: "Connexion à la base de données échouée" });
       }
     }
 
     try {
-      const dbUrl = getDatabaseUrl();
-      execSync("npx prisma db push --accept-data-loss", {
+      // Set in current process so child reliably inherits (avoids .env override)
+      process.env.DATABASE_URL = dbUrl;
+      execSync("npx prisma db push", {
         cwd: resolve(__dirname, "../.."),
-        env: { ...process.env, DATABASE_URL: dbUrl || "" },
+        env: { ...process.env, DATABASE_URL: dbUrl },
         timeout: 30_000,
         stdio: "pipe",
       });
@@ -165,7 +168,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
 
       return {
         success: true,
-        user: { Id: user.Id, Name: user.Name },
+        user: { Id: user.Id, Name: user.Name, Policy: user.Policy },
         token: authData.AccessToken,
       };
     } catch (err) {

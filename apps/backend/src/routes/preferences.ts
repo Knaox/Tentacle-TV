@@ -208,15 +208,19 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Resolve subtitle based on mode
+    // -1 = explicitly disable subtitles (tells Jellyfin not to auto-select)
+    // null = no preference set
     let subtitleIndex: number | null = null;
-    if (pref.subtitleMode !== "none" && pref.subtitleLang) {
+    if (pref.subtitleMode === "none") {
+      subtitleIndex = -1;
+    } else if (pref.subtitleLang) {
       const subs = body.subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
       const nonForced = subs.filter((t) => !t.isForced);
-      const forced = subs.filter((t) => t.isForced);
+      const forced = subs.filter((t) => !!t.isForced);
 
       if (pref.subtitleMode === "forced") {
-        // ONLY forced subs — if none exist, no subtitle at all
-        if (forced.length > 0) subtitleIndex = forced[0].index;
+        // ONLY forced subs — if none exist, explicitly disable (never fallback to non-forced)
+        subtitleIndex = forced.length > 0 ? forced[0].index : -1;
       } else if (pref.subtitleMode === "signs") {
         const signs = subs.find((t) =>
           t.title?.toLowerCase().includes("sign") ||
@@ -224,10 +228,12 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
         );
         if (signs) subtitleIndex = signs.index;
         else if (forced.length > 0) subtitleIndex = forced[0].index;
+        else subtitleIndex = -1;
       } else if (pref.subtitleMode === "always") {
         // Prefer non-forced (full) subs; only use forced as last resort
         if (nonForced.length > 0) subtitleIndex = nonForced[0].index;
         else if (forced.length > 0) subtitleIndex = forced[0].index;
+        else subtitleIndex = -1;
       }
     }
 
