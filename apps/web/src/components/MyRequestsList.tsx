@@ -126,6 +126,9 @@ function RequestRow({ req, onCancel, onRetry }: {
           <p className="mt-0.5 text-xs text-white/40">
             {req.mediaType === "movie" ? "Film" : "Série"} — {date}
           </p>
+          {req.username && (
+            <p className="text-xs text-white/30">par {req.username}</p>
+          )}
           {req.lastError && (
             <p className="mt-1 text-xs text-red-400 truncate">{req.lastError}</p>
           )}
