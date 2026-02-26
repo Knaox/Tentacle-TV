@@ -28,6 +28,7 @@ interface VideoPlayerProps {
   onProgress?: (seconds: number, paused: boolean) => void;
   onStarted?: () => void;
   onSeekRequest?: (seconds: number) => void;
+  onSeekComplete?: (seconds: number, paused: boolean) => void;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   nextEpisodeTitle?: string;
@@ -60,7 +61,7 @@ export function VideoPlayer({
   currentAudio, currentSubtitle, currentQuality,
   isDirectPlay = true, streamOffset = 0,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onProgress, onStarted, onSeekRequest,
+  onProgress, onStarted, onSeekRequest, onSeekComplete,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment,
@@ -143,7 +144,8 @@ export function VideoPlayer({
       return;
     }
     v.currentTime = targetSeconds;
-  }, [isDirectPlay, streamOffset, src, onSeekRequest]);
+    onSeekComplete?.(targetSeconds, v.paused);
+  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
 
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
