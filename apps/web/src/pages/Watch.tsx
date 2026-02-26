@@ -17,6 +17,20 @@ function formatTrackLabel(s: JfStream): string {
 
 const DBG = "[Tentacle:Player]";
 
+// Safari/iOS need HLS for remux — progressive transcode doesn't support
+// HTTP Range requests that WebKit requires for media playback.
+const useProgressiveRemux = (() => {
+  if (typeof navigator === "undefined") return true;
+  const ua = navigator.userAgent;
+  // iOS: all browsers use WebKit engine
+  if (/iPad|iPhone|iPod/.test(ua)) return false;
+  // iPadOS 13+ reports as Macintosh
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
+  // Safari desktop (exclude Chrome/Chromium which also include "Safari")
+  if (/Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua)) return false;
+  return true;
+})();
+
 export function Watch() {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
@@ -178,6 +192,7 @@ export function Watch() {
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
       playSessionId,
       sourceVideoCodec,
+      useProgressiveRemux,
     });
     console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight });
     return url;
