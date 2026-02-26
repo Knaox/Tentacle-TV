@@ -151,11 +151,12 @@ export function Watch() {
     ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined)
     : undefined;
 
+  // Subtitles are handled externally via <track> elements — NOT in the HLS URL.
+  // Including subtitleIndex here would cause a full stream reload on subtitle change.
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
     const url = client.getStreamUrl(itemId, {
       audioIndex,
-      subtitleIndex: subtitleIndex ?? -1,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
       maxHeight: qualityMaxHeight,
@@ -165,7 +166,7 @@ export function Watch() {
     });
     console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight });
     return url;
-  }, [client, itemId, audioIndex, subtitleIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId]);
+  }, [client, itemId, audioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
@@ -259,7 +260,7 @@ export function Watch() {
 
   return (
     <PlayerTransition onComplete={() => setTransitionDone(true)}>
-      <VideoPlayer {...playerProps} />
+      <VideoPlayer key={itemId} {...playerProps} />
     </PlayerTransition>
   );
 }

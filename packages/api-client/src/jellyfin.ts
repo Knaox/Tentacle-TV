@@ -110,7 +110,6 @@ export class JellyfinClient {
 
   getStreamUrl(itemId: string, options?: {
     audioIndex?: number;
-    subtitleIndex?: number;
     mediaSourceId?: string;
     maxBitrate?: number;
     /** Max video height for quality switching (e.g. 720 for 720p) */
@@ -127,7 +126,6 @@ export class JellyfinClient {
     params.set("api_key", this.accessToken ?? "");
     if (options?.mediaSourceId) params.set("MediaSourceId", options.mediaSourceId);
     if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
-    if (options?.subtitleIndex != null) params.set("SubtitleStreamIndex", String(options.subtitleIndex));
     if (options?.startTimeTicks) params.set("StartTimeTicks", String(options.startTimeTicks));
 
     // Direct play — raw file, browser handles codec/track selection
@@ -141,16 +139,28 @@ export class JellyfinClient {
     if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
     params.set("VideoCodec", "h264,hevc");
     params.set("AudioCodec", "aac,mp3,ac3");
+    params.set("BreakOnNonKeyFrames", "true");
+    params.set("SegmentContainer", "ts");
+
     if (options?.maxBitrate) {
+      // Explicit quality — set both overall cap and per-stream bitrates
+      // so Jellyfin actually transcodes to the requested quality
+      const audioBitrate = 384000;
+      const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
+      params.set("VideoBitRate", String(videoBitrate));
+      params.set("AudioBitRate", String(audioBitrate));
       params.set("MaxStreamingBitrate", String(options.maxBitrate));
     } else {
       // Remux: very high cap to preserve original quality
       params.set("MaxStreamingBitrate", "150000000");
     }
-    // Resolution constraint — tells Jellyfin to scale the video
+
+    // Resolution constraint — both MaxHeight and MaxWidth for proper scaling
     if (options?.maxHeight) {
       params.set("MaxHeight", String(options.maxHeight));
+      params.set("MaxWidth", String(Math.round(options.maxHeight * 16 / 9)));
     }
+
     return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;
   }
 

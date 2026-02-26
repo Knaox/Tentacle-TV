@@ -162,8 +162,12 @@ export function VideoPlayer({
     sourceChangingRef.current = true;
     setLoading(true);
     if (isSourceChange) { hasStartedRef.current = false; }
+    // For source changes (audio/quality switch): use saved position.
+    // For initial load: use Jellyfin resume position.
+    // key={itemId} on VideoPlayer ensures episode switches remount,
+    // so isSourceChange is always false for new episodes.
     const seekTo = isSourceChange
-      ? (isDirectPlay ? lastKnownPositionRef.current : 0)
+      ? lastKnownPositionRef.current
       : (startPositionSeconds ?? 0);
     console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo, streamOffset });
 
@@ -186,8 +190,12 @@ export function VideoPlayer({
 
     const onReady = () => {
       clearTimeout(failsafe);
-      console.debug(DBG, "ready", { seekTo, duration: v.duration });
-      if (seekTo > 0) v.currentTime = seekTo;
+      console.debug(DBG, "ready", { seekTo, isHlsUrl, duration: v.duration });
+      // For HLS: startPosition in HLS config handles seeking.
+      // For direct play: explicit seek.
+      if (seekTo > 0 && !isHlsUrl) {
+        v.currentTime = seekTo;
+      }
       sourceChangingRef.current = false;
       setLoading(false);
       if (isSourceChange || readyToPlayRef.current) {
