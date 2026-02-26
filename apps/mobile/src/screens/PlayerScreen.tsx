@@ -96,7 +96,7 @@ export function PlayerScreen({ itemId }: Props) {
   // Jellyfin duration — accurate, not from player
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
-  const { reportStart, reportStop, updatePosition } = usePlaybackReporting({
+  const { reportStart, reportStop, updatePosition, reportSeek } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream,
     playSessionId,
     audioStreamIndex: audioIndex,
@@ -167,8 +167,9 @@ export function PlayerScreen({ itemId }: Props) {
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
     console.debug(DBG, "seek", { clamped });
     videoRef.current?.seek(clamped);
+    reportSeek(clamped, paused);
     // Do NOT manually setCurrentTime — let onProgress update from the player
-  }, [jellyfinDuration]);
+  }, [jellyfinDuration, paused, reportSeek]);
 
   // Audio track change — saves position, triggers URL rebuild for non-default audio
   const handleAudioChange = useCallback((newIndex: number) => {

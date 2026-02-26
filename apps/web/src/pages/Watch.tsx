@@ -264,6 +264,11 @@ export function Watch() {
     updatePosition(seconds, paused);
   }, [updatePosition]);
 
+  const handleSeekComplete = useCallback((seconds: number, paused: boolean) => {
+    positionRef.current = seconds;
+    reportSeek(seconds, paused);
+  }, [reportSeek]);
+
   if (isLoading || !streamUrl) {
     return (
       <PlayerTransition>
@@ -287,7 +292,7 @@ export function Watch() {
     currentAudio: audioIndex, currentSubtitle: subtitleIndex, currentQuality: quality,
     isDirectPlay, streamOffset,
     onAudioChange: handleAudioChange, onSubtitleChange: setSubtitleIndex, onQualityChange: handleQualityChange,
-    onProgress: handleProgress, onStarted: reportStart, onSeekRequest: handleSeekRequest,
+    onProgress: handleProgress, onStarted: reportStart, onSeekRequest: handleSeekRequest, onSeekComplete: handleSeekComplete,
     hasNextEpisode: !!nextEpisode, hasPreviousEpisode: !!previousEpisode,
     nextEpisodeTitle: nextEpTitle,
     onNextEpisode: handleNextEpisode, onPreviousEpisode: handlePreviousEpisode,
