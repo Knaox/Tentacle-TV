@@ -142,6 +142,12 @@ export class JellyfinClient {
     if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
     params.set("TranscodingMaxAudioChannels", "6"); // Downmix 7.1+ to 5.1 (browsers can't decode 8ch)
     params.set("BreakOnNonKeyFrames", "true");
+    // Critical: without RequireAvc=false, Jellyfin forces VideoCodec=h264
+    // even when AllowVideoStreamCopy=true and the source is HEVC.
+    params.set("RequireAvc", "false");
+    params.set("RequireNonAnamorphic", "false");
+    params.set("EnableSubtitlesInManifest", "false");
+    params.set("context", "Streaming");
 
     if (options?.maxBitrate) {
       // Explicit quality — transcode both video and audio
@@ -156,12 +162,14 @@ export class JellyfinClient {
     } else {
       // Remux: copy video stream as-is, only transcode audio.
       // Set VideoCodec to match the source so Jellyfin allows stream copy.
-      // Without this, Jellyfin defaults to h264 and re-encodes HEVC sources.
       const videoCodec = options?.sourceVideoCodec || "h264";
       params.set("VideoCodec", videoCodec);
       params.set("AllowVideoStreamCopy", "true");
+      params.set("AllowAudioStreamCopy", "false");
       params.set("AudioCodec", "aac");
       params.set("SegmentContainer", "mp4");
+      params.set("MinSegments", "2");
+      params.set("CopyTimestamps", "true");
       params.set("MaxStreamingBitrate", "150000000");
     }
 
