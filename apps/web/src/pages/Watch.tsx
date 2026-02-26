@@ -111,9 +111,12 @@ export function Watch() {
     return crypto.randomUUID();
   }, [audioIndex, quality, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Remux = video copied, only audio transcoded (no explicit quality/bitrate limit)
+  const isDirectStream = !isDirectPlay && needsAudioTranscode && quality == null;
+
   // Playback reporting — now sends PlaySessionId, audio/subtitle indices to Jellyfin
   const { reportStart, updatePosition } = usePlaybackReporting({
-    itemId, mediaSourceId, isDirectPlay,
+    itemId, mediaSourceId, isDirectPlay, isDirectStream,
     playSessionId,
     audioStreamIndex: audioIndex,
     subtitleStreamIndex: subtitleIndex,
