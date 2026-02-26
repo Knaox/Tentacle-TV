@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View } from "react-native";
 import Video, { type OnProgressData, type OnLoadData } from "react-native-video";
 import {
-  useJellyfinClient, useMediaItem, usePlaybackReporting,
+  useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
 } from "@tentacle/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle/shared";
@@ -27,6 +27,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
+  const { data: ancestors } = useItemAncestors(itemId);
 
   const videoRef = useRef<Video>(null);
   const [paused, setPaused] = useState(false);
@@ -85,16 +86,17 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Resolve preferred audio/subtitle tracks
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item) return;
-    const parentId = (item as any).ParentId;
-    const seriesId = (item as any).SeriesId;
-    const libraryId = parentId || seriesId;
-    if (!libraryId) return;
+    if (prefsApplied.current || streams.length === 0 || !item || !ancestors) return;
+    const parentId = item.ParentId;
+    const seriesId = item.SeriesId;
+    const ancestorIds = ancestors.map((a: any) => a.Id);
+    const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
+    if (allCandidates.length === 0) return;
     prefsApplied.current = true;
-    console.debug(DBG, "resolving preferences", { libraryId });
+    console.debug(DBG, "resolving preferences", { allCandidates });
     resolveTracks.mutate({
-      libraryId,
-      libraryIds: [parentId, seriesId].filter(Boolean) as string[],
+      libraryId: allCandidates[0],
+      libraryIds: allCandidates,
       audioTracks: streams.filter((s) => s.Type === "Audio")
         .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
       subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
@@ -111,7 +113,7 @@ export function PlayerScreen({ route, navigation }: Props) {
         if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
       },
     });
-  }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Intro skipper
   const skipSegments = useIntroSkipper(itemId, item);
