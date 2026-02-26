@@ -18,23 +18,6 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let processing = false;
 let cycleCount = SYNC_INTERVAL; // sync on first run
 
-// Interface ajoutée pour sécuriser le typage de l'API Seerr
-interface SeerrApiRequest {
-  id: number;
-  status: number;
-  media: {
-    status: number;
-    tmdbId: number;
-    mediaType: "movie" | "tv";
-  };
-  requestedBy: {
-    displayName?: string;
-    username?: string;
-    jellyfinUserId?: string;
-  };
-  createdAt: string | Date;
-}
-
 /**
  * Process the next pending request in FIFO order.
  */
@@ -45,14 +28,14 @@ async function processQueue(): Promise<void> {
   try {
     const prisma = getPrisma();
     // 1. Submit pending requests to Seerr
-    const pending = await prisma.mediaRequest.findFirst({
+    const pending: any = await prisma.mediaRequest.findFirst({
       where: { status: "pending" },
       orderBy: { createdAt: "asc" },
     });
 
     if (pending) {
       try {
-        const result = await submitRequest(
+        const result: any = await submitRequest(
           pending.mediaType as "movie" | "tv",
           pending.tmdbId
         );
@@ -95,7 +78,7 @@ async function processQueue(): Promise<void> {
     }
 
     // 2. Sync submitted requests with Seerr status
-    const submitted = await prisma.mediaRequest.findMany({
+    const submitted: any[] = await prisma.mediaRequest.findMany({
       where: { status: { in: ["submitted", "approved"] } },
       orderBy: { updatedAt: "asc" },
       take: 5,
@@ -105,10 +88,9 @@ async function processQueue(): Promise<void> {
       if (!req.seerrRequestId) continue;
 
       try {
-        const status = await getRequestStatus(req.seerrRequestId);
+        const status: any = await getRequestStatus(req.seerrRequestId);
         if (!status) continue;
 
-        // Use both request + media status for accurate mapping
         const newStatus = mapSeerrStatus(status.status, status.mediaStatus);
 
         if (newStatus !== req.status) {
@@ -117,7 +99,6 @@ async function processQueue(): Promise<void> {
             data: { status: newStatus },
           });
 
-          // Create notification for user
           const label = STATUS_LABEL[newStatus] ?? newStatus;
           await prisma.notification.create({
             data: {
@@ -152,26 +133,20 @@ async function processQueue(): Promise<void> {
 async function syncSeerrRequests(): Promise<void> {
   try {
     const prisma = getPrisma();
-    const seerrData = await fetchAllSeerrRequests(100, 0);
+    const seerrData: any = await fetchAllSeerrRequests(100, 0);
 
-    // Get all existing seerrRequestIds in our DB
-    const existing = await prisma.mediaRequest.findMany({
+    const existing: any[] = await prisma.mediaRequest.findMany({
       where: { seerrRequestId: { not: null } },
       select: { seerrRequestId: true, status: true, id: true },
     });
     
-    // Correction : Retrait du `any`
-    const existingMap = new Map(existing.map((r) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
+    const existingMap = new Map(existing.map((r: any) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
 
-    // Correction : Cast des résultats avec notre nouvelle interface
-    const requests = seerrData.results as SeerrApiRequest[];
-
-    for (const req of requests) {
+    for (const req of (seerrData.results as any[])) {
       const newStatus = mapSeerrStatus(req.status, req.media?.status ?? 0);
       const found = existingMap.get(req.id);
 
       if (found) {
-        // Update status if changed
         if (found.status !== newStatus) {
           await prisma.mediaRequest.update({
             where: { id: found.id },
@@ -181,17 +156,16 @@ async function syncSeerrRequests(): Promise<void> {
         continue;
       }
 
-      // New request from Seerr — fetch media details for title/poster
       let title = `#${req.media.tmdbId}`;
       let posterPath: string | null = null;
       try {
-        const detail = await fetchMediaDetail(req.media.mediaType, req.media.tmdbId);
+        const detail: any = await fetchMediaDetail(req.media.mediaType, req.media.tmdbId);
         title = detail.title;
         posterPath = detail.posterPath;
       } catch { /* use fallback title */ }
 
-      const username = req.requestedBy.displayName || req.requestedBy.username || "Inconnu";
-      const jellyfinUserId = req.requestedBy.jellyfinUserId || "seerr-import";
+      const username = req.requestedBy?.displayName || req.requestedBy?.username || "Inconnu";
+      const jellyfinUserId = req.requestedBy?.jellyfinUserId || "seerr-import";
 
       await prisma.mediaRequest.create({
         data: {
@@ -210,7 +184,7 @@ async function syncSeerrRequests(): Promise<void> {
       });
     }
 
-    console.debug("[RequestWorker] Seerr sync complete:", requests.length, "requests checked");
+    console.debug("[RequestWorker] Seerr sync complete:", seerrData.results?.length || 0, "requests checked");
   } catch (err) {
     console.error("[RequestWorker] Seerr sync error:", err instanceof Error ? err.message : err);
   }
@@ -220,20 +194,13 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/**
- * Start the background request worker.
- */
 export function startRequestWorker(): void {
   if (timer) return;
   console.log("[RequestWorker] Started (interval: 60s)");
   timer = setInterval(processQueue, POLL_INTERVAL);
-  // Run immediately on start
   processQueue();
 }
 
-/**
- * Stop the background request worker.
- */
 export function stopRequestWorker(): void {
   if (timer) {
     clearInterval(timer);
