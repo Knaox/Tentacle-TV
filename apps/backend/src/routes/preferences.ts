@@ -185,12 +185,9 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
       if (pref) break;
     }
 
-    // Fallback: use any preference the user has set
-    if (!pref) {
-      pref = await prisma.libraryPreference.findFirst({
-        where: { jellyfinUserId: user.userId },
-      });
-    }
+    // No fallback — if none of the candidate IDs match a stored preference,
+    // return defaults. The frontend now sends all ancestor IDs, so a match
+    // should always occur if the user has set preferences for that library.
 
     // No preference set — use defaults
     if (!pref) {

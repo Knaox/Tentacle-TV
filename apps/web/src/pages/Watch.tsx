@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMediaItem, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
+import { useMediaItem, useItemAncestors, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle/shared";
 import type { MediaStream as JfStream } from "@tentacle/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
@@ -22,6 +22,7 @@ export function Watch() {
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
+  const { data: ancestors } = useItemAncestors(itemId);
   const { nextEpisode, previousEpisode } = useEpisodeNavigation(item);
 
   console.debug(DBG, "render", { itemId, isLoading, hasItem: !!item, itemName: item?.Name });
@@ -113,18 +114,21 @@ export function Watch() {
     subtitleStreamIndex: subtitleIndex,
   });
 
-  // Resolve preferred tracks
+  // Resolve preferred tracks — uses Jellyfin ancestors to find the correct library
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item) return;
-    const parentId = (item as any).ParentId;
-    const seriesId = (item as any).SeriesId;
-    const libraryId = parentId || seriesId;
-    if (!libraryId) return;
+    if (prefsApplied.current || streams.length === 0 || !item || !ancestors) return;
+    // Collect all possible IDs: ParentId, SeriesId, and all ancestor IDs
+    const parentId = item.ParentId;
+    const seriesId = item.SeriesId;
+    const ancestorIds = ancestors.map((a) => a.Id);
+    const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
+    if (allCandidates.length === 0) return;
     prefsApplied.current = true;
+    console.debug(DBG, "resolve tracks", { parentId, seriesId, ancestorIds, allCandidates });
     resolveTracks.mutate({
-      libraryId,
-      libraryIds: [parentId, seriesId].filter(Boolean) as string[],
+      libraryId: allCandidates[0],
+      libraryIds: allCandidates,
       audioTracks: streams.filter((s) => s.Type === "Audio")
         .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
       subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
@@ -133,7 +137,6 @@ export function Watch() {
       onSuccess: (result) => {
         console.debug(DBG, "preferences resolved", { audio: result.audioIndex, subtitle: result.subtitleIndex, currentPosition: positionRef.current });
         if (result.audioIndex != null) {
-          // BUG 3 fix: fallback to resume position when positionRef is still 0
           const ticks = getPositionTicks();
           if (ticks > 0) setStartTicks(ticks);
           setAudioIndex(result.audioIndex);
@@ -144,7 +147,7 @@ export function Watch() {
         }
       },
     });
-  }, [streams, item]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Map quality bitrate to max video height for Jellyfin resolution scaling
   const qualityMaxHeight = quality != null

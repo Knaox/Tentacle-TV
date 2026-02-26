@@ -23,6 +23,9 @@ export interface MediaItem {
   SeriesPrimaryImageTag?: string;
   PrimaryImageAspectRatio?: number;
 
+  // Parent / hierarchy
+  ParentId?: string;
+
   // Series / Episode
   SeriesName?: string;
   SeriesId?: string;
