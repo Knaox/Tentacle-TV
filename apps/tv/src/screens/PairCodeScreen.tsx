@@ -13,6 +13,7 @@ import {
   setNotificationsBackendUrl,
   setConfigBackendUrl,
 } from "@tentacle/api-client";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
@@ -20,6 +21,7 @@ import { Focusable } from "../components/focus/Focusable";
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
 export function PairCodeScreen({ navigation }: Props) {
+  const { t } = useTranslation("pairing");
   const { storage } = useTentacleConfig();
   const jellyfinClient = useJellyfinClient();
   const generateMut = useGeneratePairingCode();
@@ -120,9 +122,9 @@ export function PairCodeScreen({ navigation }: Props) {
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.successIcon}>✓</Text>
-          <Text style={styles.successTitle}>Jumelage reussi !</Text>
+          <Text style={styles.successTitle}>{t("pairing:pairingSuccess")}</Text>
           <Text style={styles.successSub}>
-            Bienvenue, {pairUser}
+            {t("pairing:welcomeUser", { username: pairUser })}
           </Text>
         </View>
       </View>
@@ -133,15 +135,14 @@ export function PairCodeScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.logo}>Tentacle</Text>
-        <Text style={styles.title}>Jumeler cet appareil</Text>
+        <Text style={styles.title}>{t("pairing:tvPairTitle")}</Text>
 
         {!code ? (
           <ActivityIndicator size="large" color="#8b5cf6" style={{ marginVertical: 32 }} />
         ) : (
           <>
             <Text style={styles.subtitle}>
-              Ouvrez Tentacle sur votre telephone ou ordinateur,{"\n"}
-              puis allez dans Jumeler un appareil et entrez ce code :
+              {t("pairing:tvPairInstructions")}
             </Text>
 
             {/* Code display */}
@@ -155,7 +156,7 @@ export function PairCodeScreen({ navigation }: Props) {
 
             {/* Timer / progress bar */}
             <Text style={[styles.timer, expired && styles.timerExpired]}>
-              {expired ? "Code expire" : `Expire dans ${minutes}:${seconds.toString().padStart(2, "0")}`}
+              {expired ? t("pairing:codeExpired") : t("pairing:expiresIn", { time: `${minutes}:${seconds.toString().padStart(2, "0")}` })}
             </Text>
             <View style={styles.progressBg}>
               <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -167,7 +168,7 @@ export function PairCodeScreen({ navigation }: Props) {
           <View style={{ marginTop: 20 }}>
             <Focusable onPress={generate} hasTVPreferredFocus>
               <View style={styles.button}>
-                <Text style={styles.buttonText}>Generer un nouveau code</Text>
+                <Text style={styles.buttonText}>{t("pairing:generateNewCode")}</Text>
               </View>
             </Focusable>
           </View>
@@ -176,7 +177,7 @@ export function PairCodeScreen({ navigation }: Props) {
         <View style={{ marginTop: expired ? 12 : 28 }}>
           <Focusable onPress={() => navigation.replace("ServerSetup")}>
             <View style={styles.backButton}>
-              <Text style={styles.backText}>Retour</Text>
+              <Text style={styles.backText}>{t("common:back")}</Text>
             </View>
           </Focusable>
         </View>

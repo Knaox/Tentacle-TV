@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle/api-client";
+import { useTranslation } from "react-i18next";
 
 export function LoginScreen() {
+  const { t } = useTranslation("auth");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ export function LoginScreen() {
     try {
       const serverUrl = storage.getItem("tentacle_server_url");
       if (!serverUrl) {
-        setError("URL du serveur non configurée");
+        setError(t("auth:serverUrlNotConfigured"));
         return;
       }
 
@@ -40,7 +42,7 @@ export function LoginScreen() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.message || "Identifiants invalides");
+        throw new Error(data?.message || t("auth:invalidCredentials"));
       }
 
       const data = await response.json();
@@ -52,7 +54,7 @@ export function LoginScreen() {
 
       router.replace("/(tabs)");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connexion échouée");
+      setError(err instanceof Error ? err.message : t("auth:loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -73,13 +75,13 @@ export function LoginScreen() {
             Tentacle
           </Text>
           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
-            Connectez-vous à votre serveur
+            {t("auth:signInSubtitle")}
           </Text>
 
           <TextInput
             value={username}
             onChangeText={setUsername}
-            placeholder="Nom d'utilisateur"
+            placeholder={t("auth:username")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             autoCapitalize="none"
             autoCorrect={false}
@@ -88,7 +90,7 @@ export function LoginScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder="Mot de passe"
+            placeholder={t("auth:password")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             secureTextEntry
             style={[inputStyle, { marginTop: 12 }]}
@@ -111,7 +113,7 @@ export function LoginScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Se connecter</Text>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("auth:signIn")}</Text>
             )}
           </Pressable>
         </View>

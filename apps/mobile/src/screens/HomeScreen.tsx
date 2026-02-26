@@ -7,10 +7,12 @@ import {
   useLibraries, useLatestItems, useJellyfinClient,
 } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { useTranslation } from "react-i18next";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";
 
 export function HomeScreen() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { data: featured } = useFeaturedItems();
   const { data: resume } = useResumeItems();
@@ -31,10 +33,10 @@ export function HomeScreen() {
         <MobileHero item={featured[0]} onPress={() => handlePress(featured[0])} />
       )}
       {resume && resume.length > 0 && (
-        <MediaRow title="Reprendre la lecture" data={resume} renderItem={renderCard} />
+        <MediaRow title={t("common:resumeWatching")} data={resume} renderItem={renderCard} />
       )}
       {nextUp && nextUp.length > 0 && (
-        <MediaRow title="Prochains épisodes" data={nextUp} renderItem={renderCard} />
+        <MediaRow title={t("common:nextEpisodes")} data={nextUp} renderItem={renderCard} />
       )}
       {(libraries ?? []).map((lib) => (
         <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} renderCard={renderCard} />
@@ -71,5 +73,6 @@ function LibraryRow({ libraryId, libraryName, renderCard }: {
 }) {
   const { data } = useLatestItems(libraryId);
   if (!data || data.length === 0) return null;
-  return <MediaRow title={`Derniers ajouts — ${libraryName}`} data={data} renderItem={renderCard} />;
+  const { t } = useTranslation("common");
+  return <MediaRow title={t("common:latestAdditions", { name: libraryName })} data={data} renderItem={renderCard} />;
 }

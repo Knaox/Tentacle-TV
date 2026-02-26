@@ -13,6 +13,7 @@ import {
   setNotificationsBackendUrl,
   setConfigBackendUrl,
 } from "@tentacle/api-client";
+import { initI18n, i18n } from "@tentacle/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 
 const storage = new RNStorageAdapter();
@@ -97,6 +98,7 @@ export default function RootLayout() {
       uuid,
       "Mobile",
     );
+    jfClient.setLanguage(i18n.language || "en");
     const savedToken = storage.getItem("tentacle_token");
     if (savedToken) jfClient.setAccessToken(savedToken);
     setClient(jfClient);
@@ -105,6 +107,9 @@ export default function RootLayout() {
   useEffect(() => {
     (async () => {
       await storage.hydrate();
+
+      const savedLang = storage.getItem("tentacle_language") ?? "en";
+      initI18n({ lng: savedLang });
 
       const savedUrl = storage.getItem("tentacle_server_url");
 
@@ -117,6 +122,7 @@ export default function RootLayout() {
           uuid,
           "Mobile",
         );
+        jfClient.setLanguage(savedLang);
         const savedToken = storage.getItem("tentacle_token");
         if (savedToken) jfClient.setAccessToken(savedToken);
         setClient(jfClient);
@@ -129,12 +135,21 @@ export default function RootLayout() {
           uuid,
           "Mobile",
         );
+        jfClient.setLanguage(savedLang);
         setClient(jfClient);
       }
 
       setReady(true);
     })();
   }, []);
+
+  // Keep client language in sync when i18n language changes
+  useEffect(() => {
+    if (!client) return;
+    const handler = (lng: string) => client.setLanguage(lng);
+    i18n.on("languageChanged", handler);
+    return () => { i18n.off("languageChanged", handler); };
+  }, [client]);
 
   if (!ready || !client) {
     return (

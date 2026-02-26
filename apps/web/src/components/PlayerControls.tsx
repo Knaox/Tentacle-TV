@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "./TrackSelector";
 import {
@@ -44,6 +45,7 @@ export function PlayerControls({
   onAudioChange, onSubtitleChange, onQualityChange,
   onNextEpisode, onPreviousEpisode,
 }: PlayerControlsProps) {
+  const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -113,17 +115,17 @@ export function PlayerControls({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {hasPreviousEpisode && (
-              <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="Épisode précédent (P)"><PrevEpIcon /></button>
+              <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title={t("player:previousEpisode")}><PrevEpIcon /></button>
             )}
-            <button onClick={() => onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
+            <button onClick={() => onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-1.5 hover:bg-white/10" title={t("player:skipBack")}>
               <span className="text-xs font-bold text-white/70">-10</span>
             </button>
             <button onClick={onTogglePlay} className="rounded-full p-2 hover:bg-white/10">{playing ? <PauseIcon /> : <PlayIcon />}</button>
-            <button onClick={() => onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
+            <button onClick={() => onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-1.5 hover:bg-white/10" title={t("player:skipForward")}>
               <span className="text-xs font-bold text-white/70">+30</span>
             </button>
             {hasNextEpisode && (
-              <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title="Épisode suivant (N)"><NextEpIcon /></button>
+              <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title={t("player:nextEpisode")}><NextEpIcon /></button>
             )}
             <div className="group/vol flex items-center gap-2">
               <button onClick={onToggleMute} className="rounded-full p-2 hover:bg-white/10">

@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useConfirmPairing } from "@tentacle/api-client";
 
 export function PairDevice() {
+  const { t } = useTranslation("pairing");
   const [chars, setChars] = useState(["", "", "", ""]);
   const [success, setSuccess] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -74,7 +76,7 @@ export function PairDevice() {
     if (!canSubmit) return;
     confirmMut.mutate(code, {
       onSuccess: (data) => {
-        setSuccess(`Appareil "${data.deviceName}" jumele avec succes !`);
+        setSuccess(t("pairing:pairSuccess", { name: data.deviceName }));
         setChars(["", "", "", ""]);
       },
     });
@@ -83,9 +85,9 @@ export function PairDevice() {
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-lg">
-        <h1 className="mb-2 text-2xl font-bold text-white">Jumeler un appareil</h1>
+        <h1 className="mb-2 text-2xl font-bold text-white">{t("pairing:pairDevice")}</h1>
         <p className="mb-8 text-sm text-white/50">
-          Entrez le code a 4 caracteres affiche sur votre TV pour l'associer a votre compte.
+          {t("pairing:enterCode")}
         </p>
 
         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-8">
@@ -114,7 +116,7 @@ export function PairDevice() {
               disabled={!canSubmit}
               className="rounded-lg bg-purple-600 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-40"
             >
-              {confirmMut.isPending ? "Jumelage..." : "Jumeler"}
+              {confirmMut.isPending ? t("pairing:pairing") : t("pairing:pair")}
             </button>
           </div>
 
@@ -128,14 +130,13 @@ export function PairDevice() {
           {/* Error message */}
           {confirmMut.isError && (
             <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center text-sm text-red-400">
-              Code invalide ou expire. Verifiez le code sur votre TV.
+              {t("pairing:codeInvalid")}
             </div>
           )}
         </div>
 
         <p className="mt-6 text-center text-xs text-white/30">
-          Le code expire apres 5 minutes. Si le code ne fonctionne pas,
-          generez-en un nouveau sur votre TV.
+          {t("pairing:codeExpireNote")}
         </p>
       </main>
     </div>

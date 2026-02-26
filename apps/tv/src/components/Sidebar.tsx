@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { View, Text } from "react-native";
 import { useLibraries } from "@tentacle/api-client";
+import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 
 interface SidebarProps {
@@ -14,11 +15,12 @@ interface SidebarItem {
 }
 
 const FIXED_ITEMS: SidebarItem[] = [
-  { key: "Home", label: "Accueil", icon: "🏠" },
-  { key: "Search", label: "Rechercher", icon: "🔍" },
+  { key: "Home", label: "nav:home", icon: "🏠" },
+  { key: "Search", label: "nav:search", icon: "🔍" },
 ];
 
 export function Sidebar({ onNavigate }: SidebarProps) {
+  const { t } = useTranslation("nav");
   const [expanded, setExpanded] = useState(false);
   const { data: libraries } = useLibraries();
 
@@ -56,7 +58,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           }}>
             <Text style={{ fontSize: 20 }}>{item.icon}</Text>
             {expanded && (
-              <Text style={{ color: "#fff", fontSize: 16, marginLeft: 12 }}>{item.label}</Text>
+              <Text style={{ color: "#fff", fontSize: 16, marginLeft: 12 }}>{t(item.label)}</Text>
             )}
           </View>
         </Focusable>

@@ -5,6 +5,7 @@ import {
   useLibraries, useLatestItems,
 } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Sidebar } from "../components/Sidebar";
@@ -15,6 +16,7 @@ import { FocusableRow } from "../components/focus/FocusableRow";
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export function HomeScreen({ navigation }: Props) {
+  const { t } = useTranslation("common");
   const { data: featured } = useFeaturedItems();
   const { data: resume } = useResumeItems();
   const { data: nextUp } = useNextUp();
@@ -45,7 +47,7 @@ export function HomeScreen({ navigation }: Props) {
         )}
         {resume && resume.length > 0 && (
           <FocusableRow
-            title="Reprendre la lecture"
+            title={t("common:resumeWatching")}
             data={resume}
             renderItem={renderCard}
             keyExtractor={(item) => item.Id}
@@ -55,7 +57,7 @@ export function HomeScreen({ navigation }: Props) {
         )}
         {nextUp && nextUp.length > 0 && (
           <FocusableRow
-            title="Prochains épisodes"
+            title={t("common:nextEpisodes")}
             data={nextUp}
             renderItem={renderCard}
             keyExtractor={(item) => item.Id}
@@ -75,10 +77,11 @@ function LibraryRow({ libraryId, libraryName, renderCard }: {
   libraryId: string; libraryName: string; renderCard: (item: MediaItem) => React.ReactNode;
 }) {
   const { data } = useLatestItems(libraryId);
+  const { t } = useTranslation("common");
   if (!data || data.length === 0) return null;
   return (
     <FocusableRow
-      title={`Derniers ajouts — ${libraryName}`}
+      title={t("common:latestAdditions", { name: libraryName })}
       data={data}
       renderItem={renderCard}
       keyExtractor={(item) => item.Id}

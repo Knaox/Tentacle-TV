@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { useAutoUpdate } from "../hooks/useAutoUpdate";
 import { isTauri } from "../hooks/useDesktopPlayer";
 
 export function UpdateNotification() {
+  const { t } = useTranslation("notifications");
   const { available, version, notes, downloading, progress, error, installUpdate, dismiss } = useAutoUpdate();
 
   if (!isTauri() || !available) return null;
@@ -12,7 +14,7 @@ export function UpdateNotification() {
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-sm font-semibold text-white">
-              Mise à jour disponible
+              {t("notifications:updateAvailable")}
             </h3>
             {version && (
               <p className="mt-0.5 text-xs text-purple-400">
@@ -43,18 +45,18 @@ export function UpdateNotification() {
                 style={{ width: `${progress}%` }} />
             </div>
             <p className="mt-1 text-center text-xs text-white/40">
-              Téléchargement… {progress}%
+              {t("notifications:downloading", { progress })}
             </p>
           </div>
         ) : (
           <div className="mt-3 flex gap-2">
             <button onClick={installUpdate}
               className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90">
-              Installer
+              {t("notifications:install")}
             </button>
             <button onClick={dismiss}
               className="rounded-lg bg-white/5 px-3 py-2 text-xs text-white/60 hover:bg-white/10">
-              Plus tard
+              {t("notifications:later")}
             </button>
           </div>
         )}

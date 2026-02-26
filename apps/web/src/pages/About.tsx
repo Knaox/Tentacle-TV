@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAppConfig } from "@tentacle/api-client";
 
 export function About() {
+  const { t } = useTranslation("about");
   const { data: config } = useAppConfig();
 
   return (
@@ -10,40 +12,36 @@ export function About() {
         <img src="/tentacle-logo-pirate.svg" alt="" className="h-14 w-14" />
         <div>
           <h1 className="text-3xl font-bold text-white">Tentacle</h1>
-          <p className="text-sm text-white/50">Version {config?.version ?? "..."}</p>
+          <p className="text-sm text-white/50">{t("about:version", { version: config?.version ?? "..." })}</p>
         </div>
       </div>
 
       <p className="mt-8 leading-relaxed text-white/70">
-        Tentacle est un client multimédia premium conçu pour offrir une expérience
-        de streaming fluide et élégante. Disponible sur Web, Desktop, Mobile et TV,
-        il permet de parcourir, rechercher et regarder votre bibliothèque de médias
-        depuis n'importe quel appareil.
+        {t("about:description")}
       </p>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">Fonctionnalités</h2>
+      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:features")}</h2>
       <ul className="mt-3 space-y-2 text-sm text-white/60">
-        <li className="flex items-center gap-2"><Dot /> Lecteur vidéo intégré avec sélection pistes audio/sous-titres</li>
-        <li className="flex items-center gap-2"><Dot /> Reprise automatique de la lecture</li>
-        <li className="flex items-center gap-2"><Dot /> Système de demandes de contenus</li>
-        <li className="flex items-center gap-2"><Dot /> Mode bureau natif avec lecteur hautes performances</li>
-        <li className="flex items-center gap-2"><Dot /> Interface adaptative (mobile, tablette, desktop, TV)</li>
-        <li className="flex items-center gap-2"><Dot /> Notifications et système de support intégrés</li>
+        <li className="flex items-center gap-2"><Dot /> {t("about:featurePlayer")}</li>
+        <li className="flex items-center gap-2"><Dot /> {t("about:featureResume")}</li>
+        <li className="flex items-center gap-2"><Dot /> {t("about:featureRequests")}</li>
+        <li className="flex items-center gap-2"><Dot /> {t("about:featureDesktop")}</li>
+        <li className="flex items-center gap-2"><Dot /> {t("about:featureAdaptive")}</li>
+        <li className="flex items-center gap-2"><Dot /> {t("about:featureNotifications")}</li>
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">Contact</h2>
+      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:contact")}</h2>
       <p className="mt-3 text-sm text-white/60">
-        Pour toute question ou signalement de bug, utilisez le système de support
-        intégré depuis le menu Aide ou contactez l'administrateur de votre serveur.
+        {t("about:contactText")}
       </p>
 
       <Link to="/credits" className="mt-10 inline-flex items-center gap-2 text-sm text-purple-400 hover:underline">
-        Crédits & Licences open-source
+        {t("about:creditsLink")}
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
       </Link>
 
       <p className="mt-8 text-xs text-white/30">
-        Tentacle {config?.version ?? ""} — {new Date().getFullYear()}
+        {t("about:copyright", { version: config?.version ?? "", year: new Date().getFullYear() })}
       </p>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchItems, useSeerrSearch, useSeerrRequest } from "@tentacle/api-client";
 import { Navbar } from "../components/Navbar";
 import { SearchLibrary } from "../components/SearchLibrary";
@@ -9,15 +10,16 @@ import { DownloadList } from "../components/DownloadList";
 
 type Tab = "library" | "discover" | "request" | "requests" | "downloads";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "library", label: "Bibliothèque" },
-  { key: "discover", label: "Découvrir" },
-  { key: "request", label: "Demander" },
-  { key: "requests", label: "Demandes" },
-  { key: "downloads", label: "Téléchargements" },
+const TABS: { key: Tab; i18nKey: string }[] = [
+  { key: "library", i18nKey: "nav:library" },
+  { key: "discover", i18nKey: "nav:discover" },
+  { key: "request", i18nKey: "nav:request" },
+  { key: "requests", i18nKey: "nav:requests" },
+  { key: "downloads", i18nKey: "nav:downloads" },
 ];
 
 export function Search() {
+  const { t } = useTranslation(["nav", "common"]);
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
   const [tab, setTab] = useState<Tab>("library");
@@ -33,21 +35,21 @@ export function Search() {
     <div className="min-h-screen bg-tentacle-bg">
       <Navbar />
       <div className="px-12 pt-24 pb-16">
-        <h1 className="mb-6 text-3xl font-bold text-white">Rechercher</h1>
+        <h1 className="mb-6 text-3xl font-bold text-white">{t("common:search")}</h1>
 
         {/* Tab bar */}
         <div className="mb-6 flex flex-wrap gap-2">
-          {TABS.map((t) => (
+          {TABS.map((tb) => (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={tb.key}
+              onClick={() => setTab(tb.key)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                tab === t.key
+                tab === tb.key
                   ? "bg-tentacle-accent text-white"
                   : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
               }`}
             >
-              {t.label}
+              {t(tb.i18nKey)}
             </button>
           ))}
         </div>
@@ -57,7 +59,7 @@ export function Search() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Film, série, anime..."
+            placeholder={t("common:searchMediaPlaceholder")}
             className="mb-6 w-full rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-tentacle-accent"
             autoFocus
           />
@@ -75,24 +77,26 @@ export function Search() {
 }
 
 function LibraryTab({ query }: { query: string }) {
+  const { t } = useTranslation("common");
   const { data, isLoading } = useSearchItems(query);
   if (isLoading && query.length >= 2) return <Spinner />;
   if (!data || data.length === 0) {
-    if (query.length >= 2) return <p className="py-20 text-center text-white/40">Aucun résultat dans votre bibliothèque</p>;
-    return <p className="py-20 text-center text-white/40">Tapez pour rechercher dans votre bibliothèque</p>;
+    if (query.length >= 2) return <p className="py-20 text-center text-white/40">{t("common:noResultsLibrary")}</p>;
+    return <p className="py-20 text-center text-white/40">{t("common:typeToSearch")}</p>;
   }
   return <SearchLibrary items={data} />;
 }
 
 function RequestTab({ query }: { query: string }) {
+  const { t } = useTranslation("common");
   const { data, isLoading } = useSeerrSearch(query);
   const requestMutation = useSeerrRequest();
   const results = (data?.results ?? []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
 
   if (isLoading && query.length >= 2) return <Spinner />;
   if (results.length === 0) {
-    if (query.length >= 2) return <p className="py-20 text-center text-white/40">Aucun résultat</p>;
-    return <p className="py-20 text-center text-white/40">Recherchez un film ou une série à demander</p>;
+    if (query.length >= 2) return <p className="py-20 text-center text-white/40">{t("common:noResults")}</p>;
+    return <p className="py-20 text-center text-white/40">{t("common:searchMediaLong")}</p>;
   }
 
   return (

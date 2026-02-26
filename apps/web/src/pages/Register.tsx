@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle/ui";
 
 // En prod VITE_BACKEND_URL="" → URLs relatives (/api/...) sur le meme domaine
@@ -14,6 +15,7 @@ export function Register() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation("auth");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +31,12 @@ export function Register() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Registration failed");
+        throw new Error(data.message || t("registrationFailed"));
       }
 
       navigate("/login");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : t("registrationFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -45,17 +47,17 @@ export function Register() {
       <GlassCard className="w-full max-w-md p-8">
         <h1 className="mb-2 text-center text-3xl font-bold">
           <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Join Tentacle
+            {t("joinTentacle")}
           </span>
         </h1>
         <p className="mb-8 text-center text-sm text-white/50">
-          Invitation-only registration
+          {t("invitationOnly")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
-            placeholder="Invite Key"
+            placeholder={t("inviteKey")}
             value={inviteKey}
             onChange={(e) => setInviteKey(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
@@ -63,7 +65,7 @@ export function Register() {
           />
           <input
             type="text"
-            placeholder="Username"
+            placeholder={t("username")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
@@ -71,7 +73,7 @@ export function Register() {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t("password")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
@@ -85,14 +87,14 @@ export function Register() {
             disabled={isLoading}
             className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isLoading ? "Creating account..." : "Create account"}
+            {isLoading ? t("creatingAccount") : t("createAccount")}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-white/40">
-          Already have an account?{" "}
+          {t("alreadyHaveAccount")}{" "}
           <Link to="/login" className="text-purple-400 hover:underline">
-            Sign in
+            {t("signIn")}
           </Link>
         </p>
       </GlassCard>

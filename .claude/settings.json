@@ -11,7 +11,8 @@
       "Bash(xargs grep -l \"request\\\\|Request\")",
       "Bash(xargs basename -a)",
       "Bash(xargs grep -l \"PlaybackStart\\\\|Sessions/Playing\")",
-      "Bash(ls -la \"c:\\\\Users\\\\damie\\\\Desktop\\\\Project\\\\Tentacle/apps/mobile/app/\\(auth\\)\")"
+      "Bash(ls -la \"c:\\\\Users\\\\damie\\\\Desktop\\\\Project\\\\Tentacle/apps/mobile/app/\\(auth\\)\")",
+      "Bash(pnpm add -D i18next react-i18next --filter @tentacle/shared)"
     ]
   }
 }

@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Hls from "hls.js";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
@@ -72,6 +73,7 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
+  const { t } = useTranslation("player");
 
   const [playing, setPlaying] = useState(false);
   const [rawTime, setRawTime] = useState(0);
@@ -418,7 +420,7 @@ export function VideoPlayer({
           }}>
           <div className="flex flex-col items-center gap-3">
             <svg className="h-20 w-20 text-white/90" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <span className="text-sm text-white/70">Appuyez pour lire</span>
+            <span className="text-sm text-white/70">{t("player:pressToPlay")}</span>
           </div>
         </div>
       )}
@@ -430,20 +432,20 @@ export function VideoPlayer({
             <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
           </svg>
-          Appuyez pour le son
+          {t("player:pressForSound")}
         </button>
       )}
 
       {showSkipIntro && introSegment && (
         <button onClick={(e) => { e.stopPropagation(); handleSeek(introSegment.end); }}
           className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          Passer l'intro
+          {t("player:skipIntro")}
         </button>
       )}
       {showSkipCredits && creditsSegment && (
         <button onClick={(e) => { e.stopPropagation(); handleSeek(creditsSegment.end); }}
           className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          Passer le générique
+          {t("player:skipCredits")}
         </button>
       )}
 

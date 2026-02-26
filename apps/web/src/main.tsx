@@ -16,8 +16,13 @@ import {
   setConfigBackendUrl,
   setPairingBackendUrl,
 } from "@tentacle/api-client";
+import { initI18n, detectLanguage, i18n } from "@tentacle/shared";
 import { App } from "./App";
 import "./index.css";
+
+// Initialize i18n before rendering
+const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
+initI18n({ lng: savedLang });
 
 // Detect Tauri (desktop app) vs web deployment
 export const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -52,6 +57,14 @@ const jellyfinClient = new JellyfinClient(
   uuid,
   deviceName
 );
+
+// Set initial language on client
+jellyfinClient.setLanguage(savedLang);
+
+// Keep client language in sync when i18n language changes
+i18n.on("languageChanged", (lng: string) => {
+  jellyfinClient.setLanguage(lng);
+});
 
 // Restore token from storage
 const savedToken = storage.getItem("tentacle_token");

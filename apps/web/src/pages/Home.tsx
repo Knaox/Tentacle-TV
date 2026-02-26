@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   useLibraries,
   useResumeItems,
@@ -11,6 +12,7 @@ import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
 
 export function Home() {
+  const { t } = useTranslation("common");
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
   const { data: nextUp } = useNextUp();
@@ -29,13 +31,13 @@ export function Home() {
       {/* Content rows */}
       <div className="space-y-2 pb-20 pt-4">
         {resumeItems && resumeItems.length > 0 && (
-          <MediaCarousel title="Reprendre la lecture" items={resumeItems} />
+          <MediaCarousel title={t("common:resumeWatching")} items={resumeItems} />
         )}
         {nextUp && nextUp.length > 0 && (
-          <MediaCarousel title="Prochains épisodes" items={nextUp} />
+          <MediaCarousel title={t("common:nextEpisodes")} items={nextUp} />
         )}
         {watchedItems && watchedItems.length > 0 && (
-          <MediaCarousel title="Déjà visionné" items={watchedItems} />
+          <MediaCarousel title={t("common:alreadyWatched")} items={watchedItems} />
         )}
         {libraries?.map((lib) => (
           <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} />
@@ -46,12 +48,13 @@ export function Home() {
 }
 
 function LibraryRow({ libraryId, libraryName }: { libraryId: string; libraryName: string }) {
+  const { t } = useTranslation("common");
   const { data: items, isLoading } = useLatestItems(libraryId);
 
   if (isLoading) {
     return (
       <section className="mb-10 px-4 md:px-12">
-        <h2 className="mb-3 text-lg font-semibold text-white/90">Derniers ajouts — {libraryName}</h2>
+        <h2 className="mb-3 text-lg font-semibold text-white/90">{t("common:latestAdditions", { name: libraryName })}</h2>
         <div className="flex gap-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <Shimmer key={i} width="170px" height="255px" />
@@ -62,5 +65,5 @@ function LibraryRow({ libraryId, libraryName }: { libraryId: string; libraryName
   }
 
   if (!items || items.length === 0) return null;
-  return <MediaCarousel title={`Derniers ajouts — ${libraryName}`} items={items} />;
+  return <MediaCarousel title={t("common:latestAdditions", { name: libraryName })} items={items} />;
 }

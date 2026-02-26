@@ -1,18 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAllRequests, useCancelRequest, useRetryRequest } from "@tentacle/api-client";
 import type { MediaRequest } from "@tentacle/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
-
-const FILTERS: { key: string; label: string }[] = [
-  { key: "", label: "Toutes" },
-  { key: "pending", label: "En attente" },
-  { key: "submitted", label: "En cours" },
-  { key: "approved", label: "Approuvées" },
-  { key: "available", label: "Disponibles" },
-  { key: "failed", label: "Échouées" },
-  { key: "declined", label: "Refusées" },
-];
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
@@ -23,16 +14,8 @@ const STATUS_COLORS: Record<string, string> = {
   declined: "bg-red-700/20 text-red-500",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  submitted: "Soumise",
-  approved: "Approuvée",
-  available: "Disponible",
-  failed: "Échouée",
-  declined: "Refusée",
-};
-
 export function MyRequestsList() {
+  const { t } = useTranslation("requests");
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
 
@@ -42,6 +25,25 @@ export function MyRequestsList() {
 
   const requests = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
+
+  const FILTERS: { key: string; label: string }[] = [
+    { key: "", label: t("requests:all") },
+    { key: "pending", label: t("requests:pending") },
+    { key: "submitted", label: t("requests:inProgress") },
+    { key: "approved", label: t("requests:approved") },
+    { key: "available", label: t("requests:available") },
+    { key: "failed", label: t("requests:failed") },
+    { key: "declined", label: t("requests:declined") },
+  ];
+
+  const STATUS_LABELS: Record<string, string> = {
+    pending: t("requests:statusPending"),
+    submitted: t("requests:statusSubmitted"),
+    approved: t("requests:statusApproved"),
+    available: t("requests:statusAvailable"),
+    failed: t("requests:statusFailed"),
+    declined: t("requests:statusDeclined"),
+  };
 
   return (
     <div className="px-4 md:px-12">
@@ -65,7 +67,7 @@ export function MyRequestsList() {
       {isLoading && <Spinner />}
 
       {!isLoading && requests.length === 0 && (
-        <p className="py-20 text-center text-white/40">Aucune demande</p>
+        <p className="py-20 text-center text-white/40">{t("requests:noRequests")}</p>
       )}
 
       {!isLoading && requests.length > 0 && (
@@ -74,6 +76,8 @@ export function MyRequestsList() {
             <RequestRow
               key={req.id}
               req={req}
+              statusLabels={STATUS_LABELS}
+              t={t}
               onCancel={() => cancelMut.mutate(req.id)}
               onRetry={() => retryMut.mutate(req.id)}
             />
@@ -88,15 +92,15 @@ export function MyRequestsList() {
             onClick={() => setPage((p) => p - 1)}
             className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/20 disabled:opacity-30"
           >
-            Précédent
+            {t("common:previous")}
           </button>
-          <span className="text-sm text-white/50">Page {page} / {totalPages}</span>
+          <span className="text-sm text-white/50">{t("common:page", { page, total: totalPages })}</span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
             className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/20 disabled:opacity-30"
           >
-            Suivant
+            {t("common:next")}
           </button>
         </div>
       )}
@@ -104,8 +108,10 @@ export function MyRequestsList() {
   );
 }
 
-function RequestRow({ req, onCancel, onRetry }: {
+function RequestRow({ req, statusLabels, t, onCancel, onRetry }: {
   req: MediaRequest;
+  statusLabels: Record<string, string>;
+  t: (key: string) => string;
   onCancel: () => void;
   onRetry: () => void;
 }) {
@@ -127,7 +133,7 @@ function RequestRow({ req, onCancel, onRetry }: {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-white truncate">{req.title}</p>
           <p className="mt-0.5 text-xs text-white/40">
-            {req.mediaType === "movie" ? "Film" : "Série"} — {date}
+            {req.mediaType === "movie" ? t("common:movie") : t("common:series")} — {date}
           </p>
           <p className="text-xs text-white/30">par {req.username}</p>
           {req.lastError && (
@@ -137,18 +143,18 @@ function RequestRow({ req, onCancel, onRetry }: {
       </div>
       <div className="flex items-center gap-2 sm:ml-auto sm:flex-shrink-0">
         <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[req.status] ?? ""}`}>
-          {STATUS_LABELS[req.status] ?? req.status}
+          {statusLabels[req.status] ?? req.status}
         </span>
         {canRetry && (
           <button onClick={onRetry}
             className="rounded-lg bg-tentacle-accent/20 px-2.5 py-1 text-xs font-medium text-purple-400 hover:bg-tentacle-accent/40">
-            Relancer
+            {t("requests:retry")}
           </button>
         )}
         {canCancel && (
           <button onClick={onCancel}
             className="rounded-lg bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 hover:bg-red-500/25">
-            Annuler
+            {t("common:cancel")}
           </button>
         )}
       </div>

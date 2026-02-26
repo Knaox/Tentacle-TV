@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 
 interface Track {
@@ -18,10 +19,10 @@ interface TrackSelectorProps {
 }
 
 const QUALITIES = [
-  { label: "Original", bitrate: null },
-  { label: "1080p", bitrate: 20_000_000 },
-  { label: "720p", bitrate: 8_000_000 },
-  { label: "480p", bitrate: 4_000_000 },
+  { key: "player:original", bitrate: null },
+  { key: "player:quality1080p", bitrate: 20_000_000 },
+  { key: "player:quality720p", bitrate: 8_000_000 },
+  { key: "player:quality480p", bitrate: 4_000_000 },
 ] as const;
 
 export function TrackSelector({
@@ -29,6 +30,7 @@ export function TrackSelector({
   currentAudio, currentSubtitle, currentQuality,
   onAudioChange, onSubtitleChange, onQualityChange, onClose,
 }: TrackSelectorProps) {
+  const { t } = useTranslation("player");
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -38,13 +40,13 @@ export function TrackSelector({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">Paramètres</span>
+        <span className="text-sm font-semibold text-white">{t("player:settings")}</span>
         <button onClick={onClose} className="text-white/40 hover:text-white">&times;</button>
       </div>
 
       <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
         {audioTracks.length > 0 && (
-          <Section title="Audio">
+          <Section title={t("player:audio")}>
             {audioTracks.map((t) => (
               <TrackOption
                 key={t.index}
@@ -57,8 +59,8 @@ export function TrackSelector({
         )}
 
         {subtitleTracks.length > 0 && (
-          <Section title="Sous-titres">
-            <TrackOption label="Désactivés" active={currentSubtitle === null} onClick={() => onSubtitleChange(null)} />
+          <Section title={t("player:subtitles")}>
+            <TrackOption label={t("player:subtitlesDisabled")} active={currentSubtitle === null} onClick={() => onSubtitleChange(null)} />
             {subtitleTracks.map((t) => (
               <TrackOption
                 key={t.index}
@@ -70,11 +72,11 @@ export function TrackSelector({
           </Section>
         )}
 
-        <Section title="Qualité">
+        <Section title={t("player:quality")}>
           {QUALITIES.map((q) => (
             <TrackOption
-              key={q.label}
-              label={q.label}
+              key={q.key}
+              label={t(q.key)}
               active={currentQuality === q.bitrate}
               onClick={() => onQualityChange(q.bitrate)}
             />

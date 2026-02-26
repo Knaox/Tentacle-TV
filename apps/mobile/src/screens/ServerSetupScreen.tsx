@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,21 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useTranslation } from "react-i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface ServerSetupScreenProps {
   onServerValidated: (url: string) => void;
 }
 
 export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps) {
+  const { t, i18n } = useTranslation("auth");
   const [url, setUrl] = useState("");
+
+  const switchLang = useCallback((lng: string) => {
+    i18n.changeLanguage(lng);
+    AsyncStorage.setItem("tentacle_language", lng);
+  }, [i18n]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,9 +57,9 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
       onServerValidated(normalized);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Delai de connexion depasse. Le serveur ne repond pas.");
+        setError(t("auth:connectionTimeout"));
       } else {
-        setError("Serveur introuvable. Verifiez l'URL.");
+        setError(t("auth:serverNotFoundRetry"));
       }
     } finally {
       setLoading(false);
@@ -71,6 +79,15 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
           paddingHorizontal: 24,
         }}
       >
+        {/* Language toggle */}
+        <View style={{ position: "absolute", top: 16, right: 16, flexDirection: "row", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+          {(["fr", "en"] as const).map((lng) => (
+            <Pressable key={lng} onPress={() => switchLang(lng)} style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: i18n.language === lng ? "rgba(139,92,246,0.3)" : "transparent" }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: i18n.language === lng ? "#c4b5fd" : "rgba(255,255,255,0.4)" }}>{lng.toUpperCase()}</Text>
+            </Pressable>
+          ))}
+        </View>
+
         <View
           style={{
             width: "100%",
@@ -101,13 +118,13 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               marginBottom: 28,
             }}
           >
-            Bienvenue sur Tentacle
+            {t("auth:welcomeToTentacle")}
           </Text>
 
           <TextInput
             value={url}
             onChangeText={setUrl}
-            placeholder="URL de votre serveur"
+            placeholder={t("auth:serverUrlLabel")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             autoCapitalize="none"
             autoCorrect={false}
@@ -124,7 +141,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               marginTop: 8,
             }}
           >
-            Ex : https://tentacle.example.com
+            {t("auth:serverUrlPlaceholder")}
           </Text>
 
           {error && (
@@ -149,7 +166,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
-                Se connecter
+                {t("auth:signIn")}
               </Text>
             )}
           </Pressable>

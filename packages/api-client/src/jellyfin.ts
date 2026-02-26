@@ -12,6 +12,7 @@ export class JellyfinClient {
   private deviceId: string;
   private storage: StorageAdapter;
   private deviceName: string;
+  private language: string = "en";
 
   constructor(
     baseUrl: string,
@@ -23,6 +24,10 @@ export class JellyfinClient {
     this.storage = storage;
     this.deviceName = deviceName;
     this.deviceId = this.getOrCreateDeviceId(uuid);
+  }
+
+  setLanguage(lang: string) {
+    this.language = lang;
   }
 
   setAccessToken(token: string | null) {
@@ -71,6 +76,7 @@ export class JellyfinClient {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       [JELLYFIN_AUTH_HEADER]: this.getAuthHeader(),
+      "X-Tentacle-Language": this.language,
       ...(this.accessToken
         ? { [JELLYFIN_TOKEN_HEADER]: this.accessToken }
         : {}),

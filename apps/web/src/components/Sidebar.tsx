@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth, useLibraries, useAppConfig } from "@tentacle/api-client";
 import { NotificationBell } from "./NotificationBell";
 
@@ -17,6 +18,7 @@ export function Sidebar() {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("nav");
   const { logout } = useAuth();
   const { data: libraries } = useLibraries();
   const { data: config } = useAppConfig();
@@ -25,7 +27,7 @@ export function Sidebar() {
 
   const navItems: NavItem[] = useMemo(() => {
     const items: NavItem[] = [
-      { key: "home", label: "Accueil", icon: <HomeIcon />, path: "/" },
+      { key: "home", label: t("home"), icon: <HomeIcon />, path: "/" },
     ];
     if (libraries) {
       for (const lib of libraries) {
@@ -33,12 +35,12 @@ export function Sidebar() {
         items.push({ key: `lib-${lib.Id}`, label: lib.Name, icon, path: `/library/${lib.Id}` });
       }
     }
-    if (features?.discover) items.push({ key: "discover", label: "Faire une demande", icon: <PlusIcon />, path: "/discover" });
-    if (features?.requests) items.push({ key: "requests", label: "Demandes en cours", icon: <ListIcon />, path: "/requests" });
-    if (features?.downloads) items.push({ key: "downloads", label: "Téléchargements", icon: <DownloadIcon />, path: "/downloads" });
-    items.push({ key: "support", label: "Aide", icon: <HelpIcon />, path: "/support" });
+    if (features?.discover) items.push({ key: "discover", label: t("makeRequest"), icon: <PlusIcon />, path: "/discover" });
+    if (features?.requests) items.push({ key: "requests", label: t("pendingRequests"), icon: <ListIcon />, path: "/requests" });
+    if (features?.downloads) items.push({ key: "downloads", label: t("downloads"), icon: <DownloadIcon />, path: "/downloads" });
+    items.push({ key: "support", label: t("help"), icon: <HelpIcon />, path: "/support" });
     return items;
-  }, [libraries, features]);
+  }, [libraries, features, t]);
 
   const isActive = (item: NavItem) => {
     if (item.key === "home") return location.pathname === "/";
@@ -73,21 +75,21 @@ export function Sidebar() {
 
       <div className="border-t border-white/5 px-2 py-3 space-y-0.5">
         <div className="flex items-center justify-center"><NotificationBell dropdownPosition="right" /></div>
-        <NavButton item={{ key: "pair", label: "Jumeler", icon: <PairIcon />, path: "/pair-device" }}
+        <NavButton item={{ key: "pair", label: t("pairDevice"), icon: <PairIcon />, path: "/pair-device" }}
           active={location.pathname === "/pair-device"} expanded={expanded}
           onClick={() => navigate("/pair-device")} />
-        <NavButton item={{ key: "settings", label: "Préférences", icon: <LangIcon />, path: "/settings" }}
+        <NavButton item={{ key: "settings", label: t("preferences"), icon: <LangIcon />, path: "/settings" }}
           active={location.pathname === "/settings"} expanded={expanded}
           onClick={() => navigate("/settings")} />
-        <NavButton item={{ key: "about", label: "À propos", icon: <InfoIcon />, path: "/about" }}
+        <NavButton item={{ key: "about", label: t("about"), icon: <InfoIcon />, path: "/about" }}
           active={location.pathname === "/about" || location.pathname === "/credits"} expanded={expanded}
           onClick={() => navigate("/about")} />
         {isAdmin && (
-          <NavButton item={{ key: "admin", label: "Administration", icon: <AdminIcon />, path: "/admin" }}
+          <NavButton item={{ key: "admin", label: t("admin"), icon: <AdminIcon />, path: "/admin" }}
             active={location.pathname === "/admin"} expanded={expanded}
             onClick={() => navigate("/admin")} />
         )}
-        <NavButton item={{ key: "logout", label: "Déconnexion", icon: <LogoutIcon />, path: "" }}
+        <NavButton item={{ key: "logout", label: t("logout"), icon: <LogoutIcon />, path: "" }}
           active={false} expanded={expanded} onClick={handleLogout} />
       </div>
     </aside>
