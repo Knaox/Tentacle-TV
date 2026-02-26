@@ -178,9 +178,13 @@ export function VideoPlayer({
     seekTargetRef.current = null;
     console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo, streamOffset });
 
+    const wasHls = !!hlsRef.current;
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
 
-    if (isSourceChange) {
+    // Full reset only when HLS is involved (old or new source).
+    // For progressive → progressive (e.g. audio track change), skip destruction
+    // to reduce the audio gap — just changing v.src is faster.
+    if (isSourceChange && (wasHls || isHlsUrl)) {
       v.pause();
       v.removeAttribute("src");
       v.load();
@@ -239,7 +243,9 @@ export function VideoPlayer({
       hls.attachMedia(v);
     } else {
       v.src = src;
-      if (isSourceChange) v.load();
+      // Explicit load only after full reset (HLS transition); for progressive → progressive
+      // setting v.src already triggers loading — double-load would add latency.
+      if (isSourceChange && (wasHls || isHlsUrl)) v.load();
       v.addEventListener("loadedmetadata", onReady, { once: true });
       if (!isSourceChange && v.readyState >= 1) {
         v.removeEventListener("loadedmetadata", onReady);
