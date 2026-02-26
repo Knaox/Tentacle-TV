@@ -139,6 +139,7 @@ export class JellyfinClient {
     if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
     params.set("VideoCodec", "h264,hevc");
     params.set("AudioCodec", "aac,mp3,ac3");
+    params.set("TranscodingMaxAudioChannels", "6"); // Downmix 7.1+ to 5.1 (browsers can't decode 8ch)
     params.set("BreakOnNonKeyFrames", "true");
     params.set("SegmentContainer", "ts");
 

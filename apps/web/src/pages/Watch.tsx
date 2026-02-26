@@ -66,10 +66,15 @@ export function Watch() {
     }
   }, [streams]);
 
-  const selectedAudioCodec = streams.find(
+  const selectedAudioStream = streams.find(
     (s) => s.Type === "Audio" && s.Index === audioIndex
-  )?.Codec?.toLowerCase();
-  const needsAudioTranscode = !!selectedAudioCodec && /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec);
+  );
+  const selectedAudioCodec = selectedAudioStream?.Codec?.toLowerCase();
+  const selectedAudioChannels = selectedAudioStream?.Channels ?? 2;
+  // Force transcode for unsupported codecs OR high channel counts (7.1+ crashes browsers)
+  const needsAudioTranscode = !!selectedAudioCodec && (
+    /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
+  );
   const isDirectPlay = audioIndex === defaultAudio && quality == null && !needsAudioTranscode;
 
   console.debug(DBG, "playback mode", {
