@@ -5,7 +5,11 @@
       "Bash(pnpm exec tsc --noEmit -p packages/api-client/tsconfig.json)",
       "Bash(pnpm --filter @tentacle/api-client typecheck)",
       "Bash(pnpm --filter @tentacle/web build)",
-      "Bash(pnpm typecheck)"
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm --filter @tentacle/backend build)",
+      "WebFetch(domain:tentacle.rouge-informatique.ch)",
+      "Bash(xargs grep -l \"request\\\\|Request\")",
+      "Bash(xargs basename -a)"
     ]
   }
 }
