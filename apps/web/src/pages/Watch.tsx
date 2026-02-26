@@ -136,7 +136,7 @@ export function Watch() {
   const isDirectStream = !isDirectPlay && needsAudioTranscode && quality == null;
 
   // Playback reporting — now sends PlaySessionId, audio/subtitle indices to Jellyfin
-  const { reportStart, updatePosition } = usePlaybackReporting({
+  const { reportStart, updatePosition, reportSeek } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream,
     playSessionId,
     audioStreamIndex: audioIndex,

@@ -150,12 +150,80 @@ export function usePlaybackReporting({
     pausedRef.current = isPaused;
   }, []);
 
+  // --- Interval management ---
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const resetInterval = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL_MS);
+  }, [reportProgress]);
+
   // Periodic progress reporting
   useEffect(() => {
     if (!itemId) return;
-    const interval = setInterval(reportProgress, REPORT_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [itemId, reportProgress]);
+    resetInterval();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [itemId, resetInterval]);
+
+  // --- Immediate report after seek (Bug #1 fix) ---
+  const reportSeek = useCallback((seconds: number, isPaused: boolean) => {
+    positionRef.current = seconds;
+    pausedRef.current = isPaused;
+    reportProgress();   // send immediately with new position
+    resetInterval();    // restart 10s timer from now
+  }, [reportProgress, resetInterval]);
+
+  // --- beforeunload + visibilitychange (Bug #2 fix) ---
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const buildBody = () => JSON.stringify({
+      ItemId: itemIdRef.current,
+      MediaSourceId: msIdRef.current ?? itemIdRef.current,
+      PlaySessionId: playSessionIdRef.current ?? undefined,
+      PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+    });
+
+    const onBeforeUnload = () => {
+      if (!itemIdRef.current || !startedRef.current) return;
+      startedRef.current = false;
+      const url = beaconUrl(clientRef.current, "/Sessions/Playing/Stopped");
+      const blob = new Blob([buildBody()], { type: "application/json" });
+      if (typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, blob);
+        console.debug(DBG, "stopOnBeforeUnload (sendBeacon)");
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "hidden") return;
+      if (!itemIdRef.current || !startedRef.current) return;
+      const url = beaconUrl(clientRef.current, "/Sessions/Playing/Progress");
+      const body = JSON.stringify({
+        ItemId: itemIdRef.current,
+        MediaSourceId: msIdRef.current ?? itemIdRef.current,
+        PlaySessionId: playSessionIdRef.current ?? undefined,
+        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        IsPaused: pausedRef.current,
+        CanSeek: true,
+        PlayMethod: playMethodRef.current,
+        AudioStreamIndex: audioIdxRef.current,
+        SubtitleStreamIndex: subIdxRef.current ?? -1,
+      });
+      const blob = new Blob([body], { type: "application/json" });
+      if (typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, blob);
+        console.debug(DBG, "progressOnVisibilityHidden (sendBeacon)");
+      }
+    };
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Report stop on unmount only — refs ensure we use latest values without
   // triggering cleanup on every dependency change
@@ -186,5 +254,5 @@ export function usePlaybackReporting({
     }, "reportStop");
   }, []);
 
-  return { reportStart, reportStop, updatePosition };
+  return { reportStart, reportStop, updatePosition, reportSeek };
 }
