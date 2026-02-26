@@ -137,23 +137,27 @@ export class JellyfinClient {
     // Transcode / remux via HLS
     params.set("DeviceId", this.deviceId);
     if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
-    params.set("VideoCodec", "h264,hevc");
-    params.set("AudioCodec", "aac,mp3,ac3");
     params.set("TranscodingMaxAudioChannels", "6"); // Downmix 7.1+ to 5.1 (browsers can't decode 8ch)
     params.set("BreakOnNonKeyFrames", "true");
-    params.set("SegmentContainer", "ts");
 
     if (options?.maxBitrate) {
-      // Explicit quality — set both overall cap and per-stream bitrates
-      // so Jellyfin actually transcodes to the requested quality
+      // Explicit quality — transcode both video and audio
+      params.set("VideoCodec", "h264");
+      params.set("AudioCodec", "aac");
+      params.set("SegmentContainer", "ts");
       const audioBitrate = 384000;
       const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
       params.set("VideoBitRate", String(videoBitrate));
       params.set("AudioBitRate", String(audioBitrate));
       params.set("MaxStreamingBitrate", String(options.maxBitrate));
     } else {
-      // Remux: copy video as-is, only transcode audio if needed
+      // Remux: copy video stream as-is, only transcode audio.
+      // Don't set VideoCodec — Jellyfin would pick h264 first and force
+      // HEVC sources to be re-encoded, destroying quality.
+      // Use mp4 segments so HEVC stream copy works (HEVC in TS is problematic).
       params.set("AllowVideoStreamCopy", "true");
+      params.set("AudioCodec", "aac");
+      params.set("SegmentContainer", "mp4");
       params.set("MaxStreamingBitrate", "150000000");
     }
 
