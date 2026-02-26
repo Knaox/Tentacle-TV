@@ -121,6 +121,9 @@ export class JellyfinClient {
     /** Unique ID per transcode session — lets Jellyfin's segment handler
      *  find the correct transcode started by master.m3u8. */
     playSessionId?: string;
+    /** Source video codec (e.g. "hevc", "h264") — used in remux mode
+     *  so Jellyfin knows it can stream copy instead of re-encoding. */
+    sourceVideoCodec?: string;
   }): string {
     const params = new URLSearchParams();
     params.set("api_key", this.accessToken ?? "");
@@ -152,9 +155,10 @@ export class JellyfinClient {
       params.set("MaxStreamingBitrate", String(options.maxBitrate));
     } else {
       // Remux: copy video stream as-is, only transcode audio.
-      // Don't set VideoCodec — Jellyfin would pick h264 first and force
-      // HEVC sources to be re-encoded, destroying quality.
-      // Use mp4 segments so HEVC stream copy works (HEVC in TS is problematic).
+      // Set VideoCodec to match the source so Jellyfin allows stream copy.
+      // Without this, Jellyfin defaults to h264 and re-encodes HEVC sources.
+      const videoCodec = options?.sourceVideoCodec || "h264";
+      params.set("VideoCodec", videoCodec);
       params.set("AllowVideoStreamCopy", "true");
       params.set("AudioCodec", "aac");
       params.set("SegmentContainer", "mp4");
