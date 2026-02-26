@@ -2,14 +2,14 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ] # Déclenche l'action quand tu push sur la branche main
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      packages: write # Autorise l'écriture sur le registre d'images
 
     steps:
       - name: Checkout repository
@@ -27,4 +27,5 @@ jobs:
         with:
           context: .
           push: true
+          # Remplace "knaox" par ton pseudo GitHub exact s'il est différent (tout en minuscules !)
           tags: ghcr.io/knaox/tentacle:latest
