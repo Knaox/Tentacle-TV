@@ -173,10 +173,9 @@ export class JellyfinClient {
       params.set("MaxStreamingBitrate", "150000000");
     }
 
-    // Resolution constraint — both MaxHeight and MaxWidth for proper scaling
+    // Resolution constraint — Jellyfin calculates proportional width automatically
     if (options?.maxHeight) {
       params.set("MaxHeight", String(options.maxHeight));
-      params.set("MaxWidth", String(Math.round(options.maxHeight * 16 / 9)));
     }
 
     return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;

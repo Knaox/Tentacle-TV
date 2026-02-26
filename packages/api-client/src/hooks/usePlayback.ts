@@ -44,20 +44,22 @@ export interface PlaybackReportingOptions {
   itemId: string | undefined;
   mediaSourceId: string | undefined;
   isDirectPlay: boolean;
+  /** Remux mode: video copied, only audio transcoded */
+  isDirectStream?: boolean;
   playSessionId: string | undefined;
   audioStreamIndex: number;
   subtitleStreamIndex: number | null;
 }
 
 export function usePlaybackReporting({
-  itemId, mediaSourceId, isDirectPlay,
+  itemId, mediaSourceId, isDirectPlay, isDirectStream,
   playSessionId, audioStreamIndex, subtitleStreamIndex,
 }: PlaybackReportingOptions) {
   const client = useJellyfinClient();
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
   const startedRef = useRef(false);
-  const playMethod = isDirectPlay ? "DirectPlay" : "Transcode";
+  const playMethod = isDirectPlay ? "DirectPlay" : isDirectStream ? "DirectStream" : "Transcode";
 
   // Refs for unmount cleanup (avoids premature Stop events on dep changes)
   const clientRef = useRef(client);

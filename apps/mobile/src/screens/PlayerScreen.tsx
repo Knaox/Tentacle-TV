@@ -57,25 +57,48 @@ export function PlayerScreen({ itemId }: Props) {
     }
   }, [itemId, streams.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Build stream URL with mediaSourceId and selected audio track
+  // Detect unsupported audio codecs (native players can't decode these reliably)
+  const selectedAudioStream = streams.find(
+    (s) => s.Type === "Audio" && s.Index === audioIndex
+  );
+  const selectedAudioCodec = selectedAudioStream?.Codec?.toLowerCase();
+  const selectedAudioChannels = selectedAudioStream?.Channels ?? 2;
+  const needsAudioTranscode = !!selectedAudioCodec && (
+    /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
+  );
+
+  // Source video codec — needed for remux mode so Jellyfin does stream copy
+  const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
+
+  const isDirectPlay = audioIndex === defaultAudio && !needsAudioTranscode;
+  // Remux = video copied, only audio transcoded (no explicit quality/bitrate limit)
+  const isDirectStream = !isDirectPlay && needsAudioTranscode;
+
+  // Unique ID per transcode session — lets Jellyfin's segment handler
+  // find the correct transcode started by master.m3u8.
+  const playSessionId = useMemo(() => {
+    if (isDirectPlay) return undefined;
+    return crypto.randomUUID();
+  }, [audioIndex, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
-    const isDirectPlay = audioIndex === defaultAudio;
     return client.getStreamUrl(itemId, {
       mediaSourceId,
       audioIndex,
       directPlay: isDirectPlay,
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
+      playSessionId,
+      sourceVideoCodec,
     });
-  }, [client, itemId, mediaSourceId, audioIndex, defaultAudio, startTicks]);
+  }, [client, itemId, mediaSourceId, audioIndex, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
 
   // Jellyfin duration — accurate, not from player
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
-  const isDirectPlay = audioIndex === defaultAudio;
   const { reportStart, reportStop, updatePosition } = usePlaybackReporting({
-    itemId, mediaSourceId, isDirectPlay,
-    playSessionId: undefined,
+    itemId, mediaSourceId, isDirectPlay, isDirectStream,
+    playSessionId,
     audioStreamIndex: audioIndex,
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
