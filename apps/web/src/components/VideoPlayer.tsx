@@ -10,6 +10,7 @@ export interface AudioTrack { index: number; label: string }
 
 interface VideoPlayerProps {
   src: string;
+  itemId: string;
   title: string;
   subtitle?: string;
   startPositionSeconds?: number;
@@ -54,7 +55,7 @@ function attemptPlay(v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFaile
 }
 
 export function VideoPlayer({
-  src, title, subtitle, startPositionSeconds, jellyfinDuration,
+  src, itemId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
   currentAudio, currentSubtitle, currentQuality,
   isDirectPlay = true, streamOffset = 0,
@@ -391,7 +392,7 @@ export function VideoPlayer({
         }}
         onCanPlay={() => { clearTimeout(waitingTimer.current); setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message); }}
-        onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(-1); }}
+        onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(`/media/${itemId}`, { replace: true }); }}
         crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (

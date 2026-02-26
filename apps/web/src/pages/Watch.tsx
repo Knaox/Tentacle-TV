@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMediaItem, useItemAncestors, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle/shared";
 import type { MediaStream as JfStream } from "@tentacle/shared";
@@ -34,6 +35,7 @@ const useProgressiveRemux = (() => {
 export function Watch() {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
@@ -69,6 +71,11 @@ export function Watch() {
     audioOverrideRef.current = false;
     resumeApplied.current = false;
   }, [itemId]);
+
+  // Invalidate media item cache on leave so detail page shows fresh watched status
+  useEffect(() => {
+    return () => { queryClient.invalidateQueries({ queryKey: ["item", itemId] }); };
+  }, [itemId, queryClient]);
 
   // Sync audioIndex when streams change (new episode loaded)
   // Skip if user explicitly changed audio to prevent refetch from resetting their choice
@@ -274,7 +281,7 @@ export function Watch() {
     ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}` : undefined;
 
   const playerProps = {
-    src: streamUrl, title, subtitle: epSubtitle,
+    src: streamUrl, itemId: itemId!, title, subtitle: epSubtitle,
     startPositionSeconds, jellyfinDuration,
     audioTracks, subtitleTracks,
     currentAudio: audioIndex, currentSubtitle: subtitleIndex, currentQuality: quality,
