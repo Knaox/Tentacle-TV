@@ -87,40 +87,6 @@ export function useSeerrRequests(filter?: string, take = 20, skip = 0) {
   });
 }
 
-// Enriched requests — includes title, poster, username resolved by backend
-export interface SeerrEnrichedRequest {
-  id: number;
-  username: string;
-  mediaType: string;
-  tmdbId: number;
-  title: string;
-  posterPath: string | null;
-  status: string;
-  seerrRequestId: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SeerrEnrichedResponse {
-  results: SeerrEnrichedRequest[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export function useSeerrRequestsEnriched(status?: string, page = 1, take = 20) {
-  const skip = (page - 1) * take;
-  return useQuery({
-    queryKey: ["seerr-requests-enriched", status, page, take],
-    queryFn: () => {
-      const p = new URLSearchParams({ take: String(take), skip: String(skip) });
-      if (status) p.set("filter", status);
-      return seerrFetch<SeerrEnrichedResponse>(`/requests/enriched?${p}`);
-    },
-    staleTime: 30_000,
-  });
-}
-
 export function useSeerrRequestCount() {
   return useQuery({
     queryKey: ["seerr-request-count"],

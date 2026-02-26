@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { useSeerrRequestsEnriched, useSeerrDeleteRequest } from "@tentacle/api-client";
-import type { SeerrEnrichedRequest } from "@tentacle/api-client";
+import { useAllRequests, useCancelRequest, useRetryRequest } from "@tentacle/api-client";
+import type { MediaRequest } from "@tentacle/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 
 const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "Toutes" },
   { key: "pending", label: "En attente" },
+  { key: "submitted", label: "En cours" },
   { key: "approved", label: "Approuvées" },
   { key: "available", label: "Disponibles" },
+  { key: "failed", label: "Échouées" },
+  { key: "declined", label: "Refusées" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -33,8 +36,9 @@ export function MyRequestsList() {
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useSeerrRequestsEnriched(filter || undefined, page);
-  const deleteMut = useSeerrDeleteRequest();
+  const { data, isLoading } = useAllRequests(filter || undefined, page);
+  const cancelMut = useCancelRequest();
+  const retryMut = useRetryRequest();
 
   const requests = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -70,7 +74,8 @@ export function MyRequestsList() {
             <RequestRow
               key={req.id}
               req={req}
-              onDelete={() => deleteMut.mutate(req.seerrRequestId)}
+              onCancel={() => cancelMut.mutate(req.id)}
+              onRetry={() => retryMut.mutate(req.id)}
             />
           ))}
         </div>
@@ -99,13 +104,15 @@ export function MyRequestsList() {
   );
 }
 
-function RequestRow({ req, onDelete }: {
-  req: SeerrEnrichedRequest;
-  onDelete: () => void;
+function RequestRow({ req, onCancel, onRetry }: {
+  req: MediaRequest;
+  onCancel: () => void;
+  onRetry: () => void;
 }) {
   const poster = req.posterPath ? `${TMDB_IMG}/w92${req.posterPath}` : null;
   const date = new Date(req.createdAt).toLocaleDateString("fr-FR");
-  const canDelete = ["pending", "approved"].includes(req.status);
+  const canCancel = ["pending", "failed", "submitted"].includes(req.status);
+  const canRetry = req.status === "failed";
 
   return (
     <div className="flex flex-col gap-3 rounded-xl bg-white/5 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
@@ -123,14 +130,23 @@ function RequestRow({ req, onDelete }: {
             {req.mediaType === "movie" ? "Film" : "Série"} — {date}
           </p>
           <p className="text-xs text-white/30">par {req.username}</p>
+          {req.lastError && (
+            <p className="mt-1 text-xs text-red-400 truncate">{req.lastError}</p>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2 sm:ml-auto sm:flex-shrink-0">
         <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[req.status] ?? ""}`}>
           {STATUS_LABELS[req.status] ?? req.status}
         </span>
-        {canDelete && (
-          <button onClick={onDelete}
+        {canRetry && (
+          <button onClick={onRetry}
+            className="rounded-lg bg-tentacle-accent/20 px-2.5 py-1 text-xs font-medium text-purple-400 hover:bg-tentacle-accent/40">
+            Relancer
+          </button>
+        )}
+        {canCancel && (
+          <button onClick={onCancel}
             className="rounded-lg bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 hover:bg-red-500/25">
             Annuler
           </button>

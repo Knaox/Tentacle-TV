@@ -11,8 +11,8 @@ export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export { useIntroSkipper } from "./hooks/useIntroSkipper";
 export type { SkipSegments } from "./hooks/useIntroSkipper";
-export { useSeerrSearch, useSeerrRequest, useSeerrDeleteRequest, useSeerrRetryRequest, useSeerrDiscover, useSeerrRequests, useSeerrRequestsEnriched, useSeerrRequestCount, useSeerrMediaDetail, setSeerrBackendUrl } from "./hooks/useSeerr";
-export type { SeerrSearchResult, SeerrSearchResponse, SeerrPagedResponse, SeerrMediaRequest, SeerrRequestsResponse, SeerrEnrichedRequest, SeerrEnrichedResponse } from "./hooks/useSeerr";
+export { useSeerrSearch, useSeerrRequest, useSeerrDeleteRequest, useSeerrRetryRequest, useSeerrDiscover, useSeerrRequests, useSeerrRequestCount, useSeerrMediaDetail, setSeerrBackendUrl } from "./hooks/useSeerr";
+export type { SeerrSearchResult, SeerrSearchResponse, SeerrPagedResponse, SeerrMediaRequest, SeerrRequestsResponse } from "./hooks/useSeerr";
 
 // Media request system
 export { useRequestMedia, useMyRequests, useAllRequests, useCancelRequest, useRetryRequest, setRequestsBackendUrl } from "./hooks/useRequests";
