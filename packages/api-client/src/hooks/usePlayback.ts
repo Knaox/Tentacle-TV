@@ -5,16 +5,22 @@ const TICKS_PER_SEC = 10_000_000;
 const REPORT_INTERVAL_MS = 10_000;
 const DBG = "[Tentacle:Playback]";
 
+type JfClient = {
+  fetch: <T>(path: string, init?: RequestInit) => Promise<T>;
+  getBaseUrl: () => string;
+  getToken: () => string | null;
+};
+
 /**
  * Fire-and-forget POST to Jellyfin session endpoint.
  * Logs errors instead of silently swallowing them.
  * Uses raw fetch as fallback if client.fetch fails (to rule out client issues).
  */
 async function sessionPost(
-  client: { fetch: <T>(path: string, init?: RequestInit) => Promise<T>; getBaseUrl: () => string; getToken: () => string | null },
+  client: JfClient,
   path: string,
   body: Record<string, unknown>,
-  label: string
+  label: string,
 ): Promise<void> {
   const bodyStr = JSON.stringify(body);
   try {
@@ -38,6 +44,13 @@ async function sessionPost(
       console.error(DBG, `${label} raw fetch also FAILED:`, err2 instanceof Error ? err2.message : String(err2));
     }
   }
+}
+
+/** Build a sendBeacon-compatible URL with api_key auth (sendBeacon can't set headers). */
+function beaconUrl(client: JfClient, path: string): string {
+  const base = client.getBaseUrl();
+  const token = client.getToken();
+  return token ? `${base}${path}?api_key=${encodeURIComponent(token)}` : `${base}${path}`;
 }
 
 export interface PlaybackReportingOptions {
