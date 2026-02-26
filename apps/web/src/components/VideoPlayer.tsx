@@ -162,10 +162,12 @@ export function VideoPlayer({
     sourceChangingRef.current = true;
     setLoading(true);
     if (isSourceChange) { hasStartedRef.current = false; }
-    // For source changes (audio/quality switch): use saved position.
-    // For initial load: use Jellyfin resume position.
-    // key={itemId} on VideoPlayer ensures episode switches remount,
-    // so isSourceChange is always false for new episodes.
+    // Direct play: seek explicitly to saved position (source change) or resume point (initial).
+    // HLS: NEVER seek via startPosition — let Jellyfin's StartTimeTicks handle positioning.
+    //   Using startPosition would break the absolute/relative PTS auto-detection
+    //   because it moves the PTS cursor within the stream, making relative timestamps
+    //   look like absolute ones. Positions then compound on each audio/quality change.
+    // key={itemId} on VideoPlayer ensures episode switches remount cleanly.
     const seekTo = isSourceChange
       ? lastKnownPositionRef.current
       : (startPositionSeconds ?? 0);
@@ -208,7 +210,7 @@ export function VideoPlayer({
     if (isHlsUrl && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        startPosition: seekTo > 0 ? seekTo : -1,
+        startPosition: -1, // Always use manifest default — StartTimeTicks in URL handles positioning
         fragLoadPolicy: {
           default: {
             maxTimeToFirstByteMs: 20_000,
