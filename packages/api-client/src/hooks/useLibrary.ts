@@ -87,7 +87,7 @@ export function useMediaItem(itemId: string | undefined) {
     queryKey: ["item", itemId],
     queryFn: () =>
       client.fetch<MediaItem>(
-        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters`
+        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId`
       ),
     enabled: !!userId && !!itemId,
     staleTime: 5 * 60 * 1000,
@@ -110,6 +110,22 @@ export function useSearchItems(query: string) {
         .then((r) => r.Items),
     enabled: !!userId && query.length >= 2,
     staleTime: 30 * 1000,
+  });
+}
+
+/** Fetch all ancestors of an item — used to find which library it belongs to. */
+export function useItemAncestors(itemId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = useUserId();
+
+  return useQuery({
+    queryKey: ["item-ancestors", itemId],
+    queryFn: () =>
+      client.fetch<Array<{ Id: string; Name: string; Type: string }>>(
+        `/Items/${itemId}/Ancestors?userId=${userId}`
+      ),
+    enabled: !!userId && !!itemId,
+    staleTime: 30 * 60 * 1000,
   });
 }
 

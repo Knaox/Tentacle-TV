@@ -1,6 +1,6 @@
 export { JellyfinClient, JellyfinError } from "./jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinClient";
-export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useSimilarItems, useSearchItems } from "./hooks/useLibrary";
+export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useSearchItems } from "./hooks/useLibrary";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
 export { useStream } from "./hooks/useStream";
 export type { StreamOptions } from "./hooks/useStream";
