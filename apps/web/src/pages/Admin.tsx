@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, usePairedDevices, useRevokePairedDevice } from "@tentacle/api-client";
 import type { SupportTicket } from "@tentacle/api-client";
+import { backendUrl } from "../main";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
+const BACKEND = backendUrl;
 const hdrs = () => {
   const tok = localStorage.getItem("tentacle_token");
   return { "Content-Type": "application/json", ...(tok ? { Authorization: `Bearer ${tok}` } : {}) };

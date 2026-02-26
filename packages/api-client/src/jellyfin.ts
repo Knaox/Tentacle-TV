@@ -12,6 +12,7 @@ export class JellyfinClient {
   private deviceId: string;
   private storage: StorageAdapter;
   private deviceName: string;
+  private authExpiredCallback?: () => void;
   constructor(
     baseUrl: string,
     storage: StorageAdapter,
@@ -22,6 +23,12 @@ export class JellyfinClient {
     this.storage = storage;
     this.deviceName = deviceName;
     this.deviceId = this.getOrCreateDeviceId(uuid);
+  }
+
+  /** Register a callback invoked when an authenticated request returns 401.
+   *  Typically used to clear stored tokens and redirect to login. */
+  setOnAuthExpired(cb: () => void) {
+    this.authExpiredCallback = cb;
   }
 
   setAccessToken(token: string | null) {
@@ -82,6 +89,12 @@ export class JellyfinClient {
     });
 
     if (!response.ok) {
+      // Token is stale or revoked — clear auth state so the UI redirects to login.
+      // Only trigger when we *thought* we were authenticated (accessToken set).
+      if (response.status === 401 && this.accessToken) {
+        this.accessToken = null;
+        this.authExpiredCallback?.();
+      }
       throw new JellyfinError(response.status, response.statusText, path);
     }
 
