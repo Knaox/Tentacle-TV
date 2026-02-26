@@ -105,8 +105,81 @@ export const seerrRoutes: FastifyPluginAsync = async (app) => {
     return proxyDelete(`/request/${id}`);
   });
 
-  // List requests
+  // List requests (raw Seerr response)
   app.get("/requests", async (req) => proxyGet(`/request?${qs(req.query)}`));
+
+  // Enriched requests — adds title + posterPath from TMDB via Seerr
+  app.get("/requests/enriched", async (req) => {
+    const data = await proxyGet(`/request?${qs(req.query)}`) as {
+      pageInfo: { pages: number; results: number; page: number; pageSize: number };
+      results: Array<{
+        id: number; type: string; status: number;
+        createdAt: string; updatedAt: string;
+        media: { tmdbId: number; mediaType: string; status: number };
+        requestedBy: { displayName?: string; username?: string; jellyfinUserId?: string };
+        seasons?: Array<{ seasonNumber: number; status: number }>;
+      }>;
+    };
+
+    // Collect unique media items to fetch details for
+    const mediaKeys = new Map<string, { mediaType: string; tmdbId: number }>();
+    for (const r of data.results) {
+      const key = `${r.media.mediaType}:${r.media.tmdbId}`;
+      if (!mediaKeys.has(key)) mediaKeys.set(key, { mediaType: r.media.mediaType, tmdbId: r.media.tmdbId });
+    }
+
+    // Fetch media details in parallel (title + posterPath)
+    const mediaDetails = new Map<string, { title: string; posterPath: string | null }>();
+    await Promise.allSettled(
+      [...mediaKeys.entries()].map(async ([key, { mediaType, tmdbId }]) => {
+        try {
+          const endpoint = mediaType === "movie" ? "movie" : "tv";
+          const detail = await proxyGet(`/${endpoint}/${tmdbId}`) as {
+            title?: string; name?: string; posterPath?: string;
+          };
+          mediaDetails.set(key, {
+            title: detail.title || detail.name || `TMDB #${tmdbId}`,
+            posterPath: detail.posterPath || null,
+          });
+        } catch { /* skip — will show fallback */ }
+      })
+    );
+
+    // Map Seerr status codes to labels
+    const mapStatus = (reqStatus: number, mediaStatus: number): string => {
+      if (mediaStatus >= 5) return "available";
+      switch (reqStatus) {
+        case 1: return "pending";
+        case 2: return "approved";
+        case 3: return "declined";
+        default: return "submitted";
+      }
+    };
+
+    const enriched = data.results.map((r) => {
+      const key = `${r.media.mediaType}:${r.media.tmdbId}`;
+      const detail = mediaDetails.get(key);
+      return {
+        id: r.id,
+        username: r.requestedBy.displayName || r.requestedBy.username || "Inconnu",
+        mediaType: r.media.mediaType,
+        tmdbId: r.media.tmdbId,
+        title: detail?.title || `#${r.media.tmdbId}`,
+        posterPath: detail?.posterPath || null,
+        status: mapStatus(r.status, r.media.status),
+        seerrRequestId: r.id,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      };
+    });
+
+    return {
+      results: enriched,
+      total: data.pageInfo.results,
+      page: data.pageInfo.page,
+      totalPages: data.pageInfo.pages,
+    };
+  });
 
   // Request count
   app.get("/requests/count", async () => proxyGet("/request/count"));

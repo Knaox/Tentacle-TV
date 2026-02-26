@@ -1,22 +1,20 @@
 import { useState } from "react";
-import { useMyRequests, useCancelRequest, useRetryRequest } from "@tentacle/api-client";
-import type { MediaRequest } from "@tentacle/api-client";
+import { useSeerrRequestsEnriched, useSeerrDeleteRequest } from "@tentacle/api-client";
+import type { SeerrEnrichedRequest } from "@tentacle/api-client";
 import { Navbar } from "../components/Navbar";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 
 const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "Toutes" },
-  { key: "pending", label: "En file" },
-  { key: "submitted", label: "Soumises" },
+  { key: "pending", label: "En attente" },
   { key: "approved", label: "Approuvées" },
   { key: "available", label: "Disponibles" },
-  { key: "failed", label: "Échouées" },
   { key: "declined", label: "Refusées" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-gray-500/20 text-gray-400",
+  pending: "bg-yellow-500/20 text-yellow-400",
   submitted: "bg-yellow-500/20 text-yellow-400",
   approved: "bg-blue-500/20 text-blue-400",
   available: "bg-green-500/20 text-green-400",
@@ -25,7 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "En file",
+  pending: "En attente",
   submitted: "Soumise",
   approved: "Approuvée",
   available: "Disponible",
@@ -37,9 +35,8 @@ export function Requests() {
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useMyRequests(filter || undefined, page);
-  const cancelMut = useCancelRequest();
-  const retryMut = useRetryRequest();
+  const { data, isLoading } = useSeerrRequestsEnriched(filter || undefined, page);
+  const deleteMut = useSeerrDeleteRequest();
 
   const requests = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -48,7 +45,7 @@ export function Requests() {
     <div className="min-h-screen bg-tentacle-bg">
       <Navbar />
       <main className="mx-auto max-w-5xl px-6 pt-24 pb-12">
-        <h1 className="mb-6 text-2xl font-bold text-white">Mes demandes</h1>
+        <h1 className="mb-6 text-2xl font-bold text-white">Demandes</h1>
 
         <div className="mb-6 flex flex-wrap gap-2">
           {FILTERS.map((f) => (
@@ -77,8 +74,7 @@ export function Requests() {
           <div className="space-y-3">
             {requests.map((req) => (
               <RequestRow key={req.id} req={req}
-                onCancel={() => cancelMut.mutate(req.id)}
-                onRetry={() => retryMut.mutate(req.id)} />
+                onDelete={() => deleteMut.mutate(req.seerrRequestId)} />
             ))}
           </div>
         )}
@@ -101,15 +97,13 @@ export function Requests() {
   );
 }
 
-function RequestRow({ req, onCancel, onRetry }: {
-  req: MediaRequest;
-  onCancel: () => void;
-  onRetry: () => void;
+function RequestRow({ req, onDelete }: {
+  req: SeerrEnrichedRequest;
+  onDelete: () => void;
 }) {
   const poster = req.posterPath ? `${TMDB_IMG}/w92${req.posterPath}` : null;
   const date = new Date(req.createdAt).toLocaleDateString("fr-FR");
-  const canCancel = ["pending", "failed", "submitted"].includes(req.status);
-  const canRetry = req.status === "failed";
+  const canDelete = ["pending", "approved"].includes(req.status);
 
   return (
     <div className="flex items-center gap-4 rounded-xl bg-white/5 px-5 py-4">
@@ -126,26 +120,15 @@ function RequestRow({ req, onCancel, onRetry }: {
         <p className="mt-0.5 text-xs text-white/40">
           {req.mediaType === "movie" ? "Film" : "Série"} — {date}
         </p>
-        {req.username && (
-          <p className="text-xs text-white/30">par {req.username}</p>
-        )}
-        {req.lastError && (
-          <p className="mt-1 text-xs text-red-400 truncate">{req.lastError}</p>
-        )}
+        <p className="text-xs text-white/30">par {req.username}</p>
       </div>
 
       <div className="flex items-center gap-2">
         <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[req.status] ?? ""}`}>
           {STATUS_LABELS[req.status] ?? req.status}
         </span>
-        {canRetry && (
-          <button onClick={onRetry}
-            className="rounded-lg bg-tentacle-accent/20 px-2.5 py-1 text-xs font-medium text-purple-400 hover:bg-tentacle-accent/40">
-            Relancer
-          </button>
-        )}
-        {canCancel && (
-          <button onClick={onCancel}
+        {canDelete && (
+          <button onClick={onDelete}
             className="rounded-lg bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 hover:bg-red-500/25">
             Annuler
           </button>
