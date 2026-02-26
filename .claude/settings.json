@@ -9,7 +9,8 @@
       "Bash(pnpm --filter @tentacle/backend build)",
       "WebFetch(domain:tentacle.rouge-informatique.ch)",
       "Bash(xargs grep -l \"request\\\\|Request\")",
-      "Bash(xargs basename -a)"
+      "Bash(xargs basename -a)",
+      "Bash(xargs grep -l \"PlaybackStart\\\\|Sessions/Playing\")"
     ]
   }
 }
