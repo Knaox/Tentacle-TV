@@ -100,6 +100,11 @@ export default function RootLayout() {
     );
     const savedToken = storage.getItem("tentacle_token");
     if (savedToken) jfClient.setAccessToken(savedToken);
+    jfClient.setOnAuthExpired(() => {
+      storage.removeItem("tentacle_token");
+      storage.removeItem("tentacle_user");
+      queryClient.clear();
+    });
     setClient(jfClient);
   }, []);
 
@@ -123,6 +128,11 @@ export default function RootLayout() {
         );
         const savedToken = storage.getItem("tentacle_token");
         if (savedToken) jfClient.setAccessToken(savedToken);
+        jfClient.setOnAuthExpired(() => {
+          storage.removeItem("tentacle_token");
+          storage.removeItem("tentacle_user");
+          queryClient.clear();
+        });
         setClient(jfClient);
         setServerUrlState(savedUrl);
       } else {

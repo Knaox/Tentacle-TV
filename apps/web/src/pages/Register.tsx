@@ -2,10 +2,9 @@ import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle/ui";
+import { backendUrl } from "../main";
 
-// En prod VITE_BACKEND_URL="" → URLs relatives (/api/...) sur le meme domaine
-// En dev VITE_BACKEND_URL="http://localhost:3001" → pointe vers le backend local
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
+const BACKEND_URL = backendUrl;
 
 export function Register() {
   const [searchParams] = useSearchParams();

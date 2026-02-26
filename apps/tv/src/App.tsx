@@ -71,6 +71,12 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   const savedToken = storage.getItem("tentacle_token");
   if (savedToken) jfClient.setAccessToken(savedToken);
 
+  jfClient.setOnAuthExpired(() => {
+    storage.removeItem("tentacle_token");
+    storage.removeItem("tentacle_user");
+    queryClient.clear();
+  });
+
   return jfClient;
 }
 

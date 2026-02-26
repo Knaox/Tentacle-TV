@@ -30,7 +30,7 @@ const deviceName = isTauriApp ? "Desktop" : "Web";
 
 // Web: same-origin (or VITE_BACKEND_URL for dev).
 // Desktop: saved Tentacle server URL from localStorage.
-const backendUrl = isTauriApp
+export const backendUrl = isTauriApp
   ? (localStorage.getItem("tentacle_server_url") || "")
   : (import.meta.env.VITE_BACKEND_URL || "");
 
@@ -63,6 +63,13 @@ const savedToken = storage.getItem("tentacle_token");
 if (savedToken) {
   jellyfinClient.setAccessToken(savedToken);
 }
+
+// On 401 (stale/revoked token) clear auth state → triggers redirect to /login.
+// The localStorage.removeItem intercept in App.tsx notifies useIsAuthenticated.
+jellyfinClient.setOnAuthExpired(() => {
+  storage.removeItem("tentacle_token");
+  storage.removeItem("tentacle_user");
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
