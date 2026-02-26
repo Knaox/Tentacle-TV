@@ -10,7 +10,8 @@
       "WebFetch(domain:tentacle.rouge-informatique.ch)",
       "Bash(xargs grep -l \"request\\\\|Request\")",
       "Bash(xargs basename -a)",
-      "Bash(xargs grep -l \"PlaybackStart\\\\|Sessions/Playing\")"
+      "Bash(xargs grep -l \"PlaybackStart\\\\|Sessions/Playing\")",
+      "Bash(ls -la \"c:\\\\Users\\\\damie\\\\Desktop\\\\Project\\\\Tentacle/apps/mobile/app/\\(auth\\)\")"
     ]
   }
 }

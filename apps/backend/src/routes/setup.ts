@@ -152,17 +152,32 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       // Authenticate via Jellyfin
-      const authHeader = `MediaBrowser Client="Tentacle", Device="Server", DeviceId="tentacle-setup", Version="0.6.0"`;
-      const authRes = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
+      const authHeader = `MediaBrowser Client="Tentacle", Device="Server", DeviceId="tentacle-setup", Version="0.7.0"`;
+      const authUrl = `${jellyfinUrl}/Users/AuthenticateByName`;
+      app.log.info({ jellyfinUrl, authUrl, username: body.username }, "create-admin: authenticating");
+
+      const authRes = await fetch(authUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Emby-Authorization": authHeader,
         },
         body: JSON.stringify({ Username: body.username, Pw: body.password }),
+        signal: AbortSignal.timeout(10_000),
       });
+
       if (!authRes.ok) {
-        return reply.status(400).send({ message: "Identifiants Jellyfin invalides" });
+        let detail = "";
+        try { detail = await authRes.text(); } catch { /* ignore */ }
+        app.log.warn({ status: authRes.status, detail, authUrl }, "create-admin: Jellyfin auth failed");
+
+        if (authRes.status === 401) {
+          return reply.status(400).send({ message: "Identifiants Jellyfin invalides (mot de passe ou nom d'utilisateur incorrect)" });
+        }
+        if (authRes.status === 403) {
+          return reply.status(400).send({ message: "Accès refusé par Jellyfin (compte verrouillé ou accès bloqué)" });
+        }
+        return reply.status(400).send({ message: `Jellyfin a répondu HTTP ${authRes.status}: ${detail || "erreur inconnue"}` });
       }
 
       const authData = await authRes.json();
@@ -179,14 +194,19 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
       await setConfigValue("setup_completed", "true");
       setAppState("running");
 
+      app.log.info({ userId: user.Id, username: user.Name }, "create-admin: setup complete");
+
       return {
         success: true,
         user: { Id: user.Id, Name: user.Name, Policy: user.Policy },
         token: authData.AccessToken,
       };
     } catch (err) {
-      if (err instanceof Error && err.message.includes("invalides")) throw err;
-      return reply.status(500).send({ message: "Erreur lors de la vérification" });
+      app.log.error({ err }, "create-admin: unexpected error");
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        return reply.status(504).send({ message: `Jellyfin ne répond pas (timeout). Vérifiez que ${jellyfinUrl} est accessible depuis le serveur.` });
+      }
+      return reply.status(500).send({ message: "Erreur lors de la vérification: " + (err instanceof Error ? err.message : String(err)) });
     }
   });
 };
