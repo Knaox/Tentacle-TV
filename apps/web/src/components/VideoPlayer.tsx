@@ -86,8 +86,10 @@ export function VideoPlayer({
   if (prevSrc !== src) {
     setPrevSrc(src);
     setRawTime(0);
-    offsetDetectedRef.current = false;
-    effectiveOffsetRef.current = streamOffset; // will be corrected on first timeupdate
+    // Jellyfin HLS manifests always contain the full media timeline (absolute PTS).
+    // effectiveOffset is always 0 — no auto-detection needed.
+    offsetDetectedRef.current = true;
+    effectiveOffsetRef.current = 0;
   }
 
   const [videoDuration, setVideoDuration] = useState(0);
@@ -118,26 +120,18 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
-  // Unified seek — uses effectiveOffset to handle both absolute and relative HLS timestamps
+  // Unified seek — Jellyfin HLS always uses absolute PTS so v.currentTime = target position
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
-    const eo = effectiveOffsetRef.current;
-    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, eo, streamOffset });
-    if (isDirectPlay) {
-      v.currentTime = targetSeconds;
-    } else if (eo > 0 && targetSeconds >= eo) {
-      // Relative timestamps — subtract offset
-      v.currentTime = targetSeconds - eo;
-    } else if (eo === 0 && streamOffset > 0) {
-      // Absolute timestamps — seek directly
-      v.currentTime = targetSeconds;
-    } else if (targetSeconds < streamOffset) {
-      // Target before stream start — rebuild URL
+    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, streamOffset });
+    // For transcoded streams, if the target is before the current transcode
+    // start position, request a new transcode from Watch.tsx
+    if (!isDirectPlay && streamOffset > 0 && targetSeconds < streamOffset - 5) {
       onSeekRequest?.(targetSeconds);
-    } else {
-      v.currentTime = targetSeconds;
+      return;
     }
+    v.currentTime = targetSeconds;
   }, [isDirectPlay, streamOffset, onSeekRequest]);
 
   const toggleFullscreen = useCallback(() => {
@@ -163,10 +157,7 @@ export function VideoPlayer({
     setLoading(true);
     if (isSourceChange) { hasStartedRef.current = false; }
     // Direct play: seek explicitly to saved position (source change) or resume point (initial).
-    // HLS: NEVER seek via startPosition — let Jellyfin's StartTimeTicks handle positioning.
-    //   Using startPosition would break the absolute/relative PTS auto-detection
-    //   because it moves the PTS cursor within the stream, making relative timestamps
-    //   look like absolute ones. Positions then compound on each audio/quality change.
+    // HLS: use startPosition to seek within the absolute-PTS manifest.
     // key={itemId} on VideoPlayer ensures episode switches remount cleanly.
     const seekTo = isSourceChange
       ? lastKnownPositionRef.current
@@ -210,7 +201,7 @@ export function VideoPlayer({
     if (isHlsUrl && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        startPosition: -1, // Always use manifest default — StartTimeTicks in URL handles positioning
+        startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
         fragLoadPolicy: {
           default: {
             maxTimeToFirstByteMs: 20_000,
@@ -348,16 +339,12 @@ export function VideoPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);
-          // Auto-detect absolute vs relative HLS timestamps on first timeupdate
-          if (!offsetDetectedRef.current && !isDirectPlay && streamOffset > 0) {
+          // Jellyfin HLS manifests always use absolute PTS (full media timeline).
+          // Set offset to 0 on first timeupdate if not already done by sync reset.
+          if (!offsetDetectedRef.current) {
             offsetDetectedRef.current = true;
-            if (t > streamOffset * 0.5) {
-              // Timestamps are absolute — v.currentTime already includes the seek position
-              effectiveOffsetRef.current = 0;
-              console.debug(DBG, "detected ABSOLUTE HLS timestamps", { t, streamOffset });
-            } else {
-              console.debug(DBG, "detected RELATIVE HLS timestamps", { t, streamOffset });
-            }
+            effectiveOffsetRef.current = 0;
+            console.debug(DBG, "offset: absolute PTS", { t, streamOffset });
           }
           const absoluteTime = effectiveOffsetRef.current + t;
           lastKnownPositionRef.current = absoluteTime;
