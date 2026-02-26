@@ -46,3 +46,8 @@ pnpm-debug.log*
 
 # Prisma
 apps/backend/prisma/*.db
+
+# Misc / AI & Docs
+.claude/
+context.md
+jellyfin-openapi-stable.json
