@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit -p packages/api-client/tsconfig.json)",
+      "Bash(pnpm exec tsc --noEmit -p packages/api-client/tsconfig.json)",
+      "Bash(pnpm --filter @tentacle/api-client typecheck)",
+      "Bash(pnpm --filter @tentacle/web build)"
+    ]
+  }
+}

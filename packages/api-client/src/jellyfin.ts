@@ -137,41 +137,39 @@ export class JellyfinClient {
       return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
     }
 
-    // Transcode / remux via HLS
+    // Shared transcode/remux params
     params.set("DeviceId", this.deviceId);
     if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
-    params.set("TranscodingMaxAudioChannels", "6"); // Downmix 7.1+ to 5.1 (browsers can't decode 8ch)
-    params.set("BreakOnNonKeyFrames", "true");
-    // Critical: without RequireAvc=false, Jellyfin forces VideoCodec=h264
-    // even when AllowVideoStreamCopy=true and the source is HEVC.
+    params.set("TranscodingMaxAudioChannels", "6");
     params.set("RequireAvc", "false");
-    params.set("RequireNonAnamorphic", "false");
-    params.set("EnableSubtitlesInManifest", "false");
     params.set("context", "Streaming");
 
-    if (options?.maxBitrate) {
-      // Explicit quality — transcode both video and audio
-      params.set("VideoCodec", "h264");
-      params.set("AudioCodec", "aac");
-      params.set("SegmentContainer", "ts");
-      const audioBitrate = 384000;
-      const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
-      params.set("VideoBitRate", String(videoBitrate));
-      params.set("AudioBitRate", String(audioBitrate));
-      params.set("MaxStreamingBitrate", String(options.maxBitrate));
-    } else {
-      // Remux: copy video stream as-is, only transcode audio.
-      // Set VideoCodec to match the source so Jellyfin allows stream copy.
+    if (!options?.maxBitrate) {
+      // Remux via progressive stream: video copied as-is, only audio transcoded.
+      // Progressive avoids Jellyfin's HLS playlist generator which overrides
+      // AllowVideoStreamCopy for HEVC, forcing h264 transcode.
       const videoCodec = options?.sourceVideoCodec || "h264";
       params.set("VideoCodec", videoCodec);
       params.set("AllowVideoStreamCopy", "true");
       params.set("AllowAudioStreamCopy", "false");
       params.set("AudioCodec", "aac");
-      params.set("SegmentContainer", "mp4");
-      params.set("MinSegments", "2");
       params.set("CopyTimestamps", "true");
       params.set("MaxStreamingBitrate", "150000000");
+      return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${params}`;
     }
+
+    // Quality transcode via HLS — full re-encode with bitrate limit
+    params.set("BreakOnNonKeyFrames", "true");
+    params.set("RequireNonAnamorphic", "false");
+    params.set("EnableSubtitlesInManifest", "false");
+    params.set("VideoCodec", "h264");
+    params.set("AudioCodec", "aac");
+    params.set("SegmentContainer", "ts");
+    const audioBitrate = 384000;
+    const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
+    params.set("VideoBitRate", String(videoBitrate));
+    params.set("AudioBitRate", String(audioBitrate));
+    params.set("MaxStreamingBitrate", String(options.maxBitrate));
 
     // Resolution constraint — Jellyfin calculates proportional width automatically
     if (options?.maxHeight) {
