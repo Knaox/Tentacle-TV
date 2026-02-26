@@ -28,7 +28,6 @@ import { startPairingCleanup } from "./services/pairingCleanup";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 const RATE_LIMIT = Number(process.env.RATE_LIMIT) || 1000;
 
 async function main() {
@@ -40,12 +39,10 @@ async function main() {
     trustProxy: true,
   });
 
-  // CORS: "*" reflects any origin (needed for Desktop/Mobile apps).
-  // Set CORS_ORIGIN to a specific URL or comma-separated list to restrict.
-  const corsOrigin = CORS_ORIGIN === "*"
-    ? true
-    : CORS_ORIGIN.includes(",") ? CORS_ORIGIN.split(",").map((s) => s.trim()) : CORS_ORIGIN;
-  await app.register(cors, { origin: corsOrigin });
+  // CORS: always reflect the request origin. Desktop (tauri://localhost),
+  // Mobile, and TV apps all send different origins. Authentication is
+  // handled by JWT, not CORS, so restricting origins adds no security.
+  await app.register(cors, { origin: true });
   await app.register(rateLimit, { max: RATE_LIMIT, timeWindow: "1 minute" });
 
   // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)
