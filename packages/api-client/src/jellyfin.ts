@@ -124,6 +124,9 @@ export class JellyfinClient {
     /** Source video codec (e.g. "hevc", "h264") — used in remux mode
      *  so Jellyfin knows it can stream copy instead of re-encoding. */
     sourceVideoCodec?: string;
+    /** Use progressive stream for remux (default true). Set false for Safari/iOS
+     *  where progressive transcode doesn't support Range requests. Falls back to HLS. */
+    useProgressiveRemux?: boolean;
   }): string {
     const params = new URLSearchParams();
     params.set("api_key", this.accessToken ?? "");
@@ -145,9 +148,7 @@ export class JellyfinClient {
     params.set("context", "Streaming");
 
     if (!options?.maxBitrate) {
-      // Remux via progressive stream: video copied as-is, only audio transcoded.
-      // Progressive avoids Jellyfin's HLS playlist generator which overrides
-      // AllowVideoStreamCopy for HEVC, forcing h264 transcode.
+      // Remux: video copied as-is, only audio transcoded.
       const videoCodec = options?.sourceVideoCodec || "h264";
       params.set("VideoCodec", videoCodec);
       params.set("AllowVideoStreamCopy", "true");
@@ -155,7 +156,21 @@ export class JellyfinClient {
       params.set("AudioCodec", "aac");
       params.set("CopyTimestamps", "true");
       params.set("MaxStreamingBitrate", "150000000");
-      return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${params}`;
+
+      if (options?.useProgressiveRemux !== false) {
+        // Progressive: avoids Jellyfin's HLS playlist generator which overrides
+        // AllowVideoStreamCopy for HEVC, forcing h264 transcode.
+        return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${params}`;
+      }
+
+      // HLS fallback (Safari/iOS): progressive transcode doesn't support HTTP
+      // Range requests that WebKit requires for media playback.
+      params.set("BreakOnNonKeyFrames", "true");
+      params.set("RequireNonAnamorphic", "false");
+      params.set("EnableSubtitlesInManifest", "false");
+      params.set("SegmentContainer", "mp4");
+      params.set("MinSegments", "2");
+      return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;
     }
 
     // Quality transcode via HLS — full re-encode with bitrate limit
