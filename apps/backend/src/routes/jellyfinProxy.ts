@@ -48,12 +48,16 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
+    // Progressive video streams (remux) can last hours — use a long timeout.
+    // HLS segments and API calls complete quickly, keep short timeout.
+    const isProgressiveStream = /Videos\/.*\/stream/.test(wildcardPath);
+    const timeout = isProgressiveStream ? 4 * 60 * 60 * 1000 : 120_000;
+
     // Build fetch options
     const fetchInit: RequestInit = {
       method: request.method,
       headers,
-      // AbortSignal for timeout (30s for most, longer for streams)
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(timeout),
     };
 
     // Forward body for POST/PUT/PATCH/DELETE

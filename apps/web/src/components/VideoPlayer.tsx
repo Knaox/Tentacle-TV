@@ -108,6 +108,7 @@ export function VideoPlayer({
   const [showPlayButton, setShowPlayButton] = useState(false);
   const [policyMuted, setPolicyMuted] = useState(false);
   const pendingPlayRef = useRef(false);
+  const seekTargetRef = useRef<number | null>(null);
   const readyToPlayRef = useRef(readyToPlay);
   readyToPlayRef.current = readyToPlay;
 
@@ -120,19 +121,28 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
-  // Unified seek — Jellyfin HLS always uses absolute PTS so v.currentTime = target position
+  // Unified seek — handles HLS (absolute PTS) and progressive (CopyTimestamps) streams
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
-    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, streamOffset });
+    const isHlsStream = src.includes(".m3u8");
+    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, streamOffset, isHlsStream });
     // For transcoded streams, if the target is before the current transcode
     // start position, request a new transcode from Watch.tsx
     if (!isDirectPlay && streamOffset > 0 && targetSeconds < streamOffset - 5) {
+      seekTargetRef.current = targetSeconds;
+      onSeekRequest?.(targetSeconds);
+      return;
+    }
+    // For progressive (non-HLS) transcoded streams, large forward seeks are
+    // beyond the download buffer — request URL rebuild with new StartTimeTicks
+    if (!isDirectPlay && !isHlsStream && targetSeconds > currentTimeRef.current + 60) {
+      seekTargetRef.current = targetSeconds;
       onSeekRequest?.(targetSeconds);
       return;
     }
     v.currentTime = targetSeconds;
-  }, [isDirectPlay, streamOffset, onSeekRequest]);
+  }, [isDirectPlay, streamOffset, src, onSeekRequest]);
 
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
@@ -159,9 +169,13 @@ export function VideoPlayer({
     // Direct play: seek explicitly to saved position (source change) or resume point (initial).
     // HLS: use startPosition to seek within the absolute-PTS manifest.
     // key={itemId} on VideoPlayer ensures episode switches remount cleanly.
-    const seekTo = isSourceChange
-      ? lastKnownPositionRef.current
-      : (startPositionSeconds ?? 0);
+    // seekTargetRef: when a seek triggered URL rebuild, use the seek target, not the old position.
+    const seekTo = seekTargetRef.current != null
+      ? seekTargetRef.current
+      : isSourceChange
+        ? lastKnownPositionRef.current
+        : (startPositionSeconds ?? 0);
+    seekTargetRef.current = null;
     console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo, streamOffset });
 
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
