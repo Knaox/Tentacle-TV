@@ -1,5 +1,6 @@
 import { getPrisma } from "./db";
 import { submitRequest, getRequestStatus, mapSeerrStatus, fetchAllSeerrRequests, fetchMediaDetail } from "./overseerr";
+
 const POLL_INTERVAL = 60_000; // 60 seconds
 const MAX_RETRIES = 3;
 const SUBMIT_DELAY = 15_000; // 15s between Seerr API calls
@@ -141,7 +142,8 @@ async function syncSeerrRequests(): Promise<void> {
       where: { seerrRequestId: { not: null } },
       select: { seerrRequestId: true, status: true, id: true },
     });
-    const existingMap = new Map(existing.map((r) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
+    // CORRECTION ICI : Ajout du type `: any` pour `r`
+    const existingMap = new Map(existing.map((r: any) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
 
     for (const req of seerrData.results) {
       const newStatus = mapSeerrStatus(req.status, req.media?.status ?? 0);
