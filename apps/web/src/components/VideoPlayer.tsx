@@ -246,14 +246,17 @@ export function VideoPlayer({
       // Explicit load only after full reset (HLS transition); for progressive → progressive
       // setting v.src already triggers loading — double-load would add latency.
       if (isSourceChange && (wasHls || isHlsUrl)) v.load();
-      v.addEventListener("loadedmetadata", onReady, { once: true });
+      // Progressive → progressive (audio track change): wait for canplay so both
+      // video and audio are buffered before playing — prevents "muted video" state.
+      const readyEvt = (isSourceChange && !wasHls && !isHlsUrl) ? "canplay" : "loadedmetadata";
+      v.addEventListener(readyEvt, onReady, { once: true });
       if (!isSourceChange && v.readyState >= 1) {
-        v.removeEventListener("loadedmetadata", onReady);
+        v.removeEventListener(readyEvt, onReady);
         onReady();
       }
     }
 
-    return () => { clearTimeout(failsafe); v.removeEventListener("loadedmetadata", onReady); };
+    return () => { clearTimeout(failsafe); v.removeEventListener("loadedmetadata", onReady); v.removeEventListener("canplay", onReady); };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { hlsRef.current?.destroy(); }, []);
@@ -397,7 +400,7 @@ export function VideoPlayer({
       </video>
 
       {loading && (playing || sourceChangingRef.current) && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center ${sourceChangingRef.current ? "bg-black" : ""}`} onClick={(e) => e.stopPropagation()}>
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
         </div>
       )}
