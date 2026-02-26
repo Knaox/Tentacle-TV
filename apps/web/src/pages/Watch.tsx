@@ -154,6 +154,9 @@ export function Watch() {
     });
   }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Source video codec — needed for remux mode so Jellyfin does stream copy
+  const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
+
   // Map quality bitrate to max video height for Jellyfin resolution scaling
   const qualityMaxHeight = quality != null
     ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined)
@@ -171,10 +174,11 @@ export function Watch() {
       directPlay: isDirectPlay,
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
       playSessionId,
+      sourceVideoCodec,
     });
     console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight });
     return url;
-  }, [client, itemId, audioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId]);
+  }, [client, itemId, audioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
