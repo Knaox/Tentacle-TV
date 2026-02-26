@@ -176,7 +176,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     const devices = await prisma.pairedDevice.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return devices.map((d) => ({
+    // CORRECTION ICI : Ajout du type `: any` pour `d`
+    return devices.map((d: any) => ({
       id: d.id,
       name: d.name,
       username: d.username,
