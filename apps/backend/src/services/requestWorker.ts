@@ -18,6 +18,23 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let processing = false;
 let cycleCount = SYNC_INTERVAL; // sync on first run
 
+// Interface ajoutée pour sécuriser le typage de l'API Seerr
+interface SeerrApiRequest {
+  id: number;
+  status: number;
+  media: {
+    status: number;
+    tmdbId: number;
+    mediaType: "movie" | "tv";
+  };
+  requestedBy: {
+    displayName?: string;
+    username?: string;
+    jellyfinUserId?: string;
+  };
+  createdAt: string | Date;
+}
+
 /**
  * Process the next pending request in FIFO order.
  */
@@ -142,10 +159,14 @@ async function syncSeerrRequests(): Promise<void> {
       where: { seerrRequestId: { not: null } },
       select: { seerrRequestId: true, status: true, id: true },
     });
-    // CORRECTION ICI : Ajout du type `: any` pour `r`
-    const existingMap = new Map(existing.map((r: any) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
+    
+    // Correction : Retrait du `any`
+    const existingMap = new Map(existing.map((r) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
 
-    for (const req of seerrData.results) {
+    // Correction : Cast des résultats avec notre nouvelle interface
+    const requests = seerrData.results as SeerrApiRequest[];
+
+    for (const req of requests) {
       const newStatus = mapSeerrStatus(req.status, req.media?.status ?? 0);
       const found = existingMap.get(req.id);
 
@@ -189,7 +210,7 @@ async function syncSeerrRequests(): Promise<void> {
       });
     }
 
-    console.debug("[RequestWorker] Seerr sync complete:", seerrData.results.length, "requests checked");
+    console.debug("[RequestWorker] Seerr sync complete:", requests.length, "requests checked");
   } catch (err) {
     console.error("[RequestWorker] Seerr sync error:", err instanceof Error ? err.message : err);
   }
