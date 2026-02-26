@@ -1,15 +1,24 @@
+import { useTranslation } from "react-i18next";
 import { useSeerrRequests, useSeerrMediaDetail } from "@tentacle/api-client";
 import type { SeerrMediaRequest } from "@tentacle/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 
-const MEDIA_STATUS: Record<number, { label: string; color: string }> = {
-  2: { label: "En attente", color: "bg-yellow-500/20 text-yellow-400" },
-  3: { label: "En cours", color: "bg-blue-500/20 text-blue-400" },
-  4: { label: "Partiel", color: "bg-orange-500/20 text-orange-400" },
+const MEDIA_STATUS_COLORS: Record<number, string> = {
+  2: "bg-yellow-500/20 text-yellow-400",
+  3: "bg-blue-500/20 text-blue-400",
+  4: "bg-orange-500/20 text-orange-400",
 };
 
 export function DownloadList() {
+  const { t } = useTranslation("requests");
+
+  const MEDIA_STATUS_LABELS: Record<number, string> = {
+    2: t("requests:downloadPending"),
+    3: t("requests:downloadInProgress"),
+    4: t("requests:downloadPartial"),
+  };
+
   const { data, isLoading } = useSeerrRequests("approved", 50, 0);
 
   const downloads = (data?.results ?? []).filter(
@@ -25,23 +34,23 @@ export function DownloadList() {
   }
 
   if (downloads.length === 0) {
-    return <p className="py-20 text-center text-white/40">Aucun téléchargement en cours</p>;
+    return <p className="py-20 text-center text-white/40">{t("requests:noDownloads")}</p>;
   }
 
   return (
     <div className="space-y-3">
-      {downloads.map((req) => <DownloadRow key={req.id} req={req} />)}
+      {downloads.map((req) => <DownloadRow key={req.id} req={req} statusLabels={MEDIA_STATUS_LABELS} t={t} />)}
     </div>
   );
 }
 
-function DownloadRow({ req }: { req: SeerrMediaRequest }) {
+function DownloadRow({ req, statusLabels, t }: { req: SeerrMediaRequest; statusLabels: Record<number, string>; t: (key: string, opts?: Record<string, string>) => string }) {
   const { data: detail } = useSeerrMediaDetail(req.media?.mediaType, req.media?.tmdbId);
 
   const title = detail?.title || detail?.name || `#${req.media?.tmdbId}`;
   const poster = detail?.posterPath ? `${TMDB_IMG}/w92${detail.posterPath}` : null;
-  const statusInfo = MEDIA_STATUS[req.media?.status];
-  const date = new Date(req.updatedAt).toLocaleDateString("fr-FR");
+  const statusLabel = statusLabels[req.media?.status];
+  const statusColor = MEDIA_STATUS_COLORS[req.media?.status];
   const seasons = req.seasons?.filter((s) => s.status < 5);
 
   return (
@@ -59,19 +68,19 @@ function DownloadRow({ req }: { req: SeerrMediaRequest }) {
         <p className="text-sm font-medium text-white truncate">
           {title}{" "}
           <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-xs text-white/60">
-            {req.media?.mediaType === "movie" ? "Film" : "Série"}
+            {req.media?.mediaType === "movie" ? t("common:movie") : t("common:series")}
           </span>
         </p>
         <p className="mt-0.5 text-xs text-white/40">
-          Mis à jour le {date}
+          {t("requests:updatedOn", { date: new Date(req.updatedAt).toLocaleDateString() })}
           {seasons && seasons.length > 0 && (
             <span> — Saisons : {seasons.map((s) => s.seasonNumber).join(", ")}</span>
           )}
         </p>
       </div>
-      {statusInfo && (
-        <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${statusInfo.color}`}>
-          {statusInfo.label}
+      {statusLabel && statusColor && (
+        <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${statusColor}`}>
+          {statusLabel}
         </span>
       )}
     </div>

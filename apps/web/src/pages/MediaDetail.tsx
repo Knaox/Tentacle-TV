@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
 import { formatDuration } from "@tentacle/shared";
@@ -13,6 +14,7 @@ const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
   const { data: similar } = useSimilarItems(itemId);
@@ -101,10 +103,10 @@ export function MediaDetail() {
                 <span className="flex items-center gap-1"><StarIcon /> {item.CommunityRating.toFixed(1)}</span>
               )}
               {runtime && <span>{runtime}</span>}
-              {isSeries && item.ChildCount && <span>{item.ChildCount} saisons</span>}
+              {isSeries && item.ChildCount && <span>{item.ChildCount} {t("common:seasons")}</span>}
               {isSeries && item.Status && (
                 <span className="rounded bg-white/10 px-2 py-0.5 text-xs">
-                  {item.Status === "Continuing" ? "En cours" : "Terminée"}
+                  {item.Status === "Continuing" ? t("common:ongoing") : t("common:ended")}
                 </span>
               )}
             </motion.div>
@@ -141,12 +143,12 @@ export function MediaDetail() {
                   whileTap={{ scale: 0.97 }}
                   className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg shadow-lg shadow-white/10"
                 >
-                  <PlayIcon /> {hasResume ? "Reprendre" : "Lecture"}
+                  <PlayIcon /> {hasResume ? t("common:resume") : t("common:play")}
                 </motion.button>
               )}
               {hasResume && !isSeries && (
                 <div className="flex items-center text-sm text-white/40">
-                  {Math.round(progress)}% visionné
+                  {t("common:percentWatched", { percent: Math.round(progress) })}
                 </div>
               )}
             </motion.div>
@@ -159,7 +161,7 @@ export function MediaDetail() {
         <motion.div className="mt-8" variants={fadeIn}
           initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.5 }}>
-          <h2 className="px-4 text-xl font-semibold text-white md:px-12">Saisons & Épisodes</h2>
+          <h2 className="px-4 text-xl font-semibold text-white md:px-12">{t("common:seasonsEpisodes")}</h2>
           <EpisodeList seriesId={itemId} />
         </motion.div>
       )}
@@ -178,7 +180,7 @@ export function MediaDetail() {
         <motion.div className="mt-6 pb-16" variants={fadeIn}
           initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.5 }}>
-          <MediaCarousel title="Titres similaires" items={similar} />
+          <MediaCarousel title={t("common:similarTitles")} items={similar} />
         </motion.div>
       )}
     </div>

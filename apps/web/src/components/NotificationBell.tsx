@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useNotifications,
   useUnreadCount,
@@ -6,6 +7,7 @@ import {
   useMarkRead,
 } from "@tentacle/api-client";
 import type { AppNotification } from "@tentacle/api-client";
+import type { TFunction } from "i18next";
 
 interface NotificationBellProps {
   /** Open dropdown to the right (for sidebar placement) */
@@ -13,6 +15,7 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ dropdownPosition = "below" }: NotificationBellProps) {
+  const { t } = useTranslation("notifications");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { data: unread } = useUnreadCount();
@@ -53,26 +56,27 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
             : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-80"
         }`}>
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <span className="text-sm font-semibold text-white">Notifications</span>
+            <span className="text-sm font-semibold text-white">{t("notifications:title")}</span>
             {count > 0 && (
               <button
                 onClick={(e) => { e.stopPropagation(); markAllMut.mutate(); }}
                 className="rounded-lg px-2 py-1 text-xs text-purple-400 hover:bg-white/10 hover:text-purple-300"
               >
-                Tout marquer lu
+                {t("notifications:markAllRead")}
               </button>
             )}
           </div>
 
           <div className="max-h-80 overflow-y-auto">
             {!notifications || notifications.length === 0 ? (
-              <p className="py-8 text-center text-sm text-white/40">Aucune notification</p>
+              <p className="py-8 text-center text-sm text-white/40">{t("notifications:noNotifications")}</p>
             ) : (
               notifications.map((n) => (
                 <NotifRow
                   key={n.id}
                   notif={n}
                   onRead={() => { if (!n.read) markOneMut.mutate(n.id); }}
+                  t={t}
                 />
               ))
             )}
@@ -83,9 +87,9 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
   );
 }
 
-function NotifRow({ notif, onRead }: { notif: AppNotification; onRead: () => void }) {
+function NotifRow({ notif, onRead, t }: { notif: AppNotification; onRead: () => void; t: TFunction }) {
   const date = new Date(notif.createdAt);
-  const ago = formatAgo(date);
+  const ago = formatAgo(date, t);
 
   return (
     <div
@@ -110,16 +114,16 @@ function NotifRow({ notif, onRead }: { notif: AppNotification; onRead: () => voi
   );
 }
 
-function formatAgo(date: Date): string {
+function formatAgo(date: Date, t: TFunction): string {
   const now = Date.now();
   const diff = now - date.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "À l'instant";
-  if (mins < 60) return `Il y a ${mins} min`;
+  if (mins < 1) return t("common:timeJustNow");
+  if (mins < 60) return t("common:timeMinutesAgo", { mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Il y a ${hours}h`;
+  if (hours < 24) return t("common:timeHoursAgo", { hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `Il y a ${days}j`;
+  if (days < 7) return t("common:timeDaysAgo", { days });
   return date.toLocaleDateString("fr-FR");
 }
 

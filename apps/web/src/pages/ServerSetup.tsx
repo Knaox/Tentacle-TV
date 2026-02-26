@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle/ui";
 
 type SetupStep = "db" | "jellyfin" | "admin";
@@ -10,6 +11,7 @@ interface SetupProps {
 export function ServerSetup({ onComplete }: SetupProps) {
   const [step, setStep] = useState<SetupStep>("db");
   const [loading, setLoading] = useState(true);
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     fetch("/api/setup/status")
@@ -46,8 +48,29 @@ export function ServerSetup({ onComplete }: SetupProps) {
     );
   }
 
+  const switchLang = (lng: string) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem("tentacle_language", lng);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="relative flex min-h-screen items-center justify-center p-4">
+      {/* Language toggle */}
+      <div className="absolute right-4 top-4 flex overflow-hidden rounded-lg border border-white/10">
+        {["fr", "en"].map((lng) => (
+          <button
+            key={lng}
+            onClick={() => switchLang(lng)}
+            className={`px-3 py-1.5 text-xs font-medium transition ${
+              i18n.language === lng
+                ? "bg-purple-500/30 text-purple-300"
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            {lng.toUpperCase()}
+          </button>
+        ))}
+      </div>
       <div className="w-full max-w-lg">
         <StepHeader step={step} />
         {step === "db" && <DbStep onNext={() => setStep("jellyfin")} />}
@@ -59,10 +82,11 @@ export function ServerSetup({ onComplete }: SetupProps) {
 }
 
 function StepHeader({ step }: { step: SetupStep }) {
+  const { t } = useTranslation("setup");
   const steps: { key: SetupStep; label: string }[] = [
-    { key: "db", label: "Base de données" },
+    { key: "db", label: t("stepDatabase") },
     { key: "jellyfin", label: "Jellyfin" },
-    { key: "admin", label: "Administrateur" },
+    { key: "admin", label: t("stepAdmin") },
   ];
   const idx = steps.findIndex((s) => s.key === step);
 
@@ -71,7 +95,7 @@ function StepHeader({ step }: { step: SetupStep }) {
       <img src="/tentacle-logo-pirate.svg" alt="" className="mx-auto mb-3 h-14 w-14" />
       <h1 className="mb-4 text-2xl font-bold">
         <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          Configuration de Tentacle
+          {t("configTitle")}
         </span>
       </h1>
       <div className="flex items-center justify-center gap-2">
@@ -90,6 +114,8 @@ function StepHeader({ step }: { step: SetupStep }) {
 }
 
 function DbStep({ onNext }: { onNext: () => void }) {
+  const { t } = useTranslation("setup");
+  const { t: tCommon } = useTranslation("common");
   const [host, setHost] = useState("localhost");
   const [port, setPort] = useState("3306");
   const [database, setDatabase] = useState("tentacle");
@@ -111,36 +137,38 @@ function DbStep({ onNext }: { onNext: () => void }) {
       if (!r2.ok) { const d = await r2.json(); throw new Error(d.message); }
       setOk(true);
     } catch (err: any) {
-      setError(err.message || "Connexion echouee");
+      setError(err.message || t("dbConnectionFailed"));
     } finally { setTesting(false); }
   };
 
   return (
     <GlassCard className="p-6">
-      <h2 className="mb-1 text-lg font-semibold">Base de données</h2>
-      <p className="mb-4 text-sm text-white/50">Connexion MariaDB / MySQL.</p>
+      <h2 className="mb-1 text-lg font-semibold">{t("dbTitle")}</h2>
+      <p className="mb-4 text-sm text-white/50">{t("dbSubtitle")}</p>
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2"><Inp label="Hote" value={host} set={setHost} /></div>
-          <Inp label="Port" value={port} set={setPort} />
+          <div className="col-span-2"><Inp label={t("dbHost")} value={host} set={setHost} /></div>
+          <Inp label={t("dbPort")} value={port} set={setPort} />
         </div>
-        <Inp label="Nom de la base" value={database} set={setDatabase} />
-        <Inp label="Utilisateur" value={user} set={setUser} />
-        <Inp label="Mot de passe" value={password} set={setPassword} type="password" />
+        <Inp label={t("dbName")} value={database} set={setDatabase} />
+        <Inp label={t("dbUser")} value={user} set={setUser} />
+        <Inp label={t("dbPassword")} value={password} set={setPassword} type="password" />
       </div>
       {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      {ok && <p className="mt-3 text-sm text-green-400">Connexion reussie, tables creees.</p>}
+      {ok && <p className="mt-3 text-sm text-green-400">{t("dbConnectionSuccess")}</p>}
       <div className="mt-4 flex gap-3">
         <Btn onClick={handleTest} disabled={testing || !password} secondary>
-          {testing ? "Test..." : "Tester la connexion"}
+          {testing ? t("dbTesting") : t("dbTestConnection")}
         </Btn>
-        <Btn onClick={onNext} disabled={!ok} className="ml-auto">Suivant</Btn>
+        <Btn onClick={onNext} disabled={!ok} className="ml-auto">{tCommon("next")}</Btn>
       </div>
     </GlassCard>
   );
 }
 
 function JellyfinStep({ onNext }: { onNext: () => void }) {
+  const { t } = useTranslation("setup");
+  const { t: tCommon } = useTranslation("common");
   const [url, setUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [testing, setTesting] = useState(false);
@@ -174,26 +202,27 @@ function JellyfinStep({ onNext }: { onNext: () => void }) {
 
   return (
     <GlassCard className="p-6">
-      <h2 className="mb-1 text-lg font-semibold">Serveur Jellyfin</h2>
-      <p className="mb-4 text-sm text-white/50">Connectez Tentacle a votre serveur media.</p>
+      <h2 className="mb-1 text-lg font-semibold">{t("jellyfinTitle")}</h2>
+      <p className="mb-4 text-sm text-white/50">{t("jellyfinSubtitle")}</p>
       <div className="space-y-3">
-        <Inp label="URL du serveur" value={url} set={setUrl} placeholder="http://192.168.1.100:8096" />
-        <Inp label="Cle API admin" value={apiKey} set={setApiKey} />
+        <Inp label={t("jellyfinUrl")} value={url} set={setUrl} placeholder={t("jellyfinUrlPlaceholder")} />
+        <Inp label={t("jellyfinApiKey")} value={apiKey} set={setApiKey} />
       </div>
-      {version && <p className="mt-3 text-sm text-green-400">Jellyfin {version} detecte</p>}
+      {version && <p className="mt-3 text-sm text-green-400">{t("jellyfinDetected", { version })}</p>}
       {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
       <div className="mt-4 flex gap-3">
         <Btn onClick={handleTest} disabled={testing || !url || !apiKey} secondary>
-          {testing ? "Test..." : "Tester"}
+          {testing ? t("dbTesting") : t("jellyfinTest")}
         </Btn>
-        {version && !saved && <Btn onClick={handleSave} secondary>Sauvegarder</Btn>}
-        <Btn onClick={onNext} disabled={!saved} className="ml-auto">Suivant</Btn>
+        {version && !saved && <Btn onClick={handleSave} secondary>{t("jellyfinSave")}</Btn>}
+        <Btn onClick={onNext} disabled={!saved} className="ml-auto">{tCommon("next")}</Btn>
       </div>
     </GlassCard>
   );
 }
 
 function AdminStep({ onComplete }: { onComplete: (token: string, user: any) => void }) {
+  const { t } = useTranslation("setup");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
@@ -214,18 +243,18 @@ function AdminStep({ onComplete }: { onComplete: (token: string, user: any) => v
 
   return (
     <GlassCard className="p-6">
-      <h2 className="mb-1 text-lg font-semibold">Compte administrateur</h2>
+      <h2 className="mb-1 text-lg font-semibold">{t("adminTitle")}</h2>
       <p className="mb-4 text-sm text-white/50">
-        Connectez-vous avec un compte administrateur Jellyfin existant.
+        {t("adminSubtitle")}
       </p>
       <div className="space-y-3">
-        <Inp label="Nom d'utilisateur Jellyfin" value={username} set={setUsername} />
-        <Inp label="Mot de passe Jellyfin" value={password} set={setPassword} type="password" />
+        <Inp label={t("adminUsername")} value={username} set={setUsername} />
+        <Inp label={t("adminPassword")} value={password} set={setPassword} type="password" />
       </div>
       {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
       <div className="mt-4">
         <Btn onClick={handleCreate} disabled={creating || !username || !password} className="w-full">
-          {creating ? "Verification..." : "Verifier et creer"}
+          {creating ? t("adminVerifying") : t("adminVerifyCreate")}
         </Btn>
       </div>
     </GlassCard>

@@ -6,7 +6,22 @@ import { getJellyfinUrl } from "../services/configStore";
 const SKIP_REQUEST_HEADERS = new Set([
   "host", "connection", "keep-alive", "transfer-encoding",
   "te", "trailer", "upgrade", "proxy-authorization", "proxy-authenticate",
+  "x-tentacle-language",
 ]);
+
+/** Jellyfin metadata endpoints that support the `language` query parameter. */
+const METADATA_PATH_PATTERNS = [
+  /^Users\/[^/]+\/Items/,
+  /^Shows\/[^/]+\/Episodes/,
+  /^Shows\/NextUp/,
+  /^Users\/[^/]+\/Items\/Resume/,
+  /^Genres/,
+  /^Persons/,
+  /^Artists/,
+  /^Studios/,
+  /^Items\/[^/]+\/Similar/,
+  /^Items\/[^/]+\/ThemeMedia/,
+];
 
 const SKIP_RESPONSE_HEADERS = new Set([
   "transfer-encoding", "connection", "keep-alive",
@@ -25,6 +40,18 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const wildcardPath = (request.params as Record<string, string>)["*"] || "";
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
     let targetUrl = `${jellyfinUrl}/${wildcardPath}${qs}`;
+
+    // Inject language param for metadata endpoints if client sent X-Tentacle-Language
+    const tentacleLang = request.headers["x-tentacle-language"];
+    if (typeof tentacleLang === "string" && METADATA_PATH_PATTERNS.some((p) => p.test(wildcardPath))) {
+      try {
+        const u = new URL(targetUrl);
+        if (!u.searchParams.has("language")) {
+          u.searchParams.set("language", tentacleLang);
+          targetUrl = u.toString();
+        }
+      } catch { /* leave targetUrl unchanged */ }
+    }
 
     // Jellyfin bug workaround: its playlist generator (DynamicHlsPlaylistGenerator)
     // propagates the full query string — including StartTimeTicks — from the

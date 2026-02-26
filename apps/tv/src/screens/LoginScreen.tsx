@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, ActivityIndicator } from "react-native";
 import { useTentacleConfig, useJellyfinClient } from "@tentacle/api-client";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
@@ -8,6 +9,7 @@ import { Focusable } from "../components/focus/Focusable";
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
 export function LoginScreen({ navigation }: Props) {
+  const { t } = useTranslation("auth");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function LoginScreen({ navigation }: Props) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.message || "Identifiants invalides");
+        throw new Error(data?.message || t("auth:invalidCredentials"));
       }
 
       const data = await response.json();
@@ -47,7 +49,7 @@ export function LoginScreen({ navigation }: Props) {
 
       navigation.replace("Home");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connexion echouee");
+      setError(err instanceof Error ? err.message : t("auth:loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -67,13 +69,13 @@ export function LoginScreen({ navigation }: Props) {
           Tentacle
         </Text>
         <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, textAlign: "center", marginBottom: 32 }}>
-          Connectez-vous a votre compte
+          {t("auth:connectToAccount")}
         </Text>
 
         <TextInput
           value={username}
           onChangeText={setUsername}
-          placeholder="Nom d'utilisateur"
+          placeholder={t("auth:username")}
           placeholderTextColor="rgba(255,255,255,0.3)"
           autoCapitalize="none"
           style={inputStyle}
@@ -81,7 +83,7 @@ export function LoginScreen({ navigation }: Props) {
         <TextInput
           value={password}
           onChangeText={setPassword}
-          placeholder="Mot de passe"
+          placeholder={t("auth:password")}
           placeholderTextColor="rgba(255,255,255,0.3)"
           secureTextEntry
           style={[inputStyle, { marginTop: 12 }]}
@@ -102,7 +104,7 @@ export function LoginScreen({ navigation }: Props) {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>Se connecter</Text>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>{t("auth:signIn")}</Text>
               )}
             </View>
           </Focusable>
@@ -115,7 +117,7 @@ export function LoginScreen({ navigation }: Props) {
               alignItems: "center",
             }}>
               <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>
-                Changer de serveur
+                {t("auth:changeServer")}
               </Text>
             </View>
           </Focusable>

@@ -1,4 +1,5 @@
 import { View, Text, ScrollView } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 
 interface Track {
@@ -20,6 +21,7 @@ export function TVTrackSelector({
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
   onSelectAudio, onSelectSubtitle, onClose,
 }: TVTrackSelectorProps) {
+  const { t } = useTranslation("player");
   return (
     <View style={{
       position: "absolute", top: 0, right: 0, bottom: 0, width: 350,
@@ -27,7 +29,7 @@ export function TVTrackSelector({
       paddingVertical: 32, paddingHorizontal: 24,
     }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700" }}>Paramètres</Text>
+        <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700" }}>{t("player:settings")}</Text>
         <Focusable onPress={onClose}>
           <View style={{ padding: 8 }}>
             <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 18 }}>✕</Text>
@@ -38,7 +40,7 @@ export function TVTrackSelector({
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Audio tracks */}
         <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: "600", marginBottom: 8, textTransform: "uppercase" }}>
-          Audio
+          {t("player:audio")}
         </Text>
         {audioTracks.map((track) => (
           <Focusable key={`audio-${track.index}`} onPress={() => onSelectAudio(track.index)}>
@@ -58,7 +60,7 @@ export function TVTrackSelector({
           color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: "600",
           marginTop: 20, marginBottom: 8, textTransform: "uppercase",
         }}>
-          Sous-titres
+          {t("player:subtitles")}
         </Text>
         <Focusable onPress={() => onSelectSubtitle(-1)}>
           <View style={{
@@ -66,7 +68,7 @@ export function TVTrackSelector({
             backgroundColor: selectedSubtitle === -1 ? "rgba(139,92,246,0.2)" : "transparent",
           }}>
             <Text style={{ color: "#fff", fontSize: 15 }}>
-              {selectedSubtitle === -1 && "✓ "}Désactivés
+              {selectedSubtitle === -1 && "✓ "}{t("player:subtitlesDisabled")}
             </Text>
           </View>
         </Focusable>

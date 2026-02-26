@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Animated } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 
 interface TVPlayerOverlayProps {
@@ -25,6 +26,7 @@ export function TVPlayerOverlay({
   title, currentTime, duration, paused,
   onPlayPause, onSeek, onBack, onSettings,
 }: TVPlayerOverlayProps) {
+  const { t } = useTranslation("player");
   const [visible, setVisible] = useState(true);
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -81,7 +83,7 @@ export function TVPlayerOverlay({
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 32 }}>
           <Focusable onPress={() => onSeek(currentTime - 10)}>
             <View style={{ padding: 12 }}>
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>-10s</Text>
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>{t("player:skipBack")}</Text>
             </View>
           </Focusable>
           <Focusable onPress={onPlayPause} hasTVPreferredFocus>
@@ -94,7 +96,7 @@ export function TVPlayerOverlay({
           </Focusable>
           <Focusable onPress={() => onSeek(currentTime + 30)}>
             <View style={{ padding: 12 }}>
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>+30s</Text>
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>{t("player:skipForward")}</Text>
             </View>
           </Focusable>
           <Focusable onPress={onSettings}>

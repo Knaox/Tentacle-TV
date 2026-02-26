@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useSearchItems, useJellyfinClient } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
 
 export function GlobalSearch() {
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -63,8 +65,8 @@ export function GlobalSearch() {
         <button onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
           className="flex items-center gap-2 rounded-xl bg-black/50 px-4 py-2 text-sm text-white/60 ring-1 ring-white/15 backdrop-blur-md transition-all hover:bg-black/70 hover:text-white/80">
           <SearchIcon />
-          <span className="hidden sm:inline">Rechercher...</span>
-          <kbd className="hidden rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/30 sm:inline">Ctrl+K</kbd>
+          <span className="hidden sm:inline">{t("common:searchPlaceholder")}</span>
+          <kbd className="hidden rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/30 sm:inline">{t("common:ctrlK")}</kbd>
         </button>
       )}
 
@@ -75,7 +77,7 @@ export function GlobalSearch() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Rechercher un film, une série..."
+            placeholder={t("common:searchMediaLong")}
             className="w-full rounded-xl bg-black/60 px-4 py-2 text-sm text-white placeholder-white/40 outline-none ring-1 ring-purple-500/50 backdrop-blur-md"
             autoFocus
           />
@@ -90,7 +92,7 @@ export function GlobalSearch() {
               )}
 
               {!isLoading && (!results || results.length === 0) && (
-                <p className="py-6 text-center text-sm text-white/40">Aucun résultat</p>
+                <p className="py-6 text-center text-sm text-white/40">{t("common:noResults")}</p>
               )}
 
               {!isLoading && results && results.length > 0 && (
@@ -109,10 +111,11 @@ export function GlobalSearch() {
 }
 
 function SearchResultItem({ item, onSelect }: { item: MediaItem; onSelect: (item: MediaItem) => void }) {
+  const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const poster = client.getImageUrl(item.Id, "Primary", { height: 80, quality: 80 });
   const year = item.ProductionYear;
-  const type = item.Type === "Movie" ? "Film" : item.Type === "Series" ? "Série" : item.Type;
+  const type = item.Type === "Movie" ? t("common:movie") : item.Type === "Series" ? t("common:series") : item.Type;
 
   return (
     <button onClick={() => onSelect(item)}

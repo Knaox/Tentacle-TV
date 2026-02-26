@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useCreateTicket,
   useMyTickets,
@@ -11,20 +12,6 @@ import {
 } from "@tentacle/api-client";
 import type { SupportTicket } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
-
-const CATEGORIES = [
-  { value: "general", label: "Général" },
-  { value: "bug", label: "Bug" },
-  { value: "feature", label: "Suggestion" },
-  { value: "account", label: "Compte" },
-] as const;
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  open: { label: "Ouvert", color: "bg-green-500/20 text-green-400" },
-  in_progress: { label: "En cours", color: "bg-blue-500/20 text-blue-400" },
-  resolved: { label: "Résolu", color: "bg-purple-500/20 text-purple-400" },
-  closed: { label: "Fermé", color: "bg-white/10 text-white/40" },
-};
 
 export function SupportPanel() {
   const [view, setView] = useState<"list" | "new" | "detail">("list");
@@ -45,6 +32,7 @@ export function SupportPanel() {
 }
 
 function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string) => void }) {
+  const { t } = useTranslation("tickets");
   const [filter, setFilter] = useState("");
   const { data, isLoading } = useMyTickets(filter || undefined);
   const tickets = data?.results ?? [];
@@ -52,28 +40,28 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-white">Mes tickets</h2>
+        <h2 className="text-lg font-semibold text-white">{t("tickets:myTickets")}</h2>
         <button onClick={onNew} className="flex-shrink-0 rounded-lg bg-tentacle-accent px-4 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80">
-          Nouveau ticket
+          {t("tickets:newTicket")}
         </button>
       </div>
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {[
-          { key: "", label: "Tous" },
-          { key: "open", label: "Ouverts" },
-          { key: "in_progress", label: "En cours" },
-          { key: "resolved", label: "Résolus" },
-          { key: "closed", label: "Fermés" },
+          { key: "", label: t("tickets:all") },
+          { key: "open", label: t("tickets:open") },
+          { key: "in_progress", label: t("tickets:inProgress") },
+          { key: "resolved", label: t("tickets:resolved") },
+          { key: "closed", label: t("tickets:closed") },
         ].map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.key ? "bg-purple-600 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}>{f.label}</button>
         ))}
       </div>
       {isLoading && <Spinner />}
-      {!isLoading && tickets.length === 0 && <p className="py-20 text-center text-white/40">Aucun ticket</p>}
+      {!isLoading && tickets.length === 0 && <p className="py-20 text-center text-white/40">{t("tickets:noTickets")}</p>}
       {!isLoading && tickets.length > 0 && (
         <div className="space-y-2">
-          {tickets.map((t) => <TicketRow key={t.id} ticket={t} onClick={() => onOpen(t.id)} />)}
+          {tickets.map((tk) => <TicketRow key={tk.id} ticket={tk} onClick={() => onOpen(tk.id)} />)}
         </div>
       )}
     </div>
@@ -81,9 +69,25 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
 }
 
 function TicketRow({ ticket, onClick }: { ticket: SupportTicket; onClick: () => void }) {
+  const { t } = useTranslation("tickets");
+
+  const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    open: { label: t("tickets:statusOpen"), color: "bg-green-500/20 text-green-400" },
+    in_progress: { label: t("tickets:statusInProgress"), color: "bg-blue-500/20 text-blue-400" },
+    resolved: { label: t("tickets:statusResolved"), color: "bg-purple-500/20 text-purple-400" },
+    closed: { label: t("tickets:statusClosed"), color: "bg-white/10 text-white/40" },
+  };
+
+  const CATEGORIES: Record<string, string> = {
+    general: t("tickets:categoryGeneral"),
+    bug: t("tickets:categoryBug"),
+    feature: t("tickets:categorySuggestion"),
+    account: t("tickets:categoryAccount"),
+  };
+
   const status = STATUS_LABELS[ticket.status];
   const date = new Date(ticket.updatedAt).toLocaleDateString("fr-FR");
-  const catLabel = CATEGORIES.find((c) => c.value === ticket.category)?.label ?? ticket.category;
+  const catLabel = CATEGORIES[ticket.category] ?? ticket.category;
 
   return (
     <div onClick={onClick} className="flex cursor-pointer items-center gap-4 rounded-xl bg-white/5 px-5 py-4 transition-colors hover:bg-white/10">
@@ -110,6 +114,7 @@ interface MediaSelection {
 }
 
 function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection | null) => void; selection: MediaSelection | null }) {
+  const { t } = useTranslation("tickets");
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [pickedSeries, setPickedSeries] = useState<MediaItem | null>(null);
@@ -177,7 +182,7 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
         value={search}
         onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); setPickedSeries(null); }}
         onFocus={() => setShowDropdown(true)}
-        placeholder="Rechercher un film ou une série..."
+        placeholder={t("tickets:searchMedia")}
         className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50"
       />
 
@@ -196,8 +201,8 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
             />
           ) : (
             <>
-              {search.length < 2 && <p className="px-4 py-3 text-xs text-white/30">Tapez au moins 2 caractères...</p>}
-              {search.length >= 2 && (!results || results.length === 0) && <p className="px-4 py-3 text-xs text-white/30">Aucun résultat</p>}
+              {search.length < 2 && <p className="px-4 py-3 text-xs text-white/30">{t("tickets:typeAtLeast")}</p>}
+              {search.length >= 2 && (!results || results.length === 0) && <p className="px-4 py-3 text-xs text-white/30">{t("tickets:noResults")}</p>}
               {results?.map((item) => (
                 <SearchResultRow key={item.Id} item={item} client={client} onClick={() => selectItem(item)} />
               ))}
@@ -210,6 +215,7 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
 }
 
 function SearchResultRow({ item, client, onClick }: { item: MediaItem; client: any; onClick: () => void }) {
+  const { t } = useTranslation("common");
   const poster = item.ImageTags?.Primary ? client.getImageUrl(item.Id, "Primary", { width: 60, quality: 80 }) : null;
   return (
     <button onClick={onClick} type="button"
@@ -222,7 +228,7 @@ function SearchResultRow({ item, client, onClick }: { item: MediaItem; client: a
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white truncate">{item.Name}</p>
         <p className="text-xs text-white/40">
-          {item.Type === "Series" ? "Série" : "Film"}
+          {item.Type === "Series" ? t("common:series") : t("common:movie")}
           {item.ProductionYear ? ` — ${item.ProductionYear}` : ""}
         </p>
       </div>
@@ -241,6 +247,8 @@ function SeriesEpisodePicker({ series, seasons, episodes, selectedSeasonId, onSe
   onBack: () => void;
   client: any;
 }) {
+  const { t } = useTranslation("common");
+
   useEffect(() => {
     if (seasons && seasons.length > 0 && !selectedSeasonId) {
       onSeasonChange(seasons[0].Id);
@@ -262,7 +270,7 @@ function SeriesEpisodePicker({ series, seasons, episodes, selectedSeasonId, onSe
           ))}
         </div>
       )}
-      {!episodes && <p className="px-4 py-3 text-xs text-white/30">Chargement...</p>}
+      {!episodes && <p className="px-4 py-3 text-xs text-white/30">{t("common:loading")}</p>}
       {episodes?.map((ep) => {
         const thumb = ep.ImageTags?.Primary ? client.getImageUrl(ep.Id, "Primary", { width: 120, quality: 70 }) : null;
         return (
@@ -286,6 +294,15 @@ function SeriesEpisodePicker({ series, seasons, episodes, selectedSeasonId, onSe
 // ── Ticket creation form ──
 
 function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (id: string) => void }) {
+  const { t } = useTranslation("tickets");
+
+  const CATEGORIES = [
+    { value: "general", label: t("tickets:categoryGeneral") },
+    { value: "bug", label: t("tickets:categoryBug") },
+    { value: "feature", label: t("tickets:categorySuggestion") },
+    { value: "account", label: t("tickets:categoryAccount") },
+  ] as const;
+
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState<"general" | "bug" | "feature" | "account">("general");
   const [body, setBody] = useState("");
@@ -303,39 +320,39 @@ function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (
         mediaItemId: media?.itemId,
         mediaItemName: media?.displayName,
       },
-      { onSuccess: (t) => onCreated(t.id) }
+      { onSuccess: (tk) => onCreated(tk.id) }
     );
   };
 
   return (
     <div>
-      <button onClick={onBack} className="mb-4 text-sm text-white/50 hover:text-white">← Retour aux tickets</button>
-      <h2 className="mb-6 text-lg font-semibold text-white">Nouveau ticket</h2>
+      <button onClick={onBack} className="mb-4 text-sm text-white/50 hover:text-white">{t("tickets:backToTickets")}</button>
+      <h2 className="mb-6 text-lg font-semibold text-white">{t("tickets:newTicket")}</h2>
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
         <div>
-          <label className="mb-1 block text-xs text-white/50">Sujet</label>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Décrivez brièvement votre problème..."
+          <label className="mb-1 block text-xs text-white/50">{t("tickets:subject")}</label>
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("tickets:subjectPlaceholder")}
             className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50" maxLength={300} />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-white/50">Catégorie</label>
+          <label className="mb-1 block text-xs text-white/50">{t("tickets:category")}</label>
           <select value={category} onChange={(e) => setCategory(e.target.value as any)}
             className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
             {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs text-white/50">Média concerné (optionnel)</label>
+          <label className="mb-1 block text-xs text-white/50">{t("tickets:relatedMedia")}</label>
           <MediaSelector selection={media} onSelect={setMedia} />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-white/50">Message</label>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Donnez le plus de détails possible..." rows={6}
+          <label className="mb-1 block text-xs text-white/50">{t("tickets:message")}</label>
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("tickets:messagePlaceholder")} rows={6}
             className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50 resize-none" maxLength={5000} />
         </div>
         <button type="submit" disabled={createMut.isPending || !subject.trim() || !body.trim()}
           className="rounded-lg bg-tentacle-accent px-6 py-2.5 text-sm font-semibold text-white hover:bg-tentacle-accent/80 disabled:opacity-50">
-          {createMut.isPending ? "Envoi..." : "Créer le ticket"}
+          {createMut.isPending ? t("common:sending") : t("tickets:createTicket")}
         </button>
       </form>
     </div>
@@ -345,6 +362,22 @@ function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (
 // ── Ticket detail view ──
 
 function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => void }) {
+  const { t } = useTranslation("tickets");
+
+  const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    open: { label: t("tickets:statusOpen"), color: "bg-green-500/20 text-green-400" },
+    in_progress: { label: t("tickets:statusInProgress"), color: "bg-blue-500/20 text-blue-400" },
+    resolved: { label: t("tickets:statusResolved"), color: "bg-purple-500/20 text-purple-400" },
+    closed: { label: t("tickets:statusClosed"), color: "bg-white/10 text-white/40" },
+  };
+
+  const CATEGORIES: Record<string, string> = {
+    general: t("tickets:categoryGeneral"),
+    bug: t("tickets:categoryBug"),
+    feature: t("tickets:categorySuggestion"),
+    account: t("tickets:categoryAccount"),
+  };
+
   const { data: ticket, isLoading } = useTicketDetail(ticketId);
   const [reply, setReply] = useState("");
   const replyMut = useReplyTicket();
@@ -362,14 +395,14 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
 
   return (
     <div>
-      <button onClick={onBack} className="mb-4 text-sm text-white/50 hover:text-white">← Retour aux tickets</button>
+      <button onClick={onBack} className="mb-4 text-sm text-white/50 hover:text-white">{t("tickets:backToTickets")}</button>
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-white">{ticket.subject}</h2>
           {status && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${status.color}`}>{status.label}</span>}
         </div>
         <p className="mt-1 text-xs text-white/40">
-          {CATEGORIES.find((c) => c.value === ticket.category)?.label} — {new Date(ticket.createdAt).toLocaleDateString("fr-FR")}
+          {CATEGORIES[ticket.category] ?? ticket.category} — {new Date(ticket.createdAt).toLocaleDateString("fr-FR")}
         </p>
         {ticket.mediaItemName && (
           <p className="mt-2 text-xs text-purple-400">{ticket.mediaItemName}</p>
@@ -380,7 +413,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
           <div key={msg.id} className={`rounded-xl p-4 ${msg.isAdmin ? "border border-purple-500/20 bg-purple-500/10" : "bg-white/5"}`}>
             <div className="mb-2 flex items-center gap-2 text-xs">
               <span className={`font-medium ${msg.isAdmin ? "text-purple-400" : "text-white/70"}`}>{msg.username}</span>
-              {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1.5 py-0.5 text-[10px] text-purple-300">Admin</span>}
+              {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1.5 py-0.5 text-[10px] text-purple-300">{t("tickets:adminBadge")}</span>}
               <span className="text-white/30">{new Date(msg.createdAt).toLocaleString("fr-FR")}</span>
             </div>
             <p className="whitespace-pre-wrap text-sm text-white/80">{msg.body}</p>
@@ -389,15 +422,15 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
       </div>
       {!isClosed && (
         <form onSubmit={handleReply} className="mt-6 max-w-3xl">
-          <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Répondre..." rows={3}
+          <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("tickets:replyPlaceholder")} rows={3}
             className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50 resize-none" maxLength={5000} />
           <button type="submit" disabled={replyMut.isPending || !reply.trim()}
             className="mt-2 rounded-lg bg-tentacle-accent px-5 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80 disabled:opacity-50">
-            {replyMut.isPending ? "Envoi..." : "Répondre"}
+            {replyMut.isPending ? t("common:sending") : t("common:send")}
           </button>
         </form>
       )}
-      {isClosed && <p className="mt-6 text-sm text-white/40">Ce ticket est fermé.</p>}
+      {isClosed && <p className="mt-6 text-sm text-white/40">{t("tickets:ticketClosed")}</p>}
     </div>
   );
 }

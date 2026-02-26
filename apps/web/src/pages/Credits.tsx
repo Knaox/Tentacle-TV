@@ -1,48 +1,52 @@
-const TECH_STACK = [
-  { name: "React", url: "https://react.dev", desc: "Interface utilisateur" },
-  { name: "TypeScript", url: "https://typescriptlang.org", desc: "Typage statique" },
-  { name: "Vite", url: "https://vitejs.dev", desc: "Bundler & dev server" },
-  { name: "Tailwind CSS", url: "https://tailwindcss.com", desc: "Framework CSS utilitaire" },
-  { name: "Framer Motion", url: "https://motion.dev", desc: "Animations" },
-  { name: "TanStack Query", url: "https://tanstack.com/query", desc: "Gestion de cache & requêtes" },
-  { name: "React Router", url: "https://reactrouter.com", desc: "Navigation SPA" },
-  { name: "Fastify", url: "https://fastify.dev", desc: "Serveur backend" },
-  { name: "Tauri", url: "https://tauri.app", desc: "Application desktop native" },
-  { name: "Expo", url: "https://expo.dev", desc: "Application mobile" },
-  { name: "React Native", url: "https://reactnative.dev", desc: "Framework mobile" },
-];
-
-const SERVICES = [
-  { name: "Jellyfin", url: "https://jellyfin.org", desc: "Serveur multimédia open-source" },
-  { name: "Overseerr / Jellyseerr", url: "https://overseerr.dev", desc: "Gestion de demandes de contenus" },
-];
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 export function Credits() {
+  const { t } = useTranslation("about");
+
+  const TECH_STACK = useMemo(() => [
+    { name: "React", url: "https://react.dev", desc: t("about:techReact") },
+    { name: "TypeScript", url: "https://typescriptlang.org", desc: t("about:techTypeScript") },
+    { name: "Vite", url: "https://vitejs.dev", desc: t("about:techVite") },
+    { name: "Tailwind CSS", url: "https://tailwindcss.com", desc: t("about:techTailwind") },
+    { name: "Framer Motion", url: "https://motion.dev", desc: t("about:techFramerMotion") },
+    { name: "TanStack Query", url: "https://tanstack.com/query", desc: t("about:techTanStackQuery") },
+    { name: "React Router", url: "https://reactrouter.com", desc: t("about:techReactRouter") },
+    { name: "Fastify", url: "https://fastify.dev", desc: t("about:techFastify") },
+    { name: "Tauri", url: "https://tauri.app", desc: t("about:techTauri") },
+    { name: "Expo", url: "https://expo.dev", desc: t("about:techExpo") },
+    { name: "React Native", url: "https://reactnative.dev", desc: t("about:techReactNative") },
+  ], [t]);
+
+  const SERVICES = useMemo(() => [
+    { name: "Jellyfin", url: "https://jellyfin.org", desc: t("about:serviceJellyfin") },
+    { name: "Overseerr / Jellyseerr", url: "https://overseerr.dev", desc: t("about:serviceOverseerr") },
+  ], [t]);
+
   return (
     <div className="mx-auto max-w-2xl px-6 pt-12">
-      <h1 className="text-2xl font-bold text-white">Crédits & Licences</h1>
+      <h1 className="text-2xl font-bold text-white">{t("about:creditsTitle")}</h1>
       <p className="mt-3 text-sm leading-relaxed text-white/60">
-        Tentacle est construit grâce à de nombreux projets open-source. Merci à
-        toutes les communautés qui rendent ce projet possible.
+        {t("about:creditsIntro")}
       </p>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">Technologies</h2>
+      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:technologies")}</h2>
       <ul className="mt-3 divide-y divide-white/5">
-        {TECH_STACK.map((t) => (
-          <li key={t.name} className="flex items-center justify-between py-2.5">
+        {TECH_STACK.map((tk) => (
+          <li key={tk.name} className="flex items-center justify-between py-2.5">
             <div>
-              <a href={t.url} target="_blank" rel="noopener noreferrer"
+              <a href={tk.url} target="_blank" rel="noopener noreferrer"
                 className="text-sm font-medium text-purple-400 hover:underline">
-                {t.name}
+                {tk.name}
               </a>
-              <p className="text-xs text-white/40">{t.desc}</p>
+              <p className="text-xs text-white/40">{tk.desc}</p>
             </div>
             <ExternalIcon />
           </li>
         ))}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">Services compatibles</h2>
+      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:compatibleServices")}</h2>
       <ul className="mt-3 divide-y divide-white/5">
         {SERVICES.map((s) => (
           <li key={s.name} className="flex items-center justify-between py-2.5">
@@ -58,15 +62,13 @@ export function Credits() {
         ))}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">Licence</h2>
+      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:license")}</h2>
       <p className="mt-3 text-sm leading-relaxed text-white/60">
-        Tentacle est distribué sous licence MIT. Les bibliothèques tierces
-        utilisées sont soumises à leurs licences respectives (MIT, Apache 2.0, BSD, etc.).
+        {t("about:licenseText")}
       </p>
 
       <p className="mt-12 text-xs text-white/30">
-        Cette page est fournie à titre informatif. Les noms et marques
-        appartiennent à leurs propriétaires respectifs.
+        {t("about:creditsDisclaimer")}
       </p>
     </div>
   );

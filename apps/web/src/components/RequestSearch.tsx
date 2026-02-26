@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useSeerrSearch, useSeerrDiscover, useRequestMedia } from "@tentacle/api-client";
 import type { SeerrSearchResult } from "@tentacle/api-client";
 import { SeerrCard } from "./SeerrCard";
@@ -8,12 +9,13 @@ import { SeerrCard } from "./SeerrCard";
  * Shows trending content by default, search results when typing.
  */
 export function RequestSearch() {
+  const { t } = useTranslation("requests");
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(input.trim()), 400);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(input.trim()), 400);
+    return () => clearTimeout(timer);
   }, [input]);
 
   const { data: searchData, isLoading: searchLoading } = useSeerrSearch(debounced);
@@ -43,7 +45,7 @@ export function RequestSearch() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Rechercher un film ou une série..."
+          placeholder={t("requests:searchToRequest")}
           className="w-full max-w-lg rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
           autoFocus
         />
@@ -52,7 +54,7 @@ export function RequestSearch() {
       <div className="px-12">
         {requestMut.isSuccess && (
           <div className="mb-4 rounded-lg bg-green-500/10 px-4 py-2 text-sm text-green-400">
-            Demande ajoutée à la file d'attente
+            {t("requests:requestAdded")}
           </div>
         )}
 
@@ -60,7 +62,7 @@ export function RequestSearch() {
         {isSearching && searchLoading && <Spinner />}
 
         {isSearching && !searchLoading && searchResults.length === 0 && (
-          <p className="py-20 text-center text-white/40">Aucun résultat</p>
+          <p className="py-20 text-center text-white/40">{t("common:noResults")}</p>
         )}
 
         {isSearching && searchResults.length > 0 && (
@@ -71,12 +73,12 @@ export function RequestSearch() {
         {!isSearching && (
           <div className="space-y-8">
             <TrendingSection
-              title="Films tendances"
+              title={t("requests:trendingMovies")}
               items={trendingMovies?.results}
               onRequest={handleRequest}
             />
             <TrendingSection
-              title="Séries tendances"
+              title={t("requests:trendingSeries")}
               items={trendingTv?.results}
               onRequest={handleRequest}
             />

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { View, Text, TextInput, ActivityIndicator } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { useTentacleConfig } from "@tentacle/api-client";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
@@ -8,8 +9,14 @@ import { Focusable } from "../components/focus/Focusable";
 type Props = NativeStackScreenProps<RootStackParamList, "ServerSetup">;
 
 export function ServerSetupScreen({ navigation }: Props) {
+  const { t, i18n } = useTranslation("auth");
   const { storage } = useTentacleConfig();
   const [serverUrl, setServerUrl] = useState("");
+
+  const switchLang = useCallback((lng: string) => {
+    i18n.changeLanguage(lng);
+    storage.setItem("tentacle_language", lng);
+  }, [i18n, storage]);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -44,20 +51,20 @@ export function ServerSetupScreen({ navigation }: Props) {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP ${response.status}`);
+        throw new Error(t("auth:httpError", { status: response.status }));
       }
 
       storage.setItem("tentacle_server_url", url);
       setSuccess(true);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Delai de connexion depasse. Le serveur ne repond pas.");
+        setError(t("auth:connectionTimeout"));
       } else if (err instanceof TypeError && err.message.includes("Network")) {
-        setError("Impossible de joindre le serveur. Verifiez l'adresse et votre connexion reseau.");
+        setError(t("auth:cannotReachServer"));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Erreur de connexion au serveur.");
+        setError(t("auth:serverConnectionError"));
       }
     } finally {
       setTesting(false);
@@ -66,12 +73,21 @@ export function ServerSetupScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      {/* Language toggle */}
+      <View style={{ position: "absolute", top: 24, right: 24, flexDirection: "row", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+        {(["fr", "en"] as const).map((lng) => (
+          <Pressable key={lng} onPress={() => switchLang(lng)} style={{ paddingHorizontal: 14, paddingVertical: 8, backgroundColor: i18n.language === lng ? "rgba(139,92,246,0.3)" : "transparent" }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: i18n.language === lng ? "#c4b5fd" : "rgba(255,255,255,0.4)" }}>{lng.toUpperCase()}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={styles.card}>
         {/* Header */}
         <Text style={styles.logo}>Tentacle</Text>
-        <Text style={styles.title}>Bienvenue sur Tentacle</Text>
+        <Text style={styles.title}>{t("auth:welcomeToTentacle")}</Text>
         <Text style={styles.subtitle}>
-          Entrez l'adresse de votre serveur Tentacle pour commencer.
+          {t("auth:enterServerUrl")}
         </Text>
 
         {/* Server URL Input */}
@@ -82,7 +98,7 @@ export function ServerSetupScreen({ navigation }: Props) {
             setError(null);
             setSuccess(false);
           }}
-          placeholder="http://192.168.1.100:3000"
+          placeholder={t("auth:serverUrlPlaceholder")}
           placeholderTextColor="rgba(255,255,255,0.3)"
           autoCapitalize="none"
           autoCorrect={false}
@@ -100,7 +116,7 @@ export function ServerSetupScreen({ navigation }: Props) {
         {/* Success message */}
         {success && (
           <View style={styles.successContainer}>
-            <Text style={styles.successText}>Serveur connecte avec succes !</Text>
+            <Text style={styles.successText}>{t("pairing:serverConnected")}</Text>
           </View>
         )}
 
@@ -118,25 +134,25 @@ export function ServerSetupScreen({ navigation }: Props) {
                   {testing ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.buttonText}>Verifier le serveur</Text>
+                    <Text style={styles.buttonText}>{t("pairing:checkServer")}</Text>
                   )}
                 </View>
               </Focusable>
             </View>
             <Text style={styles.helpText}>
-              Utilisez la telecommande pour saisir l'adresse de votre serveur.
+              {t("pairing:tvRemoteHint")}
             </Text>
           </>
         ) : (
           <>
             {/* After successful health check: choose auth method */}
-            <Text style={styles.choiceTitle}>Comment souhaitez-vous vous connecter ?</Text>
+            <Text style={styles.choiceTitle}>{t("pairing:howToConnect")}</Text>
             <View style={{ marginTop: 16 }}>
               <Focusable onPress={() => navigation.replace("PairCode")} hasTVPreferredFocus>
                 <View style={styles.button}>
-                  <Text style={styles.buttonText}>Jumeler avec un code</Text>
+                  <Text style={styles.buttonText}>{t("pairing:pairWithCode")}</Text>
                   <Text style={styles.choiceHint}>
-                    Entrez un code sur votre telephone ou ordinateur
+                    {t("pairing:pairWithCodeDesc")}
                   </Text>
                 </View>
               </Focusable>
@@ -144,8 +160,8 @@ export function ServerSetupScreen({ navigation }: Props) {
             <View style={{ marginTop: 12 }}>
               <Focusable onPress={() => navigation.replace("Login")}>
                 <View style={styles.buttonOutline}>
-                  <Text style={styles.buttonText}>Se connecter manuellement</Text>
-                  <Text style={styles.choiceHint}>Saisir identifiant et mot de passe</Text>
+                  <Text style={styles.buttonText}>{t("pairing:manualLogin")}</Text>
+                  <Text style={styles.choiceHint}>{t("pairing:manualLoginDesc")}</Text>
                 </View>
               </Focusable>
             </View>
