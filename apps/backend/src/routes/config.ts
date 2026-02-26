@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { APP_VERSION } from "@tentacle/shared";
 import { getSeerrUrl, getSeerrApiKey } from "../services/configStore";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
@@ -32,7 +33,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     const seerrEnabled = await getSeerrStatus();
 
     return {
-      version: process.env.npm_package_version || "0.5.0",
+      version: APP_VERSION,
       brandName: "Tentacle",
       features: {
         seerr: seerrEnabled,

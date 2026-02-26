@@ -23,9 +23,9 @@ export function MobileTabBar() {
         match: (p) => p === "/",
       },
       {
-        path: "##search", label: "Recherche",
-        icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
-        match: () => false,
+        path: "/requests", label: "Demandes",
+        icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
+        match: (p) => p.startsWith("/requests"),
       },
     ];
     if (features?.discover) {
@@ -58,13 +58,7 @@ export function MobileTabBar() {
       {tabs.map((tab) => {
         const active = isActive(tab);
         return (
-          <button key={tab.path} onClick={() => {
-              if (tab.path === "##search") {
-                window.dispatchEvent(new Event("open-global-search"));
-              } else {
-                navigate(tab.path);
-              }
-            }}
+          <button key={tab.path} onClick={() => navigate(tab.path)}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
               active ? "text-purple-400" : "text-white/40"
             }`}>

@@ -36,10 +36,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="requests"
         options={{
-          title: "Recherche",
-          tabBarIcon: ({ focused }) => <TabIcon label="🔍" focused={focused} />,
+          title: "Demandes",
+          tabBarIcon: ({ focused }) => <TabIcon label="📋" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -50,11 +50,8 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="requests"
-        options={{
-          title: "Demandes",
-          tabBarIcon: ({ focused }) => <TabIcon label="📋" focused={focused} />,
-        }}
+        name="search"
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="profile"

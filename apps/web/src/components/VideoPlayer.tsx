@@ -390,6 +390,7 @@ export function VideoPlayer({
           clearTimeout(waitingTimer.current);
           waitingTimer.current = setTimeout(() => setLoading(true), 300);
         }}
+        onPlaying={() => { clearTimeout(waitingTimer.current); setLoading(false); }}
         onCanPlay={() => { clearTimeout(waitingTimer.current); setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message); }}
         onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(`/media/${itemId}`, { replace: true }); }}

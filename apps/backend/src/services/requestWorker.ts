@@ -1,8 +1,9 @@
 import { getPrisma } from "./db";
-import { submitRequest, getRequestStatus, mapSeerrStatus } from "./overseerr";
+import { submitRequest, getRequestStatus, mapSeerrStatus, fetchAllSeerrRequests, fetchMediaDetail } from "./overseerr";
 const POLL_INTERVAL = 60_000; // 60 seconds
 const MAX_RETRIES = 3;
 const SUBMIT_DELAY = 15_000; // 15s between Seerr API calls
+const SYNC_INTERVAL = 5; // full Seerr sync every N cycles
 
 const STATUS_LABEL: Record<string, string> = {
   submitted: "Soumise",
@@ -14,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let processing = false;
+let cycleCount = SYNC_INTERVAL; // sync on first run
 
 /**
  * Process the next pending request in FIFO order.
@@ -113,10 +115,81 @@ async function processQueue(): Promise<void> {
         // Silently continue — will retry next cycle
       }
     }
+    // 3. Sync Seerr requests into local DB (every SYNC_INTERVAL cycles)
+    cycleCount++;
+    if (cycleCount >= SYNC_INTERVAL) {
+      cycleCount = 0;
+      await syncSeerrRequests();
+    }
   } catch (err) {
     console.error("[RequestWorker] Error:", err);
   } finally {
     processing = false;
+  }
+}
+
+/**
+ * Import Seerr requests that don't exist in our DB yet, and update status of existing ones.
+ */
+async function syncSeerrRequests(): Promise<void> {
+  try {
+    const prisma = getPrisma();
+    const seerrData = await fetchAllSeerrRequests(100, 0);
+
+    // Get all existing seerrRequestIds in our DB
+    const existing = await prisma.mediaRequest.findMany({
+      where: { seerrRequestId: { not: null } },
+      select: { seerrRequestId: true, status: true, id: true },
+    });
+    const existingMap = new Map(existing.map((r) => [r.seerrRequestId!, { id: r.id, status: r.status }]));
+
+    for (const req of seerrData.results) {
+      const newStatus = mapSeerrStatus(req.status, req.media?.status ?? 0);
+      const found = existingMap.get(req.id);
+
+      if (found) {
+        // Update status if changed
+        if (found.status !== newStatus) {
+          await prisma.mediaRequest.update({
+            where: { id: found.id },
+            data: { status: newStatus },
+          });
+        }
+        continue;
+      }
+
+      // New request from Seerr — fetch media details for title/poster
+      let title = `#${req.media.tmdbId}`;
+      let posterPath: string | null = null;
+      try {
+        const detail = await fetchMediaDetail(req.media.mediaType, req.media.tmdbId);
+        title = detail.title;
+        posterPath = detail.posterPath;
+      } catch { /* use fallback title */ }
+
+      const username = req.requestedBy.displayName || req.requestedBy.username || "Inconnu";
+      const jellyfinUserId = req.requestedBy.jellyfinUserId || "seerr-import";
+
+      await prisma.mediaRequest.create({
+        data: {
+          jellyfinUserId,
+          username,
+          mediaType: req.media.mediaType === "movie" ? "movie" : "tv",
+          tmdbId: req.media.tmdbId,
+          title,
+          posterPath,
+          status: newStatus,
+          seerrRequestId: req.id,
+          createdAt: new Date(req.createdAt),
+        },
+      }).catch(() => {
+        // Duplicate or constraint error — skip silently
+      });
+    }
+
+    console.debug("[RequestWorker] Seerr sync complete:", seerrData.results.length, "requests checked");
+  } catch (err) {
+    console.error("[RequestWorker] Seerr sync error:", err instanceof Error ? err.message : err);
   }
 }
 
