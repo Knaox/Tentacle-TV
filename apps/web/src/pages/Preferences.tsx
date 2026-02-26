@@ -50,8 +50,6 @@ const LANGUAGE_KEYS: Record<string, string> = {
   per: "preferences:langFa",
 };
 
-const SUBTITLE_MODE_VALUES = ["none", "always", "forced", "signs"] as const;
-
 const INTERFACE_LANGUAGES = [
   { code: "fr", label: "Français" },
   { code: "en", label: "English" },
