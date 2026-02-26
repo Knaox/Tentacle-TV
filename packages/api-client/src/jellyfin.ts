@@ -152,7 +152,8 @@ export class JellyfinClient {
       params.set("AudioBitRate", String(audioBitrate));
       params.set("MaxStreamingBitrate", String(options.maxBitrate));
     } else {
-      // Remux: very high cap to preserve original quality
+      // Remux: copy video as-is, only transcode audio if needed
+      params.set("AllowVideoStreamCopy", "true");
       params.set("MaxStreamingBitrate", "150000000");
     }
 
