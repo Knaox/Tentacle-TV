@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { verifyServer } from "@tentacle/shared";
 
 interface ServerSetupScreenProps {
   onServerValidated: (url: string) => void;
@@ -27,40 +28,20 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
   const [error, setError] = useState<string | null>(null);
 
   const handleConnect = async () => {
-    let normalized = url.trim().replace(/\/+$/, "");
-    if (!normalized) return;
-    // Add protocol if missing (prefer https)
-    if (!/^https?:\/\//i.test(normalized)) {
-      normalized = "https://" + normalized;
-    }
-    // Strip redundant default ports
-    normalized = normalized.replace(/^(https:\/\/[^/:]+):443\b/, "$1");
-    normalized = normalized.replace(/^(http:\/\/[^/:]+):80\b/, "$1");
-
+    if (!url.trim()) return;
     setError(null);
     setLoading(true);
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
-      const response = await fetch(`${normalized}/api/health`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error("not ok");
-      }
-
-      onServerValidated(normalized);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        setError(t("auth:connectionTimeout"));
+      const result = await verifyServer(url);
+      if (result.success) {
+        onServerValidated(result.url);
       } else {
-        setError(t("auth:serverNotFoundRetry"));
+        const key = result.errorKey ?? "serverNotFoundRetry";
+        setError(t(key, result.errorParams));
       }
+    } catch {
+      setError(t("serverNotFoundRetry"));
     } finally {
       setLoading(false);
     }

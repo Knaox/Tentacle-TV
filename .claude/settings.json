@@ -12,7 +12,10 @@
       "Bash(xargs basename -a)",
       "Bash(xargs grep -l \"PlaybackStart\\\\|Sessions/Playing\")",
       "Bash(ls -la \"c:\\\\Users\\\\damie\\\\Desktop\\\\Project\\\\Tentacle/apps/mobile/app/\\(auth\\)\")",
-      "Bash(pnpm add -D i18next react-i18next --filter @tentacle/shared)"
+      "Bash(pnpm add -D i18next react-i18next --filter @tentacle/shared)",
+      "Bash(xargs ls -la)",
+      "Bash(npx tsc --noEmit -p packages/shared/tsconfig.json)",
+      "Bash(pnpm --filter @tentacle/shared typecheck)"
     ]
   }
 }

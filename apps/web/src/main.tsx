@@ -16,7 +16,7 @@ import {
   setConfigBackendUrl,
   setPairingBackendUrl,
 } from "@tentacle/api-client";
-import { initI18n, detectLanguage, i18n } from "@tentacle/shared";
+import { initI18n, detectLanguage } from "@tentacle/shared";
 import { App } from "./App";
 import "./index.css";
 
@@ -57,14 +57,6 @@ const jellyfinClient = new JellyfinClient(
   uuid,
   deviceName
 );
-
-// Set initial language on client
-jellyfinClient.setLanguage(savedLang);
-
-// Keep client language in sync when i18n language changes
-i18n.on("languageChanged", (lng: string) => {
-  jellyfinClient.setLanguage(lng);
-});
 
 // Restore token from storage
 const savedToken = storage.getItem("tentacle_token");

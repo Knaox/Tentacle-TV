@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle/ui";
+import { verifyServer } from "@tentacle/shared";
 
 interface AppConnectProps {
   onConnected: () => void;
@@ -20,30 +21,16 @@ export function AppConnect({ onConnected }: AppConnectProps) {
     setError("");
     setTesting(true);
     try {
-      let normalized = url.trim().replace(/\/+$/, "");
-      // Add protocol if missing (prefer https)
-      if (normalized && !/^https?:\/\//i.test(normalized)) {
-        normalized = "https://" + normalized;
-      }
-      // Strip redundant default ports
-      normalized = normalized.replace(/^(https:\/\/[^/:]+):443\b/, "$1");
-      normalized = normalized.replace(/^(http:\/\/[^/:]+):80\b/, "$1");
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
-      const res = await fetch(`${normalized}/api/health`, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error(t("serverNotFound"));
-      const data = await res.json();
-      if (data.status !== "ok") throw new Error(t("invalidServerResponse"));
-      localStorage.setItem("tentacle_server_url", normalized);
-      onConnected();
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        setError(t("connectionTimeout"));
+      const result = await verifyServer(url);
+      if (result.success) {
+        localStorage.setItem("tentacle_server_url", result.url);
+        onConnected();
       } else {
-        setError(t("serverNotFoundRetry"));
+        const key = result.errorKey ?? "serverNotFoundRetry";
+        setError(t(key, result.errorParams));
       }
+    } catch {
+      setError(t("serverNotFoundRetry"));
     } finally {
       setTesting(false);
     }

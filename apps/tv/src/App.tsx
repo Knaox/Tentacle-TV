@@ -14,7 +14,7 @@ import {
   setConfigBackendUrl,
   setPairingBackendUrl,
 } from "@tentacle/api-client";
-import { initI18n, i18n } from "@tentacle/shared";
+import { initI18n } from "@tentacle/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 
@@ -85,11 +85,6 @@ export function App() {
       const savedLang = storage.getItem("tentacle_language") ?? "en";
       initI18n({ lng: savedLang });
       const jfClient = initializeBackend(tentacleUrl);
-      jfClient.setLanguage(savedLang);
-      // Keep client language in sync when i18n language changes
-      i18n.on("languageChanged", (lng: string) => {
-        jfClient.setLanguage(lng);
-      });
       setClient(jfClient);
       setReady(true);
     })();
