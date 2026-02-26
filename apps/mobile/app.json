@@ -11,14 +11,18 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.tentacle.mobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0a0a0f"
       },
-      "package": "com.tentacle.mobile"
+      "package": "com.tentacle.mobile",
+      "usesCleartextTraffic": true
     },
     "plugins": [
       "expo-router"

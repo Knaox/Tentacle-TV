@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { useTentacleConfig } from "@tentacle/api-client";
 import { useTranslation } from "react-i18next";
+import { verifyServer } from "@tentacle/shared";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
@@ -21,51 +22,24 @@ export function ServerSetupScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const normalizeUrl = (raw: string): string => {
-    let normalized = raw.trim().replace(/\/+$/, "");
-    if (normalized && !/^https?:\/\//i.test(normalized)) {
-      normalized = "https://" + normalized;
-    }
-    // Strip redundant default ports
-    normalized = normalized.replace(/^(https:\/\/[^/:]+):443\b/, "$1");
-    normalized = normalized.replace(/^(http:\/\/[^/:]+):80\b/, "$1");
-    return normalized;
-  };
-
   const handleTest = async () => {
-    const url = normalizeUrl(serverUrl);
-    if (!url) return;
+    if (!serverUrl.trim()) return;
 
     setTesting(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
-      const response = await fetch(`${url}/api/health`, {
-        method: "GET",
-        headers: { "Accept": "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(t("auth:httpError", { status: response.status }));
-      }
-
-      storage.setItem("tentacle_server_url", url);
-      setSuccess(true);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        setError(t("auth:connectionTimeout"));
-      } else if (err instanceof TypeError && err.message.includes("Network")) {
-        setError(t("auth:cannotReachServer"));
-      } else if (err instanceof Error) {
-        setError(err.message);
+      const result = await verifyServer(serverUrl);
+      if (result.success) {
+        storage.setItem("tentacle_server_url", result.url);
+        setSuccess(true);
       } else {
-        setError(t("auth:serverConnectionError"));
+        const key = result.errorKey ?? "serverNotFoundRetry";
+        setError(t(`auth:${key}`, result.errorParams));
       }
+    } catch {
+      setError(t("auth:serverNotFoundRetry"));
     } finally {
       setTesting(false);
     }
