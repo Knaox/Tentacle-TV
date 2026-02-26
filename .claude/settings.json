@@ -15,7 +15,11 @@
       "Bash(pnpm add -D i18next react-i18next --filter @tentacle/shared)",
       "Bash(xargs ls -la)",
       "Bash(npx tsc --noEmit -p packages/shared/tsconfig.json)",
-      "Bash(pnpm --filter @tentacle/shared typecheck)"
+      "Bash(pnpm --filter @tentacle/shared typecheck)",
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://tentacle.rouge-informatique.ch/api/health\")",
+      "Bash(curl -sS --max-time 10 \"https://tentacle.rouge-informatique.ch/api/health\")",
+      "Bash(curl -sS --max-time 10 -I -X OPTIONS -H \"Origin: https://tauri.localhost\" -H \"Access-Control-Request-Method: GET\" -H \"Access-Control-Request-Headers: Accept\" \"https://tentacle.rouge-informatique.ch/api/health\")",
+      "Bash(curl -sS --max-time 10 -D - -H \"Origin: https://tauri.localhost\" \"https://tentacle.rouge-informatique.ch/api/health\")"
     ]
   }
 }
