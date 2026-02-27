@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, ActivityIndicator } from "react-native";
-import { useTentacleConfig, useJellyfinClient } from "@tentacle/api-client";
+import { useTentacleConfig, useJellyfinClient } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -66,7 +66,7 @@ export function LoginScreen({ navigation }: Props) {
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0a0a0f" }}>
       <View style={{ width: 450, padding: 48, backgroundColor: "#12121a", borderRadius: 20, borderWidth: 1, borderColor: "#1e1e2e" }}>
         <Text style={{ color: "#8b5cf6", fontSize: 36, fontWeight: "800", textAlign: "center", marginBottom: 8 }}>
-          Tentacle
+          Tentacle TV
         </Text>
         <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, textAlign: "center", marginBottom: 32 }}>
           {t("auth:connectToAccount")}

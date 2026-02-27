@@ -22,7 +22,7 @@ export interface AppConfig {
 
 const defaultConfig: AppConfig = {
   version: "0.0.0",
-  brandName: "Tentacle",
+  brandName: "Tentacle TV",
   features: { seerr: false, requests: false, discover: false, downloads: false, demo: false },
 };
 

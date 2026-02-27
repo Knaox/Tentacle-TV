@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth, useLibraries, useAppConfig } from "@tentacle/api-client";
+import { useAuth, useLibraries, useAppConfig } from "@tentacle-tv/api-client";
 import { NotificationBell } from "./NotificationBell";
 
 interface NavItem { key: string; label: string; icon: React.ReactNode; path: string }
@@ -62,7 +62,7 @@ export function Sidebar() {
       <div className="flex h-16 items-center gap-3 px-4">
         <img src="/tentacle-logo-pirate.svg" alt="" className="h-8 w-8 flex-shrink-0" />
         <span className={`whitespace-nowrap text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent transition-opacity duration-200 ${expanded ? "opacity-100" : "opacity-0 w-0"}`}>
-          Tentacle
+          Tentacle TV
         </span>
       </div>
 

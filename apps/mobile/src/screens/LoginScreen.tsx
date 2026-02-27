@@ -9,7 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle/api-client";
+import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 
 export function LoginScreen() {
@@ -72,7 +72,7 @@ export function LoginScreen() {
           borderWidth: 1, borderColor: "#1e1e2e",
         }}>
           <Text style={{ color: "#8b5cf6", fontSize: 28, fontWeight: "800", textAlign: "center", marginBottom: 4 }}>
-            Tentacle
+            Tentacle TV
           </Text>
           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
             {t("auth:signInSubtitle")}

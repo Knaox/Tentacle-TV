@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useLibraries } from "@tentacle/api-client";
+import { useLibraries } from "@tentacle-tv/api-client";
 import { LibraryGrid } from "../components/LibraryGrid";
 
 export function Library() {

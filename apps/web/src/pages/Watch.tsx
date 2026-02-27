@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMediaItem, useItemAncestors, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle/api-client";
-import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle/shared";
-import type { MediaStream as JfStream } from "@tentacle/shared";
+import { useMediaItem, useItemAncestors, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle-tv/api-client";
+import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";

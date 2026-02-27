@@ -1,6 +1,6 @@
 {
-  "name": "@tentacle/shared",
-  "version": "0.9.0",
+  "name": "@tentacle-tv/shared",
+  "version": "0.9.1",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

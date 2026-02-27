@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 export function SearchLibrary({ items }: { items: MediaItem[] }) {
   const navigate = useNavigate();

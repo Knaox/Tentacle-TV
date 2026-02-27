@@ -1,5 +1,5 @@
 import { View, Text, FlatList } from "react-native";
-import type { MediaItem } from "@tentacle/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface Props {
   title: string;

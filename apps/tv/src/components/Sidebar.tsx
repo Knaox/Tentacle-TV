@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { View, Text, ScrollView, Alert, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { useLibraries } from "@tentacle/api-client";
+import { useLibraries } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useSidebar } from "../context/SidebarContext";
 import { Focusable } from "./focus/Focusable";
@@ -45,6 +45,39 @@ export function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
   const slideX = useSharedValue(-Spacing.sidebarWidth);
   const dimOpacity = useSharedValue(0);
 
+  // Track sidebar focus — close sidebar when focus leaves all items
+  const focusCountRef = useRef(0);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onItemFocus = useCallback(() => {
+    focusCountRef.current += 1;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const onItemBlur = useCallback(() => {
+    focusCountRef.current -= 1;
+    // Schedule a check — if no sidebar item regains focus, close
+    closeTimerRef.current = setTimeout(() => {
+      if (focusCountRef.current <= 0 && isVisible) {
+        closeSidebar();
+      }
+    }, 100);
+  }, [isVisible, closeSidebar]);
+
+  // Reset focus count when sidebar visibility changes
+  useEffect(() => {
+    if (!isVisible) {
+      focusCountRef.current = 0;
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    }
+  }, [isVisible]);
+
   useEffect(() => {
     const easing = Easing.out(Easing.cubic);
     slideX.value = withTiming(isVisible ? 0 : -Spacing.sidebarWidth, { duration: ANIM_DURATION, easing });
@@ -77,10 +110,13 @@ export function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
 
   const isActive = (key: string) => currentRoute === key;
 
-  const renderItem = (key: string, label: string, icon: React.ReactNode) => (
+  const renderItem = (key: string, label: string, icon: React.ReactNode, grabFocus = false) => (
     <Focusable
       key={key}
       onPress={() => handlePress(key)}
+      onFocus={onItemFocus}
+      onBlur={onItemBlur}
+      hasTVPreferredFocus={grabFocus}
     >
       <View style={{
         flexDirection: "row",
@@ -139,7 +175,7 @@ export function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
         <Pressable style={{ flex: 1 }} onPress={closeSidebar} />
       </Animated.View>
 
-      {/* Sidebar panel — all items in a single ScrollView for proper D-pad focus chain */}
+      {/* Sidebar panel */}
       <Animated.View
         style={[
           {
@@ -158,30 +194,27 @@ export function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
           contentContainerStyle={{ paddingVertical: 32, paddingHorizontal: 12 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo — focusable, navigates Home on press */}
-          <Focusable onPress={() => handlePress("Home")}>
-            <View style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              marginBottom: 16,
-              borderRadius: Radius.small,
+          {/* Logo — decorative only, not focusable */}
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            marginBottom: 16,
+          }}>
+            <TentacleLogo size={36} />
+            <Text style={{
+              color: Colors.accentPurple,
+              fontSize: 20,
+              fontWeight: "800",
+              marginLeft: 10,
             }}>
-              <TentacleLogo size={36} />
-              <Text style={{
-                color: Colors.accentPurple,
-                fontSize: 20,
-                fontWeight: "800",
-                marginLeft: 10,
-              }}>
-                Tentacle
-              </Text>
-            </View>
-          </Focusable>
+              Tentacle TV
+            </Text>
+          </View>
 
           {/* All navigation items in a single flat list for D-pad focus */}
-          {renderItem("Home", t("home"), <HomeIcon size={ICON_SIZE} color={ICON_COLOR} />)}
+          {renderItem("Home", t("home"), <HomeIcon size={ICON_SIZE} color={ICON_COLOR} />, isVisible)}
           {renderItem("Search", t("search"), <SearchIcon size={ICON_SIZE} color={ICON_COLOR} />)}
 
           {divider}

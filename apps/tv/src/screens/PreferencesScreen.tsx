@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { View, ScrollView, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useLibraries, useTentacleConfig } from "@tentacle/api-client";
+import { useLibraries, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
 import { SelectionModal } from "../components/SelectionModal";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import { i18n } from "@tentacle/shared";
+import { i18n } from "@tentacle-tv/shared";
 import { getLanguageDisplayName } from "../utils/languageNames";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
@@ -156,40 +156,40 @@ export function PreferencesScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      <ScrollView contentContainerStyle={{ padding: Spacing.screenPadding, paddingBottom: 80 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 48, paddingVertical: 32, paddingBottom: 60 }}>
         {/* Header */}
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-          <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus={!modal}>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+          <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus={!modal} style={{ alignSelf: "flex-start" }}>
             <View style={{
-              paddingHorizontal: 20, paddingVertical: 10, borderRadius: Radius.small,
+              paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.small,
               backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
-              <Text style={{ color: Colors.accentPurpleLight, ...Typography.buttonMedium }}>
+              <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "600" }}>
                 {t("common:back")}
               </Text>
             </View>
           </Focusable>
-          <Text style={{ color: Colors.textPrimary, ...Typography.pageTitle, marginLeft: 24 }}>
+          <Text style={{ color: Colors.textPrimary, fontSize: 22, fontWeight: "700", marginLeft: 20 }}>
             {t("preferences:title")}
           </Text>
-          {saving && <ActivityIndicator size="small" color={Colors.accentPurple} style={{ marginLeft: 16 }} />}
+          {saving && <ActivityIndicator size="small" color={Colors.accentPurple} style={{ marginLeft: 12 }} />}
         </View>
-        <Text style={{ color: Colors.textMuted, fontSize: 15, marginBottom: 40 }}>
+        <Text style={{ color: Colors.textMuted, fontSize: 13, marginBottom: 28 }}>
           {t("preferences:subtitle")}
         </Text>
 
         {/* Interface Language */}
         <SectionTitle text={t("preferences:interfaceLanguage")} />
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 48 }}>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 32 }}>
           {INTERFACE_LANGS.map((lang) => (
             <Focusable key={lang.code} onPress={() => changeInterfaceLang(lang.code)}>
               <View style={{
-                paddingHorizontal: 28, paddingVertical: 14, borderRadius: Radius.button,
+                paddingHorizontal: 22, paddingVertical: 10, borderRadius: Radius.button,
                 backgroundColor: currentLang === lang.code ? Colors.accentPurple : "rgba(255,255,255,0.04)",
                 borderWidth: 2, borderColor: currentLang === lang.code ? Colors.accentPurple : Colors.glassBorder,
               }}>
                 <Text style={{
-                  color: Colors.textPrimary, fontSize: 16,
+                  color: Colors.textPrimary, fontSize: 14,
                   fontWeight: currentLang === lang.code ? "700" : "400",
                 }}>
                   {t(lang.labelKey)}
@@ -207,13 +207,13 @@ export function PreferencesScreen({ navigation }: Props) {
           return (
             <View key={lib.Id} style={{
               backgroundColor: Colors.bgSurface, borderRadius: Radius.card,
-              padding: Spacing.glassPadding, marginBottom: 24,
+              padding: 20, marginBottom: 16,
               borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
-              <Text style={{ color: Colors.textPrimary, fontSize: 22, fontWeight: "700", marginBottom: 24 }}>
+              <Text style={{ color: Colors.textPrimary, fontSize: 17, fontWeight: "700", marginBottom: 16 }}>
                 {lib.Name}
               </Text>
-              <View style={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
+              <View style={{ flexDirection: "row", gap: 14, flexWrap: "wrap" }}>
                 <PrefButton
                   label={t("preferences:audio")}
                   value={pref.audioLang ? getLanguageDisplayName(pref.audioLang) : t("preferences:default")}
@@ -257,7 +257,7 @@ export function PreferencesScreen({ navigation }: Props) {
 
 function SectionTitle({ text }: { text: string }) {
   return (
-    <Text style={{ color: Colors.accentPurpleLight, fontSize: 17, fontWeight: "700", marginBottom: 16 }}>
+    <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700", marginBottom: 12 }}>
       {text}
     </Text>
   );
@@ -268,13 +268,13 @@ function PrefButton({ label, value, onPress }: { label: string; value: string; o
     <Focusable onPress={onPress}>
       <View style={{
         backgroundColor: "rgba(255,255,255,0.03)", borderRadius: Radius.button,
-        paddingHorizontal: 24, paddingVertical: 16, minWidth: 200,
+        paddingHorizontal: 18, paddingVertical: 12, minWidth: 160,
         borderWidth: 1, borderColor: Colors.glassBorder,
       }}>
-        <Text style={{ color: Colors.textTertiary, ...Typography.caption, marginBottom: 6 }}>
+        <Text style={{ color: Colors.textTertiary, fontSize: 11, marginBottom: 4 }}>
           {label}
         </Text>
-        <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
+        <Text style={{ color: Colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
           {value}
         </Text>
       </View>

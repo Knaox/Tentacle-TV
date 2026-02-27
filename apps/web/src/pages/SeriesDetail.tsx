@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMediaItem, useSeasons, useEpisodes, useJellyfinClient } from "@tentacle/api-client";
-import { Shimmer } from "@tentacle/ui";
-import type { MediaItem } from "@tentacle/shared";
+import { useMediaItem, useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import { Shimmer } from "@tentacle-tv/ui";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { Navbar } from "../components/Navbar";
 
 export function SeriesDetail() {

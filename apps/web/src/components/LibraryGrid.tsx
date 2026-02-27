@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLibraryItems, useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useLibraryItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface LibraryGridProps {
   libraryId: string;

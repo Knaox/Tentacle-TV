@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import type { SeerrMediaRequest } from "@tentacle/api-client";
+import type { SeerrMediaRequest } from "@tentacle-tv/api-client";
 
 const REQUEST_STATUS: Record<number, { label: string; bg: string; text: string }> = {
   1: { label: "En attente", bg: "rgba(234,179,8,0.15)", text: "#eab308" },

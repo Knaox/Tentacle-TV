@@ -1,6 +1,6 @@
 {
-  "name": "@tentacle/api-client",
-  "version": "0.9.0",
+  "name": "@tentacle-tv/api-client",
+  "version": "0.9.1",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -13,7 +13,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@tentacle/shared": "workspace:*",
+    "@tentacle-tv/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.0"
   },
   "peerDependencies": {

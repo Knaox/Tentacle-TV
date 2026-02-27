@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GlassCard } from "@tentacle/ui";
-import { verifyServer } from "@tentacle/shared";
+import { GlassCard } from "@tentacle-tv/ui";
+import { verifyServer } from "@tentacle-tv/shared";
 
 interface AppConnectProps {
   onConnected: () => void;

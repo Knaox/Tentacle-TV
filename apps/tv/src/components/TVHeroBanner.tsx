@@ -9,9 +9,9 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
-import { formatDuration } from "@tentacle/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { formatDuration } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon } from "./icons/TVIcons";
@@ -88,7 +88,10 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
   const rating = item.CommunityRating?.toFixed(1);
 
   return (
-    <View style={{ width: SCREEN_W, height: HERO_H, overflow: "hidden", marginBottom: -1 }}>
+    <View style={{
+      width: SCREEN_W, height: HERO_H, overflow: "hidden",
+      backgroundColor: Colors.bgDeep,
+    }}>
       {/* Current backdrop with Ken Burns */}
       <Animated.View style={[{ position: "absolute", width: "100%", height: "100%" }, currentStyle]}>
         <Animated.Image
@@ -107,10 +110,15 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
 
       {/* Gradient vertical bottom */}
       <LinearGradient
-        colors={["transparent", "rgba(6,6,10,0.4)", "rgba(6,6,10,0.85)", Colors.bgDeep]}
-        locations={[0, 0.4, 0.75, 1]}
-        style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: HERO_H * 0.5 }}
+        colors={["transparent", "rgba(6,6,10,0.5)", Colors.bgDeep]}
+        locations={[0, 0.4, 0.85]}
+        style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: HERO_H * 0.7 }}
       />
+      {/* Hard opaque strip at the very bottom — eliminates any subpixel seam */}
+      <View style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: 24,
+        backgroundColor: Colors.bgDeep,
+      }} />
 
       {/* Gradient horizontal left */}
       <LinearGradient

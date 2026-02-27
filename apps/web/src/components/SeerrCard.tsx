@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SeerrSearchResult } from "@tentacle/api-client";
+import type { SeerrSearchResult } from "@tentacle-tv/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 

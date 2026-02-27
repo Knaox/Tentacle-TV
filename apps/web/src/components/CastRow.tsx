@@ -1,4 +1,4 @@
-import { useJellyfinClient } from "@tentacle/api-client";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 
 interface Person {
   Name: string;

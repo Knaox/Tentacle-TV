@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Pressable, type ViewStyle, type GestureResponderEvent } from "react-native";
+import { Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +16,8 @@ interface FocusableProps {
   style?: ViewStyle;
   children: React.ReactNode;
   testID?: string;
+  /** Disable the focus border (e.g. for cards that have their own styling) */
+  noBorder?: boolean;
 }
 
 const SPRING_CONFIG = {
@@ -31,6 +33,7 @@ export function Focusable({
   style,
   children,
   testID,
+  noBorder = false,
 }: FocusableProps) {
   const progress = useSharedValue(0);
 
@@ -44,25 +47,49 @@ export function Focusable({
     onBlur?.();
   }, [onBlur, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => {
+  const scaleStyle = useAnimatedStyle(() => {
     const s = interpolate(progress.value, [0, 1], [FocusConfig.scaleNormal, FocusConfig.scaleUp]);
     return {
       transform: [{ scale: s }],
-      elevation: interpolate(progress.value, [0, 1], [0, 8]),
     };
   });
 
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0.5, 1]),
+  }));
+
   return (
     <Pressable
+      // @ts-ignore react-native-tvos extends Pressable
+      style={style}
       onPress={onPress}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      // @ts-ignore react-native-tvos extends Pressable
       hasTVPreferredFocus={hasTVPreferredFocus}
       testID={testID}
     >
-      <Animated.View style={[style, animatedStyle]}>
+      <Animated.View style={scaleStyle}>
         {children}
+        {/* Absolute-positioned focus ring — does NOT affect layout */}
+        {!noBorder && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              {
+                position: "absolute",
+                top: -3,
+                left: -3,
+                right: -3,
+                bottom: -3,
+                borderWidth: 3,
+                borderColor: "#a78bfa",
+                borderRadius: 12,
+                backgroundColor: "rgba(139, 92, 246, 0.12)",
+              },
+              ringStyle,
+            ]}
+          />
+        )}
       </Animated.View>
     </Pressable>
   );

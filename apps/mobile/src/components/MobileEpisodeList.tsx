@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { View, Text, Pressable, FlatList } from "react-native";
 import { Image } from "expo-image";
-import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface Props {
   seriesId: string;

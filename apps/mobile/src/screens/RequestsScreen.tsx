@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native
 import {
   useSeerrRequests, useSeerrRequestCount,
   useSeerrDeleteRequest, useSeerrRetryRequest,
-} from "@tentacle/api-client";
+} from "@tentacle-tv/api-client";
 import { MobileRequestRow } from "../components/MobileRequestRow";
 
 const FILTERS: { key: string; label: string }[] = [

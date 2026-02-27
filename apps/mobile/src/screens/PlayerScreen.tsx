@@ -5,9 +5,9 @@ import { useRouter } from "expo-router";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
-} from "@tentacle/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle/shared";
-import type { MediaStream as JfStream } from "@tentacle/shared";
+} from "@tentacle-tv/api-client";
+import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 
 interface Props { itemId: string }

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { StorageAdapter, UuidGenerator } from "@tentacle/api-client";
+import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 
 const STORAGE_KEYS = ["tentacle_device_id", "tentacle_token", "tentacle_user", "tentacle_server_url", "tentacle_language"];
 

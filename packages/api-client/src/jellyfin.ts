@@ -3,7 +3,7 @@ import {
   APP_VERSION,
   JELLYFIN_AUTH_HEADER,
   JELLYFIN_TOKEN_HEADER,
-} from "@tentacle/shared";
+} from "@tentacle-tv/shared";
 import type { StorageAdapter, UuidGenerator } from "./storage";
 
 /** Build query string — compatible Hermes (pas de URLSearchParams.set). */

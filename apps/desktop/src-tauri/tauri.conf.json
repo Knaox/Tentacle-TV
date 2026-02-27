@@ -1,18 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "Tentacle",
-  "version": "0.8.1",
+  "productName": "Tentacle TV",
+  "version": "0.9.1",
   "identifier": "com.tentacle.media",
   "build": {
     "frontendDist": "../../web/dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "",
-    "beforeBuildCommand": "pnpm --filter @tentacle/web build"
+    "beforeBuildCommand": "pnpm --filter @tentacle-tv/web build"
   },
   "app": {
     "windows": [
       {
-        "title": "Tentacle",
+        "title": "Tentacle TV",
         "width": 1280,
         "height": 800,
         "minWidth": 900,

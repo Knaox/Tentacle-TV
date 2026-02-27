@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { useSearchItems, useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useSearchItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 export function GlobalSearch() {
   const { t } = useTranslation("common");

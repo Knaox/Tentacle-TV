@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth, useAppConfig } from "@tentacle/api-client";
-import { GlassCard } from "@tentacle/ui";
+import { useAuth, useAppConfig } from "@tentacle-tv/api-client";
+import { GlassCard } from "@tentacle-tv/ui";
 
 export function Login() {
   const [username, setUsername] = useState("");

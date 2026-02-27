@@ -34,9 +34,13 @@ export type { AppNotification } from "./hooks/useNotifications";
 export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
 export type { AppConfig, AppFeatures } from "./hooks/useConfig";
 
-// Device pairing
-export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, setPairingBackendUrl } from "./hooks/usePairing";
-export type { PairingCodeResponse, PairingStatusResponse, ClaimResponse, PairedDevice } from "./hooks/usePairing";
+// Device pairing (local/backend)
+export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, useGenerateTvToken, useMyPairedDevices, useRevokeMyDevice, setPairingBackendUrl } from "./hooks/usePairing";
+export type { PairingCodeResponse, PairingStatusResponse, ClaimResponse, PairedDevice, TvTokenResponse } from "./hooks/usePairing";
+
+// Device pairing (relay)
+export { useRelayGenerate, useRelayStatus, useRelayConfirm } from "./hooks/useRelayPairing";
+export type { RelayGenerateResponse, RelayStatusResponse, RelayConfirmPayload } from "./hooks/useRelayPairing";
 
 // Storage abstraction for cross-platform support
 export type { StorageAdapter, UuidGenerator } from "./storage";

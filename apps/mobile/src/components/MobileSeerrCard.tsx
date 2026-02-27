@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { Image } from "expo-image";
-import type { SeerrSearchResult } from "@tentacle/api-client";
+import type { SeerrSearchResult } from "@tentacle-tv/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 

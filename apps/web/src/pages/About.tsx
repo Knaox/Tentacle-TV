@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAppConfig } from "@tentacle/api-client";
+import { useAppConfig } from "@tentacle-tv/api-client";
 
 export function About() {
   const { t } = useTranslation("about");
@@ -11,7 +11,7 @@ export function About() {
       <div className="flex items-center gap-4">
         <img src="/tentacle-logo-pirate.svg" alt="" className="h-14 w-14" />
         <div>
-          <h1 className="text-3xl font-bold text-white">Tentacle</h1>
+          <h1 className="text-3xl font-bold text-white">Tentacle TV</h1>
           <p className="text-sm text-white/50">{t("about:version", { version: config?.version ?? "..." })}</p>
         </div>
       </div>

@@ -1,8 +1,8 @@
 import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";
 import { MobileEpisodeList } from "../components/MobileEpisodeList";

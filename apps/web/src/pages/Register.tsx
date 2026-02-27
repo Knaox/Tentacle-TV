@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { GlassCard } from "@tentacle/ui";
+import { GlassCard } from "@tentacle-tv/ui";
 import { backendUrl } from "../main";
 
 const BACKEND_URL = backendUrl;

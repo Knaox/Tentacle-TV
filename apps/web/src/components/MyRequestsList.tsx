@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAllRequests, useCancelRequest, useRetryRequest } from "@tentacle/api-client";
-import type { MediaRequest } from "@tentacle/api-client";
+import { useAllRequests, useCancelRequest, useRetryRequest } from "@tentacle-tv/api-client";
+import type { MediaRequest } from "@tentacle-tv/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 

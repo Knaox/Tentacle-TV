@@ -5,8 +5,8 @@ import { useRouter } from "expo-router";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useJellyfinClient,
-} from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+} from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";

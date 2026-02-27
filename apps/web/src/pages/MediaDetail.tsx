@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
-import { formatDuration } from "@tentacle/shared";
+import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import { formatDuration } from "@tentacle-tv/shared";
 import { Navbar } from "../components/Navbar";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";

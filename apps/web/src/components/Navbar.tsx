@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@tentacle/api-client";
+import { useAuth } from "@tentacle-tv/api-client";
 import { NotificationBell } from "./NotificationBell";
 
 function isAdmin(): boolean {
@@ -40,9 +40,9 @@ export function Navbar() {
         onClick={() => navigate("/")}
         className="flex cursor-pointer items-center gap-3"
       >
-        <img src="/tentacle-logo-pirate.svg" alt="Tentacle" className="h-9 w-9" />
+        <img src="/tentacle-logo-pirate.svg" alt="Tentacle TV" className="h-9 w-9" />
         <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          Tentacle
+          Tentacle TV
         </span>
       </div>
 

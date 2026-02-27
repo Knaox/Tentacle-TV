@@ -17,19 +17,19 @@ services:
       retries: 5
 
   web:
-    image: ghcr.io/knaox/tentacle:latest
-    container_name: tentacle-web
+    image: ghcr.io/knaox/tentacle-tv:latest
+    container_name: tentacle-tv
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
       DATABASE_URL: mysql://${DB_USER:-tentacle_user}:${DB_PASSWORD:-tentacle_password}@db:3306/${DB_NAME:-tentacle_db}
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      JWT_SECRET: ${JWT_SECRET:-Parting-Lucid-Diffuser-Filling-Crewmate-Scrabble-Unify-Federal-Drool-Rink2-Even-Scoreless-Rejoice-Germinate-Propeller-Marbling-Divisibly-Shortlist-Pogo-Script}
       PORT: "3000"
       HOST: "0.0.0.0"
     ports:
-      - "80:3000"
+      - "3000:3000"
 
 volumes:
   tentacle-db-data:

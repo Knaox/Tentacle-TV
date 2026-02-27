@@ -1,4 +1,5 @@
-import { View, Text, TextInput, ActivityIndicator, Pressable } from "react-native";
+import { useRef } from "react";
+import { View, Text, TextInput, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
@@ -18,40 +19,49 @@ export function ServerInputStep({
   serverUrl, onChangeUrl, testing, error, onSubmit, onSwitchLang, currentLang,
 }: ServerInputStepProps) {
   const { t } = useTranslation(["auth", "pairing"]);
+  const inputRef = useRef<TextInput>(null);
 
   return (
     <View style={styles.container}>
-      {/* Language toggle */}
+      {/* Language toggle — Focusable so D-pad can reach it */}
       <View style={styles.langToggle}>
         {(["fr", "en"] as const).map((lng) => (
-          <Pressable
-            key={lng}
-            onPress={() => onSwitchLang(lng)}
-            style={[styles.langBtn, currentLang === lng && styles.langBtnActive]}
-          >
-            <Text style={[styles.langText, currentLang === lng && styles.langTextActive]}>
-              {lng.toUpperCase()}
-            </Text>
-          </Pressable>
+          <Focusable key={lng} onPress={() => onSwitchLang(lng)}>
+            <View style={[styles.langBtn, currentLang === lng && styles.langBtnActive]}>
+              <Text style={[styles.langText, currentLang === lng && styles.langTextActive]}>
+                {lng.toUpperCase()}
+              </Text>
+            </View>
+          </Focusable>
         ))}
       </View>
 
       <View style={styles.card}>
         <TentacleLogo size={56} />
-        <Text style={styles.logo}>Tentacle</Text>
+        <Text style={styles.logo}>Tentacle TV</Text>
         <Text style={styles.title}>{t("auth:welcomeToTentacle")}</Text>
         <Text style={styles.subtitle}>{t("auth:enterServerUrl")}</Text>
 
-        <TextInput
-          value={serverUrl}
-          onChangeText={onChangeUrl}
-          placeholder={t("auth:serverUrlPlaceholder")}
-          placeholderTextColor={Colors.textTertiary}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          style={styles.input}
-        />
+        {/* URL input — wrapped in Focusable so D-pad can reach it, press opens keyboard */}
+        <View style={{ width: "100%" }}>
+          <Focusable onPress={() => inputRef.current?.focus()} hasTVPreferredFocus>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                ref={inputRef}
+                value={serverUrl}
+                onChangeText={onChangeUrl}
+                onSubmitEditing={onSubmit}
+                placeholder={t("auth:serverUrlPlaceholder")}
+                placeholderTextColor={Colors.textTertiary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                returnKeyType="done"
+                style={styles.input}
+              />
+            </View>
+          </Focusable>
+        </View>
 
         {error && (
           <View style={styles.errorBox}>
@@ -60,7 +70,7 @@ export function ServerInputStep({
         )}
 
         <View style={{ marginTop: 24, width: "100%" }}>
-          <Focusable onPress={onSubmit} hasTVPreferredFocus>
+          <Focusable onPress={onSubmit}>
             <View style={[styles.button, (testing || !serverUrl.trim()) && styles.buttonDisabled]}>
               {testing ? (
                 <ActivityIndicator color="#fff" />
@@ -113,12 +123,14 @@ const styles = {
     lineHeight: 22,
     marginBottom: 28,
   },
-  input: {
-    width: "100%" as const,
+  inputWrapper: {
     backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.card,
+    overflow: "hidden" as const,
+  },
+  input: {
     paddingHorizontal: 20,
     paddingVertical: 16,
     color: Colors.textPrimary,
@@ -160,18 +172,19 @@ const styles = {
     top: 24,
     right: 24,
     flexDirection: "row" as const,
-    borderRadius: Radius.small,
-    overflow: "hidden" as const,
-    borderWidth: 1,
-    borderColor: Colors.glassBorder,
+    gap: 4,
   },
   langBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: "transparent",
+    borderRadius: Radius.small,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
   },
   langBtnActive: {
     backgroundColor: "rgba(139,92,246,0.3)",
+    borderColor: Colors.accentPurple,
   },
   langText: {
     fontSize: 14,

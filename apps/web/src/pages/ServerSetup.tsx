@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { GlassCard } from "@tentacle/ui";
+import { GlassCard } from "@tentacle-tv/ui";
 
 type SetupStep = "db" | "jellyfin" | "admin";
 

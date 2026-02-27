@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { verifyServer } from "@tentacle/shared";
+import { verifyServer } from "@tentacle-tv/shared";
 
 interface ServerSetupScreenProps {
   onServerValidated: (url: string) => void;
@@ -89,7 +89,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               marginBottom: 4,
             }}
           >
-            Tentacle
+            Tentacle TV
           </Text>
           <Text
             style={{

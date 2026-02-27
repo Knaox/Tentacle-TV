@@ -11,16 +11,21 @@ import {
   setNotificationsBackendUrl,
   setConfigBackendUrl,
   setPreferencesToken,
-} from "@tentacle/api-client";
+} from "@tentacle-tv/api-client";
+import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
-import { verifyServer } from "@tentacle/shared";
+import { verifyServer } from "@tentacle-tv/shared";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
+import { WelcomeStep } from "../components/pairing/WelcomeStep";
+import { RelayCodeDisplay } from "../components/pairing/RelayCodeDisplay";
 import { ServerInputStep } from "../components/pairing/ServerInputStep";
 import { CodeInputStep } from "../components/pairing/CodeInputStep";
 import { PairingSuccessStep } from "../components/pairing/PairingSuccessStep";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
+
+type Step = "welcome" | "relayCode" | "manualServer" | "manualCode" | "success";
 
 function setAllBackendUrls(url: string) {
   setPairingBackendUrl(url);
@@ -34,31 +39,54 @@ function setAllBackendUrls(url: string) {
 
 export function PairCodeScreen({ navigation }: Props) {
   const { i18n } = useTranslation("pairing");
+  const { t } = useTranslation(["auth", "pairing"]);
   const { storage } = useTentacleConfig();
   const jellyfinClient = useJellyfinClient();
   const claimMut = useClaimPairingCode();
-  const { t } = useTranslation(["auth", "pairing"]);
 
-  const savedUrl = storage.getItem("tentacle_server_url");
+  const [step, setStep] = useState<Step>("welcome");
+  const [pairUser, setPairUser] = useState("");
+
+  // Manual flow state
   const [serverUrl, setServerUrl] = useState("");
   const [testing, setTesting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [serverReady, setServerReady] = useState(!!savedUrl);
-
   const [chars, setChars] = useState(["", "", "", ""]);
-  const [paired, setPaired] = useState(false);
-  const [pairUser, setPairUser] = useState("");
-
-  useEffect(() => {
-    if (savedUrl) setAllBackendUrls(savedUrl);
-  }, [savedUrl]);
 
   const switchLang = useCallback((lng: string) => {
     i18n.changeLanguage(lng);
     storage.setItem("tentacle_language", lng);
   }, [i18n, storage]);
 
-  const handleTestServer = async () => {
+  // ── Relay flow: confirmed ──
+  const handleRelayConfirmed = useCallback(async (data: RelayStatusResponse) => {
+    if (!data.serverUrl || !data.token || !data.user) return;
+
+    // Verify the server is reachable
+    try {
+      const res = await fetch(`${data.serverUrl}/api/health`);
+      if (!res.ok) throw new Error("Health check failed");
+    } catch {
+      // Server not reachable — still store the data, user may fix network later
+    }
+
+    storage.setItem("tentacle_server_url", data.serverUrl);
+    setAllBackendUrls(data.serverUrl);
+    jellyfinClient.setBaseUrl(`${data.serverUrl}/api/jellyfin`);
+    jellyfinClient.setAccessToken(data.token);
+    setPreferencesToken(data.token);
+    storage.setItem("tentacle_token", data.token);
+    storage.setItem(
+      "tentacle_user",
+      JSON.stringify({ Id: data.user.id, Name: data.user.name }),
+    );
+    setPairUser(data.user.name);
+    setStep("success");
+    setTimeout(() => navigation.replace("Home"), 2000);
+  }, [storage, jellyfinClient, navigation]);
+
+  // ── Manual flow: test server ──
+  const handleTestServer = useCallback(async () => {
     if (!serverUrl.trim()) return;
     setTesting(true);
     setServerError(null);
@@ -68,7 +96,7 @@ export function PairCodeScreen({ navigation }: Props) {
         storage.setItem("tentacle_server_url", result.url);
         setAllBackendUrls(result.url);
         jellyfinClient.setBaseUrl(`${result.url}/api/jellyfin`);
-        setServerReady(true);
+        setStep("manualCode");
       } else {
         const key = result.errorKey ?? "serverNotFoundRetry";
         setServerError(t(`auth:${key}`, result.errorParams));
@@ -78,18 +106,18 @@ export function PairCodeScreen({ navigation }: Props) {
     } finally {
       setTesting(false);
     }
-  };
+  }, [serverUrl, storage, jellyfinClient, t]);
 
+  // ── Manual flow: claim code ──
   const code = chars.join("");
-  const canSubmit = code.length === 4 && !claimMut.isPending && !paired;
+  const canSubmit = code.length === 4 && !claimMut.isPending && step === "manualCode";
 
-  const handleSubmit = useCallback(() => {
-    if (code.length !== 4 || claimMut.isPending || paired) return;
+  const handleClaimSubmit = useCallback(() => {
+    if (code.length !== 4 || claimMut.isPending) return;
     claimMut.mutate(
       { code, deviceName: "Android TV" },
       {
         onSuccess: (data) => {
-          setPaired(true);
           setPairUser(data.username || "");
           if (data.serverUrl) {
             storage.setItem("tentacle_server_url", data.serverUrl);
@@ -104,15 +132,18 @@ export function PairCodeScreen({ navigation }: Props) {
               JSON.stringify({ Id: data.userId, Name: data.username }),
             );
           }
+          setStep("success");
           setTimeout(() => navigation.replace("Home"), 2000);
         },
       },
     );
-  }, [code, claimMut, paired, storage, jellyfinClient, navigation]);
+  }, [code, claimMut, storage, jellyfinClient, navigation]);
 
   useEffect(() => {
-    if (code.length === 4 && !claimMut.isPending && !paired) handleSubmit();
-  }, [code, claimMut.isPending, paired, handleSubmit]);
+    if (code.length === 4 && !claimMut.isPending && step === "manualCode") {
+      handleClaimSubmit();
+    }
+  }, [code, claimMut.isPending, step, handleClaimSubmit]);
 
   useEffect(() => {
     if (claimMut.isError) setChars(["", "", "", ""]);
@@ -142,39 +173,60 @@ export function PairCodeScreen({ navigation }: Props) {
 
   const handleChangeServer = useCallback(() => {
     storage.removeItem("tentacle_server_url");
-    setServerReady(false);
+    setStep("manualServer");
     setChars(["", "", "", ""]);
     claimMut.reset();
   }, [storage, claimMut]);
 
-  if (paired) {
-    return <PairingSuccessStep username={pairUser} />;
-  }
+  // ── Render based on step ──
+  switch (step) {
+    case "welcome":
+      return (
+        <WelcomeStep
+          onShowCode={() => setStep("relayCode")}
+          onManualSetup={() => setStep("manualServer")}
+          onSwitchLang={switchLang}
+          currentLang={i18n.language}
+        />
+      );
 
-  if (!serverReady) {
-    return (
-      <ServerInputStep
-        serverUrl={serverUrl}
-        onChangeUrl={(text) => { setServerUrl(text); setServerError(null); }}
-        testing={testing}
-        error={serverError}
-        onSubmit={handleTestServer}
-        onSwitchLang={switchLang}
-        currentLang={i18n.language}
-      />
-    );
-  }
+    case "relayCode":
+      return (
+        <RelayCodeDisplay
+          onConfirmed={handleRelayConfirmed}
+          onCancel={() => setStep("welcome")}
+          onManualSetup={() => setStep("manualServer")}
+        />
+      );
 
-  return (
-    <CodeInputStep
-      chars={chars}
-      onUpdateChar={handleUpdateChar}
-      onKeyPress={handleKeyPress}
-      isPending={claimMut.isPending}
-      isError={claimMut.isError}
-      canSubmit={canSubmit}
-      onSubmit={handleSubmit}
-      onChangeServer={handleChangeServer}
-    />
-  );
+    case "manualServer":
+      return (
+        <ServerInputStep
+          serverUrl={serverUrl}
+          onChangeUrl={(text) => { setServerUrl(text); setServerError(null); }}
+          testing={testing}
+          error={serverError}
+          onSubmit={handleTestServer}
+          onSwitchLang={switchLang}
+          currentLang={i18n.language}
+        />
+      );
+
+    case "manualCode":
+      return (
+        <CodeInputStep
+          chars={chars}
+          onUpdateChar={handleUpdateChar}
+          onKeyPress={handleKeyPress}
+          isPending={claimMut.isPending}
+          isError={claimMut.isError}
+          canSubmit={canSubmit}
+          onSubmit={handleClaimSubmit}
+          onChangeServer={handleChangeServer}
+        />
+      );
+
+    case "success":
+      return <PairingSuccessStep username={pairUser} />;
+  }
 }

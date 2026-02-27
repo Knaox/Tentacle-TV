@@ -1,0 +1,10 @@
+name = "tentacle-tv-relay"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+
+# Custom domain — requires DNS setup on Cloudflare
+# routes = [{ pattern = "pair.tentacletv.app", custom_domain = true }]
+
+[[kv_namespaces]]
+binding = "PAIR_KV"
+id = "<FILL_AFTER_wrangler_kv_namespace_create>"

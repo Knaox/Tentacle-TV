@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchItems, useSeerrSearch, useSeerrRequest } from "@tentacle/api-client";
+import { useSearchItems, useSeerrSearch, useSeerrRequest } from "@tentacle-tv/api-client";
 import { Navbar } from "../components/Navbar";
 import { SearchLibrary } from "../components/SearchLibrary";
 import { SeerrCard } from "../components/SeerrCard";

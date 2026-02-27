@@ -25,12 +25,12 @@ export function CodeInputStep({
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
-    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    setTimeout(() => inputRefs.current[0]?.focus(), 200);
   }, []);
 
   useEffect(() => {
     if (isError) {
-      setTimeout(() => inputRefs.current[0]?.focus(), 50);
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [isError]);
 
@@ -38,39 +38,50 @@ export function CodeInputStep({
     <View style={styles.container}>
       <View style={styles.card}>
         <TentacleLogo size={48} />
-        <Text style={styles.logo}>Tentacle</Text>
+        <Text style={styles.logo}>Tentacle TV</Text>
         <Text style={styles.title}>{t("pairing:tvPairTitle")}</Text>
         <Text style={styles.subtitle}>{t("pairing:tvPairInstructions")}</Text>
 
-        {/* Code input boxes */}
+        {/* Code input boxes — each wrapped in Focusable for D-pad navigation */}
         <View style={styles.codeRow}>
           {chars.map((char, i) => (
-            <TextInput
+            <Focusable
               key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
-              value={char}
-              onChangeText={(text) => {
-                const upper = text.toUpperCase().replace(/[^A-Z2-9]/g, "");
-                if (!upper) return;
-                onUpdateChar(i, upper[0]);
-                if (i < 3) inputRefs.current[i + 1]?.focus();
-              }}
-              onKeyPress={({ nativeEvent }) => {
-                if (nativeEvent.key === "Backspace") {
-                  onKeyPress(i, "Backspace");
-                  if (!chars[i] && i > 0) inputRefs.current[i - 1]?.focus();
-                }
-              }}
-              maxLength={1}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              style={[
+              onPress={() => inputRefs.current[i]?.focus()}
+              hasTVPreferredFocus={i === 0}
+            >
+              <View style={[
                 styles.codeBox,
                 char ? styles.codeBoxFilled : null,
                 isError ? styles.codeBoxError : null,
-              ]}
-              placeholderTextColor="rgba(255,255,255,0.15)"
-            />
+              ]}>
+                <TextInput
+                  ref={(el) => { inputRefs.current[i] = el; }}
+                  value={char}
+                  onChangeText={(text) => {
+                    const upper = text.toUpperCase().replace(/[^A-Z2-9]/g, "");
+                    if (!upper) return;
+                    onUpdateChar(i, upper[0]);
+                    if (i < 3) {
+                      setTimeout(() => inputRefs.current[i + 1]?.focus(), 50);
+                    }
+                  }}
+                  onKeyPress={({ nativeEvent }) => {
+                    if (nativeEvent.key === "Backspace") {
+                      onKeyPress(i, "Backspace");
+                      if (!chars[i] && i > 0) {
+                        setTimeout(() => inputRefs.current[i - 1]?.focus(), 50);
+                      }
+                    }
+                  }}
+                  maxLength={1}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  style={styles.codeInput}
+                  placeholderTextColor="rgba(255,255,255,0.15)"
+                />
+              </View>
+            </Focusable>
           ))}
         </View>
 
@@ -155,11 +166,8 @@ const styles = {
     borderRadius: Radius.buttonLarge,
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.15)",
-    textAlign: "center" as const,
-    color: Colors.textPrimary,
-    fontSize: 40,
-    fontWeight: "800" as const,
-    fontFamily: "monospace",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   codeBoxFilled: {
     borderColor: Colors.accentPurple,
@@ -168,6 +176,16 @@ const styles = {
   codeBoxError: {
     borderColor: Colors.error,
     backgroundColor: "rgba(239,68,68,0.1)",
+  },
+  codeInput: {
+    width: "100%" as const,
+    height: "100%" as const,
+    textAlign: "center" as const,
+    color: Colors.textPrimary,
+    fontSize: 40,
+    fontWeight: "800" as const,
+    fontFamily: "monospace",
+    padding: 0,
   },
   statusText: {
     color: Colors.textMuted,

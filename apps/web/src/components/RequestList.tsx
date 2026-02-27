@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useSeerrRequests, useSeerrRequestCount, useSeerrDeleteRequest, useSeerrRetryRequest } from "@tentacle/api-client";
-import type { SeerrMediaRequest } from "@tentacle/api-client";
+import { useSeerrRequests, useSeerrRequestCount, useSeerrDeleteRequest, useSeerrRetryRequest } from "@tentacle-tv/api-client";
+import type { SeerrMediaRequest } from "@tentacle-tv/api-client";
 
 const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "Toutes" },

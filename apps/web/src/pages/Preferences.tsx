@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage } from "@tentacle/api-client";
-import type { LibraryPreference } from "@tentacle/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
+import type { LibraryPreference } from "@tentacle-tv/api-client";
 
 const LANGUAGE_CODES = [
   "fre", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -131,6 +131,9 @@ export function Preferences() {
             />
           ))}
         </div>
+
+        {/* Paired devices section */}
+        <PairedDevicesSection />
       </main>
     </div>
   );
@@ -253,6 +256,46 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PairedDevicesSection() {
+  const { t } = useTranslation("pairing");
+  const { data: devices } = useMyPairedDevices();
+  const revokeMut = useRevokeMyDevice();
+
+  if (!devices || devices.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <h2 className="mb-4 text-lg font-semibold text-white">
+        {t("pairing:pairedDevices")}
+      </h2>
+      <div className="space-y-3">
+        {devices.map((device) => (
+          <div
+            key={device.id}
+            className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-4"
+          >
+            <div>
+              <p className="text-sm font-medium text-white">{device.name}</p>
+              <p className="mt-1 text-xs text-white/40">
+                {t("pairing:lastActive", {
+                  date: new Date(device.lastSeen).toLocaleDateString(),
+                })}
+              </p>
+            </div>
+            <button
+              onClick={() => revokeMut.mutate(device.id)}
+              disabled={revokeMut.isPending}
+              className="rounded-lg bg-red-600/20 px-4 py-1.5 text-xs font-medium text-red-400 hover:bg-red-600/30 disabled:opacity-40 transition"
+            >
+              {t("pairing:revoke")}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

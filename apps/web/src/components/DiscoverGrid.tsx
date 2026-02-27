@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSeerrDiscover, useSeerrSearch, useRequestMedia, useSearchItems } from "@tentacle/api-client";
+import { useSeerrDiscover, useSeerrSearch, useRequestMedia, useSearchItems } from "@tentacle-tv/api-client";
 import { SeerrCard } from "./SeerrCard";
 
 type Category = "movies" | "tv" | "anime";
