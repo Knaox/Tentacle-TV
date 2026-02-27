@@ -211,3 +211,17 @@ pub fn mpv_is_alive(state: State<'_, MpvPlayerState>) -> Result<bool, String> {
     let player = state.lock().map_err(|e| e.to_string())?;
     Ok(player.is_alive())
 }
+
+/// Resize the native video surface to match the window dimensions.
+#[tauri::command]
+pub fn mpv_resize_surface(
+    state: State<'_, MpvPlayerState>,
+    width: i32,
+    height: i32,
+) -> Result<(), String> {
+    let player = state.lock().map_err(|e| e.to_string())?;
+    #[cfg(target_os = "windows")]
+    player.resize_surface(width, height);
+    let _ = (&player, width, height); // suppress unused warnings on non-windows
+    Ok(())
+}

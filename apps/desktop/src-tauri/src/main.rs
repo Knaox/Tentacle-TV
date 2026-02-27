@@ -26,6 +26,7 @@ fn main() {
             mpv::commands::mpv_get_tracks,
             mpv::commands::mpv_stop,
             mpv::commands::mpv_is_alive,
+            mpv::commands::mpv_resize_surface,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tentacle desktop");

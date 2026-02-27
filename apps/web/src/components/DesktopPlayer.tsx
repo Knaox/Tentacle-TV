@@ -47,6 +47,8 @@ export function DesktopPlayer({
   const [showSettings, setShowSettings] = useState(false);
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const hasStartedRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
+  const prevSrcRef = useRef("");
 
   // Native mpv audio track switch — instantaneous, no stream reload
   const handleMpvAudioChange = useCallback((index: number) => {
@@ -71,16 +73,61 @@ export function DesktopPlayer({
     onSubtitleChange(index);
   }, [subtitleTracks, setSubtitleTrack, onSubtitleChange]);
 
-  // Load media when ready
+  // Make body transparent so the native video surface shows through
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = "transparent";
+    document.documentElement.style.background = "transparent";
+    return () => {
+      document.body.style.background = prev;
+      document.documentElement.style.background = "";
+    };
+  }, []);
+
+  // Resize the native video surface when the window resizes
+  useEffect(() => {
+    let invoke: ((cmd: string, args: Record<string, unknown>) => Promise<void>) | null = null;
+    const sync = () => {
+      invoke?.("mpv_resize_surface", {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }).catch(() => {});
+    };
+    import("@tauri-apps/api/core").then((mod) => {
+      invoke = mod.invoke;
+      sync(); // initial size
+    }).catch(() => {});
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+
+  // Load media when ready — preserve current mpv position on source changes
   useEffect(() => {
     if (!ready || !src) return;
+    const isSourceChange = initialLoadDoneRef.current && prevSrcRef.current !== src;
+    prevSrcRef.current = src;
+
     const options: PlayOptions = {
       url: src,
-      startPosition: startPositionSeconds,
+      // Source change (e.g. quality switch): preserve current mpv position
+      // Initial load: use Jellyfin resume position
+      startPosition: isSourceChange ? state.position : startPositionSeconds,
       audioTrack: currentAudio > 0 ? currentAudio : undefined,
       subtitleTrack: currentSubtitle ?? 0,
     };
     play(options);
+    if (!initialLoadDoneRef.current) initialLoadDoneRef.current = true;
+  }, [ready, src]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Startup timeout — detect mpv hang (black screen)
+  useEffect(() => {
+    if (!ready || !src || hasStartedRef.current) return;
+    const timeout = setTimeout(() => {
+      if (!hasStartedRef.current) {
+        console.error("[DesktopPlayer] mpv startup timeout — no playback after 15s");
+      }
+    }, 15_000);
+    return () => clearTimeout(timeout);
   }, [ready, src]);
 
   // Report progress to Jellyfin
@@ -140,7 +187,7 @@ export function DesktopPlayer({
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePause(); }
       if (e.code === "Escape") navigate(-1);
-      if (e.code === "ArrowRight") seekRelative(10);
+      if (e.code === "ArrowRight") seekRelative(30);
       if (e.code === "ArrowLeft") seekRelative(-10);
       if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
       if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
@@ -189,9 +236,10 @@ export function DesktopPlayer({
 
   return (
     <div onMouseMove={scheduleHide}
-      className="relative flex h-screen w-screen items-center justify-center bg-black">
-      {/* mpv renders in its own window — this is the overlay */}
-      <div className="absolute inset-0 bg-black/20" onClick={() => { togglePause(); setShowSettings(false); }} />
+      className="relative flex h-screen w-screen items-center justify-center"
+      style={{ background: "transparent" }}>
+      {/* mpv renders in a native child window behind this transparent WebView */}
+      <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); }} />
 
       {/* Controls overlay */}
       <div className={`absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}

@@ -62,6 +62,9 @@ pub struct MpvPlayer {
     pipe_writer: Arc<Mutex<Option<Box<dyn Write + Send>>>>,
     #[cfg(not(target_os = "windows"))]
     pipe_writer: Arc<Mutex<Option<std::os::unix::net::UnixStream>>>,
+    /// Native child window used as mpv's rendering target (Windows only).
+    #[cfg(target_os = "windows")]
+    video_surface: Option<isize>,
 }
 
 impl MpvPlayer {
@@ -74,17 +77,18 @@ impl MpvPlayer {
             request_id: AtomicU64::new(1),
             alive: Arc::new(AtomicBool::new(false)),
             pipe_writer: Arc::new(Mutex::new(None)),
+            #[cfg(target_os = "windows")]
+            video_surface: None,
         }
     }
 
-    /// Get native window handle from the main Tauri window for mpv --wid.
-    /// Returns the HWND on Windows, None on other platforms (uses --force-window=no fallback).
-    fn get_window_handle(app: &AppHandle) -> Option<i64> {
+    /// Get the main Tauri window HWND (parent for the video surface).
+    fn get_parent_hwnd(app: &AppHandle) -> Option<isize> {
         #[cfg(target_os = "windows")]
         {
             use tauri::Manager;
             let window = app.get_webview_window("main")?;
-            window.hwnd().ok().map(|h| h.0 as i64)
+            window.hwnd().ok().map(|h| h.0 as isize)
         }
         #[cfg(not(target_os = "windows"))]
         {
@@ -94,18 +98,41 @@ impl MpvPlayer {
     }
 
     /// Spawn mpv process and connect IPC.
-    /// Retrieves the native window handle from Tauri to embed mpv rendering.
+    /// Creates a native child window for mpv to render into, positioned
+    /// behind the WebView2 control so transparent CSS reveals the video.
     pub fn start(&mut self, app: AppHandle) -> Result<(), String> {
         if self.alive.load(Ordering::Relaxed) {
+            eprintln!("[TENTACLE-MPV] already alive, skipping start");
             return Ok(());
         }
 
         let mpv_path = config::mpv_binary_path()
             .ok_or_else(|| "mpv not found. Install mpv or place it in the binaries/ folder.".to_string())?;
+        eprintln!("[TENTACLE-MPV] binary path: {:?}", mpv_path);
 
-        // Get native window handle for mpv --wid (embed video in Tauri window)
-        let wid = Self::get_window_handle(&app);
+        // Create a native child window for mpv rendering (behind WebView2)
+        let wid: Option<i64> = {
+            #[cfg(target_os = "windows")]
+            {
+                Self::get_parent_hwnd(&app).and_then(|parent| {
+                    match super::video_surface::win32::create(parent) {
+                        Ok(child) => {
+                            self.video_surface = Some(child);
+                            Some(child as i64)
+                        }
+                        Err(e) => {
+                            eprintln!("[mpv] Failed to create video surface: {}", e);
+                            None
+                        }
+                    }
+                })
+            }
+            #[cfg(not(target_os = "windows"))]
+            { None }
+        };
         let args = config::default_mpv_args(&self.ipc_path, wid);
+        eprintln!("[TENTACLE-MPV] wid={:?}, ipc_path={}", wid, self.ipc_path);
+        eprintln!("[TENTACLE-MPV] launching with {} args", args.len());
 
         let child = Command::new(&mpv_path)
             .args(&args)
@@ -115,6 +142,7 @@ impl MpvPlayer {
             .spawn()
             .map_err(|e| format!("Failed to spawn mpv: {}", e))?;
 
+        eprintln!("[TENTACLE-MPV] process spawned, pid={}", child.id());
         self.process = Some(child);
         self.alive.store(true, Ordering::Relaxed);
 
@@ -140,6 +168,7 @@ impl MpvPlayer {
 
         // Give mpv a moment to create the IPC socket
         std::thread::sleep(std::time::Duration::from_millis(500));
+        eprintln!("[TENTACLE-MPV] waited 500ms for IPC socket");
 
         // Check if mpv is still alive before connecting IPC
         if let Some(ref mut child) = self.process {
@@ -152,11 +181,14 @@ impl MpvPlayer {
                     self.alive.store(false, Ordering::Relaxed);
                     return Err(format!("Failed to check mpv process: {}", e));
                 }
-                Ok(None) => {} // Still running
+                Ok(None) => {
+                    eprintln!("[TENTACLE-MPV] process still alive after wait");
+                }
             }
         }
 
         self.connect_ipc(app)?;
+        eprintln!("[TENTACLE-MPV] IPC connected, start complete");
         Ok(())
     }
 
@@ -423,10 +455,26 @@ impl MpvPlayer {
             *guard = MpvState::default();
         }
 
+        // Clean up video surface
+        #[cfg(target_os = "windows")]
+        {
+            if let Some(hwnd) = self.video_surface.take() {
+                super::video_surface::win32::destroy(hwnd);
+            }
+        }
+
         // Clean up unix socket
         #[cfg(not(target_os = "windows"))]
         {
             let _ = std::fs::remove_file(&self.ipc_path);
+        }
+    }
+
+    /// Resize the video surface to match the window size.
+    #[cfg(target_os = "windows")]
+    pub fn resize_surface(&self, width: i32, height: i32) {
+        if let Some(hwnd) = self.video_surface {
+            super::video_surface::win32::resize(hwnd, width, height);
         }
     }
 }
