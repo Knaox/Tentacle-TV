@@ -16,12 +16,13 @@ import { TVMediaCard } from "../components/TVMediaCard";
 import { FocusableRow } from "../components/focus/FocusableRow";
 import { Focusable } from "../components/focus/Focusable";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
-import { Colors, Spacing, CardConfig, Typography } from "../theme/colors";
+import { MenuIcon } from "../components/icons/TVIcons";
+import { Colors, Spacing, CardConfig, Typography, HeroConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 const SCREEN_H = require("react-native").Dimensions.get("window").height;
-const HERO_H = Math.round(SCREEN_H * 0.65);
+const HERO_H = Math.round(SCREEN_H * HeroConfig.heightRatio);
 
 export function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation("common");
@@ -168,6 +169,22 @@ export function HomeScreen({ navigation }: Props) {
           </>
         )}
       </ScrollView>
+
+      {/* Menu button — top left */}
+      <View style={{
+        position: "absolute", top: 16, left: 16, zIndex: 50,
+      }}>
+        <Focusable onPress={openSidebar} hasTVPreferredFocus>
+          <View style={{
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: Colors.glassBgHeavy,
+            borderWidth: 1, borderColor: Colors.glassBorder,
+            justifyContent: "center", alignItems: "center",
+          }}>
+            <MenuIcon size={18} color={Colors.accentPurpleLight} />
+          </View>
+        </Focusable>
+      </View>
 
       {/* Sidebar overlay */}
       <Sidebar onNavigate={handleSidebarNav} currentRoute="Home" />

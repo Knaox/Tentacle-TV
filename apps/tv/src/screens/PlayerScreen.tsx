@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View } from "react-native";
-import Video, { type OnProgressData, type OnLoadData } from "react-native-video";
+import { View, Text, Pressable } from "react-native";
+import Video, { type OnProgressData, type OnLoadData, SelectedTrackType } from "react-native-video";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
@@ -35,13 +35,14 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { data: item } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
 
-  const videoRef = useRef<Video>(null);
+  const videoRef = useRef<any>(null);
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const [showSettings, setShowSettings] = useState(false);
   const [startTicks, setStartTicks] = useState(0);
+  const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
 
@@ -80,19 +81,31 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Source video codec — needed for remux mode so Jellyfin does stream copy
   const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
 
-  const isDirectPlay = audioIndex === defaultAudio && !needsAudioTranscode;
+  // When forceTranscode is true (codec error fallback), never direct play
+  const isDirectPlay = !forceTranscode && audioIndex === defaultAudio && !needsAudioTranscode;
   // Remux = video copied, only audio transcoded (no explicit quality/bitrate limit)
-  const isDirectStream = !isDirectPlay && needsAudioTranscode;
+  const isDirectStream = !isDirectPlay && !forceTranscode && needsAudioTranscode;
 
   // Unique ID per transcode session — lets Jellyfin's segment handler
   // find the correct transcode started by master.m3u8.
   const playSessionId = useMemo(() => {
     if (isDirectPlay) return undefined;
     return randomSessionId();
-  }, [audioIndex, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [audioIndex, startTicks, isDirectPlay, forceTranscode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
+    // forceTranscode: use maxBitrate to trigger full HLS transcode to H.264
+    if (forceTranscode) {
+      return client.getStreamUrl(itemId, {
+        mediaSourceId,
+        audioIndex,
+        directPlay: false,
+        maxBitrate: 8_000_000,
+        startTimeTicks: startTicks > 0 ? startTicks : undefined,
+        playSessionId,
+      });
+    }
     return client.getStreamUrl(itemId, {
       mediaSourceId,
       audioIndex,
@@ -101,7 +114,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       playSessionId,
       sourceVideoCodec,
     });
-  }, [client, itemId, mediaSourceId, audioIndex, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
+  }, [client, itemId, mediaSourceId, audioIndex, isDirectPlay, startTicks, playSessionId, sourceVideoCodec, forceTranscode]);
 
   // Jellyfin duration — accurate, not from player
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
@@ -187,9 +200,49 @@ export function PlayerScreen({ route, navigation }: Props) {
     setAudioIndex(newIndex);
   }, []);
 
+  // --- Overlay visibility (managed here, not inside overlay) ---
+  const [overlayVisible, setOverlayVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+
+  const showOverlay = useCallback(() => {
+    setOverlayVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    if (!paused) {
+      hideTimerRef.current = setTimeout(() => setOverlayVisible(false), 5000);
+    }
+  }, [paused]);
+
+  // Re-schedule auto-hide when paused changes
+  useEffect(() => {
+    showOverlay();
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, [paused, showOverlay]);
+
+  const handleError = useCallback((error: { error: { errorString?: string; errorCode?: string; errorStackTrace?: string } }) => {
+    const msg = error?.error?.errorString || error?.error?.errorCode || "Unknown playback error";
+    const trace = error?.error?.errorStackTrace ?? "";
+    console.error("[Player] Video error:", msg);
+
+    // Auto-fallback to server-side transcoding on codec errors
+    const isCodecError = msg.includes("DECODING_FAILED")
+      || msg.includes("EXCEEDS_CAPABILITIES")
+      || trace.includes("MediaCodecVideoRenderer")
+      || trace.includes("MediaCodecVideoDecoderException");
+
+    if (isCodecError && !forceTranscode) {
+      console.error("[Player] Codec unsupported, retrying with server-side transcoding...");
+      setVideoError(null);
+      setForceTranscode(true);
+      return;
+    }
+    setVideoError(msg);
+  }, [forceTranscode]);
+
   useTVRemote({
     onBack: () => { reportStop(); navigation.goBack(); },
-    onPlayPause: handlePlayPause,
+    onPlayPause: () => { handlePlayPause(); showOverlay(); },
+    onAnyPress: showOverlay,
   });
 
   const audioTracks = useMemo(() =>
@@ -214,24 +267,54 @@ export function PlayerScreen({ route, navigation }: Props) {
         source={{ uri: streamUrl }}
         style={{ flex: 1 }}
         resizeMode="contain"
+        controls={false}
         paused={paused}
         onLoad={handleLoad}
         onProgress={handleProgress}
         onEnd={handleEnd}
-        selectedAudioTrack={{ type: "index", value: audioIndex }}
-        selectedTextTrack={subtitleIndex >= 0 ? { type: "index", value: subtitleIndex } : { type: "disabled" }}
+        onError={handleError}
+        selectedAudioTrack={{ type: SelectedTrackType.INDEX, value: audioIndex }}
+        selectedTextTrack={subtitleIndex >= 0 ? { type: SelectedTrackType.INDEX, value: subtitleIndex } : { type: SelectedTrackType.DISABLED }}
         progressUpdateInterval={250}
       />
+
+      {/* Tap/select anywhere to show overlay — receives D-pad focus when overlay hidden */}
+      <Pressable
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        onPress={showOverlay}
+        onFocus={showOverlay}
+        // @ts-ignore react-native-tvos
+        hasTVPreferredFocus={!overlayVisible && !paused}
+        accessible
+      >
+        <View style={{ flex: 1 }} />
+      </Pressable>
+
+      {/* Error display */}
+      {videoError && (
+        <View style={{
+          position: "absolute", top: 60, left: 40, right: 40,
+          backgroundColor: "rgba(239,68,68,0.9)", borderRadius: 8,
+          padding: 16,
+        }}>
+          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>Playback Error</Text>
+          <Text style={{ color: "#fff", fontSize: 14, marginTop: 4 }}>{videoError}</Text>
+          <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 8 }}>
+            URL: {streamUrl?.substring(0, 80)}...
+          </Text>
+        </View>
+      )}
 
       <TVPlayerOverlay
         title={item?.Name ?? ""}
         currentTime={currentTime}
         duration={displayDuration}
         paused={paused}
-        onPlayPause={handlePlayPause}
-        onSeek={handleSeek}
+        visible={overlayVisible}
+        onPlayPause={() => { handlePlayPause(); showOverlay(); }}
+        onSeek={(s) => { handleSeek(s); showOverlay(); }}
         onBack={() => { reportStop(); navigation.goBack(); }}
-        onSettings={() => setShowSettings((s) => !s)}
+        onSettings={() => { setShowSettings((v) => !v); showOverlay(); }}
       />
 
       {showSettings && (

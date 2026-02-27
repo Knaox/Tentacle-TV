@@ -8,7 +8,7 @@ import Animated, {
   Easing,
   interpolate,
 } from "react-native-reanimated";
-import { Colors, CardConfig, Radius } from "../theme/colors";
+import { Colors, CardConfig, Radius, Spacing } from "../theme/colors";
 
 interface SkeletonProps {
   width: number | string;
@@ -80,14 +80,13 @@ export function SkeletonHero({ height }: { height: number }) {
   return (
     <View style={{ width: "100%", height }}>
       <Skeleton width="100%" height={height} borderRadius={0} />
-      <View style={{ position: "absolute", bottom: 80, left: 60 }}>
-        <Skeleton width={400} height={48} borderRadius={8} />
-        <Skeleton width={280} height={18} borderRadius={4} style={{ marginTop: 16 }} />
-        <Skeleton width={500} height={16} borderRadius={4} style={{ marginTop: 12 }} />
-        <Skeleton width={460} height={16} borderRadius={4} style={{ marginTop: 8 }} />
-        <View style={{ flexDirection: "row", gap: 16, marginTop: 32 }}>
-          <Skeleton width={160} height={52} borderRadius={Radius.button} />
-          <Skeleton width={160} height={52} borderRadius={Radius.button} />
+      <View style={{ position: "absolute", bottom: 48, left: Spacing.screenPadding }}>
+        <Skeleton width={280} height={32} borderRadius={6} />
+        <Skeleton width={200} height={14} borderRadius={4} style={{ marginTop: 10 }} />
+        <Skeleton width={320} height={13} borderRadius={4} style={{ marginTop: 8 }} />
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
+          <Skeleton width={110} height={38} borderRadius={Radius.button} />
+          <Skeleton width={110} height={38} borderRadius={Radius.button} />
         </View>
       </View>
     </View>
@@ -99,8 +98,8 @@ export function SkeletonRow({ landscape = false }: { landscape?: boolean }) {
   const Card = landscape ? SkeletonCardLandscape : SkeletonCardPortrait;
   const count = landscape ? 4 : 6;
   return (
-    <View style={{ paddingLeft: 60, marginTop: 56 }}>
-      <Skeleton width={200} height={24} borderRadius={4} style={{ marginBottom: 20 }} />
+    <View style={{ paddingLeft: Spacing.screenPadding, marginTop: Spacing.sectionGap }}>
+      <Skeleton width={160} height={18} borderRadius={4} style={{ marginBottom: 16 }} />
       <View style={{ flexDirection: "row" }}>
         {Array.from({ length: count }).map((_, i) => (
           <Card key={i} />
