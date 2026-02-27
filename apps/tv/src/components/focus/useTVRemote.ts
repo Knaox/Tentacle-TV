@@ -4,13 +4,15 @@ import { BackHandler, Platform } from "react-native";
 interface TVRemoteOptions {
   onBack?: () => void;
   onPlayPause?: () => void;
+  /** Called on any D-pad direction or select — useful for re-showing overlays */
+  onAnyPress?: () => void;
 }
 
 /**
  * Hook for handling TV remote events.
- * Handles the back/menu button and play/pause button.
+ * Handles back/menu, play/pause, select, and D-pad arrows.
  */
-export function useTVRemote({ onBack, onPlayPause }: TVRemoteOptions) {
+export function useTVRemote({ onBack, onPlayPause, onAnyPress }: TVRemoteOptions) {
   // Handle Android TV back button
   useEffect(() => {
     if (!onBack || Platform.OS !== "android") return;
@@ -23,9 +25,6 @@ export function useTVRemote({ onBack, onPlayPause }: TVRemoteOptions) {
     return () => handler.remove();
   }, [onBack]);
 
-  // react-native-tvos provides useTVEventHandler for remote events.
-  // We use a try/catch import pattern since this module may not exist
-  // in standard RN (only in react-native-tvos fork).
   const handleTVEvent = useCallback(
     (evt: { eventType: string }) => {
       switch (evt.eventType) {
@@ -36,13 +35,34 @@ export function useTVRemote({ onBack, onPlayPause }: TVRemoteOptions) {
         case "playPause":
           onPlayPause?.();
           break;
+        case "select":
+        case "up":
+        case "down":
+        case "left":
+        case "right":
+          onAnyPress?.();
+          break;
       }
     },
-    [onBack, onPlayPause]
+    [onBack, onPlayPause, onAnyPress]
   );
 
   useEffect(() => {
-    // Try to use useTVEventHandler if available (react-native-tvos)
+    // Try to use TVEventHandler if available (react-native-tvos)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { TVEventHandler } = require("react-native");
+      if (TVEventHandler) {
+        const handler = new TVEventHandler();
+        handler.enable(undefined, (_cmp: unknown, evt: { eventType: string }) => {
+          handleTVEvent(evt);
+        });
+        return () => handler.disable();
+      }
+    } catch {
+      // Not available in standard RN
+    }
+
     try {
       const { TVEventControl } = require("react-native");
       if (TVEventControl?.enableTVMenuKey) {

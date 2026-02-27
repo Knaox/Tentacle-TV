@@ -88,7 +88,7 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
   const rating = item.CommunityRating?.toFixed(1);
 
   return (
-    <View style={{ width: SCREEN_W, height: HERO_H, overflow: "hidden" }}>
+    <View style={{ width: SCREEN_W, height: HERO_H, overflow: "hidden", marginBottom: -1 }}>
       {/* Current backdrop with Ken Burns */}
       <Animated.View style={[{ position: "absolute", width: "100%", height: "100%" }, currentStyle]}>
         <Animated.Image
@@ -123,24 +123,24 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
 
       {/* Content */}
       <View style={{
-        position: "absolute", bottom: 80, left: Spacing.screenPadding, right: SCREEN_W * 0.4,
+        position: "absolute", bottom: 48, left: Spacing.screenPadding, right: SCREEN_W * 0.4,
       }}>
         <Text
           numberOfLines={2}
           style={{
             color: Colors.textPrimary, ...Typography.heroTitle,
             textShadowColor: "rgba(0,0,0,0.8)",
-            textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8,
+            textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6,
           }}
         >
           {item.Name}
         </Text>
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: Spacing.titleToMeta }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: Spacing.titleToMeta }}>
           {year && <Text style={{ color: Colors.textSecondary, ...Typography.meta }}>{year}</Text>}
           {genres.map((g, i) => (
             <View key={g} style={{ flexDirection: "row", alignItems: "center" }}>
-              {i > 0 && <Text style={{ color: Colors.textTertiary, marginRight: 16 }}>·</Text>}
+              {i > 0 && <Text style={{ color: Colors.textTertiary, marginRight: 10 }}>·</Text>}
               <Text style={{ color: Colors.textMuted, ...Typography.meta }}>{g}</Text>
             </View>
           ))}
@@ -160,10 +160,10 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
 
         {item.Overview && (
           <Text
-            numberOfLines={3}
+            numberOfLines={2}
             style={{
               color: Colors.textSecondary, ...Typography.synopsis,
-              lineHeight: 28, marginTop: Spacing.metaToSynopsis,
+              lineHeight: 20, marginTop: Spacing.metaToSynopsis,
             }}
           >
             {item.Overview}
@@ -171,21 +171,21 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
         )}
 
         <View style={{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }}>
-          <Focusable onPress={() => onPlay(item)} hasTVPreferredFocus>
+          <Focusable onPress={() => onPlay(item)}>
             <View style={{
               backgroundColor: Colors.accentPurple,
-              paddingHorizontal: 40, paddingVertical: 16,
+              paddingHorizontal: 24, paddingVertical: 10,
               borderRadius: Radius.buttonLarge,
-              flexDirection: "row", alignItems: "center", gap: 10,
+              flexDirection: "row", alignItems: "center", gap: 8,
             }}>
-              <PlayIcon size={20} color={Colors.textPrimary} />
+              <PlayIcon size={14} color={Colors.textPrimary} />
               <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>{t("play")}</Text>
             </View>
           </Focusable>
           <Focusable onPress={() => onDetail(item)}>
             <View style={{
               backgroundColor: Colors.glassBg,
-              paddingHorizontal: 36, paddingVertical: 16,
+              paddingHorizontal: 20, paddingVertical: 10,
               borderRadius: Radius.buttonLarge,
               borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
@@ -198,14 +198,14 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
       {/* Dot indicators */}
       {items.length > 1 && (
         <View style={{
-          position: "absolute", bottom: 32, alignSelf: "center",
-          flexDirection: "row", gap: 8,
+          position: "absolute", bottom: 16, alignSelf: "center",
+          flexDirection: "row", gap: 6,
         }}>
           {items.map((_, i) => (
             <View
               key={i}
               style={{
-                width: i === index ? 24 : 8, height: 8, borderRadius: 4,
+                width: i === index ? 16 : 6, height: 6, borderRadius: 3,
                 backgroundColor: i === index ? Colors.accentPurple : Colors.textTertiary,
               }}
             />

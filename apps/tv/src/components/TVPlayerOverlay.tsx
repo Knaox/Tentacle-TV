@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect } from "react";
 import { View, Text } from "react-native";
 import Animated, {
   useSharedValue,
@@ -6,16 +6,16 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon } from "./icons/TVIcons";
-import { Colors, Radius } from "../theme/colors";
+import { Colors } from "../theme/colors";
 
 interface TVPlayerOverlayProps {
   title: string;
   currentTime: number;
   duration: number;
   paused: boolean;
+  visible: boolean;
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
@@ -31,41 +31,27 @@ function formatTime(seconds: number): string {
 }
 
 export function TVPlayerOverlay({
-  title, currentTime, duration, paused,
+  title, currentTime, duration, paused, visible,
   onPlayPause, onSeek, onBack, onSettings,
 }: TVPlayerOverlayProps) {
-  const { t } = useTranslation("player");
-  const [visible, setVisible] = useState(true);
-  const opacity = useSharedValue(1);
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  const show = useCallback(() => {
-    setVisible(true);
-    opacity.value = withTiming(1, { duration: 150 });
-    clearTimeout(hideTimer.current);
-    if (!paused) {
-      hideTimer.current = setTimeout(() => {
-        opacity.value = withTiming(0, { duration: 300 });
-        setTimeout(() => setVisible(false), 300);
-      }, 5000);
-    }
-  }, [paused, opacity]);
+  const opacity = useSharedValue(visible ? 1 : 0);
 
   useEffect(() => {
-    show();
-    return () => clearTimeout(hideTimer.current);
-  }, [paused, show]);
+    opacity.value = withTiming(visible || paused ? 1 : 0, { duration: 250 });
+  }, [visible, paused, opacity]);
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-  if (!visible && !paused) return null;
+  const isShown = visible || paused;
 
   return (
-    <Animated.View style={[{
-      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-      justifyContent: "space-between",
-    }, animStyle]}>
+    <Animated.View
+      pointerEvents={isShown ? "auto" : "none"}
+      style={[{
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+        justifyContent: "space-between",
+      }, animStyle]}
+    >
       {/* Top gradient */}
       <LinearGradient
         colors={["rgba(0,0,0,0.7)", "transparent"]}

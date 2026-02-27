@@ -347,4 +347,18 @@ export function CheckIcon({ size = S, color = C }: IconProps) {
   );
 }
 
+/** Three horizontal lines (hamburger menu) */
+export function MenuIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  const barH = Math.max(2, s * 0.1);
+  const gap = s * 0.2;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ width: s * 0.7, height: barH, backgroundColor: color, borderRadius: 1 }} />
+      <View style={{ width: s * 0.7, height: barH, backgroundColor: color, borderRadius: 1, marginTop: gap }} />
+      <View style={{ width: s * 0.7, height: barH, backgroundColor: color, borderRadius: 1, marginTop: gap }} />
+    </View>
+  );
+}
+
 export const LibraryIcon = MovieIcon;

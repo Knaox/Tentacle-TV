@@ -50,50 +50,50 @@ export const Colors = {
 
 export const Spacing = {
   /** Padding from screen edges */
-  screenPadding: 60,
+  screenPadding: 32,
   /** Gap between content sections/rows */
-  sectionGap: 56,
+  sectionGap: 28,
   /** Gap between cards in a carousel */
-  cardGap: 20,
+  cardGap: 12,
   /** Gap between buttons */
-  buttonGap: 16,
+  buttonGap: 10,
   /** Space between synopsis and buttons */
-  synopsisToButtons: 32,
+  synopsisToButtons: 16,
   /** Space between hero title and metadata */
-  titleToMeta: 12,
+  titleToMeta: 6,
   /** Space between metadata and synopsis */
-  metaToSynopsis: 20,
+  metaToSynopsis: 10,
   /** Internal padding of glassmorphism panels */
-  glassPadding: 24,
+  glassPadding: 16,
   /** Sidebar width when open */
-  sidebarWidth: 280,
+  sidebarWidth: 220,
 } as const;
 
 // ─── Typography ──────────────────────────────────────────────────────────────
 
 export const Typography = {
-  heroTitle: { fontSize: 56, fontWeight: "800" as const },
-  sectionTitle: { fontSize: 28, fontWeight: "600" as const },
-  pageTitle: { fontSize: 34, fontWeight: "800" as const },
-  detailTitle: { fontSize: 48, fontWeight: "800" as const },
-  cardTitle: { fontSize: 16, fontWeight: "500" as const },
-  meta: { fontSize: 14, fontWeight: "400" as const },
-  synopsis: { fontSize: 18, fontWeight: "400" as const },
-  buttonLarge: { fontSize: 18, fontWeight: "700" as const },
-  buttonMedium: { fontSize: 16, fontWeight: "600" as const },
-  body: { fontSize: 16, fontWeight: "400" as const },
-  caption: { fontSize: 13, fontWeight: "400" as const },
+  heroTitle: { fontSize: 32, fontWeight: "800" as const },
+  sectionTitle: { fontSize: 18, fontWeight: "600" as const },
+  pageTitle: { fontSize: 22, fontWeight: "800" as const },
+  detailTitle: { fontSize: 28, fontWeight: "800" as const },
+  cardTitle: { fontSize: 13, fontWeight: "500" as const },
+  meta: { fontSize: 12, fontWeight: "400" as const },
+  synopsis: { fontSize: 13, fontWeight: "400" as const },
+  buttonLarge: { fontSize: 14, fontWeight: "700" as const },
+  buttonMedium: { fontSize: 13, fontWeight: "600" as const },
+  body: { fontSize: 13, fontWeight: "400" as const },
+  caption: { fontSize: 11, fontWeight: "400" as const },
 } as const;
 
 // ─── Border Radius ───────────────────────────────────────────────────────────
 
 export const Radius = {
-  card: 12,
-  button: 12,
-  buttonLarge: 16,
-  pill: 20,
-  modal: 16,
-  small: 8,
+  card: 8,
+  button: 8,
+  buttonLarge: 10,
+  pill: 14,
+  modal: 12,
+  small: 6,
   full: 9999,
 } as const;
 
@@ -101,7 +101,7 @@ export const Radius = {
 
 export const HeroConfig = {
   /** Percentage of screen height for hero */
-  heightRatio: 0.65,
+  heightRatio: 0.55,
   /** Auto-rotate interval in ms */
   rotateInterval: 10_000,
   /** Crossfade duration in ms */
@@ -115,10 +115,10 @@ export const HeroConfig = {
 // ─── Focus Animation ─────────────────────────────────────────────────────────
 
 export const FocusConfig = {
-  scaleUp: 1.08,
+  scaleUp: 1.05,
   scaleNormal: 1.0,
   borderWidth: 2,
-  glowRadius: 30,
+  glowRadius: 20,
   springDamping: 15,
   springStiffness: 150,
 } as const;
@@ -127,12 +127,12 @@ export const FocusConfig = {
 
 export const CardConfig = {
   portrait: {
-    width: 200,
+    width: 130,
     aspectRatio: 2 / 3,
   },
   landscape: {
-    width: 320,
+    width: 220,
     aspectRatio: 16 / 9,
   },
-  progressBarHeight: 4,
+  progressBarHeight: 3,
 } as const;

@@ -6,7 +6,7 @@ import Animated, {
   withSpring,
   interpolate,
 } from "react-native-reanimated";
-import { Colors, FocusConfig, Radius } from "../../theme/colors";
+import { FocusConfig } from "../../theme/colors";
 
 interface FocusableProps {
   onPress?: (e?: GestureResponderEvent) => void;
@@ -14,7 +14,6 @@ interface FocusableProps {
   onBlur?: () => void;
   hasTVPreferredFocus?: boolean;
   style?: ViewStyle;
-  focusedBorderColor?: string;
   children: React.ReactNode;
   testID?: string;
 }
@@ -30,7 +29,6 @@ export function Focusable({
   onBlur,
   hasTVPreferredFocus = false,
   style,
-  focusedBorderColor = Colors.focusBorder,
   children,
   testID,
 }: FocusableProps) {
@@ -50,10 +48,7 @@ export function Focusable({
     const s = interpolate(progress.value, [0, 1], [FocusConfig.scaleNormal, FocusConfig.scaleUp]);
     return {
       transform: [{ scale: s }],
-      borderWidth: interpolate(progress.value, [0, 1], [0, FocusConfig.borderWidth]),
-      borderColor: focusedBorderColor,
-      borderRadius: Radius.card,
-      elevation: interpolate(progress.value, [0, 1], [0, 12]),
+      elevation: interpolate(progress.value, [0, 1], [0, 8]),
     };
   });
 
@@ -62,7 +57,7 @@ export function Focusable({
       onPress={onPress}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      // @ts-expect-error react-native-tvos extends Pressable
+      // @ts-ignore react-native-tvos extends Pressable
       hasTVPreferredFocus={hasTVPreferredFocus}
       testID={testID}
     >

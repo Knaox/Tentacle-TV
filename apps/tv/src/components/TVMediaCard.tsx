@@ -70,11 +70,11 @@ function PortraitCard({ item, client, width: w, progress, isWatched, t }: CardIn
         {isWatched && (
           <View style={{
             position: "absolute", top: 8, right: 8,
-            width: 24, height: 24, borderRadius: 12,
+            width: 18, height: 18, borderRadius: 9,
             backgroundColor: Colors.success,
             justifyContent: "center", alignItems: "center",
           }}>
-            <CheckIcon size={14} color={Colors.textPrimary} />
+            <CheckIcon size={10} color={Colors.textPrimary} />
           </View>
         )}
       </View>
@@ -154,11 +154,11 @@ function LandscapeCard({ item, client, width: w, progress, isWatched }: CardInne
         {isWatched && (
           <View style={{
             position: "absolute", top: 8, right: 8,
-            width: 24, height: 24, borderRadius: 12,
+            width: 18, height: 18, borderRadius: 9,
             backgroundColor: Colors.success,
             justifyContent: "center", alignItems: "center",
           }}>
-            <CheckIcon size={14} color={Colors.textPrimary} />
+            <CheckIcon size={10} color={Colors.textPrimary} />
           </View>
         )}
       </View>
