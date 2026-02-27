@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
-import { getJellyfinUrl } from "../services/configStore";
+import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
+import { verifyDeviceToken } from "../services/jwt";
 
 /** Headers to skip when proxying (hop-by-hop). */
 const SKIP_REQUEST_HEADERS = new Set([
@@ -40,10 +41,33 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       } catch { /* leave targetUrl unchanged */ }
     }
 
+    // Detect JWT device tokens (from paired TV/devices) and replace with
+    // the Jellyfin admin API key — Jellyfin only understands its own tokens.
+    const incomingToken = request.headers["x-emby-token"] as string | undefined;
+    let apiKeyOverride: string | undefined;
+    if (incomingToken) {
+      const payload = await verifyDeviceToken(incomingToken);
+      if (payload) {
+        apiKeyOverride = getJellyfinApiKey();
+      }
+    }
+
     // Forward request headers
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(request.headers)) {
       if (!SKIP_REQUEST_HEADERS.has(key.toLowerCase()) && typeof value === "string") {
+        const lower = key.toLowerCase();
+        if (apiKeyOverride) {
+          // Replace device JWT with admin API key so Jellyfin accepts the request
+          if (lower === "x-emby-token") {
+            headers[key] = apiKeyOverride;
+            continue;
+          }
+          if (lower === "x-emby-authorization") {
+            headers[key] = value.replace(/Token="[^"]*"/, `Token="${apiKeyOverride}"`);
+            continue;
+          }
+        }
         headers[key] = value;
       }
     }

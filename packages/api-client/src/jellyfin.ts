@@ -44,6 +44,10 @@ export class JellyfinClient {
     return this.accessToken;
   }
 
+  setBaseUrl(url: string) {
+    this.baseUrl = url.replace(/\/$/, "");
+  }
+
   getBaseUrl() {
     return this.baseUrl;
   }

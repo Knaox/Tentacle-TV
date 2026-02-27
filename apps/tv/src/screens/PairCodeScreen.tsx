@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, ActivityIndicator } from "react-native";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { View, Text, TextInput, ActivityIndicator, Pressable } from "react-native";
 import {
   useTentacleConfig,
   useJellyfinClient,
@@ -13,44 +13,57 @@ import {
   setConfigBackendUrl,
 } from "@tentacle/api-client";
 import { useTranslation } from "react-i18next";
+import { verifyServer } from "@tentacle/shared";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
-const VALID_CHARS = /^[A-Z2-9]$/;
+function setAllBackendUrls(url: string) {
+  setPairingBackendUrl(url);
+  setSeerrBackendUrl(url);
+  setPreferencesBackendUrl(url);
+  setRequestsBackendUrl(url);
+  setTicketsBackendUrl(url);
+  setNotificationsBackendUrl(url);
+  setConfigBackendUrl(url);
+}
 
 export function PairCodeScreen({ navigation }: Props) {
-  const { t } = useTranslation("pairing");
+  const { t, i18n } = useTranslation("pairing");
   const { storage } = useTentacleConfig();
   const jellyfinClient = useJellyfinClient();
   const claimMut = useClaimPairingCode();
+
+  // ── Server URL phase ──
+  const savedUrl = storage.getItem("tentacle_server_url");
+  const [serverUrl, setServerUrl] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverReady, setServerReady] = useState(!!savedUrl);
+
+  // ── Code entry phase ──
   const [chars, setChars] = useState(["", "", "", ""]);
   const [paired, setPaired] = useState(false);
   const [pairUser, setPairUser] = useState("");
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  // Initialize all backend URLs
+  // Initialize backend URLs if already saved
   useEffect(() => {
-    const serverUrl = storage.getItem("tentacle_server_url");
-    if (serverUrl) {
-      setPairingBackendUrl(serverUrl);
-      setSeerrBackendUrl(serverUrl);
-      setPreferencesBackendUrl(serverUrl);
-      setRequestsBackendUrl(serverUrl);
-      setTicketsBackendUrl(serverUrl);
-      setNotificationsBackendUrl(serverUrl);
-      setConfigBackendUrl(serverUrl);
+    if (savedUrl) {
+      setAllBackendUrls(savedUrl);
     }
-  }, [storage]);
+  }, [savedUrl]);
 
-  // Focus first input on mount
+  // Focus first code input when entering code phase
   useEffect(() => {
-    setTimeout(() => inputRefs.current[0]?.focus(), 100);
-  }, []);
+    if (serverReady && !paired) {
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    }
+  }, [serverReady, paired]);
 
-  // Reset on error
+  // Reset code on error
   useEffect(() => {
     if (claimMut.isError) {
       setChars(["", "", "", ""]);
@@ -58,14 +71,42 @@ export function PairCodeScreen({ navigation }: Props) {
     }
   }, [claimMut.isError]);
 
+  // ── Language toggle ──
+  const switchLang = useCallback((lng: string) => {
+    i18n.changeLanguage(lng);
+    storage.setItem("tentacle_language", lng);
+  }, [i18n, storage]);
+
+  // ── Server verification ──
+  const handleTestServer = async () => {
+    if (!serverUrl.trim()) return;
+    setTesting(true);
+    setServerError(null);
+    try {
+      const result = await verifyServer(serverUrl);
+      if (result.success) {
+        storage.setItem("tentacle_server_url", result.url);
+        setAllBackendUrls(result.url);
+        jellyfinClient.setBaseUrl(`${result.url}/api/jellyfin`);
+        setServerReady(true);
+      } else {
+        const key = result.errorKey ?? "serverNotFoundRetry";
+        setServerError(t(`auth:${key}`, result.errorParams));
+      }
+    } catch {
+      setServerError(t("auth:serverNotFoundRetry"));
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  // ── Code entry handlers ──
   const updateChar = (index: number, value: string) => {
     const upper = value.toUpperCase().replace(/[^A-Z2-9]/g, "");
     if (!upper) return;
-
     const next = [...chars];
     next[index] = upper[0];
     setChars(next);
-
     if (index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -97,6 +138,13 @@ export function PairCodeScreen({ navigation }: Props) {
         onSuccess: (data) => {
           setPaired(true);
           setPairUser(data.username || "");
+
+          if (data.serverUrl) {
+            storage.setItem("tentacle_server_url", data.serverUrl);
+            setAllBackendUrls(data.serverUrl);
+            jellyfinClient.setBaseUrl(`${data.serverUrl}/api/jellyfin`);
+          }
+
           jellyfinClient.setAccessToken(data.token);
           storage.setItem("tentacle_token", data.token);
           if (data.userId && data.username) {
@@ -134,24 +182,104 @@ export function PairCodeScreen({ navigation }: Props) {
     );
   }
 
+  // ── Server URL phase ──
+  if (!serverReady) {
+    return (
+      <View style={styles.container}>
+        {/* Language toggle */}
+        <View style={styles.langToggle}>
+          {(["fr", "en"] as const).map((lng) => (
+            <Pressable
+              key={lng}
+              onPress={() => switchLang(lng)}
+              style={[
+                styles.langBtn,
+                i18n.language === lng && styles.langBtnActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.langText,
+                  i18n.language === lng && styles.langTextActive,
+                ]}
+              >
+                {lng.toUpperCase()}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.logo}>Tentacle</Text>
+          <Text style={styles.title}>{t("auth:welcomeToTentacle")}</Text>
+          <Text style={styles.subtitle}>{t("auth:enterServerUrl")}</Text>
+
+          <TextInput
+            value={serverUrl}
+            onChangeText={(text) => {
+              setServerUrl(text);
+              setServerError(null);
+            }}
+            placeholder={t("auth:serverUrlPlaceholder")}
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            style={styles.input}
+          />
+
+          {serverError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{serverError}</Text>
+            </View>
+          )}
+
+          <View style={{ marginTop: 24 }}>
+            <Focusable onPress={handleTestServer} hasTVPreferredFocus>
+              <View
+                style={[
+                  styles.button,
+                  (testing || !serverUrl.trim()) && styles.buttonDisabled,
+                ]}
+              >
+                {testing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {t("pairing:checkServer")}
+                  </Text>
+                )}
+              </View>
+            </Focusable>
+          </View>
+
+          <Text style={styles.helpText}>{t("pairing:tvRemoteHint")}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Code entry phase ──
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.logo}>Tentacle</Text>
         <Text style={styles.title}>{t("pairing:tvPairTitle")}</Text>
-        <Text style={styles.subtitle}>
-          {t("pairing:tvPairInstructions")}
-        </Text>
+        <Text style={styles.subtitle}>{t("pairing:tvPairInstructions")}</Text>
 
         {/* Code input boxes */}
         <View style={styles.codeRow}>
           {chars.map((char, i) => (
             <TextInput
               key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
+              ref={(el) => {
+                inputRefs.current[i] = el;
+              }}
               value={char}
               onChangeText={(text) => updateChar(i, text)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(i, nativeEvent.key)}
+              onKeyPress={({ nativeEvent }) =>
+                handleKeyPress(i, nativeEvent.key)
+              }
               maxLength={1}
               autoCapitalize="characters"
               autoCorrect={false}
@@ -189,11 +317,18 @@ export function PairCodeScreen({ navigation }: Props) {
           </Focusable>
         </View>
 
-        {/* Back button */}
+        {/* Change server button */}
         <View style={{ marginTop: 12 }}>
-          <Focusable onPress={() => navigation.replace("ServerSetup")}>
+          <Focusable
+            onPress={() => {
+              storage.removeItem("tentacle_server_url");
+              setServerReady(false);
+              setChars(["", "", "", ""]);
+              claimMut.reset();
+            }}
+          >
             <View style={styles.backButton}>
-              <Text style={styles.backText}>{t("common:back")}</Text>
+              <Text style={styles.backText}>{t("pairing:changeServer")}</Text>
             </View>
           </Focusable>
         </View>
@@ -236,6 +371,17 @@ const styles = {
     textAlign: "center" as const,
     lineHeight: 22,
     marginBottom: 28,
+  },
+  input: {
+    width: "100%" as const,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "#1e1e2e",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    color: "#fff",
+    fontSize: 18,
   },
   codeRow: {
     flexDirection: "row" as const,
@@ -303,6 +449,38 @@ const styles = {
   backText: {
     color: "rgba(255,255,255,0.4)",
     fontSize: 15,
+  },
+  helpText: {
+    color: "rgba(255,255,255,0.25)",
+    fontSize: 13,
+    textAlign: "center" as const,
+    marginTop: 24,
+  },
+  langToggle: {
+    position: "absolute" as const,
+    top: 24,
+    right: 24,
+    flexDirection: "row" as const,
+    borderRadius: 8,
+    overflow: "hidden" as const,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  langBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "transparent",
+  },
+  langBtnActive: {
+    backgroundColor: "rgba(139,92,246,0.3)",
+  },
+  langText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "rgba(255,255,255,0.4)",
+  },
+  langTextActive: {
+    color: "#c4b5fd",
   },
   successIcon: {
     color: "#22c55e",

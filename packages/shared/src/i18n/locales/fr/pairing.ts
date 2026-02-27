@@ -21,4 +21,5 @@ export default {
   checkServer: "Vérifier le serveur",
   serverConnected: "Serveur connecté avec succès !",
   tvRemoteHint: "Utilisez la télécommande pour saisir l'adresse de votre serveur.",
+  changeServer: "Changer de serveur",
 } as const;

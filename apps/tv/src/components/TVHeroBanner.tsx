@@ -35,12 +35,13 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
   return (
     <Animated.View style={{ width: SCREEN_WIDTH, height: 500, opacity }}>
       <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%", position: "absolute" }} resizeMode="cover" />
-      {/* Gradient overlay */}
-      <View style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: 300,
-        backgroundColor: "transparent",
-      }}>
-        <View style={{ flex: 1, background: "linear-gradient(transparent, #0a0a0f)" }} />
+      {/* Gradient overlay — simulate gradient with stacked opacity layers */}
+      <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 300 }}>
+        <View style={{ flex: 1, backgroundColor: "rgba(10,10,15,0.1)" }} />
+        <View style={{ flex: 1, backgroundColor: "rgba(10,10,15,0.3)" }} />
+        <View style={{ flex: 1, backgroundColor: "rgba(10,10,15,0.6)" }} />
+        <View style={{ flex: 1, backgroundColor: "rgba(10,10,15,0.85)" }} />
+        <View style={{ flex: 1, backgroundColor: "#0a0a0f" }} />
       </View>
       {/* Content */}
       <View style={{ position: "absolute", bottom: 48, left: 48, right: 200 }}>
