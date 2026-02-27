@@ -119,28 +119,52 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
-  // Unified seek — handles HLS (absolute PTS) and progressive (CopyTimestamps) streams
+  // Unified seek — handles direct play, HLS, and progressive transcode streams
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
+    const clamped = Math.max(0, Math.min(targetSeconds, v.duration || Infinity));
     const isHlsStream = src.includes(".m3u8");
-    console.debug(DBG, "seek", { targetSeconds, isDirectPlay, streamOffset, isHlsStream });
-    // For transcoded streams, if the target is before the current transcode
-    // start position, request a new transcode from Watch.tsx
-    if (!isDirectPlay && streamOffset > 0 && targetSeconds < streamOffset - 5) {
-      seekTargetRef.current = targetSeconds;
-      onSeekRequest?.(targetSeconds);
+    console.debug(DBG, "seek", { clamped, isDirectPlay, streamOffset, isHlsStream });
+
+    // Direct play: HTTP Range requests support random seek — always works
+    if (isDirectPlay) {
+      v.currentTime = clamped;
+      onSeekComplete?.(clamped, v.paused);
       return;
     }
-    // For progressive (non-HLS) transcoded streams, large forward seeks are
-    // beyond the download buffer — request URL rebuild with new StartTimeTicks
-    if (!isDirectPlay && !isHlsStream && targetSeconds > currentTimeRef.current + 60) {
-      seekTargetRef.current = targetSeconds;
-      onSeekRequest?.(targetSeconds);
+
+    // HLS: HLS.js loads the correct segment on seek — works natively
+    if (isHlsStream) {
+      if (streamOffset > 0 && clamped < streamOffset - 5) {
+        seekTargetRef.current = clamped;
+        onSeekRequest?.(clamped);
+        return;
+      }
+      v.currentTime = clamped;
+      onSeekComplete?.(clamped, v.paused);
       return;
     }
-    v.currentTime = targetSeconds;
-    onSeekComplete?.(targetSeconds, v.paused);
+
+    // Progressive transcode: can only seek within the downloaded buffer.
+    // Check the actual buffered ranges instead of an arbitrary threshold.
+    const buffered = v.buffered;
+    let isInBuffer = false;
+    for (let i = 0; i < buffered.length; i++) {
+      if (clamped >= buffered.start(i) - 1 && clamped <= buffered.end(i) + 1) {
+        isInBuffer = true;
+        break;
+      }
+    }
+
+    if (isInBuffer) {
+      v.currentTime = clamped;
+      onSeekComplete?.(clamped, v.paused);
+    } else {
+      // Target outside buffer — rebuild URL with new StartTimeTicks
+      seekTargetRef.current = clamped;
+      onSeekRequest?.(clamped);
+    }
   }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
 
   const toggleFullscreen = useCallback(() => {
@@ -252,9 +276,10 @@ export function VideoPlayer({
       // Progressive transcode (stream.mp4): wait for canplay so both audio and
       // video data are buffered before playing — prevents the "video without audio"
       // gap that occurs when attemptPlay is called at loadedmetadata (too early).
-      // Direct play: loadedmetadata is fine (no transcode startup delay).
+      // Direct play / source changes with preserved position: loadedmetadata is fine.
       const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
-      const readyEvt = isProgressiveTranscode ? "canplay" : "loadedmetadata";
+      const isQuickSwitch = isSourceChange && seekTo > 0;
+      const readyEvt = isProgressiveTranscode && !isQuickSwitch ? "canplay" : "loadedmetadata";
       v.addEventListener(readyEvt, onReady, { once: true });
       // If data is already available (e.g. cached), fire immediately.
       // readyState >= 3 (HAVE_FUTURE_DATA) matches canplay; >= 1 matches loadedmetadata.
@@ -406,7 +431,7 @@ export function VideoPlayer({
       </video>
 
       {loading && (playing || sourceChangingRef.current) && (
-        <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center ${sourceChangingRef.current ? "bg-black" : ""}`} onClick={(e) => e.stopPropagation()}>
+        <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center ${sourceChangingRef.current && !hasStartedRef.current ? "bg-black" : ""}`} onClick={(e) => e.stopPropagation()}>
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
         </div>
       )}

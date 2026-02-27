@@ -40,13 +40,36 @@ export function DesktopPlayer({
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
 }: DesktopPlayerProps) {
   const navigate = useNavigate();
-  const { state, ready, error, play, togglePause, seek, seekRelative, setVolume, toggleMute, stop } = useDesktopPlayer();
+  const { state, ready, error, play, togglePause, seek, seekRelative, setAudioTrack, setSubtitleTrack, setVolume, toggleMute, stop } = useDesktopPlayer();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const hasStartedRef = useRef(false);
+
+  // Native mpv audio track switch — instantaneous, no stream reload
+  const handleMpvAudioChange = useCallback((index: number) => {
+    // Jellyfin audio stream indices start at 0; mpv track IDs start at 1
+    // The offset depends on the container — for most MKV/MP4, audio tracks
+    // in mpv are numbered starting from 1 in the order they appear.
+    const audioStreams = (audioTracks ?? []);
+    const trackPosition = audioStreams.findIndex((t) => t.index === index) + 1;
+    setAudioTrack(trackPosition > 0 ? trackPosition : 1);
+    onAudioChange(index); // Notify Watch for Jellyfin reporting
+  }, [audioTracks, setAudioTrack, onAudioChange]);
+
+  // Native mpv subtitle track switch
+  const handleMpvSubtitleChange = useCallback((index: number | null) => {
+    if (index == null) {
+      setSubtitleTrack(0); // 0 = disable subtitles in mpv
+    } else {
+      const subStreams = (subtitleTracks ?? []);
+      const trackPosition = subStreams.findIndex((t) => t.index === index) + 1;
+      setSubtitleTrack(trackPosition > 0 ? trackPosition : 0);
+    }
+    onSubtitleChange(index);
+  }, [subtitleTracks, setSubtitleTrack, onSubtitleChange]);
 
   // Load media when ready
   useEffect(() => {
@@ -198,7 +221,7 @@ export function DesktopPlayer({
                 audioTracks={audioTracks} subtitleTracks={subtitleTracks}
                 currentAudio={currentAudio} currentSubtitle={currentSubtitle}
                 currentQuality={currentQuality}
-                onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange}
+                onAudioChange={handleMpvAudioChange} onSubtitleChange={handleMpvSubtitleChange}
                 onQualityChange={onQualityChange}
                 onClose={() => setShowSettings(false)}
               />
