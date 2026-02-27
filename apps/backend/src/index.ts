@@ -123,7 +123,7 @@ async function main() {
   await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
 
   // ── Serve frontend static files in production ──
-  const webDistPath = resolve(__dirname, "../../../web/dist");
+  const webDistPath = resolve(__dirname, "../../web/dist");
   if (existsSync(webDistPath)) {
     await app.register(fastifyStatic, {
       root: webDistPath,
