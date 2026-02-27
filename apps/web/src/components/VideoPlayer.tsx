@@ -206,11 +206,15 @@ export function VideoPlayer({
       if (seekTo > 0 && !isHlsUrl) {
         v.currentTime = seekTo;
       }
-      sourceChangingRef.current = false;
-      setLoading(false);
-      // Always start playback immediately — the transition overlay covers the video,
-      // so starting early lets audio begin ~1.4s sooner (during the animation).
-      attemptPlay(v, () => setPolicyMuted(true), () => setShowPlayButton(true));
+      // Keep sourceChangingRef=true and loading=true so the spinner stays visible
+      // until actual playback starts (onPlay). This prevents the black-screen gap
+      // between metadata/canplay and real audio+video output.
+      attemptPlay(v, () => setPolicyMuted(true), () => {
+        // Play completely blocked — show manual play button, clear loading state.
+        sourceChangingRef.current = false;
+        setLoading(false);
+        setShowPlayButton(true);
+      });
     };
 
     if (isHlsUrl && Hls.isSupported()) {
@@ -245,11 +249,17 @@ export function VideoPlayer({
       // Explicit load only after full reset (HLS transition); for progressive → progressive
       // setting v.src already triggers loading — double-load would add latency.
       if (isSourceChange && (wasHls || isHlsUrl)) v.load();
-      // Progressive → progressive (audio track change): wait for canplay so both
-      // video and audio are buffered before playing — prevents "muted video" state.
-      const readyEvt = (isSourceChange && !wasHls && !isHlsUrl) ? "canplay" : "loadedmetadata";
+      // Progressive transcode (stream.mp4): wait for canplay so both audio and
+      // video data are buffered before playing — prevents the "video without audio"
+      // gap that occurs when attemptPlay is called at loadedmetadata (too early).
+      // Direct play: loadedmetadata is fine (no transcode startup delay).
+      const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
+      const readyEvt = isProgressiveTranscode ? "canplay" : "loadedmetadata";
       v.addEventListener(readyEvt, onReady, { once: true });
-      if (!isSourceChange && v.readyState >= 1) {
+      // If data is already available (e.g. cached), fire immediately.
+      // readyState >= 3 (HAVE_FUTURE_DATA) matches canplay; >= 1 matches loadedmetadata.
+      const readyStateThreshold = isProgressiveTranscode ? 3 : 1;
+      if (!isSourceChange && v.readyState >= readyStateThreshold) {
         v.removeEventListener(readyEvt, onReady);
         onReady();
       }
@@ -375,6 +385,7 @@ export function VideoPlayer({
         }}
         onLoadedMetadata={(e) => { setVideoDuration(e.currentTarget.duration); }}
         onPlay={() => {
+          sourceChangingRef.current = false;
           setPlaying(true); setLoading(false); setShowPlayButton(false);
           if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); }
         }}
@@ -383,8 +394,8 @@ export function VideoPlayer({
           clearTimeout(waitingTimer.current);
           waitingTimer.current = setTimeout(() => setLoading(true), 300);
         }}
-        onPlaying={() => { clearTimeout(waitingTimer.current); setLoading(false); }}
-        onCanPlay={() => { clearTimeout(waitingTimer.current); setLoading(false); }}
+        onPlaying={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
+        onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message); }}
         onEnded={() => { if (hasNextEpisode) startAutoPlay(); else navigate(`/media/${itemId}`, { replace: true }); }}
         crossOrigin="anonymous"
