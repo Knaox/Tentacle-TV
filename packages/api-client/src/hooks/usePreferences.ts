@@ -108,3 +108,47 @@ export function useResolveMediaTracks() {
     }),
   });
 }
+
+// ---------- Interface language (synced across devices) ----------
+
+/** Fetch the user's stored interface language from backend */
+export function useInterfaceLanguage() {
+  const hasToken = typeof localStorage !== "undefined"
+    ? !!localStorage.getItem("tentacle_token")
+    : true; // TV always has token via storage adapter
+  return useQuery({
+    queryKey: ["interface-language"],
+    queryFn: () => prefFetch<{ language: string | null }>("/language"),
+    enabled: hasToken,
+    staleTime: 60_000,
+  });
+}
+
+/** Save the user's interface language to backend */
+export function useSetInterfaceLanguage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (language: string) =>
+      prefFetch<{ language: string }>("/language", {
+        method: "PUT",
+        body: JSON.stringify({ language }),
+      }),
+    onSuccess: (data) => {
+      qc.setQueryData(["interface-language"], data);
+    },
+  });
+}
+
+/** Direct fetch for interface language (for non-hook contexts like TV App.tsx) */
+export async function fetchInterfaceLanguage(token: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${_backendBase}/language`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.language ?? null;
+  } catch {
+    return null;
+  }
+}

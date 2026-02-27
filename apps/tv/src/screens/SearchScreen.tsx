@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text } from "react-native";
 import { useSearchItems } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVSearchKeyboard } from "../components/TVSearchKeyboard";
@@ -12,6 +13,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
 export function SearchScreen({ navigation }: Props) {
+  const { t } = useTranslation(["common", "nav"]);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -32,7 +34,7 @@ export function SearchScreen({ navigation }: Props) {
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: "#0a0a0f", paddingTop: 48 }}>
       {/* Left side: keyboard */}
       <View style={{ paddingLeft: 48, paddingTop: 16 }}>
-        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "700", marginBottom: 20 }}>Rechercher</Text>
+        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "700", marginBottom: 20 }}>{t("nav:search")}</Text>
         <TVSearchKeyboard query={query} onKeyPress={handleKeyPress} onDelete={handleDelete} onClear={handleClear} />
       </View>
 
@@ -40,13 +42,13 @@ export function SearchScreen({ navigation }: Props) {
       <View style={{ flex: 1 }}>
         {isLoading && debounced.length >= 2 && (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16 }}>Recherche en cours...</Text>
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16 }}>{t("common:searching")}</Text>
           </View>
         )}
 
         {!isLoading && debounced.length >= 2 && (!results || results.length === 0) && (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16 }}>Aucun résultat</Text>
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 16 }}>{t("common:noResults")}</Text>
           </View>
         )}
 
@@ -63,7 +65,7 @@ export function SearchScreen({ navigation }: Props) {
         {debounced.length < 2 && (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
             <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 16 }}>
-              Tapez au moins 2 caractères pour rechercher
+              {t("common:typeMinChars")}
             </Text>
           </View>
         )}

@@ -6,6 +6,13 @@ import {
 } from "@tentacle/shared";
 import type { StorageAdapter, UuidGenerator } from "./storage";
 
+/** Build query string — compatible Hermes (pas de URLSearchParams.set). */
+function buildQuery(entries: Record<string, string>): string {
+  return Object.entries(entries)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+}
+
 export class JellyfinClient {
   private baseUrl: string;
   private accessToken: string | null = null;
@@ -114,14 +121,14 @@ export class JellyfinClient {
     imageType: "Primary" | "Backdrop" | "Logo" | "Thumb" = "Primary",
     options?: { width?: number; height?: number; quality?: number; tag?: string; index?: number }
   ): string {
-    const params = new URLSearchParams();
-    if (options?.width) params.set("maxWidth", String(options.width));
-    if (options?.height) params.set("maxHeight", String(options.height));
-    if (options?.quality) params.set("quality", String(options.quality));
-    if (options?.tag) params.set("tag", options.tag);
+    const p: Record<string, string> = {};
+    if (options?.width) p.maxWidth = String(options.width);
+    if (options?.height) p.maxHeight = String(options.height);
+    if (options?.quality) p.quality = String(options.quality);
+    if (options?.tag) p.tag = options.tag;
     const idx = options?.index ?? 0;
     const suffix = imageType === "Backdrop" && idx > 0 ? `/${idx}` : "";
-    return `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${params}`;
+    return `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${buildQuery(p)}`;
   }
 
   getStreamUrl(itemId: string, options?: {
@@ -144,70 +151,71 @@ export class JellyfinClient {
      *  where progressive transcode doesn't support Range requests. Falls back to HLS. */
     useProgressiveRemux?: boolean;
   }): string {
-    const params = new URLSearchParams();
-    params.set("api_key", this.accessToken ?? "");
-    if (options?.mediaSourceId) params.set("MediaSourceId", options.mediaSourceId);
-    if (options?.audioIndex != null) params.set("AudioStreamIndex", String(options.audioIndex));
-    if (options?.startTimeTicks) params.set("StartTimeTicks", String(options.startTimeTicks));
+    const p: Record<string, string> = {
+      api_key: this.accessToken ?? "",
+    };
+    if (options?.mediaSourceId) p.MediaSourceId = options.mediaSourceId;
+    if (options?.audioIndex != null) p.AudioStreamIndex = String(options.audioIndex);
+    if (options?.startTimeTicks) p.StartTimeTicks = String(options.startTimeTicks);
 
     // Direct play — raw file, browser handles codec/track selection
     if (options?.directPlay !== false && !options?.maxBitrate) {
-      params.set("Static", "true");
-      return `${this.baseUrl}/Videos/${itemId}/stream?${params}`;
+      p.Static = "true";
+      return `${this.baseUrl}/Videos/${itemId}/stream?${buildQuery(p)}`;
     }
 
     // Shared transcode/remux params
-    params.set("DeviceId", this.deviceId);
-    if (options?.playSessionId) params.set("PlaySessionId", options.playSessionId);
-    params.set("TranscodingMaxAudioChannels", "6");
-    params.set("RequireAvc", "false");
-    params.set("context", "Streaming");
+    p.DeviceId = this.deviceId;
+    if (options?.playSessionId) p.PlaySessionId = options.playSessionId;
+    p.TranscodingMaxAudioChannels = "6";
+    p.RequireAvc = "false";
+    p.context = "Streaming";
 
     if (!options?.maxBitrate) {
       // Remux: video copied as-is, only audio transcoded.
       const videoCodec = options?.sourceVideoCodec || "h264";
-      params.set("VideoCodec", videoCodec);
-      params.set("AllowVideoStreamCopy", "true");
-      params.set("AllowAudioStreamCopy", "false");
-      params.set("AudioCodec", "aac");
-      params.set("CopyTimestamps", "true");
-      params.set("MaxStreamingBitrate", "150000000");
+      p.VideoCodec = videoCodec;
+      p.AllowVideoStreamCopy = "true";
+      p.AllowAudioStreamCopy = "false";
+      p.AudioCodec = "aac";
+      p.CopyTimestamps = "true";
+      p.MaxStreamingBitrate = "150000000";
 
       if (options?.useProgressiveRemux !== false) {
         // Progressive: avoids Jellyfin's HLS playlist generator which overrides
         // AllowVideoStreamCopy for HEVC, forcing h264 transcode.
-        return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${params}`;
+        return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`;
       }
 
       // HLS fallback (Safari/iOS): progressive transcode doesn't support HTTP
       // Range requests that WebKit requires for media playback.
-      params.set("BreakOnNonKeyFrames", "true");
-      params.set("RequireNonAnamorphic", "false");
-      params.set("EnableSubtitlesInManifest", "false");
-      params.set("SegmentContainer", "mp4");
-      params.set("MinSegments", "2");
-      return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;
+      p.BreakOnNonKeyFrames = "true";
+      p.RequireNonAnamorphic = "false";
+      p.EnableSubtitlesInManifest = "false";
+      p.SegmentContainer = "mp4";
+      p.MinSegments = "2";
+      return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`;
     }
 
     // Quality transcode via HLS — full re-encode with bitrate limit
-    params.set("BreakOnNonKeyFrames", "true");
-    params.set("RequireNonAnamorphic", "false");
-    params.set("EnableSubtitlesInManifest", "false");
-    params.set("VideoCodec", "h264");
-    params.set("AudioCodec", "aac");
-    params.set("SegmentContainer", "ts");
+    p.BreakOnNonKeyFrames = "true";
+    p.RequireNonAnamorphic = "false";
+    p.EnableSubtitlesInManifest = "false";
+    p.VideoCodec = "h264";
+    p.AudioCodec = "aac";
+    p.SegmentContainer = "ts";
     const audioBitrate = 384000;
     const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
-    params.set("VideoBitRate", String(videoBitrate));
-    params.set("AudioBitRate", String(audioBitrate));
-    params.set("MaxStreamingBitrate", String(options.maxBitrate));
+    p.VideoBitRate = String(videoBitrate);
+    p.AudioBitRate = String(audioBitrate);
+    p.MaxStreamingBitrate = String(options.maxBitrate);
 
     // Resolution constraint — Jellyfin calculates proportional width automatically
     if (options?.maxHeight) {
-      params.set("MaxHeight", String(options.maxHeight));
+      p.MaxHeight = String(options.maxHeight);
     }
 
-    return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${params}`;
+    return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`;
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number): string {

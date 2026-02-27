@@ -1,6 +1,7 @@
 import { View, Text, Image, ScrollView, Dimensions } from "react-native";
 import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
@@ -13,6 +14,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
 
 export function MediaDetailScreen({ route, navigation }: Props) {
+  const { t } = useTranslation("common");
   const { itemId } = route.params;
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
@@ -50,7 +52,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
             {rating && <Text style={{ color: "#fbbf24", fontSize: 16 }}>★ {rating}</Text>}
             {runtime && <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>{runtime} min</Text>}
             {isSeries && item.ChildCount && (
-              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>{item.ChildCount} saisons</Text>
+              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>{item.ChildCount} {t("common:seasons")}</Text>
             )}
           </View>
           {item.Genres && item.Genres.length > 0 && (
@@ -72,7 +74,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
             <Focusable onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus>
               <View style={{ backgroundColor: "#8b5cf6", paddingHorizontal: 32, paddingVertical: 12, borderRadius: 8 }}>
                 <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>
-                  {item.UserData?.PlaybackPositionTicks ? "Reprendre" : "Lecture"}
+                  {item.UserData?.PlaybackPositionTicks ? t("common:resume") : t("common:play")}
                 </Text>
               </View>
             </Focusable>
@@ -86,12 +88,13 @@ export function MediaDetailScreen({ route, navigation }: Props) {
       {/* Similar items */}
       {similar && similar.length > 0 && (
         <FocusableRow
-          title="Recommandations"
+          title={t("common:similarTitles")}
           data={similar}
           renderItem={(s: MediaItem) => <TVMediaCard item={s} />}
           keyExtractor={(s) => s.Id}
           itemWidth={180}
           style={{ marginTop: 32 }}
+          onItemPress={(s: MediaItem) => navigation.push("MediaDetail", { itemId: s.Id })}
         />
       )}
     </ScrollView>

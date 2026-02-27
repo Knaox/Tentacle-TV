@@ -7,6 +7,8 @@ import { MediaDetailScreen } from "../screens/MediaDetailScreen";
 import { PlayerScreen } from "../screens/PlayerScreen";
 import { SearchScreen } from "../screens/SearchScreen";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
+import { PreferencesScreen } from "../screens/PreferencesScreen";
+import { AboutScreen } from "../screens/AboutScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -32,6 +34,8 @@ export function AppNavigator() {
       <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
       <Stack.Screen name="Player" component={PlayerScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="Preferences" component={PreferencesScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
     </Stack.Navigator>
   );
 }

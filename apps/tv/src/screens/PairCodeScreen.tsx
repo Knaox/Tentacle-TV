@@ -153,6 +153,7 @@ export function PairCodeScreen({ navigation }: Props) {
               JSON.stringify({ Id: data.userId, Name: data.username }),
             );
           }
+
           setTimeout(() => navigation.replace("Home"), 2000);
         },
       },

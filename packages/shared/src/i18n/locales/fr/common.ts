@@ -44,4 +44,7 @@ export default {
   send: "Envoyer",
   sending: "Envoi...",
   or: "OU",
+  moreInfo: "Plus d'infos",
+  searching: "Recherche en cours...",
+  typeMinChars: "Tapez au moins 2 caractères pour rechercher",
 } as const;

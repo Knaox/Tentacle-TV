@@ -16,13 +16,25 @@ import {
   setConfigBackendUrl,
   setPairingBackendUrl,
 } from "@tentacle/api-client";
-import { initI18n, detectLanguage } from "@tentacle/shared";
+import { initI18n, detectLanguage, i18n } from "@tentacle/shared";
+import { fetchInterfaceLanguage } from "@tentacle/api-client";
 import { App } from "./App";
 import "./index.css";
 
-// Initialize i18n before rendering
+// Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: savedLang });
+
+// If authenticated, fetch the authoritative language from backend and apply
+const _token = localStorage.getItem("tentacle_token");
+if (_token) {
+  fetchInterfaceLanguage(_token).then((lang) => {
+    if (lang && lang !== i18n.language) {
+      i18n.changeLanguage(lang);
+      localStorage.setItem("tentacle_language", lang);
+    }
+  }).catch(() => {});
+}
 
 // Detect Tauri (desktop app) vs web deployment
 export const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;

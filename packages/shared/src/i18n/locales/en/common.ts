@@ -44,4 +44,7 @@ export default {
   send: "Send",
   sending: "Sending...",
   or: "OR",
+  moreInfo: "More info",
+  searching: "Searching...",
+  typeMinChars: "Type at least 2 characters to search",
 } as const;

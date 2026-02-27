@@ -1,6 +1,7 @@
 import { View, Text, Image } from "react-native";
 import { useJellyfinClient } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { useTranslation } from "react-i18next";
 
 interface TVMediaCardProps {
   item: MediaItem;
@@ -8,6 +9,7 @@ interface TVMediaCardProps {
 }
 
 export function TVMediaCard({ item, width = 180 }: TVMediaCardProps) {
+  const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const poster = client.getImageUrl(item.Id, "Primary", { height: 400, quality: 85 });
   const progress = item.UserData?.PlayedPercentage;
@@ -29,7 +31,7 @@ export function TVMediaCard({ item, width = 180 }: TVMediaCardProps) {
           {item.Name}
         </Text>
         <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 2 }}>
-          {item.ProductionYear ?? ""} {item.Type === "Movie" ? "Film" : item.Type === "Series" ? "Série" : ""}
+          {item.ProductionYear ?? ""} {item.Type === "Movie" ? t("common:movie") : item.Type === "Series" ? t("common:series") : ""}
         </Text>
       </View>
     </View>

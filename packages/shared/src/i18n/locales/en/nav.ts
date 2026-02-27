@@ -16,4 +16,6 @@ export default {
   requests: "Requests",
   library: "Library",
   languagePreferences: "Language preferences",
+  logoutConfirmTitle: "Sign out",
+  logoutConfirmMessage: "Are you sure you want to disconnect?",
 } as const;

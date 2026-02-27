@@ -16,4 +16,6 @@ export default {
   requests: "Demandes",
   library: "Bibliothèque",
   languagePreferences: "Préférences langues",
+  logoutConfirmTitle: "Déconnexion",
+  logoutConfirmMessage: "Êtes-vous sûr de vouloir vous déconnecter ?",
 } as const;
