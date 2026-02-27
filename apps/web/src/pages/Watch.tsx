@@ -5,7 +5,9 @@ import { useMediaItem, useItemAncestors, useJellyfinClient, usePlaybackReporting
 import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
+import { DesktopPlayer } from "../components/DesktopPlayer";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
+import { isTauri } from "../hooks/useDesktopPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 
 function formatTrackLabel(s: JfStream): string {
@@ -95,18 +97,22 @@ export function Watch() {
   const needsAudioTranscode = !!selectedAudioCodec && (
     /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
   );
-  const isDirectPlay = audioIndex === defaultAudio && quality == null && !needsAudioTranscode;
+  const isDesktop = isTauri();
+  // Desktop (mpv): always direct play — mpv handles all codecs natively
+  const isDirectPlay = isDesktop || (audioIndex === defaultAudio && quality == null && !needsAudioTranscode);
 
   console.debug(DBG, "playback mode", {
     isDirectPlay, audioIndex, defaultAudio, selectedAudioCodec, needsAudioTranscode,
     quality, streamCount: streams.length,
   });
 
-  // BUG 5: when starting in transcode mode (e.g. default audio is DTS/TrueHD) with
+  // When starting in transcode mode (e.g. default audio is DTS/TrueHD) with
   // a resume position, initialize startTicks so HLS URL includes StartTimeTicks.
   // Only on first load per episode — not on subsequent audio/quality changes.
+  // Guard: never overwrite startTicks if the player is already playing (positionRef > 0).
   useEffect(() => {
     if (resumeApplied.current || isDirectPlay || startTicks > 0) return;
+    if (positionRef.current > 0) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks;
     if (resumeTicks && resumeTicks > 0) {
       console.debug(DBG, "init startTicks from resume (transcode mode)", { resumeTicks });
@@ -237,13 +243,16 @@ export function Watch() {
   // Audio change: save position and switch — don't reportStop() beforehand,
   // as that kills the Jellyfin transcode before the new one is ready (causing 400 on first .ts).
   // Jellyfin naturally cleans up old sessions when a new one starts.
+  // Desktop: mpv switches audio tracks natively — no URL rebuild needed.
   const handleAudioChange = useCallback((idx: number) => {
-    const ticks = getPositionTicks();
-    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current, ticks });
-    if (ticks > 0) setStartTicks(ticks);
+    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current, isDesktop });
     audioOverrideRef.current = true;
     setAudioIndex(idx);
-  }, [getPositionTicks]);
+    if (!isDesktop) {
+      const ticks = getPositionTicks();
+      if (ticks > 0) setStartTicks(ticks);
+    }
+  }, [getPositionTicks, isDesktop]);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
     const ticks = getPositionTicks();
@@ -292,23 +301,29 @@ export function Watch() {
   const nextEpTitle = nextEpisode
     ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}` : undefined;
 
-  const playerProps = {
-    src: streamUrl, itemId: itemId!, title, subtitle: epSubtitle,
+  const sharedProps = {
+    src: streamUrl, title, subtitle: epSubtitle,
     startPositionSeconds, jellyfinDuration,
     audioTracks, subtitleTracks,
     currentAudio: audioIndex, currentSubtitle: subtitleIndex, currentQuality: quality,
-    isDirectPlay, streamOffset,
     onAudioChange: handleAudioChange, onSubtitleChange: setSubtitleIndex, onQualityChange: handleQualityChange,
-    onProgress: handleProgress, onStarted: reportStart, onSeekRequest: handleSeekRequest, onSeekComplete: handleSeekComplete,
+    onProgress: handleProgress, onStarted: reportStart,
     hasNextEpisode: !!nextEpisode, hasPreviousEpisode: !!previousEpisode,
     nextEpisodeTitle: nextEpTitle,
     onNextEpisode: handleNextEpisode, onPreviousEpisode: handlePreviousEpisode,
-    introSegment: skipSegments.intro, creditsSegment: skipSegments.credits,
   };
 
   return (
     <PlayerTransition>
-      <VideoPlayer key={itemId} {...playerProps} />
+      {isDesktop ? (
+        <DesktopPlayer key={itemId} {...sharedProps} />
+      ) : (
+        <VideoPlayer key={itemId} {...sharedProps}
+          itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset}
+          onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
+          introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
+        />
+      )}
     </PlayerTransition>
   );
 }

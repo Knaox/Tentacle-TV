@@ -77,7 +77,24 @@ impl MpvPlayer {
         }
     }
 
+    /// Get native window handle from the main Tauri window for mpv --wid.
+    /// Returns the HWND on Windows, None on other platforms (uses --force-window=no fallback).
+    fn get_window_handle(app: &AppHandle) -> Option<i64> {
+        #[cfg(target_os = "windows")]
+        {
+            use tauri::Manager;
+            let window = app.get_webview_window("main")?;
+            window.hwnd().ok().map(|h| h.0 as i64)
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let _ = app;
+            None
+        }
+    }
+
     /// Spawn mpv process and connect IPC.
+    /// Retrieves the native window handle from Tauri to embed mpv rendering.
     pub fn start(&mut self, app: AppHandle) -> Result<(), String> {
         if self.alive.load(Ordering::Relaxed) {
             return Ok(());
@@ -86,7 +103,9 @@ impl MpvPlayer {
         let mpv_path = config::mpv_binary_path()
             .ok_or_else(|| "mpv not found. Install mpv or place it in the binaries/ folder.".to_string())?;
 
-        let args = config::default_mpv_args(&self.ipc_path);
+        // Get native window handle for mpv --wid (embed video in Tauri window)
+        let wid = Self::get_window_handle(&app);
+        let args = config::default_mpv_args(&self.ipc_path, wid);
 
         let child = Command::new(&mpv_path)
             .args(&args)

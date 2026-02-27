@@ -82,11 +82,11 @@ fn target_triple() -> &'static str {
 }
 
 /// Default mpv arguments for embedded playback.
-pub fn default_mpv_args(ipc_path: &str) -> Vec<String> {
-    vec![
+/// When `wid` is provided, mpv renders into the given window handle (overlay mode).
+pub fn default_mpv_args(ipc_path: &str, wid: Option<i64>) -> Vec<String> {
+    let mut args = vec![
         format!("--input-ipc-server={}", ipc_path),
         "--idle=yes".into(),
-        "--force-window=no".into(),
         "--no-terminal".into(),
         "--keep-open=yes".into(),
         "--vo=gpu".into(),
@@ -94,7 +94,19 @@ pub fn default_mpv_args(ipc_path: &str) -> Vec<String> {
         "--hr-seek=yes".into(),
         "--sub-auto=fuzzy".into(),
         "--msg-level=all=no".into(),
-    ]
+        "--osc=no".into(),
+        "--input-default-bindings=no".into(),
+        "--input-vo-keyboard=no".into(),
+        "--cache=yes".into(),
+        "--demuxer-max-bytes=150MiB".into(),
+        "--demuxer-max-back-bytes=75MiB".into(),
+    ];
+    if let Some(handle) = wid {
+        args.push(format!("--wid={}", handle));
+    } else {
+        args.push("--force-window=no".into());
+    }
+    args
 }
 
 /// Generate a unique IPC pipe/socket path.
