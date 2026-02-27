@@ -199,12 +199,16 @@ export function Watch() {
     ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined)
     : undefined;
 
+  // Desktop: mpv handles audio tracks natively (set_property aid) — exclude from URL
+  // to prevent unnecessary stream reloads on audio change.
+  const urlAudioIndex = isDesktop ? undefined : audioIndex;
+
   // Subtitles are handled externally via <track> elements — NOT in the HLS URL.
   // Including subtitleIndex here would cause a full stream reload on subtitle change.
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
     const url = client.getStreamUrl(itemId, {
-      audioIndex,
+      audioIndex: urlAudioIndex,
       mediaSourceId,
       maxBitrate: quality ?? undefined,
       maxHeight: qualityMaxHeight,
@@ -216,7 +220,7 @@ export function Watch() {
     });
     console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight });
     return url;
-  }, [client, itemId, audioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
+  }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;

@@ -387,7 +387,7 @@ export function VideoPlayer({
       }}
       onTouchStart={() => { userInteractedRef.current = true; }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
-      <video ref={videoRef} className="h-full w-full" playsInline
+      <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);

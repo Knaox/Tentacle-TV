@@ -7,13 +7,19 @@ use std::path::PathBuf;
 /// 3. Next to executable (plain name)
 /// 4. System PATH (mpv installed globally)
 pub fn mpv_binary_path() -> Option<PathBuf> {
-    // 1. Dev path
-    let dev_path = std::env::current_dir()
+    let sidecar_name = format!("mpv-{}{}", target_triple(), exe_extension());
+
+    // 1. Dev path: src-tauri/binaries/ (sidecar name first, then plain)
+    let dev_dir = std::env::current_dir()
         .unwrap_or_default()
-        .join("binaries")
-        .join(mpv_binary_name());
-    if dev_path.exists() {
-        return Some(dev_path);
+        .join("binaries");
+    let dev_sidecar = dev_dir.join(&sidecar_name);
+    if dev_sidecar.exists() {
+        return Some(dev_sidecar);
+    }
+    let dev_plain = dev_dir.join(mpv_binary_name());
+    if dev_plain.exists() {
+        return Some(dev_plain);
     }
 
     let exe_dir = std::env::current_exe()
@@ -21,8 +27,7 @@ pub fn mpv_binary_path() -> Option<PathBuf> {
         .and_then(|p| p.parent().map(|d| d.to_path_buf()))
         .unwrap_or_default();
 
-    // 2. Tauri sidecar with target triple
-    let sidecar_name = format!("mpv-{}{}", target_triple(), exe_extension());
+    // 2. Tauri sidecar with target triple (next to exe)
     let sidecar_path = exe_dir.join(&sidecar_name);
     if sidecar_path.exists() {
         return Some(sidecar_path);
@@ -90,10 +95,11 @@ pub fn default_mpv_args(ipc_path: &str, wid: Option<i64>) -> Vec<String> {
         "--no-terminal".into(),
         "--keep-open=yes".into(),
         "--vo=gpu".into(),
+        "--gpu-api=d3d11".into(),
         "--hwdec=auto-safe".into(),
         "--hr-seek=yes".into(),
         "--sub-auto=fuzzy".into(),
-        "--msg-level=all=no".into(),
+        "--msg-level=all=status".into(),
         "--osc=no".into(),
         "--input-default-bindings=no".into(),
         "--input-vo-keyboard=no".into(),
