@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { useSeerrRequests, useSeerrMediaDetail } from "@tentacle/api-client";
-import type { SeerrMediaRequest } from "@tentacle/api-client";
+import { useSeerrRequests, useSeerrMediaDetail } from "@tentacle-tv/api-client";
+import type { SeerrMediaRequest } from "@tentacle-tv/api-client";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 

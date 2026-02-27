@@ -1,6 +1,6 @@
 {
-  "name": "@tentacle/mobile",
-  "version": "0.9.0",
+  "name": "@tentacle-tv/mobile",
+  "version": "0.9.1",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -17,8 +17,8 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@tentacle/shared": "workspace:*",
-    "@tentacle/api-client": "workspace:*",
+    "@tentacle-tv/shared": "workspace:*",
+    "@tentacle-tv/api-client": "workspace:*",
     "@react-native-async-storage/async-storage": "~2.1.0",
     "@tanstack/react-query": "^5.62.0",
     "expo": "~52.0.0",

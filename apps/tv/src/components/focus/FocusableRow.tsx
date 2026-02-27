@@ -71,6 +71,7 @@ export function FocusableRow<T>({
             <Focusable
               onFocus={() => scrollToIndex(index)}
               onPress={() => onItemPress?.(item)}
+              noBorder
             >
               {renderItem(item, index)}
             </Focusable>

@@ -5,8 +5,8 @@ import {
   useUnreadCount,
   useMarkAllRead,
   useMarkRead,
-} from "@tentacle/api-client";
-import type { AppNotification } from "@tentacle/api-client";
+} from "@tentacle-tv/api-client";
+import type { AppNotification } from "@tentacle-tv/api-client";
 import type { TFunction } from "i18next";
 
 interface NotificationBellProps {

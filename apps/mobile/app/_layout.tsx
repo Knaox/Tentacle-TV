@@ -12,8 +12,8 @@ import {
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
-} from "@tentacle/api-client";
-import { initI18n } from "@tentacle/shared";
+} from "@tentacle-tv/api-client";
+import { initI18n } from "@tentacle-tv/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 
 const storage = new RNStorageAdapter();

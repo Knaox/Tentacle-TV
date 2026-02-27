@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { MediaItem } from "@tentacle/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 

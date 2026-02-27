@@ -177,6 +177,79 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  // ── POST /tv-token — Generate a long-lived TV token (relay flow, auth required) ──
+  app.post(
+    "/tv-token",
+    {
+      preHandler: [requireAuth],
+      config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
+    },
+    async (request) => {
+      const user = (request as any).user as JellyfinUser;
+      const deviceId = crypto.randomUUID();
+
+      const token = await signDeviceToken({
+        userId: user.userId,
+        username: user.username,
+        isAdmin: user.isAdmin,
+        deviceId,
+      });
+
+      const prisma = getPrisma();
+      await prisma.pairedDevice.create({
+        data: {
+          name: "TV",
+          jellyfinUserId: user.userId,
+          username: user.username,
+          tokenHash: hashToken(token),
+        },
+      });
+
+      return { token };
+    },
+  );
+
+  // ── GET /my-devices — List current user's paired devices (auth required) ──
+  app.get(
+    "/my-devices",
+    { preHandler: [requireAuth] },
+    async (request) => {
+      const user = (request as any).user as JellyfinUser;
+      const prisma = getPrisma();
+      const devices = await prisma.pairedDevice.findMany({
+        where: { jellyfinUserId: user.userId },
+        orderBy: { createdAt: "desc" },
+      });
+      return devices.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        username: d.username,
+        jellyfinUserId: d.jellyfinUserId,
+        lastSeen: d.lastSeen,
+        createdAt: d.createdAt,
+      }));
+    },
+  );
+
+  // ── DELETE /my-devices/:id — Revoke own paired device (auth required) ──
+  app.delete(
+    "/my-devices/:id",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const user = (request as any).user as JellyfinUser;
+      const { id } = request.params as { id: string };
+      const prisma = getPrisma();
+
+      const device = await prisma.pairedDevice.findUnique({ where: { id } });
+      if (!device || device.jellyfinUserId !== user.userId) {
+        return reply.status(404).send({ message: "Appareil introuvable" });
+      }
+
+      await prisma.pairedDevice.delete({ where: { id } });
+      return { success: true };
+    },
+  );
+
   // ── GET /devices — List paired devices (admin only) ──
   app.get("/devices", { preHandler: [requireAdmin] }, async () => {
     const prisma = getPrisma();

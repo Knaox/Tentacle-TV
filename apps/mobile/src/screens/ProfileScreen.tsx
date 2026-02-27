@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Share } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth, useTentacleConfig } from "@tentacle/api-client";
+import { useTranslation } from "react-i18next";
+import { useAuth, useTentacleConfig, useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
 
 interface InviteKey {
   id: number;
@@ -59,6 +60,9 @@ export function ProfileScreen() {
           <Text style={{ color: "#ef4444", fontSize: 15, fontWeight: "600" }}>Déconnexion</Text>
         </Pressable>
 
+        {/* Paired devices */}
+        <PairedDevicesSection />
+
         {/* Admin section */}
         {isAdmin && <AdminSection />}
       </View>
@@ -96,7 +100,7 @@ function AdminSection() {
 
   const shareInvite = (key: string) => {
     const url = `${serverUrl}/register?invite=${key}`;
-    Share.share({ message: `Rejoins Tentacle: ${url}` });
+    Share.share({ message: `Rejoins Tentacle TV: ${url}` });
   };
 
   return (
@@ -162,6 +166,49 @@ function AdminSection() {
           </View>
         );
       })}
+    </View>
+  );
+}
+
+function PairedDevicesSection() {
+  const { t } = useTranslation("pairing");
+  const { data: devices } = useMyPairedDevices();
+  const revokeMut = useRevokeMyDevice();
+
+  if (!devices || devices.length === 0) return null;
+
+  return (
+    <View style={{ marginBottom: 24 }}>
+      <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 12 }}>
+        {t("pairing:pairedDevices")}
+      </Text>
+      {devices.map((device) => (
+        <View key={device.id} style={{
+          backgroundColor: "#12121a", borderRadius: 12, padding: 14,
+          borderWidth: 1, borderColor: "#1e1e2e", marginBottom: 8,
+          flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{device.name}</Text>
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
+              {t("pairing:lastActive", { date: new Date(device.lastSeen).toLocaleDateString() })}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => revokeMut.mutate(device.id)}
+            disabled={revokeMut.isPending}
+            style={{
+              backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 8,
+              paddingVertical: 6, paddingHorizontal: 12,
+              opacity: revokeMut.isPending ? 0.4 : 1,
+            }}
+          >
+            <Text style={{ color: "#ef4444", fontSize: 12, fontWeight: "600" }}>
+              {t("pairing:revoke")}
+            </Text>
+          </Pressable>
+        </View>
+      ))}
     </View>
   );
 }

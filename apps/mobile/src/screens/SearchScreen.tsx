@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useSearchItems } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useSearchItems } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 
 export function SearchScreen() {

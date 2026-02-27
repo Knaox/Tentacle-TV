@@ -3,9 +3,9 @@ import { View, ScrollView, Text } from "react-native";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems,
-  useTentacleConfig, useJellyfinClient,
-} from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+  useTentacleConfig,
+} from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -16,7 +16,7 @@ import { TVMediaCard } from "../components/TVMediaCard";
 import { FocusableRow } from "../components/focus/FocusableRow";
 import { Focusable } from "../components/focus/Focusable";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
-import { MenuIcon } from "../components/icons/TVIcons";
+import { MenuIcon, SearchIcon } from "../components/icons/TVIcons";
 import { Colors, Spacing, CardConfig, Typography, HeroConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
@@ -27,7 +27,7 @@ const HERO_H = Math.round(SCREEN_H * HeroConfig.heightRatio);
 export function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
-  const { openSidebar } = useSidebar();
+  const { openSidebar, isVisible: sidebarOpen } = useSidebar();
   const featuredQuery = useFeaturedItems();
   const resumeQuery = useResumeItems();
   const nextUpQuery = useNextUp();
@@ -50,6 +50,7 @@ export function HomeScreen({ navigation }: Props) {
   }, [navigation]);
 
   const handleSidebarNav = useCallback((screen: string) => {
+    if (screen === "Home") return; // already on Home
     if (screen === "Search") navigation.navigate("Search");
     else if (screen === "Preferences") navigation.navigate("Preferences");
     else if (screen === "About") navigation.navigate("About");
@@ -57,8 +58,15 @@ export function HomeScreen({ navigation }: Props) {
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
       navigation.replace("PairCode");
+    } else if (screen.startsWith("Library_")) {
+      const libId = screen.replace("Library_", "");
+      const lib = libraries?.find((l) => l.Id === libId);
+      navigation.navigate("Library", {
+        libraryId: libId,
+        libraryName: lib?.Name ?? "",
+      });
     }
-  }, [navigation, storage]);
+  }, [navigation, storage, libraries]);
 
   const handleLogout = useCallback(() => {
     storage.removeItem("tentacle_token");
@@ -76,7 +84,45 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 60, flexGrow: 1 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        overScrollMode="never"
+      >
+        {/* Top bar — inside ScrollView so D-pad can reach them */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            marginBottom: -52,
+            zIndex: 50,
+          }}
+          pointerEvents={sidebarOpen ? "none" : "auto"}
+        >
+          <Focusable onPress={openSidebar}>
+            <View style={{
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: "rgba(15, 15, 24, 0.8)",
+              borderWidth: 1, borderColor: Colors.glassBorder,
+              justifyContent: "center", alignItems: "center",
+            }}>
+              <MenuIcon size={18} color={Colors.accentPurpleLight} />
+            </View>
+          </Focusable>
+          <Focusable onPress={() => navigation.navigate("Search")}>
+            <View style={{
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: "rgba(15, 15, 24, 0.8)",
+              borderWidth: 1, borderColor: Colors.glassBorder,
+              justifyContent: "center", alignItems: "center",
+            }}>
+              <SearchIcon size={18} color={Colors.accentPurpleLight} />
+            </View>
+          </Focusable>
+        </View>
+
         {/* Error state */}
         {allFailed && (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: Spacing.screenPadding }}>
@@ -142,6 +188,7 @@ export function HomeScreen({ navigation }: Props) {
                 itemWidth={CardConfig.landscape.width}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
+                onEdgeLeft={openSidebar}
               />
             )}
 
@@ -154,6 +201,7 @@ export function HomeScreen({ navigation }: Props) {
                 itemWidth={CardConfig.landscape.width}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
+                onEdgeLeft={openSidebar}
               />
             )}
 
@@ -169,22 +217,6 @@ export function HomeScreen({ navigation }: Props) {
           </>
         )}
       </ScrollView>
-
-      {/* Menu button — top left */}
-      <View style={{
-        position: "absolute", top: 16, left: 16, zIndex: 50,
-      }}>
-        <Focusable onPress={openSidebar} hasTVPreferredFocus>
-          <View style={{
-            width: 40, height: 40, borderRadius: 20,
-            backgroundColor: Colors.glassBgHeavy,
-            borderWidth: 1, borderColor: Colors.glassBorder,
-            justifyContent: "center", alignItems: "center",
-          }}>
-            <MenuIcon size={18} color={Colors.accentPurpleLight} />
-          </View>
-        </Focusable>
-      </View>
 
       {/* Sidebar overlay */}
       <Sidebar onNavigate={handleSidebarNav} currentRoute="Home" />

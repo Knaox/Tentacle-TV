@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle/api-client";
-import { Shimmer } from "@tentacle/ui";
-import type { MediaItem } from "@tentacle/shared";
+import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import { Shimmer } from "@tentacle-tv/ui";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 export function EpisodeList({ seriesId }: { seriesId: string }) {
   const navigate = useNavigate();

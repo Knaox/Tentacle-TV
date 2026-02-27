@@ -1,7 +1,7 @@
 import { View, Text, Image } from "react-native";
-import { useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
-import { ticksToSeconds } from "@tentacle/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { ticksToSeconds } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { Colors, Typography, Radius, CardConfig } from "../theme/colors";
 import { CheckIcon } from "./icons/TVIcons";

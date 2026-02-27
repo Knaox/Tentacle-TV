@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
-import type { MediaItem } from "@tentacle/shared";
-import { getNextEpisode } from "@tentacle/shared";
-import type { NextEpisodeResult } from "@tentacle/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { getNextEpisode } from "@tentacle-tv/shared";
+import type { NextEpisodeResult } from "@tentacle-tv/shared";
 
 export type { NextEpisodeResult };
 

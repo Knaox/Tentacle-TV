@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { Image } from "expo-image";
-import { useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface Props {
   item: MediaItem;

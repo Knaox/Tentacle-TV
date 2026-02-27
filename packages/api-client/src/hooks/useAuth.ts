@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AuthResponse, LoginRequest } from "@tentacle/shared";
+import type { AuthResponse, LoginRequest } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useTentacleConfig } from "../context";
 

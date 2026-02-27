@@ -1,116 +1,171 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useGeneratePairingCode, usePairingStatus } from "@tentacle/api-client";
+import { useGenerateTvToken, useRelayConfirm } from "@tentacle-tv/api-client";
 
 export function PairDevice() {
   const { t } = useTranslation("pairing");
-  const generateMut = useGeneratePairingCode();
-  const [code, setCode] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
-  const [remaining, setRemaining] = useState(300);
+  const tvTokenMut = useGenerateTvToken();
+  const relayConfirmMut = useRelayConfirm();
 
-  const expired = remaining <= 0;
+  const [chars, setChars] = useState(["", "", "", ""]);
+  const [status, setStatus] = useState<"idle" | "pairing" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Poll status to detect when TV claims the code
-  const { data: statusData } = usePairingStatus(code && !expired ? code : null);
-  const claimed = statusData?.status === "confirmed";
+  const code = chars.join("");
+  const canSubmit = code.length === 4 && status === "idle";
 
-  const generate = useCallback(() => {
-    setCode(null);
-    setRemaining(300);
-    generateMut.mutate(undefined, {
-      onSuccess: (data) => {
-        setCode(data.code);
-        setExpiresAt(new Date(data.expiresAt));
-      },
+  const handleChange = useCallback((index: number, value: string) => {
+    const char = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(-1);
+    setChars((prev) => {
+      const next = [...prev];
+      next[index] = char;
+      return next;
     });
-  }, [generateMut]);
-
-  // Generate on mount
-  useEffect(() => {
-    generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (char && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
   }, []);
 
-  // Countdown timer
-  useEffect(() => {
-    if (!expiresAt) return;
-    const interval = setInterval(() => {
-      const diff = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
-      setRemaining(diff);
-      if (diff <= 0) clearInterval(interval);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt]);
+  const handleKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !chars[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  }, [chars]);
 
-  const minutes = Math.floor(remaining / 60);
-  const seconds = remaining % 60;
-  const progress = expiresAt ? Math.max(0, remaining / 300) : 1;
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 4);
+    if (pasted.length === 4) {
+      setChars(pasted.split(""));
+      inputRefs.current[3]?.focus();
+    }
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
+    setStatus("pairing");
+    setErrorMsg("");
+
+    try {
+      const { token } = await tvTokenMut.mutateAsync();
+
+      const serverUrl = window.location.origin;
+      const userRaw = localStorage.getItem("tentacle_user");
+      const user = userRaw ? JSON.parse(userRaw) as { Id: string; Name: string } : null;
+      if (!user?.Id || !user?.Name) throw new Error("User info not found");
+
+      await relayConfirmMut.mutateAsync({
+        code,
+        serverUrl,
+        token,
+        user: { id: user.Id, name: user.Name },
+      });
+
+      setStatus("success");
+    } catch (err) {
+      setStatus("error");
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("404") || msg.includes("invalide") || msg.includes("expire")) {
+        setErrorMsg(t("pairing:codeInvalid"));
+      } else if (msg.includes("409") || msg.includes("utilise")) {
+        setErrorMsg(t("pairing:codeInvalid"));
+      } else {
+        setErrorMsg(t("pairing:relayError"));
+      }
+    }
+  }, [canSubmit, code, tvTokenMut, relayConfirmMut, t]);
+
+  const handleReset = useCallback(() => {
+    setChars(["", "", "", ""]);
+    setStatus("idle");
+    setErrorMsg("");
+    inputRefs.current[0]?.focus();
+  }, []);
 
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-lg">
-        <h1 className="mb-2 text-2xl font-bold text-white">{t("pairing:pairDevice")}</h1>
+        <h1 className="mb-2 text-2xl font-bold text-white">
+          {t("pairing:pairYourTV")}
+        </h1>
         <p className="mb-8 text-sm text-white/50">
-          {t("pairing:enterCode")}
+          {t("pairing:enterTVCode")}
         </p>
 
         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-8">
-          {/* Claimed / success state */}
-          {claimed ? (
+          {status === "success" ? (
             <div className="flex flex-col items-center gap-3 py-4">
-              <div className="text-5xl text-green-400">✓</div>
-              <p className="text-lg font-semibold text-green-400">{t("pairing:pairingSuccess")}</p>
-            </div>
-          ) : !code ? (
-            <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+              <div className="text-5xl text-green-400">&#x2713;</div>
+              <p className="text-lg font-semibold text-green-400">
+                {t("pairing:tvPairedSuccess")}
+              </p>
             </div>
           ) : (
             <>
-              {/* Code display */}
+              {/* Code input */}
               <div className="flex justify-center gap-3">
-                {code.split("").map((char, i) => (
-                  <div
+                {chars.map((char, i) => (
+                  <input
                     key={i}
-                    className={`flex h-16 w-14 items-center justify-center rounded-xl text-2xl font-bold font-mono transition-all ${
-                      expired
-                        ? "bg-white/[0.03] ring-1 ring-white/10 text-white/25"
-                        : "bg-purple-500/10 ring-2 ring-purple-500 text-white"
-                    }`}
-                  >
-                    {char}
-                  </div>
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    type="text"
+                    maxLength={1}
+                    value={char}
+                    onChange={(e) => handleChange(i, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(i, e)}
+                    onPaste={i === 0 ? handlePaste : undefined}
+                    autoFocus={i === 0}
+                    disabled={status === "pairing"}
+                    className={`h-16 w-14 rounded-xl text-center text-2xl font-bold font-mono outline-none transition-all ${
+                      status === "error"
+                        ? "bg-red-500/10 ring-2 ring-red-500 text-white"
+                        : char
+                        ? "bg-purple-500/10 ring-2 ring-purple-500 text-white"
+                        : "bg-white/[0.03] ring-1 ring-white/10 text-white"
+                    } focus:ring-2 focus:ring-purple-400 disabled:opacity-50`}
+                  />
                 ))}
               </div>
 
-              {/* Timer */}
-              <p className={`mt-4 text-center text-sm ${expired ? "text-red-400" : "text-white/40"}`}>
-                {expired
-                  ? t("pairing:codeExpired")
-                  : t("pairing:expiresIn", { time: `${minutes}:${seconds.toString().padStart(2, "0")}` })}
-              </p>
+              {/* Error message */}
+              {status === "error" && errorMsg && (
+                <p className="mt-4 text-center text-sm text-red-400">
+                  {errorMsg}
+                </p>
+              )}
 
-              {/* Progress bar */}
-              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/[0.08]">
-                <div
-                  className="h-full rounded-full bg-purple-500 transition-all duration-1000"
-                  style={{ width: `${progress * 100}%` }}
-                />
+              {/* Submit / retry button */}
+              <div className="mt-6 flex justify-center">
+                {status === "error" ? (
+                  <button
+                    onClick={handleReset}
+                    className="rounded-lg bg-purple-600 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500"
+                  >
+                    {t("common:retry")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
+                    className="rounded-lg bg-purple-600 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {status === "pairing" ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        {t("pairing:pairing")}
+                      </span>
+                    ) : (
+                      t("pairing:pairTV")
+                    )}
+                  </button>
+                )}
               </div>
             </>
-          )}
-
-          {/* Generate new code */}
-          {expired && (
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={generate}
-                className="rounded-lg bg-purple-600 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500"
-              >
-                {t("pairing:generateNewCode")}
-              </button>
-            </div>
           )}
         </div>
 

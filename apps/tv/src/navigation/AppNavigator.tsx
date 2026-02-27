@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useTentacleConfig } from "@tentacle/api-client";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
 import type { RootStackParamList } from "./types";
 import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
@@ -9,6 +9,7 @@ import { SearchScreen } from "../screens/SearchScreen";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { PreferencesScreen } from "../screens/PreferencesScreen";
 import { AboutScreen } from "../screens/AboutScreen";
+import { LibraryScreen } from "../screens/LibraryScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -31,6 +32,7 @@ export function AppNavigator() {
       <Stack.Screen name="PairCode" component={PairCodeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Library" component={LibraryScreen} />
       <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
       <Stack.Screen name="Player" component={PlayerScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />

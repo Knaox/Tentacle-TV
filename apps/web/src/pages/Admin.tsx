@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, usePairedDevices, useRevokePairedDevice } from "@tentacle/api-client";
-import type { SupportTicket } from "@tentacle/api-client";
+import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, usePairedDevices, useRevokePairedDevice } from "@tentacle-tv/api-client";
+import type { SupportTicket } from "@tentacle-tv/api-client";
 import { backendUrl } from "../main";
 
 const BACKEND = backendUrl;

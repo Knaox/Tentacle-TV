@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import Hls from "hls.js";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
-import type { SegmentTimestamps } from "@tentacle/shared";
+import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 export interface SubtitleTrack { index: number; label: string; url: string }
 export interface AudioTrack { index: number; label: string }

@@ -4,9 +4,9 @@ import Video, { type OnProgressData, type OnLoadData, SelectedTrackType } from "
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
-} from "@tentacle/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle/shared";
-import type { MediaStream as JfStream } from "@tentacle/shared";
+} from "@tentacle-tv/api-client";
+import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVPlayerOverlay } from "../components/TVPlayerOverlay";

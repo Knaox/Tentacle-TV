@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useSeerrSearch, useSeerrDiscover, useRequestMedia } from "@tentacle/api-client";
-import type { SeerrSearchResult } from "@tentacle/api-client";
+import { useSeerrSearch, useSeerrDiscover, useRequestMedia } from "@tentacle-tv/api-client";
+import type { SeerrSearchResult } from "@tentacle-tv/api-client";
 import { SeerrCard } from "./SeerrCard";
 
 /**

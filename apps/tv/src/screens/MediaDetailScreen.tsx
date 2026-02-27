@@ -8,9 +8,9 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
-import { formatDuration, ticksToSeconds } from "@tentacle/shared";
+import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { formatDuration, ticksToSeconds } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";

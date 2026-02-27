@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Pressable, Animated, Dimensions, ScrollView, Modal } from "react-native";
 import { useTranslation } from "react-i18next";
-import type { SegmentTimestamps } from "@tentacle/shared";
+import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 

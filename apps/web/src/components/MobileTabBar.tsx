@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAppConfig } from "@tentacle/api-client";
+import { useAppConfig } from "@tentacle-tv/api-client";
 
 interface Tab {
   path: string;

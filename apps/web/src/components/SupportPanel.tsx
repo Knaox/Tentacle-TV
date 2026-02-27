@@ -9,9 +9,9 @@ import {
   useSeasons,
   useEpisodes,
   useJellyfinClient,
-} from "@tentacle/api-client";
-import type { SupportTicket } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
+} from "@tentacle-tv/api-client";
+import type { SupportTicket } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 export function SupportPanel() {
   const [view, setView] = useState<"list" | "new" | "detail">("list");

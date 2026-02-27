@@ -15,8 +15,8 @@ import {
   setPairingBackendUrl,
   setPreferencesToken,
   fetchInterfaceLanguage,
-} from "@tentacle/api-client";
-import { initI18n, i18n } from "@tentacle/shared";
+} from "@tentacle-tv/api-client";
+import { initI18n, i18n } from "@tentacle-tv/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { SidebarProvider } from "./context/SidebarContext";

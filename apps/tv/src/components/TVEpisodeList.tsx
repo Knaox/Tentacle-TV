@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { View, Text, Image, ScrollView } from "react-native";
-import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle/api-client";
-import type { MediaItem } from "@tentacle/shared";
-import { formatDuration } from "@tentacle/shared";
+import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { formatDuration } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { CheckIcon } from "./icons/TVIcons";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";

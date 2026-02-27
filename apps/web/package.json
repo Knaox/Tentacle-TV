@@ -1,6 +1,6 @@
 {
-  "name": "@tentacle/web",
-  "version": "0.9.0",
+  "name": "@tentacle-tv/web",
+  "version": "0.9.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
-    "@tentacle/api-client": "workspace:*",
-    "@tentacle/shared": "workspace:*",
-    "@tentacle/ui": "workspace:*",
+    "@tentacle-tv/api-client": "workspace:*",
+    "@tentacle-tv/shared": "workspace:*",
+    "@tentacle-tv/ui": "workspace:*",
     "framer-motion": "^11.15.0",
     "i18next": "^25.8.13",
     "react-i18next": "^16.5.4",

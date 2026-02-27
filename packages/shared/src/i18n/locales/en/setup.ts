@@ -1,5 +1,5 @@
 export default {
-  configTitle: "Tentacle Configuration",
+  configTitle: "Tentacle TV Configuration",
   stepDatabase: "Database",
   stepJellyfin: "Jellyfin",
   stepAdmin: "Administrator",
@@ -15,7 +15,7 @@ export default {
   dbTesting: "Testing...",
   dbTestConnection: "Test connection",
   jellyfinTitle: "Jellyfin Server",
-  jellyfinSubtitle: "Connect Tentacle to your media server.",
+  jellyfinSubtitle: "Connect Tentacle TV to your media server.",
   jellyfinUrl: "Server URL",
   jellyfinUrlPlaceholder: "http://192.168.1.100:8096",
   jellyfinApiKey: "Admin API key",

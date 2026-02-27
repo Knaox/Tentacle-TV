@@ -45,7 +45,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
 
     return {
       version: APP_VERSION,
-      brandName: "Tentacle",
+      brandName: "Tentacle TV",
       features: {
         seerr: seerrEnabled,
         requests: seerrEnabled,

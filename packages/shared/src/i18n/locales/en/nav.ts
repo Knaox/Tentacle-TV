@@ -4,7 +4,7 @@ export default {
   pendingRequests: "Pending requests",
   downloads: "Downloads",
   help: "Help",
-  pairDevice: "Pair device",
+  pairDevice: "Pair TV",
   preferences: "Preferences",
   about: "About",
   admin: "Administration",

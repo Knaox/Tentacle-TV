@@ -1,5 +1,7 @@
-export const APP_NAME = "Tentacle";
-export const APP_VERSION = "0.9.0";
+export const APP_NAME = "Tentacle TV";
+export const APP_VERSION = "0.9.1";
+
+export const PAIRING_RELAY_URL = "https://pair.tentacletv.app";
 
 /** 1 Jellyfin tick = 100 nanoseconds */
 export const TICKS_PER_SECOND = 10_000_000;

@@ -6,8 +6,8 @@ import {
   useNextUp,
   useWatchedItems,
   useFeaturedItems,
-} from "@tentacle/api-client";
-import { Shimmer } from "@tentacle/ui";
+} from "@tentacle-tv/api-client";
+import { Shimmer } from "@tentacle-tv/ui";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
 

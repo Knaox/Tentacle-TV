@@ -4,7 +4,7 @@ export default {
   pendingRequests: "Demandes en cours",
   downloads: "Téléchargements",
   help: "Aide",
-  pairDevice: "Jumeler",
+  pairDevice: "Jumeler la TV",
   preferences: "Préférences",
   about: "À propos",
   admin: "Administration",

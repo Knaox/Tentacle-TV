@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useJellyfinClient } from "./useJellyfinClient";
-import type { MediaItem, ChapterInfo, SegmentTimestamps } from "@tentacle/shared";
-import { TICKS_PER_SECOND } from "@tentacle/shared";
+import type { MediaItem, ChapterInfo, SegmentTimestamps } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 
 // ---------- Response types ----------
 

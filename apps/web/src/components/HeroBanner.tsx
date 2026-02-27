@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useJellyfinClient } from "@tentacle/api-client";
-import { formatDuration } from "@tentacle/shared";
-import type { MediaItem } from "@tentacle/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { formatDuration } from "@tentacle-tv/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface HeroBannerProps {
   items: MediaItem[];

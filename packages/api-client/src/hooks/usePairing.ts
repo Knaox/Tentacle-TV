@@ -112,3 +112,38 @@ export function useRevokePairedDevice() {
     },
   });
 }
+
+// ---------- TV Token (relay flow) ----------
+
+export interface TvTokenResponse {
+  token: string;
+}
+
+/** Generate a long-lived TV token (web/mobile, requires auth) */
+export function useGenerateTvToken() {
+  return useMutation({
+    mutationFn: () =>
+      pairFetch<TvTokenResponse>("/tv-token", { method: "POST" }),
+  });
+}
+
+/** List current user's paired devices */
+export function useMyPairedDevices() {
+  return useQuery({
+    queryKey: ["my-paired-devices"],
+    queryFn: () => pairFetch<PairedDevice[]>("/my-devices"),
+    staleTime: 30_000,
+  });
+}
+
+/** Revoke own paired device (non-admin) */
+export function useRevokeMyDevice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      pairFetch<{ success: boolean }>(`/my-devices/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-paired-devices"] });
+    },
+  });
+}

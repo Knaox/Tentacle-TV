@@ -1,6 +1,6 @@
 {
-  "name": "@tentacle/backend",
-  "version": "0.9.0",
+  "name": "@tentacle-tv/backend",
+  "version": "0.9.1",
   "private": true,
   "type": "commonjs",
   "scripts": {

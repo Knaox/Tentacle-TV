@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
-import { useSeerrDiscover, useSeerrRequest } from "@tentacle/api-client";
+import { useSeerrDiscover, useSeerrRequest } from "@tentacle-tv/api-client";
 import { MobileSeerrCard } from "../components/MobileSeerrCard";
 
 type Category = "movies" | "tv" | "anime";

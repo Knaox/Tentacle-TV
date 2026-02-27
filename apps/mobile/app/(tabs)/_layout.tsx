@@ -54,6 +54,13 @@ export default function TabsLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="pair-tv"
+        options={{
+          title: "TV",
+          tabBarIcon: ({ focused }) => <TabIcon label="📺" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",

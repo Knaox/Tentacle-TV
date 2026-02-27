@@ -4,7 +4,7 @@ import { AppLayout } from "./components/AppLayout";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle/api-client";
+import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { isTauriApp } from "./main";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -105,7 +105,7 @@ export function App() {
           <div className="mb-4 text-5xl">&#x26A0;</div>
           <h1 className="mb-2 text-xl font-bold text-white">Serveur indisponible</h1>
           <p className="mb-6 text-sm text-white/50">
-            Le backend Tentacle ne repond pas. Verifiez que le service est demarre et consultez les logs du serveur.
+            Le backend Tentacle TV ne repond pas. Verifiez que le service est demarre et consultez les logs du serveur.
           </p>
           <button onClick={() => window.location.reload()}
             className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-700">

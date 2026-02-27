@@ -15,9 +15,9 @@ import {
   setNotificationsBackendUrl,
   setConfigBackendUrl,
   setPairingBackendUrl,
-} from "@tentacle/api-client";
-import { initI18n, detectLanguage, i18n } from "@tentacle/shared";
-import { fetchInterfaceLanguage } from "@tentacle/api-client";
+} from "@tentacle-tv/api-client";
+import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
+import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import { App } from "./App";
 import "./index.css";
 
