@@ -34,6 +34,7 @@ export function PlayerScreen({ itemId }: Props) {
   const [startTicks, setStartTicks] = useState(0);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
+  const resumeApplied = useRef(false);
 
   // Media source info — mediaSourceId is critical for episodes
   const mediaSource = item?.MediaSources?.[0];
@@ -138,23 +139,38 @@ export function PlayerScreen({ itemId }: Props) {
   // Intro skipper
   const skipSegments = useIntroSkipper(itemId, item);
 
+  // For transcoded/HLS streams, include resume position in the URL
+  useEffect(() => {
+    if (resumeApplied.current || isDirectPlay) return;
+    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+    if (resumeTicks && resumeTicks > 0 && startTicks === 0) {
+      resumeApplied.current = true;
+      setStartTicks(resumeTicks);
+    }
+  }, [item, isDirectPlay, startTicks]);
+
   useEffect(() => () => { reportStop(); }, [reportStop]);
 
   const handleLoad = useCallback((_data: OnLoadData) => {
     console.debug(DBG, "loaded", { jellyfinDuration });
-    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-    if (resumeTicks) {
-      videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
+    // Only seek for direct play — transcoded/HLS uses StartTimeTicks in URL
+    if (isDirectPlay) {
+      const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+      if (resumeTicks) videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
     }
     reportStart();
-  }, [item, reportStart, jellyfinDuration]);
+  }, [item, reportStart, jellyfinDuration, isDirectPlay]);
 
   // Position comes ONLY from player events, never manual setState on seek
   const handleProgress = useCallback((data: OnProgressData) => {
-    setCurrentTime(data.currentTime);
-    positionRef.current = data.currentTime;
-    updatePosition(data.currentTime, paused);
-  }, [paused, updatePosition]);
+    // ExoPlayer may report negative time for HLS streams (live-mode offset)
+    const raw = Math.max(0, data.currentTime);
+    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+    const t = raw + offset;
+    setCurrentTime(t);
+    positionRef.current = t;
+    updatePosition(t, paused);
+  }, [paused, updatePosition, isDirectPlay, startTicks]);
 
   const handleEnd = useCallback(() => {
     reportStop();
@@ -165,11 +181,13 @@ export function PlayerScreen({ itemId }: Props) {
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    console.debug(DBG, "seek", { clamped });
-    videoRef.current?.seek(clamped);
+    // For transcoded streams, player position is relative to HLS start
+    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+    const playerPos = clamped - offset;
+    console.debug(DBG, "seek", { clamped, playerPos });
+    videoRef.current?.seek(Math.max(0, playerPos));
     reportSeek(clamped, paused);
-    // Do NOT manually setCurrentTime — let onProgress update from the player
-  }, [jellyfinDuration, paused, reportSeek]);
+  }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
 
   // Audio track change — saves position, triggers URL rebuild for non-default audio
   const handleAudioChange = useCallback((newIndex: number) => {

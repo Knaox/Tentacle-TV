@@ -37,7 +37,6 @@ interface VideoPlayerProps {
   onPreviousEpisode?: () => void;
   introSegment?: SegmentTimestamps | null;
   creditsSegment?: SegmentTimestamps | null;
-  readyToPlay?: boolean;
 }
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -66,7 +65,6 @@ export function VideoPlayer({
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment,
-  readyToPlay = true,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,11 +109,7 @@ export function VideoPlayer({
   const waitingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const [policyMuted, setPolicyMuted] = useState(false);
-  const pendingPlayRef = useRef(false);
   const seekTargetRef = useRef<number | null>(null);
-  const readyToPlayRef = useRef(readyToPlay);
-  readyToPlayRef.current = readyToPlay;
-
   const currentTime = effectiveOffsetRef.current + rawTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
 
@@ -214,17 +208,17 @@ export function VideoPlayer({
       }
       sourceChangingRef.current = false;
       setLoading(false);
-      if (isSourceChange || readyToPlayRef.current) {
-        attemptPlay(v, () => setPolicyMuted(true), () => setShowPlayButton(true));
-      } else {
-        pendingPlayRef.current = true;
-      }
+      // Always start playback immediately — the transition overlay covers the video,
+      // so starting early lets audio begin ~1.4s sooner (during the animation).
+      attemptPlay(v, () => setPolicyMuted(true), () => setShowPlayButton(true));
     };
 
     if (isHlsUrl && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
+        maxBufferLength: 15,          // default 30 — less buffering before playback starts
+        startFragPrefetch: true,      // prefetch next fragment during current load
         fragLoadPolicy: {
           default: {
             maxTimeToFirstByteMs: 20_000,
@@ -265,14 +259,6 @@ export function VideoPlayer({
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { hlsRef.current?.destroy(); }, []);
-
-  useEffect(() => {
-    if (readyToPlay && pendingPlayRef.current) {
-      pendingPlayRef.current = false;
-      const v = videoRef.current;
-      if (v) attemptPlay(v, () => setPolicyMuted(true), () => setShowPlayButton(true));
-    }
-  }, [readyToPlay]);
 
   // Subtitle track visibility — re-apply after source change and when tracks load
   useEffect(() => {
