@@ -1,7 +1,7 @@
 {
   "name": "tentacle",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Premium multi-platform media client",
   "scripts": {
     "dev:web": "pnpm --filter @tentacle/web dev",
@@ -36,6 +36,9 @@
       "bcrypt",
       "esbuild",
       "prisma"
-    ]
+    ],
+    "overrides": {
+      "@react-native/community-cli-plugin>@react-native-community/cli-server-api": "14.1.2"
+    }
   }
 }
