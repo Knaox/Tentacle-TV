@@ -178,4 +178,173 @@ export function TentacleIcon({ size = 32, color = "#8b5cf6" }: IconProps) {
   );
 }
 
+/** TV screen icon */
+export function TVIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{
+        width: s * 0.82, height: s * 0.56,
+        borderWidth: s * 0.08, borderColor: color,
+        borderRadius: 4,
+      }} />
+      <View style={{
+        width: s * 0.36, height: s * 0.08, backgroundColor: color,
+        borderRadius: 2, marginTop: 2,
+      }} />
+    </View>
+  );
+}
+
+/** Music note icon */
+export function MusicIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{
+        width: s * 0.08, height: s * 0.6, backgroundColor: color,
+        position: "absolute", right: s * 0.28, top: s * 0.1,
+      }} />
+      <View style={{
+        width: s * 0.24, height: s * 0.08, backgroundColor: color,
+        position: "absolute", right: s * 0.12, top: s * 0.1,
+        transform: [{ rotate: "-20deg" }],
+      }} />
+      <View style={{
+        width: s * 0.2, height: s * 0.2, borderRadius: s * 0.1,
+        backgroundColor: color,
+        position: "absolute", left: s * 0.22, bottom: s * 0.14,
+      }} />
+    </View>
+  );
+}
+
+/** Book icon */
+export function BookIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{
+        width: s * 0.6, height: s * 0.72,
+        borderWidth: s * 0.06, borderColor: color,
+        borderRadius: 3, borderTopRightRadius: 0, borderBottomRightRadius: 0,
+      }} />
+      <View style={{
+        position: "absolute",
+        width: s * 0.06, height: s * 0.72,
+        backgroundColor: color,
+        right: s * 0.2,
+      }} />
+    </View>
+  );
+}
+
+/** Play icon (triangle) */
+export function PlayIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{
+        width: 0, height: 0,
+        borderTopWidth: s * 0.3, borderBottomWidth: s * 0.3, borderLeftWidth: s * 0.5,
+        borderTopColor: "transparent", borderBottomColor: "transparent",
+        borderLeftColor: color,
+        marginLeft: s * 0.08,
+      }} />
+    </View>
+  );
+}
+
+/** Pause icon (two bars) */
+export function PauseIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center", flexDirection: "row", gap: s * 0.14 }}>
+      <View style={{ width: s * 0.18, height: s * 0.56, backgroundColor: color, borderRadius: 2 }} />
+      <View style={{ width: s * 0.18, height: s * 0.56, backgroundColor: color, borderRadius: 2 }} />
+    </View>
+  );
+}
+
+/** Back arrow icon */
+export function BackIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{
+        width: 0, height: 0,
+        borderTopWidth: s * 0.24, borderBottomWidth: s * 0.24, borderRightWidth: s * 0.32,
+        borderTopColor: "transparent", borderBottomColor: "transparent",
+        borderRightColor: color,
+        marginRight: s * 0.1,
+      }} />
+      <View style={{
+        width: s * 0.36, height: s * 0.08, backgroundColor: color,
+        position: "absolute", right: s * 0.18,
+        borderRadius: 1,
+      }} />
+    </View>
+  );
+}
+
+/** Skip forward icon (double arrow right) */
+export function SkipForwardIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center", flexDirection: "row" }}>
+      <View style={{
+        width: 0, height: 0,
+        borderTopWidth: s * 0.2, borderBottomWidth: s * 0.2, borderLeftWidth: s * 0.24,
+        borderTopColor: "transparent", borderBottomColor: "transparent",
+        borderLeftColor: color,
+      }} />
+      <View style={{
+        width: 0, height: 0,
+        borderTopWidth: s * 0.2, borderBottomWidth: s * 0.2, borderLeftWidth: s * 0.24,
+        borderTopColor: "transparent", borderBottomColor: "transparent",
+        borderLeftColor: color,
+        marginLeft: -s * 0.04,
+      }} />
+    </View>
+  );
+}
+
+/** Skip backward icon (double arrow left) */
+export function SkipBackIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center", flexDirection: "row" }}>
+      <View style={{
+        width: 0, height: 0,
+        borderTopWidth: s * 0.2, borderBottomWidth: s * 0.2, borderRightWidth: s * 0.24,
+        borderTopColor: "transparent", borderBottomColor: "transparent",
+        borderRightColor: color,
+      }} />
+      <View style={{
+        width: 0, height: 0,
+        borderTopWidth: s * 0.2, borderBottomWidth: s * 0.2, borderRightWidth: s * 0.24,
+        borderTopColor: "transparent", borderBottomColor: "transparent",
+        borderRightColor: color,
+        marginLeft: -s * 0.04,
+      }} />
+    </View>
+  );
+}
+
+/** Checkmark icon */
+export function CheckIcon({ size = S, color = C }: IconProps) {
+  const s = size;
+  return (
+    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
+      <View style={{
+        width: s * 0.28, height: s * 0.5,
+        borderBottomWidth: s * 0.1, borderRightWidth: s * 0.1,
+        borderColor: color,
+        transform: [{ rotate: "40deg" }],
+        marginTop: -s * 0.08,
+      }} />
+    </View>
+  );
+}
+
 export const LibraryIcon = MovieIcon;

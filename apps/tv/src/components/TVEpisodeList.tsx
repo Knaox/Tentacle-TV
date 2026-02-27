@@ -2,7 +2,10 @@ import { useState } from "react";
 import { View, Text, Image, ScrollView } from "react-native";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { formatDuration } from "@tentacle/shared";
 import { Focusable } from "./focus/Focusable";
+import { CheckIcon } from "./icons/TVIcons";
+import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 interface TVEpisodeListProps {
   seriesId: string;
@@ -17,46 +20,112 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
   const { data: episodes } = useEpisodes(seriesId, activeSeasonId);
 
   return (
-    <View style={{ marginTop: 24 }}>
-      {/* Season tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 48, gap: 8 }}>
+    <View>
+      {/* Season pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 10 }}
+      >
         {(seasons ?? []).map((season) => (
           <Focusable key={season.Id} onPress={() => setSelectedSeason(season.Id)}>
             <View style={{
-              paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8,
-              backgroundColor: season.Id === activeSeasonId ? "#8b5cf6" : "rgba(255,255,255,0.08)",
+              paddingHorizontal: 24, paddingVertical: 12, borderRadius: Radius.pill,
+              backgroundColor: season.Id === activeSeasonId
+                ? Colors.accentPurple
+                : "rgba(255,255,255,0.06)",
+              borderWidth: 1,
+              borderColor: season.Id === activeSeasonId
+                ? Colors.accentPurple
+                : "rgba(255,255,255,0.08)",
             }}>
-              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{season.Name}</Text>
+              <Text style={{
+                color: Colors.textPrimary, fontSize: 15,
+                fontWeight: season.Id === activeSeasonId ? "700" : "500",
+              }}>
+                {season.Name}
+              </Text>
             </View>
           </Focusable>
         ))}
       </ScrollView>
 
-      {/* Episode list */}
-      <ScrollView style={{ marginTop: 16, maxHeight: 400 }} contentContainerStyle={{ paddingHorizontal: 48 }}>
+      {/* Episodes */}
+      <ScrollView
+        style={{ marginTop: 24, maxHeight: 500 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 8 }}
+      >
         {(episodes ?? []).map((ep) => {
-          const thumb = client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 80 });
+          const thumb = client.getImageUrl(ep.Id, "Primary", { width: 400, quality: 80 });
           const progress = ep.UserData?.PlayedPercentage ?? 0;
+          const isWatched = ep.UserData?.Played === true;
+          const runtime = ep.RunTimeTicks ? formatDuration(ep.RunTimeTicks) : null;
+
           return (
             <Focusable key={ep.Id} onPress={() => onPlay(ep)}>
               <View style={{
-                flexDirection: "row", alignItems: "center", gap: 16,
-                paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1e1e2e",
+                flexDirection: "row", alignItems: "center", gap: 20,
+                paddingVertical: 14, paddingHorizontal: 16,
+                borderRadius: Radius.small,
+                backgroundColor: "rgba(255,255,255,0.02)",
               }}>
-                <View style={{ width: 160, height: 90, borderRadius: 6, overflow: "hidden", backgroundColor: "#1e1e2e" }}>
-                  <Image source={{ uri: thumb }} style={{ width: 160, height: 90 }} resizeMode="cover" />
-                  {progress > 0 && (
-                    <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "#1e1e2e" }}>
-                      <View style={{ height: 3, width: `${progress}%`, backgroundColor: "#8b5cf6" }} />
+                {/* Thumbnail */}
+                <View style={{
+                  width: 200, height: 112,
+                  borderRadius: Radius.small, overflow: "hidden",
+                  backgroundColor: Colors.bgElevated,
+                }}>
+                  <Image
+                    source={{ uri: thumb }}
+                    style={{ width: 200, height: 112 }}
+                    resizeMode="cover"
+                  />
+                  {progress > 0 && !isWatched && (
+                    <View style={{
+                      position: "absolute", bottom: 0, left: 0, right: 0,
+                      height: CardConfig.progressBarHeight, backgroundColor: "rgba(0,0,0,0.5)",
+                    }}>
+                      <View style={{
+                        height: CardConfig.progressBarHeight,
+                        width: `${Math.min(progress, 100)}%`,
+                        backgroundColor: Colors.progressOrange, borderRadius: 2,
+                      }} />
+                    </View>
+                  )}
+                  {isWatched && (
+                    <View style={{
+                      position: "absolute", top: 6, right: 6,
+                      width: 22, height: 22, borderRadius: 11,
+                      backgroundColor: Colors.success,
+                      justifyContent: "center", alignItems: "center",
+                    }}>
+                      <CheckIcon size={12} color={Colors.textPrimary} />
                     </View>
                   )}
                 </View>
+
+                {/* Info */}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }} numberOfLines={1}>
-                    {ep.IndexNumber != null ? `${ep.IndexNumber}. ` : ""}{ep.Name}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    {ep.IndexNumber != null && (
+                      <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700" }}>
+                        E{String(ep.IndexNumber).padStart(2, "0")}
+                      </Text>
+                    )}
+                    <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 16, fontWeight: "600", flex: 1 }}>
+                      {ep.Name}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
+                    {runtime && (
+                      <Text style={{ color: Colors.textTertiary, ...Typography.caption }}>{runtime}</Text>
+                    )}
+                  </View>
                   {ep.Overview && (
-                    <Text numberOfLines={2} style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 4, lineHeight: 18 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{ color: Colors.textMuted, ...Typography.caption, marginTop: 6, lineHeight: 18 }}
+                    >
                       {ep.Overview}
                     </Text>
                   )}

@@ -1,15 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 let _backendBase = "/api/preferences";
+let _tokenOverride: string | null = null;
 
 export function setPreferencesBackendUrl(url: string) {
   _backendBase = `${url.replace(/\/$/, "")}/api/preferences`;
 }
 
+/** Set auth token for non-web platforms (React Native) where localStorage is unavailable. */
+export function setPreferencesToken(token: string | null) {
+  _tokenOverride = token;
+}
+
 function getAuthHeader(): Record<string, string> {
-  const token = typeof localStorage !== "undefined"
-    ? localStorage.getItem("tentacle_token")
-    : null;
+  const token = _tokenOverride
+    ?? (typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

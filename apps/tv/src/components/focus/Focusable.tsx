@@ -1,5 +1,12 @@
-import { useRef, useState, useCallback } from "react";
-import { Pressable, Animated, type ViewStyle, type GestureResponderEvent } from "react-native";
+import { useCallback } from "react";
+import { Pressable, type ViewStyle, type GestureResponderEvent } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolate,
+} from "react-native-reanimated";
+import { Colors, FocusConfig, Radius } from "../../theme/colors";
 
 interface FocusableProps {
   onPress?: (e?: GestureResponderEvent) => void;
@@ -12,39 +19,43 @@ interface FocusableProps {
   testID?: string;
 }
 
+const SPRING_CONFIG = {
+  damping: FocusConfig.springDamping,
+  stiffness: FocusConfig.springStiffness,
+};
+
 export function Focusable({
   onPress,
   onFocus,
   onBlur,
   hasTVPreferredFocus = false,
   style,
-  focusedBorderColor = "#8b5cf6",
+  focusedBorderColor = Colors.focusBorder,
   children,
   testID,
 }: FocusableProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const [focused, setFocused] = useState(false);
+  const progress = useSharedValue(0);
 
   const handleFocus = useCallback(() => {
-    setFocused(true);
-    Animated.spring(scale, {
-      toValue: 1.08,
-      useNativeDriver: true,
-      friction: 8,
-      tension: 100,
-    }).start();
+    progress.value = withSpring(1, SPRING_CONFIG);
     onFocus?.();
-  }, [onFocus, scale]);
+  }, [onFocus, progress]);
 
   const handleBlur = useCallback(() => {
-    setFocused(false);
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 8,
-    }).start();
+    progress.value = withSpring(0, SPRING_CONFIG);
     onBlur?.();
-  }, [onBlur, scale]);
+  }, [onBlur, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const s = interpolate(progress.value, [0, 1], [FocusConfig.scaleNormal, FocusConfig.scaleUp]);
+    return {
+      transform: [{ scale: s }],
+      borderWidth: interpolate(progress.value, [0, 1], [0, FocusConfig.borderWidth]),
+      borderColor: focusedBorderColor,
+      borderRadius: Radius.card,
+      elevation: interpolate(progress.value, [0, 1], [0, 12]),
+    };
+  });
 
   return (
     <Pressable
@@ -55,21 +66,7 @@ export function Focusable({
       hasTVPreferredFocus={hasTVPreferredFocus}
       testID={testID}
     >
-      <Animated.View
-        style={[
-          style,
-          { transform: [{ scale }] },
-          focused && {
-            borderWidth: 3,
-            borderColor: focusedBorderColor,
-            borderRadius: 12,
-            shadowColor: focusedBorderColor,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.6,
-            shadowRadius: 12,
-          },
-        ]}
-      >
+      <Animated.View style={[style, animatedStyle]}>
         {children}
       </Animated.View>
     </Pressable>

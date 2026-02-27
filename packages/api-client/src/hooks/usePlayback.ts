@@ -3,7 +3,7 @@ import { useJellyfinClient } from "./useJellyfinClient";
 
 const TICKS_PER_SEC = 10_000_000;
 const REPORT_INTERVAL_MS = 10_000;
-const DBG = "[Tentacle:Playback]";
+const DBG = "[Playback]";
 
 type JfClient = {
   fetch: <T>(path: string, init?: RequestInit) => Promise<T>;
@@ -25,7 +25,6 @@ async function sessionPost(
   const bodyStr = JSON.stringify(body);
   try {
     await client.fetch(path, { method: "POST", body: bodyStr });
-    console.debug(DBG, `${label} OK`);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(DBG, `${label} FAILED via client.fetch:`, msg);
@@ -37,9 +36,8 @@ async function sessionPost(
         headers["X-Emby-Token"] = token;
         headers["X-Emby-Authorization"] = `MediaBrowser Token="${token}"`;
       }
-      console.debug(DBG, `${label} retrying with raw fetch →`, `${baseUrl}${path}`);
       const res = await fetch(`${baseUrl}${path}`, { method: "POST", body: bodyStr, headers });
-      console.debug(DBG, `${label} raw fetch result:`, res.status, res.statusText);
+      if (!res.ok) console.error(`[Playback] ${label} fallback fetch:`, res.status);
     } catch (err2: unknown) {
       console.error(DBG, `${label} raw fetch also FAILED:`, err2 instanceof Error ? err2.message : String(err2));
     }
@@ -97,7 +95,6 @@ export function usePlaybackReporting({
     const prevId = prevItemIdRef.current;
     prevItemIdRef.current = itemId;
     if (prevId && prevId !== itemId && startedRef.current) {
-      console.debug(DBG, "episode switch — stopping old session", { prevId, newId: itemId, position: positionRef.current });
       sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
         ItemId: prevId,
         MediaSourceId: prevId,
@@ -111,8 +108,6 @@ export function usePlaybackReporting({
 
   const reportStart = useCallback(() => {
     if (!itemId) return;
-    // Allow re-reporting start (e.g. after audio/quality change rebuilds the stream)
-    console.debug(DBG, "reportStart", { itemId, mediaSourceId, playMethod, playSessionId });
     startedRef.current = true;
     sessionPost(client, "/Sessions/Playing", {
       ItemId: itemId,
@@ -131,7 +126,6 @@ export function usePlaybackReporting({
     if (!itemId || !startedRef.current) return;
     const pos = positionRef.current;
     const paused = pausedRef.current;
-    console.debug(DBG, "progress", { itemId: itemId.substring(0, 8), position: Math.floor(pos), paused });
     sessionPost(client, "/Sessions/Playing/Progress", {
       ItemId: itemId,
       MediaSourceId: mediaSourceId ?? itemId,
@@ -175,7 +169,7 @@ export function usePlaybackReporting({
 
   // --- beforeunload + visibilitychange (Bug #2 fix) ---
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
 
     const buildBody = () => JSON.stringify({
       ItemId: itemIdRef.current,
@@ -191,7 +185,6 @@ export function usePlaybackReporting({
       const blob = new Blob([buildBody()], { type: "application/json" });
       if (typeof navigator.sendBeacon === "function") {
         navigator.sendBeacon(url, blob);
-        console.debug(DBG, "stopOnBeforeUnload (sendBeacon)");
       }
     };
 
@@ -213,7 +206,6 @@ export function usePlaybackReporting({
       const blob = new Blob([body], { type: "application/json" });
       if (typeof navigator.sendBeacon === "function") {
         navigator.sendBeacon(url, blob);
-        console.debug(DBG, "progressOnVisibilityHidden (sendBeacon)");
       }
     };
 
