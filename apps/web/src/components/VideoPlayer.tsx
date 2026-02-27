@@ -309,6 +309,19 @@ export function VideoPlayer({
     };
   }, []);
 
+  const handleVolumeChange = useCallback((val: number) => {
+    setVolume(val);
+    if (videoRef.current) videoRef.current.volume = val;
+  }, []);
+
+  const handleToggleMute = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    if (!v.muted) setPolicyMuted(false);
+    setVolume(v.muted ? 0 : 1);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
@@ -342,19 +355,6 @@ export function VideoPlayer({
 
   const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
-
-  const handleVolumeChange = useCallback((val: number) => {
-    setVolume(val);
-    if (videoRef.current) videoRef.current.volume = val;
-  }, []);
-
-  const handleToggleMute = useCallback(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = !v.muted;
-    if (!v.muted) setPolicyMuted(false);
-    setVolume(v.muted ? 0 : 1);
-  }, []);
 
   return (
     <div ref={containerRef} onMouseMove={scheduleHide}
