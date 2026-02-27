@@ -314,14 +314,17 @@ export function VideoPlayer({
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
       if (e.code === "KeyF") toggleFullscreen();
       if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else navigate(-1); }
-      if (e.code === "ArrowRight") handleSeek(currentTimeRef.current + 10);
+      if (e.code === "ArrowRight") handleSeek(currentTimeRef.current + 30);
       if (e.code === "ArrowLeft") handleSeek(Math.max(0, currentTimeRef.current - 10));
+      if (e.code === "ArrowUp") { e.preventDefault(); handleVolumeChange(Math.min(1, volume + 0.1)); }
+      if (e.code === "ArrowDown") { e.preventDefault(); handleVolumeChange(Math.max(0, volume - 0.1)); }
+      if (e.code === "KeyM") handleToggleMute();
       if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
       if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay, toggleFullscreen, navigate, handleSeek, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [togglePlay, toggleFullscreen, navigate, handleSeek, handleVolumeChange, handleToggleMute, volume, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   useEffect(() => () => { clearInterval(autoPlayTimerRef.current); }, []);
 

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, memo } from "react";
 import { View, Text, ScrollView, Alert, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
@@ -37,7 +37,7 @@ function getLibraryIcon(collectionType?: string) {
   }
 }
 
-export function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
   const { t } = useTranslation("nav");
   const { isVisible, closeSidebar } = useSidebar();
   const { data: libraries } = useLibraries();
@@ -236,4 +236,4 @@ export function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
       </Animated.View>
     </>
   );
-}
+});

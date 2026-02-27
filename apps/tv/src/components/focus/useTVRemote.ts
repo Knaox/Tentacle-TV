@@ -4,6 +4,10 @@ import { BackHandler, Platform } from "react-native";
 interface TVRemoteOptions {
   onBack?: () => void;
   onPlayPause?: () => void;
+  onLeft?: () => void;
+  onRight?: () => void;
+  onUp?: () => void;
+  onDown?: () => void;
   /** Called on any D-pad direction or select — useful for re-showing overlays */
   onAnyPress?: () => void;
 }
@@ -12,7 +16,9 @@ interface TVRemoteOptions {
  * Hook for handling TV remote events.
  * Handles back/menu, play/pause, select, and D-pad arrows.
  */
-export function useTVRemote({ onBack, onPlayPause, onAnyPress }: TVRemoteOptions) {
+export function useTVRemote({
+  onBack, onPlayPause, onLeft, onRight, onUp, onDown, onAnyPress,
+}: TVRemoteOptions) {
   // Handle Android TV back button
   useEffect(() => {
     if (!onBack || Platform.OS !== "android") return;
@@ -35,16 +41,28 @@ export function useTVRemote({ onBack, onPlayPause, onAnyPress }: TVRemoteOptions
         case "playPause":
           onPlayPause?.();
           break;
-        case "select":
-        case "up":
-        case "down":
         case "left":
+          onLeft?.();
+          onAnyPress?.();
+          break;
         case "right":
+          onRight?.();
+          onAnyPress?.();
+          break;
+        case "up":
+          onUp?.();
+          onAnyPress?.();
+          break;
+        case "down":
+          onDown?.();
+          onAnyPress?.();
+          break;
+        case "select":
           onAnyPress?.();
           break;
       }
     },
-    [onBack, onPlayPause, onAnyPress]
+    [onBack, onPlayPause, onLeft, onRight, onUp, onDown, onAnyPress]
   );
 
   useEffect(() => {

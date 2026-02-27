@@ -9,6 +9,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon } from "./icons/TVIcons";
 import { Colors } from "../theme/colors";
+import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 interface TVPlayerOverlayProps {
   title: string;
@@ -16,8 +17,17 @@ interface TVPlayerOverlayProps {
   duration: number;
   paused: boolean;
   visible: boolean;
+  /** Current fast-forward/rewind speed label (e.g. ">>2x"), or null */
+  speedLabel?: string | null;
+  introSegment?: SegmentTimestamps | null;
+  creditsSegment?: SegmentTimestamps | null;
   onPlayPause: () => void;
-  onSeek: (seconds: number) => void;
+  /** Skip back uses ref-based time — no stale closure */
+  onSkipBack: () => void;
+  /** Skip forward uses ref-based time — no stale closure */
+  onSkipForward: () => void;
+  onSkipIntro?: () => void;
+  onSkipCredits?: () => void;
   onBack: () => void;
   onSettings: () => void;
 }
@@ -32,7 +42,9 @@ function formatTime(seconds: number): string {
 
 export function TVPlayerOverlay({
   title, currentTime, duration, paused, visible,
-  onPlayPause, onSeek, onBack, onSettings,
+  speedLabel, introSegment, creditsSegment,
+  onPlayPause, onSkipBack, onSkipForward,
+  onSkipIntro, onSkipCredits, onBack, onSettings,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -43,6 +55,13 @@ export function TVPlayerOverlay({
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const isShown = visible || paused;
+
+  const showSkipIntro = introSegment
+    && currentTime >= introSegment.start
+    && currentTime < introSegment.end - 1;
+  const showSkipCredits = creditsSegment
+    && currentTime >= creditsSegment.start
+    && currentTime < creditsSegment.end - 1;
 
   return (
     <Animated.View
@@ -71,6 +90,63 @@ export function TVPlayerOverlay({
           </Text>
         </View>
       </LinearGradient>
+
+      {/* Speed indicator (fast forward / rewind) */}
+      {!!speedLabel && (
+        <View style={{
+          position: "absolute", top: "45%", alignSelf: "center",
+          backgroundColor: "rgba(0,0,0,0.7)", borderRadius: 12,
+          paddingHorizontal: 24, paddingVertical: 12,
+        }}>
+          <Text style={{
+            color: Colors.textPrimary, fontSize: 28, fontWeight: "800",
+          }}>
+            {speedLabel}
+          </Text>
+        </View>
+      )}
+
+      {/* Skip intro / credits buttons */}
+      {showSkipIntro && onSkipIntro && (
+        <View style={{
+          position: "absolute", bottom: 180, right: 40,
+        }}>
+          <Focusable onPress={onSkipIntro} focusRadius={8}>
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 10,
+              backgroundColor: "rgba(0,0,0,0.6)",
+              borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
+              borderRadius: 8,
+            }}>
+              <Text style={{
+                color: Colors.textPrimary, fontSize: 15, fontWeight: "600",
+              }}>
+                Passer l'intro
+              </Text>
+            </View>
+          </Focusable>
+        </View>
+      )}
+      {showSkipCredits && onSkipCredits && (
+        <View style={{
+          position: "absolute", bottom: 180, right: 40,
+        }}>
+          <Focusable onPress={onSkipCredits} focusRadius={8}>
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 10,
+              backgroundColor: "rgba(0,0,0,0.6)",
+              borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
+              borderRadius: 8,
+            }}>
+              <Text style={{
+                color: Colors.textPrimary, fontSize: 15, fontWeight: "600",
+              }}>
+                Passer le generique
+              </Text>
+            </View>
+          </Focusable>
+        </View>
+      )}
 
       {/* Bottom gradient with controls */}
       <LinearGradient
@@ -110,7 +186,7 @@ export function TVPlayerOverlay({
 
         {/* Transport controls */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 40 }}>
-          <Focusable onPress={() => onSeek(currentTime - 10)}>
+          <Focusable onPress={onSkipBack}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
               <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: "600" }}>10s</Text>
@@ -130,7 +206,7 @@ export function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable onPress={() => onSeek(currentTime + 30)}>
+          <Focusable onPress={onSkipForward}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: "600" }}>30s</Text>
               <SkipForwardIcon size={22} color={Colors.textPrimary} />

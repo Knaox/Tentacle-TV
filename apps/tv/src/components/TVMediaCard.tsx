@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, Text, Image } from "react-native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -12,7 +13,7 @@ interface TVMediaCardProps {
   width?: number;
 }
 
-export function TVMediaCard({ item, variant = "portrait", width }: TVMediaCardProps) {
+export const TVMediaCard = memo(function TVMediaCard({ item, variant = "portrait", width }: TVMediaCardProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const progress = item.UserData?.PlayedPercentage ?? 0;
@@ -32,7 +33,7 @@ export function TVMediaCard({ item, variant = "portrait", width }: TVMediaCardPr
       progress={progress} isWatched={isWatched} t={t}
     />
   );
-}
+});
 
 interface CardInnerProps {
   item: MediaItem;

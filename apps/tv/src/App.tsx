@@ -20,13 +20,19 @@ import { initI18n, i18n } from "@tentacle-tv/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { SidebarProvider } from "./context/SidebarContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 60_000 },
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    },
   },
 });
 
@@ -116,16 +122,18 @@ export function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TentacleConfigContext.Provider value={{ storage, uuid }}>
-        <JellyfinClientContext.Provider value={client}>
-          <SidebarProvider>
-            <NavigationContainer theme={darkTheme}>
-              <AppNavigator />
-            </NavigationContainer>
-          </SidebarProvider>
-        </JellyfinClientContext.Provider>
-      </TentacleConfigContext.Provider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TentacleConfigContext.Provider value={{ storage, uuid }}>
+          <JellyfinClientContext.Provider value={client}>
+            <SidebarProvider>
+              <NavigationContainer theme={darkTheme}>
+                <AppNavigator />
+              </NavigationContainer>
+            </SidebarProvider>
+          </JellyfinClientContext.Provider>
+        </TentacleConfigContext.Provider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
