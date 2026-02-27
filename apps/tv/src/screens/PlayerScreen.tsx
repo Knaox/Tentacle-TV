@@ -45,6 +45,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
+  const resumeApplied = useRef(false);
   const [videoError, setVideoError] = useState<string | null>(null);
 
   const mediaSource = item?.MediaSources?.[0];
@@ -134,14 +135,29 @@ export function PlayerScreen({ route, navigation }: Props) {
   }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const skipSegments = useIntroSkipper(itemId, item);
+
+  // For transcoded/HLS streams, include resume position in the URL
+  // (seeking after load is unreliable when ExoPlayer detects HLS as "live")
+  useEffect(() => {
+    if (resumeApplied.current || isDirectPlay) return;
+    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+    if (resumeTicks && resumeTicks > 0 && startTicks === 0) {
+      resumeApplied.current = true;
+      setStartTicks(resumeTicks);
+    }
+  }, [item, isDirectPlay, startTicks]);
+
   useEffect(() => () => { reportStop(); }, [reportStop]);
 
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    videoRef.current?.seek(clamped);
+    // For transcoded streams, the player position is relative to HLS start
+    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+    const playerPos = clamped - offset;
+    videoRef.current?.seek(Math.max(0, playerPos));
     reportSeek(clamped, paused);
-  }, [jellyfinDuration, paused, reportSeek]);
+  }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
 
   const handlePlayPause = useCallback(() => setPaused((p) => !p), []);
 
@@ -153,17 +169,27 @@ export function PlayerScreen({ route, navigation }: Props) {
   });
 
   const handleLoad = useCallback((_data: OnLoadData) => {
-    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-    if (resumeTicks) videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
+    // Only seek for direct play — transcoded/HLS uses StartTimeTicks in URL
+    if (isDirectPlay) {
+      const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+      if (resumeTicks) videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
+    }
     reportStart();
-  }, [item, reportStart]);
+  }, [item, reportStart, isDirectPlay]);
 
   const handleProgress = useCallback((data: OnProgressData) => {
-    setCurrentTime(data.currentTime);
-    positionRef.current = data.currentTime;
-    controls.currentTimeRef.current = data.currentTime;
-    updatePosition(data.currentTime, paused);
-  }, [paused, updatePosition, controls.currentTimeRef]);
+    // ExoPlayer may report negative time when it detects HLS as "live"
+    // (time relative to live edge). Clamp to 0 and offset by startTicks.
+    const raw = Math.max(0, data.currentTime);
+    // For transcoded streams with StartTimeTicks, player time is relative
+    // to the HLS start, so add the offset to get the real media position.
+    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+    const t = raw + offset;
+    setCurrentTime(t);
+    positionRef.current = t;
+    controls.currentTimeRef.current = t;
+    updatePosition(t, paused);
+  }, [paused, updatePosition, controls.currentTimeRef, isDirectPlay, startTicks]);
 
   const handleEnd = useCallback(() => { reportStop(); navigation.goBack(); }, [navigation, reportStop]);
 
@@ -208,6 +234,8 @@ export function PlayerScreen({ route, navigation }: Props) {
       <Video
         ref={videoRef} source={{ uri: streamUrl }} style={{ flex: 1 }}
         resizeMode="contain" controls={false} paused={paused}
+        // @ts-ignore — focusable prevents ExoPlayer native TV controls ("LIVE" badge)
+        focusable={false}
         onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd} onError={handleError}
         selectedAudioTrack={{ type: SelectedTrackType.INDEX, value: audioRelativeIndex }}
         selectedTextTrack={subtitleRelativeIndex >= 0

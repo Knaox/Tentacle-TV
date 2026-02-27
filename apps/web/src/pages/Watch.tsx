@@ -57,7 +57,6 @@ export function Watch() {
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
   const audioOverrideRef = useRef(false);
-  const [transitionDone, setTransitionDone] = useState(false);
   const resumeApplied = useRef(false);
 
   // Reset state when switching episodes
@@ -305,11 +304,10 @@ export function Watch() {
     nextEpisodeTitle: nextEpTitle,
     onNextEpisode: handleNextEpisode, onPreviousEpisode: handlePreviousEpisode,
     introSegment: skipSegments.intro, creditsSegment: skipSegments.credits,
-    readyToPlay: transitionDone,
   };
 
   return (
-    <PlayerTransition onComplete={() => setTransitionDone(true)}>
+    <PlayerTransition>
       <VideoPlayer key={itemId} {...playerProps} />
     </PlayerTransition>
   );
