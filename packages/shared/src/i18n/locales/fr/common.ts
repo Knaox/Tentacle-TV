@@ -43,4 +43,5 @@ export default {
   retry: "Réessayer",
   send: "Envoyer",
   sending: "Envoi...",
+  or: "OU",
 } as const;

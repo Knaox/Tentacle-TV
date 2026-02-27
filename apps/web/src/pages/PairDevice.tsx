@@ -1,86 +1,51 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useConfirmPairing } from "@tentacle/api-client";
+import { useGeneratePairingCode, usePairingStatus } from "@tentacle/api-client";
 
 export function PairDevice() {
   const { t } = useTranslation("pairing");
-  const [chars, setChars] = useState(["", "", "", ""]);
-  const [success, setSuccess] = useState<string | null>(null);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const confirmMut = useConfirmPairing();
+  const generateMut = useGeneratePairingCode();
+  const [code, setCode] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [remaining, setRemaining] = useState(300);
 
-  // Focus first input on mount
-  useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+  const expired = remaining <= 0;
 
-  // Reset on error
-  useEffect(() => {
-    if (confirmMut.isError) {
-      setChars(["", "", "", ""]);
-      setTimeout(() => inputRefs.current[0]?.focus(), 50);
-    }
-  }, [confirmMut.isError]);
+  // Poll status to detect when TV claims the code
+  const { data: statusData } = usePairingStatus(code && !expired ? code : null);
+  const claimed = statusData?.status === "confirmed";
 
-  const updateChar = (index: number, value: string) => {
-    const upper = value.toUpperCase().replace(/[^A-Z2-9]/g, "");
-    if (!upper) return;
-
-    const next = [...chars];
-    next[index] = upper[0];
-    setChars(next);
-
-    // Auto-advance to next field
-    if (index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace") {
-      if (chars[index]) {
-        const next = [...chars];
-        next[index] = "";
-        setChars(next);
-      } else if (index > 0) {
-        const next = [...chars];
-        next[index - 1] = "";
-        setChars(next);
-        inputRefs.current[index - 1]?.focus();
-      }
-      e.preventDefault();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData
-      .getData("text")
-      .toUpperCase()
-      .replace(/[^A-Z2-9]/g, "")
-      .slice(0, 4);
-    if (!pasted) return;
-
-    const next = ["", "", "", ""];
-    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
-    setChars(next);
-
-    const focusIdx = Math.min(pasted.length, 3);
-    inputRefs.current[focusIdx]?.focus();
-  };
-
-  const code = chars.join("");
-  const canSubmit = code.length === 4 && !confirmMut.isPending;
-
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    confirmMut.mutate(code, {
+  const generate = useCallback(() => {
+    setCode(null);
+    setRemaining(300);
+    generateMut.mutate(undefined, {
       onSuccess: (data) => {
-        setSuccess(t("pairing:pairSuccess", { name: data.deviceName }));
-        setChars(["", "", "", ""]);
+        setCode(data.code);
+        setExpiresAt(new Date(data.expiresAt));
       },
     });
-  };
+  }, [generateMut]);
+
+  // Generate on mount
+  useEffect(() => {
+    generate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!expiresAt) return;
+    const interval = setInterval(() => {
+      const diff = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+      setRemaining(diff);
+      if (diff <= 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  const minutes = Math.floor(remaining / 60);
+  const seconds = remaining % 60;
+  const progress = expiresAt ? Math.max(0, remaining / 300) : 1;
 
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
@@ -91,46 +56,60 @@ export function PairDevice() {
         </p>
 
         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-8">
-          {/* Code inputs */}
-          <div className="flex justify-center gap-3" onPaste={handlePaste}>
-            {chars.map((char, i) => (
-              <input
-                key={i}
-                ref={(el) => { inputRefs.current[i] = el; }}
-                type="text"
-                inputMode="text"
-                maxLength={1}
-                value={char}
-                onChange={(e) => updateChar(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
-                className="h-16 w-14 rounded-xl bg-white/5 text-center text-2xl font-bold tracking-widest text-white ring-1 ring-white/10 transition-all focus:ring-2 focus:ring-purple-500 uppercase font-mono"
-                autoComplete="off"
-              />
-            ))}
-          </div>
-
-          {/* Submit button */}
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="rounded-lg bg-purple-600 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-40"
-            >
-              {confirmMut.isPending ? t("pairing:pairing") : t("pairing:pair")}
-            </button>
-          </div>
-
-          {/* Success message */}
-          {success && (
-            <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-center text-sm text-green-400">
-              {success}
+          {/* Claimed / success state */}
+          {claimed ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="text-5xl text-green-400">✓</div>
+              <p className="text-lg font-semibold text-green-400">{t("pairing:pairingSuccess")}</p>
             </div>
+          ) : !code ? (
+            <div className="flex justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+            </div>
+          ) : (
+            <>
+              {/* Code display */}
+              <div className="flex justify-center gap-3">
+                {code.split("").map((char, i) => (
+                  <div
+                    key={i}
+                    className={`flex h-16 w-14 items-center justify-center rounded-xl text-2xl font-bold font-mono transition-all ${
+                      expired
+                        ? "bg-white/[0.03] ring-1 ring-white/10 text-white/25"
+                        : "bg-purple-500/10 ring-2 ring-purple-500 text-white"
+                    }`}
+                  >
+                    {char}
+                  </div>
+                ))}
+              </div>
+
+              {/* Timer */}
+              <p className={`mt-4 text-center text-sm ${expired ? "text-red-400" : "text-white/40"}`}>
+                {expired
+                  ? t("pairing:codeExpired")
+                  : t("pairing:expiresIn", { time: `${minutes}:${seconds.toString().padStart(2, "0")}` })}
+              </p>
+
+              {/* Progress bar */}
+              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/[0.08]">
+                <div
+                  className="h-full rounded-full bg-purple-500 transition-all duration-1000"
+                  style={{ width: `${progress * 100}%` }}
+                />
+              </div>
+            </>
           )}
 
-          {/* Error message */}
-          {confirmMut.isError && (
-            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center text-sm text-red-400">
-              {t("pairing:codeInvalid")}
+          {/* Generate new code */}
+          {expired && (
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={generate}
+                className="rounded-lg bg-purple-600 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500"
+              >
+                {t("pairing:generateNewCode")}
+              </button>
             </div>
           )}
         </div>

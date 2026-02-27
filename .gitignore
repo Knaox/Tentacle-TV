@@ -6,9 +6,15 @@ node_modules/
 dist/
 dist-ssr/
 build/
+Builds/
+scripts/
 .next/
 .expo/
 *.tsbuildinfo
+*.apk
+*.aab
+*.ipa
+*.msi
 
 # Tauri
 apps/desktop/src-tauri/target/
