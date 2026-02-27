@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
 import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
@@ -26,7 +27,8 @@ export function AppNavigator() {
       screenOptions={{
         headerShown: false,
         animation: "fade",
-        contentStyle: { backgroundColor: "#0a0a0f" },
+        contentStyle: { backgroundColor: Colors.bgDeep },
+        statusBarHidden: true,
       }}
     >
       <Stack.Screen name="PairCode" component={PairCodeScreen} />

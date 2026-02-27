@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 import { Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
 import Animated, {
   useSharedValue,
@@ -27,7 +27,7 @@ const SPRING_CONFIG = {
   stiffness: FocusConfig.springStiffness,
 };
 
-export function Focusable({
+export const Focusable = memo(function Focusable({
   onPress,
   onFocus,
   onBlur,
@@ -61,6 +61,8 @@ export function Focusable({
     opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0.5, 1]),
   }));
 
+  const RING_GAP = 3;
+
   return (
     <Pressable
       // @ts-ignore react-native-tvos extends Pressable
@@ -71,23 +73,22 @@ export function Focusable({
       hasTVPreferredFocus={hasTVPreferredFocus}
       testID={testID}
     >
-      <Animated.View style={scaleStyle}>
+      <Animated.View style={[scaleStyle, !noBorder && { margin: -RING_GAP, padding: RING_GAP }]}>
         {children}
-        {/* Absolute-positioned focus ring — does NOT affect layout */}
+        {/* Focus ring sits at the wrapper edge — no overflow clipping on Android */}
         {!noBorder && (
           <Animated.View
             pointerEvents="none"
             style={[
               {
                 position: "absolute",
-                top: -3,
-                left: -3,
-                right: -3,
-                bottom: -3,
-                borderWidth: 3,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderWidth: 2,
                 borderColor: "#a78bfa",
                 borderRadius: focusRadius,
-                backgroundColor: "rgba(139, 92, 246, 0.12)",
               },
               ringStyle,
             ]}
@@ -96,4 +97,4 @@ export function Focusable({
       </Animated.View>
     </Pressable>
   );
-}
+});

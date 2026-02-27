@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { View, Text, Image, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
@@ -26,7 +26,7 @@ interface TVHeroBannerProps {
   onDetail: (item: MediaItem) => void;
 }
 
-export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
+export const TVHeroBanner = memo(function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const [index, setIndex] = useState(0);
@@ -222,4 +222,4 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
       )}
     </View>
   );
-}
+});

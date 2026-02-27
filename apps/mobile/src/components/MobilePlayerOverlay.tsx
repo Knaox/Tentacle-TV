@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Pressable, Animated, Dimensions, ScrollView, Modal } from "react-native";
+import { View, Text, Pressable, Animated, Dimensions, ScrollView, Modal, type GestureResponderEvent } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_INDICATOR_MS = 700;
 
 interface Track { index: number; label: string }
 
@@ -46,6 +48,12 @@ export function MobilePlayerOverlay({
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  // Double-tap skip state
+  const [doubleTapSide, setDoubleTapSide] = useState<"left" | "right" | null>(null);
+  const lastTapRef = useRef<{ time: number; side: "left" | "right" | "center" }>({ time: 0, side: "center" });
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout>>();
+  const doubleTapFadeTimer = useRef<ReturnType<typeof setTimeout>>();
+
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     if (!paused) {
@@ -57,7 +65,13 @@ export function MobilePlayerOverlay({
 
   useEffect(() => { resetHideTimer(); return () => { if (hideTimer.current) clearTimeout(hideTimer.current); }; }, [resetHideTimer]);
 
-  const handleTap = () => {
+  // Clean up double-tap timers
+  useEffect(() => () => {
+    if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+    if (doubleTapFadeTimer.current) clearTimeout(doubleTapFadeTimer.current);
+  }, []);
+
+  const toggleOverlay = useCallback(() => {
     if (!visible) {
       setVisible(true);
       opacity.setValue(1);
@@ -66,7 +80,33 @@ export function MobilePlayerOverlay({
       if (hideTimer.current) clearTimeout(hideTimer.current);
       Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => setVisible(false));
     }
-  };
+  }, [visible, opacity, resetHideTimer]);
+
+  const handleTap = useCallback((e: GestureResponderEvent) => {
+    const x = e.nativeEvent.locationX;
+    const now = Date.now();
+    const side: "left" | "right" | "center" =
+      x < SCREEN_WIDTH * 0.35 ? "left" : x > SCREEN_WIDTH * 0.65 ? "right" : "center";
+
+    const elapsed = now - lastTapRef.current.time;
+    const sameSide = side === lastTapRef.current.side;
+
+    if (elapsed < DOUBLE_TAP_MS && sameSide && side !== "center") {
+      // Double-tap on left/right — skip
+      if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+      onSeek(side === "left" ? currentTime - 10 : currentTime + 30);
+      setDoubleTapSide(side);
+      if (doubleTapFadeTimer.current) clearTimeout(doubleTapFadeTimer.current);
+      doubleTapFadeTimer.current = setTimeout(() => setDoubleTapSide(null), DOUBLE_TAP_INDICATOR_MS);
+      resetHideTimer();
+      lastTapRef.current = { time: 0, side: "center" };
+    } else {
+      // Possible single tap — wait for double
+      lastTapRef.current = { time: now, side };
+      if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+      singleTapTimer.current = setTimeout(toggleOverlay, DOUBLE_TAP_MS);
+    }
+  }, [currentTime, onSeek, resetHideTimer, toggleOverlay]);
 
   const progress = duration > 0 ? currentTime / duration : 0;
 
@@ -146,6 +186,21 @@ export function MobilePlayerOverlay({
           </Animated.View>
         )}
       </Pressable>
+
+      {/* Double-tap skip indicator */}
+      {doubleTapSide && (
+        <View pointerEvents="none" style={{
+          position: "absolute", top: "38%",
+          [doubleTapSide === "left" ? "left" : "right"]: SCREEN_WIDTH * 0.08,
+          backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 40,
+          width: 72, height: 72, justifyContent: "center", alignItems: "center",
+        }}>
+          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700" }}>
+            {doubleTapSide === "left" ? "−10" : "+30"}
+          </Text>
+          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>sec</Text>
+        </View>
+      )}
 
       {/* Track selection modal */}
       <Modal visible={showTracks} transparent animationType="slide" onRequestClose={() => setShowTracks(false)}>

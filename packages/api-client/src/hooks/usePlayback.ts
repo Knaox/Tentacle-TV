@@ -5,6 +5,12 @@ const TICKS_PER_SEC = 10_000_000;
 const REPORT_INTERVAL_MS = 10_000;
 const DBG = "[Playback]";
 
+/** Convert seconds to Jellyfin ticks, guarding against NaN/Infinity. */
+function safePositionTicks(seconds: number): number {
+  const ticks = Math.floor(seconds * TICKS_PER_SEC);
+  return Number.isFinite(ticks) && ticks >= 0 ? ticks : 0;
+}
+
 type JfClient = {
   fetch: <T>(path: string, init?: RequestInit) => Promise<T>;
   getBaseUrl: () => string;
@@ -98,7 +104,7 @@ export function usePlaybackReporting({
       sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
         ItemId: prevId,
         MediaSourceId: prevId,
-        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        PositionTicks: safePositionTicks(positionRef.current),
         PlaySessionId: playSessionIdRef.current ?? undefined,
       }, "stopOldEpisode");
       startedRef.current = false;
@@ -117,7 +123,7 @@ export function usePlaybackReporting({
       PlayMethod: playMethod,
       AudioStreamIndex: audioStreamIndex,
       SubtitleStreamIndex: subtitleStreamIndex ?? -1,
-      PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      PositionTicks: safePositionTicks(positionRef.current),
       IsPaused: false,
     }, "reportStart");
   }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex]);
@@ -130,7 +136,7 @@ export function usePlaybackReporting({
       ItemId: itemId,
       MediaSourceId: mediaSourceId ?? itemId,
       PlaySessionId: playSessionId ?? undefined,
-      PositionTicks: Math.floor(pos * TICKS_PER_SEC),
+      PositionTicks: safePositionTicks(pos),
       IsPaused: paused,
       CanSeek: true,
       PlayMethod: playMethod,
@@ -175,7 +181,7 @@ export function usePlaybackReporting({
       ItemId: itemIdRef.current,
       MediaSourceId: msIdRef.current ?? itemIdRef.current,
       PlaySessionId: playSessionIdRef.current ?? undefined,
-      PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      PositionTicks: safePositionTicks(positionRef.current),
     });
 
     const onBeforeUnload = () => {
@@ -196,7 +202,7 @@ export function usePlaybackReporting({
         ItemId: itemIdRef.current,
         MediaSourceId: msIdRef.current ?? itemIdRef.current,
         PlaySessionId: playSessionIdRef.current ?? undefined,
-        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        PositionTicks: safePositionTicks(positionRef.current),
         IsPaused: pausedRef.current,
         CanSeek: true,
         PlayMethod: playMethodRef.current,
@@ -228,7 +234,7 @@ export function usePlaybackReporting({
         ItemId: id,
         MediaSourceId: msIdRef.current ?? id,
         PlaySessionId: playSessionIdRef.current ?? undefined,
-        PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+        PositionTicks: safePositionTicks(positionRef.current),
       }, "stopOnUnmount");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -242,7 +248,7 @@ export function usePlaybackReporting({
       ItemId: id,
       MediaSourceId: msIdRef.current ?? id,
       PlaySessionId: playSessionIdRef.current ?? undefined,
-      PositionTicks: Math.floor(positionRef.current * TICKS_PER_SEC),
+      PositionTicks: safePositionTicks(positionRef.current),
     }, "reportStop");
   }, []);
 

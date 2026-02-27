@@ -43,7 +43,7 @@ export function WelcomeStep({
         <Text style={styles.subtitle}>{t("pairing:tvWelcomeSubtitle")}</Text>
 
         {/* Primary CTA */}
-        <Focusable onPress={onShowCode} hasTVPreferredFocus focusRadius={Radius.buttonLarge + 3} style={{ alignSelf: "center" }}>
+        <Focusable onPress={onShowCode} hasTVPreferredFocus focusRadius={Radius.buttonLarge + 3} style={{ marginBottom: 16 }}>
           <View style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>
               {t("pairing:showPairingCode")}
@@ -52,7 +52,7 @@ export function WelcomeStep({
         </Focusable>
 
         {/* Manual fallback link */}
-        <Focusable onPress={onManualSetup} focusRadius={Radius.button + 3} style={{ alignSelf: "center" }}>
+        <Focusable onPress={onManualSetup} focusRadius={Radius.pill + 3}>
           <View style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
               {t("pairing:configureManually")}
@@ -109,29 +109,24 @@ const styles = {
     textAlign: "center" as const,
   },
   primaryButton: {
-    paddingHorizontal: 48,
-    paddingVertical: 18,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     backgroundColor: Colors.accentPurple,
     borderRadius: Radius.buttonLarge,
-    marginBottom: 20,
   },
   primaryButtonText: {
     color: Colors.textPrimary,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700" as const,
     textAlign: "center" as const,
   },
   secondaryButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    backgroundColor: Colors.bgElevated,
-    borderRadius: Radius.button,
-    borderWidth: 1,
-    borderColor: Colors.glassBorder,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
   },
   secondaryButtonText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
+    color: Colors.textTertiary,
+    fontSize: 14,
     fontWeight: "500" as const,
     textAlign: "center" as const,
   },

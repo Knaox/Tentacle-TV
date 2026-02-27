@@ -195,6 +195,21 @@ export function PlayerScreen({ itemId }: Props) {
 
   const displayDuration = jellyfinDuration > 0 ? jellyfinDuration : 0;
 
+  // Convert Jellyfin global stream index to player-relative index.
+  // Jellyfin assigns a global Index across all stream types (video=0, audio=1, audio=2, sub=3…)
+  // but react-native-video expects an index relative to tracks of that type (audio: 0,1,2…).
+  const audioStreams = useMemo(() => streams.filter((s) => s.Type === "Audio"), [streams]);
+  const subtitleStreams = useMemo(() => streams.filter((s) => s.Type === "Subtitle"), [streams]);
+  const audioRelativeIndex = useMemo(() => {
+    const idx = audioStreams.findIndex((s) => s.Index === audioIndex);
+    return idx >= 0 ? idx : 0;
+  }, [audioStreams, audioIndex]);
+  const subtitleRelativeIndex = useMemo(() => {
+    if (subtitleIndex < 0) return -1;
+    const idx = subtitleStreams.findIndex((s) => s.Index === subtitleIndex);
+    return idx >= 0 ? idx : -1;
+  }, [subtitleStreams, subtitleIndex]);
+
   if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
 
   return (
@@ -209,8 +224,8 @@ export function PlayerScreen({ itemId }: Props) {
         onLoad={handleLoad}
         onProgress={handleProgress}
         onEnd={handleEnd}
-        selectedAudioTrack={{ type: "index", value: audioIndex }}
-        selectedTextTrack={subtitleIndex >= 0 ? { type: "index", value: subtitleIndex } : { type: "disabled" }}
+        selectedAudioTrack={{ type: "index", value: audioRelativeIndex }}
+        selectedTextTrack={subtitleRelativeIndex >= 0 ? { type: "index", value: subtitleRelativeIndex } : { type: "disabled" }}
         progressUpdateInterval={250}
       />
       <MobilePlayerOverlay
