@@ -16,11 +16,9 @@ export function AppNavigator() {
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const isAuthenticated = hasServerUrl && !!storage.getItem("tentacle_token");
 
-  const initialRouteName = !hasServerUrl
-    ? "ServerSetup"
-    : isAuthenticated
-      ? "Home"
-      : "Login";
+  const initialRouteName = isAuthenticated
+    ? "Home"
+    : "PairCode";
 
   return (
     <Stack.Navigator

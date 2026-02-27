@@ -19,22 +19,26 @@ function generateCode(): string {
 
 const generateSchema = z.object({
   deviceName: z.string().max(100).optional(),
-  deviceId: z.string().max(255).optional(),
 });
 
-const confirmSchema = z.object({
+const claimSchema = z.object({
   code: z
     .string()
     .length(4)
     .transform((s) => s.toUpperCase()),
+  deviceName: z.string().max(100).optional(),
 });
 
 export const pairRoutes: FastifyPluginAsync = async (app) => {
-  // ── POST /generate — TV requests a pairing code (no auth) ──
+  // ── POST /generate — Web user generates a pairing code (auth required) ──
   app.post(
     "/generate",
-    { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } },
+    {
+      preHandler: [requireAuth],
+      config: { rateLimit: { max: 10, timeWindow: "1 hour" } },
+    },
     async (request, reply) => {
+      const user = (request as any).user as JellyfinUser;
       const body = generateSchema.parse(request.body ?? {});
       const prisma = getPrisma();
 
@@ -62,13 +66,26 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
           .send({ message: "Impossible de générer un code, réessayez." });
       }
 
+      // Generate long-lived JWT for the future TV device
+      const deviceId = crypto.randomUUID();
+      const token = await signDeviceToken({
+        userId: user.userId,
+        username: user.username,
+        isAdmin: user.isAdmin,
+        deviceId,
+      });
+
       const expiresAt = new Date(Date.now() + CODE_TTL_MS);
       await prisma.pairingCode.create({
         data: {
           code,
           deviceName: body.deviceName ?? "TV",
-          deviceId: body.deviceId,
+          deviceId,
           expiresAt,
+          jellyfinUserId: user.userId,
+          username: user.username,
+          token,
+          status: "pending",
         },
       });
 
@@ -76,52 +93,42 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // ── GET /status/:code — TV polls for confirmation (no auth) ──
-  app.get("/status/:code", async (request) => {
-    const { code } = request.params as { code: string };
-    const prisma = getPrisma();
+  // ── GET /status/:code — Web polls to see if TV claimed the code (auth required) ──
+  app.get(
+    "/status/:code",
+    { preHandler: [requireAuth] },
+    async (request) => {
+      const { code } = request.params as { code: string };
+      const prisma = getPrisma();
 
-    const record = await prisma.pairingCode.findUnique({
-      where: { code: code.toUpperCase() },
-    });
+      const record = await prisma.pairingCode.findUnique({
+        where: { code: code.toUpperCase() },
+      });
 
-    if (!record) {
-      return { status: "expired" };
-    }
+      if (!record) {
+        return { status: "expired" };
+      }
 
-    if (record.expiresAt < new Date()) {
-      // Clean up expired code
-      await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
-      return { status: "expired" };
-    }
+      if (record.expiresAt < new Date()) {
+        await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
+        return { status: "expired" };
+      }
 
-    if (record.status === "confirmed" && record.token) {
-      const { token, jellyfinUserId, username } = record;
+      if (record.status === "confirmed") {
+        await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
+        return { status: "confirmed", deviceName: record.deviceName };
+      }
 
-      // Delete the code (single-use)
-      await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
-
-      return {
-        status: "confirmed",
-        token,
-        userId: jellyfinUserId,
-        username,
-      };
-    }
-
-    return { status: record.status };
-  });
-
-  // ── POST /confirm — Web user confirms pairing (auth required) ──
-  app.post(
-    "/confirm",
-    {
-      preHandler: [requireAuth],
-      config: { rateLimit: { max: 10, timeWindow: "1 hour" } },
+      return { status: record.status };
     },
+  );
+
+  // ── POST /claim — TV claims a pairing code and gets a token (no auth) ──
+  app.post(
+    "/claim",
+    { config: { rateLimit: { max: 10, timeWindow: "1 hour" } } },
     async (request, reply) => {
-      const user = (request as any).user as JellyfinUser;
-      const body = confirmSchema.parse(request.body);
+      const body = claimSchema.parse(request.body);
       const prisma = getPrisma();
 
       const record = await prisma.pairingCode.findUnique({
@@ -136,37 +143,37 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(409).send({ message: "Code déjà utilisé" });
       }
 
-      // Generate long-lived JWT for the TV
-      const deviceId = record.deviceId || crypto.randomUUID();
-      const token = await signDeviceToken({
-        userId: user.userId,
-        username: user.username,
-        isAdmin: user.isAdmin,
-        deviceId,
-      });
+      if (!record.token) {
+        return reply.status(400).send({ message: "Code invalide" });
+      }
 
       // Register the paired device
       await prisma.pairedDevice.create({
         data: {
-          name: record.deviceName || "TV",
-          jellyfinUserId: user.userId,
-          username: user.username,
-          tokenHash: hashToken(token),
+          name: body.deviceName || record.deviceName || "TV",
+          jellyfinUserId: record.jellyfinUserId!,
+          username: record.username!,
+          tokenHash: hashToken(record.token),
         },
       });
 
-      // Update pairing code so the TV can pick up the token
+      // Mark as claimed
       await prisma.pairingCode.update({
         where: { id: record.id },
-        data: {
-          status: "confirmed",
-          jellyfinUserId: user.userId,
-          username: user.username,
-          token,
-        },
+        data: { status: "confirmed" },
       });
 
-      return { success: true, deviceName: record.deviceName };
+      // Derive the server URL from the request so the TV knows where to connect
+      const proto = request.headers["x-forwarded-proto"] || request.protocol;
+      const host = request.headers["x-forwarded-host"] || request.hostname;
+      const serverUrl = `${proto}://${host}`;
+
+      return {
+        token: record.token,
+        userId: record.jellyfinUserId,
+        username: record.username,
+        serverUrl,
+      };
     },
   );
 
@@ -176,7 +183,6 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     const devices = await prisma.pairedDevice.findMany({
       orderBy: { createdAt: "desc" },
     });
-    // CORRECTION ICI : Ajout du type `: any` pour `d`
     return devices.map((d: any) => ({
       id: d.id,
       name: d.name,

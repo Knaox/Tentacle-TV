@@ -37,9 +37,14 @@ export interface PairingCodeResponse {
 
 export interface PairingStatusResponse {
   status: "pending" | "confirmed" | "expired";
-  token?: string;
-  userId?: string;
-  username?: string;
+  deviceName?: string;
+}
+
+export interface ClaimResponse {
+  token: string;
+  userId: string;
+  username: string;
+  serverUrl: string;
 }
 
 export interface PairedDevice {
@@ -53,10 +58,10 @@ export interface PairedDevice {
 
 // ---------- Hooks ----------
 
-/** Generate a pairing code (used by TV app) */
+/** Generate a pairing code (used by web app, requires auth) */
 export function useGeneratePairingCode() {
   return useMutation({
-    mutationFn: (data?: { deviceName?: string; deviceId?: string }) =>
+    mutationFn: (data?: { deviceName?: string }) =>
       pairFetch<PairingCodeResponse>("/generate", {
         method: "POST",
         body: JSON.stringify(data ?? {}),
@@ -64,7 +69,7 @@ export function useGeneratePairingCode() {
   });
 }
 
-/** Poll pairing status (used by TV app, 3s interval) */
+/** Poll pairing status — web checks if TV claimed the code (requires auth, 3s interval) */
 export function usePairingStatus(code: string | null) {
   return useQuery({
     queryKey: ["pairing-status", code],
@@ -76,13 +81,13 @@ export function usePairingStatus(code: string | null) {
   });
 }
 
-/** Confirm a pairing code (used by web/desktop/mobile, requires auth) */
-export function useConfirmPairing() {
+/** Claim a pairing code — TV sends code and gets token (no auth required) */
+export function useClaimPairingCode() {
   return useMutation({
-    mutationFn: (code: string) =>
-      pairFetch<{ success: boolean; deviceName: string }>("/confirm", {
+    mutationFn: (data: { code: string; deviceName?: string }) =>
+      pairFetch<ClaimResponse>("/claim", {
         method: "POST",
-        body: JSON.stringify({ code: code.toUpperCase() }),
+        body: JSON.stringify({ code: data.code.toUpperCase(), deviceName: data.deviceName }),
       }),
   });
 }

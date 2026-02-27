@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
@@ -45,14 +45,6 @@ const darkTheme = {
   },
 };
 
-/**
- * Configure all backend URL singletons and create the JellyfinClient
- * based on the saved tentacle_server_url.
- *
- * If no URL is saved yet (first launch), a placeholder JellyfinClient
- * is created — the ServerSetupScreen will set the real URL and the
- * LoginScreen will reconfigure before authenticating.
- */
 function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   const baseUrl = tentacleUrl || "http://localhost";
 
@@ -64,7 +56,6 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setConfigBackendUrl(baseUrl);
   setPairingBackendUrl(baseUrl);
 
-  // Jellyfin API is proxied through the Tentacle backend at /api/jellyfin
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
   const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV");
 
