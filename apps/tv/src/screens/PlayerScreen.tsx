@@ -15,8 +15,6 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
-const DBG = "[Tentacle:TVPlayer]";
-
 /** Hermes has no crypto.randomUUID — simple v4 fallback */
 function randomSessionId(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -121,11 +119,10 @@ export function PlayerScreen({ route, navigation }: Props) {
     if (prefsApplied.current || streams.length === 0 || !item || !ancestors) return;
     const parentId = item.ParentId;
     const seriesId = item.SeriesId;
-    const ancestorIds = ancestors.map((a: any) => a.Id);
+    const ancestorIds = ancestors.map((a: { Id: string }) => a.Id);
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) return;
     prefsApplied.current = true;
-    console.debug(DBG, "resolving preferences", { allCandidates });
     resolveTracks.mutate({
       libraryId: allCandidates[0],
       libraryIds: allCandidates,
@@ -135,7 +132,6 @@ export function PlayerScreen({ route, navigation }: Props) {
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
     }, {
       onSuccess: (result) => {
-        console.debug(DBG, "preferences resolved", result);
         if (result.audioIndex != null) {
           if (positionRef.current > 0) {
             setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
@@ -153,7 +149,6 @@ export function PlayerScreen({ route, navigation }: Props) {
   useEffect(() => () => { reportStop(); }, [reportStop]);
 
   const handleLoad = useCallback((_data: OnLoadData) => {
-    console.debug(DBG, "loaded", { jellyfinDuration });
     const resumeTicks = item?.UserData?.PlaybackPositionTicks;
     if (resumeTicks) {
       videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
@@ -177,7 +172,6 @@ export function PlayerScreen({ route, navigation }: Props) {
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    console.debug(DBG, "seek", { clamped });
     videoRef.current?.seek(clamped);
     reportSeek(clamped, paused);
     // Do NOT manually setCurrentTime — let onProgress update from the player
@@ -187,7 +181,6 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   // Audio track change — saves position, triggers URL rebuild for non-default audio
   const handleAudioChange = useCallback((newIndex: number) => {
-    console.debug(DBG, "audio change", { newIndex, position: positionRef.current });
     if (positionRef.current > 0) {
       setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     }

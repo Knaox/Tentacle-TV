@@ -5,7 +5,11 @@ import { useLibraries, useTentacleConfig } from "@tentacle/api-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
+import { SelectionModal } from "../components/SelectionModal";
+import { useTVRemote } from "../components/focus/useTVRemote";
 import { i18n } from "@tentacle/shared";
+import { getLanguageDisplayName } from "../utils/languageNames";
+import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preferences">;
 
@@ -36,6 +40,12 @@ interface LibPref {
   subtitleMode: SubtitleMode;
 }
 
+interface ModalState {
+  type: "audio" | "subtitleLang" | "subtitleMode";
+  libraryId: string;
+  currentValue: string | null;
+}
+
 function langKey(code: string) {
   return `preferences:lang${code.charAt(0).toUpperCase()}${code.slice(1)}`;
 }
@@ -49,11 +59,18 @@ export function PreferencesScreen({ navigation }: Props) {
   const [prefs, setPrefs] = useState<LibPref[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [modal, setModal] = useState<ModalState | null>(null);
 
   const serverUrl = storage.getItem("tentacle_server_url") || "";
   const token = storage.getItem("tentacle_token") || "";
 
-  // Fetch existing preferences
+  useTVRemote({
+    onBack: () => {
+      if (modal) { setModal(null); return; }
+      navigation.goBack();
+    },
+  });
+
   useEffect(() => {
     if (!serverUrl || !token) { setLoading(false); return; }
     fetch(`${serverUrl}/api/preferences`, {
@@ -100,7 +117,6 @@ export function PreferencesScreen({ navigation }: Props) {
     setCurrentLang(code);
     i18n.changeLanguage(code);
     storage.setItem("tentacle_language", code);
-    // Sync to backend (bidirectional — web will pick it up)
     if (serverUrl && token) {
       fetch(`${serverUrl}/api/preferences/language`, {
         method: "PUT",
@@ -110,62 +126,72 @@ export function PreferencesScreen({ navigation }: Props) {
     }
   }, [storage, serverUrl, token]);
 
-  const cycleAudioLang = useCallback((libId: string, current: string | null) => {
-    const idx = current ? AUDIO_LANGS.indexOf(current) : -1;
-    const next = AUDIO_LANGS[(idx + 1) % AUDIO_LANGS.length];
-    const pref = { ...getPref(libId), audioLang: next };
-    updatePref(libId, { audioLang: next });
-    savePref(pref);
-  }, [getPref, updatePref, savePref]);
+  const handleModalSelect = useCallback((value: string) => {
+    if (!modal) return;
+    const pref = getPref(modal.libraryId);
+    let updated: LibPref;
+    if (modal.type === "audio") {
+      updated = { ...pref, audioLang: value };
+      updatePref(modal.libraryId, { audioLang: value });
+    } else if (modal.type === "subtitleLang") {
+      updated = { ...pref, subtitleLang: value };
+      updatePref(modal.libraryId, { subtitleLang: value });
+    } else {
+      updated = { ...pref, subtitleMode: value as SubtitleMode };
+      updatePref(modal.libraryId, { subtitleMode: value as SubtitleMode });
+    }
+    savePref(updated);
+    setModal(null);
+  }, [modal, getPref, updatePref, savePref]);
 
-  const cycleSubtitleMode = useCallback((libId: string, current: SubtitleMode) => {
-    const idx = SUBTITLE_MODES.indexOf(current);
-    const next = SUBTITLE_MODES[(idx + 1) % SUBTITLE_MODES.length];
-    const pref = { ...getPref(libId), subtitleMode: next };
-    updatePref(libId, { subtitleMode: next });
-    savePref(pref);
-  }, [getPref, updatePref, savePref]);
+  const audioOptions = AUDIO_LANGS.map((code) => ({
+    value: code,
+    label: getLanguageDisplayName(code),
+  }));
 
-  const cycleSubtitleLang = useCallback((libId: string, current: string | null) => {
-    const idx = current ? AUDIO_LANGS.indexOf(current) : -1;
-    const next = AUDIO_LANGS[(idx + 1) % AUDIO_LANGS.length];
-    const pref = { ...getPref(libId), subtitleLang: next };
-    updatePref(libId, { subtitleLang: next });
-    savePref(pref);
-  }, [getPref, updatePref, savePref]);
+  const subtitleModeOptions = SUBTITLE_MODES.map((mode) => ({
+    value: mode,
+    label: t(SUBTITLE_MODE_KEYS[mode]),
+  }));
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
-      <ScrollView contentContainerStyle={{ padding: 48, paddingBottom: 80 }}>
+    <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
+      <ScrollView contentContainerStyle={{ padding: Spacing.screenPadding, paddingBottom: 80 }}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-          <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus>
-            <View style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.08)" }}>
-              <Text style={{ color: "#c4b5fd", fontSize: 16, fontWeight: "600" }}>
+          <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus={!modal}>
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 10, borderRadius: Radius.small,
+              backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: Colors.glassBorder,
+            }}>
+              <Text style={{ color: Colors.accentPurpleLight, ...Typography.buttonMedium }}>
                 {t("common:back")}
               </Text>
             </View>
           </Focusable>
-          <Text style={{ color: "#fff", fontSize: 28, fontWeight: "800", marginLeft: 24 }}>
+          <Text style={{ color: Colors.textPrimary, ...Typography.pageTitle, marginLeft: 24 }}>
             {t("preferences:title")}
           </Text>
-          {saving && <ActivityIndicator size="small" color="#8b5cf6" style={{ marginLeft: 16 }} />}
+          {saving && <ActivityIndicator size="small" color={Colors.accentPurple} style={{ marginLeft: 16 }} />}
         </View>
-        <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 15, marginBottom: 32 }}>
+        <Text style={{ color: Colors.textMuted, fontSize: 15, marginBottom: 40 }}>
           {t("preferences:subtitle")}
         </Text>
 
         {/* Interface Language */}
         <SectionTitle text={t("preferences:interfaceLanguage")} />
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 32 }}>
+        <View style={{ flexDirection: "row", gap: 12, marginBottom: 48 }}>
           {INTERFACE_LANGS.map((lang) => (
             <Focusable key={lang.code} onPress={() => changeInterfaceLang(lang.code)}>
               <View style={{
-                paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10,
-                backgroundColor: currentLang === lang.code ? "#8b5cf6" : "rgba(255,255,255,0.06)",
-                borderWidth: 2, borderColor: currentLang === lang.code ? "#8b5cf6" : "transparent",
+                paddingHorizontal: 28, paddingVertical: 14, borderRadius: Radius.button,
+                backgroundColor: currentLang === lang.code ? Colors.accentPurple : "rgba(255,255,255,0.04)",
+                borderWidth: 2, borderColor: currentLang === lang.code ? Colors.accentPurple : Colors.glassBorder,
               }}>
-                <Text style={{ color: "#fff", fontSize: 16, fontWeight: currentLang === lang.code ? "700" : "400" }}>
+                <Text style={{
+                  color: Colors.textPrimary, fontSize: 16,
+                  fontWeight: currentLang === lang.code ? "700" : "400",
+                }}>
                   {t(lang.labelKey)}
                 </Text>
               </View>
@@ -173,53 +199,65 @@ export function PreferencesScreen({ navigation }: Props) {
           ))}
         </View>
 
-        {loading && (
-          <ActivityIndicator size="large" color="#8b5cf6" style={{ marginTop: 24 }} />
-        )}
+        {loading && <ActivityIndicator size="large" color={Colors.accentPurple} style={{ marginTop: 24 }} />}
 
         {/* Per-library preferences */}
         {!loading && (libraries ?? []).map((lib) => {
           const pref = getPref(lib.Id);
           return (
             <View key={lib.Id} style={{
-              backgroundColor: "#12121a", borderRadius: 12, padding: 24, marginBottom: 20,
-              borderWidth: 1, borderColor: "#1e1e2e",
+              backgroundColor: Colors.bgSurface, borderRadius: Radius.card,
+              padding: Spacing.glassPadding, marginBottom: 24,
+              borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700", marginBottom: 16 }}>
+              <Text style={{ color: Colors.textPrimary, fontSize: 22, fontWeight: "700", marginBottom: 24 }}>
                 {lib.Name}
               </Text>
-
-              <View style={{ flexDirection: "row", gap: 24, flexWrap: "wrap" }}>
-                {/* Audio language */}
+              <View style={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
                 <PrefButton
                   label={t("preferences:audio")}
-                  value={pref.audioLang ? t(langKey(pref.audioLang)) : t("preferences:default")}
-                  onPress={() => cycleAudioLang(lib.Id, pref.audioLang)}
+                  value={pref.audioLang ? getLanguageDisplayName(pref.audioLang) : t("preferences:default")}
+                  onPress={() => setModal({ type: "audio", libraryId: lib.Id, currentValue: pref.audioLang })}
                 />
-                {/* Subtitle mode */}
                 <PrefButton
                   label={t("preferences:subtitleMode")}
                   value={t(SUBTITLE_MODE_KEYS[pref.subtitleMode])}
-                  onPress={() => cycleSubtitleMode(lib.Id, pref.subtitleMode)}
+                  onPress={() => setModal({ type: "subtitleMode", libraryId: lib.Id, currentValue: pref.subtitleMode })}
                 />
-                {/* Subtitle language */}
                 <PrefButton
                   label={t("preferences:subtitles")}
-                  value={pref.subtitleLang ? t(langKey(pref.subtitleLang)) : t("preferences:default")}
-                  onPress={() => cycleSubtitleLang(lib.Id, pref.subtitleLang)}
+                  value={pref.subtitleLang ? getLanguageDisplayName(pref.subtitleLang) : t("preferences:default")}
+                  onPress={() => setModal({ type: "subtitleLang", libraryId: lib.Id, currentValue: pref.subtitleLang })}
                 />
               </View>
             </View>
           );
         })}
       </ScrollView>
+
+      {/* Selection modal */}
+      {modal && (
+        <SelectionModal
+          title={
+            modal.type === "audio" ? t("preferences:audio")
+            : modal.type === "subtitleLang" ? t("preferences:subtitles")
+            : t("preferences:subtitleMode")
+          }
+          options={
+            modal.type === "subtitleMode" ? subtitleModeOptions : audioOptions
+          }
+          selectedValue={modal.currentValue}
+          onSelect={handleModalSelect}
+          onClose={() => setModal(null)}
+        />
+      )}
     </View>
   );
 }
 
 function SectionTitle({ text }: { text: string }) {
   return (
-    <Text style={{ color: "#c4b5fd", fontSize: 17, fontWeight: "700", marginBottom: 12 }}>
+    <Text style={{ color: Colors.accentPurpleLight, fontSize: 17, fontWeight: "700", marginBottom: 16 }}>
       {text}
     </Text>
   );
@@ -229,14 +267,14 @@ function PrefButton({ label, value, onPress }: { label: string; value: string; o
   return (
     <Focusable onPress={onPress}>
       <View style={{
-        backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10,
-        paddingHorizontal: 20, paddingVertical: 14, minWidth: 180,
-        borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+        backgroundColor: "rgba(255,255,255,0.03)", borderRadius: Radius.button,
+        paddingHorizontal: 24, paddingVertical: 16, minWidth: 200,
+        borderWidth: 1, borderColor: Colors.glassBorder,
       }}>
-        <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 4 }}>
+        <Text style={{ color: Colors.textTertiary, ...Typography.caption, marginBottom: 6 }}>
           {label}
         </Text>
-        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+        <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
           {value}
         </Text>
       </View>

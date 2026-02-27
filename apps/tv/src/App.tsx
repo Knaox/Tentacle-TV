@@ -13,11 +13,13 @@ import {
   setNotificationsBackendUrl,
   setConfigBackendUrl,
   setPairingBackendUrl,
+  setPreferencesToken,
   fetchInterfaceLanguage,
 } from "@tentacle/api-client";
 import { initI18n, i18n } from "@tentacle/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
+import { SidebarProvider } from "./context/SidebarContext";
 
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
@@ -61,11 +63,15 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV");
 
   const savedToken = storage.getItem("tentacle_token");
-  if (savedToken) jfClient.setAccessToken(savedToken);
+  if (savedToken) {
+    jfClient.setAccessToken(savedToken);
+    setPreferencesToken(savedToken);
+  }
 
   jfClient.setOnAuthExpired(() => {
     storage.removeItem("tentacle_token");
     storage.removeItem("tentacle_user");
+    setPreferencesToken(null);
     queryClient.clear();
   });
 
@@ -113,9 +119,11 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <TentacleConfigContext.Provider value={{ storage, uuid }}>
         <JellyfinClientContext.Provider value={client}>
-          <NavigationContainer theme={darkTheme}>
-            <AppNavigator />
-          </NavigationContainer>
+          <SidebarProvider>
+            <NavigationContainer theme={darkTheme}>
+              <AppNavigator />
+            </NavigationContainer>
+          </SidebarProvider>
         </JellyfinClientContext.Provider>
       </TentacleConfigContext.Provider>
     </QueryClientProvider>

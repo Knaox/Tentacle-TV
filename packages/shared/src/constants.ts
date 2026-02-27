@@ -1,5 +1,5 @@
 export const APP_NAME = "Tentacle";
-export const APP_VERSION = "0.8.2";
+export const APP_VERSION = "0.9.0";
 
 /** 1 Jellyfin tick = 100 nanoseconds */
 export const TICKS_PER_SECOND = 10_000_000;
