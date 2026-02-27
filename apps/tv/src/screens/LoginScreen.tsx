@@ -24,7 +24,7 @@ export function LoginScreen({ navigation }: Props) {
 
     const serverUrl = storage.getItem("tentacle_server_url");
     if (!serverUrl) {
-      navigation.replace("ServerSetup");
+      navigation.replace("PairCode");
       return;
     }
 
@@ -59,7 +59,7 @@ export function LoginScreen({ navigation }: Props) {
     storage.removeItem("tentacle_server_url");
     storage.removeItem("tentacle_token");
     storage.removeItem("tentacle_user");
-    navigation.replace("ServerSetup");
+    navigation.replace("PairCode");
   };
 
   return (

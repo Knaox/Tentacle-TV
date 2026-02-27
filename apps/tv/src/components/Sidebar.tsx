@@ -3,6 +3,7 @@ import { View, Text } from "react-native";
 import { useLibraries } from "@tentacle/api-client";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
+import { HomeIcon, SearchIcon, LibraryIcon } from "./icons/TVIcons";
 
 interface SidebarProps {
   onNavigate: (screen: string, params?: Record<string, string>) => void;
@@ -11,12 +12,15 @@ interface SidebarProps {
 interface SidebarItem {
   key: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
 }
 
+const ICON_SIZE = 22;
+const ICON_COLOR = "#c4b5fd";
+
 const FIXED_ITEMS: SidebarItem[] = [
-  { key: "Home", label: "nav:home", icon: "🏠" },
-  { key: "Search", label: "nav:search", icon: "🔍" },
+  { key: "Home", label: "nav:home", icon: <HomeIcon size={ICON_SIZE} color={ICON_COLOR} /> },
+  { key: "Search", label: "nav:search", icon: <SearchIcon size={ICON_SIZE} color={ICON_COLOR} /> },
 ];
 
 export function Sidebar({ onNavigate }: SidebarProps) {
@@ -56,7 +60,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             flexDirection: "row", alignItems: "center", paddingVertical: 12,
             paddingHorizontal: expanded ? 16 : 12, borderRadius: 8, marginBottom: 4,
           }}>
-            <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+            {item.icon}
             {expanded && (
               <Text style={{ color: "#fff", fontSize: 16, marginLeft: 12 }}>{t(item.label)}</Text>
             )}
@@ -74,7 +78,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             flexDirection: "row", alignItems: "center", paddingVertical: 10,
             paddingHorizontal: expanded ? 16 : 12, borderRadius: 8, marginBottom: 4,
           }}>
-            <Text style={{ fontSize: 18 }}>📁</Text>
+            <LibraryIcon size={20} color="rgba(255,255,255,0.5)" />
             {expanded && (
               <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginLeft: 12 }}>
                 {lib.Name}

@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle/api-client";
 import type { RootStackParamList } from "./types";
-import { ServerSetupScreen } from "../screens/ServerSetupScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MediaDetailScreen } from "../screens/MediaDetailScreen";
@@ -16,9 +15,7 @@ export function AppNavigator() {
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const isAuthenticated = hasServerUrl && !!storage.getItem("tentacle_token");
 
-  const initialRouteName = isAuthenticated
-    ? "Home"
-    : "PairCode";
+  const initialRouteName = isAuthenticated ? "Home" : "PairCode";
 
   return (
     <Stack.Navigator
@@ -29,7 +26,6 @@ export function AppNavigator() {
         contentStyle: { backgroundColor: "#0a0a0f" },
       }}
     >
-      <Stack.Screen name="ServerSetup" component={ServerSetupScreen} />
       <Stack.Screen name="PairCode" component={PairCodeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />

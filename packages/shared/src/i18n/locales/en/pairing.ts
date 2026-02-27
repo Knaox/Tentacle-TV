@@ -21,4 +21,5 @@ export default {
   checkServer: "Check server",
   serverConnected: "Server connected successfully!",
   tvRemoteHint: "Use the remote to enter your server address.",
+  changeServer: "Change server",
 } as const;
