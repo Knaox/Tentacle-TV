@@ -50,7 +50,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@tentacle/web':
+      '@tentacle-tv/web':
         specifier: workspace:*
         version: link:../web
     devDependencies:
@@ -69,10 +69,10 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.0
         version: 5.90.21(react@18.3.1)
-      '@tentacle/api-client':
+      '@tentacle-tv/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@tentacle/shared':
+      '@tentacle-tv/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       expo:
@@ -133,10 +133,10 @@ importers:
       '@tanstack/react-query':
         specifier: ^4.43.0
         version: 4.43.0(react-dom@19.2.4(react@18.3.1))(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
-      '@tentacle/api-client':
+      '@tentacle-tv/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@tentacle/shared':
+      '@tentacle-tv/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       i18next:
@@ -209,13 +209,13 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.0
         version: 5.90.21(react@19.2.4)
-      '@tentacle/api-client':
+      '@tentacle-tv/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@tentacle/shared':
+      '@tentacle-tv/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@tentacle/ui':
+      '@tentacle-tv/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       framer-motion:
@@ -285,7 +285,7 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.0
         version: 5.90.21(react@19.2.4)
-      '@tentacle/shared':
+      '@tentacle-tv/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
