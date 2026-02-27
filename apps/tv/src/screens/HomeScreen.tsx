@@ -31,11 +31,9 @@ export function HomeScreen({ navigation }: Props) {
   const nextUp = nextUpQuery.data;
   const libraries = librariesQuery.data;
 
-  // Check if all queries failed (connection issue)
   const allFailed =
     featuredQuery.isError && librariesQuery.isError;
 
-  // Loading state: queries are fetching and we have no data yet
   const isLoading =
     (featuredQuery.isLoading || librariesQuery.isLoading) &&
     !featured && !libraries;
@@ -48,9 +46,17 @@ export function HomeScreen({ navigation }: Props) {
     navigation.navigate("Player", { itemId: item.Id });
   }, [navigation]);
 
-  const handleSidebarNav = useCallback((screen: string) => {
+  const handleSidebarNav = useCallback((screen: string, params?: Record<string, string>) => {
     if (screen === "Search") navigation.navigate("Search");
-  }, [navigation]);
+    else if (screen === "Preferences") navigation.navigate("Preferences");
+    else if (screen === "About") navigation.navigate("About");
+    else if (screen === "Logout") {
+      storage.removeItem("tentacle_token");
+      storage.removeItem("tentacle_user");
+      navigation.replace("PairCode");
+    }
+    // "Home" with optional libraryId — scroll to library or stay
+  }, [navigation, storage]);
 
   const handleLogout = useCallback(() => {
     storage.removeItem("tentacle_token");
@@ -66,7 +72,6 @@ export function HomeScreen({ navigation }: Props) {
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: "#0a0a0f" }}>
       <Sidebar onNavigate={handleSidebarNav} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 48, flexGrow: 1 }}>
-        {/* Connection error state */}
         {allFailed && (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 48 }}>
             <Text style={{ color: "#ef4444", fontSize: 22, fontWeight: "700", marginBottom: 12 }}>
@@ -124,6 +129,7 @@ export function HomeScreen({ navigation }: Props) {
                 keyExtractor={(item) => item.Id}
                 itemWidth={180}
                 style={{ marginTop: 24 }}
+                onItemPress={navigateToDetail}
               />
             )}
             {nextUp && nextUp.length > 0 && (
@@ -134,10 +140,17 @@ export function HomeScreen({ navigation }: Props) {
                 keyExtractor={(item) => item.Id}
                 itemWidth={180}
                 style={{ marginTop: 24 }}
+                onItemPress={navigateToDetail}
               />
             )}
             {(libraries ?? []).map((lib) => (
-              <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} renderCard={renderCard} />
+              <LibraryRow
+                key={lib.Id}
+                libraryId={lib.Id}
+                libraryName={lib.Name}
+                renderCard={renderCard}
+                onItemPress={navigateToDetail}
+              />
             ))}
           </>
         )}
@@ -146,8 +159,10 @@ export function HomeScreen({ navigation }: Props) {
   );
 }
 
-function LibraryRow({ libraryId, libraryName, renderCard }: {
-  libraryId: string; libraryName: string; renderCard: (item: MediaItem) => React.ReactNode;
+function LibraryRow({ libraryId, libraryName, renderCard, onItemPress }: {
+  libraryId: string; libraryName: string;
+  renderCard: (item: MediaItem) => React.ReactNode;
+  onItemPress: (item: MediaItem) => void;
 }) {
   const { data } = useLatestItems(libraryId);
   const { t } = useTranslation("common");
@@ -160,6 +175,7 @@ function LibraryRow({ libraryId, libraryName, renderCard }: {
       keyExtractor={(item) => item.Id}
       itemWidth={180}
       style={{ marginTop: 24 }}
+      onItemPress={onItemPress}
     />
   );
 }

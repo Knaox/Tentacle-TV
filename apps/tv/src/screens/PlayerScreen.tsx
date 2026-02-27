@@ -17,6 +17,14 @@ type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
 const DBG = "[Tentacle:TVPlayer]";
 
+/** Hermes has no crypto.randomUUID — simple v4 fallback */
+function randomSessionId(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 function formatTrackLabel(s: JfStream): string {
   const title = s.DisplayTitle || s.Title || s.Language || `Track ${s.Index}`;
   const codec = s.Codec?.toUpperCase();
@@ -82,7 +90,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // find the correct transcode started by master.m3u8.
   const playSessionId = useMemo(() => {
     if (isDirectPlay) return undefined;
-    return crypto.randomUUID();
+    return randomSessionId();
   }, [audioIndex, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {

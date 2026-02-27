@@ -10,6 +10,7 @@ interface FocusableRowProps<T> {
   itemWidth: number;
   gap?: number;
   style?: ViewStyle;
+  onItemPress?: (item: T) => void;
 }
 
 export function FocusableRow<T>({
@@ -20,6 +21,7 @@ export function FocusableRow<T>({
   itemWidth,
   gap = 16,
   style,
+  onItemPress,
 }: FocusableRowProps<T>) {
   const listRef = useRef<FlatList>(null);
 
@@ -63,7 +65,10 @@ export function FocusableRow<T>({
         })}
         renderItem={({ item, index }) => (
           <View style={{ width: itemWidth, marginRight: gap }}>
-            <Focusable onFocus={() => scrollToIndex(index)}>
+            <Focusable
+              onFocus={() => scrollToIndex(index)}
+              onPress={() => onItemPress?.(item)}
+            >
               {renderItem(item, index)}
             </Focusable>
           </View>

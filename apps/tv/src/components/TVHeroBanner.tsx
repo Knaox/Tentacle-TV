@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { View, Text, Image, Animated, Dimensions } from "react-native";
 import { useJellyfinClient } from "@tentacle/api-client";
 import type { MediaItem } from "@tentacle/shared";
+import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -13,6 +14,7 @@ interface TVHeroBannerProps {
 }
 
 export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
+  const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const [index, setIndex] = useState(0);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -64,12 +66,12 @@ export function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
         <View style={{ flexDirection: "row", gap: 16, marginTop: 20 }}>
           <Focusable onPress={() => onPlay(item)} hasTVPreferredFocus>
             <View style={{ backgroundColor: "#8b5cf6", paddingHorizontal: 32, paddingVertical: 12, borderRadius: 8 }}>
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>Lecture</Text>
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>{t("common:play")}</Text>
             </View>
           </Focusable>
           <Focusable onPress={() => onDetail(item)}>
             <View style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 32, paddingVertical: 12, borderRadius: 8 }}>
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>Plus d'infos</Text>
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>{t("common:moreInfo")}</Text>
             </View>
           </Focusable>
         </View>

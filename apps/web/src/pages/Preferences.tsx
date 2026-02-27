@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference } from "@tentacle/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage } from "@tentacle/api-client";
 import type { LibraryPreference } from "@tentacle/api-client";
 
 const LANGUAGE_CODES = [
@@ -62,10 +62,12 @@ export function Preferences() {
   const { data: prefs } = useLibraryPreferences();
   const setMut = useSetLibraryPreference();
   const deleteMut = useDeleteLibraryPreference();
+  const setLangMut = useSetInterfaceLanguage();
 
   const handleInterfaceLangChange = (lng: string) => {
     i18n.changeLanguage(lng);
     localStorage.setItem("tentacle_language", lng);
+    setLangMut.mutate(lng);
     queryClient.invalidateQueries();
   };
 

@@ -19,7 +19,7 @@ export { useRequestMedia, useMyRequests, useAllRequests, useCancelRequest, useRe
 export type { MediaRequest, RequestsPage } from "./hooks/useRequests";
 
 // Library language/subtitle preferences
-export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, setPreferencesBackendUrl } from "./hooks/usePreferences";
+export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";
 
 // Support tickets

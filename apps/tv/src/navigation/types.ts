@@ -5,4 +5,6 @@ export type RootStackParamList = {
   MediaDetail: { itemId: string };
   Player: { itemId: string };
   Search: undefined;
+  Preferences: undefined;
+  About: undefined;
 };
