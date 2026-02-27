@@ -18,6 +18,8 @@ interface FocusableProps {
   testID?: string;
   /** Disable the focus border (e.g. for cards that have their own styling) */
   noBorder?: boolean;
+  /** Custom border radius for the focus ring (default: 12) */
+  focusRadius?: number;
 }
 
 const SPRING_CONFIG = {
@@ -34,6 +36,7 @@ export function Focusable({
   children,
   testID,
   noBorder = false,
+  focusRadius = 12,
 }: FocusableProps) {
   const progress = useSharedValue(0);
 
@@ -83,7 +86,7 @@ export function Focusable({
                 bottom: -3,
                 borderWidth: 3,
                 borderColor: "#a78bfa",
-                borderRadius: 12,
+                borderRadius: focusRadius,
                 backgroundColor: "rgba(139, 92, 246, 0.12)",
               },
               ringStyle,

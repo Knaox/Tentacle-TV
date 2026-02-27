@@ -31,9 +31,15 @@ const config = {
       // Redirect singleton packages to the TV app's copy
       if (singletonPkgs[moduleName]) {
         return {
-          filePath: require.resolve(moduleName, {
-            paths: [projectRoot],
-          }),
+          filePath: require.resolve(moduleName, { paths: [projectRoot] }),
+          type: "sourceFile",
+        };
+      }
+      // Redirect react-native sub-path imports (e.g. react-native/Libraries/...)
+      // to react-native-tvos to avoid resolving the standard react-native from monorepo root
+      if (moduleName.startsWith("react-native/")) {
+        return {
+          filePath: require.resolve(moduleName, { paths: [projectRoot] }),
           type: "sourceFile",
         };
       }

@@ -43,7 +43,7 @@ export function WelcomeStep({
         <Text style={styles.subtitle}>{t("pairing:tvWelcomeSubtitle")}</Text>
 
         {/* Primary CTA */}
-        <Focusable onPress={onShowCode} hasTVPreferredFocus>
+        <Focusable onPress={onShowCode} hasTVPreferredFocus focusRadius={Radius.buttonLarge + 3} style={{ alignSelf: "center" }}>
           <View style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>
               {t("pairing:showPairingCode")}
@@ -52,7 +52,7 @@ export function WelcomeStep({
         </Focusable>
 
         {/* Manual fallback link */}
-        <Focusable onPress={onManualSetup}>
+        <Focusable onPress={onManualSetup} focusRadius={Radius.button + 3} style={{ alignSelf: "center" }}>
           <View style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
               {t("pairing:configureManually")}
@@ -123,12 +123,16 @@ const styles = {
   },
   secondaryButton: {
     paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    backgroundColor: Colors.bgElevated,
+    borderRadius: Radius.button,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
   },
   secondaryButtonText: {
-    color: Colors.textTertiary,
-    fontSize: 14,
-    fontWeight: "400" as const,
+    color: Colors.textSecondary,
+    fontSize: 15,
+    fontWeight: "500" as const,
     textAlign: "center" as const,
   },
 } as const;
