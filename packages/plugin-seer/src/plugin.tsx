@@ -43,15 +43,15 @@ function ConfigIcon({ className }: { className?: string }) {
 
 export const seerPlugin: TentaclePlugin = {
   id: "seer",
-  name: "Seer - Demandes de medias",
+  name: "Seer - Demandes de médias",
   version: "1.0.0",
-  description: "Demandez des films et series via Jellyseerr. Decouvrez du contenu, demandez en 1 clic, suivez vos demandes.",
+  description: "Demandez des films et séries via Jellyseerr. Découvrez du contenu, demandez en 1 clic, suivez vos demandes.",
 
   routes: [
     {
       path: "/discover",
       component: DiscoverPage,
-      label: "Decouvrir",
+      label: "Découvrir",
       icon: DiscoverIcon,
       showInMobileNav: true,
       showInSidebar: true,
@@ -70,7 +70,7 @@ export const seerPlugin: TentaclePlugin = {
 
   navItems: [
     {
-      label: "Decouvrir",
+      label: "Découvrir",
       path: "/discover",
       icon: DiscoverIcon,
       platforms: ["web", "desktop", "mobile"],

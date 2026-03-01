@@ -15,7 +15,7 @@ const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m
 const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
 const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
-const Downloads = lazy(() => import("./pages/Downloads").then((m) => ({ default: m.Downloads })));
+
 const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
 const Admin = lazy(() => import("./pages/Admin").then((m) => ({ default: m.Admin })));
 const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
@@ -106,11 +106,11 @@ export function App() {
           <div className="mb-4 text-5xl">&#x26A0;</div>
           <h1 className="mb-2 text-xl font-bold text-white">Serveur indisponible</h1>
           <p className="mb-6 text-sm text-white/50">
-            Le backend Tentacle TV ne repond pas. Verifiez que le service est demarre et consultez les logs du serveur.
+            Le backend Tentacle TV ne répond pas. Vérifiez que le service est démarré et consultez les logs du serveur.
           </p>
           <button onClick={() => window.location.reload()}
             className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-700">
-            Reessayer
+            Réessayer
           </button>
         </div>
       </div>
@@ -147,7 +147,7 @@ export function App() {
           <Route element={guard(<AppLayout />)}>
             <Route index element={<Home />} />
             <Route path="library/:libraryId" element={<Library />} />
-            <Route path="downloads" element={<Downloads />} />
+
             <Route path="support" element={<Support />} />
             <Route path="settings" element={<Preferences />} />
             <Route path="pair-device" element={<PairDevice />} />

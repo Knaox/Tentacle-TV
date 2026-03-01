@@ -7,9 +7,9 @@ const STATUS_TABS: { value: RequestStatus | "all"; label: string }[] = [
   { value: "all", label: "Toutes" },
   { value: "queued", label: "En attente" },
   { value: "processing", label: "En cours" },
-  { value: "approved", label: "Approuvees" },
+  { value: "approved", label: "Approuvées" },
   { value: "available", label: "Disponibles" },
-  { value: "failed", label: "Echecs" },
+  { value: "failed", label: "Échecs" },
 ];
 
 export function RequestsPage() {
@@ -80,7 +80,7 @@ export function RequestsPage() {
             onClick={() => setPage((p) => p - 1)}
             className="rounded-lg bg-white/5 px-4 py-2 text-sm text-white/60 hover:bg-white/10 disabled:opacity-30"
           >
-            Precedent
+            Précédent
           </button>
           <span className="text-sm text-white/40">{page} / {totalPages}</span>
           <button

@@ -52,13 +52,13 @@ export function Admin() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Plugins</h2>
-            <p className="mt-1 text-sm text-white/40">Gerez vos plugins, explorez le marketplace et ajoutez des sources.</p>
+            <p className="mt-1 text-sm text-white/40">Gérez vos plugins, explorez le marketplace et ajoutez des sources.</p>
           </div>
           <button
             onClick={() => navigate("/admin/plugins")}
             className="rounded-lg bg-purple-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-500"
           >
-            Gerer les plugins
+            Gérer les plugins
           </button>
         </div>
       </div>
@@ -95,7 +95,7 @@ export function Admin() {
 
 /* ── Services ── */
 interface DbFields { host: string; port: number; database: string; user: string }
-interface SvcData { jellyfin: { status: string; url: string; version: string }; seerr: { status: string; url: string }; database: { status: string; fromEnv: boolean; fields?: DbFields }; }
+interface SvcData { jellyfin: { status: string; url: string; version: string }; database: { status: string; fromEnv: boolean; fields?: DbFields }; }
 const dot = (s: string) => `inline-block h-2 w-2 rounded-full mr-1.5 ${s === "connected" ? "bg-green-400" : s === "error" ? "bg-red-400" : "bg-white/30"}`;
 
 function ServicesSection() {
@@ -104,12 +104,10 @@ function ServicesSection() {
 
   const [d, setD] = useState<SvcData | null>(null);
   const [jUrl, setJUrl] = useState(""); const [jKey, setJKey] = useState("");
-  const [sUrl, setSUrl] = useState(""); const [sKey, setSKey] = useState("");
   const [dbHost, setDbHost] = useState("localhost"); const [dbPort, setDbPort] = useState("3306");
   const [dbName, setDbName] = useState("tentacle"); const [dbUser, setDbUser] = useState("");
   const [dbPass, setDbPass] = useState("");
   const [jMsg, setJMsg] = useState<{ ok: boolean; t: string } | null>(null);
-  const [sMsg, setSMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [dbMsg, setDbMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [busy, setBusy] = useState("");
 
@@ -119,7 +117,6 @@ function ServicesSection() {
       if (r.ok) {
         const j: SvcData = await r.json(); setD(j);
         if (j.jellyfin.url) setJUrl(j.jellyfin.url);
-        if (j.seerr.url) setSUrl(j.seerr.url);
         if (j.database.fields) {
           setDbHost(j.database.fields.host); setDbPort(String(j.database.fields.port));
           setDbName(j.database.fields.database); setDbUser(j.database.fields.user);
@@ -139,9 +136,6 @@ function ServicesSection() {
   };
   const testJ = async () => { setBusy("tj"); setJMsg(null); const r = await aFetch("/test-jellyfin", "POST", { url: jUrl, apiKey: jKey }); setJMsg({ ok: r.ok, t: r.ok ? `Jellyfin ${r.d.version || ""} - ${r.d.serverName || ""}` : r.msg }); setBusy(""); };
   const saveJ = async () => { setBusy("sj"); setJMsg(null); const r = await aFetch("/jellyfin", "PUT", { url: jUrl, apiKey: jKey }); setJMsg({ ok: r.ok, t: r.ok ? t("admin:save") : r.msg }); if (r.ok) await load(); setBusy(""); };
-  const testS = async () => { setBusy("ts"); setSMsg(null); const r = await aFetch("/test-seerr", "POST", { url: sUrl, apiKey: sKey }); setSMsg({ ok: r.ok, t: r.ok ? t("admin:seerrConnectionSuccess") : r.msg }); setBusy(""); };
-  const saveS = async () => { setBusy("ss"); setSMsg(null); const r = await aFetch("/seerr", "PUT", { url: sUrl, apiKey: sKey }); setSMsg({ ok: r.ok, t: r.ok ? t("admin:save") : r.msg }); if (r.ok) await load(); setBusy(""); };
-  const delS = async () => { if (!confirm(t("admin:seerrDeleteWarning"))) return; setBusy("ds"); setSMsg(null); const r = await aFetch("/seerr", "DELETE"); setSMsg({ ok: r.ok, t: r.ok ? t("admin:delete") : r.msg }); if (r.ok) { setSUrl(""); setSKey(""); await load(); } setBusy(""); };
   const saveDb = async () => { setBusy("sdb"); setDbMsg(null); const r = await aFetch("/database", "PUT", { host: dbHost, port: Number(dbPort), database: dbName, user: dbUser, password: dbPass }); setDbMsg({ ok: r.ok, t: r.ok ? t("admin:dbRestartNote") : r.msg }); setBusy(""); };
   const [resetConfirm, setResetConfirm] = useState(false);
   const resetServer = async () => { setBusy("rst"); const r = await aFetch("/reset-server", "POST", {}); if (r.ok) { localStorage.removeItem("tentacle_token"); localStorage.removeItem("tentacle_user"); window.location.reload(); } else { setDbMsg({ ok: false, t: r.msg }); } setBusy(""); setResetConfirm(false); };
@@ -160,18 +154,6 @@ function ServicesSection() {
         </div>
         <div className="flex items-center gap-2"><button onClick={testJ} disabled={!!busy || !jUrl || !jKey} className={cls.bs}>{busy === "tj" ? `${t("admin:test")}...` : t("admin:test")}</button>
           <button onClick={saveJ} disabled={!!busy || !jUrl || !jKey} className={cls.bp}>{busy === "sj" ? "..." : t("admin:save")}</button><Msg m={jMsg} /></div>
-      </div>
-      <div className={cls.sub}>
-        <div className="flex items-center gap-2"><span className={dot(d.seerr.status)} /><span className="text-sm font-medium text-white">{t("admin:seerr")}</span><span className="text-xs text-white/40">{sLabel(d.seerr.status)}</span>
-          <span className="ml-auto rounded bg-white/5 px-2 py-0.5 text-xs text-white/30">{t("admin:seerrOptional")}</span></div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div><label className={cls.lbl}>{t("admin:serverUrl")}</label><input value={sUrl} onChange={e => setSUrl(e.target.value)} placeholder="http://localhost:5055" className={cls.inp} /></div>
-          <div><label className={cls.lbl}>{t("admin:apiKey")}</label><input value={sKey} onChange={e => setSKey(e.target.value)} placeholder={t("admin:apiKey")} className={cls.inp} type="password" /></div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap"><button onClick={testS} disabled={!!busy || !sUrl || !sKey} className={cls.bs}>{busy === "ts" ? `${t("admin:test")}...` : t("admin:test")}</button>
-          <button onClick={saveS} disabled={!!busy || !sUrl || !sKey} className={cls.bp}>{busy === "ss" ? "..." : t("admin:save")}</button>
-          {d.seerr.status !== "not_configured" && <button onClick={delS} disabled={!!busy} className={cls.bd}>{busy === "ds" ? "..." : t("admin:delete")}</button>}<Msg m={sMsg} /></div>
-        <p className="text-xs text-white/30">{t("admin:seerrDeleteWarning")}</p>
       </div>
       <div className={cls.sub}>
         <div className="flex items-center gap-2"><span className={dot(d.database.status)} /><span className="text-sm font-medium text-white">{t("admin:database")}</span><span className="text-xs text-white/40">{sLabel(d.database.status)}</span></div>

@@ -8,7 +8,7 @@ import {
   WebStorageAdapter,
   WebUuidGenerator,
   TentacleConfigContext,
-  setSeerrBackendUrl,
+
   setRequestsBackendUrl,
   setPreferencesBackendUrl,
   setTicketsBackendUrl,
@@ -50,7 +50,6 @@ export const backendUrl = isTauriApp
 
 /** Reconfigure all backend service URLs for a given base URL */
 export function configureBackendUrls(url: string) {
-  setSeerrBackendUrl(url);
   setRequestsBackendUrl(url);
   setPreferencesBackendUrl(url);
   setTicketsBackendUrl(url);
