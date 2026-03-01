@@ -13,8 +13,8 @@ export function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(input.trim()), 350);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(input.trim()), 350);
+    return () => clearTimeout(timer);
   }, [input]);
 
   const { data: results, isLoading } = useSearchItems(debounced);
@@ -47,7 +47,10 @@ export function GlobalSearch() {
 
   // Mobile tab bar integration
   useEffect(() => {
-    const handler = () => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 50); };
+    const handler = () => {
+      setOpen(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    };
     window.addEventListener("open-global-search", handler);
     return () => window.removeEventListener("open-global-search", handler);
   }, []);
@@ -60,31 +63,69 @@ export function GlobalSearch() {
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Collapsed: search icon button */}
+      {/* Collapsed: search button */}
       {!open && (
-        <button onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
-          className="flex items-center gap-2 rounded-xl bg-black/50 px-4 py-2 text-sm text-white/60 ring-1 ring-white/15 backdrop-blur-md transition-all hover:bg-black/70 hover:text-white/80">
+        <button
+          onClick={() => {
+            setOpen(true);
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm transition-all duration-300"
+          style={{
+            width: 220,
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            backdropFilter: "blur(12px)",
+            color: "rgba(255,255,255,0.3)",
+          }}
+        >
           <SearchIcon />
-          <span className="hidden sm:inline">{t("common:searchPlaceholder")}</span>
-          <kbd className="hidden rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/30 sm:inline">{t("common:ctrlK")}</kbd>
+          <span className="hidden flex-1 text-left sm:inline">{t("common:searchPlaceholder")}</span>
+          <kbd
+            className="hidden rounded px-1.5 py-0.5 text-[10px] text-white/20 sm:inline"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            {t("common:ctrlK")}
+          </kbd>
         </button>
       )}
 
       {/* Expanded: input + dropdown */}
       {open && (
-        <div className="w-[calc(100vw-5rem)] max-w-80">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t("common:searchMediaLong")}
-            className="w-full rounded-xl bg-black/60 px-4 py-2 text-sm text-white placeholder-white/40 outline-none ring-1 ring-purple-500/50 backdrop-blur-md"
-            autoFocus
-          />
+        <div style={{ width: 320 }} className="transition-all duration-300">
+          <div
+            className="flex items-center gap-2 rounded-xl px-4 py-2.5"
+            style={{
+              background: "rgba(139,92,246,0.1)",
+              border: "1px solid rgba(139,92,246,0.3)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <SearchIcon focused />
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t("common:searchMediaLong")}
+              className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/30 outline-none"
+              autoFocus
+            />
+          </div>
 
           {/* Results dropdown */}
           {debounced.length >= 2 && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-white/10 bg-black/95 backdrop-blur-xl">
+            <div
+              className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl animate-fade-slide-down"
+              style={{
+                background: "rgba(15,15,25,0.95)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+              }}
+            >
               {isLoading && (
                 <div className="flex justify-center py-6">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-tentacle-accent border-t-transparent" />
@@ -118,22 +159,31 @@ function SearchResultItem({ item, onSelect }: { item: MediaItem; onSelect: (item
   const type = item.Type === "Movie" ? t("common:movie") : item.Type === "Series" ? t("common:series") : item.Type;
 
   return (
-    <button onClick={() => onSelect(item)}
-      className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-white/5">
+    <button
+      onClick={() => onSelect(item)}
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150 hover:bg-white/5"
+    >
       <img src={poster} alt="" className="h-12 w-8 flex-shrink-0 rounded object-cover" loading="lazy" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-white">{item.Name}</p>
         <p className="text-xs text-white/40">
-          {type}{year ? ` — ${year}` : ""}
+          {type}
+          {year ? ` — ${year}` : ""}
         </p>
       </div>
     </button>
   );
 }
 
-function SearchIcon() {
+function SearchIcon({ focused }: { focused?: boolean }) {
   return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg
+      className={`h-4 w-4 transition-colors duration-200 ${focused ? "text-white/70" : "text-white/30"}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   );

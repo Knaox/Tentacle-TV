@@ -39,22 +39,35 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="relative rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all duration-200 hover:bg-white/10 hover:text-white/80"
+        style={{ background: "rgba(255,255,255,0.05)" }}
       >
         <BellIcon />
         {count > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-            {count > 99 ? "99+" : count}
-          </span>
+          <div
+            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full animate-pulse-glow"
+            style={{
+              background: "#8B5CF6",
+              boxShadow: "0 0 6px rgba(139,92,246,0.6)",
+            }}
+          />
         )}
       </button>
 
       {open && (
-        <div className={`absolute z-50 rounded-xl border border-white/10 bg-tentacle-surface shadow-2xl ${
-          dropdownPosition === "right"
-            ? "bottom-0 left-full ml-2 w-80"
-            : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-80"
-        }`}>
+        <div
+          className={`absolute z-50 animate-scale-in overflow-hidden rounded-xl ${
+            dropdownPosition === "right"
+              ? "bottom-0 left-full ml-2 w-80 origin-bottom-left"
+              : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-80 origin-top-right"
+          }`}
+          style={{
+            background: "rgba(15,15,25,0.95)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+          }}
+        >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="text-sm font-semibold text-white">{t("notifications:title")}</span>
             {count > 0 && (

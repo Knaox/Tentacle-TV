@@ -193,6 +193,9 @@ export function Watch() {
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
     if (prefsApplied.current || streams.length === 0 || !item) return;
+    // For episodes/seasons, ancestors are required to resolve the library root ID.
+    // ParentId = season, SeriesId = series — neither is the library where preferences are stored.
+    if ((item.Type === "Episode" || item.Type === "Season") && ancestors === undefined) return;
     const parentId = item.ParentId;
     const seriesId = item.SeriesId;
     const ancestorIds = (ancestors ?? []).map((a) => a.Id);
