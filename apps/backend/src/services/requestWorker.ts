@@ -2,7 +2,7 @@ import { getPrisma } from "./db";
 import { submitRequest, getRequestStatus, mapSeerrStatus, fetchAllSeerrRequests, fetchMediaDetail } from "./overseerr";
 
 const POLL_INTERVAL = 60_000; // 60 seconds
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 10;
 const SUBMIT_DELAY = 15_000; // 15s between Seerr API calls
 const SYNC_INTERVAL = 5; // full Seerr sync every N cycles
 

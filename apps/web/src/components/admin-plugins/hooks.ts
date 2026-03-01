@@ -47,6 +47,14 @@ export function useUninstallPlugin() {
   });
 }
 
+export function useUpdatePlugin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/${id}/update`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
+  });
+}
+
 // -- Marketplace --
 
 export function useMarketplacePlugins() {
@@ -60,7 +68,7 @@ export function useMarketplacePlugins() {
 export function useInstallPlugin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { pluginId: string; sourceId?: string }) =>
+    mutationFn: (body: { pluginId: string; version: string; sourceId: string }) =>
       apiFetch("/install", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
   });
@@ -97,6 +105,14 @@ export function useToggleSource() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiFetch(`/sources/${id}/toggle`, { method: "PUT" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
+  });
+}
+
+export function useRefreshSources() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch("/sources/refresh", { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
   });
 }

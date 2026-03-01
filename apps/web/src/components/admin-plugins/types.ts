@@ -1,30 +1,39 @@
 export interface InstalledPlugin {
   id: string;
+  pluginId: string;
   name: string;
   version: string;
-  description: string;
-  author: string;
+  sourceId: string;
   enabled: boolean;
-  hasUpdate: boolean;
-  latestVersion?: string;
+  config: Record<string, unknown>;
+  installedAt: string;
 }
 
 export interface MarketplacePlugin {
-  id: string;
+  pluginId: string;
   name: string;
   version: string;
   description: string;
   author: string;
-  downloads: number;
+  sourceId: string;
+  sourceName: string;
+  official: boolean;
   installed: boolean;
+  installedVersion?: string;
+  updateAvailable: boolean;
+  downloadUrl?: string;
+  icon?: string;
+  tags?: string[];
+  category?: string;
+  repo?: string;
 }
 
 export interface PluginSource {
   id: string;
   name: string;
   url: string;
+  official: boolean;
   enabled: boolean;
-  pluginCount: number;
 }
 
 export const cls = {

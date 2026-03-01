@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cls } from "./types";
-import { usePluginSources, useAddSource, useRemoveSource, useToggleSource } from "./hooks";
+import {
+  usePluginSources, useAddSource, useRemoveSource, useToggleSource, useRefreshSources,
+} from "./hooks";
 
 export function SourcesTab() {
   const { t } = useTranslation("adminPlugins");
@@ -9,6 +11,7 @@ export function SourcesTab() {
   const addMut = useAddSource();
   const removeMut = useRemoveSource();
   const toggleMut = useToggleSource();
+  const refreshMut = useRefreshSources();
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -38,6 +41,17 @@ export function SourcesTab() {
 
   return (
     <div className="space-y-4">
+      {/* Refresh button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => refreshMut.mutate()}
+          disabled={refreshMut.isPending}
+          className={cls.bs}
+        >
+          {refreshMut.isPending ? "..." : t("adminPlugins:refreshAll")}
+        </button>
+      </div>
+
       {/* Source list */}
       {(!sources || sources.length === 0) && !showForm && (
         <p className={cls.empty}>{t("adminPlugins:noSources")}</p>
@@ -50,9 +64,11 @@ export function SourcesTab() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-white">{s.name}</span>
-                  <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/40">
-                    {t("adminPlugins:pluginCount", { count: s.pluginCount })}
-                  </span>
+                  {s.official && (
+                    <span className="rounded bg-purple-500/20 px-2 py-0.5 text-xs text-purple-300">
+                      {t("adminPlugins:official")}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-white/40 truncate">{s.url}</p>
               </div>
@@ -74,18 +90,20 @@ export function SourcesTab() {
                   />
                 </button>
 
-                {/* Remove */}
-                <button
-                  onClick={() => {
-                    if (confirm(t("adminPlugins:confirmRemoveSource", { name: s.name }))) {
-                      removeMut.mutate(s.id);
-                    }
-                  }}
-                  disabled={removeMut.isPending}
-                  className={cls.bd}
-                >
-                  {t("adminPlugins:remove")}
-                </button>
+                {/* Remove — only for non-official sources */}
+                {!s.official && (
+                  <button
+                    onClick={() => {
+                      if (confirm(t("adminPlugins:confirmRemoveSource", { name: s.name }))) {
+                        removeMut.mutate(s.id);
+                      }
+                    }}
+                    disabled={removeMut.isPending}
+                    className={cls.bd}
+                  >
+                    {t("adminPlugins:remove")}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -96,6 +114,7 @@ export function SourcesTab() {
       {showForm ? (
         <div className={cls.card}>
           <h3 className="mb-3 text-sm font-semibold text-white">{t("adminPlugins:addSource")}</h3>
+          <p className="mb-3 text-xs text-yellow-400/80">{t("adminPlugins:sourceWarning")}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className={cls.lbl}>{t("adminPlugins:sourceName")}</label>
