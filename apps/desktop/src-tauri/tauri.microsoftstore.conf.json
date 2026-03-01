@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
+  "bundle": {
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "path": "./MicrosoftEdgeWebView2RuntimeInstallerX64.exe"
+      }
+    }
+  }
+}
