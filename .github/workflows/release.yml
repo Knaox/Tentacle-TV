@@ -87,6 +87,7 @@ jobs:
           TAURI_BUNDLE_WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:
           projectPath: apps/desktop
+          tauriScript: pnpm tauri
           tagName: ${{ github.ref_name }}
           releaseName: "Tentacle TV ${{ github.ref_name }}"
           releaseBody: |
