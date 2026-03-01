@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
 import { requireAdmin, requireAuth } from "../middleware/auth";
 import { randomUUID } from "crypto";
 import {
@@ -16,6 +18,7 @@ import {
   downloadPlugin,
   extractPlugin,
   removePluginFiles,
+  DATA_DIR,
   type PluginSource,
   type InstalledPlugin,
   type EnrichedEntry,
@@ -40,7 +43,17 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
   app.get("/active", { preHandler: requireAuth }, async () => {
     return getInstalled().filter((p) => p.enabled).map((p) => ({
       id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
+      hasBundle: existsSync(resolve(DATA_DIR, p.pluginId, "dist")),
     }));
+  });
+
+  app.get("/:pluginId/bundle", { preHandler: requireAuth }, async (request, reply) => {
+    const { pluginId } = request.params as { pluginId: string };
+    const bundlePath = resolve(DATA_DIR, pluginId, "dist", `plugin-${pluginId}.iife.js`);
+    if (!existsSync(bundlePath)) {
+      return reply.status(404).send({ message: "Bundle not found" });
+    }
+    reply.type("application/javascript").send(readFileSync(bundlePath, "utf-8"));
   });
 
   await app.register(async (admin) => {

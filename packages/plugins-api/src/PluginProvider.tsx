@@ -1,18 +1,51 @@
-import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
+import { useState, useEffect, useSyncExternalStore, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import type { TentaclePlugin } from "./types";
 import { PluginContext } from "./context";
 import { subscribeRegistry, getRegistrySnapshot } from "./registry";
 
-interface PluginProviderProps {
-  children: ReactNode;
+interface ActivePlugin {
+  pluginId: string;
+  hasBundle: boolean;
+  version: string;
 }
 
-export function PluginProvider({ children }: PluginProviderProps) {
+interface PluginProviderProps {
+  children: ReactNode;
+  backendUrl?: string;
+}
+
+export function PluginProvider({ children, backendUrl = "" }: PluginProviderProps) {
   const plugins = useSyncExternalStore(subscribeRegistry, getRegistrySnapshot);
   const [enabledPlugins, setEnabledPlugins] = useState<TentaclePlugin[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadedBundles = useRef(new Set<string>());
 
+  // Load dynamic plugin bundles from backend
+  useEffect(() => {
+    const token = localStorage.getItem("tentacle_token");
+    if (!token) { setLoading(false); return; }
+
+    const base = backendUrl || "";
+    fetch(`${base}/api/plugins/active`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((active: ActivePlugin[]) => {
+        for (const p of active) {
+          if (p.hasBundle && !loadedBundles.current.has(p.pluginId)) {
+            loadedBundles.current.add(p.pluginId);
+            const script = document.createElement("script");
+            script.src = `${base}/api/plugins/${p.pluginId}/bundle?v=${p.version}`;
+            script.async = true;
+            document.head.appendChild(script);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [backendUrl]);
+
+  // Check which registered plugins are configured
   useEffect(() => {
     let cancelled = false;
 
@@ -22,12 +55,16 @@ export function PluginProvider({ children }: PluginProviderProps) {
 
       for (const plugin of plugins) {
         try {
+          // Initialize plugin (registers i18n, sets backend URL, etc.)
+          if (plugin.initialize) {
+            await plugin.initialize();
+          }
           const configured = await plugin.isConfigured();
           if (configured) {
             enabled.push(plugin);
           }
         } catch {
-          // Plugin config check failed — treat as not configured
+          // Plugin init/config check failed — treat as not configured
         }
       }
 

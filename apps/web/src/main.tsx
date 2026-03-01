@@ -1,7 +1,12 @@
 import { StrictMode } from "react";
+import * as React from "react";
+import * as ReactJSXRuntime from "react/jsx-runtime";
 import { createRoot } from "react-dom/client";
+import * as TanStackQuery from "@tanstack/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as ReactRouterDOM from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
+import * as ReactI18next from "react-i18next";
 import {
   JellyfinClient,
   JellyfinClientContext,
@@ -18,10 +23,15 @@ import {
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
+import * as PluginsAPI from "@tentacle-tv/plugins-api";
 import { PluginProvider, registerPlugin } from "@tentacle-tv/plugins-api";
-import { seerPlugin, setSeerBackendUrl } from "@tentacle-tv/plugin-seer";
 import { App } from "./App";
 import "./index.css";
+
+// Expose shared modules for dynamically loaded plugins (IIFE bundles)
+(window as unknown as Record<string, unknown>).TentacleShared = {
+  React, ReactJSXRuntime, ReactRouterDOM, TanStackQuery, ReactI18next, PluginsAPI,
+};
 
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
@@ -59,10 +69,9 @@ export function configureBackendUrls(url: string) {
 }
 
 configureBackendUrls(backendUrl);
-setSeerBackendUrl(backendUrl);
 
-// Register plugins
-registerPlugin(seerPlugin);
+// Expose plugin registration and backend URL for dynamically loaded plugins
+(window as unknown as Record<string, unknown>).__tentacle = { registerPlugin, backendUrl };
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
@@ -107,7 +116,7 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <TentacleConfigContext.Provider value={{ storage, uuid }}>
         <JellyfinClientContext.Provider value={jellyfinClient}>
-          <PluginProvider>
+          <PluginProvider backendUrl={backendUrl}>
             <BrowserRouter>
               <App />
             </BrowserRouter>

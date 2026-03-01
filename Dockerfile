@@ -13,7 +13,6 @@ COPY packages/shared/package.json packages/shared/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/plugins-api/package.json packages/plugins-api/package.json
-COPY packages/plugin-seer/package.json packages/plugin-seer/package.json
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile

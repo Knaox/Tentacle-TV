@@ -68,7 +68,7 @@ interface RawRegistryEntry {
 // ── Constants ──
 
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
-const DATA_DIR = resolve(__dirname, "../../data/plugins");
+export const DATA_DIR = resolve(__dirname, "../../data/plugins");
 const SOURCES_FILE = "sources.json";
 const INSTALLED_FILE = "installed.json";
 const SEER_CONFIG_FILE = "seer-config.json";
