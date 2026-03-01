@@ -188,14 +188,14 @@ export function Watch() {
     };
   }, [itemId, queryClient]);
 
-  // Resolve preferred tracks — uses Jellyfin ancestors to find the correct library
+  // Resolve preferred tracks — uses ParentId/SeriesId + ancestors (if available) to find the library.
+  // Does NOT block on ancestors — ParentId alone is usually sufficient for movies.
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item || !ancestors) return;
-    // Collect all possible IDs: ParentId, SeriesId, and all ancestor IDs
+    if (prefsApplied.current || streams.length === 0 || !item) return;
     const parentId = item.ParentId;
     const seriesId = item.SeriesId;
-    const ancestorIds = ancestors.map((a) => a.Id);
+    const ancestorIds = (ancestors ?? []).map((a) => a.Id);
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) return;
     prefsApplied.current = true;
@@ -203,7 +203,7 @@ export function Watch() {
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     const subtitleTracksPayload = streams.filter((s) => s.Type === "Subtitle")
       .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
-    console.debug(DBG, "resolve tracks", { parentId, seriesId, ancestorIds, allCandidates,
+    console.debug(DBG, "resolve tracks", { parentId, seriesId, allCandidates,
       audioTracks: audioTracksPayload.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
     });
     resolveTracks.mutate({
