@@ -239,6 +239,9 @@ importers:
       react-router-dom:
         specifier: ^7.1.0
         version: 7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      tauri-plugin-libmpv-api:
+        specifier: ^0.3.2
+        version: 0.3.2
       video.js:
         specifier: ^8.20.0
         version: 8.23.7
@@ -260,7 +263,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: ^4.3.0
-        version: 4.7.0(vite@6.4.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.7.0(vite@6.4.1(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.24(postcss@8.5.6)
@@ -278,7 +281,7 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^6.0.0
-        version: 6.4.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 6.4.1(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/api-client:
     dependencies:
@@ -335,6 +338,11 @@ importers:
         version: 5.9.3
 
 packages:
+
+  7z-wasm@1.2.0:
+    resolution: {integrity: sha512-AZjtWXFleAe5nQ27JYISs70cICjO0zZr4LU45I9pXKcrhG0qiEWgq3Vjwr9JHHihFLuqgc7uSHYVn/z3vXCjdw==}
+    engines: {node: '>=8.0.0'}
+    hasBin: true
 
   '@0no-co/graphql.web@1.2.0':
     resolution: {integrity: sha512-/1iHy9TTr63gE1YcR5idjx8UREz1s0kFhydf3bBLCXyqjhkIc6igAzTOx3zPifCwFR87tsh/4Pa9cNts6d2otw==}
@@ -2123,6 +2131,9 @@ packages:
 
   '@tauri-apps/api@2.10.1':
     resolution: {integrity: sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==}
+
+  '@tauri-apps/api@2.8.0':
+    resolution: {integrity: sha512-ga7zdhbS2GXOMTIZRT0mYjKJtR9fivsXzsyq5U3vjDL0s6DTMwYRm0UHNjzTY5dh4+LSC68Sm/7WEiimbQNYlw==}
 
   '@tauri-apps/cli-darwin-arm64@2.10.0':
     resolution: {integrity: sha512-avqHD4HRjrMamE/7R/kzJPcAJnZs0IIS+1nkDP5b+TNBn3py7N2aIo9LIpy+VQq0AkN8G5dDpZtOOBkmWt/zjA==}
@@ -4925,6 +4936,10 @@ packages:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
 
+  readline-sync@1.4.10:
+    resolution: {integrity: sha512-gNva8/6UAe8QYepIQH/jQ2qn91Qj0B9sYjMBBs3QOB8F2CXcKgLxQaJRP76sWVRQt+QU+8fAkCbCvjjMFu7Ycw==}
+    engines: {node: '>= 0.8.0'}
+
   readline@1.3.0:
     resolution: {integrity: sha512-k2d6ACCkiNYz222Fs/iNze30rRJ1iIicW7JuX/7/cozvih6YCkFZH+J6mAFDVgv0dRBaAyr4jDqC95R2y4IADg==}
 
@@ -5352,6 +5367,11 @@ packages:
     engines: {node: '>=10'}
     deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
+  tauri-plugin-libmpv-api@0.3.2:
+    resolution: {integrity: sha512-vDEIE+E66cbtblZzBzJLKYs5L2eY05xrzk2dCKybByHN1giXAWXLZRKL3Gm8dq4pjukwHRjVHqjRf8b4wGbQxA==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
   temp-dir@2.0.0:
     resolution: {integrity: sha512-aoBAniQmmwtcKp/7BzsH8Cxzv8OL736p7v1ihGb5e9DJ9kTwGWHrQrVB5+lfVDzfGrdRzXch+ig7LHaY1JTOrg==}
     engines: {node: '>=8'}
@@ -5773,6 +5793,10 @@ packages:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
+
+  7z-wasm@1.2.0:
+    dependencies:
+      readline-sync: 1.4.10
 
   '@0no-co/graphql.web@1.2.0': {}
 
@@ -8216,6 +8240,8 @@ snapshots:
 
   '@tauri-apps/api@2.10.1': {}
 
+  '@tauri-apps/api@2.8.0': {}
+
   '@tauri-apps/cli-darwin-arm64@2.10.0':
     optional: true
 
@@ -8386,7 +8412,7 @@ snapshots:
       global: 4.4.0
       is-function: 1.0.2
 
-  '@vitejs/plugin-react@4.7.0(vite@6.4.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@vitejs/plugin-react@4.7.0(vite@6.4.1(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
@@ -8394,7 +8420,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vite: 6.4.1(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -11410,6 +11436,8 @@ snapshots:
 
   readdirp@4.1.2: {}
 
+  readline-sync@1.4.10: {}
+
   readline@1.3.0: {}
 
   real-require@0.2.0: {}
@@ -11866,6 +11894,11 @@ snapshots:
       mkdirp: 1.0.4
       yallist: 4.0.0
 
+  tauri-plugin-libmpv-api@0.3.2:
+    dependencies:
+      7z-wasm: 1.2.0
+      '@tauri-apps/api': 2.8.0
+
   temp-dir@2.0.0: {}
 
   temp@0.8.4:
@@ -12052,7 +12085,7 @@ snapshots:
     dependencies:
       global: 4.4.0
 
-  vite@6.4.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
+  vite@6.4.1(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.27.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.3)
@@ -12063,7 +12096,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 25.3.0
       fsevents: 2.3.3
-      jiti: 2.6.1
+      jiti: 1.21.7
       lightningcss: 1.27.0
       terser: 5.46.0
       tsx: 4.21.0

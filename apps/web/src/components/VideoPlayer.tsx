@@ -6,8 +6,8 @@ import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
-export interface SubtitleTrack { index: number; label: string; url: string }
-export interface AudioTrack { index: number; label: string }
+export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
+export interface AudioTrack { index: number; label: string; lang?: string }
 
 interface VideoPlayerProps {
   src: string;

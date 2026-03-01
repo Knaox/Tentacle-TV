@@ -73,9 +73,16 @@ export function Watch() {
     resumeApplied.current = false;
   }, [itemId]);
 
-  // Invalidate media item cache on leave so detail page shows fresh watched status
+  // Invalidate media item cache on leave so detail page shows fresh resume position.
+  // Delay slightly so Jellyfin has time to process the stop report (async POST).
   useEffect(() => {
-    return () => { queryClient.invalidateQueries({ queryKey: ["item", itemId] }); };
+    return () => {
+      const id = itemId;
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["item", id] });
+        queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+      }, 600);
+    };
   }, [itemId, queryClient]);
 
   // Sync audioIndex when streams change (new episode loaded)
@@ -85,6 +92,19 @@ export function Watch() {
       const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
         ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
       setAudioIndex(defAudio);
+    }
+  }, [streams]);
+
+  // Sync subtitleIndex from Jellyfin's default subtitle track when streams load.
+  // This ensures subtitles are shown immediately (before async preference resolution).
+  // The preference effect below will override this with the user's preferred track.
+  useEffect(() => {
+    if (streams.length > 0 && !prefsApplied.current) {
+      const defSub = streams.find((s) => s.Type === "Subtitle" && s.IsDefault)?.Index ?? null;
+      if (defSub != null) {
+        console.debug(DBG, "init subtitle from Jellyfin default", { defSub });
+        setSubtitleIndex(defSub);
+      }
     }
   }, [streams]);
 
@@ -98,8 +118,11 @@ export function Watch() {
     /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
   );
   const isDesktop = isTauri();
-  // Desktop (mpv): always direct play — mpv handles all codecs natively
-  const isDirectPlay = isDesktop || (audioIndex === defaultAudio && quality == null && !needsAudioTranscode);
+  // Desktop (mpv): direct play unless user explicitly requests quality transcode.
+  // Web: direct play only when using default audio, no quality override, and no codec transcode needed.
+  const isDirectPlay = isDesktop
+    ? quality == null
+    : (audioIndex === defaultAudio && quality == null && !needsAudioTranscode);
 
   console.debug(DBG, "playback mode", {
     isDirectPlay, audioIndex, defaultAudio, selectedAudioCodec, needsAudioTranscode,
@@ -199,9 +222,9 @@ export function Watch() {
     ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined)
     : undefined;
 
-  // Desktop: mpv handles audio tracks natively (set_property aid) — exclude from URL
-  // to prevent unnecessary stream reloads on audio change.
-  const urlAudioIndex = isDesktop ? undefined : audioIndex;
+  // Desktop direct play: mpv handles audio tracks natively (set_property aid) — exclude from URL.
+  // Desktop transcoded / web: audio index needed in URL for Jellyfin's transcoder.
+  const urlAudioIndex = (isDesktop && isDirectPlay) ? undefined : audioIndex;
 
   // Subtitles are handled externally via <track> elements — NOT in the HLS URL.
   // Including subtitleIndex here would cause a full stream reload on subtitle change.
@@ -227,17 +250,21 @@ export function Watch() {
 
   const audioTracks: AudioTrack[] = useMemo(() =>
     streams.filter((s) => s.Type === "Audio")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
+      .map((s) => ({ index: s.Index, label: formatTrackLabel(s), lang: s.Language?.toLowerCase() })),
     [streams]
   );
 
   const subtitleTracks: SubtitleTrack[] = useMemo(() =>
     streams.filter((s) => s.Type === "Subtitle")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s), url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index) })),
+      .map((s) => ({ index: s.Index, label: formatTrackLabel(s), url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index), lang: s.Language?.toLowerCase(), codec: s.Codec?.toLowerCase() })),
     [streams, client, itemId, mediaSourceId]
   );
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  const posterUrl = useMemo(() => {
+    if (!itemId) return undefined;
+    return client.getImageUrl(itemId, "Backdrop", { quality: 80 });
+  }, [client, itemId]);
   // BUG 5: resume position from Jellyfin UserData
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
@@ -252,11 +279,12 @@ export function Watch() {
     console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current, isDesktop });
     audioOverrideRef.current = true;
     setAudioIndex(idx);
-    if (!isDesktop) {
+    // URL rebuild needed for web (always) and desktop in transcoded mode (quality set)
+    if (!isDesktop || quality != null) {
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
     }
-  }, [getPositionTicks, isDesktop]);
+  }, [getPositionTicks, isDesktop, quality]);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
     const ticks = getPositionTicks();
@@ -291,7 +319,7 @@ export function Watch() {
 
   if (isLoading || !streamUrl) {
     return (
-      <PlayerTransition>
+      <PlayerTransition transparent={isDesktop}>
         <div className="flex h-full w-full items-center justify-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
         </div>
@@ -318,9 +346,11 @@ export function Watch() {
   };
 
   return (
-    <PlayerTransition>
+    <PlayerTransition transparent={isDesktop}>
       {isDesktop ? (
-        <DesktopPlayer key={itemId} {...sharedProps} />
+        <DesktopPlayer key={itemId} {...sharedProps}
+          isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
+          introSegment={skipSegments.intro} creditsSegment={skipSegments.credits} />
       ) : (
         <VideoPlayer key={itemId} {...sharedProps}
           itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset}
