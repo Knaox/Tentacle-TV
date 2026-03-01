@@ -7,6 +7,9 @@ import { verifyDeviceToken } from "../services/jwt";
 const SKIP_REQUEST_HEADERS = new Set([
   "host", "connection", "keep-alive", "transfer-encoding",
   "te", "trailer", "upgrade", "proxy-authorization", "proxy-authenticate",
+  // Fastify parses then re-serializes JSON bodies — Content-Length may change.
+  // Let Node.js fetch recalculate it from the actual body.
+  "content-length",
 ]);
 
 const SKIP_RESPONSE_HEADERS = new Set([
