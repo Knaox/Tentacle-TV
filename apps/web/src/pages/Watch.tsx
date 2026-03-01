@@ -73,24 +73,6 @@ export function Watch() {
     resumeApplied.current = false;
   }, [itemId]);
 
-  // Invalidate all relevant caches on leave so Home + MediaDetail show fresh data.
-  // Two phases: immediate (marks stale) + delayed (refetch after Jellyfin processes stop).
-  useEffect(() => {
-    return () => {
-      const id = itemId;
-      const keys = [
-        { queryKey: ["item", id] },
-        { queryKey: ["resume-items"] },
-        { queryKey: ["next-up"] },
-        { queryKey: ["watched-items"] },
-      ];
-      // Phase 1: mark stale immediately so any mounting component knows to refetch
-      keys.forEach((k) => queryClient.invalidateQueries(k));
-      // Phase 2: refetch after Jellyfin has processed the stop report
-      setTimeout(() => keys.forEach((k) => queryClient.refetchQueries(k)), 800);
-    };
-  }, [itemId, queryClient]);
-
   // Sync audioIndex when streams change (new episode loaded)
   // Skip if user explicitly changed audio to prevent refetch from resetting their choice
   useEffect(() => {
@@ -178,12 +160,32 @@ export function Watch() {
   const isDirectStream = !isDirectPlay && needsAudioTranscode && quality == null;
 
   // Playback reporting — now sends PlaySessionId, audio/subtitle indices to Jellyfin
-  const { reportStart, updatePosition, reportSeek } = usePlaybackReporting({
+  const { reportStart, reportStop, updatePosition, reportSeek } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream,
     playSessionId,
     audioStreamIndex: audioIndex,
     subtitleStreamIndex: subtitleIndex,
   });
+
+  // Invalidate all relevant caches on leave so Home + MediaDetail show fresh data.
+  // Explicit reportStop ensures Jellyfin records the final position before we refetch.
+  const reportStopRef = useRef(reportStop);
+  reportStopRef.current = reportStop;
+  useEffect(() => {
+    return () => {
+      reportStopRef.current();
+      const id = itemId;
+      const keys = [
+        { queryKey: ["item", id] },
+        { queryKey: ["resume-items"] },
+        { queryKey: ["next-up"] },
+        { queryKey: ["watched-items"] },
+      ];
+      keys.forEach((k) => queryClient.invalidateQueries(k));
+      setTimeout(() => keys.forEach((k) => queryClient.refetchQueries(k)), 1500);
+      setTimeout(() => keys.forEach((k) => queryClient.refetchQueries(k)), 4000);
+    };
+  }, [itemId, queryClient]);
 
   // Resolve preferred tracks — uses Jellyfin ancestors to find the correct library
   const resolveTracks = useResolveMediaTracks();
@@ -201,7 +203,7 @@ export function Watch() {
       libraryId: allCandidates[0],
       libraryIds: allCandidates,
       audioTracks: streams.filter((s) => s.Type === "Audio")
-        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
+        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: s.DisplayTitle })),
       subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
     }, {
