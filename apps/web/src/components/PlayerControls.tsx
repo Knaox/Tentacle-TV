@@ -4,7 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "./TrackSelector";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon,
-  GearIcon, FsIcon, ExitFsIcon, PrevEpIcon, NextEpIcon,
+  GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon,
 } from "./PlayerIcons";
 
 export interface PlayerControlsProps {
@@ -142,7 +142,7 @@ export function PlayerControls({
               <button onClick={() => setShowSettings((p) => !p)} className="rounded-full p-2 hover:bg-white/10"><GearIcon /></button>
             )}
             <button onClick={onToggleFullscreen} className="rounded-full p-2 hover:bg-white/10">
-              {fullscreen ? <ExitFsIcon /> : <FsIcon />}
+              {fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
             </button>
           </div>
         </div>

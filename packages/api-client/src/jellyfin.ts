@@ -218,8 +218,8 @@ export class JellyfinClient {
     return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`;
   }
 
-  getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number): string {
-    return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.vtt?api_key=${this.accessToken}`;
+  getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number, format = "vtt"): string {
+    return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`;
   }
 }
 

@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface PlayerTransitionProps {
   children: ReactNode;
+  /** Use transparent background (for desktop mpv player rendering behind WebView2) */
+  transparent?: boolean;
 }
 
 /**
  * Cinematic "lights out → curtain open → reveal" animation
  * when entering the video player.
  */
-export function PlayerTransition({ children }: PlayerTransitionProps) {
+export function PlayerTransition({ children, transparent = false }: PlayerTransitionProps) {
   const [phase, setPhase] = useState<"curtain" | "done">("curtain");
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export function PlayerTransition({ children }: PlayerTransitionProps) {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen bg-black">
+    <div className={`relative h-screen w-screen ${transparent ? "" : "bg-black"}`}>
       {children}
 
       <AnimatePresence>

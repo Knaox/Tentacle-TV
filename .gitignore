@@ -57,3 +57,4 @@ apps/backend/prisma/*.db
 .claude/
 context.md
 jellyfin-openapi-stable.json
+tentacle-tv-ui-demo.jsx

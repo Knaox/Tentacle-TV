@@ -14,7 +14,7 @@ interface TrackSelectorProps {
   currentQuality: number | null;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  onQualityChange: (bitrate: number | null) => void;
+  onQualityChange?: (bitrate: number | null) => void;
   onClose: () => void;
 }
 
@@ -72,16 +72,18 @@ export function TrackSelector({
           </Section>
         )}
 
-        <Section title={t("player:quality")}>
-          {QUALITIES.map((q) => (
-            <TrackOption
-              key={q.key}
-              label={t(q.key)}
-              active={currentQuality === q.bitrate}
-              onClick={() => onQualityChange(q.bitrate)}
-            />
-          ))}
-        </Section>
+        {onQualityChange && (
+          <Section title={t("player:quality")}>
+            {QUALITIES.map((q) => (
+              <TrackOption
+                key={q.key}
+                label={t(q.key)}
+                active={currentQuality === q.bitrate}
+                onClick={() => onQualityChange(q.bitrate)}
+              />
+            ))}
+          </Section>
+        )}
       </div>
     </motion.div>
   );
