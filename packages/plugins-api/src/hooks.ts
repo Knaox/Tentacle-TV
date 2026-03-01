@@ -40,20 +40,20 @@ export function usePluginRoutes(): PluginRoute[] {
   );
 }
 
-/** Get all admin routes from enabled plugins. */
+/** Get all admin routes from all registered plugins (including unconfigured). */
 export function usePluginAdminRoutes(): PluginRoute[] {
-  const { enabledPlugins } = useContext(PluginContext);
+  const { plugins } = useContext(PluginContext);
   return useMemo(
-    () => enabledPlugins.flatMap((plugin) => plugin.adminRoutes ?? []),
-    [enabledPlugins],
+    () => plugins.flatMap((plugin) => plugin.adminRoutes ?? []),
+    [plugins],
   );
 }
 
-/** Get all admin nav items from enabled plugins. */
+/** Get all admin nav items from all registered plugins (including unconfigured). */
 export function usePluginAdminNavItems(): PluginNavItem[] {
-  const { enabledPlugins } = useContext(PluginContext);
+  const { plugins } = useContext(PluginContext);
   return useMemo(
-    () => enabledPlugins.flatMap((plugin) => plugin.adminNavItems ?? []),
-    [enabledPlugins],
+    () => plugins.flatMap((plugin) => plugin.adminNavItems ?? []),
+    [plugins],
   );
 }
