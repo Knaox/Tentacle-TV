@@ -150,6 +150,9 @@ export class JellyfinClient {
     /** Use progressive stream for remux (default true). Set false for Safari/iOS
      *  where progressive transcode doesn't support Range requests. Falls back to HLS. */
     useProgressiveRemux?: boolean;
+    /** Burn-in subtitle stream index — for bitmap subtitles (PGS) that can't be
+     *  converted to VTT. jellyfin-web pattern: server encodes subtitle into video. */
+    subtitleStreamIndex?: number;
   }): string {
     const p: Record<string, string> = {
       api_key: this.accessToken ?? "",
@@ -157,6 +160,9 @@ export class JellyfinClient {
     if (options?.mediaSourceId) p.MediaSourceId = options.mediaSourceId;
     if (options?.audioIndex != null) p.AudioStreamIndex = String(options.audioIndex);
     if (options?.startTimeTicks) p.StartTimeTicks = String(options.startTimeTicks);
+    // jellyfin-web pattern: include SubtitleStreamIndex for server-side burn-in
+    // of bitmap subtitles (PGS/DVDSUB) that can't be converted to VTT.
+    if (options?.subtitleStreamIndex != null) p.SubtitleStreamIndex = String(options.subtitleStreamIndex);
 
     // Direct play — raw file, browser handles codec/track selection
     if (options?.directPlay !== false && !options?.maxBitrate) {
