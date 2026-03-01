@@ -87,9 +87,10 @@ export function VideoPlayer({
   const [prevSrc, setPrevSrc] = useState(src);
   if (prevSrc !== src) {
     setPrevSrc(src);
-    setRawTime(0);
-    // Jellyfin HLS manifests always contain the full media timeline (absolute PTS).
-    // effectiveOffset is always 0 — no auto-detection needed.
+    // jellyfin-web pattern: don't reset displayed time during stream changes
+    // (quality/audio switch). Keep showing the last known position until the
+    // new source provides timeupdate events with the correct absolute time.
+    // Full reset only happens on episode switch (key={itemId} triggers remount).
     offsetDetectedRef.current = true;
     effectiveOffsetRef.current = 0;
   }
@@ -225,9 +226,11 @@ export function VideoPlayer({
     const onReady = () => {
       clearTimeout(failsafe);
       console.debug(DBG, "ready", { seekTo, isHlsUrl, duration: v.duration });
-      // For HLS: startPosition in HLS config handles seeking.
-      // For direct play: explicit seek.
-      if (seekTo > 0 && !isHlsUrl) {
+      // jellyfin-web pattern (seekOnPlaybackStart): explicit seek for both HLS
+      // and direct play. For HLS, startPosition sets the initial segment but may
+      // not be frame-accurate due to keyframe alignment. Explicit seek corrects
+      // for the offset, ensuring exact position after quality/audio changes.
+      if (seekTo > 0) {
         v.currentTime = seekTo;
       }
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
@@ -311,6 +314,29 @@ export function VideoPlayer({
     v.textTracks.addEventListener("addtrack", apply);
     return () => v.textTracks.removeEventListener("addtrack", apply);
   }, [currentSubtitle, subtitleTracks, src]);
+
+  // jellyfin-web pattern (plugin.js:setAudioStreamIndex): In Direct Play, switch
+  // audio tracks natively via HTML5 audioTracks API. This avoids URL rebuild and
+  // stream interruption. Supported in Firefox/Safari; Chrome requires transcoding
+  // fallback (handled by Watch.tsx rebuilding the URL when native switch unavailable).
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !isDirectPlay) return;
+    // HTMLMediaElement.audioTracks is not in standard TS lib — access via type cast.
+    const elemTracks = (v as HTMLVideoElement & {
+      audioTracks?: { readonly length: number; [i: number]: { enabled: boolean } };
+    }).audioTracks;
+    if (!elemTracks || elemTracks.length < 2) return;
+    // Map Jellyfin stream index to position in the <video> element's audioTracks list.
+    // audioTracks prop contains only Audio-type streams, in file order — same order
+    // as the browser's audioTracks on the <video> element.
+    const targetPos = audioTracks.findIndex((t) => t.index === currentAudio);
+    if (targetPos === -1 || targetPos >= elemTracks.length) return;
+    for (let i = 0; i < elemTracks.length; i++) {
+      elemTracks[i].enabled = (i === targetPos);
+    }
+    console.debug(DBG, "native audio switch", { targetPos, currentAudio, total: elemTracks.length });
+  }, [currentAudio, isDirectPlay, audioTracks]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);

@@ -20,6 +20,19 @@ function formatTrackLabel(s: JfStream): string {
 
 const DBG = "[Tentacle:Player]";
 
+// jellyfin-web pattern: detect native HTML5 audioTracks API support (Firefox, Safari).
+// When available, audio switching in Direct Play is instant with no URL rebuild.
+// Chrome does NOT support this — falls back to remux with URL rebuild.
+const supportsNativeAudioTracks = (() => {
+  if (typeof document === "undefined") return false;
+  const v = document.createElement("video");
+  return "audioTracks" in v;
+})();
+
+// Bitmap subtitle codecs that cannot be converted to VTT — require server burn-in.
+// jellyfin-web pattern (plugin.js:setCurrentTrackElement): these use DeliveryMethod='Encode'.
+const BURN_IN_SUBTITLE_CODECS = /^(pgssub|dvdsub|dvbsub|hdmv_pgs_subtitle|pgs)$/i;
+
 // Safari/iOS need HLS for remux — progressive transcode doesn't support
 // HTTP Range requests that WebKit requires for media playback.
 const useProgressiveRemux = (() => {
@@ -56,6 +69,11 @@ export function Watch() {
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
   const [quality, setQuality] = useState<number | null>(null);
   const [startTicks, setStartTicks] = useState<number>(0);
+  // jellyfin-web pattern: defer URL construction until preferences are resolved
+  // to avoid double-load (default audio → preferred audio URL rebuild).
+  const [prefsReady, setPrefsReady] = useState(false);
+  // jellyfin-web pattern: bitmap subtitles (PGS) need server burn-in via URL param.
+  const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
   const audioOverrideRef = useRef(false);
@@ -67,6 +85,8 @@ export function Watch() {
     setStartTicks(0);
     setQuality(null);
     setSubtitleIndex(null);
+    setPrefsReady(false);
+    setBurnInSubtitleIndex(undefined);
     positionRef.current = 0;
     prefsApplied.current = false;
     audioOverrideRef.current = false;
@@ -108,10 +128,14 @@ export function Watch() {
   );
   const isDesktop = isTauri();
   // Desktop (mpv): direct play unless user explicitly requests quality transcode.
-  // Web: direct play only when using default audio, no quality override, and no codec transcode needed.
+  // Web: direct play when audio codec is browser-compatible and no quality override.
+  // jellyfin-web pattern (playbackmanager.js:setAudioStreamIndex): in Direct Play,
+  // audio tracks are switched natively via HTML5 audioTracks API (Firefox/Safari).
+  // Chrome falls back to remux (non-default audio forces URL rebuild).
   const isDirectPlay = isDesktop
     ? quality == null
-    : (audioIndex === defaultAudio && quality == null && !needsAudioTranscode);
+    : (quality == null && !needsAudioTranscode
+       && (audioIndex === defaultAudio || supportsNativeAudioTracks));
 
   console.debug(DBG, "playback mode", {
     isDirectPlay, audioIndex, defaultAudio, selectedAudioCodec, needsAudioTranscode,
@@ -200,7 +224,8 @@ export function Watch() {
     const seriesId = item.SeriesId;
     const ancestorIds = (ancestors ?? []).map((a) => a.Id);
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
-    if (allCandidates.length === 0) return;
+    // No library candidates — no preferences to resolve, ready to play immediately.
+    if (allCandidates.length === 0) { setPrefsReady(true); return; }
     prefsApplied.current = true;
     const audioTracksPayload = streams.filter((s) => s.Type === "Audio")
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
@@ -222,17 +247,56 @@ export function Watch() {
       onSuccess: (result) => {
         console.debug(DBG, "preferences resolved", { audio: result.audioIndex, subtitle: result.subtitleIndex, currentPosition: positionRef.current });
         if (result.audioIndex != null) {
-          const ticks = getPositionTicks();
-          if (ticks > 0) setStartTicks(ticks);
+          // jellyfin-web pattern: predict if preferred audio needs transcoding.
+          // If so, include resume position in startTicks for HLS URL.
+          const newStream = streams.find((s) => s.Type === "Audio" && s.Index === result.audioIndex);
+          const codec = newStream?.Codec?.toLowerCase() ?? "";
+          const channels = newStream?.Channels ?? 2;
+          const needsTranscode = /^(ac3|eac3|dts|truehd)$/i.test(codec) || channels > 6;
+          const willBeDirectPlay = isDesktop
+            ? quality == null
+            : (quality == null && !needsTranscode
+               && (result.audioIndex === defaultAudio || supportsNativeAudioTracks));
+          if (!willBeDirectPlay) {
+            const resumeTicks = item?.UserData?.PlaybackPositionTicks;
+            if (resumeTicks && resumeTicks > 0) {
+              setStartTicks(resumeTicks);
+              resumeApplied.current = true;
+            }
+          }
           setAudioIndex(result.audioIndex);
         }
         // -1 = explicitly disabled, positive = specific track, null = no preference
         if (result.subtitleIndex != null) {
-          setSubtitleIndex(result.subtitleIndex === -1 ? null : result.subtitleIndex);
+          const idx = result.subtitleIndex === -1 ? null : result.subtitleIndex;
+          setSubtitleIndex(idx);
+          // jellyfin-web pattern: bitmap subtitles (PGS) need server burn-in.
+          if (idx != null) {
+            const subStream = streams.find((s) => s.Type === "Subtitle" && s.Index === idx);
+            if (subStream && BURN_IN_SUBTITLE_CODECS.test(subStream.Codec ?? "")) {
+              setBurnInSubtitleIndex(idx);
+            }
+          }
         }
+        setPrefsReady(true);
+      },
+      onError: () => {
+        // Preferences failed — play with defaults.
+        console.debug(DBG, "preferences resolve failed — using defaults");
+        setPrefsReady(true);
       },
     });
   }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fallback: don't wait forever for preferences — start playback after 2s.
+  useEffect(() => {
+    if (prefsReady || streams.length === 0) return;
+    const timer = setTimeout(() => {
+      console.debug(DBG, "prefs timeout — starting playback with defaults");
+      setPrefsReady(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [prefsReady, streams.length]);
 
   // Source video codec — needed for remux mode so Jellyfin does stream copy
   const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
@@ -242,14 +306,17 @@ export function Watch() {
     ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined)
     : undefined;
 
-  // Desktop direct play: mpv handles audio tracks natively (set_property aid) — exclude from URL.
-  // Desktop transcoded / web: audio index needed in URL for Jellyfin's transcoder.
-  const urlAudioIndex = (isDesktop && isDirectPlay) ? undefined : audioIndex;
+  // jellyfin-web pattern: in Direct Play, audio tracks are switched natively
+  // (HTML5 audioTracks on web, mpv set_property on desktop) — exclude from URL
+  // to prevent unnecessary stream reload. Only include for transcoding/remux.
+  const urlAudioIndex = isDirectPlay ? undefined : audioIndex;
 
-  // Subtitles are handled externally via <track> elements — NOT in the HLS URL.
-  // Including subtitleIndex here would cause a full stream reload on subtitle change.
+  // Text subtitles are handled externally via <track> elements — NOT in the stream URL.
+  // Bitmap subtitles (PGS) use server burn-in via SubtitleStreamIndex in the URL.
+  // jellyfin-web pattern (playbackmanager.js:changeStream): gate URL on prefsReady
+  // to avoid double-load when preferences resolve to a different audio/subtitle track.
   const streamUrl = useMemo(() => {
-    if (!itemId) return null;
+    if (!itemId || !prefsReady) return null;
     const url = client.getStreamUrl(itemId, {
       audioIndex: urlAudioIndex,
       mediaSourceId,
@@ -260,10 +327,11 @@ export function Watch() {
       playSessionId,
       sourceVideoCodec,
       useProgressiveRemux,
+      subtitleStreamIndex: burnInSubtitleIndex,
     });
-    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight });
+    console.debug(DBG, "stream URL built", { url: url?.substring(0, 120) + "...", isDirectPlay, startTicks, quality, qualityMaxHeight, burnInSubtitleIndex });
     return url;
-  }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
+  }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, isDirectPlay, startTicks, playSessionId, sourceVideoCodec, prefsReady, burnInSubtitleIndex]);
 
   // Stream offset in seconds (for transcoded seeking)
   const streamOffset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
@@ -291,20 +359,56 @@ export function Watch() {
     return ticks ? ticks / TICKS_PER_SECOND : undefined;
   }, [item]);
 
-  // Audio change: save position and switch — don't reportStop() beforehand,
-  // as that kills the Jellyfin transcode before the new one is ready (causing 400 on first .ts).
-  // Jellyfin naturally cleans up old sessions when a new one starts.
-  // Desktop: mpv switches audio tracks natively — no URL rebuild needed.
+  // Audio change: jellyfin-web pattern — in Direct Play with native audioTracks
+  // support, switch instantly without URL rebuild. Otherwise save position and
+  // rebuild URL for remux/transcode. Don't reportStop() beforehand, as that kills
+  // the Jellyfin transcode before the new one is ready (causing 400 on first .ts).
   const handleAudioChange = useCallback((idx: number) => {
-    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current, isDesktop });
+    console.debug(DBG, "audio change", { newIndex: idx, position: positionRef.current, isDesktop, supportsNativeAudioTracks });
     audioOverrideRef.current = true;
-    setAudioIndex(idx);
-    // URL rebuild needed for web (always) and desktop in transcoded mode (quality set)
-    if (!isDesktop || quality != null) {
+    // jellyfin-web pattern (playbackmanager.js:setAudioStreamIndex): predict
+    // whether the new audio track will stay in Direct Play (native switch).
+    const newStream = streams.find((s) => s.Type === "Audio" && s.Index === idx);
+    const codec = newStream?.Codec?.toLowerCase() ?? "";
+    const channels = newStream?.Channels ?? 2;
+    const newNeedsTranscode = /^(ac3|eac3|dts|truehd)$/i.test(codec) || channels > 6;
+    const willStayDirectPlay = isDesktop
+      ? quality == null
+      : (quality == null && !newNeedsTranscode
+         && (idx === defaultAudio || supportsNativeAudioTracks));
+    // Only rebuild URL (save position) when exiting Direct Play.
+    if (!willStayDirectPlay) {
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
     }
-  }, [getPositionTicks, isDesktop, quality]);
+    setAudioIndex(idx);
+  }, [getPositionTicks, isDesktop, quality, streams, defaultAudio]);
+
+  // jellyfin-web pattern (playbackmanager.js:setSubtitleStreamIndex): text subtitles
+  // are switched client-side via <track> elements. Bitmap subtitles (PGS/DVDSUB)
+  // require server burn-in — trigger URL rebuild with SubtitleStreamIndex.
+  const handleSubtitleChange = useCallback((idx: number | null) => {
+    if (idx != null) {
+      const subStream = streams.find((s) => s.Type === "Subtitle" && s.Index === idx);
+      const isBurnIn = BURN_IN_SUBTITLE_CODECS.test(subStream?.Codec ?? "");
+      if (isBurnIn) {
+        // Bitmap subtitle: save position and rebuild URL with burn-in.
+        const ticks = getPositionTicks();
+        if (ticks > 0) setStartTicks(ticks);
+        setBurnInSubtitleIndex(idx);
+        setSubtitleIndex(idx);
+        return;
+      }
+    }
+    // Text subtitle or disable: client-side handling via <track> elements.
+    // If switching away from burn-in, rebuild URL without SubtitleStreamIndex.
+    if (burnInSubtitleIndex != null) {
+      const ticks = getPositionTicks();
+      if (ticks > 0) setStartTicks(ticks);
+      setBurnInSubtitleIndex(undefined);
+    }
+    setSubtitleIndex(idx);
+  }, [streams, getPositionTicks, burnInSubtitleIndex]);
 
   const handleQualityChange = useCallback((bitrate: number | null) => {
     const ticks = getPositionTicks();
@@ -358,7 +462,7 @@ export function Watch() {
     startPositionSeconds, jellyfinDuration,
     audioTracks, subtitleTracks,
     currentAudio: audioIndex, currentSubtitle: subtitleIndex, currentQuality: quality,
-    onAudioChange: handleAudioChange, onSubtitleChange: setSubtitleIndex, onQualityChange: handleQualityChange,
+    onAudioChange: handleAudioChange, onSubtitleChange: handleSubtitleChange, onQualityChange: handleQualityChange,
     onProgress: handleProgress, onStarted: reportStart,
     hasNextEpisode: !!nextEpisode, hasPreviousEpisode: !!previousEpisode,
     nextEpisodeTitle: nextEpTitle,
