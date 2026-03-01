@@ -32,7 +32,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
     setAnimKey((k) => k + 1);
   };
 
-  if (!items.length) return <div className="h-[420px]" />;
+  if (!items.length) return <div className="h-[480px]" />;
 
   const item = items[index];
   const isEpisode = item.Type === "Episode";
@@ -52,7 +52,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const accentColor = "#8B5CF6"; // default accent
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: 420 }}>
+    <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: 480 }}>
       {/* Animated radial gradient backgrounds */}
       {items.map((it, i) => (
         <div
@@ -86,44 +86,48 @@ export function HeroBanner({ items }: HeroBannerProps) {
       {/* Noise texture overlay */}
       <div className="noise-texture absolute inset-0 opacity-20" />
 
-      {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/40 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg/80 via-transparent to-transparent" />
+      {/* Gradient overlays — stronger for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg via-tentacle-bg/40 to-transparent" />
 
       {/* Content */}
-      <div className="absolute bottom-10 left-4 right-4 z-10 md:left-10 md:right-1/3">
+      <div className="absolute bottom-8 left-4 right-4 z-10 md:left-10 md:right-1/3">
         <div key={animKey} style={{ animation: "fadeSlideUp 0.6s ease both" }}>
-          {/* Badge */}
-          {hasProgress && (
-            <span
-              className="mb-3 inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
-              style={{
-                background: "rgba(139,92,246,0.25)",
-                color: "#C4B5FD",
-                border: "1px solid rgba(139,92,246,0.3)",
-              }}
-            >
-              Continuer
-            </span>
+          {/* Badge + episode label row */}
+          {(hasProgress || episodeLabel) && (
+            <div className="mb-2 flex items-center gap-3">
+              {hasProgress && (
+                <span
+                  className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
+                  style={{
+                    background: "rgba(139,92,246,0.25)",
+                    color: "#C4B5FD",
+                    border: "1px solid rgba(139,92,246,0.3)",
+                  }}
+                >
+                  Continuer
+                </span>
+              )}
+              {episodeLabel && (
+                <span className="text-sm font-medium text-white/50">{episodeLabel}</span>
+              )}
+            </div>
           )}
 
           {/* Title */}
           {logoUrl ? (
-            <img src={logoUrl} alt={displayName} className="mb-4 h-16 object-contain object-left" draggable={false} />
+            <img src={logoUrl} alt={displayName} className="mb-3 h-14 object-contain object-left md:h-16" draggable={false} />
           ) : (
             <h2
-              className="mb-3 text-3xl font-black tracking-tight text-white drop-shadow-lg md:text-5xl"
+              className="mb-2 text-2xl font-black tracking-tight text-white drop-shadow-lg md:text-4xl"
               style={{ textShadow: `0 4px 30px ${accentColor}60` }}
             >
               {displayName}
             </h2>
           )}
-          {episodeLabel && (
-            <p className="mb-2 text-sm font-medium text-white/60">{episodeLabel}</p>
-          )}
 
           {/* Metadata */}
-          <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+          <div className="mb-3 flex flex-wrap items-center gap-2.5 text-sm">
             {item.ProductionYear && <span className="text-white/50">{item.ProductionYear}</span>}
             {item.CommunityRating && (
               <span className="flex items-center gap-1 text-amber-400">
@@ -153,7 +157,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
 
           {/* Progress bar */}
           {hasProgress && (
-            <div className="mb-5 flex max-w-xs items-center gap-3">
+            <div className="mb-3 flex max-w-xs items-center gap-3">
               <div className="h-1 flex-1 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
                 <div
                   className="h-full rounded-full"
@@ -168,9 +172,9 @@ export function HeroBanner({ items }: HeroBannerProps) {
             </div>
           )}
 
-          {/* Overview */}
+          {/* Overview — 2 lines max */}
           {item.Overview && (
-            <p className="mb-5 hidden max-w-xl text-sm leading-relaxed text-white/60 line-clamp-3 sm:block">
+            <p className="mb-4 hidden max-w-xl text-sm leading-relaxed text-white/60 line-clamp-2 sm:block">
               {item.Overview}
             </p>
           )}

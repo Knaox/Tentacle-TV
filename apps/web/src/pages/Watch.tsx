@@ -207,7 +207,11 @@ export function Watch() {
     const subtitleTracksPayload = streams.filter((s) => s.Type === "Subtitle")
       .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     console.debug(DBG, "resolve tracks", { parentId, seriesId, allCandidates,
+      itemType: item.Type,
+      ancestorsLoaded: ancestors !== undefined,
+      ancestorTypes: (ancestors ?? []).map((a) => ({ id: a.Id, name: a.Name, type: a.Type })),
       audioTracks: audioTracksPayload.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
+      subtitleTracks: subtitleTracksPayload.map((t) => ({ idx: t.index, lang: t.language, title: t.title, forced: t.isForced })),
     });
     resolveTracks.mutate({
       libraryId: allCandidates[0],
