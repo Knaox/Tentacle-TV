@@ -115,12 +115,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Log Jellyfin error responses for debugging
       if (response.status >= 400) {
         const body = await response.text();
-        request.log.warn({ status: response.status, path: wildcardPath, body: body.substring(0, 500) }, "Jellyfin error");
+        request.log.warn({ status: response.status, path: wildcardPath, method: request.method, body: body.substring(0, 500) }, "Jellyfin error");
         return reply.send(body);
       }
 
-      // Pipe response body
-      if (!response.body) {
+      // 204 No Content: must not include a body per HTTP spec.
+      // Avoid piping an empty stream which can confuse some clients.
+      if (response.status === 204 || !response.body) {
         return reply.send();
       }
 
@@ -132,6 +133,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(504).send({ message: "Jellyfin timeout" });
       }
       const msg = err instanceof Error ? err.message : "Proxy error";
+      request.log.error({ path: wildcardPath, method: request.method, error: msg }, "Proxy error");
       return reply.status(502).send({ message: msg });
     }
   });

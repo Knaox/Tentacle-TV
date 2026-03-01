@@ -92,7 +92,10 @@ export function VideoPlayer({
     // new source provides timeupdate events with the correct absolute time.
     // Full reset only happens on episode switch (key={itemId} triggers remount).
     offsetDetectedRef.current = true;
-    effectiveOffsetRef.current = 0;
+    // HLS with CopyTimestamps: PTS are absolute, no offset needed.
+    // Progressive transcode: PTS start from 0, need to add streamOffset for display.
+    const isHls = src.includes(".m3u8");
+    effectiveOffsetRef.current = (!isHls && !isDirectPlay && streamOffset > 0) ? streamOffset : 0;
   }
 
   const [videoDuration, setVideoDuration] = useState(0);
@@ -120,13 +123,25 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
-  // Unified seek — handles direct play, HLS, and progressive transcode streams
+  // Unified seek — handles direct play, HLS, and progressive transcode streams.
+  // jellyfin-web pattern: for transcoded streams (HLS or progressive), Jellyfin
+  // generates segments/data progressively from StartTimeTicks. Seeking beyond the
+  // buffered range requires a URL rebuild (new StartTimeTicks = seek position) to
+  // start a fresh transcode from that point.
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
-    const clamped = Math.max(0, Math.min(targetSeconds, v.duration || Infinity));
     const isHlsStream = src.includes(".m3u8");
-    console.debug(DBG, "seek", { clamped, isDirectPlay, streamOffset, isHlsStream });
+
+    // For progressive transcode, v.duration is stream-relative (starts at 0).
+    // Add streamOffset to get the absolute maximum seekable position.
+    const isProgressiveTranscode = !isHlsStream && !isDirectPlay && streamOffset > 0;
+    const absMax = isProgressiveTranscode
+      ? (v.duration || Infinity) + streamOffset
+      : (v.duration || Infinity);
+    const clamped = Math.max(0, Math.min(targetSeconds, absMax));
+
+    console.debug(DBG, "seek", { target: targetSeconds, clamped, isDirectPlay, streamOffset, isHlsStream, vDuration: v.duration });
 
     // Direct play: HTTP Range requests support random seek — always works
     if (isDirectPlay) {
@@ -135,32 +150,44 @@ export function VideoPlayer({
       return;
     }
 
-    // HLS: HLS.js loads the correct segment on seek — works natively
+    // Helper: check if a position (in video-element time) is within buffered ranges
+    const isPositionBuffered = (pos: number): boolean => {
+      const buf = v.buffered;
+      for (let i = 0; i < buf.length; i++) {
+        if (pos >= buf.start(i) - 1 && pos <= buf.end(i) + 1) return true;
+      }
+      return false;
+    };
+
+    // HLS transcoded: Jellyfin generates segments progressively from StartTimeTicks.
+    // Seeking beyond buffered content requires a new transcode session (URL rebuild).
     if (isHlsStream) {
+      // Backward seek past stream start needs URL rebuild
       if (streamOffset > 0 && clamped < streamOffset - 5) {
         seekTargetRef.current = clamped;
         onSeekRequest?.(clamped);
         return;
       }
-      v.currentTime = clamped;
-      onSeekComplete?.(clamped, v.paused);
+
+      if (isPositionBuffered(clamped)) {
+        v.currentTime = clamped;
+        onSeekComplete?.(clamped, v.paused);
+      } else {
+        // Target not buffered — start new transcode from seek position
+        console.debug(DBG, "HLS seek: target not buffered, rebuilding URL", { clamped });
+        seekTargetRef.current = clamped;
+        onSeekRequest?.(clamped);
+      }
       return;
     }
 
-    // Progressive transcode: can only seek within the downloaded buffer.
-    // Check the actual buffered ranges instead of an arbitrary threshold.
-    const buffered = v.buffered;
-    let isInBuffer = false;
-    for (let i = 0; i < buffered.length; i++) {
-      if (clamped >= buffered.start(i) - 1 && clamped <= buffered.end(i) + 1) {
-        isInBuffer = true;
-        break;
-      }
-    }
+    // Progressive transcode: convert absolute target to video-relative time.
+    // The stream starts at v.currentTime=0 representing absolute streamOffset.
+    const relativeTarget = isProgressiveTranscode ? clamped - streamOffset : clamped;
 
-    if (isInBuffer) {
-      v.currentTime = clamped;
-      onSeekComplete?.(clamped, v.paused);
+    if (isPositionBuffered(relativeTarget)) {
+      v.currentTime = relativeTarget;
+      onSeekComplete?.(clamped, v.paused); // report absolute position
     } else {
       // Target outside buffer — rebuild URL with new StartTimeTicks
       seekTargetRef.current = clamped;
@@ -225,15 +252,22 @@ export function VideoPlayer({
 
     const onReady = () => {
       clearTimeout(failsafe);
-      console.debug(DBG, "ready", { seekTo, isHlsUrl, isSourceChange, duration: v.duration });
+      console.debug(DBG, "ready", { seekTo, isHlsUrl, isSourceChange, isDirectPlay, streamOffset, duration: v.duration });
       // jellyfin-web pattern: explicit seek for frame-accurate positioning.
       // For HLS initial load: startPosition is segment-boundary accurate — good enough,
       // skip explicit seek so play() fires faster (reduces audio delay).
       // For HLS source changes (audio/quality switch): explicit seek corrects the
       // segment-boundary offset (startPosition can be a few seconds off).
-      // For direct play / progressive: always seek (HTTP Range supports it).
-      if (seekTo > 0 && (!isHlsUrl || isSourceChange)) {
-        v.currentTime = seekTo;
+      // For direct play: always seek (HTTP Range supports it).
+      // For progressive transcode: stream already starts at seekTo (via StartTimeTicks),
+      // so v.currentTime=0 is correct — don't seek to the absolute position.
+      if (seekTo > 0) {
+        const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
+        if (isProgressiveTranscode && streamOffset > 0) {
+          console.debug(DBG, "skip explicit seek — progressive stream starts at streamOffset", { seekTo, streamOffset });
+        } else if (!isHlsUrl || isSourceChange) {
+          v.currentTime = seekTo;
+        }
       }
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
       // until actual playback starts (onPlay). This prevents the black-screen gap
@@ -435,12 +469,13 @@ export function VideoPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);
-          // Jellyfin HLS manifests always use absolute PTS (full media timeline).
-          // Set offset to 0 on first timeupdate if not already done by sync reset.
+          // HLS with CopyTimestamps: PTS are absolute (v.currentTime = absolute position).
+          // Progressive transcode: PTS start from 0, need streamOffset for absolute display.
           if (!offsetDetectedRef.current) {
             offsetDetectedRef.current = true;
-            effectiveOffsetRef.current = 0;
-            console.debug(DBG, "offset: absolute PTS", { t, streamOffset });
+            const isHls = src.includes(".m3u8");
+            effectiveOffsetRef.current = (!isHls && !isDirectPlay && streamOffset > 0) ? streamOffset : 0;
+            console.debug(DBG, "offset detected", { t, streamOffset, isHls, isDirectPlay, effectiveOffset: effectiveOffsetRef.current });
           }
           const absoluteTime = effectiveOffsetRef.current + t;
           lastKnownPositionRef.current = absoluteTime;
