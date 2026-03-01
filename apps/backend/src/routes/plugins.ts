@@ -23,6 +23,7 @@ import {
   type InstalledPlugin,
   type EnrichedEntry,
 } from "../services/pluginManager";
+import { setConfigValue } from "../services/configStore";
 
 // ── Zod schemas ──
 const addSourceSchema = z.object({
@@ -264,6 +265,9 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     admin.put("/seer/config", async (request) => {
       const config = configSchema.parse(request.body);
       saveSeerConfig(config);
+      // Sync URL and API key to the database so the seerr proxy routes can read them
+      if (typeof config.url === "string") await setConfigValue("seerr_url", config.url);
+      if (typeof config.apiKey === "string") await setConfigValue("seerr_api_key", config.apiKey);
       return config;
     });
   });
