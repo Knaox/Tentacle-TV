@@ -203,9 +203,9 @@ export function Watch() {
       libraryId: allCandidates[0],
       libraryIds: allCandidates,
       audioTracks: streams.filter((s) => s.Type === "Audio")
-        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: s.DisplayTitle })),
+        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") })),
       subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
-        .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
+        .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") })),
     }, {
       onSuccess: (result) => {
         console.debug(DBG, "preferences resolved", { audio: result.audioIndex, subtitle: result.subtitleIndex, currentPosition: positionRef.current });
