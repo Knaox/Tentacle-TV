@@ -73,15 +73,21 @@ export function Watch() {
     resumeApplied.current = false;
   }, [itemId]);
 
-  // Invalidate media item cache on leave so detail page shows fresh resume position.
-  // Delay slightly so Jellyfin has time to process the stop report (async POST).
+  // Invalidate all relevant caches on leave so Home + MediaDetail show fresh data.
+  // Two phases: immediate (marks stale) + delayed (refetch after Jellyfin processes stop).
   useEffect(() => {
     return () => {
       const id = itemId;
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["item", id] });
-        queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-      }, 600);
+      const keys = [
+        { queryKey: ["item", id] },
+        { queryKey: ["resume-items"] },
+        { queryKey: ["next-up"] },
+        { queryKey: ["watched-items"] },
+      ];
+      // Phase 1: mark stale immediately so any mounting component knows to refetch
+      keys.forEach((k) => queryClient.invalidateQueries(k));
+      // Phase 2: refetch after Jellyfin has processed the stop report
+      setTimeout(() => keys.forEach((k) => queryClient.refetchQueries(k)), 800);
     };
   }, [itemId, queryClient]);
 

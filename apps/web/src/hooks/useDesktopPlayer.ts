@@ -246,7 +246,8 @@ export function useDesktopPlayer() {
     setFileLoaded(false); // Reset — will be set again on file-loaded event
     try {
       if (options.startPosition != null && options.startPosition > 0) {
-        await api.setProperty("start", `+${options.startPosition.toFixed(1)}`);
+        console.debug("[mpv] play: setting start position", options.startPosition);
+        await api.command("set", ["start", `+${options.startPosition.toFixed(1)}`]);
       } else {
         // Reset start property so the stream starts from its natural beginning
         // (important for transcoded streams where position is baked into the URL)
