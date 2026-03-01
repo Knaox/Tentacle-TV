@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { backendUrl } from "../../main";
 import type { InstalledPlugin, MarketplacePlugin, PluginSource } from "./types";
 
@@ -21,6 +22,26 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+/** Fetch a plugin's IIFE bundle and inject it as an inline script.
+ *  The bundle auto-registers via window.__tentacle.registerPlugin(). */
+function loadPluginBundle(pluginId: string, version: string) {
+  const token = localStorage.getItem("tentacle_token");
+  if (!token) return;
+  fetch(`${BASE}/${pluginId}/bundle?v=${version}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then((r) => (r.ok ? r.text() : ""))
+    .then((code) => {
+      if (code) {
+        const script = document.createElement("script");
+        script.textContent = code;
+        script.dataset.pluginId = pluginId;
+        document.head.appendChild(script);
+      }
+    })
+    .catch(() => {});
+}
+
 // -- Installed plugins --
 
 export function useInstalledPlugins() {
@@ -34,24 +55,44 @@ export function useInstalledPlugins() {
 export function useTogglePlugin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiFetch(`/${id}/toggle`, { method: "PUT" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
+    mutationFn: (id: string) => apiFetch<InstalledPlugin>(`/${id}/toggle`, { method: "PUT" }),
+    onSuccess: (plugin) => {
+      qc.invalidateQueries({ queryKey: ["admin-plugins"] });
+      if (plugin.enabled) {
+        loadPluginBundle(plugin.pluginId, plugin.version);
+      } else {
+        unregisterPlugin(plugin.pluginId);
+      }
+    },
   });
 }
 
 export function useUninstallPlugin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiFetch(`/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
+    mutationFn: ({ id }: { id: string; pluginId: string }) =>
+      apiFetch(`/${id}`, { method: "DELETE" }),
+    onSuccess: (_, { pluginId }) => {
+      qc.invalidateQueries({ queryKey: ["admin-plugins"] });
+      unregisterPlugin(pluginId);
+    },
   });
 }
 
 export function useUpdatePlugin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiFetch(`/${id}/update`, { method: "POST" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
+    mutationFn: (id: string) => apiFetch<InstalledPlugin>(`/${id}/update`, { method: "POST" }),
+    onSuccess: (data: unknown) => {
+      qc.invalidateQueries({ queryKey: ["admin-plugins"] });
+      const plugin: InstalledPlugin = (data as { plugin?: InstalledPlugin }).plugin ?? (data as InstalledPlugin);
+      if (plugin.pluginId) {
+        unregisterPlugin(plugin.pluginId);
+        if (plugin.enabled) {
+          loadPluginBundle(plugin.pluginId, plugin.version);
+        }
+      }
+    },
   });
 }
 
@@ -69,8 +110,13 @@ export function useInstallPlugin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { pluginId: string; version: string; sourceId: string }) =>
-      apiFetch("/install", { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-plugins"] }),
+      apiFetch<InstalledPlugin>("/install", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: (plugin) => {
+      qc.invalidateQueries({ queryKey: ["admin-plugins"] });
+      if (plugin.enabled) {
+        loadPluginBundle(plugin.pluginId, plugin.version);
+      }
+    },
   });
 }
 

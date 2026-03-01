@@ -96,7 +96,7 @@ export function InstalledTab() {
             <button
               onClick={() => {
                 if (confirm(t("adminPlugins:confirmUninstall", { name: p.name }))) {
-                  uninstallMut.mutate(p.id);
+                  uninstallMut.mutate({ id: p.id, pluginId: p.pluginId });
                 }
               }}
               disabled={uninstallMut.isPending}

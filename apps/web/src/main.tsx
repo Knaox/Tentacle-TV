@@ -14,7 +14,6 @@ import {
   WebUuidGenerator,
   TentacleConfigContext,
 
-  setRequestsBackendUrl,
   setPreferencesBackendUrl,
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
@@ -24,7 +23,7 @@ import {
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import * as PluginsAPI from "@tentacle-tv/plugins-api";
-import { PluginProvider, registerPlugin } from "@tentacle-tv/plugins-api";
+import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { App } from "./App";
 import "./index.css";
 
@@ -60,7 +59,6 @@ export const backendUrl = isTauriApp
 
 /** Reconfigure all backend service URLs for a given base URL */
 export function configureBackendUrls(url: string) {
-  setRequestsBackendUrl(url);
   setPreferencesBackendUrl(url);
   setTicketsBackendUrl(url);
   setNotificationsBackendUrl(url);
@@ -71,7 +69,7 @@ export function configureBackendUrls(url: string) {
 configureBackendUrls(backendUrl);
 
 // Expose plugin registration and backend URL for dynamically loaded plugins
-(window as unknown as Record<string, unknown>).__tentacle = { registerPlugin, backendUrl };
+(window as unknown as Record<string, unknown>).__tentacle = { registerPlugin, unregisterPlugin, backendUrl };
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
