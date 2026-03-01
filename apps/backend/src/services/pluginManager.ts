@@ -263,7 +263,7 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   mkdirSync(destDir, { recursive: true });
 
   const { execSync } = await import("child_process");
-  execSync(`tar -xzf "${archivePath}" -C "${destDir}" --strip-components=1`, {
+  execSync(`tar -xzf "${archivePath}" -C "${destDir}"`, {
     stdio: "pipe", timeout: 30_000,
   });
   rmSync(archivePath, { force: true });
