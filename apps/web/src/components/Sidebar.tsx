@@ -1,29 +1,29 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth, useLibraries, useAppConfig } from "@tentacle-tv/api-client";
-import { NotificationBell } from "./NotificationBell";
+import { useLibraries, useAppConfig } from "@tentacle-tv/api-client";
+import { SidebarPreviewPanel } from "./SidebarPreviewPanel";
 
-interface NavItem { key: string; label: string; icon: React.ReactNode; path: string }
-
-function checkIsAdmin(): boolean {
-  try {
-    const raw = localStorage.getItem("tentacle_user");
-    if (!raw) return false;
-    return JSON.parse(raw).Policy?.IsAdministrator === true;
-  } catch { return false; }
+interface NavItem {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  path: string;
+  isLibrary?: boolean;
+  libraryId?: string;
 }
 
 export function Sidebar() {
   const [expanded, setExpanded] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<NavItem | null>(null);
+  const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation("nav");
-  const { logout } = useAuth();
   const { data: libraries } = useLibraries();
   const { data: config } = useAppConfig();
-  const isAdmin = checkIsAdmin();
   const features = config?.features;
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const navItems: NavItem[] = useMemo(() => {
     const items: NavItem[] = [
@@ -32,13 +32,22 @@ export function Sidebar() {
     if (libraries) {
       for (const lib of libraries) {
         const icon = lib.CollectionType === "movies" ? <FilmIcon /> : <TvIcon />;
-        items.push({ key: `lib-${lib.Id}`, label: lib.Name, icon, path: `/library/${lib.Id}` });
+        items.push({
+          key: `lib-${lib.Id}`,
+          label: lib.Name,
+          icon,
+          path: `/library/${lib.Id}`,
+          isLibrary: true,
+          libraryId: lib.Id,
+        });
       }
     }
-    if (features?.discover) items.push({ key: "discover", label: t("makeRequest"), icon: <PlusIcon />, path: "/discover" });
-    if (features?.requests) items.push({ key: "requests", label: t("pendingRequests"), icon: <ListIcon />, path: "/requests" });
-    if (features?.downloads) items.push({ key: "downloads", label: t("downloads"), icon: <DownloadIcon />, path: "/downloads" });
-    items.push({ key: "support", label: t("help"), icon: <HelpIcon />, path: "/support" });
+    if (features?.discover)
+      items.push({ key: "discover", label: t("makeRequest"), icon: <PlusIcon />, path: "/discover" });
+    if (features?.requests)
+      items.push({ key: "requests", label: t("pendingRequests"), icon: <ListIcon />, path: "/requests" });
+    if (features?.downloads)
+      items.push({ key: "downloads", label: t("downloads"), icon: <DownloadIcon />, path: "/downloads" });
     return items;
   }, [libraries, features, t]);
 
@@ -47,84 +56,171 @@ export function Sidebar() {
     return location.pathname === item.path || location.pathname.startsWith(item.path + "/");
   };
 
-  const handleLogout = () => {
-    logout.mutate(undefined, { onSuccess: () => navigate("/login") });
-  };
+  const handleItemHover = useCallback(
+    (item: NavItem, el: HTMLButtonElement) => {
+      clearTimeout(hoverTimeoutRef.current);
+      if (item.isLibrary && !expanded) {
+        setHoveredItem(item);
+        setHoveredRect(el.getBoundingClientRect());
+      } else {
+        setHoveredItem(null);
+        setHoveredRect(null);
+      }
+    },
+    [expanded],
+  );
+
+  const handleItemLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredItem(null);
+      setHoveredRect(null);
+    }, 200);
+  }, []);
+
+  const handlePreviewEnter = useCallback(() => {
+    clearTimeout(hoverTimeoutRef.current);
+  }, []);
+
+  const handlePreviewLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredItem(null);
+      setHoveredRect(null);
+    }, 200);
+  }, []);
 
   return (
-    <aside
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-      className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-white/5 bg-black/40 backdrop-blur-xl transition-all duration-300 ${
-        expanded ? "w-56" : "w-16"
-      }`}
-    >
-      <div className="flex h-16 items-center gap-3 px-4">
-        <img src="/tentacle-logo-pirate.svg" alt="" className="h-8 w-8 flex-shrink-0" />
-        <span className={`whitespace-nowrap text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent transition-opacity duration-200 ${expanded ? "opacity-100" : "opacity-0 w-0"}`}>
-          Tentacle TV
-        </span>
-      </div>
+    <>
+      <aside
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => {
+          setExpanded(false);
+          handleItemLeave();
+        }}
+        className="fixed left-0 top-0 z-40 flex h-screen flex-col py-5 transition-all duration-300"
+        style={{
+          width: expanded ? 200 : 62,
+          background: "rgba(10,10,18,0.85)",
+          backdropFilter: "blur(20px)",
+          borderRight: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        {/* Logo */}
+        <div className="mb-6 flex items-center gap-2 px-3">
+          <div
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+            style={{
+              background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
+              boxShadow: "0 4px 15px rgba(139,92,246,0.3)",
+            }}
+          >
+            <img src="/tentacle-logo-pirate.svg" alt="" className="h-6 w-6" />
+          </div>
+          <span
+            className="overflow-hidden whitespace-nowrap text-sm font-bold text-white transition-opacity duration-300"
+            style={{ opacity: expanded ? 1 : 0, width: expanded ? "auto" : 0 }}
+          >
+            Tentacle TV
+          </span>
+        </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
-        {navItems.map((item) => (
-          <NavButton key={item.key} item={item} active={isActive(item)} expanded={expanded}
-            onClick={() => navigate(item.path)} />
-        ))}
-      </nav>
+        {/* Main nav */}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-2.5">
+          {navItems.map((item) => (
+            <SidebarButton
+              key={item.key}
+              item={item}
+              active={isActive(item)}
+              expanded={expanded}
+              onClick={() => navigate(item.path)}
+              onHover={handleItemHover}
+              onLeave={handleItemLeave}
+            />
+          ))}
+        </nav>
 
-      <div className="border-t border-white/5 px-2 py-3 space-y-0.5">
-        <div className="flex items-center justify-center"><NotificationBell dropdownPosition="right" /></div>
-        <NavButton item={{ key: "pair", label: t("pairDevice"), icon: <PairIcon />, path: "/pair-device" }}
-          active={location.pathname === "/pair-device"} expanded={expanded}
-          onClick={() => navigate("/pair-device")} />
-        <NavButton item={{ key: "settings", label: t("preferences"), icon: <LangIcon />, path: "/settings" }}
-          active={location.pathname === "/settings"} expanded={expanded}
-          onClick={() => navigate("/settings")} />
-        <NavButton item={{ key: "about", label: t("about"), icon: <InfoIcon />, path: "/about" }}
-          active={location.pathname === "/about" || location.pathname === "/credits"} expanded={expanded}
-          onClick={() => navigate("/about")} />
-        {isAdmin && (
-          <NavButton item={{ key: "admin", label: t("admin"), icon: <AdminIcon />, path: "/admin" }}
-            active={location.pathname === "/admin"} expanded={expanded}
-            onClick={() => navigate("/admin")} />
-        )}
-        <NavButton item={{ key: "logout", label: t("logout"), icon: <LogoutIcon />, path: "" }}
-          active={false} expanded={expanded} onClick={handleLogout} />
-      </div>
-    </aside>
+        {/* Bottom: pair device only */}
+        <div className="border-t border-white/5 px-2.5 pt-3">
+          <SidebarButton
+            item={{ key: "pair", label: t("pairDevice"), icon: <PairIcon />, path: "/pair-device" }}
+            active={location.pathname === "/pair-device"}
+            expanded={expanded}
+            onClick={() => navigate("/pair-device")}
+            onHover={handleItemHover}
+            onLeave={handleItemLeave}
+          />
+        </div>
+      </aside>
+
+      {/* Preview panel */}
+      {hoveredItem?.isLibrary && hoveredItem.libraryId && hoveredRect && (
+        <SidebarPreviewPanel
+          libraryId={hoveredItem.libraryId}
+          libraryName={hoveredItem.label}
+          top={hoveredRect.top}
+          onMouseEnter={handlePreviewEnter}
+          onMouseLeave={handlePreviewLeave}
+        />
+      )}
+    </>
   );
 }
 
-function NavButton({ item, active, expanded, onClick }: {
-  item: NavItem; active: boolean; expanded: boolean; onClick: () => void;
+function SidebarButton({
+  item,
+  active,
+  expanded,
+  onClick,
+  onHover,
+  onLeave,
+}: {
+  item: NavItem;
+  active: boolean;
+  expanded: boolean;
+  onClick: () => void;
+  onHover: (item: NavItem, el: HTMLButtonElement) => void;
+  onLeave: () => void;
 }) {
   return (
-    <button onClick={onClick} title={expanded ? undefined : item.label}
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+    <button
+      onClick={onClick}
+      title={expanded ? undefined : item.label}
+      onMouseEnter={(e) => onHover(item, e.currentTarget)}
+      onMouseLeave={onLeave}
+      className={`relative flex w-full items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
         active
-          ? "bg-gradient-to-r from-purple-600/30 to-pink-600/20 text-white"
-          : "text-white/50 hover:bg-white/5 hover:text-white/80"
-      }`}>
-      <span className={`flex-shrink-0 ${active ? "text-purple-400" : ""}`}>{item.icon}</span>
-      <span className={`whitespace-nowrap transition-opacity duration-200 ${expanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+          ? "text-tentacle-accent-muted"
+          : "text-white/40 hover:bg-white/5 hover:text-white/70"
+      }`}
+      style={{
+        paddingLeft: 12,
+        background: active ? "rgba(139,92,246,0.15)" : undefined,
+      }}
+    >
+      {/* Active indicator bar */}
+      {active && (
+        <div
+          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full animate-breathe"
+          style={{
+            background: "linear-gradient(180deg, #8B5CF6, #A78BFA)",
+          }}
+        />
+      )}
+      <span className="flex-shrink-0">{item.icon}</span>
+      <span
+        className="overflow-hidden whitespace-nowrap transition-opacity duration-200"
+        style={{ opacity: expanded ? 1 : 0, width: expanded ? "auto" : 0 }}
+      >
         {item.label}
       </span>
-      {active && <span className="ml-auto h-1.5 w-1.5 flex-shrink-0 rounded-full bg-purple-400" />}
     </button>
   );
 }
 
-/* ── Icons (20x20) ── */
-function HomeIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>; }
-function FilmIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5" /></svg>; }
-function TvIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125z" /></svg>; }
-function PlusIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>; }
-function DownloadIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>; }
-function HelpIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>; }
-function LangIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" /></svg>; }
-function AdminIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>; }
-function ListIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>; }
-function InfoIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>; }
-function PairIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-6.364-6.364L4.5 8.25" /><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5" /></svg>; }
-function LogoutIcon() { return <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>; }
+/* ── Icons (20×20) ── */
+function HomeIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>; }
+function FilmIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>; }
+function TvIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125z" /></svg>; }
+function PlusIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>; }
+function DownloadIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>; }
+function ListIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>; }
+function PairIcon() { return <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-6.364-6.364L4.5 8.25" /><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5" /></svg>; }

@@ -171,13 +171,18 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // GET /api/preferences/language — Get user's interface language
-  app.get("/language", async (request) => {
-    const prisma = getPrisma();
-    const user = (request as any).user as JellyfinUser;
-    const key = `user_lang_${user.userId}`;
+  app.get("/language", async (request, reply) => {
+    try {
+      const prisma = getPrisma();
+      const user = (request as any).user as JellyfinUser;
+      const key = `user_lang_${user.userId}`;
 
-    const row = await prisma.serverConfig.findUnique({ where: { key } });
-    return { language: row?.value ?? null };
+      const row = await prisma.serverConfig.findUnique({ where: { key } });
+      return { language: row?.value ?? null };
+    } catch (err) {
+      app.log.error(err, "[preferences/language] Error fetching user language");
+      return reply.status(500).send({ message: "Failed to fetch language preference" });
+    }
   });
 
   // PUT /api/preferences/language — Set user's interface language
@@ -197,15 +202,32 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // POST /api/preferences/resolve — Resolve best tracks for a media item
-  app.post("/resolve", async (request) => {
+  const resolveSchema = z.object({
+    libraryId: z.string().min(1),
+    libraryIds: z.array(z.string()).optional(),
+    audioTracks: z.array(z.object({
+      index: z.number(),
+      language: z.string().optional(),
+      isDefault: z.boolean().optional(),
+      title: z.string().optional(),
+    })).default([]),
+    subtitleTracks: z.array(z.object({
+      index: z.number(),
+      language: z.string().optional(),
+      isForced: z.boolean().optional(),
+      title: z.string().optional(),
+    })).default([]),
+  });
+
+  app.post("/resolve", async (request, reply) => {
+    let body: z.infer<typeof resolveSchema>;
+    try {
+      body = resolveSchema.parse(request.body);
+    } catch (err) {
+      return reply.status(400).send({ message: "Invalid request body", error: String(err) });
+    }
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
-    const body = request.body as {
-      libraryId: string;
-      libraryIds?: string[];
-      audioTracks: Array<{ index: number; language?: string; isDefault?: boolean; title?: string }>;
-      subtitleTracks: Array<{ index: number; language?: string; isForced?: boolean; title?: string }>;
-    };
 
     // Try exact match first, then any of the provided IDs, then any user preference
     const candidates = [body.libraryId, ...(body.libraryIds ?? [])].filter(Boolean);
