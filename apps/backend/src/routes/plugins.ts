@@ -36,6 +36,13 @@ const installSchema = z.object({
 
 const configSchema = z.record(z.unknown());
 
+const proxySchema = z.object({
+  url: z.string().url(),
+  method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("GET"),
+  headers: z.record(z.string()).optional(),
+  body: z.unknown().optional(),
+});
+
 // ── Route registration ──
 export const pluginRoutes: FastifyPluginAsync = async (app) => {
   app.get("/active", { preHandler: requireAuth }, async () => {
@@ -253,6 +260,28 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       plugin.config = configSchema.parse(request.body);
       saveInstalled(installed);
       return plugin.config;
+    });
+
+    // Generic server-side proxy for plugins (avoids CORS)
+    admin.post("/:id/proxy", async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const plugin = findPlugin(getInstalled(), id);
+      if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
+      const { url, method, headers: hdrs, body: reqBody } = proxySchema.parse(request.body);
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: hdrs,
+          body: reqBody ? JSON.stringify(reqBody) : undefined,
+          signal: AbortSignal.timeout(10_000),
+        });
+        const text = await res.text();
+        let json: unknown;
+        try { json = JSON.parse(text); } catch { json = null; }
+        return { status: res.status, ok: res.ok, data: json ?? text };
+      } catch (err) {
+        return reply.status(502).send({ message: err instanceof Error ? err.message : "Proxy request failed" });
+      }
     });
 
     admin.get("/:id/status", async (request, reply) => {
