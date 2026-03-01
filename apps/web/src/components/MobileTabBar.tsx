@@ -31,7 +31,7 @@ export function MobileTabBar() {
       list.push({
         path: item.path,
         label: item.label,
-        icon: IconComp ? <IconComp className="h-5 w-5" /> : <span className="h-5 w-5">{item.icon}</span>,
+        icon: IconComp ? <IconComp className="h-5 w-5" /> : <span className="h-5 w-5">{item.icon as string}</span>,
         match: (p) => p.startsWith(item.path),
       });
     }

@@ -15,7 +15,7 @@ export function DiscoverPage() {
   const [sort, setSort] = useState<SortOption>("popularity");
   const [page, setPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState<SeerrSearchResult | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const category: DiscoverCategory = mediaFilter === "movie"
     ? "movies"
