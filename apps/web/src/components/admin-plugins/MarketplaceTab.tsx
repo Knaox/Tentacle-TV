@@ -45,7 +45,7 @@ export function MarketplaceTab() {
           <p className="text-xs text-white/50 line-clamp-2">{p.description}</p>
           <div className="mt-2 flex items-center gap-3 text-xs text-white/30">
             <span>{p.author}</span>
-            {p.downloads > 0 && <span>{t("adminPlugins:downloadCount", { count: p.downloads.toLocaleString() })}</span>}
+            {p.downloads > 0 && <span>{t("adminPlugins:downloadCount", { count: p.downloads })}</span>}
           </div>
         </div>
       ))}
