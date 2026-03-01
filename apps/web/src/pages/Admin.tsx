@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, usePairedDevices, useRevokePairedDevice } from "@tentacle-tv/api-client";
 import type { SupportTicket } from "@tentacle-tv/api-client";
@@ -25,6 +26,7 @@ interface InviteKey {
 
 export function Admin() {
   const { t } = useTranslation("admin");
+  const navigate = useNavigate();
   const [invites, setInvites] = useState<InviteKey[]>([]);
   const [maxUses, setMaxUses] = useState(1);
   const [expiresHours, setExpiresHours] = useState(72);
@@ -44,6 +46,23 @@ export function Admin() {
   return (
     <div className="px-4 pt-6 pb-16 md:px-12"><div className="mx-auto max-w-4xl">
       <h1 className="mb-8 text-2xl font-bold text-white">{t("admin:title")}</h1>
+
+      {/* Plugins shortcut */}
+      <div className={cls.card}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Plugins</h2>
+            <p className="mt-1 text-sm text-white/40">Gerez vos plugins, explorez le marketplace et ajoutez des sources.</p>
+          </div>
+          <button
+            onClick={() => navigate("/admin/plugins")}
+            className="rounded-lg bg-purple-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-500"
+          >
+            Gerer les plugins
+          </button>
+        </div>
+      </div>
+
       <ServicesSection />
       <PairedDevicesSection />
       <div className={cls.card}>
