@@ -18,6 +18,8 @@ import {
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
+import { PluginProvider, registerPlugin } from "@tentacle-tv/plugins-api";
+import { seerPlugin, setSeerBackendUrl } from "@tentacle-tv/plugin-seer";
 import { App } from "./App";
 import "./index.css";
 
@@ -58,6 +60,10 @@ export function configureBackendUrls(url: string) {
 }
 
 configureBackendUrls(backendUrl);
+setSeerBackendUrl(backendUrl);
+
+// Register plugins
+registerPlugin(seerPlugin);
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
@@ -102,9 +108,11 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <TentacleConfigContext.Provider value={{ storage, uuid }}>
         <JellyfinClientContext.Provider value={jellyfinClient}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <PluginProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </PluginProvider>
         </JellyfinClientContext.Provider>
       </TentacleConfigContext.Provider>
     </QueryClientProvider>

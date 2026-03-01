@@ -5,6 +5,7 @@ import { UpdateNotification } from "./components/UpdateNotification";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { usePluginRoutes } from "@tentacle-tv/plugins-api";
 import { isTauriApp } from "./main";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -14,15 +15,14 @@ const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m
 const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
 const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
-const Discover = lazy(() => import("./pages/Discover").then((m) => ({ default: m.Discover })));
 const Downloads = lazy(() => import("./pages/Downloads").then((m) => ({ default: m.Downloads })));
 const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
 const Admin = lazy(() => import("./pages/Admin").then((m) => ({ default: m.Admin })));
 const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
 const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
-const MyRequestsList = lazy(() => import("./components/MyRequestsList").then((m) => ({ default: m.MyRequestsList })));
 const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
+const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
 
 function PageSpinner() {
   return (
@@ -133,39 +133,51 @@ export function App() {
   return (
     <>
       <Suspense fallback={<PageSpinner />}>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={authed ? <Navigate to="/" replace /> : <Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* Protected — immersive (no sidebar/tabbar) */}
-          <Route path="/watch/:itemId" element={guard(<Watch />)} />
-          <Route path="/media/:itemId" element={guard(<MediaDetail />)} />
-
-          {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
-          <Route element={guard(<AppLayout />)}>
-            <Route index element={<Home />} />
-            <Route path="library/:libraryId" element={<Library />} />
-            <Route path="discover" element={<Discover />} />
-            <Route path="requests" element={<RequestsPage />} />
-            <Route path="downloads" element={<Downloads />} />
-            <Route path="support" element={<Support />} />
-            <Route path="settings" element={<Preferences />} />
-            <Route path="pair-device" element={<PairDevice />} />
-            <Route path="admin" element={<Admin />} />
-            <Route path="about" element={<About />} />
-            <Route path="credits" element={<Credits />} />
-          </Route>
-
-          <Route path="/preferences" element={<Navigate to="/settings" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <PluginRoutes guard={guard} />
       </Suspense>
       <UpdateNotification />
     </>
   );
 }
 
-function RequestsPage() {
-  return <div className="px-4 pt-4 md:px-12"><MyRequestsList /></div>;
+function PluginRoutes({ guard }: { guard: (el: React.ReactElement) => React.ReactElement }) {
+  const pluginRoutes = usePluginRoutes();
+
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      {/* Protected — immersive (no sidebar/tabbar) */}
+      <Route path="/watch/:itemId" element={guard(<Watch />)} />
+      <Route path="/media/:itemId" element={guard(<MediaDetail />)} />
+
+      {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
+      <Route element={guard(<AppLayout />)}>
+        <Route index element={<Home />} />
+        <Route path="library/:libraryId" element={<Library />} />
+        <Route path="downloads" element={<Downloads />} />
+        <Route path="support" element={<Support />} />
+        <Route path="settings" element={<Preferences />} />
+        <Route path="pair-device" element={<PairDevice />} />
+        <Route path="admin/*" element={<Admin />} />
+        <Route path="admin/plugins" element={<AdminPlugins />} />
+        <Route path="about" element={<About />} />
+        <Route path="credits" element={<Credits />} />
+
+        {/* Dynamic plugin routes */}
+        {pluginRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path.replace(/^\//, "")}
+            element={<route.component />}
+          />
+        ))}
+      </Route>
+
+      <Route path="/preferences" element={<Navigate to="/settings" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }

@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, type ComponentType } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLibraries, useAppConfig } from "@tentacle-tv/api-client";
+import { usePluginNavItems } from "@tentacle-tv/plugins-api";
 import { SidebarPreviewPanel } from "./SidebarPreviewPanel";
 
 interface NavItem {
@@ -23,6 +24,7 @@ export function Sidebar() {
   const { data: libraries } = useLibraries();
   const { data: config } = useAppConfig();
   const features = config?.features;
+  const pluginNavItems = usePluginNavItems("desktop");
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const navItems: NavItem[] = useMemo(() => {
@@ -42,14 +44,21 @@ export function Sidebar() {
         });
       }
     }
-    if (features?.discover)
-      items.push({ key: "discover", label: t("makeRequest"), icon: <PlusIcon />, path: "/discover" });
-    if (features?.requests)
-      items.push({ key: "requests", label: t("pendingRequests"), icon: <ListIcon />, path: "/requests" });
+    // Plugin nav items — only shown when plugin is installed AND configured
+    for (const item of pluginNavItems) {
+      const IconComp = typeof item.icon !== "string" ? item.icon as ComponentType<{ className?: string }> : null;
+      items.push({
+        key: `plugin-${item.path}`,
+        label: item.label,
+        icon: IconComp ? <IconComp /> : <span>{item.icon}</span>,
+        path: item.path,
+      });
+    }
+
     if (features?.downloads)
       items.push({ key: "downloads", label: t("downloads"), icon: <DownloadIcon />, path: "/downloads" });
     return items;
-  }, [libraries, features, t]);
+  }, [libraries, features, t, pluginNavItems]);
 
   const isActive = (item: NavItem) => {
     if (item.key === "home") return location.pathname === "/";

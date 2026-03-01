@@ -1,0 +1,31 @@
+{
+  "name": "@tentacle-tv/plugin-seer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@tentacle-tv/plugins-api": "workspace:*",
+    "@tentacle-tv/api-client": "workspace:*",
+    "@tentacle-tv/shared": "workspace:*",
+    "@tanstack/react-query": "^5.62.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-router-dom": ">=7.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "react-router-dom": "^7.1.0",
+    "typescript": "^5.7.0"
+  }
+}

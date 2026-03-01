@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, type ComponentType } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAppConfig } from "@tentacle-tv/api-client";
+import { usePluginNavItems } from "@tentacle-tv/plugins-api";
 
 interface Tab {
   path: string;
@@ -14,8 +14,7 @@ export function MobileTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation("nav");
-  const { data: config } = useAppConfig();
-  const features = config?.features;
+  const pluginNavItems = usePluginNavItems("web");
 
   const tabs: Tab[] = useMemo(() => {
     const list: Tab[] = [
@@ -24,19 +23,19 @@ export function MobileTabBar() {
         icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>,
         match: (p) => p === "/",
       },
-      {
-        path: "/requests", label: t("requests"),
-        icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
-        match: (p) => p.startsWith("/requests"),
-      },
     ];
-    if (features?.discover) {
+
+    // Plugin nav items — only appear when plugin is installed AND configured
+    for (const item of pluginNavItems) {
+      const IconComp = typeof item.icon !== "string" ? item.icon as ComponentType<{ className?: string }> : null;
       list.push({
-        path: "/discover", label: t("requests"),
-        icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>,
-        match: (p) => p.startsWith("/discover") || p.startsWith("/requests"),
+        path: item.path,
+        label: item.label,
+        icon: IconComp ? <IconComp className="h-5 w-5" /> : <span className="h-5 w-5">{item.icon}</span>,
+        match: (p) => p.startsWith(item.path),
       });
     }
+
     list.push(
       {
         path: "/pair-device", label: t("pairDevice"),
@@ -48,7 +47,7 @@ export function MobileTabBar() {
       },
     );
     return list;
-  }, [features, t]);
+  }, [t, pluginNavItems]);
 
   const isActive = (tab: Tab) => {
     if (tab.match) return tab.match(location.pathname);

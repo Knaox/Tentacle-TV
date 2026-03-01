@@ -1,37 +1,62 @@
-# Tentacle
+# Tentacle TV
 
-**A premium media client for Jellyfin**
+**Client media moderne et multi-plateforme pour Jellyfin**
 
-<!-- Badges -->
-![Version](https://img.shields.io/badge/version-0.8.2-blue)
+![Version](https://img.shields.io/badge/version-0.9.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Tentacle is a multi-platform media client ecosystem that connects to your Jellyfin server. It provides a polished, modern interface for browsing and streaming your media library across all your devices.
+Tentacle TV est un ecosysteme client media multi-plateforme connecte a votre serveur Jellyfin. Il offre une interface moderne et soignee pour parcourir et lire votre mediatheque sur tous vos appareils.
 
-## Features
+## Fonctionnalites
 
-- **Multi-platform** — Web, Desktop (macOS/Windows), Mobile (iOS/Android), TV (Android TV)
-- **Jellyfin integration** — Library browsing, playback, watch progress tracking
-- **Overseerr/Jellyseerr integration** — Optional media request management
-- **Support ticket system** — Built-in user support
-- **Invitation system** — Control who can access your server
-- **Multi-language** — French and English
-- **Dark theme** — Glassmorphism design with smooth animations
-- **TV remote support** — Full D-pad navigation for Android TV
-- **Desktop native playback** — Dolby Vision and Atmos support via mpv (Tauri)
+### Client multi-plateforme
+- **Web** -- React 19 + Vite + Tailwind CSS
+- **Desktop** -- Tauri v2 (Windows, macOS, Linux) avec lecteur mpv natif
+- **Mobile** -- React Native / Expo (iOS, Android)
+- **TV** -- React Native (Android TV) avec navigation D-pad
 
-## Screenshots
+### Lecture video
+- Lecteur HTML5 (web) avec support HLS
+- Lecteur mpv natif (desktop) : Direct Play, Dolby Vision, Atmos
+- Switch audio et sous-titres a la volee
+- Reprise de lecture (continuer a regarder)
+- Preferences par bibliotheque (langue audio, sous-titres par defaut)
 
-<!-- Add screenshots here -->
-<!-- ![Home](docs/screenshots/home.png) -->
-<!-- ![Library](docs/screenshots/library.png) -->
-<!-- ![Player](docs/screenshots/player.png) -->
+### Interface
+- Design premium dark/violet avec glassmorphisme
+- Hero section dynamique avec rotation automatique
+- Sidebar extensible au hover avec preview des bibliotheques
+- Cartes media animees, animations CSS fluides
+- Barre de recherche globale avec raccourci clavier
+- Multi-langue (francais, anglais)
+- 100% responsive
+
+### Systeme de plugins
+- Architecture extensible avec marketplace integre (admin web/desktop)
+- Support de sources multiples (registres GitHub personnalises)
+- Installation, mise a jour et desinstallation en un clic
+- Integration automatique dans la navigation et les routes
+- Les plugins ne s'affichent que s'ils sont installes ET configures
+- Verification SHA256 et compatibilite de version a l'installation
+
+### Plugin Seer -- Demandes de medias (optionnel)
+- Integration Jellyseerr pour demander films et series
+- Filtres par type (films, series, animes), tri par popularite/note/recent
+- Demande de film en 1 clic, selecteur de saisons pour les series
+- File d'attente serveur (retry automatique, max 10 tentatives)
+- Gestion des demandes par utilisateur
+- Suppression propre (Tentacle + Jellyseerr + Sonarr/Radarr)
+- Configuration admin (URL, cle API, auto-approbation, limites)
+
+### Autres fonctionnalites
+- Systeme d'invitations pour controler les acces
+- Tickets de support integres
+- Appairage TV par code (confirme depuis le web)
+- Notifications en temps reel
 
 ## Quick Start (Docker)
 
-Deploy Tentacle in 3 steps:
-
-**1. Create a `docker-compose.yml` file:**
+**1. Creer un fichier `docker-compose.yml` :**
 
 ```yaml
 services:
@@ -71,116 +96,116 @@ volumes:
   tentacle-db-data:
 ```
 
-**2. Start the containers:**
+**2. Demarrer :** `docker compose up -d`
 
-```bash
-docker compose up -d
-```
-
-**3. Open your browser:**
-
-Go to [http://localhost](http://localhost) and follow the setup wizard.
-
-> No `.env` file is required. Default values work out of the box.
-> Only `JWT_SECRET` should be changed in production.
+**3. Ouvrir** [http://localhost](http://localhost) et suivre l'assistant de configuration.
 
 ## Configuration
 
-Jellyfin and Overseerr are configured through the web UI after first launch. The setup wizard guides you through:
+Jellyfin et les services sont configures via l'interface web apres le premier lancement :
 
-1. **Database** — Connection is pre-configured via Docker Compose
-2. **Jellyfin** — Enter your Jellyfin server URL and verify the connection
-3. **Admin account** — Authenticate with your Jellyfin admin credentials
+1. **Base de donnees** -- Pre-configuree via Docker Compose
+2. **Jellyfin** -- Entrer l'URL du serveur et verifier la connexion
+3. **Compte admin** -- S'authentifier avec les identifiants Jellyfin admin
 
-Overseerr/Jellyseerr can be added later in **Settings > Administration > Services**.
+Jellyseerr peut etre ajoute ensuite via Admin > Plugins > Seer.
 
-## Connecting Apps
+## Developpement
 
-Once the server is running, connect your apps:
+### Prerequis
+- Node.js >= 20
+- pnpm >= 9
+- Rust (pour le build desktop)
+- MariaDB (ou Docker)
 
-1. Open the Tentacle app (Desktop, Mobile, or TV)
-2. Enter your Tentacle server URL (e.g. `http://your-server-ip`)
-3. Log in with your Jellyfin credentials
-
-For TV devices, use the **pairing system**: the TV displays a code that you confirm from the web interface.
-
-## Development
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-- MariaDB (or use Docker for the database)
-
-### Setup
-
+### Installation
 ```bash
-git clone https://github.com/knaox/tentacle.git
-cd tentacle
+git clone https://github.com/knaox/Tentacle-TV.git
+cd Tentacle-TV
 pnpm install
-cp .env.example .env
-# Edit .env with your local values
 ```
 
-### Run in development
-
+### Lancer en dev
 ```bash
-# Start backend (port 3001)
-pnpm dev:backend
-
-# Start web frontend (port 5173)
-pnpm dev:web
-
-# Start desktop app
-pnpm dev:desktop
-
-# Start mobile app
-pnpm dev:mobile
-
-# Start TV app
-pnpm dev:tv
+pnpm dev:backend    # Backend (port 3001)
+pnpm dev:web        # Frontend web (port 5173)
+pnpm dev:desktop    # App desktop Tauri
+pnpm dev:mobile     # App mobile Expo
+pnpm dev:tv         # App TV
 ```
 
-### Project structure
+### Structure du projet
+```
+apps/
+  web/        -- Frontend React 19 (Vite)
+  backend/    -- API Fastify (Prisma + MySQL)
+  desktop/    -- App desktop Tauri v2
+  mobile/     -- App mobile Expo / React Native
+  tv/         -- App Android TV React Native
+packages/
+  api-client/ -- Client API + hooks TanStack Query
+  shared/     -- Types, i18n, utilitaires
+  ui/         -- Composants React partages
+  plugins-api/-- Interface systeme de plugins
+  plugin-seer/-- Plugin Seer (demandes de medias)
+scripts/      -- Scripts PowerShell de build/deploy
+```
 
-- apps/
-  - web/ — React 19 web client (Vite)
-  - backend/ — Fastify API server (Prisma + MariaDB)
-  - desktop/ — Tauri v2 desktop wrapper
-  - mobile/ — Expo + React Native mobile app
-  - tv/ — React Native TV app
-- packages/
-  - shared/ — Constants, types, i18n
-  - api-client/ — Jellyfin API hooks (TanStack Query)
-  - ui/ — Shared React components
+## Plugins
 
-## Tech Stack
+### Installer un plugin
+1. Admin > Plugins > Marketplace
+2. Cliquer "Installer"
+3. Configurer dans l'onglet du plugin
+4. Activer
 
-| Layer | Technology |
-|-------|-----------|
-| Web Frontend | React 19, Vite 6, Tailwind CSS 3 |
-| Mobile | React Native 0.76, Expo 52, NativeWind 4 |
-| Desktop | Tauri v2, mpv (native playback) |
-| TV | React Native TV (tvOS fork) |
-| Backend | Fastify 5, Prisma 6, MariaDB 11 |
-| State Management | TanStack Query v5 |
-| Language | TypeScript 5 (strict mode) |
+### Ajouter une source de plugins
+1. Admin > Plugins > Sources
+2. "Ajouter une source" avec l'URL d'un `registry.json`
+3. Les plugins apparaissent dans le Marketplace
 
-## Environment Variables
+### Developper un plugin
+Un plugin implemente l'interface `TentaclePlugin` (voir `packages/plugins-api/src/types.ts`) et fournit routes, navigation, configuration admin, et logique serveur optionnelle.
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DATABASE_URL` | MariaDB connection string | — | Yes |
-| `JWT_SECRET` | Secret for signing auth tokens | — | Yes |
-| `PORT` | Server port | `3000` | No |
-| `HOST` | Server bind address | `0.0.0.0` | No |
+## Distribution
 
-Jellyfin and Overseerr URLs are stored in the database and configured through the web UI.
+| Plateforme | Methode |
+|---|---|
+| Desktop | GitHub Releases (auto via CI a chaque tag `v*`), Microsoft Store |
+| Web | Docker (`ghcr.io/knaox/tentacle:latest`) ou hebergement statique |
+| Mobile | Build via Expo / EAS |
+| TV | APK via Gradle |
 
-## License
+Auto-update desktop via Tauri Updater.
+
+## Stack technique
+
+| Composant | Technologie |
+|---|---|
+| Frontend web | React 19, Vite 6, Tailwind CSS 3 |
+| Desktop | Tauri v2, Rust, mpv |
+| Mobile | React Native 0.76, Expo 52, NativeWind |
+| TV | React Native tvOS |
+| Backend | Fastify 5, Prisma 6, MariaDB |
+| State | TanStack Query v5 |
+| Langage | TypeScript 5 (strict) |
+| CI/CD | GitHub Actions |
+
+## Variables d'environnement
+
+| Variable | Description | Defaut | Requis |
+|---|---|---|---|
+| `DATABASE_URL` | Connexion MariaDB | -- | Oui |
+| `JWT_SECRET` | Secret pour les tokens JWT | -- | Oui |
+| `PORT` | Port du serveur | `3000` | Non |
+| `HOST` | Adresse de bind | `0.0.0.0` | Non |
+
+Jellyfin et Jellyseerr sont configures via l'interface web et stockes en base.
+
+## Licence
 
 [MIT](LICENSE)
 
-## Contributing
+## Contribuer
 
-Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/knaox/tentacle).
+Les contributions sont les bienvenues. Ouvrir une issue ou soumettre une PR sur [GitHub](https://github.com/knaox/Tentacle-TV).
