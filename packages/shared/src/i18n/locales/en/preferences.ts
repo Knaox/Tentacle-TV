@@ -13,6 +13,8 @@ export default {
   modeForcedOnly: "Forced only",
   modeSignsSongs: "Signs & Songs",
   langFr: "French",
+  langFrVff: "French VFF",
+  langFrVfq: "French VFQ",
   langEn: "English",
   langJa: "Japanese",
   langDe: "German",

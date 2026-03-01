@@ -15,6 +15,7 @@ export interface AudioTrackInfo {
   index: number;
   language?: string;
   isDefault?: boolean;
+  title?: string;
 }
 
 export interface SubtitleTrackInfo {
@@ -33,6 +34,8 @@ export interface TrackResolution {
 
 export const LANGUAGES = [
   { code: "fre", label: "Français" },
+  { code: "fre-vff", label: "Français VFF" },
+  { code: "fre-vfq", label: "Français VFQ" },
   { code: "eng", label: "English" },
   { code: "jpn", label: "Japonais" },
   { code: "ger", label: "Allemand" },
@@ -144,6 +147,13 @@ export function langMatches(trackLang: string | undefined, prefLang: string): bo
   return group?.has(tl) ?? false;
 }
 
+/** Split a variant-aware language code: "fre-vff" → ["fre", "vff"], "jpn" → ["jpn", null]. */
+export function parseVariant(code: string): [string, string | null] {
+  const idx = code.indexOf("-");
+  if (idx < 0) return [code, null];
+  return [code.substring(0, idx), code.substring(idx + 1)];
+}
+
 // ── Client-side track resolution ──
 
 export function resolveMediaTracks(
@@ -159,11 +169,20 @@ export function resolveMediaTracks(
     };
   }
 
-  // Resolve audio: prefer matching language, fallback to default
+  // Resolve audio: prefer matching language, fallback to default.
+  // Supports variant codes like "fre-vff" or "fre-vfq" — splits into base lang + variant tag.
   let audioIndex = audioTracks.find((t) => t.isDefault)?.index ?? audioTracks[0]?.index ?? null;
   if (pref.audioLang) {
-    const match = audioTracks.find((t) => langMatches(t.language, pref.audioLang!));
-    if (match) audioIndex = match.index;
+    const [baseLang, variant] = parseVariant(pref.audioLang);
+    const langCandidates = audioTracks.filter((t) => langMatches(t.language, baseLang));
+    if (variant && langCandidates.length > 0) {
+      const variantMatch = langCandidates.find((t) =>
+        t.title?.toLowerCase().includes(variant.toLowerCase()),
+      );
+      audioIndex = variantMatch?.index ?? langCandidates[0].index;
+    } else if (langCandidates.length > 0) {
+      audioIndex = langCandidates[0].index;
+    }
   }
 
   // Resolve subtitle based on mode

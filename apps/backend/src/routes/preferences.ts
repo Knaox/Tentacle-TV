@@ -75,6 +75,13 @@ function langMatches(trackLang: string | undefined, prefLang: string): boolean {
   return group?.has(tl) ?? false;
 }
 
+/** Split a variant-aware language code: "fre-vff" → ["fre", "vff"], "jpn" → ["jpn", null]. */
+function parseVariant(code: string): [string, string | null] {
+  const idx = code.indexOf("-");
+  if (idx < 0) return [code, null];
+  return [code.substring(0, idx), code.substring(idx + 1)];
+}
+
 export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
@@ -196,7 +203,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     const body = request.body as {
       libraryId: string;
       libraryIds?: string[];
-      audioTracks: Array<{ index: number; language?: string; isDefault?: boolean }>;
+      audioTracks: Array<{ index: number; language?: string; isDefault?: boolean; title?: string }>;
       subtitleTracks: Array<{ index: number; language?: string; isForced?: boolean; title?: string }>;
     };
 
@@ -223,11 +230,20 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
       };
     }
 
-    // Resolve audio: prefer matching language, fallback to default
+    // Resolve audio: prefer matching language, fallback to default.
+    // Supports variant codes like "fre-vff" or "fre-vfq" — splits into base lang + variant tag.
     let audioIndex = body.audioTracks.find((t) => t.isDefault)?.index ?? body.audioTracks[0]?.index ?? null;
     if (pref.audioLang) {
-      const match = body.audioTracks.find((t) => langMatches(t.language, pref.audioLang!));
-      if (match) audioIndex = match.index;
+      const [baseLang, variant] = parseVariant(pref.audioLang);
+      const langCandidates = body.audioTracks.filter((t) => langMatches(t.language, baseLang));
+      if (variant && langCandidates.length > 0) {
+        const variantMatch = langCandidates.find((t) =>
+          t.title?.toLowerCase().includes(variant.toLowerCase()),
+        );
+        audioIndex = variantMatch?.index ?? langCandidates[0].index;
+      } else if (langCandidates.length > 0) {
+        audioIndex = langCandidates[0].index;
+      }
     }
 
     // Resolve subtitle based on mode

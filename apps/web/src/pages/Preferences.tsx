@@ -5,7 +5,7 @@ import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDelete
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 
 const LANGUAGE_CODES = [
-  "fre", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
+  "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
   "ara", "pol", "dut", "cze", "hin", "tha", "swe", "nor", "fin", "tur",
   "hun", "rum", "gre", "dan", "heb", "vie", "ind", "may", "ukr", "bul",
   "hrv", "srp", "cat", "tam", "tel", "per",
@@ -13,6 +13,8 @@ const LANGUAGE_CODES = [
 
 const LANGUAGE_KEYS: Record<string, string> = {
   fre: "preferences:langFr",
+  "fre-vff": "preferences:langFrVff",
+  "fre-vfq": "preferences:langFrVfq",
   eng: "preferences:langEn",
   jpn: "preferences:langJa",
   ger: "preferences:langDe",
