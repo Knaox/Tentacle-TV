@@ -226,11 +226,11 @@ export function VideoPlayer({
     const onReady = () => {
       clearTimeout(failsafe);
       console.debug(DBG, "ready", { seekTo, isHlsUrl, duration: v.duration });
-      // jellyfin-web pattern (seekOnPlaybackStart): explicit seek for both HLS
-      // and direct play. For HLS, startPosition sets the initial segment but may
-      // not be frame-accurate due to keyframe alignment. Explicit seek corrects
-      // for the offset, ensuring exact position after quality/audio changes.
-      if (seekTo > 0) {
+      // jellyfin-web pattern: for HLS, startPosition in config already handles
+      // initial segment loading — play() immediately without seeking first.
+      // Seeking before play forces re-buffering, causing the audio delay.
+      // For direct play / progressive: seek explicitly (HTTP Range supports it).
+      if (seekTo > 0 && !isHlsUrl) {
         v.currentTime = seekTo;
       }
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
@@ -248,7 +248,10 @@ export function VideoPlayer({
       const hls = new Hls({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
-        maxBufferLength: 15,          // default 30 — less buffering before playback starts
+        lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
+        backBufferLength: Infinity,   // jellyfin-web pattern: keep played segments in buffer
+        maxBufferLength: 6,           // jellyfin-web pattern: 6s for fast playback start (was 15)
+        maxMaxBufferLength: 6,        // jellyfin-web pattern: cap buffer to prevent over-buffering
         startFragPrefetch: true,      // prefetch next fragment during current load
         fragLoadPolicy: {
           default: {
