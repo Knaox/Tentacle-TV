@@ -1,12 +1,19 @@
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { cls } from "./types";
-import { useInstalledPlugins, useTogglePlugin, useUninstallPlugin } from "./hooks";
+import { useInstalledPlugins, useTogglePlugin, useUninstallPlugin, useUpdatePlugin } from "./hooks";
+
+const PLUGIN_CONFIG_ROUTES: Record<string, string> = {
+  seer: "/admin/plugins/seer",
+};
 
 export function InstalledTab() {
   const { t } = useTranslation("adminPlugins");
+  const navigate = useNavigate();
   const { data: plugins, isLoading } = useInstalledPlugins();
   const toggleMut = useTogglePlugin();
   const uninstallMut = useUninstallPlugin();
+  const updateMut = useUpdatePlugin();
 
   if (isLoading) {
     return (
@@ -26,18 +33,19 @@ export function InstalledTab() {
         <div key={p.id} className={cls.row}>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
+              {/* Health indicator */}
+              <span
+                className={`h-2 w-2 rounded-full ${p.enabled ? "bg-green-500" : "bg-white/20"}`}
+                title={p.enabled ? t("adminPlugins:enable") : t("adminPlugins:disable")}
+              />
               <span className="text-sm font-medium text-white">{p.name}</span>
               <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/40">
                 v{p.version}
               </span>
-              {p.hasUpdate && p.latestVersion && (
-                <span className="rounded bg-purple-500/20 px-2 py-0.5 text-xs text-purple-300">
-                  {t("adminPlugins:updateAvailable", { version: p.latestVersion })}
-                </span>
-              )}
             </div>
-            <p className="mt-1 text-xs text-white/50 truncate">{p.description}</p>
-            <p className="mt-0.5 text-xs text-white/30">{t("adminPlugins:byAuthor", { author: p.author })}</p>
+            <p className="mt-0.5 text-xs text-white/30">
+              {new Date(p.installedAt).toLocaleDateString()}
+            </p>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -58,12 +66,23 @@ export function InstalledTab() {
             </button>
 
             {/* Configure */}
-            <button className={cls.bs}>{t("adminPlugins:configure")}</button>
+            {PLUGIN_CONFIG_ROUTES[p.pluginId] && (
+              <button
+                onClick={() => navigate(PLUGIN_CONFIG_ROUTES[p.pluginId])}
+                className={cls.bs}
+              >
+                {t("adminPlugins:configure")}
+              </button>
+            )}
 
             {/* Update */}
-            {p.hasUpdate && (
-              <button className={cls.bp}>{t("adminPlugins:update")}</button>
-            )}
+            <button
+              onClick={() => updateMut.mutate(p.id)}
+              disabled={updateMut.isPending}
+              className={cls.bs}
+            >
+              {updateMut.isPending ? "..." : t("adminPlugins:update")}
+            </button>
 
             {/* Uninstall */}
             <button
