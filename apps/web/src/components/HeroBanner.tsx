@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -11,6 +12,7 @@ interface HeroBannerProps {
 const ROTATE_MS = 6000;
 
 export function HeroBanner({ items }: HeroBannerProps) {
+  const { t } = useTranslation("common");
   const [index, setIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const navigate = useNavigate();
@@ -117,7 +119,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
                     border: "1px solid rgba(139,92,246,0.3)",
                   }}
                 >
-                  Continuer
+                  {t("common:continueLabel")}
                 </span>
               )}
               {episodeLabel && (
@@ -201,7 +203,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
                 boxShadow: "0 8px 30px rgba(139,92,246,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
               }}
             >
-              <PlayIcon /> {hasProgress ? "Reprendre" : "Lecture"}
+              <PlayIcon /> {hasProgress ? t("common:resume") : t("common:play")}
             </button>
             <button
               onClick={() => navigate(`/media/${isEpisode && item.SeriesId ? item.SeriesId : item.Id}`)}
@@ -212,7 +214,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
                 border: "1px solid rgba(255,255,255,0.1)",
               }}
             >
-              Plus d'infos
+              {t("common:moreInfo")}
             </button>
           </div>
         </div>

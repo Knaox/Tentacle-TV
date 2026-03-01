@@ -29,4 +29,6 @@ export default {
   updatedOn: "Mis à jour le {{date}}",
   seasonsList: "Saisons : {{seasons}}",
   requestedBy: "par {{name}}",
+  statusCompleted: "Complétée",
+  statusRequested: "Demandé",
 } as const;

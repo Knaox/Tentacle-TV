@@ -137,7 +137,7 @@ function formatAgo(date: Date, t: TFunction): string {
   if (hours < 24) return t("common:timeHoursAgo", { hours });
   const days = Math.floor(hours / 24);
   if (days < 7) return t("common:timeDaysAgo", { days });
-  return date.toLocaleDateString("fr-FR");
+  return date.toLocaleDateString();
 }
 
 function BellIcon() {

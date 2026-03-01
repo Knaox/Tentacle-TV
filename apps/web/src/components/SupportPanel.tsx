@@ -86,7 +86,7 @@ function TicketRow({ ticket, onClick }: { ticket: SupportTicket; onClick: () => 
   };
 
   const status = STATUS_LABELS[ticket.status];
-  const date = new Date(ticket.updatedAt).toLocaleDateString("fr-FR");
+  const date = new Date(ticket.updatedAt).toLocaleDateString();
   const catLabel = CATEGORIES[ticket.category] ?? ticket.category;
 
   return (
@@ -95,7 +95,7 @@ function TicketRow({ ticket, onClick }: { ticket: SupportTicket; onClick: () => 
         <p className="text-sm font-medium text-white truncate">{ticket.subject}</p>
         <p className="mt-0.5 text-xs text-white/40">
           {catLabel} — {date}
-          {ticket._count && <span className="ml-2">{ticket._count.messages} message{ticket._count.messages !== 1 ? "s" : ""}</span>}
+          {ticket._count && <span className="ml-2">{t("tickets:messagesCount", { count: ticket._count.messages })}</span>}
         </p>
         {ticket.mediaItemName && (
           <p className="mt-1 text-xs text-purple-400 truncate">{ticket.mediaItemName}</p>
@@ -402,7 +402,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
           {status && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${status.color}`}>{status.label}</span>}
         </div>
         <p className="mt-1 text-xs text-white/40">
-          {CATEGORIES[ticket.category] ?? ticket.category} — {new Date(ticket.createdAt).toLocaleDateString("fr-FR")}
+          {CATEGORIES[ticket.category] ?? ticket.category} — {new Date(ticket.createdAt).toLocaleDateString()}
         </p>
         {ticket.mediaItemName && (
           <p className="mt-2 text-xs text-purple-400">{ticket.mediaItemName}</p>
@@ -414,7 +414,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
             <div className="mb-2 flex items-center gap-2 text-xs">
               <span className={`font-medium ${msg.isAdmin ? "text-purple-400" : "text-white/70"}`}>{msg.username}</span>
               {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1.5 py-0.5 text-[10px] text-purple-300">{t("tickets:adminBadge")}</span>}
-              <span className="text-white/30">{new Date(msg.createdAt).toLocaleString("fr-FR")}</span>
+              <span className="text-white/30">{new Date(msg.createdAt).toLocaleString()}</span>
             </div>
             <p className="whitespace-pre-wrap text-sm text-white/80">{msg.body}</p>
           </div>

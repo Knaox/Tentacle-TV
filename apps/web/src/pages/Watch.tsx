@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMediaItem, useItemAncestors, useJellyfinClient, usePlaybackReporting, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper } from "@tentacle-tv/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle-tv/shared";
@@ -10,8 +11,8 @@ import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { isTauri } from "../hooks/useDesktopPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 
-function formatTrackLabel(s: JfStream): string {
-  const title = s.DisplayTitle || s.Title || s.Language || `Piste ${s.Index}`;
+function formatTrackLabel(s: JfStream, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const title = s.DisplayTitle || s.Title || s.Language || t("player:trackFallback", { index: s.Index });
   const codec = s.Codec?.toUpperCase();
   const parts = [title];
   if (codec && !title.toUpperCase().includes(codec)) parts.push(codec);
@@ -48,6 +49,7 @@ const useProgressiveRemux = (() => {
 })();
 
 export function Watch() {
+  const { t } = useTranslation("player");
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -338,14 +340,14 @@ export function Watch() {
 
   const audioTracks: AudioTrack[] = useMemo(() =>
     streams.filter((s) => s.Type === "Audio")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s), lang: s.Language?.toLowerCase() })),
-    [streams]
+      .map((s) => ({ index: s.Index, label: formatTrackLabel(s, t), lang: s.Language?.toLowerCase() })),
+    [streams, t]
   );
 
   const subtitleTracks: SubtitleTrack[] = useMemo(() =>
     streams.filter((s) => s.Type === "Subtitle")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s), url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index), lang: s.Language?.toLowerCase(), codec: s.Codec?.toLowerCase() })),
-    [streams, client, itemId, mediaSourceId]
+      .map((s) => ({ index: s.Index, label: formatTrackLabel(s, t), url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index), lang: s.Language?.toLowerCase(), codec: s.Codec?.toLowerCase() })),
+    [streams, client, itemId, mediaSourceId, t]
   );
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);

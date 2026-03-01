@@ -116,7 +116,7 @@ function RequestRow({ req, statusLabels, t, onCancel, onRetry }: {
   onRetry: () => void;
 }) {
   const poster = req.posterPath ? `${TMDB_IMG}/w92${req.posterPath}` : null;
-  const date = new Date(req.createdAt).toLocaleDateString("fr-FR");
+  const date = new Date(req.createdAt).toLocaleDateString();
   const canCancel = ["pending", "failed", "submitted"].includes(req.status);
   const canRetry = req.status === "failed";
 
@@ -127,7 +127,7 @@ function RequestRow({ req, statusLabels, t, onCancel, onRetry }: {
           <img src={poster} alt={req.title} className="h-16 w-11 flex-shrink-0 rounded-lg object-cover" />
         ) : (
           <div className="flex h-16 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs text-white/30">
-            N/A
+            {t("common:notAvailable")}
           </div>
         )}
         <div className="min-w-0 flex-1">
@@ -135,7 +135,7 @@ function RequestRow({ req, statusLabels, t, onCancel, onRetry }: {
           <p className="mt-0.5 text-xs text-white/40">
             {req.mediaType === "movie" ? t("common:movie") : t("common:series")} — {date}
           </p>
-          <p className="text-xs text-white/30">par {req.username}</p>
+          <p className="text-xs text-white/30">{t("requests:requestedBy", { name: req.username })}</p>
           {req.lastError && (
             <p className="mt-1 text-xs text-red-400 truncate">{req.lastError}</p>
           )}

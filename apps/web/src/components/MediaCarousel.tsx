@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -11,6 +12,7 @@ interface MediaCarouselProps {
 }
 
 export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProps) {
+  const { t } = useTranslation("common");
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -61,7 +63,7 @@ export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProp
       <div className="mb-4 flex items-center gap-2 px-4 md:px-8">
         <h2 className="text-lg font-bold tracking-tight text-white/90">{title}</h2>
         <span className="-translate-x-2 flex items-center gap-0.5 text-xs font-medium text-purple-400 opacity-0 transition-all duration-300 group-hover/row:translate-x-0 group-hover/row:opacity-100">
-          Tout voir
+          {t("common:seeAll")}
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
@@ -128,6 +130,7 @@ export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProp
 }
 
 function CarouselCard({ item, index }: { item: MediaItem; index: number }) {
+  const { t } = useTranslation("common");
   const [hovered, setHovered] = useState(false);
   const client = useJellyfinClient();
   const navigate = useNavigate();
@@ -239,7 +242,7 @@ function CarouselCard({ item, index }: { item: MediaItem; index: number }) {
                 navigate(`/watch/${item.Id}`);
               }}
             >
-              <PlayIcon /> Lecture
+              <PlayIcon /> {t("common:play")}
             </button>
           </div>
         </div>

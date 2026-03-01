@@ -18,4 +18,5 @@ export default {
   languagePreferences: "Préférences langues",
   logoutConfirmTitle: "Déconnexion",
   logoutConfirmMessage: "Êtes-vous sûr de vouloir vous déconnecter ?",
+  tv: "TV",
 } as const;

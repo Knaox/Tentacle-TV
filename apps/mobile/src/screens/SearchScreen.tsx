@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 
 export function SearchScreen() {
+  const { t } = useTranslation("common");
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(query.trim()), 300);
+    return () => clearTimeout(timer);
   }, [query]);
 
   const { data: results, isLoading } = useSearchItems(debounced);
@@ -23,7 +25,7 @@ export function SearchScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Rechercher dans la bibliothèque..."
+          placeholder={t("common:searchMediaLong")}
           placeholderTextColor="rgba(255,255,255,0.3)"
           autoCapitalize="none"
           autoCorrect={false}
@@ -42,7 +44,7 @@ export function SearchScreen() {
 
       {!isLoading && debounced.length >= 2 && (!results || results.length === 0) && (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 15 }}>Aucun résultat</Text>
+          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 15 }}>{t("common:noResults")}</Text>
         </View>
       )}
 
@@ -64,7 +66,7 @@ export function SearchScreen() {
       {debounced.length < 2 && !isLoading && (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 15 }}>
-            Tapez au moins 2 caractères
+            {t("common:typeMinChars")}
           </Text>
         </View>
       )}

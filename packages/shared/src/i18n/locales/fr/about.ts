@@ -26,6 +26,7 @@ export default {
   techTailwind: "Framework CSS utilitaire",
   techFramerMotion: "Animations",
   techTanStack: "Gestion de cache & requêtes",
+  techTanStackQuery: "Gestion de cache & requêtes",
   techReactRouter: "Navigation SPA",
   techFastify: "Serveur backend",
   techTauri: "Application desktop native",

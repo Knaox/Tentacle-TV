@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useDiscoverMedia } from "../hooks/useDiscoverMedia";
 import { useSeerSearch } from "../hooks/useSearch";
 import { useRequestMedia } from "../hooks/useRequestMedia";
@@ -9,6 +10,7 @@ import { MediaDetailModal } from "./MediaDetailModal";
 import type { SeerrSearchResult, DiscoverCategory, MediaFilter, SortOption } from "../api/types";
 
 export function DiscoverPage() {
+  const { t } = useTranslation("seer");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -69,7 +71,7 @@ export function DiscoverPage() {
 
   return (
     <div className="px-4 pt-4 md:px-12">
-      <h1 className="mb-6 text-2xl font-bold text-white">Découvrir</h1>
+      <h1 className="mb-6 text-2xl font-bold text-white">{t("seer:discoverTitle")}</h1>
 
       {/* Search bar */}
       <div className="mb-4">
@@ -77,7 +79,7 @@ export function DiscoverPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un film, une série..."
+          placeholder={t("seer:searchPlaceholder")}
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-purple-500 focus:bg-white/8"
         />
       </div>
@@ -117,7 +119,7 @@ export function DiscoverPage() {
                 onClick={() => setPage((p) => p - 1)}
                 className="rounded-lg bg-white/5 px-4 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 disabled:opacity-30"
               >
-                Précédent
+                {t("seer:previousPage")}
               </button>
               <span className="text-sm text-white/40">
                 {page} / {totalPages}
@@ -127,14 +129,14 @@ export function DiscoverPage() {
                 onClick={() => setPage((p) => p + 1)}
                 className="rounded-lg bg-white/5 px-4 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 disabled:opacity-30"
               >
-                Suivant
+                {t("seer:nextPage")}
               </button>
             </div>
           )}
         </>
       ) : (
         <div className="py-12 text-center text-sm text-white/30">
-          {isSearching ? "Aucun résultat" : "Aucun contenu disponible"}
+          {isSearching ? t("seer:noResults") : t("seer:noContent")}
         </div>
       )}
 

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useMediaDetail } from "../hooks/useMediaDetail";
 import { useRequestMedia } from "../hooks/useRequestMedia";
 import { SeriesSeasonPicker } from "./SeriesSeasonPicker";
@@ -12,10 +13,11 @@ interface MediaDetailModalProps {
 }
 
 export function MediaDetailModal({ item, onClose, onRequest, requesting }: MediaDetailModalProps) {
+  const { t } = useTranslation("seer");
   const mediaType = item.mediaType === "movie" ? "movie" as const : "tv" as const;
   const { data: detail, isLoading } = useMediaDetail(mediaType, item.id);
   const requestMedia = useRequestMedia();
-  const title = mediaTitle(item);
+  const title = mediaTitle(item) || t("seer:untitled");
   const year = mediaYear(item);
   const backdrop = backdropUrl(item.backdropPath);
   const poster = posterUrl(item.posterPath);
@@ -60,7 +62,7 @@ export function MediaDetailModal({ item, onClose, onRequest, requesting }: Media
           <div className="min-w-0 flex-1 pt-2">
             <h2 className="text-xl font-bold text-white">{title}</h2>
             <p className="mt-0.5 text-sm text-white/40">
-              {year} {item.mediaType === "movie" ? "Film" : "Serie"}
+              {year} {item.mediaType === "movie" ? t("seer:typeMovie") : t("seer:typeSeries")}
             </p>
             {item.overview && (
               <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-white/50">
@@ -88,7 +90,7 @@ export function MediaDetailModal({ item, onClose, onRequest, requesting }: Media
               disabled={requesting}
               className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
             >
-              {requesting ? "Envoi de la demande..." : "Demander ce film"}
+              {requesting ? t("seer:requestingMovie") : t("seer:requestMovie")}
             </button>
           )}
 

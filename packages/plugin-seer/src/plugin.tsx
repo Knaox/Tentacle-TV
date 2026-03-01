@@ -43,15 +43,15 @@ function ConfigIcon({ className }: { className?: string }) {
 
 export const seerPlugin: TentaclePlugin = {
   id: "seer",
-  name: "Seer - Demandes de médias",
+  name: "seer:pluginName",
   version: "1.0.0",
-  description: "Demandez des films et séries via Jellyseerr. Découvrez du contenu, demandez en 1 clic, suivez vos demandes.",
+  description: "seer:pluginDescription",
 
   routes: [
     {
       path: "/discover",
       component: DiscoverPage,
-      label: "Découvrir",
+      label: "seer:navDiscover",
       icon: DiscoverIcon,
       showInMobileNav: true,
       showInSidebar: true,
@@ -60,7 +60,7 @@ export const seerPlugin: TentaclePlugin = {
     {
       path: "/requests",
       component: RequestsPage,
-      label: "Mes demandes",
+      label: "seer:navMyRequests",
       icon: RequestsIcon,
       showInMobileNav: true,
       showInSidebar: true,
@@ -70,13 +70,13 @@ export const seerPlugin: TentaclePlugin = {
 
   navItems: [
     {
-      label: "Découvrir",
+      label: "seer:navDiscover",
       path: "/discover",
       icon: DiscoverIcon,
       platforms: ["web", "desktop", "mobile"],
     },
     {
-      label: "Demandes",
+      label: "seer:navRequests",
       path: "/requests",
       icon: RequestsIcon,
       platforms: ["web", "desktop", "mobile"],
@@ -87,7 +87,7 @@ export const seerPlugin: TentaclePlugin = {
     {
       path: "/admin/plugins/seer",
       component: SeerConfigPage,
-      label: "Configuration Seer",
+      label: "seer:navConfig",
       icon: ConfigIcon,
       showInMobileNav: false,
       showInSidebar: false,
@@ -98,7 +98,7 @@ export const seerPlugin: TentaclePlugin = {
 
   adminNavItems: [
     {
-      label: "Seer",
+      label: "seer:navSeer",
       path: "/admin/plugins/seer",
       icon: ConfigIcon,
       platforms: ["web", "desktop"],

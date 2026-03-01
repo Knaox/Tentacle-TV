@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cls } from "./types";
 import { usePluginSources, useAddSource, useRemoveSource, useToggleSource } from "./hooks";
 
 export function SourcesTab() {
+  const { t } = useTranslation("adminPlugins");
   const { data: sources, isLoading } = usePluginSources();
   const addMut = useAddSource();
   const removeMut = useRemoveSource();
@@ -38,7 +40,7 @@ export function SourcesTab() {
     <div className="space-y-4">
       {/* Source list */}
       {(!sources || sources.length === 0) && !showForm && (
-        <p className={cls.empty}>Aucune source configurée</p>
+        <p className={cls.empty}>{t("adminPlugins:noSources")}</p>
       )}
 
       {sources && sources.length > 0 && (
@@ -49,7 +51,7 @@ export function SourcesTab() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-white">{s.name}</span>
                   <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/40">
-                    {s.pluginCount} plugin{s.pluginCount !== 1 ? "s" : ""}
+                    {t("adminPlugins:pluginCount", { count: s.pluginCount })}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-white/40 truncate">{s.url}</p>
@@ -63,7 +65,7 @@ export function SourcesTab() {
                   className={`relative h-6 w-11 rounded-full transition-colors ${
                     s.enabled ? "bg-purple-600" : "bg-white/10"
                   }`}
-                  title={s.enabled ? "Désactiver" : "Activer"}
+                  title={s.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
                 >
                   <span
                     className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
@@ -75,14 +77,14 @@ export function SourcesTab() {
                 {/* Remove */}
                 <button
                   onClick={() => {
-                    if (confirm(`Supprimer la source "${s.name}" ?`)) {
+                    if (confirm(t("adminPlugins:confirmRemoveSource", { name: s.name }))) {
                       removeMut.mutate(s.id);
                     }
                   }}
                   disabled={removeMut.isPending}
                   className={cls.bd}
                 >
-                  Supprimer
+                  {t("adminPlugins:remove")}
                 </button>
               </div>
             </div>
@@ -93,19 +95,19 @@ export function SourcesTab() {
       {/* Add source form */}
       {showForm ? (
         <div className={cls.card}>
-          <h3 className="mb-3 text-sm font-semibold text-white">Ajouter une source</h3>
+          <h3 className="mb-3 text-sm font-semibold text-white">{t("adminPlugins:addSource")}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className={cls.lbl}>Nom</label>
+              <label className={cls.lbl}>{t("adminPlugins:sourceName")}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ma source"
+                placeholder={t("adminPlugins:sourceNamePlaceholder")}
                 className={cls.inp}
               />
             </div>
             <div>
-              <label className={cls.lbl}>URL du registre</label>
+              <label className={cls.lbl}>{t("adminPlugins:sourceUrl")}</label>
               <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
@@ -120,16 +122,16 @@ export function SourcesTab() {
               disabled={addMut.isPending || !name.trim() || !url.trim()}
               className={cls.bp}
             >
-              {addMut.isPending ? "..." : "Ajouter"}
+              {addMut.isPending ? "..." : t("adminPlugins:add")}
             </button>
             <button onClick={() => setShowForm(false)} className={cls.bs}>
-              Annuler
+              {t("common:cancel")}
             </button>
           </div>
         </div>
       ) : (
         <button onClick={() => setShowForm(true)} className={cls.bp}>
-          Ajouter une source
+          {t("adminPlugins:addSource")}
         </button>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 
 interface Person {
@@ -18,19 +19,22 @@ interface CastRowProps {
   studios?: Studio[];
 }
 
-const CREW_TYPES: { type: string; label: string }[] = [
-  { type: "Director", label: "Réalisation" },
-  { type: "Writer", label: "Scénario" },
-  { type: "Producer", label: "Production" },
-  { type: "Composer", label: "Musique" },
-];
+const CREW_TYPES = ["Director", "Writer", "Producer", "Composer"] as const;
+const CREW_KEYS: Record<string, string> = {
+  Director: "media:crewDirector",
+  Writer: "media:crewWriter",
+  Producer: "media:crewProducer",
+  Composer: "media:crewComposer",
+};
 
 export function CastRow({ people, studios }: CastRowProps) {
+  const { t } = useTranslation("media");
   const client = useJellyfinClient();
   const actors = people.filter((p) => p.Type === "Actor").slice(0, 20);
 
-  const crewGroups = CREW_TYPES.map(({ type, label }) => ({
-    label,
+  const crewGroups = CREW_TYPES.map((type) => ({
+    type,
+    label: t(CREW_KEYS[type]),
     members: people.filter((p) => p.Type === type),
   })).filter((g) => g.members.length > 0);
 
@@ -42,10 +46,10 @@ export function CastRow({ people, studios }: CastRowProps) {
       {/* Crew & Studios */}
       {hasCrew && (
         <div>
-          <h3 className="mb-3 text-lg font-semibold text-white/90">Équipe</h3>
+          <h3 className="mb-3 text-lg font-semibold text-white/90">{t("media:crewSection")}</h3>
           <div className="flex flex-wrap gap-x-8 gap-y-3">
             {crewGroups.map((group) => (
-              <div key={group.label}>
+              <div key={group.type}>
                 <p className="text-xs font-medium text-white/40">{group.label}</p>
                 <p className="mt-0.5 text-sm text-white/80">
                   {group.members.map((m) => m.Name).join(", ")}
@@ -54,7 +58,7 @@ export function CastRow({ people, studios }: CastRowProps) {
             ))}
             {studios && studios.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-white/40">Studio</p>
+                <p className="text-xs font-medium text-white/40">{t("media:studioLabel")}</p>
                 <p className="mt-0.5 text-sm text-white/80">
                   {studios.map((s) => s.Name).join(", ")}
                 </p>
@@ -67,7 +71,7 @@ export function CastRow({ people, studios }: CastRowProps) {
       {/* Actors */}
       {actors.length > 0 && (
         <div>
-          <h3 className="mb-3 text-lg font-semibold text-white/90">Casting</h3>
+          <h3 className="mb-3 text-lg font-semibold text-white/90">{t("media:castSection")}</h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {actors.map((person) => (
               <div key={person.Id} className="w-20 flex-shrink-0 text-center sm:w-24">

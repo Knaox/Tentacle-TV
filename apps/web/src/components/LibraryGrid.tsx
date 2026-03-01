@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useLibraryItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -9,6 +10,7 @@ interface LibraryGridProps {
 }
 
 export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
+  const { t } = useTranslation("common");
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -29,7 +31,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={`Rechercher dans ${libraryName}...`}
+          placeholder={t("common:searchInLibrary", { name: libraryName })}
           className="w-full max-w-md rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
         />
       </div>
@@ -44,7 +46,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           </div>
         ) : !items || items.length === 0 ? (
           <p className="py-20 text-center text-white/40">
-            {debounced.length >= 2 ? "Aucun résultat" : "Aucun média dans cette bibliothèque"}
+            {debounced.length >= 2 ? t("common:noResults") : t("common:emptyLibrary")}
           </p>
         ) : (
           <MediaGrid items={items} />
@@ -55,6 +57,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
 }
 
 function MediaGrid({ items }: { items: MediaItem[] }) {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
 
@@ -77,7 +80,7 @@ function MediaGrid({ items }: { items: MediaItem[] }) {
               <p className="text-sm font-medium text-white line-clamp-1">{item.Name}</p>
               <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
                 {item.ProductionYear && <span>{item.ProductionYear}</span>}
-                <span>{item.Type === "Movie" ? "Film" : "Série"}</span>
+                <span>{item.Type === "Movie" ? t("common:movie") : t("common:series")}</span>
               </div>
             </div>
             {/* Progress bar */}

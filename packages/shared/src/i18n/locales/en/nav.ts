@@ -18,4 +18,5 @@ export default {
   languagePreferences: "Language preferences",
   logoutConfirmTitle: "Sign out",
   logoutConfirmMessage: "Are you sure you want to disconnect?",
+  tv: "TV",
 } as const;

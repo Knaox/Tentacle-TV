@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMediaItem, useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Navbar } from "../components/Navbar";
 
 export function SeriesDetail() {
+  const { t } = useTranslation("common");
   const { seriesId } = useParams<{ seriesId: string }>();
   const navigate = useNavigate();
   const client = useJellyfinClient();
@@ -35,8 +37,8 @@ export function SeriesDetail() {
           <div className="mb-3 flex items-center gap-3 text-sm text-white/60">
             {series?.ProductionYear && <span>{series.ProductionYear}</span>}
             {series?.OfficialRating && <span className="rounded border border-white/30 px-1.5 py-0.5 text-xs">{series.OfficialRating}</span>}
-            {series?.CommunityRating && <span>{series.CommunityRating.toFixed(1)} / 10</span>}
-            {series?.Status && <span>{series.Status === "Continuing" ? "En cours" : "Terminée"}</span>}
+            {series?.CommunityRating && <span>{t("common:ratingOutOfTen", { rating: series.CommunityRating.toFixed(1) })}</span>}
+            {series?.Status && <span>{series.Status === "Continuing" ? t("common:ongoing") : t("common:ended")}</span>}
           </div>
           {series?.Overview && <p className="max-w-2xl text-sm leading-relaxed text-white/60 line-clamp-3">{series.Overview}</p>}
         </div>
@@ -78,6 +80,7 @@ export function SeriesDetail() {
 }
 
 function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; client: ReturnType<typeof useJellyfinClient>; onPlay: () => void }) {
+  const { t } = useTranslation("common");
   const thumbUrl = ep.ImageTags?.Primary
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
@@ -112,11 +115,11 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
           <span className="text-sm font-semibold text-white">
             {ep.IndexNumber}. {ep.Name}
           </span>
-          {played && <span className="text-xs text-tentacle-accent">Vu</span>}
+          {played && <span className="text-xs text-tentacle-accent">{t("common:watched")}</span>}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
-          {runtime && <span>{runtime} min</span>}
-          {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString("fr-FR")}</span>}
+          {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
+          {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
         </div>
         {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2">{ep.Overview}</p>}
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -53,6 +54,7 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
 }
 
 function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; client: ReturnType<typeof useJellyfinClient>; onPlay: () => void }) {
+  const { t } = useTranslation("common");
   const thumbUrl = ep.ImageTags?.Primary
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
@@ -87,11 +89,11 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
           <span className="text-sm font-semibold text-white">
             {ep.IndexNumber}. {ep.Name}
           </span>
-          {played && <span className="text-xs text-tentacle-accent">Vu</span>}
+          {played && <span className="text-xs text-tentacle-accent">{t("common:watched")}</span>}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
-          {runtime && <span>{runtime} min</span>}
-          {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString("fr-FR")}</span>}
+          {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
+          {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
         </div>
         {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2">{ep.Overview}</p>}
       </div>

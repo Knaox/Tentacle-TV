@@ -1,5 +1,6 @@
+import { useTranslation } from "react-i18next";
 import type { SeerrSearchResult } from "../api/types";
-import { posterUrl, mediaTitle, mediaYear, formatMediaType } from "../utils/media-helpers";
+import { posterUrl, mediaTitle, mediaYear, mediaTypeKey } from "../utils/media-helpers";
 
 interface MediaCardProps {
   item: SeerrSearchResult;
@@ -9,9 +10,10 @@ interface MediaCardProps {
 }
 
 export function MediaCard({ item, onRequest, onClick, requesting }: MediaCardProps) {
-  const title = mediaTitle(item);
+  const { t } = useTranslation("seer");
+  const title = mediaTitle(item) || t("seer:untitled");
   const year = mediaYear(item);
-  const type = formatMediaType(item);
+  const type = t(mediaTypeKey(item));
   const poster = posterUrl(item.posterPath);
   const hasMediaInfo = item.mediaInfo && item.mediaInfo.status > 1;
 
@@ -31,7 +33,7 @@ export function MediaCard({ item, onRequest, onClick, requesting }: MediaCardPro
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-white/5 text-white/20 text-sm">
-            Pas d'image
+            {t("seer:noImage")}
           </div>
         )}
 
@@ -55,17 +57,17 @@ export function MediaCard({ item, onRequest, onClick, requesting }: MediaCardPro
               disabled={requesting}
               className="m-3 w-full rounded-lg bg-purple-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
             >
-              {requesting ? "Envoi..." : "Demander"}
+              {requesting ? t("seer:sending") : t("seer:request")}
             </button>
           )}
           {item.mediaType === "tv" && !hasMediaInfo && (
             <div className="m-3 w-full rounded-lg bg-purple-600/80 py-2 text-center text-xs font-semibold text-white">
-              Voir les saisons
+              {t("seer:viewSeasons")}
             </div>
           )}
           {hasMediaInfo && (
             <div className="m-3 w-full rounded-lg bg-emerald-600/80 py-2 text-center text-xs font-semibold text-white">
-              Deja demande
+              {t("seer:alreadyRequested")}
             </div>
           )}
         </div>

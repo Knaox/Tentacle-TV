@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { getSeerBackendUrl } from "../../api/endpoints";
 
 interface SeerConfig {
@@ -10,6 +11,7 @@ interface SeerConfig {
 }
 
 export function SeerConfigPage() {
+  const { t } = useTranslation("seer");
   const [config, setConfig] = useState<SeerConfig>({
     url: "",
     apiKey: "",
@@ -53,14 +55,14 @@ export function SeerConfigPage() {
       });
       if (res.ok) {
         setStatus("connected");
-        setMessage("Connexion réussie");
+        setMessage(t("seer:connectionSuccess"));
       } else {
         setStatus("error");
-        setMessage("Échec de la connexion");
+        setMessage(t("seer:connectionFailed"));
       }
     } catch {
       setStatus("error");
-      setMessage("Impossible de joindre le serveur");
+      setMessage(t("seer:connectionUnreachable"));
     }
   };
 
@@ -73,10 +75,10 @@ export function SeerConfigPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(config),
       });
-      if (res.ok) setMessage("Configuration sauvegardée");
-      else setMessage("Erreur lors de la sauvegarde");
+      if (res.ok) setMessage(t("seer:configSaved"));
+      else setMessage(t("seer:configSaveError"));
     } catch {
-      setMessage("Erreur réseau");
+      setMessage(t("seer:networkError"));
     } finally {
       setSaving(false);
     }
@@ -93,24 +95,24 @@ export function SeerConfigPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Configuration Seer</h2>
+        <h2 className="text-xl font-bold text-white">{t("seer:configTitle")}</h2>
         <div className="flex items-center gap-2">
           <div className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
           <span className="text-xs text-white/50">
-            {status === "connected" ? "Connecté" : status === "error" ? "Erreur" : status === "testing" ? "Test..." : "Non configuré"}
+            {status === "connected" ? t("seer:statusConnected") : status === "error" ? t("seer:statusError") : status === "testing" ? t("seer:statusTesting") : t("seer:statusNotConfigured")}
           </span>
         </div>
       </div>
 
       {/* URL */}
       <div>
-        <label className="mb-1 block text-sm font-medium text-white/70">URL Jellyseerr</label>
+        <label className="mb-1 block text-sm font-medium text-white/70">{t("seer:urlLabel")}</label>
         <div className="flex gap-2">
           <input
             type="url"
             value={config.url}
             onChange={(e) => setConfig((c) => ({ ...c, url: e.target.value }))}
-            placeholder="https://jellyseerr.example.com"
+            placeholder={t("seer:urlPlaceholder")}
             className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-purple-500"
           />
           <button
@@ -118,19 +120,19 @@ export function SeerConfigPage() {
             disabled={!config.url || status === "testing"}
             className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/15 disabled:opacity-40"
           >
-            Tester
+            {t("seer:testButton")}
           </button>
         </div>
       </div>
 
       {/* API Key */}
       <div>
-        <label className="mb-1 block text-sm font-medium text-white/70">Clé API</label>
+        <label className="mb-1 block text-sm font-medium text-white/70">{t("seer:apiKeyLabel")}</label>
         <input
           type="password"
           value={config.apiKey}
           onChange={(e) => setConfig((c) => ({ ...c, apiKey: e.target.value }))}
-          placeholder="Clé API Jellyseerr"
+          placeholder={t("seer:apiKeyPlaceholder")}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-purple-500"
         />
       </div>
@@ -138,14 +140,14 @@ export function SeerConfigPage() {
       {/* Toggles */}
       <div className="space-y-3">
         <ToggleRow
-          label="Activer Seer"
-          description="Active le plugin de demandes de médias"
+          label={t("seer:toggleEnabled")}
+          description={t("seer:toggleEnabledDesc")}
           checked={config.enabled}
           onChange={(v) => setConfig((c) => ({ ...c, enabled: v }))}
         />
         <ToggleRow
-          label="Auto-approbation"
-          description="Approuver automatiquement les demandes"
+          label={t("seer:toggleAutoApprove")}
+          description={t("seer:toggleAutoApproveDesc")}
           checked={config.autoApprove}
           onChange={(v) => setConfig((c) => ({ ...c, autoApprove: v }))}
         />
@@ -154,7 +156,7 @@ export function SeerConfigPage() {
       {/* User limit */}
       <div>
         <label className="mb-1 block text-sm font-medium text-white/70">
-          Limite par utilisateur (0 = illimite)
+          {t("seer:userLimitLabel")}
         </label>
         <input
           type="number"
@@ -172,7 +174,7 @@ export function SeerConfigPage() {
           disabled={saving}
           className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
         >
-          {saving ? "Sauvegarde..." : "Sauvegarder"}
+          {saving ? t("seer:saving") : t("seer:save")}
         </button>
         {message && <span className="text-sm text-white/50">{message}</span>}
       </div>

@@ -30,4 +30,6 @@ export default {
   replyPlaceholder: "Reply...",
   ticketClosed: "This ticket is closed.",
   adminBadge: "Admin",
+  messagesCount_one: "{{count}} message",
+  messagesCount_other: "{{count}} messages",
 } as const;
