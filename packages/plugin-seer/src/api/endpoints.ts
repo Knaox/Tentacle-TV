@@ -28,17 +28,17 @@ export const SEER_ENDPOINTS = {
   tv: (id: number) =>
     `${_backendBase}/api/seerr/tv/${id}`,
   request: () =>
-    `${_backendBase}/api/plugins/seer/requests`,
+    `${_backendBase}/api/requests`,
   requests: (page = 1, limit = 20) =>
-    `${_backendBase}/api/plugins/seer/requests?page=${page}&limit=${limit}`,
+    `${_backendBase}/api/requests?page=${page}&limit=${limit}`,
   requestById: (id: string) =>
-    `${_backendBase}/api/plugins/seer/requests/${id}`,
+    `${_backendBase}/api/requests/${id}`,
   retryRequest: (id: string) =>
-    `${_backendBase}/api/plugins/seer/requests/${id}/retry`,
+    `${_backendBase}/api/requests/${id}/retry`,
   queueStatus: () =>
-    `${_backendBase}/api/plugins/seer/queue/status`,
+    `${_backendBase}/api/requests/queue/status`,
   config: () =>
-    `${_backendBase}/api/admin/plugins/seer/config`,
+    `${_backendBase}/api/plugins/seer/config`,
   testConnection: () =>
     `${_backendBase}/api/admin/test-seerr`,
 } as const;

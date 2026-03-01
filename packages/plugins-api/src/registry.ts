@@ -6,8 +6,10 @@ import type { TentaclePlugin } from "./types";
 
 const _plugins = new Map<string, TentaclePlugin>();
 const _listeners = new Set<() => void>();
+let _snapshot: TentaclePlugin[] = [];
 
 function notify() {
+  _snapshot = Array.from(_plugins.values());
   _listeners.forEach((cb) => cb());
 }
 
@@ -30,7 +32,7 @@ export function getPlugin(id: string): TentaclePlugin | undefined {
 
 /** Get all registered plugins. */
 export function getAllPlugins(): TentaclePlugin[] {
-  return Array.from(_plugins.values());
+  return _snapshot;
 }
 
 /** Subscribe to registry changes. Returns unsubscribe function. */
@@ -39,7 +41,7 @@ export function subscribeRegistry(cb: () => void): () => void {
   return () => { _listeners.delete(cb); };
 }
 
-/** Snapshot for useSyncExternalStore. */
+/** Snapshot for useSyncExternalStore — must return a stable reference. */
 export function getRegistrySnapshot(): TentaclePlugin[] {
-  return getAllPlugins();
+  return _snapshot;
 }

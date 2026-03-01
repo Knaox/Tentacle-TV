@@ -25,7 +25,7 @@ export function SeerConfigPage() {
   const token = localStorage.getItem("tentacle_token") ?? "";
 
   useEffect(() => {
-    fetch(`${backendBase}/api/admin/plugins/seer/config`, {
+    fetch(`${backendBase}/api/plugins/seer/config`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -68,7 +68,7 @@ export function SeerConfigPage() {
     setSaving(true);
     setMessage("");
     try {
-      const res = await fetch(`${backendBase}/api/admin/plugins/seer/config`, {
+      const res = await fetch(`${backendBase}/api/plugins/seer/config`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(config),
