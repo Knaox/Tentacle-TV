@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { backendUrl } from "../../main";
 import type { InstalledPlugin, MarketplacePlugin, PluginSource } from "./types";
 
-const BASE = `${backendUrl}/api/admin/plugins`;
+const BASE = `${backendUrl}/api/plugins`;
 
 function hdrs(): Record<string, string> {
   const tok = localStorage.getItem("tentacle_token");
