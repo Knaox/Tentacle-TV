@@ -225,12 +225,14 @@ export function VideoPlayer({
 
     const onReady = () => {
       clearTimeout(failsafe);
-      console.debug(DBG, "ready", { seekTo, isHlsUrl, duration: v.duration });
-      // jellyfin-web pattern: for HLS, startPosition in config already handles
-      // initial segment loading — play() immediately without seeking first.
-      // Seeking before play forces re-buffering, causing the audio delay.
-      // For direct play / progressive: seek explicitly (HTTP Range supports it).
-      if (seekTo > 0 && !isHlsUrl) {
+      console.debug(DBG, "ready", { seekTo, isHlsUrl, isSourceChange, duration: v.duration });
+      // jellyfin-web pattern: explicit seek for frame-accurate positioning.
+      // For HLS initial load: startPosition is segment-boundary accurate — good enough,
+      // skip explicit seek so play() fires faster (reduces audio delay).
+      // For HLS source changes (audio/quality switch): explicit seek corrects the
+      // segment-boundary offset (startPosition can be a few seconds off).
+      // For direct play / progressive: always seek (HTTP Range supports it).
+      if (seekTo > 0 && (!isHlsUrl || isSourceChange)) {
         v.currentTime = seekTo;
       }
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
@@ -249,9 +251,9 @@ export function VideoPlayer({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
         lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
-        backBufferLength: Infinity,   // jellyfin-web pattern: keep played segments in buffer
-        maxBufferLength: 6,           // jellyfin-web pattern: 6s for fast playback start (was 15)
-        maxMaxBufferLength: 6,        // jellyfin-web pattern: cap buffer to prevent over-buffering
+        backBufferLength: 60,         // keep 60s of played content for quick backward seeks
+        maxBufferLength: 6,           // jellyfin-web pattern: 6s for fast playback start
+        maxMaxBufferLength: 60,       // allow larger buffer after seeking (6 was too restrictive)
         startFragPrefetch: true,      // prefetch next fragment during current load
         fragLoadPolicy: {
           default: {
