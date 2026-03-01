@@ -3,29 +3,5 @@
   "description": "Plugins officiels pour Tentacle TV",
   "author": "Knaox",
   "url": "https://github.com/knaox/tentacle-plugins-registry",
-  "plugins": [
-    {
-      "id": "seer",
-      "name": "Seer - Demandes de medias",
-      "description": "Demandez des films et series via Jellyseerr. Decouvrez du contenu par plateforme, demandez en 1 clic, suivez vos demandes.",
-      "author": "Knaox",
-      "repo": "Knaox/Tentacle-Plugin-Seer",
-      "icon": "",
-      "latestVersion": "1.0.0",
-      "versions": [
-        {
-          "version": "1.0.0",
-          "minTentacleVersion": "0.9.0",
-          "maxTentacleVersion": null,
-          "downloadUrl": "https://github.com/Knaox/Tentacle-Plugin-Seer/releases/download/v1.0.0/plugin-seer-v1.0.0.tar.gz",
-          "checksum": "sha256:e6e7f06543e657ea264c2ba69b1e79d338b100d9bdd81ffe0fc540080de5d3fc",
-          "changelog": "Version initiale - plugin standalone IIFE",
-          "releaseDate": "2026-03-01"
-        }
-      ],
-      "tags": ["media", "requests", "jellyseerr", "sonarr", "radarr"],
-      "platforms": ["web", "desktop", "mobile"],
-      "category": "media-management"
-    }
-  ]
+  "plugins": []
 }

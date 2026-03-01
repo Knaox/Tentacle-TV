@@ -78,14 +78,6 @@ export function getJellyfinApiKey(): string | undefined {
   return cache.get("jellyfin_api_key");
 }
 
-export function getSeerrUrl(): string | undefined {
-  return cache.get("seerr_url");
-}
-
-export function getSeerrApiKey(): string | undefined {
-  return cache.get("seerr_api_key");
-}
-
 export function isSetupComplete(): boolean {
   return cache.get("setup_completed") === "true";
 }

@@ -10,8 +10,6 @@ import {
   saveCustomSources,
   getInstalled,
   saveInstalled,
-  getSeerConfig,
-  saveSeerConfig,
   fetchRegistryCached,
   clearCache,
   enrichPlugins,
@@ -23,7 +21,6 @@ import {
   type InstalledPlugin,
   type EnrichedEntry,
 } from "../services/pluginManager";
-import { setConfigValue } from "../services/configStore";
 
 // ── Zod schemas ──
 const addSourceSchema = z.object({
@@ -260,15 +257,5 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       return { id: plugin.id, pluginId: plugin.pluginId, enabled: plugin.enabled, version: plugin.version, healthy: plugin.enabled };
     });
 
-    // ── Seer plugin config ──
-    admin.get("/seer/config", async () => getSeerConfig());
-    admin.put("/seer/config", async (request) => {
-      const config = configSchema.parse(request.body);
-      saveSeerConfig(config);
-      // Sync URL and API key to the database so the seerr proxy routes can read them
-      if (typeof config.url === "string") await setConfigValue("seerr_url", config.url);
-      if (typeof config.apiKey === "string") await setConfigValue("seerr_api_key", config.apiKey);
-      return config;
-    });
   });
 };

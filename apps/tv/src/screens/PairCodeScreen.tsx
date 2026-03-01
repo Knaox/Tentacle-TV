@@ -4,9 +4,7 @@ import {
   useJellyfinClient,
   useClaimPairingCode,
   setPairingBackendUrl,
-  setSeerrBackendUrl,
   setPreferencesBackendUrl,
-  setRequestsBackendUrl,
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
@@ -29,9 +27,7 @@ type Step = "welcome" | "relayCode" | "manualServer" | "manualCode" | "success";
 
 function setAllBackendUrls(url: string) {
   setPairingBackendUrl(url);
-  setSeerrBackendUrl(url);
   setPreferencesBackendUrl(url);
-  setRequestsBackendUrl(url);
   setTicketsBackendUrl(url);
   setNotificationsBackendUrl(url);
   setConfigBackendUrl(url);

@@ -6,9 +6,7 @@ import {
   JellyfinClient,
   JellyfinClientContext,
   TentacleConfigContext,
-  setSeerrBackendUrl,
   setPreferencesBackendUrl,
-  setRequestsBackendUrl,
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
@@ -42,9 +40,7 @@ export function useServerUrl() {
 
 /* ── Configure all backend URLs from a Tentacle server URL ── */
 function configureBackendUrls(tentacleUrl: string) {
-  setSeerrBackendUrl(tentacleUrl);
   setPreferencesBackendUrl(tentacleUrl);
-  setRequestsBackendUrl(tentacleUrl);
   setTicketsBackendUrl(tentacleUrl);
   setNotificationsBackendUrl(tentacleUrl);
   setConfigBackendUrl(tentacleUrl);

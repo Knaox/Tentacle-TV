@@ -4,9 +4,9 @@ import fr from "./locales/fr";
 import en from "./locales/en";
 
 const NAMESPACES = [
-  "common", "auth", "setup", "player", "admin", "requests",
+  "common", "auth", "setup", "player", "admin",
   "tickets", "pairing", "preferences", "about", "notifications", "nav",
-  "adminPlugins", "media", "errors", "discover", "profile", "seer",
+  "adminPlugins", "media", "errors", "profile",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {
