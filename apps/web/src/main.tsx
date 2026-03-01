@@ -29,7 +29,7 @@ import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
 (window as unknown as Record<string, unknown>).TentacleShared = {
-  React, ReactJSXRuntime, ReactRouterDOM, TanStackQuery, ReactI18next, PluginsAPI,
+  React, ReactJSXRuntime, ReactRouterDOM, TanStackQuery, ReactI18next, PluginsAPI, i18n,
 };
 
 // Initialize i18n before rendering (local cache first for instant display)
