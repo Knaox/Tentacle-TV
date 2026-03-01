@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { SeerrSeason } from "../api/types";
 
 interface SeriesSeasonPickerProps {
@@ -8,6 +9,7 @@ interface SeriesSeasonPickerProps {
 }
 
 export function SeriesSeasonPicker({ seasons, onRequest, requesting }: SeriesSeasonPickerProps) {
+  const { t } = useTranslation("seer");
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   // Filter out season 0 (specials)
@@ -33,19 +35,19 @@ export function SeriesSeasonPicker({ seasons, onRequest, requesting }: SeriesSea
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-white">Saisons</h4>
+        <h4 className="text-sm font-semibold text-white">{t("seer:seasonsTitle")}</h4>
         <div className="flex gap-2">
           <button
             onClick={selectAll}
             className="text-[10px] font-medium text-purple-400 hover:text-purple-300"
           >
-            Tout
+            {t("seer:selectAll")}
           </button>
           <button
             onClick={deselectAll}
             className="text-[10px] font-medium text-white/40 hover:text-white/60"
           >
-            Aucun
+            {t("seer:selectNone")}
           </button>
         </div>
       </div>
@@ -75,8 +77,8 @@ export function SeriesSeasonPicker({ seasons, onRequest, requesting }: SeriesSea
               )}
             </div>
             <div className="min-w-0">
-              <p className="truncate font-medium">{season.name || `Saison ${season.seasonNumber}`}</p>
-              <p className="text-[10px] text-white/30">{season.episodeCount} episodes</p>
+              <p className="truncate font-medium">{season.name || t("seer:seasonFallback", { number: season.seasonNumber })}</p>
+              <p className="text-[10px] text-white/30">{t("seer:episodeCount", { count: season.episodeCount })}</p>
             </div>
           </button>
         ))}
@@ -88,8 +90,8 @@ export function SeriesSeasonPicker({ seasons, onRequest, requesting }: SeriesSea
         className="w-full rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {requesting
-          ? "Envoi..."
-          : `Demander ${selected.size} saison${selected.size > 1 ? "s" : ""}`}
+          ? t("seer:sending")
+          : t("seer:requestSeasons", { count: selected.size })}
       </button>
     </div>
   );

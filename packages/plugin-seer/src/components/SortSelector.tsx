@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { SortOption } from "../api/types";
 
 interface SortSelectorProps {
@@ -5,14 +6,16 @@ interface SortSelectorProps {
   onChange: (value: SortOption) => void;
 }
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "popularity", label: "Popularite" },
-  { value: "trending", label: "Tendances" },
-  { value: "vote_average", label: "Note" },
-  { value: "release_date", label: "Recent" },
-];
-
 export function SortSelector({ value, onChange }: SortSelectorProps) {
+  const { t } = useTranslation("seer");
+
+  const SORT_OPTIONS: { value: SortOption; key: string }[] = [
+    { value: "popularity", key: "seer:sortPopularity" },
+    { value: "trending", key: "seer:sortTrending" },
+    { value: "vote_average", key: "seer:sortRating" },
+    { value: "release_date", key: "seer:sortRecent" },
+  ];
+
   return (
     <select
       value={value}
@@ -21,7 +24,7 @@ export function SortSelector({ value, onChange }: SortSelectorProps) {
     >
       {SORT_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value} className="bg-[#1a1a2e]">
-          {opt.label}
+          {t(opt.key)}
         </option>
       ))}
     </select>

@@ -51,14 +51,14 @@ export function Admin() {
       <div className={cls.card}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Plugins</h2>
-            <p className="mt-1 text-sm text-white/40">Gérez vos plugins, explorez le marketplace et ajoutez des sources.</p>
+            <h2 className="text-lg font-semibold text-white">{t("admin:pluginsTitle")}</h2>
+            <p className="mt-1 text-sm text-white/40">{t("admin:pluginsDescription")}</p>
           </div>
           <button
             onClick={() => navigate("/admin/plugins")}
             className="rounded-lg bg-purple-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-500"
           >
-            Gérer les plugins
+            {t("admin:managePlugins")}
           </button>
         </div>
       </div>
@@ -83,8 +83,8 @@ export function Admin() {
           return (<div key={inv.id} className={`rounded-lg border p-4 ${active ? "border-white/10" : "border-white/5 opacity-50"}`}><div className="flex items-center justify-between gap-4"><div>
             <code className="text-sm font-mono text-tentacle-accent-light">{inv.key}</code>
             <div className="mt-1 flex items-center gap-3 text-xs text-white/40"><span>{t("admin:usesCount", { current: inv.currentUses, max: inv.maxUses })}</span>
-              {inv.expiresAt && <span>{expired ? t("admin:expiresOn", { date: new Date(inv.expiresAt).toLocaleDateString("fr-FR") }) : t("admin:expiresOn", { date: new Date(inv.expiresAt).toLocaleDateString("fr-FR") })}</span>}
-              <span>{t("admin:createdOn", { date: new Date(inv.createdAt).toLocaleDateString("fr-FR") })}</span></div>
+              {inv.expiresAt && <span>{expired ? t("admin:expiresOn", { date: new Date(inv.expiresAt).toLocaleDateString() }) : t("admin:expiresOn", { date: new Date(inv.expiresAt).toLocaleDateString() })}</span>}
+              <span>{t("admin:createdOn", { date: new Date(inv.createdAt).toLocaleDateString() })}</span></div>
             {inv.usages.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{inv.usages.map(u => <span key={u.username} className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/50">{u.username}</span>)}</div>}
           </div>{active && <button onClick={() => copyLink(inv.key)} className="flex-shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white">{copiedKey === inv.key ? t("admin:copied") : t("admin:copyLink")}</button>}</div></div>);
         })}</div>}
@@ -218,8 +218,8 @@ function PairedDevicesSection() {
                 <p className="text-sm font-medium text-white">{device.name}</p>
                 <div className="mt-1 flex items-center gap-3 text-xs text-white/40">
                   <span>{device.username}</span>
-                  <span>{t("admin:lastActivity", { date: new Date(device.lastSeen).toLocaleDateString("fr-FR") })}</span>
-                  <span>{t("admin:pairedOn", { date: new Date(device.createdAt).toLocaleDateString("fr-FR") })}</span>
+                  <span>{t("admin:lastActivity", { date: new Date(device.lastSeen).toLocaleDateString() })}</span>
+                  <span>{t("admin:pairedOn", { date: new Date(device.createdAt).toLocaleDateString() })}</span>
                 </div>
               </div>
               <button
@@ -254,7 +254,7 @@ function AdminTickets() {
         const s = TS[tk.status]; return (
           <div key={tk.id} onClick={() => setSelId(tk.id)} className="flex cursor-pointer items-center gap-4 rounded-lg border border-white/5 p-3 hover:bg-white/5">
             <div className="flex-1 min-w-0"><p className="text-sm font-medium text-white truncate">{tk.subject}</p>
-              <p className="text-xs text-white/40">{tk.username} — {new Date(tk.updatedAt).toLocaleDateString("fr-FR")}</p>
+              <p className="text-xs text-white/40">{tk.username} — {new Date(tk.updatedAt).toLocaleDateString()}</p>
               {tk.mediaItemName && <p className="mt-0.5 text-xs text-purple-400 truncate">{tk.mediaItemName}</p>}</div>
             {s && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${s.c}`}>{s.l}</span>}</div>);
       })}</div>}
@@ -282,8 +282,8 @@ function TicketDetail({ id, onBack }: { id: string; onBack: () => void }) {
     <div className="max-h-80 space-y-2 overflow-y-auto">{ticket.messages?.map(msg => (
       <div key={msg.id} className={`rounded-lg p-3 ${msg.isAdmin ? "border border-purple-500/20 bg-purple-500/10" : "bg-white/5"}`}>
         <div className="mb-1 flex items-center gap-2 text-xs"><span className={msg.isAdmin ? "font-medium text-purple-400" : "text-white/70"}>{msg.username}</span>
-          {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1 py-0.5 text-[10px] text-purple-300">Admin</span>}
-          <span className="text-white/30">{new Date(msg.createdAt).toLocaleString("fr-FR")}</span></div>
+          {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1 py-0.5 text-[10px] text-purple-300">{t("admin:adminBadge")}</span>}
+          <span className="text-white/30">{new Date(msg.createdAt).toLocaleString()}</span></div>
         <p className="whitespace-pre-wrap text-sm text-white/80">{msg.body}</p></div>))}</div>
     {ticket.status !== "closed" && <form onSubmit={handleReply} className="mt-4">
       <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder={t("admin:replyAsAdmin")} rows={3}

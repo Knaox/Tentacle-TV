@@ -56,4 +56,10 @@ export default {
   noTickets: "No tickets",
   replyAsAdmin: "Reply as admin...",
   reply: "Reply",
+  pluginsTitle: "Plugins",
+  pluginsDescription: "Manage your plugins, explore the marketplace and add sources.",
+  managePlugins: "Manage plugins",
+  saveFailed: "Save failed",
+  adminBadge: "Admin",
+  ticketClosed: "Closed",
 } as const;

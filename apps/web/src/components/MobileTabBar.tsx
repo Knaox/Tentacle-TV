@@ -30,7 +30,7 @@ export function MobileTabBar() {
       const IconComp = typeof item.icon !== "string" ? item.icon as ComponentType<{ className?: string }> : null;
       list.push({
         path: item.path,
-        label: item.label,
+        label: t(item.label),
         icon: IconComp ? <IconComp className="h-5 w-5" /> : <span className="h-5 w-5">{item.icon as string}</span>,
         match: (p) => p.startsWith(item.path),
       });

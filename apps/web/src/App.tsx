@@ -1,5 +1,6 @@
 import { useSyncExternalStore, useCallback, useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { ServerSetup } from "./pages/ServerSetup";
@@ -56,6 +57,7 @@ function useIsAuthenticated(): boolean {
 }
 
 export function App() {
+  const { t } = useTranslation("errors");
   const authed = useIsAuthenticated();
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
@@ -104,13 +106,13 @@ export function App() {
       <div className="flex h-screen items-center justify-center p-4">
         <div className="max-w-md text-center">
           <div className="mb-4 text-5xl">&#x26A0;</div>
-          <h1 className="mb-2 text-xl font-bold text-white">Serveur indisponible</h1>
+          <h1 className="mb-2 text-xl font-bold text-white">{t("errors:serverUnavailable")}</h1>
           <p className="mb-6 text-sm text-white/50">
-            Le backend Tentacle TV ne répond pas. Vérifiez que le service est démarré et consultez les logs du serveur.
+            {t("errors:serverUnavailableMessage")}
           </p>
           <button onClick={() => window.location.reload()}
             className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-700">
-            Réessayer
+            {t("common:retry")}
           </button>
         </div>
       </div>

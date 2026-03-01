@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { LocalMediaRequest } from "../api/types";
 import { posterUrl } from "../utils/media-helpers";
 import { RequestStatusBadge } from "./RequestStatusBadge";
@@ -11,9 +12,10 @@ interface RequestCardProps {
 }
 
 export function RequestCard({ request, onDelete, onRetry, deleting, retrying }: RequestCardProps) {
+  const { t } = useTranslation("seer");
   const poster = posterUrl(request.posterPath);
-  const typeLabel = request.mediaType === "movie" ? "Film" : "Serie";
-  const date = new Date(request.createdAt).toLocaleDateString("fr-FR", {
+  const typeLabel = request.mediaType === "movie" ? t("seer:typeMovie") : t("seer:typeSeries");
+  const date = new Date(request.createdAt).toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -27,7 +29,7 @@ export function RequestCard({ request, onDelete, onRetry, deleting, retrying }: 
           <img src={poster} alt={request.title} className="h-full w-full object-cover" loading="lazy" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-white/5 text-white/20 text-[10px]">
-            N/A
+            {t("seer:notAvailable")}
           </div>
         )}
       </div>
@@ -42,7 +44,7 @@ export function RequestCard({ request, onDelete, onRetry, deleting, retrying }: 
           </div>
           {request.seasons && request.seasons.length > 0 && (
             <p className="mt-0.5 text-[10px] text-white/30">
-              Saison(s) : {request.seasons.join(", ")}
+              {t("seer:seasonsLabel", { seasons: request.seasons.join(", ") })}
             </p>
           )}
         </div>
@@ -56,7 +58,7 @@ export function RequestCard({ request, onDelete, onRetry, deleting, retrying }: 
                 disabled={retrying}
                 className="rounded-md bg-purple-600/20 px-2.5 py-1 text-[10px] font-medium text-purple-400 transition-colors hover:bg-purple-600/30 disabled:opacity-50"
               >
-                {retrying ? "..." : "Redemander"}
+                {retrying ? "..." : t("seer:retry")}
               </button>
             )}
             {onDelete && request.status !== "available" && (
@@ -65,7 +67,7 @@ export function RequestCard({ request, onDelete, onRetry, deleting, retrying }: 
                 disabled={deleting}
                 className="rounded-md bg-red-600/20 px-2.5 py-1 text-[10px] font-medium text-red-400 transition-colors hover:bg-red-600/30 disabled:opacity-50"
               >
-                {deleting ? "..." : "Supprimer"}
+                {deleting ? "..." : t("seer:delete")}
               </button>
             )}
           </div>

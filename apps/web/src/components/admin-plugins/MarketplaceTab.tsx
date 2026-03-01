@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { cls } from "./types";
 import { useMarketplacePlugins, useInstallPlugin } from "./hooks";
 
 export function MarketplaceTab() {
+  const { t } = useTranslation("adminPlugins");
   const { data: plugins, isLoading } = useMarketplacePlugins();
   const installMut = useInstallPlugin();
 
@@ -14,7 +16,7 @@ export function MarketplaceTab() {
   }
 
   if (!plugins || plugins.length === 0) {
-    return <p className={cls.empty}>Aucun plugin disponible dans les sources configurées</p>;
+    return <p className={cls.empty}>{t("adminPlugins:noMarketplacePlugins")}</p>;
   }
 
   return (
@@ -28,7 +30,7 @@ export function MarketplaceTab() {
             </div>
             {p.installed ? (
               <span className="flex-shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/40">
-                Installé
+                {t("adminPlugins:installed")}
               </span>
             ) : (
               <button
@@ -36,14 +38,14 @@ export function MarketplaceTab() {
                 disabled={installMut.isPending}
                 className={`flex-shrink-0 ${cls.bp}`}
               >
-                {installMut.isPending ? "..." : "Installer"}
+                {installMut.isPending ? "..." : t("adminPlugins:install")}
               </button>
             )}
           </div>
           <p className="text-xs text-white/50 line-clamp-2">{p.description}</p>
           <div className="mt-2 flex items-center gap-3 text-xs text-white/30">
             <span>{p.author}</span>
-            {p.downloads > 0 && <span>{p.downloads.toLocaleString()} téléchargements</span>}
+            {p.downloads > 0 && <span>{t("adminPlugins:downloadCount", { count: p.downloads.toLocaleString() })}</span>}
           </div>
         </div>
       ))}

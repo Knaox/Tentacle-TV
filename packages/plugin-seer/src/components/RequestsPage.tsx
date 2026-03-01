@@ -1,23 +1,25 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useMyRequests, useDeleteRequest, useRetryRequest } from "../hooks/useRequests";
 import { RequestCard } from "./RequestCard";
 import type { RequestStatus } from "../api/types";
 
-const STATUS_TABS: { value: RequestStatus | "all"; label: string }[] = [
-  { value: "all", label: "Toutes" },
-  { value: "queued", label: "En attente" },
-  { value: "processing", label: "En cours" },
-  { value: "approved", label: "Approuvées" },
-  { value: "available", label: "Disponibles" },
-  { value: "failed", label: "Échecs" },
-];
-
 export function RequestsPage() {
+  const { t } = useTranslation("seer");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<RequestStatus | "all">("all");
   const { data, isLoading } = useMyRequests(page, 20);
   const deleteMutation = useDeleteRequest();
   const retryMutation = useRetryRequest();
+
+  const STATUS_TABS: { value: RequestStatus | "all"; key: string }[] = [
+    { value: "all", key: "seer:filterAll" },
+    { value: "queued", key: "seer:filterQueued" },
+    { value: "processing", key: "seer:filterProcessing" },
+    { value: "approved", key: "seer:filterApproved" },
+    { value: "available", key: "seer:filterAvailable" },
+    { value: "failed", key: "seer:filterFailed" },
+  ];
 
   const requests = data?.requests ?? [];
   const filtered = statusFilter === "all"
@@ -27,7 +29,7 @@ export function RequestsPage() {
 
   return (
     <div className="px-4 pt-4 md:px-12">
-      <h1 className="mb-6 text-2xl font-bold text-white">Mes demandes</h1>
+      <h1 className="mb-6 text-2xl font-bold text-white">{t("seer:myRequestsTitle")}</h1>
 
       {/* Status filter tabs */}
       <div className="mb-6 flex flex-wrap gap-2">
@@ -41,7 +43,7 @@ export function RequestsPage() {
                 : "bg-white/5 text-white/50 hover:bg-white/10"
             }`}
           >
-            {tab.label}
+            {t(tab.key)}
           </button>
         ))}
       </div>
@@ -67,8 +69,8 @@ export function RequestsPage() {
       ) : (
         <div className="py-12 text-center text-sm text-white/30">
           {statusFilter === "all"
-            ? "Vous n'avez aucune demande"
-            : "Aucune demande avec ce statut"}
+            ? t("seer:noRequestsAll")
+            : t("seer:noRequestsFiltered")}
         </div>
       )}
 
@@ -80,7 +82,7 @@ export function RequestsPage() {
             onClick={() => setPage((p) => p - 1)}
             className="rounded-lg bg-white/5 px-4 py-2 text-sm text-white/60 hover:bg-white/10 disabled:opacity-30"
           >
-            Précédent
+            {t("seer:previousPage")}
           </button>
           <span className="text-sm text-white/40">{page} / {totalPages}</span>
           <button
@@ -88,7 +90,7 @@ export function RequestsPage() {
             onClick={() => setPage((p) => p + 1)}
             className="rounded-lg bg-white/5 px-4 py-2 text-sm text-white/60 hover:bg-white/10 disabled:opacity-30"
           >
-            Suivant
+            {t("seer:nextPage")}
           </button>
         </div>
       )}

@@ -1,21 +1,14 @@
 import { useState } from "react";
 import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import {
   useSeerrRequests, useSeerrRequestCount,
   useSeerrDeleteRequest, useSeerrRetryRequest,
 } from "@tentacle-tv/api-client";
 import { MobileRequestRow } from "../components/MobileRequestRow";
 
-const FILTERS: { key: string; label: string }[] = [
-  { key: "", label: "Toutes" },
-  { key: "pending", label: "En attente" },
-  { key: "approved", label: "Approuvées" },
-  { key: "available", label: "Disponibles" },
-  { key: "failed", label: "Échouées" },
-  { key: "declined", label: "Refusées" },
-];
-
 export function RequestsScreen() {
+  const { t } = useTranslation("requests");
   const [filter, setFilter] = useState("");
   const [skip, setSkip] = useState(0);
   const take = 20;
@@ -29,11 +22,20 @@ export function RequestsScreen() {
   const totalPages = data?.pageInfo?.pages ?? 1;
   const currentPage = Math.floor(skip / take) + 1;
 
+  const FILTERS: { key: string; label: string }[] = [
+    { key: "", label: t("requests:all") },
+    { key: "pending", label: t("requests:pending") },
+    { key: "approved", label: t("requests:approved") },
+    { key: "available", label: t("requests:available") },
+    { key: "failed", label: t("requests:failed") },
+    { key: "declined", label: t("requests:declined") },
+  ];
+
   return (
     <View style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
       {/* Header */}
       <View style={{ paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12 }}>
-        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "800", marginBottom: 12 }}>Demandes</Text>
+        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "800", marginBottom: 12 }}>{t("requests:title")}</Text>
         <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
           {FILTERS.map((f) => {
             const count = counts?.[f.key === "" ? "total" : f.key];
@@ -66,7 +68,7 @@ export function RequestsScreen() {
 
       {!isLoading && requests.length === 0 && (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 15 }}>Aucune demande</Text>
+          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 15 }}>{t("requests:noRequests")}</Text>
         </View>
       )}
 
@@ -93,7 +95,7 @@ export function RequestsScreen() {
             onPress={() => setSkip((s) => s - take)}
             style={{ backgroundColor: "rgba(255,255,255,0.1)", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, opacity: currentPage <= 1 ? 0.3 : 1 }}
           >
-            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>Précédent</Text>
+            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{t("common:previous")}</Text>
           </Pressable>
           <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
             {currentPage} / {totalPages}
@@ -103,7 +105,7 @@ export function RequestsScreen() {
             onPress={() => setSkip((s) => s + take)}
             style={{ backgroundColor: "rgba(255,255,255,0.1)", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, opacity: currentPage >= totalPages ? 0.3 : 1 }}
           >
-            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>Suivant</Text>
+            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{t("common:next")}</Text>
           </Pressable>
         </View>
       )}

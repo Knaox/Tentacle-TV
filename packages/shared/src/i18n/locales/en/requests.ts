@@ -29,4 +29,6 @@ export default {
   updatedOn: "Updated on {{date}}",
   seasonsList: "Seasons: {{seasons}}",
   requestedBy: "by {{name}}",
+  statusCompleted: "Completed",
+  statusRequested: "Requested",
 } as const;

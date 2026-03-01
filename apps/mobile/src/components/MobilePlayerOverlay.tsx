@@ -198,7 +198,7 @@ export function MobilePlayerOverlay({
           <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700" }}>
             {doubleTapSide === "left" ? "−10" : "+30"}
           </Text>
-          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>sec</Text>
+          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>{t("player:secondsShort")}</Text>
         </View>
       )}
 

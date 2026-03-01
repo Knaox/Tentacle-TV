@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MobileMediaCard } from "../components/MobileMediaCard";
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function MediaDetailScreen({ itemId }: Props) {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
@@ -46,9 +48,9 @@ export function MediaDetailScreen({ itemId }: Props) {
           <View style={{ flexDirection: "row", gap: 8, marginTop: 4, flexWrap: "wrap", alignItems: "center" }}>
             {year && <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>{year}</Text>}
             {rating && <Text style={{ color: "#fbbf24", fontSize: 13 }}>★ {rating}</Text>}
-            {runtime && <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>{runtime} min</Text>}
+            {runtime && <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>{t("common:minutesShort", { count: runtime })}</Text>}
             {isSeries && item.ChildCount && (
-              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>{item.ChildCount} saisons</Text>
+              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>{t("common:seasonsCount", { count: item.ChildCount })}</Text>
             )}
           </View>
         </View>
@@ -64,7 +66,7 @@ export function MediaDetailScreen({ itemId }: Props) {
           }}
         >
           <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
-            {item.UserData?.PlaybackPositionTicks ? "Reprendre" : "Lecture"}
+            {item.UserData?.PlaybackPositionTicks ? t("common:resume") : t("common:play")}
           </Text>
         </Pressable>
       </View>
@@ -95,7 +97,7 @@ export function MediaDetailScreen({ itemId }: Props) {
       {/* Similar */}
       {similar && similar.length > 0 && (
         <MediaRow
-          title="Recommandations"
+          title={t("common:recommendations")}
           data={similar}
           renderItem={(s: MediaItem) => (
             <MobileMediaCard item={s} onPress={() => router.push(`/media/${s.Id}`)} />

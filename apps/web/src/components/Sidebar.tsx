@@ -49,7 +49,7 @@ export function Sidebar() {
       const IconComp = typeof item.icon !== "string" ? item.icon as ComponentType<{ className?: string }> : null;
       items.push({
         key: `plugin-${item.path}`,
-        label: item.label,
+        label: t(item.label),
         icon: IconComp ? <IconComp /> : <span>{item.icon as string}</span>,
         path: item.path,
       });

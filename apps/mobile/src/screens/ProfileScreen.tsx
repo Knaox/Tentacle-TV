@@ -15,6 +15,7 @@ interface InviteKey {
 }
 
 export function ProfileScreen() {
+  const { t } = useTranslation("profile");
   const router = useRouter();
   const { logout } = useAuth();
   const { storage } = useTentacleConfig();
@@ -37,17 +38,17 @@ export function ProfileScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#0a0a0f" }} contentContainerStyle={{ paddingBottom: 32 }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 56 }}>
-        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "800", marginBottom: 20 }}>Profil</Text>
+        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "800", marginBottom: 20 }}>{t("profile:title")}</Text>
 
         {/* User info */}
         <View style={{
           backgroundColor: "#12121a", borderRadius: 12, padding: 20,
           borderWidth: 1, borderColor: "#1e1e2e", marginBottom: 16,
         }}>
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>{user?.Name ?? "Utilisateur"}</Text>
+          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>{user?.Name ?? t("profile:defaultUsername")}</Text>
           {isAdmin && (
             <View style={{ marginTop: 6, backgroundColor: "rgba(139,92,246,0.15)", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, alignSelf: "flex-start" }}>
-              <Text style={{ color: "#8b5cf6", fontSize: 12, fontWeight: "600" }}>Administrateur</Text>
+              <Text style={{ color: "#8b5cf6", fontSize: 12, fontWeight: "600" }}>{t("profile:adminBadge")}</Text>
             </View>
           )}
         </View>
@@ -57,7 +58,7 @@ export function ProfileScreen() {
           backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 12, paddingVertical: 14, alignItems: "center",
           borderWidth: 1, borderColor: "rgba(239,68,68,0.2)", marginBottom: 24,
         }}>
-          <Text style={{ color: "#ef4444", fontSize: 15, fontWeight: "600" }}>Déconnexion</Text>
+          <Text style={{ color: "#ef4444", fontSize: 15, fontWeight: "600" }}>{t("profile:logout")}</Text>
         </Pressable>
 
         {/* Paired devices */}
@@ -71,6 +72,7 @@ export function ProfileScreen() {
 }
 
 function AdminSection() {
+  const { t } = useTranslation("profile");
   const { storage } = useTentacleConfig();
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const [invites, setInvites] = useState<InviteKey[]>([]);
@@ -100,24 +102,24 @@ function AdminSection() {
 
   const shareInvite = (key: string) => {
     const url = `${serverUrl}/register?invite=${key}`;
-    Share.share({ message: `Rejoins Tentacle TV: ${url}` });
+    Share.share({ message: t("profile:shareInviteMessage", { url }) });
   };
 
   return (
     <View>
-      <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 12 }}>Administration</Text>
+      <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 12 }}>{t("profile:administration")}</Text>
 
       {/* Create invite */}
       <View style={{ backgroundColor: "#12121a", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#1e1e2e", marginBottom: 16 }}>
-        <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600", marginBottom: 12 }}>Générer une invitation</Text>
+        <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600", marginBottom: 12 }}>{t("profile:generateInvite")}</Text>
         <View style={{ flexDirection: "row", gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 4 }}>Max utilisations</Text>
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 4 }}>{t("profile:maxUses")}</Text>
             <TextInput value={maxUses} onChangeText={setMaxUses} keyboardType="number-pad"
               style={adminInputStyle} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 4 }}>Expire (heures)</Text>
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 4 }}>{t("profile:expiresHours")}</Text>
             <TextInput value={expiresHours} onChangeText={setExpiresHours} keyboardType="number-pad"
               style={adminInputStyle} />
           </View>
@@ -127,7 +129,7 @@ function AdminSection() {
           opacity: creating ? 0.6 : 1,
         }}>
           {creating ? <ActivityIndicator color="#fff" size="small" /> : (
-            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>Générer</Text>
+            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("profile:generate")}</Text>
           )}
         </Pressable>
       </View>
@@ -144,8 +146,8 @@ function AdminSection() {
           }}>
             <Text style={{ color: "#8b5cf6", fontSize: 13, fontFamily: "monospace" }}>{inv.key}</Text>
             <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
-              {inv.currentUses}/{inv.maxUses} utilisé(s) — Créé le {new Date(inv.createdAt).toLocaleDateString("fr-FR")}
-              {expired ? " — Expiré" : ""}
+              {t("profile:usedCount", { current: inv.currentUses, max: inv.maxUses })} — {t("profile:createdOn", { date: new Date(inv.createdAt).toLocaleDateString() })}
+              {expired ? ` — ${t("profile:expired")}` : ""}
             </Text>
             {inv.usages.length > 0 && (
               <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
@@ -160,7 +162,7 @@ function AdminSection() {
               <Pressable onPress={() => shareInvite(inv.key)} style={{
                 marginTop: 8, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 6, paddingVertical: 6, alignItems: "center",
               }}>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Partager le lien</Text>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>{t("profile:shareLink")}</Text>
               </Pressable>
             )}
           </View>

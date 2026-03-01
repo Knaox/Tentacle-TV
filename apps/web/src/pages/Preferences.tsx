@@ -85,7 +85,7 @@ export function Preferences() {
     { value: "none" as const, label: t("preferences:modeDisabled") },
     { value: "always" as const, label: t("preferences:modeAlwaysOn") },
     { value: "forced" as const, label: t("preferences:modeForcedOnly") },
-    { value: "signs" as const, label: "Signs & Songs" },
+    { value: "signs" as const, label: t("preferences:modeSignsSongs") },
   ], [t]);
 
   const prefsMap = new Map(prefs?.map((p) => [p.libraryId, p]) ?? []);

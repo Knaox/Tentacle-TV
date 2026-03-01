@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, FlatList } from "react-native";
 import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -52,6 +53,7 @@ export function MobileEpisodeList({ seriesId, onPlay }: Props) {
 function EpisodeItems({ seriesId, seasonId, onPlay }: {
   seriesId: string; seasonId: string; onPlay: (ep: MediaItem) => void;
 }) {
+  const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { data: episodes } = useEpisodes(seriesId, seasonId);
 
@@ -81,7 +83,7 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
                 {ep.IndexNumber != null ? `${ep.IndexNumber}. ` : ""}{ep.Name}
               </Text>
               <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
-                {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{runtime} min</Text>}
+                {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("common:minutesShort", { count: runtime })}</Text>}
               </View>
               {ep.Overview && (
                 <Text numberOfLines={2} style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4, lineHeight: 15 }}>

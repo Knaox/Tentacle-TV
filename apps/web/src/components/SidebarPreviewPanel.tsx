@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useLatestItems, useJellyfinClient, useResumeItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -17,6 +18,7 @@ export function SidebarPreviewPanel({
   onMouseEnter,
   onMouseLeave,
 }: SidebarPreviewPanelProps) {
+  const { t } = useTranslation("common");
   const { data: resumeItems } = useResumeItems();
   const { data: latestItems } = useLatestItems(libraryId);
   const client = useJellyfinClient();
@@ -29,7 +31,7 @@ export function SidebarPreviewPanel({
 
   const hasResume = libraryResumeItems && libraryResumeItems.length > 0;
   const displayItems = hasResume ? libraryResumeItems : latestItems?.slice(0, 2);
-  const subtitle = hasResume ? "Continuer" : "Derniers ajouts";
+  const subtitle = hasResume ? t("common:continueLabel") : t("common:latestAdditionsShort");
 
   if (!displayItems || displayItems.length === 0) return null;
 

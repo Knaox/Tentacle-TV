@@ -24,4 +24,7 @@ export default {
   audioLabel: "AUDIO",
   subtitlesLabel: "SUBTITLES",
   trackFallback: "Track {{index}}",
+  mpvError: "mpv error: {{error}}",
+  secondsShort: "sec",
+  nextEpisodeLabel: "Next episode",
 } as const;

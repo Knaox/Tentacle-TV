@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { cls } from "./types";
 import { useInstalledPlugins, useTogglePlugin, useUninstallPlugin } from "./hooks";
 
 export function InstalledTab() {
+  const { t } = useTranslation("adminPlugins");
   const { data: plugins, isLoading } = useInstalledPlugins();
   const toggleMut = useTogglePlugin();
   const uninstallMut = useUninstallPlugin();
@@ -15,7 +17,7 @@ export function InstalledTab() {
   }
 
   if (!plugins || plugins.length === 0) {
-    return <p className={cls.empty}>Aucun plugin installé</p>;
+    return <p className={cls.empty}>{t("adminPlugins:noPlugins")}</p>;
   }
 
   return (
@@ -30,12 +32,12 @@ export function InstalledTab() {
               </span>
               {p.hasUpdate && p.latestVersion && (
                 <span className="rounded bg-purple-500/20 px-2 py-0.5 text-xs text-purple-300">
-                  v{p.latestVersion} disponible
+                  {t("adminPlugins:updateAvailable", { version: p.latestVersion })}
                 </span>
               )}
             </div>
             <p className="mt-1 text-xs text-white/50 truncate">{p.description}</p>
-            <p className="mt-0.5 text-xs text-white/30">par {p.author}</p>
+            <p className="mt-0.5 text-xs text-white/30">{t("adminPlugins:byAuthor", { author: p.author })}</p>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -46,7 +48,7 @@ export function InstalledTab() {
               className={`relative h-6 w-11 rounded-full transition-colors ${
                 p.enabled ? "bg-purple-600" : "bg-white/10"
               }`}
-              title={p.enabled ? "Désactiver" : "Activer"}
+              title={p.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
             >
               <span
                 className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
@@ -56,24 +58,24 @@ export function InstalledTab() {
             </button>
 
             {/* Configure */}
-            <button className={cls.bs}>Configurer</button>
+            <button className={cls.bs}>{t("adminPlugins:configure")}</button>
 
             {/* Update */}
             {p.hasUpdate && (
-              <button className={cls.bp}>Mettre à jour</button>
+              <button className={cls.bp}>{t("adminPlugins:update")}</button>
             )}
 
             {/* Uninstall */}
             <button
               onClick={() => {
-                if (confirm(`Désinstaller ${p.name} ?`)) {
+                if (confirm(t("adminPlugins:confirmUninstall", { name: p.name }))) {
                   uninstallMut.mutate(p.id);
                 }
               }}
               disabled={uninstallMut.isPending}
               className={cls.bd}
             >
-              Désinstaller
+              {t("adminPlugins:uninstall")}
             </button>
           </div>
         </div>

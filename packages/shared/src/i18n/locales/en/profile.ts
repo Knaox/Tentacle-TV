@@ -1,0 +1,16 @@
+export default {
+  title: "Profile",
+  defaultUsername: "User",
+  adminBadge: "Administrator",
+  logout: "Sign out",
+  shareInviteMessage: "Join Tentacle TV: {{url}}",
+  administration: "Administration",
+  generateInvite: "Generate an invite",
+  maxUses: "Max uses",
+  expiresHours: "Expires (hours)",
+  generate: "Generate",
+  usedCount: "{{current}}/{{max}} used",
+  createdOn: "Created on {{date}}",
+  expired: "Expired",
+  shareLink: "Share link",
+} as const;

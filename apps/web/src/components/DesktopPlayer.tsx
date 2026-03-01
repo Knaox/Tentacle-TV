@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "./TrackSelector";
 import { NextEpisodeOverlay } from "./NextEpisodeOverlay";
@@ -138,6 +139,7 @@ export function DesktopPlayer({
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
 }: DesktopPlayerProps) {
+  const { t } = useTranslation("player");
   const navigate = useNavigate();
   const { state, ready, fileLoaded, error, play, togglePause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen, stop } = useDesktopPlayer();
@@ -437,8 +439,8 @@ export function DesktopPlayer({
   if (error && onFallbackToWeb) { onFallbackToWeb(); return null; }
   if (error) return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
-      <p className="text-lg text-red-400">Erreur mpv : {error}</p>
-      <button onClick={() => navigate(-1)} className="rounded-lg bg-tentacle-accent px-6 py-2 text-white hover:bg-tentacle-accent/80">Retour</button>
+      <p className="text-lg text-red-400">{t("player:mpvError", { error })}</p>
+      <button onClick={() => navigate(-1)} className="rounded-lg bg-tentacle-accent px-6 py-2 text-white hover:bg-tentacle-accent/80">{t("common:back")}</button>
     </div>
   );
   if (!ready) return (
@@ -482,13 +484,13 @@ export function DesktopPlayer({
       {showSkipIntro && introSegment && (
         <button onClick={() => seek(isDirectPlay ? introSegment.end : Math.max(0, introSegment.end - effectiveMpvOffset.current))}
           className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          Passer l'intro
+          {t("player:skipIntro")}
         </button>
       )}
       {showSkipCredits && creditsSegment && (
         <button onClick={() => { if (hasNextEpisode) onNextEpisode?.(); else seek(isDirectPlay ? creditsSegment.end : Math.max(0, creditsSegment.end - effectiveMpvOffset.current)); }}
           className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {hasNextEpisode ? "Episode suivant" : "Passer le générique"}
+          {hasNextEpisode ? t("player:nextEpisodeLabel") : t("player:skipCredits")}
         </button>
       )}
 
