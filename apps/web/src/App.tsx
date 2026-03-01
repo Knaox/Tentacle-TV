@@ -65,6 +65,7 @@ export function App() {
   const [needsServerUrl, setNeedsServerUrl] = useState(
     isTauriApp && !localStorage.getItem("tentacle_server_url")
   );
+  const pluginRoutes = usePluginRoutes();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
 
   // Check backend setup status on mount (web deployment only)
@@ -133,51 +134,43 @@ export function App() {
   return (
     <>
       <Suspense fallback={<PageSpinner />}>
-        <PluginRoutes guard={guard} />
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Protected — immersive (no sidebar/tabbar) */}
+          <Route path="/watch/:itemId" element={guard(<Watch />)} />
+          <Route path="/media/:itemId" element={guard(<MediaDetail />)} />
+
+          {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
+          <Route element={guard(<AppLayout />)}>
+            <Route index element={<Home />} />
+            <Route path="library/:libraryId" element={<Library />} />
+            <Route path="downloads" element={<Downloads />} />
+            <Route path="support" element={<Support />} />
+            <Route path="settings" element={<Preferences />} />
+            <Route path="pair-device" element={<PairDevice />} />
+            <Route path="admin/*" element={<Admin />} />
+            <Route path="admin/plugins" element={<AdminPlugins />} />
+            <Route path="about" element={<About />} />
+            <Route path="credits" element={<Credits />} />
+
+            {/* Dynamic plugin routes */}
+            {pluginRoutes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path.replace(/^\//, "")}
+                element={<route.component />}
+              />
+            ))}
+          </Route>
+
+          <Route path="/preferences" element={<Navigate to="/settings" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Suspense>
       <UpdateNotification />
     </>
-  );
-}
-
-function PluginRoutes({ guard }: { guard: (el: React.ReactElement) => React.ReactElement }) {
-  const pluginRoutes = usePluginRoutes();
-
-  return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-
-      {/* Protected — immersive (no sidebar/tabbar) */}
-      <Route path="/watch/:itemId" element={guard(<Watch />)} />
-      <Route path="/media/:itemId" element={guard(<MediaDetail />)} />
-
-      {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
-      <Route element={guard(<AppLayout />)}>
-        <Route index element={<Home />} />
-        <Route path="library/:libraryId" element={<Library />} />
-        <Route path="downloads" element={<Downloads />} />
-        <Route path="support" element={<Support />} />
-        <Route path="settings" element={<Preferences />} />
-        <Route path="pair-device" element={<PairDevice />} />
-        <Route path="admin/*" element={<Admin />} />
-        <Route path="admin/plugins" element={<AdminPlugins />} />
-        <Route path="about" element={<About />} />
-        <Route path="credits" element={<Credits />} />
-
-        {/* Dynamic plugin routes */}
-        {pluginRoutes.map((route) => (
-          <Route
-            key={route.path}
-            path={route.path.replace(/^\//, "")}
-            element={<route.component />}
-          />
-        ))}
-      </Route>
-
-      <Route path="/preferences" element={<Navigate to="/settings" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
   );
 }

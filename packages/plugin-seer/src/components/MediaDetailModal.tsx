@@ -92,7 +92,7 @@ export function MediaDetailModal({ item, onClose, onRequest, requesting }: Media
             </button>
           )}
 
-          {item.mediaType === "tv" && !isLoading && detail && "seasons" in detail && (
+          {item.mediaType === "tv" && !isLoading && detail && (detail as SeerrTvDetail).seasons && (
             <SeriesSeasonPicker
               seasons={(detail as SeerrTvDetail).seasons ?? []}
               onRequest={handleSeasonRequest}
