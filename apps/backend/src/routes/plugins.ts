@@ -233,9 +233,14 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       return plugin;
     });
 
+    // Lookup by UUID or pluginId
+    function findPlugin(installed: InstalledPlugin[], id: string) {
+      return installed.find((p) => p.id === id || p.pluginId === id);
+    }
+
     admin.get("/:id/config", async (request, reply) => {
       const { id } = request.params as { id: string };
-      const plugin = getInstalled().find((p) => p.id === id);
+      const plugin = findPlugin(getInstalled(), id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       return plugin.config;
     });
@@ -243,7 +248,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     admin.put("/:id/config", async (request, reply) => {
       const { id } = request.params as { id: string };
       const installed = getInstalled();
-      const plugin = installed.find((p) => p.id === id);
+      const plugin = findPlugin(installed, id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       plugin.config = configSchema.parse(request.body);
       saveInstalled(installed);
@@ -252,7 +257,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.get("/:id/status", async (request, reply) => {
       const { id } = request.params as { id: string };
-      const plugin = getInstalled().find((p) => p.id === id);
+      const plugin = findPlugin(getInstalled(), id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       return { id: plugin.id, pluginId: plugin.pluginId, enabled: plugin.enabled, version: plugin.version, healthy: plugin.enabled };
     });
