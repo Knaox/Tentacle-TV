@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Text } from "react-native";
+import { useAppConfig } from "@tentacle-tv/api-client";
 
 const TAB_ICON_SIZE = 20;
 
@@ -12,6 +13,10 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  const { data: config } = useAppConfig();
+  const features = config?.features;
+  const seerrEnabled = features?.seerr && features?.requests;
+
   return (
     <Tabs
       screenOptions={{
@@ -40,13 +45,15 @@ export default function TabsLayout() {
         options={{
           title: "Demandes",
           tabBarIcon: ({ focused }) => <TabIcon label="📋" focused={focused} />,
+          href: seerrEnabled ? "/requests" : null,
         }}
       />
       <Tabs.Screen
         name="discover"
         options={{
-          title: "Découvrir",
+          title: "Decouvrir",
           tabBarIcon: ({ focused }) => <TabIcon label="🧭" focused={focused} />,
+          href: seerrEnabled ? "/discover" : null,
         }}
       />
       <Tabs.Screen
