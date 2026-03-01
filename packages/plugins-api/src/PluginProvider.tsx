@@ -35,10 +35,19 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
         for (const p of active) {
           if (p.hasBundle && !loadedBundles.current.has(p.pluginId)) {
             loadedBundles.current.add(p.pluginId);
-            const script = document.createElement("script");
-            script.src = `${base}/api/plugins/${p.pluginId}/bundle?v=${p.version}`;
-            script.async = true;
-            document.head.appendChild(script);
+            // Fetch bundle with auth header, then inject as inline script
+            fetch(`${base}/api/plugins/${p.pluginId}/bundle?v=${p.version}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+              .then((r) => (r.ok ? r.text() : ""))
+              .then((code) => {
+                if (code) {
+                  const script = document.createElement("script");
+                  script.textContent = code;
+                  document.head.appendChild(script);
+                }
+              })
+              .catch(() => {});
           }
         }
       })
