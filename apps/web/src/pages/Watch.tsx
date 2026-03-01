@@ -74,9 +74,10 @@ export function Watch() {
   }, [itemId]);
 
   // Sync audioIndex when streams change (new episode loaded)
-  // Skip if user explicitly changed audio to prevent refetch from resetting their choice
+  // Skip if user explicitly changed audio OR if preferences have already been applied.
+  // Without the prefsApplied guard, a re-render could overwrite the resolved preference.
   useEffect(() => {
-    if (streams.length > 0 && !audioOverrideRef.current) {
+    if (streams.length > 0 && !audioOverrideRef.current && !prefsApplied.current) {
       const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
         ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
       setAudioIndex(defAudio);
@@ -198,14 +199,18 @@ export function Watch() {
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) return;
     prefsApplied.current = true;
-    console.debug(DBG, "resolve tracks", { parentId, seriesId, ancestorIds, allCandidates });
+    const audioTracksPayload = streams.filter((s) => s.Type === "Audio")
+      .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
+    const subtitleTracksPayload = streams.filter((s) => s.Type === "Subtitle")
+      .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
+    console.debug(DBG, "resolve tracks", { parentId, seriesId, ancestorIds, allCandidates,
+      audioTracks: audioTracksPayload.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
+    });
     resolveTracks.mutate({
       libraryId: allCandidates[0],
       libraryIds: allCandidates,
-      audioTracks: streams.filter((s) => s.Type === "Audio")
-        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") })),
-      subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
-        .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") })),
+      audioTracks: audioTracksPayload,
+      subtitleTracks: subtitleTracksPayload,
     }, {
       onSuccess: (result) => {
         console.debug(DBG, "preferences resolved", { audio: result.audioIndex, subtitle: result.subtitleIndex, currentPosition: positionRef.current });

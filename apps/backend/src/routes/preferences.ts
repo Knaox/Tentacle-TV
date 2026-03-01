@@ -236,10 +236,14 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     if (pref.audioLang) {
       const [baseLang, variant] = parseVariant(pref.audioLang);
       const langCandidates = body.audioTracks.filter((t) => langMatches(t.language, baseLang));
+      app.log.info({ baseLang, variant, prefAudioLang: pref.audioLang,
+        candidates: langCandidates.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
+      }, "[resolve] audio matching");
       if (variant && langCandidates.length > 0) {
         const variantMatch = langCandidates.find((t) =>
           t.title?.toLowerCase().includes(variant.toLowerCase()),
         );
+        app.log.info({ variant, matchedIndex: variantMatch?.index ?? null, fallbackIndex: langCandidates[0].index }, "[resolve] variant match");
         audioIndex = variantMatch?.index ?? langCandidates[0].index;
       } else if (langCandidates.length > 0) {
         audioIndex = langCandidates[0].index;
