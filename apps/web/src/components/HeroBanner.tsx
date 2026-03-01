@@ -16,8 +16,16 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
 
+  // Reset timer when user manually navigates
+  const [resetKey, setResetKey] = useState(0);
+
   const next = useCallback(() => {
     setIndex((i) => (i + 1) % items.length);
+    setAnimKey((k) => k + 1);
+  }, [items.length]);
+
+  const prev = useCallback(() => {
+    setIndex((i) => (i - 1 + items.length) % items.length);
     setAnimKey((k) => k + 1);
   }, [items.length]);
 
@@ -25,12 +33,16 @@ export function HeroBanner({ items }: HeroBannerProps) {
     if (items.length <= 1) return;
     const timer = setInterval(next, ROTATE_MS);
     return () => clearInterval(timer);
-  }, [next, items.length]);
+  }, [next, items.length, resetKey]);
 
   const goTo = (i: number) => {
     setIndex(i);
     setAnimKey((k) => k + 1);
+    setResetKey((k) => k + 1);
   };
+
+  const goPrev = () => { prev(); setResetKey((k) => k + 1); };
+  const goNext = () => { next(); setResetKey((k) => k + 1); };
 
   if (!items.length) return <div className="h-[480px]" />;
 
@@ -52,7 +64,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const accentColor = "#8B5CF6"; // default accent
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: 480 }}>
+    <div className="group/banner relative w-full overflow-hidden rounded-2xl" style={{ height: 480 }}>
       {/* Animated radial gradient backgrounds */}
       {items.map((it, i) => (
         <div
@@ -206,24 +218,51 @@ export function HeroBanner({ items }: HeroBannerProps) {
         </div>
       </div>
 
-      {/* Pill indicators */}
+      {/* Navigation arrows + pill indicators */}
       {items.length > 1 && (
-        <div className="absolute bottom-6 right-8 z-10 flex gap-2">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              className="rounded-full transition-all duration-500"
-              style={{
-                width: i === index ? 28 : 8,
-                height: 8,
-                background:
-                  i === index ? "linear-gradient(90deg, #8B5CF6, #A78BFA)" : "rgba(255,255,255,0.2)",
-                boxShadow: i === index ? "0 0 12px rgba(139,92,246,0.5)" : "none",
-              }}
-            />
-          ))}
-        </div>
+        <>
+          {/* Prev / Next arrows */}
+          <button
+            onClick={goPrev}
+            className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white/70 opacity-0 transition-all duration-300 hover:text-white group-hover/banner:opacity-100"
+            style={{
+              background: "rgba(0,0,0,0.4)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <ChevronLeftIcon />
+          </button>
+          <button
+            onClick={goNext}
+            className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white/70 opacity-0 transition-all duration-300 hover:text-white group-hover/banner:opacity-100"
+            style={{
+              background: "rgba(0,0,0,0.4)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <ChevronRightIcon />
+          </button>
+
+          {/* Pill indicators */}
+          <div className="absolute bottom-6 right-8 z-10 flex gap-2">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className="rounded-full transition-all duration-500"
+                style={{
+                  width: i === index ? 28 : 8,
+                  height: 8,
+                  background:
+                    i === index ? "linear-gradient(90deg, #8B5CF6, #A78BFA)" : "rgba(255,255,255,0.2)",
+                  boxShadow: i === index ? "0 0 12px rgba(139,92,246,0.5)" : "none",
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -241,6 +280,22 @@ function StarIcon() {
   return (
     <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   );
 }
