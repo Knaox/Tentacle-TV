@@ -16,8 +16,7 @@
     "@tentacle-tv/plugins-api": "workspace:*",
     "@tentacle-tv/api-client": "workspace:*",
     "@tentacle-tv/shared": "workspace:*",
-    "@tanstack/react-query": "^5.62.0",
-    "react-i18next": "^16.5.4"
+    "@tanstack/react-query": "^5.62.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
