@@ -15,7 +15,7 @@ export function InstalledTab() {
   }
 
   if (!plugins || plugins.length === 0) {
-    return <p className={cls.empty}>Aucun plugin installe</p>;
+    return <p className={cls.empty}>Aucun plugin installé</p>;
   }
 
   return (
@@ -46,7 +46,7 @@ export function InstalledTab() {
               className={`relative h-6 w-11 rounded-full transition-colors ${
                 p.enabled ? "bg-purple-600" : "bg-white/10"
               }`}
-              title={p.enabled ? "Desactiver" : "Activer"}
+              title={p.enabled ? "Désactiver" : "Activer"}
             >
               <span
                 className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
@@ -60,20 +60,20 @@ export function InstalledTab() {
 
             {/* Update */}
             {p.hasUpdate && (
-              <button className={cls.bp}>Mettre a jour</button>
+              <button className={cls.bp}>Mettre à jour</button>
             )}
 
             {/* Uninstall */}
             <button
               onClick={() => {
-                if (confirm(`Desinstaller ${p.name} ?`)) {
+                if (confirm(`Désinstaller ${p.name} ?`)) {
                   uninstallMut.mutate(p.id);
                 }
               }}
               disabled={uninstallMut.isPending}
               className={cls.bd}
             >
-              Desinstaller
+              Désinstaller
             </button>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { MarketplaceTab } from "../components/admin-plugins/MarketplaceTab";
 import { SourcesTab } from "../components/admin-plugins/SourcesTab";
 
 const TABS = [
-  { key: "installed", label: "Installes" },
+  { key: "installed", label: "Installés" },
   { key: "marketplace", label: "Marketplace" },
   { key: "sources", label: "Sources" },
 ] as const;
@@ -19,7 +19,7 @@ export function AdminPlugins() {
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-2 text-2xl font-bold text-white">Plugins</h1>
         <p className="mb-6 text-sm text-white/50">
-          Gerez les plugins installes, explorez le marketplace et configurez vos sources.
+          Gérez les plugins installés, explorez le marketplace et configurez vos sources.
         </p>
 
         {/* Tab bar */}

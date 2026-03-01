@@ -38,7 +38,7 @@ export function SourcesTab() {
     <div className="space-y-4">
       {/* Source list */}
       {(!sources || sources.length === 0) && !showForm && (
-        <p className={cls.empty}>Aucune source configuree</p>
+        <p className={cls.empty}>Aucune source configurée</p>
       )}
 
       {sources && sources.length > 0 && (
@@ -63,7 +63,7 @@ export function SourcesTab() {
                   className={`relative h-6 w-11 rounded-full transition-colors ${
                     s.enabled ? "bg-purple-600" : "bg-white/10"
                   }`}
-                  title={s.enabled ? "Desactiver" : "Activer"}
+                  title={s.enabled ? "Désactiver" : "Activer"}
                 >
                   <span
                     className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${

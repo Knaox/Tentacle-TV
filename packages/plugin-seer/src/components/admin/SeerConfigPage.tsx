@@ -53,10 +53,10 @@ export function SeerConfigPage() {
       });
       if (res.ok) {
         setStatus("connected");
-        setMessage("Connexion reussie");
+        setMessage("Connexion réussie");
       } else {
         setStatus("error");
-        setMessage("Echec de la connexion");
+        setMessage("Échec de la connexion");
       }
     } catch {
       setStatus("error");
@@ -73,10 +73,10 @@ export function SeerConfigPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(config),
       });
-      if (res.ok) setMessage("Configuration sauvegardee");
+      if (res.ok) setMessage("Configuration sauvegardée");
       else setMessage("Erreur lors de la sauvegarde");
     } catch {
-      setMessage("Erreur reseau");
+      setMessage("Erreur réseau");
     } finally {
       setSaving(false);
     }
@@ -97,7 +97,7 @@ export function SeerConfigPage() {
         <div className="flex items-center gap-2">
           <div className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
           <span className="text-xs text-white/50">
-            {status === "connected" ? "Connecte" : status === "error" ? "Erreur" : status === "testing" ? "Test..." : "Non configure"}
+            {status === "connected" ? "Connecté" : status === "error" ? "Erreur" : status === "testing" ? "Test..." : "Non configuré"}
           </span>
         </div>
       </div>
@@ -125,12 +125,12 @@ export function SeerConfigPage() {
 
       {/* API Key */}
       <div>
-        <label className="mb-1 block text-sm font-medium text-white/70">Cle API</label>
+        <label className="mb-1 block text-sm font-medium text-white/70">Clé API</label>
         <input
           type="password"
           value={config.apiKey}
           onChange={(e) => setConfig((c) => ({ ...c, apiKey: e.target.value }))}
-          placeholder="Cle API Jellyseerr"
+          placeholder="Clé API Jellyseerr"
           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-purple-500"
         />
       </div>
@@ -139,7 +139,7 @@ export function SeerConfigPage() {
       <div className="space-y-3">
         <ToggleRow
           label="Activer Seer"
-          description="Active le plugin de demandes de medias"
+          description="Active le plugin de demandes de médias"
           checked={config.enabled}
           onChange={(v) => setConfig((c) => ({ ...c, enabled: v }))}
         />

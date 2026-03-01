@@ -14,7 +14,7 @@ export function MarketplaceTab() {
   }
 
   if (!plugins || plugins.length === 0) {
-    return <p className={cls.empty}>Aucun plugin disponible dans les sources configurees</p>;
+    return <p className={cls.empty}>Aucun plugin disponible dans les sources configurées</p>;
   }
 
   return (
@@ -28,7 +28,7 @@ export function MarketplaceTab() {
             </div>
             {p.installed ? (
               <span className="flex-shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/40">
-                Installe
+                Installé
               </span>
             ) : (
               <button
@@ -43,7 +43,7 @@ export function MarketplaceTab() {
           <p className="text-xs text-white/50 line-clamp-2">{p.description}</p>
           <div className="mt-2 flex items-center gap-3 text-xs text-white/30">
             <span>{p.author}</span>
-            {p.downloads > 0 && <span>{p.downloads.toLocaleString()} telechargements</span>}
+            {p.downloads > 0 && <span>{p.downloads.toLocaleString()} téléchargements</span>}
           </div>
         </div>
       ))}
