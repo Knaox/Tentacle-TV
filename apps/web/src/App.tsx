@@ -6,7 +6,7 @@ import { UpdateNotification } from "./components/UpdateNotification";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { usePluginRoutes } from "@tentacle-tv/plugins-api";
+import { usePluginRoutes, usePluginAdminRoutes } from "@tentacle-tv/plugins-api";
 import { isTauriApp } from "./main";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -68,6 +68,7 @@ export function App() {
     isTauriApp && !localStorage.getItem("tentacle_server_url")
   );
   const pluginRoutes = usePluginRoutes();
+  const pluginAdminRoutes = usePluginAdminRoutes();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
 
   // Check backend setup status on mount (web deployment only)
@@ -155,6 +156,15 @@ export function App() {
             <Route path="pair-device" element={<PairDevice />} />
             <Route path="admin/*" element={<Admin />} />
             <Route path="admin/plugins" element={<AdminPlugins />} />
+
+            {/* Dynamic plugin admin routes */}
+            {pluginAdminRoutes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path.replace(/^\//, "")}
+                element={<Suspense fallback={<PageSpinner />}><route.component /></Suspense>}
+              />
+            ))}
             <Route path="about" element={<About />} />
             <Route path="credits" element={<Credits />} />
 

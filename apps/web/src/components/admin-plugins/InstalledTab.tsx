@@ -1,16 +1,24 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { usePluginAdminRoutes } from "@tentacle-tv/plugins-api";
 import { cls } from "./types";
 import { useInstalledPlugins, useTogglePlugin, useUninstallPlugin, useUpdatePlugin } from "./hooks";
-
-const PLUGIN_CONFIG_ROUTES: Record<string, string> = {
-  seer: "/admin/plugins/seer",
-};
 
 export function InstalledTab() {
   const { t } = useTranslation("adminPlugins");
   const navigate = useNavigate();
   const { data: plugins, isLoading } = useInstalledPlugins();
+  const adminRoutes = usePluginAdminRoutes();
+  const pluginConfigRoutes = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const route of adminRoutes) {
+      // Extract pluginId from path like "/admin/plugins/seer"
+      const match = route.path.match(/^\/admin\/plugins\/([^/]+)/);
+      if (match) map[match[1]] = route.path;
+    }
+    return map;
+  }, [adminRoutes]);
   const toggleMut = useTogglePlugin();
   const uninstallMut = useUninstallPlugin();
   const updateMut = useUpdatePlugin();
@@ -66,9 +74,9 @@ export function InstalledTab() {
             </button>
 
             {/* Configure */}
-            {PLUGIN_CONFIG_ROUTES[p.pluginId] && (
+            {pluginConfigRoutes[p.pluginId] && (
               <button
-                onClick={() => navigate(PLUGIN_CONFIG_ROUTES[p.pluginId])}
+                onClick={() => navigate(pluginConfigRoutes[p.pluginId])}
                 className={cls.bs}
               >
                 {t("adminPlugins:configure")}
