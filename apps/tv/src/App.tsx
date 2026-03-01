@@ -6,9 +6,7 @@ import {
   JellyfinClient,
   JellyfinClientContext,
   TentacleConfigContext,
-  setSeerrBackendUrl,
   setPreferencesBackendUrl,
-  setRequestsBackendUrl,
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
@@ -57,9 +55,7 @@ const darkTheme = {
 function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   const baseUrl = tentacleUrl || "http://localhost";
 
-  setSeerrBackendUrl(baseUrl);
   setPreferencesBackendUrl(baseUrl);
-  setRequestsBackendUrl(baseUrl);
   setTicketsBackendUrl(baseUrl);
   setNotificationsBackendUrl(baseUrl);
   setConfigBackendUrl(baseUrl);

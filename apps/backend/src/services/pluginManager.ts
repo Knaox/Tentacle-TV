@@ -71,7 +71,6 @@ const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 export const DATA_DIR = resolve(__dirname, "../../data/plugins");
 const SOURCES_FILE = "sources.json";
 const INSTALLED_FILE = "installed.json";
-const SEER_CONFIG_FILE = "seer-config.json";
 
 const OFFICIAL_SOURCE: PluginSource = {
   id: "official",
@@ -125,16 +124,6 @@ export function getInstalled(): InstalledPlugin[] {
 
 export function saveInstalled(p: InstalledPlugin[]): void {
   writeJson(INSTALLED_FILE, p);
-}
-
-// ── Seer config ──
-
-export function getSeerConfig(): Record<string, unknown> {
-  return readJson<Record<string, unknown>>(SEER_CONFIG_FILE, {});
-}
-
-export function saveSeerConfig(config: Record<string, unknown>): void {
-  writeJson(SEER_CONFIG_FILE, config);
 }
 
 // ── Registry cache ──

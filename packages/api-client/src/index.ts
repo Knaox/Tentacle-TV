@@ -11,13 +11,6 @@ export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export { useIntroSkipper } from "./hooks/useIntroSkipper";
 export type { SkipSegments } from "./hooks/useIntroSkipper";
-export { useSeerrSearch, useSeerrRequest, useSeerrDeleteRequest, useSeerrRetryRequest, useSeerrDiscover, useSeerrRequests, useSeerrRequestCount, useSeerrMediaDetail, setSeerrBackendUrl } from "./hooks/useSeerr";
-export type { SeerrSearchResult, SeerrSearchResponse, SeerrPagedResponse, SeerrMediaRequest, SeerrRequestsResponse } from "./hooks/useSeerr";
-
-// Media request system
-export { useRequestMedia, useMyRequests, useAllRequests, useCancelRequest, useRetryRequest, setRequestsBackendUrl } from "./hooks/useRequests";
-export type { MediaRequest, RequestsPage } from "./hooks/useRequests";
-
 // Library language/subtitle preferences
 export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";
@@ -53,5 +46,5 @@ export { useSeriesWatchState, useContinueWatching } from "./hooks/useWatchState"
 export type { NextEpisodeResult } from "./hooks/useWatchState";
 
 // App mode (standalone vs backend)
-export { AppModeProvider, useAppMode, saveSeerrConfig, clearSeerrConfig } from "./appMode";
-export type { AppMode, SeerrConfig, AppModeProviderProps } from "./appMode";
+export { AppModeProvider, useAppMode } from "./appMode";
+export type { AppMode, AppModeProviderProps } from "./appMode";

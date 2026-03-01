@@ -20,7 +20,6 @@ export function Credits() {
 
   const SERVICES = useMemo(() => [
     { name: "Jellyfin", url: "https://jellyfin.org", desc: t("about:serviceJellyfin") },
-    { name: "Overseerr / Jellyseerr", url: "https://overseerr.dev", desc: t("about:serviceOverseerr") },
   ], [t]);
 
   return (

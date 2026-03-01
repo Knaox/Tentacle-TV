@@ -7,9 +7,6 @@ export function setConfigBackendUrl(url: string) {
 }
 
 export interface AppFeatures {
-  seerr: boolean;
-  requests: boolean;
-  discover: boolean;
   downloads: boolean;
   demo: boolean;
 }
@@ -23,7 +20,7 @@ export interface AppConfig {
 const defaultConfig: AppConfig = {
   version: "0.0.0",
   brandName: "Tentacle TV",
-  features: { seerr: false, requests: false, discover: false, downloads: false, demo: false },
+  features: { downloads: false, demo: false },
 };
 
 export function useAppConfig() {

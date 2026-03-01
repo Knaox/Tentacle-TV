@@ -33,5 +33,4 @@ export default {
   techExpo: "Mobile application",
   techReactNative: "Mobile framework",
   serviceJellyfin: "Open-source media server",
-  serviceOverseerr: "Content request management",
 } as const;
