@@ -265,7 +265,20 @@ export function VideoPlayer({
         },
       });
       hlsRef.current = hls;
-      hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+      // HLS play timing:
+      // - Source change (audio/quality switch): play immediately on MANIFEST_PARSED
+      //   for fast switching. Explicit seek handles frame-accurate positioning.
+      // - Initial load: wait for canplay (audio+video data buffered) so the user
+      //   hears audio immediately when the video appears, instead of seeing video
+      //   with delayed audio while the first TS segment's audio track decodes.
+      if (isSourceChange) {
+        hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+      } else {
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.debug(DBG, "HLS manifest parsed, waiting for canplay");
+        });
+        v.addEventListener("canplay", onReady, { once: true });
+      }
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           console.error(DBG, "HLS fatal error:", data.type, data.details);
