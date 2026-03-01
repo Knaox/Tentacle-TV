@@ -82,6 +82,27 @@ function parseVariant(code: string): [string, string | null] {
   return [code.substring(0, idx), code.substring(idx + 1)];
 }
 
+/**
+ * Variant alias patterns — matches variant tags against common title patterns.
+ * Jellyfin track titles may use full names ("Français (France)") instead of tags ("VFF").
+ */
+const VARIANT_ALIASES: Record<string, string[]> = {
+  vff: ["vff", "france", "français (france)", "french (france)", "vf "],
+  vfq: ["vfq", "québec", "quebec", "québécois", "quebecois", "canada", "canadien", "français (canada)", "french (canada)"],
+  vfi: ["vfi", "international"],
+  vf: ["vf"],
+};
+
+function variantMatchesTitle(title: string | undefined, variant: string): boolean {
+  if (!title) return false;
+  const lower = title.toLowerCase();
+  const aliases = VARIANT_ALIASES[variant.toLowerCase()];
+  if (aliases) {
+    return aliases.some((alias) => lower.includes(alias));
+  }
+  return lower.includes(variant.toLowerCase());
+}
+
 export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
@@ -262,9 +283,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
         candidates: langCandidates.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
       }, "[resolve] audio matching");
       if (variant && langCandidates.length > 0) {
-        const variantMatch = langCandidates.find((t) =>
-          t.title?.toLowerCase().includes(variant.toLowerCase()),
-        );
+        const variantMatch = langCandidates.find((t) => variantMatchesTitle(t.title, variant));
         app.log.info({ variant, matchedIndex: variantMatch?.index ?? null, fallbackIndex: langCandidates[0].index }, "[resolve] variant match");
         audioIndex = variantMatch?.index ?? langCandidates[0].index;
       } else if (langCandidates.length > 0) {

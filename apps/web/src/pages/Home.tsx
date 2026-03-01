@@ -43,7 +43,7 @@ export function Home() {
         }}
       >
         {heroLoading ? (
-          <div className="skeleton-shimmer h-[420px] rounded-2xl" />
+          <div className="skeleton-shimmer h-[480px] rounded-2xl" />
         ) : (
           <HeroBanner items={heroItems} />
         )}

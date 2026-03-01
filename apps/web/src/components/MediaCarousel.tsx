@@ -73,7 +73,7 @@ export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProp
         {canScrollLeft && (
           <>
             <div
-              className="pointer-events-none absolute bottom-8 left-0 top-0 z-10 w-16"
+              className="pointer-events-none absolute bottom-4 left-0 top-0 z-10 w-16"
               style={{ background: "linear-gradient(to right, #08081280, transparent)" }}
             />
             <button
@@ -96,7 +96,7 @@ export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProp
         {canScrollRight && (
           <>
             <div
-              className="pointer-events-none absolute bottom-8 right-0 top-0 z-10 w-16"
+              className="pointer-events-none absolute bottom-4 right-0 top-0 z-10 w-16"
               style={{ background: "linear-gradient(to left, #08081280, transparent)" }}
             />
             <button
@@ -118,7 +118,7 @@ export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProp
         <div
           ref={scrollRef}
           onScroll={updateScrollState}
-          className="flex gap-4 overflow-x-auto scroll-smooth px-4 pb-8 pt-4 scrollbar-hide md:px-8"
+          className="flex gap-4 overflow-x-auto scroll-smooth px-4 pb-4 scrollbar-hide md:px-8"
         >
           {visible && items.map((item, i) => <CarouselCard key={item.Id} item={item} index={i} />)}
         </div>
@@ -168,10 +168,9 @@ function CarouselCard({ item, index }: { item: MediaItem; index: number }) {
         className="relative overflow-hidden rounded-xl"
         style={{
           aspectRatio: "2/3",
-          transition: "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s ease",
-          transform: hovered ? "scale(1.06) translateY(-8px)" : "scale(1)",
+          transition: "box-shadow 0.35s ease, border-color 0.35s ease",
           boxShadow: hovered
-            ? "0 20px 40px rgba(139,92,246,0.3), 0 0 60px rgba(139,92,246,0.15)"
+            ? "0 8px 30px rgba(139,92,246,0.4), 0 0 0 2px rgba(139,92,246,0.5)"
             : "0 4px 20px rgba(0,0,0,0.3)",
         }}
       >
@@ -181,6 +180,10 @@ function CarouselCard({ item, index }: { item: MediaItem; index: number }) {
           className="h-full w-full object-cover"
           loading="lazy"
           draggable={false}
+          style={{
+            transition: "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+            transform: hovered ? "scale(1.1)" : "scale(1)",
+          }}
         />
 
         {/* Hover overlay */}
