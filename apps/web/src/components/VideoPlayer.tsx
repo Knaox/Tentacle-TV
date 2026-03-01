@@ -77,10 +77,12 @@ export function VideoPlayer({
   const [rawTime, setRawTime] = useState(0);
   const lastKnownPositionRef = useRef(0);
 
-  // Auto-detect whether Jellyfin HLS uses absolute or relative timestamps.
-  // Jellyfin often preserves original PTS (absolute), making v.currentTime ≈ streamOffset
-  // instead of starting from 0.  effectiveOffset corrects for this.
+  // CopyTimestamps=true preserves the original container's PTS base.
+  // Some media have a non-zero PTS start (e.g., broadcast recordings with PTS offset 677s).
+  // effectiveOffsetRef subtracts this so displayed time = movie position (0 to duration).
+  // containerPtsOffsetRef stores the raw offset for converting seek targets back to PTS.
   const effectiveOffsetRef = useRef(0);
+  const containerPtsOffsetRef = useRef(0);
   const offsetDetectedRef = useRef(false);
 
   // Synchronously reset state when src changes
@@ -91,11 +93,9 @@ export function VideoPlayer({
     // (quality/audio switch). Keep showing the last known position until the
     // new source provides timeupdate events with the correct absolute time.
     // Full reset only happens on episode switch (key={itemId} triggers remount).
+    // Container PTS offset persists across source changes (same media).
     offsetDetectedRef.current = true;
-    // HLS with CopyTimestamps: PTS are absolute, no offset needed.
-    // Progressive transcode: PTS start from 0, need to add streamOffset for display.
-    const isHls = src.includes(".m3u8");
-    effectiveOffsetRef.current = (!isHls && !isDirectPlay && streamOffset > 0) ? streamOffset : 0;
+    effectiveOffsetRef.current = -containerPtsOffsetRef.current;
   }
 
   const [videoDuration, setVideoDuration] = useState(0);
@@ -128,33 +128,41 @@ export function VideoPlayer({
   // generates segments/data progressively from StartTimeTicks. Seeking beyond the
   // buffered range requires a URL rebuild (new StartTimeTicks = seek position) to
   // start a fresh transcode from that point.
+  //
+  // All targets from PlayerControls are in "movie position" (0 to duration).
+  // CopyTimestamps streams have a container PTS offset — v.currentTime and v.buffered
+  // are in PTS space (offset + movie_position). containerPtsOffsetRef bridges this gap.
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
     const isHlsStream = src.includes(".m3u8");
+    const ptsOffset = containerPtsOffsetRef.current;
 
-    // For progressive transcode, v.duration is stream-relative (starts at 0).
-    // Add streamOffset to get the absolute maximum seekable position.
+    // Clamp to valid movie-position range.
+    // For progressive transcode, v.duration is stream-relative (movieDuration - streamOffset).
     const isProgressiveTranscode = !isHlsStream && !isDirectPlay && streamOffset > 0;
-    const absMax = isProgressiveTranscode
+    const movieMax = isProgressiveTranscode
       ? (v.duration || Infinity) + streamOffset
       : (v.duration || Infinity);
-    const clamped = Math.max(0, Math.min(targetSeconds, absMax));
+    const clamped = Math.max(0, Math.min(targetSeconds, movieMax));
 
-    console.debug(DBG, "seek", { target: targetSeconds, clamped, isDirectPlay, streamOffset, isHlsStream, vDuration: v.duration });
+    // Convert movie position to video-element PTS time
+    const ptsTarget = clamped + ptsOffset;
+
+    console.debug(DBG, "seek", { target: targetSeconds, clamped, ptsTarget, ptsOffset, isDirectPlay, streamOffset, isHlsStream });
 
     // Direct play: HTTP Range requests support random seek — always works
     if (isDirectPlay) {
-      v.currentTime = clamped;
+      v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
       return;
     }
 
-    // Helper: check if a position (in video-element time) is within buffered ranges
-    const isPositionBuffered = (pos: number): boolean => {
+    // Helper: check if a PTS position is within buffered ranges
+    const isPositionBuffered = (pts: number): boolean => {
       const buf = v.buffered;
       for (let i = 0; i < buf.length; i++) {
-        if (pos >= buf.start(i) - 1 && pos <= buf.end(i) + 1) return true;
+        if (pts >= buf.start(i) - 1 && pts <= buf.end(i) + 1) return true;
       }
       return false;
     };
@@ -169,25 +177,22 @@ export function VideoPlayer({
         return;
       }
 
-      if (isPositionBuffered(clamped)) {
-        v.currentTime = clamped;
+      if (isPositionBuffered(ptsTarget)) {
+        v.currentTime = ptsTarget;
         onSeekComplete?.(clamped, v.paused);
       } else {
         // Target not buffered — start new transcode from seek position
-        console.debug(DBG, "HLS seek: target not buffered, rebuilding URL", { clamped });
+        console.debug(DBG, "HLS seek: target not buffered, rebuilding URL", { clamped, ptsTarget });
         seekTargetRef.current = clamped;
         onSeekRequest?.(clamped);
       }
       return;
     }
 
-    // Progressive transcode: convert absolute target to video-relative time.
-    // The stream starts at v.currentTime=0 representing absolute streamOffset.
-    const relativeTarget = isProgressiveTranscode ? clamped - streamOffset : clamped;
-
-    if (isPositionBuffered(relativeTarget)) {
-      v.currentTime = relativeTarget;
-      onSeekComplete?.(clamped, v.paused); // report absolute position
+    // Progressive transcode: check if PTS target is buffered
+    if (isPositionBuffered(ptsTarget)) {
+      v.currentTime = ptsTarget;
+      onSeekComplete?.(clamped, v.paused);
     } else {
       // Target outside buffer — rebuild URL with new StartTimeTicks
       seekTargetRef.current = clamped;
@@ -252,21 +257,24 @@ export function VideoPlayer({
 
     const onReady = () => {
       clearTimeout(failsafe);
-      console.debug(DBG, "ready", { seekTo, isHlsUrl, isSourceChange, isDirectPlay, streamOffset, duration: v.duration });
+      const ptsOffset = containerPtsOffsetRef.current;
+      console.debug(DBG, "ready", { seekTo, isHlsUrl, isSourceChange, isDirectPlay, streamOffset, ptsOffset, duration: v.duration });
       // jellyfin-web pattern: explicit seek for frame-accurate positioning.
       // For HLS initial load: startPosition is segment-boundary accurate — good enough,
       // skip explicit seek so play() fires faster (reduces audio delay).
       // For HLS source changes (audio/quality switch): explicit seek corrects the
       // segment-boundary offset (startPosition can be a few seconds off).
       // For direct play: always seek (HTTP Range supports it).
-      // For progressive transcode: stream already starts at seekTo (via StartTimeTicks),
-      // so v.currentTime=0 is correct — don't seek to the absolute position.
+      // For progressive transcode: stream already starts at seekTo (via StartTimeTicks)
+      // with CopyTimestamps, so v.currentTime naturally lands at the right PTS.
       if (seekTo > 0) {
         const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
         if (isProgressiveTranscode && streamOffset > 0) {
-          console.debug(DBG, "skip explicit seek — progressive stream starts at streamOffset", { seekTo, streamOffset });
+          // Progressive with CopyTimestamps: stream naturally starts at correct PTS
+          console.debug(DBG, "skip explicit seek — progressive stream starts at correct PTS", { seekTo, streamOffset });
         } else if (!isHlsUrl || isSourceChange) {
-          v.currentTime = seekTo;
+          // Add container PTS offset to convert movie position → PTS
+          v.currentTime = seekTo + ptsOffset;
         }
       }
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
@@ -469,13 +477,22 @@ export function VideoPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setRawTime(t);
-          // HLS with CopyTimestamps: PTS are absolute (v.currentTime = absolute position).
-          // Progressive transcode: PTS start from 0, need streamOffset for absolute display.
-          if (!offsetDetectedRef.current) {
+          // Detect container PTS offset on first timeupdate.
+          // CopyTimestamps=true preserves the original container's PTS base, which
+          // may be non-zero (e.g., 677s for broadcast recordings). Subtract it
+          // so displayed time shows movie position (0 to duration), not raw PTS.
+          if (!offsetDetectedRef.current && t > 0) {
             offsetDetectedRef.current = true;
-            const isHls = src.includes(".m3u8");
-            effectiveOffsetRef.current = (!isHls && !isDirectPlay && streamOffset > 0) ? streamOffset : 0;
-            console.debug(DBG, "offset detected", { t, streamOffset, isHls, isDirectPlay, effectiveOffset: effectiveOffsetRef.current });
+            const expectedStart = startPositionSeconds || 0;
+            const detectedOffset = t - expectedStart;
+            // Significant offset (> 5s) = real container PTS base, not timing jitter
+            if (detectedOffset > 5) {
+              containerPtsOffsetRef.current = Math.round(detectedOffset);
+              effectiveOffsetRef.current = -containerPtsOffsetRef.current;
+              console.debug(DBG, "container PTS offset detected", { t, expectedStart, offset: containerPtsOffsetRef.current });
+            } else {
+              console.debug(DBG, "no PTS offset", { t, expectedStart });
+            }
           }
           const absoluteTime = effectiveOffsetRef.current + t;
           lastKnownPositionRef.current = absoluteTime;
