@@ -19,6 +19,7 @@ export interface MarketplacePlugin {
   sourceName: string;
   official: boolean;
   installed: boolean;
+  installedId?: string;
   installedVersion?: string;
   updateAvailable: boolean;
   downloadUrl?: string;
