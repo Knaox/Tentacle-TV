@@ -22,9 +22,12 @@ export interface PluginBackendContext {
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
   const installed = getInstalled().filter((p) => p.enabled);
+  console.log(`[PluginBackend] DATA_DIR: ${DATA_DIR}`);
+  console.log(`[PluginBackend] Found ${installed.length} enabled plugin(s): ${installed.map((p) => p.pluginId).join(", ") || "(none)"}`);
 
   for (const plugin of installed) {
     const pluginDir = resolve(DATA_DIR, plugin.pluginId);
+    console.log(`[PluginBackend] Checking "${plugin.pluginId}" — dir: ${pluginDir} (exists: ${existsSync(pluginDir)})`);
 
     // Check plugin.json for a declared server module
     const manifestPath = resolve(pluginDir, "plugin.json");
@@ -32,8 +35,15 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
     if (existsSync(manifestPath)) {
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-        if (manifest.server) declaredServer = resolve(pluginDir, manifest.server);
-      } catch { /* ignore parse errors */ }
+        if (manifest.server) {
+          declaredServer = resolve(pluginDir, manifest.server);
+          console.log(`[PluginBackend]   plugin.json declares server: "${manifest.server}" → ${declaredServer}`);
+        }
+      } catch (e) {
+        console.warn(`[PluginBackend]   Failed to parse plugin.json:`, e);
+      }
+    } else {
+      console.log(`[PluginBackend]   No plugin.json at ${manifestPath}`);
     }
 
     const serverPaths = [
@@ -44,14 +54,22 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
     ];
 
     const serverPath = serverPaths.find((p) => existsSync(p));
-    if (!serverPath) continue;
+    if (!serverPath) {
+      console.log(`[PluginBackend]   No server module found. Checked: ${serverPaths.map((p) => `${p} (${existsSync(p)})`).join(", ")}`);
+      continue;
+    }
+
+    console.log(`[PluginBackend]   Server module found: ${serverPath}`);
 
     try {
-      const mod = await import(`file://${serverPath.replace(/\\/g, "/")}`);
+      const importUrl = `file://${serverPath.replace(/\\/g, "/")}`;
+      console.log(`[PluginBackend]   Importing: ${importUrl}`);
+      const mod = await import(importUrl);
+      console.log(`[PluginBackend]   Module keys: ${Object.keys(mod).join(", ")}`);
       const pluginFn = mod.default || mod;
 
       if (typeof pluginFn !== "function") {
-        console.warn(`[PluginBackend] ${plugin.pluginId}: server module does not export a function`);
+        console.warn(`[PluginBackend] ${plugin.pluginId}: server module does not export a function (type: ${typeof pluginFn})`);
         continue;
       }
 
@@ -67,14 +85,16 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       };
 
       // Register plugin routes under /api/plugins/{pluginId}/
+      const prefix = `/api/plugins/${plugin.pluginId}`;
+      console.log(`[PluginBackend]   Registering routes with prefix: ${prefix}`);
       await app.register(
         async (scope) => {
           await pluginFn(scope, ctx);
         },
-        { prefix: `/api/plugins/${plugin.pluginId}` },
+        { prefix },
       );
 
-      console.log(`[PluginBackend] Loaded backend for "${plugin.pluginId}"`);
+      console.log(`[PluginBackend] Loaded backend for "${plugin.pluginId}" ✓`);
     } catch (err) {
       console.error(`[PluginBackend] Failed to load backend for "${plugin.pluginId}":`, err);
     }
