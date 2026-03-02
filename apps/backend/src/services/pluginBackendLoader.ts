@@ -92,7 +92,11 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
     try {
       const importUrl = `file://${serverPath.replace(/\\/g, "/")}`;
       console.log(`[PluginBackend]   Importing: ${importUrl}`);
-      const mod = await import(importUrl);
+      // Use Function constructor to preserve real import() — TypeScript CJS
+      // compilation transforms `import()` to `require()`, which cannot handle
+      // file:// URLs or ESM .mjs modules.
+      const dynamicImport = new Function("url", "return import(url)") as (url: string) => Promise<any>;
+      const mod = await dynamicImport(importUrl);
       console.log(`[PluginBackend]   Module keys: ${Object.keys(mod).join(", ")}`);
       const pluginFn = mod.default || mod;
 
