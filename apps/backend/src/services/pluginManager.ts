@@ -45,6 +45,7 @@ export interface EnrichedEntry extends RegistryPlugin {
   sourceName: string;
   official: boolean;
   installed: boolean;
+  installedId?: string;
   installedVersion?: string;
   updateAvailable: boolean;
 }
@@ -203,6 +204,7 @@ export function enrichPlugins(
       sourceName: source.name,
       official: source.official,
       installed: !!inst,
+      installedId: inst?.id,
       installedVersion: inst?.version,
       updateAvailable: !!inst && inst.version !== p.version,
     };

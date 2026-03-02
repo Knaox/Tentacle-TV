@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { cls } from "./types";
-import { useMarketplacePlugins, useInstallPlugin } from "./hooks";
+import { useMarketplacePlugins, useInstallPlugin, useUpdatePlugin } from "./hooks";
 
 export function MarketplaceTab() {
   const { t } = useTranslation("adminPlugins");
   const { data: plugins, isLoading, error } = useMarketplacePlugins();
   const installMut = useInstallPlugin();
+  const updateMut = useUpdatePlugin();
 
   if (isLoading) {
     return (
@@ -40,13 +41,13 @@ export function MarketplaceTab() {
               </div>
             </div>
             {p.installed ? (
-              p.updateAvailable ? (
+              p.updateAvailable && p.installedId ? (
                 <button
-                  onClick={() => installMut.mutate({ pluginId: p.pluginId, version: p.version, sourceId: p.sourceId })}
-                  disabled={installMut.isPending}
+                  onClick={() => updateMut.mutate(p.installedId!)}
+                  disabled={updateMut.isPending}
                   className={`flex-shrink-0 ${cls.bp}`}
                 >
-                  {installMut.isPending ? "..." : t("adminPlugins:update")}
+                  {updateMut.isPending ? "..." : t("adminPlugins:update")}
                 </button>
               ) : (
                 <span className="flex-shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/40">
