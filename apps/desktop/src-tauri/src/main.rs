@@ -10,6 +10,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             video_surface::toggle_fullscreen,
             video_surface::is_fullscreen,
+            video_surface::exit_fullscreen,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tentacle desktop");

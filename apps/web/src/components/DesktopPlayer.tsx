@@ -12,6 +12,10 @@ import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 const DBG = "[DesktopPlayer]";
 
+// Module-level invoke cache — available immediately in cleanup, no async import needed
+let cachedInvoke: ((cmd: string) => Promise<unknown>) | null = null;
+import("@tauri-apps/api/core").then(({ invoke }) => { cachedInvoke = invoke; }).catch(() => {});
+
 interface DesktopPlayerProps {
   src: string; title: string; subtitle?: string;
   startPositionSeconds?: number; jellyfinDuration?: number;
@@ -160,6 +164,8 @@ export function DesktopPlayer({
   // effectiveMpvOffset is 0 when absolute (no correction needed), or streamOffset when relative.
   const effectiveMpvOffset = useRef(0);
   const offsetDetectedForSrc = useRef("");
+  const fullscreenRef = useRef(state.fullscreen);
+  fullscreenRef.current = state.fullscreen;
 
   // MPV tracks split by type
   const mpvAudio = useMemo(() => state.tracks.filter((t) => t.type === "audio"), [state.tracks]);
@@ -288,9 +294,9 @@ export function DesktopPlayer({
 
     // Use lastAbsolutePosRef for source changes — survives direct play ↔ transcode transitions.
     // state.position is relative to the current stream, which is wrong when switching modes.
-    const startPos = isDirectPlay
-      ? (isSourceChange ? lastAbsolutePosRef.current : startPositionSeconds)
-      : undefined;
+    const startPos = isSourceChange
+      ? lastAbsolutePosRef.current
+      : (isDirectPlay ? startPositionSeconds : undefined);
 
     console.debug(DBG, "play", { src: src.substring(0, 80), startPos, absolutePos: lastAbsolutePosRef.current,
       isDirectPlay, isSourceChange });
@@ -341,6 +347,18 @@ export function DesktopPlayer({
     if (state.playing && sourceChanging) setSourceChanging(false);
   }, [state.playing, sourceChanging]);
 
+  // Navigate back with fullscreen exit — awaits exit_fullscreen before navigating
+  const goBack = useCallback(async () => {
+    if (fullscreenRef.current && cachedInvoke) {
+      try {
+        await cachedInvoke("exit_fullscreen");
+        // Brief delay for OS window manager to process the transition
+        await new Promise((r) => setTimeout(r, 50));
+      } catch { /* proceed anyway */ }
+    }
+    navigate(-1);
+  }, [navigate]);
+
   const startAutoPlayCountdown = useCallback(() => {
     if (!hasNextEpisode || !onNextEpisode) return;
     setAutoPlayCountdown(10);
@@ -360,18 +378,23 @@ export function DesktopPlayer({
   const cancelAutoPlay = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
     setAutoPlayCountdown(null);
-    navigate(-1);
-  }, [navigate]);
+    goBack();
+  }, [goBack]);
 
   useEffect(() => {
     if (state.eof && hasStartedRef.current) {
       if (hasNextEpisode) startAutoPlayCountdown();
-      else navigate(-1);
+      else goBack();
     }
-  }, [state.eof, navigate, hasNextEpisode, startAutoPlayCountdown]);
+  }, [state.eof, goBack, hasNextEpisode, startAutoPlayCountdown]);
 
   useEffect(() => {
-    return () => { stop(); clearInterval(autoPlayTimerRef.current); };
+    return () => {
+      clearInterval(autoPlayTimerRef.current);
+      // Fallback: fire-and-forget exit fullscreen via cached invoke
+      cachedInvoke?.("exit_fullscreen")?.catch(() => {});
+      stop();
+    };
   }, [stop]);
 
   const scheduleHide = useCallback(() => {
@@ -385,7 +408,10 @@ export function DesktopPlayer({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePause(); }
-      if (e.code === "Escape") navigate(-1);
+      if (e.code === "Escape") {
+        if (fullscreenRef.current) toggleFullscreen();
+        else goBack();
+      }
       if (e.code === "ArrowRight") seekRelative(30);
       if (e.code === "ArrowLeft") seekRelative(-10);
       if (e.code === "KeyF") toggleFullscreen();
@@ -394,7 +420,7 @@ export function DesktopPlayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, navigate, seekRelative, toggleFullscreen, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [togglePause, goBack, seekRelative, toggleFullscreen, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   const fmt = (s: number) => {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
@@ -440,7 +466,7 @@ export function DesktopPlayer({
   if (error) return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
       <p className="text-lg text-red-400">{t("player:mpvError", { error })}</p>
-      <button onClick={() => navigate(-1)} className="rounded-lg bg-tentacle-accent px-6 py-2 text-white hover:bg-tentacle-accent/80">{t("common:back")}</button>
+      <button onClick={() => goBack()} className="rounded-lg bg-tentacle-accent px-6 py-2 text-white hover:bg-tentacle-accent/80">{t("common:back")}</button>
     </div>
   );
   if (!ready) return (
@@ -500,7 +526,7 @@ export function DesktopPlayer({
         <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
           <div className="bg-gradient-to-b from-black/70 to-transparent px-6 pb-10 pt-5">
             <div className="flex items-center gap-4">
-              <button onClick={() => navigate(-1)} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
+              <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
               <div>
                 <h2 className="text-lg font-semibold text-white">{title}</h2>
                 {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}

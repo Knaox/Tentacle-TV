@@ -100,7 +100,12 @@ export function VideoPlayer({
 
   const [videoDuration, setVideoDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(() => {
+    const s = localStorage.getItem("tentacle_player_volume");
+    if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
+    return 1;
+  });
+  useEffect(() => { if (videoRef.current) videoRef.current.volume = volume; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -419,6 +424,7 @@ export function VideoPlayer({
   const handleVolumeChange = useCallback((val: number) => {
     setVolume(val);
     if (videoRef.current) videoRef.current.volume = val;
+    try { localStorage.setItem("tentacle_player_volume", String(Math.round(val * 100))); } catch {}
   }, []);
 
   const handleToggleMute = useCallback(() => {

@@ -54,7 +54,11 @@ const OBSERVED_PROPERTIES = [
 ] as const satisfies readonly MpvObservableProperty[];
 
 export function useDesktopPlayer() {
-  const [state, setState] = useState<MpvState>(defaultState);
+  const [state, setState] = useState<MpvState>(() => {
+    const sv = localStorage.getItem("tentacle_player_volume");
+    const vol = sv != null ? Number(sv) : 100;
+    return { ...defaultState, volume: (!Number.isNaN(vol) && vol >= 0 && vol <= 100) ? vol : 100 };
+  });
   const [ready, setReady] = useState(false);
   const [fileLoaded, setFileLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,10 +91,19 @@ export function useDesktopPlayer() {
             osc: "no",
             "input-default-bindings": "no",
             "input-vo-keyboard": "no",
+            "force-media-title": "Tentacle TV",
+            "audio-client-name": "Tentacle TV",
+            title: "Tentacle TV",
           },
           observedProperties: OBSERVED_PROPERTIES,
         });
         setReady(true);
+        // Restore persisted volume
+        const sv = localStorage.getItem("tentacle_player_volume");
+        if (sv != null) {
+          const v = Number(sv);
+          if (!Number.isNaN(v) && v >= 0 && v <= 100) api.setProperty("volume", v).catch(() => {});
+        }
       } catch (e) {
         setError(String(e));
         return;
@@ -117,8 +130,11 @@ export function useDesktopPlayer() {
                 return { ...prev, duration: (event.data as number | null) ?? prev.duration };
               case "pause":
                 return { ...prev, paused: event.data as boolean };
-              case "volume":
-                return { ...prev, volume: event.data as number };
+              case "volume": {
+                const vol = event.data as number;
+                try { localStorage.setItem("tentacle_player_volume", String(Math.round(vol))); } catch {}
+                return { ...prev, volume: vol };
+              }
               case "mute":
                 return { ...prev, muted: event.data as boolean };
               case "aid": {
