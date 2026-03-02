@@ -29,12 +29,31 @@ export interface PluginBackendContext {
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
   const installed = getInstalled().filter((p) => p.enabled);
-  console.log(`[PluginBackend] DATA_DIR: ${DATA_DIR}`);
+
+  pluginBackendDiag.dataDir = DATA_DIR;
+  pluginBackendDiag.enabledPlugins = installed.map((p) => p.pluginId);
+  pluginBackendDiag.loadResults = [];
+
+  console.log(`[PluginBackend] DATA_DIR: ${DATA_DIR} (exists: ${existsSync(DATA_DIR)})`);
+  if (existsSync(DATA_DIR)) {
+    try {
+      const contents = readdirSync(DATA_DIR);
+      console.log(`[PluginBackend] DATA_DIR contents: ${contents.join(", ")}`);
+    } catch { /* ignore */ }
+  }
   console.log(`[PluginBackend] Found ${installed.length} enabled plugin(s): ${installed.map((p) => p.pluginId).join(", ") || "(none)"}`);
 
   for (const plugin of installed) {
     const pluginDir = resolve(DATA_DIR, plugin.pluginId);
-    console.log(`[PluginBackend] Checking "${plugin.pluginId}" — dir: ${pluginDir} (exists: ${existsSync(pluginDir)})`);
+    const dirExists = existsSync(pluginDir);
+    console.log(`[PluginBackend] Checking "${plugin.pluginId}" — dir: ${pluginDir} (exists: ${dirExists})`);
+
+    if (dirExists) {
+      try {
+        const files = readdirSync(pluginDir);
+        console.log(`[PluginBackend]   Directory contents: ${files.join(", ")}`);
+      } catch { /* ignore */ }
+    }
 
     // Check plugin.json for a declared server module
     const manifestPath = resolve(pluginDir, "plugin.json");
@@ -62,7 +81,9 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
 
     const serverPath = serverPaths.find((p) => existsSync(p));
     if (!serverPath) {
-      console.log(`[PluginBackend]   No server module found. Checked: ${serverPaths.map((p) => `${p} (${existsSync(p)})`).join(", ")}`);
+      const detail = `No server module. Checked: ${serverPaths.join(", ")}`;
+      console.log(`[PluginBackend]   ${detail}`);
+      pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "no_server", detail });
       continue;
     }
 
@@ -76,7 +97,9 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       const pluginFn = mod.default || mod;
 
       if (typeof pluginFn !== "function") {
-        console.warn(`[PluginBackend] ${plugin.pluginId}: server module does not export a function (type: ${typeof pluginFn})`);
+        const detail = `Not a function (type: ${typeof pluginFn})`;
+        console.warn(`[PluginBackend] ${plugin.pluginId}: ${detail}`);
+        pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "bad_export", detail });
         continue;
       }
 
@@ -102,8 +125,11 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       );
 
       console.log(`[PluginBackend] Loaded backend for "${plugin.pluginId}" ✓`);
+      pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "loaded" });
     } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       console.error(`[PluginBackend] Failed to load backend for "${plugin.pluginId}":`, err);
+      pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "error", detail });
     }
   }
 }
