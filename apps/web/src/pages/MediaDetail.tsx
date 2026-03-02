@@ -7,6 +7,7 @@ import { Navbar } from "../components/Navbar";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaCarousel } from "../components/MediaCarousel";
+import { LicenseAttribution } from "../components/media/LicenseAttribution";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
 const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
@@ -174,6 +175,9 @@ export function MediaDetail() {
           <CastRow people={item.People ?? []} studios={item.Studios} />
         </motion.div>
       )}
+
+      {/* License & Attribution */}
+      <LicenseAttribution item={item} />
 
       {/* Similar items */}
       {similar && similar.length > 0 && (
