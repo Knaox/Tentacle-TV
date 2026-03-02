@@ -35,7 +35,8 @@ function pluginHasServerModule(pluginId: string): boolean {
       if (manifest.server) return true;
     } catch { /* ignore */ }
   }
-  return existsSync(resolve(pluginDir, "server", "index.js"));
+  return existsSync(resolve(pluginDir, "server", "index.js"))
+    || existsSync(resolve(pluginDir, "server", "index.mjs"));
 }
 
 function scheduleRestart() {
