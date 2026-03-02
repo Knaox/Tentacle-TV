@@ -23,6 +23,7 @@ import { adminRoutes } from "./routes/admin";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { startPairingCleanup } from "./services/pairingCleanup";
+import { loadPluginBackends } from "./services/pluginBackendLoader";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -169,6 +170,8 @@ async function main() {
   // Start background workers only when fully configured
   if (state === "running") {
     startPairingCleanup();
+    // Load plugin backend modules (server-side routes declared by plugins)
+    await loadPluginBackends(app);
   }
 
   await app.listen({ port: PORT, host: HOST });
