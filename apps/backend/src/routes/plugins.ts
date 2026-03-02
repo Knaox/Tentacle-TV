@@ -22,6 +22,27 @@ import {
   type EnrichedEntry,
 } from "../services/pluginManager";
 
+/**
+ * Check if a plugin has a server module. If so, the process needs to restart
+ * because Fastify cannot register routes after the server is already listening.
+ */
+function pluginHasServerModule(pluginId: string): boolean {
+  const pluginDir = resolve(DATA_DIR, pluginId);
+  const manifestPath = resolve(pluginDir, "plugin.json");
+  if (existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+      if (manifest.server) return true;
+    } catch { /* ignore */ }
+  }
+  return existsSync(resolve(pluginDir, "server", "index.js"));
+}
+
+function scheduleRestart() {
+  console.log("[Plugins] Server module changed — scheduling graceful restart in 1s");
+  setTimeout(() => process.exit(0), 1000);
+}
+
 // ── Zod schemas ──
 const addSourceSchema = z.object({
   url: z.string().url(),
@@ -189,6 +210,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       };
       installed.push(plugin);
       saveInstalled(installed);
+      if (pluginHasServerModule(body.pluginId)) scheduleRestart();
       return plugin;
     });
 
@@ -197,9 +219,11 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       const installed = getInstalled();
       const idx = installed.findIndex((p) => p.id === id);
       if (idx === -1) return reply.status(404).send({ message: "Plugin not found" });
+      const hadServer = pluginHasServerModule(installed[idx].pluginId);
       removePluginFiles(installed[idx].pluginId);
       installed.splice(idx, 1);
       saveInstalled(installed);
+      if (hadServer) scheduleRestart();
       return { success: true };
     });
 
@@ -237,6 +261,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       plugin.version = latest.version;
       plugin.name = latest.name || plugin.name;
       saveInstalled(installed);
+      if (pluginHasServerModule(plugin.pluginId)) scheduleRestart();
       return plugin;
     });
 
