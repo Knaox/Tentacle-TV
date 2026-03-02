@@ -40,6 +40,9 @@ export interface MediaItem {
   UserData?: UserItemData;
   Chapters?: ChapterInfo[];
 
+  // Tags
+  Tags?: string[];
+
   // External IDs
   ProviderIds?: Record<string, string>;
 

@@ -6,4 +6,15 @@ export default {
   crewSection: "Crew",
   studioLabel: "Studio",
   castSection: "Cast",
+
+  // License & Attribution
+  licenseTitle: "License & Attribution",
+  licenseDirector: "Director",
+  licenseProducer: "Producer",
+  licenseExecutiveProducer: "Executive Producer",
+  licenseConceptArt: "Concept Art",
+  licenseStudio: "Studio",
+  licenseSource: "Source",
+  licenseModifications: "Modifications",
+  licenseCopyright: "Copyright",
 } as const;
