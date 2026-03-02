@@ -3733,7 +3733,7 @@ dependencies = [
 
 [[package]]
 name = "tentacle-desktop"
-version = "1.0.0-beta"
+version = "1.0.0-1"
 dependencies = [
  "serde",
  "serde_json",
