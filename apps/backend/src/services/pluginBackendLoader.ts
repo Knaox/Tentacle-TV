@@ -1,7 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { resolve } from "path";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { getInstalled, DATA_DIR } from "./pluginManager";
+
+/** Diagnostic info collected during loading (exposed via /api/health) */
+export const pluginBackendDiag: {
+  dataDir: string;
+  enabledPlugins: string[];
+  loadResults: { pluginId: string; status: string; detail?: string }[];
+} = { dataDir: "", enabledPlugins: [], loadResults: [] };
 
 /**
  * Scans installed & enabled plugins for a server module (server/index.js).
