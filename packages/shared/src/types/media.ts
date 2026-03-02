@@ -43,6 +43,9 @@ export interface MediaItem {
   // Tags
   Tags?: string[];
 
+  // External URLs
+  ExternalUrls?: Array<{ Name: string; Url: string }>;
+
   // External IDs
   ProviderIds?: Record<string, string>;
 

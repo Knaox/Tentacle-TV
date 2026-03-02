@@ -1,46 +1,64 @@
 import { useMemo } from "react";
-import type { MediaItem, MediaLicense } from "@tentacle-tv/shared";
-import { KNOWN_OPEN_SOURCE_MEDIA } from "@tentacle-tv/shared";
+import type { MediaItem, ResolvedLicense, LicenseInfo, LicenseCreator } from "@tentacle-tv/shared";
+import { KNOWN_OPEN_SOURCE_MEDIA, CC_LICENSE_MAP } from "@tentacle-tv/shared";
 
-/** CC license tag patterns found in Jellyfin tags */
-const CC_TAG_PATTERNS = [
-  "CC-BY-4.0",
-  "CC-BY-SA-4.0",
-  "CC-BY-NC-4.0",
-  "CC-BY-NC-SA-4.0",
-  "CC-BY-ND-4.0",
-  "CC-BY-NC-ND-4.0",
-  "CC0-1.0",
-  "Creative Commons",
-  "Public Domain",
-] as const;
+/** Crew types we extract from Jellyfin People for attribution */
+const ATTRIBUTION_CREW_TYPES = ["Director", "Producer", "Writer", "Composer"] as const;
+
+/**
+ * Try to detect a CC license type from Jellyfin tags.
+ * Returns the matching LicenseInfo or null.
+ */
+function detectLicenseFromTags(tags: string[]): LicenseInfo | null {
+  for (const tag of tags) {
+    const upper = tag.toUpperCase().trim();
+    // Try exact match in CC_LICENSE_MAP keys
+    for (const [key, info] of Object.entries(CC_LICENSE_MAP)) {
+      if (upper === key.toUpperCase() || upper.includes(key.toUpperCase())) {
+        return info;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Build creators list from Jellyfin People metadata.
+ */
+function buildCreatorsFromPeople(
+  people: MediaItem["People"]
+): LicenseCreator[] {
+  if (!people?.length) return [];
+  return people
+    .filter((p) =>
+      ATTRIBUTION_CREW_TYPES.some((t) => t === p.Type)
+    )
+    .map((p) => ({
+      name: p.Name,
+      role: p.Type,
+    }));
+}
 
 /**
  * Resolves license information for a given media item.
- * 1. Checks Jellyfin tags for CC license indicators
- * 2. Looks up KNOWN_OPEN_SOURCE_MEDIA by title+year or providerIds
- * 3. Returns null if no license is found
+ *
+ * Priority:
+ * 1. Local KNOWN_OPEN_SOURCE_MEDIA database (curated, richest data)
+ * 2. Dynamic resolution from Jellyfin tags + metadata (any CC-tagged media)
+ * 3. null if no license detected
  */
-export function useMediaLicense(item: MediaItem | undefined): MediaLicense | null {
+export function useMediaLicense(item: MediaItem | undefined): ResolvedLicense | null {
   return useMemo(() => {
     if (!item) return null;
 
-    // Check if Jellyfin tags contain a CC indicator
-    const hasLicenseTag = item.Tags?.some((tag) =>
-      CC_TAG_PATTERNS.some((p) => tag.toUpperCase().includes(p.toUpperCase()))
-    );
-
-    // Look up in local database by providerIds first, then by title+year
-    const match = KNOWN_OPEN_SOURCE_MEDIA.find((entry) => {
-      // Match by IMDB ID
+    // 1. Look up in local curated database (by providerIds, then title+year)
+    const localMatch = KNOWN_OPEN_SOURCE_MEDIA.find((entry) => {
       if (entry.match.imdbId && item.ProviderIds?.Imdb === entry.match.imdbId) {
         return true;
       }
-      // Match by TMDB ID
       if (entry.match.tmdbId && item.ProviderIds?.Tmdb === entry.match.tmdbId) {
         return true;
       }
-      // Match by title + year
       if (
         entry.match.title &&
         item.Name?.toLowerCase() === entry.match.title.toLowerCase() &&
@@ -51,14 +69,44 @@ export function useMediaLicense(item: MediaItem | undefined): MediaLicense | nul
       return false;
     });
 
-    // Return match from local DB, or null if neither tag nor DB match
-    if (match) return match;
-    if (hasLicenseTag) {
-      // Tag found but no local DB entry — we can't build a full TASL attribution
-      // without more data, so return null (could be extended in the future)
-      return null;
+    if (localMatch) {
+      return {
+        license: localMatch.license,
+        attribution: localMatch.attribution,
+        modifications: localMatch.modifications,
+      };
     }
 
-    return null;
-  }, [item?.Id, item?.Name, item?.ProductionYear, item?.Tags, item?.ProviderIds]);
+    // 2. Dynamic resolution from Jellyfin tags
+    const detectedLicense = item.Tags?.length
+      ? detectLicenseFromTags(item.Tags)
+      : null;
+
+    if (!detectedLicense) return null;
+
+    // Build attribution dynamically from Jellyfin metadata
+    const creators = buildCreatorsFromPeople(item.People);
+    const studioName = item.Studios?.[0]?.Name;
+
+    // Try to find a source URL from ExternalUrls
+    const sourceExternal = item.ExternalUrls?.find(
+      (u) => !u.Url.includes("imdb.com") && !u.Url.includes("themoviedb.org")
+    );
+    const sourceUrl = sourceExternal?.Url ?? "";
+    const sourceName = sourceExternal?.Name ?? studioName ?? "";
+
+    // Build copyright notice
+    const copyrightHolder = studioName ?? creators[0]?.name ?? item.Name;
+    const copyrightNotice = `\u00a9 ${copyrightHolder}`;
+
+    return {
+      license: detectedLicense,
+      attribution: {
+        copyrightNotice,
+        creators,
+        sourceUrl,
+        sourceName,
+      },
+    };
+  }, [item?.Id, item?.Name, item?.ProductionYear, item?.Tags, item?.ProviderIds, item?.People, item?.Studios, item?.ExternalUrls]);
 }

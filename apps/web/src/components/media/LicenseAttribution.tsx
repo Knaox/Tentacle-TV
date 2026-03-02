@@ -77,18 +77,20 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
       )}
 
       {/* Source */}
-      <div className="mb-3">
-        <p className="text-xs font-medium text-white/40">{t("media:licenseSource")}</p>
-        <a
-          href={license.attribution.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-0.5 inline-flex items-center gap-1 text-sm text-tentacle-accent-light transition-colors hover:text-tentacle-accent"
-        >
-          {license.attribution.sourceName}
-          <ExternalLinkIcon />
-        </a>
-      </div>
+      {license.attribution.sourceUrl && (
+        <div className="mb-3">
+          <p className="text-xs font-medium text-white/40">{t("media:licenseSource")}</p>
+          <a
+            href={license.attribution.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-0.5 inline-flex items-center gap-1 text-sm text-tentacle-accent-light transition-colors hover:text-tentacle-accent"
+          >
+            {license.attribution.sourceName || license.attribution.sourceUrl}
+            <ExternalLinkIcon />
+          </a>
+        </div>
+      )}
 
       {/* Modifications */}
       {license.modifications && (

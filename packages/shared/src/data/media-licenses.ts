@@ -1,3 +1,31 @@
+export interface LicenseInfo {
+  /** SPDX identifier or custom */
+  type: string;
+  /** Full display name */
+  fullName: string;
+  /** URL to the legal text */
+  url: string;
+  /** URL of the badge/icon */
+  badgeUrl?: string;
+}
+
+export interface LicenseCreator {
+  name: string;
+  role: string;
+  url?: string;
+}
+
+export interface LicenseAttribution {
+  /** Full copyright notice */
+  copyrightNotice: string;
+  /** Primary creator(s) */
+  creators: LicenseCreator[];
+  /** Link to the official source */
+  sourceUrl: string;
+  /** Source name (e.g. "Blender Studio") */
+  sourceName: string;
+}
+
 export interface MediaLicense {
   /** Patterns for matching: exact title, title + year, or provider ID */
   match: {
@@ -6,33 +34,64 @@ export interface MediaLicense {
     imdbId?: string;
     tmdbId?: string;
   };
-  license: {
-    /** SPDX identifier or custom */
-    type: string;
-    /** Full display name */
-    fullName: string;
-    /** URL to the legal text */
-    url: string;
-    /** URL of the badge/icon */
-    badgeUrl?: string;
-  };
-  attribution: {
-    /** Full copyright notice */
-    copyrightNotice: string;
-    /** Primary creator(s) */
-    creators: Array<{
-      name: string;
-      role: string;
-      url?: string;
-    }>;
-    /** Link to the official source */
-    sourceUrl: string;
-    /** Source name (e.g. "Blender Studio") */
-    sourceName: string;
-  };
+  license: LicenseInfo;
+  attribution: LicenseAttribution;
   /** Description of modifications if the content was altered */
   modifications?: string;
 }
+
+/** Resolved license data ready for display (from local DB or built dynamically) */
+export interface ResolvedLicense {
+  license: LicenseInfo;
+  attribution: LicenseAttribution;
+  modifications?: string;
+}
+
+/** Map of CC tag patterns to their full license metadata */
+export const CC_LICENSE_MAP: Record<string, LicenseInfo> = {
+  "CC-BY-4.0": {
+    type: "CC-BY-4.0",
+    fullName: "Creative Commons Attribution 4.0 International",
+    url: "https://creativecommons.org/licenses/by/4.0/",
+    badgeUrl: "https://licensebuttons.net/l/by/4.0/88x31.png",
+  },
+  "CC-BY-SA-4.0": {
+    type: "CC-BY-SA-4.0",
+    fullName: "Creative Commons Attribution-ShareAlike 4.0 International",
+    url: "https://creativecommons.org/licenses/by-sa/4.0/",
+    badgeUrl: "https://licensebuttons.net/l/by-sa/4.0/88x31.png",
+  },
+  "CC-BY-NC-4.0": {
+    type: "CC-BY-NC-4.0",
+    fullName: "Creative Commons Attribution-NonCommercial 4.0 International",
+    url: "https://creativecommons.org/licenses/by-nc/4.0/",
+    badgeUrl: "https://licensebuttons.net/l/by-nc/4.0/88x31.png",
+  },
+  "CC-BY-NC-SA-4.0": {
+    type: "CC-BY-NC-SA-4.0",
+    fullName: "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International",
+    url: "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    badgeUrl: "https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png",
+  },
+  "CC-BY-ND-4.0": {
+    type: "CC-BY-ND-4.0",
+    fullName: "Creative Commons Attribution-NoDerivatives 4.0 International",
+    url: "https://creativecommons.org/licenses/by-nd/4.0/",
+    badgeUrl: "https://licensebuttons.net/l/by-nd/4.0/88x31.png",
+  },
+  "CC-BY-NC-ND-4.0": {
+    type: "CC-BY-NC-ND-4.0",
+    fullName: "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International",
+    url: "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+    badgeUrl: "https://licensebuttons.net/l/by-nc-nd/4.0/88x31.png",
+  },
+  "CC0-1.0": {
+    type: "CC0-1.0",
+    fullName: "CC0 1.0 Universal (Public Domain Dedication)",
+    url: "https://creativecommons.org/publicdomain/zero/1.0/",
+    badgeUrl: "https://licensebuttons.net/p/zero/1.0/88x31.png",
+  },
+};
 
 export const KNOWN_OPEN_SOURCE_MEDIA: MediaLicense[] = [
   {
