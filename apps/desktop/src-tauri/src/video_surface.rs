@@ -24,3 +24,18 @@ pub async fn is_fullscreen(app: AppHandle) -> Result<bool, String> {
 
     Ok(window.is_fullscreen().unwrap_or(false))
 }
+
+/// Force exit fullscreen — used during cleanup/navigation.
+#[command]
+pub async fn exit_fullscreen(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Window 'main' not found")?;
+
+    if window.is_fullscreen().unwrap_or(false) {
+        window
+            .set_fullscreen(false)
+            .map_err(|e| format!("Failed to exit fullscreen: {e}"))?;
+    }
+    Ok(())
+}

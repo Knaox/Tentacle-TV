@@ -208,9 +208,9 @@ export function Watch() {
         { queryKey: ["next-up"] },
         { queryKey: ["watched-items"] },
       ];
+      // Invalidate only — React Query will refetch in the background when
+      // the consuming components remount (no visible "mega refresh").
       keys.forEach((k) => queryClient.invalidateQueries(k));
-      setTimeout(() => keys.forEach((k) => queryClient.refetchQueries(k)), 1500);
-      setTimeout(() => keys.forEach((k) => queryClient.refetchQueries(k)), 4000);
     };
   }, [itemId, queryClient]);
 
