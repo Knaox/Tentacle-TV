@@ -50,3 +50,15 @@ export function isPrivateIp(ip: string): boolean {
 
   return false;
 }
+
+/**
+ * Extract the real client IP from a Fastify request.
+ * Priority: CF-Connecting-IP (Cloudflare) → X-Real-IP (nginx) → request.ip
+ */
+export function getRealClientIp(request: { ip: string; headers: Record<string, string | string[] | undefined> }): string {
+  const cf = request.headers["cf-connecting-ip"];
+  if (typeof cf === "string" && cf) return cf;
+  const realIp = request.headers["x-real-ip"];
+  if (typeof realIp === "string" && realIp) return realIp;
+  return request.ip;
+}
