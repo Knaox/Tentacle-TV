@@ -3,18 +3,15 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 import { readFileSync } from "fs";
 
-// Lire la version selon le contexte de build (Tauri desktop vs web)
-const isTauriBuild = !!process.env.TAURI_ENV_PLATFORM;
-const pkgPath = isTauriBuild
-  ? resolve(__dirname, "../desktop/package.json")
-  : resolve(__dirname, "package.json");
-const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-const appVersion = pkg.version;
+// Injecter les deux versions (sélection à runtime via isTauriApp)
+const webVersion = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
+const desktopVersion = JSON.parse(readFileSync(resolve(__dirname, "../desktop/package.json"), "utf-8")).version;
 
 export default defineConfig({
   plugins: [react()],
   define: {
-    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_VERSION_WEB__: JSON.stringify(webVersion),
+    __APP_VERSION_DESKTOP__: JSON.stringify(desktopVersion),
   },
   // Load .env files from monorepo root (where .env and .env.production live)
   envDir: resolve(__dirname, "../.."),
