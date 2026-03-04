@@ -1,8 +1,8 @@
 import { useSyncExternalStore, useCallback, useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateNotification } from "./components/UpdateNotification";
+import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
@@ -57,7 +57,6 @@ function useIsAuthenticated(): boolean {
 }
 
 export function App() {
-  const { t } = useTranslation("errors");
   const authed = useIsAuthenticated();
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
@@ -101,23 +100,9 @@ export function App() {
 
   if (setupRequired === null) return <PageSpinner />;
 
-  // Backend unreachable (502/503/crash) — show error, not setup wizard
+  // Backend unreachable (502/503/crash) — show crying tentacle, reload on reconnect
   if (backendDown) {
-    return (
-      <div className="flex h-screen items-center justify-center p-4">
-        <div className="max-w-md text-center">
-          <div className="mb-4 text-5xl">&#x26A0;</div>
-          <h1 className="mb-2 text-xl font-bold text-white">{t("errors:serverUnavailable")}</h1>
-          <p className="mb-6 text-sm text-white/50">
-            {t("errors:serverUnavailableMessage")}
-          </p>
-          <button onClick={() => window.location.reload()}
-            className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-700">
-            {t("common:retry")}
-          </button>
-        </div>
-      </div>
-    );
+    return <OfflineBanner reloadOnReconnect />;
   }
 
   // Web deployment: show full setup wizard (DB → Jellyfin → Admin)
@@ -183,6 +168,7 @@ export function App() {
         </Routes>
       </Suspense>
       <UpdateNotification />
+      <OfflineBanner />
     </>
   );
 }

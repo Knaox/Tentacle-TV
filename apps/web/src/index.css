@@ -102,3 +102,49 @@ video::cue {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* Crying tentacle animations */
+@keyframes tentacle-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes tentacle-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes tentacle-wiggle {
+  0%, 100% { transform: rotate(0deg) scaleX(1); }
+  25% { transform: rotate(1deg) scaleX(0.98); }
+  75% { transform: rotate(-1deg) scaleX(1.02); }
+}
+
+@keyframes tear-fall-left {
+  0% { transform: translateY(0); opacity: 0.8; }
+  80% { transform: translateY(50px); opacity: 0.3; }
+  100% { transform: translateY(60px); opacity: 0; }
+}
+
+@keyframes tear-fall-right {
+  0% { transform: translateY(0); opacity: 0.8; }
+  80% { transform: translateY(50px); opacity: 0.3; }
+  100% { transform: translateY(60px); opacity: 0; }
+}
+
+@keyframes tentacle-look {
+  0%, 40%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-3px); }
+  25% { transform: translateX(3px); }
+}
+
+@keyframes tentacle-tremble {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(1px); }
+  75% { transform: translateY(-1px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
