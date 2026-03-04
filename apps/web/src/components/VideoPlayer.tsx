@@ -325,9 +325,8 @@ export function VideoPlayer({
         if (isProgressiveTranscode && streamOffset > 0) {
           // Progressive with CopyTimestamps: stream naturally starts at correct PTS
           console.debug(DBG, "skip explicit seek — progressive stream starts at correct PTS", { seekTo, streamOffset });
-        } else if (!isHlsUrl || isSourceChange || (isHlsUrl && HAS_NATIVE_HLS)) {
+        } else if (!isHlsUrl || isSourceChange) {
           // Add container PTS offset to convert movie position → PTS
-          // HAS_NATIVE_HLS: Safari native HLS has no startPosition param, needs explicit seek
           v.currentTime = seekTo + ptsOffset;
         }
       }
@@ -342,14 +341,10 @@ export function VideoPlayer({
       });
     };
 
-    if (isHlsUrl && HAS_NATIVE_HLS) {
-      // Safari: use native HLS player — Safari's MSE is buggy (freezes, buffer errors).
-      // HAS_NATIVE_HLS is false on Chrome/Brave/Firefox/Edge → this block is dead code there.
-      console.debug(DBG, "native HLS (Safari)", { seekTo, isSourceChange });
-      v.src = src;
-      if (isSourceChange) v.load();
-      v.addEventListener("canplay", onReady, { once: true });
-    } else if (isHlsUrl && Hls.isSupported()) {
+    if (isHlsUrl && Hls.isSupported()) {
+      // hls.js: works on Chrome/Brave/Firefox/Edge (MSE) AND Safari 17.1+ (ManagedMediaSource).
+      // Since hls.js v1.5, Hls.isSupported() returns true on Safari 17.1+ via ManagedMediaSource
+      // → full buffer control, seeking, quality selection — same as Chrome.
       const hls = new Hls({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
@@ -399,6 +394,12 @@ export function VideoPlayer({
       });
       hls.loadSource(src);
       hls.attachMedia(v);
+    } else if (isHlsUrl && HAS_NATIVE_HLS) {
+      // Older Safari (< 17.1, no ManagedMediaSource): native HLS fallback.
+      console.debug(DBG, "native HLS fallback (older Safari)", { seekTo, isSourceChange });
+      v.src = src;
+      if (isSourceChange) v.load();
+      v.addEventListener("canplay", onReady, { once: true });
     } else {
       v.src = src;
       // Explicit load only after full reset (HLS transition); for progressive → progressive
@@ -605,19 +606,20 @@ export function VideoPlayer({
         }}
         onProgress={() => {
           const v = videoRef.current;
-          if (!v || !v.duration) return;
+          if (!v) return;
           const buf = v.buffered;
-          if (buf.length > 0) {
-            // Show buffered range ahead of current position (not stale high-water mark)
-            let bufEnd = 0;
-            for (let i = 0; i < buf.length; i++) {
-              if (v.currentTime >= buf.start(i) - 0.5 && v.currentTime <= buf.end(i) + 0.5) {
-                bufEnd = buf.end(i); break;
-              }
+          // Use jellyfinDuration for HLS event playlists where v.duration is Infinity
+          const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : v.duration;
+          if (!dur || !isFinite(dur) || buf.length === 0) return;
+          // Show buffered range ahead of current position (not stale high-water mark)
+          let bufEnd = 0;
+          for (let i = 0; i < buf.length; i++) {
+            if (v.currentTime >= buf.start(i) - 0.5 && v.currentTime <= buf.end(i) + 0.5) {
+              bufEnd = buf.end(i); break;
             }
-            if (bufEnd === 0) bufEnd = buf.end(buf.length - 1);
-            setBuffered(bufEnd / v.duration);
           }
+          if (bufEnd === 0) bufEnd = buf.end(buf.length - 1);
+          setBuffered(bufEnd / dur);
         }}
         onLoadedMetadata={(e) => { setVideoDuration(e.currentTarget.duration); }}
         onPlay={() => {
@@ -635,7 +637,7 @@ export function VideoPlayer({
         onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message); }}
         onEnded={() => { if (hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode) navigate(`/media/${itemId}`, { replace: true }); }}
-        crossOrigin={HAS_NATIVE_HLS ? undefined : "anonymous"}
+        crossOrigin="anonymous"
       >
         {subtitleTracks.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
