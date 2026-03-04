@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, hdrs, cls } from "./adminUtils";
 
+interface TestResult { ok: boolean; version?: string; error?: string }
+interface TestResponse { public: TestResult | null; private: TestResult | null }
+
 export function DirectStreamingSection() {
   const { t } = useTranslation("admin");
   const [enabled, setEnabled] = useState(false);
@@ -9,7 +12,9 @@ export function DirectStreamingSection() {
   const [privateUrl, setPrivateUrl] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const [testResult, setTestResult] = useState<TestResponse | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -47,6 +52,20 @@ export function DirectStreamingSection() {
     setBusy(false);
   };
 
+  const testUrls = async () => {
+    setTesting(true); setTestResult(null);
+    try {
+      const r = await fetch(`${BACKEND}/api/admin/test-direct-streaming`, {
+        method: "POST", headers: hdrs(),
+        body: JSON.stringify({ publicUrl: publicUrl.trim(), privateUrl: privateUrl.trim() }),
+      });
+      if (r.ok) setTestResult(await r.json());
+    } catch {}
+    setTesting(false);
+  };
+
+  const dot = (ok: boolean) => `inline-block h-2 w-2 rounded-full mr-1.5 ${ok ? "bg-green-400" : "bg-red-400"}`;
+
   if (!loaded) return null;
   return (
     <div className={cls.card}>
@@ -76,9 +95,36 @@ export function DirectStreamingSection() {
               placeholder="http://192.168.1.50:8096" className={cls.inp} />
             <p className="mt-1 text-xs text-white/30">{t("admin:directStreamingPrivateUrlHelp")}</p>
           </div>
+
+          {/* Test results */}
+          {testResult && (
+            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 space-y-2">
+              {testResult.public && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={dot(testResult.public.ok)} />
+                  <span className="text-white/60">{t("admin:directStreamingPublicUrl")}:</span>
+                  <span className={testResult.public.ok ? "text-green-400" : "text-red-400"}>
+                    {testResult.public.ok ? `Jellyfin ${testResult.public.version}` : testResult.public.error}
+                  </span>
+                </div>
+              )}
+              {testResult.private && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={dot(testResult.private.ok)} />
+                  <span className="text-white/60">{t("admin:directStreamingPrivateUrl")}:</span>
+                  <span className={testResult.private.ok ? "text-green-400" : "text-red-400"}>
+                    {testResult.private.ok ? `Jellyfin ${testResult.private.version}` : testResult.private.error}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
+          <button onClick={testUrls} disabled={testing || (!publicUrl.trim() && !privateUrl.trim())} className={cls.bs}>
+            {testing ? `${t("admin:test")}...` : t("admin:test")}
+          </button>
           <button onClick={save} disabled={busy} className={cls.bp}>
             {busy ? "..." : t("admin:save")}
           </button>

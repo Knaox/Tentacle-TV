@@ -33,40 +33,15 @@ async function fetchStreamingConfig(token: string | null): Promise<StreamingConf
   }
 }
 
-async function healthCheck(mediaBaseUrl: string): Promise<boolean> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${mediaBaseUrl}/System/Info/Public`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 /**
- * Fetch streaming config from backend and validate with health check.
+ * Fetch streaming config from backend (includes server-side health check).
  * Polls every 5 minutes to pick up admin changes without re-login.
  */
 export function useStreamingConfig(token: string | null) {
   return useQuery<StreamingConfig>({
     queryKey: ["streaming-config", token],
-    queryFn: async (): Promise<StreamingConfig> => {
-      const config = await fetchStreamingConfig(token);
-      if (!config.enabled || !config.mediaBaseUrl) return DISABLED_CONFIG;
-
-      const reachable = await healthCheck(config.mediaBaseUrl);
-      if (!reachable) {
-        console.warn("[DirectStreaming] Health check failed, falling back to proxy");
-        return DISABLED_CONFIG;
-      }
-
-      return config;
-    },
-    staleTime: 5 * 60_000, // re-fetch every 5 min
+    queryFn: () => fetchStreamingConfig(token),
+    staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     retry: false,
     enabled: !!token,
