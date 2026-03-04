@@ -5,7 +5,7 @@ import { UpdateNotification } from "./components/UpdateNotification";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useStreamingConfig } from "@tentacle-tv/api-client";
 import { usePluginRoutes, usePluginAdminRoutes } from "@tentacle-tv/plugins-api";
 import { isTauriApp } from "./main";
 
@@ -54,6 +54,27 @@ function useIsAuthenticated(): boolean {
     return () => { authListeners.delete(cb); };
   }, []);
   return useSyncExternalStore(subscribe, () => !!localStorage.getItem("tentacle_token"));
+}
+
+/** Sync direct streaming config from backend into JellyfinClient. */
+function DirectStreamingSync() {
+  const client = useJellyfinClient();
+  const token = localStorage.getItem("tentacle_token");
+  const { data } = useStreamingConfig(token);
+
+  useEffect(() => {
+    if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
+      client.setDirectStreaming({
+        enabled: true,
+        mediaBaseUrl: data.mediaBaseUrl,
+        jellyfinToken: data.jellyfinToken,
+      });
+    } else {
+      client.setDirectStreaming(null);
+    }
+  }, [client, data]);
+
+  return null;
 }
 
 export function App() {
@@ -121,6 +142,7 @@ export function App() {
 
   return (
     <>
+      {authed && <DirectStreamingSync />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}

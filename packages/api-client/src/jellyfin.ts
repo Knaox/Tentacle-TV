@@ -14,6 +14,12 @@ function buildQuery(entries: Record<string, string>): string {
     .join("&");
 }
 
+export interface DirectStreamingState {
+  enabled: boolean;
+  mediaBaseUrl: string;
+  jellyfinToken: string;
+}
+
 export class JellyfinClient {
   private baseUrl: string;
   private accessToken: string | null = null;
@@ -21,6 +27,7 @@ export class JellyfinClient {
   private storage: StorageAdapter;
   private deviceName: string;
   private authExpiredCallback?: () => void;
+  private directStreaming: DirectStreamingState | null = null;
   constructor(
     baseUrl: string,
     storage: StorageAdapter,
@@ -33,31 +40,26 @@ export class JellyfinClient {
     this.deviceId = this.getOrCreateDeviceId(uuid);
   }
 
-  /** Register a callback invoked when an authenticated request returns 401.
-   *  Typically used to clear stored tokens and redirect to login. */
-  setOnAuthExpired(cb: () => void) {
-    this.authExpiredCallback = cb;
-  }
+  setOnAuthExpired(cb: () => void) { this.authExpiredCallback = cb; }
+  setAccessToken(token: string | null) { this.accessToken = token; }
+  getAccessToken() { return this.accessToken; }
+  getToken() { return this.accessToken; }
+  setBaseUrl(url: string) { this.baseUrl = url.replace(/\/$/, ""); }
 
-  setAccessToken(token: string | null) {
-    this.accessToken = token;
-  }
+  getBaseUrl() { return this.baseUrl; }
 
-  getAccessToken() {
-    return this.accessToken;
-  }
+  setDirectStreaming(config: DirectStreamingState | null) { this.directStreaming = config; }
+  getDirectStreaming() { return this.directStreaming; }
 
-  /** Alias for getAccessToken — used by playback reporting diagnostics */
-  getToken() {
-    return this.accessToken;
-  }
-
-  setBaseUrl(url: string) {
-    this.baseUrl = url.replace(/\/$/, "");
-  }
-
-  getBaseUrl() {
-    return this.baseUrl;
+  /** Resolve a media URL: use direct Jellyfin URL if active, otherwise proxy. */
+  private resolveMediaUrl(proxyUrl: string): string {
+    if (!this.directStreaming) return proxyUrl;
+    const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
+    const path = proxyUrl.replace(this.baseUrl, "");
+    return `${mediaBaseUrl}${path}`.replace(
+      /([?&])api_key=[^&]*/,
+      `$1api_key=${encodeURIComponent(jellyfinToken)}`
+    );
   }
 
   getDeviceId() {
@@ -129,7 +131,8 @@ export class JellyfinClient {
     if (options?.tag) p.tag = options.tag;
     const idx = options?.index ?? 0;
     const suffix = imageType === "Backdrop" && idx > 0 ? `/${idx}` : "";
-    return `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${buildQuery(p)}`;
+    const url = `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${buildQuery(p)}`;
+    return this.resolveMediaUrl(url);
   }
 
   getStreamUrl(itemId: string, options?: {
@@ -169,7 +172,7 @@ export class JellyfinClient {
     // Direct play — raw file, browser handles codec/track selection
     if (options?.directPlay !== false && !options?.maxBitrate) {
       p.Static = "true";
-      return `${this.baseUrl}/Videos/${itemId}/stream?${buildQuery(p)}`;
+      return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/stream?${buildQuery(p)}`);
     }
 
     // Shared transcode/remux params
@@ -202,7 +205,7 @@ export class JellyfinClient {
       p.MaxWidth = "1920";
 
       if (options?.useProgressiveRemux !== false) {
-        return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`;
+        return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`);
       }
 
       // HLS remux — TS segments avoid hls.js fMP4 audio timestamp offset bug (#7432).
@@ -211,7 +214,7 @@ export class JellyfinClient {
       p.EnableSubtitlesInManifest = "false";
       p.SegmentContainer = "ts";
       p.MinSegments = "2";
-      return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`;
+      return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);
     }
 
     // Quality transcode via HLS — full re-encode with bitrate limit.
@@ -240,11 +243,11 @@ export class JellyfinClient {
       p.MaxHeight = String(options.maxHeight);
     }
 
-    return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`;
+    return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number, format = "vtt"): string {
-    return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`;
+    return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`);
   }
 
   /** POST /Items/{id}/PlaybackInfo — server-driven stream selection.

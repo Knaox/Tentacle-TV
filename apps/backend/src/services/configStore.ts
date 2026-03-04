@@ -81,3 +81,17 @@ export function getJellyfinApiKey(): string | undefined {
 export function isSetupComplete(): boolean {
   return cache.get("setup_completed") === "true";
 }
+
+export interface DirectStreamingConfig {
+  enabled: boolean;
+  publicUrl: string | null;
+  privateUrl: string | null;
+}
+
+export function getDirectStreamingConfig(): DirectStreamingConfig {
+  return {
+    enabled: cache.get("direct_streaming_enabled") === "true",
+    publicUrl: cache.get("jellyfin_public_url") ?? null,
+    privateUrl: cache.get("jellyfin_private_url") ?? null,
+  };
+}

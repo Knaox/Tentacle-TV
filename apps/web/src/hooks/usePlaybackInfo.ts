@@ -81,10 +81,14 @@ export function usePlaybackInfo() {
       const directStream = ms.SupportsDirectStream && !directPlay;
 
       let url: string;
+      const ds = client.getDirectStreaming();
       if (directPlay) {
-        url = `${client.getBaseUrl()}/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${client.getAccessToken()}`;
+        const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
+        const token = ds ? ds.jellyfinToken : client.getAccessToken();
+        url = `${baseUrl}/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
       } else if (ms.TranscodingUrl) {
-        url = `${client.getBaseUrl()}${ms.TranscodingUrl}`;
+        const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
+        url = `${baseUrl}${ms.TranscodingUrl}`;
       } else {
         console.warn(DBG, "no TranscodingUrl and not direct play");
         setState((prev) => ({ ...prev, isLoading: false }));

@@ -61,4 +61,12 @@ export default {
   playbackDescription: "Configure automatic episode advancement behavior.",
   autoplayCreditsMinutes: "Auto-play trigger (minutes before end)",
   autoplayCreditsHelp: "When no credits are detected, the \"Up Next\" banner appears this many minutes before the end of the episode. Set to 0 to only trigger at the very end.",
+  directStreaming: "Direct Streaming",
+  directStreamingDescription: "When enabled, clients fetch video streams and images directly from Jellyfin. The backend automatically detects whether the client is on the local network or remote to provide the correct URL.",
+  directStreamingEnabled: "Enable direct streaming",
+  directStreamingPublicUrl: "Jellyfin public URL",
+  directStreamingPrivateUrl: "Jellyfin private URL (LAN)",
+  directStreamingPublicUrlHelp: "URL accessible from the internet (e.g. https://jf.example.com)",
+  directStreamingPrivateUrlHelp: "URL accessible from the local network (e.g. http://192.168.1.50:8096)",
+  directStreamingUrlRequired: "Both URLs are required when direct streaming is enabled.",
 } as const;
