@@ -233,7 +233,9 @@ export class JellyfinClient {
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number, format = "vtt"): string {
-    return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`);
+    // Always proxy — <track> elements enforce CORS; cross-origin tracks are blocked
+    // (and on browsers with crossOrigin="anonymous", they corrupt the <video> element).
+    return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`;
   }
 
   /** POST /Items/{id}/PlaybackInfo — server-driven stream selection.

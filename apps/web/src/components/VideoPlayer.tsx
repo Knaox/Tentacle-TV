@@ -45,6 +45,11 @@ interface VideoPlayerProps {
 
 const DBG = "[Tentacle:VideoPlayer]";
 
+/** Safari-only: native HLS support detected via canPlayType.
+ *  Returns "" on Chrome/Brave/Firefox/Edge → all Safari-specific code paths are inert. */
+const HAS_NATIVE_HLS = typeof document !== "undefined"
+  && document.createElement("video").canPlayType("application/vnd.apple.mpegurl") !== "";
+
 /** Max time (ms) to wait for canplaythrough before falling back to play anyway.
  *  Progressive transcode: video=copy is instant but audio transcode takes 1-3s.
  *  canplaythrough fires when the browser has decoded enough audio+video. */
@@ -320,8 +325,9 @@ export function VideoPlayer({
         if (isProgressiveTranscode && streamOffset > 0) {
           // Progressive with CopyTimestamps: stream naturally starts at correct PTS
           console.debug(DBG, "skip explicit seek — progressive stream starts at correct PTS", { seekTo, streamOffset });
-        } else if (!isHlsUrl || isSourceChange) {
+        } else if (!isHlsUrl || isSourceChange || (isHlsUrl && HAS_NATIVE_HLS)) {
           // Add container PTS offset to convert movie position → PTS
+          // HAS_NATIVE_HLS: Safari native HLS has no startPosition param, needs explicit seek
           v.currentTime = seekTo + ptsOffset;
         }
       }
@@ -336,7 +342,14 @@ export function VideoPlayer({
       });
     };
 
-    if (isHlsUrl && Hls.isSupported()) {
+    if (isHlsUrl && HAS_NATIVE_HLS) {
+      // Safari: use native HLS player — Safari's MSE is buggy (freezes, buffer errors).
+      // HAS_NATIVE_HLS is false on Chrome/Brave/Firefox/Edge → this block is dead code there.
+      console.debug(DBG, "native HLS (Safari)", { seekTo, isSourceChange });
+      v.src = src;
+      if (isSourceChange) v.load();
+      v.addEventListener("canplay", onReady, { once: true });
+    } else if (isHlsUrl && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
@@ -612,7 +625,7 @@ export function VideoPlayer({
         onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
         onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message); }}
         onEnded={() => { if (hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode) navigate(`/media/${itemId}`, { replace: true }); }}
-        crossOrigin="anonymous"
+        crossOrigin={HAS_NATIVE_HLS ? undefined : "anonymous"}
       >
         {subtitleTracks.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
