@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { getConfigValue, getDirectStreamingConfig } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
-import { isPrivateIp } from "../services/networkUtils";
+import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 
 // Read version from package.json at startup (works in both dev/tsx and compiled CJS)
 const APP_VERSION: string = (() => {
@@ -38,7 +38,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
     }
 
-    const clientIp = request.ip;
+    const clientIp = getRealClientIp(request);
     const mediaBaseUrl = isPrivateIp(clientIp) ? cfg.privateUrl : cfg.publicUrl;
 
     // Server-side health check: verify Jellyfin is reachable from backend
