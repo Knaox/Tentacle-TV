@@ -1,15 +1,32 @@
 import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile, ProfileCondition, SubtitleProfile } from "@tentacle-tv/shared";
 
-// ── Codec support detection via MediaSource.isTypeSupported ──
+// ── Codec support detection ──
+// MediaSource.isTypeSupported → MSE capability (hls.js / TranscodingProfiles)
+// canPlayType → native <video> capability (DirectPlayProfiles)
+
+const testVideo = typeof document !== "undefined" ? document.createElement("video") : null;
+
+/** Safari-only: native HLS support. False on Chrome/Brave/Firefox/Edge. */
+const IS_NATIVE_HLS = testVideo?.canPlayType("application/vnd.apple.mpegurl") !== "";
 
 function supportsVideoCodec(codec: string, container = "mp4"): boolean {
-  if (typeof MediaSource === "undefined" || !MediaSource.isTypeSupported) return false;
-  return MediaSource.isTypeSupported(`video/${container}; codecs="${codec}"`);
+  if (typeof MediaSource !== "undefined" && MediaSource.isTypeSupported) {
+    return MediaSource.isTypeSupported(`video/${container}; codecs="${codec}"`);
+  }
+  // Fallback for Safari iOS < 17.1 (no MSE)
+  return testVideo?.canPlayType(`video/${container}; codecs="${codec}"`) !== "";
 }
 
 function supportsAudioCodec(codec: string): boolean {
-  if (typeof MediaSource === "undefined" || !MediaSource.isTypeSupported) return false;
-  return MediaSource.isTypeSupported(`audio/mp4; codecs="${codec}"`);
+  if (typeof MediaSource !== "undefined" && MediaSource.isTypeSupported) {
+    return MediaSource.isTypeSupported(`audio/mp4; codecs="${codec}"`);
+  }
+  return testVideo?.canPlayType(`audio/mp4; codecs="${codec}"`) !== "";
+}
+
+/** Check native container support via canPlayType (for DirectPlayProfiles). */
+function canPlayContainer(mime: string): boolean {
+  return testVideo?.canPlayType(mime) !== "";
 }
 
 const canPlayH264 = () => supportsVideoCodec("avc1.640029");
@@ -44,13 +61,15 @@ export function buildBrowserDeviceProfile(maxBitrate?: number): DeviceProfile {
   const audioCodecStr = audioCodecs.join(",");
 
   // ── Direct play profiles ──
+  // ONLY list containers the browser can play natively via <video src>.
+  // MKV is NOT supported natively by any browser — it falls through to
+  // DirectStream (remux to HLS via ffmpeg -c copy, nearly free).
   const directPlayProfiles: DirectPlayProfile[] = [];
   if (videoCodecs.length > 0) {
     directPlayProfiles.push(
       { Container: "mp4,m4v", Type: "Video", VideoCodec: videoCodecStr, AudioCodec: audioCodecStr },
-      { Container: "mkv", Type: "Video", VideoCodec: videoCodecStr, AudioCodec: audioCodecStr },
     );
-    if (canPlayVp9()) {
+    if (canPlayContainer("video/webm") && canPlayVp9()) {
       directPlayProfiles.push({ Container: "webm", Type: "Video", VideoCodec: "vp9", AudioCodec: "opus,vorbis" });
     }
   }
@@ -80,8 +99,10 @@ export function buildBrowserDeviceProfile(maxBitrate?: number): DeviceProfile {
     },
   ];
 
-  // If HEVC is supported, add a second HLS profile for HEVC transcode
-  if (canPlayHevc()) {
+  // HEVC in HLS: only for browsers using hls.js/MSE (Chrome/Brave/Firefox/Edge).
+  // Safari native HLS requires fMP4 segments for HEVC — TS segments don't work.
+  // IS_NATIVE_HLS is true only on Safari → this profile is skipped there.
+  if (canPlayHevc() && !IS_NATIVE_HLS) {
     transcodingProfiles.push({
       Container: "ts",
       Type: "Video",
