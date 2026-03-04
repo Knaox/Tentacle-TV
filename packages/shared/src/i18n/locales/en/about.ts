@@ -7,7 +7,7 @@ export default {
   featureResume: "Automatic playback resume",
   featureRequests: "Content request system",
   featureDesktop: "Native desktop mode with high-performance player",
-  featureAdaptive: "Adaptive interface (mobile, tablet, desktop, TV)",
+  featureAdaptive: "Adaptive interface (Desktop and Web)",
   featureNotifications: "Built-in notifications and support system",
   contact: "Contact",
   contactText: "For any questions or bug reports, use the built-in support system from the Help menu or contact your server administrator.",

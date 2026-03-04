@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAppConfig } from "@tentacle-tv/api-client";
+import { isTauriApp } from "../main";
 
 export function About() {
   const { t } = useTranslation("about");
-  const { data: config } = useAppConfig();
+  const platform = isTauriApp ? "Desktop" : "Web";
 
   return (
     <div className="mx-auto max-w-2xl px-6 pt-12">
@@ -12,7 +12,7 @@ export function About() {
         <img src="/tentacle-logo-pirate.svg" alt="" className="h-14 w-14" />
         <div>
           <h1 className="text-3xl font-bold text-white">Tentacle TV</h1>
-          <p className="text-sm text-white/50">{t("about:version", { version: config?.version ?? "..." })}</p>
+          <p className="text-sm text-white/50">{t("about:version", { version: __APP_VERSION__ })} — {platform}</p>
         </div>
       </div>
 
@@ -41,7 +41,7 @@ export function About() {
       </Link>
 
       <p className="mt-8 text-xs text-white/30">
-        {t("about:copyright", { version: config?.version ?? "", year: new Date().getFullYear() })}
+        {t("about:copyright", { version: __APP_VERSION__, year: new Date().getFullYear() })}
       </p>
     </div>
   );
