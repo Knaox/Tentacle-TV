@@ -58,4 +58,8 @@ export default {
   emptyLibrary: "No media in this library",
   seasonsCount_one: "{{count}} season",
   seasonsCount_other: "{{count}} seasons",
+  offlineTitle: "Oops, the server is taking a break!",
+  offlineMessage: "Don't worry, this isn't your fault. The server is temporarily unreachable — our little octopus is doing its best to restore the connection.",
+  offlineHint: "This usually resolves on its own. If the problem persists, contact your administrator.",
+  retryConnection: "Retry connection",
 } as const;

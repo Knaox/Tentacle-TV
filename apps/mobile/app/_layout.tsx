@@ -1,6 +1,8 @@
 import { useState, useEffect, createContext, useContext, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
+import { useServerReachable } from "@/hooks/useServerReachable";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   JellyfinClient,
@@ -71,6 +73,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [token, segments, serverUrl]);
 
   return <>{children}</>;
+}
+
+function OfflineOverlay() {
+  const { serverUrl } = useServerUrl();
+  const { isReachable, retry } = useServerReachable();
+  // Ne pas afficher si aucun serveur configuré (écran de setup)
+  if (!serverUrl) return null;
+  return <OfflineBanner visible={!isReachable} onRetry={retry} />;
 }
 
 export default function RootLayout() {
@@ -160,6 +170,7 @@ export default function RootLayout() {
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={client}>
             <AuthGuard>
+              <OfflineOverlay />
               <Slot />
             </AuthGuard>
           </JellyfinClientContext.Provider>
