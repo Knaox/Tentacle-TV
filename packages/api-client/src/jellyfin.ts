@@ -97,16 +97,15 @@ export class JellyfinClient {
     return id;
   }
 
-  getAuthHeader(): string {
+  getAuthHeader(token?: string): string {
+    const t = token ?? this.accessToken;
     const parts = [
       `MediaBrowser Client="${APP_NAME}"`,
       `Device="${this.deviceName}"`,
       `DeviceId="${this.deviceId}"`,
       `Version="${APP_VERSION}"`,
     ];
-    if (this.accessToken) {
-      parts.push(`Token="${this.accessToken}"`);
-    }
+    if (t) parts.push(`Token="${t}"`);
     return parts.join(", ");
   }
 
@@ -126,20 +125,15 @@ export class JellyfinClient {
     });
 
     if (!response.ok) {
-      // Token is stale or revoked — clear auth state so the UI redirects to login.
-      // Only trigger when we *thought* we were authenticated (accessToken set).
       if (response.status === 401 && this.accessToken) {
         this.accessToken = null;
         this.authExpiredCallback?.();
       }
       throw new JellyfinError(response.status, response.statusText, path);
     }
-
-    // 204 No Content or empty body — return undefined
     if (response.status === 204) return undefined as T;
     const text = await response.text();
-    if (!text) return undefined as T;
-    return JSON.parse(text);
+    return text ? JSON.parse(text) : (undefined as T);
   }
 
   getImageUrl(
@@ -210,39 +204,31 @@ export class JellyfinClient {
       if (options?.useProgressiveRemux !== false) {
         return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`);
       }
-
-      // HLS remux — TS segments avoid hls.js fMP4 audio timestamp offset bug (#7432).
-      p.BreakOnNonKeyFrames = "true";
-      p.RequireNonAnamorphic = "false";
-      p.EnableSubtitlesInManifest = "false";
-      p.SegmentContainer = "ts";
-      p.MinSegments = "2";
-      return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);
+      // HLS remux fallback (Safari/iOS) — TS segments
+      return this.resolveHls(itemId, p);
     }
 
     // Quality transcode via HLS — full re-encode with bitrate limit.
     p.AllowVideoStreamCopy = "false";
     p.AllowAudioStreamCopy = "false";
-    p.BreakOnNonKeyFrames = "true";
-    p.RequireNonAnamorphic = "false";
-    p.EnableSubtitlesInManifest = "false";
     p.EnableAudioVbrEncoding = "true";
     p.CopyTimestamps = "true";
     p.VideoCodec = "h264";
     p.AudioCodec = "aac";
+    const audioBitrate = 384000;
+    p.VideoBitrate = String(Math.max(options.maxBitrate - audioBitrate, 500000));
+    p.AudioBitrate = String(audioBitrate);
+    p.MaxWidth = "1920";
+    if (options?.maxHeight) p.MaxHeight = String(options.maxHeight);
+    return this.resolveHls(itemId, p);
+  }
+
+  private resolveHls(itemId: string, p: Record<string, string>): string {
+    p.BreakOnNonKeyFrames = "true";
+    p.RequireNonAnamorphic = "false";
+    p.EnableSubtitlesInManifest = "false";
     p.SegmentContainer = "ts";
     p.MinSegments = "2";
-    const audioBitrate = 384000;
-    const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
-    p.VideoBitrate = String(videoBitrate);
-    p.AudioBitrate = String(audioBitrate);
-    // H264 cap: 1920px wide (4K H264 unsupported by most browsers).
-    p.MaxWidth = "1920";
-
-    if (options?.maxHeight) {
-      p.MaxHeight = String(options.maxHeight);
-    }
-
     return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);
   }
 
@@ -251,9 +237,8 @@ export class JellyfinClient {
   }
 
   /** POST /Items/{id}/PlaybackInfo — server-driven stream selection.
-   *  The server analyzes the file against the DeviceProfile and returns
-   *  MediaSources with optimal TranscodingUrl (or direct play flags).
-   *  Used by web; mobile/TV/desktop still use getStreamUrl(). */
+   *  When direct streaming is active, sends directly to Jellyfin so the
+   *  transcode session uses the user's token (not the admin API key). */
   async getPlaybackInfo(
     itemId: string,
     options: {
@@ -277,10 +262,28 @@ export class JellyfinClient {
     if (options.audioStreamIndex != null) q.AudioStreamIndex = String(options.audioStreamIndex);
     if (options.subtitleStreamIndex != null) q.SubtitleStreamIndex = String(options.subtitleStreamIndex);
 
-    return this.fetch<PlaybackInfoResponse>(
-      `/Items/${itemId}/PlaybackInfo?${buildQuery(q)}`,
-      { method: "POST", body: JSON.stringify({ DeviceProfile: options.deviceProfile }) }
-    );
+    const path = `/Items/${itemId}/PlaybackInfo?${buildQuery(q)}`;
+    const body = JSON.stringify({ DeviceProfile: options.deviceProfile });
+
+    // Direct streaming: call Jellyfin directly so the transcode session
+    // (and all HLS segment URLs) use the user's token, not the admin API key.
+    if (this.directStreaming) {
+      const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
+      const res = await fetch(`${mediaBaseUrl}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          [JELLYFIN_AUTH_HEADER]: this.getAuthHeader(jellyfinToken),
+          [JELLYFIN_TOKEN_HEADER]: jellyfinToken,
+        },
+        body,
+      });
+      if (!res.ok) throw new JellyfinError(res.status, res.statusText, path);
+      const text = res.status === 204 ? "" : await res.text();
+      return text ? JSON.parse(text) : (undefined as unknown as PlaybackInfoResponse);
+    }
+
+    return this.fetch<PlaybackInfoResponse>(path, { method: "POST", body });
   }
 }
 
