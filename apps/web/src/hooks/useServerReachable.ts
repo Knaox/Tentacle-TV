@@ -14,6 +14,7 @@ export function useServerReachable() {
   const [isReachable, setIsReachable] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCheckedRef = useRef(false);
+  const wasOfflineRef = useRef(false);
 
   const checkServer = useCallback(async () => {
     try {
@@ -52,6 +53,16 @@ export function useServerReachable() {
   const retry = useCallback(() => {
     checkServer();
   }, [checkServer]);
+
+  // Invalide toutes les queries quand le serveur revient
+  useEffect(() => {
+    if (!isReachable) {
+      wasOfflineRef.current = true;
+    } else if (wasOfflineRef.current) {
+      wasOfflineRef.current = false;
+      queryClient.invalidateQueries();
+    }
+  }, [isReachable, queryClient]);
 
   // Ping périodique quand offline
   useEffect(() => {
