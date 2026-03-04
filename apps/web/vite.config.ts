@@ -1,11 +1,14 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 
 // Injecter les deux versions (sélection à runtime via isTauriApp)
 const webVersion = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
-const desktopVersion = JSON.parse(readFileSync(resolve(__dirname, "../desktop/package.json"), "utf-8")).version;
+const desktopPkgPath = resolve(__dirname, "../desktop/package.json");
+const desktopVersion = existsSync(desktopPkgPath)
+  ? JSON.parse(readFileSync(desktopPkgPath, "utf-8")).version
+  : webVersion;
 
 export default defineConfig({
   plugins: [react()],
