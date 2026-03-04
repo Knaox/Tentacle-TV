@@ -7,7 +7,7 @@ export default {
   featureResume: "Reprise automatique de la lecture",
   featureRequests: "Système de demandes de contenus",
   featureDesktop: "Mode bureau natif avec lecteur hautes performances",
-  featureAdaptive: "Interface adaptative (mobile, tablette, desktop, TV)",
+  featureAdaptive: "Interface adaptative (Desktop et Web)",
   featureNotifications: "Notifications et système de support intégrés",
   contact: "Contact",
   contactText: "Pour toute question ou signalement de bug, utilisez le système de support intégré depuis le menu Aide ou contactez l'administrateur de votre serveur.",
