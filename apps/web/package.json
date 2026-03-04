@@ -23,8 +23,7 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^16.5.4",
     "react-router-dom": "^7.1.0",
-    "tauri-plugin-libmpv-api": "^0.3.2",
-    "video.js": "^8.20.0"
+    "tauri-plugin-libmpv-api": "^0.3.2"
   },
   "devDependencies": {
     "@tauri-apps/api": "^2.10.1",
