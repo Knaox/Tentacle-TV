@@ -19,6 +19,7 @@ import {
   setNotificationsBackendUrl,
   setConfigBackendUrl,
   setPairingBackendUrl,
+  setStreamingConfigBackendUrl,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -64,6 +65,7 @@ export function configureBackendUrls(url: string) {
   setNotificationsBackendUrl(url);
   setConfigBackendUrl(url);
   setPairingBackendUrl(url);
+  setStreamingConfigBackendUrl(url);
 }
 
 configureBackendUrls(backendUrl);

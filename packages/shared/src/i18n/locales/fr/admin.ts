@@ -61,4 +61,12 @@ export default {
   playbackDescription: "Configurer le passage automatique à l'épisode suivant.",
   autoplayCreditsMinutes: "Déclenchement auto-play (minutes avant la fin)",
   autoplayCreditsHelp: "Quand aucun générique n'est détecté, la banderole « À suivre » apparaît ce nombre de minutes avant la fin de l'épisode. Mettre à 0 pour ne déclencher qu'à la toute fin.",
+  directStreaming: "Lecture directe",
+  directStreamingDescription: "Lorsque activé, les clients récupèrent les flux vidéo et images directement depuis Jellyfin. Le backend détecte automatiquement si le client est sur le réseau local ou distant pour lui fournir la bonne URL.",
+  directStreamingEnabled: "Activer la lecture directe",
+  directStreamingPublicUrl: "URL publique Jellyfin",
+  directStreamingPrivateUrl: "URL privée Jellyfin (LAN)",
+  directStreamingPublicUrlHelp: "URL accessible depuis Internet (ex: https://jf.example.com)",
+  directStreamingPrivateUrlHelp: "URL accessible depuis le réseau local (ex: http://192.168.1.50:8096)",
+  directStreamingUrlRequired: "Les deux URLs sont requises quand la lecture directe est activée.",
 } as const;

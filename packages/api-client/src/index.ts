@@ -1,4 +1,5 @@
 export { JellyfinClient, JellyfinError } from "./jellyfin";
+export type { DirectStreamingState } from "./jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinClient";
 export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useSearchItems } from "./hooks/useLibrary";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
@@ -27,6 +28,10 @@ export type { AppNotification } from "./hooks/useNotifications";
 // App config & feature flags
 export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
 export type { AppConfig, AppFeatures } from "./hooks/useConfig";
+
+// Direct streaming config
+export { useStreamingConfig, setStreamingConfigBackendUrl } from "./hooks/useStreamingConfig";
+export type { StreamingConfig } from "./hooks/useStreamingConfig";
 
 // Device pairing (local/backend)
 export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, useGenerateTvToken, useMyPairedDevices, useRevokeMyDevice, setPairingBackendUrl } from "./hooks/usePairing";

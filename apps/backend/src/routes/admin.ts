@@ -7,6 +7,7 @@ import {
   getJellyfinUrl,
   getJellyfinApiKey,
   setAppState,
+  getDirectStreamingConfig,
 } from "../services/configStore";
 import { getPrisma } from "../services/db";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
@@ -136,6 +137,44 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.put("/playback", async (request) => {
     const body = z.object({ autoplayCreditsMinutes: z.number().min(0).max(30) }).parse(request.body);
     await setConfigValue("autoplay_credits_minutes", String(body.autoplayCreditsMinutes));
+    return { success: true };
+  });
+
+  /** GET /api/admin/direct-streaming — Read direct streaming settings. */
+  app.get("/direct-streaming", async () => {
+    const cfg = getDirectStreamingConfig();
+    return {
+      enabled: cfg.enabled,
+      publicUrl: cfg.publicUrl ?? "",
+      privateUrl: cfg.privateUrl ?? "",
+    };
+  });
+
+  /** PUT /api/admin/direct-streaming — Update direct streaming settings. */
+  app.put("/direct-streaming", async (request, reply) => {
+    const schema = z.object({
+      enabled: z.boolean(),
+      publicUrl: z.string().url().optional().or(z.literal("")),
+      privateUrl: z.string().url().optional().or(z.literal("")),
+    }).refine(
+      (d) => !d.enabled || (!!d.publicUrl && !!d.privateUrl),
+      { message: "Both publicUrl and privateUrl are required when enabled" }
+    );
+
+    const parsed = schema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ message: parsed.error.issues[0].message });
+    }
+    const body = parsed.data;
+
+    await setConfigValue("direct_streaming_enabled", String(body.enabled));
+    if (body.publicUrl) {
+      await setConfigValue("jellyfin_public_url", body.publicUrl.replace(/\/$/, ""));
+    }
+    if (body.privateUrl) {
+      await setConfigValue("jellyfin_private_url", body.privateUrl.replace(/\/$/, ""));
+    }
+
     return { success: true };
   });
 
