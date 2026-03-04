@@ -31,7 +31,24 @@ const RATE_LIMIT = Number(process.env.RATE_LIMIT) || 1000;
 
 async function main() {
   const app = Fastify({
-    logger: true,
+    logger: {
+      serializers: {
+        req(request) {
+          const cf = request.headers?.["cf-connecting-ip"];
+          const realIp = request.headers?.["x-real-ip"];
+          const clientIp = (typeof cf === "string" && cf) ? cf
+            : (typeof realIp === "string" && realIp) ? realIp
+            : request.raw?.socket?.remoteAddress ?? "";
+          return {
+            method: request.method,
+            url: request.url,
+            host: request.headers?.host,
+            remoteAddress: clientIp,
+            remotePort: request.raw?.socket?.remotePort,
+          };
+        },
+      },
+    },
     // Allow large bodies for proxied requests (images, etc.)
     bodyLimit: 50 * 1024 * 1024,
     // Trust X-Forwarded-* headers from reverse proxy (nginx) for real client IP
