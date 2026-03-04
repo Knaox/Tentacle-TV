@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
@@ -6,12 +6,15 @@ import {
   JellyfinClient,
   JellyfinClientContext,
   TentacleConfigContext,
+  useJellyfinClient,
   setPreferencesBackendUrl,
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
   setPairingBackendUrl,
   setPreferencesToken,
+  setStreamingConfigBackendUrl,
+  useStreamingConfig,
   fetchInterfaceLanguage,
 } from "@tentacle-tv/api-client";
 import { initI18n, i18n } from "@tentacle-tv/shared";
@@ -60,6 +63,7 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setNotificationsBackendUrl(baseUrl);
   setConfigBackendUrl(baseUrl);
   setPairingBackendUrl(baseUrl);
+  setStreamingConfigBackendUrl(baseUrl);
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
   const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV");
@@ -78,6 +82,27 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   });
 
   return jfClient;
+}
+
+/** Sync direct streaming config from backend into JellyfinClient. */
+function DirectStreamingSync() {
+  const client = useJellyfinClient();
+  const token = storage.getItem("tentacle_token");
+  const { data } = useStreamingConfig(token);
+
+  useEffect(() => {
+    if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
+      client.setDirectStreaming({
+        enabled: true,
+        mediaBaseUrl: data.mediaBaseUrl,
+        jellyfinToken: data.jellyfinToken,
+      });
+    } else {
+      client.setDirectStreaming(null);
+    }
+  }, [client, data]);
+
+  return null;
 }
 
 export function App() {
@@ -122,6 +147,7 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={client}>
+            <DirectStreamingSync />
             <SidebarProvider>
               <NavigationContainer theme={darkTheme}>
                 <AppNavigator />

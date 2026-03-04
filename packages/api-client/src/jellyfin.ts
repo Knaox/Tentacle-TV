@@ -28,6 +28,9 @@ export class JellyfinClient {
   private deviceName: string;
   private authExpiredCallback?: () => void;
   private directStreaming: DirectStreamingState | null = null;
+  private directStreamingErrors = 0;
+  private directStreamingFailCallback?: () => void;
+  private static readonly DS_ERROR_THRESHOLD = 3;
   constructor(
     baseUrl: string,
     storage: StorageAdapter,
@@ -48,16 +51,36 @@ export class JellyfinClient {
 
   getBaseUrl() { return this.baseUrl; }
 
-  setDirectStreaming(config: DirectStreamingState | null) { this.directStreaming = config; }
+  setDirectStreaming(config: DirectStreamingState | null) {
+    this.directStreaming = config;
+    if (config) this.directStreamingErrors = 0;
+  }
   getDirectStreaming() { return this.directStreaming; }
 
-  /** Resolve a media URL: use direct Jellyfin URL if active, otherwise proxy. */
+  setOnDirectStreamingFail(cb: () => void) { this.directStreamingFailCallback = cb; }
+
+  /** Report a direct streaming media failure. After DS_ERROR_THRESHOLD consecutive
+   *  errors, auto-disables direct streaming and fires the fail callback. */
+  reportDirectStreamingError(): void {
+    if (!this.directStreaming) return;
+    if (++this.directStreamingErrors >= JellyfinClient.DS_ERROR_THRESHOLD) {
+      this.directStreaming = null;
+      this.directStreamingErrors = 0;
+      this.directStreamingFailCallback?.();
+    }
+  }
+
+  /** Reset consecutive error counter (call on successful media load). */
+  reportDirectStreamingSuccess(): void { this.directStreamingErrors = 0; }
+
+  /** Resolve a media URL: use direct Jellyfin URL if active, otherwise proxy.
+   *  Also replaces api_key/ApiKey with the user's own Jellyfin token. */
   private resolveMediaUrl(proxyUrl: string): string {
     if (!this.directStreaming) return proxyUrl;
     const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
     const path = proxyUrl.replace(this.baseUrl, "");
     return `${mediaBaseUrl}${path}`.replace(
-      /([?&])api_key=[^&]*/,
+      /([?&])(api_key|ApiKey)=[^&]*/i,
       `$1api_key=${encodeURIComponent(jellyfinToken)}`
     );
   }
@@ -139,24 +162,15 @@ export class JellyfinClient {
     audioIndex?: number;
     mediaSourceId?: string;
     maxBitrate?: number;
-    /** Max video height for quality switching (e.g. 720 for 720p) */
     maxHeight?: number;
-    /** false = force transcode/remux (e.g. audio track change) */
     directPlay?: boolean;
-    /** Seek position for transcoded streams (in Jellyfin ticks) */
     startTimeTicks?: number;
-    /** Unique ID per transcode session — lets Jellyfin's segment handler
-     *  find the correct transcode started by master.m3u8. */
     playSessionId?: string;
-    /** @deprecated No longer used — remux path always requests h264 as transcode
-     *  fallback codec. AllowVideoStreamCopy=true handles codec-agnostic copy.
-     *  Kept for backward compatibility with mobile/TV callers. */
+    /** @deprecated Kept for mobile/TV compat — remux always uses h264 fallback. */
     sourceVideoCodec?: string;
-    /** Use progressive stream for remux (default true). Set false for Safari/iOS
-     *  where progressive transcode doesn't support Range requests. Falls back to HLS. */
+    /** Progressive remux (default true). Set false for Safari/iOS (no Range support). */
     useProgressiveRemux?: boolean;
-    /** Burn-in subtitle stream index — for bitmap subtitles (PGS) that can't be
-     *  converted to VTT. jellyfin-web pattern: server encodes subtitle into video. */
+    /** Bitmap subtitle burn-in index (PGS/DVDSUB). */
     subtitleStreamIndex?: number;
   }): string {
     const p: Record<string, string> = {
@@ -165,8 +179,7 @@ export class JellyfinClient {
     if (options?.mediaSourceId) p.MediaSourceId = options.mediaSourceId;
     if (options?.audioIndex != null) p.AudioStreamIndex = String(options.audioIndex);
     if (options?.startTimeTicks) p.StartTimeTicks = String(options.startTimeTicks);
-    // jellyfin-web pattern: include SubtitleStreamIndex for server-side burn-in
-    // of bitmap subtitles (PGS/DVDSUB) that can't be converted to VTT.
+    // Server-side burn-in for bitmap subtitles (PGS/DVDSUB)
     if (options?.subtitleStreamIndex != null) p.SubtitleStreamIndex = String(options.subtitleStreamIndex);
 
     // Direct play — raw file, browser handles codec/track selection
@@ -183,18 +196,8 @@ export class JellyfinClient {
     p.context = "Streaming";
 
     if (!options?.maxBitrate) {
-      // Remux: video copied as-is, only audio transcoded.
-      // Safety net: if Jellyfin can't copy the video (e.g. HDR tonemapping),
-      // it falls back to full video transcode. Without VideoBitrate/MaxWidth
-      // the output would be tiny (416px) because Jellyfin derives resolution
-      // from the video bitrate. These values only apply when copy fails.
-      // Always request h264 as transcode fallback codec. Even though
-      // AllowVideoStreamCopy=true tells Jellyfin to copy the video when possible,
-      // if it CAN'T copy (e.g. HDR tonemapping), it falls back to encoding.
-      // With VideoCodec="hevc", Jellyfin uses libx265 software (slow, crf 28,
-      // poor quality). With "h264", it can use HW encoders (h264_qsv, h264_vaapi)
-      // which are fast and better quality. AllowVideoStreamCopy=true already
-      // tells Jellyfin to copy whatever the source codec is when possible.
+      // Remux: video copy + audio transcode. h264 fallback codec for HW encoding.
+      // VideoBitrate/MaxWidth are safety nets if Jellyfin can't copy (HDR tonemapping).
       p.VideoCodec = "h264";
       p.AllowVideoStreamCopy = "true";
       p.AllowAudioStreamCopy = "false";
@@ -218,9 +221,6 @@ export class JellyfinClient {
     }
 
     // Quality transcode via HLS — full re-encode with bitrate limit.
-    // AllowVideoStreamCopy/AllowAudioStreamCopy must be false: without this
-    // the server defaults to true and copies the stream instead of transcoding
-    // to the requested bitrate (instant start but no quality/bandwidth control).
     p.AllowVideoStreamCopy = "false";
     p.AllowAudioStreamCopy = "false";
     p.BreakOnNonKeyFrames = "true";

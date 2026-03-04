@@ -88,7 +88,16 @@ export function usePlaybackInfo() {
         url = `${baseUrl}/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
       } else if (ms.TranscodingUrl) {
         const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
-        url = `${baseUrl}${ms.TranscodingUrl}`;
+        // TranscodingUrl from proxy contains the admin API key (from token swap).
+        // Replace it with the user's own Jellyfin token for direct streaming.
+        let transcodingPath = ms.TranscodingUrl;
+        if (ds) {
+          transcodingPath = transcodingPath.replace(
+            /([?&])(api_key|ApiKey)=[^&]*/i,
+            `$1ApiKey=${encodeURIComponent(ds.jellyfinToken)}`
+          );
+        }
+        url = `${baseUrl}${transcodingPath}`;
       } else {
         console.warn(DBG, "no TranscodingUrl and not direct play");
         setState((prev) => ({ ...prev, isLoading: false }));

@@ -99,29 +99,31 @@ model ServerConfig {
 }
 
 model PairingCode {
-  id              String    @id @default(cuid())
-  code            String    @unique @db.VarChar(4)
-  status          String    @default("pending") @db.VarChar(20)
-  deviceName      String?   @db.VarChar(100)
-  deviceId        String?   @db.VarChar(255)
-  jellyfinUserId  String?   @db.VarChar(255)
-  username        String?   @db.VarChar(255)
-  token           String?   @db.Text
-  createdAt       DateTime  @default(now())
-  expiresAt       DateTime
+  id                    String    @id @default(cuid())
+  code                  String    @unique @db.VarChar(4)
+  status                String    @default("pending") @db.VarChar(20)
+  deviceName            String?   @db.VarChar(100)
+  deviceId              String?   @db.VarChar(255)
+  jellyfinUserId        String?   @db.VarChar(255)
+  username              String?   @db.VarChar(255)
+  token                 String?   @db.Text
+  jellyfinAccessToken   String?   @db.Text
+  createdAt             DateTime  @default(now())
+  expiresAt             DateTime
 
   @@index([expiresAt])
   @@map("pairing_codes")
 }
 
 model PairedDevice {
-  id              String    @id @default(cuid())
-  name            String    @db.VarChar(100)
-  jellyfinUserId  String    @db.VarChar(255)
-  username        String    @db.VarChar(255)
-  tokenHash       String    @unique @db.VarChar(64)
-  lastSeen        DateTime  @default(now())
-  createdAt       DateTime  @default(now())
+  id                    String    @id @default(cuid())
+  name                  String    @db.VarChar(100)
+  jellyfinUserId        String    @db.VarChar(255)
+  username              String    @db.VarChar(255)
+  tokenHash             String    @unique @db.VarChar(64)
+  jellyfinAccessToken   String?   @db.Text
+  lastSeen              DateTime  @default(now())
+  createdAt             DateTime  @default(now())
 
   @@index([jellyfinUserId])
   @@index([tokenHash])

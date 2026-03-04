@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, hdrs, cls } from "./adminUtils";
 
-interface TestResult { ok: boolean; version?: string; error?: string }
+interface TestResult { ok: boolean; version?: string; error?: string; corsOk?: boolean }
 interface TestResponse { public: TestResult | null; private: TestResult | null }
 
 export function DirectStreamingSection() {
@@ -75,7 +75,8 @@ export function DirectStreamingSection() {
   return (
     <div className={cls.card}>
       <h2 className="mb-1 text-lg font-semibold text-white">{t("admin:directStreaming")}</h2>
-      <p className="mb-4 text-sm text-white/40">{t("admin:directStreamingDescription")}</p>
+      <p className="mb-2 text-sm text-white/40">{t("admin:directStreamingDescription")}</p>
+      <p className="mb-4 text-xs text-white/25">{t("admin:directStreamingCorsHelp")}</p>
       <div className={cls.sub}>
         <label className="flex cursor-pointer items-center gap-3">
           <div className="relative">
@@ -111,21 +112,41 @@ export function DirectStreamingSection() {
           {testResult && (
             <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 space-y-2">
               {testResult.public && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={dot(testResult.public.ok)} />
-                  <span className="text-white/60">{t("admin:directStreamingPublicUrl")}:</span>
-                  <span className={testResult.public.ok ? "text-green-400" : "text-red-400"}>
-                    {testResult.public.ok ? `Jellyfin ${testResult.public.version}` : testResult.public.error}
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={dot(testResult.public.ok)} />
+                    <span className="text-white/60">{t("admin:directStreamingPublicUrl")}:</span>
+                    <span className={testResult.public.ok ? "text-green-400" : "text-red-400"}>
+                      {testResult.public.ok ? `Jellyfin ${testResult.public.version}` : testResult.public.error}
+                    </span>
+                    {testResult.public.ok && testResult.public.corsOk !== undefined && (
+                      <span className={testResult.public.corsOk ? "text-green-400" : "text-amber-400"}>
+                        {testResult.public.corsOk ? `— ${t("admin:directStreamingCorsOk")}` : "— CORS"}
+                      </span>
+                    )}
+                  </div>
+                  {testResult.public.ok && testResult.public.corsOk === false && (
+                    <p className="text-xs text-amber-400 pl-4">{t("admin:directStreamingCorsWarning")}</p>
+                  )}
                 </div>
               )}
               {testResult.private && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={dot(testResult.private.ok)} />
-                  <span className="text-white/60">{t("admin:directStreamingPrivateUrl")}:</span>
-                  <span className={testResult.private.ok ? "text-green-400" : "text-red-400"}>
-                    {testResult.private.ok ? `Jellyfin ${testResult.private.version}` : testResult.private.error}
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={dot(testResult.private.ok)} />
+                    <span className="text-white/60">{t("admin:directStreamingPrivateUrl")}:</span>
+                    <span className={testResult.private.ok ? "text-green-400" : "text-red-400"}>
+                      {testResult.private.ok ? `Jellyfin ${testResult.private.version}` : testResult.private.error}
+                    </span>
+                    {testResult.private.ok && testResult.private.corsOk !== undefined && (
+                      <span className={testResult.private.corsOk ? "text-green-400" : "text-amber-400"}>
+                        {testResult.private.corsOk ? `— ${t("admin:directStreamingCorsOk")}` : "— CORS"}
+                      </span>
+                    )}
+                  </div>
+                  {testResult.private.ok && testResult.private.corsOk === false && (
+                    <p className="text-xs text-amber-400 pl-4">{t("admin:directStreamingCorsWarning")}</p>
+                  )}
                 </div>
               )}
             </div>

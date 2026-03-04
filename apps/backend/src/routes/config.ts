@@ -3,7 +3,9 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { getConfigValue, getDirectStreamingConfig } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
+import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
+import { getPrisma } from "../services/db";
 
 // Read version from package.json at startup (works in both dev/tsx and compiled CJS)
 const APP_VERSION: string = (() => {
@@ -55,13 +57,28 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
     }
 
-    // The user's own Jellyfin token (from Bearer header) — safe for direct media access.
+    // Extract bearer token and determine type
     const authHeader = request.headers.authorization;
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    // Paired device JWTs are dot-separated (3 parts); Jellyfin tokens are opaque hex strings.
     const isPairedDevice = bearerToken?.includes(".") && bearerToken.split(".").length === 3;
-    const jellyfinToken = isPairedDevice ? null : bearerToken;
+
+    let jellyfinToken: string | null = null;
+
+    if (isPairedDevice && bearerToken) {
+      // Paired device: look up stored Jellyfin token from PairedDevice record
+      const payload = await verifyDeviceToken(bearerToken);
+      if (payload) {
+        const prisma = getPrisma();
+        const device = await prisma.pairedDevice.findUnique({
+          where: { tokenHash: hashToken(bearerToken) },
+          select: { jellyfinAccessToken: true },
+        });
+        jellyfinToken = device?.jellyfinAccessToken ?? null;
+      }
+    } else {
+      // Web user: their bearer token IS the Jellyfin token
+      jellyfinToken = bearerToken;
+    }
 
     request.log.info({ clientIp, private: isPrivateIp(clientIp), mediaBaseUrl }, "Direct streaming active");
 

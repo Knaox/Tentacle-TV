@@ -30,7 +30,7 @@ export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
 export type { AppConfig, AppFeatures } from "./hooks/useConfig";
 
 // Direct streaming config
-export { useStreamingConfig, setStreamingConfigBackendUrl } from "./hooks/useStreamingConfig";
+export { useStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUERY_KEY } from "./hooks/useStreamingConfig";
 export type { StreamingConfig } from "./hooks/useStreamingConfig";
 
 // Device pairing (local/backend)
