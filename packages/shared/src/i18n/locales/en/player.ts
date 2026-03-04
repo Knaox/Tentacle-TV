@@ -27,4 +27,6 @@ export default {
   mpvError: "mpv error: {{error}}",
   secondsShort: "sec",
   nextEpisodeLabel: "Next episode",
+  upNext: "Up Next",
+  dismiss: "Dismiss",
 } as const;
