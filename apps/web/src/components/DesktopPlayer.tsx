@@ -27,6 +27,9 @@ interface DesktopPlayerProps {
   isDirectPlay?: boolean; streamOffset?: number; posterUrl?: string;
   introSegment?: SegmentTimestamps | null; creditsSegment?: SegmentTimestamps | null;
   hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
+  nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
+  autoplayCreditsSeconds?: number;
+  itemId?: string;
   onNextEpisode?: () => void; onPreviousEpisode?: () => void; onFallbackToWeb?: () => void;
 }
 
@@ -141,6 +144,9 @@ export function DesktopPlayer({
   isDirectPlay = true, streamOffset = 0, posterUrl,
   introSegment, creditsSegment,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
+  nextEpisodeImageUrl, nextEpisodeDescription,
+  autoplayCreditsSeconds,
+  itemId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
 }: DesktopPlayerProps) {
   const { t } = useTranslation("player");
@@ -378,15 +384,45 @@ export function DesktopPlayer({
   const cancelAutoPlay = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
     setAutoPlayCountdown(null);
-    goBack();
-  }, [goBack]);
+  }, []);
 
+  // Navigate to detail page for movies — awaits exit_fullscreen before navigating
+  const goToDetail = useCallback(async () => {
+    if (fullscreenRef.current && cachedInvoke) {
+      try {
+        await cachedInvoke("exit_fullscreen");
+        await new Promise((r) => setTimeout(r, 50));
+      } catch { /* proceed anyway */ }
+    }
+    navigate(`/media/${itemId}`, { replace: true });
+  }, [navigate, itemId]);
+
+  // Show overlay when entering credits (or last 2 min fallback for episodes)
+  const creditsAutoPlayTriggered = useRef(false);
+  useEffect(() => {
+    if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
+    if (!hasNextEpisode || !hasStartedRef.current) return;
+    const pos = state.position + effectiveMpvOffset.current;
+    const d = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
+    // Use detected credits segment, or fallback to configured time before end for episodes > 5 min
+    const fallbackSeconds = autoplayCreditsSeconds ?? 120;
+    const triggerAt = creditsSegment ? creditsSegment.start
+      : (fallbackSeconds > 0 && d > 300 ? d - fallbackSeconds : null);
+    if (triggerAt != null && pos >= triggerAt) {
+      console.debug(DBG, "auto-play trigger", { pos, triggerAt, hasCreditsSegment: !!creditsSegment });
+      creditsAutoPlayTriggered.current = true;
+      startAutoPlayCountdown();
+    }
+  }, [state.position, creditsSegment, hasNextEpisode, autoPlayCountdown, startAutoPlayCountdown, jellyfinDuration, state.duration]);
+
+  // EOF fallback: no credits segment detected, or movie → detail page
   useEffect(() => {
     if (state.eof && hasStartedRef.current) {
-      if (hasNextEpisode) startAutoPlayCountdown();
-      else goBack();
+      if (hasNextEpisode && autoPlayCountdown === null) startAutoPlayCountdown();
+      else if (!hasNextEpisode && itemId) goToDetail();
+      else if (!hasNextEpisode) goBack();
     }
-  }, [state.eof, goBack, hasNextEpisode, startAutoPlayCountdown]);
+  }, [state.eof, goBack, goToDetail, hasNextEpisode, startAutoPlayCountdown, itemId, autoPlayCountdown]);
 
   useEffect(() => {
     return () => {
@@ -513,7 +549,7 @@ export function DesktopPlayer({
           {t("player:skipIntro")}
         </button>
       )}
-      {showSkipCredits && creditsSegment && (
+      {showSkipCredits && creditsSegment && !autoPlayCountdown && (
         <button onClick={() => { if (hasNextEpisode) onNextEpisode?.(); else seek(isDirectPlay ? creditsSegment.end : Math.max(0, creditsSegment.end - effectiveMpvOffset.current)); }}
           className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
           {hasNextEpisode ? t("player:nextEpisodeLabel") : t("player:skipCredits")}
@@ -613,10 +649,13 @@ export function DesktopPlayer({
         </div>
       </div>
 
-      {autoPlayCountdown !== null && (
-        <NextEpisodeOverlay countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
-          onPlayNow={() => onNextEpisode?.()} onCancel={cancelAutoPlay} />
-      )}
+      <AnimatePresence>
+        {autoPlayCountdown !== null && (
+          <NextEpisodeOverlay countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
+            episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
+            onPlayNow={() => onNextEpisode?.()} onDismiss={cancelAutoPlay} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

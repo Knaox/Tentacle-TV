@@ -57,4 +57,8 @@ export default {
   saveFailed: "Échec de la sauvegarde",
   adminBadge: "Admin",
   ticketClosed: "Fermé",
+  playback: "Lecture",
+  playbackDescription: "Configurer le passage automatique à l'épisode suivant.",
+  autoplayCreditsMinutes: "Déclenchement auto-play (minutes avant la fin)",
+  autoplayCreditsHelp: "Quand aucun générique n'est détecté, la banderole « À suivre » apparaît ce nombre de minutes avant la fin de l'épisode. Mettre à 0 pour ne déclencher qu'à la toute fin.",
 } as const;

@@ -4,6 +4,7 @@ import {
   JELLYFIN_AUTH_HEADER,
   JELLYFIN_TOKEN_HEADER,
 } from "@tentacle-tv/shared";
+import type { DeviceProfile, PlaybackInfoResponse } from "@tentacle-tv/shared";
 import type { StorageAdapter, UuidGenerator } from "./storage";
 
 /** Build query string — compatible Hermes (pas de URLSearchParams.set). */
@@ -71,7 +72,7 @@ export class JellyfinClient {
     return id;
   }
 
-  private getAuthHeader(): string {
+  getAuthHeader(): string {
     const parts = [
       `MediaBrowser Client="${APP_NAME}"`,
       `Device="${this.deviceName}"`,
@@ -144,8 +145,9 @@ export class JellyfinClient {
     /** Unique ID per transcode session — lets Jellyfin's segment handler
      *  find the correct transcode started by master.m3u8. */
     playSessionId?: string;
-    /** Source video codec (e.g. "hevc", "h264") — used in remux mode
-     *  so Jellyfin knows it can stream copy instead of re-encoding. */
+    /** @deprecated No longer used — remux path always requests h264 as transcode
+     *  fallback codec. AllowVideoStreamCopy=true handles codec-agnostic copy.
+     *  Kept for backward compatibility with mobile/TV callers. */
     sourceVideoCodec?: string;
     /** Use progressive stream for remux (default true). Set false for Safari/iOS
      *  where progressive transcode doesn't support Range requests. Falls back to HLS. */
@@ -179,44 +181,61 @@ export class JellyfinClient {
 
     if (!options?.maxBitrate) {
       // Remux: video copied as-is, only audio transcoded.
-      const videoCodec = options?.sourceVideoCodec || "h264";
-      p.VideoCodec = videoCodec;
+      // Safety net: if Jellyfin can't copy the video (e.g. HDR tonemapping),
+      // it falls back to full video transcode. Without VideoBitrate/MaxWidth
+      // the output would be tiny (416px) because Jellyfin derives resolution
+      // from the video bitrate. These values only apply when copy fails.
+      // Always request h264 as transcode fallback codec. Even though
+      // AllowVideoStreamCopy=true tells Jellyfin to copy the video when possible,
+      // if it CAN'T copy (e.g. HDR tonemapping), it falls back to encoding.
+      // With VideoCodec="hevc", Jellyfin uses libx265 software (slow, crf 28,
+      // poor quality). With "h264", it can use HW encoders (h264_qsv, h264_vaapi)
+      // which are fast and better quality. AllowVideoStreamCopy=true already
+      // tells Jellyfin to copy whatever the source codec is when possible.
+      p.VideoCodec = "h264";
       p.AllowVideoStreamCopy = "true";
       p.AllowAudioStreamCopy = "false";
       p.AudioCodec = "aac";
       p.CopyTimestamps = "true";
-      p.MaxStreamingBitrate = "150000000";
+      p.VideoBitrate = "139616000";
+      p.AudioBitrate = "384000";
+      p.MaxWidth = "1920";
 
       if (options?.useProgressiveRemux !== false) {
-        // Progressive: avoids Jellyfin's HLS playlist generator which overrides
-        // AllowVideoStreamCopy for HEVC, forcing h264 transcode.
         return `${this.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`;
       }
 
-      // HLS fallback (Safari/iOS): progressive transcode doesn't support HTTP
-      // Range requests that WebKit requires for media playback.
+      // HLS remux — TS segments avoid hls.js fMP4 audio timestamp offset bug (#7432).
       p.BreakOnNonKeyFrames = "true";
       p.RequireNonAnamorphic = "false";
       p.EnableSubtitlesInManifest = "false";
-      p.SegmentContainer = "mp4";
+      p.SegmentContainer = "ts";
       p.MinSegments = "2";
       return `${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`;
     }
 
-    // Quality transcode via HLS — full re-encode with bitrate limit
+    // Quality transcode via HLS — full re-encode with bitrate limit.
+    // AllowVideoStreamCopy/AllowAudioStreamCopy must be false: without this
+    // the server defaults to true and copies the stream instead of transcoding
+    // to the requested bitrate (instant start but no quality/bandwidth control).
+    p.AllowVideoStreamCopy = "false";
+    p.AllowAudioStreamCopy = "false";
     p.BreakOnNonKeyFrames = "true";
     p.RequireNonAnamorphic = "false";
     p.EnableSubtitlesInManifest = "false";
+    p.EnableAudioVbrEncoding = "true";
+    p.CopyTimestamps = "true";
     p.VideoCodec = "h264";
     p.AudioCodec = "aac";
     p.SegmentContainer = "ts";
+    p.MinSegments = "2";
     const audioBitrate = 384000;
     const videoBitrate = Math.max(options.maxBitrate - audioBitrate, 500000);
-    p.VideoBitRate = String(videoBitrate);
-    p.AudioBitRate = String(audioBitrate);
-    p.MaxStreamingBitrate = String(options.maxBitrate);
+    p.VideoBitrate = String(videoBitrate);
+    p.AudioBitrate = String(audioBitrate);
+    // H264 cap: 1920px wide (4K H264 unsupported by most browsers).
+    p.MaxWidth = "1920";
 
-    // Resolution constraint — Jellyfin calculates proportional width automatically
     if (options?.maxHeight) {
       p.MaxHeight = String(options.maxHeight);
     }
@@ -226,6 +245,39 @@ export class JellyfinClient {
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number, format = "vtt"): string {
     return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`;
+  }
+
+  /** POST /Items/{id}/PlaybackInfo — server-driven stream selection.
+   *  The server analyzes the file against the DeviceProfile and returns
+   *  MediaSources with optimal TranscodingUrl (or direct play flags).
+   *  Used by web; mobile/TV/desktop still use getStreamUrl(). */
+  async getPlaybackInfo(
+    itemId: string,
+    options: {
+      userId: string;
+      deviceProfile: DeviceProfile;
+      mediaSourceId?: string;
+      audioStreamIndex?: number;
+      subtitleStreamIndex?: number;
+      startTimeTicks?: number;
+      maxStreamingBitrate?: number;
+    }
+  ): Promise<PlaybackInfoResponse> {
+    const q: Record<string, string> = {
+      UserId: options.userId,
+      StartTimeTicks: String(options.startTimeTicks ?? 0),
+      IsPlayback: "true",
+      AutoOpenLiveStream: "true",
+      MaxStreamingBitrate: String(options.maxStreamingBitrate ?? 42_000_000),
+    };
+    if (options.mediaSourceId) q.MediaSourceId = options.mediaSourceId;
+    if (options.audioStreamIndex != null) q.AudioStreamIndex = String(options.audioStreamIndex);
+    if (options.subtitleStreamIndex != null) q.SubtitleStreamIndex = String(options.subtitleStreamIndex);
+
+    return this.fetch<PlaybackInfoResponse>(
+      `/Items/${itemId}/PlaybackInfo?${buildQuery(q)}`,
+      { method: "POST", body: JSON.stringify({ DeviceProfile: options.deviceProfile }) }
+    );
   }
 }
 

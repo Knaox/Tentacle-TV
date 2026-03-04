@@ -15,12 +15,14 @@ export interface AppConfig {
   version: string;
   brandName: string;
   features: AppFeatures;
+  autoplayCreditsMinutes: number;
 }
 
 const defaultConfig: AppConfig = {
   version: "0.0.0",
   brandName: "Tentacle TV",
   features: { downloads: false, demo: false },
+  autoplayCreditsMinutes: 2,
 };
 
 export function useAppConfig() {

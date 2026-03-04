@@ -14,7 +14,12 @@ const SKIP_REQUEST_HEADERS = new Set([
 
 const SKIP_RESPONSE_HEADERS = new Set([
   "transfer-encoding", "connection", "keep-alive",
-  // Node fetch auto-decompresses — don't tell browser content is still compressed
+]);
+
+/** Extra headers to strip for non-media (API/JSON) responses.
+ *  Node fetch auto-decompresses gzipped JSON — content-length/encoding change.
+ *  Media streams pass through raw bytes, so these headers stay accurate. */
+const SKIP_API_RESPONSE_HEADERS = new Set([
   "content-encoding", "content-length",
 ]);
 
@@ -105,11 +110,14 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Set status
       reply.status(response.status);
 
-      // Forward response headers
+      // Media streams: forward content-length/encoding so the browser can
+      // support Range requests, progress bars, and correct buffering.
+      const isMediaResponse = isProgressiveStream || /\/(hls1|Audio)\//.test(wildcardPath);
       for (const [key, value] of response.headers) {
-        if (!SKIP_RESPONSE_HEADERS.has(key.toLowerCase())) {
-          reply.header(key, value);
-        }
+        const lower = key.toLowerCase();
+        if (SKIP_RESPONSE_HEADERS.has(lower)) continue;
+        if (!isMediaResponse && SKIP_API_RESPONSE_HEADERS.has(lower)) continue;
+        reply.header(key, value);
       }
 
       // Log Jellyfin error responses for debugging

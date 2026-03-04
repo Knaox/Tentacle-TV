@@ -24,7 +24,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const authHeader = 'MediaBrowser Client="Tentacle TV", Device="Server", DeviceId="tentacle-server", Version="0.7.0"';
+      const deviceId = `tentacle-server-${body.username}`;
+      const authHeader = `MediaBrowser Client="Tentacle TV", Device="Server", DeviceId="${deviceId}", Version="0.9.2"`;
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
         headers: {
