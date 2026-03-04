@@ -6,6 +6,8 @@ interface PlayerTransitionProps {
   children: ReactNode;
   /** Use transparent background (for desktop mpv player rendering behind WebView2) */
   transparent?: boolean;
+  /** Appelé quand l'animation splash est terminée et le lecteur peut démarrer */
+  onComplete?: () => void;
 }
 
 const DROP_COUNT = 14;
@@ -48,7 +50,7 @@ export type SplashPhase = "enter" | "clap" | "splash" | "exit";
  * Animation d'intro poulpe pirate : apparition → claque des tentacules →
  * plongeon avec éclaboussures + son → révélation du lecteur vidéo.
  */
-export function PlayerTransition({ children, transparent = false }: PlayerTransitionProps) {
+export function PlayerTransition({ children, transparent = false, onComplete }: PlayerTransitionProps) {
   const [phase, setPhase] = useState<SplashPhase>("enter");
   const soundPlayed = useRef(false);
 
@@ -59,8 +61,10 @@ export function PlayerTransition({ children, transparent = false }: PlayerTransi
       if (!soundPlayed.current) { soundPlayed.current = true; playSplashSound(); }
     }, 1500);
     const t3 = setTimeout(() => setPhase("exit"), 2200);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []);
+    // Signal que l'animation est terminée (après le fade-out de 400ms)
+    const t4 = setTimeout(() => onComplete?.(), 2600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showSplashFx = phase === "splash" || phase === "exit";
 

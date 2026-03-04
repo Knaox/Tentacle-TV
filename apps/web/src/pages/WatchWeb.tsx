@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
@@ -91,15 +91,9 @@ export function WatchWeb() {
     reportSeek(seconds, paused);
   }, [reportSeek, positionRef]);
 
-  if (isLoading || !streamUrl) {
-    return (
-      <PlayerTransition transparent={false}>
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-        </div>
-      </PlayerTransition>
-    );
-  }
+  const [splashDone, setSplashDone] = useState(false);
+
+  const showPlayer = splashDone && !isLoading && !!streamUrl;
 
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
@@ -112,22 +106,28 @@ export function WatchWeb() {
     ? (nextEpisode.Overview.length > 120 ? nextEpisode.Overview.slice(0, 120) + "…" : nextEpisode.Overview) : undefined;
 
   return (
-    <PlayerTransition transparent={false}>
-      <VideoPlayer
-        key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
-        startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
-        audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-        currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={quality}
-        onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-        onProgress={handleProgress} onStarted={reportStart}
-        hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
-        nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-        nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
-        onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
-        itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset}
-        onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
-        introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
-      />
+    <PlayerTransition transparent={false} onComplete={() => setSplashDone(true)}>
+      {showPlayer ? (
+        <VideoPlayer
+          key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
+          startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
+          audioTracks={audioTracks} subtitleTracks={subtitleTracks}
+          currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={quality}
+          onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
+          onProgress={handleProgress} onStarted={reportStart}
+          hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
+          nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
+          nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
+          onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
+          itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset}
+          onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
+          introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          {splashDone && <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />}
+        </div>
+      )}
     </PlayerTransition>
   );
 }
