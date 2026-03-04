@@ -1,31 +1,91 @@
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
 
 interface AutoPlayOverlayProps {
   countdown: number;
   episodeTitle?: string;
+  episodeDescription?: string;
+  episodeImageUrl?: string;
   onPlay: () => void;
   onCancel: () => void;
 }
 
-export function AutoPlayOverlay({ countdown, episodeTitle, onPlay, onCancel }: AutoPlayOverlayProps) {
+const COUNTDOWN_TOTAL = 10;
+
+export function AutoPlayOverlay({ countdown, episodeTitle, episodeDescription, episodeImageUrl, onPlay, onCancel }: AutoPlayOverlayProps) {
   const { t } = useTranslation("player");
+  const progress = ((COUNTDOWN_TOTAL - countdown) / COUNTDOWN_TOTAL) * 100;
+
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80" onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-col items-center gap-6 text-center">
-        <p className="text-lg text-white/70">{t("player:nextEpisodeIn")}</p>
-        <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-tentacle-accent">
-          <span className="text-4xl font-bold text-white">{countdown}</span>
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 40, scale: 0.95 }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      className="absolute bottom-6 right-6 z-30 w-[340px] overflow-hidden rounded-xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Progress bar */}
+      <div className="h-1 w-full bg-white/10">
+        <div
+          className="h-full bg-tentacle-accent transition-all duration-1000 ease-linear"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <div className="p-3.5">
+        {/* Header */}
+        <div className="mb-2.5 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-tentacle-accent">
+            {t("player:upNext")}
+          </span>
+          <button
+            onClick={onCancel}
+            className="rounded-full p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+            title={t("player:dismiss")}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        {episodeTitle && <p className="text-sm text-white/50">{episodeTitle}</p>}
-        <div className="flex gap-4">
-          <button onClick={onPlay} className="rounded-lg bg-tentacle-accent px-6 py-2.5 text-sm font-semibold text-white hover:bg-tentacle-accent/80">
+
+        {/* Content row */}
+        <div className="flex gap-3">
+          {/* Thumbnail */}
+          {episodeImageUrl && (
+            <div className="h-[72px] w-[128px] flex-shrink-0 overflow-hidden rounded-lg bg-white/5">
+              <img src={episodeImageUrl} alt="" className="h-full w-full object-cover" />
+            </div>
+          )}
+
+          {/* Info */}
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            {episodeTitle && (
+              <p className="truncate text-sm font-medium text-white">{episodeTitle}</p>
+            )}
+            {episodeDescription && (
+              <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-white/50">{episodeDescription}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={onPlay}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-tentacle-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-tentacle-accent/80"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
             {t("player:playNow")}
           </button>
-          <button onClick={onCancel} className="rounded-lg bg-white/10 px-6 py-2.5 text-sm text-white/70 hover:bg-white/20">
-            {t("common:cancel")}
-          </button>
+          <span className="text-xs tabular-nums text-white/40">
+            {countdown}{t("player:secondsShort")}
+          </span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
