@@ -185,7 +185,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       privateUrl: z.string().url().optional().or(z.literal("")),
     }).parse(request.body);
 
-    const test = async (url: string): Promise<{ ok: boolean; version?: string; error?: string }> => {
+    const test = async (url: string): Promise<{ ok: boolean; version?: string; error?: string; corsOk?: boolean }> => {
       if (!url) return { ok: false, error: "URL vide" };
       try {
         const res = await fetch(`${url.replace(/\/$/, "")}/System/Info/Public`, {
@@ -193,7 +193,12 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
         });
         if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
         const info = await res.json();
-        return { ok: true, version: info.Version };
+
+        // Check if Jellyfin sends CORS headers (required for browser direct streaming)
+        const acao = res.headers.get("access-control-allow-origin");
+        const corsOk = acao === "*" || (!!acao && acao.length > 0);
+
+        return { ok: true, version: info.Version, corsOk };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
       }

@@ -12,6 +12,9 @@ import {
   setTicketsBackendUrl,
   setNotificationsBackendUrl,
   setConfigBackendUrl,
+  setStreamingConfigBackendUrl,
+  useStreamingConfig,
+  useJellyfinClient,
 } from "@tentacle-tv/api-client";
 import { initI18n } from "@tentacle-tv/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
@@ -46,6 +49,7 @@ function configureBackendUrls(tentacleUrl: string) {
   setTicketsBackendUrl(tentacleUrl);
   setNotificationsBackendUrl(tentacleUrl);
   setConfigBackendUrl(tentacleUrl);
+  setStreamingConfigBackendUrl(tentacleUrl);
 }
 
 /* ── Auth & server guard ── */
@@ -73,6 +77,27 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [token, segments, serverUrl]);
 
   return <>{children}</>;
+}
+
+/** Sync direct streaming config from backend into JellyfinClient. */
+function DirectStreamingSync() {
+  const client = useJellyfinClient();
+  const token = storage.getItem("tentacle_token");
+  const { data } = useStreamingConfig(token);
+
+  useEffect(() => {
+    if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
+      client.setDirectStreaming({
+        enabled: true,
+        mediaBaseUrl: data.mediaBaseUrl,
+        jellyfinToken: data.jellyfinToken,
+      });
+    } else {
+      client.setDirectStreaming(null);
+    }
+  }, [client, data]);
+
+  return null;
 }
 
 function OfflineOverlay() {
@@ -170,6 +195,7 @@ export default function RootLayout() {
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={client}>
             <AuthGuard>
+              <DirectStreamingSync />
               <OfflineOverlay />
               <Slot />
             </AuthGuard>

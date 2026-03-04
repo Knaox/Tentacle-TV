@@ -12,6 +12,8 @@ export interface StreamingConfig {
   jellyfinToken: string | null;
 }
 
+export const STREAMING_CONFIG_QUERY_KEY = "streaming-config";
+
 const DISABLED_CONFIG: StreamingConfig = {
   enabled: false,
   mediaBaseUrl: null,
@@ -39,7 +41,7 @@ async function fetchStreamingConfig(token: string | null): Promise<StreamingConf
  */
 export function useStreamingConfig(token: string | null) {
   return useQuery<StreamingConfig>({
-    queryKey: ["streaming-config", token],
+    queryKey: [STREAMING_CONFIG_QUERY_KEY, token],
     queryFn: () => fetchStreamingConfig(token),
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,

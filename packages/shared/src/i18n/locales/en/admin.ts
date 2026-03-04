@@ -70,4 +70,7 @@ export default {
   directStreamingPrivateUrlHelp: "URL accessible from the local network (e.g. http://192.168.1.50:8096)",
   directStreamingUrlRequired: "Both URLs are required when direct streaming is enabled.",
   directStreamingHttpWarning: "Warning: this URL uses HTTP but your Tentacle site is served over HTTPS. The browser will block requests (mixed content). Use an HTTPS URL or put an HTTPS reverse proxy in front of Jellyfin.",
+  directStreamingCorsWarning: "Jellyfin does not appear to allow cross-origin requests from your Tentacle domain. Direct streaming will not work in browsers. Add your Tentacle domain in Jellyfin > Dashboard > Networking > CORS hosts.",
+  directStreamingCorsOk: "CORS OK",
+  directStreamingCorsHelp: "For direct streaming to work in browsers, Jellyfin must allow cross-origin requests. Go to Jellyfin > Dashboard > Networking > CORS hosts and add your Tentacle URL (e.g. https://tentacle.example.com).",
 } as const;

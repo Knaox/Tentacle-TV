@@ -75,6 +75,13 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
+      // Capture the web user's Jellyfin token for direct streaming on the paired device
+      const authHeader = request.headers.authorization as string | undefined;
+      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      // Jellyfin tokens are opaque hex strings; JWTs have 3 dot-separated parts
+      const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
+      const jellyfinAccessToken = isJellyfinToken ? bearerToken : null;
+
       const expiresAt = new Date(Date.now() + CODE_TTL_MS);
       await prisma.pairingCode.create({
         data: {
@@ -85,6 +92,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
           jellyfinUserId: user.userId,
           username: user.username,
           token,
+          jellyfinAccessToken,
           status: "pending",
         },
       });
@@ -147,13 +155,14 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(400).send({ message: "Code invalide" });
       }
 
-      // Register the paired device
+      // Register the paired device (include Jellyfin token for direct streaming)
       await prisma.pairedDevice.create({
         data: {
           name: body.deviceName || record.deviceName || "TV",
           jellyfinUserId: record.jellyfinUserId!,
           username: record.username!,
           tokenHash: hashToken(record.token),
+          jellyfinAccessToken: record.jellyfinAccessToken,
         },
       });
 
@@ -195,6 +204,11 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
+      // Capture Jellyfin token for direct streaming
+      const authHeader = request.headers.authorization as string | undefined;
+      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
+
       const prisma = getPrisma();
       await prisma.pairedDevice.create({
         data: {
@@ -202,6 +216,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
           jellyfinUserId: user.userId,
           username: user.username,
           tokenHash: hashToken(token),
+          jellyfinAccessToken: isJellyfinToken ? bearerToken : null,
         },
       });
 
@@ -267,20 +282,12 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ── DELETE /devices/:id — Revoke a paired device (admin only) ──
-  app.delete(
-    "/devices/:id",
-    { preHandler: [requireAdmin] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const prisma = getPrisma();
-
-      const device = await prisma.pairedDevice.findUnique({ where: { id } });
-      if (!device) {
-        return reply.status(404).send({ message: "Appareil introuvable" });
-      }
-
-      await prisma.pairedDevice.delete({ where: { id } });
-      return { success: true };
-    },
-  );
+  app.delete("/devices/:id", { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const prisma = getPrisma();
+    const device = await prisma.pairedDevice.findUnique({ where: { id } });
+    if (!device) return reply.status(404).send({ message: "Appareil introuvable" });
+    await prisma.pairedDevice.delete({ where: { id } });
+    return { success: true };
+  });
 };

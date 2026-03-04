@@ -5,8 +5,10 @@ import { UpdateNotification } from "./components/UpdateNotification";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig, useStreamingConfig } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePluginRoutes, usePluginAdminRoutes } from "@tentacle-tv/plugins-api";
+import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { isTauriApp } from "./main";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -56,9 +58,11 @@ function useIsAuthenticated(): boolean {
   return useSyncExternalStore(subscribe, () => !!localStorage.getItem("tentacle_token"));
 }
 
-/** Sync direct streaming config from backend into JellyfinClient. */
+/** Sync direct streaming config from backend into JellyfinClient.
+ *  Auto-disables and refetches config when consecutive media errors occur. */
 function DirectStreamingSync() {
   const client = useJellyfinClient();
+  const queryClient = useQueryClient();
   const token = localStorage.getItem("tentacle_token");
   const { data } = useStreamingConfig(token);
 
@@ -73,6 +77,16 @@ function DirectStreamingSync() {
       client.setDirectStreaming(null);
     }
   }, [client, data]);
+
+  // Register fallback: on consecutive direct streaming errors, force refetch
+  useEffect(() => {
+    client.setOnDirectStreamingFail(() => {
+      queryClient.invalidateQueries({ queryKey: [STREAMING_CONFIG_QUERY_KEY] });
+    });
+  }, [client, queryClient]);
+
+  // Global image error listener for direct streaming URLs
+  useDirectStreamingGuard();
 
   return null;
 }
