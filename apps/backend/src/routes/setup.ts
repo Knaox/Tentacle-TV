@@ -153,7 +153,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
     try {
       // Authenticate via Jellyfin
       const authUrl = `${jellyfinUrl}/Users/AuthenticateByName`;
-      const authHeader = 'MediaBrowser Client="Tentacle TV", Device="Setup", DeviceId="tentacle-setup", Version="0.7.0"';
+      const authHeader = 'MediaBrowser Client="Tentacle TV", Device="Setup", DeviceId="tentacle-setup", Version="0.9.2"';
       app.log.info({ jellyfinUrl, authUrl, username: body.username }, "create-admin: authenticating");
 
       const authRes = await fetch(authUrl, {

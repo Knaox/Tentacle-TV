@@ -15,6 +15,8 @@ type JfClient = {
   fetch: <T>(path: string, init?: RequestInit) => Promise<T>;
   getBaseUrl: () => string;
   getToken: () => string | null;
+  getDeviceId: () => string;
+  getAuthHeader: () => string;
 };
 
 /**
@@ -40,7 +42,7 @@ async function sessionPost(
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) {
         headers["X-Emby-Token"] = token;
-        headers["X-Emby-Authorization"] = `MediaBrowser Token="${token}"`;
+        headers["X-Emby-Authorization"] = client.getAuthHeader();
       }
       const res = await fetch(`${baseUrl}${path}`, { method: "POST", body: bodyStr, headers });
       if (!res.ok) console.error(`[Playback] ${label} fallback fetch:`, res.status);
@@ -55,6 +57,26 @@ function beaconUrl(client: JfClient, path: string): string {
   const base = client.getBaseUrl();
   const token = client.getToken();
   return token ? `${base}${path}?api_key=${encodeURIComponent(token)}` : `${base}${path}`;
+}
+
+/**
+ * Fire-and-forget DELETE to kill an active Jellyfin transcode (ffmpeg process).
+ * Uses api_key query param since headers can't be set in keepalive/beacon contexts.
+ */
+function killActiveEncoding(client: JfClient, playSessionId: string | undefined, keepalive = false): void {
+  if (!playSessionId) return;
+  const deviceId = client.getDeviceId();
+  const base = client.getBaseUrl();
+  const token = client.getToken();
+  const url = `${base}/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}&playSessionId=${encodeURIComponent(playSessionId)}`;
+  // Include auth header so the request works through the proxy.
+  // Also keep api_key query param as fallback for sendBeacon contexts.
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["X-Emby-Token"] = token;
+    headers["X-Emby-Authorization"] = client.getAuthHeader();
+  }
+  fetch(url, { method: "DELETE", headers, keepalive }).catch(() => {});
 }
 
 export interface PlaybackReportingOptions {
@@ -78,6 +100,10 @@ export function usePlaybackReporting({
   const startedRef = useRef(false);
   const playMethod = isDirectPlay ? "DirectPlay" : isDirectStream ? "DirectStream" : "Transcode";
 
+  // Promise from the last stop call — lets callers (Watch.tsx) chain cache
+  // invalidation after Jellyfin has processed the final position.
+  const lastStopPromiseRef = useRef<Promise<void>>(Promise.resolve());
+
   // Refs for unmount cleanup (avoids premature Stop events on dep changes)
   const clientRef = useRef(client);
   const itemIdRef = useRef(itemId);
@@ -96,11 +122,24 @@ export function usePlaybackReporting({
   subIdxRef.current = subtitleStreamIndex;
   playMethodRef.current = playMethod;
 
+  // --- Interval management (declared early — used by all stop paths) ---
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /** Kill the progress interval. Called from every stop/cleanup path. */
+  const clearProgressInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   // When itemId changes (episode switch), stop the old session and reset state
   useEffect(() => {
     const prevId = prevItemIdRef.current;
     prevItemIdRef.current = itemId;
     if (prevId && prevId !== itemId && startedRef.current) {
+      clearProgressInterval();
+      killActiveEncoding(clientRef.current, playSessionIdRef.current);
       sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
         ItemId: prevId,
         MediaSourceId: prevId,
@@ -110,7 +149,7 @@ export function usePlaybackReporting({
       startedRef.current = false;
       positionRef.current = 0;
     }
-  }, [itemId]);
+  }, [itemId, clearProgressInterval]);
 
   const reportStart = useCallback(() => {
     if (!itemId) return;
@@ -150,20 +189,19 @@ export function usePlaybackReporting({
     pausedRef.current = isPaused;
   }, []);
 
-  // --- Interval management ---
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const resetInterval = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL_MS);
-  }, [reportProgress]);
+    clearProgressInterval();
+    if (startedRef.current) {
+      intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL_MS);
+    }
+  }, [reportProgress, clearProgressInterval]);
 
   // Periodic progress reporting
   useEffect(() => {
     if (!itemId) return;
     resetInterval();
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [itemId, resetInterval]);
+    return clearProgressInterval;
+  }, [itemId, resetInterval, clearProgressInterval]);
 
   // --- Immediate report after seek (Bug #1 fix) ---
   const reportSeek = useCallback((seconds: number, isPaused: boolean) => {
@@ -186,7 +224,9 @@ export function usePlaybackReporting({
 
     const onBeforeUnload = () => {
       if (!itemIdRef.current || !startedRef.current) return;
+      clearProgressInterval();
       startedRef.current = false;
+      killActiveEncoding(clientRef.current, playSessionIdRef.current, true);
       const url = beaconUrl(clientRef.current, "/Sessions/Playing/Stopped");
       const blob = new Blob([buildBody()], { type: "application/json" });
       if (typeof navigator.sendBeacon === "function") {
@@ -224,13 +264,16 @@ export function usePlaybackReporting({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Report stop on unmount only — refs ensure we use latest values without
-  // triggering cleanup on every dependency change
+  // triggering cleanup on every dependency change.
+  // Saves the Promise so Watch.tsx can chain cache invalidation after it.
   useEffect(() => {
     return () => {
+      clearProgressInterval();
       const id = itemIdRef.current;
       if (!id || !startedRef.current) return;
       startedRef.current = false;
-      sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
+      killActiveEncoding(clientRef.current, playSessionIdRef.current);
+      lastStopPromiseRef.current = sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
         ItemId: id,
         MediaSourceId: msIdRef.current ?? id,
         PlaySessionId: playSessionIdRef.current ?? undefined,
@@ -239,12 +282,16 @@ export function usePlaybackReporting({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Explicit stop for platforms that call it manually (TV, mobile)
-  const reportStop = useCallback(() => {
+  // Explicit stop for platforms that call it manually (TV, mobile).
+  // Returns a Promise so callers can wait for Jellyfin to acknowledge
+  // the final position before invalidating caches.
+  const reportStop = useCallback((): Promise<void> => {
+    clearProgressInterval();
     const id = itemIdRef.current;
-    if (!id || !startedRef.current) return;
+    if (!id || !startedRef.current) return Promise.resolve();
     startedRef.current = false;
-    sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
+    killActiveEncoding(clientRef.current, playSessionIdRef.current);
+    return sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
       ItemId: id,
       MediaSourceId: msIdRef.current ?? id,
       PlaySessionId: playSessionIdRef.current ?? undefined,
@@ -252,5 +299,10 @@ export function usePlaybackReporting({
     }, "reportStop");
   }, []);
 
-  return { reportStart, reportStop, updatePosition, reportSeek };
+  /** Kill the active transcode — exposed for seek in transcoded mode. */
+  const killTranscode = useCallback((sessionId?: string) => {
+    killActiveEncoding(clientRef.current, sessionId ?? playSessionIdRef.current);
+  }, []);
+
+  return { reportStart, reportStop, updatePosition, reportSeek, killTranscode, lastStopPromiseRef };
 }

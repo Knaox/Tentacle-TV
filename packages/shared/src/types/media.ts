@@ -79,6 +79,17 @@ export interface MediaSource {
   SupportsDirectStream: boolean;
   SupportsTranscoding: boolean;
   MediaStreams: MediaStream[];
+  // Fields returned by POST /Items/{id}/PlaybackInfo
+  TranscodingUrl?: string;
+  TranscodingSubProtocol?: string;
+  TranscodingContainer?: string;
+  DefaultAudioStreamIndex?: number;
+  DefaultSubtitleStreamIndex?: number;
+}
+
+export interface PlaybackInfoResponse {
+  MediaSources: MediaSource[];
+  PlaySessionId: string;
 }
 
 export interface MediaStream {
@@ -123,4 +134,68 @@ export interface LibraryView {
   Name: string;
   CollectionType?: string;
   ImageTags?: Record<string, string>;
+}
+
+// ── DeviceProfile types (Jellyfin PlaybackInfo API) ──
+
+export interface DirectPlayProfile {
+  Container: string;
+  Type: "Video" | "Audio";
+  VideoCodec?: string;
+  AudioCodec?: string;
+}
+
+export interface TranscodingProfile {
+  Container: string;
+  Type: "Video" | "Audio";
+  VideoCodec?: string;
+  AudioCodec?: string;
+  Protocol: string;
+  EstimateContentLength?: boolean;
+  EnableMpegtsM2TsMode?: boolean;
+  TranscodeSeekInfo?: "Auto" | "Bytes";
+  CopyTimestamps?: boolean;
+  Context?: "Streaming" | "Static";
+  MaxAudioChannels?: string;
+  MinSegments?: number;
+  SegmentLength?: number;
+  BreakOnNonKeyFrames?: boolean;
+}
+
+export interface ProfileCondition {
+  Condition: "Equals" | "NotEquals" | "LessThanEqual" | "GreaterThanEqual" | "EqualsAny";
+  Property: string;
+  Value: string;
+  IsRequired?: boolean;
+}
+
+export interface CodecProfile {
+  Type: "Video" | "VideoAudio" | "Audio";
+  Codec?: string;
+  Conditions: ProfileCondition[];
+  ApplyConditions?: ProfileCondition[];
+}
+
+export interface SubtitleProfile {
+  Format: string;
+  Method: "Encode" | "Embed" | "External" | "Hls" | "Drop";
+}
+
+export interface ResponseProfile {
+  Type: "Video" | "Audio";
+  Container?: string;
+  VideoCodec?: string;
+  AudioCodec?: string;
+  MimeType: string;
+}
+
+export interface DeviceProfile {
+  MaxStreamingBitrate?: number;
+  MaxStaticBitrate?: number;
+  MusicStreamingTranscodingBitrate?: number;
+  DirectPlayProfiles: DirectPlayProfile[];
+  TranscodingProfiles: TranscodingProfile[];
+  CodecProfiles?: CodecProfile[];
+  SubtitleProfiles: SubtitleProfile[];
+  ResponseProfiles?: ResponseProfile[];
 }

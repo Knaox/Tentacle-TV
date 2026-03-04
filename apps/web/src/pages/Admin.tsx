@@ -63,6 +63,7 @@ export function Admin() {
         </div>
       </div>
 
+      <PlaybackSection />
       <ServicesSection />
       <PairedDevicesSection />
       <div className={cls.card}>
@@ -90,6 +91,54 @@ export function Admin() {
         })}</div>}
       </div>
     </div></div>
+  );
+}
+
+/* ── Playback ── */
+function PlaybackSection() {
+  const { t } = useTranslation("admin");
+  const [minutes, setMinutes] = useState(2);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`${BACKEND}/api/admin/playback`, { headers: hdrs() });
+        if (r.ok) { const d = await r.json(); setMinutes(d.autoplayCreditsMinutes ?? 2); }
+      } catch {}
+      setLoaded(true);
+    })();
+  }, []);
+
+  const save = async () => {
+    setBusy(true); setMsg(null);
+    try {
+      const r = await fetch(`${BACKEND}/api/admin/playback`, { method: "PUT", headers: hdrs(), body: JSON.stringify({ autoplayCreditsMinutes: minutes }) });
+      setMsg(r.ok ? { ok: true, t: t("admin:saved") } : { ok: false, t: t("admin:saveFailed") });
+    } catch { setMsg({ ok: false, t: t("admin:saveFailed") }); }
+    setBusy(false);
+  };
+
+  if (!loaded) return null;
+  return (
+    <div className={cls.card}>
+      <h2 className="mb-1 text-lg font-semibold text-white">{t("admin:playback")}</h2>
+      <p className="mb-4 text-sm text-white/40">{t("admin:playbackDescription")}</p>
+      <div className={cls.sub}>
+        <label className={cls.lbl}>{t("admin:autoplayCreditsMinutes")}</label>
+        <div className="flex items-center gap-3">
+          <input type="number" min={0} max={30} step={0.5} value={minutes}
+            onChange={e => setMinutes(Number(e.target.value))}
+            className="w-24 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-tentacle-accent" />
+          <span className="text-xs text-white/40">min</span>
+          <button onClick={save} disabled={busy} className={cls.bp}>{busy ? "..." : t("admin:save")}</button>
+          {msg && <span className={`text-xs ${msg.ok ? "text-green-400" : "text-red-400"}`}>{msg.t}</span>}
+        </div>
+        <p className="mt-1 text-xs text-white/30">{t("admin:autoplayCreditsHelp")}</p>
+      </div>
+    </div>
   );
 }
 

@@ -51,6 +51,7 @@ const OBSERVED_PROPERTIES = [
   ["sid", "int64"],
   ["demuxer-cache-duration", "double", "none"],
   ["paused-for-cache", "flag"],
+  ["eof-reached", "flag"],
 ] as const satisfies readonly MpvObservableProperty[];
 
 export function useDesktopPlayer() {
@@ -154,6 +155,14 @@ export function useDesktopPlayer() {
               }
               case "paused-for-cache":
                 return { ...prev, buffering: event.data as boolean };
+              case "eof-reached":
+                // With keep-open=yes, mpv doesn't fire end-file on EOF — it pauses
+                // at the last frame and sets eof-reached=true instead.
+                console.debug("[mpv] eof-reached raw:", event.data, typeof event.data);
+                if (event.data) {
+                  return { ...prev, eof: true };
+                }
+                return prev;
               default:
                 return prev;
             }

@@ -5,6 +5,7 @@ export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeatured
 export { useStream } from "./hooks/useStream";
 export type { StreamOptions } from "./hooks/useStream";
 export { useAuth } from "./hooks/useAuth";
+export { useUserId } from "./hooks/useUserId";
 export { usePlaybackReporting } from "./hooks/usePlayback";
 export type { PlaybackReportingOptions } from "./hooks/usePlayback";
 export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";

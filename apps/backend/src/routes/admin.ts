@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "../middleware/auth";
 import {
   setConfigValue,
+  getConfigValue,
   getJellyfinUrl,
   getJellyfinApiKey,
   setAppState,
@@ -123,6 +124,19 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     const url = `mysql://${body.user}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
     saveDatabaseUrl(url);
     return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
+  });
+
+  /** GET /api/admin/playback — Read playback settings. */
+  app.get("/playback", async () => {
+    const v = getConfigValue("autoplay_credits_minutes");
+    return { autoplayCreditsMinutes: v != null ? Number(v) : 2 };
+  });
+
+  /** PUT /api/admin/playback — Update playback settings. */
+  app.put("/playback", async (request) => {
+    const body = z.object({ autoplayCreditsMinutes: z.number().min(0).max(30) }).parse(request.body);
+    await setConfigValue("autoplay_credits_minutes", String(body.autoplayCreditsMinutes));
+    return { success: true };
   });
 
   /** POST /api/admin/reset-server — Wipe all config and reset to setup mode. */

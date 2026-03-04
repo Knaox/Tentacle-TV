@@ -57,4 +57,8 @@ export default {
   saveFailed: "Save failed",
   adminBadge: "Admin",
   ticketClosed: "Closed",
+  playback: "Playback",
+  playbackDescription: "Configure automatic episode advancement behavior.",
+  autoplayCreditsMinutes: "Auto-play trigger (minutes before end)",
+  autoplayCreditsHelp: "When no credits are detected, the \"Up Next\" banner appears this many minutes before the end of the episode. Set to 0 to only trigger at the very end.",
 } as const;
