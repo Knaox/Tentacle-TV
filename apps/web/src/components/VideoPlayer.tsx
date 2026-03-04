@@ -5,7 +5,6 @@ import Hls from "hls.js";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
-import { SplashAnimation } from "./SplashAnimation";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
@@ -152,7 +151,6 @@ export function VideoPlayer({
   const waitingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const [policyMuted, setPolicyMuted] = useState(false);
-  const [splashDone, setSplashDone] = useState(false);
   const seekTargetRef = useRef<number | null>(null);
   const seekStallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const currentTime = effectiveOffsetRef.current + displayTime;
@@ -646,14 +644,8 @@ export function VideoPlayer({
         ))}
       </video>
 
-      {/* Splash intro — poulpe pirate qui plonge (premier lancement uniquement) */}
-      {!splashDone && (
-        <SplashAnimation videoReady={playing} onComplete={() => setSplashDone(true)} />
-      )}
-
-      {/* Spinner classique pour le buffering en cours de lecture */}
-      {splashDone && loading && (playing || sourceChangingRef.current) && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+      {loading && (playing || sourceChangingRef.current) && (
+        <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center ${sourceChangingRef.current && !hasStartedRef.current ? "bg-black" : ""}`} onClick={(e) => e.stopPropagation()}>
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
         </div>
       )}
