@@ -267,20 +267,26 @@ export class JellyfinClient {
 
     // Direct streaming: call Jellyfin directly so the transcode session
     // (and all HLS segment URLs) use the user's token, not the admin API key.
+    // Wrapped in try/catch: Safari/iOS blocks CORS preflight → fall back to proxy.
     if (this.directStreaming) {
-      const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
-      const res = await fetch(`${mediaBaseUrl}${path}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          [JELLYFIN_AUTH_HEADER]: this.getAuthHeader(jellyfinToken),
-          [JELLYFIN_TOKEN_HEADER]: jellyfinToken,
-        },
-        body,
-      });
-      if (!res.ok) throw new JellyfinError(res.status, res.statusText, path);
-      const text = res.status === 204 ? "" : await res.text();
-      return text ? JSON.parse(text) : (undefined as unknown as PlaybackInfoResponse);
+      try {
+        const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
+        const res = await fetch(`${mediaBaseUrl}${path}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            [JELLYFIN_AUTH_HEADER]: this.getAuthHeader(jellyfinToken),
+            [JELLYFIN_TOKEN_HEADER]: jellyfinToken,
+          },
+          body,
+        });
+        if (!res.ok) throw new JellyfinError(res.status, res.statusText, path);
+        const text = res.status === 204 ? "" : await res.text();
+        return text ? JSON.parse(text) : (undefined as unknown as PlaybackInfoResponse);
+      } catch (e) {
+        if (e instanceof JellyfinError) throw e;
+        // CORS preflight blocked (Safari/iOS) — fall back to proxy
+      }
     }
 
     return this.fetch<PlaybackInfoResponse>(path, { method: "POST", body });
