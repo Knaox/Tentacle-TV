@@ -191,6 +191,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (isDesktop || !prefsReady || !itemId) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks ?? 0;
     const ticks = startTicks > 0 ? startTicks : resumeTicks;
+    // Edge/Chrome: no native audioTracks API — if user wants non-default audio,
+    // force server-side audio selection (remux/transcode) instead of direct play.
+    const forceTranscode = !supportsNativeAudioTracks && audioIndex !== defaultAudio;
     pbInfo.fetchPlaybackInfo({
       itemId,
       mediaSourceId,
@@ -198,6 +201,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
       subtitleStreamIndex: burnInSubtitleIndex,
       startTimeTicks: ticks > 0 ? ticks : undefined,
       maxStreamingBitrate: quality ?? 42_000_000,
+      forceTranscode,
     });
   }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality]); // eslint-disable-line react-hooks/exhaustive-deps
 
