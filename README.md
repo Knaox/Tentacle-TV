@@ -29,7 +29,8 @@
 | **Web** | Available | React 19 + Vite 6 + Tailwind CSS |
 | **Desktop** | Available | Tauri v2 + native mpv player (Windows, macOS, Linux) |
 | **Mobile** | Coming soon | React Native + Expo (iOS & Android) |
-| **TV** | Coming soon | React Native (Android TV) |
+| **Android TV** | Coming soon | React Native (Android TV) |
+| **Apple TV** | Coming soon | React Native (tvOS) |
 
 ---
 
