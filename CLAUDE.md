@@ -107,7 +107,7 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 | Mobile | React Native 0.76, Expo 52, NativeWind 4 |
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | Data | TanStack Query v5 |
-| Video | Video.js 8 + hls.js (web), react-native-video (mobile/TV) |
+| Video | hls.js 1.6 + HTML5 `<video>` (web), react-native-video (mobile/TV) |
 | i18n | i18next + react-i18next (FR/EN) |
 | Validation | Zod 3.24 |
 | TypeScript | 5.7, strict mode, ES2022 target |

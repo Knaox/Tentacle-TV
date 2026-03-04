@@ -20,6 +20,10 @@
   Browse and stream your Jellyfin library through a sleek, dark-themed interface with glassmorphism design, smooth animations, and powerful features — all self-hosted.
 </p>
 
+<p align="center">
+  <img src="docs/screenshot-home.png" alt="Tentacle TV — Home" width="800" />
+</p>
+
 ---
 
 ## Platforms
@@ -363,7 +367,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |
-| Video | Video.js 8 + hls.js (web), mpv (desktop) |
+| Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop) |
 | i18n | i18next + react-i18next (English & French) |
 | Validation | Zod 3.24 |
 | CI/CD | GitHub Actions (Docker build on push to main) |
