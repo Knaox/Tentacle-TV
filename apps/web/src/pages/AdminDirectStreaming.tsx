@@ -64,6 +64,11 @@ export function DirectStreamingSection() {
     setTesting(false);
   };
 
+  const isSiteHttps = window.location.protocol === "https:";
+  const isHttpUrl = (url: string) => url.trim().toLowerCase().startsWith("http://");
+  const publicHttpWarning = isSiteHttps && isHttpUrl(publicUrl);
+  const privateHttpWarning = isSiteHttps && isHttpUrl(privateUrl);
+
   const dot = (ok: boolean) => `inline-block h-2 w-2 rounded-full mr-1.5 ${ok ? "bg-green-400" : "bg-red-400"}`;
 
   if (!loaded) return null;
@@ -88,12 +93,18 @@ export function DirectStreamingSection() {
             <input value={publicUrl} onChange={(e) => setPublicUrl(e.target.value)}
               placeholder="https://jf.example.com" className={cls.inp} />
             <p className="mt-1 text-xs text-white/30">{t("admin:directStreamingPublicUrlHelp")}</p>
+            {publicHttpWarning && (
+              <p className="mt-1 text-xs text-amber-400">{t("admin:directStreamingHttpWarning")}</p>
+            )}
           </div>
           <div>
             <label className={cls.lbl}>{t("admin:directStreamingPrivateUrl")}</label>
             <input value={privateUrl} onChange={(e) => setPrivateUrl(e.target.value)}
               placeholder="http://192.168.1.50:8096" className={cls.inp} />
             <p className="mt-1 text-xs text-white/30">{t("admin:directStreamingPrivateUrlHelp")}</p>
+            {privateHttpWarning && (
+              <p className="mt-1 text-xs text-amber-400">{t("admin:directStreamingHttpWarning")}</p>
+            )}
           </div>
 
           {/* Test results */}

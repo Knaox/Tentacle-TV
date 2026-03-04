@@ -69,4 +69,5 @@ export default {
   directStreamingPublicUrlHelp: "URL accessible depuis Internet (ex: https://jf.example.com)",
   directStreamingPrivateUrlHelp: "URL accessible depuis le réseau local (ex: http://192.168.1.50:8096)",
   directStreamingUrlRequired: "Les deux URLs sont requises quand la lecture directe est activée.",
+  directStreamingHttpWarning: "Attention : cette URL est en HTTP mais votre site Tentacle est en HTTPS. Le navigateur bloquera les requêtes (contenu mixte). Utilisez une URL HTTPS ou placez un reverse proxy HTTPS devant Jellyfin.",
 } as const;
