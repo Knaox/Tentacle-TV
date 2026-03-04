@@ -58,4 +58,8 @@ export default {
   emptyLibrary: "Aucun média dans cette bibliothèque",
   seasonsCount_one: "{{count}} saison",
   seasonsCount_other: "{{count}} saisons",
+  offlineTitle: "Oups, le serveur fait une pause !",
+  offlineMessage: "Pas de panique, ce n'est pas de votre faute. Le serveur est temporairement injoignable, notre petit poulpe fait tout son possible pour rétablir la connexion.",
+  offlineHint: "Cela se résout généralement tout seul. Si le problème persiste, contactez votre administrateur.",
+  retryConnection: "Réessayer la connexion",
 } as const;

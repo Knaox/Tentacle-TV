@@ -66,7 +66,9 @@ export function Login() {
             <p className="text-sm text-red-400">
               {login.error.message?.includes("401")
                 ? t("invalidCredentials")
-                : login.error.message || t("loginFailed")}
+                : login.error.message?.includes("502") || login.error.message?.includes("503")
+                  ? t("common:offlineTitle")
+                  : login.error.message || t("loginFailed")}
             </p>
           )}
 
