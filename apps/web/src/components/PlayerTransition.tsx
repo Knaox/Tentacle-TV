@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SplashOctopus } from "./SplashOctopus";
 
 interface PlayerTransitionProps {
   children: ReactNode;
@@ -33,7 +34,7 @@ function playSplashSound() {
   } catch { /* autoplay policy ou pas de Web Audio */ }
 }
 
-/** Gouttes d'eau pré-calculées (stable entre renders). */
+/** Gouttes d'eau pré-calculées. */
 const drops = Array.from({ length: DROP_COUNT }, (_, i) => ({
   angle: (i / DROP_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.3,
   dist: 90 + Math.random() * 70,
@@ -41,14 +42,14 @@ const drops = Array.from({ length: DROP_COUNT }, (_, i) => ({
   delay: Math.random() * 0.15,
 }));
 
-type Phase = "enter" | "clap" | "splash" | "exit";
+export type SplashPhase = "enter" | "clap" | "splash" | "exit";
 
 /**
  * Animation d'intro poulpe pirate : apparition → claque des tentacules →
  * plongeon avec éclaboussures + son → révélation du lecteur vidéo.
  */
 export function PlayerTransition({ children, transparent = false }: PlayerTransitionProps) {
-  const [phase, setPhase] = useState<Phase>("enter");
+  const [phase, setPhase] = useState<SplashPhase>("enter");
   const soundPlayed = useRef(false);
 
   useEffect(() => {
@@ -60,19 +61,6 @@ export function PlayerTransition({ children, transparent = false }: PlayerTransi
     const t3 = setTimeout(() => setPhase("exit"), 2200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
-
-  const octopusVariants = {
-    enter: { scale: 0, opacity: 0, y: 0, rotate: 0 },
-    clap: { scale: [1, 1.15, 0.92, 1.1, 0.96, 1.05, 1], opacity: 1, y: 0, rotate: [0, -4, 5, -3, 4, -2, 0] },
-    splash: { scale: 0.5, opacity: 0.7, y: 80, rotate: 0 },
-    exit: { scale: 0.2, opacity: 0, y: 140, rotate: 0 },
-  };
-  const octopusTransitions: Record<Phase, object> = {
-    enter: { duration: 0.35, ease: "backOut" },
-    clap: { duration: 1, ease: "easeInOut" },
-    splash: { duration: 0.5, ease: "easeIn" },
-    exit: { duration: 0.4, ease: "easeIn" },
-  };
 
   const showSplashFx = phase === "splash" || phase === "exit";
 
@@ -88,18 +76,23 @@ export function PlayerTransition({ children, transparent = false }: PlayerTransi
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {/* Poulpe pirate */}
-            <motion.img
-              src="/tentacle-logo-pirate.svg"
-              alt=""
+            {/* Poulpe pirate animé */}
+            <motion.div
               className="relative z-10"
-              draggable={false}
-              style={{ width: 180, height: Math.round(180 * (560 / 512)) }}
-              initial="enter"
-              animate={phase}
-              variants={octopusVariants}
-              transition={octopusTransitions[phase]}
-            />
+              initial={{ scale: 0, opacity: 0, y: 0 }}
+              animate={
+                phase === "enter" ? { scale: 1, opacity: 1, y: 0 } :
+                phase === "clap" ? { scale: 1, opacity: 1, y: 0 } :
+                { scale: 0.5, opacity: 0.7, y: 80 }
+              }
+              transition={
+                phase === "enter" ? { duration: 0.35, ease: "backOut" } :
+                phase === "splash" ? { duration: 0.5, ease: "easeIn" } :
+                { duration: 0.3 }
+              }
+            >
+              <SplashOctopus phase={phase} size={180} />
+            </motion.div>
 
             {/* Éclaboussures — gouttes d'eau */}
             {showSplashFx && drops.map((d, i) => (
