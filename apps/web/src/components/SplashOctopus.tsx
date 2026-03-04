@@ -15,10 +15,10 @@ export function SplashOctopus({ phase, size = 180 }: SplashOctopusProps) {
 
   // CSS keyframes pour le clap et le splash — animation des tentacules
   // Pattern SVG : translate(pivot) rotate(deg) translate(-pivot)
-  const LP = "180,360";   // pivot gauche
-  const RP = "332,360";   // pivot droit
-  const NLP = "-180,-360"; // inverse
-  const NRP = "-332,-360"; // inverse
+  const LP = "180px,360px";   // pivot gauche
+  const RP = "332px,360px";   // pivot droit
+  const NLP = "-180px,-360px"; // inverse
+  const NRP = "-332px,-360px"; // inverse
 
   const cssKeyframes = `
     @keyframes tentacle-clap-left {
