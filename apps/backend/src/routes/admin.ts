@@ -178,6 +178,35 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     return { success: true };
   });
 
+  /** POST /api/admin/test-direct-streaming — Test connectivity to Jellyfin URLs from the server. */
+  app.post("/test-direct-streaming", async (request) => {
+    const body = z.object({
+      publicUrl: z.string().url().optional().or(z.literal("")),
+      privateUrl: z.string().url().optional().or(z.literal("")),
+    }).parse(request.body);
+
+    const test = async (url: string): Promise<{ ok: boolean; version?: string; error?: string }> => {
+      if (!url) return { ok: false, error: "URL vide" };
+      try {
+        const res = await fetch(`${url.replace(/\/$/, "")}/System/Info/Public`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+        const info = await res.json();
+        return { ok: true, version: info.Version };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
+      }
+    };
+
+    const [pub, priv] = await Promise.all([
+      body.publicUrl ? test(body.publicUrl) : Promise.resolve(null),
+      body.privateUrl ? test(body.privateUrl) : Promise.resolve(null),
+    ]);
+
+    return { public: pub, private: priv };
+  });
+
   /** POST /api/admin/reset-server — Wipe all config and reset to setup mode. */
   app.post("/reset-server", async (_request, reply) => {
     try {

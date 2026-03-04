@@ -41,14 +41,29 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     const clientIp = request.ip;
     const mediaBaseUrl = isPrivateIp(clientIp) ? cfg.privateUrl : cfg.publicUrl;
 
+    // Server-side health check: verify Jellyfin is reachable from backend
+    try {
+      const hc = await fetch(`${mediaBaseUrl}/System/Info/Public`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!hc.ok) {
+        request.log.warn({ mediaBaseUrl, status: hc.status }, "Direct streaming health check failed");
+        return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
+      }
+    } catch (err) {
+      request.log.warn({ mediaBaseUrl, err }, "Direct streaming health check unreachable");
+      return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
+    }
+
     // The user's own Jellyfin token (from Bearer header) — safe for direct media access.
-    // Paired device JWTs are NOT valid Jellyfin tokens, so we return null for them.
     const authHeader = request.headers.authorization;
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     // Paired device JWTs are dot-separated (3 parts); Jellyfin tokens are opaque hex strings.
     const isPairedDevice = bearerToken?.includes(".") && bearerToken.split(".").length === 3;
     const jellyfinToken = isPairedDevice ? null : bearerToken;
+
+    request.log.info({ clientIp, private: isPrivateIp(clientIp), mediaBaseUrl }, "Direct streaming active");
 
     return {
       directStreaming: {
