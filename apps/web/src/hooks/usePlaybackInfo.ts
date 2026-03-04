@@ -46,6 +46,8 @@ export function usePlaybackInfo() {
     subtitleStreamIndex?: number;
     startTimeTicks?: number;
     maxStreamingBitrate?: number;
+    /** Force server-side audio selection (Edge/Chrome: no native audioTracks API). */
+    forceTranscode?: boolean;
   }) => {
     if (!userId) return;
 
@@ -53,13 +55,18 @@ export function usePlaybackInfo() {
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      const bitrateProfile = opts.maxStreamingBitrate != null
+      let profile = opts.maxStreamingBitrate != null
         ? buildBrowserDeviceProfile(opts.maxStreamingBitrate)
         : deviceProfile;
+      // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
+      // returns a TranscodingUrl with the correct audio track selected server-side.
+      if (opts.forceTranscode) {
+        profile = { ...profile, DirectPlayProfiles: [] };
+      }
 
       const result = await client.getPlaybackInfo(opts.itemId, {
         userId,
-        deviceProfile: bitrateProfile,
+        deviceProfile: profile,
         mediaSourceId: opts.mediaSourceId,
         audioStreamIndex: opts.audioStreamIndex,
         subtitleStreamIndex: opts.subtitleStreamIndex,
