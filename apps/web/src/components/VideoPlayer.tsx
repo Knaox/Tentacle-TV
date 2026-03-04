@@ -233,7 +233,7 @@ export function VideoPlayer({
           seekTargetRef.current = clamped;
           onSeekRequest?.(clamped);
         }
-      }, 3000);
+      }, 8000);
       return;
     }
 
@@ -354,7 +354,7 @@ export function VideoPlayer({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
         lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
-        backBufferLength: 90,         // keep 90s of played content for quick backward seeks
+        backBufferLength: Infinity,    // VOD: keep all played segments — instant backward seek
         maxBufferLength: 30,          // buffer 30s ahead for smooth playback
         maxMaxBufferLength: 120,      // allow up to 120s buffer for sustained streaming
         startFragPrefetch: true,      // prefetch next fragment during current load
@@ -607,7 +607,17 @@ export function VideoPlayer({
           const v = videoRef.current;
           if (!v || !v.duration) return;
           const buf = v.buffered;
-          if (buf.length > 0) setBuffered(buf.end(buf.length - 1) / v.duration);
+          if (buf.length > 0) {
+            // Show buffered range ahead of current position (not stale high-water mark)
+            let bufEnd = 0;
+            for (let i = 0; i < buf.length; i++) {
+              if (v.currentTime >= buf.start(i) - 0.5 && v.currentTime <= buf.end(i) + 0.5) {
+                bufEnd = buf.end(i); break;
+              }
+            }
+            if (bufEnd === 0) bufEnd = buf.end(buf.length - 1);
+            setBuffered(bufEnd / v.duration);
+          }
         }}
         onLoadedMetadata={(e) => { setVideoDuration(e.currentTarget.duration); }}
         onPlay={() => {
