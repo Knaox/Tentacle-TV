@@ -33,7 +33,6 @@ export function MediaDetail() {
   }
 
   const isSeries = item.Type === "Series";
-  const isEpisode = item.Type === "Episode";
   const backdropId = item.ParentBackdropItemId ?? item.Id;
   const backdropUrl = client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 80 });
   const posterUrl = item.ImageTags?.Primary
