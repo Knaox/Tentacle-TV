@@ -18,7 +18,11 @@ export function MediaDetail() {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
-  const { data: similar } = useSimilarItems(itemId);
+  const isEpisode = item?.Type === "Episode";
+  const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
+  const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
+  const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
+  const { data: similar } = useSimilarItems(similarId, similarParentId);
 
   if (isLoading || !item) {
     return (

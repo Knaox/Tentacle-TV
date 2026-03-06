@@ -1,7 +1,12 @@
-import { View, Text, Pressable } from "react-native";
+import { memo, useState } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
+import Animated from "react-native-reanimated";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { PressableCard, ProgressBar } from "@/components/ui";
+import { colors, typography } from "@/theme";
+import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
   item: MediaItem;
@@ -9,28 +14,65 @@ interface Props {
   width?: number;
 }
 
-export function MobileMediaCard({ item, onPress, width }: Props) {
+export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, width = 130 }: Props) {
   const client = useJellyfinClient();
-  const poster = client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 });
-  const year = item.ProductionYear;
-  const progress = item.UserData?.PlayedPercentage;
+  const isEpisode = item.Type === "Episode";
+  const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
+  const hasPrimary = isEpisode && item.SeriesId ? true : !!item.ImageTags?.Primary;
+  const poster = hasPrimary ? client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 }) : null;
+  const [imgError, setImgError] = useState(false);
+  const progress = item.UserData?.PlayedPercentage ?? 0;
+  const isWatched = item.UserData?.Played === true && progress >= 100;
+  const hasProgress = progress > 0 && progress < 100;
+  const showFallback = !poster || imgError;
 
   return (
-    <Pressable onPress={onPress} style={{ width }}>
-      <View style={{ aspectRatio: 2 / 3, borderRadius: 10, overflow: "hidden", backgroundColor: "#1e1e2e" }}>
-        <Image source={{ uri: poster }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
-        {progress != null && progress > 0 && (
-          <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.2)" }}>
-            <View style={{ height: "100%", width: `${progress}%`, backgroundColor: "#8b5cf6" }} />
+    <PressableCard onPress={onPress} style={{ width }}>
+      <View style={st.poster}>
+        {showFallback ? (
+          <View style={st.fallback}>
+            <Text style={st.fallbackLetter}>{item.Name?.charAt(0).toUpperCase() ?? "?"}</Text>
+          </View>
+        ) : ENABLE_SHARED_POSTER_TRANSITION ? (
+          <Animated.Image
+            source={{ uri: poster }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+            onError={() => setImgError(true)}
+            sharedTransitionTag={`poster-${posterId}`}
+          />
+        ) : (
+          <Image
+            source={{ uri: poster }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            onError={() => setImgError(true)}
+          />
+        )}
+        {hasProgress && (
+          <View style={st.progWrap}>
+            <ProgressBar progress={progress / 100} height={3} />
+          </View>
+        )}
+        {isWatched && (
+          <View style={st.badge}>
+            <Text style={st.check}>{"\u2713"}</Text>
           </View>
         )}
       </View>
-      <Text numberOfLines={1} style={{ color: "#fff", fontSize: 12, fontWeight: "600", marginTop: 6 }}>
-        {item.Name}
-      </Text>
-      {year && (
-        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{year}</Text>
-      )}
-    </Pressable>
+      <Text numberOfLines={1} style={st.title}>{item.Name}</Text>
+      {item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
+    </PressableCard>
   );
-}
+});
+
+const st = StyleSheet.create({
+  poster: { aspectRatio: 2 / 3, borderRadius: 10, overflow: "hidden", backgroundColor: colors.surfaceElevated },
+  fallback: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceElevated },
+  fallbackLetter: { fontSize: 32, fontWeight: "700", color: colors.textMuted },
+  progWrap: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 4, paddingBottom: 4 },
+  badge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" },
+  check: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  title: { ...typography.small, color: colors.textPrimary, marginTop: 6 },
+  year: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
+});

@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import compress from "@fastify/compress";
 import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { resolve } from "path";
@@ -59,6 +60,7 @@ async function main() {
   // Mobile, and TV apps all send different origins. Authentication is
   // handled by JWT, not CORS, so restricting origins adds no security.
   await app.register(cors, { origin: true });
+  await app.register(compress, { threshold: 1024 });
   await app.register(rateLimit, { max: RATE_LIMIT, timeWindow: "1 minute" });
 
   // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)

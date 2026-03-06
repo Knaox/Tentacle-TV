@@ -1,6 +1,7 @@
 export default {
   title: "About",
   version: "Version {{version}}",
+  versionBuild: "Version {{version}} (build {{build}})",
   description: "Tentacle TV is a premium media client designed to deliver a smooth and elegant streaming experience. Available on Web, Desktop, Mobile, and TV, it lets you browse, search, and watch your media library from any device.",
   features: "Features",
   featurePlayer: "Built-in video player with audio/subtitle track selection",

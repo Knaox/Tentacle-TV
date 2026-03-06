@@ -6,4 +6,10 @@ export default {
   downloading: "Downloading… {{progress}}%",
   install: "Install",
   later: "Later",
+  justNow: "Just now",
+  minutesAgo: "{{count}}m ago",
+  hoursAgo: "{{count}}h ago",
+  daysAgo: "{{count}}d ago",
+  ticketReplyTitle: "Reply on \"{{subject}}\"",
+  ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
 } as const;

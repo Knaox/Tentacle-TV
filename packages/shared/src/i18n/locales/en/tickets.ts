@@ -15,6 +15,7 @@ export default {
   categoryGeneral: "General",
   categoryBug: "Bug",
   categorySuggestion: "Suggestion",
+  categoryFeature: "Feature request",
   categoryAccount: "Account",
   backToTickets: "Back to tickets",
   subject: "Subject",

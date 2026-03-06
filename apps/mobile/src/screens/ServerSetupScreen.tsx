@@ -8,9 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { verifyServer } from "@tentacle-tv/shared";
+import { TentacleLogo } from "../components/TentacleLogo";
 
 interface ServerSetupScreenProps {
   onServerValidated: (url: string) => void;
@@ -18,6 +20,7 @@ interface ServerSetupScreenProps {
 
 export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps) {
   const { t, i18n } = useTranslation("auth");
+  const insets = useSafeAreaInsets();
   const [url, setUrl] = useState("");
 
   const switchLang = useCallback((lng: string) => {
@@ -61,7 +64,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
         }}
       >
         {/* Language toggle */}
-        <View style={{ position: "absolute", top: 16, right: 16, flexDirection: "row", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+        <View style={{ position: "absolute", top: insets.top + 12, right: 16, flexDirection: "row", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
           {(["fr", "en"] as const).map((lng) => (
             <Pressable key={lng} onPress={() => switchLang(lng)} style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: i18n.language === lng ? "rgba(139,92,246,0.3)" : "transparent" }}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: i18n.language === lng ? "#c4b5fd" : "rgba(255,255,255,0.4)" }}>{lng.toUpperCase()}</Text>
@@ -80,6 +83,9 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
             borderColor: "#1e1e2e",
           }}
         >
+          <View style={{ alignItems: "center", marginBottom: 8 }}>
+            <TentacleLogo size={80} />
+          </View>
           <Text
             style={{
               color: "#8b5cf6",
@@ -99,13 +105,13 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               marginBottom: 28,
             }}
           >
-            {t("auth:welcomeToTentacle")}
+            {t("welcomeToTentacle")}
           </Text>
 
           <TextInput
             value={url}
             onChangeText={setUrl}
-            placeholder={t("auth:serverUrlLabel")}
+            placeholder={t("serverUrlLabel")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             autoCapitalize="none"
             autoCorrect={false}
@@ -122,7 +128,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               marginTop: 8,
             }}
           >
-            {t("auth:serverUrlPlaceholder")}
+            {t("serverUrlPlaceholder")}
           </Text>
 
           {error && (
@@ -147,7 +153,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
-                {t("auth:signIn")}
+                {t("signIn")}
               </Text>
             )}
           </Pressable>

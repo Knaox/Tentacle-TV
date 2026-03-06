@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
+import { SubtleBackground } from "../components/ui";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import {
   useGenerateTvToken,
@@ -16,6 +18,8 @@ import {
 
 export function PairTVScreen() {
   const { t } = useTranslation("pairing");
+  const { t: te } = useTranslation("errors");
+  const insets = useSafeAreaInsets();
   const { storage } = useTentacleConfig();
   const tvTokenMut = useGenerateTvToken();
   const relayConfirmMut = useRelayConfirm();
@@ -55,11 +59,11 @@ export function PairTVScreen() {
       const { token } = await tvTokenMut.mutateAsync();
 
       const serverUrl = storage.getItem("tentacle_server_url") ?? "";
-      if (!serverUrl) throw new Error("No server URL");
+      if (!serverUrl) throw new Error(te("noServerUrl"));
 
       const userRaw = storage.getItem("tentacle_user");
       const user = userRaw ? JSON.parse(userRaw) as { Id: string; Name: string } : null;
-      if (!user?.Id || !user?.Name) throw new Error("User info not found");
+      if (!user?.Id || !user?.Name) throw new Error(te("userInfoNotFound"));
 
       await relayConfirmMut.mutateAsync({
         code,
@@ -73,11 +77,11 @@ export function PairTVScreen() {
       setStatus("error");
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("404") || msg.includes("invalide") || msg.includes("expire")) {
-        setErrorMsg(t("pairing:codeInvalid"));
+        setErrorMsg(t("codeInvalid"));
       } else if (msg.includes("409") || msg.includes("utilise")) {
-        setErrorMsg(t("pairing:codeInvalid"));
+        setErrorMsg(t("codeInvalid"));
       } else {
-        setErrorMsg(t("pairing:relayError"));
+        setErrorMsg(t("relayError"));
       }
     }
   }, [canSubmit, code, tvTokenMut, relayConfirmMut, storage, t]);
@@ -90,20 +94,21 @@ export function PairTVScreen() {
   }, []);
 
   return (
+    <SubtleBackground>
     <ScrollView
-      style={{ flex: 1, backgroundColor: "#0a0a0f" }}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
     >
-      <View style={{ paddingHorizontal: 16, paddingTop: 56 }}>
-        <Text style={styles.title}>{t("pairing:pairYourTV")}</Text>
-        <Text style={styles.subtitle}>{t("pairing:enterTVCode")}</Text>
+      <View style={{ paddingHorizontal: 16, paddingTop: insets.top + 16 }}>
+        <Text style={styles.title}>{t("pairYourTV")}</Text>
+        <Text style={styles.subtitle}>{t("enterTVCode")}</Text>
 
         <View style={styles.card}>
           {status === "success" ? (
             <View style={styles.successContainer}>
               <Text style={styles.successIcon}>&#x2713;</Text>
               <Text style={styles.successText}>
-                {t("pairing:tvPairedSuccess")}
+                {t("tvPairedSuccess")}
               </Text>
             </View>
           ) : (
@@ -142,7 +147,7 @@ export function PairTVScreen() {
               {/* Submit / retry */}
               {status === "error" ? (
                 <Pressable onPress={handleReset} style={styles.button}>
-                  <Text style={styles.buttonText}>{t("common:retry")}</Text>
+                  <Text style={styles.buttonText}>{t("retry")}</Text>
                 </Pressable>
               ) : (
                 <Pressable
@@ -153,7 +158,7 @@ export function PairTVScreen() {
                   {status === "pairing" ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.buttonText}>{t("pairing:pairTV")}</Text>
+                    <Text style={styles.buttonText}>{t("pairTV")}</Text>
                   )}
                 </Pressable>
               )}
@@ -161,9 +166,10 @@ export function PairTVScreen() {
           )}
         </View>
 
-        <Text style={styles.footnote}>{t("pairing:codeExpireNote")}</Text>
+        <Text style={styles.footnote}>{t("codeExpireNote")}</Text>
       </View>
     </ScrollView>
+    </SubtleBackground>
   );
 }
 

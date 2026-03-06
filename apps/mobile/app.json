@@ -4,15 +4,22 @@
     "slug": "tentacle-mobile",
     "version": "0.9.2",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "tentacle",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#080812"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tentacle.mobile",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"],
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
@@ -20,13 +27,15 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0a0a0f"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#080812"
       },
       "package": "com.tentacle.mobile",
       "usesCleartextTraffic": true
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-screen-orientation"
     ],
     "extra": {
       "router": {

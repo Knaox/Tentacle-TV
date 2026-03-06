@@ -134,6 +134,9 @@ export interface LibraryView {
   Name: string;
   CollectionType?: string;
   ImageTags?: Record<string, string>;
+  BackdropImageTags?: string[];
+  ChildCount?: number;
+  RecursiveItemCount?: number;
 }
 
 // ── DeviceProfile types (Jellyfin PlaybackInfo API) ──

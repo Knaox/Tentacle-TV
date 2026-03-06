@@ -29,4 +29,7 @@ export default {
   nextEpisodeLabel: "Épisode suivant",
   upNext: "À suivre",
   dismiss: "Masquer",
+  playbackError: "Erreur de lecture vidéo",
+  retry: "Réessayer",
+  back: "Retour",
 } as const;

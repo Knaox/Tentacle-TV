@@ -62,7 +62,7 @@ async function tryHealth(
     return { ok: false, status: res.status };
   } catch (err: unknown) {
     clearTimeout(timer);
-    if (err instanceof DOMException && err.name === "AbortError") {
+    if (err instanceof Error && err.name === "AbortError") {
       return { ok: false, isTimeout: true };
     }
     return { ok: false };

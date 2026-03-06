@@ -30,7 +30,11 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
-  const { data: similar } = useSimilarItems(itemId);
+  const isEpisode = item?.Type === "Episode";
+  const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
+  const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
+  const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
+  const { data: similar } = useSimilarItems(similarId, similarParentId);
 
   useTVRemote({ onBack: () => navigation.goBack() });
 

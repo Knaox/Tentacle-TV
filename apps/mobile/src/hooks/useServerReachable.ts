@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerUrl } from "../../app/_layout";
+import { useServerUrl } from "@/providers/ServerUrlContext";
 
 /**
  * Détecte si le serveur Tentacle/Jellyfin est joignable.
