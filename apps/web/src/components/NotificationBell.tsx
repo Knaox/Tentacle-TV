@@ -100,6 +100,39 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
   );
 }
 
+const STATUS_TKEYS: Record<string, string> = {
+  open: "tickets:statusOpen",
+  in_progress: "tickets:statusInProgress",
+  resolved: "tickets:statusResolved",
+  closed: "tickets:statusClosed",
+};
+
+const FR_STATUS_TO_KEY: Record<string, string> = {
+  "Ouvert": "open", "En cours": "in_progress", "Résolu": "resolved", "Fermé": "closed",
+};
+
+function formatNotifTitle(n: AppNotification, t: TFunction): string {
+  if (n.type === "ticket_reply") {
+    const legacy = n.title.match(/^Réponse sur\s+"(.+)"$/);
+    const subject = legacy ? legacy[1] : n.title;
+    return t("notifications:ticketReplyTitle", { subject });
+  }
+  if (n.type === "ticket_status") {
+    const isNew = n.body && STATUS_TKEYS[n.body];
+    if (isNew) {
+      return t("notifications:ticketStatusTitle", { subject: n.title, status: t(STATUS_TKEYS[n.body!]) });
+    }
+    const legacy = n.title.match(/^Ticket\s+"(.+?)"\s+—\s+(.+)$/);
+    if (legacy) {
+      const statusKey = FR_STATUS_TO_KEY[legacy[2]];
+      if (statusKey) {
+        return t("notifications:ticketStatusTitle", { subject: legacy[1], status: t(STATUS_TKEYS[statusKey]) });
+      }
+    }
+  }
+  return n.title;
+}
+
 function NotifRow({ notif, onRead, t }: { notif: AppNotification; onRead: () => void; t: TFunction }) {
   const date = new Date(notif.createdAt);
   const ago = formatAgo(date, t);
@@ -115,9 +148,9 @@ function NotifRow({ notif, onRead, t }: { notif: AppNotification; onRead: () => 
         {!notif.read && <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-purple-500" />}
         <div className="min-w-0 flex-1">
           <p className={`text-sm ${!notif.read ? "font-medium text-white" : "text-white/70"}`}>
-            {notif.title}
+            {formatNotifTitle(notif, t)}
           </p>
-          {notif.body && (
+          {notif.body && notif.type !== "ticket_status" && (
             <p className="mt-0.5 text-xs text-white/40 line-clamp-2">{notif.body}</p>
           )}
           <p className="mt-1 text-[10px] text-white/30">{ago}</p>

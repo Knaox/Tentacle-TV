@@ -166,7 +166,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
         data: {
           jellyfinUserId: notifyUserId,
           type: "ticket_reply",
-          title: `Réponse sur "${ticket.subject}"`,
+          title: ticket.subject,
           body: body.body.slice(0, 200),
           refId: id,
         },
@@ -192,19 +192,13 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
       data: { status: body.status },
     });
 
-    // Notify ticket owner
-    const statusLabels: Record<string, string> = {
-      open: "Ouvert",
-      in_progress: "En cours",
-      resolved: "Résolu",
-      closed: "Fermé",
-    };
-
+    // Notify ticket owner — store raw data, frontend renders i18n
     await prisma.notification.create({
       data: {
         jellyfinUserId: ticket.jellyfinUserId,
         type: "ticket_status",
-        title: `Ticket "${ticket.subject}" — ${statusLabels[body.status]}`,
+        title: ticket.subject,
+        body: body.status,
         refId: id,
       },
     });

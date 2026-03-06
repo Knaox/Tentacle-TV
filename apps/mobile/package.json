@@ -2,7 +2,7 @@
   "name": "@tentacle-tv/mobile",
   "version": "0.1.0",
   "private": true,
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -14,27 +14,43 @@
     "submit:ios": "eas submit --platform ios",
     "submit:android": "eas submit --platform android",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "postinstall": "node -e \"['@tanstack/react-query','@tanstack/query-core','react-native-reanimated'].forEach(p=>{try{const f=require.resolve(p+'/package.json');const j=JSON.parse(require('fs').readFileSync(f,'utf8'));if(j['react-native']){delete j['react-native'];require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\\n')}}catch{}})\""
   },
   "dependencies": {
-    "@tentacle-tv/shared": "workspace:*",
-    "@tentacle-tv/api-client": "workspace:*",
+    "@babel/runtime": "^7.28.6",
     "@react-native-async-storage/async-storage": "~2.1.0",
     "@tanstack/react-query": "^5.62.0",
+    "@tentacle-tv/api-client": "workspace:*",
+    "@tentacle-tv/shared": "workspace:*",
     "expo": "~52.0.0",
+    "expo-blur": "~14.0.3",
+    "expo-constants": "~17.0.8",
+    "expo-haptics": "~14.0.1",
     "expo-image": "~2.0.0",
+    "expo-linear-gradient": "~14.0.2",
+    "expo-linking": "~7.0.5",
     "expo-router": "~4.0.0",
+    "expo-screen-orientation": "^8.0.4",
+    "expo-splash-screen": "~0.29.24",
     "expo-status-bar": "~2.0.0",
+    "i18next": "^25.8.13",
     "nativewind": "^4.1.0",
     "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-i18next": "^16.5.4",
     "react-native": "~0.76.0",
+    "react-native-reanimated": "~3.16.7",
     "react-native-safe-area-context": "~5.0.0",
     "react-native-screens": "~4.4.0",
-    "react-native-svg": "^15.8.0",
-    "react-native-video": "^6.9.0"
+    "react-native-svg": "~15.11.0",
+    "react-native-video": "^6.9.0",
+    "react-native-webview": "13.12.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "react-native-css-interop": "~0.1.22",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.0"
   }

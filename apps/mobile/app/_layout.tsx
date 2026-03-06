@@ -1,207 +1,128 @@
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
-import { View, ActivityIndicator } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
-import { useServerReachable } from "@/hooks/useServerReachable";
-import { OfflineBanner } from "@/components/OfflineBanner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  JellyfinClient,
-  JellyfinClientContext,
-  TentacleConfigContext,
-  setPreferencesBackendUrl,
-  setTicketsBackendUrl,
-  setNotificationsBackendUrl,
-  setConfigBackendUrl,
-  setStreamingConfigBackendUrl,
-  useStreamingConfig,
-  useJellyfinClient,
-} from "@tentacle-tv/api-client";
-import { initI18n } from "@tentacle-tv/shared";
+import "react-native-reanimated";
+import { useEffect, useState, useCallback } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { initI18n, i18n } from "@tentacle-tv/shared";
+import { ErrorBoundary } from "@/providers/ErrorBoundary";
+import { AppProviders } from "@/providers/AppProviders";
+import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
+import { colors } from "@/theme";
 
+// Prevent splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync();
+
+// Module-level singletons
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 60_000 },
-  },
-});
-
-/* ── Server URL context ── */
-interface ServerUrlContextValue {
-  serverUrl: string | null;
-  setServerUrl: (url: string) => void;
-}
-
-const ServerUrlContext = createContext<ServerUrlContextValue>({
-  serverUrl: null,
-  setServerUrl: () => {},
-});
-
-export function useServerUrl() {
-  return useContext(ServerUrlContext);
-}
-
-/* ── Configure all backend URLs from a Tentacle server URL ── */
-function configureBackendUrls(tentacleUrl: string) {
-  setPreferencesBackendUrl(tentacleUrl);
-  setTicketsBackendUrl(tentacleUrl);
-  setNotificationsBackendUrl(tentacleUrl);
-  setConfigBackendUrl(tentacleUrl);
-  setStreamingConfigBackendUrl(tentacleUrl);
-}
-
-/* ── Auth & server guard ── */
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const segments = useSegments();
-  const router = useRouter();
-  const { serverUrl } = useServerUrl();
-  const token = storage.getItem("tentacle_token");
-
-  useEffect(() => {
-    const inAuth = segments[0] === "(auth)";
-
-    if (!serverUrl) {
-      // No server URL configured → send to server setup
-      if (!(inAuth && segments[1] === "server-setup")) {
-        router.replace("/(auth)/server-setup");
-      }
-    } else if (!token && !inAuth) {
-      // Server configured but not logged in → send to login
-      router.replace("/(auth)/login");
-    } else if (token && inAuth) {
-      // Logged in but still in auth flow → go to main app
-      router.replace("/(tabs)");
-    }
-  }, [token, segments, serverUrl]);
-
-  return <>{children}</>;
-}
-
-/** Sync direct streaming config from backend into JellyfinClient. */
-function DirectStreamingSync() {
-  const client = useJellyfinClient();
-  const token = storage.getItem("tentacle_token");
-  const { data } = useStreamingConfig(token);
-
-  useEffect(() => {
-    if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
-      client.setDirectStreaming({
-        enabled: true,
-        mediaBaseUrl: data.mediaBaseUrl,
-        jellyfinToken: data.jellyfinToken,
-      });
-    } else {
-      client.setDirectStreaming(null);
-    }
-  }, [client, data]);
-
-  return null;
-}
-
-function OfflineOverlay() {
-  const { serverUrl } = useServerUrl();
-  const { isReachable, retry } = useServerReachable();
-  // Ne pas afficher si aucun serveur configuré (écran de setup)
-  if (!serverUrl) return null;
-  return <OfflineBanner visible={!isReachable} onRetry={retry} />;
-}
+// Init i18n immediately so useTranslation works on first render.
+// Language will be corrected after storage hydration if needed.
+initI18n({ lng: "fr" });
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
-  const [client, setClient] = useState<JellyfinClient | null>(null);
-  const [serverUrl, setServerUrlState] = useState<string | null>(null);
+  const [serverUrl, setServerUrl] = useState<string | null>(null);
+  const segments = useSegments();
+  const router = useRouter();
 
-  // Callback to save the server URL and initialize the client
-  const setServerUrl = useCallback((url: string) => {
-    const trimmed = url.replace(/\/+$/, "");
-    storage.setItem("tentacle_server_url", trimmed);
-    setServerUrlState(trimmed);
-
-    // Configure all backend service URLs
-    configureBackendUrls(trimmed);
-
-    // Create / update JellyfinClient with baseUrl = {tentacleUrl}/api/jellyfin
-    const jfClient = new JellyfinClient(
-      `${trimmed}/api/jellyfin`,
-      storage,
-      uuid,
-      "Mobile",
-    );
-    const savedToken = storage.getItem("tentacle_token");
-    if (savedToken) jfClient.setAccessToken(savedToken);
-    jfClient.setOnAuthExpired(() => {
-      storage.removeItem("tentacle_token");
-      storage.removeItem("tentacle_user");
-      queryClient.clear();
-    });
-    setClient(jfClient);
-  }, []);
-
+  // Hydrate storage, read persisted values, init i18n
+  // Timeout 5s to prevent infinite splash on real iPhone if AsyncStorage hangs
   useEffect(() => {
-    (async () => {
-      await storage.hydrate();
+    let mounted = true;
 
-      const savedLang = storage.getItem("tentacle_language") ?? "en";
-      initI18n({ lng: savedLang });
-
-      const savedUrl = storage.getItem("tentacle_server_url");
-
-      if (savedUrl) {
-        // Server URL already configured — initialize everything
-        configureBackendUrls(savedUrl);
-        const jfClient = new JellyfinClient(
-          `${savedUrl}/api/jellyfin`,
-          storage,
-          uuid,
-          "Mobile",
-        );
-        const savedToken = storage.getItem("tentacle_token");
-        if (savedToken) jfClient.setAccessToken(savedToken);
-        jfClient.setOnAuthExpired(() => {
-          storage.removeItem("tentacle_token");
-          storage.removeItem("tentacle_user");
-          queryClient.clear();
-        });
-        setClient(jfClient);
-        setServerUrlState(savedUrl);
-      } else {
-        // No server URL — create a placeholder client (will be replaced after setup)
-        const jfClient = new JellyfinClient(
-          "https://placeholder.invalid",
-          storage,
-          uuid,
-          "Mobile",
-        );
-        setClient(jfClient);
+    async function init() {
+      try {
+        await Promise.race([
+          storage.hydrate(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("hydration_timeout")), 5000)
+          ),
+        ]);
+      } catch (e) {
+        console.warn("[RootLayout] Hydration failed:", e);
       }
 
+      if (!mounted) return;
+
+      const url = storage.getItem("tentacle_server_url");
+      const lang = storage.getItem("tentacle_language");
+      if (lang && lang !== i18n.language) i18n.changeLanguage(lang);
+
+      setServerUrl(url);
       setReady(true);
-    })();
+      await SplashScreen.hideAsync();
+    }
+
+    init();
+    return () => { mounted = false; };
   }, []);
 
-  if (!ready || !client) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0a0a0f" }}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
-      </View>
-    );
-  }
+  // Auth guard: redirect based on stored credentials
+  useEffect(() => {
+    if (!ready) return;
+
+    const inAuthGroup = segments[0] === "(auth)";
+    const url = storage.getItem("tentacle_server_url");
+    const token = storage.getItem("tentacle_token");
+
+    if (!url) {
+      const onSetup = segments[0] === "(auth)" && segments[1] === "server-setup";
+      if (!onSetup) {
+        router.replace("/(auth)/server-setup");
+      }
+    } else if (url && !token && !inAuthGroup) {
+      router.replace("/(auth)/login");
+    } else if (url && token && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [ready, segments, router]);
+
+  // Callback exposed to server-setup screen
+  const handleSetServerUrl = useCallback((url: string) => {
+    storage.setItem("tentacle_server_url", url);
+    setServerUrl(url);
+  }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ServerUrlContext.Provider value={{ serverUrl, setServerUrl }}>
-        <TentacleConfigContext.Provider value={{ storage, uuid }}>
-          <JellyfinClientContext.Provider value={client}>
-            <AuthGuard>
-              <DirectStreamingSync />
-              <OfflineOverlay />
-              <Slot />
-            </AuthGuard>
-          </JellyfinClientContext.Provider>
-        </TentacleConfigContext.Provider>
-      </ServerUrlContext.Provider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ServerUrlContext.Provider value={{ serverUrl, setServerUrl: handleSetServerUrl }}>
+          <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl}>
+            <StatusBar style="light" />
+            <Stack screenOptions={{ headerShown: false, gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}>
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
+              <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal" }} />
+              <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
+              <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
+              <Stack.Screen name="search" options={{ presentation: "modal" }} />
+              <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
+              <Stack.Screen name="support" options={{ presentation: "card" }} />
+              <Stack.Screen name="about" options={{ presentation: "card" }} />
+              <Stack.Screen name="credits" options={{ presentation: "card" }} />
+            </Stack>
+            {!ready && (
+              <View style={styles.loading}>
+                <ActivityIndicator size="large" color={colors.accent} />
+              </View>
+            )}
+          </AppProviders>
+        </ServerUrlContext.Provider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+});

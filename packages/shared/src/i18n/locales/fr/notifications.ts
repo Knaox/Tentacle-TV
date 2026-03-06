@@ -6,4 +6,10 @@ export default {
   downloading: "Téléchargement… {{progress}}%",
   install: "Installer",
   later: "Plus tard",
+  justNow: "À l'instant",
+  minutesAgo: "il y a {{count}}min",
+  hoursAgo: "il y a {{count}}h",
+  daysAgo: "il y a {{count}}j",
+  ticketReplyTitle: "Réponse sur \"{{subject}}\"",
+  ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
 } as const;

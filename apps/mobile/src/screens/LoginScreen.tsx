@@ -8,12 +8,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
+  const insets = useSafeAreaInsets();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export function LoginScreen() {
     try {
       const serverUrl = storage.getItem("tentacle_server_url");
       if (!serverUrl) {
-        setError(t("auth:serverUrlNotConfigured"));
+        setError(t("serverUrlNotConfigured"));
         return;
       }
 
@@ -42,7 +44,7 @@ export function LoginScreen() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.message || t("auth:invalidCredentials"));
+        throw new Error(data?.message || t("invalidCredentials"));
       }
 
       const data = await response.json();
@@ -54,7 +56,7 @@ export function LoginScreen() {
 
       router.replace("/(tabs)");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("auth:loginFailed"));
+      setError(err instanceof Error ? err.message : t("loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ export function LoginScreen() {
       style={{ flex: 1, backgroundColor: "#0a0a0f" }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24, paddingTop: insets.top + 16 }}>
         <View style={{
           width: "100%", maxWidth: 400, padding: 32,
           backgroundColor: "#12121a", borderRadius: 16,
@@ -75,13 +77,13 @@ export function LoginScreen() {
             Tentacle TV
           </Text>
           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
-            {t("auth:signInSubtitle")}
+            {t("signInSubtitle")}
           </Text>
 
           <TextInput
             value={username}
             onChangeText={setUsername}
-            placeholder={t("auth:username")}
+            placeholder={t("username")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             autoCapitalize="none"
             autoCorrect={false}
@@ -90,7 +92,7 @@ export function LoginScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder={t("auth:password")}
+            placeholder={t("password")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             secureTextEntry
             style={[inputStyle, { marginTop: 12 }]}
@@ -113,7 +115,7 @@ export function LoginScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("auth:signIn")}</Text>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("signIn")}</Text>
             )}
           </Pressable>
         </View>

@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { colors } from "@/theme";
 
 interface Props {
   seriesId: string;
@@ -50,6 +51,35 @@ export function MobileEpisodeList({ seriesId, onPlay }: Props) {
   );
 }
 
+function EpisodeThumb({ ep, seriesId, client }: {
+  ep: MediaItem; seriesId: string; client: ReturnType<typeof useJellyfinClient>;
+}) {
+  const hasPrimary = !!ep.ImageTags?.Primary;
+  const thumbUrl = hasPrimary
+    ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 70 })
+    : client.getImageUrl(seriesId, "Backdrop", { width: 300, quality: 70 });
+  const [imgError, setImgError] = useState(false);
+
+  if (imgError) {
+    return (
+      <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceElevated }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textMuted }}>
+          {ep.IndexNumber != null ? `E${ep.IndexNumber}` : ep.Name?.charAt(0).toUpperCase() ?? "?"}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: thumbUrl }}
+      style={{ width: "100%", height: "100%" }}
+      contentFit="cover"
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
 function EpisodeItems({ seriesId, seasonId, onPlay }: {
   seriesId: string; seasonId: string; onPlay: (ep: MediaItem) => void;
 }) {
@@ -62,7 +92,6 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
   return (
     <View style={{ paddingHorizontal: 16, gap: 8 }}>
       {episodes.map((ep) => {
-        const thumb = client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 70 });
         const progress = ep.UserData?.PlayedPercentage;
         const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
 
@@ -70,8 +99,8 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
           <Pressable key={ep.Id} onPress={() => onPlay(ep)}
             style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, overflow: "hidden" }}
           >
-            <View style={{ width: 140, height: 80, backgroundColor: "#1e1e2e" }}>
-              <Image source={{ uri: thumb }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+            <View style={{ width: 140, height: 80, backgroundColor: colors.surfaceElevated }}>
+              <EpisodeThumb ep={ep} seriesId={seriesId} client={client} />
               {progress != null && progress > 0 && (
                 <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.2)" }}>
                   <View style={{ height: "100%", width: `${progress}%`, backgroundColor: "#8b5cf6" }} />
@@ -83,7 +112,7 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
                 {ep.IndexNumber != null ? `${ep.IndexNumber}. ` : ""}{ep.Name}
               </Text>
               <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
-                {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("common:minutesShort", { count: runtime })}</Text>}
+                {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("minutesShort", { count: runtime })}</Text>}
               </View>
               {ep.Overview && (
                 <Text numberOfLines={2} style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4, lineHeight: 15 }}>

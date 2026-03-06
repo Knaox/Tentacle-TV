@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 
-const STORAGE_KEYS = ["tentacle_device_id", "tentacle_token", "tentacle_user", "tentacle_server_url"];
+const STORAGE_KEYS = ["tentacle_device_id", "tentacle_token", "tentacle_user", "tentacle_server_url", "tentacle_language"];
 
 /**
  * Synchronous storage adapter backed by AsyncStorage.
@@ -29,6 +29,11 @@ export class RNStorageAdapter implements StorageAdapter {
   removeItem(key: string): void {
     this.cache.delete(key);
     AsyncStorage.removeItem(key).catch(console.error);
+  }
+
+  clear(): void {
+    this.cache.clear();
+    AsyncStorage.clear().catch(console.error);
   }
 }
 

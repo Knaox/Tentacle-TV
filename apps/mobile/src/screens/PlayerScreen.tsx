@@ -1,26 +1,24 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, StatusBar } from "react-native";
+import { View, StatusBar, ActivityIndicator, Text, Pressable, Platform } from "react-native";
 import Video, { type OnProgressData, type OnLoadData } from "react-native-video";
 import { useRouter } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
 } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { useTranslation } from "react-i18next";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
+import { randomUUID, formatTrackLabel } from "../lib/playerUtils";
 
 interface Props { itemId: string }
 
 const DBG = "[Tentacle:MobilePlayer]";
 
-function formatTrackLabel(s: JfStream): string {
-  const title = s.DisplayTitle || s.Title || s.Language || `Track ${s.Index}`;
-  const codec = s.Codec?.toUpperCase();
-  return codec && !title.toUpperCase().includes(codec) ? `${title} (${codec})` : title;
-}
-
 export function PlayerScreen({ itemId }: Props) {
+  const { t } = useTranslation("player");
   const router = useRouter();
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
@@ -32,9 +30,24 @@ export function PlayerScreen({ itemId }: Props) {
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const [startTicks, setStartTicks] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
   const resumeApplied = useRef(false);
+
+  // ── Orientation: lock landscape on mount, restore portrait on unmount ──
+  useEffect(() => {
+    if (Platform.OS !== "ios" && Platform.OS !== "android") return;
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    return () => { ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); };
+  }, []);
+
+  // ── StatusBar: hide on mount, show on unmount ──
+  useEffect(() => {
+    StatusBar.setHidden(true);
+    return () => { StatusBar.setHidden(false); };
+  }, []);
 
   // Media source info — mediaSourceId is critical for episodes
   const mediaSource = item?.MediaSources?.[0];
@@ -53,12 +66,14 @@ export function PlayerScreen({ itemId }: Props) {
       setAudioIndex(defaultAudio);
       setSubtitleIndex(-1);
       setStartTicks(0);
+      setError(null);
+      setIsBuffering(true);
       positionRef.current = 0;
       prefsApplied.current = false;
     }
   }, [itemId, streams.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detect unsupported audio codecs (native players can't decode these reliably)
+  // Detect unsupported audio codecs
   const selectedAudioStream = streams.find(
     (s) => s.Type === "Audio" && s.Index === audioIndex
   );
@@ -68,33 +83,25 @@ export function PlayerScreen({ itemId }: Props) {
     /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
   );
 
-  // Source video codec — needed for remux mode so Jellyfin does stream copy
   const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
 
   const isDirectPlay = audioIndex === defaultAudio && !needsAudioTranscode;
-  // Remux = video copied, only audio transcoded (no explicit quality/bitrate limit)
   const isDirectStream = !isDirectPlay && needsAudioTranscode;
 
-  // Unique ID per transcode session — lets Jellyfin's segment handler
-  // find the correct transcode started by master.m3u8.
   const playSessionId = useMemo(() => {
     if (isDirectPlay) return undefined;
-    return crypto.randomUUID();
+    return randomUUID();
   }, [audioIndex, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
     return client.getStreamUrl(itemId, {
-      mediaSourceId,
-      audioIndex,
-      directPlay: isDirectPlay,
+      mediaSourceId, audioIndex, directPlay: isDirectPlay,
       startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
-      playSessionId,
-      sourceVideoCodec,
+      playSessionId, sourceVideoCodec,
     });
   }, [client, itemId, mediaSourceId, audioIndex, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
 
-  // Jellyfin duration — accurate, not from player
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const { reportStart, reportStop, updatePosition, reportSeek } = usePlaybackReporting({
@@ -114,7 +121,6 @@ export function PlayerScreen({ itemId }: Props) {
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) return;
     prefsApplied.current = true;
-    console.debug(DBG, "resolving preferences", { allCandidates });
     resolveTracks.mutate({
       libraryId: allCandidates[0],
       libraryIds: allCandidates,
@@ -124,11 +130,8 @@ export function PlayerScreen({ itemId }: Props) {
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
     }, {
       onSuccess: (result) => {
-        console.debug(DBG, "preferences resolved", result);
         if (result.audioIndex != null) {
-          if (positionRef.current > 0) {
-            setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-          }
+          if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
           setAudioIndex(result.audioIndex);
         }
         if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
@@ -136,7 +139,6 @@ export function PlayerScreen({ itemId }: Props) {
     });
   }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Intro skipper
   const skipSegments = useIntroSkipper(itemId, item);
 
   // For transcoded/HLS streams, include resume position in the URL
@@ -152,24 +154,22 @@ export function PlayerScreen({ itemId }: Props) {
   useEffect(() => () => { reportStop(); }, [reportStop]);
 
   const handleLoad = useCallback((_data: OnLoadData) => {
-    console.debug(DBG, "loaded", { jellyfinDuration });
-    // Only seek for direct play — transcoded/HLS uses StartTimeTicks in URL
+    setIsBuffering(false);
+    setError(null);
     if (isDirectPlay) {
       const resumeTicks = item?.UserData?.PlaybackPositionTicks;
       if (resumeTicks) videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
     }
     reportStart();
-  }, [item, reportStart, jellyfinDuration, isDirectPlay]);
+  }, [item, reportStart, isDirectPlay]);
 
-  // Position comes ONLY from player events, never manual setState on seek
   const handleProgress = useCallback((data: OnProgressData) => {
-    // ExoPlayer may report negative time for HLS streams (live-mode offset)
     const raw = Math.max(0, data.currentTime);
     const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
-    const t = raw + offset;
-    setCurrentTime(t);
-    positionRef.current = t;
-    updatePosition(t, paused);
+    const pos = raw + offset;
+    setCurrentTime(pos);
+    positionRef.current = pos;
+    updatePosition(pos, paused);
   }, [paused, updatePosition, isDirectPlay, startTicks]);
 
   const handleEnd = useCallback(() => {
@@ -177,45 +177,48 @@ export function PlayerScreen({ itemId }: Props) {
     router.back();
   }, [router, reportStop]);
 
-  // Unified seek — native player seek, no URL rebuild
+  const handleError = useCallback((e: any) => {
+    console.error(DBG, "playback error", e);
+    setError(t("playbackError") ?? "Erreur de lecture");
+    setIsBuffering(false);
+  }, [t]);
+
+  const handleBuffer = useCallback(({ isBuffering: buffering }: { isBuffering: boolean }) => {
+    setIsBuffering(buffering);
+  }, []);
+
+  const handleReadyForDisplay = useCallback(() => {
+    setIsBuffering(false);
+  }, []);
+
+  const handleRetry = useCallback(() => { setError(null); setIsBuffering(true); }, []);
+
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    // For transcoded streams, player position is relative to HLS start
     const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
-    const playerPos = clamped - offset;
-    console.debug(DBG, "seek", { clamped, playerPos });
-    videoRef.current?.seek(Math.max(0, playerPos));
+    videoRef.current?.seek(Math.max(0, clamped - offset));
     reportSeek(clamped, paused);
   }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
 
-  // Audio track change — saves position, triggers URL rebuild for non-default audio
   const handleAudioChange = useCallback((newIndex: number) => {
-    console.debug(DBG, "audio change", { newIndex, position: positionRef.current });
-    if (positionRef.current > 0) {
-      setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-    }
+    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     setAudioIndex(newIndex);
   }, []);
 
   const handlePlayPause = useCallback(() => setPaused((p) => !p), []);
 
   const audioTracks = useMemo(() =>
-    streams.filter((s) => s.Type === "Audio")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
+    streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
     [streams]
   );
   const subtitleTracks = useMemo(() =>
-    streams.filter((s) => s.Type === "Subtitle")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
+    streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
     [streams]
   );
 
   const displayDuration = jellyfinDuration > 0 ? jellyfinDuration : 0;
 
-  // Convert Jellyfin global stream index to player-relative index.
-  // Jellyfin assigns a global Index across all stream types (video=0, audio=1, audio=2, sub=3…)
-  // but react-native-video expects an index relative to tracks of that type (audio: 0,1,2…).
   const audioStreams = useMemo(() => streams.filter((s) => s.Type === "Audio"), [streams]);
   const subtitleStreams = useMemo(() => streams.filter((s) => s.Type === "Subtitle"), [streams]);
   const audioRelativeIndex = useMemo(() => {
@@ -232,37 +235,64 @@ export function PlayerScreen({ itemId }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <StatusBar hidden />
-      <Video
-        ref={videoRef}
-        source={{ uri: streamUrl }}
-        style={{ flex: 1 }}
-        resizeMode="contain"
-        paused={paused}
-        onLoad={handleLoad}
-        onProgress={handleProgress}
-        onEnd={handleEnd}
-        selectedAudioTrack={{ type: "index", value: audioRelativeIndex }}
-        selectedTextTrack={subtitleRelativeIndex >= 0 ? { type: "index", value: subtitleRelativeIndex } : { type: "disabled" }}
-        progressUpdateInterval={250}
-      />
-      <MobilePlayerOverlay
-        title={item?.Name ?? ""}
-        currentTime={currentTime}
-        duration={displayDuration}
-        paused={paused}
-        audioTracks={audioTracks}
-        subtitleTracks={subtitleTracks}
-        selectedAudio={audioIndex}
-        selectedSubtitle={subtitleIndex}
-        introSegment={skipSegments.intro}
-        creditsSegment={skipSegments.credits}
-        onPlayPause={handlePlayPause}
-        onSeek={handleSeek}
-        onBack={() => { reportStop(); router.back(); }}
-        onSelectAudio={handleAudioChange}
-        onSelectSubtitle={setSubtitleIndex}
-      />
+      {!error && (
+        <Video
+          ref={videoRef}
+          source={{ uri: streamUrl }}
+          style={{ flex: 1 }}
+          resizeMode="contain"
+          paused={paused}
+          onLoad={handleLoad}
+          onProgress={handleProgress}
+          onEnd={handleEnd}
+          onError={handleError}
+          onBuffer={handleBuffer}
+          onReadyForDisplay={handleReadyForDisplay}
+          selectedAudioTrack={{ type: "index", value: audioRelativeIndex }}
+          selectedTextTrack={subtitleRelativeIndex >= 0 ? { type: "index", value: subtitleRelativeIndex } : { type: "disabled" }}
+          progressUpdateInterval={250}
+        />
+      )}
+
+      {/* Loading spinner */}
+      {isBuffering && !error && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#8b5cf6" />
+        </View>
+      )}
+
+      {/* Error overlay */}
+      {error && (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 32 }}>
+          <Text style={{ color: "#fff", fontSize: 16, textAlign: "center", marginBottom: 16 }}>{error}</Text>
+          <Pressable onPress={handleRetry} style={{ backgroundColor: "#8b5cf6", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 }}>
+            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("retry") ?? "Réessayer"}</Text>
+          </Pressable>
+          <Pressable onPress={() => { reportStop(); router.back(); }} style={{ marginTop: 12 }}>
+            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{t("back") ?? "Retour"}</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {!error && (
+        <MobilePlayerOverlay
+          title={item?.Name ?? ""}
+          currentTime={currentTime}
+          duration={displayDuration}
+          paused={paused}
+          audioTracks={audioTracks}
+          subtitleTracks={subtitleTracks}
+          selectedAudio={audioIndex}
+          selectedSubtitle={subtitleIndex}
+          introSegment={skipSegments.intro}
+          creditsSegment={skipSegments.credits}
+          onPlayPause={handlePlayPause}
+          onSeek={handleSeek}
+          onBack={() => { reportStop(); router.back(); }}
+          onSelectAudio={handleAudioChange}
+          onSelectSubtitle={setSubtitleIndex}
+        />
+      )}
     </View>
   );
 }

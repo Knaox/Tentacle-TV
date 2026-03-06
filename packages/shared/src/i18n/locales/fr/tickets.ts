@@ -15,6 +15,7 @@ export default {
   categoryGeneral: "Général",
   categoryBug: "Bug",
   categorySuggestion: "Suggestion",
+  categoryFeature: "Fonctionnalité",
   categoryAccount: "Compte",
   backToTickets: "Retour aux tickets",
   subject: "Sujet",

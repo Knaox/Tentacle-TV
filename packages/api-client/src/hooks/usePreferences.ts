@@ -51,7 +51,8 @@ export interface TrackResolution {
 // ---------- Hooks ----------
 
 export function useLibraryPreferences() {
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = !!_tokenOverride
+    || (typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token"));
 
   return useQuery({
     queryKey: ["library-preferences"],
@@ -118,9 +119,8 @@ export function useResolveMediaTracks() {
 
 /** Fetch the user's stored interface language from backend */
 export function useInterfaceLanguage() {
-  const hasToken = typeof localStorage !== "undefined"
-    ? !!localStorage.getItem("tentacle_token")
-    : true; // TV always has token via storage adapter
+  const hasToken = !!_tokenOverride
+    || (typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token"));
   return useQuery({
     queryKey: ["interface-language"],
     queryFn: () => prefFetch<{ language: string | null }>("/language"),

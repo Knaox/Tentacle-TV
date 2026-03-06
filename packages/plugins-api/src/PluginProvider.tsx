@@ -24,34 +24,42 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
   // Load dynamic plugin bundles from backend
   useEffect(() => {
     const token = localStorage.getItem("tentacle_token");
-    if (!token) { setLoading(false); return; }
+    if (!token) { console.warn("[PluginProvider] No token — skipping plugin load"); setLoading(false); return; }
 
     const base = backendUrl || "";
     fetch(`${base}/api/plugins/active`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => (r.ok ? r.json() : []))
+      .then((r) => {
+        if (!r.ok) return [];
+        return r.json();
+      })
       .then((active: ActivePlugin[]) => {
         for (const p of active) {
           if (p.hasBundle && !loadedBundles.current.has(p.pluginId)) {
             loadedBundles.current.add(p.pluginId);
-            // Fetch bundle with auth header, then inject as inline script
             fetch(`${base}/api/plugins/${p.pluginId}/bundle?v=${p.version}`, {
               headers: { Authorization: `Bearer ${token}` },
             })
-              .then((r) => (r.ok ? r.text() : ""))
-              .then((code) => {
+              .then(async (r) => {
+                if (!r.ok) {
+                  console.error(`[PluginProvider] Bundle fetch for ${p.pluginId} failed: ${r.status}`);
+                  return;
+                }
+                const code = await r.text();
                 if (code) {
                   const script = document.createElement("script");
                   script.textContent = code;
                   document.head.appendChild(script);
+                } else {
+                  console.error(`[PluginProvider] Empty bundle for ${p.pluginId}`);
                 }
               })
-              .catch(() => {});
+              .catch((err) => console.error(`[PluginProvider] Bundle load error for ${p.pluginId}:`, err));
           }
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[PluginProvider] Failed to fetch active plugins:", err));
   }, [backendUrl]);
 
   // Check which registered plugins are configured
@@ -64,7 +72,6 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
 
       for (const plugin of plugins) {
         try {
-          // Initialize plugin (registers i18n, sets backend URL, etc.)
           if (plugin.initialize) {
             await plugin.initialize();
           }
@@ -72,8 +79,8 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
           if (configured) {
             enabled.push(plugin);
           }
-        } catch {
-          // Plugin init/config check failed — treat as not configured
+        } catch (err) {
+          console.warn(`[PluginProvider] ${plugin.id}: init/config check failed:`, err);
         }
       }
 

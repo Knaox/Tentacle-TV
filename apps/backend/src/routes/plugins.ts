@@ -67,20 +67,51 @@ const proxySchema = z.object({
 
 // ── Route registration ──
 export const pluginRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/active", { preHandler: requireAuth }, async () => {
-    return getInstalled().filter((p) => p.enabled).map((p) => ({
-      id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
-      hasBundle: existsSync(resolve(DATA_DIR, p.pluginId, "dist")),
-    }));
+  // Shared dependencies bundle (React, ReactDOM, TQ, i18next) — no auth needed
+  // DATA_DIR = data/plugins/, shared-deps is at data/shared-deps/
+  const sharedDepsPath = resolve(DATA_DIR, "..", "shared-deps", "shared-deps.js");
+  let sharedDepsCache: string | null = null;
+
+  app.get("/shared-deps.js", { config: { compress: false } }, async (_request, reply) => {
+    if (!existsSync(sharedDepsPath)) {
+      return reply.status(404).send({ message: "Shared deps not built. Run: pnpm build:shared-deps" });
+    }
+    if (!sharedDepsCache) {
+      sharedDepsCache = readFileSync(sharedDepsPath, "utf-8");
+    }
+    reply
+      .header("Cache-Control", "public, max-age=86400, immutable")
+      .type("application/javascript")
+      .send(sharedDepsCache);
   });
 
-  app.get("/:pluginId/bundle", { preHandler: requireAuth }, async (request, reply) => {
+  app.get("/active", { preHandler: requireAuth }, async () => {
+    return getInstalled().filter((p) => p.enabled).map((p) => {
+      const pluginDir = resolve(DATA_DIR, p.pluginId);
+      let navItems: unknown[] = [];
+      const manifestPath = resolve(pluginDir, "plugin.json");
+      if (existsSync(manifestPath)) {
+        try {
+          const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+          if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
+        } catch { /* ignore malformed manifest */ }
+      }
+      return {
+        id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
+        hasBundle: existsSync(resolve(pluginDir, "dist")),
+        navItems,
+        configEnabled: (p.config as Record<string, unknown>)?.enabled,
+      };
+    });
+  });
+
+  app.get("/:pluginId/bundle", { preHandler: requireAuth, config: { compress: false } }, async (request, reply) => {
     const { pluginId } = request.params as { pluginId: string };
     const bundlePath = resolve(DATA_DIR, pluginId, "dist", `plugin-${pluginId}.iife.js`);
     if (!existsSync(bundlePath)) {
       return reply.status(404).send({ message: "Bundle not found" });
     }
-    reply.type("application/javascript").send(readFileSync(bundlePath, "utf-8"));
+    reply.type("application/javascript").send(readFileSync(bundlePath));
   });
 
   await app.register(async (admin) => {

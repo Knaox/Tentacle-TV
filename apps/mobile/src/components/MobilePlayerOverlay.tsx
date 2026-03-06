@@ -131,14 +131,14 @@ export function MobilePlayerOverlay({
               </Pressable>
               <Text numberOfLines={1} style={{ color: "#fff", fontSize: 16, fontWeight: "600", flex: 1 }}>{title}</Text>
               <Pressable onPress={() => setShowTracks(true)} hitSlop={16}>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{t("player:tracks")}</Text>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{t("tracks")}</Text>
               </Pressable>
             </View>
 
             {/* Center controls */}
             <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 40 }}>
               <Pressable onPress={() => { onSeek(currentTime - 10); resetHideTimer(); }} hitSlop={16}>
-                <Text style={{ color: "#fff", fontSize: 20 }}>{t("player:skipBack")}</Text>
+                <Text style={{ color: "#fff", fontSize: 20 }}>{t("skipBack")}</Text>
               </Pressable>
               <Pressable onPress={() => { onPlayPause(); resetHideTimer(); }} hitSlop={16}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" }}>
@@ -146,7 +146,7 @@ export function MobilePlayerOverlay({
                 </View>
               </Pressable>
               <Pressable onPress={() => { onSeek(currentTime + 30); resetHideTimer(); }} hitSlop={16}>
-                <Text style={{ color: "#fff", fontSize: 20 }}>{t("player:skipForward")}</Text>
+                <Text style={{ color: "#fff", fontSize: 20 }}>{t("skipForward")}</Text>
               </Pressable>
             </View>
 
@@ -155,7 +155,7 @@ export function MobilePlayerOverlay({
               <View style={{ position: "absolute", bottom: 120, right: 16 }}>
                 <Pressable onPress={() => onSeek(introSegment.end)}
                   style={{ backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 }}>
-                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("player:skipIntro")}</Text>
+                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("skipIntro")}</Text>
                 </Pressable>
               </View>
             )}
@@ -163,7 +163,7 @@ export function MobilePlayerOverlay({
               <View style={{ position: "absolute", bottom: 120, right: 16 }}>
                 <Pressable onPress={() => onSeek(creditsSegment.end)}
                   style={{ backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 }}>
-                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("player:skipCredits")}</Text>
+                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("skipCredits")}</Text>
                 </Pressable>
               </View>
             )}
@@ -198,7 +198,7 @@ export function MobilePlayerOverlay({
           <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700" }}>
             {doubleTapSide === "left" ? "−10" : "+30"}
           </Text>
-          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>{t("player:secondsShort")}</Text>
+          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>{t("secondsShort")}</Text>
         </View>
       )}
 
@@ -207,12 +207,12 @@ export function MobilePlayerOverlay({
         <Pressable onPress={() => setShowTracks(false)} style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" }}>
           <View style={{ backgroundColor: "#12121a", borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: "60%", paddingBottom: 32 }}>
             <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#1e1e2e" }}>
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("player:tracksAudioSubtitle")}</Text>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("tracksAudioSubtitle")}</Text>
             </View>
             <ScrollView style={{ padding: 16 }}>
               {audioTracks.length > 0 && (
                 <>
-                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 8 }}>{t("player:audioLabel")}</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 8 }}>{t("audioLabel")}</Text>
                   {audioTracks.map((t) => (
                     <Pressable key={t.index} onPress={() => onSelectAudio(t.index)}
                       style={{ paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -226,13 +226,13 @@ export function MobilePlayerOverlay({
               )}
               {subtitleTracks.length > 0 && (
                 <>
-                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>{t("player:subtitlesLabel")}</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>{t("subtitlesLabel")}</Text>
                   <Pressable onPress={() => onSelectSubtitle(-1)}
                     style={{ paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: selectedSubtitle === -1 ? "#8b5cf6" : "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" }}>
                       {selectedSubtitle === -1 && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#8b5cf6" }} />}
                     </View>
-                    <Text style={{ color: "#fff", fontSize: 14 }}>{t("player:disabled")}</Text>
+                    <Text style={{ color: "#fff", fontSize: 14 }}>{t("disabled")}</Text>
                   </Pressable>
                   {subtitleTracks.map((t) => (
                     <Pressable key={t.index} onPress={() => onSelectSubtitle(t.index)}

@@ -4,6 +4,7 @@ export interface StorageAdapter {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  clear?(): void;
 }
 
 export interface UuidGenerator {
@@ -20,6 +21,9 @@ export class WebStorageAdapter implements StorageAdapter {
   }
   removeItem(key: string): void {
     localStorage.removeItem(key);
+  }
+  clear(): void {
+    localStorage.clear();
   }
 }
 
