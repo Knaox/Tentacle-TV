@@ -104,11 +104,11 @@ function TrackOption({ label, active, onClick }: { label: string; active: boolea
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
-        active ? "bg-tentacle-accent/20 text-tentacle-accent-light" : "text-white/70 hover:bg-white/5 hover:text-white"
+      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+        active ? "bg-tentacle-accent/25 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"
       }`}
     >
-      <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${active ? "bg-tentacle-accent" : "bg-transparent"}`} />
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(139,92,246,0.6)]" : "bg-white/20"}`} />
       <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
         <span className="truncate">{title}</span>
         {lang && <Badge color="purple">{lang}</Badge>}

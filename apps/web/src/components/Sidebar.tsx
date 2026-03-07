@@ -111,16 +111,16 @@ export function Sidebar() {
           width: expanded ? 200 : 62,
           background: "rgba(10,10,18,0.85)",
           backdropFilter: "blur(20px)",
-          borderRight: "1px solid rgba(255,255,255,0.05)",
+          borderRight: "1px solid transparent",
+          borderImage: "linear-gradient(180deg, transparent, rgba(139,92,246,0.15), transparent) 1",
         }}
       >
         {/* Logo */}
         <div className="mb-6 flex items-center gap-2 px-3">
           <div
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl shadow-[0_4px_15px_rgba(139,92,246,0.3)] hover:animate-breathe"
             style={{
               background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
-              boxShadow: "0 4px 15px rgba(139,92,246,0.3)",
             }}
           >
             <img src="/tentacle-logo-pirate.svg" alt="" className="h-6 w-6" />
@@ -148,8 +148,11 @@ export function Sidebar() {
           ))}
         </nav>
 
+        {/* Gradient separator */}
+        <div className="mx-3 my-2 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent)" }} />
+
         {/* Bottom: pair device only */}
-        <div className="border-t border-white/5 px-2.5 pt-3">
+        <div className="px-2.5 pt-3">
           <SidebarButton
             item={{ key: "pair", label: t("pairDevice"), icon: <PairIcon />, path: "/pair-device" }}
             active={location.pathname === "/pair-device"}
@@ -203,18 +206,19 @@ function SidebarButton({
       }`}
       style={{
         paddingLeft: 12,
-        background: active ? "rgba(139,92,246,0.15)" : undefined,
+        background: active ? "linear-gradient(90deg, rgba(139,92,246,0.15), transparent)" : undefined,
       }}
     >
       {/* Active indicator bar */}
-      {active && (
-        <div
-          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full animate-breathe"
-          style={{
-            background: "linear-gradient(180deg, #8B5CF6, #A78BFA)",
-          }}
-        />
-      )}
+      <div
+        className="absolute left-0 top-1/2 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200"
+        style={{
+          height: active ? 20 : 0,
+          opacity: active ? 1 : 0,
+          background: "linear-gradient(180deg, #8B5CF6, #A78BFA)",
+          boxShadow: active ? "0 0 15px rgba(139,92,246,0.3)" : "none",
+        }}
+      />
       <span className="flex-shrink-0">{item.icon}</span>
       <span
         className="overflow-hidden whitespace-nowrap transition-opacity duration-200"

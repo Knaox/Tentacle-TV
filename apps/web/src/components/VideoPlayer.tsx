@@ -448,15 +448,17 @@ export function VideoPlayer({
 
   useEffect(() => () => { hlsRef.current?.destroy(); clearTimeout(seekStallTimer.current); }, []);
 
-  // Subtitle track visibility — re-apply after source change and when tracks load
+  // Subtitle track visibility — re-apply after source change and when tracks load.
+  // Uses "disabled" (fully off) for non-selected tracks to prevent hls.js interference
+  // (hls.js can reset "hidden" tracks to "showing" — issue #4032).
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     const apply = () => {
-      for (let i = 0; i < v.textTracks.length; i++) v.textTracks[i].mode = "hidden";
-      if (currentSubtitle != null) {
-        const idx = subtitleTracks.findIndex((s) => s.index === currentSubtitle);
-        if (idx >= 0 && v.textTracks[idx]) v.textTracks[idx].mode = "showing";
+      const targetIdx = currentSubtitle != null
+        ? subtitleTracks.findIndex((s) => s.index === currentSubtitle) : -1;
+      for (let i = 0; i < v.textTracks.length; i++) {
+        v.textTracks[i].mode = (i === targetIdx) ? "showing" : "disabled";
       }
     };
     apply();
@@ -532,6 +534,24 @@ export function VideoPlayer({
       if (e.code === "KeyM") handleToggleMute();
       if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
       if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
+      if (e.code === "KeyS") {
+        // Toggle subtitles
+        const v = videoRef.current;
+        if (v && v.textTracks.length > 0) {
+          const active = Array.from(v.textTracks).findIndex((t) => t.mode === "showing");
+          if (active >= 0) { onSubtitleChange(null); }
+          else if (subtitleTracks.length > 0) { onSubtitleChange(subtitleTracks[0].index); }
+        }
+      }
+      if (e.code === "KeyR") handleSeek(0);
+      if (e.code === "KeyC") {
+        // Cycle subtitle tracks
+        if (subtitleTracks.length > 0) {
+          const currentIdx = subtitleTracks.findIndex((t) => t.index === currentSubtitle);
+          const nextIdx = (currentIdx + 1) % (subtitleTracks.length + 1);
+          onSubtitleChange(nextIdx < subtitleTracks.length ? subtitleTracks[nextIdx].index : null);
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -576,6 +596,11 @@ export function VideoPlayer({
         const v = videoRef.current;
         if (policyMuted && v && !v.paused) { v.muted = false; setPolicyMuted(false); return; }
         togglePlay();
+      }}
+      onDoubleClick={toggleFullscreen}
+      onWheel={(e) => {
+        e.preventDefault();
+        handleVolumeChange(Math.min(1, Math.max(0, volume + (e.deltaY < 0 ? 0.05 : -0.05))));
       }}
       onTouchStart={() => { userInteractedRef.current = true; }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">

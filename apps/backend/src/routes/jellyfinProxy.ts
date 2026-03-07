@@ -39,6 +39,8 @@ const ALLOWED_PROXY_PATTERNS: RegExp[] = [
 
   // User data
   /^Users\/[^/]+\/Items/,
+  /^Users\/[^/]+\/FavoriteItems\/[^/]+$/,
+  /^Users\/[^/]+\/PlayedItems\/[^/]+$/,
   /^Users\/[^/]+\/Views$/,
   /^Users\/Me$/,
   /^Users\/AuthenticateByName$/,
@@ -142,9 +144,11 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    // Cookie-based auth: inject token as X-Emby-Token if not already present from headers
+    // Cookie-based auth: inject token as X-Emby-Token if not already present from headers.
+    // Use apiKeyOverride (admin API key) when the cookie was a verified device JWT,
+    // otherwise forward the raw cookie (Jellyfin native token).
     if (cookieToken && !headers["x-emby-token"] && !headers["X-Emby-Token"]) {
-      headers["X-Emby-Token"] = cookieToken;
+      headers["X-Emby-Token"] = apiKeyOverride ?? cookieToken;
     }
 
     // Progressive video streams (remux) can last hours — use a long timeout.

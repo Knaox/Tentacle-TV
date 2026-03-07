@@ -1,15 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { PlayIcon, StarIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons/HeroIcons";
 
 interface HeroBannerProps {
   items: MediaItem[];
 }
 
-const ROTATE_MS = 6000;
+const ROTATE_MS = 8000;
 
 export function HeroBanner({ items }: HeroBannerProps) {
   const { t } = useTranslation("common");
@@ -18,8 +19,8 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
 
-  // Reset timer when user manually navigates
   const [resetKey, setResetKey] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const next = useCallback(() => {
     setIndex((i) => (i + 1) % items.length);
@@ -31,11 +32,15 @@ export function HeroBanner({ items }: HeroBannerProps) {
     setAnimKey((k) => k + 1);
   }, [items.length]);
 
+  const startTimer = useCallback(() => {
+    clearInterval(timerRef.current);
+    if (items.length > 1) timerRef.current = setInterval(next, ROTATE_MS);
+  }, [next, items.length]);
+
   useEffect(() => {
-    if (items.length <= 1) return;
-    const timer = setInterval(next, ROTATE_MS);
-    return () => clearInterval(timer);
-  }, [next, items.length, resetKey]);
+    startTimer();
+    return () => clearInterval(timerRef.current);
+  }, [startTimer, resetKey]);
 
   const goTo = (i: number) => {
     setIndex(i);
@@ -46,7 +51,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const goPrev = () => { prev(); setResetKey((k) => k + 1); };
   const goNext = () => { next(); setResetKey((k) => k + 1); };
 
-  if (!items.length) return <div className="h-[480px]" />;
+  if (!items.length) return <div className="h-[60vh] sm:h-[65vh] md:h-[70vh]" />;
 
   const item = items[index];
   const isEpisode = item.Type === "Episode";
@@ -66,7 +71,11 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const accentColor = "#8B5CF6"; // default accent
 
   return (
-    <div className="group/banner relative w-full overflow-hidden rounded-2xl" style={{ height: 480 }}>
+    <div
+      className="group/banner relative w-full overflow-hidden h-[60vh] sm:h-[65vh] md:h-[70vh]"
+      onMouseEnter={() => clearInterval(timerRef.current)}
+      onMouseLeave={() => startTimer()}
+    >
       {/* Animated radial gradient backgrounds */}
       {items.map((it, i) => (
         <div
@@ -91,7 +100,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
             src={url}
             alt=""
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-1000"
-            style={{ opacity: i === index ? 0.3 : 0 }}
+            style={{ opacity: i === index ? 0.65 : 0 }}
             draggable={false}
           />
         );
@@ -101,11 +110,11 @@ export function HeroBanner({ items }: HeroBannerProps) {
       <div className="noise-texture absolute inset-0 opacity-20" />
 
       {/* Gradient overlays — stronger for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg via-tentacle-bg/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/80 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg/90 via-tentacle-bg/50 to-transparent" />
 
       {/* Content */}
-      <div className="absolute bottom-8 left-4 right-4 z-10 md:left-10 md:right-1/3">
+      <div className="absolute bottom-12 left-6 right-6 z-10 md:left-12 md:right-1/3 lg:bottom-16 lg:left-16">
         <div key={animKey} style={{ animation: "fadeSlideUp 0.6s ease both" }}>
           {/* Badge + episode label row */}
           {(hasProgress || episodeLabel) && (
@@ -130,11 +139,11 @@ export function HeroBanner({ items }: HeroBannerProps) {
 
           {/* Title */}
           {logoUrl ? (
-            <img src={logoUrl} alt={displayName} className="mb-3 h-14 object-contain object-left md:h-16" draggable={false} />
+            <img src={logoUrl} alt={displayName} className="mb-3 h-16 object-contain object-left md:h-20 lg:h-24" draggable={false} />
           ) : (
             <h2
-              className="mb-2 text-2xl font-black tracking-tight text-white drop-shadow-lg md:text-4xl"
-              style={{ textShadow: `0 4px 30px ${accentColor}60` }}
+              className="mb-2 text-3xl font-black tracking-tight text-white drop-shadow-lg md:text-5xl lg:text-[3.25rem]"
+              style={{ textShadow: `0 4px 40px ${accentColor}80, 0 2px 16px rgba(0,0,0,0.5)` }}
             >
               {displayName}
             </h2>
@@ -267,37 +276,5 @@ export function HeroBanner({ items }: HeroBannerProps) {
         </>
       )}
     </div>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function StarIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-}
-
-function ChevronLeftIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
   );
 }

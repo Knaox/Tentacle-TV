@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { FadeImage } from "./FadeImage";
 
 export function EpisodeList({ seriesId }: { seriesId: string }) {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
       {/* Thumbnail */}
       <div className="relative w-28 flex-shrink-0 overflow-hidden rounded-lg bg-tentacle-surface sm:w-44">
         <div className="aspect-video">
-          {thumbUrl && <img src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
+          {thumbUrl && <FadeImage src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
         </div>
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90">

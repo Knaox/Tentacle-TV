@@ -2,6 +2,7 @@ export interface MediaItem {
   Id: string;
   Name: string;
   Type: "Movie" | "Series" | "Episode" | "Season" | "BoxSet" | "Audio" | "MusicAlbum";
+  OriginalTitle?: string;
   Overview?: string;
   Taglines?: string[];
   Genres?: string[];
@@ -107,6 +108,7 @@ export interface MediaStream {
   BitRate?: number;
   Channels?: number;
   SampleRate?: number;
+  VideoRangeType?: string;
 }
 
 export interface UserItemData {

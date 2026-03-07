@@ -470,26 +470,11 @@ export function DesktopPlayer({
   const bufProg = dur > 0 ? Math.min((actualPos + state.buffered) / dur, 1) : 0;
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
 
-  // Map MPV state back to Jellyfin indices for the selector highlight
-  const curAudioMapped = mpvAudio.length > 0
-    ? findJfIndex(state.audioTrack, audioTracks, mpvAudio) : null;
-  const curAudio = curAudioMapped ?? currentAudio;
-  const curSubMapped = state.subtitleTrack === 0
-    ? null
-    : mpvSubs.length > 0
-      ? findJfIndex(state.subtitleTrack, subtitleTracks, mpvSubs) : null;
-  const curSub = state.subtitleTrack === 0 ? null : (curSubMapped ?? currentSubtitle);
-
-  // Debug track state periodically (only when tracks change)
-  useEffect(() => {
-    console.debug(DBG, "track display state", {
-      mpvAid: state.audioTrack, mpvSid: state.subtitleTrack,
-      curAudioMapped, curAudio, curSubMapped, curSub: state.subtitleTrack === 0 ? null : (curSubMapped ?? currentSubtitle),
-      currentAudio, currentSubtitle,
-      mpvAudioTracks: mpvAudio.map(t => ({ id: t.id, lang: t.lang })),
-      mpvSubTracks: mpvSubs.map(t => ({ id: t.id, lang: t.lang })),
-    });
-  }, [state.audioTrack, state.subtitleTrack, mpvAudio.length, mpvSubs.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Map MPV state back to Jellyfin indices for the selector highlight.
+  // Use React state (currentAudio/currentSubtitle) as source of truth — mpv state
+  // updates are async (Tauri IPC delay) and would show stale values briefly.
+  const curAudio = currentAudio;
+  const curSub = currentSubtitle;
 
   // Skip intro / credits segments
   const showSkipIntro = introSegment && actualPos >= introSegment.start && actualPos < introSegment.end - 1;

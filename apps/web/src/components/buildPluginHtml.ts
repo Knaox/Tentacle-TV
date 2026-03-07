@@ -206,6 +206,9 @@ export function buildPluginHtml({
       toast: function(message, type) {
         parent.postMessage({ type: "TOAST", message: message, toastType: type || "info" }, "*");
       },
+      setOverlay: function(open) {
+        parent.postMessage({ type: open ? "OVERLAY_OPEN" : "OVERLAY_CLOSE" }, "*");
+      },
     };
 
     // ── Fetch interceptor: route backend API calls through postMessage bridge ──
@@ -235,10 +238,11 @@ export function buildPluginHtml({
         catch(e) { parsedBody = body; }
       }
       return window.__tentacle_bridge.apiRequest(method, apiPath, parsedBody)
-        .then(function(result) {
-          var jsonStr = JSON.stringify(result);
+        .then(function(wrapped) {
+          var jsonStr = JSON.stringify(wrapped.__res !== undefined ? wrapped.__res : wrapped);
+          var status = wrapped.__status || 200;
           return new Response(jsonStr, {
-            status: 200,
+            status: status,
             headers: { "Content-Type": "application/json" },
           });
         });
@@ -253,7 +257,7 @@ export function buildPluginHtml({
         if (pending) {
           delete _pendingRequests[data.id];
           if (data.error) pending.reject(new Error(data.error));
-          else pending.resolve(data.result);
+          else pending.resolve({ __res: data.result, __status: data.status || 200 });
         }
       }
 

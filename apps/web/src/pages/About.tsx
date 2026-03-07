@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { isTauriApp } from "../main";
+import { PageTransition } from "../components/PageTransition";
 
 export function About() {
   const { t } = useTranslation("about");
@@ -8,6 +9,7 @@ export function About() {
   const version = isTauriApp ? __APP_VERSION_DESKTOP__ : __APP_VERSION_WEB__;
 
   return (
+    <PageTransition>
     <div className="mx-auto max-w-2xl px-6 pt-12">
       <div className="flex items-center gap-4">
         <img src="/tentacle-logo-pirate.svg" alt="" className="h-14 w-14" />
@@ -45,6 +47,7 @@ export function About() {
         {t("about:copyright", { version, year: new Date().getFullYear() })}
       </p>
     </div>
+    </PageTransition>
   );
 }
 

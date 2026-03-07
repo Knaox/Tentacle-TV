@@ -124,13 +124,23 @@ export function usePlaybackReporting({
 
   // --- Interval management (declared early — used by all stop paths) ---
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Background beacon interval (sendBeacon-based, for when tab is hidden). */
+  const bgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** True when the tab is hidden — prevents fetch-based interval in background. */
+  const bgModeRef = useRef(false);
 
-  /** Kill the progress interval. Called from every stop/cleanup path. */
+  /** Kill all progress intervals (fetch-based AND background beacon).
+   *  Called from every stop/cleanup path. */
   const clearProgressInterval = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (bgIntervalRef.current) {
+      clearInterval(bgIntervalRef.current);
+      bgIntervalRef.current = null;
+    }
+    bgModeRef.current = false;
   }, []);
 
   // When itemId changes (episode switch), stop the old session and reset state
@@ -152,7 +162,7 @@ export function usePlaybackReporting({
   }, [itemId, clearProgressInterval]);
 
   const reportStart = useCallback(() => {
-    if (!itemId) return;
+    if (!itemId || startedRef.current) return;
     startedRef.current = true;
     sessionPost(client, "/Sessions/Playing", {
       ItemId: itemId,
@@ -191,10 +201,14 @@ export function usePlaybackReporting({
 
   const resetInterval = useCallback(() => {
     clearProgressInterval();
-    if (startedRef.current) {
+    if (startedRef.current && !bgModeRef.current) {
       intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL_MS);
     }
   }, [reportProgress, clearProgressInterval]);
+
+  // Ref to latest resetInterval — used by visibilitychange handler ([] deps effect).
+  const resetIntervalRef = useRef(resetInterval);
+  resetIntervalRef.current = resetInterval;
 
   // Periodic progress reporting
   useEffect(() => {
@@ -211,16 +225,39 @@ export function usePlaybackReporting({
     resetInterval();    // restart 10s timer from now
   }, [reportProgress, resetInterval]);
 
-  // --- beforeunload + visibilitychange (Bug #2 fix) ---
+  // --- beforeunload + visibilitychange (background tab resilience) ---
+  // Chrome throttles/freezes setInterval in background tabs after ~5 min.
+  // When the tab goes hidden, switch to sendBeacon-based periodic reporting
+  // (fire-and-forget, survives throttling). Restore normal fetch interval
+  // when the tab returns to foreground.
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
 
-    const buildBody = () => JSON.stringify({
+    const buildProgressBody = () => JSON.stringify({
       ItemId: itemIdRef.current,
       MediaSourceId: msIdRef.current ?? itemIdRef.current,
       PlaySessionId: playSessionIdRef.current ?? undefined,
       PositionTicks: safePositionTicks(positionRef.current),
+      IsPaused: pausedRef.current,
+      CanSeek: true,
+      PlayMethod: playMethodRef.current,
+      AudioStreamIndex: audioIdxRef.current,
+      SubtitleStreamIndex: subIdxRef.current ?? -1,
     });
+
+    const sendProgressBeacon = () => {
+      if (!itemIdRef.current || !startedRef.current) return;
+      const url = beaconUrl(clientRef.current, "/Sessions/Playing/Progress");
+      const blob = new Blob([buildProgressBody()], { type: "application/json" });
+      if (typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, blob);
+      }
+    };
+
+    const startBgBeaconInterval = () => {
+      if (bgIntervalRef.current) clearInterval(bgIntervalRef.current);
+      bgIntervalRef.current = setInterval(sendProgressBeacon, REPORT_INTERVAL_MS);
+    };
 
     const onBeforeUnload = () => {
       if (!itemIdRef.current || !startedRef.current) return;
@@ -228,30 +265,37 @@ export function usePlaybackReporting({
       startedRef.current = false;
       killActiveEncoding(clientRef.current, playSessionIdRef.current, true);
       const url = beaconUrl(clientRef.current, "/Sessions/Playing/Stopped");
-      const blob = new Blob([buildBody()], { type: "application/json" });
+      const blob = new Blob([JSON.stringify({
+        ItemId: itemIdRef.current,
+        MediaSourceId: msIdRef.current ?? itemIdRef.current,
+        PlaySessionId: playSessionIdRef.current ?? undefined,
+        PositionTicks: safePositionTicks(positionRef.current),
+      })], { type: "application/json" });
       if (typeof navigator.sendBeacon === "function") {
         navigator.sendBeacon(url, blob);
       }
     };
 
     const onVisibilityChange = () => {
-      if (document.visibilityState !== "hidden") return;
-      if (!itemIdRef.current || !startedRef.current) return;
-      const url = beaconUrl(clientRef.current, "/Sessions/Playing/Progress");
-      const body = JSON.stringify({
-        ItemId: itemIdRef.current,
-        MediaSourceId: msIdRef.current ?? itemIdRef.current,
-        PlaySessionId: playSessionIdRef.current ?? undefined,
-        PositionTicks: safePositionTicks(positionRef.current),
-        IsPaused: pausedRef.current,
-        CanSeek: true,
-        PlayMethod: playMethodRef.current,
-        AudioStreamIndex: audioIdxRef.current,
-        SubtitleStreamIndex: subIdxRef.current ?? -1,
-      });
-      const blob = new Blob([body], { type: "application/json" });
-      if (typeof navigator.sendBeacon === "function") {
-        navigator.sendBeacon(url, blob);
+      if (document.visibilityState === "hidden") {
+        if (!itemIdRef.current || !startedRef.current) return;
+        // Tab → background: kill the fetch-based interval (will be throttled/frozen)
+        // and switch to beacon-based reporting.
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        bgModeRef.current = true;
+        sendProgressBeacon();
+        startBgBeaconInterval();
+      } else {
+        // Tab → foreground: restore normal fetch-based reporting.
+        // clearProgressInterval handles both intervals + resets bgModeRef.
+        clearProgressInterval();
+        if (itemIdRef.current && startedRef.current) {
+          sendProgressBeacon(); // immediate catch-up report
+        }
+        resetIntervalRef.current();
       }
     };
 
