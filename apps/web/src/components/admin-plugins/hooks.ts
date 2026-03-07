@@ -6,40 +6,16 @@ import type { InstalledPlugin, MarketplacePlugin, PluginSource } from "./types";
 const BASE = `${backendUrl}/api/plugins`;
 
 function hdrs(): Record<string, string> {
-  const tok = localStorage.getItem("tentacle_token");
-  return {
-    "Content-Type": "application/json",
-    ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
-  };
+  return { "Content-Type": "application/json" };
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...hdrs(), ...(init?.headers as Record<string, string>) } });
+  const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...hdrs(), ...(init?.headers as Record<string, string>) }, credentials: "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
   }
   return res.json();
-}
-
-/** Fetch a plugin's IIFE bundle and inject it as an inline script.
- *  The bundle auto-registers via window.__tentacle.registerPlugin(). */
-function loadPluginBundle(pluginId: string, version: string) {
-  const token = localStorage.getItem("tentacle_token");
-  if (!token) return;
-  fetch(`${BASE}/${pluginId}/bundle?v=${version}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then((r) => (r.ok ? r.text() : ""))
-    .then((code) => {
-      if (code) {
-        const script = document.createElement("script");
-        script.textContent = code;
-        script.dataset.pluginId = pluginId;
-        document.head.appendChild(script);
-      }
-    })
-    .catch(() => {});
 }
 
 // -- Installed plugins --
@@ -58,9 +34,7 @@ export function useTogglePlugin() {
     mutationFn: (id: string) => apiFetch<InstalledPlugin>(`/${id}/toggle`, { method: "PUT" }),
     onSuccess: (plugin) => {
       qc.invalidateQueries({ queryKey: ["admin-plugins"] });
-      if (plugin.enabled) {
-        loadPluginBundle(plugin.pluginId, plugin.version);
-      } else {
+      if (!plugin.enabled) {
         unregisterPlugin(plugin.pluginId);
       }
     },
@@ -88,9 +62,6 @@ export function useUpdatePlugin() {
       const plugin: InstalledPlugin = (data as { plugin?: InstalledPlugin }).plugin ?? (data as InstalledPlugin);
       if (plugin.pluginId) {
         unregisterPlugin(plugin.pluginId);
-        if (plugin.enabled) {
-          loadPluginBundle(plugin.pluginId, plugin.version);
-        }
       }
     },
   });
@@ -111,11 +82,8 @@ export function useInstallPlugin() {
   return useMutation({
     mutationFn: (body: { pluginId: string; version: string; sourceId: string }) =>
       apiFetch<InstalledPlugin>("/install", { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: (plugin) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-plugins"] });
-      if (plugin.enabled) {
-        loadPluginBundle(plugin.pluginId, plugin.version);
-      }
     },
   });
 }
