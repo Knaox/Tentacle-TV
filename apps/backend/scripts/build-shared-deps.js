@@ -55,8 +55,21 @@ build({
     "process.env.NODE_ENV": '"production"',
   },
   plugins: [dedupeReact],
-}).then(() => {
+}).then(async () => {
   console.log("shared-deps.js built →", resolve(outDir, "shared-deps.js"));
+
+  // Download Tailwind CSS runtime for plugin iframes
+  const tailwindOut = resolve(outDir, "tailwind.js");
+  const { existsSync } = require("fs");
+  if (!existsSync(tailwindOut)) {
+    console.log("Downloading tailwind.js from CDN...");
+    const res = await fetch("https://cdn.tailwindcss.com");
+    if (!res.ok) throw new Error(`Tailwind download failed: ${res.status}`);
+    require("fs").writeFileSync(tailwindOut, await res.text());
+    console.log("tailwind.js downloaded →", tailwindOut);
+  } else {
+    console.log("tailwind.js already exists, skipping download");
+  }
 }).catch((err) => {
   console.error(err);
   process.exit(1);

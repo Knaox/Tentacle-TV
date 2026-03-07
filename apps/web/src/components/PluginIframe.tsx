@@ -64,13 +64,13 @@ function fetchSharedDeps(baseUrl: string): Promise<string> {
   return sharedDepsPromise;
 }
 
-// Module-level cache for Tailwind CDN (inlined to avoid CSP/sandbox issues in Tauri prod)
+// Module-level cache for Tailwind runtime (served from backend to avoid CORS/CSP issues in Tauri)
 let tailwindPromise: Promise<string> | null = null;
-function fetchTailwindCdn(): Promise<string> {
+function fetchTailwind(baseUrl: string): Promise<string> {
   if (!tailwindPromise) {
-    tailwindPromise = fetch("https://cdn.tailwindcss.com/3.4.17")
+    tailwindPromise = fetch(`${baseUrl}/api/plugins/tailwind.js`)
       .then((r) => {
-        if (!r.ok) throw new Error(`Tailwind CDN fetch failed: ${r.status}`);
+        if (!r.ok) throw new Error(`Tailwind fetch failed: ${r.status}`);
         return r.text();
       })
       .catch((err) => {
@@ -106,7 +106,7 @@ export function PluginIframe({
   }>({ status: "loading" });
 
   useEffect(() => {
-    Promise.all([fetchSharedDeps(backendUrl), fetchTailwindCdn()])
+    Promise.all([fetchSharedDeps(backendUrl), fetchTailwind(backendUrl)])
       .then(([sharedDepsCode, tailwindCode]) =>
         setDeps({ status: "ready", sharedDepsCode, tailwindCode }),
       )
