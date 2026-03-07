@@ -85,13 +85,26 @@ async function validateToken(token: string): Promise<JellyfinUser | null> {
   }
 }
 
-export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+/** Extract auth token from cookie (web) or Authorization header (mobile/desktop). */
+function getTokenFromRequest(request: FastifyRequest): string | null {
+  // 1. Cookie (web — httpOnly, XSS-proof)
+  const cookieToken = (request as any).cookies?.tentacle_token;
+  if (cookieToken) return cookieToken;
+  // 2. Authorization: Bearer header (mobile/desktop)
   const authHeader = request.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
+  // 3. X-Emby-Token header (Jellyfin client direct)
+  const embyToken = request.headers["x-emby-token"];
+  if (typeof embyToken === "string" && embyToken) return embyToken;
+  return null;
+}
+
+export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+  const token = getTokenFromRequest(request);
+  if (!token) {
     return reply.status(401).send({ message: "Unauthorized" });
   }
 
-  const token = authHeader.slice(7);
   const user = await validateToken(token);
   if (!user) {
     return reply.status(401).send({ message: "Invalid token" });
@@ -101,12 +114,11 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 }
 
 export async function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
-  const authHeader = request.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
+  const token = getTokenFromRequest(request);
+  if (!token) {
     return reply.status(401).send({ message: "Unauthorized" });
   }
 
-  const token = authHeader.slice(7);
   const user = await validateToken(token);
   if (!user) {
     return reply.status(401).send({ message: "Invalid token" });
