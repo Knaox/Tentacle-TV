@@ -177,27 +177,26 @@ export function App() {
             <Route path="support" element={<Support />} />
             <Route path="settings" element={<Preferences />} />
             <Route path="pair-device" element={<PairDevice />} />
-            <Route path="admin/*" element={<Admin />} />
+            <Route path="admin" element={<Admin />} />
             <Route path="admin/plugins" element={<AdminPlugins />} />
 
-            {/* Dynamic plugin admin routes (sandboxed iframes) */}
-            {activePluginsMeta.flatMap((plugin) =>
-              (plugin.navItems || [])
-                .filter((nav) => nav.admin && nav.platforms?.includes("web"))
-                .map((nav) => (
-                  <Route
-                    key={`${plugin.pluginId}-${nav.path}`}
-                    path={nav.path.replace(/^\//, "")}
-                    element={
-                      <PluginIframe
-                        pluginId={plugin.pluginId}
-                        bundleUrl={`${backendUrl}/api/plugins/${plugin.pluginId}/bundle?v=${plugin.version}`}
-                        pluginPath={nav.path}
-                      />
-                    }
-                  />
-                ))
-            )}
+            {/* Dynamic plugin admin routes (sandboxed iframes) — convention: /admin/plugins/:pluginId */}
+            {activePluginsMeta
+              .filter((plugin) => plugin.hasBundle)
+              .map((plugin) => (
+                <Route
+                  key={`admin-${plugin.pluginId}`}
+                  path={`admin/plugins/${plugin.pluginId}`}
+                  element={
+                    <PluginIframe
+                      pluginId={plugin.pluginId}
+                      bundleUrl={`${backendUrl}/api/plugins/${plugin.pluginId}/bundle?v=${plugin.version}`}
+                      pluginPath={`/admin/plugins/${plugin.pluginId}`}
+                    />
+                  }
+                />
+              ))
+            }
             <Route path="about" element={<About />} />
             <Route path="credits" element={<Credits />} />
 
