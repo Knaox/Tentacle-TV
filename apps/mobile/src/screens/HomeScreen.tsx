@@ -1,9 +1,9 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { ScrollView, RefreshControl, View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
-  useLibraries, useLatestItems, useUserId, useTentacleConfig,
+  useLibraries, useLatestItems, useUserId,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -18,30 +18,11 @@ export function HomeScreen() {
   const { t: te } = useTranslation("errors");
   const router = useRouter();
   const userId = useUserId();
-  const { storage } = useTentacleConfig();
 
   const featured = useFeaturedItems();
   const resume = useResumeItems();
   const nextUp = useNextUp();
   const libraries = useLibraries();
-
-  // Debug: trace why queries might not run
-  useEffect(() => {
-    const rawUser = storage.getItem("tentacle_user");
-    const rawToken = storage.getItem("tentacle_token");
-    const rawUrl = storage.getItem("tentacle_server_url");
-    console.log("[HomeScreen DEBUG]", {
-      userId,
-      hasToken: !!rawToken,
-      hasUrl: !!rawUrl,
-      hasUser: !!rawUser,
-      userIdFromRaw: rawUser ? JSON.parse(rawUser)?.Id : "NO_RAW",
-      featuredStatus: featured.status,
-      resumeStatus: resume.status,
-      featuredError: featured.error?.message,
-      resumeError: resume.error?.message,
-    });
-  }, [userId, featured.status, resume.status, featured.error, resume.error, storage]);
 
   const isLoading = featured.isLoading || resume.isLoading;
 

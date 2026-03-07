@@ -23,6 +23,61 @@ const SKIP_API_RESPONSE_HEADERS = new Set([
   "content-encoding", "content-length",
 ]);
 
+/** Whitelist of allowed Jellyfin proxy path patterns. */
+const ALLOWED_PROXY_PATTERNS: RegExp[] = [
+  // Streaming — Videos/{id}/... or Videos/{id}/{mediaSourceId}/...
+  /^Videos\/[^/]+\/(stream|stream\.mp4|PlaybackInfo)/,
+  /^Videos\/[^/]+\/[^/]+\/(master\.m3u8|main\.m3u8|Subtitles)/,
+  /^Videos\/[^/]+\/(master\.m3u8|main\.m3u8|Subtitles)/,
+  /^Audio\/[^/]+\//,
+  /^(Videos\/[^/]+\/)?hls1\//,
+  /^Videos\/ActiveEncodings$/,
+
+  // Items & metadata
+  /^Items(\/[^/]+)?(\/Images|\/Similar|\/Ancestors|\/PlaybackInfo)?$/,
+  /^Items\/[^/]+\/Images\//,
+
+  // User data
+  /^Users\/[^/]+\/Items/,
+  /^Users\/[^/]+\/Views$/,
+  /^Users\/Me$/,
+  /^Users\/AuthenticateByName$/,
+
+  // Shows
+  /^Shows\/NextUp$/,
+  /^Shows\/[^/]+\/(Seasons|Episodes|NextUp)$/,
+
+  // Playback reporting
+  /^Sessions\/Playing(\/Progress|\/Stopped)?$/,
+  /^Sessions\/Logout$/,
+
+  // Media analysis
+  /^MediaSegments\/[^/]+$/,
+  /^Episode\/[^/]+\/(IntroSkipperSegments|Timestamps)$/,
+
+  // System
+  /^System\/Info\/Public$/,
+  /^Branding\/Configuration$/,
+
+  // Search
+  /^Search\/Hints$/,
+
+  // Display preferences
+  /^DisplayPreferences\//,
+
+  // Filters
+  /^(Genres|Studios|Persons|Artists)(\/|$)/,
+];
+
+/** Pre-computed case-insensitive versions of ALLOWED_PROXY_PATTERNS. */
+const ALLOWED_PROXY_PATTERNS_CI = ALLOWED_PROXY_PATTERNS.map(
+  (p) => new RegExp(p.source, "i")
+);
+
+function isAllowedProxyPath(path: string): boolean {
+  return ALLOWED_PROXY_PATTERNS_CI.some((pattern) => pattern.test(path));
+}
+
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();
@@ -32,6 +87,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
     // Build target URL: strip the prefix that Fastify already consumed
     const wildcardPath = (request.params as Record<string, string>)["*"] || "";
+
+    // Whitelist check: only allow known Jellyfin API paths
+    if (!isAllowedProxyPath(wildcardPath)) {
+      console.log("[PROXY BLOCKED]", wildcardPath);
+      return reply.status(403).send({ error: "Forbidden proxy path" });
+    }
+
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
     let targetUrl = `${jellyfinUrl}/${wildcardPath}${qs}`;
 
@@ -49,9 +111,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       } catch { /* leave targetUrl unchanged */ }
     }
 
-    // Detect JWT device tokens (from paired TV/devices) and replace with
-    // the Jellyfin admin API key — Jellyfin only understands its own tokens.
-    const incomingToken = request.headers["x-emby-token"] as string | undefined;
+    // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header
+    const cookieToken = (request as any).cookies?.tentacle_token;
+    const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken;
     let apiKeyOverride: string | undefined;
     if (incomingToken) {
       const payload = await verifyDeviceToken(incomingToken);
@@ -78,6 +140,11 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         }
         headers[key] = value;
       }
+    }
+
+    // Cookie-based auth: inject token as X-Emby-Token if not already present from headers
+    if (cookieToken && !headers["x-emby-token"] && !headers["X-Emby-Token"]) {
+      headers["X-Emby-Token"] = cookieToken;
     }
 
     // Progressive video streams (remux) can last hours — use a long timeout.

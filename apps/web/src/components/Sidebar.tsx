@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef, useCallback, type ComponentType } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLibraries, useAppConfig } from "@tentacle-tv/api-client";
-import { usePluginNavItems } from "@tentacle-tv/plugins-api";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { SidebarPreviewPanel } from "./SidebarPreviewPanel";
+import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 
 interface NavItem {
   key: string;
@@ -20,11 +21,11 @@ export function Sidebar() {
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation("nav");
+  const { t, i18n } = useTranslation("nav");
   const { data: libraries } = useLibraries();
   const { data: config } = useAppConfig();
   const features = config?.features;
-  const pluginNavItems = usePluginNavItems("desktop");
+  const activePluginsMeta = useActivePluginsMeta();
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const navItems: NavItem[] = useMemo(() => {
@@ -44,19 +45,21 @@ export function Sidebar() {
         });
       }
     }
-    // Plugin nav items — only shown when plugin is installed AND configured
-    for (const item of pluginNavItems) {
-      const IconComp = typeof item.icon !== "string" ? item.icon as ComponentType<{ className?: string }> : null;
-      items.push({
-        key: `plugin-${item.path}`,
-        label: t(item.label),
-        icon: IconComp ? <IconComp /> : <span>{item.icon as string}</span>,
-        path: item.path,
-      });
+    // Plugin nav items — from backend active plugins metadata
+    for (const plugin of activePluginsMeta) {
+      for (const nav of plugin.navItems || []) {
+        if (nav.admin || !nav.platforms?.includes("web")) continue;
+        items.push({
+          key: `plugin-${plugin.pluginId}-${nav.path}`,
+          label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),
+          icon: getLucideIcon(nav.icon),
+          path: nav.path,
+        });
+      }
     }
 
     return items;
-  }, [libraries, features, t, pluginNavItems]);
+  }, [libraries, features, t, i18n.language, activePluginsMeta]);
 
   const isActive = (item: NavItem) => {
     if (item.key === "home") return location.pathname === "/";

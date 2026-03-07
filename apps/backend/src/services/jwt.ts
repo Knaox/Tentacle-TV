@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { getConfigValue, setConfigValue } from "./configStore";
 
-const TOKEN_EXPIRY = "365d";
+const TOKEN_EXPIRY = "90d";
 
 export interface DeviceTokenPayload {
   userId: string;

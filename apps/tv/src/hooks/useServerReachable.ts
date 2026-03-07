@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerUrl } from "@/providers/ServerUrlContext";
 
 /**
  * Détecte si le serveur Tentacle/Jellyfin est joignable.
  * - Ping /api/health avec timeout 5s
  * - Ping périodique (15s) quand offline
  * - Re-check au retour au premier plan (AppState)
- * - Détecte les erreurs réseau globales de React Query
+ * - Détecte les erreurs réseau + HTTP 500+ de React Query
  */
-export function useServerReachable() {
-  const { serverUrl } = useServerUrl();
+export function useServerReachable(serverUrl: string | null) {
   const queryClient = useQueryClient();
   const [isReachable, setIsReachable] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -56,7 +54,7 @@ export function useServerReachable() {
     return () => sub.remove();
   }, [checkServer]);
 
-  // Écoute les erreurs réseau globales de React Query
+  // Écoute les erreurs réseau + HTTP 500+ de React Query
   useEffect(() => {
     const cache = queryClient.getQueryCache();
     const unsubscribe = cache.subscribe((event) => {

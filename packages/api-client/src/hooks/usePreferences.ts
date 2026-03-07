@@ -24,7 +24,7 @@ async function prefFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers });
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
@@ -52,7 +52,7 @@ export interface TrackResolution {
 
 export function useLibraryPreferences() {
   const hasToken = !!_tokenOverride
-    || (typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token"));
+    || (typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user")));
 
   return useQuery({
     queryKey: ["library-preferences"],
@@ -120,7 +120,7 @@ export function useResolveMediaTracks() {
 /** Fetch the user's stored interface language from backend */
 export function useInterfaceLanguage() {
   const hasToken = !!_tokenOverride
-    || (typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token"));
+    || (typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user")));
   return useQuery({
     queryKey: ["interface-language"],
     queryFn: () => prefFetch<{ language: string | null }>("/language"),
@@ -147,8 +147,13 @@ export function useSetInterfaceLanguage() {
 /** Direct fetch for interface language (for non-hook contexts like TV App.tsx) */
 export async function fetchInterfaceLanguage(token: string): Promise<string | null> {
   try {
+    const headers: Record<string, string> = {};
+    if (token !== "__cookie__") {
+      headers.Authorization = `Bearer ${token}`;
+    }
     const res = await fetch(`${_backendBase}/language`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
+      credentials: "include",
     });
     if (!res.ok) return null;
     const data = await res.json();

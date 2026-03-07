@@ -22,6 +22,8 @@ import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { SidebarProvider } from "./context/SidebarContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { OfflineBanner } from "./components/OfflineBanner";
+import { useServerReachable } from "./hooks/useServerReachable";
 
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
@@ -105,9 +107,26 @@ function DirectStreamingSync() {
   return null;
 }
 
+/** Contenu principal — nécessite QueryClientProvider comme parent */
+function AppContent({ serverUrl }: { serverUrl: string | null }) {
+  const { isReachable, retry } = useServerReachable(serverUrl);
+  return (
+    <>
+      <DirectStreamingSync />
+      <SidebarProvider>
+        <NavigationContainer theme={darkTheme}>
+          <AppNavigator />
+        </NavigationContainer>
+      </SidebarProvider>
+      <OfflineBanner visible={!isReachable} onRetry={retry} />
+    </>
+  );
+}
+
 export function App() {
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
+  const [serverUrl, setServerUrl] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -129,6 +148,7 @@ export function App() {
         } catch { /* silent — use local cache */ }
       }
 
+      setServerUrl(tentacleUrl);
       setClient(jfClient);
       setReady(true);
     })();
@@ -147,12 +167,7 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={client}>
-            <DirectStreamingSync />
-            <SidebarProvider>
-              <NavigationContainer theme={darkTheme}>
-                <AppNavigator />
-              </NavigationContainer>
-            </SidebarProvider>
+            <AppContent serverUrl={serverUrl} />
           </JellyfinClientContext.Provider>
         </TentacleConfigContext.Provider>
       </QueryClientProvider>

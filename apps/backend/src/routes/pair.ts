@@ -77,7 +77,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
 
       // Capture the web user's Jellyfin token for direct streaming on the paired device
       const authHeader = request.headers.authorization as string | undefined;
-      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
+        : (request as any).cookies?.tentacle_token || null;
       // Jellyfin tokens are opaque hex strings; JWTs have 3 dot-separated parts
       const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
       const jellyfinAccessToken = isJellyfinToken ? bearerToken : null;
@@ -206,7 +207,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
 
       // Capture Jellyfin token for direct streaming
       const authHeader = request.headers.authorization as string | undefined;
-      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
+        : (request as any).cookies?.tentacle_token || null;
       const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
 
       const prisma = getPrisma();

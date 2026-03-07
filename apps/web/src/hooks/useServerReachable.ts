@@ -91,8 +91,8 @@ export function useServerReachable() {
     const handleError = (error: unknown) => {
       const msg = (error as Error)?.message ?? "";
       const isNetworkError = error instanceof TypeError && msg === "Failed to fetch";
-      const isGatewayError = msg.includes("502") || msg.includes("503");
-      if (isNetworkError || isGatewayError) {
+      const isServerError = (error as any)?.status >= 500 || msg.includes("500") || msg.includes("502") || msg.includes("503");
+      if (isNetworkError || isServerError) {
         checkServer();
       }
     };

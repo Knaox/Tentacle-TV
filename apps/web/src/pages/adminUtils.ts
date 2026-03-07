@@ -2,10 +2,7 @@ import { backendUrl } from "../main";
 
 export const BACKEND = backendUrl;
 
-export const hdrs = () => {
-  const tok = localStorage.getItem("tentacle_token");
-  return { "Content-Type": "application/json", ...(tok ? { Authorization: `Bearer ${tok}` } : {}) };
-};
+export const hdrs = () => ({ "Content-Type": "application/json" });
 
 export const cls = {
   card: "mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6",

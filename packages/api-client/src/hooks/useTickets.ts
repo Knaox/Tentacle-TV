@@ -19,7 +19,7 @@ async function ticketFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers });
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
@@ -85,7 +85,7 @@ export function useCreateTicket() {
 export function useMyTickets(status?: string, page = 1) {
   const params = new URLSearchParams({ page: String(page), limit: "20" });
   if (status) params.set("status", status);
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
     queryKey: ["tickets", "mine", status, page],
@@ -98,7 +98,7 @@ export function useMyTickets(status?: string, page = 1) {
 export function useAllTickets(status?: string, page = 1) {
   const params = new URLSearchParams({ page: String(page), limit: "20" });
   if (status) params.set("status", status);
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
     queryKey: ["tickets", "all", status, page],
@@ -109,7 +109,7 @@ export function useAllTickets(status?: string, page = 1) {
 }
 
 export function useTicketDetail(id: string | undefined) {
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
     queryKey: ["tickets", "detail", id],

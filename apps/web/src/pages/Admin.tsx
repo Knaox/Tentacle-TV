@@ -20,12 +20,12 @@ export function Admin() {
   const [creating, setCreating] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const fetchInvites = useCallback(async () => {
-    const r = await fetch(`${BACKEND}/api/invites`, { headers: hdrs() }); if (r.ok) setInvites(await r.json());
+    const r = await fetch(`${BACKEND}/api/invites`, { headers: hdrs(), credentials: "include" }); if (r.ok) setInvites(await r.json());
   }, []);
   useEffect(() => { fetchInvites(); }, [fetchInvites]);
   const createInvite = async () => {
     setCreating(true);
-    const r = await fetch(`${BACKEND}/api/invites`, { method: "POST", headers: hdrs(), body: JSON.stringify({ maxUses, expiresInHours: expiresHours }) });
+    const r = await fetch(`${BACKEND}/api/invites`, { method: "POST", headers: hdrs(), body: JSON.stringify({ maxUses, expiresInHours: expiresHours }), credentials: "include" });
     if (r.ok) await fetchInvites(); setCreating(false);
   };
   const copyLink = (key: string) => { navigator.clipboard.writeText(`${window.location.origin}/register?invite=${key}`); setCopiedKey(key); setTimeout(() => setCopiedKey(null), 2000); };
@@ -93,7 +93,7 @@ function PlaybackSection() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${BACKEND}/api/admin/playback`, { headers: hdrs() });
+        const r = await fetch(`${BACKEND}/api/admin/playback`, { headers: hdrs(), credentials: "include" });
         if (r.ok) { const d = await r.json(); setMinutes(d.autoplayCreditsMinutes ?? 2); }
       } catch {}
       setLoaded(true);
@@ -103,7 +103,7 @@ function PlaybackSection() {
   const save = async () => {
     setBusy(true); setMsg(null);
     try {
-      const r = await fetch(`${BACKEND}/api/admin/playback`, { method: "PUT", headers: hdrs(), body: JSON.stringify({ autoplayCreditsMinutes: minutes }) });
+      const r = await fetch(`${BACKEND}/api/admin/playback`, { method: "PUT", headers: hdrs(), body: JSON.stringify({ autoplayCreditsMinutes: minutes }), credentials: "include" });
       setMsg(r.ok ? { ok: true, t: t("admin:saved") } : { ok: false, t: t("admin:saveFailed") });
     } catch { setMsg({ ok: false, t: t("admin:saveFailed") }); }
     setBusy(false);
@@ -150,7 +150,7 @@ function ServicesSection() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch(`${BACKEND}/api/admin/services`, { headers: hdrs() });
+      const r = await fetch(`${BACKEND}/api/admin/services`, { headers: hdrs(), credentials: "include" });
       if (r.ok) {
         const j: SvcData = await r.json(); setD(j);
         if (j.jellyfin.url) setJUrl(j.jellyfin.url);
@@ -165,17 +165,15 @@ function ServicesSection() {
 
   const aFetch = async (path: string, method: string, body?: object) => {
     const h: Record<string, string> = {};
-    const tok = localStorage.getItem("tentacle_token");
-    if (tok) h["Authorization"] = `Bearer ${tok}`;
     if (body) h["Content-Type"] = "application/json";
-    const r = await fetch(`${BACKEND}/api/admin${path}`, { method, headers: h, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const r = await fetch(`${BACKEND}/api/admin${path}`, { method, headers: h, credentials: "include", ...(body ? { body: JSON.stringify(body) } : {}) });
     const j = await r.json().catch(() => ({})); return { ok: r.ok, d: j, msg: j.message || (r.ok ? "OK" : t("admin:statusError")) };
   };
   const testJ = async () => { setBusy("tj"); setJMsg(null); const r = await aFetch("/test-jellyfin", "POST", { url: jUrl, apiKey: jKey }); setJMsg({ ok: r.ok, t: r.ok ? `Jellyfin ${r.d.version || ""} - ${r.d.serverName || ""}` : r.msg }); setBusy(""); };
   const saveJ = async () => { setBusy("sj"); setJMsg(null); const r = await aFetch("/jellyfin", "PUT", { url: jUrl, apiKey: jKey }); setJMsg({ ok: r.ok, t: r.ok ? t("admin:save") : r.msg }); if (r.ok) await load(); setBusy(""); };
   const saveDb = async () => { setBusy("sdb"); setDbMsg(null); const r = await aFetch("/database", "PUT", { host: dbHost, port: Number(dbPort), database: dbName, user: dbUser, password: dbPass }); setDbMsg({ ok: r.ok, t: r.ok ? t("admin:dbRestartNote") : r.msg }); setBusy(""); };
   const [resetConfirm, setResetConfirm] = useState(false);
-  const resetServer = async () => { setBusy("rst"); const r = await aFetch("/reset-server", "POST", {}); if (r.ok) { localStorage.removeItem("tentacle_token"); localStorage.removeItem("tentacle_user"); window.location.reload(); } else { setDbMsg({ ok: false, t: r.msg }); } setBusy(""); setResetConfirm(false); };
+  const resetServer = async () => { setBusy("rst"); const r = await aFetch("/reset-server", "POST", {}); if (r.ok) { localStorage.removeItem("tentacle_user"); window.location.reload(); } else { setDbMsg({ ok: false, t: r.msg }); } setBusy(""); setResetConfirm(false); };
 
   if (!d) return <div className={cls.card}><h2 className="text-lg font-semibold text-white">{t("admin:services")}</h2><p className="mt-2 text-sm text-white/40">{t("common:loading")}</p></div>;
   const Msg = ({ m }: { m: { ok: boolean; t: string } | null }) => m ? <span className={`text-xs ${m.ok ? "text-green-400" : "text-red-400"}`}>{m.t}</span> : null;
