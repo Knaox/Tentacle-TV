@@ -81,10 +81,16 @@ export class JellyfinClient {
     if (!this.directStreaming) return proxyUrl;
     const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
     const path = proxyUrl.replace(this.baseUrl, "");
-    return `${mediaBaseUrl}${path}`.replace(
-      /([?&])(api_key|ApiKey)=[^&]*/i,
-      `$1api_key=${encodeURIComponent(jellyfinToken)}`
-    );
+    // Images stay proxied to avoid CORS — only streams & subtitles go direct
+    if (/\/Images\//i.test(path)) return proxyUrl;
+    let url = `${mediaBaseUrl}${path}`;
+    const encoded = encodeURIComponent(jellyfinToken);
+    if (/([?&])(api_key|ApiKey)=/i.test(url)) {
+      url = url.replace(/([?&])(api_key|ApiKey)=[^&]*/i, `$1api_key=${encoded}`);
+    } else {
+      url += (url.includes("?") ? "&" : "?") + `api_key=${encoded}`;
+    }
+    return url;
   }
 
   getDeviceId() {

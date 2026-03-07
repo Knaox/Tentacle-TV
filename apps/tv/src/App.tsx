@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import {
   JellyfinClient,
@@ -15,6 +15,7 @@ import {
   setPreferencesToken,
   setStreamingConfigBackendUrl,
   useStreamingConfig,
+  STREAMING_CONFIG_QUERY_KEY,
   fetchInterfaceLanguage,
 } from "@tentacle-tv/api-client";
 import { initI18n, i18n } from "@tentacle-tv/shared";
@@ -89,6 +90,7 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
 /** Sync direct streaming config from backend into JellyfinClient. */
 function DirectStreamingSync() {
   const client = useJellyfinClient();
+  const qc = useQueryClient();
   const token = storage.getItem("tentacle_token");
   const { data } = useStreamingConfig(token);
 
@@ -103,6 +105,12 @@ function DirectStreamingSync() {
       client.setDirectStreaming(null);
     }
   }, [client, data]);
+
+  useEffect(() => {
+    client.setOnDirectStreamingFail(() => {
+      qc.invalidateQueries({ queryKey: [STREAMING_CONFIG_QUERY_KEY] });
+    });
+  }, [client, qc]);
 
   return null;
 }

@@ -161,22 +161,6 @@ export function usePlaybackReporting({
     }
   }, [itemId, clearProgressInterval]);
 
-  const reportStart = useCallback(() => {
-    if (!itemId || startedRef.current) return;
-    startedRef.current = true;
-    sessionPost(client, "/Sessions/Playing", {
-      ItemId: itemId,
-      MediaSourceId: mediaSourceId ?? itemId,
-      PlaySessionId: playSessionId ?? undefined,
-      CanSeek: true,
-      PlayMethod: playMethod,
-      AudioStreamIndex: audioStreamIndex,
-      SubtitleStreamIndex: subtitleStreamIndex ?? -1,
-      PositionTicks: safePositionTicks(positionRef.current),
-      IsPaused: false,
-    }, "reportStart");
-  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex]);
-
   const reportProgress = useCallback(() => {
     if (!itemId || !startedRef.current) return;
     const pos = positionRef.current;
@@ -205,6 +189,26 @@ export function usePlaybackReporting({
       intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL_MS);
     }
   }, [reportProgress, clearProgressInterval]);
+
+  const reportStart = useCallback((initialPositionSeconds?: number) => {
+    if (!itemId || startedRef.current) return;
+    startedRef.current = true;
+    if (initialPositionSeconds != null && initialPositionSeconds > 0) {
+      positionRef.current = initialPositionSeconds;
+    }
+    sessionPost(client, "/Sessions/Playing", {
+      ItemId: itemId,
+      MediaSourceId: mediaSourceId ?? itemId,
+      PlaySessionId: playSessionId ?? undefined,
+      CanSeek: true,
+      PlayMethod: playMethod,
+      AudioStreamIndex: audioStreamIndex,
+      SubtitleStreamIndex: subtitleStreamIndex ?? -1,
+      PositionTicks: safePositionTicks(positionRef.current),
+      IsPaused: false,
+    }, "reportStart");
+    resetInterval();
+  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex, resetInterval]);
 
   // Ref to latest resetInterval — used by visibilitychange handler ([] deps effect).
   const resetIntervalRef = useRef(resetInterval);
