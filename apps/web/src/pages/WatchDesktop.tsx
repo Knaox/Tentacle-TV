@@ -13,7 +13,7 @@ export function WatchDesktop() {
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
     quality, setQuality, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
-    positionRef, audioOverrideRef,
+    positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
@@ -51,6 +51,7 @@ export function WatchDesktop() {
   }, [quality, getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
 
   const handleSubtitleChange = useCallback((idx: number | null) => {
+    subtitleOverrideRef.current = true;
     // In direct play, mpv handles all subtitle types natively — just update state
     if (isDirectPlay) { setSubtitleIndex(idx); return; }
     // In transcode mode, bitmap subtitles need server burn-in

@@ -20,7 +20,7 @@ export function useResumeItems() {
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 10_000,
+    staleTime: 30_000,
     refetchOnMount: "always",
   });
 }
@@ -87,7 +87,7 @@ export function useFeaturedItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?SortBy=Random&Limit=5&Recursive=true` +
-            `&IncludeItemTypes=Movie&Fields=Overview,Genres,Taglines&HasBackdrop=true&${IMAGE_OPTS}`
+            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines&HasBackdrop=true&${IMAGE_OPTS}`
         )
         .then((r) => r.Items),
     enabled: !!userId,

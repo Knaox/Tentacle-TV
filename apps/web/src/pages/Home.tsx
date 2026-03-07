@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useLibraries,
@@ -10,6 +9,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
+import { PageTransition } from "../components/PageTransition";
 
 export function Home() {
   const { t } = useTranslation("common");
@@ -18,12 +18,6 @@ export function Home() {
   const { data: nextUp } = useNextUp();
   const { data: watchedItems } = useWatchedItems();
   const { data: libraries } = useLibraries();
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 100);
-    return () => clearTimeout(t);
-  }, []);
 
   // Hero: prioritize resume items (quick resume), fallback to featured
   const heroItems = resumeItems && resumeItems.length > 0
@@ -32,25 +26,16 @@ export function Home() {
   const heroLoading = featuredLoading && !resumeItems;
 
   return (
-    <>
+    <PageTransition>
       {/* Hero Banner */}
-      <div
-        className="px-4 pt-4 md:px-8"
-        style={{
-          opacity: loaded ? 1 : 0,
-          transform: loaded ? "translateY(0)" : "translateY(20px)",
-          transition: "all 0.6s ease 0.2s",
-        }}
-      >
-        {heroLoading ? (
-          <div className="skeleton-shimmer h-[480px] rounded-2xl" />
-        ) : (
-          <HeroBanner items={heroItems} />
-        )}
-      </div>
+      {heroLoading ? (
+        <div className="skeleton-shimmer h-[70vh] w-full" />
+      ) : (
+        <HeroBanner items={heroItems} />
+      )}
 
       {/* Content rows */}
-      <div className="space-y-2 pb-20 pt-6">
+      <div className="space-y-0 pb-20 pt-6">
         {resumeItems && resumeItems.length > 0 && (
           <MediaCarousel title={t("common:resumeWatching")} items={resumeItems} animDelay={350} />
         )}
@@ -64,7 +49,7 @@ export function Home() {
           <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} delayIndex={i} />
         ))}
       </div>
-    </>
+    </PageTransition>
   );
 }
 

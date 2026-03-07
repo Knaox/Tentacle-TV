@@ -18,11 +18,12 @@ export function AppLayout() {
       {/* Ambient background glow */}
       <div className="ambient-glow" />
 
-      {!isMobile && <Sidebar />}
+      {!isMobile && <div data-host-chrome="sidebar"><Sidebar /></div>}
 
       <div className={isMobile ? "pb-20 pt-14" : "pl-[62px]"}>
         {/* Top bar: search + notifications + avatar */}
         <div
+          data-host-chrome="topbar"
           className="fixed right-2 z-30 flex items-center gap-2 sm:right-4"
           style={{ top: "max(0.75rem, env(safe-area-inset-top, 0.75rem))" }}
         >

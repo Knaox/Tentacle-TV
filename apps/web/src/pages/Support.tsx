@@ -1,9 +1,12 @@
 import { SupportPanel } from "../components/SupportPanel";
+import { PageTransition } from "../components/PageTransition";
 
 export function Support() {
   return (
-    <div className="pt-16">
-      <SupportPanel />
-    </div>
+    <PageTransition>
+      <div className="pt-16">
+        <SupportPanel />
+      </div>
+    </PageTransition>
   );
 }

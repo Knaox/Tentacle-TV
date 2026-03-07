@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { InstalledTab } from "../components/admin-plugins/InstalledTab";
 import { MarketplaceTab } from "../components/admin-plugins/MarketplaceTab";
 import { SourcesTab } from "../components/admin-plugins/SourcesTab";
+import { PageTransition } from "../components/PageTransition";
 
 type TabKey = "installed" | "marketplace" | "sources";
 
@@ -17,6 +18,7 @@ export function AdminPlugins() {
   ];
 
   return (
+    <PageTransition>
     <div className="px-4 pt-6 pb-16 md:px-12">
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-2 text-2xl font-bold text-white">{t("adminPlugins:pageTitle")}</h1>
@@ -47,5 +49,6 @@ export function AdminPlugins() {
         {tab === "sources" && <SourcesTab />}
       </div>
     </div>
+    </PageTransition>
   );
 }

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
+import { PageTransition } from "../components/PageTransition";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -91,6 +92,7 @@ export function Preferences() {
   const prefsMap = new Map(prefs?.map((p) => [p.libraryId, p]) ?? []);
 
   return (
+    <PageTransition>
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-4xl">
         <h1 className="mb-2 text-2xl font-bold text-white">{t("preferences:title")}</h1>
@@ -138,6 +140,7 @@ export function Preferences() {
         <PairedDevicesSection />
       </main>
     </div>
+    </PageTransition>
   );
 }
 

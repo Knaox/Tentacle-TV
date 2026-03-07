@@ -9,6 +9,7 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -55,9 +56,27 @@ export function GlobalSearch() {
     return () => window.removeEventListener("open-global-search", handler);
   }, []);
 
+  // Reset selection when results change
+  useEffect(() => { setSelectedIndex(-1); }, [results]);
+
+  const visibleResults = results?.slice(0, 8) ?? [];
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((i) => Math.min(i + 1, visibleResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && selectedIndex >= 0 && visibleResults[selectedIndex]) {
+      handleSelect(visibleResults[selectedIndex]);
+    }
+  };
+
   const handleSelect = (item: MediaItem) => {
     setOpen(false);
     setInput("");
+    setSelectedIndex(-1);
     navigate(`/media/${item.Id}`);
   };
 
@@ -109,6 +128,7 @@ export function GlobalSearch() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleInputKeyDown}
               placeholder={t("common:searchMediaLong")}
               className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/30 outline-none"
               autoFocus
@@ -138,8 +158,8 @@ export function GlobalSearch() {
 
               {!isLoading && results && results.length > 0 && (
                 <div className="py-2">
-                  {results.slice(0, 8).map((item) => (
-                    <SearchResultItem key={item.Id} item={item} onSelect={handleSelect} />
+                  {visibleResults.map((item, i) => (
+                    <SearchResultItem key={item.Id} item={item} onSelect={handleSelect} highlighted={i === selectedIndex} />
                   ))}
                 </div>
               )}
@@ -151,7 +171,7 @@ export function GlobalSearch() {
   );
 }
 
-function SearchResultItem({ item, onSelect }: { item: MediaItem; onSelect: (item: MediaItem) => void }) {
+function SearchResultItem({ item, onSelect, highlighted }: { item: MediaItem; onSelect: (item: MediaItem) => void; highlighted?: boolean }) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const poster = client.getImageUrl(item.Id, "Primary", { height: 80, quality: 80 });
@@ -161,7 +181,7 @@ function SearchResultItem({ item, onSelect }: { item: MediaItem; onSelect: (item
   return (
     <button
       onClick={() => onSelect(item)}
-      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150 hover:bg-white/5"
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150 hover:bg-white/5 ${highlighted ? "bg-white/10" : ""}`}
     >
       <img src={poster} alt="" className="h-12 w-8 flex-shrink-0 rounded object-cover" loading="lazy" />
       <div className="min-w-0 flex-1">

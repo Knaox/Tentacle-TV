@@ -5,6 +5,7 @@ import { usePairedDevices, useRevokePairedDevice } from "@tentacle-tv/api-client
 import { BACKEND, hdrs, cls, creds } from "./adminUtils";
 import { DirectStreamingSection } from "./AdminDirectStreaming";
 import { AdminTickets } from "./AdminTickets";
+import { PageTransition } from "../components/PageTransition";
 
 interface InviteKey {
   id: number; key: string; maxUses: number; currentUses: number;
@@ -31,6 +32,7 @@ export function Admin() {
   const copyLink = (key: string) => { navigator.clipboard.writeText(`${window.location.origin}/register?invite=${key}`); setCopiedKey(key); setTimeout(() => setCopiedKey(null), 2000); };
 
   return (
+    <PageTransition>
     <div className="px-4 pt-6 pb-16 md:px-12"><div className="mx-auto max-w-4xl">
       <h1 className="mb-8 text-2xl font-bold text-white">{t("admin:title")}</h1>
 
@@ -79,6 +81,7 @@ export function Admin() {
         })}</div>}
       </div>
     </div></div>
+    </PageTransition>
   );
 }
 

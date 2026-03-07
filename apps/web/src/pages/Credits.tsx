@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { PageTransition } from "../components/PageTransition";
 
 export function Credits() {
   const { t } = useTranslation("about");
@@ -23,6 +24,7 @@ export function Credits() {
   ], [t]);
 
   return (
+    <PageTransition>
     <div className="mx-auto max-w-2xl px-6 pt-12">
       <h1 className="text-2xl font-bold text-white">{t("about:creditsTitle")}</h1>
       <p className="mt-3 text-sm leading-relaxed text-white/60">
@@ -70,6 +72,7 @@ export function Credits() {
         {t("about:creditsDisclaimer")}
       </p>
     </div>
+    </PageTransition>
   );
 }
 

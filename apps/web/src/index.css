@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  :focus-visible {
+    outline: 2px solid rgba(139, 92, 246, 0.6);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
   body {
     @apply min-h-screen bg-tentacle-bg font-sans text-white;
   }
@@ -18,11 +24,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-white/10;
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/20;
+    background: rgba(139, 92, 246, 0.5);
   }
 }
 
@@ -93,7 +100,7 @@ video::cue {
 
 /* Shimmer skeleton loading */
 .skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background: linear-gradient(90deg, rgba(139,92,246,0.04) 25%, rgba(139,92,246,0.10) 50%, rgba(139,92,246,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease infinite;
 }

@@ -1,20 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, formatDuration } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 
 export function WatchWeb() {
+  const { t } = useTranslation("common");
   const queryClient = useQueryClient();
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
     quality, setQuality, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
-    positionRef, audioOverrideRef,
+    positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds,
@@ -51,6 +53,7 @@ export function WatchWeb() {
   }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
 
   const handleSubtitleChange = useCallback((idx: number | null) => {
+    subtitleOverrideRef.current = true;
     if (idx != null) {
       const sub = streams.find((s: JfStream) => s.Type === "Subtitle" && s.Index === idx);
       if (BURN_IN_SUBTITLE_CODECS.test(sub?.Codec ?? "")) {
@@ -92,6 +95,16 @@ export function WatchWeb() {
   }, [reportSeek, positionRef]);
 
   const [splashDone, setSplashDone] = useState(false);
+  const [showResumeIndicator, setShowResumeIndicator] = useState(false);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    if (splashDone && startPositionSeconds && startPositionSeconds > 0) {
+      setShowResumeIndicator(true);
+      resumeTimerRef.current = setTimeout(() => setShowResumeIndicator(false), 3000);
+    }
+    return () => clearTimeout(resumeTimerRef.current);
+  }, [splashDone, startPositionSeconds]);
 
   const showPlayer = splashDone && !isLoading && !!streamUrl;
 
@@ -105,8 +118,23 @@ export function WatchWeb() {
   const nextEpisodeDescription = nextEpisode?.Overview
     ? (nextEpisode.Overview.length > 120 ? nextEpisode.Overview.slice(0, 120) + "…" : nextEpisode.Overview) : undefined;
 
+  const resumeTimeFormatted = startPositionSeconds && startPositionSeconds > 0
+    ? formatDuration(Math.round(startPositionSeconds) * 10_000_000) : null;
+
   return (
     <PlayerTransition transparent={false} onComplete={() => setSplashDone(true)}>
+      {showResumeIndicator && resumeTimeFormatted && (
+        <div
+          className="absolute left-1/2 top-16 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm text-white/80 transition-opacity duration-500"
+          style={{
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(8px)",
+            opacity: showResumeIndicator ? 1 : 0,
+          }}
+        >
+          {t("common:resumeAt", { time: resumeTimeFormatted })}
+        </div>
+      )}
       {showPlayer ? (
         <VideoPlayer
           key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}

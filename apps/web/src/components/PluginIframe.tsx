@@ -199,6 +199,23 @@ export function PluginIframe({
           if (typeof data.path === "string") navigate(data.path);
           break;
 
+        case "OVERLAY_OPEN": {
+          document.querySelectorAll<HTMLElement>("[data-host-chrome]").forEach((el) => {
+            el.style.filter = "blur(4px) brightness(0.5)";
+            el.style.pointerEvents = "none";
+            el.style.transition = "filter 300ms ease";
+          });
+          break;
+        }
+
+        case "OVERLAY_CLOSE": {
+          document.querySelectorAll<HTMLElement>("[data-host-chrome]").forEach((el) => {
+            el.style.filter = "";
+            el.style.pointerEvents = "";
+          });
+          break;
+        }
+
         case "READY":
         case "PLUGIN_REGISTER":
           break;

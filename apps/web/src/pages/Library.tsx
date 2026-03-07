@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { LibraryGrid } from "../components/LibraryGrid";
+import { PageTransition } from "../components/PageTransition";
 
 export function Library() {
   const { libraryId } = useParams<{ libraryId: string }>();
@@ -9,8 +10,10 @@ export function Library() {
 
   if (!libraryId) return null;
   return (
-    <div className="pt-8">
-      <LibraryGrid libraryId={libraryId} libraryName={name} />
-    </div>
+    <PageTransition>
+      <div className="pt-8">
+        <LibraryGrid libraryId={libraryId} libraryName={name} />
+      </div>
+    </PageTransition>
   );
 }

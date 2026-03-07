@@ -11,6 +11,8 @@ import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
+import { useScrollMemory } from "./hooks/useScrollMemory";
+import { ToastProvider } from "./contexts/ToastContext";
 import { isTauriApp } from "./main";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -157,8 +159,9 @@ export function App() {
   }
 
   return (
-    <>
+    <ToastProvider>
       {authed && <DirectStreamingSync />}
+      <ScrollMemoryWrapper />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}
@@ -226,6 +229,11 @@ export function App() {
       </Suspense>
       <UpdateNotification />
       <OfflineBanner />
-    </>
+    </ToastProvider>
   );
+}
+
+function ScrollMemoryWrapper() {
+  useScrollMemory();
+  return null;
 }

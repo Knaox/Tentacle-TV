@@ -17,4 +17,10 @@ export default {
   licenseSource: "Source",
   licenseModifications: "Modifications",
   licenseCopyright: "Copyright",
+
+  // Technical info
+  techInfo: "Infos techniques",
+  video: "Vidéo",
+  audioTrack: "Audio",
+  subtitleTracks: "Sous-titres",
 } as const;

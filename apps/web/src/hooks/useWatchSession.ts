@@ -60,6 +60,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
   const audioOverrideRef = useRef(false);
+  const subtitleOverrideRef = useRef(false);
   const resumeApplied = useRef(false);
 
   // Web: server-driven stream selection via PlaybackInfo
@@ -69,7 +70,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     console.debug(DBG, "episode switch — resetting state", { itemId });
     setStartTicks(0); setQuality(null); setSubtitleIndex(null); setPrefsReady(false);
     setBurnInSubtitleIndex(undefined); positionRef.current = 0;
-    prefsApplied.current = false; audioOverrideRef.current = false; resumeApplied.current = false;
+    prefsApplied.current = false; audioOverrideRef.current = false;
+    subtitleOverrideRef.current = false; resumeApplied.current = false;
     if (!isDesktop) pbInfo.reset();
   }, [itemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -82,7 +84,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   }, [streams]);
 
   useEffect(() => {
-    if (streams.length > 0 && !prefsApplied.current) {
+    if (streams.length > 0 && !prefsApplied.current && !subtitleOverrideRef.current) {
       const defSub = streams.find((s) => s.Type === "Subtitle" && s.IsDefault)?.Index ?? null;
       if (defSub != null) setSubtitleIndex(defSub);
     }
@@ -149,7 +151,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
       .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, audioTracks: aTracks, subtitleTracks: sTracks }, {
       onSuccess: (result) => {
-        if (result.audioIndex != null) {
+        if (result.audioIndex != null && !audioOverrideRef.current) {
           if (isDesktop) {
             // Desktop: check if new audio changes direct play status
             const newStream = streams.find((s) => s.Type === "Audio" && s.Index === result.audioIndex);
@@ -166,7 +168,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
           // Web: server determines direct play via PlaybackInfo — no client check needed
           setAudioIndex(result.audioIndex);
         }
-        if (result.subtitleIndex != null) {
+        if (result.subtitleIndex != null && !subtitleOverrideRef.current) {
           const idx = result.subtitleIndex === -1 ? null : result.subtitleIndex;
           setSubtitleIndex(idx);
           if (idx != null) {
@@ -261,7 +263,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
     quality, setQuality, startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
-    positionRef, audioOverrideRef,
+    positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
     streamUrl, streamOffset,
     audioTracks, subtitleTracks,

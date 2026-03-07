@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { FadeImage } from "./FadeImage";
 
 interface Person {
   Name: string;
@@ -74,10 +75,10 @@ export function CastRow({ people, studios }: CastRowProps) {
           <h3 className="mb-3 text-lg font-semibold text-white/90">{t("media:castSection")}</h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {actors.map((person) => (
-              <div key={person.Id} className="w-20 flex-shrink-0 text-center sm:w-24">
-                <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-tentacle-surface sm:h-24 sm:w-24">
+              <div key={person.Id} className="w-20 flex-shrink-0 text-center sm:w-24 group/actor">
+                <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-tentacle-surface transition-all duration-300 group-hover/actor:scale-105 group-hover/actor:ring-2 group-hover/actor:ring-tentacle-accent/50 sm:h-24 sm:w-24">
                   {person.PrimaryImageTag ? (
-                    <img
+                    <FadeImage
                       src={client.getImageUrl(person.Id, "Primary", { width: 200, quality: 85 })}
                       alt={person.Name}
                       className="h-full w-full object-cover"
