@@ -28,8 +28,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - generate with: openssl rand -base64 64}
       PORT: "3000"
       HOST: "0.0.0.0"
+    volumes:
+      - tentacle-data:/app/data
     ports:
       - "3000:3000"
 
 volumes:
   tentacle-db-data:
+  tentacle-data:

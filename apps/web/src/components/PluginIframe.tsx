@@ -64,6 +64,23 @@ function fetchSharedDeps(baseUrl: string): Promise<string> {
   return sharedDepsPromise;
 }
 
+// Module-level cache for Tailwind CDN (inlined to avoid CSP/sandbox issues in Tauri prod)
+let tailwindPromise: Promise<string> | null = null;
+function fetchTailwindCdn(): Promise<string> {
+  if (!tailwindPromise) {
+    tailwindPromise = fetch("https://cdn.tailwindcss.com/3.4.17")
+      .then((r) => {
+        if (!r.ok) throw new Error(`Tailwind CDN fetch failed: ${r.status}`);
+        return r.text();
+      })
+      .catch((err) => {
+        tailwindPromise = null;
+        throw err;
+      });
+  }
+  return tailwindPromise;
+}
+
 /**
  * Renders a plugin inside a sandboxed iframe (allow-scripts only).
  * The plugin has NO access to the parent's DOM, localStorage, or cookies.
@@ -80,31 +97,35 @@ export function PluginIframe({
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
 
-  // Fetch shared-deps.js
-  const [sharedDeps, setSharedDeps] = useState<{
+  // Fetch shared-deps.js + Tailwind CDN
+  const [deps, setDeps] = useState<{
     status: "loading" | "ready" | "error";
-    code?: string;
+    sharedDepsCode?: string;
+    tailwindCode?: string;
     error?: string;
   }>({ status: "loading" });
 
   useEffect(() => {
-    fetchSharedDeps(backendUrl)
-      .then((code) => setSharedDeps({ status: "ready", code }))
+    Promise.all([fetchSharedDeps(backendUrl), fetchTailwindCdn()])
+      .then(([sharedDepsCode, tailwindCode]) =>
+        setDeps({ status: "ready", sharedDepsCode, tailwindCode }),
+      )
       .catch((err) =>
-        setSharedDeps({ status: "error", error: (err as Error).message }),
+        setDeps({ status: "error", error: (err as Error).message }),
       );
   }, [pluginId]);
 
   // Build HTML for iframe srcDoc
   const htmlContent = useMemo(() => {
-    if (sharedDeps.status !== "ready" || !sharedDeps.code) return null;
+    if (deps.status !== "ready" || !deps.sharedDepsCode || !deps.tailwindCode) return null;
     return buildPluginHtml({
       backendUrl,
       lang,
       pluginPath,
-      sharedDepsCode: sharedDeps.code,
+      sharedDepsCode: deps.sharedDepsCode,
+      tailwindCode: deps.tailwindCode,
     });
-  }, [lang, pluginPath, sharedDeps]);
+  }, [lang, pluginPath, deps]);
 
   // Handle postMessage from iframe
   const handleMessage = useCallback(
@@ -196,13 +217,13 @@ export function PluginIframe({
     bundleFetched.current = false;
   }, [bundleUrl, pluginPath]);
 
-  if (sharedDeps.status === "loading") {
+  if (deps.status === "loading") {
     return <PluginLoader lang={lang} />;
   }
 
-  if (sharedDeps.status === "error") {
+  if (deps.status === "error") {
     return (
-      <PluginLoader lang={lang} error={sharedDeps.error} />
+      <PluginLoader lang={lang} error={deps.error} />
     );
   }
 

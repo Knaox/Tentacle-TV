@@ -3,6 +3,7 @@ interface BuildPluginHtmlParams {
   lang: string;
   pluginPath: string;
   sharedDepsCode: string;
+  tailwindCode: string;
 }
 
 /**
@@ -17,16 +18,18 @@ export function buildPluginHtml({
   lang,
   pluginPath,
   sharedDepsCode,
+  tailwindCode,
 }: BuildPluginHtmlParams): string {
-  // Escape </script> in shared-deps code to avoid breaking the HTML
+  // Escape </script> in inlined code to avoid breaking the HTML
   const safeDepsCode = sharedDepsCode.replace(/<\/script/gi, "<\\/script");
+  const safeTailwindCode = tailwindCode.replace(/<\/script/gi, "<\\/script");
 
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script>${safeTailwindCode}<\/script>
   <script>
     tailwind.config = {
       theme: {
@@ -136,6 +139,12 @@ export function buildPluginHtml({
       padding: 24px;
       text-align: center;
     }
+    /* Scrollbar Tentacle — fine et violette */
+    *::-webkit-scrollbar { width: 6px; height: 6px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 3px; }
+    *::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.5); }
+    * { scrollbar-width: thin; scrollbar-color: rgba(139, 92, 246, 0.3) transparent; }
   </style>
 </head>
 <body>
