@@ -16,17 +16,30 @@ import {
   downloadPlugin,
   extractPlugin,
   removePluginFiles,
+  isValidPluginId,
+  assertPathUnderDataDir,
   DATA_DIR,
   type PluginSource,
   type InstalledPlugin,
   type EnrichedEntry,
 } from "../services/pluginManager";
+import { isPrivateIp } from "../services/networkUtils";
+import { lookup } from "dns/promises";
+
+/** Validate :id param — must be a UUID or a valid pluginId (blocks path traversal). */
+function isValidRouteId(id: string): boolean {
+  // UUID format (internal DB IDs)
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return true;
+  // Valid plugin ID format
+  return isValidPluginId(id);
+}
 
 /**
  * Check if a plugin has a server module. If so, the process needs to restart
  * because Fastify cannot register routes after the server is already listening.
  */
 function pluginHasServerModule(pluginId: string): boolean {
+  if (!isValidPluginId(pluginId)) return false;
   const pluginDir = resolve(DATA_DIR, pluginId);
   const manifestPath = resolve(pluginDir, "plugin.json");
   if (existsSync(manifestPath)) {
@@ -51,7 +64,7 @@ const addSourceSchema = z.object({
 });
 
 const installSchema = z.object({
-  pluginId: z.string().min(1),
+  pluginId: z.string().min(1).regex(/^[a-z0-9][a-z0-9._-]{0,63}$/, "Invalid plugin ID format"),
   version: z.string().min(1),
   sourceId: z.string().min(1),
 });
@@ -86,7 +99,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get("/active", { preHandler: requireAuth }, async () => {
-    return getInstalled().filter((p) => p.enabled).map((p) => {
+    return getInstalled().filter((p) => p.enabled && isValidPluginId(p.pluginId)).map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
       let navItems: unknown[] = [];
       const manifestPath = resolve(pluginDir, "plugin.json");
@@ -107,7 +120,11 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/:pluginId/bundle", { preHandler: requireAuth, config: { compress: false } }, async (request, reply) => {
     const { pluginId } = request.params as { pluginId: string };
+    if (!isValidPluginId(pluginId)) {
+      return reply.status(400).send({ message: "Invalid plugin ID" });
+    }
     const bundlePath = resolve(DATA_DIR, pluginId, "dist", `plugin-${pluginId}.iife.js`);
+    assertPathUnderDataDir(bundlePath);
     if (!existsSync(bundlePath)) {
       return reply.status(404).send({ message: "Bundle not found" });
     }
@@ -139,6 +156,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.delete("/sources/:id", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id) && id !== "official") return reply.status(400).send({ message: "Invalid ID" });
       if (id === "official") return reply.status(403).send({ message: "Cannot remove official source" });
       const custom = getCustomSources();
       const idx = custom.findIndex((s) => s.id === id);
@@ -152,6 +170,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.put("/sources/:id/toggle", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id) && id !== "official") return reply.status(400).send({ message: "Invalid ID" });
       const sources = getSources();
       const source = sources.find((s) => s.id === id);
       if (!source) return reply.status(404).send({ message: "Source not found" });
@@ -180,6 +199,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.post("/sources/:id/validate", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id) && id !== "official") return reply.status(400).send({ message: "Invalid ID" });
       const source = getSources().find((s) => s.id === id);
       if (!source) return reply.status(404).send({ message: "Source not found" });
       try {
@@ -248,6 +268,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.delete("/:id", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const installed = getInstalled();
       const idx = installed.findIndex((p) => p.id === id);
       if (idx === -1) return reply.status(404).send({ message: "Plugin not found" });
@@ -261,6 +282,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.put("/:id/toggle", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const installed = getInstalled();
       const plugin = installed.find((p) => p.id === id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
@@ -271,6 +293,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.post("/:id/update", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const installed = getInstalled();
       const plugin = installed.find((p) => p.id === id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
@@ -304,6 +327,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.get("/:id/config", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const plugin = findPlugin(getInstalled(), id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       return plugin.config;
@@ -311,6 +335,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.put("/:id/config", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const installed = getInstalled();
       const plugin = findPlugin(installed, id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
@@ -322,9 +347,29 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     // Generic server-side proxy for plugins (avoids CORS)
     admin.post("/:id/proxy", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const plugin = findPlugin(getInstalled(), id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       const { url, method, headers: hdrs, body: reqBody } = proxySchema.parse(request.body);
+
+      // SSRF protection: block non-HTTP schemes
+      let parsed: URL;
+      try { parsed = new URL(url); } catch { return reply.status(400).send({ message: "Invalid URL" }); }
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return reply.status(400).send({ message: "Only HTTP(S) URLs are allowed" });
+      }
+
+      // SSRF protection: resolve hostname and warn on private/internal IPs
+      // Admin-only route — allow private IPs (Jellyseerr/Overseerr often run on LAN)
+      try {
+        const { address } = await lookup(parsed.hostname);
+        if (isPrivateIp(address)) {
+          request.log.warn(`[Plugins] Admin proxy to private IP ${address} (${parsed.hostname}) for plugin ${id}`);
+        }
+      } catch {
+        return reply.status(400).send({ message: "Cannot resolve hostname" });
+      }
+
       try {
         const res = await fetch(url, {
           method,
@@ -343,6 +388,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     admin.get("/:id/status", async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!isValidRouteId(id)) return reply.status(400).send({ message: "Invalid ID" });
       const plugin = findPlugin(getInstalled(), id);
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       return { id: plugin.id, pluginId: plugin.pluginId, enabled: plugin.enabled, version: plugin.version, healthy: plugin.enabled };
