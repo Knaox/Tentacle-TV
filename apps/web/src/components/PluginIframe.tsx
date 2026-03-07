@@ -95,16 +95,23 @@ export function PluginIframe({
       );
   }, [pluginId]);
 
-  // Build HTML string for iframe srcDoc (avoids blob URL restrictions in sandboxed iframes)
-  const htmlContent = useMemo(() => {
+  // Build blob URL for iframe (avoids Tauri CSP hash restrictions on srcDoc inline scripts)
+  const blobUrl = useMemo(() => {
     if (sharedDeps.status !== "ready" || !sharedDeps.code) return null;
-    return buildPluginHtml({
+    const html = buildPluginHtml({
       backendUrl,
       lang,
       pluginPath,
       sharedDepsCode: sharedDeps.code,
     });
+    const blob = new Blob([html], { type: "text/html" });
+    return URL.createObjectURL(blob);
   }, [lang, pluginPath, sharedDeps]);
+
+  // Revoke blob URL on cleanup
+  useEffect(() => {
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+  }, [blobUrl]);
 
   // Handle postMessage from iframe
   const handleMessage = useCallback(
@@ -209,7 +216,7 @@ export function PluginIframe({
   return (
     <iframe
       ref={iframeRef}
-      srcDoc={htmlContent!}
+      src={blobUrl!}
       sandbox="allow-scripts"
       title={`plugin-${pluginId}`}
       className="h-full w-full border-0"
