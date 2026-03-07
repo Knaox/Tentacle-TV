@@ -14,9 +14,14 @@ export function InstalledTab() {
     const map: Record<string, string> = {};
     for (const plugin of activePlugins) {
       const adminNav = (plugin.navItems || []).find(
-        (nav) => nav.admin && nav.platforms?.includes("web")
+        (nav: Record<string, unknown>) => nav.admin && (nav.platforms as string[])?.includes("web")
       );
-      if (adminNav) map[plugin.pluginId] = adminNav.path;
+      if (adminNav) {
+        map[plugin.pluginId] = (adminNav as Record<string, unknown>).path as string;
+      } else if (plugin.hasBundle) {
+        // Fallback: convention-based admin route
+        map[plugin.pluginId] = `/admin/plugins/${plugin.pluginId}`;
+      }
     }
     return map;
   }, [activePlugins]);
