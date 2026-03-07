@@ -1,7 +1,8 @@
-import { useMemo, type ComponentType } from "react";
+import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { usePluginNavItems } from "@tentacle-tv/plugins-api";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 
 interface Tab {
   path: string;
@@ -13,8 +14,8 @@ interface Tab {
 export function MobileTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation("nav");
-  const pluginNavItems = usePluginNavItems("web");
+  const { t, i18n } = useTranslation("nav");
+  const activePluginsMeta = useActivePluginsMeta();
 
   const tabs: Tab[] = useMemo(() => {
     const list: Tab[] = [
@@ -25,15 +26,17 @@ export function MobileTabBar() {
       },
     ];
 
-    // Plugin nav items — only appear when plugin is installed AND configured
-    for (const item of pluginNavItems) {
-      const IconComp = typeof item.icon !== "string" ? item.icon as ComponentType<{ className?: string }> : null;
-      list.push({
-        path: item.path,
-        label: t(item.label),
-        icon: IconComp ? <IconComp className="h-5 w-5" /> : <span className="h-5 w-5">{item.icon as string}</span>,
-        match: (p) => p.startsWith(item.path),
-      });
+    // Plugin nav items — from backend active plugins metadata
+    for (const plugin of activePluginsMeta) {
+      for (const nav of plugin.navItems || []) {
+        if (nav.admin || !nav.platforms?.includes("web")) continue;
+        list.push({
+          path: nav.path,
+          label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),
+          icon: getLucideIcon(nav.icon),
+          match: (p: string) => p.startsWith(nav.path),
+        });
+      }
     }
 
     list.push(
@@ -47,7 +50,7 @@ export function MobileTabBar() {
       },
     );
     return list;
-  }, [t, pluginNavItems]);
+  }, [t, i18n.language, activePluginsMeta]);
 
   const isActive = (tab: Tab) => {
     if (tab.match) return tab.match(location.pathname);
