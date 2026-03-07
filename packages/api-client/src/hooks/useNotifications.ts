@@ -20,7 +20,10 @@ async function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
   };
   // Only set Content-Type when there's a body (Fastify rejects empty JSON bodies with 400)
   if (init?.body) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: "include" });
+  // Use credentials: "include" (cookies) only on web (no Bearer token in localStorage).
+  // Desktop/mobile send the token via Authorization header — cookies don't work cross-origin.
+  const hasToken = !!localStorage.getItem("tentacle_token");
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);

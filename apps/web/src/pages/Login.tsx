@@ -96,6 +96,15 @@ export function Login() {
             {t("createAccount")}
           </Link>
         </p>
+
+        {isTauriApp && (
+          <button
+            onClick={() => { localStorage.removeItem("tentacle_server_url"); window.location.reload(); }}
+            className="mt-4 w-full text-center text-sm text-white/30 transition-colors hover:text-white/60"
+          >
+            {t("changeServer")}
+          </button>
+        )}
       </GlassCard>
     </div>
   );

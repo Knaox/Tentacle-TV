@@ -1,8 +1,17 @@
-import { backendUrl } from "../main";
+import { backendUrl, isTauriApp } from "../main";
 
 export const BACKEND = backendUrl;
 
-export const hdrs = () => ({ "Content-Type": "application/json" });
+export const hdrs = (): Record<string, string> => {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const token = localStorage.getItem("tentacle_token");
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
+};
+
+/** credentials option: use cookies on web, nothing on desktop (token is in header) */
+export const creds = (): RequestCredentials | undefined =>
+  isTauriApp ? undefined : "include";
 
 export const cls = {
   card: "mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6",

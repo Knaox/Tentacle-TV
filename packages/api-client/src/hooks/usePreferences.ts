@@ -24,7 +24,8 @@ async function prefFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: "include" });
+  const hasToken = !!(_tokenOverride || (typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token")));
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
@@ -153,7 +154,7 @@ export async function fetchInterfaceLanguage(token: string): Promise<string | nu
     }
     const res = await fetch(`${_backendBase}/language`, {
       headers,
-      credentials: "include",
+      credentials: token === "__cookie__" ? "include" : undefined,
     });
     if (!res.ok) return null;
     const data = await res.json();

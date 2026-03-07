@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { existsSync, readFileSync, mkdirSync, rmSync, writeFileSync, createWriteStream } from "fs";
-import { resolve, join } from "path";
+import { resolve, join, sep } from "path";
 import { pipeline } from "stream/promises";
 
 // ── Types ──
@@ -78,7 +78,7 @@ export function isValidPluginId(id: string): boolean {
 export function assertPathUnderDataDir(resolvedPath: string): void {
   const normalized = resolve(resolvedPath);
   const base = resolve(DATA_DIR);
-  if (!normalized.startsWith(base + "/") && normalized !== base) {
+  if (!normalized.startsWith(base + sep) && normalized !== base) {
     throw new Error("Invalid plugin path: outside data directory");
   }
 }
@@ -272,7 +272,13 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   mkdirSync(destDir, { recursive: true });
 
   const { execSync } = await import("child_process");
-  execSync(`tar -xzf "${archivePath}" -C "${destDir}"`, {
+  // On Windows: use forward slashes (tar misinterprets backslashes) and
+  // --force-local (prevents tar from interpreting "C:" as a remote host)
+  const isWin = process.platform === "win32";
+  const archive = isWin ? archivePath.replace(/\\/g, "/") : archivePath;
+  const dest = isWin ? destDir.replace(/\\/g, "/") : destDir;
+  const forceLocal = isWin ? " --force-local" : "";
+  execSync(`tar -xzf "${archive}"${forceLocal} -C "${dest}"`, {
     stdio: "pipe", timeout: 30_000,
   });
   rmSync(archivePath, { force: true });

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePairedDevices, useRevokePairedDevice } from "@tentacle-tv/api-client";
-import { BACKEND, hdrs, cls } from "./adminUtils";
+import { BACKEND, hdrs, cls, creds } from "./adminUtils";
 import { DirectStreamingSection } from "./AdminDirectStreaming";
 import { AdminTickets } from "./AdminTickets";
 
@@ -20,12 +20,12 @@ export function Admin() {
   const [creating, setCreating] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const fetchInvites = useCallback(async () => {
-    const r = await fetch(`${BACKEND}/api/invites`, { headers: hdrs(), credentials: "include" }); if (r.ok) setInvites(await r.json());
+    const r = await fetch(`${BACKEND}/api/invites`, { headers: hdrs(), credentials: creds() }); if (r.ok) setInvites(await r.json());
   }, []);
   useEffect(() => { fetchInvites(); }, [fetchInvites]);
   const createInvite = async () => {
     setCreating(true);
-    const r = await fetch(`${BACKEND}/api/invites`, { method: "POST", headers: hdrs(), body: JSON.stringify({ maxUses, expiresInHours: expiresHours }), credentials: "include" });
+    const r = await fetch(`${BACKEND}/api/invites`, { method: "POST", headers: hdrs(), body: JSON.stringify({ maxUses, expiresInHours: expiresHours }), credentials: creds() });
     if (r.ok) await fetchInvites(); setCreating(false);
   };
   const copyLink = (key: string) => { navigator.clipboard.writeText(`${window.location.origin}/register?invite=${key}`); setCopiedKey(key); setTimeout(() => setCopiedKey(null), 2000); };
@@ -93,7 +93,7 @@ function PlaybackSection() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${BACKEND}/api/admin/playback`, { headers: hdrs(), credentials: "include" });
+        const r = await fetch(`${BACKEND}/api/admin/playback`, { headers: hdrs(), credentials: creds() });
         if (r.ok) { const d = await r.json(); setMinutes(d.autoplayCreditsMinutes ?? 2); }
       } catch {}
       setLoaded(true);
@@ -103,7 +103,7 @@ function PlaybackSection() {
   const save = async () => {
     setBusy(true); setMsg(null);
     try {
-      const r = await fetch(`${BACKEND}/api/admin/playback`, { method: "PUT", headers: hdrs(), body: JSON.stringify({ autoplayCreditsMinutes: minutes }), credentials: "include" });
+      const r = await fetch(`${BACKEND}/api/admin/playback`, { method: "PUT", headers: hdrs(), body: JSON.stringify({ autoplayCreditsMinutes: minutes }), credentials: creds() });
       setMsg(r.ok ? { ok: true, t: t("admin:saved") } : { ok: false, t: t("admin:saveFailed") });
     } catch { setMsg({ ok: false, t: t("admin:saveFailed") }); }
     setBusy(false);
@@ -150,7 +150,7 @@ function ServicesSection() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch(`${BACKEND}/api/admin/services`, { headers: hdrs(), credentials: "include" });
+      const r = await fetch(`${BACKEND}/api/admin/services`, { headers: hdrs(), credentials: creds() });
       if (r.ok) {
         const j: SvcData = await r.json(); setD(j);
         if (j.jellyfin.url) setJUrl(j.jellyfin.url);
@@ -164,9 +164,9 @@ function ServicesSection() {
   useEffect(() => { load(); }, [load]);
 
   const aFetch = async (path: string, method: string, body?: object) => {
-    const h: Record<string, string> = {};
-    if (body) h["Content-Type"] = "application/json";
-    const r = await fetch(`${BACKEND}/api/admin${path}`, { method, headers: h, credentials: "include", ...(body ? { body: JSON.stringify(body) } : {}) });
+    const h: Record<string, string> = { ...hdrs() };
+    if (!body) delete h["Content-Type"];
+    const r = await fetch(`${BACKEND}/api/admin${path}`, { method, headers: h, credentials: creds(), ...(body ? { body: JSON.stringify(body) } : {}) });
     const j = await r.json().catch(() => ({})); return { ok: r.ok, d: j, msg: j.message || (r.ok ? "OK" : t("admin:statusError")) };
   };
   const testJ = async () => { setBusy("tj"); setJMsg(null); const r = await aFetch("/test-jellyfin", "POST", { url: jUrl, apiKey: jKey }); setJMsg({ ok: r.ok, t: r.ok ? `Jellyfin ${r.d.version || ""} - ${r.d.serverName || ""}` : r.msg }); setBusy(""); };

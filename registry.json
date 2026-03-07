@@ -18,7 +18,7 @@
           "minTentacleVersion": "0.9.0",
           "maxTentacleVersion": null,
           "downloadUrl": "https://github.com/knaox/Tentacle-TV/releases/download/plugin-seer-v1.1.0-beta/plugin-seer-v1.1.0-beta.tar.gz",
-          "checksum": "sha256:768ea27ed8401a2a8779c7a28e2314c90b326db23b75b8881abe082d704e2df2",
+          "checksum": "sha256:c94890baa25ff2603376ebb05d27f8b46151f4f21dfd66ac24ae3437316af50d",
           "changelog": "Plugin iframe sandbox, nav items sidebar (labels i18n, icônes lucide), stats route, admin settings",
           "releaseDate": "2026-03-07"
         }

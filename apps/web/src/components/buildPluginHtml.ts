@@ -102,16 +102,34 @@ export function buildPluginHtml({
     #plugin-root { min-height: 100vh; }
     .plugin-loading {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
+      gap: 24px;
       min-height: 100vh;
       color: var(--text-secondary);
       font-size: 14px;
     }
+    .plugin-loading .logo-wrap {
+      position: relative;
+      animation: breathe-logo 2s ease infinite;
+    }
+    .plugin-loading .logo-wrap img { width: 64px; height: 64px; filter: drop-shadow(0 0 20px rgba(139,92,246,0.5)); }
+    .plugin-loading .spinner {
+      position: absolute; inset: -12px;
+      border: 2px solid transparent;
+      border-top-color: rgba(139,92,246,0.6);
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes breathe-logo { 0%,100% { opacity: .8; } 50% { opacity: 1; } }
     .plugin-error {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
+      gap: 8px;
       min-height: 100vh;
       color: #ef4444;
       font-size: 14px;
@@ -122,7 +140,13 @@ export function buildPluginHtml({
 </head>
 <body>
   <div id="plugin-root">
-    <div class="plugin-loading">Loading plugin…</div>
+    <div class="plugin-loading">
+      <div class="logo-wrap">
+        <img src="${backendUrl}/tentacle-logo-pirate.svg" alt="Tentacle" onerror="this.style.display='none'">
+        <div class="spinner"></div>
+      </div>
+      <span>${lang === "fr" ? "Chargement du plugin…" : "Loading plugin…"}</span>
+    </div>
   </div>
 
   <script>
@@ -224,7 +248,7 @@ export function buildPluginHtml({
         }
       }
 
-      if (data.type === "INJECT_BUNDLE") {
+      if (data.type === "INJECT_BUNDLE" && !window.__bundleInjected) {
         window.__bundleInjected = true;
         try {
           var script = document.createElement("script");
@@ -277,9 +301,11 @@ export function buildPluginHtml({
 
         var pluginPath = ${JSON.stringify(pluginPath)};
 
+        var __pluginRegistered = false;
         window.__tentacle = {
           backendUrl: ${JSON.stringify(backendUrl)},
           registerPlugin: async function(plugin) {
+            if (__pluginRegistered) return;
             try {
               if (plugin.initialize) await plugin.initialize();
 
@@ -312,18 +338,21 @@ export function buildPluginHtml({
                 React.createElement(TQ.QueryClientProvider, { client: queryClient },
                   React.createElement(RI.I18nextProvider, { i18n: i18n },
                     React.createElement(React.Suspense,
-                      { fallback: React.createElement("div", { className: "plugin-loading" }, "Loading…") },
+                      { fallback: null },
                       React.createElement(route.component)
                     )
                   )
                 )
               );
 
+              __pluginRegistered = true;
               parent.postMessage({ type: "READY", pluginId: plugin.id }, "*");
               parent.postMessage({
                 type: "PLUGIN_REGISTER",
                 pluginId: plugin.id,
-                navItems: plugin.navItems || [],
+                navItems: (plugin.navItems || []).map(function(n) {
+                  return { label: n.label, path: n.path, icon: n.icon ? "custom" : undefined };
+                }),
                 routes: (plugin.routes || []).map(function(r) { return r.path; }),
               }, "*");
             } catch (err) {

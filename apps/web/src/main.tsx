@@ -51,7 +51,13 @@ if (_hasUser) {
 }
 
 // Detect Tauri (desktop app) vs web deployment
-export const isTauriApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// Check multiple signals: __TAURI_INTERNALS__ (v2 IPC bridge, always injected),
+// __TAURI__ (withGlobalTauri or @tauri-apps/api), and User-Agent fallback.
+export const isTauriApp = typeof window !== "undefined" && (
+  "__TAURI_INTERNALS__" in window ||
+  "__TAURI__" in window ||
+  navigator.userAgent.includes("Tauri")
+);
 const deviceName = isTauriApp ? "Desktop" : "Web";
 
 // Web: same-origin (or VITE_BACKEND_URL for dev).

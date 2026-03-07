@@ -3,6 +3,44 @@ import { useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { backendUrl } from "../main";
 
+const LOADER_TEXTS = {
+  fr: { loading: "Chargement du plugin…", error: "Erreur de chargement" },
+  en: { loading: "Loading plugin…", error: "Loading error" },
+} as const;
+
+function PluginLoader({ lang, error }: { lang: string; error?: string }) {
+  const t = LOADER_TEXTS[lang === "fr" ? "fr" : "en"];
+  return (
+    <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center gap-6 bg-[#080812]">
+      <div className={`relative ${error ? "" : "animate-pulse"}`}>
+        <img
+          src="/tentacle-logo-pirate.svg"
+          alt="Tentacle"
+          className="h-16 w-16 drop-shadow-[0_0_20px_rgba(139,92,246,0.5)]"
+        />
+        {!error && (
+          <div className="absolute -inset-3 animate-spin rounded-full border-2 border-transparent border-t-purple-500/60"
+            style={{ animationDuration: "1.2s" }}
+          />
+        )}
+      </div>
+      {error ? (
+        <div className="text-center">
+          <p className="text-sm font-medium text-red-400">{t.error}</p>
+          <p className="mt-1 max-w-xs text-xs text-red-400/60">{error}</p>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400/80">{t.loading}</p>
+      )}
+    </div>
+  );
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem("tentacle_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 interface PluginIframeProps {
   pluginId: string;
   bundleUrl: string;
@@ -13,10 +51,7 @@ interface PluginIframeProps {
 let sharedDepsPromise: Promise<string> | null = null;
 function fetchSharedDeps(baseUrl: string): Promise<string> {
   if (!sharedDepsPromise) {
-    const url = baseUrl
-      ? `${baseUrl}/api/plugins/shared-deps.js`
-      : "/api/plugins/shared-deps.js";
-    sharedDepsPromise = fetch(url)
+    sharedDepsPromise = fetch(`${baseUrl}/api/plugins/shared-deps.js?v=2`)
       .then((r) => {
         if (!r.ok) throw new Error(`shared-deps.js fetch failed: ${r.status}`);
         return r.text();
@@ -86,7 +121,10 @@ export function PluginIframe({
           if (bundleFetched.current) return;
           bundleFetched.current = true;
           try {
-            const res = await fetch(bundleUrl, { credentials: "include" });
+            const res = await fetch(bundleUrl, {
+              credentials: "include",
+              headers: getAuthHeaders(),
+            });
             if (!res.ok) throw new Error(`Bundle fetch failed: ${res.status}`);
             const code = await res.text();
             iframe.contentWindow?.postMessage(
@@ -103,7 +141,7 @@ export function PluginIframe({
           const { id, method, path, body } = data;
           try {
             const base = backendUrl || "";
-            const headers: Record<string, string> = {};
+            const headers: Record<string, string> = { ...getAuthHeaders() };
             if (body) headers["Content-Type"] = "application/json";
             const res = await fetch(`${base}${path}`, {
               method: method || "GET",
@@ -159,18 +197,12 @@ export function PluginIframe({
   }, [bundleUrl, pluginPath]);
 
   if (sharedDeps.status === "loading") {
-    return (
-      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center text-gray-400">
-        Chargement des dépendances…
-      </div>
-    );
+    return <PluginLoader lang={lang} />;
   }
 
   if (sharedDeps.status === "error") {
     return (
-      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center text-red-400">
-        Erreur de chargement des dépendances : {sharedDeps.error}
-      </div>
+      <PluginLoader lang={lang} error={sharedDeps.error} />
     );
   }
 
