@@ -28,4 +28,4 @@ jobs:
           context: .
           push: true
           # Remplace "knaox" par ton pseudo GitHub exact s'il est différent (tout en minuscules !)
-          tags: ghcr.io/knaox/tentacle:latest
+          tags: ghcr.io/knaox/tentacle-tv:latest
