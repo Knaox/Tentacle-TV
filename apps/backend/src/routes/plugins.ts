@@ -99,6 +99,23 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       .send(sharedDepsCache);
   });
 
+  // Tailwind CSS runtime (inlined in plugin iframes to avoid CORS/CSP issues in Tauri)
+  const tailwindPath = resolve(DATA_DIR, "..", "shared-deps", "tailwind.js");
+  let tailwindCache: string | null = null;
+
+  app.get("/tailwind.js", { config: { compress: false } }, async (_request, reply) => {
+    if (!existsSync(tailwindPath)) {
+      return reply.status(404).send({ message: "tailwind.js not found in data/shared-deps/" });
+    }
+    if (!tailwindCache) {
+      tailwindCache = readFileSync(tailwindPath, "utf-8");
+    }
+    reply
+      .header("Cache-Control", "public, max-age=604800, immutable")
+      .type("application/javascript")
+      .send(tailwindCache);
+  });
+
   app.get("/active", { preHandler: requireAuth }, async () => {
     return getInstalled().filter((p) => p.enabled && isValidPluginId(p.pluginId)).map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
