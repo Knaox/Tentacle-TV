@@ -104,37 +104,6 @@ function findMpvTrack(
   return null;
 }
 
-/** Reverse: MPV track ID → Jellyfin track index. */
-function findJfIndex(
-  mpvId: number,
-  jfTracks: { index: number; lang?: string }[],
-  mpvTracks: MpvTrack[],
-): number | null {
-  // Handle type mismatch: mpv might report aid/sid as different types
-  const numId = typeof mpvId === "number" ? mpvId : Number(mpvId);
-  if (Number.isNaN(numId)) return null;
-
-  const mpvTrack = mpvTracks.find((t) => t.id === numId);
-  if (!mpvTrack) {
-    // Direct positional fallback using mpv track ID (1-based → 0-based)
-    const pos = numId - 1;
-    if (pos >= 0 && pos < jfTracks.length) return jfTracks[pos].index;
-    return null;
-  }
-
-  if (mpvTrack.lang) {
-    const mpvPos = mpvTracks.filter((t) => langMatch(t.lang, mpvTrack.lang)).indexOf(mpvTrack);
-    const jfSameLang = jfTracks.filter((t) => langMatch(t.lang, mpvTrack.lang));
-    if (mpvPos >= 0 && mpvPos < jfSameLang.length) return jfSameLang[mpvPos].index;
-    if (jfSameLang.length > 0) return jfSameLang[0].index;
-    // Language match failed — fall through to positional
-  }
-
-  const mpvPos = mpvTracks.indexOf(mpvTrack);
-  if (mpvPos >= 0 && mpvPos < jfTracks.length) return jfTracks[mpvPos].index;
-  return null;
-}
-
 export function DesktopPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   audioTracks = [], subtitleTracks = [],
