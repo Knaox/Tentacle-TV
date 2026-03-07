@@ -31,6 +31,9 @@ RUN pnpm build
 WORKDIR /app/apps/backend
 RUN pnpm build && npx prisma generate
 
+# Build shared-deps.js for plugin sandbox
+RUN node scripts/build-shared-deps.js
+
 # Production image
 FROM node:20-alpine AS production
 
@@ -44,6 +47,7 @@ COPY --from=base /app/apps/backend/dist ./apps/backend/dist
 COPY --from=base /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=base /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=base /app/apps/backend/package.json ./apps/backend/package.json
+COPY --from=base /app/apps/backend/data/shared-deps ./apps/backend/data/shared-deps
 COPY --from=base /app/apps/web/dist ./apps/web/dist
 
 # Copy entrypoint script
