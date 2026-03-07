@@ -1,10 +1,13 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
+import helmet from "@fastify/helmet";
 import compress from "@fastify/compress";
 import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { resolve } from "path";
 import { existsSync } from "fs";
+import { ZodError } from "zod";
 
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
 import { detectAppState, getAppState } from "./services/configStore";
@@ -56,12 +59,54 @@ async function main() {
     trustProxy: true,
   });
 
-  // CORS: always reflect the request origin. Desktop (tauri://localhost),
-  // Mobile, and TV apps all send different origins. Authentication is
-  // handled by JWT, not CORS, so restricting origins adds no security.
-  await app.register(cors, { origin: true });
+  // Security headers
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    referrerPolicy: { policy: "no-referrer" },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+  });
+
+  // Cookie support (httpOnly auth cookies for web)
+  await app.register(cookie);
+
+  // CORS: restrictive in production, permissive in dev
+  const corsOrigins = process.env.CORS_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean);
+  await app.register(cors, {
+    origin: corsOrigins?.length
+      ? (origin, cb) => {
+          // Allow requests with no origin (mobile apps, curl, server-to-server)
+          if (!origin) return cb(null, true);
+          if (corsOrigins.includes(origin)) return cb(null, true);
+          cb(new Error("CORS origin not allowed"), false);
+        }
+      : true,
+    credentials: true,
+  });
+
   await app.register(compress, { threshold: 1024 });
   await app.register(rateLimit, { max: RATE_LIMIT, timeWindow: "1 minute" });
+
+  // Global error handler: hide internals on 5xx, pass 4xx, format ZodErrors
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ZodError) {
+      return reply.status(400).send({
+        message: "Validation error",
+        errors: error.errors,
+      });
+    }
+
+    const statusCode = (error as any).statusCode ?? 500;
+    if (statusCode >= 500) {
+      app.log.error(error);
+      return reply.status(statusCode).send({ message: "Internal server error" });
+    }
+
+    return reply.status(statusCode).send({
+      message: (error as Error).message || "Error",
+    });
+  });
 
   // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)
   app.removeContentTypeParser("application/json");

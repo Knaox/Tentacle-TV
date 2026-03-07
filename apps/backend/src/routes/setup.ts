@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { execSync } from "child_process";
 import { resolve } from "path";
@@ -18,6 +18,18 @@ import {
   setConfigValue,
   getConfigValue,
 } from "../services/configStore";
+import { requireAdmin } from "../middleware/auth";
+import { injectCorsHosts } from "../services/jellyfinCors";
+
+/**
+ * Guard: if the app is already running (setup completed), require admin auth.
+ * During initial setup, allow unauthenticated access.
+ */
+async function setupOrAdmin(request: FastifyRequest, reply: FastifyReply) {
+  if (getAppState() === "running") {
+    return requireAdmin(request, reply);
+  }
+}
 
 const testDbSchema = z.object({
   host: z.string().min(1),
@@ -59,7 +71,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/setup/test-db — Test DB connection with provided credentials. */
-  app.post("/test-db", async (request, reply) => {
+  app.post("/test-db", { preHandler: setupOrAdmin }, async (request, reply) => {
     const body = testDbSchema.parse(request.body);
     const url = `mysql://${body.user}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
 
@@ -74,7 +86,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/setup/migrate — Run Prisma migrations to create tables. */
-  app.post("/migrate", async (_request, reply) => {
+  app.post("/migrate", { preHandler: setupOrAdmin }, async (_request, reply) => {
     const dbUrl = getDatabaseUrl();
     if (!dbUrl) {
       return reply.status(400).send({ message: "Base de données non configurée" });
@@ -108,7 +120,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/setup/test-jellyfin — Test Jellyfin connection. */
-  app.post("/test-jellyfin", async (request, reply) => {
+  app.post("/test-jellyfin", { preHandler: setupOrAdmin }, async (request, reply) => {
     const body = testJellyfinSchema.parse(request.body);
     const url = body.url.replace(/\/$/, "");
 
@@ -128,13 +140,25 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/setup/save-jellyfin — Save Jellyfin URL and API key. */
-  app.post("/save-jellyfin", async (request, reply) => {
+  app.post("/save-jellyfin", { preHandler: setupOrAdmin }, async (request, reply) => {
     const body = testJellyfinSchema.parse(request.body);
     const url = body.url.replace(/\/$/, "");
 
     try {
       await setConfigValue("jellyfin_url", url);
       await setConfigValue("jellyfin_api_key", body.apiKey);
+
+      // Injection CORS automatique (non-bloquant)
+      const tentacleOrigin = (request.headers.origin as string) || process.env.TENTACLE_PUBLIC_URL;
+      if (tentacleOrigin) {
+        try {
+          const result = await injectCorsHosts(url, body.apiKey, [tentacleOrigin], request.log);
+          if (result.added.length) request.log.info({ added: result.added }, "CORS hosts injected into Jellyfin");
+        } catch (err) {
+          request.log.warn({ error: err }, "CORS injection failed (non-blocking)");
+        }
+      }
+
       await detectAppState();
       return { success: true, state: getAppState() };
     } catch (err) {
@@ -143,7 +167,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/setup/create-admin — Verify Jellyfin credentials and create admin. */
-  app.post("/create-admin", async (request, reply) => {
+  app.post("/create-admin", { preHandler: setupOrAdmin }, async (request, reply) => {
     const body = createAdminSchema.parse(request.body);
     const jellyfinUrl = getConfigValue("jellyfin_url");
     if (!jellyfinUrl) {
@@ -195,6 +219,15 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
       setAppState("running");
 
       app.log.info({ userId: user.Id, username: user.Name }, "create-admin: setup complete");
+
+      // Set httpOnly cookie for web clients
+      reply.setCookie("tentacle_token", authData.AccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 90 * 24 * 60 * 60,
+      });
 
       return {
         success: true,

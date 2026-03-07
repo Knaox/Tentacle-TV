@@ -13,6 +13,14 @@ export const demoRoutes: FastifyPluginAsync = async (app) => {
       token: "demo-token-tentacle",
     };
 
+    reply.setCookie("tentacle_token", demoUser.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 90 * 24 * 60 * 60,
+    });
+
     return reply.send({
       token: demoUser.token,
       user: {

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
+import { requireAuth } from "../middleware/auth";
 
 const registerSchema = z.object({
   inviteKey: z.string().min(1),
@@ -16,7 +17,7 @@ const loginSchema = z.object({
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   /** POST /api/auth/login — Authenticate via Jellyfin, return token + user. */
-  app.post("/login", async (request, reply) => {
+  app.post("/login", { config: { rateLimit: { max: 5, timeWindow: 60000 } } }, async (request, reply) => {
     const body = loginSchema.parse(request.body);
     const jellyfinUrl = getJellyfinUrl();
     if (!jellyfinUrl) {
@@ -41,6 +42,16 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const data = await res.json();
+
+      // Set httpOnly cookie for web clients (XSS-proof token storage)
+      reply.setCookie("tentacle_token", data.AccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 90 * 24 * 60 * 60,
+      });
+
       return {
         AccessToken: data.AccessToken,
         User: data.User,
@@ -52,7 +63,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/auth/register — Create a Jellyfin user with an invite key. */
-  app.post("/register", async (request, reply) => {
+  app.post("/register", { config: { rateLimit: { max: 3, timeWindow: 60000 } } }, async (request, reply) => {
     const body = registerSchema.parse(request.body);
     const prisma = getPrisma();
     const jellyfinUrl = getJellyfinUrl();
@@ -117,5 +128,28 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       message: "Compte créé avec succès",
       userId: jellyfinUser.Id,
     });
+  });
+
+  /** POST /api/auth/logout — Invalidate Jellyfin session + clear cookie. */
+  app.post("/logout", { preHandler: [requireAuth] }, async (request, reply) => {
+    const jellyfinUrl = getJellyfinUrl();
+    const authHeader = request.headers.authorization;
+    const token = authHeader?.slice(7)
+      || (request as any).cookies?.tentacle_token;
+
+    if (jellyfinUrl && token) {
+      try {
+        await fetch(`${jellyfinUrl}/Sessions/Logout`, {
+          method: "POST",
+          headers: { "X-Emby-Token": token },
+          signal: AbortSignal.timeout(5000),
+        });
+      } catch {
+        // Non-blocking: Jellyfin might be unreachable
+      }
+    }
+
+    reply.clearCookie("tentacle_token", { path: "/" });
+    return { success: true };
   });
 };
