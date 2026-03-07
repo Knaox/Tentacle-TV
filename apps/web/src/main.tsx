@@ -37,10 +37,12 @@ import "./index.css";
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: savedLang });
 
-// If authenticated, fetch the authoritative language from backend and apply
-const _token = localStorage.getItem("tentacle_token");
-if (_token) {
-  fetchInterfaceLanguage(_token).then((lang) => {
+// If authenticated (user info persisted), fetch the authoritative language from backend
+const _hasUser = !!localStorage.getItem("tentacle_user");
+if (_hasUser) {
+  // For web: credentials cookie is sent automatically; token param is only for mobile/desktop
+  const _token = localStorage.getItem("tentacle_token");
+  fetchInterfaceLanguage(_token || "__cookie__").then((lang) => {
     if (lang && lang !== i18n.language) {
       i18n.changeLanguage(lang);
       localStorage.setItem("tentacle_language", lang);
@@ -70,7 +72,9 @@ export function configureBackendUrls(url: string) {
 
 configureBackendUrls(backendUrl);
 
-// Expose plugin registration and backend URL for dynamically loaded plugins
+// Plugin registration (legacy — plugins now run in sandboxed iframes on web)
+// Mobile/desktop still use inline registration.
+// Keeping window.__tentacle for backwards compat during transition.
 (window as unknown as Record<string, unknown>).__tentacle = { registerPlugin, unregisterPlugin, backendUrl };
 
 const storage = new WebStorageAdapter();
@@ -84,7 +88,12 @@ const jellyfinClient = new JellyfinClient(
   deviceName
 );
 
-// Restore token from storage
+// Web: use httpOnly cookies for auth (XSS-proof token storage)
+if (!isTauriApp) {
+  jellyfinClient.useCredentials = true;
+}
+
+// Restore token from storage (mobile/desktop only — web uses httpOnly cookies)
 const savedToken = storage.getItem("tentacle_token");
 if (savedToken) {
   jellyfinClient.setAccessToken(savedToken);

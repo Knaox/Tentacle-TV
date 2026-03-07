@@ -23,7 +23,12 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
     },
   },
+  esbuild: {
+    drop: ["debugger"],
+    pure: ["console.log", "console.debug", "console.info"],
+  },
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

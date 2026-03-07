@@ -20,7 +20,7 @@ async function pairFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers });
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
