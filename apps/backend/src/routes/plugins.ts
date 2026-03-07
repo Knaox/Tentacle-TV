@@ -92,8 +92,9 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     if (!sharedDepsCache) {
       sharedDepsCache = readFileSync(sharedDepsPath, "utf-8");
     }
+    const isDev = process.env.NODE_ENV !== "production";
     reply
-      .header("Cache-Control", "public, max-age=86400, immutable")
+      .header("Cache-Control", isDev ? "no-cache" : "public, max-age=86400, immutable")
       .type("application/javascript")
       .send(sharedDepsCache);
   });
@@ -232,38 +233,43 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     admin.get("/", async () => getInstalled());
 
     admin.post("/install", async (request, reply) => {
-      const body = installSchema.parse(request.body);
-      const installed = getInstalled();
-      if (installed.some((p) => p.pluginId === body.pluginId)) {
-        return reply.status(409).send({ message: "Plugin already installed" });
-      }
-      const source = getSources().find((s) => s.id === body.sourceId);
-      if (!source) return reply.status(404).send({ message: "Source not found" });
+      try {
+        const body = installSchema.parse(request.body);
+        const installed = getInstalled();
+        if (installed.some((p) => p.pluginId === body.pluginId)) {
+          return reply.status(409).send({ message: "Plugin already installed" });
+        }
+        const source = getSources().find((s) => s.id === body.sourceId);
+        if (!source) return reply.status(404).send({ message: "Source not found" });
 
-      const registryPlugins = await fetchRegistryCached(source.id, source.url);
-      const reg = registryPlugins.find((p) => p.pluginId === body.pluginId && p.version === body.version);
-      let pluginName = body.pluginId;
-      if (reg) {
-        pluginName = reg.name || body.pluginId;
-        if (reg.downloadUrl) {
-          try {
+        const registryPlugins = await fetchRegistryCached(source.id, source.url);
+        const reg = registryPlugins.find((p) => p.pluginId === body.pluginId && p.version === body.version);
+        console.log("[plugin-install]", { pluginId: body.pluginId, version: body.version, found: !!reg, downloadUrl: reg?.downloadUrl, checksum: reg?.checksum });
+        let pluginName = body.pluginId;
+        if (reg) {
+          pluginName = reg.name || body.pluginId;
+          if (reg.downloadUrl) {
             const archive = await downloadPlugin(body.pluginId, reg.downloadUrl, reg.checksum);
+            console.log("[plugin-install] downloaded to:", archive);
             await extractPlugin(archive, body.pluginId);
-          } catch (err) {
-            return reply.status(500).send({ message: err instanceof Error ? err.message : "Download failed" });
+            console.log("[plugin-install] extracted OK");
           }
         }
-      }
 
-      const plugin: InstalledPlugin = {
-        id: randomUUID(), pluginId: body.pluginId, sourceId: body.sourceId,
-        name: pluginName, version: body.version, enabled: true, config: {},
-        installedAt: new Date().toISOString(),
-      };
-      installed.push(plugin);
-      saveInstalled(installed);
-      if (pluginHasServerModule(body.pluginId)) scheduleRestart();
-      return plugin;
+        const plugin: InstalledPlugin = {
+          id: randomUUID(), pluginId: body.pluginId, sourceId: body.sourceId,
+          name: pluginName, version: body.version, enabled: true, config: {},
+          installedAt: new Date().toISOString(),
+        };
+        installed.push(plugin);
+        saveInstalled(installed);
+        if (pluginHasServerModule(body.pluginId)) scheduleRestart();
+        return plugin;
+      } catch (err) {
+        console.error("[plugin-install] ERROR:", err);
+        const msg = err instanceof Error ? err.message : "Install failed";
+        return reply.status(500).send({ message: msg });
+      }
     });
 
     admin.delete("/:id", async (request, reply) => {

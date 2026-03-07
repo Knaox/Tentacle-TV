@@ -189,7 +189,6 @@ async function main() {
     await app.register(fastifyStatic, {
       root: webDistPath,
       prefix: "/",
-      wildcard: false,
     });
     // SPA fallback: serve index.html for all non-API routes
     app.setNotFoundHandler(async (request, reply) => {

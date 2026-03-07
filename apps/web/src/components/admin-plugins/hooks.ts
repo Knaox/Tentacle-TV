@@ -6,11 +6,15 @@ import type { InstalledPlugin, MarketplacePlugin, PluginSource } from "./types";
 const BASE = `${backendUrl}/api/plugins`;
 
 function hdrs(): Record<string, string> {
-  return { "Content-Type": "application/json" };
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const token = localStorage.getItem("tentacle_token");
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...hdrs(), ...(init?.headers as Record<string, string>) }, credentials: "include" });
+  const hasToken = !!localStorage.getItem("tentacle_token");
+  const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...hdrs(), ...(init?.headers as Record<string, string>) }, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);

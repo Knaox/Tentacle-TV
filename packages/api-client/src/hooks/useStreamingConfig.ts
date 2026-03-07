@@ -29,9 +29,10 @@ async function fetchStreamingConfig(token: string | null): Promise<StreamingConf
     if (token !== "__cookie__") {
       headers.Authorization = `Bearer ${token}`;
     }
+    // token === "__cookie__" means web (use cookies); real token means desktop/mobile (use header)
     const res = await fetch(`${_backendBase}/api/config/streaming`, {
       headers,
-      credentials: "include",
+      credentials: token === "__cookie__" ? "include" : undefined,
     });
     if (!res.ok) return DISABLED_CONFIG;
     const data = await res.json();

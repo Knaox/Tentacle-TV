@@ -23,7 +23,9 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
     if (!hasAuth) { setLoading(false); return; }
 
     const base = backendUrl || "";
-    fetch(`${base}/api/plugins/active`, { credentials: "include" })
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null;
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    fetch(`${base}/api/plugins/active`, { headers, credentials: token ? undefined : "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((active: ActivePluginMeta[]) => {
         setActivePluginsMeta(active);
