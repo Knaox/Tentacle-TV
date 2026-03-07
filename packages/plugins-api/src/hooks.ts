@@ -57,3 +57,9 @@ export function usePluginAdminNavItems(): PluginNavItem[] {
     [plugins],
   );
 }
+
+/** Get active plugins metadata from backend (for iframe-based rendering). */
+export function useActivePluginsMeta() {
+  const { activePluginsMeta } = useContext(PluginContext);
+  return activePluginsMeta;
+}

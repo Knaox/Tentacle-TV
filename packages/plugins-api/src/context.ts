@@ -1,6 +1,23 @@
 import { createContext } from "react";
 import type { TentaclePlugin } from "./types";
 
+/** Metadata for an active plugin (from backend /api/plugins/active). */
+export interface ActivePluginMeta {
+  id: string;
+  pluginId: string;
+  name: string;
+  version: string;
+  hasBundle: boolean;
+  navItems: Array<{
+    label?: string | Record<string, string>;
+    labels?: Record<string, string>;
+    path: string;
+    icon: string;
+    platforms: string[];
+    admin?: boolean;
+  }>;
+}
+
 export interface PluginContextValue {
   /** All registered plugins */
   plugins: TentaclePlugin[];
@@ -10,6 +27,8 @@ export interface PluginContextValue {
   isPluginEnabled: (id: string) => boolean;
   /** Loading state while checking plugin configs */
   loading: boolean;
+  /** Active plugins metadata from backend (for iframe-based rendering) */
+  activePluginsMeta: ActivePluginMeta[];
 }
 
 export const PluginContext = createContext<PluginContextValue>({
@@ -17,4 +36,5 @@ export const PluginContext = createContext<PluginContextValue>({
   enabledPlugins: [],
   isPluginEnabled: () => false,
   loading: true,
+  activePluginsMeta: [],
 });
