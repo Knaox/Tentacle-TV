@@ -114,7 +114,7 @@ export function PlayerScreen({ itemId }: Props) {
       }
     }
 
-    pb.reporting.reportStart();
+    pb.reporting.reportStart(targetPosition);
   }, [pb.item, pb.reporting, pb.isDirectPlay, pb.streamOffset, pb.positionRef]);
 
   const handleProgress = useCallback((data: OnProgressData) => {

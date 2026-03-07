@@ -142,7 +142,7 @@ export function WatchWeb() {
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={quality}
           onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-          onProgress={handleProgress} onStarted={reportStart}
+          onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
           nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}

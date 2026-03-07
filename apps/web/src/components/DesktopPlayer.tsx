@@ -120,7 +120,7 @@ export function DesktopPlayer({
 }: DesktopPlayerProps) {
   const { t } = useTranslation("player");
   const navigate = useNavigate();
-  const { state, ready, fileLoaded, error, play, togglePause, seek, seekRelative,
+  const { state, ready, fileLoaded, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen, stop } = useDesktopPlayer();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -128,6 +128,10 @@ export function DesktopPlayer({
   const [showSettings, setShowSettings] = useState(false);
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const [sourceChanging, setSourceChanging] = useState(false);
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const isDragging = useRef(false);
+  const wasPlayingBeforeDrag = useRef(false);
+  const seekBarRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
   // State (not ref!) — transitioning to true triggers preference effect re-runs
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -434,8 +438,51 @@ export function DesktopPlayer({
   };
 
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
+
+  // ── Seekbar scrub (drag) ──
+  const pctFromEvent = useCallback((e: MouseEvent | React.MouseEvent) => {
+    const bar = seekBarRef.current;
+    if (!bar) return 0;
+    const r = bar.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  }, []);
+
+  const onScrubStart = useCallback((e: React.MouseEvent) => {
+    if (dur <= 0) return;
+    e.preventDefault();
+    isDragging.current = true;
+    wasPlayingBeforeDrag.current = !state.paused;
+    if (!state.paused) setPause(true);
+    const pct = pctFromEvent(e as unknown as MouseEvent);
+    setDragProgress(pct);
+    const target = pct * dur;
+    seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
+  }, [dur, state.paused, setPause, pctFromEvent, seek, isDirectPlay]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isDragging.current || dur <= 0) return;
+      const pct = pctFromEvent(e);
+      setDragProgress(pct);
+      const target = pct * dur;
+      seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
+    };
+    const onUp = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      const pct = pctFromEvent(e);
+      setDragProgress(null);
+      const target = pct * dur;
+      seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
+      if (wasPlayingBeforeDrag.current) setPause(false);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+  }, [dur, pctFromEvent, seek, setPause, isDirectPlay]);
+
   const actualPos = state.position + effectiveMpvOffset.current;
-  const progress = dur > 0 ? actualPos / dur : 0;
+  const displayProgress = dragProgress ?? (dur > 0 ? actualPos / dur : 0);
   const bufProg = dur > 0 ? Math.min((actualPos + state.buffered) / dur, 1) : 0;
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
 
@@ -547,19 +594,15 @@ export function DesktopPlayer({
               )}
             </AnimatePresence>
 
-            {/* Progress bar with buffer */}
-            <div className="group/bar relative mb-3 flex h-1.5 cursor-pointer items-center rounded-full bg-white/20 transition-all hover:h-2.5"
-              onClick={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                const pct = (e.clientX - r.left) / r.width;
-                const target = pct * dur;
-                seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
-              }}>
+            {/* Progress bar with buffer + drag scrub */}
+            <div ref={seekBarRef}
+              className={`group/bar relative mb-3 flex h-1.5 cursor-pointer items-center rounded-full bg-white/20 transition-all ${dragProgress != null ? "h-2.5" : "hover:h-2.5"}`}
+              onMouseDown={onScrubStart}>
               {/* Buffer bar */}
               <div className="absolute h-full rounded-full bg-white/10" style={{ width: `${bufProg * 100}%` }} />
               {/* Progress bar */}
-              <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${progress * 100}%` }}>
-                <div className="absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100" />
+              <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${displayProgress * 100}%` }}>
+                <div className={`absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow transition-opacity ${dragProgress != null ? "opacity-100" : "opacity-0 group-hover/bar:opacity-100"}`} />
               </div>
             </div>
 
@@ -588,7 +631,7 @@ export function DesktopPlayer({
                     onChange={(e) => setVolume(Number(e.target.value))}
                     className="hidden w-20 accent-tentacle-accent group-hover/vol:block" />
                 </div>
-                <span className="text-sm text-white/60">{fmt(actualPos)} / {fmt(dur)}</span>
+                <span className="text-sm text-white/60">{fmt(dragProgress != null ? dragProgress * dur : actualPos)} / {fmt(dur)}</span>
               </div>
               <div className="flex items-center gap-2">
                 {hasSettings && (

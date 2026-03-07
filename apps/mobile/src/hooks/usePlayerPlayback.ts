@@ -162,11 +162,21 @@ export function usePlayerPlayback(itemId: string) {
       const directStream = ms.SupportsDirectStream && !directPlay;
 
       let url: string;
+      const ds = client.getDirectStreaming();
       if (directPlay) {
-        const token = client.getAccessToken();
-        url = `${client.getBaseUrl()}/Videos/${itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
+        const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
+        const token = ds ? ds.jellyfinToken : client.getAccessToken();
+        url = `${baseUrl}/Videos/${itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
       } else if (ms.TranscodingUrl) {
-        url = `${client.getBaseUrl()}${ms.TranscodingUrl}`;
+        const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
+        let transcodingPath = ms.TranscodingUrl;
+        if (ds) {
+          transcodingPath = transcodingPath.replace(
+            /([?&])(api_key|ApiKey)=[^&]*/i,
+            `$1ApiKey=${encodeURIComponent(ds.jellyfinToken)}`
+          );
+        }
+        url = `${baseUrl}${transcodingPath}`;
       } else {
         setState((prev) => ({ ...prev, isLoading: false, error: "No stream URL" }));
         return;
