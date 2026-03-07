@@ -10,6 +10,7 @@ import {
   getDirectStreamingConfig,
 } from "../services/configStore";
 import { getPrisma } from "../services/db";
+import { injectCorsHosts } from "../services/jellyfinCors";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
 const jellyfinConfigSchema = z.object({
@@ -175,6 +176,20 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       await setConfigValue("jellyfin_private_url", body.privateUrl.replace(/\/$/, ""));
     }
 
+    // Injection CORS pour le direct streaming (non-bloquant)
+    const jellyfinUrl = getJellyfinUrl();
+    const apiKey = getJellyfinApiKey();
+    if (jellyfinUrl && apiKey && body.enabled) {
+      const tentacleOrigin = (request.headers.origin as string) || process.env.TENTACLE_PUBLIC_URL;
+      const urlsToInject = [tentacleOrigin].filter(Boolean) as string[];
+      try {
+        const result = await injectCorsHosts(jellyfinUrl, apiKey, urlsToInject, request.log);
+        if (result.added.length) request.log.info({ added: result.added }, "CORS hosts injected");
+      } catch (err) {
+        request.log.warn({ error: err }, "CORS injection failed (non-blocking)");
+      }
+    }
+
     return { success: true };
   });
 
@@ -185,10 +200,16 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       privateUrl: z.string().url().optional().or(z.literal("")),
     }).parse(request.body);
 
+    // Origin header to send so Jellyfin returns CORS headers (server-to-server fetch has no Origin by default)
+    const testOrigin = (request.headers.origin as string) || process.env.TENTACLE_PUBLIC_URL || "";
+
     const test = async (url: string): Promise<{ ok: boolean; version?: string; error?: string; corsOk?: boolean }> => {
       if (!url) return { ok: false, error: "URL vide" };
       try {
+        const headers: Record<string, string> = {};
+        if (testOrigin) headers["Origin"] = testOrigin;
         const res = await fetch(`${url.replace(/\/$/, "")}/System/Info/Public`, {
+          headers,
           signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
