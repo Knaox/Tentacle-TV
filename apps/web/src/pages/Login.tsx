@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth, useAppConfig } from "@tentacle-tv/api-client";
 import { GlassCard } from "@tentacle-tv/ui";
+import { isTauriApp, backendUrl } from "../main";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -24,11 +25,15 @@ export function Login() {
   const handleDemo = async () => {
     setDemoLoading(true);
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-      const res = await fetch(`${backendUrl}/api/auth/demo`, { method: "POST" });
+      const res = await fetch(`${backendUrl}/api/auth/demo`, {
+        method: "POST",
+        credentials: isTauriApp ? undefined : "include",
+      });
       if (!res.ok) throw new Error("Demo unavailable");
       const data = await res.json();
-      localStorage.setItem("tentacle_token", data.token);
+      if (isTauriApp && data.AccessToken) {
+        localStorage.setItem("tentacle_token", data.AccessToken);
+      }
       localStorage.setItem("tentacle_user", JSON.stringify(data.user));
       navigate("/");
     } catch {
