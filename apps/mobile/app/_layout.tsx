@@ -8,6 +8,8 @@ import { initI18n, i18n } from "@tentacle-tv/shared";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { useServerReachable } from "@/hooks/useServerReachable";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { colors } from "@/theme";
 
@@ -21,6 +23,12 @@ const uuid = new RNUuidGenerator();
 // Init i18n immediately so useTranslation works on first render.
 // Language will be corrected after storage hydration if needed.
 initI18n({ lng: "fr" });
+
+/** Composant interne — nécessite AppProviders comme parent */
+function OfflineOverlay() {
+  const { isReachable, retry } = useServerReachable();
+  return <OfflineBanner visible={!isReachable} onRetry={retry} />;
+}
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -105,6 +113,7 @@ export default function RootLayout() {
               <Stack.Screen name="about" options={{ presentation: "card" }} />
               <Stack.Screen name="credits" options={{ presentation: "card" }} />
             </Stack>
+            <OfflineOverlay />
             {!ready && (
               <View style={styles.loading}>
                 <ActivityIndicator size="large" color={colors.accent} />

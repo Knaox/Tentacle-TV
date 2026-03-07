@@ -65,10 +65,9 @@ export function useServerReachable() {
         event.action?.type === "error"
       ) {
         const error = event.action.error;
-        if (
-          error instanceof TypeError &&
-          error.message === "Network request failed"
-        ) {
+        const isNetworkError = error instanceof TypeError && error.message === "Network request failed";
+        const isServerError = (error as any)?.status >= 500;
+        if (isNetworkError || isServerError) {
           checkServer();
         }
       }

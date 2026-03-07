@@ -100,12 +100,18 @@ export function buildIosDeviceProfile(maxBitrate?: number): DeviceProfile {
   ];
 
   const subtitleProfiles: SubtitleProfile[] = [
-    // AVPlayer supporte les sous-titres texte via react-native-video
+    // Text subs — External for direct play (sideloaded VTT),
+    // Hls for transcode (server embeds WebVTT in HLS manifest, native AVPlayer reads them)
     { Format: "vtt", Method: "External" },
+    { Format: "vtt", Method: "Hls" },
     { Format: "srt", Method: "External" },
+    { Format: "srt", Method: "Hls" },
     { Format: "subrip", Method: "External" },
+    { Format: "subrip", Method: "Hls" },
     { Format: "ass", Method: "External" },
+    { Format: "ass", Method: "Hls" },
     { Format: "ssa", Method: "External" },
+    { Format: "ssa", Method: "Hls" },
     // Bitmap — doivent être gravés par le serveur
     { Format: "pgssub", Method: "Encode" },
     { Format: "dvdsub", Method: "Encode" },
