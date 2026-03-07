@@ -24,8 +24,14 @@ async function fetchStreamingConfig(token: string | null): Promise<StreamingConf
   if (!token) return DISABLED_CONFIG;
 
   try {
+    const headers: Record<string, string> = {};
+    // Real token for mobile/desktop; web uses httpOnly cookies
+    if (token !== "__cookie__") {
+      headers.Authorization = `Bearer ${token}`;
+    }
     const res = await fetch(`${_backendBase}/api/config/streaming`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
+      credentials: "include",
     });
     if (!res.ok) return DISABLED_CONFIG;
     const data = await res.json();

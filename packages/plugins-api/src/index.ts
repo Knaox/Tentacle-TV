@@ -24,7 +24,7 @@ export {
 
 // Context & Provider
 export { PluginContext } from "./context";
-export type { PluginContextValue } from "./context";
+export type { PluginContextValue, ActivePluginMeta } from "./context";
 export { PluginProvider } from "./PluginProvider";
 
 // Hooks
@@ -36,4 +36,5 @@ export {
   usePluginRoutes,
   usePluginAdminRoutes,
   usePluginAdminNavItems,
+  useActivePluginsMeta,
 } from "./hooks";

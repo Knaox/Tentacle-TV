@@ -7,7 +7,9 @@ import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePluginRoutes, usePluginAdminRoutes } from "@tentacle-tv/plugins-api";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { PluginIframe } from "./components/PluginIframe";
+import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { isTauriApp } from "./main";
 
@@ -35,7 +37,7 @@ function PageSpinner() {
   );
 }
 
-/* -- Reactive auth state -- */
+/* -- Reactive auth state (tracks tentacle_user, not token — token is in httpOnly cookie) -- */
 const authListeners = new Set<() => void>();
 function notifyAuthChange() { authListeners.forEach((cb) => cb()); }
 
@@ -43,11 +45,11 @@ const origSetItem = localStorage.setItem.bind(localStorage);
 const origRemoveItem = localStorage.removeItem.bind(localStorage);
 localStorage.setItem = (key: string, value: string) => {
   origSetItem(key, value);
-  if (key === "tentacle_token") notifyAuthChange();
+  if (key === "tentacle_user") notifyAuthChange();
 };
 localStorage.removeItem = (key: string) => {
   origRemoveItem(key);
-  if (key === "tentacle_token") notifyAuthChange();
+  if (key === "tentacle_user") notifyAuthChange();
 };
 
 function useIsAuthenticated(): boolean {
@@ -55,7 +57,7 @@ function useIsAuthenticated(): boolean {
     authListeners.add(cb);
     return () => { authListeners.delete(cb); };
   }, []);
-  return useSyncExternalStore(subscribe, () => !!localStorage.getItem("tentacle_token"));
+  return useSyncExternalStore(subscribe, () => !!localStorage.getItem("tentacle_user"));
 }
 
 /** Sync direct streaming config from backend into JellyfinClient.
@@ -63,7 +65,9 @@ function useIsAuthenticated(): boolean {
 function DirectStreamingSync() {
   const client = useJellyfinClient();
   const queryClient = useQueryClient();
-  const token = localStorage.getItem("tentacle_token");
+  // Web uses httpOnly cookie (credentials: "include"), so pass a sentinel token
+  // to satisfy the `enabled: !!token` guard. Mobile/desktop pass real token.
+  const token = localStorage.getItem("tentacle_token") || (localStorage.getItem("tentacle_user") ? "__cookie__" : null);
   const { data } = useStreamingConfig(token);
 
   useEffect(() => {
@@ -101,8 +105,7 @@ export function App() {
   const [needsServerUrl, setNeedsServerUrl] = useState(
     isTauriApp && !localStorage.getItem("tentacle_server_url")
   );
-  const pluginRoutes = usePluginRoutes();
-  const pluginAdminRoutes = usePluginAdminRoutes();
+  const activePluginsMeta = useActivePluginsMeta();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
 
   // Check backend setup status on mount (web deployment only)
@@ -146,7 +149,6 @@ export function App() {
       <ServerSetup
         onComplete={(token, user) => {
           client.setAccessToken(token);
-          storage.setItem("tentacle_token", token);
           storage.setItem("tentacle_user", JSON.stringify(user));
           setSetupRequired(false);
         }}
@@ -178,25 +180,45 @@ export function App() {
             <Route path="admin/*" element={<Admin />} />
             <Route path="admin/plugins" element={<AdminPlugins />} />
 
-            {/* Dynamic plugin admin routes */}
-            {pluginAdminRoutes.map((route) => (
-              <Route
-                key={route.path}
-                path={route.path.replace(/^\//, "")}
-                element={<Suspense fallback={<PageSpinner />}><route.component /></Suspense>}
-              />
-            ))}
+            {/* Dynamic plugin admin routes (sandboxed iframes) */}
+            {activePluginsMeta.flatMap((plugin) =>
+              (plugin.navItems || [])
+                .filter((nav) => nav.admin && nav.platforms?.includes("web"))
+                .map((nav) => (
+                  <Route
+                    key={`${plugin.pluginId}-${nav.path}`}
+                    path={nav.path.replace(/^\//, "")}
+                    element={
+                      <PluginIframe
+                        pluginId={plugin.pluginId}
+                        bundleUrl={`${backendUrl}/api/plugins/${plugin.pluginId}/bundle?v=${plugin.version}`}
+                        pluginPath={nav.path}
+                      />
+                    }
+                  />
+                ))
+            )}
             <Route path="about" element={<About />} />
             <Route path="credits" element={<Credits />} />
 
-            {/* Dynamic plugin routes */}
-            {pluginRoutes.map((route) => (
-              <Route
-                key={route.path}
-                path={route.path.replace(/^\//, "")}
-                element={<route.component />}
-              />
-            ))}
+            {/* Dynamic plugin routes (sandboxed iframes) */}
+            {activePluginsMeta.flatMap((plugin) =>
+              (plugin.navItems || [])
+                .filter((nav) => !nav.admin && nav.platforms?.includes("web"))
+                .map((nav) => (
+                  <Route
+                    key={`${plugin.pluginId}-${nav.path}`}
+                    path={nav.path.replace(/^\//, "")}
+                    element={
+                      <PluginIframe
+                        pluginId={plugin.pluginId}
+                        bundleUrl={`${backendUrl}/api/plugins/${plugin.pluginId}/bundle?v=${plugin.version}`}
+                        pluginPath={nav.path}
+                      />
+                    }
+                  />
+                ))
+            )}
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />

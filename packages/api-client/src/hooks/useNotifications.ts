@@ -20,7 +20,7 @@ async function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
   };
   // Only set Content-Type when there's a body (Fastify rejects empty JSON bodies with 400)
   if (init?.body) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers });
+  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
@@ -44,7 +44,7 @@ export interface AppNotification {
 // ---------- Hooks ----------
 
 export function useNotifications(limit = 20) {
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
     queryKey: ["notifications", limit],
@@ -56,7 +56,7 @@ export function useNotifications(limit = 20) {
 }
 
 export function useUnreadCount() {
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
     queryKey: ["notifications", "unread-count"],

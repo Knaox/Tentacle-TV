@@ -25,10 +25,9 @@ export function Login() {
     setDemoLoading(true);
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-      const res = await fetch(`${backendUrl}/api/auth/demo`, { method: "POST" });
+      const res = await fetch(`${backendUrl}/api/auth/demo`, { method: "POST", credentials: "include" });
       if (!res.ok) throw new Error("Demo unavailable");
       const data = await res.json();
-      localStorage.setItem("tentacle_token", data.token);
       localStorage.setItem("tentacle_user", JSON.stringify(data.user));
       navigate("/");
     } catch {

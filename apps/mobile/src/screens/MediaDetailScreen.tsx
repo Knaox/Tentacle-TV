@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { View, Text, ScrollView, Dimensions, RefreshControl, InteractionManager } from "react-native";
 import Animated, {
   useSharedValue,
@@ -45,7 +45,8 @@ export function MediaDetailScreen({ itemId }: Props) {
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
   const badges = useMemo(() => computeBadges(item), [item]);
 
-  // Cascade entry animations
+  // Cascade entry animations — only run once per itemId (not on data refetch)
+  const animatedForId = useRef<string | null>(null);
   const posterAnim = useSharedValue(0);
   const titleAnim = useSharedValue(0);
   const metaAnim = useSharedValue(0);
@@ -53,7 +54,8 @@ export function MediaDetailScreen({ itemId }: Props) {
   const contentAnim = useSharedValue(0);
 
   useEffect(() => {
-    if (!item) return;
+    if (!item || animatedForId.current === itemId) return;
+    animatedForId.current = itemId;
     // Reset to 0 before animating (handles cached data + navigation reuse)
     posterAnim.value = 0;
     titleAnim.value = 0;
@@ -69,7 +71,7 @@ export function MediaDetailScreen({ itemId }: Props) {
       contentAnim.value = withDelay(400, withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) }));
     });
     return () => handle.cancel();
-  }, [item, posterAnim, titleAnim, metaAnim, actionsAnim, contentAnim]);
+  }, [item, itemId, posterAnim, titleAnim, metaAnim, actionsAnim, contentAnim]);
 
   const posterStyle = useAnimatedStyle(() => ({
     opacity: posterAnim.value,

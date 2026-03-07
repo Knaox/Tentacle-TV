@@ -68,6 +68,21 @@ interface RawRegistryEntry {
 
 // ── Constants ──
 
+const PLUGIN_ID_REGEX = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+
+export function isValidPluginId(id: string): boolean {
+  return PLUGIN_ID_REGEX.test(id);
+}
+
+/** Verify a resolved path is safely under DATA_DIR (no path traversal). */
+export function assertPathUnderDataDir(resolvedPath: string): void {
+  const normalized = resolve(resolvedPath);
+  const base = resolve(DATA_DIR);
+  if (!normalized.startsWith(base + "/") && normalized !== base) {
+    throw new Error("Invalid plugin path: outside data directory");
+  }
+}
+
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 export const DATA_DIR = resolve(__dirname, "../../data/plugins");
 const SOURCES_FILE = "sources.json";
@@ -218,6 +233,7 @@ export async function downloadPlugin(
   downloadUrl: string,
   expectedChecksum?: string,
 ): Promise<string> {
+  if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
   const tmpDir = resolve(DATA_DIR, ".tmp");
   if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
 
@@ -249,7 +265,9 @@ async function verifyChecksum(filePath: string, expected: string): Promise<boole
 }
 
 export async function extractPlugin(archivePath: string, pluginId: string): Promise<string> {
+  if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
   const destDir = resolve(DATA_DIR, pluginId);
+  assertPathUnderDataDir(destDir);
   if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true });
   mkdirSync(destDir, { recursive: true });
 
@@ -262,6 +280,8 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
 }
 
 export function removePluginFiles(pluginId: string): void {
+  if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
   const dir = resolve(DATA_DIR, pluginId);
+  assertPathUnderDataDir(dir);
   if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
 }

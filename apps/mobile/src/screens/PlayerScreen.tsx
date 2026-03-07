@@ -1,298 +1,282 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, StatusBar, ActivityIndicator, Text, Pressable, Platform } from "react-native";
-import Video, { type OnProgressData, type OnLoadData } from "react-native-video";
+import { View, StatusBar, Platform } from "react-native";
+import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType, type ISO639_1 } from "react-native-video";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import * as ScreenOrientation from "expo-screen-orientation";
-import {
-  useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
-  useResolveMediaTracks, useIntroSkipper,
-} from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
+import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
+import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
+import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
-import { randomUUID, formatTrackLabel } from "../lib/playerUtils";
+import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
+import { PlayerErrorView } from "../components/player/PlayerErrorView";
+import { PlayerGestures } from "../components/player/PlayerGestures";
 
 interface Props { itemId: string }
-
-const DBG = "[Tentacle:MobilePlayer]";
 
 export function PlayerScreen({ itemId }: Props) {
   const { t } = useTranslation("player");
   const router = useRouter();
-  const client = useJellyfinClient();
-  const { data: item } = useMediaItem(itemId);
-  const { data: ancestors } = useItemAncestors(itemId);
+  const queryClient = useQueryClient();
+  const videoRef = useRef<VideoRef>(null);
 
-  const videoRef = useRef<Video>(null);
+  const pb = usePlayerPlayback(itemId);
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [audioIndex, setAudioIndex] = useState(0);
-  const [subtitleIndex, setSubtitleIndex] = useState(-1);
-  const [startTicks, setStartTicks] = useState(0);
+  const [bufferedTime, setBufferedTime] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const positionRef = useRef(0);
-  const prefsApplied = useRef(false);
+  const [overlayVisible, setOverlayVisible] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
   const resumeApplied = useRef(false);
+  const retryCount = useRef(0);
+  const hasEverPlayed = useRef(false);
 
-  // ── Orientation: lock landscape on mount, restore portrait on unmount ──
+  // Orientation: landscape on mount, portrait on unmount
   useEffect(() => {
     if (Platform.OS !== "ios" && Platform.OS !== "android") return;
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
     return () => { ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); };
   }, []);
 
-  // ── StatusBar: hide on mount, show on unmount ──
+  // StatusBar: hide/show
   useEffect(() => {
     StatusBar.setHidden(true);
     return () => { StatusBar.setHidden(false); };
   }, []);
 
-  // Media source info — mediaSourceId is critical for episodes
-  const mediaSource = item?.MediaSources?.[0];
-  const mediaSourceId = mediaSource?.Id ?? itemId;
-  const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
-
-  const defaultAudio = useMemo(() =>
-    streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
-    ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0,
-    [streams]
-  );
-
-  // Reset state on episode change
+  // Fetch PlaybackInfo once the item metadata is ready
   useEffect(() => {
-    if (streams.length > 0) {
-      setAudioIndex(defaultAudio);
-      setSubtitleIndex(-1);
-      setStartTicks(0);
-      setError(null);
-      setIsBuffering(true);
-      positionRef.current = 0;
-      prefsApplied.current = false;
-    }
-  }, [itemId, streams.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!pb.item) return;
+    resumeApplied.current = false;
+    retryCount.current = 0;
+    setIsBuffering(true);
+    setPaused(false);
+    setBufferedTime(0);
 
-  // Detect unsupported audio codecs
-  const selectedAudioStream = streams.find(
-    (s) => s.Type === "Audio" && s.Index === audioIndex
-  );
-  const selectedAudioCodec = selectedAudioStream?.Codec?.toLowerCase();
-  const selectedAudioChannels = selectedAudioStream?.Channels ?? 2;
-  const needsAudioTranscode = !!selectedAudioCodec && (
-    /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
-  );
+    const resumeTicks = pb.item.UserData?.PlaybackPositionTicks;
+    const resumeSeconds = resumeTicks && resumeTicks > 0 ? resumeTicks / TICKS_PER_SECOND : 0;
+    // Store resume position so changeAudio/changeSubtitle preserves it
+    pb.positionRef.current = resumeSeconds;
+    // Don't set currentTime here — let handleProgress determine the real position
 
-  const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
-
-  const isDirectPlay = audioIndex === defaultAudio && !needsAudioTranscode;
-  const isDirectStream = !isDirectPlay && needsAudioTranscode;
-
-  const playSessionId = useMemo(() => {
-    if (isDirectPlay) return undefined;
-    return randomUUID();
-  }, [audioIndex, startTicks, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const streamUrl = useMemo(() => {
-    if (!itemId) return null;
-    return client.getStreamUrl(itemId, {
-      mediaSourceId, audioIndex, directPlay: isDirectPlay,
-      startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
-      playSessionId, sourceVideoCodec,
+    pb.fetchPlaybackInfo({
+      startTimeTicks: resumeTicks && resumeTicks > 0 ? resumeTicks : undefined,
     });
-  }, [client, itemId, mediaSourceId, audioIndex, isDirectPlay, startTicks, playSessionId, sourceVideoCodec]);
+  }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  // Reset videoReady when stream URL changes (avoids selectedTextTrack crash)
+  useEffect(() => { setVideoReady(false); }, [pb.streamUrl]);
 
-  const { reportStart, reportStop, updatePosition, reportSeek } = usePlaybackReporting({
-    itemId, mediaSourceId, isDirectPlay, isDirectStream,
-    playSessionId,
-    audioStreamIndex: audioIndex,
-    subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
+  // Auto-apply language preferences
+  usePlayerPreferences({
+    item: pb.item,
+    ancestors: pb.ancestors,
+    streams: pb.streams,
+    onAudioResolved: (idx) => pb.changeAudio(idx),
+    onSubtitleResolved: (idx) => pb.changeSubtitle(idx),
   });
 
-  // Resolve preferred audio/subtitle tracks
-  const resolveTracks = useResolveMediaTracks();
-  useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item || !ancestors) return;
-    const parentId = item.ParentId;
-    const seriesId = item.SeriesId;
-    const ancestorIds = ancestors.map((a: any) => a.Id);
-    const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
-    if (allCandidates.length === 0) return;
-    prefsApplied.current = true;
-    resolveTracks.mutate({
-      libraryId: allCandidates[0],
-      libraryIds: allCandidates,
-      audioTracks: streams.filter((s) => s.Type === "Audio")
-        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
-      subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
-        .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
-    }, {
-      onSuccess: (result) => {
-        if (result.audioIndex != null) {
-          if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-          setAudioIndex(result.audioIndex);
-        }
-        if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
-      },
-    });
-  }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const skipSegments = useIntroSkipper(itemId, item);
-
-  // For transcoded/HLS streams, include resume position in the URL
-  useEffect(() => {
-    if (resumeApplied.current || isDirectPlay) return;
-    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-    if (resumeTicks && resumeTicks > 0 && startTicks === 0) {
-      resumeApplied.current = true;
-      setStartTicks(resumeTicks);
-    }
-  }, [item, isDirectPlay, startTicks]);
-
-  useEffect(() => () => { reportStop(); }, [reportStop]);
+  // Audio/subtitle track lists for the modal
+  const audioTracks = useMemo(() =>
+    pb.streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
+    [pb.streams],
+  );
+  const subtitleTracks = useMemo(() =>
+    pb.streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
+    [pb.streams],
+  );
 
   const handleLoad = useCallback((_data: OnLoadData) => {
     setIsBuffering(false);
-    setError(null);
-    if (isDirectPlay) {
-      const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-      if (resumeTicks) videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
+    setVideoReady(true);
+    hasEverPlayed.current = true;
+
+    // First load: resume from metadata; subsequent loads (track change): use current position
+    const targetPosition = resumeApplied.current
+      ? pb.positionRef.current
+      : (pb.item?.UserData?.PlaybackPositionTicks ?? 0) / TICKS_PER_SECOND;
+    resumeApplied.current = true;
+
+    if (targetPosition > 0) {
+      if (pb.isDirectPlay) {
+        // Direct play: seek absolute (startPosition should already have positioned,
+        // but seek as backup)
+        videoRef.current?.seek(targetPosition);
+      } else {
+        // Transcode: HLS stream starts at streamOffset,
+        // so seek to (target - streamOffset) within the stream
+        const seekInStream = targetPosition - pb.streamOffset;
+        if (seekInStream > 1) {
+          videoRef.current?.seek(seekInStream);
+        }
+      }
     }
-    reportStart();
-  }, [item, reportStart, isDirectPlay]);
+
+    pb.reporting.reportStart();
+  }, [pb.item, pb.reporting, pb.isDirectPlay, pb.streamOffset, pb.positionRef]);
 
   const handleProgress = useCallback((data: OnProgressData) => {
     const raw = Math.max(0, data.currentTime);
-    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
-    const pos = raw + offset;
+    const pos = raw + pb.streamOffset;
     setCurrentTime(pos);
-    positionRef.current = pos;
-    updatePosition(pos, paused);
-  }, [paused, updatePosition, isDirectPlay, startTicks]);
+    setBufferedTime(data.playableDuration > 0 ? data.playableDuration + pb.streamOffset : 0);
+    pb.positionRef.current = pos;
+    pb.reporting.updatePosition(pos, paused);
+  }, [paused, pb.reporting, pb.streamOffset, pb.positionRef]);
 
   const handleEnd = useCallback(() => {
-    reportStop();
-    router.back();
-  }, [router, reportStop]);
+    pb.reporting.reportStop();
+    invalidateAndGoBack();
+  }, [router, pb.reporting]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleError = useCallback((e: any) => {
-    console.error(DBG, "playback error", e);
-    setError(t("playbackError") ?? "Erreur de lecture");
-    setIsBuffering(false);
-  }, [t]);
-
-  const handleBuffer = useCallback(({ isBuffering: buffering }: { isBuffering: boolean }) => {
-    setIsBuffering(buffering);
-  }, []);
-
-  const handleReadyForDisplay = useCallback(() => {
-    setIsBuffering(false);
-  }, []);
-
-  const handleRetry = useCallback(() => { setError(null); setIsBuffering(true); }, []);
+  const handleError = useCallback((e: unknown) => {
+    console.error("[Tentacle:Player] onError", e);
+    if (retryCount.current < 1) {
+      retryCount.current++;
+      pb.retry();
+    }
+  }, [pb]);
 
   const handleSeek = useCallback((seconds: number) => {
-    const dur = jellyfinDuration || 0;
+    const dur = pb.jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+    const offset = pb.streamOffset;
     videoRef.current?.seek(Math.max(0, clamped - offset));
-    reportSeek(clamped, paused);
-  }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
+    pb.reporting.reportSeek(clamped, paused);
+  }, [pb.jellyfinDuration, pb.streamOffset, paused, pb.reporting]);
 
-  const handleAudioChange = useCallback((newIndex: number) => {
-    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-    setAudioIndex(newIndex);
-  }, []);
+  // Invalidate home queries so watch state refreshes
+  const invalidateAndGoBack = useCallback(() => {
+    pb.reporting.reportStop();
+    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    router.back();
+  }, [router, pb.reporting, queryClient, itemId]);
 
-  const handlePlayPause = useCallback(() => setPaused((p) => !p), []);
+  const handleNextEpisode = useCallback(() => {
+    const next = pb.episodeNav.nextEpisode;
+    if (!next) return;
+    pb.reporting.reportStop();
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    router.replace(`/watch/${next.Id}`);
+  }, [pb.episodeNav.nextEpisode, pb.reporting, queryClient, router]);
 
-  const audioTracks = useMemo(() =>
-    streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
-    [streams]
-  );
-  const subtitleTracks = useMemo(() =>
-    streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
-    [streams]
-  );
+  const handlePrevEpisode = useCallback(() => {
+    const prev = pb.episodeNav.previousEpisode;
+    if (!prev) return;
+    pb.reporting.reportStop();
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    router.replace(`/watch/${prev.Id}`);
+  }, [pb.episodeNav.previousEpisode, pb.reporting, queryClient, router]);
 
-  const displayDuration = jellyfinDuration > 0 ? jellyfinDuration : 0;
+  const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
-  const audioStreams = useMemo(() => streams.filter((s) => s.Type === "Audio"), [streams]);
-  const subtitleStreams = useMemo(() => streams.filter((s) => s.Type === "Subtitle"), [streams]);
-  const audioRelativeIndex = useMemo(() => {
-    const idx = audioStreams.findIndex((s) => s.Index === audioIndex);
-    return idx >= 0 ? idx : 0;
-  }, [audioStreams, audioIndex]);
-  const subtitleRelativeIndex = useMemo(() => {
-    if (subtitleIndex < 0) return -1;
-    const idx = subtitleStreams.findIndex((s) => s.Index === subtitleIndex);
-    return idx >= 0 ? idx : -1;
-  }, [subtitleStreams, subtitleIndex]);
+  // Cleanup on unmount — report stop + refresh resume lists
+  // Note: don't invalidate ["item", itemId] here — it's already done in
+  // invalidateAndGoBack, and double-invalidation resets MediaDetail animations
+  useEffect(() => () => {
+    pb.reporting.reportStop();
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
+  // Error screen
+  if (pb.error && !pb.isLoading) {
+    return <PlayerErrorView message={t("playbackError")} onRetry={pb.retry} onBack={invalidateAndGoBack} />;
+  }
+
+  // Loading: no stream URL yet
+  if (!pb.streamUrl) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#000" }}>
+        <PlayerLoadingView />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      {!error && (
-        <Video
-          ref={videoRef}
-          source={{ uri: streamUrl }}
-          style={{ flex: 1 }}
-          resizeMode="contain"
-          paused={paused}
-          onLoad={handleLoad}
-          onProgress={handleProgress}
-          onEnd={handleEnd}
-          onError={handleError}
-          onBuffer={handleBuffer}
-          onReadyForDisplay={handleReadyForDisplay}
-          selectedAudioTrack={{ type: "index", value: audioRelativeIndex }}
-          selectedTextTrack={subtitleRelativeIndex >= 0 ? { type: "index", value: subtitleRelativeIndex } : { type: "disabled" }}
-          progressUpdateInterval={250}
-        />
-      )}
+      <Video
+        ref={videoRef}
+        source={{
+          uri: pb.streamUrl,
+          startPosition: pb.startPositionMs > 0 ? pb.startPositionMs : undefined,
+          // Sideloaded VTT tracks — only for direct play (not HLS, crashes iOS AVPlayer)
+          textTracks: pb.isDirectPlay && pb.textTracks.length > 0
+            ? pb.textTracks as { title: string; language: ISO639_1; type: typeof pb.textTracks[number]["type"]; uri: string }[]
+            : undefined,
+        }}
+        style={{ flex: 1 }}
+        resizeMode="contain"
+        paused={paused}
+        selectedAudioTrack={
+          pb.isDirectPlay && pb.audioTrackSelectedIndex >= 0
+            ? { type: SelectedTrackType.INDEX, value: pb.audioTrackSelectedIndex }
+            : undefined
+        }
+        selectedTextTrack={
+          // Direct play: select sideloaded VTT track by index
+          videoReady && pb.isDirectPlay && pb.textTrackSelectedIndex >= 0
+            ? { type: SelectedTrackType.INDEX, value: pb.textTrackSelectedIndex }
+            // Transcode with subtitle selected: show HLS-embedded subtitle (index 0 in manifest)
+            : videoReady && !pb.isDirectPlay && pb.subtitleIndex >= 0
+              ? { type: SelectedTrackType.INDEX, value: 0 }
+              // No subtitle selected: disable
+              : videoReady
+                ? { type: SelectedTrackType.DISABLED }
+                : undefined
+        }
+        onLoad={handleLoad}
+        onProgress={handleProgress}
+        onEnd={handleEnd}
+        onError={handleError}
+        onBuffer={({ isBuffering: b }) => setIsBuffering(b)}
+        onReadyForDisplay={() => setIsBuffering(false)}
+        progressUpdateInterval={250}
+        preventsDisplaySleepDuringVideoPlayback
+        allowsExternalPlayback={pb.textTracks.length === 0}
+        enterPictureInPictureOnLeave
+      />
 
-      {/* Loading spinner */}
-      {isBuffering && !error && (
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
-        </View>
-      )}
+      {isBuffering && !hasEverPlayed.current && <PlayerLoadingView />}
 
-      {/* Error overlay */}
-      {error && (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 32 }}>
-          <Text style={{ color: "#fff", fontSize: 16, textAlign: "center", marginBottom: 16 }}>{error}</Text>
-          <Pressable onPress={handleRetry} style={{ backgroundColor: "#8b5cf6", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 }}>
-            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("retry") ?? "Réessayer"}</Text>
-          </Pressable>
-          <Pressable onPress={() => { reportStop(); router.back(); }} style={{ marginTop: 12 }}>
-            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{t("back") ?? "Retour"}</Text>
-          </Pressable>
-        </View>
-      )}
+      <PlayerGestures
+        currentTime={currentTime}
+        overlayVisible={overlayVisible}
+        onSeek={handleSeek}
+        onToggleOverlay={toggleOverlay}
+        onSwipeDown={invalidateAndGoBack}
+      />
 
-      {!error && (
-        <MobilePlayerOverlay
-          title={item?.Name ?? ""}
-          currentTime={currentTime}
-          duration={displayDuration}
-          paused={paused}
-          audioTracks={audioTracks}
-          subtitleTracks={subtitleTracks}
-          selectedAudio={audioIndex}
-          selectedSubtitle={subtitleIndex}
-          introSegment={skipSegments.intro}
-          creditsSegment={skipSegments.credits}
-          onPlayPause={handlePlayPause}
-          onSeek={handleSeek}
-          onBack={() => { reportStop(); router.back(); }}
-          onSelectAudio={handleAudioChange}
-          onSelectSubtitle={setSubtitleIndex}
-        />
-      )}
+      <MobilePlayerOverlay
+        title={pb.item?.Name ?? ""}
+        currentTime={currentTime}
+        duration={pb.jellyfinDuration || 0}
+        bufferedTime={bufferedTime}
+        paused={paused}
+        audioTracks={audioTracks}
+        subtitleTracks={subtitleTracks}
+        selectedAudio={pb.audioIndex}
+        selectedSubtitle={pb.subtitleIndex}
+        qualityKey={pb.qualityKey}
+        introSegment={pb.skipSegments.intro}
+        creditsSegment={pb.skipSegments.credits}
+        nextEpisode={pb.episodeNav.nextEpisode}
+        previousEpisode={pb.episodeNav.previousEpisode}
+        onPlayPause={() => setPaused((p) => !p)}
+        onSeek={handleSeek}
+        onBack={invalidateAndGoBack}
+        onSelectAudio={pb.changeAudio}
+        onSelectSubtitle={pb.changeSubtitle}
+        onSelectQuality={pb.changeQuality}
+        onNextEpisode={handleNextEpisode}
+        onPreviousEpisode={handlePrevEpisode}
+        visible={overlayVisible}
+        onToggle={toggleOverlay}
+      />
     </View>
   );
 }

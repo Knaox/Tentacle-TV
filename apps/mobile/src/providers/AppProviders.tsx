@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { AppState } from "react-native";
-import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, focusManager, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 
 // Refetch les queries stale quand l'app revient au premier plan
@@ -14,6 +14,9 @@ import {
   TentacleConfigContext,
   JellyfinClientContext,
   JellyfinClient,
+  useJellyfinClient,
+  useStreamingConfig,
+  STREAMING_CONFIG_QUERY_KEY,
   setPreferencesBackendUrl,
   setPreferencesToken,
   setConfigBackendUrl,
@@ -56,7 +59,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
   // Handle auth expiration: clear storage and redirect to login
   useEffect(() => {
     client.setOnAuthExpired(() => {
-      console.warn("[AppProviders] Auth expired — clearing token, redirecting to login");
+      console.debug("[AppProviders] Auth expired — clearing token, redirecting to login");
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
       setPreferencesToken(null);
@@ -91,9 +94,38 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
     <QueryClientProvider client={queryClient}>
       <TentacleConfigContext.Provider value={configValue}>
         <JellyfinClientContext.Provider value={client}>
+          <DirectStreamingSync storage={storage} />
           {children}
         </JellyfinClientContext.Provider>
       </TentacleConfigContext.Provider>
     </QueryClientProvider>
   );
+}
+
+/** Sync direct streaming config — same logic as web DirectStreamingSync */
+function DirectStreamingSync({ storage }: { storage: StorageAdapter }) {
+  const client = useJellyfinClient();
+  const qc = useQueryClient();
+  const token = storage.getItem("tentacle_token");
+  const { data } = useStreamingConfig(token);
+
+  useEffect(() => {
+    if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
+      client.setDirectStreaming({
+        enabled: true,
+        mediaBaseUrl: data.mediaBaseUrl,
+        jellyfinToken: data.jellyfinToken,
+      });
+    } else {
+      client.setDirectStreaming(null);
+    }
+  }, [client, data]);
+
+  useEffect(() => {
+    client.setOnDirectStreamingFail(() => {
+      qc.invalidateQueries({ queryKey: [STREAMING_CONFIG_QUERY_KEY] });
+    });
+  }, [client, qc]);
+
+  return null;
 }
