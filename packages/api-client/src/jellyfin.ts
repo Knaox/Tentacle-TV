@@ -31,6 +31,8 @@ export class JellyfinClient {
   private directStreamingErrors = 0;
   private directStreamingFailCallback?: () => void;
   private static readonly DS_ERROR_THRESHOLD = 3;
+  /** When true, send credentials: "include" (httpOnly cookies) instead of token headers. */
+  useCredentials = false;
   constructor(
     baseUrl: string,
     storage: StorageAdapter,
@@ -122,6 +124,7 @@ export class JellyfinClient {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers,
+      credentials: this.useCredentials ? "include" : undefined,
     });
 
     if (!response.ok) {
@@ -167,9 +170,12 @@ export class JellyfinClient {
     /** Bitmap subtitle burn-in index (PGS/DVDSUB). */
     subtitleStreamIndex?: number;
   }): string {
-    const p: Record<string, string> = {
-      api_key: this.accessToken ?? "",
-    };
+    const p: Record<string, string> = {};
+    // When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
+    // Mobile/desktop still need api_key in the URL for stream requests.
+    if (!this.useCredentials) {
+      p.api_key = this.accessToken ?? "";
+    }
     if (options?.mediaSourceId) p.MediaSourceId = options.mediaSourceId;
     if (options?.audioIndex != null) p.AudioStreamIndex = String(options.audioIndex);
     if (options?.startTimeTicks) p.StartTimeTicks = String(options.startTimeTicks);
@@ -235,7 +241,9 @@ export class JellyfinClient {
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number, format = "vtt"): string {
     // Always proxy — <track> elements enforce CORS; cross-origin tracks are blocked
     // (and on browsers with crossOrigin="anonymous", they corrupt the <video> element).
-    return `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}?api_key=${this.accessToken}`;
+    const base = `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}`;
+    // When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
+    return this.useCredentials ? base : `${base}?api_key=${this.accessToken}`;
   }
 
   /** POST /Items/{id}/PlaybackInfo — server-driven stream selection.
@@ -251,6 +259,8 @@ export class JellyfinClient {
       subtitleStreamIndex?: number;
       startTimeTicks?: number;
       maxStreamingBitrate?: number;
+      maxWidth?: number;
+      maxHeight?: number;
     }
   ): Promise<PlaybackInfoResponse> {
     const q: Record<string, string> = {
@@ -263,6 +273,8 @@ export class JellyfinClient {
     if (options.mediaSourceId) q.MediaSourceId = options.mediaSourceId;
     if (options.audioStreamIndex != null) q.AudioStreamIndex = String(options.audioStreamIndex);
     if (options.subtitleStreamIndex != null) q.SubtitleStreamIndex = String(options.subtitleStreamIndex);
+    if (options.maxWidth) q.MaxWidth = String(options.maxWidth);
+    if (options.maxHeight) q.MaxHeight = String(options.maxHeight);
 
     const path = `/Items/${itemId}/PlaybackInfo?${buildQuery(q)}`;
     const body = JSON.stringify({ DeviceProfile: options.deviceProfile });
