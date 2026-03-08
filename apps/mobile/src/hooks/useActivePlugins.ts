@@ -70,7 +70,7 @@ export function useActivePlugins() {
       });
       if (!res.ok) return [];
       const all: ActivePlugin[] = await res.json();
-      return all.filter((p) => p.hasBundle && p.configEnabled !== false);
+      return all.filter((p) => p.hasBundle && p.configEnabled === true);
     },
     enabled: !!serverUrl && !!token,
     staleTime: 5 * 60_000,

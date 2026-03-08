@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth, useAppConfig } from "@tentacle-tv/api-client";
+import { useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { GlassCard } from "@tentacle-tv/ui";
 import { isTauriApp, backendUrl } from "../main";
 
@@ -12,6 +13,7 @@ export function Login() {
   const { t } = useTranslation("auth");
   const { login } = useAuth();
   const { data: config } = useAppConfig();
+  const refreshPlugins = useRefreshPlugins();
   const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,6 +37,7 @@ export function Login() {
         localStorage.setItem("tentacle_token", data.AccessToken);
       }
       localStorage.setItem("tentacle_user", JSON.stringify(data.user));
+      refreshPlugins();
       navigate("/");
     } catch {
       setDemoLoading(false);

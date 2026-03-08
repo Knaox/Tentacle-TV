@@ -8,6 +8,7 @@ export interface ActivePluginMeta {
   name: string;
   version: string;
   hasBundle: boolean;
+  configEnabled?: boolean;
   navItems: Array<{
     label?: string | Record<string, string>;
     labels?: Record<string, string>;
@@ -29,6 +30,8 @@ export interface PluginContextValue {
   loading: boolean;
   /** Active plugins metadata from backend (for iframe-based rendering) */
   activePluginsMeta: ActivePluginMeta[];
+  /** Re-fetch active plugins from backend (e.g. after login) */
+  refreshPlugins: () => void;
 }
 
 export const PluginContext = createContext<PluginContextValue>({
@@ -37,4 +40,5 @@ export const PluginContext = createContext<PluginContextValue>({
   isPluginEnabled: () => false,
   loading: true,
   activePluginsMeta: [],
+  refreshPlugins: () => {},
 });

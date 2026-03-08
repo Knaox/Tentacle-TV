@@ -7,6 +7,15 @@ export interface InstalledPlugin {
   enabled: boolean;
   config: Record<string, unknown>;
   installedAt: string;
+  hasBundle?: boolean;
+  navItems?: Array<{
+    path: string;
+    icon: string;
+    platforms: string[];
+    admin?: boolean;
+    labels?: Record<string, string>;
+    label?: string | Record<string, string>;
+  }>;
 }
 
 export interface MarketplacePlugin {

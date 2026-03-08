@@ -37,4 +37,5 @@ export {
   usePluginAdminRoutes,
   usePluginAdminNavItems,
   useActivePluginsMeta,
+  useRefreshPlugins,
 } from "./hooks";

@@ -1,5 +1,6 @@
-import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore, useMemo } from "react";
 import type { ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TentaclePlugin } from "./types";
 import { PluginContext } from "./context";
 import type { ActivePluginMeta } from "./context";
@@ -10,29 +11,44 @@ interface PluginProviderProps {
   backendUrl?: string;
 }
 
+const PLUGINS_ACTIVE_KEY = ["plugins-api", "active-meta"];
+
 export function PluginProvider({ children, backendUrl = "" }: PluginProviderProps) {
   const plugins = useSyncExternalStore(subscribeRegistry, getRegistrySnapshot);
   const [enabledPlugins, setEnabledPlugins] = useState<TentaclePlugin[]>([]);
-  const [activePluginsMeta, setActivePluginsMeta] = useState<ActivePluginMeta[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Load active plugin metadata from backend (bundles loaded by PluginIframe)
-  useEffect(() => {
-    const hasAuth = typeof localStorage !== "undefined"
-      && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
-    if (!hasAuth) { setLoading(false); return; }
+  const base = backendUrl || "";
 
-    const base = backendUrl || "";
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null;
-    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-    fetch(`${base}/api/plugins/active`, { headers, credentials: token ? undefined : "include" })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((active: ActivePluginMeta[]) => {
-        setActivePluginsMeta(active);
-        setLoading(false);
-      })
-      .catch(() => { setLoading(false); });
-  }, [backendUrl]);
+  // Fetch active plugin metadata from backend via React Query.
+  // Automatically refetched when queryClient.invalidateQueries() is called (e.g. on login).
+  const { data: activePluginsMeta = [], isLoading: loading } = useQuery({
+    queryKey: PLUGINS_ACTIVE_KEY,
+    queryFn: async (): Promise<ActivePluginMeta[]> => {
+      const hasAuth = typeof localStorage !== "undefined"
+        && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
+      if (!hasAuth) return [];
+
+      const token = typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null;
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      try {
+        const res = await fetch(`${base}/api/plugins/active`, {
+          headers,
+          credentials: token ? undefined : "include",
+        });
+        if (!res.ok) return [];
+        return await res.json();
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  // Manual refresh trigger (e.g. after plugin config change)
+  const refreshPlugins = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: PLUGINS_ACTIVE_KEY });
+  }, [queryClient]);
 
   // Check which registered plugins are configured (for mobile/desktop inline mode)
   useEffect(() => {
@@ -70,7 +86,8 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
     isPluginEnabled: (id: string) => enabledPlugins.some((p) => p.id === id),
     loading,
     activePluginsMeta,
-  }), [plugins, enabledPlugins, loading, activePluginsMeta]);
+    refreshPlugins,
+  }), [plugins, enabledPlugins, loading, activePluginsMeta, refreshPlugins]);
 
   return (
     <PluginContext.Provider value={value}>

@@ -127,11 +127,15 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
           if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
         } catch { /* ignore malformed manifest */ }
       }
+      const configEnabled = (p.config as Record<string, unknown>)?.enabled === true;
       return {
         id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
         hasBundle: existsSync(resolve(pluginDir, "dist")),
-        navItems,
-        configEnabled: (p.config as Record<string, unknown>)?.enabled,
+        // Only expose regular navItems when plugin is configured; admin navItems always visible
+        navItems: configEnabled
+          ? navItems
+          : navItems.filter((n: any) => n.admin),
+        configEnabled,
       };
     });
   });
@@ -247,7 +251,22 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
     // ── Installed plugins ──
 
-    admin.get("/", async () => getInstalled());
+    admin.get("/", async () => getInstalled().map((p) => {
+      const pluginDir = resolve(DATA_DIR, p.pluginId);
+      let navItems: unknown[] = [];
+      const manifestPath = resolve(pluginDir, "plugin.json");
+      if (isValidPluginId(p.pluginId) && existsSync(manifestPath)) {
+        try {
+          const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+          if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
+        } catch { /* ignore */ }
+      }
+      return {
+        ...p,
+        hasBundle: isValidPluginId(p.pluginId) && existsSync(resolve(pluginDir, "dist")),
+        navItems,
+      };
+    }));
 
     admin.post("/install", async (request, reply) => {
       try {

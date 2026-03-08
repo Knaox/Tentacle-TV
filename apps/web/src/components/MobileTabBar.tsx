@@ -28,6 +28,7 @@ export function MobileTabBar() {
 
     // Plugin nav items — from backend active plugins metadata
     for (const plugin of activePluginsMeta) {
+      if (plugin.configEnabled !== true) continue;
       for (const nav of plugin.navItems || []) {
         if (nav.admin || !nav.platforms?.includes("web")) continue;
         list.push({

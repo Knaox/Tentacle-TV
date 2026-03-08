@@ -7,7 +7,7 @@ import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
@@ -108,7 +108,13 @@ export function App() {
     isTauriApp && !localStorage.getItem("tentacle_server_url")
   );
   const activePluginsMeta = useActivePluginsMeta();
+  const refreshPlugins = useRefreshPlugins();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
+
+  // Re-fetch plugins after login (backendUrl doesn't change so the effect won't re-run otherwise)
+  useEffect(() => {
+    if (authed) refreshPlugins();
+  }, [authed, refreshPlugins]);
 
   // Check backend setup status on mount (web deployment only)
   useEffect(() => {
@@ -204,7 +210,9 @@ export function App() {
             <Route path="credits" element={<Credits />} />
 
             {/* Dynamic plugin routes (sandboxed iframes) */}
-            {activePluginsMeta.flatMap((plugin) =>
+            {activePluginsMeta
+              .filter((plugin) => plugin.configEnabled === true)
+              .flatMap((plugin) =>
               (plugin.navItems || [])
                 .filter((nav) => !nav.admin && nav.platforms?.includes("web"))
                 .map((nav) => (

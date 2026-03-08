@@ -63,3 +63,9 @@ export function useActivePluginsMeta() {
   const { activePluginsMeta } = useContext(PluginContext);
   return activePluginsMeta;
 }
+
+/** Re-fetch active plugins from backend (e.g. after login). */
+export function useRefreshPlugins() {
+  const { refreshPlugins } = useContext(PluginContext);
+  return refreshPlugins;
+}
