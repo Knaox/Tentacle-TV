@@ -87,10 +87,10 @@ services:
     container_name: tentacle-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?generate with: openssl rand -base64 32}
-      MYSQL_DATABASE: ${DB_NAME:-tentacle_db}
-      MYSQL_USER: ${DB_USER:-tentacle_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?generate with: openssl rand -base64 32}
+      MYSQL_ROOT_PASSWORD: CHANGE_ME_ROOT_PASSWORD
+      MYSQL_DATABASE: tentacle_db
+      MYSQL_USER: tentacle_user
+      MYSQL_PASSWORD: CHANGE_ME_DB_PASSWORD
     volumes:
       - tentacle-db-data:/var/lib/mysql
     healthcheck:
@@ -107,8 +107,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: mysql://${DB_USER:-tentacle_user}:${MYSQL_PASSWORD}@db:3306/${DB_NAME:-tentacle_db}
-      JWT_SECRET: ${JWT_SECRET:?generate with: openssl rand -base64 64}
+      DATABASE_URL: mysql://tentacle_user:CHANGE_ME_DB_PASSWORD@db:3306/tentacle_db
+      JWT_SECRET: CHANGE_ME_LONG_RANDOM_SECRET
       PORT: "3000"
       HOST: "0.0.0.0"
     volumes:
@@ -121,13 +121,7 @@ volumes:
   tentacle-data:
 ```
 
-Create a `.env` file with your secrets:
-
-```bash
-MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)
-MYSQL_PASSWORD=$(openssl rand -base64 32)
-JWT_SECRET=$(openssl rand -base64 64)
-```
+> **Important:** Replace `CHANGE_ME_ROOT_PASSWORD`, `CHANGE_ME_DB_PASSWORD` and `CHANGE_ME_LONG_RANDOM_SECRET` with secure values. The password in `MYSQL_PASSWORD` must match the one in `DATABASE_URL`. You can generate secrets with `openssl rand -base64 32`.
 
 ```bash
 docker compose up -d
@@ -144,7 +138,7 @@ services:
     container_name: tentacle-tv
     restart: unless-stopped
     environment:
-      JWT_SECRET: ${JWT_SECRET:?generate with: openssl rand -base64 64}
+      JWT_SECRET: CHANGE_ME_LONG_RANDOM_SECRET
       PORT: "3000"
       HOST: "0.0.0.0"
     volumes:
