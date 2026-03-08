@@ -74,9 +74,11 @@
 
 ## Quick Start (Docker)
 
-The fastest way to get Tentacle TV running. You only need Docker.
+The fastest way to get Tentacle TV running. You only need Docker. Two deployment options are available.
 
-### 1. Create a `docker-compose.yml`
+### Option A — All-in-one (recommended)
+
+Includes MariaDB and Tentacle TV in a single stack. Use the provided [`docker-compose.yml`](docker-compose.yml):
 
 ```yaml
 services:
@@ -85,10 +87,10 @@ services:
     container_name: tentacle-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: change_me_root_password
-      MYSQL_DATABASE: tentacle_db
-      MYSQL_USER: tentacle_user
-      MYSQL_PASSWORD: change_me_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?generate with: openssl rand -base64 32}
+      MYSQL_DATABASE: ${DB_NAME:-tentacle_db}
+      MYSQL_USER: ${DB_USER:-tentacle_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?generate with: openssl rand -base64 32}
     volumes:
       - tentacle-db-data:/var/lib/mysql
     healthcheck:
@@ -105,30 +107,66 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: mysql://tentacle_user:change_me_password@db:3306/tentacle_db
-      JWT_SECRET: change_me_to_a_long_random_secret
+      DATABASE_URL: mysql://${DB_USER:-tentacle_user}:${MYSQL_PASSWORD}@db:3306/${DB_NAME:-tentacle_db}
+      JWT_SECRET: ${JWT_SECRET:?generate with: openssl rand -base64 64}
       PORT: "3000"
       HOST: "0.0.0.0"
+    volumes:
+      - tentacle-data:/app/apps/backend/data
     ports:
-      - "80:3000"
+      - "3000:3000"
 
 volumes:
   tentacle-db-data:
+  tentacle-data:
 ```
 
-> **Important:** Replace `change_me_root_password`, `change_me_password`, and `change_me_to_a_long_random_secret` with your own secure values. Make sure the password in `MYSQL_PASSWORD` matches the one in `DATABASE_URL`.
+Create a `.env` file with your secrets:
 
-### 2. Start
+```bash
+MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)
+MYSQL_PASSWORD=$(openssl rand -base64 32)
+JWT_SECRET=$(openssl rand -base64 64)
+```
 
 ```bash
 docker compose up -d
 ```
 
-### 3. Configure
+### Option B — External database
 
-Open [http://localhost](http://localhost) in your browser. The setup wizard will guide you through:
+If you already have a MariaDB/MySQL instance (NAS, dedicated server, cloud), use [`docker-compose.external.yml`](docker-compose.external.yml):
 
-1. **Database** — Already configured via Docker Compose (auto-detected)
+```yaml
+services:
+  web:
+    image: ghcr.io/knaox/tentacle-tv:latest
+    container_name: tentacle-tv
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?generate with: openssl rand -base64 64}
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    volumes:
+      - tentacle-data:/app/apps/backend/data
+    ports:
+      - "3000:3000"
+
+volumes:
+  tentacle-data:
+```
+
+```bash
+docker compose -f docker-compose.external.yml up -d
+```
+
+The database connection is configured through the setup wizard on first launch and persisted in the `tentacle-data` volume.
+
+### Configure
+
+Open `http://<your-server>:3000` in your browser. The setup wizard will guide you through:
+
+1. **Database** — Auto-detected (Option A) or enter your connection details (Option B)
 2. **Jellyfin** — Enter your Jellyfin server URL and verify the connection
 3. **Admin account** — Sign in with your Jellyfin admin credentials
 
