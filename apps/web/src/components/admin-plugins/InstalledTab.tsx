@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { cls } from "./types";
 import { useInstalledPlugins, useTogglePlugin, useUninstallPlugin, useUpdatePlugin } from "./hooks";
 
@@ -9,22 +8,20 @@ export function InstalledTab() {
   const { t } = useTranslation("adminPlugins");
   const navigate = useNavigate();
   const { data: plugins, isLoading } = useInstalledPlugins();
-  const activePlugins = useActivePluginsMeta();
   const pluginConfigRoutes = useMemo(() => {
     const map: Record<string, string> = {};
-    for (const plugin of activePlugins) {
-      const adminNav = (plugin.navItems || []).find(
-        (nav: Record<string, unknown>) => nav.admin && (nav.platforms as string[])?.includes("web")
+    for (const p of plugins || []) {
+      const adminNav = (p.navItems || []).find(
+        (nav) => nav.admin && nav.platforms?.includes("web")
       );
       if (adminNav) {
-        map[plugin.pluginId] = (adminNav as Record<string, unknown>).path as string;
-      } else if (plugin.hasBundle) {
-        // Fallback: convention-based admin route
-        map[plugin.pluginId] = `/admin/plugins/${plugin.pluginId}`;
+        map[p.pluginId] = adminNav.path;
+      } else if (p.hasBundle) {
+        map[p.pluginId] = `/admin/plugins/${p.pluginId}`;
       }
     }
     return map;
-  }, [activePlugins]);
+  }, [plugins]);
   const toggleMut = useTogglePlugin();
   const uninstallMut = useUninstallPlugin();
   const updateMut = useUpdatePlugin();
