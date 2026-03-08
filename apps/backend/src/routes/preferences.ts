@@ -278,7 +278,16 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     let audioIndex = body.audioTracks.find((t) => t.isDefault)?.index ?? body.audioTracks[0]?.index ?? null;
     if (pref.audioLang) {
       const [baseLang, variant] = parseVariant(pref.audioLang);
-      const langCandidates = body.audioTracks.filter((t) => langMatches(t.language, baseLang));
+      // Match by language code first, then by title (some servers have empty Language field)
+      const langGroup = ALIAS_MAP.get(baseLang.toLowerCase());
+      const allAliases = langGroup ? [...langGroup] : [baseLang.toLowerCase()];
+      let langCandidates = body.audioTracks.filter((t) => langMatches(t.language, baseLang));
+      if (langCandidates.length === 0) {
+        // Fallback: match language aliases in track title
+        langCandidates = body.audioTracks.filter((t) =>
+          t.title && allAliases.some((alias) => t.title!.toLowerCase().includes(alias))
+        );
+      }
       app.log.info({ baseLang, variant, prefAudioLang: pref.audioLang,
         candidates: langCandidates.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
       }, "[resolve] audio matching");
@@ -298,7 +307,14 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     if (pref.subtitleMode === "none") {
       subtitleIndex = -1;
     } else if (pref.subtitleLang) {
-      const subs = body.subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
+      const subLangGroup = ALIAS_MAP.get(pref.subtitleLang.toLowerCase());
+      const subAliases = subLangGroup ? [...subLangGroup] : [pref.subtitleLang.toLowerCase()];
+      let subs = body.subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
+      if (subs.length === 0) {
+        subs = body.subtitleTracks.filter((t) =>
+          t.title && subAliases.some((alias) => t.title!.toLowerCase().includes(alias))
+        );
+      }
       const nonForced = subs.filter((t) => !t.isForced);
       const forced = subs.filter((t) => !!t.isForced);
 
