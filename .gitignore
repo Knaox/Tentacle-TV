@@ -9,6 +9,7 @@ build/
 Builds/
 scripts/
 !apps/backend/scripts/
+!apps/desktop/scripts/
 .next/
 .expo/
 *.tsbuildinfo
