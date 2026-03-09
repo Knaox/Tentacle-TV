@@ -21,6 +21,16 @@ export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+/** Detect macOS — used to route to native HLS player (AVFoundation) instead of MPV.
+ *  Uses navigator.platform with userAgent fallback (platform is deprecated). */
+export function isMacOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  // Primary: navigator.platform (still reliable in WKWebView as of 2025)
+  if (navigator.platform?.startsWith("Mac")) return true;
+  // Fallback: userAgent check (in case platform is empty or changed in future WebKit)
+  return /Macintosh|Mac OS X/i.test(navigator.userAgent);
+}
+
 export interface PlayOptions {
   url: string;
   startPosition?: number;
@@ -29,12 +39,18 @@ export interface PlayOptions {
 }
 
 // Lazy-loaded plugin API — only available in Tauri context
+// On macOS: uses our custom mpv render API adapter
+// On Windows/Linux: uses tauri-plugin-libmpv-api
 type PluginApi = typeof import("tauri-plugin-libmpv-api");
 let api: PluginApi | null = null;
 
 const loadApi = async (): Promise<boolean> => {
   try {
-    api = await import("tauri-plugin-libmpv-api");
+    if (isMacOS()) {
+      api = await import("../lib/mpvMacosApi") as unknown as PluginApi;
+    } else {
+      api = await import("tauri-plugin-libmpv-api");
+    }
     return true;
   } catch {
     return false;
@@ -79,12 +95,15 @@ export function useDesktopPlayer() {
       if (!loaded || cancelled || !api) return;
 
       try {
+        const macOS = isMacOS();
         await api.init({
           initialOptions: {
             vo: "gpu-next",
             hwdec: "auto-safe",
             "keep-open": "yes",
-            "force-window": "yes",
+            // Sur macOS, force-window entre en conflit avec le wid (NSView)
+            // injecté par le plugin — MPV crée alors une fenêtre séparée.
+            ...(!macOS && { "force-window": "yes" }),
             "hr-seek": "yes",
             cache: "yes",
             "demuxer-max-bytes": "150MiB",

@@ -24,9 +24,11 @@ interface VideoPlayerProps {
   currentQuality: number | null;
   isDirectPlay?: boolean;
   streamOffset?: number;
+  /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */
+  useNativeHls?: boolean;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  onQualityChange: (bitrate: number | null) => void;
+  onQualityChange?: (bitrate: number | null) => void;
   onProgress?: (seconds: number, paused: boolean) => void;
   onStarted?: () => void;
   onSeekRequest?: (seconds: number) => void;
@@ -57,10 +59,7 @@ const BUFFER_GATE_TIMEOUT = 8_000;
 
 function attemptPlay(v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void) {
   v.muted = false;
-  v.play().then(() => {
-    console.debug(DBG, "play OK (unmuted)");
-  }).catch(() => {
-    console.debug(DBG, "unmuted play rejected, retrying muted");
+  v.play().catch(() => {
     v.muted = true;
     v.play().then(onPolicyMuted).catch((err) => {
       console.error(DBG, "muted play also failed:", err);
@@ -83,7 +82,7 @@ export function VideoPlayer({
   src, itemId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
   currentAudio, currentSubtitle, currentQuality,
-  isDirectPlay = true, streamOffset = 0,
+  isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted, onSeekRequest, onSeekComplete,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
@@ -192,11 +191,8 @@ export function VideoPlayer({
     // Convert movie position to video-element PTS time
     const ptsTarget = clamped + ptsOffset;
 
-    console.debug(DBG, "seek", { target: targetSeconds, clamped, ptsTarget, ptsOffset, isDirectPlay, streamOffset, isHlsStream });
-
     // --- LEVEL 1: Target in HTML5 buffer → instant seek ---
     if (isTimeInBuffered(v, ptsTarget)) {
-      console.debug(DBG, "seek level 1: in buffer (instant)");
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
       return;
@@ -216,7 +212,6 @@ export function VideoPlayer({
     // If ffmpeg has advanced past this position (readrate=10x), the segment
     // already exists on disk and hls.js fetches it quickly.
     if (isHlsStream) {
-      console.debug(DBG, "seek level 2: HLS, trying currentTime with stall watcher");
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
 
@@ -228,8 +223,6 @@ export function VideoPlayer({
         const el = videoRef.current;
         if (!el) return;
         if (Math.abs(el.currentTime - ptsTarget) > 2) {
-          console.debug(DBG, "seek level 3: HLS stall detected, rebuilding URL",
-            { currentTime: el.currentTime, ptsTarget, clamped });
           seekTargetRef.current = clamped;
           onSeekRequest?.(clamped);
         }
@@ -239,7 +232,6 @@ export function VideoPlayer({
 
     // --- Progressive transcode: always full restart (level 3) ---
     // No in-stream seek support — must rebuild URL with new StartTimeTicks.
-    console.debug(DBG, "seek level 3: progressive transcode, rebuilding URL", { clamped });
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
   }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
@@ -285,7 +277,6 @@ export function VideoPlayer({
         ? lastKnownPositionRef.current
         : (startPositionSeconds ?? 0);
     seekTargetRef.current = null;
-    console.debug(DBG, "src changed", { isSourceChange, isHlsUrl, isDirectPlay, seekTo, streamOffset });
 
     const wasHls = !!hlsRef.current;
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
@@ -311,7 +302,6 @@ export function VideoPlayer({
     const onReady = () => {
       clearTimeout(failsafe);
       const ptsOffset = containerPtsOffsetRef.current;
-      console.debug(DBG, "ready", { seekTo, isHlsUrl, isSourceChange, isDirectPlay, streamOffset, ptsOffset, duration: v.duration });
       // jellyfin-web pattern: explicit seek for frame-accurate positioning.
       // For HLS initial load: startPosition is segment-boundary accurate — good enough,
       // skip explicit seek so play() fires faster (reduces audio delay).
@@ -324,9 +314,11 @@ export function VideoPlayer({
         const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
         if (isProgressiveTranscode && streamOffset > 0) {
           // Progressive with CopyTimestamps: stream naturally starts at correct PTS
-          console.debug(DBG, "skip explicit seek — progressive stream starts at correct PTS", { seekTo, streamOffset });
-        } else if (!isHlsUrl || isSourceChange) {
-          // Add container PTS offset to convert movie position → PTS
+        } else if (!isHlsUrl || isSourceChange || useNativeHls) {
+          // Add container PTS offset to convert movie position → PTS.
+          // Native HLS (WKWebView): manifest starts at seekTo via StartTimeTicks
+          // but explicit seek ensures frame-accurate positioning (segment boundaries
+          // may not align exactly with the resume point).
           v.currentTime = seekTo + ptsOffset;
         }
       }
@@ -341,7 +333,7 @@ export function VideoPlayer({
       });
     };
 
-    if (isHlsUrl && Hls.isSupported()) {
+    if (isHlsUrl && !useNativeHls && Hls.isSupported()) {
       // hls.js: works on Chrome/Brave/Firefox/Edge (MSE) AND Safari 17.1+ (ManagedMediaSource).
       // Since hls.js v1.5, Hls.isSupported() returns true on Safari 17.1+ via ManagedMediaSource
       // → full buffer control, seeking, quality selection — same as Chrome.
@@ -379,9 +371,6 @@ export function VideoPlayer({
       if (isSourceChange) {
         hls.on(Hls.Events.MANIFEST_PARSED, onReady);
       } else {
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.debug(DBG, "HLS manifest parsed, waiting for canplay");
-        });
         v.addEventListener("canplay", onReady, { once: true });
       }
       hls.on(Hls.Events.ERROR, (_, data) => {
@@ -395,8 +384,7 @@ export function VideoPlayer({
       hls.loadSource(src);
       hls.attachMedia(v);
     } else if (isHlsUrl && HAS_NATIVE_HLS) {
-      // Older Safari (< 17.1, no ManagedMediaSource): native HLS fallback.
-      console.debug(DBG, "native HLS fallback (older Safari)", { seekTo, isSourceChange });
+      // Native HLS: WKWebView/AVFoundation (macOS Tauri) or older Safari (< 17.1).
       v.src = src;
       if (isSourceChange) v.load();
       v.addEventListener("canplay", onReady, { once: true });
@@ -417,7 +405,6 @@ export function VideoPlayer({
         v.addEventListener("canplaythrough", onReady, { once: true });
         bufferGateTimer = setTimeout(() => {
           v.removeEventListener("canplaythrough", onReady);
-          console.debug(DBG, "canplaythrough timeout — playing on best-effort");
           onReady();
         }, BUFFER_GATE_TIMEOUT);
         // readyState 4 = HAVE_ENOUGH_DATA = canplaythrough already fired
@@ -487,7 +474,6 @@ export function VideoPlayer({
     for (let i = 0; i < elemTracks.length; i++) {
       elemTracks[i].enabled = (i === targetPos);
     }
-    console.debug(DBG, "native audio switch", { targetPos, currentAudio, total: elemTracks.length });
   }, [currentAudio, isDirectPlay, audioTracks]);
 
   useEffect(() => {
@@ -620,9 +606,6 @@ export function VideoPlayer({
             if (detectedOffset > 5) {
               containerPtsOffsetRef.current = Math.round(detectedOffset);
               effectiveOffsetRef.current = -containerPtsOffsetRef.current;
-              console.debug(DBG, "container PTS offset detected", { t, expectedStart, offset: containerPtsOffsetRef.current });
-            } else {
-              console.debug(DBG, "no PTS offset", { t, expectedStart });
             }
           }
           const absoluteTime = effectiveOffsetRef.current + t;
@@ -660,9 +643,13 @@ export function VideoPlayer({
         onSeeked={() => { clearTimeout(seekStallTimer.current); }}
         onPlaying={() => { clearTimeout(waitingTimer.current); clearTimeout(seekStallTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
         onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
-        onError={(e) => { console.error(DBG, "video error", e.currentTarget.error?.message); }}
+        onStalled={() => { console.warn(DBG, "video stalled", { src: src.slice(0, 120), readyState: videoRef.current?.readyState, networkState: videoRef.current?.networkState }); }}
+        onError={(e) => {
+          const err = e.currentTarget.error;
+          console.error(DBG, "video error", { code: err?.code, message: err?.message, src: src.slice(0, 120), networkState: e.currentTarget.networkState });
+        }}
         onEnded={() => { if (hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode) navigate(`/media/${itemId}`, { replace: true }); }}
-        crossOrigin="anonymous"
+        crossOrigin={useNativeHls ? undefined : "anonymous"}
       >
         {subtitleTracks.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
@@ -724,7 +711,7 @@ export function VideoPlayer({
           onTogglePlay={togglePlay} onSeek={handleSeek}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}
           onToggleFullscreen={toggleFullscreen} onBack={() => navigate(-1)}
-          onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={onQualityChange}
+          onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
         />
       </div>

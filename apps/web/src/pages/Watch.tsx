@@ -3,5 +3,8 @@ import { WatchWeb } from "./WatchWeb";
 import { WatchDesktop } from "./WatchDesktop";
 
 export function Watch() {
-  return isTauri() ? <WatchDesktop /> : <WatchWeb />;
+  // Tauri (all platforms) → MPV desktop player
+  // Navigateur → player web avec hls.js
+  if (isTauri()) return <WatchDesktop />;
+  return <WatchWeb />;
 }
