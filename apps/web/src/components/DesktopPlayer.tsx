@@ -271,11 +271,12 @@ export function DesktopPlayer({
     // Show loading overlay during source changes (quality/audio switch)
     if (isSourceChange) setSourceChanging(true);
 
-    // Use lastAbsolutePosRef for source changes — survives direct play ↔ transcode transitions.
-    // state.position is relative to the current stream, which is wrong when switching modes.
-    const startPos = isSourceChange
-      ? lastAbsolutePosRef.current
-      : (isDirectPlay ? startPositionSeconds : undefined);
+    // For direct play: mpv must seek to the correct position.
+    // For transcode (HLS): position is baked into the URL via StartTimeTicks —
+    // do NOT pass startPosition to mpv or it will double-seek and freeze.
+    const startPos = isDirectPlay
+      ? (isSourceChange ? lastAbsolutePosRef.current : startPositionSeconds)
+      : undefined;
 
     console.debug(DBG, "play", { src: src.substring(0, 80), startPos, absolutePos: lastAbsolutePosRef.current,
       isDirectPlay, isSourceChange });
