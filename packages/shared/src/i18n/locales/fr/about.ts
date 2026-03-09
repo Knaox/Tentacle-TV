@@ -6,7 +6,7 @@ export default {
   features: "Fonctionnalités",
   featurePlayer: "Lecteur vidéo intégré avec sélection pistes audio/sous-titres",
   featureResume: "Reprise automatique de la lecture",
-  featureRequests: "Système de demandes de contenus",
+  featureRequests: "Système de plugins",
   featureDesktop: "Mode bureau natif avec lecteur hautes performances",
   featureAdaptive: "Interface adaptative (Desktop et Web)",
   featureNotifications: "Notifications et système de support intégrés",
