@@ -238,7 +238,7 @@ export class JellyfinClient {
   private resolveHls(itemId: string, p: Record<string, string>): string {
     p.BreakOnNonKeyFrames = "true";
     p.RequireNonAnamorphic = "false";
-    p.EnableSubtitlesInManifest = "false";
+    p.EnableSubtitlesInManifest = "true";
     p.SegmentContainer = "ts";
     p.MinSegments = "2";
     return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);

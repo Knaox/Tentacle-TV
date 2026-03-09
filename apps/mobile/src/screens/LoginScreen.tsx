@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
+import { TentacleLogo } from "../components/TentacleLogo";
+import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
@@ -19,10 +21,50 @@ export function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
   const router = useRouter();
+
+  // Auto-reconnect: if we have a stored token (session expired in-memory),
+  // try to validate it before showing the login form.
+  useEffect(() => {
+    if (!isSessionExpired()) return;
+    const storedToken = storage.getItem("tentacle_token");
+    if (!storedToken) return;
+
+    let cancelled = false;
+    setReconnecting(true);
+
+    const serverUrl = storage.getItem("tentacle_server_url");
+    if (!serverUrl) { setReconnecting(false); return; }
+
+    fetch(`${serverUrl}/api/jellyfin/Users/Me`, {
+      headers: { "X-Emby-Token": storedToken },
+    })
+      .then((res) => {
+        if (cancelled) return;
+        if (res.ok) {
+          // Token still valid — restore session
+          client.setAccessToken(storedToken);
+          setSessionExpired(false);
+          router.replace("/(tabs)");
+        } else {
+          // Token truly expired — clear from storage
+          storage.removeItem("tentacle_token");
+          storage.removeItem("tentacle_user");
+          setSessionExpired(false);
+          setReconnecting(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setReconnecting(false);
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async () => {
     if (!username || !password) return;
@@ -53,6 +95,7 @@ export function LoginScreen() {
       client.setAccessToken(data.AccessToken);
       storage.setItem("tentacle_token", data.AccessToken);
       storage.setItem("tentacle_user", JSON.stringify(data.User));
+      setSessionExpired(false);
 
       router.replace("/(tabs)");
     } catch (err) {
@@ -61,6 +104,18 @@ export function LoginScreen() {
       setLoading(false);
     }
   };
+
+  if (reconnecting) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0a0a0f", justifyContent: "center", alignItems: "center" }}>
+        <TentacleLogo size={80} />
+        <ActivityIndicator color="#8b5cf6" style={{ marginTop: 24 }} size="large" />
+        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 12 }}>
+          {t("reconnecting")}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -73,6 +128,9 @@ export function LoginScreen() {
           backgroundColor: "#12121a", borderRadius: 16,
           borderWidth: 1, borderColor: "#1e1e2e",
         }}>
+          <View style={{ alignItems: "center", marginBottom: 8 }}>
+            <TentacleLogo size={80} />
+          </View>
           <Text style={{ color: "#8b5cf6", fontSize: 28, fontWeight: "800", textAlign: "center", marginBottom: 4 }}>
             Tentacle TV
           </Text>
@@ -87,6 +145,7 @@ export function LoginScreen() {
             placeholderTextColor="rgba(255,255,255,0.3)"
             autoCapitalize="none"
             autoCorrect={false}
+            accessibilityLabel={t("username")}
             style={inputStyle}
           />
           <TextInput
@@ -95,6 +154,7 @@ export function LoginScreen() {
             placeholder={t("password")}
             placeholderTextColor="rgba(255,255,255,0.3)"
             secureTextEntry
+            accessibilityLabel={t("password")}
             style={[inputStyle, { marginTop: 12 }]}
             onSubmitEditing={handleLogin}
           />
@@ -106,6 +166,8 @@ export function LoginScreen() {
           <Pressable
             onPress={handleLogin}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel={t("signIn")}
             style={{
               marginTop: 24, backgroundColor: "#8b5cf6", borderRadius: 10,
               paddingVertical: 14, alignItems: "center",
@@ -121,6 +183,8 @@ export function LoginScreen() {
 
           <Pressable
             onPress={() => router.replace("/server-setup")}
+            accessibilityRole="button"
+            accessibilityLabel={t("changeServer")}
             style={{ marginTop: 16, alignItems: "center", paddingVertical: 8 }}
           >
             <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{t("changeServer")}</Text>

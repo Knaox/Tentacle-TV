@@ -49,6 +49,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t("home"),
+          tabBarAccessibilityLabel: t("home"),
           tabBarIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />,
         }}
       />
@@ -58,6 +59,7 @@ export default function TabsLayout() {
         name="libraries"
         options={{
           title: t("library"),
+          tabBarAccessibilityLabel: t("library"),
           tabBarIcon: ({ color, size }) => <Feather name="film" size={size} color={color} />,
         }}
       />
@@ -67,6 +69,7 @@ export default function TabsLayout() {
         name="plugins"
         options={{
           title: first?.label ?? "Plugins",
+          tabBarAccessibilityLabel: first?.label ?? "Plugins",
           href: first ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Feather name={resolveIcon(first?.icon, "compass") as never} size={size} color={color} />
@@ -79,6 +82,7 @@ export default function TabsLayout() {
         name="plugin-extra"
         options={{
           title: second?.label ?? "Plugins",
+          tabBarAccessibilityLabel: second?.label ?? "Plugins",
           href: second ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Feather name={resolveIcon(second?.icon, "list") as never} size={size} color={color} />
@@ -91,6 +95,7 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: t("profile"),
+          tabBarAccessibilityLabel: t("profile"),
           tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
         }}
       />

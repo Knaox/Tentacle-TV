@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from "react";
-import { Pressable, Animated, type ViewStyle } from "react-native";
+import { Pressable, Animated, type ViewStyle, type AccessibilityRole } from "react-native";
 
 // expo-haptics may not be available in all Expo Go builds
 let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
@@ -15,9 +15,11 @@ interface Props {
   onLongPress?: () => void;
   style?: ViewStyle;
   scaleValue?: number;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityLabel?: string;
 }
 
-export function PressableCard({ children, onPress, onLongPress, style, scaleValue = 0.97 }: Props) {
+export function PressableCard({ children, onPress, onLongPress, style, scaleValue = 0.97, accessibilityRole, accessibilityLabel }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -40,7 +42,7 @@ export function PressableCard({ children, onPress, onLongPress, style, scaleValu
   };
 
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+    <Pressable onPress={onPress} onLongPress={onLongPress} onPressIn={handlePressIn} onPressOut={handlePressOut} accessibilityRole={accessibilityRole} accessibilityLabel={accessibilityLabel}>
       <Animated.View style={[{ transform: [{ scale }] }, style]}>
         {children}
       </Animated.View>

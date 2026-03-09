@@ -64,9 +64,20 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
         }}
       >
         {/* Language toggle */}
-        <View style={{ position: "absolute", top: insets.top + 12, right: 16, flexDirection: "row", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+        <View
+          style={{ position: "absolute", top: insets.top + 12, right: 16, flexDirection: "row", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Language"
+        >
           {(["fr", "en"] as const).map((lng) => (
-            <Pressable key={lng} onPress={() => switchLang(lng)} style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: i18n.language === lng ? "rgba(139,92,246,0.3)" : "transparent" }}>
+            <Pressable
+              key={lng}
+              onPress={() => switchLang(lng)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: i18n.language === lng }}
+              accessibilityLabel={lng === "fr" ? "Francais" : "English"}
+              style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: i18n.language === lng ? "rgba(139,92,246,0.3)" : "transparent" }}
+            >
               <Text style={{ fontSize: 12, fontWeight: "600", color: i18n.language === lng ? "#c4b5fd" : "rgba(255,255,255,0.4)" }}>{lng.toUpperCase()}</Text>
             </Pressable>
           ))}
@@ -117,6 +128,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
             autoCorrect={false}
             keyboardType="url"
             textContentType="URL"
+            accessibilityLabel={t("serverUrlLabel")}
             style={inputStyle}
             onSubmitEditing={handleConnect}
           />
@@ -140,6 +152,8 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
           <Pressable
             onPress={handleConnect}
             disabled={loading || !url.trim()}
+            accessibilityRole="button"
+            accessibilityLabel={t("signIn")}
             style={{
               marginTop: 24,
               backgroundColor: "#8b5cf6",

@@ -52,18 +52,19 @@ export function SearchScreen() {
             placeholderTextColor={colors.textDim}
             autoCapitalize="none"
             autoCorrect={false}
+            accessibilityLabel={t("searchMediaLong")}
             style={{
               flex: 1, paddingHorizontal: spacing.sm, paddingVertical: spacing.md,
               color: colors.textPrimary, ...typography.body,
             }}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery("")} hitSlop={8}>
+            <Pressable onPress={() => setQuery("")} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("clearSearch")}>
               <Feather name="x" size={16} color={colors.textMuted} />
             </Pressable>
           )}
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("close")}>
           <Feather name="x" size={22} color={colors.textSecondary} />
         </Pressable>
       </View>

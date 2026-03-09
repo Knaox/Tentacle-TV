@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar, Platform } from "react-native";
-import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType, type ISO639_1 } from "react-native-video";
+import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -13,6 +13,7 @@ import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 import { PlayerGestures } from "../components/player/PlayerGestures";
+import { SubtitleOverlay } from "../components/player/SubtitleOverlay";
 
 interface Props { itemId: string }
 
@@ -206,7 +207,7 @@ export function PlayerScreen({ itemId }: Props) {
           startPosition: pb.startPositionMs > 0 ? pb.startPositionMs : undefined,
           // Sideloaded VTT tracks — only for direct play (not HLS, crashes iOS AVPlayer)
           textTracks: pb.isDirectPlay && pb.textTracks.length > 0
-            ? pb.textTracks as { title: string; language: ISO639_1; type: typeof pb.textTracks[number]["type"]; uri: string }[]
+            ? pb.textTracks as any
             : undefined,
         }}
         style={{ flex: 1 }}
@@ -221,13 +222,10 @@ export function PlayerScreen({ itemId }: Props) {
           // Direct play: select sideloaded VTT track by index
           videoReady && pb.isDirectPlay && pb.textTrackSelectedIndex >= 0
             ? { type: SelectedTrackType.INDEX, value: pb.textTrackSelectedIndex }
-            // Transcode with subtitle selected: show HLS-embedded subtitle (index 0 in manifest)
-            : videoReady && !pb.isDirectPlay && pb.subtitleIndex >= 0
-              ? { type: SelectedTrackType.INDEX, value: 0 }
-              // No subtitle selected: disable
-              : videoReady
-                ? { type: SelectedTrackType.DISABLED }
-                : undefined
+            // Transcode: subtitles handled by custom SubtitleOverlay — disable native tracks
+            : videoReady
+              ? { type: SelectedTrackType.DISABLED }
+              : undefined
         }
         onLoad={handleLoad}
         onProgress={handleProgress}
@@ -240,6 +238,8 @@ export function PlayerScreen({ itemId }: Props) {
         allowsExternalPlayback={pb.textTracks.length === 0}
         enterPictureInPictureOnLeave
       />
+
+      <SubtitleOverlay vttUrl={pb.subtitleVttUrl} currentTime={currentTime} />
 
       {isBuffering && !hasEverPlayed.current && <PlayerLoadingView />}
 

@@ -12,4 +12,6 @@ export default {
   daysAgo: "il y a {{count}}j",
   ticketReplyTitle: "Réponse sur \"{{subject}}\"",
   ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
+  autoRetry: "Nouvelle tentative automatique pour « {{title}} » ({{count}}/{{max}})",
+  autoRetryFailed: "Échec définitif pour « {{title}} » après {{max}} tentatives",
 } as const;

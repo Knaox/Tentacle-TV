@@ -130,6 +130,63 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
+  /** DELETE /api/auth/account — Delete user account (Jellyfin + Tentacle DB). */
+  app.delete("/account", { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = (request as any).user as { userId: string; username: string; isAdmin: boolean };
+
+    // Prevent admin self-deletion
+    if (user.isAdmin) {
+      return reply.status(403).send({
+        message: "Les administrateurs ne peuvent pas supprimer leur propre compte",
+      });
+    }
+
+    const jellyfinUrl = getJellyfinUrl();
+    const apiKey = getJellyfinApiKey();
+
+    if (!jellyfinUrl || !apiKey) {
+      return reply.status(503).send({ message: "Jellyfin non configuré" });
+    }
+
+    // 1. Delete user from Jellyfin
+    try {
+      const res = await fetch(`${jellyfinUrl}/Users/${user.userId}`, {
+        method: "DELETE",
+        headers: { "X-Emby-Token": apiKey },
+      });
+      if (!res.ok && res.status !== 404) {
+        throw new Error(`Jellyfin responded with ${res.status}`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Échec de suppression Jellyfin";
+      return reply.status(500).send({ message: msg });
+    }
+
+    // 2. Clean up Tentacle DB data
+    const prisma = getPrisma();
+    try {
+      await prisma.$transaction([
+        prisma.libraryPreference.deleteMany({ where: { jellyfinUserId: user.userId } }),
+        prisma.pairedDevice.deleteMany({ where: { jellyfinUserId: user.userId } }),
+        prisma.notification.deleteMany({ where: { jellyfinUserId: user.userId } }),
+        prisma.inviteUsage.deleteMany({ where: { jellyfinUserId: user.userId } }),
+      ]);
+      // Delete ticket messages then tickets (cascade handles messages)
+      const tickets = await prisma.supportTicket.findMany({
+        where: { jellyfinUserId: user.userId },
+        select: { id: true },
+      });
+      if (tickets.length > 0) {
+        await prisma.supportTicket.deleteMany({ where: { jellyfinUserId: user.userId } });
+      }
+    } catch {
+      // Non-blocking: Jellyfin user is already deleted
+    }
+
+    reply.clearCookie("tentacle_token", { path: "/" });
+    return { success: true, message: "Compte supprimé" };
+  });
+
   /** POST /api/auth/logout — Invalidate Jellyfin session + clear cookie. */
   app.post("/logout", { preHandler: [requireAuth] }, async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();

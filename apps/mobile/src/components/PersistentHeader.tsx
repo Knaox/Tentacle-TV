@@ -40,7 +40,7 @@ export function PersistentHeader() {
 
       {/* Right actions */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-        <Pressable onPress={() => router.push("/search")} hitSlop={8}>
+        <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
           <Feather name="search" size={20} color={colors.textPrimary} />
         </Pressable>
         <NotificationBell />

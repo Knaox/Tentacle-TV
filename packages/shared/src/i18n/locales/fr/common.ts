@@ -94,4 +94,5 @@ export default {
   resultCount_one: "{{count}} résultat",
   resultCount_other: "{{count}} résultats",
   noResultsHint: "Essayez d'autres filtres",
+  clearSearch: "Effacer la recherche",
 } as const;

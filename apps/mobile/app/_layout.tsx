@@ -11,6 +11,7 @@ import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useServerReachable } from "@/hooks/useServerReachable";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
+import { isSessionExpired } from "@/auth/sessionState";
 import { colors } from "@/theme";
 
 // Prevent splash screen from auto-hiding
@@ -83,7 +84,7 @@ export default function RootLayout() {
       }
     } else if (url && !token && !inAuthGroup) {
       router.replace("/(auth)/login");
-    } else if (url && token && inAuthGroup) {
+    } else if (url && token && inAuthGroup && !isSessionExpired()) {
       router.replace("/(tabs)");
     }
   }, [ready, segments, router]);
