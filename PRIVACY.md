@@ -14,7 +14,7 @@ All data stays between your device and your own Jellyfin server:
 
 - **Authentication credentials** (username, access token) are stored locally on your device in the iOS Keychain and used solely to authenticate with your Jellyfin server.
 - **Server URL** is stored locally to connect to your chosen Jellyfin server.
-- **Playback preferences** (audio/subtitle language) are stored on your Jellyfin server and locally on your device.
+- **Playback preferences** (audio/subtitle language) are stored on your Tentacle server and locally on your device.
 - **Watch history and playback progress** are managed entirely by your Jellyfin server.
 
 ## Analytics and Tracking
