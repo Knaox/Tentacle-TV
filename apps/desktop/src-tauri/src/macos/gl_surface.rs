@@ -38,7 +38,7 @@ pub unsafe fn create_gl_surface(ns_window: *mut c_void) -> Result<GlSurface, Str
     let scale_factor: f64 = msg_send![window, backingScaleFactor];
 
     // Create pixel format with double-buffered OpenGL
-    let attrs: [u32; 7] = [
+    let attrs: [u32; 8] = [
         8,   // NSOpenGLPFAColorSize
         32,
         11,  // NSOpenGLPFADepthSize
@@ -46,6 +46,7 @@ pub unsafe fn create_gl_surface(ns_window: *mut c_void) -> Result<GlSurface, Str
         5,   // NSOpenGLPFADoubleBuffer
         99,  // NSOpenGLPFAOpenGLProfile
         0x1000, // NSOpenGLProfileVersionLegacy
+        0,   // terminator (required by initWithAttributes:)
     ];
     let pixel_format_class = objc2::runtime::AnyClass::get(
         CStr::from_bytes_with_nul(b"NSOpenGLPixelFormat\0").unwrap()
