@@ -1,18 +1,25 @@
 # Tentacle TV — Automated Release Build
 #
 # Triggers on push of a tag matching v* (e.g. v1.0.0, v0.9.2-beta.1)
-# Builds the Tauri desktop app for Windows and creates a draft GitHub Release
-# with .msi and -setup.exe installers attached.
+# Builds the Tauri desktop app for Windows and macOS, then creates a draft
+# GitHub Release with all installers attached.
 #
-# Secrets requis (à configurer dans GitHub → Settings → Secrets → Actions) :
+# Secrets requis (GitHub → Settings → Secrets → Actions) :
 #
-# OPTIONNEL - Signature Windows (si tu as un certificat code-signing) :
-#   WINDOWS_CERTIFICATE          : Certificat .pfx encodé en base64
-#   WINDOWS_CERTIFICATE_PASSWORD : Mot de passe du certificat .pfx
-#
-# REQUIS - Signature updater Tauri (pour les mises à jour automatiques) :
+# REQUIS - Signature updater Tauri :
 #   TAURI_SIGNING_PRIVATE_KEY          : Clé privée pour signer les updates
 #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD : Mot de passe de la clé (vide si aucun)
+#
+# REQUIS - macOS (signing + notarisation) :
+#   APPLE_CERTIFICATE_BASE64     : Certificat Developer ID (.p12) encodé en base64
+#   APPLE_CERTIFICATE_PASSWORD   : Mot de passe du .p12
+#   APPLE_API_KEY                : App Store Connect API Key ID (ex: 4H8HJVZLC4)
+#   APPLE_API_ISSUER             : Issuer ID de l'API Key
+#   APPLE_API_KEY_CONTENT        : Contenu du fichier AuthKey_XXXX.p8
+#
+# OPTIONNEL - Signature Windows :
+#   WINDOWS_CERTIFICATE          : Certificat .pfx encodé en base64
+#   WINDOWS_CERTIFICATE_PASSWORD : Mot de passe du certificat .pfx
 
 name: Release Desktop
 
@@ -30,8 +37,19 @@ env:
 
 jobs:
   release:
-    name: Build & Release (Windows)
-    runs-on: windows-latest
+    name: Build (${{ matrix.label }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            label: Windows
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            label: macOS
+
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
 
@@ -61,6 +79,8 @@ jobs:
 
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Cache Cargo registry & build
         uses: actions/cache@v4
@@ -75,6 +95,43 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
+      # ─── macOS : import certificat Developer ID ───
+      - name: Import Apple Developer ID certificate
+        if: matrix.os == 'macos-latest'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$CERTIFICATE_BASE64" | base64 --decode > /tmp/certificate.p12
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import /tmp/certificate.p12 -k build.keychain \
+            -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k actions build.keychain
+          rm /tmp/certificate.p12
+
+      # ─── macOS : écrire la clé API pour notarisation ───
+      - name: Write Apple API key
+        if: matrix.os == 'macos-latest'
+        env:
+          API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+        run: echo "$API_KEY_CONTENT" > /tmp/AuthKey.p8
+
+      # ─── macOS : pré-signer les dylibs libmpv ───
+      - name: Pre-sign dylibs
+        if: matrix.os == 'macos-latest'
+        run: |
+          for dylib in apps/desktop/src-tauri/lib/*.dylib; do
+            [ -f "$dylib" ] || continue
+            codesign --force --options runtime --timestamp \
+              --sign "Developer ID Application: Damien ROUGE (96K3M57W49)" \
+              "$dylib"
+            echo "Signed: $(basename "$dylib")"
+          done
+
+      # ─── Build + upload dans la release ───
       - name: Build & create release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -85,6 +142,10 @@ jobs:
           # Signature Windows (optionnel)
           TAURI_BUNDLE_WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           TAURI_BUNDLE_WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          # Notarisation macOS (vides sur Windows → Tauri skip)
+          APPLE_API_KEY: ${{ matrix.os == 'macos-latest' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_ISSUER: ${{ matrix.os == 'macos-latest' && secrets.APPLE_API_ISSUER || '' }}
+          APPLE_API_KEY_PATH: ${{ matrix.os == 'macos-latest' && '/tmp/AuthKey.p8' || '' }}
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
@@ -94,7 +155,9 @@ jobs:
             Voir le [changelog](https://github.com/Knaox/Tentacle-TV/blob/main/CHANGELOG.md) pour les détails.
 
             ## Installation
+            - **macOS** : télécharger le fichier `.dmg` (signé et notarisé)
             - **Windows (installeur)** : télécharger le fichier `-setup.exe`
             - **Windows (MSI)** : télécharger le fichier `.msi`
           releaseDraft: true
           prerelease: false
+          args: --target ${{ matrix.target }}
