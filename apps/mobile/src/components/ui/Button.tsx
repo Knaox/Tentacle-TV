@@ -19,6 +19,7 @@ interface Props {
   disabled?: boolean;
   style?: ViewStyle;
   fullWidth?: boolean;
+  accessibilityLabel?: string;
 }
 
 const variants: Record<Variant, { bg: string; text: string; border?: string }> = {
@@ -28,7 +29,7 @@ const variants: Record<Variant, { bg: string; text: string; border?: string }> =
   ghost: { bg: "transparent", text: colors.textSecondary },
 };
 
-export function Button({ title, onPress, variant = "primary", loading, disabled, style, fullWidth }: Props) {
+export function Button({ title, onPress, variant = "primary", loading, disabled, style, fullWidth, accessibilityLabel }: Props) {
   const v = variants[variant];
   const isDisabled = disabled || loading;
 
@@ -41,6 +42,9 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
     <Pressable
       onPress={handlePress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: isDisabled }}
       style={[{
         backgroundColor: v.bg,
         borderRadius: spacing.buttonRadius,

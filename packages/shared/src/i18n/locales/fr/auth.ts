@@ -38,4 +38,5 @@ export default {
   changeServer: "Changer de serveur",
   serverUrlLabel: "URL de votre serveur",
   httpError: "Erreur HTTP {{status}}",
+  reconnecting: "Reconnexion...",
 } as const;

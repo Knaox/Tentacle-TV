@@ -135,13 +135,13 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
               </View>
             )}
             <View style={s.btns}>
-              <Pressable style={s.playBtn} onPress={() => onPlay(item)}>
+              <Pressable style={s.playBtn} onPress={() => onPlay(item)} accessibilityRole="button" accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Feather name="play" size={16} color={colors.textPrimary} />
                   <Text style={s.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
                 </View>
               </Pressable>
-              <Pressable style={s.infoBtn} onPress={() => onInfo(item)}>
+              <Pressable style={s.infoBtn} onPress={() => onInfo(item)} accessibilityRole="button" accessibilityLabel={`${t("moreInfo")} ${item.Name}`}>
                 <Text style={s.infoTxt}>{t("moreInfo")}</Text>
               </Pressable>
             </View>

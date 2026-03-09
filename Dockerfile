@@ -48,6 +48,9 @@ COPY --from=base /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=base /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=base /app/apps/backend/package.json ./apps/backend/package.json
 COPY --from=base /app/apps/backend/data/shared-deps ./apps/backend/data/shared-deps
+# Seed copy for shared-deps — entrypoint refreshes them on every start
+# so that image updates bring new shared-deps even when volume already exists
+COPY --from=base /app/apps/backend/data/shared-deps /app/shared-deps-seed
 COPY --from=base /app/apps/web/dist ./apps/web/dist
 
 # Copy entrypoint script

@@ -34,4 +34,5 @@ export default {
   techExpo: "Application mobile",
   techReactNative: "Framework mobile",
   serviceJellyfin: "Serveur multimédia open-source",
+  privacyPolicy: "Politique de confidentialité",
 } as const;

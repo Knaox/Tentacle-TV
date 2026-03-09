@@ -1,0 +1,25 @@
+## Docker Compose pour utilisateurs avec leur propre base de données externe
+## (NAS, serveur dédié, cloud, etc.)
+##
+## Usage :
+##   docker compose -f docker-compose.external.yml up -d
+##
+## La base de données se configure via le wizard de setup au premier lancement.
+## La config est persistée dans le volume tentacle-data (data/database.json).
+
+services:
+  web:
+    image: ghcr.io/knaox/tentacle-tv:latest
+    container_name: tentacle-tv
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - generate with: openssl rand -base64 64}
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    volumes:
+      - tentacle-data:/app/apps/backend/data
+    ports:
+      - "3000:3000"
+
+volumes:
+  tentacle-data:

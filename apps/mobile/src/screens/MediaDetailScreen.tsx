@@ -121,6 +121,7 @@ export function MediaDetailScreen({ itemId }: Props) {
         <GradientOverlay direction="top" height={100} color="rgba(0,0,0,0.4)" />
         <IconButton
           icon="←" onPress={() => router.back()}
+          accessibilityLabel={t("back")}
           style={{ position: "absolute", top: insets.top + spacing.sm, left: spacing.screenPadding }}
         />
       </View>
@@ -164,7 +165,7 @@ export function MediaDetailScreen({ itemId }: Props) {
       {/* Play / Resume */}
       {!isSeries && (
         <Animated.View style={[{ paddingHorizontal: spacing.screenPadding, marginTop: spacing.lg }, actionsStyle]}>
-          <Button title={playLabel} onPress={() => router.push(`/watch/${item.Id}`)} fullWidth style={{ borderRadius: 12, height: 52 }} />
+          <Button title={playLabel} onPress={() => router.push(`/watch/${item.Id}`)} fullWidth style={{ borderRadius: 12, height: 52 }} accessibilityLabel={`${playLabel} ${item.Name}`} />
           {hasResume && <ProgressBar progress={progress} style={{ marginTop: spacing.sm }} />}
         </Animated.View>
       )}
@@ -192,6 +193,8 @@ export function MediaDetailScreen({ itemId }: Props) {
             </Text>
             <Text
               onPress={() => setExpanded((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? t("showLess") : t("showMore")}
               style={{ ...typography.caption, color: colors.accent, marginTop: spacing.xs }}
             >
               {expanded ? t("showLess") : t("showMore")}

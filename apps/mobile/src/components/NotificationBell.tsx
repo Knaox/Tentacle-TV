@@ -94,7 +94,7 @@ export function NotificationBell() {
 
   return (
     <>
-      <Pressable onPress={openSheet} hitSlop={8} style={{ position: "relative" }}>
+      <Pressable onPress={openSheet} hitSlop={8} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? t("title") + `, ${count}` : t("title")}>
         <Feather name="bell" size={20} color="#ffffff" />
         {count > 0 && (
           <View style={{

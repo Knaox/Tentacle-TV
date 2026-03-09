@@ -161,6 +161,8 @@ export function usePlayerPlayback(itemId: string) {
       const directPlay = ms.SupportsDirectPlay && !ms.TranscodingUrl;
       const directStream = ms.SupportsDirectStream && !directPlay;
 
+      const subIdx = opts?.subtitleStreamIndex ?? subtitleIndexRef.current;
+
       let url: string;
       const ds = client.getDirectStreaming();
       if (directPlay) {
@@ -177,6 +179,17 @@ export function usePlayerPlayback(itemId: string) {
           );
         }
         url = `${baseUrl}${transcodingPath}`;
+
+        // Always force subtitles in HLS manifest for iOS AVPlayer
+        // (Jellyfin defaults to false, but iOS needs them embedded in the m3u8)
+        url = url.replace(/EnableSubtitlesInManifest=false/i, "EnableSubtitlesInManifest=true");
+        if (!/EnableSubtitlesInManifest/i.test(url)) {
+          url += (url.includes("?") ? "&" : "?") + "EnableSubtitlesInManifest=true";
+        }
+        // Ensure SubtitleStreamIndex is present when a subtitle is selected
+        if (subIdx >= 0 && !/SubtitleStreamIndex/i.test(url)) {
+          url += `&SubtitleStreamIndex=${subIdx}`;
+        }
       } else {
         setState((prev) => ({ ...prev, isLoading: false, error: "No stream URL" }));
         return;
@@ -190,7 +203,6 @@ export function usePlayerPlayback(itemId: string) {
         if (match) actualOffsetTicks = Number(match[1]);
       }
       const streamOffset = actualOffsetTicks > 0 ? actualOffsetTicks / 10_000_000 : 0;
-      const subIdx = opts?.subtitleStreamIndex ?? subtitleIndexRef.current;
       const burnIn = detectBurnIn(ms, subIdx);
       // Only sideload VTT tracks for direct play — for transcoded HLS,
       // Jellyfin embeds text subs in the manifest (sideloading crashes iOS AVPlayer)
@@ -202,7 +214,12 @@ export function usePlayerPlayback(itemId: string) {
         ? Math.round(positionRef.current * 1000)
         : 0;
 
-      console.debug(DBG, "resolved", { directPlay, directStream, startPositionMs, url: url.slice(0, 100) });
+      console.debug(DBG, "resolved", {
+        directPlay, directStream, startPositionMs, subIdx, burnIn,
+        hasSubsInManifest: /EnableSubtitlesInManifest=true/i.test(url),
+        hasSubIdx: /SubtitleStreamIndex=\d+/i.test(url),
+        url: url.slice(0, 200),
+      });
 
       setState({
         streamUrl: url,
@@ -266,12 +283,17 @@ export function usePlayerPlayback(itemId: string) {
         });
       }
     } else {
-      // Transcode: server manages subs in HLS manifest — always refetch
-      const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
-      fetchPlaybackInfo({
-        subtitleStreamIndex: newIndex >= 0 ? newIndex : undefined,
-        startTimeTicks: startTicks > 0 ? startTicks : undefined,
-      });
+      // Transcode: text subs are rendered via custom overlay — no refetch needed.
+      // Only refetch for bitmap subs (server burn-in) or when disabling a burn-in sub.
+      const sub = streams.find((s) => s.Index === newIndex && s.Type === "Subtitle");
+      const needsBurnIn = sub ? isBitmapSub(sub) : false;
+      if (needsBurnIn || (newIndex < 0 && state.burnInSubIndex >= 0)) {
+        const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
+        fetchPlaybackInfo({
+          subtitleStreamIndex: newIndex >= 0 ? newIndex : undefined,
+          startTimeTicks: startTicks > 0 ? startTicks : undefined,
+        });
+      }
     }
   }, [fetchPlaybackInfo, streams, state.isDirectPlay, state.burnInSubIndex]);
 
@@ -302,6 +324,14 @@ export function usePlayerPlayback(itemId: string) {
     return textSubStreams.findIndex((s) => s.Index === subtitleIndex);
   }, [subtitleIndex, state.isDirectPlay, state.burnInSubIndex, streams]);
 
+  /** VTT URL for custom subtitle overlay in transcode mode */
+  const subtitleVttUrl = useMemo(() => {
+    if (state.isDirectPlay || subtitleIndex < 0) return null;
+    const sub = streams.find((s) => s.Index === subtitleIndex && s.Type === "Subtitle");
+    if (!sub || isBitmapSub(sub)) return null;
+    return client.getSubtitleUrl(itemId, mediaSourceId, subtitleIndex, "vtt");
+  }, [subtitleIndex, state.isDirectPlay, streams, client, itemId, mediaSourceId]);
+
   /** Index into native audio tracks for selectedAudioTrack prop (0-based among audio streams only) */
   const audioTrackSelectedIndex = useMemo(() => {
     const audioStreams = streams.filter((s) => s.Type === "Audio");
@@ -312,7 +342,7 @@ export function usePlayerPlayback(itemId: string) {
     item, ancestors, streams, mediaSourceId, jellyfinDuration,
     ...state,
     audioIndex, subtitleIndex, qualityKey, positionRef,
-    textTrackSelectedIndex, audioTrackSelectedIndex,
+    textTrackSelectedIndex, audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, skipSegments, reporting,
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,
   };

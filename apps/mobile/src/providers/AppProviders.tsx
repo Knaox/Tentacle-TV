@@ -25,6 +25,7 @@ import {
   setTicketsBackendUrl,
   setPairingBackendUrl,
 } from "@tentacle-tv/api-client";
+import { setSessionExpired } from "@/auth/sessionState";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 
 interface AppProvidersProps {
@@ -56,12 +57,13 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverUrl]);
 
-  // Handle auth expiration: clear storage and redirect to login
+  // Handle auth expiration: redirect to login but keep token in storage
+  // so the app can try to auto-reconnect on next restart.
+  // Token is only cleared from storage on explicit logout.
   useEffect(() => {
     client.setOnAuthExpired(() => {
-      console.debug("[AppProviders] Auth expired — clearing token, redirecting to login");
-      storage.removeItem("tentacle_token");
-      storage.removeItem("tentacle_user");
+      console.debug("[AppProviders] Auth expired — redirecting to login (token kept in storage)");
+      setSessionExpired(true);
       setPreferencesToken(null);
       queryClient.clear();
       router.replace("/(auth)/login");

@@ -27,7 +27,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, wi
   const showFallback = !poster || imgError;
 
   return (
-    <PressableCard onPress={onPress} style={{ width }}>
+    <PressableCard onPress={onPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}`}>
       <View style={st.poster}>
         {showFallback ? (
           <View style={st.fallback}>

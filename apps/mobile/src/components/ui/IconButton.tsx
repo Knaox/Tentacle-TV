@@ -8,13 +8,16 @@ interface Props {
   style?: ViewStyle;
   color?: string;
   bgColor?: string;
+  accessibilityLabel?: string;
 }
 
-export function IconButton({ icon, onPress, size = 36, style, color, bgColor }: Props) {
+export function IconButton({ icon, onPress, size = 36, style, color, bgColor, accessibilityLabel }: Props) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={[{
         width: size,
         height: size,
