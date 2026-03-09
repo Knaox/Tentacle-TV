@@ -236,6 +236,10 @@ export class JellyfinClient {
   }
 
   private resolveHls(itemId: string, p: Record<string, string>): string {
+    // Jellyfin 10.10+ rejects StartTimeTicks on individual .ts segment requests,
+    // but propagates all master.m3u8 query params to segment URLs → error.
+    // The client must seek to the desired position instead.
+    delete p.StartTimeTicks;
     p.BreakOnNonKeyFrames = "true";
     p.RequireNonAnamorphic = "false";
     p.EnableSubtitlesInManifest = "true";

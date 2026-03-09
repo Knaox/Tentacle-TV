@@ -39,8 +39,10 @@ export function MediaDetail() {
   }
 
   const isSeries = item.Type === "Series";
-  const backdropId = item.ParentBackdropItemId ?? item.Id;
-  const backdropUrl = client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 80 });
+  const hasParentBackdrop = (item.ParentBackdropImageTags?.length ?? 0) > 0;
+  const hasOwnBackdrop = (item.BackdropImageTags?.length ?? 0) > 0;
+  const backdropId = hasParentBackdrop ? (item.ParentBackdropItemId ?? item.Id) : item.Id;
+  const backdropUrl = (hasParentBackdrop || hasOwnBackdrop) ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 80 }) : null;
   const posterUrl = item.ImageTags?.Primary
     ? client.getImageUrl(item.Id, "Primary", { height: 500, quality: 90 })
     : null;
@@ -91,13 +93,16 @@ export function MediaDetail() {
           <ArrowLeftIcon />
           {t("common:back")}
         </button>
-        <motion.img
-          src={backdropUrl} alt="" draggable={false}
-          initial={{ opacity: 0, scale: 1.15 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.6, ease: "easeOut" }}
-          className="absolute inset-0 h-full w-full object-cover animate-ken-burns"
-        />
+        {backdropUrl && (
+          <motion.img
+            src={backdropUrl} alt="" draggable={false}
+            initial={{ opacity: 0, scale: 1.15 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.6, ease: "easeOut" }}
+            className="absolute inset-0 h-full w-full object-cover animate-ken-burns"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg/80 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-tentacle-bg/40 via-transparent to-transparent" />

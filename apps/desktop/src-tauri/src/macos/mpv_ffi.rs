@@ -92,6 +92,7 @@ type MpvRenderContextCreateFn = unsafe extern "C" fn(*mut *mut c_void, *mut c_vo
 type MpvRenderContextSetUpdateCallbackFn = unsafe extern "C" fn(*mut c_void, Option<unsafe extern "C" fn(*mut c_void)>, *mut c_void);
 type MpvRenderContextRenderFn = unsafe extern "C" fn(*mut c_void, *mut MpvRenderParam) -> c_int;
 type MpvRenderContextFreeFn = unsafe extern "C" fn(*mut c_void);
+type MpvRenderContextReportSwapFn = unsafe extern "C" fn(*mut c_void);
 
 pub struct MpvLib {
     _lib: libloading::Library,
@@ -110,6 +111,7 @@ pub struct MpvLib {
     pub render_context_set_update_callback: MpvRenderContextSetUpdateCallbackFn,
     pub render_context_render: MpvRenderContextRenderFn,
     pub render_context_free: MpvRenderContextFreeFn,
+    pub render_context_report_swap: MpvRenderContextReportSwapFn,
 }
 
 // SAFETY: MpvLib only stores function pointers and a library handle.
@@ -148,6 +150,7 @@ impl MpvLib {
                 render_context_set_update_callback: sym!(b"mpv_render_context_set_update_callback\0", MpvRenderContextSetUpdateCallbackFn),
                 render_context_render: sym!(b"mpv_render_context_render\0", MpvRenderContextRenderFn),
                 render_context_free: sym!(b"mpv_render_context_free\0", MpvRenderContextFreeFn),
+                render_context_report_swap: sym!(b"mpv_render_context_report_swap\0", MpvRenderContextReportSwapFn),
                 _lib: lib,
             })
         }

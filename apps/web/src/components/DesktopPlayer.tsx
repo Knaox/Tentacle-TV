@@ -157,25 +157,25 @@ export function DesktopPlayer({
   // ── Audio change handler ──
   const handleAudioChange = useCallback((jfIndex: number) => {
     const aPos = audioTracks.findIndex((t) => t.index === jfIndex);
-    console.debug(DBG, "audio change", { jfIndex, aPos, mpvAudioCount: mpvAudio.length,
-      jfLangs: audioTracks.map(t => t.lang), mpvLangs: mpvAudio.map(t => t.lang),
-      mpvIds: mpvAudio.map(t => t.id) });
-    let mpvId: number | null = null;
-    if (mpvAudio.length > 0) {
-      mpvId = findMpvTrack(jfIndex, audioTracks, mpvAudio);
-      // Extra positional fallback if findMpvTrack failed
-      if (mpvId == null && aPos >= 0 && aPos < mpvAudio.length) {
-        mpvId = mpvAudio[aPos].id;
+    console.debug(DBG, "audio change", { jfIndex, aPos, mpvAudioCount: mpvAudio.length, isDirectPlay });
+    // In transcode mode, audio switching is done by rebuilding the URL with the
+    // new AudioStreamIndex — mpv reloads automatically. No need to set aid.
+    if (isDirectPlay) {
+      let mpvId: number | null = null;
+      if (mpvAudio.length > 0) {
+        mpvId = findMpvTrack(jfIndex, audioTracks, mpvAudio);
+        if (mpvId == null && aPos >= 0 && aPos < mpvAudio.length) {
+          mpvId = mpvAudio[aPos].id;
+        }
       }
+      if (mpvId == null && aPos >= 0) {
+        mpvId = aPos + 1;
+      }
+      console.debug(DBG, "mapped audio", { jfIndex, mpvId });
+      if (mpvId != null) setAudioTrack(mpvId);
     }
-    // Final fallback: 1-based positional (mpv default numbering)
-    if (mpvId == null && aPos >= 0) {
-      mpvId = aPos + 1;
-    }
-    console.debug(DBG, "mapped audio", { jfIndex, mpvId });
-    if (mpvId != null) setAudioTrack(mpvId);
     onAudioChange(jfIndex);
-  }, [audioTracks, mpvAudio, setAudioTrack, onAudioChange]);
+  }, [audioTracks, mpvAudio, setAudioTrack, onAudioChange, isDirectPlay]);
 
   // ── Subtitle change handler ──
   const handleSubtitleChange = useCallback((jfIndex: number | null) => {
@@ -205,6 +205,14 @@ export function DesktopPlayer({
   // Also re-triggers when mpvAudio changes (queryTrackList completes).
   useEffect(() => {
     if (!fileLoaded || !ready) return;
+    // In transcode mode, Jellyfin outputs only the selected audio track via
+    // AudioStreamIndex — HLS has exactly 1 audio track (aid=1). Force it here
+    // because mpv's aid persists across loadfile: if the previous direct play file
+    // had aid=3 (e.g. Japanese), the new HLS stream has no track 3 → no audio.
+    if (!isDirectPlay) {
+      setAudioTrack(1);
+      return;
+    }
     let mpvId: number | null = null;
     if (mpvAudio.length > 0) {
       mpvId = findMpvTrack(currentAudio, audioTracks, mpvAudio);
@@ -221,7 +229,7 @@ export function DesktopPlayer({
     console.debug(DBG, "pref apply audio", { currentAudio, mpvId, currentMpv: state.audioTrack,
       hasMpvTracks: mpvAudio.length > 0, jfLangs: audioTracks.map(t => t.lang), mpvLangs: mpvAudio.map(t => t.lang) });
     if (mpvId != null) setAudioTrack(mpvId);
-  }, [currentAudio, mpvAudio, fileLoaded, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentAudio, mpvAudio, fileLoaded, ready, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Apply subtitle preference from parent ──
   useEffect(() => {
@@ -271,12 +279,12 @@ export function DesktopPlayer({
     // Show loading overlay during source changes (quality/audio switch)
     if (isSourceChange) setSourceChanging(true);
 
-    // For direct play: mpv must seek to the correct position.
-    // For transcode (HLS): position is baked into the URL via StartTimeTicks —
-    // do NOT pass startPosition to mpv or it will double-seek and freeze.
-    const startPos = isDirectPlay
-      ? (isSourceChange ? lastAbsolutePosRef.current : startPositionSeconds)
-      : undefined;
+    // mpv must seek to the correct position for both direct play and transcode.
+    // StartTimeTicks is stripped from HLS URLs (Jellyfin 10.10+ rejects it on segments),
+    // so mpv always handles seeking client-side.
+    const startPos = isSourceChange
+      ? lastAbsolutePosRef.current
+      : startPositionSeconds;
 
     console.debug(DBG, "play", { src: src.substring(0, 80), startPos, absolutePos: lastAbsolutePosRef.current,
       isDirectPlay, isSourceChange });

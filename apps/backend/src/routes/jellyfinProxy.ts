@@ -99,6 +99,17 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
     let targetUrl = `${jellyfinUrl}/${wildcardPath}${qs}`;
 
+    // Strip api_key from proxied URLs — auth is handled via X-Emby-Token header.
+    // Prevents token leakage in server logs and downstream systems.
+    try {
+      const u = new URL(targetUrl);
+      if (u.searchParams.has("api_key") || u.searchParams.has("ApiKey")) {
+        u.searchParams.delete("api_key");
+        u.searchParams.delete("ApiKey");
+        targetUrl = u.toString();
+      }
+    } catch { /* leave targetUrl unchanged */ }
+
     // Jellyfin bug workaround: its playlist generator (DynamicHlsPlaylistGenerator)
     // propagates the full query string — including StartTimeTicks — from the
     // main.m3u8 request into every segment URL.  But its segment handler

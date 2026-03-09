@@ -17,6 +17,7 @@ type JfClient = {
   getToken: () => string | null;
   getDeviceId: () => string;
   getAuthHeader: () => string;
+  useCredentials: boolean;
 };
 
 /**
@@ -52,9 +53,12 @@ async function sessionPost(
   }
 }
 
-/** Build a sendBeacon-compatible URL with api_key auth (sendBeacon can't set headers). */
+/** Build a sendBeacon-compatible URL.
+ *  When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
+ *  Mobile/desktop still need api_key in the URL (sendBeacon can't set headers). */
 function beaconUrl(client: JfClient, path: string): string {
   const base = client.getBaseUrl();
+  if (client.useCredentials) return `${base}${path}`;
   const token = client.getToken();
   return token ? `${base}${path}?api_key=${encodeURIComponent(token)}` : `${base}${path}`;
 }
@@ -63,8 +67,8 @@ function beaconUrl(client: JfClient, path: string): string {
  * Fire-and-forget DELETE to kill an active Jellyfin transcode (ffmpeg process).
  * Uses api_key query param since headers can't be set in keepalive/beacon contexts.
  */
-function killActiveEncoding(client: JfClient, playSessionId: string | undefined, keepalive = false): void {
-  if (!playSessionId) return;
+function killActiveEncoding(client: JfClient, playSessionId: string | undefined, keepalive = false): Promise<void> {
+  if (!playSessionId) return Promise.resolve();
   const deviceId = client.getDeviceId();
   const base = client.getBaseUrl();
   const token = client.getToken();
@@ -76,7 +80,7 @@ function killActiveEncoding(client: JfClient, playSessionId: string | undefined,
     headers["X-Emby-Token"] = token;
     headers["X-Emby-Authorization"] = client.getAuthHeader();
   }
-  fetch(url, { method: "DELETE", headers, keepalive }).catch(() => {});
+  return fetch(url, { method: "DELETE", headers, keepalive }).then(() => {}).catch(() => {});
 }
 
 export interface PlaybackReportingOptions {
@@ -348,8 +352,8 @@ export function usePlaybackReporting({
   }, []);
 
   /** Kill the active transcode — exposed for seek in transcoded mode. */
-  const killTranscode = useCallback((sessionId?: string) => {
-    killActiveEncoding(clientRef.current, sessionId ?? playSessionIdRef.current);
+  const killTranscode = useCallback((sessionId?: string): Promise<void> => {
+    return killActiveEncoding(clientRef.current, sessionId ?? playSessionIdRef.current);
   }, []);
 
   return { reportStart, reportStop, updatePosition, reportSeek, killTranscode, lastStopPromiseRef };

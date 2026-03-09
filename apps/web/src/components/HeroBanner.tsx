@@ -92,7 +92,13 @@ export function HeroBanner({ items }: HeroBannerProps) {
 
       {/* Backdrop image with crossfade */}
       {items.map((it, i) => {
-        const backdropId = it.Type === "Episode" && it.SeriesId ? it.SeriesId : it.Id;
+        const isEp = it.Type === "Episode";
+        const hasParentBackdrop = (it.ParentBackdropImageTags?.length ?? 0) > 0;
+        const hasOwnBackdrop = (it.BackdropImageTags?.length ?? 0) > 0;
+        if (!hasParentBackdrop && !hasOwnBackdrop) return null;
+        const backdropId = isEp
+          ? (hasParentBackdrop ? (it.ParentBackdropItemId ?? it.SeriesId ?? it.Id) : it.Id)
+          : it.Id;
         const url = client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 80 });
         return (
           <img
@@ -102,6 +108,7 @@ export function HeroBanner({ items }: HeroBannerProps) {
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-1000"
             style={{ opacity: i === index ? 0.65 : 0 }}
             draggable={false}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         );
       })}

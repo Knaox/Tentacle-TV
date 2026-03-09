@@ -104,10 +104,17 @@ export function useDesktopPlayer() {
             // Sur macOS, force-window entre en conflit avec le wid (NSView)
             // injecté par le plugin — MPV crée alors une fenêtre séparée.
             ...(!macOS && { "force-window": "yes" }),
-            "hr-seek": "yes",
+            // Use keyframe seeking by default (hr-seek breaks HLS segment boundaries)
+            "hr-seek": "default",
             cache: "yes",
             "demuxer-max-bytes": "150MiB",
             "demuxer-max-back-bytes": "75MiB",
+            "cache-pause-wait": 3,
+            "demuxer-readahead-secs": 30,
+            // HLS/network resilience
+            "network-timeout": 30,
+            "stream-lavf-o": "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_on_http_error=4xx\\,5xx,reconnect_delay_max=5",
+            "demuxer-lavf-o": "probesize=10000000,analyzeduration=10000000",
             osc: "no",
             "input-default-bindings": "no",
             "input-vo-keyboard": "no",
