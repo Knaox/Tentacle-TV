@@ -31,7 +31,7 @@ export interface PlayerControlsProps {
   onBack: () => void;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  onQualityChange: (bitrate: number | null) => void;
+  onQualityChange?: (bitrate: number | null) => void;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
 }

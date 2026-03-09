@@ -7,6 +7,7 @@ import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
+import { isTauri, isMacOS } from "../hooks/useDesktopPlayer";
 
 export function WatchWeb() {
   const { t } = useTranslation("common");
@@ -23,6 +24,8 @@ export function WatchWeb() {
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     skipSegments, autoplayCreditsSeconds, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
+
+  const useNativeHls = isTauri() && isMacOS();
 
   const { reportStart, updatePosition, reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
@@ -147,7 +150,7 @@ export function WatchWeb() {
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
           nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
           onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
-          itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset}
+          itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         />

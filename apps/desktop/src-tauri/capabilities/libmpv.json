@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "libmpv-plugin",
+  "description": "libmpv plugin permissions for Windows/Linux",
+  "windows": ["main"],
+  "platforms": ["windows", "linux"],
+  "permissions": [
+    "libmpv:default"
+  ]
+}

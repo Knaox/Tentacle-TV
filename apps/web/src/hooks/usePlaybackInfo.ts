@@ -2,6 +2,8 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaSource } from "@tentacle-tv/shared";
 import { buildBrowserDeviceProfile } from "../lib/browserDeviceProfile";
+import { buildMacOSDeviceProfile } from "../lib/macosDeviceProfile";
+import { isTauri, isMacOS } from "./useDesktopPlayer";
 
 const DBG = "[Tentacle:PlaybackInfo]";
 
@@ -37,8 +39,11 @@ export function usePlaybackInfo() {
     isLoading: false,
   });
 
-  const deviceProfile = useMemo(() => buildBrowserDeviceProfile(), []);
-
+  const isMacOSTauri = isTauri() && isMacOS();
+  const deviceProfile = useMemo(
+    () => isMacOSTauri ? buildMacOSDeviceProfile() : buildBrowserDeviceProfile(),
+    [isMacOSTauri],
+  );
   const fetchPlaybackInfo = useCallback(async (opts: {
     itemId: string;
     mediaSourceId?: string;
@@ -56,7 +61,7 @@ export function usePlaybackInfo() {
 
     try {
       let profile = opts.maxStreamingBitrate != null
-        ? buildBrowserDeviceProfile(opts.maxStreamingBitrate)
+        ? (isMacOSTauri ? buildMacOSDeviceProfile(opts.maxStreamingBitrate) : buildBrowserDeviceProfile(opts.maxStreamingBitrate))
         : deviceProfile;
       // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
       // returns a TranscodingUrl with the correct audio track selected server-side.
@@ -113,11 +118,6 @@ export function usePlaybackInfo() {
 
       const offsetTicks = opts.startTimeTicks ?? 0;
       const streamOffset = !directPlay && offsetTicks > 0 ? offsetTicks / 10_000_000 : 0;
-
-      console.debug(DBG, "resolved", {
-        directPlay, directStream, url: url.slice(0, 120),
-        playSessionId: result.PlaySessionId,
-      });
 
       setState({
         streamUrl: url,
