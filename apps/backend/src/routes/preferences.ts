@@ -118,6 +118,38 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     return prefs;
   });
 
+  // GET /api/preferences/language — Get user's interface language
+  // Static routes registered before /:libraryId to avoid parametric shadowing
+  app.get("/language", async (request, reply) => {
+    try {
+      const prisma = getPrisma();
+      const user = (request as any).user as JellyfinUser;
+      const key = `user_lang_${user.userId}`;
+
+      const row = await prisma.serverConfig.findUnique({ where: { key } });
+      return { language: row?.value ?? null };
+    } catch (err) {
+      app.log.error(err, "[preferences/language] Error fetching user language");
+      return reply.status(500).send({ message: "Failed to fetch language preference" });
+    }
+  });
+
+  // PUT /api/preferences/language — Set user's interface language
+  app.put("/language", async (request) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+    const { language } = z.object({ language: z.string().max(5) }).parse(request.body);
+    const key = `user_lang_${user.userId}`;
+
+    await prisma.serverConfig.upsert({
+      where: { key },
+      create: { key, value: language },
+      update: { value: language },
+    });
+
+    return { language };
+  });
+
   // GET /api/preferences/:libraryId — Get preference for a specific library
   app.get("/:libraryId", async (request, reply) => {
     const prisma = getPrisma();
@@ -189,37 +221,6 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     } catch {
       return reply.status(404).send({ message: "Preference not found" });
     }
-  });
-
-  // GET /api/preferences/language — Get user's interface language
-  app.get("/language", async (request, reply) => {
-    try {
-      const prisma = getPrisma();
-      const user = (request as any).user as JellyfinUser;
-      const key = `user_lang_${user.userId}`;
-
-      const row = await prisma.serverConfig.findUnique({ where: { key } });
-      return { language: row?.value ?? null };
-    } catch (err) {
-      app.log.error(err, "[preferences/language] Error fetching user language");
-      return reply.status(500).send({ message: "Failed to fetch language preference" });
-    }
-  });
-
-  // PUT /api/preferences/language — Set user's interface language
-  app.put("/language", async (request) => {
-    const prisma = getPrisma();
-    const user = (request as any).user as JellyfinUser;
-    const { language } = z.object({ language: z.string().max(5) }).parse(request.body);
-    const key = `user_lang_${user.userId}`;
-
-    await prisma.serverConfig.upsert({
-      where: { key },
-      create: { key, value: language },
-      update: { value: language },
-    });
-
-    return { language };
   });
 
   // POST /api/preferences/resolve — Resolve best tracks for a media item

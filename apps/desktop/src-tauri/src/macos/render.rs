@@ -228,6 +228,7 @@ fn render_loop(state: Arc<RenderState>, cgl_context: *mut c_void) {
         unsafe {
             (lib.render_context_render)(render_ctx, render_params.as_mut_ptr());
             CGLFlushDrawable(cgl_context);
+            (lib.render_context_report_swap)(render_ctx);
         }
     }
 }

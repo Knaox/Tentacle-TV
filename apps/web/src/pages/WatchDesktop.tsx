@@ -21,7 +21,7 @@ export function WatchDesktop() {
     skipSegments, autoplayCreditsSeconds, getPositionTicks,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
 
-  const { reportStart, updatePosition, reportSeek: _reportSeek, lastStopPromiseRef } = usePlaybackReporting({
+  const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
   });
@@ -40,17 +40,18 @@ export function WatchDesktop() {
     };
   }, [itemId, queryClient, lastStopPromiseRef]);
 
-  const handleAudioChange = useCallback((idx: number) => {
+  const handleAudioChange = useCallback(async (idx: number) => {
     audioOverrideRef.current = true;
-    // In transcode mode (quality override), save position for URL rebuild
+    // In transcode mode (quality override), kill old ffmpeg before URL rebuild
     if (quality != null) {
+      await killTranscode();
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
     }
     setAudioIndex(idx);
-  }, [quality, getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
+  }, [quality, killTranscode, getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
 
-  const handleSubtitleChange = useCallback((idx: number | null) => {
+  const handleSubtitleChange = useCallback(async (idx: number | null) => {
     subtitleOverrideRef.current = true;
     // In direct play, mpv handles all subtitle types natively — just update state
     if (isDirectPlay) { setSubtitleIndex(idx); return; }
@@ -58,6 +59,7 @@ export function WatchDesktop() {
     if (idx != null) {
       const sub = streams.find((s: JfStream) => s.Type === "Subtitle" && s.Index === idx);
       if (BURN_IN_SUBTITLE_CODECS.test(sub?.Codec ?? "")) {
+        await killTranscode();
         const ticks = getPositionTicks();
         if (ticks > 0) setStartTicks(ticks);
         setBurnInSubtitleIndex(idx);
@@ -66,18 +68,20 @@ export function WatchDesktop() {
       }
     }
     if (burnInSubtitleIndex != null) {
+      await killTranscode();
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
       setBurnInSubtitleIndex(undefined);
     }
     setSubtitleIndex(idx);
-  }, [isDirectPlay, streams, getPositionTicks, burnInSubtitleIndex, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
+  }, [isDirectPlay, streams, killTranscode, getPositionTicks, burnInSubtitleIndex, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
 
-  const handleQualityChange = useCallback((bitrate: number | null) => {
+  const handleQualityChange = useCallback(async (bitrate: number | null) => {
+    await killTranscode();
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
     setQuality(bitrate);
-  }, [getPositionTicks, setStartTicks, setQuality]);
+  }, [killTranscode, getPositionTicks, setQuality, setStartTicks]);
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;

@@ -21,7 +21,8 @@ export function SeriesDetail() {
     if (seasons?.length && !selectedSeasonId) setSelectedSeasonId(seasons[0].Id);
   }, [seasons, selectedSeasonId]);
 
-  const backdropUrl = series ? client.getImageUrl(series.Id, "Backdrop", { width: 1920, quality: 80 }) : "";
+  const hasBackdrop = series && (series.BackdropImageTags?.length ?? 0) > 0;
+  const backdropUrl = hasBackdrop ? client.getImageUrl(series.Id, "Backdrop", { width: 1920, quality: 80 }) : "";
 
   return (
     <div className="min-h-screen bg-tentacle-bg">
@@ -29,7 +30,7 @@ export function SeriesDetail() {
 
       {/* Hero */}
       <div className="relative h-[50vh] w-full overflow-hidden">
-        {series && <img src={backdropUrl} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />}
+        {backdropUrl && <img src={backdropUrl} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
         <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-tentacle-bg/70 to-transparent" />
         <div className="absolute bottom-10 left-12 right-1/3">
@@ -95,7 +96,7 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
       {/* Thumbnail */}
       <div className="relative w-44 flex-shrink-0 overflow-hidden rounded-lg bg-tentacle-surface">
         <div className="aspect-video">
-          {thumbUrl && <img src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
+          {thumbUrl && <img src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
         </div>
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90">

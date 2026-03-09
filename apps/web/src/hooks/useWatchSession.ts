@@ -228,9 +228,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const isDirectStream = isDesktop ? desktopIsDirectStream : pbInfo.isDirectStream;
   const playSessionId = isDesktop ? desktopPlaySessionId : (pbInfo.playSessionId ?? "");
   const streamUrl = isDesktop ? desktopStreamUrl : pbInfo.streamUrl;
-  const streamOffset = isDesktop
-    ? (!desktopIsDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0)
-    : pbInfo.streamOffset;
+  // Desktop: no streamOffset — StartTimeTicks stripped from HLS URLs (Jellyfin 10.10+ compat),
+  // mpv handles seeking client-side via startPositionSeconds.
+  const streamOffset = isDesktop ? 0 : pbInfo.streamOffset;
 
   const audioTracks: AudioTrack[] = useMemo(() =>
     streams.filter((s) => s.Type === "Audio")
@@ -243,7 +243,14 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     [streams, client, itemId, mediaSourceId, t]);
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
-  const posterUrl = useMemo(() => itemId ? client.getImageUrl(itemId, "Backdrop", { quality: 80 }) : undefined, [client, itemId]);
+  const posterUrl = useMemo(() => {
+    if (!itemId) return undefined;
+    const hasParentBackdrop = (item?.ParentBackdropImageTags?.length ?? 0) > 0;
+    const hasOwnBackdrop = (item?.BackdropImageTags?.length ?? 0) > 0;
+    if (!hasParentBackdrop && !hasOwnBackdrop) return undefined;
+    const id = hasParentBackdrop ? (item?.ParentBackdropItemId ?? itemId) : itemId;
+    return client.getImageUrl(id, "Backdrop", { quality: 80 });
+  }, [client, itemId, item]);
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
     return ticks ? ticks / TICKS_PER_SECOND : undefined;

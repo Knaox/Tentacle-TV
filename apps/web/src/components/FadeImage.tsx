@@ -4,8 +4,11 @@ interface FadeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   duration?: number;
 }
 
-export function FadeImage({ duration = 0.3, style, onLoad, ...props }: FadeImageProps) {
+export function FadeImage({ duration = 0.3, style, onLoad, onError, ...props }: FadeImageProps) {
   const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  if (errored) return null;
 
   return (
     <img
@@ -13,6 +16,10 @@ export function FadeImage({ duration = 0.3, style, onLoad, ...props }: FadeImage
       onLoad={(e) => {
         setLoaded(true);
         onLoad?.(e);
+      }}
+      onError={(e) => {
+        setErrored(true);
+        onError?.(e);
       }}
       style={{
         ...style,
