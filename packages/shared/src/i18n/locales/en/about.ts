@@ -6,7 +6,7 @@ export default {
   features: "Features",
   featurePlayer: "Built-in video player with audio/subtitle track selection",
   featureResume: "Automatic playback resume",
-  featureRequests: "Content request system",
+  featureRequests: "Plugin system",
   featureDesktop: "Native desktop mode with high-performance player",
   featureAdaptive: "Adaptive interface (Desktop and Web)",
   featureNotifications: "Built-in notifications and support system",
