@@ -150,7 +150,7 @@ jobs:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
           tagName: ${{ github.ref_name }}
-          releaseName: "Tentacle TV ${{ github.ref_name }}"
+          releaseName: "Tentacle-TV ${{ github.ref_name }}"
           releaseBody: |
             Voir le [changelog](https://github.com/Knaox/Tentacle-TV/blob/main/CHANGELOG.md) pour les détails.
 
