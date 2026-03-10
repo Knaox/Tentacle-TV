@@ -26,6 +26,7 @@ import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
 import { adminRoutes } from "./routes/admin";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
+import { sharedWatchlistRoutes } from "./routes/sharedWatchlists";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 
@@ -177,6 +178,7 @@ async function main() {
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
+  await app.register(sharedWatchlistRoutes, { prefix: "/api/shared-watchlists" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
 

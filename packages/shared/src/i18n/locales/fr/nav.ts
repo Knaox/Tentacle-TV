@@ -19,4 +19,11 @@ export default {
   logoutConfirmTitle: "Déconnexion",
   logoutConfirmMessage: "Êtes-vous sûr de vouloir vous déconnecter ?",
   tv: "TV",
+  more: "Plus",
+  libraries: "Bibliothèques",
+  myList: "Ma liste",
+  myFavorites: "Mes favoris",
+  pinned: "Épinglé",
+  pin: "Épingler",
+  unpin: "Désépingler",
 } as const;

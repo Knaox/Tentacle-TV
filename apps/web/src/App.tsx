@@ -1,7 +1,7 @@
 import { useSyncExternalStore, useCallback, useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
-import { UpdateNotification } from "./components/UpdateNotification";
+import { UpdateModal } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
@@ -30,6 +30,8 @@ const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
 const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
 const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
+const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
+const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
 
 function PageSpinner() {
   return (
@@ -182,6 +184,8 @@ export function App() {
           <Route element={guard(<AppLayout />)}>
             <Route index element={<Home />} />
             <Route path="library/:libraryId" element={<Library />} />
+            <Route path="watchlist" element={<Watchlist />} />
+            <Route path="favorites" element={<Favorites />} />
 
             <Route path="support" element={<Support />} />
             <Route path="settings" element={<Preferences />} />
@@ -235,7 +239,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-      <UpdateNotification />
+      <UpdateModal />
       <OfflineBanner />
     </ToastProvider>
   );

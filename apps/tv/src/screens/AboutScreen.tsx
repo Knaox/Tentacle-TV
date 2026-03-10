@@ -1,7 +1,8 @@
 import { View, ScrollView, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { APP_VERSION } from "@tentacle-tv/shared";
+
+const APP_VERSION: string = require("../../package.json").version ?? "0.9.2";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";

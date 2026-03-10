@@ -20,6 +20,7 @@ import {
 } from "../services/configStore";
 import { requireAdmin } from "../middleware/auth";
 import { injectCorsHosts } from "../services/jellyfinCors";
+import { BACKEND_VERSION } from "../services/version";
 
 /**
  * Guard: if the app is already running (setup completed), require admin auth.
@@ -177,7 +178,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
     try {
       // Authenticate via Jellyfin
       const authUrl = `${jellyfinUrl}/Users/AuthenticateByName`;
-      const authHeader = 'MediaBrowser Client="Tentacle TV", Device="Setup", DeviceId="tentacle-setup", Version="0.9.2"';
+      const authHeader = `MediaBrowser Client="Tentacle TV", Device="Setup", DeviceId="tentacle-setup", Version="${BACKEND_VERSION}"`;
       app.log.info({ jellyfinUrl, authUrl, username: body.username }, "create-admin: authenticating");
 
       const authRes = await fetch(authUrl, {

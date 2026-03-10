@@ -5,6 +5,7 @@ export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, u
 export type { CatalogFilters } from "./hooks/useLibrary";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
 export { useFavorite } from "./hooks/useFavorite";
+export { useWatchlist, useToggleWatchlist, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useStream } from "./hooks/useStream";
 export type { StreamOptions } from "./hooks/useStream";
@@ -27,6 +28,20 @@ export type { SupportTicket, TicketMessage, TicketsPage } from "./hooks/useTicke
 // Notifications
 export { useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, setNotificationsBackendUrl } from "./hooks/useNotifications";
 export type { AppNotification } from "./hooks/useNotifications";
+
+// Shared watchlists
+export {
+  useShareableUsers, useMySharedWatchlists, useSharedWatchlistMembers, useSharedWatchlistItems,
+  useCreateSharedWatchlist, useUpdateSharedWatchlist, useDeleteSharedWatchlist,
+  useAddSharedWatchlistMember, useUpdateMemberRole, useRemoveMember,
+  useAddSharedWatchlistItem, useRemoveSharedWatchlistItem,
+  useBatchAddToSharedWatchlists,
+  setSharedWatchlistsBackendUrl,
+} from "./hooks/useSharedWatchlists";
+export type { SharedWatchlistSummary, SharedWatchlistMember, SharedWatchlistItemData, ShareRole, BatchAddResult } from "./hooks/useSharedWatchlists";
+
+// Batch remove
+export { useBatchRemoveFavorites, useBatchRemoveWatchlist, useBatchRemoveSharedItems } from "./hooks/useBatchRemove";
 
 // App config & feature flags
 export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";

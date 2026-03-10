@@ -69,7 +69,8 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setStreamingConfigBackendUrl(baseUrl);
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
-  const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV");
+  const TV_VERSION: string = require("../../package.json").version ?? "0.9.2";
+  const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV", "Tentacle TV - TV", TV_VERSION);
 
   const savedToken = storage.getItem("tentacle_token");
   if (savedToken) {

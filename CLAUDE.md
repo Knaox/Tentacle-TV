@@ -30,6 +30,9 @@ pnpm db:push          # prisma db push (sync schema to DB)
 pnpm db:migrate       # prisma migrate dev
 pnpm db:studio        # Prisma Studio GUI
 
+# Plugins (run from apps/backend/)
+pnpm build:shared-deps  # Download tailwind.js + bundle shared-deps.js (required for plugins)
+
 # Docker
 pnpm docker:up        # Start MariaDB + Tentacle containers
 pnpm docker:reset     # Full teardown + rebuild (volumes included)

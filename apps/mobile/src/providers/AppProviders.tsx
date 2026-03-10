@@ -50,7 +50,8 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
 
   const client = useMemo(() => {
     const jellyfinBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
-    const c = new JellyfinClient(jellyfinBase, storage, uuid, "Tentacle-iOS");
+    const MOBILE_VERSION: string = require("../../package.json").version ?? "1.0.0";
+    const c = new JellyfinClient(jellyfinBase, storage, uuid, "Tentacle-iOS", "Tentacle TV - Mobile", MOBILE_VERSION);
     const token = storage.getItem("tentacle_token");
     if (token) c.setAccessToken(token);
     return c;

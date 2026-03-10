@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { isTauri } from "./useDesktopPlayer";
+import { isTauri, isMacOS } from "./useDesktopPlayer";
+
+export type UpdatePhase = "idle" | "available" | "downloading" | "installing" | "restarting";
 
 export interface UpdateInfo {
   available: boolean;
+  phase: UpdatePhase;
   version?: string;
   notes?: string;
   downloading: boolean;
@@ -12,6 +15,7 @@ export interface UpdateInfo {
 
 const defaultInfo: UpdateInfo = {
   available: false,
+  phase: "idle",
   downloading: false,
   progress: 0,
   error: null,
@@ -21,7 +25,7 @@ export function useAutoUpdate() {
   const [info, setInfo] = useState<UpdateInfo>(defaultInfo);
 
   useEffect(() => {
-    if (!isTauri()) return;
+    if (!isTauri() || !isMacOS()) return;
 
     let cancelled = false;
 
@@ -35,6 +39,7 @@ export function useAutoUpdate() {
         setInfo((prev) => ({
           ...prev,
           available: true,
+          phase: "available",
           version: update.version,
           notes: update.body ?? undefined,
         }));
@@ -49,9 +54,9 @@ export function useAutoUpdate() {
   }, []);
 
   const installUpdate = useCallback(async () => {
-    if (!isTauri()) return;
+    if (!isTauri() || !isMacOS()) return;
 
-    setInfo((prev) => ({ ...prev, downloading: true, progress: 0, error: null }));
+    setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
 
     try {
       const { check } = await import("@tauri-apps/plugin-updater");
@@ -75,11 +80,11 @@ export function useAutoUpdate() {
           setInfo((prev) => ({ ...prev, progress: pct }));
         }
         if (event.event === "Finished") {
-          setInfo((prev) => ({ ...prev, progress: 100 }));
+          setInfo((prev) => ({ ...prev, progress: 100, phase: "installing" }));
         }
       });
 
-      // Relaunch after install
+      setInfo((prev) => ({ ...prev, phase: "restarting" }));
       const { relaunch } = await import("@tauri-apps/plugin-process");
       await relaunch();
     } catch (err) {

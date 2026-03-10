@@ -36,7 +36,7 @@ async function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
 export interface AppNotification {
   id: string;
   jellyfinUserId: string;
-  type: "ticket_reply" | "ticket_status" | "request_status";
+  type: "ticket_reply" | "ticket_status" | "request_status" | "watchlist_share";
   title: string;
   body: string | null;
   refId: string | null;

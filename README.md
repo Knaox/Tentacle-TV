@@ -271,7 +271,17 @@ pnpm db:push       # Sync schema to database
 cd ../..
 ```
 
-### 5. Start Development Servers
+### 5. Build Plugin Dependencies
+
+```bash
+cd apps/backend
+pnpm build:shared-deps   # Downloads tailwind.js + bundles shared-deps.js
+cd ../..
+```
+
+> This step is required for the plugin system to work. Without it, plugin pages will fail to load with a 404 on `tailwind.js`.
+
+### 6. Start Development Servers
 
 Run both in separate terminals:
 

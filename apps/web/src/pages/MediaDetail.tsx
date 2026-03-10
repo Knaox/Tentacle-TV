@@ -2,14 +2,14 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useWatchedToggle } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useWatchedToggle, useToggleWatchlist } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { LicenseAttribution } from "../components/media/LicenseAttribution";
 import { TechInfo } from "../components/TechInfo";
-import { PlayIcon, ArrowLeftIcon, StarIcon, HeartIcon, CheckCircleIcon, QualityBadge } from "../components/media/MediaDetailIcons";
+import { PlayIcon, ArrowLeftIcon, StarIcon, HeartIcon, BookmarkIcon, CheckCircleIcon, QualityBadge } from "../components/media/MediaDetailIcons";
 import { PageTransition } from "../components/PageTransition";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
@@ -27,6 +27,7 @@ export function MediaDetail() {
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
   const { add: addFav, remove: removeFav } = useFavorite(itemId);
+  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(itemId);
   const { markWatched, markUnwatched } = useWatchedToggle(itemId);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
 
@@ -51,6 +52,7 @@ export function MediaDetail() {
   const progress = item.UserData?.PlayedPercentage;
   const hasResume = progress != null && progress > 0 && progress < 100;
   const isFavorite = item.UserData?.IsFavorite === true;
+  const isInWatchlist = item.UserData?.Likes === true;
   const isWatched = item.UserData?.Played === true;
 
   // Media stream badges
@@ -72,6 +74,11 @@ export function MediaDetail() {
   const toggleFavorite = () => {
     if (isFavorite) removeFav.mutate();
     else addFav.mutate();
+  };
+
+  const toggleWatchlist = () => {
+    if (isInWatchlist) removeWatchlist.mutate();
+    else addWatchlist.mutate();
   };
 
   const toggleWatched = () => {
@@ -232,11 +239,21 @@ export function MediaDetail() {
               {/* Favorite button */}
               <button
                 onClick={toggleFavorite}
-                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                aria-label={isFavorite ? t("common:removeFromFavorites") : t("common:addToFavorites")}
                 className="flex h-10 w-10 items-center justify-center rounded-full transition-all hover:bg-white/10"
                 style={{ border: "1px solid rgba(255,255,255,0.15)" }}
               >
                 <HeartIcon filled={isFavorite} />
+              </button>
+
+              {/* Watchlist button */}
+              <button
+                onClick={toggleWatchlist}
+                aria-label={isInWatchlist ? t("common:removeFromMyList") : t("common:addToMyList")}
+                className="flex h-10 w-10 items-center justify-center rounded-full transition-all hover:bg-white/10"
+                style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                <BookmarkIcon filled={isInWatchlist} />
               </button>
 
               {/* Watched button */}
