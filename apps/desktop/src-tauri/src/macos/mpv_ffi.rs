@@ -157,19 +157,24 @@ impl MpvLib {
     }
 
     fn find_lib_path() -> Result<PathBuf, String> {
-        // 1. Bundle: exe_dir/lib/libmpv.dylib
         if let Ok(exe) = std::env::current_exe() {
-            let bundle_path = exe.parent().unwrap_or(&exe).join("lib/libmpv.dylib");
+            // 1. Bundle: Contents/Resources/lib/libmpv.dylib (production .app)
+            let bundle_path = exe.parent().unwrap_or(&exe).join("../Resources/lib/libmpv.dylib");
             if bundle_path.exists() {
                 return Ok(bundle_path);
             }
+            // 2. Old bundle path fallback: exe_dir/lib/libmpv.dylib
+            let old_bundle_path = exe.parent().unwrap_or(&exe).join("lib/libmpv.dylib");
+            if old_bundle_path.exists() {
+                return Ok(old_bundle_path);
+            }
         }
-        // 2. Dev fallback: Homebrew arm64
+        // 3. Dev fallback: Homebrew arm64
         let homebrew_arm = PathBuf::from("/opt/homebrew/lib/libmpv.dylib");
         if homebrew_arm.exists() {
             return Ok(homebrew_arm);
         }
-        // 3. Dev fallback: Homebrew x86_64
+        // 4. Dev fallback: Homebrew x86_64
         let homebrew_x86 = PathBuf::from("/usr/local/lib/libmpv.dylib");
         if homebrew_x86.exists() {
             return Ok(homebrew_x86);
