@@ -133,7 +133,7 @@ jobs:
 
       # ─── Build + upload dans la release ───
       - name: Build & create release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Signature updater Tauri
