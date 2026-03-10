@@ -116,6 +116,7 @@ export interface UserItemData {
   PlayCount: number;
   IsFavorite: boolean;
   Played: boolean;
+  Likes?: boolean | null;
   PlayedPercentage?: number;
   UnplayedItemCount?: number;
   LastPlayedDate?: string;

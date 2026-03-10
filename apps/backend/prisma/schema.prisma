@@ -129,3 +129,44 @@ model PairedDevice {
   @@index([tokenHash])
   @@map("paired_devices")
 }
+
+model SharedWatchlist {
+  id              String   @id @default(cuid())
+  name            String   @db.VarChar(100)
+  creatorId       String   @db.VarChar(255)
+  creatorUsername  String   @db.VarChar(255)
+  createdAt       DateTime @default(now())
+  members         SharedWatchlistMember[]
+  items           SharedWatchlistItem[]
+
+  @@index([creatorId])
+  @@map("shared_watchlists")
+}
+
+model SharedWatchlistMember {
+  id          String   @id @default(cuid())
+  watchlistId String
+  watchlist   SharedWatchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  userId      String   @db.VarChar(255)
+  username    String   @db.VarChar(255)
+  role        String   @default("reader") @db.VarChar(20)
+  createdAt   DateTime @default(now())
+
+  @@unique([watchlistId, userId])
+  @@index([userId])
+  @@map("shared_watchlist_members")
+}
+
+model SharedWatchlistItem {
+  id              String   @id @default(cuid())
+  watchlistId     String
+  watchlist       SharedWatchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  jellyfinItemId  String   @db.VarChar(255)
+  addedById       String   @db.VarChar(255)
+  addedByUsername  String   @db.VarChar(255)
+  createdAt       DateTime @default(now())
+
+  @@unique([watchlistId, jellyfinItemId])
+  @@index([watchlistId])
+  @@map("shared_watchlist_items")
+}

@@ -14,4 +14,8 @@ export default {
   ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
   autoRetry: "Nouvelle tentative automatique pour « {{title}} » ({{count}}/{{max}})",
   autoRetryFailed: "Échec définitif pour « {{title}} » après {{max}} tentatives",
+  updateNow: "Mettre à jour",
+  updateInstalling: "Installation en cours...",
+  updateRestarting: "Redémarrage...",
+  updateReleaseNotes: "Notes de mise à jour",
 } as const;

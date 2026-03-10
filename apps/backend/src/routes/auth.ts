@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
+import { BACKEND_VERSION } from "../services/version";
 
 const registerSchema = z.object({
   inviteKey: z.string().min(1),
@@ -26,7 +27,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const deviceId = `tentacle-server-${body.username}`;
-      const authHeader = `MediaBrowser Client="Tentacle TV", Device="Server", DeviceId="${deviceId}", Version="0.9.2"`;
+      const authHeader = `MediaBrowser Client="Tentacle TV", Device="Server", DeviceId="${deviceId}", Version="${BACKEND_VERSION}"`;
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
         headers: {

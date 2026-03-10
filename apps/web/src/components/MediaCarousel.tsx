@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CarouselCard } from "./CarouselCard";
 
@@ -8,9 +9,11 @@ interface MediaCarouselProps {
   items: MediaItem[];
   /** Extra delay (ms) added to entry animations for cascade sequencing */
   animDelay?: number;
+  /** When set, "Tout voir" becomes a clickable link to this path */
+  href?: string;
 }
 
-export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProps) {
+export function MediaCarousel({ title, items, animDelay = 0, href }: MediaCarouselProps) {
   const { t } = useTranslation("common");
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -79,12 +82,24 @@ export function MediaCarousel({ title, items, animDelay = 0 }: MediaCarouselProp
       {/* Title with "Tout voir" on hover */}
       <div className="mb-4 flex items-center gap-2 px-4 md:px-8">
         <h2 className="text-lg font-bold tracking-tight text-white/90">{title}</h2>
-        <span className="-translate-x-2 flex items-center gap-0.5 text-xs font-medium text-purple-400 opacity-0 transition-all duration-300 group-hover/row:translate-x-0 group-hover/row:opacity-100">
-          {t("common:seeAll")}
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </span>
+        {href ? (
+          <Link
+            to={href}
+            className="-translate-x-2 flex items-center gap-0.5 text-xs font-medium text-purple-400 opacity-0 transition-all duration-300 hover:text-purple-300 group-hover/row:translate-x-0 group-hover/row:opacity-100"
+          >
+            {t("common:seeAll")}
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        ) : (
+          <span className="-translate-x-2 flex items-center gap-0.5 text-xs font-medium text-purple-400 opacity-0 transition-all duration-300 group-hover/row:translate-x-0 group-hover/row:opacity-100">
+            {t("common:seeAll")}
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        )}
       </div>
 
       <div className="relative">

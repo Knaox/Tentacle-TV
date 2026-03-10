@@ -23,6 +23,9 @@ apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/.tauri-keys/tentacle.key
 apps/desktop/src-tauri/binaries/*.exe
 
+# Release notes (local only)
+RELEASE.md
+
 # Environment (secrets — never commit)
 .env
 .env.local

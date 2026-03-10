@@ -20,6 +20,7 @@ import {
   setConfigBackendUrl,
   setPairingBackendUrl,
   setStreamingConfigBackendUrl,
+  setSharedWatchlistsBackendUrl,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -74,6 +75,7 @@ export function configureBackendUrls(url: string) {
   setConfigBackendUrl(url);
   setPairingBackendUrl(url);
   setStreamingConfigBackendUrl(url);
+  setSharedWatchlistsBackendUrl(url);
 }
 
 configureBackendUrls(backendUrl);
@@ -87,11 +89,16 @@ const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
 
 // JellyfinClient routes through the Tentacle proxy at /api/jellyfin/*
+const clientName = isTauriApp ? "Tentacle TV - Desktop" : "Tentacle TV - Web";
+const clientVersion = isTauriApp ? __APP_VERSION_DESKTOP__ : __APP_VERSION_WEB__;
+
 const jellyfinClient = new JellyfinClient(
   backendUrl ? `${backendUrl}/api/jellyfin` : "/api/jellyfin",
   storage,
   uuid,
-  deviceName
+  deviceName,
+  clientName,
+  clientVersion,
 );
 
 // Web: use httpOnly cookies for auth (XSS-proof token storage)

@@ -9,6 +9,7 @@ export function setConfigBackendUrl(url: string) {
 export interface AppFeatures {
   downloads: boolean;
   demo: boolean;
+  sharedWatchlists?: boolean;
 }
 
 export interface AppConfig {

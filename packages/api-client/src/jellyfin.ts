@@ -26,6 +26,8 @@ export class JellyfinClient {
   private deviceId: string;
   private storage: StorageAdapter;
   private deviceName: string;
+  private clientName: string;
+  private version: string;
   private authExpiredCallback?: () => void;
   private directStreaming: DirectStreamingState | null = null;
   private directStreamingErrors = 0;
@@ -37,11 +39,15 @@ export class JellyfinClient {
     baseUrl: string,
     storage: StorageAdapter,
     uuid: UuidGenerator,
-    deviceName = "Web"
+    deviceName = "Web",
+    clientName?: string,
+    version?: string,
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
     this.storage = storage;
     this.deviceName = deviceName;
+    this.clientName = clientName ?? APP_NAME;
+    this.version = version ?? APP_VERSION;
     this.deviceId = this.getOrCreateDeviceId(uuid);
   }
 
@@ -108,10 +114,10 @@ export class JellyfinClient {
   getAuthHeader(token?: string): string {
     const t = token ?? this.accessToken;
     const parts = [
-      `MediaBrowser Client="${APP_NAME}"`,
+      `MediaBrowser Client="${this.clientName}"`,
       `Device="${this.deviceName}"`,
       `DeviceId="${this.deviceId}"`,
-      `Version="${APP_VERSION}"`,
+      `Version="${this.version}"`,
     ];
     if (t) parts.push(`Token="${t}"`);
     return parts.join(", ");

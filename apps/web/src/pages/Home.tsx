@@ -6,6 +6,7 @@ import {
   useNextUp,
   useWatchedItems,
   useFeaturedItems,
+  useWatchlist,
 } from "@tentacle-tv/api-client";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
@@ -16,6 +17,7 @@ export function Home() {
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
   const { data: nextUp } = useNextUp();
+  const { data: watchlist } = useWatchlist();
   const { data: watchedItems } = useWatchedItems();
   const { data: libraries } = useLibraries();
 
@@ -42,8 +44,11 @@ export function Home() {
         {nextUp && nextUp.length > 0 && (
           <MediaCarousel title={t("common:nextEpisodes")} items={nextUp} animDelay={450} />
         )}
+        {watchlist && watchlist.length > 0 && (
+          <MediaCarousel title={t("common:myList")} items={watchlist} animDelay={500} href="/watchlist" />
+        )}
         {watchedItems && watchedItems.length > 0 && (
-          <MediaCarousel title={t("common:alreadyWatched")} items={watchedItems} animDelay={550} />
+          <MediaCarousel title={t("common:alreadyWatched")} items={watchedItems} animDelay={650} />
         )}
         {libraries?.map((lib, i) => (
           <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} delayIndex={i} />
@@ -91,6 +96,7 @@ function LibraryRow({
       title={t("common:latestAdditions", { name: libraryName })}
       items={items}
       animDelay={650 + delayIndex * 100}
+      href={`/library/${libraryId}`}
     />
   );
 }

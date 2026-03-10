@@ -14,4 +14,8 @@ export default {
   ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
   autoRetry: "Automatic retry for \"{{title}}\" ({{count}}/{{max}})",
   autoRetryFailed: "Permanently failed for \"{{title}}\" after {{max}} attempts",
+  updateNow: "Update now",
+  updateInstalling: "Installing...",
+  updateRestarting: "Restarting...",
+  updateReleaseNotes: "Release notes",
 } as const;

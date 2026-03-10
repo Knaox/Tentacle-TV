@@ -19,4 +19,11 @@ export default {
   logoutConfirmTitle: "Sign out",
   logoutConfirmMessage: "Are you sure you want to disconnect?",
   tv: "TV",
+  more: "More",
+  libraries: "Libraries",
+  myList: "My List",
+  myFavorites: "My Favorites",
+  pinned: "Pinned",
+  pin: "Pin",
+  unpin: "Unpin",
 } as const;

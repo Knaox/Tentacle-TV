@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { MediaContextMenu } from "./MediaContextMenu";
+import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
 
 export function CarouselCard({ item, index }: { item: MediaItem; index: number }) {
   const { t } = useTranslation("common");
   const [hovered, setHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const client = useJellyfinClient();
   const navigate = useNavigate();
   const year = item.ProductionYear;
@@ -17,6 +22,18 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
   const isEpisode = item.Type === "Episode";
   const genre = item.Genres?.[0];
 
+  // Local optimistic state — syncs from prop, toggles instantly on click
+  const [localWatchlist, setLocalWatchlist] = useState(item.UserData?.Likes === true);
+  const [localFavorite, setLocalFavorite] = useState(item.UserData?.IsFavorite === true);
+  useEffect(() => { setLocalWatchlist(item.UserData?.Likes === true); }, [item.UserData?.Likes]);
+  useEffect(() => { setLocalFavorite(item.UserData?.IsFavorite === true); }, [item.UserData?.IsFavorite]);
+
+  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(item.Id);
+  const { add: addFav, remove: removeFav } = useFavorite(item.Id);
+  const { data: config } = useAppConfig();
+  const [sharedPickerPos, setSharedPickerPos] = useState<{ x: number; y: number } | null>(null);
+  const [addedToShared, setAddedToShared] = useState(false);
+
   const imageUrl =
     isEpisode && item.SeriesId
       ? client.getImageUrl(item.SeriesId, "Primary", { height: 450, quality: 90 })
@@ -25,8 +42,36 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
   const detailId = isEpisode ? (item.SeriesId ?? item.Id) : item.Id;
 
   const handleClick = () => {
+    if (ctxMenu) return;
     navigate(`/media/${detailId}`);
   };
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const pos = { x: touch.clientX, y: touch.clientY };
+    longPressTimer.current = setTimeout(() => {
+      setCtxMenu(pos);
+    }, 500);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   return (
     <div
@@ -39,6 +84,10 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
     >
       {/* Poster */}
       <div
@@ -124,6 +173,73 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
           </div>
         </div>
 
+        {/* Quick action buttons — top-right, hover only */}
+        <div
+          className="absolute right-1.5 top-1.5 z-10 flex flex-col gap-1"
+          style={{
+            opacity: hovered ? 1 : 0,
+            pointerEvents: hovered ? "auto" : "none",
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          {/* Favorite toggle */}
+          <button
+            className="flex h-6 w-6 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110"
+            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLocalFavorite(!localFavorite);
+              if (localFavorite) removeFav.mutate();
+              else addFav.mutate();
+            }}
+            aria-label={localFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            {localFavorite ? (
+              <svg className="h-3 w-3 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
+            ) : (
+              <svg className="h-3 w-3 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+            )}
+          </button>
+          {/* Watchlist toggle */}
+          <button
+            className="flex h-6 w-6 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110"
+            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLocalWatchlist(!localWatchlist);
+              if (localWatchlist) removeWatchlist.mutate();
+              else addWatchlist.mutate();
+            }}
+            aria-label={localWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+          >
+            {localWatchlist ? (
+              <svg className="h-3 w-3 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
+            ) : (
+              <svg className="h-3 w-3 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+            )}
+          </button>
+          {/* Shared watchlist button */}
+          {config?.features.sharedWatchlists && (
+            <button
+              className="flex h-6 w-6 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110"
+              style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setSharedPickerPos(sharedPickerPos ? null : {
+                  x: Math.min(rect.right + 8, window.innerWidth - 280),
+                  y: rect.top,
+                });
+              }}
+              aria-label="Add to shared list"
+            >
+              <svg className={`h-3 w-3 ${addedToShared ? "text-pink-400" : "text-white/60"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h6m3 0h3m-1.5-1.5v3" />
+              </svg>
+            </button>
+          )}
+        </div>
+
         {/* Watched badge */}
         {watched && (
           <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-tentacle-accent shadow">
@@ -158,6 +274,33 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
           {genre}
         </p>
       </div>
+
+      {ctxMenu && (
+        <MediaContextMenu
+          itemId={item.Id}
+          isFavorite={localFavorite}
+          isInWatchlist={localWatchlist}
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+          onToggleFavorite={() => setLocalFavorite(!localFavorite)}
+          onToggleWatchlist={() => setLocalWatchlist(!localWatchlist)}
+        />
+      )}
+
+      {sharedPickerPos && createPortal(
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setSharedPickerPos(null)} />
+          <div
+            className="fixed z-50 w-[260px] overflow-hidden rounded-xl border border-white/10 bg-[#12121a]/95 shadow-2xl backdrop-blur-lg"
+            style={{ left: sharedPickerPos.x, top: sharedPickerPos.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SharedWatchlistPicker itemId={item.Id} onDone={() => setSharedPickerPos(null)} onSuccess={() => setAddedToShared(true)} />
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
