@@ -15,7 +15,7 @@
       "backgroundColor": "#080812"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.tentacle.mobile",
       "buildNumber": "1",
       "infoPlist": {
