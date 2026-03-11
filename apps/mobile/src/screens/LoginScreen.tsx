@@ -14,6 +14,7 @@ import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
 import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
+import { storeCredentials, attemptReAuth } from "../auth/credentialManager";
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
@@ -43,7 +44,7 @@ export function LoginScreen() {
     fetch(`${serverUrl}/api/jellyfin/Users/Me`, {
       headers: { "X-Emby-Token": storedToken },
     })
-      .then((res) => {
+      .then(async (res) => {
         if (cancelled) return;
         if (res.ok) {
           // Token still valid — restore session
@@ -51,7 +52,17 @@ export function LoginScreen() {
           setSessionExpired(false);
           router.replace("/(tabs)");
         } else {
-          // Token truly expired — clear from storage
+          // Token expired — try re-auth via stored credentials
+          const reAuth = await attemptReAuth(storage, serverUrl);
+          if (!cancelled && reAuth) {
+            client.setAccessToken(reAuth.AccessToken);
+            storage.setItem("tentacle_token", reAuth.AccessToken);
+            storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
+            setSessionExpired(false);
+            router.replace("/(tabs)");
+            return;
+          }
+          // Re-auth failed — show login form
           storage.removeItem("tentacle_token");
           storage.removeItem("tentacle_user");
           setSessionExpired(false);
@@ -95,6 +106,7 @@ export function LoginScreen() {
       client.setAccessToken(data.AccessToken);
       storage.setItem("tentacle_token", data.AccessToken);
       storage.setItem("tentacle_user", JSON.stringify(data.User));
+      storeCredentials(storage, username, password);
       setSessionExpired(false);
 
       router.replace("/(tabs)");

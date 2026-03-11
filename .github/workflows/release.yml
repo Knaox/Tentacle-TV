@@ -158,6 +158,6 @@ jobs:
             - **macOS** : télécharger le fichier `.dmg` (signé et notarisé)
             - **Windows (installeur)** : télécharger le fichier `-setup.exe`
             - **Windows (MSI)** : télécharger le fichier `.msi`
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}

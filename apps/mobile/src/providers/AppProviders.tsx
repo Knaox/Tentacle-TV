@@ -26,7 +26,15 @@ import {
   setPairingBackendUrl,
 } from "@tentacle-tv/api-client";
 import { setSessionExpired } from "@/auth/sessionState";
+import { attemptReAuth } from "@/auth/credentialManager";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
+
+/** AbortSignal.timeout() polyfill for React Native */
+function timeoutSignal(ms: number): AbortSignal {
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
 
 interface AppProvidersProps {
   storage: StorageAdapter;
@@ -59,18 +67,113 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverUrl]);
 
-  // Handle auth expiration: redirect to login but keep token in storage
-  // so the app can try to auto-reconnect on next restart.
-  // Token is only cleared from storage on explicit logout.
+  // Handle auth expiration: try to refresh before logging out
   useEffect(() => {
-    client.setOnAuthExpired(() => {
-      console.debug("[AppProviders] Auth expired — redirecting to login (token kept in storage)");
-      setSessionExpired(true);
-      setPreferencesToken(null);
-      queryClient.clear();
-      router.replace("/(auth)/login");
+    client.setOnAuthExpired(async () => {
+      const token = storage.getItem("tentacle_token");
+      if (!token || !serverUrl) {
+        setSessionExpired(true);
+        setPreferencesToken(null);
+        client.setAccessToken(null);
+        queryClient.clear();
+        router.replace("/(auth)/login");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${serverUrl}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+          signal: timeoutSignal(5000),
+        });
+
+        if (res.ok) {
+          // Token still valid — restore session silently
+          const data = await res.json();
+          client.setAccessToken(data.AccessToken);
+          setPreferencesToken(data.AccessToken);
+          console.debug("[AppProviders] Token refreshed successfully");
+          return;
+        }
+
+        if (res.status === 401) {
+          // Token truly expired — try re-auth via stored credentials
+          console.debug("[AppProviders] Token expired — attempting re-auth");
+          const reAuth = await attemptReAuth(storage, serverUrl);
+          if (reAuth) {
+            client.setAccessToken(reAuth.AccessToken);
+            storage.setItem("tentacle_token", reAuth.AccessToken);
+            storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
+            setPreferencesToken(reAuth.AccessToken);
+            console.debug("[AppProviders] Re-auth succeeded");
+            return;
+          }
+          // Re-auth failed — redirect to login
+          console.debug("[AppProviders] Re-auth failed — redirecting to login");
+          storage.removeItem("tentacle_token");
+          storage.removeItem("tentacle_user");
+          setSessionExpired(true);
+          setPreferencesToken(null);
+          client.setAccessToken(null);
+          queryClient.clear();
+          router.replace("/(auth)/login");
+          return;
+        }
+
+        // Server error (503, etc.) — keep token, don't disconnect
+        console.debug("[AppProviders] Refresh failed (server unreachable) — keeping session");
+      } catch {
+        // Network error — don't disconnect
+        console.debug("[AppProviders] Refresh failed (network) — keeping session");
+      }
     });
-  }, [client, storage, router]);
+  }, [client, storage, router, serverUrl]);
+
+  // Validate token when app returns to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", async (state) => {
+      if (state !== "active" || !serverUrl) return;
+      const token = storage.getItem("tentacle_token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${serverUrl}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+          signal: timeoutSignal(5000),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          client.setAccessToken(data.AccessToken);
+          setPreferencesToken(data.AccessToken);
+        } else if (res.status === 401) {
+          // Try re-auth via stored credentials
+          const reAuth = await attemptReAuth(storage, serverUrl);
+          if (reAuth) {
+            client.setAccessToken(reAuth.AccessToken);
+            storage.setItem("tentacle_token", reAuth.AccessToken);
+            storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
+            setPreferencesToken(reAuth.AccessToken);
+          } else {
+            storage.removeItem("tentacle_token");
+            storage.removeItem("tentacle_user");
+            setSessionExpired(true);
+            setPreferencesToken(null);
+            client.setAccessToken(null);
+            queryClient.clear();
+            router.replace("/(auth)/login");
+          }
+        }
+        // 503/network error: silently ignore, keep current session
+      } catch {
+        // Network error — keep session
+      }
+    });
+    return () => sub.remove();
+  }, [client, storage, router, serverUrl]);
 
   useEffect(() => {
     if (!serverUrl) return;

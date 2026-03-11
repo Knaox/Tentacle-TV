@@ -115,6 +115,7 @@ if (savedToken) {
 // On 401 (stale/revoked token) clear auth state → triggers redirect to /login.
 // The localStorage.removeItem intercept in App.tsx notifies useIsAuthenticated.
 jellyfinClient.setOnAuthExpired(() => {
+  jellyfinClient.setAccessToken(null);
   storage.removeItem("tentacle_token");
   storage.removeItem("tentacle_user");
 });

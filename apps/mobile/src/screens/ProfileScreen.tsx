@@ -8,6 +8,7 @@ import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
 import { colors, spacing, typography } from "../theme";
 import { GlassCard, Badge, Button, Divider, FadeIn, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
+import { clearCredentials } from "../auth/credentialManager";
 
 // Read version directly from app.json (expo-constants bakes the value into the native build)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -36,7 +37,10 @@ export function ProfileScreen() {
 
   const handleLogout = () => {
     logout.mutate(undefined, {
-      onSuccess: () => router.replace("/(auth)/login"),
+      onSuccess: () => {
+        clearCredentials(storage);
+        router.replace("/(auth)/login");
+      },
     });
   };
 
