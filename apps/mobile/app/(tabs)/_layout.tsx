@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
-import { View } from "react-native";
+import { Platform, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useMobilePluginNavItems, usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
 import { PersistentHeader } from "@/components/PersistentHeader";
@@ -20,6 +21,9 @@ function resolveIcon(icon: string | undefined, fallback: string): string {
 
 export default function TabsLayout() {
   const { t } = useTranslation("nav");
+  const { width: screenW } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isCompact = screenW < 380;
   const navItems = useMobilePluginNavItems();
   usePrefetchPluginBundles();
   const first = navItems[0];
@@ -33,15 +37,17 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.tabBar,
-          borderTopColor: colors.borderAccent,
-          borderTopWidth: 1,
-          height: 88,
-          paddingBottom: 28,
-          paddingTop: 8,
+          borderTopColor: colors.border,
+          borderTopWidth: 0.5,
+          height: 60 + Math.max(insets.bottom, Platform.OS === "android" ? 8 : 0),
+          paddingBottom: Math.max(insets.bottom, Platform.OS === "android" ? 8 : 0),
+          paddingTop: isCompact ? 4 : 8,
+          elevation: 0,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: "rgba(255,255,255,0.4)",
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: isCompact ? 9 : 11, fontWeight: "600" },
+        tabBarAllowFontScaling: false,
       }}
     >
       {/* Tab 1: Home */}

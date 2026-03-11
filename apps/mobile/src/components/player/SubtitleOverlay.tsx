@@ -1,13 +1,15 @@
-import { View, Text } from "react-native";
+import { View, Text, useWindowDimensions } from "react-native";
 import { useSubtitleOverlay } from "../../hooks/useSubtitleOverlay";
 
 interface Props {
   vttUrl: string | null;
   currentTime: number;
+  headers?: Record<string, string>;
 }
 
-export function SubtitleOverlay({ vttUrl, currentTime }: Props) {
-  const text = useSubtitleOverlay(vttUrl, currentTime);
+export function SubtitleOverlay({ vttUrl, currentTime, headers }: Props) {
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const text = useSubtitleOverlay(vttUrl, currentTime, headers);
   if (!text) return null;
 
   const lines = text.split("\n");
@@ -19,9 +21,9 @@ export function SubtitleOverlay({ vttUrl, currentTime }: Props) {
         position: "absolute",
         left: 0,
         right: 0,
-        bottom: 60,
+        bottom: Math.min(60, Math.round(screenH * 0.08)),
         alignItems: "center",
-        paddingHorizontal: 24,
+        paddingHorizontal: Math.min(24, Math.round(screenW * 0.06)),
       }}
     >
       <View

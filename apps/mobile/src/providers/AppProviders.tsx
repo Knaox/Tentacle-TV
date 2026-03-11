@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 import { QueryClient, QueryClientProvider, focusManager, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 
@@ -51,7 +51,8 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
   const client = useMemo(() => {
     const jellyfinBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
     const MOBILE_VERSION: string = require("../../package.json").version ?? "1.0.0";
-    const c = new JellyfinClient(jellyfinBase, storage, uuid, "Tentacle-iOS", "Tentacle TV - Mobile", MOBILE_VERSION);
+    const deviceName = Platform.OS === "android" ? "Tentacle-Android" : "Tentacle-iOS";
+    const c = new JellyfinClient(jellyfinBase, storage, uuid, deviceName, "Tentacle TV - Mobile", MOBILE_VERSION);
     const token = storage.getItem("tentacle_token");
     if (token) c.setAccessToken(token);
     return c;

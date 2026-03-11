@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { View, Text, ScrollView, Dimensions, RefreshControl, InteractionManager } from "react-native";
+import { View, Text, ScrollView, RefreshControl, InteractionManager, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,15 +23,14 @@ import { MobileEpisodeList } from "../components/MobileEpisodeList";
 import { CastRow } from "../components/CastRow";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../constants/featureFlags";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const BACKDROP_H = Math.round(SCREEN_HEIGHT * 0.45);
-const POSTER_W = 130;
-const POSTER_H = 195;
-
 interface Props { itemId: string }
 
 export function MediaDetailScreen({ itemId }: Props) {
   const { t } = useTranslation("common");
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+  const BACKDROP_H = Math.round(SCREEN_HEIGHT * 0.45);
+  const POSTER_W = Math.round(SCREEN_WIDTH * 0.3);
+  const POSTER_H = Math.round(POSTER_W * 1.5);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const client = useJellyfinClient();
@@ -141,7 +140,14 @@ export function MediaDetailScreen({ itemId }: Props) {
           {...(ENABLE_SHARED_POSTER_TRANSITION ? { sharedTransitionTag: `poster-${posterId}` } : {})}
         />
         <Animated.View style={[{ flex: 1, marginLeft: spacing.lg, justifyContent: "flex-end" }, titleStyle]}>
-          <Text style={{ fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>{item.Name}</Text>
+          {isEpisode && item.SeriesName && (
+            <Text numberOfLines={1} style={{ ...typography.caption, color: colors.textSecondary, marginBottom: 2 }}>{item.SeriesName}</Text>
+          )}
+          <Text style={{ fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>
+            {isEpisode && item.IndexNumber != null
+              ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} \u00b7 `
+              : ""}{item.Name}
+          </Text>
           <Animated.View style={[{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs, flexWrap: "wrap", alignItems: "center" }, metaStyle]}>
             {year && <Text style={{ ...typography.caption, color: colors.textSecondary }}>{year}</Text>}
             {year && (runtimeMin != null && runtimeMin > 0 || rating) && <Text style={{ ...typography.caption, color: colors.textMuted }}>·</Text>}
@@ -229,11 +235,15 @@ export function MediaDetailScreen({ itemId }: Props) {
 /* --- Loading skeleton --- */
 
 function LoadingSkeleton({ top }: { top: number }) {
+  const { width: sw, height: sh } = useWindowDimensions();
+  const backdropH = Math.round(sh * 0.45);
+  const posterW = Math.round(sw * 0.3);
+  const posterH = Math.round(posterW * 1.5);
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: top }}>
-      <Skeleton width="100%" height={BACKDROP_H} radius={0} />
+      <Skeleton width="100%" height={backdropH} radius={0} />
       <View style={{ flexDirection: "row", paddingHorizontal: spacing.screenPadding, marginTop: -90 }}>
-        <Skeleton width={POSTER_W} height={POSTER_H} radius={spacing.cardRadius} />
+        <Skeleton width={posterW} height={posterH} radius={spacing.cardRadius} />
         <View style={{ flex: 1, marginLeft: spacing.lg, justifyContent: "flex-end", gap: spacing.sm }}>
           <Skeleton width="80%" height={22} />
           <Skeleton width="50%" height={14} />

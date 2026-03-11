@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Pressable, Animated } from "react-native";
+import { View, Text, Pressable, Animated, useWindowDimensions } from "react-native";
 import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
@@ -47,6 +47,9 @@ export function MobilePlayerOverlay({
   visible, onToggle,
 }: Props) {
   const { t } = useTranslation("player");
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const playSize = Math.min(60, Math.round(screenH * 0.08));
+  const centerGap = Math.min(36, Math.round(screenW * 0.05));
   const [showSettings, setShowSettings] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false);
   const [showAutoPlay, setShowAutoPlay] = useState(false);
@@ -105,7 +108,7 @@ export function MobilePlayerOverlay({
           </View>
 
           {/* Center controls */}
-          <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 36 }}>
+          <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap }}>
             {previousEpisode && onPreviousEpisode && (
               <Pressable onPress={onPreviousEpisode} hitSlop={16} style={{ padding: 8 }}>
                 <SkipBack size={22} color="rgba(255,255,255,0.8)" />
@@ -119,7 +122,7 @@ export function MobilePlayerOverlay({
 
             <Pressable onPress={() => { onPlayPause(); resetHideTimer(); }} hitSlop={16}>
               <View style={{
-                width: 60, height: 60, borderRadius: 30,
+                width: playSize, height: playSize, borderRadius: playSize / 2,
                 backgroundColor: "rgba(255,255,255,0.15)",
                 justifyContent: "center", alignItems: "center",
               }}>
@@ -141,12 +144,12 @@ export function MobilePlayerOverlay({
 
           {/* Skip intro / credits */}
           {showSkipIntro && introSegment && (
-            <View style={{ position: "absolute", bottom: 120, right: 16 }}>
+            <View style={{ position: "absolute", bottom: Math.min(120, Math.round(screenH * 0.15)), right: 16 }}>
               <SkipButton label={t("skipIntro")} onPress={() => onSeek(introSegment.end)} />
             </View>
           )}
           {showSkipCredits && creditsSegment && (
-            <View style={{ position: "absolute", bottom: 120, right: 16 }}>
+            <View style={{ position: "absolute", bottom: Math.min(120, Math.round(screenH * 0.15)), right: 16 }}>
               <SkipButton label={t("skipCredits")} onPress={() => onSeek(creditsSegment.end)} />
             </View>
           )}

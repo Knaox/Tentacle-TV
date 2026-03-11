@@ -60,8 +60,13 @@ export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, wi
           </View>
         )}
       </View>
-      <Text numberOfLines={1} style={st.title}>{item.Name}</Text>
-      {item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
+      <Text numberOfLines={1} style={st.title}>
+        {isEpisode && item.IndexNumber != null
+          ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} \u00b7 `
+          : ""}{item.Name}
+      </Text>
+      {!isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
+      {isEpisode && item.SeriesName != null && <Text numberOfLines={1} style={st.year}>{item.SeriesName}</Text>}
     </PressableCard>
   );
 });

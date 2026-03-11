@@ -5,7 +5,11 @@ import { parseVtt, type VttCue } from "../lib/vttParser";
  * Fetch a VTT subtitle file and return the current cue text based on playback time.
  * Returns null when no cue is active, URL is null, or fetch failed.
  */
-export function useSubtitleOverlay(vttUrl: string | null, currentTime: number): string | null {
+export function useSubtitleOverlay(
+  vttUrl: string | null,
+  currentTime: number,
+  headers?: Record<string, string>,
+): string | null {
   const cuesRef = useRef<VttCue[]>([]);
   const [currentText, setCurrentText] = useState<string | null>(null);
 
@@ -17,13 +21,13 @@ export function useSubtitleOverlay(vttUrl: string | null, currentTime: number): 
 
     const controller = new AbortController();
 
-    fetch(vttUrl, { signal: controller.signal })
+    fetch(vttUrl, { signal: controller.signal, headers })
       .then((r) => r.text())
       .then((text) => {
         cuesRef.current = parseVtt(text);
       })
       .catch(() => {
-        // Fail silently — no subtitles shown
+        console.warn("[Tentacle:Subtitles] VTT fetch failed", vttUrl?.slice(0, 120));
       });
 
     return () => controller.abort();

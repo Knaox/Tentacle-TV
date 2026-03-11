@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { View, Text, Pressable, Animated } from "react-native";
+import { View, Text, Pressable, Animated, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -13,6 +13,7 @@ interface Props {
 
 export function AutoPlayOverlay({ nextEpisode, onPlay, onDismiss }: Props) {
   const { t } = useTranslation("player");
+  const { width: screenW } = useWindowDimensions();
   const [countdown, setCountdown] = useState(COUNTDOWN_SEC);
   const slideAnim = useRef(new Animated.Value(100)).current;
 
@@ -50,7 +51,7 @@ export function AutoPlayOverlay({ nextEpisode, onPlay, onDismiss }: Props) {
     }}>
       <View style={{
         backgroundColor: "rgba(18, 18, 26, 0.95)", borderRadius: 12,
-        padding: 16, width: 260,
+        padding: 16, width: Math.min(260, screenW - 32),
         borderWidth: 1, borderColor: "rgba(139, 92, 246, 0.2)",
         shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3, shadowRadius: 8,
