@@ -29,7 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis", "dmg", "updater"],
+    "targets": "all",
     "publisher": "Damien ROUGE",
     "resources": ["lib/**/*"],
     "icon": [
