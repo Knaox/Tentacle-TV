@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": "v1Compatible",
     "publisher": "Damien ROUGE",
     "resources": ["lib/**/*"],
     "icon": [
