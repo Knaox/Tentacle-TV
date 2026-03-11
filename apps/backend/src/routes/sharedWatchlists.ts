@@ -68,11 +68,11 @@ export const sharedWatchlistRoutes: FastifyPluginAsync = async (app) => {
       }),
     ]);
     return [
-      ...created.map((w) => ({
+      ...created.map((w: typeof created[number]) => ({
         id: w.id, name: w.name, creatorId: w.creatorId, creatorUsername: w.creatorUsername,
         memberCount: w._count.members, itemCount: w._count.items, myRole: "creator" as const,
       })),
-      ...memberships.map((m) => ({
+      ...memberships.map((m: typeof memberships[number]) => ({
         id: m.watchlist.id, name: m.watchlist.name, creatorId: m.watchlist.creatorId,
         creatorUsername: m.watchlist.creatorUsername, memberCount: m.watchlist._count.members,
         itemCount: m.watchlist._count.items, myRole: m.role as "contributor" | "reader",
@@ -162,7 +162,7 @@ export const sharedWatchlistRoutes: FastifyPluginAsync = async (app) => {
     if (!role) return reply.status(403).send({ message: "Non autorisé" });
     const items = await prisma.sharedWatchlistItem.findMany({ where: { watchlistId: id }, orderBy: { createdAt: "desc" } });
     if (items.length === 0) return { items: [] };
-    const itemIds = items.map((i) => i.jellyfinItemId);
+    const itemIds = items.map((i: typeof items[number]) => i.jellyfinItemId);
     type JfItem = { Name: string; Type: string; ProductionYear?: number; ImageTags?: Record<string, string>; UserData?: { Played: boolean; IsFavorite: boolean; Likes?: boolean } };
     const jellyfinMap: Record<string, JfItem> = {};
     try {
@@ -170,7 +170,7 @@ export const sharedWatchlistRoutes: FastifyPluginAsync = async (app) => {
       for (const jfItem of jfData.Items) jellyfinMap[jfItem.Id] = jfItem;
     } catch { /* fallback: return DB data without enrichment */ }
     return {
-      items: items.map((item) => {
+      items: items.map((item: typeof items[number]) => {
         const jf = jellyfinMap[item.jellyfinItemId];
         return {
           id: item.id, jellyfinItemId: item.jellyfinItemId,

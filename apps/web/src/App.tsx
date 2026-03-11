@@ -5,7 +5,7 @@ import { UpdateModal } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, notifyUserChange } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
@@ -49,11 +49,11 @@ const origSetItem = localStorage.setItem.bind(localStorage);
 const origRemoveItem = localStorage.removeItem.bind(localStorage);
 localStorage.setItem = (key: string, value: string) => {
   origSetItem(key, value);
-  if (key === "tentacle_user") notifyAuthChange();
+  if (key === "tentacle_user") { notifyAuthChange(); notifyUserChange(); }
 };
 localStorage.removeItem = (key: string) => {
   origRemoveItem(key);
-  if (key === "tentacle_user") notifyAuthChange();
+  if (key === "tentacle_user") { notifyAuthChange(); notifyUserChange(); }
 };
 
 function useIsAuthenticated(): boolean {

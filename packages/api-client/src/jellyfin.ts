@@ -33,6 +33,9 @@ export class JellyfinClient {
   private directStreamingErrors = 0;
   private directStreamingFailCallback?: () => void;
   private static readonly DS_ERROR_THRESHOLD = 3;
+  private _consecutive401Count = 0;
+  private _isLoggingIn = false;
+  private static readonly AUTH_EXPIRE_THRESHOLD = 2;
   /** When true, send credentials: "include" (httpOnly cookies) instead of token headers. */
   useCredentials = false;
   constructor(
@@ -55,6 +58,7 @@ export class JellyfinClient {
   setAccessToken(token: string | null) { this.accessToken = token; }
   getAccessToken() { return this.accessToken; }
   getToken() { return this.accessToken; }
+  setLoggingIn(v: boolean) { this._isLoggingIn = v; }
   setBaseUrl(url: string) { this.baseUrl = url.replace(/\/$/, ""); }
 
   getBaseUrl() { return this.baseUrl; }
@@ -140,12 +144,16 @@ export class JellyfinClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401 && this.accessToken) {
-        this.accessToken = null;
-        this.authExpiredCallback?.();
+      if (response.status === 401 && this.accessToken && !this._isLoggingIn) {
+        this._consecutive401Count++;
+        if (this._consecutive401Count >= JellyfinClient.AUTH_EXPIRE_THRESHOLD) {
+          this._consecutive401Count = 0;
+          this.authExpiredCallback?.();
+        }
       }
       throw new JellyfinError(response.status, response.statusText, path);
     }
+    this._consecutive401Count = 0;
     if (response.status === 204) return undefined as T;
     const text = await response.text();
     return text ? JSON.parse(text) : (undefined as T);

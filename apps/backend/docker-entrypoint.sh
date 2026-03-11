@@ -57,7 +57,7 @@ if [ -n "$DATABASE_URL" ]; then
     echo "[Entrypoint] ERROR: Database not reachable after $MAX_RETRIES attempts. Starting server anyway."
   else
     echo "[Entrypoint] Running database migrations..."
-    npx prisma db push --accept-data-loss || echo "[Entrypoint] WARNING: Migration failed — server will start in setup mode."
+    npx prisma db push || echo "[Entrypoint] WARNING: Migration failed — server will start in setup mode."
   fi
 else
   echo "[Entrypoint] No DATABASE_URL — starting in setup mode"

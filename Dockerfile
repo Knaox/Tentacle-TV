@@ -29,7 +29,7 @@ RUN pnpm build
 
 # Build backend
 WORKDIR /app/apps/backend
-RUN pnpm build && npx prisma generate
+RUN npx prisma generate && pnpm build
 
 # Build shared-deps.js for plugin sandbox
 RUN node scripts/build-shared-deps.js

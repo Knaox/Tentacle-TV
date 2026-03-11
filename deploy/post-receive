@@ -53,7 +53,7 @@ fi
 
 cd "$SOURCE_DIR/apps/backend"
 npx prisma generate
-npx prisma db push --accept-data-loss 2>/dev/null || echo "  (Prisma push skipped — vérifier connexion DB)"
+npx prisma db push 2>/dev/null || echo "  (Prisma push skipped — vérifier connexion DB)"
 cd "$SOURCE_DIR"
 
 # ─── 5. Build frontend + backend ───

@@ -188,6 +188,49 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     return { success: true, message: "Compte supprimé" };
   });
 
+  /** POST /api/auth/refresh — Verify token validity + renew cookie. */
+  app.post("/refresh", { config: { rateLimit: { max: 10, timeWindow: 60000 } } }, async (request, reply) => {
+    const body = (request.body as { token?: string } | undefined);
+    const token = body?.token
+      || (request as any).cookies?.tentacle_token;
+
+    if (!token) {
+      return reply.status(401).send({ message: "Token manquant" });
+    }
+
+    const jellyfinUrl = getJellyfinUrl();
+    if (!jellyfinUrl) {
+      return reply.status(503).send({ message: "Jellyfin non configuré" });
+    }
+
+    try {
+      const res = await fetch(`${jellyfinUrl}/Users/Me`, {
+        headers: { "X-Emby-Token": token },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!res.ok) {
+        return reply.status(401).send({ message: "Token invalide" });
+      }
+
+      const user = await res.json();
+
+      // Renew httpOnly cookie
+      reply.setCookie("tentacle_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 90 * 24 * 60 * 60,
+      });
+
+      return { AccessToken: token, User: user };
+    } catch {
+      // Jellyfin unreachable — don't invalidate the token
+      return reply.status(503).send({ message: "Impossible de contacter Jellyfin" });
+    }
+  });
+
   /** POST /api/auth/logout — Invalidate Jellyfin session + clear cookie. */
   app.post("/logout", { preHandler: [requireAuth] }, async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();
