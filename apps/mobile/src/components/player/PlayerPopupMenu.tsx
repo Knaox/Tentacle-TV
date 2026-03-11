@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { View, Text, Pressable, ScrollView, Animated } from "react-native";
+import { View, Text, Pressable, ScrollView, Animated, useWindowDimensions } from "react-native";
 import { X } from "lucide-react-native";
 import { parseTrackLabel } from "../../lib/playerUtils";
 
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
+  const { width: screenW, height: screenH } = useWindowDimensions();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(10)).current;
 
@@ -42,10 +43,11 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
 
       {/* Popup */}
       <Animated.View style={{
-        position: "absolute", bottom: 80, right: 12,
-        width: 280, borderRadius: 12, padding: 14,
+        position: "absolute", bottom: 80, right: Math.min(12, screenW * 0.03),
+        width: Math.min(280, screenW - 32), borderRadius: 12, padding: 14,
         backgroundColor: "rgba(0,0,0,0.9)",
         borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
+        overflow: "hidden",
         opacity, transform: [{ translateY }],
       }}>
         {/* Header */}
@@ -56,7 +58,7 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
           </Pressable>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 300 }}>
+        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: Math.min(300, screenH * 0.5) }}>
           {sections.map((section) => (
             <View key={section.title} style={{ paddingTop: 12, marginBottom: 10 }}>
               <Text style={{

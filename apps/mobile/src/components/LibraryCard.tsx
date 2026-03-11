@@ -80,7 +80,7 @@ export const LibraryCard = memo(function LibraryCard({ library, onPress, width }
         </View>
 
         <View style={styles.labelContainer}>
-          <Text style={styles.name} numberOfLines={1}>{library.Name}</Text>
+          <Text style={styles.name} numberOfLines={1} maxFontSizeMultiplier={1.2}>{library.Name}</Text>
           {(library.RecursiveItemCount ?? library.ChildCount) != null &&
             (library.RecursiveItemCount ?? library.ChildCount)! > 0 && (
             <Text style={styles.count}>

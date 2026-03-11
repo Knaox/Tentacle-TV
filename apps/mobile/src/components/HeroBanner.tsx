@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Dimensions, FlatList, Pressable, StyleSheet, Text, View, type ViewToken } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions, type ViewToken } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -13,8 +13,6 @@ import Animated, {
 import { GradientOverlay } from "@/components/ui";
 import { colors, spacing, typography } from "@/theme";
 
-const SCREEN_W = Dimensions.get("window").width;
-const BANNER_H = 420;
 const ROTATE_MS = 6000;
 
 interface HeroBannerProps {
@@ -33,6 +31,8 @@ function formatRuntime(ticks: number): string {
 
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
   const { t } = useTranslation("common");
+  const { width: SCREEN_W, height: screenH } = useWindowDimensions();
+  const BANNER_H = Math.min(420, Math.round(screenH * 0.45));
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
   const listRef = useRef<FlatList<MediaItem>>(null);
@@ -51,7 +51,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         return n;
       });
     }, ROTATE_MS);
-  }, [items.length]);
+  }, [items.length, SCREEN_W]);
 
   useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, [startTimer]);
 
@@ -90,7 +90,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
     const runtime = item.RunTimeTicks ? formatRuntime(item.RunTimeTicks) : null;
 
     return (
-      <View style={[s.slide, { paddingTop: insets.top }]}>
+      <View style={[s.slide, { width: SCREEN_W, height: BANNER_H, paddingTop: insets.top }]}>
         {bgUrl ? (
           <Image
             source={{ uri: bgUrl }}
@@ -104,7 +104,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         <GradientOverlay direction="bottom" height={BANNER_H * 0.85} color={colors.background} />
         <GradientOverlay direction="top" height={100 + insets.top} color="rgba(0,0,0,0.6)" />
         <AnimatedSlideContent activeIndex={activeShared} slideIndex={index}>
-          <View style={s.content}>
+          <View style={[s.content, { paddingBottom: Math.min(40, Math.round(screenH * 0.05)) }]}>
             {hasProgress && (
               <View style={s.continueBadge}>
                 <Text style={s.continueTxt}>{t("continueLabel")}</Text>
@@ -124,10 +124,17 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
               {genres.map((g) => <Text key={g} style={s.metaTxt}>{g}</Text>)}
               {runtime && <Text style={s.metaTxt}>{runtime}</Text>}
             </View>
-            <Text style={s.title} numberOfLines={2}>{item.Name}</Text>
+            {isEpisode && item.SeriesName != null && (
+              <Text numberOfLines={1} style={s.metaTxt}>{item.SeriesName}</Text>
+            )}
+            <Text style={s.title} numberOfLines={2} maxFontSizeMultiplier={1.2}>
+              {isEpisode && item.IndexNumber != null
+                ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} \u00b7 `
+                : ""}{item.Name}
+            </Text>
             {item.Overview != null && <Text style={s.overview} numberOfLines={2}>{item.Overview}</Text>}
             {hasProgress && (
-              <View style={s.progRow}>
+              <View style={[s.progRow, { maxWidth: Math.min(200, Math.round(SCREEN_W * 0.5)) }]}>
                 <View style={s.progTrack}>
                   <View style={[s.progFill, { width: `${progress}%` as unknown as number }]} />
                 </View>
@@ -149,7 +156,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         </AnimatedSlideContent>
       </View>
     );
-  }, [client, insets.top, onPlay, onInfo, t, bgErrors, onBgError, activeShared]);
+  }, [client, insets.top, onPlay, onInfo, t, bgErrors, onBgError, activeShared, SCREEN_W, BANNER_H, screenH]);
 
   if (!items.length) return <View style={{ height: BANNER_H }} />;
 
@@ -225,8 +232,8 @@ function AnimatedSlideContent({ activeIndex, slideIndex, children }: {
 }
 
 const s = StyleSheet.create({
-  slide: { width: SCREEN_W, height: BANNER_H, justifyContent: "flex-end" },
-  content: { paddingHorizontal: spacing.screenPadding, paddingBottom: 40 },
+  slide: { justifyContent: "flex-end" as const },
+  content: { paddingHorizontal: spacing.screenPadding },
   continueBadge: {
     alignSelf: "flex-start", backgroundColor: colors.accent,
     borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
@@ -239,7 +246,7 @@ const s = StyleSheet.create({
   rBadgeTxt: { ...typography.badge, color: colors.textSecondary },
   title: { ...typography.hero, color: colors.textPrimary, marginBottom: 6 },
   overview: { ...typography.caption, color: colors.textSecondary, lineHeight: 18, marginBottom: 10 },
-  progRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10, maxWidth: 200 },
+  progRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" },
   progFill: { height: "100%", borderRadius: 2, backgroundColor: colors.accent },
   progLbl: { ...typography.badge, color: colors.textMuted },

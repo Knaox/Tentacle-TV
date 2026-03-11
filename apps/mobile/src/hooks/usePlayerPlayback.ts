@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from "react";
+import { Platform } from "react-native";
 import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
   usePlaybackReporting, useIntroSkipper, useEpisodeNavigation,
@@ -7,6 +8,7 @@ import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, MediaSource } from "@tentacle-tv/shared";
 import { TextTrackType } from "react-native-video";
 import { buildIosDeviceProfile } from "../lib/iosDeviceProfile";
+import { buildAndroidDeviceProfile } from "../lib/androidDeviceProfile";
 import { toISO6391 } from "../lib/playerUtils";
 
 const DBG = "[Tentacle:Playback]";
@@ -44,13 +46,15 @@ export interface PlaybackState {
   burnInSubIndex: number;
   /** Native start position in ms for react-native-video source.startPosition */
   startPositionMs: number;
+  /** Auth headers for react-native-video source */
+  headers: Record<string, string>;
 }
 
 const INITIAL_STATE: PlaybackState = {
   streamUrl: null, playSessionId: null, mediaSource: null,
   isDirectPlay: false, isDirectStream: false, streamOffset: 0,
   isLoading: true, error: null, textTracks: [], burnInSubIndex: -1,
-  startPositionMs: 0,
+  startPositionMs: 0, headers: {},
 };
 
 /** Bitmap subtitle codecs that need server-side burn-in */
@@ -130,7 +134,9 @@ export function usePlayerPlayback(itemId: string) {
     const bitrate = opts?.maxBitrate ?? preset?.bitrate ?? 0;
     const maxWidth = opts?.maxWidth ?? preset?.maxWidth ?? 0;
     const maxHeight = opts?.maxHeight ?? preset?.maxHeight ?? 0;
-    const profile = buildIosDeviceProfile(bitrate > 0 ? bitrate : undefined);
+    const profile = Platform.OS === "android"
+      ? buildAndroidDeviceProfile(bitrate > 0 ? bitrate : undefined)
+      : buildIosDeviceProfile(bitrate > 0 ? bitrate : undefined);
 
     // On retry after error: strip DirectPlay to force server transcoding
     if (opts?.isRetry) {
@@ -214,8 +220,13 @@ export function usePlayerPlayback(itemId: string) {
         ? Math.round(positionRef.current * 1000)
         : 0;
 
-      console.debug(DBG, "resolved", {
+      // Build auth headers for react-native-video source (required by some reverse proxies)
+      const token = ds ? ds.jellyfinToken : client.getAccessToken();
+      const headers: Record<string, string> = token ? { "X-Emby-Token": token } : {};
+
+      console.log(DBG, "resolved", {
         directPlay, directStream, startPositionMs, subIdx, burnIn,
+        container: ms.Container,
         hasSubsInManifest: /EnableSubtitlesInManifest=true/i.test(url),
         hasSubIdx: /SubtitleStreamIndex=\d+/i.test(url),
         url: url.slice(0, 200),
@@ -233,6 +244,7 @@ export function usePlayerPlayback(itemId: string) {
         textTracks,
         burnInSubIndex: burnIn,
         startPositionMs,
+        headers,
       });
     } catch (err) {
       if (fetchIdRef.current !== currentFetch) return;
@@ -324,9 +336,12 @@ export function usePlayerPlayback(itemId: string) {
     return textSubStreams.findIndex((s) => s.Index === subtitleIndex);
   }, [subtitleIndex, state.isDirectPlay, state.burnInSubIndex, streams]);
 
-  /** VTT URL for custom subtitle overlay in transcode mode */
+  /** VTT URL for custom subtitle overlay (transcode mode + Android direct play).
+   *  iOS direct play uses native sideloaded VTT tracks via AVPlayer. */
   const subtitleVttUrl = useMemo(() => {
-    if (state.isDirectPlay || subtitleIndex < 0) return null;
+    if (subtitleIndex < 0) return null;
+    // iOS direct play: sideloaded VTT handled natively by AVPlayer
+    if (state.isDirectPlay && Platform.OS !== "android") return null;
     const sub = streams.find((s) => s.Index === subtitleIndex && s.Type === "Subtitle");
     if (!sub || isBitmapSub(sub)) return null;
     return client.getSubtitleUrl(itemId, mediaSourceId, subtitleIndex, "vtt");

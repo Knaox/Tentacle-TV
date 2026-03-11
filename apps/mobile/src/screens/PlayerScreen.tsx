@@ -32,7 +32,9 @@ export function PlayerScreen({ itemId }: Props) {
   const [videoReady, setVideoReady] = useState(false);
   const resumeApplied = useRef(false);
   const retryCount = useRef(0);
+  const retryingRef = useRef(false);
   const hasEverPlayed = useRef(false);
+  const [playerError, setPlayerError] = useState<string | null>(null);
 
   // Orientation: landscape on mount, portrait on unmount
   useEffect(() => {
@@ -68,7 +70,30 @@ export function PlayerScreen({ itemId }: Props) {
   }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset videoReady when stream URL changes (avoids selectedTextTrack crash)
-  useEffect(() => { setVideoReady(false); }, [pb.streamUrl]);
+  // Also clear retryingRef + playerError so the new stream can report errors
+  useEffect(() => {
+    setVideoReady(false);
+    retryingRef.current = false;
+    setPlayerError(null);
+  }, [pb.streamUrl]);
+
+  // Android loading timeout — if onLoad hasn't fired after 20s, show error
+  useEffect(() => {
+    if (!pb.streamUrl || videoReady) return;
+    const timer = setTimeout(() => {
+      if (!videoReady && !playerError && !retryingRef.current) {
+        console.log("[Tentacle:Player] loading timeout (20s) — URL:", pb.streamUrl?.slice(0, 200));
+        if (retryCount.current < 1) {
+          retryCount.current++;
+          retryingRef.current = true;
+          pb.retry();
+        } else {
+          setPlayerError(t("playbackError"));
+        }
+      }
+    }, 20_000);
+    return () => clearTimeout(timer);
+  }, [pb.streamUrl, videoReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-apply language preferences
   usePlayerPreferences({
@@ -133,12 +158,21 @@ export function PlayerScreen({ itemId }: Props) {
   }, [router, pb.reporting]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleError = useCallback((e: unknown) => {
-    console.error("[Tentacle:Player] onError", e);
+    // Guard against duplicate onError from ExoPlayer or race with retryingRef
+    if (retryingRef.current) return;
+    const errorDetail = e && typeof e === "object" ? JSON.stringify(e) : String(e);
     if (retryCount.current < 1) {
+      // First error = expected on emulators / unsupported codecs → auto-retry with transcode
+      console.log("[Tentacle:Player] onError — retrying with transcode fallback", errorDetail);
       retryCount.current++;
+      retryingRef.current = true;
       pb.retry();
+    } else {
+      // All retries exhausted — show error screen
+      console.error("[Tentacle:Player] onError — all retries exhausted", errorDetail);
+      setPlayerError(t("playbackError"));
     }
-  }, [pb]);
+  }, [pb, t]);
 
   const handleSeek = useCallback((seconds: number) => {
     const dur = pb.jellyfinDuration || 0;
@@ -184,9 +218,20 @@ export function PlayerScreen({ itemId }: Props) {
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Error screen
-  if (pb.error && !pb.isLoading) {
-    return <PlayerErrorView message={t("playbackError")} onRetry={pb.retry} onBack={invalidateAndGoBack} />;
+  // Error screen — from playback hook (HTTP error) or player (codec/stream error)
+  if ((pb.error || playerError) && !pb.isLoading) {
+    return (
+      <PlayerErrorView
+        message={playerError ?? t("playbackError")}
+        onRetry={() => {
+          setPlayerError(null);
+          retryCount.current = 0;
+          retryingRef.current = false;
+          pb.retry();
+        }}
+        onBack={invalidateAndGoBack}
+      />
+    );
   }
 
   // Loading: no stream URL yet
@@ -204,25 +249,38 @@ export function PlayerScreen({ itemId }: Props) {
         ref={videoRef}
         source={{
           uri: pb.streamUrl,
+          // Auth headers — Android only (iOS uses cookies / query string token)
+          ...(Platform.OS === "android" && Object.keys(pb.headers).length > 0 ? { headers: pb.headers } : {}),
           startPosition: pb.startPositionMs > 0 ? pb.startPositionMs : undefined,
-          // Sideloaded VTT tracks — only for direct play (not HLS, crashes iOS AVPlayer)
-          textTracks: pb.isDirectPlay && pb.textTracks.length > 0
+          // Sideloaded VTT tracks — iOS direct play only (Android uses custom SubtitleOverlay)
+          textTracks: pb.isDirectPlay && pb.textTracks.length > 0 && Platform.OS === "ios"
             ? pb.textTracks as any
             : undefined,
+          // Help ExoPlayer identify HLS streams (Jellyfin URLs may lack .m3u8 extension)
+          ...(Platform.OS === "android" && !pb.isDirectPlay ? { type: "m3u8" } : {}),
         }}
         style={{ flex: 1 }}
         resizeMode="contain"
         paused={paused}
+        // Android ExoPlayer buffer config — larger buffer for smoother playback
+        {...(Platform.OS === "android" ? {
+          bufferConfig: {
+            minBufferMs: 15000,
+            maxBufferMs: 50000,
+            bufferForPlaybackMs: 2500,
+            bufferForPlaybackAfterRebufferMs: 5000,
+          },
+        } : {})}
         selectedAudioTrack={
           pb.isDirectPlay && pb.audioTrackSelectedIndex >= 0
             ? { type: SelectedTrackType.INDEX, value: pb.audioTrackSelectedIndex }
             : undefined
         }
         selectedTextTrack={
-          // Direct play: select sideloaded VTT track by index
-          videoReady && pb.isDirectPlay && pb.textTrackSelectedIndex >= 0
+          // iOS direct play: select sideloaded VTT track by index
+          videoReady && pb.isDirectPlay && pb.textTrackSelectedIndex >= 0 && Platform.OS === "ios"
             ? { type: SelectedTrackType.INDEX, value: pb.textTrackSelectedIndex }
-            // Transcode: subtitles handled by custom SubtitleOverlay — disable native tracks
+            // Android + transcode: subtitles handled by custom SubtitleOverlay — disable native tracks
             : videoReady
               ? { type: SelectedTrackType.DISABLED }
               : undefined
@@ -236,10 +294,11 @@ export function PlayerScreen({ itemId }: Props) {
         progressUpdateInterval={250}
         preventsDisplaySleepDuringVideoPlayback
         allowsExternalPlayback={pb.textTracks.length === 0}
-        enterPictureInPictureOnLeave
+        // PiP only on iOS — Android needs manifest config
+        {...(Platform.OS === "ios" ? { enterPictureInPictureOnLeave: true } : {})}
       />
 
-      <SubtitleOverlay vttUrl={pb.subtitleVttUrl} currentTime={currentTime} />
+      <SubtitleOverlay vttUrl={pb.subtitleVttUrl} currentTime={currentTime} headers={pb.headers} />
 
       {isBuffering && !hasEverPlayed.current && <PlayerLoadingView />}
 

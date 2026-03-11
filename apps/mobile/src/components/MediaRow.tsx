@@ -35,6 +35,8 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
         renderItem={renderFlatItem}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={st.list}
+        decelerationRate="fast"
+        scrollEventThrottle={16}
       />
     </View>
   );

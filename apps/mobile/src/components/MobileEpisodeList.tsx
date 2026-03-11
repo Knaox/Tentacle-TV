@@ -84,6 +84,8 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
   seriesId: string; seasonId: string; onPlay: (ep: MediaItem) => void;
 }) {
   const { t } = useTranslation("common");
+  const thumbW = 110;
+  const thumbH = 62;
   const client = useJellyfinClient();
   const { data: episodes } = useEpisodes(seriesId, seasonId);
 
@@ -93,23 +95,37 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
     <View style={{ paddingHorizontal: 16, gap: 8 }}>
       {episodes.map((ep) => {
         const progress = ep.UserData?.PlayedPercentage;
+        const isWatched = ep.UserData?.Played === true;
         const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
+        const epLabel = ep.IndexNumber != null
+          ? `S${String(ep.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(ep.IndexNumber).padStart(2, "0")} \u00b7 `
+          : "";
 
         return (
           <Pressable key={ep.Id} onPress={() => onPlay(ep)}
-            style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, overflow: "hidden" }}
+            style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, overflow: "hidden", minHeight: thumbH }}
           >
-            <View style={{ width: 140, height: 80, backgroundColor: colors.surfaceElevated }}>
+            <View style={{ width: thumbW, height: thumbH, alignSelf: "center", backgroundColor: colors.surfaceElevated, borderRadius: 6, overflow: "hidden" }}>
               <EpisodeThumb ep={ep} seriesId={seriesId} client={client} />
               {progress != null && progress > 0 && (
                 <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.2)" }}>
                   <View style={{ height: "100%", width: `${progress}%`, backgroundColor: "#8b5cf6" }} />
                 </View>
               )}
+              {isWatched && (
+                <View style={{
+                  position: "absolute", bottom: 4, right: 4,
+                  width: 18, height: 18, borderRadius: 9,
+                  backgroundColor: colors.success,
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>{"\u2713"}</Text>
+                </View>
+              )}
             </View>
             <View style={{ flex: 1, padding: 10, justifyContent: "center" }}>
               <Text numberOfLines={1} style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
-                {ep.IndexNumber != null ? `${ep.IndexNumber}. ` : ""}{ep.Name}
+                {epLabel}{ep.Name}
               </Text>
               <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
                 {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("minutesShort", { count: runtime })}</Text>}

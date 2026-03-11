@@ -1,5 +1,13 @@
-import { Pressable, Text, type ViewStyle } from "react-native";
+import { Pressable, type ViewStyle } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { colors } from "../../theme";
+
+const ICON_MAP: Record<string, keyof typeof Feather.glyphMap> = {
+  "←": "arrow-left",
+  "→": "arrow-right",
+  "✕": "x",
+  "×": "x",
+};
 
 interface Props {
   icon: string;
@@ -12,6 +20,8 @@ interface Props {
 }
 
 export function IconButton({ icon, onPress, size = 36, style, color, bgColor, accessibilityLabel }: Props) {
+  const featherName = ICON_MAP[icon] ?? (icon as keyof typeof Feather.glyphMap);
+
   return (
     <Pressable
       onPress={onPress}
@@ -27,7 +37,7 @@ export function IconButton({ icon, onPress, size = 36, style, color, bgColor, ac
         alignItems: "center",
       }, style]}
     >
-      <Text style={{ color: color ?? colors.textPrimary, fontSize: size * 0.5 }}>{icon}</Text>
+      <Feather name={featherName} size={Math.round(size * 0.5)} color={color ?? colors.textPrimary} />
     </Pressable>
   );
 }
