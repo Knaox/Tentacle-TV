@@ -1,0 +1,24 @@
+diff --git a/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt b/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
+index 1234567..abcdefg 100644
+--- a/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
++++ b/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
+@@ -109,9 +109,16 @@
+
+     fun setSubtitleStyle(style: SubtitleStyle) {
+         playerView.subtitleView?.let { subtitleView ->
+-            // Reset to defaults
+-            subtitleView.setUserDefaultStyle()
+-            subtitleView.setUserDefaultTextSize()
++            // Apply transparent background caption style (no black box)
++            val captionStyle = androidx.media3.ui.CaptionStyleCompat(
++                android.graphics.Color.WHITE,                    // foreground
++                android.graphics.Color.TRANSPARENT,              // background
++                android.graphics.Color.TRANSPARENT,              // window
++                androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW, // edge type
++                android.graphics.Color.BLACK,                    // edge color
++                null                                             // typeface
++            )
++            subtitleView.setStyle(captionStyle)
+
+             // Apply custom styling
+             if (style.fontSize > 0) {
