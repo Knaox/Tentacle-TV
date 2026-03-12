@@ -23,7 +23,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "0.8.2"
+        versionName "0.9.5"
     }
     signingConfigs {
         debug {
@@ -47,6 +47,15 @@ android {
 
 dependencies {
     implementation("com.facebook.react:react-android")
+    implementation("dev.jdtech.mpv:libmpv:0.5.1")
+
+    // Media3 ExoPlayer — aligned with react-native-video (1.8.0)
+    implementation "androidx.media3:media3-exoplayer:1.8.0"
+    implementation "androidx.media3:media3-exoplayer-hls:1.8.0"
+    implementation "androidx.media3:media3-ui:1.8.0"
+
+    // Jellyfin FFmpeg decoder — AV1 (dav1d) + audio codec fallback
+    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1"
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

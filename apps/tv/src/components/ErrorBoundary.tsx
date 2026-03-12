@@ -35,7 +35,7 @@ export class ErrorBoundary extends React.Component<
           <Text style={{ color: Colors.textSecondary, fontSize: 15, textAlign: "center", marginBottom: 28 }}>
             {this.state.error?.message ?? "An unexpected error occurred."}
           </Text>
-          <Focusable onPress={this.handleRetry} hasTVPreferredFocus>
+          <Focusable variant="button" onPress={this.handleRetry} hasTVPreferredFocus>
             <View style={{
               backgroundColor: Colors.accentPurple,
               paddingHorizontal: 28, paddingVertical: 12,

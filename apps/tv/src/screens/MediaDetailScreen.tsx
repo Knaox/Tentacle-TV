@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { View, Text, Image, ScrollView, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
@@ -8,7 +8,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useJellyfinClient, useToggleWatchlist } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration, ticksToSeconds } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -18,8 +18,9 @@ import { Focusable } from "../components/focus/Focusable";
 import { FocusableRow } from "../components/focus/FocusableRow";
 import { TVMediaCard } from "../components/TVMediaCard";
 import { TVEpisodeList } from "../components/TVEpisodeList";
-import { PlayIcon } from "../components/icons/TVIcons";
+import { PlayIcon, BookmarkIcon, BookmarkFilledIcon } from "../components/icons/TVIcons";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -35,8 +36,15 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
+  const { add: addToWatchlist, remove: removeFromWatchlist } = useToggleWatchlist(itemId);
 
+  const scrollRef = useRef<ScrollView>(null);
   useTVRemote({ onBack: () => navigation.goBack() });
+
+  const scrollToButtons = useCallback(() => {
+    // Scroll to top area so buttons are visible within the backdrop zone
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
 
   // Cascade entry animations
   const titleAnim = useSharedValue(0);
@@ -71,7 +79,11 @@ export function MediaDetailScreen({ route, navigation }: Props) {
 
   if (!item) return <View style={{ flex: 1, backgroundColor: Colors.bgDeep }} />;
 
-  const backdrop = client.getImageUrl(item.Id, "Backdrop", { width: 1920, quality: 80 });
+  const hasParentBackdrop = isEpisode && (item.ParentBackdropImageTags?.length ?? 0) > 0;
+  const backdropId = isEpisode
+    ? (hasParentBackdrop ? (item.ParentBackdropItemId ?? item.SeriesId ?? item.Id) : item.Id)
+    : item.Id;
+  const backdrop = client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 80 });
   const isSeries = item.Type === "Series";
   const year = item.ProductionYear;
   const rating = item.CommunityRating?.toFixed(1);
@@ -94,7 +106,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: Colors.bgDeep }} contentContainerStyle={{ paddingBottom: 60 }}>
+    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: Colors.bgDeep }} contentContainerStyle={{ paddingBottom: 60 }}>
       {/* Full-screen backdrop */}
       <View style={{ width: SCREEN_W, height: SCREEN_H * 0.6 }}>
         <Image
@@ -119,7 +131,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
       {/* Content zone */}
       <View style={{
         paddingHorizontal: Spacing.screenPadding,
-        marginTop: -SCREEN_H * 0.25,
+        marginTop: -Math.round(SCREEN_H * 0.22),
       }}>
         {/* Title */}
         <Animated.View style={titleStyle}>
@@ -161,7 +173,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
               paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6,
               borderWidth: 1, borderColor: "rgba(139, 92, 246, 0.3)",
             }}>
-              <Text style={{ color: Colors.accentPurpleLight, fontSize: 12, fontWeight: "700" }}>{tag}</Text>
+              <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700" }}>{tag}</Text>
             </View>
           ))}
           {item.Genres?.map((g) => (
@@ -169,26 +181,25 @@ export function MediaDetailScreen({ route, navigation }: Props) {
               backgroundColor: "rgba(255,255,255,0.06)",
               paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6,
             }}>
-              <Text style={{ color: Colors.textMuted, fontSize: 13 }}>{g}</Text>
+              <Text style={{ color: Colors.textMuted, fontSize: 14 }}>{g}</Text>
             </View>
           ))}
         </Animated.View>
 
-        {/* Synopsis */}
+        {/* Synopsis — not focusable, content scrolls via nestedScrollEnabled */}
         {item.Overview && (
           <Animated.View style={[{ marginTop: Spacing.metaToSynopsis, maxWidth: SCREEN_W * 0.55 }, synopsisStyle]}>
-            <Text
-              numberOfLines={5}
-              style={{ color: Colors.textSecondary, ...Typography.synopsis, lineHeight: 28 }}
-            >
-              {item.Overview}
-            </Text>
+            <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
+              <Text style={{ color: Colors.textSecondary, ...Typography.synopsis, lineHeight: 28 }}>
+                {item.Overview}
+              </Text>
+            </ScrollView>
           </Animated.View>
         )}
 
         {/* Buttons */}
         <Animated.View style={[{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }, buttonsStyle]}>
-          <Focusable onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus>
+          <Focusable variant="button" onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus onFocus={scrollToButtons}>
             <View style={{
               backgroundColor: Colors.accentPurple,
               paddingHorizontal: 40, paddingVertical: 16,
@@ -197,6 +208,23 @@ export function MediaDetailScreen({ route, navigation }: Props) {
             }}>
               <PlayIcon size={20} color={Colors.textPrimary} />
               <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>{resumeLabel}</Text>
+            </View>
+          </Focusable>
+          <Focusable variant="button" onPress={() => item.UserData?.Likes ? removeFromWatchlist.mutate() : addToWatchlist.mutate()} onFocus={scrollToButtons}>
+            <View style={{
+              backgroundColor: Colors.glassBg,
+              paddingHorizontal: 28, paddingVertical: 16,
+              borderRadius: Radius.buttonLarge,
+              borderWidth: 1, borderColor: Colors.glassBorder,
+              flexDirection: "row", alignItems: "center", gap: 10,
+            }}>
+              {item.UserData?.Likes
+                ? <BookmarkFilledIcon size={18} color={Colors.accentPurple} />
+                : <BookmarkIcon size={18} color={Colors.textSecondary} />
+              }
+              <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>
+                {item.UserData?.Likes ? t("removeFromMyList") : t("addToMyList")}
+              </Text>
             </View>
           </Focusable>
         </Animated.View>
@@ -219,6 +247,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}
           onItemPress={(s: MediaItem) => navigation.push("MediaDetail", { itemId: s.Id })}
+          onRowFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
         />
       )}
     </ScrollView>

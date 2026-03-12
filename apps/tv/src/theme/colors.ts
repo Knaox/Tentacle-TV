@@ -38,7 +38,7 @@ export const Colors = {
   overlayGradientEnd: "#06060a",
 
   // Focus
-  focusGlow: "rgba(139, 92, 246, 0.3)",
+  focusGlow: "rgba(139, 92, 246, 0.4)",
   focusBorder: "#8b5cf6",
 
   // Dividers
@@ -54,7 +54,7 @@ export const Spacing = {
   /** Gap between content sections/rows */
   sectionGap: 28,
   /** Gap between cards in a carousel */
-  cardGap: 12,
+  cardGap: 16,
   /** Gap between buttons */
   buttonGap: 10,
   /** Space between synopsis and buttons */
@@ -73,16 +73,16 @@ export const Spacing = {
 
 export const Typography = {
   heroTitle: { fontSize: 32, fontWeight: "800" as const },
-  sectionTitle: { fontSize: 18, fontWeight: "600" as const },
+  sectionTitle: { fontSize: 20, fontWeight: "600" as const },
   pageTitle: { fontSize: 22, fontWeight: "800" as const },
   detailTitle: { fontSize: 28, fontWeight: "800" as const },
-  cardTitle: { fontSize: 13, fontWeight: "500" as const },
-  meta: { fontSize: 12, fontWeight: "400" as const },
-  synopsis: { fontSize: 13, fontWeight: "400" as const },
-  buttonLarge: { fontSize: 14, fontWeight: "700" as const },
-  buttonMedium: { fontSize: 13, fontWeight: "600" as const },
-  body: { fontSize: 13, fontWeight: "400" as const },
-  caption: { fontSize: 11, fontWeight: "400" as const },
+  cardTitle: { fontSize: 16, fontWeight: "500" as const },
+  meta: { fontSize: 16, fontWeight: "400" as const },
+  synopsis: { fontSize: 16, fontWeight: "400" as const },
+  buttonLarge: { fontSize: 16, fontWeight: "700" as const },
+  buttonMedium: { fontSize: 16, fontWeight: "600" as const },
+  body: { fontSize: 16, fontWeight: "400" as const },
+  caption: { fontSize: 14, fontWeight: "400" as const },
 } as const;
 
 // ─── Border Radius ───────────────────────────────────────────────────────────
@@ -117,21 +117,25 @@ export const HeroConfig = {
 export const FocusConfig = {
   scaleUp: 1.05,
   scaleNormal: 1.0,
-  borderWidth: 2,
+  borderWidth: 0,
   glowRadius: 20,
-  springDamping: 15,
-  springStiffness: 150,
+  springDamping: 18,
+  springStiffness: 200,
+  shadowColor: "#8B5CF6",
+  shadowOpacity: 0.5,
+  shadowRadius: 12,
+  elevation: 8,
 } as const;
 
 // ─── Card Dimensions ─────────────────────────────────────────────────────────
 
 export const CardConfig = {
   portrait: {
-    width: 130,
+    width: 160,
     aspectRatio: 2 / 3,
   },
   landscape: {
-    width: 220,
+    width: 260,
     aspectRatio: 16 / 9,
   },
   progressBarHeight: 3,

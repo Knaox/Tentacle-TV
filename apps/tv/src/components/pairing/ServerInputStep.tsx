@@ -26,7 +26,7 @@ export function ServerInputStep({
       {/* Language toggle — Focusable so D-pad can reach it */}
       <View style={styles.langToggle}>
         {(["fr", "en"] as const).map((lng) => (
-          <Focusable key={lng} onPress={() => onSwitchLang(lng)}>
+          <Focusable key={lng} variant="button" onPress={() => onSwitchLang(lng)}>
             <View style={[styles.langBtn, currentLang === lng && styles.langBtnActive]}>
               <Text style={[styles.langText, currentLang === lng && styles.langTextActive]}>
                 {lng.toUpperCase()}
@@ -44,7 +44,7 @@ export function ServerInputStep({
 
         {/* URL input — wrapped in Focusable so D-pad can reach it, press opens keyboard */}
         <View style={{ width: "100%" }}>
-          <Focusable onPress={() => inputRef.current?.focus()} hasTVPreferredFocus>
+          <Focusable variant="button" onPress={() => inputRef.current?.focus()} hasTVPreferredFocus>
             <View style={styles.inputWrapper}>
               <TextInput
                 ref={inputRef}
@@ -70,7 +70,7 @@ export function ServerInputStep({
         )}
 
         <View style={{ marginTop: 24, width: "100%" }}>
-          <Focusable onPress={onSubmit}>
+          <Focusable variant="button" onPress={onSubmit}>
             <View style={[styles.button, (testing || !serverUrl.trim()) && styles.buttonDisabled]}>
               {testing ? (
                 <ActivityIndicator color="#fff" />

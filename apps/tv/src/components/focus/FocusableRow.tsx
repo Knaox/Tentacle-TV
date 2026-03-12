@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
-import { FlatList, View, Text, type ViewStyle } from "react-native";
+import { FlatList, View, Text, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
+import { useTVRemote } from "./useTVRemote";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 
 interface FocusableRowProps<T> {
@@ -14,6 +15,11 @@ interface FocusableRowProps<T> {
   onItemPress?: (item: T) => void;
   /** Called when user navigates left past the first item */
   onEdgeLeft?: () => void;
+  /** Called when any item in this row receives focus */
+  onRowFocus?: () => void;
+  /** Layout callback for tracking row Y position */
+  onLayout?: (event: LayoutChangeEvent) => void;
+  onItemLongPress?: (item: T) => void;
 }
 
 export function FocusableRow<T>({
@@ -26,8 +32,13 @@ export function FocusableRow<T>({
   style,
   onItemPress,
   onEdgeLeft,
+  onRowFocus,
+  onLayout,
+  onItemLongPress,
 }: FocusableRowProps<T>) {
   const listRef = useRef<FlatList>(null);
+  const focusedIndexRef = useRef(-1);
+  const rowHasFocusRef = useRef(false);
 
   const scrollToIndex = useCallback(
     (index: number) => {
@@ -40,10 +51,21 @@ export function FocusableRow<T>({
     []
   );
 
+  // When the first item has focus and user presses left, fire onEdgeLeft
+  useTVRemote({
+    onLeft: onEdgeLeft
+      ? () => {
+          if (rowHasFocusRef.current && focusedIndexRef.current === 0) {
+            onEdgeLeft();
+          }
+        }
+      : undefined,
+  });
+
   if (data.length === 0) return null;
 
   return (
-    <View style={style}>
+    <View style={style} onLayout={onLayout}>
       {title && (
         <Text style={{
           color: Colors.textPrimary,
@@ -59,19 +81,33 @@ export function FocusableRow<T>({
         data={data}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding }}
+        style={{ overflow: "visible" }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, paddingVertical: 8 }}
         keyExtractor={keyExtractor}
+        initialNumToRender={data.length}
+        windowSize={21}
+        maxToRenderPerBatch={10}
         getItemLayout={(_, index) => ({
           length: itemWidth + gap,
           offset: (itemWidth + gap) * index,
           index,
         })}
         renderItem={({ item, index }) => (
-          <View style={{ width: itemWidth, marginRight: gap }}>
+          <View style={{ width: itemWidth, marginRight: gap, overflow: "visible" }}>
             <Focusable
-              onFocus={() => scrollToIndex(index)}
+              variant="card"
+              onFocus={() => {
+                focusedIndexRef.current = index;
+                rowHasFocusRef.current = true;
+                scrollToIndex(index);
+                onRowFocus?.();
+              }}
+              onBlur={() => {
+                if (focusedIndexRef.current === index) rowHasFocusRef.current = false;
+              }}
               onPress={() => onItemPress?.(item)}
-              noBorder
+              onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
+              focusRadius={8}
             >
               {renderItem(item, index)}
             </Focusable>

@@ -87,12 +87,12 @@ export function RelayCodeDisplay({
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.errorText}>{t("pairing:relayError")}</Text>
-          <Focusable onPress={generate} hasTVPreferredFocus>
+          <Focusable variant="button" onPress={generate} hasTVPreferredFocus>
             <View style={styles.retryButton}>
               <Text style={styles.retryButtonText}>{t("common:retry")}</Text>
             </View>
           </Focusable>
-          <Focusable onPress={onManualSetup}>
+          <Focusable variant="button" onPress={onManualSetup}>
             <View style={styles.linkButton}>
               <Text style={styles.linkText}>
                 {t("pairing:configureManually")}
@@ -112,7 +112,7 @@ export function RelayCodeDisplay({
         {expired ? (
           <>
             <Text style={styles.expiredText}>{t("pairing:codeExpired")}</Text>
-            <Focusable onPress={generate} hasTVPreferredFocus>
+            <Focusable variant="button" onPress={generate} hasTVPreferredFocus>
               <View style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>
                   {t("pairing:generateNewCode")}
@@ -153,7 +153,7 @@ export function RelayCodeDisplay({
         )}
 
         {/* Cancel button */}
-        <Focusable onPress={onCancel}>
+        <Focusable variant="button" onPress={onCancel}>
           <View style={styles.linkButton}>
             <Text style={styles.linkText}>{t("pairing:cancel")}</Text>
           </View>

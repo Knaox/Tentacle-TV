@@ -1,6 +1,8 @@
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
+import { MicIcon } from "./icons/TVIcons";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { Colors, Radius } from "../theme/colors";
 
 const KEYS = [
@@ -17,32 +19,57 @@ interface TVSearchKeyboardProps {
   onKeyPress: (key: string) => void;
   onDelete: () => void;
   onClear: () => void;
+  onVoiceResult?: (text: string) => void;
 }
 
-export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear }: TVSearchKeyboardProps) {
+export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoiceResult }: TVSearchKeyboardProps) {
   const { t } = useTranslation("common");
 
+  const { isListening, isPending, isAvailable, startListening, stopListening } = useSpeechRecognition({
+    onResult: (text) => onVoiceResult?.(text),
+  });
+
+  const micBg = isListening
+    ? Colors.accentPurple
+    : isPending
+      ? "rgba(139,92,246,0.3)"
+      : "rgba(255,255,255,0.08)";
+
   return (
-    <View style={{ width: 272, paddingRight: 16 }}>
-      {/* Query display — focusable so D-pad UP from keyboard reaches it, then RIGHT → results */}
-      <Focusable onPress={onDelete} style={{ marginBottom: 16 }}>
-        <View style={{
-          backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
-          padding: 12, minHeight: 40,
-          borderWidth: 1, borderColor: Colors.glassBorder,
-        }}>
-          <Text style={{ color: Colors.textPrimary, fontSize: 16 }}>
-            {query || " "}
-            <Text style={{ color: Colors.accentPurple }}>|</Text>
-          </Text>
-        </View>
-      </Focusable>
+    <View style={{ width: 260 }}>
+      {/* Query row with mic icon */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <Focusable variant="button" onPress={onDelete} style={{ flex: 1 }}>
+          <View style={{
+            backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
+            padding: 10, minHeight: 40,
+            borderWidth: 1, borderColor: Colors.glassBorder,
+          }}>
+            <Text style={{ color: Colors.textPrimary, fontSize: 14 }}>
+              {query || " "}
+              <Text style={{ color: Colors.accentPurple }}>|</Text>
+            </Text>
+          </View>
+        </Focusable>
+
+        {isAvailable && (
+          <Focusable variant="button" onPress={isListening ? stopListening : startListening}>
+            <View style={{
+              width: 40, height: 40, borderRadius: Radius.small,
+              backgroundColor: micBg,
+              justifyContent: "center", alignItems: "center",
+            }}>
+              <MicIcon size={20} color={isListening || isPending ? "#fff" : Colors.textPrimary} />
+            </View>
+          </Focusable>
+        )}
+      </View>
 
       {/* Keyboard grid */}
       {KEYS.map((row, rowIdx) => (
-        <View key={rowIdx} style={{ flexDirection: "row", gap: 6, marginBottom: 6 }}>
-          {row.map((key) => (
-            <Focusable key={key} onPress={() => onKeyPress(key.toLowerCase())}>
+        <View key={rowIdx} style={{ flexDirection: "row", gap: 6, marginBottom: 4 }}>
+          {row.map((key, keyIdx) => (
+            <Focusable key={key} variant="button" onPress={() => onKeyPress(key.toLowerCase())} hasTVPreferredFocus={rowIdx === 0 && keyIdx === 0}>
               <View style={{
                 width: 36, height: 36, borderRadius: Radius.small,
                 backgroundColor: "rgba(255,255,255,0.08)",
@@ -55,9 +82,9 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear }: TVSea
         </View>
       ))}
 
-      {/* Special keys — more visible */}
+      {/* Special keys */}
       <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
-        <Focusable onPress={() => onKeyPress(" ")}>
+        <Focusable variant="button" onPress={() => onKeyPress(" ")}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.10)",
@@ -69,7 +96,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear }: TVSea
             </Text>
           </View>
         </Focusable>
-        <Focusable onPress={onDelete}>
+        <Focusable variant="button" onPress={onDelete}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.10)",
@@ -77,13 +104,13 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear }: TVSea
             justifyContent: "center", alignItems: "center",
             flexDirection: "row", gap: 4,
           }}>
-            <Text style={{ color: Colors.textPrimary, fontSize: 16 }}>⌫</Text>
-            <Text style={{ color: Colors.textPrimary, fontSize: 11, fontWeight: "500" }}>
+            <Text style={{ color: Colors.textPrimary, fontSize: 14 }}>&#x232B;</Text>
+            <Text style={{ color: Colors.textPrimary, fontSize: 12, fontWeight: "500" }}>
               {t("delete", { defaultValue: "Delete" })}
             </Text>
           </View>
         </Focusable>
-        <Focusable onPress={onClear}>
+        <Focusable variant="button" onPress={onClear}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(239,68,68,0.15)",

@@ -1,8 +1,9 @@
-import { useCallback } from "react";
-import { View, ScrollView, Text } from "react-native";
+import { useCallback, useRef } from "react";
+import { View, ScrollView, Text, TVFocusGuideView, type LayoutChangeEvent } from "react-native";
+import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
-  useLibraries, useLatestItems,
+  useLibraries, useLatestItems, useWatchlist,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -28,15 +29,31 @@ export function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const { openSidebar, isVisible: sidebarOpen } = useSidebar();
+
+  // BACK on home screen opens sidebar (Netflix/Plex pattern)
+  useTVRemote({ onBack: sidebarOpen ? undefined : openSidebar });
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const rowYMap = useRef<Map<string, number>>(new Map());
+
+  const scrollToRow = useCallback((key: string) => {
+    const y = rowYMap.current.get(key);
+    if (y != null) {
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: true });
+    }
+  }, []);
+
   const featuredQuery = useFeaturedItems();
   const resumeQuery = useResumeItems();
   const nextUpQuery = useNextUp();
   const librariesQuery = useLibraries();
+  const watchlistQuery = useWatchlist();
 
   const featured = featuredQuery.data;
   const resume = resumeQuery.data;
   const nextUp = nextUpQuery.data;
   const libraries = librariesQuery.data;
+  const watchlist = watchlistQuery.data;
 
   const allFailed = featuredQuery.isError && librariesQuery.isError;
   const isLoading = (featuredQuery.isLoading || librariesQuery.isLoading) && !featured && !libraries;
@@ -84,41 +101,46 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
+      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
+      <TVFocusGuideView trapFocusLeft style={{ flex: 1 }}>
       <ScrollView
+        ref={scrollViewRef}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 20 }}
         overScrollMode="never"
+        accessible={!sidebarOpen}
+        importantForAccessibility={sidebarOpen ? "no-hide-descendants" : "auto"}
       >
-        {/* Top bar — inside ScrollView so D-pad can reach them */}
+        {/* Top bar — overlays hero via negative margin */}
         <View
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
             paddingHorizontal: 20,
             paddingTop: 16,
-            marginBottom: -52,
+            marginBottom: -64,
             zIndex: 50,
           }}
           pointerEvents={sidebarOpen ? "none" : "auto"}
         >
-          <Focusable onPress={openSidebar}>
+          <Focusable variant="button" onPress={openSidebar}>
             <View style={{
-              width: 36, height: 36, borderRadius: 18,
+              width: 48, height: 48, borderRadius: 24,
               backgroundColor: "rgba(15, 15, 24, 0.8)",
               borderWidth: 1, borderColor: Colors.glassBorder,
               justifyContent: "center", alignItems: "center",
             }}>
-              <MenuIcon size={18} color={Colors.accentPurpleLight} />
+              <MenuIcon size={20} color={Colors.accentPurpleLight} />
             </View>
           </Focusable>
-          <Focusable onPress={() => navigation.navigate("Search")}>
+          <Focusable variant="button" onPress={() => navigation.navigate("Search")}>
             <View style={{
-              width: 36, height: 36, borderRadius: 18,
+              width: 48, height: 48, borderRadius: 24,
               backgroundColor: "rgba(15, 15, 24, 0.8)",
               borderWidth: 1, borderColor: Colors.glassBorder,
               justifyContent: "center", alignItems: "center",
             }}>
-              <SearchIcon size={18} color={Colors.accentPurpleLight} />
+              <SearchIcon size={20} color={Colors.accentPurpleLight} />
             </View>
           </Focusable>
         </View>
@@ -133,7 +155,7 @@ export function HomeScreen({ navigation }: Props) {
               {String(featuredQuery.error?.message || "Network request failed")}
             </Text>
             <View style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
-              <Focusable onPress={() => {
+              <Focusable variant="button" onPress={() => {
                 featuredQuery.refetch();
                 resumeQuery.refetch();
                 nextUpQuery.refetch();
@@ -148,7 +170,7 @@ export function HomeScreen({ navigation }: Props) {
                   </Text>
                 </View>
               </Focusable>
-              <Focusable onPress={handleLogout}>
+              <Focusable variant="button" onPress={handleLogout}>
                 <View style={{
                   backgroundColor: Colors.glassBg,
                   paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12,
@@ -176,7 +198,27 @@ export function HomeScreen({ navigation }: Props) {
         {!allFailed && !isLoading && (
           <>
             {featured && featured.length > 0 && (
-              <TVHeroBanner items={featured} onPlay={navigateToPlay} onDetail={navigateToDetail} />
+              <TVHeroBanner
+                items={featured}
+                onPlay={navigateToPlay}
+                onDetail={navigateToDetail}
+                onBannerFocus={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
+              />
+            )}
+
+            {watchlist && watchlist.length > 0 && (
+              <FocusableRow
+                title={t("myList")}
+                data={watchlist}
+                renderItem={renderPortraitCard}
+                keyExtractor={(item) => item.Id}
+                itemWidth={CardConfig.portrait.width}
+                style={{ marginTop: Spacing.sectionGap }}
+                onItemPress={navigateToDetail}
+                onEdgeLeft={openSidebar}
+                onLayout={(e) => rowYMap.current.set("watchlist", e.nativeEvent.layout.y)}
+                onRowFocus={() => scrollToRow("watchlist")}
+              />
             )}
 
             {resume && resume.length > 0 && (
@@ -189,6 +231,8 @@ export function HomeScreen({ navigation }: Props) {
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
                 onEdgeLeft={openSidebar}
+                onLayout={(e) => rowYMap.current.set("resume", e.nativeEvent.layout.y)}
+                onRowFocus={() => scrollToRow("resume")}
               />
             )}
 
@@ -202,6 +246,8 @@ export function HomeScreen({ navigation }: Props) {
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
                 onEdgeLeft={openSidebar}
+                onLayout={(e) => rowYMap.current.set("nextUp", e.nativeEvent.layout.y)}
+                onRowFocus={() => scrollToRow("nextUp")}
               />
             )}
 
@@ -212,11 +258,15 @@ export function HomeScreen({ navigation }: Props) {
                 libraryName={lib.Name}
                 renderCard={renderPortraitCard}
                 onItemPress={navigateToDetail}
+                onEdgeLeft={openSidebar}
+                onLayout={(e) => rowYMap.current.set(`lib_${lib.Id}`, e.nativeEvent.layout.y)}
+                onRowFocus={() => scrollToRow(`lib_${lib.Id}`)}
               />
             ))}
           </>
         )}
       </ScrollView>
+      </TVFocusGuideView>
 
       {/* Sidebar overlay */}
       <Sidebar onNavigate={handleSidebarNav} currentRoute="Home" />
@@ -224,10 +274,13 @@ export function HomeScreen({ navigation }: Props) {
   );
 }
 
-function LibraryRow({ libraryId, libraryName, renderCard, onItemPress }: {
+function LibraryRow({ libraryId, libraryName, renderCard, onItemPress, onEdgeLeft, onLayout, onRowFocus }: {
   libraryId: string; libraryName: string;
   renderCard: (item: MediaItem) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
+  onEdgeLeft?: () => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
+  onRowFocus?: () => void;
 }) {
   const { data } = useLatestItems(libraryId);
   const { t } = useTranslation("common");
@@ -241,6 +294,9 @@ function LibraryRow({ libraryId, libraryName, renderCard, onItemPress }: {
       itemWidth={CardConfig.portrait.width}
       style={{ marginTop: Spacing.sectionGap }}
       onItemPress={onItemPress}
+      onEdgeLeft={onEdgeLeft}
+      onLayout={onLayout}
+      onRowFocus={onRowFocus}
     />
   );
 }

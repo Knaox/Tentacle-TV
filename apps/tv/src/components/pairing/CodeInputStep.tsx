@@ -47,6 +47,7 @@ export function CodeInputStep({
           {chars.map((char, i) => (
             <Focusable
               key={i}
+              variant="button"
               onPress={() => inputRefs.current[i]?.focus()}
               hasTVPreferredFocus={i === 0}
             >
@@ -99,7 +100,7 @@ export function CodeInputStep({
         )}
 
         <View style={{ marginTop: 24, width: "100%" }}>
-          <Focusable onPress={onSubmit}>
+          <Focusable variant="button" onPress={onSubmit}>
             <View style={[styles.button, !canSubmit && styles.buttonDisabled]}>
               <Text style={styles.buttonText}>{t("pairing:pair")}</Text>
             </View>
@@ -107,7 +108,7 @@ export function CodeInputStep({
         </View>
 
         <View style={{ marginTop: 12 }}>
-          <Focusable onPress={onChangeServer}>
+          <Focusable variant="button" onPress={onChangeServer}>
             <View style={styles.backButton}>
               <Text style={styles.backText}>{t("pairing:changeServer")}</Text>
             </View>

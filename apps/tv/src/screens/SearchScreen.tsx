@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, FlatList } from "react-native";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -14,10 +14,15 @@ import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
+const NUM_COLUMNS = 5;
+const CARD_HEIGHT = Math.round(CardConfig.portrait.width / CardConfig.portrait.aspectRatio);
+const ROW_HEIGHT = CARD_HEIGHT + Spacing.cardGap; // card height + gap
+
 export function SearchScreen({ navigation }: Props) {
   const { t } = useTranslation(["common", "nav"]);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
+  const resultsRef = useRef<FlatList>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query.trim()), 300);
@@ -36,18 +41,23 @@ export function SearchScreen({ navigation }: Props) {
     navigation.navigate("MediaDetail", { itemId: item.Id });
   }, [navigation]);
 
+  const scrollToRow = useCallback((index: number) => {
+    const row = Math.floor(index / NUM_COLUMNS);
+    resultsRef.current?.scrollToOffset({ offset: Math.max(0, row * ROW_HEIGHT - 60), animated: true });
+  }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep, paddingTop: 32 }}>
       {/* Back button */}
       <View style={{ paddingHorizontal: Spacing.screenPadding, marginBottom: 16 }}>
-        <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus style={{ alignSelf: "flex-start" }}>
+        <Focusable variant="button" onPress={() => navigation.goBack()} style={{ alignSelf: "flex-start" }}>
           <View style={{
             paddingHorizontal: 16, paddingVertical: 8,
             borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.06)",
             borderWidth: 1, borderColor: Colors.glassBorder,
           }}>
-            <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "600" }}>
+            <Text style={{ color: Colors.accentPurpleLight, fontSize: 16, fontWeight: "600" }}>
               {t("common:back")}
             </Text>
           </View>
@@ -70,6 +80,7 @@ export function SearchScreen({ navigation }: Props) {
             onKeyPress={handleKeyPress}
             onDelete={handleDelete}
             onClear={handleClear}
+            onVoiceResult={(text) => setQuery(text)}
           />
         </View>
 
@@ -99,14 +110,23 @@ export function SearchScreen({ navigation }: Props) {
           {/* Results grid */}
           {results && results.length > 0 && (
             <FlatList
+              ref={resultsRef}
               data={results}
-              numColumns={4}
+              numColumns={NUM_COLUMNS}
               showsVerticalScrollIndicator={false}
+              removeClippedSubviews
+              maxToRenderPerBatch={10}
+              windowSize={5}
               contentContainerStyle={{ paddingHorizontal: 32, paddingVertical: 24 }}
               keyExtractor={(item) => item.Id}
               columnWrapperStyle={{ gap: Spacing.cardGap, marginBottom: Spacing.cardGap }}
-              renderItem={({ item }) => (
-                <Focusable onPress={() => navigateToDetail(item)} noBorder>
+              getItemLayout={(_, index) => ({
+                length: ROW_HEIGHT,
+                offset: ROW_HEIGHT * Math.floor(index / NUM_COLUMNS),
+                index,
+              })}
+              renderItem={({ item, index }) => (
+                <Focusable variant="card" onPress={() => navigateToDetail(item)} onFocus={() => scrollToRow(index)}>
                   <TVMediaCard item={item} variant="portrait" />
                 </Focusable>
               )}

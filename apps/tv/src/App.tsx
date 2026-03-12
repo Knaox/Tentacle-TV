@@ -69,7 +69,7 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setStreamingConfigBackendUrl(baseUrl);
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
-  const TV_VERSION: string = require("../../package.json").version ?? "0.9.2";
+  const TV_VERSION: string = require("../package.json").version ?? "0.9.2";
   const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV", "Tentacle TV - TV", TV_VERSION);
 
   const savedToken = storage.getItem("tentacle_token");
@@ -93,7 +93,7 @@ function DirectStreamingSync() {
   const client = useJellyfinClient();
   const qc = useQueryClient();
   const token = storage.getItem("tentacle_token");
-  const { data } = useStreamingConfig(token);
+  const { data, isError, isFetched } = useStreamingConfig(token);
 
   useEffect(() => {
     if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
@@ -102,10 +102,20 @@ function DirectStreamingSync() {
         mediaBaseUrl: data.mediaBaseUrl,
         jellyfinToken: data.jellyfinToken,
       });
-    } else {
-      client.setDirectStreaming(null);
+      // Cache for fallback when backend is unreachable
+      storage.setItem("tentacle_jellyfin_url", data.mediaBaseUrl);
+      storage.setItem("tentacle_jellyfin_token", data.jellyfinToken);
+    } else if (isError || (isFetched && !data?.enabled)) {
+      // Fallback: try direct streaming from cached Jellyfin credentials
+      const jfUrl = storage.getItem("tentacle_jellyfin_url");
+      const jfToken = storage.getItem("tentacle_jellyfin_token");
+      if (jfUrl && jfToken) {
+        client.setDirectStreaming({ enabled: true, mediaBaseUrl: jfUrl, jellyfinToken: jfToken });
+      } else {
+        client.setDirectStreaming(null);
+      }
     }
-  }, [client, data]);
+  }, [client, data, isError, isFetched]);
 
   useEffect(() => {
     client.setOnDirectStreamingFail(() => {

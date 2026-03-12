@@ -44,7 +44,7 @@ export function AboutScreen({ navigation }: Props) {
         paddingBottom: 60,
       }}>
         {/* Back button — alignSelf so focus ring wraps just the button */}
-        <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus style={{ alignSelf: "flex-start", marginBottom: 28 }}>
+        <Focusable variant="button" onPress={() => navigation.goBack()} hasTVPreferredFocus style={{ alignSelf: "flex-start", marginBottom: 28 }}>
           <View style={{
             paddingHorizontal: 16, paddingVertical: 8,
             borderRadius: Radius.small,

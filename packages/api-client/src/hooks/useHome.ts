@@ -21,7 +21,6 @@ export function useResumeItems() {
         .then((r) => r.Items),
     enabled: !!userId,
     staleTime: 30_000,
-    refetchOnMount: "always",
   });
 }
 
@@ -55,7 +54,6 @@ export function useNextUp() {
         .then((r) => r.Items),
     enabled: !!userId,
     staleTime: 30_000,
-    refetchOnMount: "always",
   });
 }
 

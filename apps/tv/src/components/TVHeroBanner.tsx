@@ -24,9 +24,10 @@ interface TVHeroBannerProps {
   items: MediaItem[];
   onPlay: (item: MediaItem) => void;
   onDetail: (item: MediaItem) => void;
+  onBannerFocus?: () => void;
 }
 
-export const TVHeroBanner = memo(function TVHeroBanner({ items, onPlay, onDetail }: TVHeroBannerProps) {
+export const TVHeroBanner = memo(function TVHeroBanner({ items, onPlay, onDetail, onBannerFocus }: TVHeroBannerProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const [index, setIndex] = useState(0);
@@ -61,11 +62,25 @@ export const TVHeroBanner = memo(function TVHeroBanner({ items, onPlay, onDetail
   }, [items.length, index, currentOpacity, nextOpacity]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const userInteracting = useRef(false);
+
   useEffect(() => {
     if (items.length <= 1) return;
-    timerRef.current = setInterval(doTransition, HeroConfig.rotateInterval);
+    timerRef.current = setInterval(() => {
+      if (userInteracting.current) return;
+      doTransition();
+    }, HeroConfig.rotateInterval);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [items.length, doTransition]);
+
+  const handleButtonFocus = useCallback(() => {
+    userInteracting.current = true;
+    onBannerFocus?.();
+  }, [onBannerFocus]);
+
+  const handleButtonBlur = useCallback(() => {
+    userInteracting.current = false;
+  }, []);
 
   useEffect(() => { currentOpacity.value = 1; }, [index, currentOpacity]);
 
@@ -179,7 +194,7 @@ export const TVHeroBanner = memo(function TVHeroBanner({ items, onPlay, onDetail
         )}
 
         <View style={{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }}>
-          <Focusable onPress={() => onPlay(item)}>
+          <Focusable variant="button" onPress={() => onPlay(item)} hasTVPreferredFocus onFocus={handleButtonFocus} onBlur={handleButtonBlur}>
             <View style={{
               backgroundColor: Colors.accentPurple,
               paddingHorizontal: 24, paddingVertical: 10,
@@ -190,7 +205,7 @@ export const TVHeroBanner = memo(function TVHeroBanner({ items, onPlay, onDetail
               <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>{t("play")}</Text>
             </View>
           </Focusable>
-          <Focusable onPress={() => onDetail(item)}>
+          <Focusable variant="button" onPress={() => onDetail(item)} onFocus={handleButtonFocus} onBlur={handleButtonBlur}>
             <View style={{
               backgroundColor: Colors.glassBg,
               paddingHorizontal: 20, paddingVertical: 10,
