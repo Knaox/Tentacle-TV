@@ -35,7 +35,7 @@
 | **Windows** | Available | Tauri v2 + native mpv player (MSI / EXE) |
 | **iOS** | Coming soon | React Native + Expo |
 | **Android** | Coming soon | React Native + Expo |
-| **Android TV** | Coming soon | React Native (Android TV) |
+| **Android TV** | Beta | React Native + dual-player (MPV / ExoPlayer) |
 | **Apple TV** | Coming soon | React Native (tvOS) |
 
 ---
@@ -45,6 +45,7 @@
 ### Video Playback
 - HTML5 player (web) with HLS streaming via hls.js
 - Native mpv player (desktop) with Direct Play, Dolby Vision, and Atmos support
+- Android TV dual-player: MPV (SDR) + ExoPlayer/Media3 (HDR/DV) with audio passthrough
 - On-the-fly audio track and subtitle switching
 - Resume watching — pick up right where you left off
 - Per-library preferences (default audio language, subtitles)
@@ -194,6 +195,68 @@ The app auto-updates via the built-in Tauri updater.
 
 ---
 
+## Android TV App
+
+The Android TV app uses a **dual-player architecture** for optimal playback across all content types.
+
+### Player Routing
+
+| Content | Player | Why |
+|---------|--------|-----|
+| **SDR** (H.264, HEVC, AV1) | MPV (`libmpv`) | Fast seeking, ASS/SSA subtitles, video filters |
+| **HDR10 / HDR10+** | ExoPlayer (Media3) | MediaCodec surface mode = HDR passthrough to TV |
+| **Dolby Vision P8** | ExoPlayer (Media3) | Native DV decoder on supported devices |
+| **Dolby Vision P7** | ExoPlayer + DvCompatRenderer | P7→P8.1 rewrite for device compatibility |
+
+Detection is automatic via `VideoRangeType` from Jellyfin metadata — HDR/DV content routes to ExoPlayer, SDR content routes to MPV.
+
+### Audio Passthrough
+
+The ExoPlayer pipeline uses `DefaultAudioSink` with real device `AudioCapabilities` for bitstream passthrough over HDMI:
+
+| Format | Passthrough | Notes |
+|--------|-------------|-------|
+| AC3 / EAC3 | Yes | Wide device support |
+| EAC3 JOC (Dolby Atmos) | Yes | If device/AVR reports `ENCODING_E_AC3_JOC` |
+| TrueHD (Dolby Atmos) | Yes | Nvidia Shield only |
+| DTS / DTS-HD MA | Yes | Shield and select devices |
+| Fallback | PCM decode | Automatic when passthrough unavailable |
+
+### Architecture
+
+```
+              ┌──────────────────┐
+              │   PlayerScreen   │
+              │  (React Native)  │
+              └────────┬─────────┘
+                       │
+              ┌────────▼────────┐
+              │  HDR / DV ?     │
+              └───┬─────────┬───┘
+             SDR  │         │  HDR/DV
+                  ▼         ▼
+        ┌────────────┐  ┌──────────────────┐
+        │  MPVPlayer │  │  ExoPlayer       │
+        │  (libmpv)  │  │  (Media3)        │
+        │            │  │                  │
+        │ vo=gpu     │  │ SurfaceView      │
+        │ mediacodec │  │ HDR passthrough  │
+        │ -copy      │  │ DV P7→P8.1       │
+        │ subs ASS ✅│  │ Audio PT ✅      │
+        └────────────┘  └──────────────────┘
+```
+
+Both players expose the same interface (`seek`, `setAudioTrack`, `setSubtitleTrack`) so the overlay controls, track selector, and skip buttons work identically.
+
+### Installation
+
+```bash
+cd apps/tv/android && ./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+---
+
 ## Environment Variables
 
 | Variable | Description | Default | Required |
@@ -324,7 +387,7 @@ apps/
   backend/         Fastify 5 + Prisma 6 + MariaDB (API server)
   desktop/         Tauri v2 (wraps web build for native desktop)
   mobile/          Expo 52 + React Native (coming soon)
-  tv/              React Native for Android TV (coming soon)
+  tv/              React Native for Android TV (dual-player: MPV + ExoPlayer)
 
 packages/
   api-client/      Jellyfin API client + TanStack Query hooks
@@ -411,7 +474,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |
-| Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop) |
+| Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop), MPV + ExoPlayer/Media3 (TV) |
 | i18n | i18next + react-i18next (English & French) |
 | Validation | Zod 3.24 |
 | CI/CD | GitHub Actions (Docker build on push to main) |

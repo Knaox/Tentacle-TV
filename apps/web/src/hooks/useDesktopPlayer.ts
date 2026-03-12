@@ -44,6 +44,10 @@ export interface PlayOptions {
 type PluginApi = typeof import("tauri-plugin-libmpv-api");
 let api: PluginApi | null = null;
 
+// Serialization gate: init must wait for any pending destroy to complete.
+// Prevents race condition when switching episodes (key={itemId} unmounts+remounts).
+let pendingDestroy: Promise<void> = Promise.resolve();
+
 const loadApi = async (): Promise<boolean> => {
   try {
     if (isMacOS()) {
@@ -91,6 +95,12 @@ export function useDesktopPlayer() {
     let cancelled = false;
 
     (async () => {
+      // Wait for any previous destroy to finish before re-initializing.
+      // Critical for episode switches: old DesktopPlayer unmounts (destroy) while
+      // new one mounts (init) — without this gate, both Rust commands race on the
+      // same RenderState causing a segfault (GL context / thread use-after-free).
+      await pendingDestroy;
+
       const loaded = await loadApi();
       if (!loaded || cancelled || !api) return;
 
@@ -275,7 +285,7 @@ export function useDesktopPlayer() {
       cancelled = true;
       for (const unlisten of unlistenRefs.current) unlisten();
       unlistenRefs.current = [];
-      api?.destroy().catch(() => {});
+      pendingDestroy = api?.destroy().catch(() => {}) ?? Promise.resolve();
     };
   }, []);
 
@@ -374,7 +384,13 @@ export function useDesktopPlayer() {
     }
   }, []);
 
-  const stop = useCallback(async () => { api?.destroy().catch(() => {}); }, []);
+  const stop = useCallback(async () => {
+    if (api) {
+      const p = api.destroy().catch(() => {});
+      pendingDestroy = p;
+      await p;
+    }
+  }, []);
 
   return { state, ready, fileLoaded, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen, stop };

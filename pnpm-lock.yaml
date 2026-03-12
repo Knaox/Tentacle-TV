@@ -7,6 +7,11 @@ settings:
 overrides:
   '@react-native/community-cli-plugin>@react-native-community/cli-server-api': 14.1.2
 
+patchedDependencies:
+  react-native-video@6.19.0:
+    hash: f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293
+    path: patches/react-native-video@6.19.0.patch
+
 importers:
 
   .: {}
@@ -176,7 +181,7 @@ importers:
         version: 15.11.2(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
       react-native-video:
         specifier: ^6.9.0
-        version: 6.19.0(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
+        version: 6.19.0(patch_hash=f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293)(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
       react-native-webview:
         specifier: 13.12.5
         version: 13.12.5(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
@@ -255,7 +260,7 @@ importers:
         version: 15.15.3(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
       react-native-video:
         specifier: ^6.9.0
-        version: 6.19.0(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
+        version: 6.19.0(patch_hash=f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293)(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@react-native-community/cli':
         specifier: ^14.1.2
@@ -11565,12 +11570,12 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  react-native-video@6.19.0(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1))(react@18.3.1):
+  react-native-video@6.19.0(patch_hash=f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293)(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
       react-native: react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@18.3.28)(react@18.3.1)
 
-  react-native-video@6.19.0(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1))(react@18.3.1):
+  react-native-video@6.19.0(patch_hash=f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293)(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
       react-native: 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@18.3.28)(react@18.3.1)
