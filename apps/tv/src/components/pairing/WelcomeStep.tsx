@@ -28,7 +28,7 @@ export function WelcomeStep({
     <View style={styles.container}>
       {/* Language toggle */}
       <View style={styles.langRow}>
-        <Focusable onPress={toggleLang}>
+        <Focusable variant="button" onPress={toggleLang}>
           <View style={styles.langButton}>
             <Text style={styles.langText}>
               {currentLang === "fr" ? "EN" : "FR"}
@@ -43,7 +43,7 @@ export function WelcomeStep({
         <Text style={styles.subtitle}>{t("pairing:tvWelcomeSubtitle")}</Text>
 
         {/* Primary CTA */}
-        <Focusable onPress={onShowCode} hasTVPreferredFocus focusRadius={Radius.buttonLarge + 3} style={{ marginBottom: 16 }}>
+        <Focusable variant="button" onPress={onShowCode} hasTVPreferredFocus focusRadius={Radius.buttonLarge + 3} style={{ marginBottom: 16 }}>
           <View style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>
               {t("pairing:showPairingCode")}
@@ -52,7 +52,7 @@ export function WelcomeStep({
         </Focusable>
 
         {/* Manual fallback link */}
-        <Focusable onPress={onManualSetup} focusRadius={Radius.pill + 3}>
+        <Focusable variant="button" onPress={onManualSetup} focusRadius={Radius.pill + 3}>
           <View style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
               {t("pairing:configureManually")}

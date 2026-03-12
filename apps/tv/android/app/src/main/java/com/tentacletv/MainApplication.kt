@@ -8,13 +8,15 @@ import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import com.tentacletv.exoplayer.ExoPackage
+import com.tentacletv.mpv.MpvPackage
 
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
-            PackageList(this).packages
+            PackageList(this).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage())
 
         override fun getJSMainModuleName(): String = "index"
 

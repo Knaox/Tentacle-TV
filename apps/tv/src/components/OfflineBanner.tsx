@@ -30,7 +30,7 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
         <CryingTentacle size={140} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Focusable onPress={onRetry} hasTVPreferredFocus>
+        <Focusable variant="button" onPress={onRetry} hasTVPreferredFocus>
           <View style={styles.button}>
             <Text style={styles.buttonText}>{t("retryConnection")}</Text>
           </View>

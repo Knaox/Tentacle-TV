@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { View, Text, Image, ScrollView } from "react-native";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { CheckIcon } from "./icons/TVIcons";
+import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 interface TVEpisodeListProps {
@@ -12,12 +13,16 @@ interface TVEpisodeListProps {
   onPlay: (episode: MediaItem) => void;
 }
 
+const EPISODE_ROW_HEIGHT = 148; // paddingVertical 14*2 + thumbnail 112 + gap 8
+
 export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
   const client = useJellyfinClient();
   const { data: seasons } = useSeasons(seriesId);
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
   const activeSeasonId = selectedSeason ?? seasons?.[0]?.Id;
   const { data: episodes } = useEpisodes(seriesId, activeSeasonId);
+  const episodeScrollRef = useRef<ScrollView>(null);
+  const { makeOnFocus } = useTVScrollToFocused(episodeScrollRef, 60);
 
   return (
     <View>
@@ -28,7 +33,7 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
         contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 10 }}
       >
         {(seasons ?? []).map((season) => (
-          <Focusable key={season.Id} onPress={() => setSelectedSeason(season.Id)}>
+          <Focusable key={season.Id} variant="button" onPress={() => setSelectedSeason(season.Id)}>
             <View style={{
               paddingHorizontal: 24, paddingVertical: 12, borderRadius: Radius.pill,
               backgroundColor: season.Id === activeSeasonId
@@ -52,22 +57,23 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
 
       {/* Episodes */}
       <ScrollView
+        ref={episodeScrollRef}
         style={{ marginTop: 24, maxHeight: 500 }}
         contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 8 }}
       >
-        {(episodes ?? []).map((ep) => {
+        {(episodes ?? []).map((ep, epIndex) => {
           const thumb = client.getImageUrl(ep.Id, "Primary", { width: 400, quality: 80 });
           const progress = ep.UserData?.PlayedPercentage ?? 0;
           const isWatched = ep.UserData?.Played === true;
           const runtime = ep.RunTimeTicks ? formatDuration(ep.RunTimeTicks) : null;
 
           return (
-            <Focusable key={ep.Id} onPress={() => onPlay(ep)}>
+            <Focusable key={ep.Id} variant="row" onPress={() => onPlay(ep)} onFocus={makeOnFocus(epIndex, EPISODE_ROW_HEIGHT)}>
               <View style={{
                 flexDirection: "row", alignItems: "center", gap: 20,
                 paddingVertical: 14, paddingHorizontal: 16,
-                borderRadius: Radius.small,
-                backgroundColor: "rgba(255,255,255,0.02)",
+                borderRadius: Radius.card,
+                backgroundColor: "rgba(255,255,255,0.04)",
               }}>
                 {/* Thumbnail */}
                 <View style={{
@@ -108,9 +114,16 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     {ep.IndexNumber != null && (
-                      <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700" }}>
-                        E{String(ep.IndexNumber).padStart(2, "0")}
-                      </Text>
+                      <View style={{
+                        backgroundColor: "rgba(139, 92, 246, 0.15)",
+                        paddingHorizontal: 8, paddingVertical: 3,
+                        borderRadius: 4, borderWidth: 1,
+                        borderColor: "rgba(139, 92, 246, 0.25)",
+                      }}>
+                        <Text style={{ color: Colors.textSecondary, fontSize: 13, fontWeight: "700" }}>
+                          E{String(ep.IndexNumber).padStart(2, "0")}
+                        </Text>
+                      </View>
                     )}
                     <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 16, fontWeight: "600", flex: 1 }}>
                       {ep.Name}
@@ -123,7 +136,7 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
                   </View>
                   {ep.Overview && (
                     <Text
-                      numberOfLines={1}
+                      numberOfLines={2}
                       style={{ color: Colors.textMuted, ...Typography.caption, marginTop: 6, lineHeight: 18 }}
                     >
                       {ep.Overview}

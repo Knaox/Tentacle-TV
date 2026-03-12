@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { View, ScrollView, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useLibraries, useTentacleConfig } from "@tentacle-tv/api-client";
@@ -9,6 +9,7 @@ import { SelectionModal } from "../components/SelectionModal";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { i18n } from "@tentacle-tv/shared";
 import { getLanguageDisplayName } from "../utils/languageNames";
+import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preferences">;
@@ -60,6 +61,9 @@ export function PreferencesScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState<ModalState | null>(null);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const { makeOnFocus } = useTVScrollToFocused(scrollRef);
 
   const serverUrl = storage.getItem("tentacle_server_url") || "";
   const token = storage.getItem("tentacle_token") || "";
@@ -156,15 +160,18 @@ export function PreferencesScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 48, paddingVertical: 32, paddingBottom: 60 }}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ paddingHorizontal: 48, paddingVertical: 32, paddingBottom: 60 }}
+      >
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-          <Focusable onPress={() => navigation.goBack()} hasTVPreferredFocus={!modal} style={{ alignSelf: "flex-start" }}>
+          <Focusable variant="button" onPress={() => navigation.goBack()} hasTVPreferredFocus={!modal} style={{ alignSelf: "flex-start" }}>
             <View style={{
               paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.small,
               backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
-              <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "600" }}>
+              <Text style={{ color: Colors.accentPurpleLight, fontSize: 16, fontWeight: "600" }}>
                 {t("common:back")}
               </Text>
             </View>
@@ -174,7 +181,7 @@ export function PreferencesScreen({ navigation }: Props) {
           </Text>
           {saving && <ActivityIndicator size="small" color={Colors.accentPurple} style={{ marginLeft: 12 }} />}
         </View>
-        <Text style={{ color: Colors.textMuted, fontSize: 13, marginBottom: 28 }}>
+        <Text style={{ color: Colors.textMuted, fontSize: 14, marginBottom: 28 }}>
           {t("preferences:subtitle")}
         </Text>
 
@@ -182,14 +189,14 @@ export function PreferencesScreen({ navigation }: Props) {
         <SectionTitle text={t("preferences:interfaceLanguage")} />
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 32 }}>
           {INTERFACE_LANGS.map((lang) => (
-            <Focusable key={lang.code} onPress={() => changeInterfaceLang(lang.code)}>
+            <Focusable key={lang.code} variant="button" onPress={() => changeInterfaceLang(lang.code)}>
               <View style={{
                 paddingHorizontal: 22, paddingVertical: 10, borderRadius: Radius.button,
                 backgroundColor: currentLang === lang.code ? Colors.accentPurple : "rgba(255,255,255,0.04)",
                 borderWidth: 2, borderColor: currentLang === lang.code ? Colors.accentPurple : Colors.glassBorder,
               }}>
                 <Text style={{
-                  color: Colors.textPrimary, fontSize: 14,
+                  color: Colors.textPrimary, fontSize: 16,
                   fontWeight: currentLang === lang.code ? "700" : "400",
                 }}>
                   {t(lang.labelKey)}
@@ -202,8 +209,9 @@ export function PreferencesScreen({ navigation }: Props) {
         {loading && <ActivityIndicator size="large" color={Colors.accentPurple} style={{ marginTop: 24 }} />}
 
         {/* Per-library preferences */}
-        {!loading && (libraries ?? []).map((lib) => {
+        {!loading && (libraries ?? []).map((lib, libIdx) => {
           const pref = getPref(lib.Id);
+          const scrollToLib = makeOnFocus(libIdx, 140);
           return (
             <View key={lib.Id} style={{
               backgroundColor: Colors.bgSurface, borderRadius: Radius.card,
@@ -218,16 +226,19 @@ export function PreferencesScreen({ navigation }: Props) {
                   label={t("preferences:audio")}
                   value={pref.audioLang ? getLanguageDisplayName(pref.audioLang) : t("preferences:default")}
                   onPress={() => setModal({ type: "audio", libraryId: lib.Id, currentValue: pref.audioLang })}
+                  onFocus={scrollToLib}
                 />
                 <PrefButton
                   label={t("preferences:subtitleMode")}
                   value={t(SUBTITLE_MODE_KEYS[pref.subtitleMode])}
                   onPress={() => setModal({ type: "subtitleMode", libraryId: lib.Id, currentValue: pref.subtitleMode })}
+                  onFocus={scrollToLib}
                 />
                 <PrefButton
                   label={t("preferences:subtitles")}
                   value={pref.subtitleLang ? getLanguageDisplayName(pref.subtitleLang) : t("preferences:default")}
                   onPress={() => setModal({ type: "subtitleLang", libraryId: lib.Id, currentValue: pref.subtitleLang })}
+                  onFocus={scrollToLib}
                 />
               </View>
             </View>
@@ -257,24 +268,24 @@ export function PreferencesScreen({ navigation }: Props) {
 
 function SectionTitle({ text }: { text: string }) {
   return (
-    <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700", marginBottom: 12 }}>
+    <Text style={{ color: Colors.accentPurpleLight, fontSize: 16, fontWeight: "700", marginBottom: 12 }}>
       {text}
     </Text>
   );
 }
 
-function PrefButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
+function PrefButton({ label, value, onPress, onFocus }: { label: string; value: string; onPress: () => void; onFocus?: () => void }) {
   return (
-    <Focusable onPress={onPress}>
+    <Focusable variant="button" onPress={onPress} onFocus={onFocus}>
       <View style={{
         backgroundColor: "rgba(255,255,255,0.03)", borderRadius: Radius.button,
         paddingHorizontal: 18, paddingVertical: 12, minWidth: 160,
         borderWidth: 1, borderColor: Colors.glassBorder,
       }}>
-        <Text style={{ color: Colors.textTertiary, fontSize: 11, marginBottom: 4 }}>
+        <Text style={{ color: Colors.textTertiary, fontSize: 14, marginBottom: 4 }}>
           {label}
         </Text>
-        <Text style={{ color: Colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
+        <Text style={{ color: Colors.textPrimary, fontSize: 16, fontWeight: "600" }}>
           {value}
         </Text>
       </View>

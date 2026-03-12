@@ -1,56 +1,62 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, Text, Pressable } from "react-native";
-import Video, { type OnProgressData, type OnLoadData, SelectedTrackType } from "react-native-video";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
 } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVPlayerOverlay } from "../components/TVPlayerOverlay";
 import { TVTrackSelector } from "../components/TVTrackSelector";
+import { TVSkipSegmentButton } from "../components/TVSkipSegmentButton";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
+import { randomSessionId, formatTrackLabel } from "../utils/playerHelpers";
+import { MPVPlayer, type MPVPlayerHandle, type MpvTrack } from "../components/player/MPVPlayer";
+import { ExoPlayer } from "../components/player/ExoPlayer";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
-/** Hermes has no crypto.randomUUID — simple v4 fallback */
-function randomSessionId(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
-
-function formatTrackLabel(s: JfStream): string {
-  const title = s.DisplayTitle || s.Title || s.Language || `Track ${s.Index}`;
-  const codec = s.Codec?.toUpperCase();
-  return codec && !title.toUpperCase().includes(codec) ? `${title} (${codec})` : title;
-}
-
 export function PlayerScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
+  const { t } = useTranslation("player");
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
 
-  const videoRef = useRef<Video>(null);
+  const mpvRef = useRef<MPVPlayerHandle>(null);
+  const exoRef = useRef<MPVPlayerHandle>(null);
   const [paused, setPaused] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [displayTime, setDisplayTime] = useState(0);
+  const [bufferedTime, setBufferedTime] = useState(0);
+  const displayTimeRef = useRef(0);
+  const bufferedTimeRef = useRef(0);
+  const lastDisplayUpdate = useRef(0);
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const [showSettings, setShowSettings] = useState(false);
+  const showSettingsRef = useRef(false);
   const [startTicks, setStartTicks] = useState(0);
   const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
   const resumeApplied = useRef(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
 
   const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
+
+  // Detect HDR/DV content — route to ExoPlayer for HDR passthrough
+  const videoStream = streams.find((s) => s.Type === "Video");
+  const isHDR = videoStream?.VideoRangeType != null
+    && videoStream.VideoRangeType !== "SDR";
+  const useExoPlayer = isHDR && !forceTranscode;
+  // Unified ref — points to whichever player is active
+  const playerRef = useExoPlayer ? exoRef : mpvRef;
 
   const defaultAudio = useMemo(() =>
     streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
@@ -59,30 +65,25 @@ export function PlayerScreen({ route, navigation }: Props) {
   );
 
   useEffect(() => {
-    if (streams.length > 0) {
+    if (defaultAudio !== undefined) {
       setAudioIndex(defaultAudio);
       setSubtitleIndex(-1);
       setStartTicks(0);
       positionRef.current = 0;
       prefsApplied.current = false;
     }
-  }, [itemId, streams.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [itemId, defaultAudio]);
 
-  const selectedAudioStream = streams.find((s) => s.Type === "Audio" && s.Index === audioIndex);
-  const selectedAudioCodec = selectedAudioStream?.Codec?.toLowerCase();
-  const selectedAudioChannels = selectedAudioStream?.Channels ?? 2;
-  const needsAudioTranscode = !!selectedAudioCodec && (
-    /^(ac3|eac3|dts|truehd)$/i.test(selectedAudioCodec) || selectedAudioChannels > 6
-  );
-
-  const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
-  const isDirectPlay = !forceTranscode && audioIndex === defaultAudio && !needsAudioTranscode;
-  const isDirectStream = !isDirectPlay && !forceTranscode && needsAudioTranscode;
+  // MPV handles all codecs natively — direct play unless forced transcode
+  const isDirectPlay = !forceTranscode;
+  const isDirectStream = false;
 
   const playSessionId = useMemo(() => {
     if (isDirectPlay) return undefined;
     return randomSessionId();
   }, [audioIndex, startTicks, isDirectPlay, forceTranscode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
@@ -93,11 +94,10 @@ export function PlayerScreen({ route, navigation }: Props) {
       });
     }
     return client.getStreamUrl(itemId, {
-      mediaSourceId, audioIndex, directPlay: isDirectPlay,
-      startTimeTicks: !isDirectPlay && startTicks > 0 ? startTicks : undefined,
+      mediaSourceId, directPlay: true,
       playSessionId, sourceVideoCodec,
     });
-  }, [client, itemId, mediaSourceId, audioIndex, isDirectPlay, startTicks, playSessionId, sourceVideoCodec, forceTranscode]);
+  }, [client, itemId, mediaSourceId, startTicks, playSessionId, sourceVideoCodec, forceTranscode]);
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -137,7 +137,6 @@ export function PlayerScreen({ route, navigation }: Props) {
   const skipSegments = useIntroSkipper(itemId, item);
 
   // For transcoded/HLS streams, include resume position in the URL
-  // (seeking after load is unreliable when ExoPlayer detects HLS as "live")
   useEffect(() => {
     if (resumeApplied.current || isDirectPlay) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks;
@@ -149,13 +148,32 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   useEffect(() => () => { reportStop(); }, [reportStop]);
 
+  // Build MPV track map when tracks arrive (Jellyfin index → MPV track ID)
+  const handleTracks = useCallback((tracks: MpvTrack[]) => {
+    const audioTracks = tracks.filter((t) => t.type === "audio");
+    const subTracks = tracks.filter((t) => t.type === "sub");
+    const jellyfinAudio = streams.filter((s) => s.Type === "Audio");
+    const jellyfinSubs = streams.filter((s) => s.Type === "Subtitle");
+    const map: Record<number, number> = {};
+    jellyfinAudio.forEach((s, i) => {
+      if (i < audioTracks.length) map[s.Index] = audioTracks[i].id;
+    });
+    jellyfinSubs.forEach((s, i) => {
+      if (i < subTracks.length) map[s.Index] = subTracks[i].id;
+    });
+    setMpvTrackMap(map);
+  }, [streams]);
+
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    // For transcoded streams, the player position is relative to HLS start
-    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
-    const playerPos = clamped - offset;
-    videoRef.current?.seek(Math.max(0, playerPos));
+    if (isDirectPlay) {
+      playerRef.current?.seek(clamped);
+    } else {
+      // For transcoded streams, the player position is relative to HLS start
+      const offset = startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+      playerRef.current?.seek(Math.max(0, clamped - offset));
+    }
     reportSeek(clamped, paused);
   }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
 
@@ -164,47 +182,88 @@ export function PlayerScreen({ route, navigation }: Props) {
   const controls = useTVPlayerControls({
     paused, jellyfinDuration: jellyfinDuration ?? 0,
     onSeek: handleSeek,
-    onBack: () => { reportStop(); navigation.goBack(); },
+    onBack: () => {
+      if (showSettingsRef.current) { setShowSettings(false); showSettingsRef.current = false; return; }
+      reportStop(); navigation.goBack();
+    },
     onPlayPause: handlePlayPause,
   });
 
-  const handleLoad = useCallback((_data: OnLoadData) => {
+  // Sync display time immediately when overlay appears
+  useEffect(() => {
+    if (controls.overlayVisible) {
+      setDisplayTime(displayTimeRef.current);
+      lastDisplayUpdate.current = Date.now();
+    }
+  }, [controls.overlayVisible]);
+
+  const handleLoad = useCallback((duration: number) => {
     // Only seek for direct play — transcoded/HLS uses StartTimeTicks in URL
     if (isDirectPlay) {
       const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-      if (resumeTicks) videoRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
+      if (resumeTicks) playerRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
     }
     reportStart();
   }, [item, reportStart, isDirectPlay]);
 
-  const handleProgress = useCallback((data: OnProgressData) => {
-    // ExoPlayer may report negative time when it detects HLS as "live"
-    // (time relative to live edge). Clamp to 0 and offset by startTicks.
-    const raw = Math.max(0, data.currentTime);
-    // For transcoded streams with StartTimeTicks, player time is relative
-    // to the HLS start, so add the offset to get the real media position.
+  const handleProgress = useCallback((currentTime: number, buffered: number) => {
+    const raw = Math.max(0, currentTime);
     const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
     const t = raw + offset;
-    setCurrentTime(t);
+    const bufferedAbs = Math.max(0, buffered) + offset;
+    // Always update refs (no re-render)
     positionRef.current = t;
     controls.currentTimeRef.current = t;
+    displayTimeRef.current = t;
+    bufferedTimeRef.current = bufferedAbs;
+    // Only update display state at ~1Hz to avoid excessive re-renders
+    const now = Date.now();
+    if (now - lastDisplayUpdate.current >= 1000) {
+      lastDisplayUpdate.current = now;
+      setDisplayTime(t);
+      setBufferedTime(bufferedAbs);
+    }
     updatePosition(t, paused);
   }, [paused, updatePosition, controls.currentTimeRef, isDirectPlay, startTicks]);
 
   const handleEnd = useCallback(() => { reportStop(); navigation.goBack(); }, [navigation, reportStop]);
 
   const handleAudioChange = useCallback((newIndex: number) => {
-    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-    setAudioIndex(newIndex);
-  }, []);
+    if (isDirectPlay) {
+      // MPV: switch track directly, no URL change needed
+      const mpvId = mpvTrackMap[newIndex];
+      if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
+      setAudioIndex(newIndex);
+    } else {
+      // Transcode fallback: change URL (server-side track selection)
+      if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+      setAudioIndex(newIndex);
+    }
+  }, [isDirectPlay, mpvTrackMap]);
 
-  const handleError = useCallback((error: { error: { errorString?: string; errorCode?: string; errorStackTrace?: string } }) => {
-    const msg = error?.error?.errorString || error?.error?.errorCode || "Unknown playback error";
-    const trace = error?.error?.errorStackTrace ?? "";
-    const isCodecError = msg.includes("DECODING_FAILED") || msg.includes("EXCEEDS_CAPABILITIES")
-      || trace.includes("MediaCodecVideoRenderer") || trace.includes("MediaCodecVideoDecoderException");
+  // Apply subtitle track via MPV when in direct play
+  useEffect(() => {
+    if (!isDirectPlay) return;
+    if (subtitleIndex < 0) {
+      playerRef.current?.setSubtitleTrack(0); // disable
+    } else {
+      const mpvId = mpvTrackMap[subtitleIndex];
+      if (mpvId != null) playerRef.current?.setSubtitleTrack(mpvId);
+    }
+  }, [subtitleIndex, isDirectPlay, mpvTrackMap]);
+
+  // Apply audio track via MPV when in direct play
+  useEffect(() => {
+    if (!isDirectPlay) return;
+    const mpvId = mpvTrackMap[audioIndex];
+    if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
+  }, [audioIndex, isDirectPlay, mpvTrackMap]);
+
+  const handleError = useCallback((error: string) => {
+    const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
+      || error.includes("codec") || error.includes("Could not open");
     if (isCodecError && !forceTranscode) { setVideoError(null); setForceTranscode(true); return; }
-    setVideoError(msg);
+    setVideoError(error);
   }, [forceTranscode]);
 
   // Track lists for UI
@@ -213,41 +272,46 @@ export function PlayerScreen({ route, navigation }: Props) {
   const subtitleTracks = useMemo(() =>
     streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
 
-  // Convert Jellyfin global index to player-relative index for react-native-video
-  const audioStreams = useMemo(() => streams.filter((s) => s.Type === "Audio"), [streams]);
-  const subtitleStreams = useMemo(() => streams.filter((s) => s.Type === "Subtitle"), [streams]);
-  const audioRelativeIndex = useMemo(() => {
-    const idx = audioStreams.findIndex((s) => s.Index === audioIndex);
-    return idx >= 0 ? idx : 0;
-  }, [audioStreams, audioIndex]);
-  const subtitleRelativeIndex = useMemo(() => {
-    if (subtitleIndex < 0) return -1;
-    const idx = subtitleStreams.findIndex((s) => s.Index === subtitleIndex);
-    return idx >= 0 ? idx : -1;
-  }, [subtitleStreams, subtitleIndex]);
-
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : 0;
   if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <Video
-        ref={videoRef} source={{ uri: streamUrl }} style={{ flex: 1 }}
-        resizeMode="contain" controls={false} paused={paused}
-        // @ts-ignore — focusable prevents ExoPlayer native TV controls ("LIVE" badge)
-        focusable={false}
-        onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd} onError={handleError}
-        selectedAudioTrack={{ type: SelectedTrackType.INDEX, value: audioRelativeIndex }}
-        selectedTextTrack={subtitleRelativeIndex >= 0
-          ? { type: SelectedTrackType.INDEX, value: subtitleRelativeIndex }
-          : { type: SelectedTrackType.DISABLED }}
-        progressUpdateInterval={250}
-      />
+      {useExoPlayer ? (
+        <ExoPlayer
+          ref={exoRef}
+          source={streamUrl}
+          paused={paused}
+          progressInterval={controls.overlayVisible ? 250 : 1000}
+          audioPassthrough
+          style={{ flex: 1 }}
+          onLoad={handleLoad}
+          onProgress={handleProgress}
+          onEnd={handleEnd}
+          onError={handleError}
+          onTracks={handleTracks}
+        />
+      ) : (
+        <MPVPlayer
+          ref={mpvRef}
+          source={streamUrl}
+          paused={paused}
+          progressInterval={controls.overlayVisible ? 250 : 1000}
+          style={{ flex: 1 }}
+          onLoad={handleLoad}
+          onProgress={handleProgress}
+          onEnd={handleEnd}
+          onError={handleError}
+          onTracks={handleTracks}
+        />
+      )}
       <Pressable
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        onPress={controls.showOverlay} onFocus={controls.showOverlay}
+        onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!controls.overlayVisible && !paused} accessible
+        hasTVPreferredFocus={!controls.overlayVisible && !showSettings}
+        accessible={!controls.overlayVisible && !showSettings}
+        importantForAccessibility={controls.overlayVisible || showSettings ? "no-hide-descendants" : "auto"}
       >
         <View style={{ flex: 1 }} />
       </Pressable>
@@ -256,30 +320,48 @@ export function PlayerScreen({ route, navigation }: Props) {
           position: "absolute", top: 60, left: 40, right: 40,
           backgroundColor: "rgba(239,68,68,0.9)", borderRadius: 8, padding: 16,
         }}>
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>Playback Error</Text>
+          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>{t("playbackError")}</Text>
           <Text style={{ color: "#fff", fontSize: 14, marginTop: 4 }}>{videoError}</Text>
         </View>
       )}
       <TVPlayerOverlay
         title={item?.Name ?? ""}
-        currentTime={controls.scrubbing ? controls.scrubPosition : currentTime}
+        currentTime={controls.scrubbing ? controls.scrubPosition : displayTime}
+        bufferedTime={bufferedTime}
         duration={displayDuration} paused={paused} visible={controls.overlayVisible}
         speedLabel={controls.speedLabel}
-        introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         onPlayPause={() => { handlePlayPause(); controls.showOverlay(); }}
         onSkipBack={() => { controls.handleSkipBack(); controls.showOverlay(); }}
         onSkipForward={() => { controls.handleSkipForward(); controls.showOverlay(); }}
-        onSkipIntro={skipSegments.intro ? () => handleSeek(skipSegments.intro!.end) : undefined}
-        onSkipCredits={skipSegments.credits ? () => handleSeek(skipSegments.credits!.end) : undefined}
         onBack={() => { reportStop(); navigation.goBack(); }}
-        onSettings={() => { setShowSettings((v) => !v); controls.showOverlay(); }}
+        onSettings={() => {
+          setShowSettings((v) => { showSettingsRef.current = !v; return !v; });
+          controls.showOverlay();
+        }}
+      />
+      {/* Skip intro/credits — rendered outside overlay so always visible */}
+      <TVSkipSegmentButton
+        type="intro"
+        segment={skipSegments.intro}
+        currentTime={displayTime}
+        onSkip={() => handleSeek(skipSegments.intro!.end)}
+        overlayVisible={controls.overlayVisible}
+        showSettings={showSettings}
+      />
+      <TVSkipSegmentButton
+        type="credits"
+        segment={skipSegments.credits}
+        currentTime={displayTime}
+        onSkip={() => handleSeek(skipSegments.credits!.end)}
+        overlayVisible={controls.overlayVisible}
+        showSettings={showSettings}
       />
       {showSettings && (
         <TVTrackSelector
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           selectedAudio={audioIndex} selectedSubtitle={subtitleIndex}
           onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
-          onClose={() => setShowSettings(false)}
+          onClose={() => { setShowSettings(false); showSettingsRef.current = false; }}
         />
       )}
     </View>

@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { View, Text, Image } from "react-native";
+import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ticksToSeconds } from "@tentacle-tv/shared";
@@ -46,7 +47,7 @@ interface CardInnerProps {
 function PortraitCard({ item, client, width: w, progress, isWatched, t }: CardInnerProps & { t: ReturnType<typeof useTranslation>["t"] }) {
   const cardW = w ?? CardConfig.portrait.width;
   const cardH = cardW / CardConfig.portrait.aspectRatio;
-  const poster = client.getImageUrl(item.Id, "Primary", { height: 500, quality: 90 });
+  const poster = client.getImageUrl(item.Id, "Primary", { height: 360, quality: 80 });
 
   return (
     <View style={{ width: cardW }}>
@@ -94,7 +95,7 @@ function LandscapeCard({ item, client, width: w, progress, isWatched }: CardInne
   const cardW = w ?? CardConfig.landscape.width;
   const cardH = cardW / CardConfig.landscape.aspectRatio;
   const imageType = item.Type === "Episode" ? "Primary" : "Backdrop";
-  const thumb = client.getImageUrl(item.Id, imageType, { width: 640, quality: 85 });
+  const thumb = client.getImageUrl(item.Id, imageType, { width: 400, quality: 75 });
 
   const episodeLabel = item.Type === "Episode" && item.ParentIndexNumber != null && item.IndexNumber != null
     ? `S${String(item.ParentIndexNumber).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")}`
@@ -114,21 +115,30 @@ function LandscapeCard({ item, client, width: w, progress, isWatched }: CardInne
           resizeMode="cover"
         />
         {/* Bottom gradient for text legibility */}
-        <View style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: cardH * 0.5,
-        }}>
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.05)" }} />
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.3)" }} />
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.65)" }} />
-        </View>
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.75)"]}
+          locations={[0.3, 1]}
+          style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: cardH * 0.6 }}
+        />
         {/* Episode info overlay */}
-        <View style={{ position: "absolute", bottom: CardConfig.progressBarHeight + 10, left: 12, right: 50 }}>
+        <View style={{ position: "absolute", bottom: CardConfig.progressBarHeight + 14, left: 12, right: 50 }}>
           {episodeLabel ? (
-            <Text numberOfLines={1} style={{ color: Colors.accentPurpleLight, fontSize: 13, fontWeight: "600" }}>
-              {episodeLabel}{item.Name ? ` · ${item.Name}` : ""}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{
+                backgroundColor: "rgba(139, 92, 246, 0.3)",
+                paddingHorizontal: 6, paddingVertical: 2,
+                borderRadius: 4, marginRight: 6,
+              }}>
+                <Text style={{ color: "#e4e4e7", fontSize: 12, fontWeight: "700" }}>
+                  {episodeLabel}
+                </Text>
+              </View>
+              <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 15, fontWeight: "600", flex: 1 }}>
+                {item.Name}
+              </Text>
+            </View>
           ) : (
-            <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
+            <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
               {item.Name}
             </Text>
           )}
@@ -136,7 +146,7 @@ function LandscapeCard({ item, client, width: w, progress, isWatched }: CardInne
         {/* Remaining time */}
         {remainingMin != null && remainingMin > 0 && (
           <View style={{ position: "absolute", bottom: CardConfig.progressBarHeight + 10, right: 12 }}>
-            <Text style={{ color: Colors.textMuted, fontSize: 11 }}>{remainingMin} min</Text>
+            <Text style={{ color: Colors.textMuted, fontSize: 14 }}>{remainingMin} min</Text>
           </View>
         )}
         {/* Progress bar */}
