@@ -121,7 +121,7 @@ export function DesktopPlayer({
   const { t } = useTranslation("player");
   const navigate = useNavigate();
   const { state, ready, fileLoaded, error, play, togglePause, setPause, seek, seekRelative,
-    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen, stop } = useDesktopPlayer();
+    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const [showControls, setShowControls] = useState(true);
@@ -411,9 +411,12 @@ export function DesktopPlayer({
       clearInterval(autoPlayTimerRef.current);
       // Fallback: fire-and-forget exit fullscreen via cached invoke
       cachedInvoke?.("exit_fullscreen")?.catch(() => {});
-      stop();
+      // NOTE: do NOT call stop() here — useDesktopPlayer's own cleanup effect
+      // handles mpv destruction and feeds the pendingDestroy gate so the next
+      // init (episode switch) waits for it. Calling stop() here would race
+      // with the hook's cleanup and cause a double-destroy.
     };
-  }, [stop]);
+  }, []);
 
   const scheduleHide = useCallback(() => {
     clearTimeout(hideTimer.current);

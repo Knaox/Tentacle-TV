@@ -30,6 +30,65 @@ async function fetchLatest() {
   }
 }
 
+// ─── Per-platform version fetcher ────────────────────────────────────────────
+const VERSION_SOURCES = {
+  web:     "apps/web/package.json",
+  desktop: null, // from latest.json
+  mobile:  "apps/mobile/package.json",
+  tv:      "apps/tv/package.json",
+  backend: "apps/backend/package.json",
+};
+
+async function fetchWindowsStoreVersion() {
+  try {
+    // Microsoft Display Catalog API — public, no auth required
+    const productId = "9NKHL0T84245";
+    const res = await fetch(
+      `https://displaycatalog.mp.microsoft.com/v7.0/products/${productId}?languages=en-us&market=US`,
+      { cf: { cacheTtl: 3600, cacheEverything: true } },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const pkg = data.Product?.DisplaySkuAvailabilities?.[0]?.Sku?.Properties?.Packages?.[0];
+    if (!pkg?.PackageFullName) return null;
+    // PackageFullName: "DamienROUGE.Tentacle_1.2.3.0_x64__nc896ct3kqbem"
+    const ver = pkg.PackageFullName.split("_")[1]; // "1.2.3.0"
+    return ver ? ver.replace(/\.0$/, "") : null;    // "1.2.3"
+  } catch {
+    return null;
+  }
+}
+
+async function fetchVersions(latest) {
+  const versions = { desktop: latest?.version || null };
+  const entries = Object.entries(VERSION_SOURCES).filter(([, path]) => path);
+
+  const [pkgResults, winStoreVer] = await Promise.all([
+    Promise.allSettled(
+      entries.map(async ([key, path]) => {
+        const url = `https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/${path}`;
+        const res = await fetch(url, {
+          cf: { cacheTtl: 3600, cacheEverything: true },
+          headers: { "User-Agent": "Tentacle-TV-Download-Worker" },
+        });
+        if (!res.ok) return [key, null];
+        const pkg = await res.json();
+        return [key, pkg.version || null];
+      }),
+    ),
+    fetchWindowsStoreVersion(),
+  ]);
+
+  for (const r of pkgResults) {
+    if (r.status === "fulfilled") {
+      const [key, ver] = r.value;
+      versions[key] = ver;
+    }
+  }
+  versions.windowsStore = winStoreVer || versions.desktop;
+  return versions;
+}
+
 function extractMacDmg(latest) {
   if (!latest?.platforms) return null;
   const key = Object.keys(latest.platforms).find(
@@ -63,7 +122,7 @@ function extractWindowsExe(latest) {
 }
 
 // ─── HTML page ────────────────────────────────────────────────────────────────
-function renderPage(latest) {
+function renderPage(latest, versions = {}) {
   const version = latest?.version ? `v${latest.version.replace(/^v/, "")}` : null;
   const macDmg = extractMacDmg(latest);
   const macUrl = macDmg || `${CONFIG.github}/releases/latest`;
@@ -79,15 +138,18 @@ function renderPage(latest) {
   const showMobile = showIOS || showAndroid;
   const showDesktop = showMac || showWin;
 
-  // Platform status table — only enabled platforms
+  // Format version badge for table
+  const fmtVer = (v) => v ? `<code class="ver">v${v.replace(/^v/, "")}</code>` : "—";
+
+  // Platform status table — only enabled platforms, with per-platform version
   const platforms = [
-    CONFIG.web.enabled       && { name: "Web",        ...CONFIG.web },
-    CONFIG.macOS.enabled     && { name: "macOS",      ...CONFIG.macOS },
-    CONFIG.windows.enabled   && { name: "Windows",    ...CONFIG.windows },
-    CONFIG.iOS.enabled       && { name: "iOS",        ...CONFIG.iOS },
-    CONFIG.android.enabled   && { name: "Android",    ...CONFIG.android },
-    CONFIG.androidTV.enabled && { name: "Android TV", ...CONFIG.androidTV },
-    CONFIG.appleTV.enabled   && { name: "Apple TV",   ...CONFIG.appleTV },
+    CONFIG.web.enabled       && { name: "Web",        ...CONFIG.web,       version: versions.web },
+    CONFIG.macOS.enabled     && { name: "macOS",      ...CONFIG.macOS,     version: versions.desktop },
+    CONFIG.windows.enabled   && { name: "Windows",    ...CONFIG.windows,   version: versions.windowsStore },
+    CONFIG.iOS.enabled       && { name: "iOS",        ...CONFIG.iOS,       version: versions.mobile },
+    CONFIG.android.enabled   && { name: "Android",    ...CONFIG.android,   version: versions.mobile },
+    CONFIG.androidTV.enabled && { name: "Android TV", ...CONFIG.androidTV, version: versions.tv },
+    CONFIG.appleTV.enabled   && { name: "Apple TV",   ...CONFIG.appleTV,   version: versions.tv },
   ].filter(Boolean);
 
   return `<!DOCTYPE html>
@@ -118,7 +180,7 @@ function renderPage(latest) {
       ${logoSvg()}
     </div>
     <h1 class="hero-title">Tentacle TV</h1>
-    ${version ? `<span class="badge">${version}</span>` : ""}
+    <span class="badge">Latest</span>
     <p class="hero-sub">A premium, modern media client for <strong>Jellyfin</strong>.</p>
     <p class="hero-desc">Stream your library through a sleek, dark-themed interface with glassmorphism design,<br class="hide-mobile"> smooth animations, and powerful features &mdash; all self-hosted.</p>
   </header>
@@ -137,7 +199,7 @@ function renderPage(latest) {
         <a href="${macUrl}" class="card featured">
           <div class="card-icon">${macSvg()}</div>
           <div class="card-body">
-            <span class="card-label">macOS</span>
+            <span class="card-label">macOS ${version ? `<span class="card-ver">${version}</span>` : ""}</span>
             <span class="card-sub">${macDmg ? "Apple Silicon · .dmg · Signed & Notarized" : "View on GitHub Releases"}</span>
           </div>
           <span class="card-action">${iconSvg("arrow-down")}</span>
@@ -146,13 +208,13 @@ function renderPage(latest) {
         <a href="${winUrl}" class="card"${winStoreUrl ? ' target="_blank" rel="noopener"' : ""}>
           <div class="card-icon">${windowsSvg()}</div>
           <div class="card-body">
-            <span class="card-label">Windows</span>
+            <span class="card-label">Windows ${versions.windowsStore ? `<span class="card-ver">v${versions.windowsStore.replace(/^v/,"")}</span>` : ""}</span>
             <span class="card-sub">${winSub}</span>
           </div>
           <span class="card-action">${iconSvg("arrow-down")}</span>
         </a>` : ""}
       </div>
-      ${version ? `<p class="section-note">Auto-updates built-in via Tauri updater. Current: <code>${version}</code></p>` : ""}
+      ${version ? `<p class="section-note">Auto-updates built-in via Tauri updater.</p>` : ""}
     </section>` : ""}
 
     ${showMobile ? `
@@ -187,7 +249,7 @@ function renderPage(latest) {
     <section class="section fadeUp" style="animation-delay:.2s">
       <div class="section-header">
         <h2 class="section-title">${iconSvg("docker")} Self-Host with Docker</h2>
-        <span class="section-badge">Recommended</span>
+        ${versions.backend ? `<span class="section-badge">v${versions.backend.replace(/^v/,"")}</span>` : `<span class="section-badge">Recommended</span>`}
       </div>
       <p class="section-desc">The fastest way to get Tentacle TV running. Copy, paste, done.</p>
 
@@ -333,9 +395,9 @@ function renderPage(latest) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Platform</th><th>Status</th><th>Technology</th></tr></thead>
+          <thead><tr><th>Platform</th><th>Version</th><th>Status</th><th>Technology</th></tr></thead>
           <tbody>
-            ${platforms.map(p => `<tr><td>${p.name}</td><td><span class="status-badge ${p.status === "available" ? "ok" : p.status === "beta" ? "beta" : "soon"}">${p.status === "available" ? "Available" : p.status === "beta" ? "Beta" : "Coming soon"}</span></td><td>${p.tech}</td></tr>`).join("\n            ")}
+            ${platforms.map(p => `<tr><td>${p.name}</td><td>${fmtVer(p.version)}</td><td><span class="status-badge ${p.status === "available" ? "ok" : p.status === "beta" ? "beta" : "soon"}">${p.status === "available" ? "Available" : p.status === "beta" ? "Beta" : "Coming soon"}</span></td><td>${p.tech}</td></tr>`).join("\n            ")}
           </tbody>
         </table>
       </div>
@@ -532,6 +594,7 @@ main{width:100%;max-width:680px}
 .card-icon svg{width:22px;height:22px;fill:var(--text)}
 .card-body{flex:1;display:flex;flex-direction:column;gap:.15rem;position:relative;z-index:1}
 .card-label{font-size:1rem;font-weight:600}
+.card-ver{font-size:.65rem;font-weight:500;color:var(--accent);background:rgba(139,92,246,.12);padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:middle}
 .card-sub{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text-dim)}
 .card-action{width:34px;height:34px;display:flex;align-items:center;justify-content:center;
   border-radius:50%;background:rgba(255,255,255,.05);flex-shrink:0;transition:all .2s;position:relative;z-index:1}
@@ -582,6 +645,7 @@ tr:last-child td{border-bottom:none}
 .status-badge.ok{background:rgba(52,211,153,.12);color:var(--green)}
 .status-badge.beta{background:rgba(139,92,246,.12);color:var(--violet)}
 .status-badge.soon{background:rgba(251,191,36,.1);color:var(--amber)}
+code.ver{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--accent);background:rgba(139,92,246,.1);padding:.1rem .4rem;border-radius:4px}
 
 /* ═══ Features Grid ═══ */
 .features-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
@@ -874,7 +938,8 @@ export default {
     }
 
     const latest = await fetchLatest();
-    const html = renderPage(latest);
+    const versions = await fetchVersions(latest);
+    const html = renderPage(latest, versions);
 
     return new Response(html, {
       status: 200,
