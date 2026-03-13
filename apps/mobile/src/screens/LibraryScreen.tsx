@@ -7,7 +7,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLibraryItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useLibraryCatalog, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { colors, spacing, typography } from "../theme";
 import { PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
@@ -59,17 +59,34 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
   }, [query]);
 
   const sort = SORT_OPTIONS[activeSort];
-  const { data, isLoading, refetch, isRefetching } = useLibraryItems(libraryId, {
-    search: debounced,
+  const {
+    data,
+    isLoading,
+    refetch,
+    isRefetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useLibraryCatalog(libraryId, {
+    searchTerm: debounced,
     sortBy: sort.sortBy,
     sortOrder: sort.sortOrder,
-    limit: 100,
   });
+
+  const items = useMemo(
+    () => data?.pages.flatMap((p) => p.Items) ?? [],
+    [data],
+  );
+  const totalCount = data?.pages[0]?.TotalRecordCount ?? 0;
 
   const handlePress = useCallback(
     (item: MediaItem) => router.push(`/media/${item.Id}`),
     [router],
   );
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(
     ({ item }: { item: MediaItem }) => (
@@ -97,7 +114,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
     ));
   }, [numColumns]);
 
-  const itemCount = data?.length ?? 0;
+  const itemCount = totalCount;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -142,7 +159,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
       {/* Contenu principal */}
       {isLoading && !isRefetching ? (
         <View style={styles.skeletonGrid}>{skeletons}</View>
-      ) : !data || data.length === 0 ? (
+      ) : items.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{t("noResults")}</Text>
         </View>
@@ -150,19 +167,25 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
         <FadeIn delay={100} style={{ flex: 1 }}>
           <FlatList
             key={`grid-${numColumns}`}
-            data={data}
+            data={items}
             numColumns={numColumns}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             contentContainerStyle={styles.gridContent}
             columnWrapperStyle={{ gap: ITEM_GAP }}
             onRefresh={refetch}
-            refreshing={isRefetching}
+            refreshing={isRefetching && !isFetchingNextPage}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
             showsVerticalScrollIndicator={false}
             ListFooterComponent={
-              <Text style={styles.footerCount}>
-                {t("itemCount", { count: itemCount })}
-              </Text>
+              isFetchingNextPage ? (
+                <ActivityIndicator size="small" color={colors.accent} style={{ paddingVertical: spacing.xl }} />
+              ) : (
+                <Text style={styles.footerCount}>
+                  {t("itemCount", { count: itemCount })}
+                </Text>
+              )
             }
           />
         </FadeIn>

@@ -45,6 +45,16 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
 
   console.debug(DBG, "render", { itemId, isLoading, hasItem: !!item, itemName: item?.Name });
 
+  // Sécurité : si l'item n'est pas lisible (série, saison, boxset), rediriger vers la page détail
+  useEffect(() => {
+    if (!item || isLoading) return;
+    const nonPlayable = ["Series", "Season", "BoxSet"];
+    if (nonPlayable.includes(item.Type)) {
+      console.warn(DBG, "non-playable item loaded in player, redirecting", { id: item.Id, type: item.Type, name: item.Name });
+      navigate(`/media/${item.Id}`, { replace: true });
+    }
+  }, [item, isLoading, navigate]);
+
   const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
@@ -183,10 +193,13 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (prefsReady || streams.length === 0) return;
+    if (prefsReady) return;
+    // Si l'item est chargé mais sans MediaSources, débloquer immédiatement
+    if (streams.length === 0 && item && !isLoading) { setPrefsReady(true); return; }
+    if (streams.length === 0) return;
     const timer = setTimeout(() => setPrefsReady(true), 2000);
     return () => clearTimeout(timer);
-  }, [prefsReady, streams.length]);
+  }, [prefsReady, streams.length, item, isLoading]);
 
   // ── Web: fetch PlaybackInfo when params change ──
   useEffect(() => {

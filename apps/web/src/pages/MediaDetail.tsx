@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useWatchedToggle, useToggleWatchlist } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useWatchedToggle, useToggleWatchlist, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
@@ -30,6 +30,7 @@ export function MediaDetail() {
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(itemId);
   const { markWatched, markUnwatched } = useWatchedToggle(itemId);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const { data: watchState } = useSeriesWatchState(item?.Type === "Series" ? itemId : undefined);
 
   if (isLoading || !item) {
     return (
@@ -67,7 +68,14 @@ export function MediaDetail() {
     (audioStream.Codec.includes("truehd") || audioStream.Codec.includes("eac3"));
 
   const handlePlay = () => {
-    if (isSeries) return;
+    if (isSeries) {
+      const epId = watchState?.type !== "completed" ? watchState?.episode?.Id : undefined;
+      // Sécurité : ne jamais naviguer vers l'ID de la série elle-même
+      if (epId && epId !== item.Id) {
+        navigate(`/watch/${epId}`);
+      }
+      return;
+    }
     navigate(`/watch/${item.Id}`);
   };
 
@@ -225,16 +233,38 @@ export function MediaDetail() {
 
             {/* Action buttons */}
             <motion.div variants={fadeUp} className="mt-5 flex items-center gap-3">
-              {!isSeries && (
-                <motion.button
-                  onClick={handlePlay}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg shadow-lg shadow-white/10"
-                >
-                  <PlayIcon /> {hasResume ? t("common:resume") : t("common:play")}
-                </motion.button>
-              )}
+              {(() => {
+                if (isSeries) {
+                  if (!watchState || watchState.type === "completed") return null;
+                  const ep = watchState.episode;
+                  const epLabel = `S${String(ep.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(ep.IndexNumber ?? 0).padStart(2, "0")}`;
+                  const label = watchState.type === "continue"
+                    ? `${t("common:resume")} ${epLabel}`
+                    : watchState.type === "next"
+                      ? `${t("common:play")} ${epLabel}`
+                      : t("common:play");
+                  return (
+                    <motion.button
+                      onClick={handlePlay}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg shadow-lg shadow-white/10"
+                    >
+                      <PlayIcon /> {label}
+                    </motion.button>
+                  );
+                }
+                return (
+                  <motion.button
+                    onClick={handlePlay}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 font-semibold text-tentacle-bg shadow-lg shadow-white/10"
+                  >
+                    <PlayIcon /> {hasResume ? t("common:resume") : t("common:play")}
+                  </motion.button>
+                );
+              })()}
 
               {/* Favorite button */}
               <button
@@ -269,6 +299,12 @@ export function MediaDetail() {
               {hasResume && !isSeries && (
                 <div className="flex items-center text-sm text-white/40">
                   {t("common:percentWatched", { percent: Math.round(progress) })}
+                </div>
+              )}
+              {isSeries && watchState?.type === "continue" && watchState.episode && (
+                <div className="flex items-center text-sm text-white/40">
+                  S{String(watchState.episode.ParentIndexNumber ?? 0).padStart(2, "0")}E{String(watchState.episode.IndexNumber ?? 0).padStart(2, "0")}
+                  {" — "}{t("common:percentWatched", { percent: Math.round((watchState.episode.UserData?.PlayedPercentage ?? 0)) })}
                 </div>
               )}
             </motion.div>

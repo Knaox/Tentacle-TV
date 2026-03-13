@@ -109,17 +109,19 @@ class MpvPlayerView(
             MPVLib.setOptionString("hwdec-codecs", "h264,hevc,av1,vp9,vp8")
             Log.w(TAG, ">>> initMpv video options OK")
 
-            // Audio output — passthrough for Dolby Atmos / DTS, fallback to multi-channel PCM
+            // Audio output — decode to PCM (no passthrough to avoid A/V sync issues)
             Log.w(TAG, ">>> initMpv setting audio options...")
-            MPVLib.setOptionString("ao", "audiotrack")
+            MPVLib.setOptionString("ao", "opensles,audiotrack")
             MPVLib.setOptionString("audio-channels", "auto-safe")
-            MPVLib.setOptionString("audio-spdif", "ac3,eac3,truehd,dts,dts-hd")
+            // audio-spdif removed: passthrough causes latency on receivers that
+            // don't support the codec; MPV decodes to multi-channel PCM instead
+            MPVLib.setOptionString("audio-stream-silence", "yes")  // Keep audio pipeline open, avoids re-init desync on DTS-HD
             Log.w(TAG, ">>> initMpv audio options OK")
 
             // Cache / buffer
             Log.w(TAG, ">>> initMpv setting cache options...")
             MPVLib.setOptionString("cache", "yes")
-            MPVLib.setOptionString("cache-secs", "10")
+            MPVLib.setOptionString("cache-secs", "300")
             MPVLib.setOptionString("demuxer-max-bytes", "150MiB")
             MPVLib.setOptionString("demuxer-max-back-bytes", "75MiB")
             Log.w(TAG, ">>> initMpv cache options OK")
@@ -149,6 +151,7 @@ class MpvPlayerView(
             MPVLib.observeProperty("duration", MPVLib.MPV_FORMAT_DOUBLE)
             MPVLib.observeProperty("pause", MPVLib.MPV_FORMAT_FLAG)
             MPVLib.observeProperty("eof-reached", MPVLib.MPV_FORMAT_FLAG)
+            MPVLib.observeProperty("demuxer-cache-duration", MPVLib.MPV_FORMAT_DOUBLE)
             MPVLib.observeProperty("demuxer-cache-time", MPVLib.MPV_FORMAT_DOUBLE)
             MPVLib.observeProperty("track-list/count", MPVLib.MPV_FORMAT_INT64)
             Log.w(TAG, ">>> initMpv properties observed OK")
@@ -309,12 +312,18 @@ class MpvPlayerView(
                 val now = System.currentTimeMillis()
                 if (now - lastProgressEmit >= progressInterval) {
                     lastProgressEmit = now
-                    val buffered = try {
+                    val cacheDuration = try {
+                        MPVLib.getPropertyDouble("demuxer-cache-duration") ?: 0.0
+                    } catch (_: Exception) { 0.0 }
+                    val cacheEnd = try {
                         MPVLib.getPropertyDouble("demuxer-cache-time") ?: 0.0
                     } catch (_: Exception) { 0.0 }
+                    // Use whichever gives a higher buffered position
+                    val bufferedAbs = if (cacheEnd > value) cacheEnd else value + cacheDuration
+                    Log.d(TAG, "[Buffer] time=${String.format("%.1f", value)} cacheDur=${String.format("%.1f", cacheDuration)} cacheEnd=${String.format("%.1f", cacheEnd)} bufferedAbs=${String.format("%.1f", bufferedAbs)}")
                     emitEvent("progress", Arguments.createMap().apply {
                         putDouble("currentTime", value)
-                        putDouble("bufferedTime", value + buffered)
+                        putDouble("bufferedTime", bufferedAbs)
                     })
                 }
             }

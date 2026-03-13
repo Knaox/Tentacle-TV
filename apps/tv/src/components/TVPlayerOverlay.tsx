@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { View, Text } from "react-native";
 import Animated, {
   useSharedValue,
@@ -26,6 +26,10 @@ interface TVPlayerOverlayProps {
   onSkipForward: () => void;
   onBack: () => void;
   onSettings: () => void;
+  /** When true, seekbar gets hasTVPreferredFocus instead of play/pause */
+  seekActive?: boolean;
+  onSeekBarFocus?: () => void;
+  onSeekBarBlur?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -36,11 +40,11 @@ function formatTime(seconds: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-export function TVPlayerOverlay({
+export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   title, currentTime, bufferedTime = 0, duration, paused, visible,
-  speedLabel,
+  speedLabel, seekActive = false,
   onPlayPause, onSkipBack, onSkipForward,
-  onBack, onSettings,
+  onBack, onSettings, onSeekBarFocus, onSeekBarBlur,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -53,8 +57,18 @@ export function TVPlayerOverlay({
   const buffered = duration > 0 ? (bufferedTime / duration) * 100 : 0;
   const isShown = visible || paused;
 
+  const bufferStripPct = buffered - progress;
+  useEffect(() => {
+    if (isShown) {
+      console.log("[Overlay] buffer:", bufferedTime.toFixed(1) + "s", "progress:", currentTime.toFixed(1) + "s", "dur:", duration.toFixed(0) + "s",
+        "bar%: progress=" + progress.toFixed(1), "buffer=" + buffered.toFixed(1), "visibleStrip=" + bufferStripPct.toFixed(2) + "%",
+        "(~" + Math.round(bufferStripPct * 16) + "px on 1600px bar)");
+    }
+  }, [isShown, bufferedTime, currentTime, duration]);
+
   return (
     <Animated.View
+      renderToHardwareTextureAndroid
       pointerEvents={isShown ? "box-none" : "none"}
       accessible={isShown}
       // @ts-ignore — Android TV accessibility
@@ -104,43 +118,53 @@ export function TVPlayerOverlay({
         colors={["transparent", "rgba(0,0,0,0.8)"]}
         style={{ paddingHorizontal: 40, paddingBottom: 48, paddingTop: 80 }}
       >
-        {/* Progress bar */}
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "500", width: 76 }}>
-            {formatTime(currentTime)}
-          </Text>
-          <View style={{
-            flex: 1, height: 5, backgroundColor: "rgba(255,255,255,0.15)",
-            borderRadius: 3, marginHorizontal: 16, overflow: "hidden",
-          }}>
-            {/* Buffer bar */}
+        {/* Progress bar — Focusable so D-pad seek gives it focus */}
+        <Focusable
+          variant="button"
+          hasTVPreferredFocus={seekActive}
+          focusRadius={6}
+          style={{ marginBottom: 24 }}
+          onFocus={onSeekBarFocus}
+          onBlur={onSeekBarBlur}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "500", width: 76 }}>
+              {formatTime(currentTime)}
+            </Text>
             <View style={{
-              position: "absolute", top: 0, left: 0, bottom: 0,
-              width: `${Math.min(buffered, 100)}%`,
-              backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3,
-            }} />
-            {/* Playback progress */}
-            <View style={{
-              height: 5, width: `${Math.min(progress, 100)}%`,
-              backgroundColor: Colors.accentPurple, borderRadius: 3,
-            }} />
-            {/* Scrubber dot */}
-            <View style={{
-              position: "absolute", top: -4,
-              left: `${Math.min(progress, 100)}%`,
-              marginLeft: -6,
-              width: 13, height: 13, borderRadius: 7,
-              backgroundColor: Colors.accentPurple,
-              borderWidth: 2, borderColor: Colors.textPrimary,
-            }} />
+              flex: 1, height: 5, backgroundColor: "rgba(255,255,255,0.15)",
+              borderRadius: 3, marginHorizontal: 16, overflow: "hidden",
+            }}>
+              {/* Buffer bar */}
+              <View style={{
+                position: "absolute", top: 0, left: 0, bottom: 0,
+                width: `${Math.min(buffered, 100)}%`,
+                minWidth: buffered > progress ? 8 : 0,
+                backgroundColor: "rgba(255,255,255,0.4)", borderRadius: 3,
+              }} />
+              {/* Playback progress */}
+              <View style={{
+                height: 5, width: `${Math.min(progress, 100)}%`,
+                backgroundColor: Colors.accentPurple, borderRadius: 3,
+              }} />
+              {/* Scrubber dot */}
+              <View style={{
+                position: "absolute", top: -4,
+                left: `${Math.min(progress, 100)}%`,
+                marginLeft: -6,
+                width: 13, height: 13, borderRadius: 7,
+                backgroundColor: Colors.accentPurple,
+                borderWidth: 2, borderColor: Colors.textPrimary,
+              }} />
+            </View>
+            <Text style={{
+              color: Colors.textSecondary, fontSize: 16, fontWeight: "500",
+              width: 76, textAlign: "right",
+            }}>
+              {formatTime(duration)}
+            </Text>
           </View>
-          <Text style={{
-            color: Colors.textSecondary, fontSize: 16, fontWeight: "500",
-            width: 76, textAlign: "right",
-          }}>
-            {formatTime(duration)}
-          </Text>
-        </View>
+        </Focusable>
 
         {/* Transport controls */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 40 }}>
@@ -151,7 +175,7 @@ export function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable variant="button" onPress={onPlayPause} hasTVPreferredFocus={visible}>
+          <Focusable variant="button" onPress={onPlayPause} hasTVPreferredFocus={visible && !seekActive}>
             <View style={{
               width: 68, height: 68, borderRadius: 34,
               backgroundColor: Colors.accentPurple,
@@ -180,4 +204,4 @@ export function TVPlayerOverlay({
       </LinearGradient>
     </Animated.View>
   );
-}
+});

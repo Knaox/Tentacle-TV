@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
+import { invalidateAllMediaQueries } from "./cacheUtils";
 
 export function useBatchRemoveFavorites() {
   const client = useJellyfinClient();
@@ -14,12 +15,7 @@ export function useBatchRemoveFavorites() {
           client.fetch(`/Users/${userId}/FavoriteItems/${id}`, { method: "DELETE" })
         )
       ),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["favorites"] });
-      qc.invalidateQueries({ queryKey: ["latest-items"] });
-      qc.invalidateQueries({ queryKey: ["watchlist"] });
-      qc.invalidateQueries({ queryKey: ["library"] });
-    },
+    onSettled: () => invalidateAllMediaQueries(qc),
   });
 }
 
@@ -35,12 +31,7 @@ export function useBatchRemoveWatchlist() {
           client.fetch(`/Users/${userId}/Items/${id}/Rating`, { method: "DELETE" })
         )
       ),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["watchlist"] });
-      qc.invalidateQueries({ queryKey: ["favorites"] });
-      qc.invalidateQueries({ queryKey: ["latest-items"] });
-      qc.invalidateQueries({ queryKey: ["library"] });
-    },
+    onSettled: () => invalidateAllMediaQueries(qc),
   });
 }
 

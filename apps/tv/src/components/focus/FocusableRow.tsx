@@ -1,5 +1,5 @@
 import { useRef, useCallback } from "react";
-import { FlatList, View, Text, type ViewStyle, type LayoutChangeEvent } from "react-native";
+import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
 import { Colors, Spacing, Typography } from "../../theme/colors";
@@ -76,6 +76,7 @@ export function FocusableRow<T>({
           {title}
         </Text>
       )}
+      <TVFocusGuideView trapFocusRight>
       <FlatList
         ref={listRef}
         data={data}
@@ -114,6 +115,7 @@ export function FocusableRow<T>({
           </View>
         )}
       />
+      </TVFocusGuideView>
     </View>
   );
 }

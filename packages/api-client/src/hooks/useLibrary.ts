@@ -72,7 +72,7 @@ export function useLibraryItems(
       let url = `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}&IncludeItemTypes=Movie,Series` +
         `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio&Limit=${limit}` +
-        `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`;
+        `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`;
       if (search.length >= 2) url += `&searchTerm=${encodeURIComponent(search)}`;
       return client.fetch<{ Items: MediaItem[] }>(url).then((r) => r.Items);
     },
@@ -108,7 +108,7 @@ export function useEpisodes(seriesId: string | undefined, seasonId: string | und
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Shows/${seriesId}/Episodes?SeasonId=${seasonId}&userId=${userId}` +
-            `&Fields=Overview,PrimaryImageAspectRatio,MediaSources,MediaStreams`
+            `&Fields=Overview,PrimaryImageAspectRatio,MediaSources,MediaStreams&EnableUserData=true`
         )
         .then((r) => r.Items),
     enabled: !!userId && !!seriesId && !!seasonId,
@@ -142,7 +142,7 @@ export function useSearchItems(query: string) {
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?searchTerm=${encodeURIComponent(query)}&Recursive=true` +
             `&IncludeItemTypes=Movie,Series&Limit=24&Fields=Overview,PrimaryImageAspectRatio` +
-            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
+            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
         )
         .then((r) => r.Items),
     enabled: !!userId && query.length >= 2,
@@ -176,7 +176,7 @@ export function useSimilarItems(itemId: string | undefined, parentId?: string) {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Items/${itemId}/Similar?userId=${userId}&Limit=24&Fields=Overview,PrimaryImageAspectRatio,ParentId` +
-            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
+            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
         )
         .then((r) => r.Items),
     select: (items) => {
@@ -213,6 +213,7 @@ export interface CatalogFilters {
   years?: string[];
   statusFilter?: string;
   searchTerm?: string;
+  limit?: number;
 }
 
 export function useLibraryCatalog(libraryId: string | undefined, filters: CatalogFilters = {}) {
@@ -225,10 +226,11 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
     years,
     statusFilter,
     searchTerm,
+    limit = 30,
   } = filters;
 
   return useInfiniteQuery({
-    queryKey: ["library-catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm],
+    queryKey: ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit],
     queryFn: ({ pageParam = 0 }) => {
       const itemTypes = statusFilter === "IsResumable" ? "Movie,Episode" : "Movie,Series";
       let url =
@@ -237,8 +239,8 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
         `&IncludeItemTypes=${itemTypes}&Recursive=true` +
         `&Fields=Overview,PrimaryImageAspectRatio` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1` +
-        `&Limit=30&StartIndex=${pageParam}` +
-        `&EnableTotalRecordCount=true`;
+        `&Limit=${limit}&StartIndex=${pageParam}` +
+        `&EnableTotalRecordCount=true&EnableUserData=true`;
       if (genreIds && genreIds.length > 0) url += `&GenreIds=${genreIds.join(",")}`;
       if (years && years.length > 0) url += `&Years=${years.join(",")}`;
       if (statusFilter) url += `&Filters=${statusFilter}`;

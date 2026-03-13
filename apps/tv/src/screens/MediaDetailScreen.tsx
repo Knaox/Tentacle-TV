@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, ScrollView, Dimensions } from "react-native";
+import { View, Text, Image, ScrollView, Dimensions, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,11 +8,13 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMediaItem, useSimilarItems, useJellyfinClient, useToggleWatchlist } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration, ticksToSeconds } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
 import { FocusableRow } from "../components/focus/FocusableRow";
@@ -29,6 +31,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
 export function MediaDetailScreen({ route, navigation }: Props) {
   const { t } = useTranslation("common");
   const { itemId } = route.params;
+  const queryClient = useQueryClient();
   const client = useJellyfinClient();
   const { data: item } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
@@ -39,7 +42,20 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const { add: addToWatchlist, remove: removeFromWatchlist } = useToggleWatchlist(itemId);
 
   const scrollRef = useRef<ScrollView>(null);
+  const playBtnRef = useRef<View>(null);
   useTVRemote({ onBack: () => navigation.goBack() });
+
+  // Re-focus play button + refresh data when screen comes back to foreground
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+      const timer = setTimeout(() => {
+        // @ts-ignore setNativeProps exists on react-native-tvos
+        playBtnRef.current?.setNativeProps({ hasTVPreferredFocus: true });
+      }, 150);
+      return () => clearTimeout(timer);
+    }, [queryClient, itemId])
+  );
 
   const scrollToButtons = useCallback(() => {
     // Scroll to top area so buttons are visible within the backdrop zone
@@ -199,7 +215,8 @@ export function MediaDetailScreen({ route, navigation }: Props) {
 
         {/* Buttons */}
         <Animated.View style={[{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }, buttonsStyle]}>
-          <Focusable variant="button" onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus onFocus={scrollToButtons}>
+          <TVFocusGuideView autoFocus style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
+          <Focusable ref={playBtnRef} variant="button" onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus onFocus={scrollToButtons}>
             <View style={{
               backgroundColor: Colors.accentPurple,
               paddingHorizontal: 40, paddingVertical: 16,
@@ -227,6 +244,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
               </Text>
             </View>
           </Focusable>
+          </TVFocusGuideView>
         </Animated.View>
       </View>
 

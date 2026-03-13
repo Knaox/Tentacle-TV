@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, StarIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons/HeroIcons";
@@ -18,6 +18,8 @@ export function HeroBanner({ items }: HeroBannerProps) {
   const [animKey, setAnimKey] = useState(0);
   const navigate = useNavigate();
   const client = useJellyfinClient();
+  const currentItem = items[index];
+  const { data: watchState } = useSeriesWatchState(currentItem?.Type === "Series" ? currentItem.Id : undefined);
 
   const [resetKey, setResetKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -212,7 +214,14 @@ export function HeroBanner({ items }: HeroBannerProps) {
           {/* Buttons */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(`/watch/${item.Id}`)}
+              onClick={() => {
+                if (item.Type === "Series") {
+                  const epId = watchState?.type !== "completed" ? watchState?.episode?.Id : undefined;
+                  navigate(epId ? `/watch/${epId}` : `/media/${item.Id}`);
+                } else {
+                  navigate(`/watch/${item.Id}`);
+                }
+              }}
               className="hero-btn-primary flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
               style={{
                 background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",

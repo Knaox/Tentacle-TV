@@ -1,5 +1,11 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { BackHandler, Platform } from "react-native";
+
+// react-native-tvos 0.76 exports useTVEventHandler as a hook (not a class)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { useTVEventHandler } = require("react-native") as {
+  useTVEventHandler: (callback: (evt: { eventType: string; eventKeyAction?: number }) => void) => void;
+};
 
 interface TVRemoteOptions {
   onBack?: () => void;
@@ -8,87 +14,102 @@ interface TVRemoteOptions {
   onRight?: () => void;
   onUp?: () => void;
   onDown?: () => void;
+  /** Called on long-press D-pad left (Android TV emits once after ~300ms hold) */
+  onLongLeft?: () => void;
+  /** Called on long-press D-pad right (Android TV emits once after ~300ms hold) */
+  onLongRight?: () => void;
+  /** Called on key-up (ACTION_UP) for any event type — used to detect release */
+  onKeyUp?: (eventType: string) => void;
+  /** Called on rewind button (dedicated Shield remote button) */
+  onRewind?: () => void;
+  /** Called on fast-forward button (dedicated Shield remote button) */
+  onFastForward?: () => void;
   /** Called on any D-pad direction or select — useful for re-showing overlays */
   onAnyPress?: () => void;
 }
 
 /**
  * Hook for handling TV remote events.
- * Handles back/menu, play/pause, select, and D-pad arrows.
+ * Uses react-native-tvos useTVEventHandler hook.
+ *
+ * Note: react-native-tvos sends most events as action=1 (key-up only).
+ * Only longLeft/longRight arrive as action=0 (key-down).
  */
-export function useTVRemote({
-  onBack, onPlayPause, onLeft, onRight, onUp, onDown, onAnyPress,
-}: TVRemoteOptions) {
+export function useTVRemote(options: TVRemoteOptions) {
+  // Store latest callbacks in ref to avoid stale closures
+  const optRef = useRef(options);
+  optRef.current = options;
+
   // Handle Android TV back button
   useEffect(() => {
-    if (!onBack || Platform.OS !== "android") return;
-
+    if (!options.onBack || Platform.OS !== "android") return;
     const handler = BackHandler.addEventListener("hardwareBackPress", () => {
-      onBack();
+      optRef.current.onBack?.();
       return true;
     });
-
     return () => handler.remove();
-  }, [onBack]);
+  }, [options.onBack]);
 
-  const handleTVEvent = useCallback(
-    (evt: { eventType: string }) => {
-      switch (evt.eventType) {
-        case "menu":
-        case "back":
-          onBack?.();
-          break;
-        case "playPause":
-          onPlayPause?.();
-          break;
-        case "left":
-          onLeft?.();
-          onAnyPress?.();
-          break;
-        case "right":
-          onRight?.();
-          onAnyPress?.();
-          break;
-        case "up":
-          onUp?.();
-          onAnyPress?.();
-          break;
-        case "down":
-          onDown?.();
-          onAnyPress?.();
-          break;
-        case "select":
-          onAnyPress?.();
-          break;
-      }
-    },
-    [onBack, onPlayPause, onLeft, onRight, onUp, onDown, onAnyPress]
-  );
+  // Handle all TV remote events
+  useTVEventHandler((evt: { eventType: string; eventKeyAction?: number }) => {
+    const o = optRef.current;
+    const { eventType, eventKeyAction } = evt;
 
-  useEffect(() => {
-    // Try to use TVEventHandler if available (react-native-tvos)
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { TVEventHandler } = require("react-native");
-      if (TVEventHandler) {
-        const handler = new TVEventHandler();
-        handler.enable(undefined, (_cmp: unknown, evt: { eventType: string }) => {
-          handleTVEvent(evt);
-        });
-        return () => handler.disable();
-      }
-    } catch {
-      // Not available in standard RN
+    // Ignore focus system noise
+    if (eventType === "blur" || eventType === "focus") return;
+
+    // Key-up: notify for hold release detection
+    if (eventKeyAction === 1) {
+      o.onKeyUp?.(eventType);
+      // longLeft/longRight already fired on key-down (action=0) — don't re-trigger
+      if (eventType === "longLeft" || eventType === "longRight") return;
+      // Block up/down/menu/back on key-up — these should NOT fire on action=1
+      // (otherwise key-up "down" triggers onDown → scrubbing mode, breaking DPAD seek)
+      if (eventType === "up" || eventType === "down" || eventType === "menu" || eventType === "back") return;
+      // Only let directional seeks and playback controls fall through on key-up
     }
 
-    try {
-      const { TVEventControl } = require("react-native");
-      if (TVEventControl?.enableTVMenuKey) {
-        TVEventControl.enableTVMenuKey();
-        return () => TVEventControl.disableTVMenuKey();
-      }
-    } catch {
-      // Not available in standard RN
+    switch (eventType) {
+      case "menu":
+      case "back":
+        o.onBack?.();
+        break;
+      case "playPause":
+        o.onPlayPause?.();
+        break;
+      case "left":
+        o.onLeft?.();
+        o.onAnyPress?.();
+        break;
+      case "right":
+        o.onRight?.();
+        o.onAnyPress?.();
+        break;
+      case "up":
+        o.onUp?.();
+        o.onAnyPress?.();
+        break;
+      case "down":
+        o.onDown?.();
+        o.onAnyPress?.();
+        break;
+      case "longLeft":
+        o.onLongLeft?.();
+        break;
+      case "longRight":
+        o.onLongRight?.();
+        break;
+      case "rewind":
+        o.onRewind?.();
+        o.onAnyPress?.();
+        break;
+      case "fastForward":
+        o.onFastForward?.();
+        o.onAnyPress?.();
+        break;
+      case "select":
+        o.onAnyPress?.();
+        break;
     }
-  }, [handleTVEvent]);
+  });
 }

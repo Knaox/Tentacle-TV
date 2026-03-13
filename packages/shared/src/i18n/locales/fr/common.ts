@@ -144,4 +144,9 @@ export default {
   deleteCount: "Supprimer ({{count}})",
   removeCount: "Retirer ({{count}})",
   toWatch: "À regarder",
+  markWatched: "Marquer comme vu",
+  markUnwatched: "Marquer comme non vu",
+  markSeasonWatched: "Saison vue",
+  markSeasonUnwatched: "Saison non vue",
+  loadingMore: "Chargement...",
 } as const;

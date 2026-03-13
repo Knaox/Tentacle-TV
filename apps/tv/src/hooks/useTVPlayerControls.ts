@@ -18,6 +18,7 @@ interface TVPlayerControlsOptions {
   onSeek: (seconds: number) => void;
   onBack: () => void;
   onPlayPause: () => void;
+  seekBarFocusedRef: React.RefObject<boolean>;
 }
 
 interface HoldState {
@@ -33,7 +34,7 @@ function getSpeedTier(holdStartTime: number): number {
 }
 
 export function useTVPlayerControls({
-  paused, jellyfinDuration, onSeek, onBack, onPlayPause,
+  paused, jellyfinDuration, onSeek, onBack, onPlayPause, seekBarFocusedRef,
 }: TVPlayerControlsOptions) {
   const currentTimeRef = useRef(0);
 
@@ -48,12 +49,17 @@ export function useTVPlayerControls({
   const overlayVisibleRef = useRef(true);
   overlayVisibleRef.current = overlayVisible;
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** When true, seekbar gets focus instead of play/pause button */
+  const [seekActive, setSeekActive] = useState(false);
 
   const showOverlay = useCallback(() => {
     setOverlayVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     if (!paused) {
-      hideTimerRef.current = setTimeout(() => setOverlayVisible(false), OVERLAY_HIDE_MS);
+      hideTimerRef.current = setTimeout(() => {
+        setOverlayVisible(false);
+        setSeekActive(false);
+      }, OVERLAY_HIDE_MS);
     }
   }, [paused]);
 
@@ -100,18 +106,8 @@ export function useTVPlayerControls({
   stopHoldStable.current = stopHold;
 
   const handleRelease = useCallback(() => {
+    console.log("[PlayerControls] handleRelease, hold:", holdRef.current?.eventCount);
     if (!holdRef.current) return;
-    const { dir, eventCount } = holdRef.current;
-    if (eventCount <= 1) {
-      // Short press — skip +30s / -10s
-      const dur = durationRef.current || 0;
-      if (dir === "forward") {
-        const target = currentTimeRef.current + 30;
-        onSeekRef.current(Math.max(0, dur > 0 ? Math.min(target, dur) : target));
-      } else {
-        onSeekRef.current(Math.max(0, currentTimeRef.current - 10));
-      }
-    }
     stopHoldStable.current();
   }, []);
 
@@ -148,34 +144,69 @@ export function useTVPlayerControls({
 
   // --- D-pad direction handler (core hold detection) ---
   const handleDpadDirection = useCallback((dir: "forward" | "backward") => {
+    console.log("[PlayerControls] handleDpadDirection:", dir, "overlay:", overlayVisibleRef.current, "hold:", holdRef.current?.eventCount, "scrub:", scrubbingRef.current);
     skipAnyPressRef.current = true;
     if (scrubbingRef.current) { moveScrub(dir); return; }
 
+    // Overlay visible + transport button focused (not seekbar) → let focus engine navigate
+    if (overlayVisibleRef.current && !seekBarFocusedRef.current) {
+      showOverlay();
+      return;
+    }
+
     // Already in active acceleration — just reset release timer
     if (holdRef.current && holdRef.current.dir === dir && holdRef.current.eventCount > 1) {
+      console.log("[PlayerControls] acceleration active, reset timer");
       if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
       releaseTimerRef.current = setTimeout(handleRelease, RELEASE_TIMEOUT_MS);
       return;
     }
 
     if (!holdRef.current) {
-      // First event of a new press
-      if (overlayVisibleRef.current) return; // native focus navigates overlay buttons
+      // First event — immediate seek +30s / -10s
+      const dur = durationRef.current || 0;
+      if (dir === "forward") {
+        const target = currentTimeRef.current + 30;
+        const clamped = Math.max(0, dur > 0 ? Math.min(target, dur) : target);
+        console.log("[PlayerControls] SEEK forward:", currentTimeRef.current, "→", clamped);
+        currentTimeRef.current = clamped;
+        onSeekRef.current(clamped);
+      } else {
+        const clamped = Math.max(0, currentTimeRef.current - 10);
+        console.log("[PlayerControls] SEEK backward:", currentTimeRef.current, "→", clamped);
+        currentTimeRef.current = clamped;
+        onSeekRef.current(clamped);
+      }
+      setSeekActive(true);
+      showOverlay();
       holdRef.current = { dir, startTime: Date.now(), eventCount: 1 };
     } else if (holdRef.current.dir === dir) {
       // Second event (same direction) = hold detected → start acceleration
       holdRef.current.eventCount = 2;
       startAcceleration(dir);
+      showOverlay();
     } else {
-      // Direction changed mid-hold
+      // Direction changed mid-hold — immediate seek in new direction
       stopHold();
-      if (overlayVisibleRef.current) return;
+      const dur = durationRef.current || 0;
+      if (dir === "forward") {
+        const target = currentTimeRef.current + 30;
+        const clamped = Math.max(0, dur > 0 ? Math.min(target, dur) : target);
+        currentTimeRef.current = clamped;
+        onSeekRef.current(clamped);
+      } else {
+        const clamped = Math.max(0, currentTimeRef.current - 10);
+        currentTimeRef.current = clamped;
+        onSeekRef.current(clamped);
+      }
+      setSeekActive(true);
+      showOverlay();
       holdRef.current = { dir, startTime: Date.now(), eventCount: 1 };
     }
 
     if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
     releaseTimerRef.current = setTimeout(handleRelease, RELEASE_TIMEOUT_MS);
-  }, [moveScrub, stopHold, startAcceleration, handleRelease]);
+  }, [moveScrub, stopHold, startAcceleration, handleRelease, showOverlay]);
 
   const handleDpadDown = useCallback(() => {
     if (overlayVisibleRef.current) return;
@@ -211,12 +242,39 @@ export function useTVPlayerControls({
       onPlayPause();
       showOverlay();
     },
-    onLeft: () => handleDpadDirection("backward"),
-    onRight: () => handleDpadDirection("forward"),
+    onLeft: () => { console.log("[PlayerControls] onLeft"); handleDpadDirection("backward"); },
+    onRight: () => { console.log("[PlayerControls] onRight"); handleDpadDirection("forward"); },
+    onLongRight: () => {
+      console.log("[PlayerControls] onLongRight");
+      if (scrubbingRef.current) return;
+      if (overlayVisibleRef.current && !seekBarFocusedRef.current) return;
+      if (releaseTimerRef.current) { clearTimeout(releaseTimerRef.current); releaseTimerRef.current = null; }
+      holdRef.current = { dir: "forward", startTime: Date.now(), eventCount: 2 };
+      startAcceleration("forward");
+      setSeekActive(true);
+      showOverlay();
+    },
+    onLongLeft: () => {
+      console.log("[PlayerControls] onLongLeft");
+      if (scrubbingRef.current) return;
+      if (overlayVisibleRef.current && !seekBarFocusedRef.current) return;
+      if (releaseTimerRef.current) { clearTimeout(releaseTimerRef.current); releaseTimerRef.current = null; }
+      holdRef.current = { dir: "backward", startTime: Date.now(), eventCount: 2 };
+      startAcceleration("backward");
+      setSeekActive(true);
+      showOverlay();
+    },
+    onRewind: () => { console.log("[PlayerControls] onRewind"); handleDpadDirection("backward"); },
+    onFastForward: () => { console.log("[PlayerControls] onFastForward"); handleDpadDirection("forward"); },
+    onKeyUp: () => {
+      console.log("[PlayerControls] onKeyUp, hold:", holdRef.current?.eventCount);
+      if (holdRef.current && holdRef.current.eventCount > 1) stopHold();
+    },
     onDown: handleDpadDown,
     onUp: showOverlay,
     onAnyPress: () => {
       if (skipAnyPressRef.current) { skipAnyPressRef.current = false; return; }
+      if (holdRef.current && holdRef.current.eventCount > 1) { stopHold(); return; }
       showOverlay();
     },
   });
@@ -225,6 +283,7 @@ export function useTVPlayerControls({
     currentTimeRef,
     overlayVisible,
     showOverlay,
+    seekActive,
     speedLabel,
     scrubbing,
     scrubPosition,

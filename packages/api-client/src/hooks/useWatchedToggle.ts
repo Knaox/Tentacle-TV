@@ -1,24 +1,52 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
+import { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot } from "./cacheUtils";
 
-export function useWatchedToggle(itemId: string | undefined) {
+interface WatchedToggleContext {
+  seriesId?: string;
+  seasonId?: string;
+}
+
+export function useWatchedToggle(itemId: string | undefined, context?: WatchedToggleContext) {
   const client = useJellyfinClient();
   const userId = useUserId();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-  };
+  const seriesContext = context?.seriesId
+    ? { seriesId: context.seriesId, seasonId: context.seasonId }
+    : undefined;
 
   const markWatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "POST" }),
-    onSuccess: invalidate,
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["item", itemId] });
+      const snapshot = updateItemUserDataInCache(qc, itemId!, () => ({
+        Played: true,
+        PlayedPercentage: 100,
+      }));
+      return { snapshot };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
+    },
+    onSettled: () => invalidateAllMediaQueries(qc, { itemId, seriesContext }),
   });
 
   const markUnwatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "DELETE" }),
-    onSuccess: invalidate,
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["item", itemId] });
+      const snapshot = updateItemUserDataInCache(qc, itemId!, () => ({
+        Played: false,
+        PlayedPercentage: 0,
+      }));
+      return { snapshot };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
+    },
+    onSettled: () => invalidateAllMediaQueries(qc, { itemId, seriesContext }),
   });
 
   return { markWatched, markUnwatched };

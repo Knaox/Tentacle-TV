@@ -12,6 +12,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
@@ -130,9 +131,19 @@ class ExoPlayerView(
                 .build()
         }
 
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                50_000,     // minBufferMs
+                300_000,    // maxBufferMs (300s, matches MPV cache-secs)
+                2_500,      // bufferForPlaybackMs
+                5_000       // bufferForPlaybackAfterRebufferMs
+            )
+            .build()
+
         player = ExoPlayer.Builder(reactContext)
             .setRenderersFactory(renderersFactory)
             .setTrackSelector(trackSelector)
+            .setLoadControl(loadControl)
             .build()
             .also { exo ->
                 exo.setAudioAttributes(

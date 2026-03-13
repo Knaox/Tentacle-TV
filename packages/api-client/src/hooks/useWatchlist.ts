@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
+import { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot } from "./cacheUtils";
 
 const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
@@ -28,58 +29,34 @@ export function useWatchlist() {
 export function useToggleWatchlist(itemId: string | undefined) {
   const client = useJellyfinClient();
   const userId = useUserId();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
   const add = useMutation({
     mutationFn: () =>
       client.fetch(`/Users/${userId}/Items/${itemId}/Rating?likes=true`, { method: "POST" }),
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["item", itemId] });
-      const prev = queryClient.getQueryData<MediaItem>(["item", itemId]);
-      if (prev?.UserData) {
-        queryClient.setQueryData<MediaItem>(["item", itemId], {
-          ...prev,
-          UserData: { ...prev.UserData, Likes: true },
-        });
-      }
-      return { prev };
+      await qc.cancelQueries({ queryKey: ["item", itemId] });
+      const snapshot = updateItemUserDataInCache(qc, itemId!, () => ({ Likes: true }));
+      return { snapshot };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.prev) queryClient.setQueryData(["item", itemId], context.prev);
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-      queryClient.invalidateQueries({ queryKey: ["favorites"] });
-      queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-      queryClient.invalidateQueries({ queryKey: ["library"] });
-    },
+    onSettled: () => invalidateAllMediaQueries(qc, { itemId }),
   });
 
   const remove = useMutation({
     mutationFn: () =>
       client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }),
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["item", itemId] });
-      const prev = queryClient.getQueryData<MediaItem>(["item", itemId]);
-      if (prev?.UserData) {
-        queryClient.setQueryData<MediaItem>(["item", itemId], {
-          ...prev,
-          UserData: { ...prev.UserData, Likes: false },
-        });
-      }
-      return { prev };
+      await qc.cancelQueries({ queryKey: ["item", itemId] });
+      const snapshot = updateItemUserDataInCache(qc, itemId!, () => ({ Likes: false }));
+      return { snapshot };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.prev) queryClient.setQueryData(["item", itemId], context.prev);
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-      queryClient.invalidateQueries({ queryKey: ["favorites"] });
-      queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-      queryClient.invalidateQueries({ queryKey: ["library"] });
-    },
+    onSettled: () => invalidateAllMediaQueries(qc, { itemId }),
   });
 
   return { add, remove };

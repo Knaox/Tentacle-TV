@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-virtual": "^3.13.22",
     "@tentacle-tv/api-client": "workspace:*",
     "@tentacle-tv/plugins-api": "workspace:*",
     "@tentacle-tv/shared": "workspace:*",
