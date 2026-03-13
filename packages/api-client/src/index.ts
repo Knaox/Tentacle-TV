@@ -44,6 +44,12 @@ export type { SharedWatchlistSummary, SharedWatchlistMember, SharedWatchlistItem
 // Batch remove
 export { useBatchRemoveFavorites, useBatchRemoveWatchlist, useBatchRemoveSharedItems } from "./hooks/useBatchRemove";
 
+// Batch watched toggle
+export { useBatchWatchedToggle } from "./hooks/useBatchWatchedToggle";
+
+// Cache utilities for cross-platform state sync
+export { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot } from "./hooks/cacheUtils";
+
 // App config & feature flags
 export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
 export type { AppConfig, AppFeatures } from "./hooks/useConfig";

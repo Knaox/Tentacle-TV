@@ -31,12 +31,15 @@ export function useSeriesWatchState(seriesId: string | undefined) {
         `/Shows/${seriesId}/Episodes?${params}`
       );
 
-      const episodes = (data.Items || []).sort((a, b) => {
-        const sa = a.ParentIndexNumber ?? 0;
-        const sb = b.ParentIndexNumber ?? 0;
-        if (sa !== sb) return sa - sb;
-        return (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0);
-      });
+      const episodes = (data.Items || [])
+        // Exclure la Saison 0 (Spécials/OVA) — souvent sans fichier média
+        .filter((ep) => (ep.ParentIndexNumber ?? 0) > 0)
+        .sort((a, b) => {
+          const sa = a.ParentIndexNumber ?? 0;
+          const sb = b.ParentIndexNumber ?? 0;
+          if (sa !== sb) return sa - sb;
+          return (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0);
+        });
 
       return getNextEpisode(episodes);
     },

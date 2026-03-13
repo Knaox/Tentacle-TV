@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, forwardRef, useCallback } from "react";
 import { Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
 import Animated, {
   useSharedValue,
@@ -59,7 +59,7 @@ const HAS_GAP: Record<FocusVariant, boolean> = {
   row: false,
 };
 
-export const Focusable = memo(function Focusable({
+export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusable({
   onPress,
   onLongPress,
   onFocus,
@@ -75,7 +75,7 @@ export const Focusable = memo(function Focusable({
   nextFocusLeft,
   nextFocusRight,
   accessibilityLabel,
-}: FocusableProps) {
+}: FocusableProps, ref) {
   const progress = useSharedValue(0);
 
   const handleFocus = useCallback(() => {
@@ -134,6 +134,7 @@ export const Focusable = memo(function Focusable({
 
   return (
     <Pressable
+      ref={ref}
       // @ts-ignore react-native-tvos extends Pressable
       style={style}
       onPress={onPress}
@@ -210,4 +211,4 @@ export const Focusable = memo(function Focusable({
       </Animated.View>
     </Pressable>
   );
-});
+}));

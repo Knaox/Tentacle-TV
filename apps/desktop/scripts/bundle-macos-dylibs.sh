@@ -94,7 +94,15 @@ for dylib in "$LIB_DIR"/*.dylib; do
   echo "  Rewritten: $filename"
 done
 
-# --- Étape 3 : Vérification ---
+# --- Étape 3 : Re-signer (ad-hoc) après modification des binaires ---
+echo "--- Re-signing libraries (ad-hoc) ---"
+for dylib in "$LIB_DIR"/*.dylib; do
+  [ -f "$dylib" ] || continue
+  codesign --force --sign - "$dylib" 2>/dev/null || true
+done
+echo "  All libraries re-signed."
+
+# --- Étape 4 : Vérification ---
 echo ""
 echo "--- Verification ---"
 ERRORS=0

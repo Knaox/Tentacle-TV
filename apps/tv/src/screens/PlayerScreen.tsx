@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, Text, Pressable } from "react-native";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
+import { View, Text, Pressable, ActivityIndicator, AppState } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper,
@@ -16,8 +17,56 @@ import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
 import { randomSessionId, formatTrackLabel } from "../utils/playerHelpers";
 import { MPVPlayer, type MPVPlayerHandle, type MpvTrack } from "../components/player/MPVPlayer";
 import { ExoPlayer } from "../components/player/ExoPlayer";
+import { Colors } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
+
+interface MemoizedPlayerProps {
+  useExoPlayer: boolean;
+  exoRef: React.Ref<MPVPlayerHandle>;
+  mpvRef: React.Ref<MPVPlayerHandle>;
+  source: string;
+  paused: boolean;
+  onLoad: (duration: number) => void;
+  onProgress: (currentTime: number, buffered: number) => void;
+  onEnd: () => void;
+  onError: (error: string) => void;
+  onTracks: (tracks: MpvTrack[]) => void;
+}
+
+const MemoizedPlayer = memo(function MemoizedPlayer({
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused,
+  onLoad, onProgress, onEnd, onError, onTracks,
+}: MemoizedPlayerProps) {
+  return isExo ? (
+    <ExoPlayer
+      ref={exoRef}
+      source={source}
+      paused={paused}
+      progressInterval={1000}
+      audioPassthrough
+      style={{ flex: 1 }}
+      onLoad={onLoad}
+      onProgress={onProgress}
+      onEnd={onEnd}
+      onError={onError}
+      onTracks={onTracks}
+    />
+  ) : (
+    <MPVPlayer
+      ref={mpvRef}
+      source={source}
+      paused={paused}
+      progressInterval={1000}
+      style={{ flex: 1 }}
+      onLoad={onLoad}
+      onProgress={onProgress}
+      onEnd={onEnd}
+      onError={onError}
+      onTracks={onTracks}
+    />
+  );
+});
 
 export function PlayerScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
@@ -45,6 +94,11 @@ export function PlayerScreen({ route, navigation }: Props) {
   const resumeApplied = useRef(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
+  const seekBarFocusedRef = useRef(false);
+
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(true);
+  const lastProgressTime = useRef(Date.now());
 
   const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
@@ -107,6 +161,12 @@ export function PlayerScreen({ route, navigation }: Props) {
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
 
+  // Refs for stable access in AppState listener ([] deps)
+  const pausedStateRef = useRef(paused);
+  pausedStateRef.current = paused;
+  const reportSeekRef = useRef(reportSeek);
+  reportSeekRef.current = reportSeek;
+
   // Resolve preferred audio/subtitle tracks
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
@@ -146,7 +206,38 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [item, isDirectPlay, startTicks]);
 
-  useEffect(() => () => { reportStop(); }, [reportStop]);
+  const invalidateAndGoBack = useCallback(async () => {
+    await reportStop();
+    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    queryClient.invalidateQueries({ queryKey: ["next-up"] });
+    navigation.goBack();
+  }, [reportStop, queryClient, itemId, navigation]);
+
+  useEffect(() => () => {
+    reportStop();
+    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    queryClient.invalidateQueries({ queryKey: ["next-up"] });
+  }, [reportStop]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pause video + save progress when app goes to background (Home button)
+  // Use reportSeek (Progress report) instead of reportStop to keep startedRef alive,
+  // so Back after returning still sends a proper Stop with the saved position.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "background" || state === "inactive") {
+        setPaused(true);
+        reportSeekRef.current(positionRef.current, true);
+      } else if (state === "active") {
+        // Restart reporting after returning from background
+        reportSeekRef.current(positionRef.current, pausedStateRef.current);
+      }
+    });
+    return () => sub.remove();
+  }, []); // stable — refs avoid dep on reportSeek/paused
 
   // Build MPV track map when tracks arrive (Jellyfin index → MPV track ID)
   const handleTracks = useCallback((tracks: MpvTrack[]) => {
@@ -167,6 +258,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
+    // Update display immediately so overlay reflects the seek target
+    displayTimeRef.current = clamped;
+    setDisplayTime(clamped);
+    lastDisplayUpdate.current = Date.now();
     if (isDirectPlay) {
       playerRef.current?.seek(clamped);
     } else {
@@ -184,15 +279,17 @@ export function PlayerScreen({ route, navigation }: Props) {
     onSeek: handleSeek,
     onBack: () => {
       if (showSettingsRef.current) { setShowSettings(false); showSettingsRef.current = false; return; }
-      reportStop(); navigation.goBack();
+      invalidateAndGoBack();
     },
     onPlayPause: handlePlayPause,
+    seekBarFocusedRef,
   });
 
   // Sync display time immediately when overlay appears
   useEffect(() => {
     if (controls.overlayVisible) {
       setDisplayTime(displayTimeRef.current);
+      setBufferedTime(bufferedTimeRef.current);
       lastDisplayUpdate.current = Date.now();
     }
   }, [controls.overlayVisible]);
@@ -203,6 +300,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       const resumeTicks = item?.UserData?.PlaybackPositionTicks;
       if (resumeTicks) playerRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
     }
+    setIsLoading(false);
     reportStart();
   }, [item, reportStart, isDirectPlay]);
 
@@ -211,11 +309,16 @@ export function PlayerScreen({ route, navigation }: Props) {
     const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
     const t = raw + offset;
     const bufferedAbs = Math.max(0, buffered) + offset;
+    if (Math.floor(t) % 10 === 0 && Math.floor(t) !== Math.floor(positionRef.current)) {
+      console.log("[Player] progress:", t.toFixed(1), "buffered:", bufferedAbs.toFixed(1), "raw buffered:", buffered.toFixed(1), "duration:", jellyfinDuration);
+    }
     // Always update refs (no re-render)
     positionRef.current = t;
     controls.currentTimeRef.current = t;
     displayTimeRef.current = t;
     bufferedTimeRef.current = bufferedAbs;
+    lastProgressTime.current = Date.now();
+    setIsLoading(false);
     // Only update display state at ~1Hz to avoid excessive re-renders
     const now = Date.now();
     if (now - lastDisplayUpdate.current >= 1000) {
@@ -223,10 +326,21 @@ export function PlayerScreen({ route, navigation }: Props) {
       setDisplayTime(t);
       setBufferedTime(bufferedAbs);
     }
-    updatePosition(t, paused);
-  }, [paused, updatePosition, controls.currentTimeRef, isDirectPlay, startTicks]);
+    updatePosition(t, pausedStateRef.current); // ref to avoid re-creating on pause/unpause
+  }, [updatePosition, controls.currentTimeRef, isDirectPlay, startTicks]);
 
-  const handleEnd = useCallback(() => { reportStop(); navigation.goBack(); }, [navigation, reportStop]);
+  // Detect rebuffering: no progress callback for >2s while playing
+  useEffect(() => {
+    if (paused) return;
+    const interval = setInterval(() => {
+      if (!paused && Date.now() - lastProgressTime.current > 2000) {
+        setIsLoading(true);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [paused]);
+
+  const handleEnd = useCallback(() => { invalidateAndGoBack(); }, [invalidateAndGoBack]);
 
   const handleAudioChange = useCallback((newIndex: number) => {
     if (isDirectPlay) {
@@ -277,34 +391,18 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      {useExoPlayer ? (
-        <ExoPlayer
-          ref={exoRef}
-          source={streamUrl}
-          paused={paused}
-          progressInterval={controls.overlayVisible ? 250 : 1000}
-          audioPassthrough
-          style={{ flex: 1 }}
-          onLoad={handleLoad}
-          onProgress={handleProgress}
-          onEnd={handleEnd}
-          onError={handleError}
-          onTracks={handleTracks}
-        />
-      ) : (
-        <MPVPlayer
-          ref={mpvRef}
-          source={streamUrl}
-          paused={paused}
-          progressInterval={controls.overlayVisible ? 250 : 1000}
-          style={{ flex: 1 }}
-          onLoad={handleLoad}
-          onProgress={handleProgress}
-          onEnd={handleEnd}
-          onError={handleError}
-          onTracks={handleTracks}
-        />
-      )}
+      <MemoizedPlayer
+        useExoPlayer={useExoPlayer}
+        exoRef={exoRef}
+        mpvRef={mpvRef}
+        source={streamUrl}
+        paused={paused}
+        onLoad={handleLoad}
+        onProgress={handleProgress}
+        onEnd={handleEnd}
+        onError={handleError}
+        onTracks={handleTracks}
+      />
       <Pressable
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
@@ -315,6 +413,16 @@ export function PlayerScreen({ route, navigation }: Props) {
       >
         <View style={{ flex: 1 }} />
       </Pressable>
+      {isLoading && (
+        <View style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          justifyContent: "center", alignItems: "center",
+          backgroundColor: "rgba(0,0,0,0.3)",
+          zIndex: 50, elevation: 50,
+        }} pointerEvents="none">
+          <ActivityIndicator size="large" color={Colors.accentPurple} />
+        </View>
+      )}
       {videoError && (
         <View style={{
           position: "absolute", top: 60, left: 40, right: 40,
@@ -329,15 +437,17 @@ export function PlayerScreen({ route, navigation }: Props) {
         currentTime={controls.scrubbing ? controls.scrubPosition : displayTime}
         bufferedTime={bufferedTime}
         duration={displayDuration} paused={paused} visible={controls.overlayVisible}
-        speedLabel={controls.speedLabel}
+        speedLabel={controls.speedLabel} seekActive={controls.seekActive}
         onPlayPause={() => { handlePlayPause(); controls.showOverlay(); }}
         onSkipBack={() => { controls.handleSkipBack(); controls.showOverlay(); }}
         onSkipForward={() => { controls.handleSkipForward(); controls.showOverlay(); }}
-        onBack={() => { reportStop(); navigation.goBack(); }}
+        onBack={invalidateAndGoBack}
         onSettings={() => {
           setShowSettings((v) => { showSettingsRef.current = !v; return !v; });
           controls.showOverlay();
         }}
+        onSeekBarFocus={() => { seekBarFocusedRef.current = true; }}
+        onSeekBarBlur={() => { seekBarFocusedRef.current = false; }}
       />
       {/* Skip intro/credits — rendered outside overlay so always visible */}
       <TVSkipSegmentButton

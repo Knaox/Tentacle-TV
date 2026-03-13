@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useLibraryItems, useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useLibraryCatalog, useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useItemsPerRow } from "../hooks/useItemsPerRow";
 import { MediaContextMenu } from "./MediaContextMenu";
 import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
 
@@ -21,6 +23,10 @@ const SORT_OPTIONS = [
   { value: "CommunityRating,Descending", labelKey: "sortRatingDesc" },
 ] as const;
 
+const POSTER_ASPECT = 2 / 3;
+const TEXT_HEIGHT = 52;
+const GAP = 16;
+
 export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const { t } = useTranslation("common");
   const [input, setInput] = useState("");
@@ -28,23 +34,77 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const [sort, setSort] = useState("SortName,Ascending");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(input.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(input.trim()), 300);
+    return () => clearTimeout(timer);
   }, [input]);
 
   const [sortBy, sortOrder] = sort.split(",");
 
-  const { data: items, isLoading } = useLibraryItems(libraryId, {
-    search: debounced,
-    limit: 50,
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useLibraryCatalog(libraryId, {
+    searchTerm: debounced,
     sortBy,
     sortOrder,
+    limit: 50,
   });
+
+  const items = useMemo(
+    () => data?.pages.flatMap((p) => p.Items) ?? [],
+    [data],
+  );
+  const totalCount = data?.pages[0]?.TotalRecordCount ?? 0;
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const { itemsPerRow, containerWidth } = useItemsPerRow(gridRef);
+
+  const rowCount = useMemo(
+    () => Math.ceil(items.length / itemsPerRow) + (hasNextPage ? 1 : 0),
+    [items.length, itemsPerRow, hasNextPage],
+  );
+
+  const estimateSize = useCallback(() => {
+    if (containerWidth <= 0) return 320;
+    const cardWidth = (containerWidth - GAP * (itemsPerRow - 1)) / itemsPerRow;
+    return cardWidth / POSTER_ASPECT + TEXT_HEIGHT + GAP;
+  }, [containerWidth, itemsPerRow]);
+
+  const virtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize,
+    overscan: 5,
+    scrollMargin: gridRef.current?.offsetTop ?? 0,
+  });
+
+  // Fetch next page when approaching the end
+  useEffect(() => {
+    const virtualItems = virtualizer.getVirtualItems();
+    const lastItem = virtualItems.at(-1);
+    if (!lastItem) return;
+    if (lastItem.index >= rowCount - 3 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [virtualizer.getVirtualItems(), hasNextPage, isFetchingNextPage, fetchNextPage, rowCount]);
+
+  // Reset scroll when filters change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [sortBy, sortOrder, debounced]);
+
+  const navigate = useNavigate();
+  const handleNavigate = useCallback(
+    (id: string) => navigate(`/media/${id}`),
+    [navigate],
+  );
 
   return (
     <div>
       {/* Search + Sort bar */}
-      <div className="mb-6 flex flex-col gap-3 px-4 sm:flex-row sm:items-center md:px-12">
+      <div className="mb-6 flex flex-col gap-3 px-4 sm:flex-row sm:items-center md:px-8">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -62,25 +122,84 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
             </option>
           ))}
         </select>
+        {!isLoading && totalCount > 0 && (
+          <span className="text-sm text-white/40">
+            {t("common:itemCount", { count: totalCount })}
+          </span>
+        )}
       </div>
 
       {/* Grid */}
-      <div className="px-4 md:px-12">
+      <div className="px-4 md:px-8" ref={gridRef}>
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
             {Array.from({ length: 24 }).map((_, i) => (
               <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-white/5" />
             ))}
           </div>
-        ) : !items || items.length === 0 ? (
+        ) : items.length === 0 ? (
           <p className="py-20 text-center text-white/40">
             {debounced.length >= 2 ? t("common:noResults") : t("common:emptyLibrary")}
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-            {items.map((item, i) => (
-              <GridCard key={item.Id} item={item} index={i} />
-            ))}
+          <div>
+            <div
+              style={{
+                height: virtualizer.getTotalSize(),
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const startIdx = virtualRow.index * itemsPerRow;
+                const rowItems = items.slice(startIdx, startIdx + itemsPerRow);
+                const isLoaderRow = virtualRow.index >= Math.ceil(items.length / itemsPerRow);
+
+                return (
+                  <div
+                    key={virtualRow.key}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: virtualRow.size,
+                      transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+                    }}
+                  >
+                    {isLoaderRow ? (
+                      <div className="flex h-full items-center justify-center">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                        <span className="ml-2 text-sm text-white/40">{t("common:loadingMore")}</span>
+                      </div>
+                    ) : (
+                      <div
+                        className="grid"
+                        style={{
+                          gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`,
+                          gap: GAP,
+                        }}
+                      >
+                        {rowItems.map((item) => (
+                          <GridCard
+                            key={item.Id}
+                            item={item}
+                            onNavigate={handleNavigate}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {isFetchingNextPage && (
+              <div className="flex items-center justify-center py-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                <span className="ml-2 text-sm text-white/40">{t("common:loadingMore")}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -88,9 +207,15 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   );
 }
 
-function GridCard({ item, index }: { item: MediaItem; index: number }) {
+/* ── GridCard (memoized) ──────────────────────────── */
+
+interface GridCardProps {
+  item: MediaItem;
+  onNavigate: (id: string) => void;
+}
+
+const GridCard = memo(function GridCard({ item, onNavigate }: GridCardProps) {
   const { t } = useTranslation("common");
-  const navigate = useNavigate();
   const client = useJellyfinClient();
   const [imgLoaded, setImgLoaded] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
@@ -125,13 +250,12 @@ function GridCard({ item, index }: { item: MediaItem; index: number }) {
 
   return (
     <div
-      onClick={() => { if (!ctxMenu) navigate(`/media/${item.Id}`); }}
+      onClick={() => { if (!ctxMenu) onNavigate(item.Id); }}
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
       onTouchEnd={clearLongPress}
       onTouchMove={clearLongPress}
       className="group relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-transform duration-300 hover:scale-[1.03]"
-      style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${index * 40}ms` }}
     >
       <div className="aspect-[2/3] bg-tentacle-surface">
         <img
@@ -177,7 +301,6 @@ function GridCard({ item, index }: { item: MediaItem; index: number }) {
               <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
             )}
           </button>
-          {/* Shared watchlist button */}
           {config?.features.sharedWatchlists && (
             <button
               className="flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110"
@@ -240,4 +363,4 @@ function GridCard({ item, index }: { item: MediaItem; index: number }) {
       )}
     </div>
   );
-}
+});

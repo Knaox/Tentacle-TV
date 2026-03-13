@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "./MediaContextMenu";
 import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
@@ -31,6 +31,8 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(item.Id);
   const { add: addFav, remove: removeFav } = useFavorite(item.Id);
   const { data: config } = useAppConfig();
+  const isSeries = item.Type === "Series";
+  const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
   const [sharedPickerPos, setSharedPickerPos] = useState<{ x: number; y: number } | null>(null);
   const [addedToShared, setAddedToShared] = useState(false);
 
@@ -165,7 +167,12 @@ export function CarouselCard({ item, index }: { item: MediaItem; index: number }
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/watch/${item.Id}`);
+                if (isSeries) {
+                  const epId = watchState?.type !== "completed" ? watchState?.episode?.Id : undefined;
+                  navigate(epId ? `/watch/${epId}` : `/media/${item.Id}`);
+                } else {
+                  navigate(`/watch/${item.Id}`);
+                }
               }}
             >
               <PlayIcon /> {t("common:play")}

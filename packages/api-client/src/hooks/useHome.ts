@@ -5,6 +5,7 @@ import { useUserId } from "./useUserId";
 
 const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
+const USER_DATA = "EnableUserData=true";
 
 export function useResumeItems() {
   const client = useJellyfinClient();
@@ -16,7 +17,7 @@ export function useResumeItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items/Resume?Limit=12&Recursive=true` +
-            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}`
+            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
@@ -32,7 +33,7 @@ export function useLatestItems(parentId: string | undefined) {
     queryKey: ["latest-items", parentId],
     queryFn: () =>
       client.fetch<MediaItem[]>(
-        `/Users/${userId}/Items/Latest?ParentId=${parentId}&Limit=16&Fields=${FIELDS}&${IMAGE_OPTS}`
+        `/Users/${userId}/Items/Latest?ParentId=${parentId}&Limit=16&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
       ),
     enabled: !!userId && !!parentId,
     staleTime: 2 * 60 * 1000,
@@ -49,7 +50,7 @@ export function useNextUp() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Shows/NextUp?userId=${userId}&Limit=12&DisableFirstEpisode=true` +
-            `&EnableResumable=false&Fields=${FIELDS}&${IMAGE_OPTS}`
+            `&EnableResumable=false&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
@@ -67,7 +68,7 @@ export function useWatchedItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?SortBy=DatePlayed&SortOrder=Descending&Limit=16` +
-            `&Recursive=true&IncludeItemTypes=Movie,Episode&Filters=IsPlayed&Fields=${FIELDS}&${IMAGE_OPTS}`
+            `&Recursive=true&IncludeItemTypes=Movie,Episode&Filters=IsPlayed&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
@@ -85,7 +86,7 @@ export function useFeaturedItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?SortBy=Random&Limit=5&Recursive=true` +
-            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines&HasBackdrop=true&${IMAGE_OPTS}`
+            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines&HasBackdrop=true&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
