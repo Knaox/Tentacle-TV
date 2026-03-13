@@ -1,0 +1,8 @@
+# Ignorer les dépendances Homebrew bundlées (générées par bundle-macos-dylibs.sh)
+# Seuls les fichiers originaux sont trackés dans git.
+*
+!.gitignore
+!libmpv.dylib
+!libmpv-wrapper.dylib
+!libmpv-2.dll
+!libmpv-wrapper.dll

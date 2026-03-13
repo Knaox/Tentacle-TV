@@ -15,13 +15,16 @@ VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([0-
 DMG_NAME="${APP_NAME}_${VERSION}_aarch64.dmg"
 DMG_PATH="$BUNDLE_DIR/dmg/$DMG_NAME"
 
-# --- 1. Pré-signer les dylibs sources ---
-echo "==> [1/8] Pre-signing source dylibs..."
-for dylib in src-tauri/lib/*.dylib; do
-  [ -f "$dylib" ] || continue
+# --- 0. Bundler les dépendances Homebrew de libmpv ---
+echo "==> [0/9] Bundling dylib dependencies..."
+bash "$(dirname "$0")/bundle-macos-dylibs.sh"
+
+# --- 1. Pré-signer toutes les libs ---
+echo "==> [1/9] Pre-signing bundled libraries..."
+find src-tauri/lib -type f | while read -r lib; do
   codesign --force --options runtime --timestamp \
-    --sign "$SIGNING_IDENTITY" "$dylib"
-  echo "  Signed: $(basename "$dylib")"
+    --sign "$SIGNING_IDENTITY" "$lib" 2>/dev/null || true
+  echo "  Signed: $(basename "$lib")"
 done
 
 # --- 2. Build .app seulement (pas de DMG, pas de notarisation Tauri) ---
