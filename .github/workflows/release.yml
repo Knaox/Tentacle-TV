@@ -119,16 +119,24 @@ jobs:
           API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
         run: echo "$API_KEY_CONTENT" > /tmp/AuthKey.p8
 
-      # ─── macOS : pré-signer les dylibs libmpv ───
-      - name: Pre-sign dylibs
+      # ─── macOS : installer mpv et bundler toutes les dylibs ───
+      - name: Install mpv & bundle dylibs
         if: matrix.os == 'macos-latest'
         run: |
-          for dylib in apps/desktop/src-tauri/lib/*.dylib; do
-            [ -f "$dylib" ] || continue
+          brew install mpv
+          cp "$(brew --prefix mpv)/lib/libmpv.dylib" apps/desktop/src-tauri/lib/libmpv.dylib
+          chmod 755 apps/desktop/src-tauri/lib/libmpv.dylib
+          bash apps/desktop/scripts/bundle-macos-dylibs.sh
+
+      # ─── macOS : pré-signer toutes les libs (dylibs + Python framework) ───
+      - name: Pre-sign bundled libraries
+        if: matrix.os == 'macos-latest'
+        run: |
+          find apps/desktop/src-tauri/lib -type f | while read -r lib; do
             codesign --force --options runtime --timestamp \
               --sign "Developer ID Application: Damien ROUGE (96K3M57W49)" \
-              "$dylib"
-            echo "Signed: $(basename "$dylib")"
+              "$lib" 2>/dev/null || true
+            echo "Signed: $(basename "$lib")"
           done
 
       # ─── Build + upload dans la release ───
