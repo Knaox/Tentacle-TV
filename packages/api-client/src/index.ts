@@ -31,12 +31,13 @@ export type { AppNotification } from "./hooks/useNotifications";
 
 // Shared watchlists
 export {
-  useShareableUsers, useMySharedWatchlists, useSharedWatchlistMembers, useSharedWatchlistItems,
+  useShareableUsers, useMySharedWatchlists, useSharedWatchlistMembers, useSharedWatchlistItems, useAllSharedWatchlistItems,
   useCreateSharedWatchlist, useUpdateSharedWatchlist, useDeleteSharedWatchlist,
   useAddSharedWatchlistMember, useUpdateMemberRole, useRemoveMember,
   useAddSharedWatchlistItem, useRemoveSharedWatchlistItem,
   useBatchAddToSharedWatchlists,
   setSharedWatchlistsBackendUrl,
+  setSharedWatchlistsToken,
 } from "./hooks/useSharedWatchlists";
 export type { SharedWatchlistSummary, SharedWatchlistMember, SharedWatchlistItemData, ShareRole, BatchAddResult } from "./hooks/useSharedWatchlists";
 

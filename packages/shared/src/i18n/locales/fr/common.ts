@@ -128,6 +128,7 @@ export default {
   createFirstList: "Créez votre première liste partagée",
   leaveList: "Quitter la liste",
   manageMembers: "Gérer les membres",
+  invite: "Inviter",
   deleteList: "Supprimer la liste",
   confirmDeleteList: "Êtes-vous sûr de vouloir supprimer cette liste ? Tous les items et membres seront retirés.",
   itemAddedToLists: "Ajouté à {{count}} liste(s)",
@@ -141,4 +142,6 @@ export default {
   selectAll: "Tout sélectionner",
   selectedCount: "{{count}} sélectionné(s)",
   deleteCount: "Supprimer ({{count}})",
+  removeCount: "Retirer ({{count}})",
+  toWatch: "À regarder",
 } as const;

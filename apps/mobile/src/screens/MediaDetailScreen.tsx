@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { View, Text, ScrollView, RefreshControl, InteractionManager, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, RefreshControl, InteractionManager, useWindowDimensions, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,9 +10,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist } from "@tentacle-tv/api-client";
 import { ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { colors, spacing, typography } from "../theme";
@@ -21,6 +22,7 @@ import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";
 import { MobileEpisodeList } from "../components/MobileEpisodeList";
 import { CastRow } from "../components/CastRow";
+import { SharedWatchlistPickerSheet } from "../components/SharedWatchlistPickerSheet";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../constants/featureFlags";
 
 interface Props { itemId: string }
@@ -28,7 +30,7 @@ interface Props { itemId: string }
 export function MediaDetailScreen({ itemId }: Props) {
   const { t } = useTranslation("common");
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
-  const BACKDROP_H = Math.round(SCREEN_HEIGHT * 0.45);
+  const BACKDROP_H = Math.round(SCREEN_HEIGHT * 0.38);
   const POSTER_W = Math.round(SCREEN_WIDTH * 0.3);
   const POSTER_H = Math.round(POSTER_W * 1.5);
   const insets = useSafeAreaInsets();
@@ -40,7 +42,13 @@ export function MediaDetailScreen({ itemId }: Props) {
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
+  // Pour les épisodes, cibler la série parente (les listes filtrent Movie,Series)
+  const actionTargetId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
+  const actionTargetItem = isEpisode ? parentSeries : item;
+  const favorite = useFavorite(actionTargetId);
+  const watchlistToggle = useToggleWatchlist(actionTargetId);
   const [expanded, setExpanded] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
   const badges = useMemo(() => computeBadges(item), [item]);
 
@@ -176,6 +184,39 @@ export function MediaDetailScreen({ itemId }: Props) {
         </Animated.View>
       )}
 
+      {/* Quick actions — ciblent la série parente pour les épisodes */}
+      <Animated.View style={[{ flexDirection: "row", justifyContent: "center", gap: spacing.xxxl, marginTop: spacing.lg, paddingHorizontal: spacing.screenPadding }, actionsStyle]}>
+        <ActionButton
+          icon="heart"
+          label={actionTargetItem?.UserData?.IsFavorite ? t("removeFromFavorites") : t("addToFavorites")}
+          active={!!actionTargetItem?.UserData?.IsFavorite}
+          activeColor="#ef4444"
+          onPress={() => actionTargetItem?.UserData?.IsFavorite ? favorite.remove.mutate() : favorite.add.mutate()}
+        />
+        <ActionButton
+          icon="bookmark"
+          label={actionTargetItem?.UserData?.Likes ? t("removeFromMyList") : t("addToMyList")}
+          active={!!actionTargetItem?.UserData?.Likes}
+          activeColor={colors.accent}
+          onPress={() => actionTargetItem?.UserData?.Likes ? watchlistToggle.remove.mutate() : watchlistToggle.add.mutate()}
+        />
+        <ActionButton
+          icon="list"
+          label={t("addToSharedList")}
+          active={false}
+          activeColor={colors.accent}
+          onPress={() => setSheetVisible(true)}
+        />
+      </Animated.View>
+
+      {/* Shared watchlist picker */}
+      <SharedWatchlistPickerSheet
+        visible={sheetVisible}
+        itemId={actionTargetId}
+        alreadyInWatchlist={!!actionTargetItem?.UserData?.Likes}
+        onClose={() => setSheetVisible(false)}
+      />
+
       {/* Content — fades in last */}
       <Animated.View style={contentStyle}>
         {/* Separator */}
@@ -271,6 +312,34 @@ function fmtTime(sec: number): string {
   const mm = m.toString().padStart(2, "0");
   const ss = s.toString().padStart(2, "0");
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/* --- Action button --- */
+
+function ActionButton({ icon, label, active, activeColor, onPress }: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  active: boolean;
+  activeColor: string;
+  onPress: () => void;
+}) {
+  const color = active ? activeColor : colors.textMuted;
+  // Truncate label to first 2 words max for compact display
+  const shortLabel = label.split(" ").slice(0, 2).join(" ");
+  return (
+    <Pressable onPress={onPress} style={{ alignItems: "center", gap: spacing.xs }}>
+      <View style={{
+        width: 44, height: 44, borderRadius: 22,
+        backgroundColor: active ? `${activeColor}20` : colors.surfaceElevated,
+        justifyContent: "center", alignItems: "center",
+      }}>
+        <Feather name={icon} size={20} color={color} />
+      </View>
+      <Text numberOfLines={1} style={{ ...typography.badge, color, maxWidth: 80, textAlign: "center" }}>
+        {shortLabel}
+      </Text>
+    </Pressable>
+  );
 }
 
 interface StreamLike { Type?: string; Width?: number; Codec?: string; Channels?: number; DisplayTitle?: string }

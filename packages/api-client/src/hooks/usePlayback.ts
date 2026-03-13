@@ -16,8 +16,9 @@ type JfClient = {
   getBaseUrl: () => string;
   getToken: () => string | null;
   getDeviceId: () => string;
-  getAuthHeader: () => string;
+  getAuthHeader: (token?: string) => string;
   useCredentials: boolean;
+  getDirectStreaming?: () => { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null;
 };
 
 /**
@@ -32,6 +33,29 @@ async function sessionPost(
   label: string,
 ): Promise<void> {
   const bodyStr = JSON.stringify(body);
+
+  // Direct Jellyfin route: bypass proxy to use the actual user's token
+  // (proxy replaces user JWT with admin API key → wrong user context)
+  const ds = client.getDirectStreaming?.();
+  if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+    try {
+      const res = await fetch(`${ds.mediaBaseUrl}${path}`, {
+        method: "POST", body: bodyStr,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Emby-Token": ds.jellyfinToken,
+          "X-Emby-Authorization": client.getAuthHeader(ds.jellyfinToken),
+        },
+      });
+      if (res.ok || res.status === 204) return;
+      console.error(DBG, `${label} direct: ${res.status}`);
+    } catch (err: unknown) {
+      console.error(DBG, `${label} direct FAILED:`, err instanceof Error ? err.message : String(err));
+    }
+    // Fall through to proxy on failure
+  }
+
+  // Proxy path (original logic, unchanged)
   try {
     await client.fetch(path, { method: "POST", body: bodyStr });
   } catch (err: unknown) {
@@ -57,6 +81,10 @@ async function sessionPost(
  *  When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
  *  Mobile/desktop still need api_key in the URL (sendBeacon can't set headers). */
 function beaconUrl(client: JfClient, path: string): string {
+  const ds = client.getDirectStreaming?.();
+  if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+    return `${ds.mediaBaseUrl}${path}?api_key=${encodeURIComponent(ds.jellyfinToken)}`;
+  }
   const base = client.getBaseUrl();
   if (client.useCredentials) return `${base}${path}`;
   const token = client.getToken();
@@ -70,17 +98,25 @@ function beaconUrl(client: JfClient, path: string): string {
 function killActiveEncoding(client: JfClient, playSessionId: string | undefined, keepalive = false): Promise<void> {
   if (!playSessionId) return Promise.resolve();
   const deviceId = client.getDeviceId();
+  const path = `/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}&playSessionId=${encodeURIComponent(playSessionId)}`;
+
+  // Direct route when available (bypass proxy admin token issue)
+  const ds = client.getDirectStreaming?.();
+  if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+    return fetch(`${ds.mediaBaseUrl}${path}`, {
+      method: "DELETE", keepalive,
+      headers: { "X-Emby-Token": ds.jellyfinToken, "X-Emby-Authorization": client.getAuthHeader(ds.jellyfinToken) },
+    }).then(() => {}).catch(() => {});
+  }
+
   const base = client.getBaseUrl();
   const token = client.getToken();
-  const url = `${base}/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}&playSessionId=${encodeURIComponent(playSessionId)}`;
-  // Include auth header so the request works through the proxy.
-  // Also keep api_key query param as fallback for sendBeacon contexts.
   const headers: Record<string, string> = {};
   if (token) {
     headers["X-Emby-Token"] = token;
     headers["X-Emby-Authorization"] = client.getAuthHeader();
   }
-  return fetch(url, { method: "DELETE", headers, keepalive }).then(() => {}).catch(() => {});
+  return fetch(`${base}${path}`, { method: "DELETE", headers, keepalive }).then(() => {}).catch(() => {});
 }
 
 export interface PlaybackReportingOptions {

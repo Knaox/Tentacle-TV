@@ -8,6 +8,7 @@ import { colors } from "@/theme";
 
 const SCREEN_H = Dimensions.get("window").height;
 const DISMISS_THRESHOLD = 80;
+const HANDLE_H = 20; // paddingTop(10) + paddingBottom(6) + bar(4)
 
 interface BottomSheetProps {
   visible: boolean;
@@ -45,8 +46,15 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
     ]).start(() => ref.current.onClose());
   }, [translateY, overlayOpacity]);
 
+  // Track previous visible state to distinguish open/close from snapPoint changes
+  const prevVisibleRef = useRef(false);
+
   useEffect(() => {
-    if (visible) {
+    const wasVisible = prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+
+    if (visible && !wasVisible) {
+      // Opening: animate from bottom
       ref.current.currentSnap = 0;
       setIsExpanded(false);
       translateY.setValue(SCREEN_H);
@@ -54,13 +62,18 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
         Animated.spring(translateY, { toValue: SCREEN_H - minH, useNativeDriver: true, damping: 20, stiffness: 200 }),
         Animated.timing(overlayOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
       ]).start();
-    } else {
+    } else if (visible && wasVisible) {
+      // Already open, snapPoints changed — smoothly animate to new snap 0
+      ref.current.currentSnap = 0;
+      setIsExpanded(false);
+      animateTo(SCREEN_H - minH);
+    } else if (!visible) {
       Animated.parallel([
         Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true, damping: 20, stiffness: 200 }),
         Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]).start();
     }
-  }, [visible, translateY, overlayOpacity, minH]);
+  }, [visible, translateY, overlayOpacity, minH, animateTo]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -124,7 +137,10 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
           <View {...panResponder.panHandlers} style={{ alignItems: "center", paddingTop: 10, paddingBottom: 6 }}>
             <View style={{ width: 40, height: 4, backgroundColor: "#4b5563", borderRadius: 2 }} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{
+            flex: 1,
+            maxHeight: (isExpanded ? maxH : minH) - HANDLE_H - (isExpanded ? insets.top : 0) - insets.bottom,
+          }}>
             {children}
           </View>
         </Animated.View>
