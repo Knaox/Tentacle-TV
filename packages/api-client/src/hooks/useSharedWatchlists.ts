@@ -1,15 +1,20 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 
 let _backendBase = "/api/shared-watchlists";
+let _tokenOverride: string | null = null;
 
 export function setSharedWatchlistsBackendUrl(url: string) {
   _backendBase = `${url.replace(/\/$/, "")}/api/shared-watchlists`;
 }
 
+/** Set auth token for non-web platforms (React Native) where localStorage is unavailable. */
+export function setSharedWatchlistsToken(token: string | null) {
+  _tokenOverride = token;
+}
+
 function getAuthHeader(): Record<string, string> {
-  const token = typeof localStorage !== "undefined"
-    ? localStorage.getItem("tentacle_token")
-    : null;
+  const token = _tokenOverride
+    ?? (typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -19,7 +24,7 @@ async function swFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const hasToken = !!localStorage.getItem("tentacle_token");
+  const hasToken = !!(_tokenOverride || (typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token")));
   const res = await fetch(`${_backendBase}${path}`, {
     ...init,
     headers,
@@ -82,8 +87,8 @@ export interface BatchAddResult {
 // ---------- Query hooks ----------
 
 function hasAuth(): boolean {
-  return typeof localStorage !== "undefined" &&
-    !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
+  return !!_tokenOverride || (typeof localStorage !== "undefined" &&
+    !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user")));
 }
 
 export function useShareableUsers() {
@@ -122,6 +127,16 @@ export function useSharedWatchlistItems(watchlistId: string | null) {
       ),
     enabled: !!watchlistId,
     staleTime: 30_000,
+  });
+}
+
+export function useAllSharedWatchlistItems(watchlistIds: string[]) {
+  return useQueries({
+    queries: watchlistIds.map((id) => ({
+      queryKey: ["sw", "items", id],
+      queryFn: () => swFetch<{ items: SharedWatchlistItemData[] }>(`/${id}/items`).then(r => r.items),
+      staleTime: 30_000,
+    })),
   });
 }
 

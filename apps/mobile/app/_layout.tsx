@@ -108,6 +108,9 @@ export default function RootLayout() {
               <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal" }} />
               <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
               <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
+              <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
+              <Stack.Screen name="shared-watchlist/[listId]" options={{ presentation: "card" }} />
+              <Stack.Screen name="favorites" options={{ presentation: "card" }} />
               <Stack.Screen name="search" options={{ presentation: "modal" }} />
               <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
               <Stack.Screen name="support" options={{ presentation: "card" }} />

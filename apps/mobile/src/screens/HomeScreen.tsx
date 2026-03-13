@@ -1,9 +1,11 @@
-import { useCallback } from "react";
-import { ScrollView, RefreshControl, View, Text } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { ScrollView, RefreshControl, View, Text, FlatList, Pressable, StyleSheet, Image } from "react-native";
 import { useRouter } from "expo-router";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useUserId,
+  useWatchlist, useMySharedWatchlists, useAllSharedWatchlistItems,
+  useJellyfinClient,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -11,6 +13,7 @@ import { SkeletonHero, SkeletonRow, FadeIn } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { MediaRow } from "@/components/MediaRow";
+import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { colors, spacing, typography } from "@/theme";
 
 export function HomeScreen() {
@@ -23,6 +26,11 @@ export function HomeScreen() {
   const resume = useResumeItems();
   const nextUp = useNextUp();
   const libraries = useLibraries();
+  const watchlist = useWatchlist();
+  const sharedLists = useMySharedWatchlists();
+
+  const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
 
   const isLoading = featured.isLoading || resume.isLoading;
 
@@ -46,9 +54,14 @@ export function HomeScreen() {
     router.push(`/watch/${item.Id}`);
   }, [router]);
 
+  const handleLongPress = useCallback((item: MediaItem) => {
+    setLongPressItemId(item.Id);
+    setActionSheetVisible(true);
+  }, []);
+
   const renderCard = useCallback((item: MediaItem) => (
-    <MobileMediaCard item={item} onPress={() => handlePress(item)} />
-  ), [handlePress]);
+    <MobileMediaCard item={item} onPress={() => handlePress(item)} onLongPress={() => handleLongPress(item)} />
+  ), [handlePress, handleLongPress]);
 
   // Show skeleton while truly loading (not just disabled)
   const anyFetching = featured.isFetching || resume.isFetching;
@@ -110,6 +123,17 @@ export function HomeScreen() {
           </FadeIn>
         )}
 
+        {/* À regarder */}
+        <FadeIn delay={250}>
+          <MyListRow
+            personalItems={watchlist.data ?? []}
+            sharedListIds={(sharedLists.data ?? []).map(l => l.id)}
+            onSeeAll={() => router.push("/watchlist")}
+            onItemPress={(jellyfinId) => router.push(`/media/${jellyfinId}`)}
+            onItemLongPress={(jellyfinId) => { setLongPressItemId(jellyfinId); setActionSheetVisible(true); }}
+          />
+        </FadeIn>
+
         {/* Library rows */}
         {(libraries.data ?? []).map((lib, index) => (
           <LibraryRow
@@ -121,9 +145,113 @@ export function HomeScreen() {
           />
         ))}
       </ScrollView>
+
+      {longPressItemId && (
+        <MediaActionSheet
+          visible={actionSheetVisible}
+          itemId={longPressItemId}
+          onClose={() => setActionSheetVisible(false)}
+        />
+      )}
     </View>
   );
 }
+
+/* ── Carrousel "À regarder" ────────────────────────── */
+
+interface CarouselItem {
+  key: string;
+  jellyfinId: string;
+  name: string;
+  year?: number;
+}
+
+function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItemLongPress }: {
+  personalItems: MediaItem[];
+  sharedListIds: string[];
+  onSeeAll: () => void;
+  onItemPress: (jellyfinId: string) => void;
+  onItemLongPress: (jellyfinId: string) => void;
+}) {
+  const { t } = useTranslation("common");
+  const client = useJellyfinClient();
+  const sharedQueries = useAllSharedWatchlistItems(sharedListIds);
+
+  const merged = useMemo<CarouselItem[]>(() => {
+    const seen = new Set<string>();
+    const result: CarouselItem[] = [];
+
+    // Personal items first
+    for (const item of personalItems) {
+      if (!seen.has(item.Id)) {
+        seen.add(item.Id);
+        result.push({ key: item.Id, jellyfinId: item.Id, name: item.Name, year: item.ProductionYear });
+      }
+    }
+
+    // Then shared items (deduplicated)
+    for (const q of sharedQueries) {
+      if (!q.data) continue;
+      for (const item of q.data) {
+        if (!seen.has(item.jellyfinItemId)) {
+          seen.add(item.jellyfinItemId);
+          result.push({ key: item.jellyfinItemId, jellyfinId: item.jellyfinItemId, name: item.name, year: item.year });
+        }
+      }
+    }
+
+    return result;
+  }, [personalItems, sharedQueries]);
+
+  if (merged.length === 0) return null;
+
+  const renderItem = ({ item }: { item: CarouselItem }) => {
+    const poster = client.getImageUrl(item.jellyfinId, "Primary", { width: 300, quality: 80 });
+    return (
+      <Pressable
+        onPress={() => onItemPress(item.jellyfinId)}
+        onLongPress={() => onItemLongPress(item.jellyfinId)}
+        style={mlst.card}
+      >
+        <Image source={{ uri: poster }} style={mlst.poster} />
+        <Text numberOfLines={1} style={mlst.cardName}>{item.name}</Text>
+        {item.year ? <Text style={mlst.cardYear}>{item.year}</Text> : null}
+      </Pressable>
+    );
+  };
+
+  return (
+    <View style={mlst.root}>
+      <View style={mlst.header}>
+        <Text style={mlst.title}>{t("toWatch")}</Text>
+        <Pressable onPress={onSeeAll} hitSlop={8}>
+          <Text style={mlst.seeAll}>{t("seeAll")} {"\u203A"}</Text>
+        </Pressable>
+      </View>
+      <FlatList
+        horizontal
+        data={merged}
+        keyExtractor={(item) => item.key}
+        renderItem={renderItem}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={mlst.list}
+        decelerationRate="fast"
+      />
+    </View>
+  );
+}
+
+const mlst = StyleSheet.create({
+  root: { marginTop: spacing.xl },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, marginBottom: spacing.md },
+  title: { ...typography.subtitle, color: colors.textPrimary },
+  seeAll: { ...typography.caption, color: colors.accent },
+  list: { paddingHorizontal: spacing.screenPadding, gap: 12 },
+  card: { width: 130 },
+  poster: { width: 130, aspectRatio: 2 / 3, borderRadius: 10, backgroundColor: colors.surfaceElevated },
+  cardName: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: 6 },
+  cardYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
+});
 
 function LibraryRow({ libraryId, libraryName, renderCard, index }: {
   libraryId: string;

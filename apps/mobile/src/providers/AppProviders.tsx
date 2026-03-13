@@ -24,6 +24,8 @@ import {
   setNotificationsBackendUrl,
   setTicketsBackendUrl,
   setPairingBackendUrl,
+  setSharedWatchlistsBackendUrl,
+  setSharedWatchlistsToken,
 } from "@tentacle-tv/api-client";
 import { setSessionExpired } from "@/auth/sessionState";
 import { attemptReAuth } from "@/auth/credentialManager";
@@ -74,6 +76,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
       if (!token || !serverUrl) {
         setSessionExpired(true);
         setPreferencesToken(null);
+        setSharedWatchlistsToken(null);
         client.setAccessToken(null);
         queryClient.clear();
         router.replace("/(auth)/login");
@@ -93,6 +96,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           const data = await res.json();
           client.setAccessToken(data.AccessToken);
           setPreferencesToken(data.AccessToken);
+          setSharedWatchlistsToken(data.AccessToken);
           console.debug("[AppProviders] Token refreshed successfully");
           return;
         }
@@ -106,6 +110,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setPreferencesToken(reAuth.AccessToken);
+            setSharedWatchlistsToken(reAuth.AccessToken);
             console.debug("[AppProviders] Re-auth succeeded");
             return;
           }
@@ -115,6 +120,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           storage.removeItem("tentacle_user");
           setSessionExpired(true);
           setPreferencesToken(null);
+          setSharedWatchlistsToken(null);
           client.setAccessToken(null);
           queryClient.clear();
           router.replace("/(auth)/login");
@@ -149,6 +155,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           const data = await res.json();
           client.setAccessToken(data.AccessToken);
           setPreferencesToken(data.AccessToken);
+          setSharedWatchlistsToken(data.AccessToken);
         } else if (res.status === 401) {
           // Try re-auth via stored credentials
           const reAuth = await attemptReAuth(storage, serverUrl);
@@ -157,11 +164,13 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setPreferencesToken(reAuth.AccessToken);
+            setSharedWatchlistsToken(reAuth.AccessToken);
           } else {
             storage.removeItem("tentacle_token");
             storage.removeItem("tentacle_user");
             setSessionExpired(true);
             setPreferencesToken(null);
+            setSharedWatchlistsToken(null);
             client.setAccessToken(null);
             queryClient.clear();
             router.replace("/(auth)/login");
@@ -184,11 +193,13 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
     setNotificationsBackendUrl(serverUrl);
     setTicketsBackendUrl(serverUrl);
     setPairingBackendUrl(serverUrl);
+    setSharedWatchlistsBackendUrl(serverUrl);
 
     const token = storage.getItem("tentacle_token");
     if (token) {
       client.setAccessToken(token);
       setPreferencesToken(token);
+      setSharedWatchlistsToken(token);
     }
   }, [serverUrl, client, storage]);
 

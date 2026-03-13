@@ -11,10 +11,11 @@ import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 interface Props {
   item: MediaItem;
   onPress: () => void;
+  onLongPress?: () => void;
   width?: number;
 }
 
-export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, width = 130 }: Props) {
+export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, onLongPress, width = 130 }: Props) {
   const client = useJellyfinClient();
   const isEpisode = item.Type === "Episode";
   const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
@@ -27,7 +28,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, wi
   const showFallback = !poster || imgError;
 
   return (
-    <PressableCard onPress={onPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}`}>
+    <PressableCard onPress={onPress} onLongPress={onLongPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}`}>
       <View style={st.poster}>
         {showFallback ? (
           <View style={st.fallback}>
