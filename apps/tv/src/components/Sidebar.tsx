@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { View, Text, ScrollView, Pressable, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
@@ -23,6 +23,8 @@ import { Colors, Spacing, Radius } from "../theme/colors";
 interface SidebarProps {
   onNavigate: (screen: string, params?: Record<string, string>) => void;
   currentRoute?: string;
+  /** Called after the sidebar close animation finishes — use to restore focus */
+  onClosed?: () => void;
 }
 
 const ICON_SIZE = 20;
@@ -39,7 +41,7 @@ function getLibraryIcon(collectionType?: string) {
   }
 }
 
-export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClosed }: SidebarProps) {
   const { t } = useTranslation("nav");
   const { isVisible, closeSidebar } = useSidebar();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -51,11 +53,18 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute }: Sideb
   // BACK button closes the sidebar
   useTVRemote({ onBack: isVisible && !logoutModalVisible ? closeSidebar : undefined });
 
+  const wasVisible = useRef(false);
   useEffect(() => {
     const easing = Easing.out(Easing.cubic);
     slideX.value = withTiming(isVisible ? 0 : -Spacing.sidebarWidth, { duration: ANIM_DURATION, easing });
     dimOpacity.value = withTiming(isVisible ? 1 : 0, { duration: ANIM_DURATION, easing });
-  }, [isVisible, slideX, dimOpacity]);
+    // Fire onClosed after close animation completes
+    if (wasVisible.current && !isVisible) {
+      const timer = setTimeout(() => onClosed?.(), ANIM_DURATION + 50);
+      return () => clearTimeout(timer);
+    }
+    wasVisible.current = isVisible;
+  }, [isVisible, slideX, dimOpacity, onClosed]);
 
   const sidebarStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: slideX.value }],

@@ -26,13 +26,15 @@ interface TVTrackSelectorProps {
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
   onClose: () => void;
+  /** Called on any user interaction to reset overlay auto-hide timer */
+  onInteraction?: () => void;
 }
 
 const TRACK_ITEM_HEIGHT = 52; // paddingVertical 14*2 + text ~24
 
 export function TVTrackSelector({
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
-  onSelectAudio, onSelectSubtitle, onClose,
+  onSelectAudio, onSelectSubtitle, onClose, onInteraction,
 }: TVTrackSelectorProps) {
   const { t } = useTranslation("player");
   const slideX = useSharedValue(380);
@@ -48,7 +50,7 @@ export function TVTrackSelector({
   }));
 
   const renderTrack = (track: Track, isSelected: boolean, onSelect: () => void, preferFocus = false, scrollIndex = 0) => (
-    <Focusable key={track.index} variant="row" onPress={onSelect} hasTVPreferredFocus={preferFocus} onFocus={makeOnFocus(scrollIndex, TRACK_ITEM_HEIGHT)}>
+    <Focusable key={track.index} variant="row" onPress={() => { onSelect(); onInteraction?.(); }} hasTVPreferredFocus={preferFocus} onFocus={makeOnFocus(scrollIndex, TRACK_ITEM_HEIGHT)}>
       <View style={{
         flexDirection: "row", alignItems: "center",
         paddingVertical: 14, paddingHorizontal: 16,

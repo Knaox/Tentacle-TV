@@ -1,5 +1,7 @@
 import { useCallback, useRef } from "react";
 import { View, ScrollView, Text, TVFocusGuideView, type LayoutChangeEvent } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
@@ -28,13 +30,29 @@ const HERO_H = Math.round(SCREEN_H * HeroConfig.heightRatio);
 export function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
+  const queryClient = useQueryClient();
   const { openSidebar, isVisible: sidebarOpen } = useSidebar();
+
+  // Invalidate volatile queries when screen regains focus (e.g. after Player)
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+      queryClient.invalidateQueries({ queryKey: ["next-up"] });
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    }, [queryClient])
+  );
 
   // BACK on home screen opens sidebar (Netflix/Plex pattern)
   useTVRemote({ onBack: sidebarOpen ? undefined : openSidebar });
 
   const scrollViewRef = useRef<ScrollView>(null);
   const rowYMap = useRef<Map<string, number>>(new Map());
+  const menuBtnRef = useRef<View>(null);
+
+  // Restore focus to menu button after sidebar closes
+  const handleSidebarClosed = useCallback(() => {
+    menuBtnRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
+  }, []);
 
   const scrollToRow = useCallback((key: string) => {
     const y = rowYMap.current.get(key);
@@ -123,7 +141,7 @@ export function HomeScreen({ navigation }: Props) {
           }}
           pointerEvents={sidebarOpen ? "none" : "auto"}
         >
-          <Focusable variant="button" onPress={openSidebar}>
+          <Focusable ref={menuBtnRef} variant="button" onPress={openSidebar}>
             <View style={{
               width: 48, height: 48, borderRadius: 24,
               backgroundColor: "rgba(15, 15, 24, 0.8)",
@@ -215,7 +233,6 @@ export function HomeScreen({ navigation }: Props) {
                 itemWidth={CardConfig.portrait.width}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
-                onEdgeLeft={openSidebar}
                 onLayout={(e) => rowYMap.current.set("watchlist", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("watchlist")}
               />
@@ -230,7 +247,6 @@ export function HomeScreen({ navigation }: Props) {
                 itemWidth={CardConfig.landscape.width}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
-                onEdgeLeft={openSidebar}
                 onLayout={(e) => rowYMap.current.set("resume", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("resume")}
               />
@@ -245,7 +261,6 @@ export function HomeScreen({ navigation }: Props) {
                 itemWidth={CardConfig.landscape.width}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
-                onEdgeLeft={openSidebar}
                 onLayout={(e) => rowYMap.current.set("nextUp", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("nextUp")}
               />
@@ -258,7 +273,6 @@ export function HomeScreen({ navigation }: Props) {
                 libraryName={lib.Name}
                 renderCard={renderPortraitCard}
                 onItemPress={navigateToDetail}
-                onEdgeLeft={openSidebar}
                 onLayout={(e) => rowYMap.current.set(`lib_${lib.Id}`, e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow(`lib_${lib.Id}`)}
               />
@@ -269,16 +283,15 @@ export function HomeScreen({ navigation }: Props) {
       </TVFocusGuideView>
 
       {/* Sidebar overlay */}
-      <Sidebar onNavigate={handleSidebarNav} currentRoute="Home" />
+      <Sidebar onNavigate={handleSidebarNav} currentRoute="Home" onClosed={handleSidebarClosed} />
     </View>
   );
 }
 
-function LibraryRow({ libraryId, libraryName, renderCard, onItemPress, onEdgeLeft, onLayout, onRowFocus }: {
+function LibraryRow({ libraryId, libraryName, renderCard, onItemPress, onLayout, onRowFocus }: {
   libraryId: string; libraryName: string;
   renderCard: (item: MediaItem) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
-  onEdgeLeft?: () => void;
   onLayout?: (event: LayoutChangeEvent) => void;
   onRowFocus?: () => void;
 }) {
@@ -294,7 +307,6 @@ function LibraryRow({ libraryId, libraryName, renderCard, onItemPress, onEdgeLef
       itemWidth={CardConfig.portrait.width}
       style={{ marginTop: Spacing.sectionGap }}
       onItemPress={onItemPress}
-      onEdgeLeft={onEdgeLeft}
       onLayout={onLayout}
       onRowFocus={onRowFocus}
     />

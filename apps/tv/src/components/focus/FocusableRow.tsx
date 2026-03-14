@@ -76,7 +76,7 @@ export function FocusableRow<T>({
           {title}
         </Text>
       )}
-      <TVFocusGuideView trapFocusRight>
+      <TVFocusGuideView trapFocusLeft trapFocusRight>
       <FlatList
         ref={listRef}
         data={data}

@@ -19,6 +19,8 @@ interface TVPlayerControlsOptions {
   onBack: () => void;
   onPlayPause: () => void;
   seekBarFocusedRef: React.RefObject<boolean>;
+  /** When true, overlay auto-hide timer is suspended (e.g. track selector open) */
+  settingsOpen?: boolean;
 }
 
 interface HoldState {
@@ -35,6 +37,7 @@ function getSpeedTier(holdStartTime: number): number {
 
 export function useTVPlayerControls({
   paused, jellyfinDuration, onSeek, onBack, onPlayPause, seekBarFocusedRef,
+  settingsOpen = false,
 }: TVPlayerControlsOptions) {
   const currentTimeRef = useRef(0);
 
@@ -55,13 +58,13 @@ export function useTVPlayerControls({
   const showOverlay = useCallback(() => {
     setOverlayVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (!paused) {
+    if (!paused && !settingsOpen) {
       hideTimerRef.current = setTimeout(() => {
         setOverlayVisible(false);
         setSeekActive(false);
       }, OVERLAY_HIDE_MS);
     }
-  }, [paused]);
+  }, [paused, settingsOpen]);
 
   useEffect(() => {
     showOverlay();
@@ -81,12 +84,16 @@ export function useTVPlayerControls({
     if (seekIntervalRef.current) { clearInterval(seekIntervalRef.current); seekIntervalRef.current = null; }
     holdRef.current = null;
     setSpeedLabel(null);
-  }, []);
+    // Restart auto-hide timer now that acceleration has stopped
+    showOverlay();
+  }, [showOverlay]);
 
   const startAcceleration = useCallback((dir: "forward" | "backward") => {
     if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
     seekIntervalRef.current = setInterval(() => {
       if (!holdRef.current) return;
+      // Keep overlay visible during acceleration — clear the auto-hide timer
+      if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
       const speed = getSpeedTier(holdRef.current.startTime);
       const delta = (dir === "forward" ? 1 : -1) * speed * HOLD_BASE_DELTA;
       const target = currentTimeRef.current + delta;
