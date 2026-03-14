@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
-import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon } from "./icons/TVIcons";
+import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon } from "./icons/TVIcons";
 import { Colors } from "../theme/colors";
 interface TVPlayerOverlayProps {
   title: string;
@@ -30,6 +30,12 @@ interface TVPlayerOverlayProps {
   seekActive?: boolean;
   onSeekBarFocus?: () => void;
   onSeekBarBlur?: () => void;
+  /** Next episode — hidden if not provided */
+  onNextEpisode?: () => void;
+  /** Restart / previous episode (double-click) */
+  onPrevEpisode?: () => void;
+  hasNextEpisode?: boolean;
+  hasPreviousEpisode?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -45,6 +51,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   speedLabel, seekActive = false,
   onPlayPause, onSkipBack, onSkipForward,
   onBack, onSettings, onSeekBarFocus, onSeekBarBlur,
+  onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -56,15 +63,6 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const buffered = duration > 0 ? (bufferedTime / duration) * 100 : 0;
   const isShown = visible || paused;
-
-  const bufferStripPct = buffered - progress;
-  useEffect(() => {
-    if (isShown) {
-      console.log("[Overlay] buffer:", bufferedTime.toFixed(1) + "s", "progress:", currentTime.toFixed(1) + "s", "dur:", duration.toFixed(0) + "s",
-        "bar%: progress=" + progress.toFixed(1), "buffer=" + buffered.toFixed(1), "visibleStrip=" + bufferStripPct.toFixed(2) + "%",
-        "(~" + Math.round(bufferStripPct * 16) + "px on 1600px bar)");
-    }
-  }, [isShown, bufferedTime, currentTime, duration]);
 
   return (
     <Animated.View
@@ -167,7 +165,15 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         </Focusable>
 
         {/* Transport controls */}
-        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 40 }}>
+        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 32 }}>
+          {hasPreviousEpisode && (
+            <Focusable variant="button" onPress={onPrevEpisode}>
+              <View style={{ padding: 10 }}>
+                <PrevTrackIcon size={20} color={Colors.textSecondary} />
+              </View>
+            </Focusable>
+          )}
+
           <Focusable variant="button" onPress={onSkipBack}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
@@ -194,6 +200,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
               <SkipForwardIcon size={22} color={Colors.textPrimary} />
             </View>
           </Focusable>
+
+          {hasNextEpisode && (
+            <Focusable variant="button" onPress={onNextEpisode}>
+              <View style={{ padding: 10 }}>
+                <NextTrackIcon size={20} color={Colors.textSecondary} />
+              </View>
+            </Focusable>
+          )}
 
           <Focusable variant="button" onPress={onSettings}>
             <View style={{ padding: 13 }}>

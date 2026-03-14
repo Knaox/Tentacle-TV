@@ -142,6 +142,24 @@ export function SkipBackIcon({ size = S, color = C }: IconProps) {
   );
 }
 
+export function NextTrackIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <Path d="M4 4l12 8-12 8V4z" />
+      <Rect x={18} y={5} width={2} height={14} rx={1} />
+    </Svg>
+  );
+}
+
+export function PrevTrackIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <Path d="M20 4L8 12l12 8V4z" />
+      <Rect x={4} y={5} width={2} height={14} rx={1} />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ size = S, color = C }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -205,6 +223,15 @@ export function MicIcon({ size = S, color = C }: IconProps) {
       <Path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
       <Path d="M19 10v2a7 7 0 0 1-14 0v-2" />
       <Line x1={12} x2={12} y1={19} y2={22} />
+    </Svg>
+  );
+}
+
+export function CloseIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Line x1="18" y1="6" x2="6" y2="18" />
+      <Line x1="6" y1="6" x2="18" y2="18" />
     </Svg>
   );
 }

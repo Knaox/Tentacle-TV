@@ -3,7 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, AppState } from "react-native
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
-  useResolveMediaTracks, useIntroSkipper,
+  useResolveMediaTracks, useIntroSkipper, useEpisodeNavigation,
 } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
@@ -13,7 +13,9 @@ import type { RootStackParamList } from "../navigation/types";
 import { TVPlayerOverlay } from "../components/TVPlayerOverlay";
 import { TVTrackSelector } from "../components/TVTrackSelector";
 import { TVSkipSegmentButton } from "../components/TVSkipSegmentButton";
+import { TVAutoPlayOverlay } from "../components/TVAutoPlayOverlay";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
+import { useAutoPlay } from "../hooks/useAutoPlay";
 import { randomSessionId, formatTrackLabel } from "../utils/playerHelpers";
 import { MPVPlayer, type MPVPlayerHandle, type MpvTrack } from "../components/player/MPVPlayer";
 import { ExoPlayer } from "../components/player/ExoPlayer";
@@ -196,6 +198,22 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const skipSegments = useIntroSkipper(itemId, item);
 
+  // Auto-play next episode (credits detection + countdown)
+  const navigateToEpisode = useCallback((episodeId: string) => {
+    reportStop();
+    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    queryClient.invalidateQueries({ queryKey: ["next-up"] });
+    navigation.replace("Player", { itemId: episodeId });
+  }, [reportStop, queryClient, itemId, navigation]);
+
+  const autoPlay = useAutoPlay(
+    item, jellyfinDuration ?? 0,
+    skipSegments.credits, navigateToEpisode,
+  );
+
+  const { previousEpisode } = useEpisodeNavigation(item);
+
   // For transcoded/HLS streams, include resume position in the URL
   useEffect(() => {
     if (resumeApplied.current || isDirectPlay) return;
@@ -214,6 +232,22 @@ export function PlayerScreen({ route, navigation }: Props) {
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
     navigation.goBack();
   }, [reportStop, queryClient, itemId, navigation]);
+
+  /** When episode finishes, navigate to series detail instead of just going back */
+  const handleFinished = useCallback(async () => {
+    await reportStop();
+    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    queryClient.invalidateQueries({ queryKey: ["next-up"] });
+    const seriesId = item?.SeriesId;
+    if (seriesId) {
+      // Go to series detail to see seasons & episodes
+      navigation.replace("MediaDetail", { itemId: seriesId });
+    } else {
+      navigation.goBack();
+    }
+  }, [reportStop, queryClient, itemId, item?.SeriesId, navigation]);
 
   useEffect(() => () => {
     reportStop();
@@ -255,22 +289,43 @@ export function PlayerScreen({ route, navigation }: Props) {
     setMpvTrackMap(map);
   }, [streams]);
 
+  // Count of stale progress callbacks to skip after a seek
+  const skipProgressCountRef = useRef(0);
+
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    // Update display immediately so overlay reflects the seek target
+    skipProgressCountRef.current = 1; // skip next 1 stale callback
     displayTimeRef.current = clamped;
+    positionRef.current = clamped;
     setDisplayTime(clamped);
     lastDisplayUpdate.current = Date.now();
+    lastProgressTime.current = Date.now();
     if (isDirectPlay) {
       playerRef.current?.seek(clamped);
     } else {
-      // For transcoded streams, the player position is relative to HLS start
       const offset = startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
       playerRef.current?.seek(Math.max(0, clamped - offset));
     }
     reportSeek(clamped, paused);
+    checkTriggerRef.current(clamped);
   }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
+
+  // Restart episode (single click) or previous episode (double click < 500ms)
+  const prevClickTimeRef = useRef(0);
+  const handlePrevEpisode = useCallback(() => {
+    const now = Date.now();
+    if (now - prevClickTimeRef.current < 500 && previousEpisode) {
+      navigateToEpisode(previousEpisode.Id);
+    } else {
+      handleSeek(0);
+    }
+    prevClickTimeRef.current = now;
+  }, [previousEpisode, navigateToEpisode, handleSeek]);
+
+  const handleNextEpisode = useCallback(() => {
+    if (autoPlay.nextEpisode) navigateToEpisode(autoPlay.nextEpisode.Id);
+  }, [autoPlay.nextEpisode, navigateToEpisode]);
 
   const handlePlayPause = useCallback(() => setPaused((p) => !p), []);
 
@@ -278,11 +333,13 @@ export function PlayerScreen({ route, navigation }: Props) {
     paused, jellyfinDuration: jellyfinDuration ?? 0,
     onSeek: handleSeek,
     onBack: () => {
+      if (autoPlay.countdown !== null) { autoPlay.cancelAutoPlay(); return; }
       if (showSettingsRef.current) { setShowSettings(false); showSettingsRef.current = false; return; }
       invalidateAndGoBack();
     },
     onPlayPause: handlePlayPause,
     seekBarFocusedRef,
+    settingsOpen: showSettings,
   });
 
   // Sync display time immediately when overlay appears
@@ -294,40 +351,61 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [controls.overlayVisible]);
 
+  // Stable refs for native player callbacks — native side keeps the initial
+  // JS callback, so these must have [] deps to avoid stale closures in release builds.
+  const checkTriggerRef = useRef(autoPlay.checkTrigger);
+  checkTriggerRef.current = autoPlay.checkTrigger;
+  const reportStartRef = useRef(reportStart);
+  reportStartRef.current = reportStart;
+  const isDirectPlayRef = useRef(isDirectPlay);
+  isDirectPlayRef.current = isDirectPlay;
+  const startTicksRef = useRef(startTicks);
+  startTicksRef.current = startTicks;
+  const updatePositionRef = useRef(updatePosition);
+  updatePositionRef.current = updatePosition;
+
   const handleLoad = useCallback((duration: number) => {
-    // Only seek for direct play — transcoded/HLS uses StartTimeTicks in URL
-    if (isDirectPlay) {
+    if (isDirectPlayRef.current) {
       const resumeTicks = item?.UserData?.PlaybackPositionTicks;
       if (resumeTicks) playerRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
     }
     setIsLoading(false);
-    reportStart();
-  }, [item, reportStart, isDirectPlay]);
+    reportStartRef.current();
+  }, [item]);
 
   const handleProgress = useCallback((currentTime: number, buffered: number) => {
     const raw = Math.max(0, currentTime);
-    const offset = !isDirectPlay && startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
+    const offset = !isDirectPlayRef.current && startTicksRef.current > 0
+      ? startTicksRef.current / TICKS_PER_SECOND : 0;
     const t = raw + offset;
     const bufferedAbs = Math.max(0, buffered) + offset;
-    if (Math.floor(t) % 10 === 0 && Math.floor(t) !== Math.floor(positionRef.current)) {
-      console.log("[Player] progress:", t.toFixed(1), "buffered:", bufferedAbs.toFixed(1), "raw buffered:", buffered.toFixed(1), "duration:", jellyfinDuration);
+
+    // After a seek, skip 1 stale progress callback (native reports old position).
+    // Keep lastProgressTime updated to prevent false rebuffering detection.
+    if (skipProgressCountRef.current > 0) {
+      skipProgressCountRef.current--;
+      bufferedTimeRef.current = bufferedAbs;
+      lastProgressTime.current = Date.now();
+      setIsLoading(false);
+      return;
     }
-    // Always update refs (no re-render)
+
     positionRef.current = t;
     controls.currentTimeRef.current = t;
     displayTimeRef.current = t;
     bufferedTimeRef.current = bufferedAbs;
     lastProgressTime.current = Date.now();
     setIsLoading(false);
-    // Only update display state at ~1Hz to avoid excessive re-renders
     const now = Date.now();
     if (now - lastDisplayUpdate.current >= 1000) {
       lastDisplayUpdate.current = now;
       setDisplayTime(t);
       setBufferedTime(bufferedAbs);
     }
-    updatePosition(t, pausedStateRef.current); // ref to avoid re-creating on pause/unpause
-  }, [updatePosition, controls.currentTimeRef, isDirectPlay, startTicks]);
+    updatePositionRef.current(t, pausedStateRef.current);
+    // Check auto-play trigger on every progress tick (not dependent on re-renders)
+    checkTriggerRef.current(t);
+  }, [controls.currentTimeRef]);
 
   // Detect rebuffering: no progress callback for >2s while playing
   useEffect(() => {
@@ -340,7 +418,26 @@ export function PlayerScreen({ route, navigation }: Props) {
     return () => clearInterval(interval);
   }, [paused]);
 
-  const handleEnd = useCallback(() => { invalidateAndGoBack(); }, [invalidateAndGoBack]);
+  // Refs for stable handleEnd — native player keeps the initial JS callback,
+  // so deps must not change or the native side calls a stale closure.
+  const autoPlayRef = useRef(autoPlay);
+  autoPlayRef.current = autoPlay;
+  const invalidateAndGoBackRef = useRef(invalidateAndGoBack);
+  invalidateAndGoBackRef.current = invalidateAndGoBack;
+  const handleFinishedRef = useRef(handleFinished);
+  handleFinishedRef.current = handleFinished;
+
+  const handleEnd = useCallback(() => {
+    const ap = autoPlayRef.current;
+    if (ap.nextEpisode && ap.countdown === null) {
+      ap.startAutoPlay();
+    } else if (ap.countdown !== null) {
+      // Countdown already running — let it finish
+    } else {
+      // No next episode OR user dismissed — go to series detail or back
+      handleFinishedRef.current();
+    }
+  }, []);
 
   const handleAudioChange = useCallback((newIndex: number) => {
     if (isDirectPlay) {
@@ -387,6 +484,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
 
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : 0;
+  const autoPlayActive = autoPlay.countdown !== null;
   if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
 
   return (
@@ -407,9 +505,9 @@ export function PlayerScreen({ route, navigation }: Props) {
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!controls.overlayVisible && !showSettings}
-        accessible={!controls.overlayVisible && !showSettings}
-        importantForAccessibility={controls.overlayVisible || showSettings ? "no-hide-descendants" : "auto"}
+        hasTVPreferredFocus={!controls.overlayVisible && !showSettings && !autoPlayActive}
+        accessible={!controls.overlayVisible && !showSettings && !autoPlayActive}
+        importantForAccessibility={controls.overlayVisible || showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
       >
         <View style={{ flex: 1 }} />
       </Pressable>
@@ -436,7 +534,8 @@ export function PlayerScreen({ route, navigation }: Props) {
         title={item?.Name ?? ""}
         currentTime={controls.scrubbing ? controls.scrubPosition : displayTime}
         bufferedTime={bufferedTime}
-        duration={displayDuration} paused={paused} visible={controls.overlayVisible}
+        duration={displayDuration} paused={paused}
+        visible={controls.overlayVisible && !autoPlayActive}
         speedLabel={controls.speedLabel} seekActive={controls.seekActive}
         onPlayPause={() => { handlePlayPause(); controls.showOverlay(); }}
         onSkipBack={() => { controls.handleSkipBack(); controls.showOverlay(); }}
@@ -448,30 +547,49 @@ export function PlayerScreen({ route, navigation }: Props) {
         }}
         onSeekBarFocus={() => { seekBarFocusedRef.current = true; }}
         onSeekBarBlur={() => { seekBarFocusedRef.current = false; }}
+        onNextEpisode={handleNextEpisode}
+        onPrevEpisode={handlePrevEpisode}
+        hasNextEpisode={!!autoPlay.nextEpisode}
+        hasPreviousEpisode={!!previousEpisode}
       />
-      {/* Skip intro/credits — rendered outside overlay so always visible */}
-      <TVSkipSegmentButton
-        type="intro"
-        segment={skipSegments.intro}
-        currentTime={displayTime}
-        onSkip={() => handleSeek(skipSegments.intro!.end)}
-        overlayVisible={controls.overlayVisible}
-        showSettings={showSettings}
-      />
-      <TVSkipSegmentButton
-        type="credits"
-        segment={skipSegments.credits}
-        currentTime={displayTime}
-        onSkip={() => handleSeek(skipSegments.credits!.end)}
-        overlayVisible={controls.overlayVisible}
-        showSettings={showSettings}
-      />
+      {/* Skip intro/credits — hidden during auto-play overlay */}
+      {!autoPlayActive && (
+        <>
+          <TVSkipSegmentButton
+            type="intro"
+            segment={skipSegments.intro}
+            currentTime={displayTime}
+            onSkip={() => handleSeek(skipSegments.intro!.end)}
+            overlayVisible={controls.overlayVisible}
+            showSettings={showSettings}
+          />
+          <TVSkipSegmentButton
+            type="credits"
+            segment={skipSegments.credits}
+            currentTime={displayTime}
+            onSkip={() => handleSeek(skipSegments.credits!.end)}
+            overlayVisible={controls.overlayVisible}
+            showSettings={showSettings}
+          />
+        </>
+      )}
       {showSettings && (
         <TVTrackSelector
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           selectedAudio={audioIndex} selectedSubtitle={subtitleIndex}
           onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
           onClose={() => { setShowSettings(false); showSettingsRef.current = false; }}
+          onInteraction={controls.showOverlay}
+        />
+      )}
+      {autoPlayActive && (
+        <TVAutoPlayOverlay
+          countdown={autoPlay.countdown!}
+          episodeTitle={autoPlay.nextEpisodeTitle}
+          episodeDescription={autoPlay.nextEpisodeDescription}
+          episodeImageUrl={autoPlay.nextEpisodeImageUrl}
+          onPlayNow={autoPlay.navigateToNextEpisode}
+          onDismiss={autoPlay.cancelAutoPlay}
         />
       )}
     </View>
