@@ -488,16 +488,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   useEffect(() => {
     if (!isDirectPlay) return;
     if (subtitleIndex < 0) {
-      console.log("[Subs] disable subtitles");
       playerRef.current?.setSubtitleTrack(0); // disable
     } else {
       const mpvId = mpvTrackMap[subtitleIndex];
-      console.log(`[Subs] select jellyfinIdx=${subtitleIndex} → mpvId=${mpvId} map=${JSON.stringify(mpvTrackMap)}`);
-      if (mpvId != null) {
-        playerRef.current?.setSubtitleTrack(mpvId);
-      } else {
-        console.warn(`[Subs] mpvId NOT FOUND for jellyfinIdx=${subtitleIndex}`);
-      }
+      if (mpvId != null) playerRef.current?.setSubtitleTrack(mpvId);
     }
   }, [subtitleIndex, isDirectPlay, mpvTrackMap]);
 
