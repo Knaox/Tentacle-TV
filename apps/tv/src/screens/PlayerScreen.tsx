@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { View, Text, Pressable, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, AppState, Dimensions, findNodeHandle, UIManager, type ViewStyle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
@@ -639,8 +639,13 @@ export function PlayerScreen({ route, navigation }: Props) {
             controls.showOverlay();
             // Force focus back to background Pressable after panel unmounts
             setTimeout(() => {
-              backgroundRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
-            }, 100);
+              const node = findNodeHandle(backgroundRef.current);
+              if (node) {
+                try {
+                  UIManager.updateView(node, "RCTView", { hasTVPreferredFocus: true });
+                } catch { /* ignore */ }
+              }
+            }, 150);
           }}
           onInteraction={controls.showOverlay}
         />
