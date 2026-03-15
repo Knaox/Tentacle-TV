@@ -85,6 +85,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);
+  const backgroundRef = useRef<any>(null);
   const [paused, setPaused] = useState(false);
   const [displayTime, setDisplayTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -555,10 +556,11 @@ export function PlayerScreen({ route, navigation }: Props) {
         onVideoSize={handleVideoSize}
       />
       <Pressable
+        ref={backgroundRef}
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!showSettings && !autoPlayActive}
+        hasTVPreferredFocus={!controls.overlayVisible && !showSettings && !autoPlayActive}
         accessible={!showSettings && !autoPlayActive}
         importantForAccessibility={showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
       >
@@ -631,7 +633,15 @@ export function PlayerScreen({ route, navigation }: Props) {
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           selectedAudio={audioIndex} selectedSubtitle={subtitleIndex}
           onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
-          onClose={() => { setShowSettings(false); showSettingsRef.current = false; controls.showOverlay(); }}
+          onClose={() => {
+            setShowSettings(false);
+            showSettingsRef.current = false;
+            controls.showOverlay();
+            // Force focus back to background Pressable after panel unmounts
+            setTimeout(() => {
+              backgroundRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
+            }, 100);
+          }}
           onInteraction={controls.showOverlay}
         />
       )}
