@@ -33,18 +33,23 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     const clientIp = getRealClientIp(request);
     const mediaBaseUrl = isPrivateIp(clientIp) ? cfg.privateUrl : cfg.publicUrl;
 
-    // Server-side health check: verify Jellyfin is reachable from backend
-    try {
-      const hc = await fetch(`${mediaBaseUrl}/System/Info/Public`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      if (!hc.ok) {
-        request.log.warn({ mediaBaseUrl, status: hc.status }, "Direct streaming health check failed");
+    // Server-side health check: verify Jellyfin is running.
+    // Use the internal Jellyfin URL (not mediaBaseUrl) because the backend may
+    // not be able to reach the public URL from Docker (hairpin NAT / DNS).
+    const jellyfinHealthUrl = getJellyfinUrl();
+    if (jellyfinHealthUrl) {
+      try {
+        const hc = await fetch(`${jellyfinHealthUrl}/System/Info/Public`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (!hc.ok) {
+          request.log.warn({ jellyfinHealthUrl, status: hc.status }, "Direct streaming health check failed");
+          return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
+        }
+      } catch (err) {
+        request.log.warn({ jellyfinHealthUrl, err }, "Direct streaming health check unreachable");
         return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
       }
-    } catch (err) {
-      request.log.warn({ mediaBaseUrl, err }, "Direct streaming health check unreachable");
-      return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
     }
 
     // Extract bearer token and determine type
