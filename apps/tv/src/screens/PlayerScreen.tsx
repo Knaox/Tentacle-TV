@@ -114,11 +114,15 @@ export function PlayerScreen({ route, navigation }: Props) {
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
 
-  // Route HDR/DV content to ExoPlayer for HDR passthrough
+  // Route HDR and 4K HEVC to ExoPlayer — its hardware decoder renders directly
+  // without mediacodec-copy overhead. MPV stays for 1080p/H264 where copy is fast.
   const videoStream = streams.find((s) => s.Type === "Video");
   const isHDR = videoStream?.VideoRangeType != null
     && videoStream.VideoRangeType !== "SDR";
-  const useExoPlayer = isHDR && !forceTranscode;
+  const isHEVC4K = (videoStream?.Codec?.toLowerCase() === "hevc"
+    || videoStream?.Codec?.toLowerCase() === "h265")
+    && (videoStream?.Width ?? 0) > 1920;
+  const useExoPlayer = (isHDR || isHEVC4K) && !forceTranscode;
   // Unified ref — points to whichever player is active
   const playerRef = useExoPlayer ? exoRef : mpvRef;
 
