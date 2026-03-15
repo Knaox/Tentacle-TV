@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { View, Text, Pressable, ActivityIndicator, AppState, Dimensions, findNodeHandle, UIManager, type ViewStyle } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
@@ -85,7 +85,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);
-  const backgroundRef = useRef<any>(null);
+  const [focusKey, setFocusKey] = useState(0);
   const [paused, setPaused] = useState(false);
   const [displayTime, setDisplayTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -556,7 +556,7 @@ export function PlayerScreen({ route, navigation }: Props) {
         onVideoSize={handleVideoSize}
       />
       <Pressable
-        ref={backgroundRef}
+        key={`bg-${focusKey}`}
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
@@ -637,15 +637,9 @@ export function PlayerScreen({ route, navigation }: Props) {
             setShowSettings(false);
             showSettingsRef.current = false;
             controls.showOverlay();
-            // Force focus back to background Pressable after panel unmounts
-            setTimeout(() => {
-              const node = findNodeHandle(backgroundRef.current);
-              if (node) {
-                try {
-                  UIManager.updateView(node, "RCTView", { hasTVPreferredFocus: true });
-                } catch { /* ignore */ }
-              }
-            }, 150);
+            // Force re-mount of background Pressable to reclaim focus
+            // (Android TV loses focus when a focusable container unmounts)
+            setFocusKey((k) => k + 1);
           }}
           onInteraction={controls.showOverlay}
         />
