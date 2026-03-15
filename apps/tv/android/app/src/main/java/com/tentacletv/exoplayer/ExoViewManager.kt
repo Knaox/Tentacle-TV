@@ -14,6 +14,7 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
         private const val COMMAND_SEEK = 1
         private const val COMMAND_SET_AUDIO_TRACK = 2
         private const val COMMAND_SET_SUBTITLE_TRACK = 3
+        private const val COMMAND_LOAD_SUBTITLE = 4
     }
 
     override fun getName(): String = "ExoPlayerView"
@@ -54,6 +55,7 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
             "seek" to COMMAND_SEEK,
             "setAudioTrack" to COMMAND_SET_AUDIO_TRACK,
             "setSubtitleTrack" to COMMAND_SET_SUBTITLE_TRACK,
+            "loadSubtitle" to COMMAND_LOAD_SUBTITLE,
         )
     }
 
@@ -62,6 +64,7 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
             "seek" -> args?.getDouble(0)?.let { view.seekTo(it) }
             "setAudioTrack" -> args?.getInt(0)?.let { view.setAudioTrack(it) }
             "setSubtitleTrack" -> args?.getInt(0)?.let { view.setSubtitleTrack(it) }
+            "loadSubtitle" -> view.loadSubtitle(args?.getString(0))
         }
     }
 
