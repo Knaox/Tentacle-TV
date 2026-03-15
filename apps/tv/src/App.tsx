@@ -79,14 +79,50 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
     setPreferencesToken(savedToken);
   }
 
-  jfClient.setOnAuthExpired(() => {
-    storage.removeItem("tentacle_token");
-    storage.removeItem("tentacle_user");
-    storage.removeItem("tentacle_jellyfin_token");
-    setPreferencesToken(null);
-    queryClient.clear();
-    if (navigationRef.isReady()) {
-      navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+  jfClient.setOnAuthExpired(async () => {
+    const token = storage.getItem("tentacle_token");
+    const serverUrl = storage.getItem("tentacle_server_url");
+    if (!token || !serverUrl) {
+      doLogout();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${serverUrl}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      if (res.ok) {
+        // Token still valid — restore session silently
+        const data = await res.json();
+        jfClient.setAccessToken(data.AccessToken);
+        setPreferencesToken(data.AccessToken);
+        return;
+      }
+
+      if (res.status !== 401) {
+        // 503 / server error — keep session, don't disconnect
+        return;
+      }
+    } catch {
+      // Network error — keep session
+      return;
+    }
+
+    // 401 confirmed — token truly expired, logout
+    doLogout();
+
+    function doLogout() {
+      storage.removeItem("tentacle_token");
+      storage.removeItem("tentacle_user");
+      storage.removeItem("tentacle_jellyfin_token");
+      setPreferencesToken(null);
+      queryClient.clear();
+      if (navigationRef.isReady()) {
+        navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+      }
     }
   });
 

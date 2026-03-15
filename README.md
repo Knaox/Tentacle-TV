@@ -35,7 +35,7 @@
 | **Windows** | Available | Tauri v2 + native mpv player (MSI / EXE) |
 | **iOS** | Coming soon | React Native + Expo |
 | **Android** | Coming soon | React Native + Expo |
-| **Android TV** | Beta | React Native + dual-player (MPV / ExoPlayer) |
+| **Android TV** | Available | React Native + ExoPlayer/Media3 |
 | **Apple TV** | Coming soon | React Native (tvOS) |
 
 ---
@@ -45,7 +45,7 @@
 ### Video Playback
 - HTML5 player (web) with HLS streaming via hls.js
 - Native mpv player (desktop) with Direct Play, Dolby Vision, and Atmos support
-- Android TV dual-player: MPV (SDR) + ExoPlayer/Media3 (HDR/DV) with audio passthrough
+- Android TV: ExoPlayer/Media3 with hardware decoding, HDR/DV passthrough, and surround audio bitstream
 - On-the-fly audio track and subtitle switching
 - Resume watching — pick up right where you left off
 - Per-library preferences (default audio language, subtitles)
@@ -197,22 +197,24 @@ The app auto-updates via the built-in Tauri updater.
 
 ## Android TV App
 
-The Android TV app uses a **dual-player architecture** for optimal playback across all content types.
+The Android TV app uses **ExoPlayer (Media3)** for all video playback — direct play with hardware decoding for all common codecs. Player architecture inspired by [VoidTV for Jellyfin](https://github.com/hritwikjohri/VoidTV-for-jellyfin).
 
-### Player Routing
+### Codec Support (Direct Play)
 
-| Content | Player | Why |
-|---------|--------|-----|
-| **SDR** (H.264, HEVC, AV1) | MPV (`libmpv`) | Fast seeking, ASS/SSA subtitles, video filters |
-| **HDR10 / HDR10+** | ExoPlayer (Media3) | MediaCodec surface mode = HDR passthrough to TV |
-| **Dolby Vision P8** | ExoPlayer (Media3) | Native DV decoder on supported devices |
-| **Dolby Vision P7** | ExoPlayer + DvCompatRenderer | P7→P8.1 rewrite for device compatibility |
+| Codec | Decoding | Notes |
+|-------|----------|-------|
+| **H.264 / AVC** | Hardware (MediaCodec) | All Android TV devices |
+| **HEVC / H.265** | Hardware (MediaCodec) | Shield, Chromecast, Fire TV, etc. |
+| **VP9** | Hardware (MediaCodec) | Wide device support |
+| **AV1** | FFmpeg (dav1d) | Software decode via Jellyfin FFmpeg decoder |
+| **Dolby Vision P8** | Hardware (MediaCodec) | Native DV decoder on supported devices |
+| **Dolby Vision P7** | DvCompatRenderer | P7→P8.1 rewrite for device compatibility |
 
-Detection is automatic via `VideoRangeType` from Jellyfin metadata — HDR/DV content routes to ExoPlayer, SDR content routes to MPV.
+Codec errors trigger an automatic fallback to server-side transcoding (H.264 + AAC).
 
 ### Audio Passthrough
 
-The ExoPlayer pipeline uses `DefaultAudioSink` with real device `AudioCapabilities` for bitstream passthrough over HDMI:
+`DefaultAudioSink` with real device `AudioCapabilities` for bitstream passthrough over HDMI:
 
 | Format | Passthrough | Notes |
 |--------|-------------|-------|
@@ -221,32 +223,6 @@ The ExoPlayer pipeline uses `DefaultAudioSink` with real device `AudioCapabiliti
 | TrueHD (Dolby Atmos) | Yes | Nvidia Shield only |
 | DTS / DTS-HD MA | Yes | Shield and select devices |
 | Fallback | PCM decode | Automatic when passthrough unavailable |
-
-### Architecture
-
-```
-              ┌──────────────────┐
-              │   PlayerScreen   │
-              │  (React Native)  │
-              └────────┬─────────┘
-                       │
-              ┌────────▼────────┐
-              │  HDR / DV ?     │
-              └───┬─────────┬───┘
-             SDR  │         │  HDR/DV
-                  ▼         ▼
-        ┌────────────┐  ┌──────────────────┐
-        │  MPVPlayer │  │  ExoPlayer       │
-        │  (libmpv)  │  │  (Media3)        │
-        │            │  │                  │
-        │ vo=gpu     │  │ SurfaceView      │
-        │ mediacodec │  │ HDR passthrough  │
-        │ -copy      │  │ DV P7→P8.1       │
-        │ subs ASS ✅│  │ Audio PT ✅      │
-        └────────────┘  └──────────────────┘
-```
-
-Both players expose the same interface (`seek`, `setAudioTrack`, `setSubtitleTrack`) so the overlay controls, track selector, and skip buttons work identically.
 
 ### Installation
 
@@ -387,7 +363,7 @@ apps/
   backend/         Fastify 5 + Prisma 6 + MariaDB (API server)
   desktop/         Tauri v2 (wraps web build for native desktop)
   mobile/          Expo 52 + React Native (coming soon)
-  tv/              React Native for Android TV (dual-player: MPV + ExoPlayer)
+  tv/              React Native for Android TV (ExoPlayer/Media3)
 
 packages/
   api-client/      Jellyfin API client + TanStack Query hooks
@@ -474,7 +450,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |
-| Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop), MPV + ExoPlayer/Media3 (TV) |
+| Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop), ExoPlayer/Media3 1.8 (TV) |
 | i18n | i18next + react-i18next (English & French) |
 | Validation | Zod 3.24 |
 | CI/CD | GitHub Actions (Docker build on push to main) |

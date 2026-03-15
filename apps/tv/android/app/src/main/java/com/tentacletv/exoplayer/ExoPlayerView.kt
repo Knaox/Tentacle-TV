@@ -12,9 +12,13 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioCapabilities
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.facebook.react.bridge.Arguments
@@ -88,10 +92,31 @@ class ExoPlayerView(
         if (player != null) return
         Log.w(TAG, ">>> initPlayer START")
 
+        // Detect device audio capabilities for bitstream passthrough (VoidTV pattern)
+        val audioCapabilities = if (audioPassthrough) {
+            AudioCapabilities.getCapabilities(reactContext)
+        } else {
+            AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES
+        }
+
         val renderersFactory = object : DefaultRenderersFactory(reactContext) {
             init {
                 setExtensionRendererMode(EXTENSION_RENDERER_MODE_ON)
                 setEnableDecoderFallback(true)
+            }
+
+            // Custom AudioSink — passes surround bitstream (AC3/DTS/TrueHD) to receiver
+            // instead of decoding to PCM. Required for real passthrough.
+            override fun buildAudioSink(
+                context: android.content.Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean,
+            ): AudioSink {
+                return DefaultAudioSink.Builder(context)
+                    .setAudioCapabilities(audioCapabilities)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                    .build()
             }
 
             // Add DV Profile 7→8.1 compat renderer for Dolby Vision
@@ -125,9 +150,27 @@ class ExoPlayerView(
             }
         }
 
+        // Detect device audio passthrough capabilities (VoidTV pattern)
+        val preferredMimeTypes = mutableListOf<String>()
+        if (audioPassthrough) {
+            val caps = AudioCapabilities.getCapabilities(reactContext)
+            val candidates = mapOf(
+                MimeTypes.AUDIO_TRUEHD to android.media.AudioFormat.ENCODING_DOLBY_TRUEHD,
+                MimeTypes.AUDIO_DTS_HD to android.media.AudioFormat.ENCODING_DTS_HD,
+                MimeTypes.AUDIO_E_AC3 to android.media.AudioFormat.ENCODING_E_AC3,
+                MimeTypes.AUDIO_AC3 to android.media.AudioFormat.ENCODING_AC3,
+                MimeTypes.AUDIO_DTS to android.media.AudioFormat.ENCODING_DTS,
+            )
+            for ((mime, encoding) in candidates) {
+                if (caps.supportsEncoding(encoding)) preferredMimeTypes.add(mime)
+            }
+            Log.w(TAG, ">>> Audio passthrough: $preferredMimeTypes")
+        }
+
         val trackSelector = DefaultTrackSelector(reactContext).apply {
             parameters = buildUponParameters()
                 .setPreferredAudioLanguage("und")
+                .setPreferredAudioMimeTypes(*preferredMimeTypes.toTypedArray())
                 .build()
         }
 

@@ -112,7 +112,7 @@ class MpvPlayerView(
             MPVLib.setOptionString("vo", "gpu")
             MPVLib.setOptionString("gpu-context", "android")
             MPVLib.setOptionString("opengl-es", "yes")
-            MPVLib.setOptionString("hwdec", "auto")
+            MPVLib.setOptionString("hwdec", "mediacodec,mediacodec-copy")
             MPVLib.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
             MPVLib.setOptionString("vd-lavc-dr", "yes")
             MPVLib.setOptionString("vd-lavc-film-grain", "cpu")

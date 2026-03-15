@@ -33,6 +33,8 @@ export default {
   techTauri: "Application desktop native",
   techExpo: "Application mobile",
   techReactNative: "Framework mobile",
+  techExoPlayer: "Lecteur vidéo Android TV (Media3)",
+  techVoidTV: "Inspiration architecture lecteur Android TV",
   serviceJellyfin: "Serveur multimédia open-source",
   privacyPolicy: "Politique de confidentialité",
 } as const;
