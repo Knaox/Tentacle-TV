@@ -109,7 +109,7 @@ class MpvPlayerView(
             Log.w(TAG, ">>> initMpv setting video options...")
             MPVLib.setOptionString("vo", "gpu")
             MPVLib.setOptionString("gpu-context", "android")
-            MPVLib.setOptionString("hwdec", "mediacodec-copy")
+            MPVLib.setOptionString("hwdec", "mediacodec")
             MPVLib.setOptionString("hwdec-codecs", "h264,hevc,av1,vp9,vp8")
             MPVLib.setOptionString("keepaspect", "yes")
             MPVLib.setOptionString("panscan", "0.0")

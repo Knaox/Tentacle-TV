@@ -83,29 +83,29 @@ export function TVTrackSelector({
       }, panelStyle]}
     >
       {/* Header */}
-      <View style={{
-        flexDirection: "row", justifyContent: "space-between",
-        alignItems: "center", marginBottom: 32, paddingHorizontal: 8,
-      }}>
+      <View style={{ marginBottom: 32, paddingHorizontal: 8 }}>
         <Text style={{ color: Colors.textPrimary, fontSize: 22, fontWeight: "700" }}>
           {t("tracks")}
         </Text>
-        <Focusable variant="button" onPress={onClose}>
-          <View style={{
-            paddingHorizontal: 16, paddingVertical: 8,
-            borderRadius: Radius.small,
-            backgroundColor: "rgba(255,255,255,0.06)",
-          }}>
-            <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
-              {t("close", { defaultValue: "Close" })}
-            </Text>
-          </View>
-        </Focusable>
       </View>
 
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
-      <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
+      <TVFocusGuideView autoFocus trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
         <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
+          {/* Close button — inside focus guide so D-pad can reach it */}
+          <Focusable variant="button" onPress={onClose}>
+            <View style={{
+              paddingHorizontal: 16, paddingVertical: 8,
+              borderRadius: Radius.small,
+              backgroundColor: "rgba(255,255,255,0.06)",
+              alignSelf: "flex-end", marginBottom: 20,
+            }}>
+              <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
+                {t("close", { defaultValue: "Close" })}
+              </Text>
+            </View>
+          </Focusable>
+
           {/* Audio section */}
           <Text style={{
             color: Colors.textTertiary, fontSize: 14, fontWeight: "700",
