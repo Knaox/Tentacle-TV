@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { View, Text, Pressable, ActivityIndicator, AppState } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
@@ -23,22 +23,26 @@ import { Colors } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
+const SCREEN = Dimensions.get("window");
+
 interface MemoizedPlayerProps {
   useExoPlayer: boolean;
   exoRef: React.Ref<MPVPlayerHandle>;
   mpvRef: React.Ref<MPVPlayerHandle>;
   source: string;
   paused: boolean;
+  playerStyle: ViewStyle;
   onLoad: (duration: number) => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
   onError: (error: string) => void;
   onTracks: (tracks: MpvTrack[]) => void;
+  onVideoSize: (width: number, height: number, pixelRatio: number) => void;
 }
 
 const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused,
-  onLoad, onProgress, onEnd, onError, onTracks,
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused, playerStyle,
+  onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
     <ExoPlayer
@@ -47,12 +51,13 @@ const MemoizedPlayer = memo(function MemoizedPlayer({
       paused={paused}
       progressInterval={1000}
       audioPassthrough
-      style={{ flex: 1 }}
+      style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}
       onEnd={onEnd}
       onError={onError}
       onTracks={onTracks}
+      onVideoSize={onVideoSize}
     />
   ) : (
     <MPVPlayer
@@ -60,12 +65,13 @@ const MemoizedPlayer = memo(function MemoizedPlayer({
       source={source}
       paused={paused}
       progressInterval={1000}
-      style={{ flex: 1 }}
+      style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}
       onEnd={onEnd}
       onError={onError}
       onTracks={onTracks}
+      onVideoSize={onVideoSize}
     />
   );
 });
@@ -97,6 +103,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
   const seekBarFocusedRef = useRef(false);
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
@@ -483,23 +490,40 @@ export function PlayerScreen({ route, navigation }: Props) {
   const subtitleTracks = useMemo(() =>
     streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
 
+  const handleVideoSize = useCallback((width: number, height: number, pixelRatio: number) => {
+    if (width > 0 && height > 0) {
+      setVideoAspect((width / height) * pixelRatio);
+    }
+  }, []);
+
+  const playerStyle = useMemo<ViewStyle>(() => {
+    if (!videoAspect) return { width: SCREEN.width, height: SCREEN.height };
+    const screenAspect = SCREEN.width / SCREEN.height;
+    if (videoAspect > screenAspect) {
+      return { width: SCREEN.width, height: Math.round(SCREEN.width / videoAspect) };
+    }
+    return { width: Math.round(SCREEN.height * videoAspect), height: SCREEN.height };
+  }, [videoAspect]);
+
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : 0;
   const autoPlayActive = autoPlay.countdown !== null;
   if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
       <MemoizedPlayer
         useExoPlayer={useExoPlayer}
         exoRef={exoRef}
         mpvRef={mpvRef}
         source={streamUrl}
         paused={paused}
+        playerStyle={playerStyle}
         onLoad={handleLoad}
         onProgress={handleProgress}
         onEnd={handleEnd}
         onError={handleError}
         onTracks={handleTracks}
+        onVideoSize={handleVideoSize}
       />
       <Pressable
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}

@@ -33,7 +33,7 @@ export function useAutoPlay(
   const client = useJellyfinClient();
   const { nextEpisode } = useEpisodeNavigation(item);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>();
+  const autoPlayTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const creditsTriggered = useRef(false);
   const countdownRef = useRef<number | null>(null);
 

@@ -5,11 +5,13 @@ import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, i18n } from "@tentacle-tv/shared";
+import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useServerReachable } from "@/hooks/useServerReachable";
+import { clearCredentials } from "@/auth/credentialManager";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { colors } from "@/theme";
@@ -28,7 +30,26 @@ initI18n({ lng: "fr" });
 /** Composant interne — nécessite AppProviders comme parent */
 function OfflineOverlay() {
   const { isReachable, retry } = useServerReachable();
-  return <OfflineBanner visible={!isReachable} onRetry={retry} />;
+  const { logout } = useAuth();
+  const { storage: appStorage } = useTentacleConfig();
+  const router = useRouter();
+
+  const handleLogout = useCallback(() => {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        clearCredentials(appStorage);
+        router.replace("/(auth)/login");
+      },
+      onError: () => {
+        appStorage.removeItem("tentacle_token");
+        appStorage.removeItem("tentacle_user");
+        clearCredentials(appStorage);
+        router.replace("/(auth)/login");
+      },
+    });
+  }, [logout, appStorage, router]);
+
+  return <OfflineBanner visible={!isReachable} onRetry={retry} onLogout={handleLogout} />;
 }
 
 export default function RootLayout() {
@@ -78,7 +99,7 @@ export default function RootLayout() {
     const token = storage.getItem("tentacle_token");
 
     if (!url) {
-      const onSetup = segments[0] === "(auth)" && segments[1] === "server-setup";
+      const onSetup = segments[0] === "(auth)" && (segments as string[])[1] === "server-setup";
       if (!onSetup) {
         router.replace("/(auth)/server-setup");
       }

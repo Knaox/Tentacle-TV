@@ -46,15 +46,17 @@ interface CardInnerProps {
 
 function PortraitCard({ item, client, width: w, progress, isWatched, t }: CardInnerProps & { t: ReturnType<typeof useTranslation>["t"] }) {
   const cardW = w ?? CardConfig.portrait.width;
-  const cardH = cardW / CardConfig.portrait.aspectRatio;
   const poster = client.getImageUrl(item.Id, "Primary", { height: 360, quality: 80 });
 
   return (
     <View style={{ width: cardW }}>
-      <View style={{ borderRadius: Radius.card, overflow: "hidden", backgroundColor: Colors.bgCard }}>
+      <View style={{
+        aspectRatio: CardConfig.portrait.aspectRatio,
+        borderRadius: Radius.card, overflow: "hidden", backgroundColor: Colors.bgCard,
+      }}>
         <Image
           source={{ uri: poster }}
-          style={{ width: cardW, height: cardH, backgroundColor: Colors.bgElevated }}
+          style={{ width: "100%", height: "100%", backgroundColor: Colors.bgElevated }}
           resizeMode="cover"
         />
         {progress > 0 && !isWatched && (
@@ -93,7 +95,6 @@ function PortraitCard({ item, client, width: w, progress, isWatched, t }: CardIn
 
 function LandscapeCard({ item, client, width: w, progress, isWatched }: CardInnerProps) {
   const cardW = w ?? CardConfig.landscape.width;
-  const cardH = cardW / CardConfig.landscape.aspectRatio;
   const imageType = item.Type === "Episode" ? "Primary" : "Backdrop";
   const thumb = client.getImageUrl(item.Id, imageType, { width: 400, quality: 75 });
 
@@ -108,17 +109,20 @@ function LandscapeCard({ item, client, width: w, progress, isWatched }: CardInne
 
   return (
     <View style={{ width: cardW }}>
-      <View style={{ borderRadius: Radius.card, overflow: "hidden", backgroundColor: Colors.bgCard }}>
+      <View style={{
+        aspectRatio: CardConfig.landscape.aspectRatio,
+        borderRadius: Radius.card, overflow: "hidden", backgroundColor: Colors.bgCard,
+      }}>
         <Image
           source={{ uri: thumb }}
-          style={{ width: cardW, height: cardH, backgroundColor: Colors.bgElevated }}
+          style={{ width: "100%", height: "100%", backgroundColor: Colors.bgElevated }}
           resizeMode="cover"
         />
         {/* Bottom gradient for text legibility */}
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.75)"]}
           locations={[0.3, 1]}
-          style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: cardH * 0.6 }}
+          style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%" }}
         />
         {/* Episode info overlay */}
         <View style={{ position: "absolute", bottom: CardConfig.progressBarHeight + 14, left: 12, right: 50 }}>

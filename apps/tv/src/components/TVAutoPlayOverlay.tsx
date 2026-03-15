@@ -101,7 +101,7 @@ export function TVAutoPlayOverlay({
             <Image
               source={{ uri: episodeImageUrl }}
               style={{
-                width: 128, height: 72,
+                width: 128, aspectRatio: 16 / 9,
                 borderRadius: 6,
                 backgroundColor: "rgba(255, 255, 255, 0.05)",
               }}

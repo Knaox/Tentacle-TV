@@ -85,7 +85,7 @@ export function FocusableRow<T>({
         style={{ overflow: "visible" }}
         contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, paddingVertical: 8 }}
         keyExtractor={keyExtractor}
-        initialNumToRender={data.length}
+        initialNumToRender={6}
         windowSize={21}
         maxToRenderPerBatch={10}
         getItemLayout={(_, index) => ({

@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { colors, spacing, typography } from "@/theme";

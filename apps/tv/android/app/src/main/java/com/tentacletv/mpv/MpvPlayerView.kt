@@ -27,6 +27,10 @@ class MpvPlayerView(
     private var lastProgressEmit = 0L
     var progressInterval = 1000L
 
+    // Video dimensions for aspect ratio event
+    private var videoParamsW = 0
+    private var videoParamsH = 0
+
     init {
         Log.w(TAG, ">>> CONSTRUCTOR viewId=$id context=${reactContext.javaClass.simpleName} appCtx=${reactContext.applicationContext.javaClass.simpleName}")
         holder.addCallback(this)
@@ -107,6 +111,8 @@ class MpvPlayerView(
             MPVLib.setOptionString("gpu-context", "android")
             MPVLib.setOptionString("hwdec", "mediacodec-copy")
             MPVLib.setOptionString("hwdec-codecs", "h264,hevc,av1,vp9,vp8")
+            MPVLib.setOptionString("keepaspect", "yes")
+            MPVLib.setOptionString("panscan", "0.0")
             Log.w(TAG, ">>> initMpv video options OK")
 
             // Audio output — decode to PCM (no passthrough to avoid A/V sync issues)
@@ -154,6 +160,8 @@ class MpvPlayerView(
             MPVLib.observeProperty("demuxer-cache-duration", MPVLib.MPV_FORMAT_DOUBLE)
             MPVLib.observeProperty("demuxer-cache-time", MPVLib.MPV_FORMAT_DOUBLE)
             MPVLib.observeProperty("track-list/count", MPVLib.MPV_FORMAT_INT64)
+            MPVLib.observeProperty("video-params/w", MPVLib.MPV_FORMAT_INT64)
+            MPVLib.observeProperty("video-params/h", MPVLib.MPV_FORMAT_INT64)
             Log.w(TAG, ">>> initMpv properties observed OK")
 
             initialized = true
@@ -289,6 +297,14 @@ class MpvPlayerView(
                 Log.w(TAG, ">>> track-list/count changed to $value, sending track list")
                 sendTrackList()
             }
+            "video-params/w" -> {
+                videoParamsW = value.toInt()
+                emitVideoSizeIfReady()
+            }
+            "video-params/h" -> {
+                videoParamsH = value.toInt()
+                emitVideoSizeIfReady()
+            }
         }
     }
 
@@ -370,6 +386,19 @@ class MpvPlayerView(
             Log.w(TAG, ">>> sendTrackList emitted $count tracks")
         } catch (e: Exception) {
             Log.e(TAG, ">>> sendTrackList FAILED", e)
+        }
+    }
+
+    // --- Video size emission ---
+
+    private fun emitVideoSizeIfReady() {
+        if (videoParamsW > 0 && videoParamsH > 0) {
+            Log.w(TAG, ">>> emitVideoSize ${videoParamsW}x${videoParamsH}")
+            emitEvent("videoSize", Arguments.createMap().apply {
+                putInt("videoWidth", videoParamsW)
+                putInt("videoHeight", videoParamsH)
+                putDouble("pixelRatio", 1.0)
+            })
         }
     }
 

@@ -77,13 +77,13 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
               }}>
                 {/* Thumbnail */}
                 <View style={{
-                  width: 200, height: 112,
+                  width: 200, aspectRatio: 16 / 9,
                   borderRadius: Radius.small, overflow: "hidden",
                   backgroundColor: Colors.bgElevated,
                 }}>
                   <Image
                     source={{ uri: thumb }}
-                    style={{ width: 200, height: 112 }}
+                    style={{ width: "100%", height: "100%" }}
                     resizeMode="cover"
                   />
                   {progress > 0 && !isWatched && (

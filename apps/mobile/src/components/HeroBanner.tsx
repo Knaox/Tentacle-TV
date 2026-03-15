@@ -36,7 +36,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
   const listRef = useRef<FlatList<MediaItem>>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [active, setActive] = useState(0);
   const activeShared = useSharedValue(0);
   useEffect(() => { activeShared.value = active; }, [active, activeShared]);

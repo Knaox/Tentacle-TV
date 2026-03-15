@@ -62,6 +62,7 @@ export default {
   offlineMessage: "Pas de panique, ce n'est pas de votre faute. Le serveur est temporairement injoignable, notre petit poulpe fait tout son possible pour rétablir la connexion.",
   offlineHint: "Cela se résout généralement tout seul. Si le problème persiste, contactez votre administrateur.",
   retryConnection: "Réessayer la connexion",
+  offlineLogout: "Se déconnecter",
   resumeAt: "Reprendre à {{time}}",
   showMore: "Voir plus",
   showLess: "Voir moins",
