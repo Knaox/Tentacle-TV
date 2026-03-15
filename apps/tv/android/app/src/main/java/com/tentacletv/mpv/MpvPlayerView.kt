@@ -109,7 +109,7 @@ class MpvPlayerView(
             Log.w(TAG, ">>> initMpv setting video options...")
             MPVLib.setOptionString("vo", "gpu")
             MPVLib.setOptionString("gpu-context", "android")
-            MPVLib.setOptionString("hwdec", "mediacodec")
+            MPVLib.setOptionString("hwdec", "mediacodec-copy")
             MPVLib.setOptionString("hwdec-codecs", "h264,hevc,av1,vp9,vp8")
             MPVLib.setOptionString("keepaspect", "yes")
             MPVLib.setOptionString("panscan", "0.0")
@@ -126,10 +126,14 @@ class MpvPlayerView(
             // Cache / buffer
             Log.w(TAG, ">>> initMpv setting cache options...")
             MPVLib.setOptionString("cache", "yes")
-            MPVLib.setOptionString("cache-secs", "300")
-            MPVLib.setOptionString("demuxer-max-bytes", "150MiB")
-            MPVLib.setOptionString("demuxer-max-back-bytes", "75MiB")
+            MPVLib.setOptionString("cache-secs", "60")
+            MPVLib.setOptionString("demuxer-max-bytes", "64MiB")
+            MPVLib.setOptionString("demuxer-max-back-bytes", "32MiB")
             Log.w(TAG, ">>> initMpv cache options OK")
+
+            // Performance — reduce copy overhead
+            MPVLib.setOptionString("vd-lavc-dr", "yes")
+            MPVLib.setOptionString("vd-lavc-threads", "0")
 
             // Subtitles — use Android system fonts (/system/fonts)
             // libass has no fontconfig on Android → sub-font-provider=none + explicit dir

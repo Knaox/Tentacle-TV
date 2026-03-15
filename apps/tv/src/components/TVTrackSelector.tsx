@@ -90,7 +90,7 @@ export function TVTrackSelector({
       </View>
 
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
-      <TVFocusGuideView autoFocus trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
+      <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
         <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
           {/* Close button — inside focus guide so D-pad can reach it */}
           <Focusable variant="button" onPress={onClose}>
