@@ -139,7 +139,7 @@ class MpvPlayerView(
             MPVLib.setOptionString("sub-font-provider", "none")
             MPVLib.setOptionString("sub-fonts-dir", "/system/fonts")
             MPVLib.setOptionString("osd-fonts-dir", "/system/fonts")
-            MPVLib.setOptionString("sub-font", "sans-serif")
+            MPVLib.setOptionString("sub-font", "Roboto")
             MPVLib.setOptionString("sub-font-size", "48")
             MPVLib.setOptionString("sub-color", "#FFFFFFFF")
             MPVLib.setOptionString("sub-border-color", "#FF000000")
