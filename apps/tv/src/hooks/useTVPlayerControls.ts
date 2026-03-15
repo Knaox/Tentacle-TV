@@ -54,8 +54,11 @@ export function useTVPlayerControls({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** When true, seekbar gets focus instead of play/pause button */
   const [seekActive, setSeekActive] = useState(false);
+  /** Timestamp of last showOverlay call — used to debounce playPause events */
+  const lastShowOverlayRef = useRef(0);
 
   const showOverlay = useCallback(() => {
+    lastShowOverlayRef.current = Date.now();
     setOverlayVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     if (!paused && !settingsOpen) {
@@ -246,8 +249,13 @@ export function useTVPlayerControls({
     onPlayPause: () => {
       if (holdRef.current) { stopHold(); return; }
       if (scrubbing) { confirmScrub(); return; }
-      // If overlay is hidden, first press just shows it (no pause toggle)
-      if (!overlayVisibleRef.current) { showOverlay(); return; }
+      // If overlay is hidden, first press just shows it (no pause toggle).
+      // Also block for 300ms after showOverlay to prevent double-event from
+      // Shield remote firing both "select" (→ showOverlay) and "playPause".
+      if (!overlayVisibleRef.current || (Date.now() - lastShowOverlayRef.current < 300)) {
+        showOverlay();
+        return;
+      }
       onPlayPause();
       showOverlay();
     },
