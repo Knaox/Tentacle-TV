@@ -103,6 +103,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
   const seekBarFocusedRef = useRef(false);
+  const externalSubsLoaded = useRef(false);
   const [videoAspect, setVideoAspect] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
@@ -134,6 +135,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       setStartTicks(0);
       positionRef.current = 0;
       prefsApplied.current = false;
+      externalSubsLoaded.current = false;
     }
   }, [itemId, defaultAudio]);
 
@@ -281,6 +283,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   }, []); // stable — refs avoid dep on reportSeek/paused
 
   // Build MPV track map when tracks arrive (Jellyfin index → MPV track ID)
+  // Also load external subtitle files that MPV doesn't find in the container.
   const handleTracks = useCallback((tracks: MpvTrack[]) => {
     const audioTracks = tracks.filter((t) => t.type === "audio");
     const subTracks = tracks.filter((t) => t.type === "sub");
@@ -294,7 +297,20 @@ export function PlayerScreen({ route, navigation }: Props) {
       if (i < subTracks.length) map[s.Index] = subTracks[i].id;
     });
     setMpvTrackMap(map);
-  }, [streams]);
+
+    // Load external subtitle tracks that MPV didn't find in the container.
+    // After sub-add, MPV fires track-list/count → handleTracks again with updated list.
+    if (!externalSubsLoaded.current && isDirectPlay && itemId && mediaSourceId) {
+      const externalSubs = jellyfinSubs.filter((s) => s.IsExternal);
+      if (externalSubs.length > 0) {
+        externalSubsLoaded.current = true;
+        externalSubs.forEach((sub) => {
+          const url = client.getSubtitleUrl(itemId, mediaSourceId, sub.Index);
+          playerRef.current?.addSubtitleTrack(url);
+        });
+      }
+    }
+  }, [streams, isDirectPlay, itemId, mediaSourceId, client]);
 
   // Count of stale progress callbacks to skip after a seek
   const skipProgressCountRef = useRef(0);

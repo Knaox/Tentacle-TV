@@ -241,6 +241,17 @@ class MpvPlayerView(
         }
     }
 
+    fun addSubtitleTrack(url: String) {
+        Log.w(TAG, ">>> addSubtitleTrack url=${url.take(120)}... initialized=$initialized")
+        if (!initialized) return
+        try {
+            MPVLib.command(arrayOf("sub-add", url, "auto"))
+            Log.w(TAG, ">>> addSubtitleTrack OK")
+        } catch (e: Exception) {
+            Log.e(TAG, ">>> addSubtitleTrack FAILED", e)
+        }
+    }
+
     fun setSubtitleTrack(id: Int) {
         Log.w(TAG, ">>> setSubtitleTrack id=$id initialized=$initialized")
         if (!initialized) return
