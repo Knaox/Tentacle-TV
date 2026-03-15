@@ -17,7 +17,7 @@ export type { MpvTrack as ExoTrack, MPVPlayerHandle as ExoPlayerHandle };
 
 interface ExoEvent {
   nativeEvent: {
-    type: "progress" | "load" | "end" | "error" | "tracks" | "videoSize";
+    type: "progress" | "load" | "end" | "error" | "tracks" | "videoSize" | "subtitles";
     currentTime?: number;
     bufferedTime?: number;
     duration?: number;
@@ -26,6 +26,7 @@ interface ExoEvent {
     videoWidth?: number;
     videoHeight?: number;
     pixelRatio?: number;
+    text?: string;
   };
 }
 
@@ -41,6 +42,7 @@ interface ExoPlayerProps {
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
   onVideoSize?: (width: number, height: number, pixelRatio: number) => void;
+  onSubtitles?: (text: string) => void;
 }
 
 const NativeExoView = requireNativeComponent<{
@@ -60,7 +62,7 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   function ExoPlayer(
-    { source, paused, progressInterval = 1000, audioPassthrough = true, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize },
+    { source, paused, progressInterval = 1000, audioPassthrough = true, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
     ref,
   ) {
     const nativeRef = useRef(null);
@@ -69,12 +71,13 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
       seek: (seconds: number) => dispatchCommand(nativeRef, "seek", [seconds]),
       setAudioTrack: (id: number) => dispatchCommand(nativeRef, "setAudioTrack", [id]),
       setSubtitleTrack: (id: number) => dispatchCommand(nativeRef, "setSubtitleTrack", [id]),
-      addSubtitleTrack: () => {}, // ExoPlayer: external subs handled natively via MediaItem
+      addSubtitleTrack: () => {},
+      loadSubtitle: (url: string | null) => dispatchCommand(nativeRef, "loadSubtitle", [url ?? ""]),
     }));
 
     const handleEvent = useCallback(
       (event: ExoEvent) => {
-        const { type, currentTime, bufferedTime, duration, error, tracks, videoWidth, videoHeight, pixelRatio } = event.nativeEvent;
+        const { type, currentTime, bufferedTime, duration, error, tracks, videoWidth, videoHeight, pixelRatio, text } = event.nativeEvent;
         switch (type) {
           case "progress":
             onProgress?.(currentTime ?? 0, bufferedTime ?? 0);
@@ -94,9 +97,12 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
           case "videoSize":
             onVideoSize?.(videoWidth ?? 0, videoHeight ?? 0, pixelRatio ?? 1);
             break;
+          case "subtitles":
+            onSubtitles?.(text ?? "");
+            break;
         }
       },
-      [onProgress, onLoad, onEnd, onError, onTracks, onVideoSize],
+      [onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles],
     );
 
     return (

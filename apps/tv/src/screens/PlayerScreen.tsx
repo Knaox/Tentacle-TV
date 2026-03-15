@@ -483,16 +483,22 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [isDirectPlay, mpvTrackMap]);
 
-  // Apply subtitle track via MPV when in direct play
+  // Apply subtitle track — load as external VTT from Jellyfin (Media3 SSA extraction broken)
   useEffect(() => {
     if (!isDirectPlay) return;
     if (subtitleIndex < 0) {
-      playerRef.current?.setSubtitleTrack(0); // disable
-    } else {
-      const mpvId = mpvTrackMap[subtitleIndex];
-      if (mpvId != null) playerRef.current?.setSubtitleTrack(mpvId);
+      playerRef.current?.loadSubtitle?.(null);
+    } else if (itemId && mediaSourceId) {
+      const ds = client.getDirectStreaming?.();
+      let url: string;
+      if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+        url = `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${subtitleIndex}/Stream.vtt?api_key=${encodeURIComponent(ds.jellyfinToken)}`;
+      } else {
+        url = client.getSubtitleUrl(itemId, mediaSourceId, subtitleIndex);
+      }
+      playerRef.current?.loadSubtitle?.(url);
     }
-  }, [subtitleIndex, isDirectPlay, mpvTrackMap]);
+  }, [subtitleIndex, isDirectPlay, itemId, mediaSourceId, client]);
 
   // Apply audio track via MPV when in direct play
   useEffect(() => {
@@ -519,6 +525,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       setVideoAspect((width / height) * pixelRatio);
     }
   }, []);
+
 
   const playerStyle = useMemo<ViewStyle>(() => {
     if (!videoAspect) return { width: SCREEN.width, height: SCREEN.height };

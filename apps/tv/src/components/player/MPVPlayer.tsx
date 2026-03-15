@@ -26,6 +26,7 @@ export interface MPVPlayerHandle {
   setAudioTrack: (id: number) => void;
   setSubtitleTrack: (id: number) => void;
   addSubtitleTrack: (url: string) => void;
+  loadSubtitle?: (url: string | null) => void;
 }
 
 interface MpvEvent {
