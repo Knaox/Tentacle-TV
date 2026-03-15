@@ -19,6 +19,7 @@ type JfClient = {
   getAuthHeader: (token?: string) => string;
   useCredentials: boolean;
   getDirectStreaming?: () => { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null;
+  reportDirectStreamingError?: () => void;
 };
 
 /**
@@ -49,8 +50,10 @@ async function sessionPost(
       });
       if (res.ok || res.status === 204) return;
       console.error(DBG, `${label} direct: ${res.status}`);
+      client.reportDirectStreamingError?.();
     } catch (err: unknown) {
       console.error(DBG, `${label} direct FAILED:`, err instanceof Error ? err.message : String(err));
+      client.reportDirectStreamingError?.();
     }
     // Fall through to proxy on failure
   }

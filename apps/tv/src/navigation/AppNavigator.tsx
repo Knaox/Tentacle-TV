@@ -23,9 +23,11 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function AppNavigator() {
   const { storage } = useTentacleConfig();
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
-  const isAuthenticated = hasServerUrl && !!storage.getItem("tentacle_token");
+  const hasToken = !!storage.getItem("tentacle_token");
 
-  const initialRouteName = isAuthenticated ? "Home" : "PairCode";
+  const initialRouteName = hasServerUrl
+    ? (hasToken ? "Home" : "Login")
+    : "PairCode";
 
   return (
     <Suspense fallback={<SkeletonLoader />}>

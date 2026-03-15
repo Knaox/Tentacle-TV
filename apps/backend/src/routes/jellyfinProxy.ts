@@ -1,7 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
-import { verifyDeviceToken } from "../services/jwt";
+import { verifyDeviceToken, hashToken } from "../services/jwt";
+import { getPrisma, hasPrisma } from "../services/db";
 
 /** Headers to skip when proxying (hop-by-hop). */
 const SKIP_REQUEST_HEADERS = new Set([
@@ -132,6 +133,22 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       const payload = await verifyDeviceToken(incomingToken);
       if (payload) {
         apiKeyOverride = getJellyfinApiKey();
+
+        // For session endpoints, use the user's actual Jellyfin token instead of
+        // admin API key so Jellyfin can attribute the session to the correct user.
+        // Admin API key authenticates the request but loses user context → progress not saved.
+        if (apiKeyOverride && /^Sessions\/(Playing|Logout)/.test(wildcardPath) && hasPrisma()) {
+          try {
+            const prisma = getPrisma();
+            const device = await prisma.pairedDevice.findUnique({
+              where: { tokenHash: hashToken(incomingToken) },
+              select: { jellyfinAccessToken: true },
+            });
+            if (device?.jellyfinAccessToken) {
+              apiKeyOverride = device.jellyfinAccessToken;
+            }
+          } catch { /* keep admin API key as fallback */ }
+        }
       }
     }
 
