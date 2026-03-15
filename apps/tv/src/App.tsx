@@ -97,7 +97,18 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
 function DirectStreamingSync() {
   const client = useJellyfinClient();
   const qc = useQueryClient();
-  const token = storage.getItem("tentacle_token");
+
+  // Token must be reactive: after pairing/login the token changes but this
+  // component is already mounted — poll storage to pick up new tokens.
+  const [token, setToken] = useState<string | null>(storage.getItem("tentacle_token"));
+  useEffect(() => {
+    const id = setInterval(() => {
+      const current = storage.getItem("tentacle_token");
+      setToken((prev) => (current !== prev ? current : prev));
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
+
   const { data, isError, isFetched } = useStreamingConfig(token);
 
   useEffect(() => {
