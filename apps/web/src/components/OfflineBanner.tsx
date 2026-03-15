@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "./CryingTentacle";
 import { useServerReachable } from "../hooks/useServerReachable";
@@ -15,6 +17,8 @@ interface OfflineBannerProps {
 export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const { isReachable, retry } = useServerReachable();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const wasOfflineRef = useRef(false);
 
   // Reload la page quand le serveur revient après un backendDown initial
@@ -27,6 +31,10 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
   }, [isReachable, reloadOnReconnect]);
 
   if (isReachable) return null;
+
+  const handleLogout = () => {
+    logout.mutate(undefined, { onSuccess: () => navigate("/login") });
+  };
 
   return (
     <div
@@ -49,6 +57,12 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
           className="mt-8 rounded-xl bg-[#8b5cf6] px-8 py-3 text-sm font-semibold text-white transition-all hover:bg-[#7c3aed] hover:scale-105 active:scale-95"
         >
           {t("retryConnection")}
+        </button>
+        <button
+          onClick={handleLogout}
+          className="mt-3 rounded-xl border border-red-500/30 bg-red-500/15 px-8 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/25 hover:scale-105 active:scale-95"
+        >
+          {t("offlineLogout")}
         </button>
       </div>
     </div>

@@ -29,12 +29,15 @@ export interface MPVPlayerHandle {
 
 interface MpvEvent {
   nativeEvent: {
-    type: "progress" | "load" | "end" | "error" | "tracks";
+    type: "progress" | "load" | "end" | "error" | "tracks" | "videoSize";
     currentTime?: number;
     bufferedTime?: number;
     duration?: number;
     error?: string;
     tracks?: MpvTrack[];
+    videoWidth?: number;
+    videoHeight?: number;
+    pixelRatio?: number;
   };
 }
 
@@ -48,6 +51,7 @@ interface MPVPlayerProps {
   onEnd?: () => void;
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
+  onVideoSize?: (width: number, height: number, pixelRatio: number) => void;
 }
 
 const NativeMpvView = requireNativeComponent<{
@@ -66,7 +70,7 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const MPVPlayer = forwardRef<MPVPlayerHandle, MPVPlayerProps>(
   function MPVPlayer(
-    { source, paused, progressInterval = 1000, style, onProgress, onLoad, onEnd, onError, onTracks },
+    { source, paused, progressInterval = 1000, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize },
     ref,
   ) {
     const nativeRef = useRef(null);
@@ -79,7 +83,7 @@ export const MPVPlayer = forwardRef<MPVPlayerHandle, MPVPlayerProps>(
 
     const handleEvent = useCallback(
       (event: MpvEvent) => {
-        const { type, currentTime, bufferedTime, duration, error, tracks } = event.nativeEvent;
+        const { type, currentTime, bufferedTime, duration, error, tracks, videoWidth, videoHeight, pixelRatio } = event.nativeEvent;
         switch (type) {
           case "progress":
             onProgress?.(currentTime ?? 0, bufferedTime ?? 0);
@@ -96,9 +100,12 @@ export const MPVPlayer = forwardRef<MPVPlayerHandle, MPVPlayerProps>(
           case "tracks":
             onTracks?.(tracks ?? []);
             break;
+          case "videoSize":
+            onVideoSize?.(videoWidth ?? 0, videoHeight ?? 0, pixelRatio ?? 1);
+            break;
         }
       },
-      [onProgress, onLoad, onEnd, onError, onTracks],
+      [onProgress, onLoad, onEnd, onError, onTracks, onVideoSize],
     );
 
     return (

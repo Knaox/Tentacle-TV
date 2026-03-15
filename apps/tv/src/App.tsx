@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
+      cacheTime: 30 * 60 * 1000,
     },
   },
 });
@@ -135,9 +135,9 @@ function AppContent({ serverUrl }: { serverUrl: string | null }) {
       <SidebarProvider>
         <NavigationContainer theme={darkTheme}>
           <AppNavigator />
+          <OfflineBanner visible={!isReachable} onRetry={retry} />
         </NavigationContainer>
       </SidebarProvider>
-      <OfflineBanner visible={!isReachable} onRetry={retry} />
     </>
   );
 }

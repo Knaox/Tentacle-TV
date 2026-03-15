@@ -6,9 +6,10 @@ import { CryingTentacle } from "./CryingTentacle";
 interface OfflineBannerProps {
   visible: boolean;
   onRetry: () => void;
+  onLogout?: () => void;
 }
 
-export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
+export function OfflineBanner({ visible, onRetry, onLogout }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -28,9 +29,14 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
         <CryingTentacle size={120} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Pressable style={styles.button} onPress={onRetry}>
-          <Text style={styles.buttonText}>{t("retryConnection")}</Text>
+        <Pressable style={styles.retryButton} onPress={onRetry}>
+          <Text style={styles.retryButtonText}>{t("retryConnection")}</Text>
         </Pressable>
+        {onLogout && (
+          <Pressable style={styles.logoutButton} onPress={onLogout}>
+            <Text style={styles.logoutButtonText}>{t("offlineLogout")}</Text>
+          </Pressable>
+        )}
       </View>
     </Animated.View>
   );
@@ -62,15 +68,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-  button: {
+  retryButton: {
     backgroundColor: "#8b5cf6",
     borderRadius: 12,
     paddingHorizontal: 32,
     paddingVertical: 14,
     marginTop: 28,
   },
-  buttonText: {
+  retryButtonText: {
     color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  logoutButton: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.3)",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    marginTop: 12,
+  },
+  logoutButtonText: {
+    color: "#ef4444",
     fontSize: 15,
     fontWeight: "600",
   },

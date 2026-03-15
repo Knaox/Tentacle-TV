@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState, useRef } from "react";
-import { View, FlatList, ScrollView, Text, TVFocusGuideView } from "react-native";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+import { View, ScrollView, Text, TVFocusGuideView, ActivityIndicator, findNodeHandle } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useLibraryCatalog, useGenres } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -16,8 +17,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 const COLUMNS = 5;
 const CARD_W = CardConfig.portrait.width;
 const CARD_H = CARD_W / CardConfig.portrait.aspectRatio;
-const COL_GAP = 16;
 const ROW_GAP = 16;
+const ESTIMATED_ITEM_SIZE = 290;
 
 const SORT_OPTIONS = [
   { sortBy: "DateCreated", sortOrder: "Descending", labelKey: "sortDateDesc" },
@@ -27,22 +28,10 @@ const SORT_OPTIONS = [
   { sortBy: "CommunityRating", sortOrder: "Descending", labelKey: "sortRatingDesc" },
 ] as const;
 
-function chunkRows(items: MediaItem[]): MediaItem[][] {
-  const rows: MediaItem[][] = [];
-  for (let i = 0; i < items.length; i += COLUMNS) {
-    rows.push(items.slice(i, i + COLUMNS));
-  }
-  return rows;
-}
-
 export function LibraryScreen({ route, navigation }: Props) {
   const { libraryId, libraryName } = route.params;
   const { t } = useTranslation("common");
-  const flatListRef = useRef<FlatList>(null);
-
-  // Measure real row height from first rendered row (includes title, metadata, padding)
-  const measuredRowHeight = useRef(0);
-  const [rowHeightReady, setRowHeightReady] = useState(false);
+  const flashListRef = useRef<FlashList<MediaItem>>(null);
 
   const [sortIndex, setSortIndex] = useState(0);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -53,11 +42,10 @@ export function LibraryScreen({ route, navigation }: Props) {
     sortBy: currentSort.sortBy,
     sortOrder: currentSort.sortOrder,
     genreIds: selectedGenre ? [selectedGenre] : undefined,
-    limit: 50,
+    limit: 30,
   });
 
   const items = useMemo(() => data?.pages.flatMap((p) => p.Items) ?? [], [data]);
-  const rows = useMemo(() => chunkRows(items), [items]);
 
   useTVRemote({ onBack: () => navigation.goBack() });
 
@@ -65,8 +53,17 @@ export function LibraryScreen({ route, navigation }: Props) {
     navigation.navigate("MediaDetail", { itemId: item.Id });
   }, [navigation]);
 
+  // Guard: only scroll when the focused row actually changes (prevents rollback on DPAD left/right)
+  const lastScrolledRow = useRef(-1);
+  const scrollToRow = useCallback((rowIndex: number) => {
+    if (lastScrolledRow.current === rowIndex) return;
+    lastScrolledRow.current = rowIndex;
+    flashListRef.current?.scrollToIndex({ index: rowIndex * COLUMNS, animated: false, viewPosition: 0.3 });
+  }, []);
+
   const resetScroll = useCallback(() => {
-    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    lastScrolledRow.current = -1;
+    flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, []);
 
   const handleSortChange = useCallback((index: number) => {
@@ -83,28 +80,6 @@ export function LibraryScreen({ route, navigation }: Props) {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // scrollToIndex with getItemLayout = instant (no async measure needed)
-  const scrollToRow = useCallback((rowIndex: number) => {
-    if (!measuredRowHeight.current) return;
-    flatListRef.current?.scrollToIndex({ index: rowIndex, viewPosition: 0.3, animated: false });
-  }, []);
-  const scrollToRowRef = useRef(scrollToRow);
-  scrollToRowRef.current = scrollToRow;
-
-  // getItemLayout uses the REAL measured height — instant & accurate
-  const getItemLayout = useCallback((_: unknown, index: number) => ({
-    length: measuredRowHeight.current,
-    offset: index * measuredRowHeight.current,
-    index,
-  }), []);
-
-  const handleRowLayout = useCallback((height: number) => {
-    if (measuredRowHeight.current === 0 && height > 0) {
-      measuredRowHeight.current = height;
-      setRowHeightReady(true);
-    }
-  }, []);
-
   const header = useMemo(() => (
     <LibraryHeader
       libraryName={libraryName} sortIndex={sortIndex} selectedGenre={selectedGenre}
@@ -113,28 +88,15 @@ export function LibraryScreen({ route, navigation }: Props) {
     />
   ), [libraryName, sortIndex, selectedGenre, genresList, navigation, handleSortChange, handleGenreChange, t]);
 
-  const renderRow = useCallback(({ item: row, index: rowIndex }: { item: MediaItem[]; index: number }) => (
-    <View
-      style={{ flexDirection: "row", gap: COL_GAP, marginBottom: ROW_GAP }}
-      onLayout={measuredRowHeight.current === 0
-        ? (e) => handleRowLayout(e.nativeEvent.layout.height + ROW_GAP)
-        : undefined}
-    >
-      {row.map((item, colIndex) => (
-        <View key={item.Id} style={{ width: CARD_W }}>
-          <Focusable
-            variant="card"
-            onPress={() => navigateToDetail(item)}
-            onFocus={() => scrollToRowRef.current(rowIndex)}
-            focusRadius={8}
-            hasTVPreferredFocus={rowIndex === 0 && colIndex === 0}
-          >
-            <TVMediaCard item={item} variant="portrait" />
-          </Focusable>
-        </View>
-      ))}
-    </View>
-  ), [navigateToDetail, handleRowLayout]);
+  const renderItem = useCallback(({ item, index }: { item: MediaItem; index: number }) => (
+    <GridItem
+      item={item}
+      index={index}
+      totalItems={items.length}
+      onPress={() => navigateToDetail(item)}
+      onFocus={() => scrollToRow(Math.floor(index / COLUMNS))}
+    />
+  ), [navigateToDetail, scrollToRow, items.length]);
 
   if (isLoading && items.length === 0) {
     return (
@@ -165,23 +127,66 @@ export function LibraryScreen({ route, navigation }: Props) {
   return (
     // @ts-ignore — TVFocusGuideView props from react-native-tvos
     <TVFocusGuideView trapFocusLeft style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      <FlatList
-        ref={flatListRef}
-        data={rows}
-        keyExtractor={(row) => row[0].Id}
-        renderItem={renderRow}
-        {...(rowHeightReady ? { getItemLayout } : {})}
+      <FlashList
+        ref={flashListRef}
+        data={items}
+        numColumns={COLUMNS}
+        estimatedItemSize={ESTIMATED_ITEM_SIZE}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.Id}
         ListHeaderComponent={header}
         contentContainerStyle={{ padding: Spacing.screenPadding, paddingBottom: 80 }}
-        overScrollMode="never"
-        initialNumToRender={4}
-        windowSize={9}
-        maxToRenderPerBatch={6}
-        updateCellsBatchingPeriod={30}
         onEndReached={handleEndReached}
-        onEndReachedThreshold={2}
+        onEndReachedThreshold={0.5}
+        drawDistance={800}
+        overrideItemLayout={(layout) => { layout.size = ESTIMATED_ITEM_SIZE; }}
+        ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
+        overScrollMode="never"
       />
     </TVFocusGuideView>
+  );
+}
+
+function FooterLoader() {
+  return (
+    <View style={{ paddingVertical: 24, alignItems: "center" }}>
+      <ActivityIndicator size="small" color={Colors.accentPurple} />
+    </View>
+  );
+}
+
+/* ---- Grid item with edge focus clamping ---- */
+
+function GridItem({ item, index, totalItems, onPress, onFocus }: {
+  item: MediaItem; index: number; totalItems: number;
+  onPress: () => void; onFocus: () => void;
+}) {
+  const ref = useRef<View>(null);
+  const [nodeId, setNodeId] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const handle = findNodeHandle(ref.current);
+    if (handle) setNodeId(handle);
+  }, []);
+
+  const isFirstInRow = index % COLUMNS === 0;
+  const isLastInRow = index % COLUMNS === COLUMNS - 1 || index === totalItems - 1;
+
+  return (
+    <View style={{ width: CARD_W, marginBottom: ROW_GAP }}>
+      <Focusable
+        ref={ref}
+        variant="card"
+        onPress={onPress}
+        onFocus={onFocus}
+        hasTVPreferredFocus={index === 0}
+        focusRadius={8}
+        nextFocusLeft={isFirstInRow ? nodeId : undefined}
+        nextFocusRight={isLastInRow ? nodeId : undefined}
+      >
+        <TVMediaCard item={item} variant="portrait" />
+      </Focusable>
+    </View>
   );
 }
 

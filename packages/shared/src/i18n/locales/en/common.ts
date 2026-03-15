@@ -62,6 +62,7 @@ export default {
   offlineMessage: "Don't worry, this isn't your fault. The server is temporarily unreachable — our little octopus is doing its best to restore the connection.",
   offlineHint: "This usually resolves on its own. If the problem persists, contact your administrator.",
   retryConnection: "Retry connection",
+  offlineLogout: "Sign out",
   resumeAt: "Resume at {{time}}",
   showMore: "Show more",
   showLess: "Show less",

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useSyncExternalStore, useCallback } from "react";
+import { useMemo, useEffect, useSyncExternalStore } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";

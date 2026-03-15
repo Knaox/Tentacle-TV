@@ -194,6 +194,15 @@ class ExoPlayerView(
                         Log.w(TAG, ">>> onTracksChanged groups=${tracks.groups.size}")
                         sendTrackList(tracks)
                     }
+
+                    override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                        Log.w(TAG, ">>> onVideoSizeChanged ${videoSize.width}x${videoSize.height} pixelRatio=${videoSize.pixelWidthHeightRatio}")
+                        emitEvent("videoSize", Arguments.createMap().apply {
+                            putInt("videoWidth", videoSize.width)
+                            putInt("videoHeight", videoSize.height)
+                            putDouble("pixelRatio", videoSize.pixelWidthHeightRatio.toDouble())
+                        })
+                    }
                 })
             }
 

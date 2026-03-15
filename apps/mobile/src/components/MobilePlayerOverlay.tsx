@@ -54,7 +54,7 @@ export function MobilePlayerOverlay({
   const [showSubtitles, setShowSubtitles] = useState(false);
   const [showAutoPlay, setShowAutoPlay] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const autoPlayDismissed = useRef(false);
 
   const resetHideTimer = useCallback(() => {

@@ -23,7 +23,7 @@ export function useFocusRecovery(
           recoveryTimer = setTimeout(() => {
             const node = findNodeHandle(fallbackRef.current);
             if (node != null) {
-              try { UIManager.sendAccessibilityEvent(node, 8); } catch {}
+              try { (UIManager as { sendAccessibilityEvent?: (tag: number, type: number) => void }).sendAccessibilityEvent?.(node, 8); } catch {}
             }
           }, 500);
         } else if (evt.eventType === "focus") {

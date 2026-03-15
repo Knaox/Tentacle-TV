@@ -20,8 +20,8 @@ export function PlayerGestures({ currentTime, overlayVisible, onSeek, onToggleOv
   const indicatorSize = Math.min(72, Math.round(screenH * 0.09));
   const [doubleTapSide, setDoubleTapSide] = useState<"left" | "right" | null>(null);
   const lastTapRef = useRef<{ time: number; side: "left" | "right" | "center" }>({ time: 0, side: "center" });
-  const singleTapTimer = useRef<ReturnType<typeof setTimeout>>();
-  const doubleTapFadeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const doubleTapFadeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => {
     if (singleTapTimer.current) clearTimeout(singleTapTimer.current);

@@ -105,7 +105,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
         </Text>
         <TouchableOpacity
           onPress={handleRetry}
-          style={{ paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.primary, borderRadius: 8 }}
+          style={{ paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.accent, borderRadius: 8 }}
         >
           <Text style={{ ...typography.body, color: "#fff" }}>
             {tc("retry") ?? "Réessayer"}

@@ -38,6 +38,7 @@
       "prisma"
     ],
     "overrides": {
+      "@types/react": "^19.0.0",
       "@react-native/community-cli-plugin>@react-native-community/cli-server-api": "14.1.2"
     },
     "patchedDependencies": {
