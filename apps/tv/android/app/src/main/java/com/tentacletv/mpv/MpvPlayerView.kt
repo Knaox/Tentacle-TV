@@ -132,17 +132,21 @@ class MpvPlayerView(
             MPVLib.setOptionString("demuxer-max-back-bytes", "75MiB")
             Log.w(TAG, ">>> initMpv cache options OK")
 
-            // Subtitles
+            // Subtitles — use Android system fonts (/system/fonts)
+            // libass has no fontconfig on Android → sub-font-provider=none + explicit dir
             MPVLib.setOptionString("sub-auto", "no")
             MPVLib.setOptionString("sub-visibility", "yes")
-            MPVLib.setOptionString("sub-font-provider", "auto")
+            MPVLib.setOptionString("sub-font-provider", "none")
+            MPVLib.setOptionString("sub-fonts-dir", "/system/fonts")
+            MPVLib.setOptionString("osd-fonts-dir", "/system/fonts")
+            MPVLib.setOptionString("sub-font", "sans-serif")
             MPVLib.setOptionString("sub-font-size", "48")
             MPVLib.setOptionString("sub-color", "#FFFFFFFF")
             MPVLib.setOptionString("sub-border-color", "#FF000000")
             MPVLib.setOptionString("sub-border-size", "3")
             MPVLib.setOptionString("sub-shadow-offset", "2")
             MPVLib.setOptionString("sub-use-margins", "yes")
-            MPVLib.setOptionString("sub-ass-override", "yes")
+            MPVLib.setOptionString("sub-ass-override", "force")
 
             // Disable OSD (we use our own overlay)
             MPVLib.setOptionString("osc", "no")
