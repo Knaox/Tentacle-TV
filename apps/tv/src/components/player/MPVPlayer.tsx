@@ -25,6 +25,7 @@ export interface MPVPlayerHandle {
   seek: (seconds: number) => void;
   setAudioTrack: (id: number) => void;
   setSubtitleTrack: (id: number) => void;
+  addSubtitleTrack: (url: string) => void;
 }
 
 interface MpvEvent {
@@ -79,6 +80,7 @@ export const MPVPlayer = forwardRef<MPVPlayerHandle, MPVPlayerProps>(
       seek: (seconds: number) => dispatchCommand(nativeRef, "seek", [seconds]),
       setAudioTrack: (id: number) => dispatchCommand(nativeRef, "setAudioTrack", [id]),
       setSubtitleTrack: (id: number) => dispatchCommand(nativeRef, "setSubtitleTrack", [id]),
+      addSubtitleTrack: (url: string) => dispatchCommand(nativeRef, "addSubtitleTrack", [url]),
     }));
 
     const handleEvent = useCallback(
