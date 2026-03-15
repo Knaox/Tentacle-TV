@@ -298,16 +298,25 @@ export function PlayerScreen({ route, navigation }: Props) {
     });
     setMpvTrackMap(map);
 
-    // Load external subtitle tracks that MPV didn't find in the container.
-    // After sub-add, MPV fires track-list/count → handleTracks again with updated list.
+    // Load subtitle tracks that MPV didn't find in the container (external subs).
+    // Uses count comparison instead of IsExternal (field may be absent from API).
+    // Uses direct Jellyfin URL when available (MPV makes native HTTP requests
+    // without auth headers — proxy would strip api_key and reject).
     if (!externalSubsLoaded.current && isDirectPlay && itemId && mediaSourceId) {
-      const externalSubs = jellyfinSubs.filter((s) => s.IsExternal);
-      if (externalSubs.length > 0) {
+      const missingCount = jellyfinSubs.length - subTracks.length;
+      if (missingCount > 0) {
         externalSubsLoaded.current = true;
-        externalSubs.forEach((sub) => {
-          const url = client.getSubtitleUrl(itemId, mediaSourceId, sub.Index);
+        const ds = client.getDirectStreaming?.();
+        for (let i = subTracks.length; i < jellyfinSubs.length; i++) {
+          const sub = jellyfinSubs[i];
+          let url: string;
+          if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+            url = `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${sub.Index}/Stream.vtt?api_key=${encodeURIComponent(ds.jellyfinToken)}`;
+          } else {
+            url = client.getSubtitleUrl(itemId, mediaSourceId, sub.Index);
+          }
           playerRef.current?.addSubtitleTrack(url);
-        });
+        }
       }
     }
   }, [streams, isDirectPlay, itemId, mediaSourceId, client]);
