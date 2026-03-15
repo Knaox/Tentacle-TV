@@ -114,11 +114,15 @@ export function PlayerScreen({ route, navigation }: Props) {
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
 
-  // Detect HDR/DV content — route to ExoPlayer for HDR passthrough
+  // Route HEVC/HDR content to ExoPlayer — its hardware decoder avoids the
+  // mediacodec-copy overhead that causes lag in MPV on Android TV.
+  // MPV is kept for H264/VP9 (lighter codecs where mediacodec-copy is fine).
   const videoStream = streams.find((s) => s.Type === "Video");
   const isHDR = videoStream?.VideoRangeType != null
     && videoStream.VideoRangeType !== "SDR";
-  const useExoPlayer = isHDR && !forceTranscode;
+  const isHEVC = videoStream?.Codec?.toLowerCase() === "hevc"
+    || videoStream?.Codec?.toLowerCase() === "h265";
+  const useExoPlayer = (isHDR || isHEVC) && !forceTranscode;
   // Unified ref — points to whichever player is active
   const playerRef = useExoPlayer ? exoRef : mpvRef;
 
@@ -554,9 +558,9 @@ export function PlayerScreen({ route, navigation }: Props) {
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!controls.overlayVisible && !showSettings && !autoPlayActive}
-        accessible={!controls.overlayVisible && !showSettings && !autoPlayActive}
-        importantForAccessibility={controls.overlayVisible || showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
+        hasTVPreferredFocus={!showSettings && !autoPlayActive}
+        accessible={!showSettings && !autoPlayActive}
+        importantForAccessibility={showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
       >
         <View style={{ flex: 1 }} />
       </Pressable>
