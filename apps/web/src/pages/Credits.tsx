@@ -17,6 +17,8 @@ export function Credits() {
     { name: "Tauri", url: "https://tauri.app", desc: t("about:techTauri") },
     { name: "Expo", url: "https://expo.dev", desc: t("about:techExpo") },
     { name: "React Native", url: "https://reactnative.dev", desc: t("about:techReactNative") },
+    { name: "ExoPlayer / Media3", url: "https://developer.android.com/media/media3/exoplayer", desc: t("about:techExoPlayer") },
+    { name: "VoidTV", url: "https://github.com/hritwikjohri/VoidTV-for-jellyfin", desc: t("about:techVoidTV") },
   ], [t]);
 
   const SERVICES = useMemo(() => [

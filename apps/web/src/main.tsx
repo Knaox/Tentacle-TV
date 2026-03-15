@@ -112,9 +112,16 @@ if (savedToken) {
   jellyfinClient.setAccessToken(savedToken);
 }
 
-// On 401 (stale/revoked token) clear auth state → triggers redirect to /login.
-// The localStorage.removeItem intercept in App.tsx notifies useIsAuthenticated.
-jellyfinClient.setOnAuthExpired(() => {
+// On 401 — try refresh before logging out (avoids disconnect on Jellyfin restart).
+// Web uses httpOnly cookies so the cookie is sent automatically.
+jellyfinClient.setOnAuthExpired(async () => {
+  try {
+    const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+    if (res.ok) return; // Session restored silently
+    if (res.status !== 401) return; // 503 / server error — keep session
+  } catch { return; } // Network error — keep session
+
+  // 401 confirmed — token truly expired, logout
   jellyfinClient.setAccessToken(null);
   storage.removeItem("tentacle_token");
   storage.removeItem("tentacle_user");
