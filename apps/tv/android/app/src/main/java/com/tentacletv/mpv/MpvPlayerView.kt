@@ -115,13 +115,12 @@ class MpvPlayerView(
             MPVLib.setOptionString("panscan", "0.0")
             Log.w(TAG, ">>> initMpv video options OK")
 
-            // Audio output — decode to PCM (no passthrough to avoid A/V sync issues)
+            // Audio output — passthrough for surround codecs, PCM fallback for stereo
             Log.w(TAG, ">>> initMpv setting audio options...")
-            MPVLib.setOptionString("ao", "opensles,audiotrack")
+            MPVLib.setOptionString("ao", "audiotrack,opensles")
             MPVLib.setOptionString("audio-channels", "auto-safe")
-            // audio-spdif removed: passthrough causes latency on receivers that
-            // don't support the codec; MPV decodes to multi-channel PCM instead
-            MPVLib.setOptionString("audio-stream-silence", "yes")  // Keep audio pipeline open, avoids re-init desync on DTS-HD
+            MPVLib.setOptionString("audio-spdif", "ac3,eac3,truehd,dts,dts-hd")
+            MPVLib.setOptionString("audio-stream-silence", "yes")
             Log.w(TAG, ">>> initMpv audio options OK")
 
             // Cache / buffer
