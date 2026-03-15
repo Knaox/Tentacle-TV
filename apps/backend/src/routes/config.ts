@@ -100,7 +100,10 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       jellyfinToken = bearerToken;
     }
 
-    request.log.info({ clientIp, private: isPrivateIp(clientIp), mediaBaseUrl }, "Direct streaming active");
+    request.log.info({
+      clientIp, private: isPrivateIp(clientIp), mediaBaseUrl,
+      isPairedDevice: !!isPairedDevice, hasJellyfinToken: !!jellyfinToken, tokenExpired,
+    }, "Direct streaming config response");
 
     return {
       directStreaming: {
