@@ -132,9 +132,12 @@ class MpvPlayerView(
             MPVLib.setOptionString("demuxer-max-back-bytes", "75MiB")
             Log.w(TAG, ">>> initMpv cache options OK")
 
-            // Subtitles
-            MPVLib.setOptionString("sub-ass-override", "no")
+            // Subtitles — force override ASS styles for consistent rendering on TV
+            MPVLib.setOptionString("sub-ass-override", "force")
             MPVLib.setOptionString("sub-auto", "no")
+            MPVLib.setOptionString("sub-font-size", "48")
+            MPVLib.setOptionString("sub-border-size", "3")
+            MPVLib.setOptionString("sub-margin-y", "36")
 
             // Disable OSD (we use our own overlay)
             MPVLib.setOptionString("osc", "no")

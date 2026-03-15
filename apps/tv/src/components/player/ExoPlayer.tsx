@@ -69,6 +69,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
       seek: (seconds: number) => dispatchCommand(nativeRef, "seek", [seconds]),
       setAudioTrack: (id: number) => dispatchCommand(nativeRef, "setAudioTrack", [id]),
       setSubtitleTrack: (id: number) => dispatchCommand(nativeRef, "setSubtitleTrack", [id]),
+      addSubtitleTrack: () => {}, // ExoPlayer: external subs handled natively via MediaItem
     }));
 
     const handleEvent = useCallback(
