@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { View, Text, Pressable, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
+import { View, Text, Pressable, TouchableOpacity, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
@@ -85,7 +85,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);
-  const [focusKey, setFocusKey] = useState(0);
+  const backgroundRef = useRef<TouchableOpacity>(null);
   const [paused, setPaused] = useState(false);
   const [displayTime, setDisplayTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -555,8 +555,9 @@ export function PlayerScreen({ route, navigation }: Props) {
         onTracks={handleTracks}
         onVideoSize={handleVideoSize}
       />
-      <Pressable
-        key={`bg-${focusKey}`}
+      <TouchableOpacity
+        ref={backgroundRef}
+        activeOpacity={1}
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
@@ -565,7 +566,7 @@ export function PlayerScreen({ route, navigation }: Props) {
         importantForAccessibility={showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
       >
         <View style={{ flex: 1 }} />
-      </Pressable>
+      </TouchableOpacity>
       {isLoading && (
         <View style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
@@ -637,9 +638,10 @@ export function PlayerScreen({ route, navigation }: Props) {
             setShowSettings(false);
             showSettingsRef.current = false;
             controls.showOverlay();
-            // Force re-mount of background Pressable to reclaim focus
-            // (Android TV loses focus when a focusable container unmounts)
-            setFocusKey((k) => k + 1);
+            // Force focus back via native props (1ms delay per react-native-tvos #398)
+            setTimeout(() => {
+              (backgroundRef.current as any)?.setNativeProps?.({ hasTVPreferredFocus: true });
+            }, 1);
           }}
           onInteraction={controls.showOverlay}
         />
