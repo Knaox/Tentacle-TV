@@ -105,38 +105,30 @@ class MpvPlayerView(
             MPVLib.create(appCtx)
             Log.w(TAG, ">>> initMpv MPVLib.create OK")
 
-            // Video output
-            Log.w(TAG, ">>> initMpv setting video options...")
+            // Performance profile (official mpv-android default)
+            MPVLib.setOptionString("profile", "fast")
+
+            // Video output — matches official mpv-android config
             MPVLib.setOptionString("vo", "gpu")
             MPVLib.setOptionString("gpu-context", "android")
-            MPVLib.setOptionString("hwdec", "mediacodec-copy")
-            MPVLib.setOptionString("hwdec-codecs", "h264,hevc,av1,vp9,vp8")
+            MPVLib.setOptionString("opengl-es", "yes")
+            MPVLib.setOptionString("hwdec", "auto")
+            MPVLib.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
+            MPVLib.setOptionString("vd-lavc-dr", "yes")
+            MPVLib.setOptionString("vd-lavc-film-grain", "cpu")
             MPVLib.setOptionString("keepaspect", "yes")
-            MPVLib.setOptionString("panscan", "0.0")
-            Log.w(TAG, ">>> initMpv video options OK")
 
-            // Audio output — passthrough for surround codecs, PCM fallback for stereo
-            Log.w(TAG, ">>> initMpv setting audio options...")
+            // Audio output — passthrough for surround codecs, PCM fallback
             MPVLib.setOptionString("ao", "audiotrack,opensles")
             MPVLib.setOptionString("audio-channels", "auto-safe")
             MPVLib.setOptionString("audio-spdif", "ac3,eac3,truehd,dts,dts-hd")
             MPVLib.setOptionString("audio-stream-silence", "yes")
-            Log.w(TAG, ">>> initMpv audio options OK")
 
-            // Cache / buffer
-            Log.w(TAG, ">>> initMpv setting cache options...")
-            MPVLib.setOptionString("cache", "yes")
-            MPVLib.setOptionString("cache-secs", "60")
-            MPVLib.setOptionString("demuxer-max-bytes", "64MiB")
-            MPVLib.setOptionString("demuxer-max-back-bytes", "32MiB")
-            Log.w(TAG, ">>> initMpv cache options OK")
+            // Cache / demuxer (official: 64 MiB each)
+            MPVLib.setOptionString("demuxer-max-bytes", "${64 * 1024 * 1024}")
+            MPVLib.setOptionString("demuxer-max-back-bytes", "${64 * 1024 * 1024}")
 
-            // Performance — reduce copy overhead
-            MPVLib.setOptionString("vd-lavc-dr", "yes")
-            MPVLib.setOptionString("vd-lavc-threads", "0")
-
-            // Subtitles — use Android system fonts (/system/fonts)
-            // libass has no fontconfig on Android → sub-font-provider=none + explicit dir
+            // Subtitles — libass needs explicit font dir on Android (no fontconfig)
             MPVLib.setOptionString("sub-auto", "no")
             MPVLib.setOptionString("sub-visibility", "yes")
             MPVLib.setOptionString("sub-font-provider", "none")
@@ -151,13 +143,9 @@ class MpvPlayerView(
             MPVLib.setOptionString("sub-use-margins", "yes")
             MPVLib.setOptionString("sub-ass-override", "force")
 
-            // Disable OSD (we use our own overlay)
+            // Disable OSD (we use our own React Native overlay)
             MPVLib.setOptionString("osc", "no")
             MPVLib.setOptionString("osd-level", "0")
-
-            // Enable verbose logging for MPV itself to diagnose crashes
-            MPVLib.setOptionString("terminal", "yes")
-            MPVLib.setOptionString("msg-level", "all=v")
             Log.w(TAG, ">>> initMpv all options set, calling MPVLib.init()...")
 
             MPVLib.init()

@@ -114,15 +114,11 @@ export function PlayerScreen({ route, navigation }: Props) {
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
 
-  // Route HEVC/HDR content to ExoPlayer — its hardware decoder avoids the
-  // mediacodec-copy overhead that causes lag in MPV on Android TV.
-  // MPV is kept for H264/VP9 (lighter codecs where mediacodec-copy is fine).
+  // Route HDR/DV content to ExoPlayer for HDR passthrough
   const videoStream = streams.find((s) => s.Type === "Video");
   const isHDR = videoStream?.VideoRangeType != null
     && videoStream.VideoRangeType !== "SDR";
-  const isHEVC = videoStream?.Codec?.toLowerCase() === "hevc"
-    || videoStream?.Codec?.toLowerCase() === "h265";
-  const useExoPlayer = (isHDR || isHEVC) && !forceTranscode;
+  const useExoPlayer = isHDR && !forceTranscode;
   // Unified ref — points to whichever player is active
   const playerRef = useExoPlayer ? exoRef : mpvRef;
 
