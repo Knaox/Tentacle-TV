@@ -560,7 +560,7 @@ export function PlayerScreen({ route, navigation }: Props) {
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!controls.overlayVisible && !showSettings && !autoPlayActive}
+        hasTVPreferredFocus={!showSettings && !autoPlayActive}
         accessible={!showSettings && !autoPlayActive}
         importantForAccessibility={showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
       >
