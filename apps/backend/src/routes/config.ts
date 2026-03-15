@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getConfigValue, getDirectStreamingConfig } from "../services/configStore";
+import { getConfigValue, getDirectStreamingConfig, getJellyfinUrl } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
@@ -53,6 +53,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     const isPairedDevice = bearerToken?.includes(".") && bearerToken.split(".").length === 3;
 
     let jellyfinToken: string | null = null;
+    let tokenExpired = false;
 
     if (isPairedDevice && bearerToken) {
       // Paired device: look up stored Jellyfin token from PairedDevice record
@@ -64,6 +65,30 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
           select: { jellyfinAccessToken: true },
         });
         jellyfinToken = device?.jellyfinAccessToken ?? null;
+
+        // Validate the stored token against Jellyfin
+        if (jellyfinToken) {
+          const jellyfinUrl = getJellyfinUrl();
+          if (jellyfinUrl) {
+            try {
+              const check = await fetch(`${jellyfinUrl}/Users/Me`, {
+                headers: { "X-Emby-Token": jellyfinToken },
+                signal: AbortSignal.timeout(3000),
+              });
+              if (!check.ok) {
+                request.log.warn("Paired device jellyfinAccessToken expired — clearing from DB");
+                tokenExpired = true;
+                jellyfinToken = null;
+                prisma.pairedDevice.update({
+                  where: { tokenHash: hashToken(bearerToken) },
+                  data: { jellyfinAccessToken: null },
+                }).catch(() => {});
+              }
+            } catch {
+              // Jellyfin unreachable — keep the token, don't mark as expired
+            }
+          }
+        }
       }
     } else {
       // Web user: their bearer token IS the Jellyfin token
@@ -77,6 +102,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         enabled: true,
         mediaBaseUrl,
         jellyfinToken,
+        ...(tokenExpired && { tokenExpired: true }),
       },
     };
   });

@@ -10,6 +10,7 @@ export interface StreamingConfig {
   enabled: boolean;
   mediaBaseUrl: string | null;
   jellyfinToken: string | null;
+  tokenExpired?: boolean;
 }
 
 export const STREAMING_CONFIG_QUERY_KEY = "streaming-config";

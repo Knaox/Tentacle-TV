@@ -25,6 +25,7 @@ import { SidebarProvider } from "./context/SidebarContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useServerReachable } from "./hooks/useServerReachable";
+import { navigationRef } from "./navigation/navigationRef";
 
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
@@ -81,8 +82,12 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   jfClient.setOnAuthExpired(() => {
     storage.removeItem("tentacle_token");
     storage.removeItem("tentacle_user");
+    storage.removeItem("tentacle_jellyfin_token");
     setPreferencesToken(null);
     queryClient.clear();
+    if (navigationRef.isReady()) {
+      navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+    }
   });
 
   return jfClient;
@@ -96,6 +101,15 @@ function DirectStreamingSync() {
   const { data, isError, isFetched } = useStreamingConfig(token);
 
   useEffect(() => {
+    if (data?.tokenExpired) {
+      // Jellyfin token from pairing has expired — force re-login
+      storage.removeItem("tentacle_jellyfin_token");
+      client.setDirectStreaming(null);
+      if (navigationRef.isReady()) {
+        navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+      }
+      return;
+    }
     if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
       client.setDirectStreaming({
         enabled: true,
@@ -105,7 +119,7 @@ function DirectStreamingSync() {
       // Cache for fallback when backend is unreachable
       storage.setItem("tentacle_jellyfin_url", data.mediaBaseUrl);
       storage.setItem("tentacle_jellyfin_token", data.jellyfinToken);
-    } else if (isError || (isFetched && !data?.enabled)) {
+    } else if (isError || (isFetched && (!data?.enabled || !data?.jellyfinToken))) {
       // Fallback: try direct streaming from cached Jellyfin credentials
       const jfUrl = storage.getItem("tentacle_jellyfin_url");
       const jfToken = storage.getItem("tentacle_jellyfin_token");
@@ -133,7 +147,7 @@ function AppContent({ serverUrl }: { serverUrl: string | null }) {
     <>
       <DirectStreamingSync />
       <SidebarProvider>
-        <NavigationContainer theme={darkTheme}>
+        <NavigationContainer ref={navigationRef} theme={darkTheme}>
           <AppNavigator />
           <OfflineBanner visible={!isReachable} onRetry={retry} />
         </NavigationContainer>
