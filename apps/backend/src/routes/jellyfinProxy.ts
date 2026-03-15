@@ -137,7 +137,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         // For session endpoints, use the user's actual Jellyfin token instead of
         // admin API key so Jellyfin can attribute the session to the correct user.
         // Admin API key authenticates the request but loses user context → progress not saved.
-        if (apiKeyOverride && /^Sessions\/(Playing|Logout)/.test(wildcardPath) && hasPrisma()) {
+        if (apiKeyOverride && /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath) && hasPrisma()) {
           try {
             const prisma = getPrisma();
             const device = await prisma.pairedDevice.findUnique({
