@@ -246,6 +246,8 @@ export function useTVPlayerControls({
     onPlayPause: () => {
       if (holdRef.current) { stopHold(); return; }
       if (scrubbing) { confirmScrub(); return; }
+      // If overlay is hidden, first press just shows it (no pause toggle)
+      if (!overlayVisibleRef.current) { showOverlay(); return; }
       onPlayPause();
       showOverlay();
     },
