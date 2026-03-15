@@ -627,7 +627,7 @@ export function PlayerScreen({ route, navigation }: Props) {
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           selectedAudio={audioIndex} selectedSubtitle={subtitleIndex}
           onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
-          onClose={() => { setShowSettings(false); showSettingsRef.current = false; }}
+          onClose={() => { setShowSettings(false); showSettingsRef.current = false; controls.showOverlay(); }}
           onInteraction={controls.showOverlay}
         />
       )}
