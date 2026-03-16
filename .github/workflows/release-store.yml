@@ -1,10 +1,11 @@
 # Tentacle TV — Microsoft Store Build
 #
-# Workflow manuel pour générer le setup.exe avec WebView2 offline installer
-# à soumettre sur le Microsoft Partner Center.
+# Workflow manuel pour générer le setup.exe à soumettre sur le Microsoft
+# Partner Center.
 #
-# Ce workflow utilise la config tauri.microsoftstore.conf.json qui embarque
-# le runtime WebView2 dans l'installeur (requis par le Microsoft Store).
+# Ce workflow utilise la config tauri.microsoftstore.conf.json qui désactive
+# transparent (incompatible avec le sandbox Store). WebView2 est déjà
+# préinstallé sur Windows 10/11, donc on ne l'embarque PAS.
 #
 # Secrets requis : mêmes que release.yml (voir commentaires là-bas)
 
@@ -88,6 +89,6 @@ jobs:
           releaseName: "Tentacle TV ${{ inputs.version }} (Store)"
           releaseBody: |
             Build Microsoft Store pour soumission au Partner Center.
-            Inclut le runtime WebView2 offline.
+            WebView2 préinstallé sur Windows 10/11 (pas d'offline installer).
           releaseDraft: true
           prerelease: false
