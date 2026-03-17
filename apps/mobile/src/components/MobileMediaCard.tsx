@@ -23,7 +23,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({ item, onPress, on
   const poster = hasPrimary ? client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 }) : null;
   const [imgError, setImgError] = useState(false);
   const progress = item.UserData?.PlayedPercentage ?? 0;
-  const isWatched = item.UserData?.Played === true && progress >= 100;
+  const isWatched = item.UserData?.Played === true;
   const hasProgress = progress > 0 && progress < 100;
   const showFallback = !poster || imgError;
 
@@ -77,7 +77,7 @@ const st = StyleSheet.create({
   fallback: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceElevated },
   fallbackLetter: { fontSize: 32, fontWeight: "700", color: colors.textMuted },
   progWrap: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 4, paddingBottom: 4 },
-  badge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" },
+  badge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
   check: { color: "#fff", fontSize: 12, fontWeight: "800" },
   title: { ...typography.small, color: colors.textPrimary, marginTop: 6 },
   year: { ...typography.badge, color: colors.textMuted, marginTop: 2 },

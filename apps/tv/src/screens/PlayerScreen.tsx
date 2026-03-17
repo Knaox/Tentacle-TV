@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { View, Text, Pressable, TouchableOpacity, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting,
+  useJellyfinClient, useUserId, useMediaItem, useItemAncestors, usePlaybackReporting,
   useResolveMediaTracks, useIntroSkipper, useEpisodeNavigation,
 } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
@@ -80,6 +80,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
   const { t } = useTranslation("player");
   const client = useJellyfinClient();
+  const userId = useUserId();
   const { data: item } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
 
@@ -234,28 +235,31 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const invalidateAndGoBack = useCallback(async () => {
     await reportStop();
+    client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["item", itemId] });
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
+    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
     navigation.goBack();
-  }, [reportStop, queryClient, itemId, navigation]);
+  }, [reportStop, queryClient, itemId, navigation, client, userId]);
 
   /** When episode finishes, navigate to series detail instead of just going back */
   const handleFinished = useCallback(async () => {
     await reportStop();
+    client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["item", itemId] });
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
+    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
     const seriesId = item?.SeriesId;
     if (seriesId) {
-      // Go to series detail to see seasons & episodes
       navigation.replace("MediaDetail", { itemId: seriesId });
     } else {
       navigation.goBack();
     }
-  }, [reportStop, queryClient, itemId, item?.SeriesId, navigation]);
+  }, [reportStop, queryClient, itemId, item?.SeriesId, navigation, client, userId]);
 
   useEffect(() => () => {
     reportStop();
@@ -263,6 +267,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
+    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
   }, [reportStop]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pause video + save progress when app goes to background (Home button)

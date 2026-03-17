@@ -9,7 +9,9 @@ import {
 } from "react-native";
 import { SubtleBackground } from "../components/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Feather } from "@expo/vector-icons";
 import {
   useGenerateTvToken,
   useRelayConfirm,
@@ -20,6 +22,7 @@ export function PairTVScreen() {
   const { t } = useTranslation("pairing");
   const { t: te } = useTranslation("errors");
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { storage } = useTentacleConfig();
   const tvTokenMut = useGenerateTvToken();
   const relayConfirmMut = useRelayConfirm();
@@ -100,7 +103,12 @@ export function PairTVScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
     >
       <View style={{ paddingHorizontal: 16, paddingTop: insets.top + 16 }}>
-        <Text style={styles.title}>{t("pairYourTV")}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+          <Pressable onPress={() => router.back()} hitSlop={12} style={{ marginRight: 12 }}>
+            <Feather name="chevron-left" size={26} color="#8b5cf6" />
+          </Pressable>
+          <Text style={[styles.title, { marginBottom: 0 }]}>{t("pairYourTV")}</Text>
+        </View>
         <Text style={styles.subtitle}>{t("enterTVCode")}</Text>
 
         <View style={styles.card}>

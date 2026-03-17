@@ -253,4 +253,59 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     reply.clearCookie("tentacle_token", { path: "/" });
     return { success: true };
   });
+
+  /** POST /api/auth/password-reset-request — Create a support ticket for password reset. */
+  const resetRequestSchema = z.object({ username: z.string().min(1) });
+
+  app.post("/password-reset-request", {
+    config: { rateLimit: { max: 3, timeWindow: 3_600_000 } },
+  }, async (request, reply) => {
+    const { username } = resetRequestSchema.parse(request.body);
+    const jellyfinUrl = getJellyfinUrl();
+    const apiKey = getJellyfinApiKey();
+
+    // Always respond 200 to avoid leaking user existence
+    const successResponse = { message: "Demande enregistrée" };
+
+    if (!jellyfinUrl || !apiKey) {
+      return reply.send(successResponse);
+    }
+
+    try {
+      const res = await fetch(`${jellyfinUrl}/Users`, {
+        headers: { "X-Emby-Token": apiKey },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return reply.send(successResponse);
+
+      const users = (await res.json()) as { Id: string; Name: string }[];
+      const match = users.find(
+        (u) => u.Name.toLowerCase() === username.toLowerCase()
+      );
+      if (!match) return reply.send(successResponse);
+
+      const prisma = getPrisma();
+      await prisma.supportTicket.create({
+        data: {
+          jellyfinUserId: match.Id,
+          username: match.Name,
+          subject: "Réinitialisation de mot de passe",
+          category: "account",
+          status: "open",
+          messages: {
+            create: {
+              jellyfinUserId: match.Id,
+              username: match.Name,
+              isAdmin: false,
+              body: `L'utilisateur ${match.Name} demande une réinitialisation de son mot de passe.`,
+            },
+          },
+        },
+      });
+
+      return reply.send(successResponse);
+    } catch {
+      return reply.send(successResponse);
+    }
+  });
 };

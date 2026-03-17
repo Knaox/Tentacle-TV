@@ -33,12 +33,17 @@ export function AboutScreen() {
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + 32, paddingHorizontal: spacing.screenPadding }}
     >
-      <Text
-        style={{ ...typography.title, color: colors.textPrimary, marginBottom: spacing.xxxl }}
-        accessibilityRole="header"
-      >
-        {t("title")}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.xxxl }}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={{ marginRight: spacing.sm }}>
+          <Feather name="chevron-left" size={26} color={colors.accent} />
+        </Pressable>
+        <Text
+          style={{ ...typography.title, color: colors.textPrimary }}
+          accessibilityRole="header"
+        >
+          {t("title")}
+        </Text>
+      </View>
 
       <FadeIn delay={0}>
         <View style={{ alignItems: "center", marginBottom: spacing.xxxl }}>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePlaybackReporting } from "@tentacle-tv/api-client";
+import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
@@ -26,19 +26,24 @@ export function WatchDesktop() {
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
   });
 
+  const jfClient = useJellyfinClient();
+  const jfUserId = useUserId();
+
   useEffect(() => {
     return () => {
       const id = itemId;
       queryClient.removeQueries({ queryKey: ["item", id] });
       const invalidateAll = () => {
+        jfClient.fetch(`/Users/${jfUserId}/Items/${id}/Rating`, { method: "DELETE" }).catch(() => {});
         queryClient.invalidateQueries({ queryKey: ["item", id] });
         queryClient.invalidateQueries({ queryKey: ["resume-items"] });
         queryClient.invalidateQueries({ queryKey: ["next-up"] });
         queryClient.invalidateQueries({ queryKey: ["watched-items"] });
+        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
       };
       lastStopPromiseRef.current.then(invalidateAll, invalidateAll);
     };
-  }, [itemId, queryClient, lastStopPromiseRef]);
+  }, [itemId, queryClient, lastStopPromiseRef, jfClient, jfUserId]);
 
   const handleAudioChange = useCallback(async (idx: number) => {
     audioOverrideRef.current = true;

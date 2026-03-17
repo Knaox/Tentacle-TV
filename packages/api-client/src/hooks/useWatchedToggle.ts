@@ -24,11 +24,16 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
       const snapshot = updateItemUserDataInCache(qc, itemId!, () => ({
         Played: true,
         PlayedPercentage: 100,
+        Likes: false,
       }));
       return { snapshot };
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
+    },
+    onSuccess: () => {
+      // Remove from personal watchlist in Jellyfin DB
+      client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
     },
     onSettled: () => invalidateAllMediaQueries(qc, { itemId, seriesContext }),
   });

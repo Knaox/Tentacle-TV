@@ -164,6 +164,7 @@ interface CarouselItem {
   jellyfinId: string;
   name: string;
   year?: number;
+  played?: boolean;
 }
 
 function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItemLongPress }: {
@@ -185,7 +186,7 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
     for (const item of personalItems) {
       if (!seen.has(item.Id)) {
         seen.add(item.Id);
-        result.push({ key: item.Id, jellyfinId: item.Id, name: item.Name, year: item.ProductionYear });
+        result.push({ key: item.Id, jellyfinId: item.Id, name: item.Name, year: item.ProductionYear, played: item.UserData?.Played === true });
       }
     }
 
@@ -213,7 +214,14 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
         onLongPress={() => onItemLongPress(item.jellyfinId)}
         style={mlst.card}
       >
-        <Image source={{ uri: poster }} style={mlst.poster} />
+        <View style={{ borderRadius: 10, overflow: "hidden" }}>
+          <Image source={{ uri: poster }} style={mlst.poster} />
+          {item.played && (
+            <View style={mlst.watchedBadge}>
+              <Text style={mlst.watchedCheck}>{"\u2713"}</Text>
+            </View>
+          )}
+        </View>
         <Text numberOfLines={1} style={mlst.cardName}>{item.name}</Text>
         {item.year ? <Text style={mlst.cardYear}>{item.year}</Text> : null}
       </Pressable>
@@ -251,6 +259,8 @@ const mlst = StyleSheet.create({
   poster: { width: 130, aspectRatio: 2 / 3, borderRadius: 10, backgroundColor: colors.surfaceElevated },
   cardName: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: 6 },
   cardYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
+  watchedBadge: { position: "absolute" as const, top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#8B5CF6", alignItems: "center" as const, justifyContent: "center" as const },
+  watchedCheck: { color: "#fff", fontSize: 12, fontWeight: "800" as const },
 });
 
 function LibraryRow({ libraryId, libraryName, renderCard, index }: {

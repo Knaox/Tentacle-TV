@@ -86,6 +86,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
 
     const progress = item.UserData?.PlayedPercentage ?? 0;
     const hasProgress = progress > 0 && progress < 100;
+    const isWatched = item.UserData?.Played === true;
     const genres = item.Genres?.slice(0, 2) ?? [];
     const runtime = item.RunTimeTicks ? formatRuntime(item.RunTimeTicks) : null;
 
@@ -108,6 +109,12 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
             {hasProgress && (
               <View style={s.continueBadge}>
                 <Text style={s.continueTxt}>{t("continueLabel")}</Text>
+              </View>
+            )}
+            {isWatched && !hasProgress && (
+              <View style={s.watchedBadge}>
+                <Feather name="check" size={12} color="#fff" />
+                <Text style={s.continueTxt}>{t("watched")}</Text>
               </View>
             )}
             <View style={s.meta}>
@@ -237,6 +244,11 @@ const s = StyleSheet.create({
   continueBadge: {
     alignSelf: "flex-start", backgroundColor: colors.accent,
     borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
+  },
+  watchedBadge: {
+    alignSelf: "flex-start", backgroundColor: "#8B5CF6",
+    borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
+    flexDirection: "row" as const, alignItems: "center" as const, gap: 4,
   },
   continueTxt: { ...typography.badge, color: "#fff", fontWeight: "800", textTransform: "uppercase" as const },
   meta: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" as const },

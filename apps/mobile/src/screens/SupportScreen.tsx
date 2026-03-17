@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { colors, spacing, typography } from "../theme";
 import { GlassCard, Badge, Button, IconButton, SubtleBackground } from "../components/ui";
 
@@ -77,6 +79,7 @@ export function SupportScreen({ initialTicketId }: SupportScreenProps) {
 function ListView({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string) => void }) {
   const { t } = useTranslation("tickets");
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [filter, setFilter] = useState("");
   const { serverUrl, headers } = useTicketApi();
   const { data, isLoading } = useQuery({
@@ -95,7 +98,12 @@ function ListView({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string) =
     <SubtleBackground style={{ justifyContent: "flex-start" }}>
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: spacing.screenPadding,
         flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={{ ...typography.title, color: colors.textPrimary }}>{t("myTickets")}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          <Pressable onPress={() => router.back()} hitSlop={12} style={{ marginRight: spacing.sm }}>
+            <Feather name="chevron-left" size={26} color={colors.accent} />
+          </Pressable>
+          <Text style={{ ...typography.title, color: colors.textPrimary }}>{t("myTickets")}</Text>
+        </View>
         <Button title={t("newTicket")} onPress={onNew} style={{ paddingVertical: 10, paddingHorizontal: 16 }} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}

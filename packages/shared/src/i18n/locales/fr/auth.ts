@@ -39,4 +39,12 @@ export default {
   serverUrlLabel: "URL de votre serveur",
   httpError: "Erreur HTTP {{status}}",
   reconnecting: "Reconnexion...",
+  confirmPassword: "Confirmer le mot de passe",
+  passwordMismatch: "Les mots de passe ne correspondent pas",
+  forgotPassword: "Mot de passe oublié ?",
+  forgotPasswordTitle: "Mot de passe oublié",
+  forgotPasswordDescription: "Entrez votre nom d'utilisateur. L'administrateur sera notifié et vous contactera.",
+  forgotPasswordSuccess: "Votre demande a été transmise à l'administrateur.",
+  sendRequest: "Envoyer la demande",
+  noAccount: "Pas encore de compte ?",
 } as const;

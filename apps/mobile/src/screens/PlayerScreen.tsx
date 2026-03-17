@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
+import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
@@ -24,6 +25,8 @@ export function PlayerScreen({ itemId }: Props) {
   const videoRef = useRef<VideoRef>(null);
 
   const pb = usePlayerPlayback(itemId);
+  const jfClient = useJellyfinClient();
+  const userId = useUserId();
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -185,11 +188,14 @@ export function PlayerScreen({ itemId }: Props) {
   // Invalidate home queries so watch state refreshes
   const invalidateAndGoBack = useCallback(() => {
     pb.reporting.reportStop();
+    // Remove from personal watchlist if fully watched
+    jfClient.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["item", itemId] });
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
     router.back();
-  }, [router, pb.reporting, queryClient, itemId]);
+  }, [router, pb.reporting, queryClient, itemId, jfClient, userId]);
 
   const handleNextEpisode = useCallback(() => {
     const next = pb.episodeNav.nextEpisode;
@@ -216,6 +222,7 @@ export function PlayerScreen({ itemId }: Props) {
     pb.reporting.reportStop();
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Error screen — from playback hook (HTTP error) or player (codec/stream error)

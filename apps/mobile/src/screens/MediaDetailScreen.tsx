@@ -114,6 +114,7 @@ export function MediaDetailScreen({ itemId }: Props) {
   const resumeSec = ticksToSeconds(posTicks);
   const playLabel = hasResume ? t("resumeAt", { time: fmtTime(resumeSec) }) : t("play");
   const progress = item.UserData?.PlayedPercentage ? item.UserData.PlayedPercentage / 100 : 0;
+  const isWatched = item.UserData?.Played === true;
 
   return (
     <ScrollView
@@ -135,18 +136,25 @@ export function MediaDetailScreen({ itemId }: Props) {
 
       {/* Poster + Metadata */}
       <View style={{ flexDirection: "row", paddingHorizontal: spacing.screenPadding, marginTop: -(POSTER_H / 2) }}>
-        <Animated.Image
-          source={{ uri: poster }}
-          style={[
-            {
-              width: POSTER_W, height: POSTER_H, borderRadius: spacing.cardRadius, backgroundColor: colors.surfaceElevated,
-              shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 16,
-            },
-            ENABLE_SHARED_POSTER_TRANSITION ? undefined : posterStyle,
-          ]}
-          resizeMode="cover"
-          {...(ENABLE_SHARED_POSTER_TRANSITION ? { sharedTransitionTag: `poster-${posterId}` } : {})}
-        />
+        <View style={{ width: POSTER_W, height: POSTER_H }}>
+          <Animated.Image
+            source={{ uri: poster }}
+            style={[
+              {
+                width: POSTER_W, height: POSTER_H, borderRadius: spacing.cardRadius, backgroundColor: colors.surfaceElevated,
+                shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 16,
+              },
+              ENABLE_SHARED_POSTER_TRANSITION ? undefined : posterStyle,
+            ]}
+            resizeMode="cover"
+            {...(ENABLE_SHARED_POSTER_TRANSITION ? { sharedTransitionTag: `poster-${posterId}` } : {})}
+          />
+          {isWatched && (
+            <View style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: 12, backgroundColor: "#8B5CF6", alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "800" }}>{"\u2713"}</Text>
+            </View>
+          )}
+        </View>
         <Animated.View style={[{ flex: 1, marginLeft: spacing.lg, justifyContent: "flex-end" }, titleStyle]}>
           {isEpisode && item.SeriesName && (
             <Text numberOfLines={1} style={{ ...typography.caption, color: colors.textSecondary, marginBottom: 2 }}>{item.SeriesName}</Text>
@@ -324,10 +332,8 @@ function ActionButton({ icon, label, active, activeColor, onPress }: {
   onPress: () => void;
 }) {
   const color = active ? activeColor : colors.textMuted;
-  // Truncate label to first 2 words max for compact display
-  const shortLabel = label.split(" ").slice(0, 2).join(" ");
   return (
-    <Pressable onPress={onPress} style={{ alignItems: "center", gap: spacing.xs }}>
+    <Pressable onPress={onPress} style={{ alignItems: "center", gap: spacing.xs, flex: 1 }}>
       <View style={{
         width: 44, height: 44, borderRadius: 22,
         backgroundColor: active ? `${activeColor}20` : colors.surfaceElevated,
@@ -335,8 +341,8 @@ function ActionButton({ icon, label, active, activeColor, onPress }: {
       }}>
         <Feather name={icon} size={20} color={color} />
       </View>
-      <Text numberOfLines={1} style={{ ...typography.badge, color, maxWidth: 80, textAlign: "center" }}>
-        {shortLabel}
+      <Text numberOfLines={2} style={{ ...typography.badge, color, textAlign: "center" }}>
+        {label}
       </Text>
     </Pressable>
   );

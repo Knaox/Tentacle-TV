@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePlaybackReporting } from "@tentacle-tv/api-client";
+import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, formatDuration } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
@@ -32,19 +32,24 @@ export function WatchWeb() {
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
   });
 
+  const jfClient = useJellyfinClient();
+  const jfUserId = useUserId();
+
   useEffect(() => {
     return () => {
       const id = itemId;
       queryClient.removeQueries({ queryKey: ["item", id] });
       const invalidateAll = () => {
+        jfClient.fetch(`/Users/${jfUserId}/Items/${id}/Rating`, { method: "DELETE" }).catch(() => {});
         queryClient.invalidateQueries({ queryKey: ["item", id] });
         queryClient.invalidateQueries({ queryKey: ["resume-items"] });
         queryClient.invalidateQueries({ queryKey: ["next-up"] });
         queryClient.invalidateQueries({ queryKey: ["watched-items"] });
+        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
       };
       lastStopPromiseRef.current.then(invalidateAll, invalidateAll);
     };
-  }, [itemId, queryClient, lastStopPromiseRef]);
+  }, [itemId, queryClient, lastStopPromiseRef, jfClient, jfUserId]);
 
   // Audio change: save position for potential transcode restart.
   // Server decides direct play vs transcode via PlaybackInfo.

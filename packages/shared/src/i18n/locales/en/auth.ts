@@ -39,4 +39,12 @@ export default {
   serverUrlLabel: "Server URL",
   httpError: "HTTP error {{status}}",
   reconnecting: "Reconnecting...",
+  confirmPassword: "Confirm password",
+  passwordMismatch: "Passwords do not match",
+  forgotPassword: "Forgot password?",
+  forgotPasswordTitle: "Forgot password",
+  forgotPasswordDescription: "Enter your username. The administrator will be notified and contact you.",
+  forgotPasswordSuccess: "Your request has been sent to the administrator.",
+  sendRequest: "Send request",
+  noAccount: "Don't have an account?",
 } as const;

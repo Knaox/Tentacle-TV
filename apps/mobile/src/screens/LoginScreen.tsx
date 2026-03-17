@@ -194,10 +194,29 @@ export function LoginScreen() {
           </Pressable>
 
           <Pressable
+            onPress={() => router.push("/(auth)/forgot-password")}
+            accessibilityRole="button"
+            style={{ marginTop: 12, alignItems: "center", paddingVertical: 8 }}
+          >
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{t("forgotPassword")}</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/(auth)/register")}
+            accessibilityRole="button"
+            style={{ marginTop: 8, alignItems: "center", paddingVertical: 8 }}
+          >
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
+              {t("noAccount")}{" "}
+              <Text style={{ color: "#8b5cf6" }}>{t("createAccount")}</Text>
+            </Text>
+          </Pressable>
+
+          <Pressable
             onPress={() => router.replace("/server-setup")}
             accessibilityRole="button"
             accessibilityLabel={t("changeServer")}
-            style={{ marginTop: 16, alignItems: "center", paddingVertical: 8 }}
+            style={{ marginTop: 8, alignItems: "center", paddingVertical: 8 }}
           >
             <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{t("changeServer")}</Text>
           </Pressable>
