@@ -11,6 +11,7 @@ export function Register() {
   const [inviteKey, setInviteKey] = useState(searchParams.get("invite") ?? "");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -78,12 +79,25 @@ export function Register() {
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
             required
           />
+          <div>
+            <input
+              type="password"
+              placeholder={t("confirmPassword")}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
+              required
+            />
+            {confirmPassword && password !== confirmPassword && (
+              <p className="mt-1 text-sm text-red-400">{t("passwordMismatch")}</p>
+            )}
+          </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !confirmPassword || password !== confirmPassword}
             className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isLoading ? t("creatingAccount") : t("createAccount")}

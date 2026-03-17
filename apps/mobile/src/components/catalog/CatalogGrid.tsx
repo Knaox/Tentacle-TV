@@ -110,14 +110,20 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
   const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const poster = client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 });
   const progress = item.UserData?.PlayedPercentage;
+  const isWatched = item.UserData?.Played === true;
 
   return (
     <PressableCard onPress={onPress} style={{ width, marginBottom: spacing.md }}>
       <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surfaceElevated }}>
         <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        {progress != null && progress > 0 && (
+        {progress != null && progress > 0 && !isWatched && (
           <View style={styles.progressContainer}>
             <ProgressBar progress={progress / 100} height={3} />
+          </View>
+        )}
+        {isWatched && (
+          <View style={styles.watchedBadge}>
+            <Text style={styles.watchedCheck}>{"\u2713"}</Text>
           </View>
         )}
       </View>
@@ -138,6 +144,8 @@ const styles = StyleSheet.create({
   emptyTitle: { ...typography.subtitle, color: colors.textMuted, marginTop: spacing.md },
   emptyHint: { ...typography.caption, color: colors.textDim, marginTop: spacing.xs },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
+  watchedBadge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#8B5CF6", alignItems: "center", justifyContent: "center" },
+  watchedCheck: { color: "#fff", fontSize: 12, fontWeight: "800" },
   itemTitle: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: spacing.xs + 2 },
   itemYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
 });

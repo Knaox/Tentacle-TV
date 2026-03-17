@@ -248,11 +248,17 @@ const SharedItemCard = memo(function SharedItemCard({ item, width, client, onPre
   const poster = item.imageTag
     ? client.getImageUrl(item.jellyfinItemId, "Primary", { width: 300, quality: 80, tag: item.imageTag })
     : client.getImageUrl(item.jellyfinItemId, "Primary", { width: 300, quality: 80 });
+  const isWatched = item.userData?.played === true;
 
   return (
     <Pressable onPress={onPress} onLongPress={onLongPress} style={{ width, marginBottom: spacing.md }}>
       <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surfaceElevated }}>
         <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        {isWatched && (
+          <View style={styles.watchedBadge}>
+            <Text style={styles.watchedCheck}>{"\u2713"}</Text>
+          </View>
+        )}
         {selectable && (
           <View style={[StyleSheet.absoluteFill, styles.selectOverlay, selected && styles.selectOverlayActive]}>
             <View style={[styles.checkbox, selected && styles.checkboxActive]}>
@@ -292,6 +298,8 @@ const styles = StyleSheet.create({
   gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxl },
   itemTitle: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: spacing.xs + 2 },
   itemYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
+  watchedBadge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#8B5CF6", alignItems: "center", justifyContent: "center" },
+  watchedCheck: { color: "#fff", fontSize: 12, fontWeight: "800" },
   selectOverlay: {
     backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "flex-start",
