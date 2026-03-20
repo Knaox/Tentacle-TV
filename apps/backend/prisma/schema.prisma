@@ -170,3 +170,55 @@ model SharedWatchlistItem {
   @@index([watchlistId])
   @@map("shared_watchlist_items")
 }
+
+// Plugin Seer — tables gérées par le plugin, déclarées ici pour que prisma db push ne les supprime pas
+model SeerRequest {
+  id               String    @id @db.VarChar(36)
+  jellyfinUserId   String    @db.VarChar(255)
+  username         String    @db.VarChar(255)
+  mediaType        String    @db.VarChar(10)
+  tmdbId           Int
+  title            String    @db.VarChar(500)
+  posterPath       String?   @db.VarChar(500)
+  backdropPath     String?   @db.VarChar(500)
+  overview         String?   @db.Text
+  year             String?   @db.VarChar(10)
+  seasons          Json?
+  status           String    @default("queued") @db.VarChar(30)
+  seerrRequestId   Int?
+  seerrMediaId     Int?
+  seerrMediaStatus Int?
+  retryCount       Int       @default(0)
+  maxRetries       Int       @default(10)
+  lastError        String?   @db.Text
+  priority         Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  sentAt           DateTime?
+  completedAt      DateTime?
+
+  @@index([jellyfinUserId])
+  @@index([status])
+  @@index([status, priority(sort: Desc), createdAt])
+  @@map("seer_requests")
+}
+
+model SeerCleanupQueue {
+  id             String    @id @db.VarChar(36)
+  action         String    @db.VarChar(20)
+  mediaType      String    @db.VarChar(10)
+  tmdbId         Int
+  title          String    @db.VarChar(500)
+  seerrRequestId Int?
+  seerrMediaId   Int?
+  deleteFiles    Boolean   @default(true)
+  retryCount     Int       @default(0)
+  maxRetries     Int       @default(20)
+  lastError      String?   @db.Text
+  status         String    @default("pending") @db.VarChar(20)
+  createdAt      DateTime  @default(now())
+  nextRetryAt    DateTime  @default(now())
+
+  @@index([status, nextRetryAt])
+  @@map("seer_cleanup_queue")
+}

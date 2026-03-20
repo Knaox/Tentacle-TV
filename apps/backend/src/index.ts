@@ -27,6 +27,7 @@ import { adminRoutes } from "./routes/admin";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { sharedWatchlistRoutes } from "./routes/sharedWatchlists";
+import { tmdbRoutes } from "./routes/tmdb";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 
@@ -179,6 +180,7 @@ async function main() {
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
   await app.register(sharedWatchlistRoutes, { prefix: "/api/shared-watchlists" });
+  await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
 

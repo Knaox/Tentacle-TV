@@ -206,6 +206,23 @@ export function useGenres(libraryId: string | undefined) {
   });
 }
 
+export function useStudios(libraryId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = useUserId();
+
+  return useQuery({
+    queryKey: ["studios", libraryId],
+    queryFn: () =>
+      client
+        .fetch<{ Items: Array<{ Id: string; Name: string }> }>(
+          `/Studios?ParentId=${libraryId}&UserId=${userId}`
+        )
+        .then((r) => r.Items),
+    enabled: !!userId && !!libraryId,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 export interface CatalogFilters {
   sortBy?: string;
   sortOrder?: string;
@@ -214,6 +231,9 @@ export interface CatalogFilters {
   statusFilter?: string;
   searchTerm?: string;
   limit?: number;
+  minCommunityRating?: number;
+  isFavorite?: boolean;
+  studioIds?: string[];
 }
 
 export function useLibraryCatalog(libraryId: string | undefined, filters: CatalogFilters = {}) {
@@ -227,23 +247,29 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
     statusFilter,
     searchTerm,
     limit = 30,
+    minCommunityRating,
+    isFavorite,
+    studioIds,
   } = filters;
 
   return useInfiniteQuery({
-    queryKey: ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit],
+    queryKey: ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit, minCommunityRating, isFavorite, studioIds],
     queryFn: ({ pageParam = 0 }) => {
       const itemTypes = statusFilter === "IsResumable" ? "Movie,Episode" : "Movie,Series";
       let url =
         `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}` +
         `&IncludeItemTypes=${itemTypes}&Recursive=true` +
-        `&Fields=Overview,PrimaryImageAspectRatio` +
+        `&Fields=Overview,PrimaryImageAspectRatio,ProviderIds,Studios` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1` +
         `&Limit=${limit}&StartIndex=${pageParam}` +
         `&EnableTotalRecordCount=true&EnableUserData=true`;
       if (genreIds && genreIds.length > 0) url += `&GenreIds=${genreIds.join(",")}`;
       if (years && years.length > 0) url += `&Years=${years.join(",")}`;
       if (statusFilter) url += `&Filters=${statusFilter}`;
+      if (isFavorite) url += `&IsFavorite=true`;
+      if (minCommunityRating != null) url += `&MinCommunityRating=${minCommunityRating}`;
+      if (studioIds && studioIds.length > 0) url += `&StudioIds=${studioIds.join(",")}`;
       if (searchTerm && searchTerm.length >= 2) url += `&searchTerm=${encodeURIComponent(searchTerm)}`;
       return client.fetch<{ Items: MediaItem[]; TotalRecordCount: number }>(url);
     },

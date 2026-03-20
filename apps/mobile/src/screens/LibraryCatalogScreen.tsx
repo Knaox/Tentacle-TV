@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,9 @@ import { Feather } from "@expo/vector-icons";
 import { useLibraryCatalog } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui";
-import { GenreFilter, SortSelector, StatusFilter, CatalogGrid, SORT_OPTIONS } from "@/components/catalog";
+import { GenreFilter, SortSelector, StatusFilter, CatalogGrid, SORT_OPTIONS, AdvancedFilterSheet } from "@/components/catalog";
+import { usePlatformFilter } from "@/hooks/usePlatformFilter";
+import type { AdvancedFilters } from "@/components/catalog";
 import { colors, spacing, typography } from "@/theme";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -28,11 +30,27 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedPlatformIds, setSelectedPlatformIds] = useState<number[]>([]);
   const [sortIndex, setSortIndex] = useState(0);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [sortSheetVisible, setSortSheetVisible] = useState(false);
   const [yearSheetVisible, setYearSheetVisible] = useState(false);
+  const [advancedVisible, setAdvancedVisible] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    genreIds: [], studioIds: [], platformIds: [], yearFrom: null, yearTo: null,
+    ratingMin: null, isFavorite: false,
+    sortBy: SORT_OPTIONS[0].sortBy, sortOrder: SORT_OPTIONS[0].sortOrder,
+  });
+
+  const advancedActiveCount = useMemo(() => {
+    let c = 0;
+    if (advancedFilters.studioIds.length > 0) c++;
+    if (advancedFilters.yearFrom != null || advancedFilters.yearTo != null) c++;
+    if (advancedFilters.ratingMin != null) c++;
+    if (advancedFilters.isFavorite) c++;
+    return c;
+  }, [advancedFilters]);
 
   // Debounce search
   useEffect(() => {
@@ -40,16 +58,40 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Construire les années pour le filtre avancé (range from/to)
+  const yearsParam = useMemo(() => {
+    if (advancedFilters.yearFrom != null || advancedFilters.yearTo != null) {
+      const from = advancedFilters.yearFrom ?? 1900;
+      const to = advancedFilters.yearTo ?? new Date().getFullYear();
+      const arr: string[] = [];
+      for (let y = from; y <= to; y++) arr.push(String(y));
+      return arr;
+    }
+    return selectedYear ? [selectedYear] : undefined;
+  }, [advancedFilters.yearFrom, advancedFilters.yearTo, selectedYear]);
+
   const catalog = useLibraryCatalog(libraryId, {
     sortBy: SORT_OPTIONS[sortIndex].sortBy,
     sortOrder: SORT_OPTIONS[sortIndex].sortOrder,
     genreIds: selectedGenres.length > 0 ? selectedGenres : undefined,
-    years: selectedYear ? [selectedYear] : undefined,
+    years: yearsParam,
     statusFilter: statusFilter ?? undefined,
     searchTerm: debouncedSearch.length >= 2 ? debouncedSearch : undefined,
+    studioIds: advancedFilters.studioIds.length > 0 ? advancedFilters.studioIds : undefined,
+    minCommunityRating: advancedFilters.ratingMin ?? undefined,
+    isFavorite: advancedFilters.isFavorite || undefined,
+    limit: selectedPlatformIds.length > 0 ? 500 : undefined,
   });
 
-  const totalCount = catalog.data?.pages[0]?.TotalRecordCount ?? 0;
+  // Filtre plateforme TMDB côté client
+  const allCatalogItems = useMemo(
+    () => catalog.data?.pages.flatMap((p) => p.Items) ?? [],
+    [catalog.data],
+  );
+  const { filteredItems: platformFiltered } = usePlatformFilter(allCatalogItems, selectedPlatformIds);
+  const totalCount = selectedPlatformIds.length > 0
+    ? platformFiltered.length
+    : (catalog.data?.pages[0]?.TotalRecordCount ?? 0);
 
   const handleItemPress = useCallback(
     (item: MediaItem) => router.push(`/media/${item.Id}`),
@@ -73,8 +115,15 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
           <Pressable onPress={() => setSearchVisible((v) => !v)} hitSlop={12}>
             <Feather name="search" size={20} color={searchVisible ? colors.accent : colors.textSecondary} />
           </Pressable>
-          <Pressable onPress={() => setSortSheetVisible(true)} hitSlop={12} style={{ marginLeft: spacing.md }}>
-            <Feather name="sliders" size={20} color={colors.textSecondary} />
+          <Pressable onPress={() => setAdvancedVisible(true)} hitSlop={12} style={{ marginLeft: spacing.md }}>
+            <View>
+              <Feather name="sliders" size={20} color={advancedActiveCount > 0 ? colors.accent : colors.textSecondary} />
+              {advancedActiveCount > 0 && (
+                <View style={styles.headerBadge}>
+                  <Text style={styles.headerBadgeText}>{advancedActiveCount}</Text>
+                </View>
+              )}
+            </View>
           </Pressable>
         </View>
       </View>
@@ -117,7 +166,11 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
       )}
 
       {/* Grid */}
-      <CatalogGrid catalog={catalog as any} onItemPress={handleItemPress} />
+      <CatalogGrid
+        catalog={catalog as any}
+        onItemPress={handleItemPress}
+        overrideItems={selectedPlatformIds.length > 0 ? platformFiltered : undefined}
+      />
 
       {/* Sort BottomSheet */}
       <SortSelector
@@ -125,6 +178,40 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
         onSortChange={setSortIndex}
         visible={sortSheetVisible}
         onClose={() => setSortSheetVisible(false)}
+      />
+
+      {/* Advanced Filter BottomSheet */}
+      <AdvancedFilterSheet
+        visible={advancedVisible}
+        onClose={() => setAdvancedVisible(false)}
+        libraryId={libraryId}
+        filters={advancedFilters}
+        onToggleGenre={(id) => setAdvancedFilters((f) => ({
+          ...f,
+          genreIds: f.genreIds.includes(id) ? f.genreIds.filter((g) => g !== id) : [...f.genreIds, id],
+        }))}
+        onToggleStudio={(id) => setAdvancedFilters((f) => ({
+          ...f,
+          studioIds: f.studioIds.includes(id) ? f.studioIds.filter((s) => s !== id) : [...f.studioIds, id],
+        }))}
+        onTogglePlatform={(id) => {
+          setAdvancedFilters((f) => ({
+            ...f,
+            platformIds: f.platformIds.includes(id) ? f.platformIds.filter((p) => p !== id) : [...f.platformIds, id],
+          }));
+          setSelectedPlatformIds((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
+        }}
+        onYearFromChange={(v) => setAdvancedFilters((f) => ({ ...f, yearFrom: v }))}
+        onYearToChange={(v) => setAdvancedFilters((f) => ({ ...f, yearTo: v }))}
+        onRatingMinChange={(v) => setAdvancedFilters((f) => ({ ...f, ratingMin: v }))}
+        onFavoriteChange={(v) => setAdvancedFilters((f) => ({ ...f, isFavorite: v }))}
+        onSortByChange={(sortBy, sortOrder) => setAdvancedFilters((f) => ({ ...f, sortBy, sortOrder }))}
+        onReset={() => { setSelectedPlatformIds([]); setAdvancedFilters({
+          genreIds: [], studioIds: [], platformIds: [], yearFrom: null, yearTo: null,
+          ratingMin: null, isFavorite: false,
+          sortBy: SORT_OPTIONS[0].sortBy, sortOrder: SORT_OPTIONS[0].sortOrder,
+        }); }}
+        activeCount={advancedActiveCount}
       />
 
       {/* Year BottomSheet */}
@@ -219,4 +306,6 @@ const styles = StyleSheet.create({
   },
   yearOptionText: { ...typography.body, color: colors.textSecondary },
   yearOptionActive: { color: colors.accent, fontWeight: "600" },
+  headerBadge: { position: "absolute", top: -4, right: -6, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  headerBadgeText: { color: "#fff", fontSize: 8, fontWeight: "800" },
 });

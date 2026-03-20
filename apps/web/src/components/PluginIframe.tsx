@@ -199,6 +199,7 @@ export function PluginIframe({
           if (typeof data.path === "string") navigate(data.path);
           break;
 
+
         case "OVERLAY_OPEN": {
           document.querySelectorAll<HTMLElement>("[data-host-chrome]").forEach((el) => {
             el.style.filter = "blur(4px) brightness(0.5)";
