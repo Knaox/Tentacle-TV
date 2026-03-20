@@ -19,9 +19,10 @@ function getNumColumns(): number {
 interface Props {
   catalog: UseInfiniteQueryResult<{ pages: Array<{ Items: MediaItem[]; TotalRecordCount: number }> }>;
   onItemPress: (item: MediaItem) => void;
+  overrideItems?: MediaItem[];
 }
 
-export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress }: Props) {
+export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, overrideItems }: Props) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const [numColumns, setNumColumns] = useState(getNumColumns);
@@ -32,8 +33,8 @@ export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress }: P
   }, []);
 
   const items = useMemo(
-    () => catalog.data?.pages.flatMap((p) => p.Items) ?? [],
-    [catalog.data],
+    () => overrideItems ?? catalog.data?.pages.flatMap((p) => p.Items) ?? [],
+    [overrideItems, catalog.data],
   );
 
   const cardWidth = useMemo(() => {

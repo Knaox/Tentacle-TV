@@ -133,6 +133,7 @@ function PlaybackSection() {
   );
 }
 
+
 /* ── Services ── */
 interface DbFields { host: string; port: number; database: string; user: string }
 interface SvcData { jellyfin: { status: string; url: string; version: string }; database: { status: string; fromEnv: boolean; fields?: DbFields }; }

@@ -8,20 +8,13 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
 import { MediaContextMenu } from "./MediaContextMenu";
 import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
+import { LibraryFilterBar, useLibraryFilters } from "./LibraryFilters";
+import { usePlatformFilter } from "../hooks/usePlatformFilter";
 
 interface LibraryGridProps {
   libraryId: string;
   libraryName: string;
 }
-
-const SORT_OPTIONS = [
-  { value: "DateCreated,Descending", labelKey: "sortDateDesc" },
-  { value: "SortName,Ascending", labelKey: "sortTitleAsc" },
-  { value: "SortName,Descending", labelKey: "sortTitleDesc" },
-  { value: "ProductionYear,Descending", labelKey: "sortYearDesc" },
-  { value: "ProductionYear,Ascending", labelKey: "sortYearAsc" },
-  { value: "CommunityRating,Descending", labelKey: "sortRatingDesc" },
-] as const;
 
 const POSTER_ASPECT = 2 / 3;
 const TEXT_HEIGHT = 52;
@@ -31,14 +24,27 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const { t } = useTranslation("common");
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [sort, setSort] = useState("SortName,Ascending");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(input.trim()), 300);
     return () => clearTimeout(timer);
   }, [input]);
 
-  const [sortBy, sortOrder] = sort.split(",");
+  const {
+    filters, toggleGenre, togglePlatform, setYearFrom, setYearTo,
+    setRatingMin, setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
+    resetFilters, clearYears, clearRating, activeCount, hasActiveFilters,
+  } = useLibraryFilters();
+
+  // Construire les années pour le hook
+  const yearsParam = useMemo(() => {
+    if (!filters.yearFrom && !filters.yearTo) return undefined;
+    const from = filters.yearFrom ?? 1900;
+    const to = filters.yearTo ?? new Date().getFullYear();
+    const arr: string[] = [];
+    for (let y = from; y <= to; y++) arr.push(String(y));
+    return arr;
+  }, [filters.yearFrom, filters.yearTo]);
 
   const {
     data,
@@ -48,16 +54,26 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
     isFetchingNextPage,
   } = useLibraryCatalog(libraryId, {
     searchTerm: debounced,
-    sortBy,
-    sortOrder,
-    limit: 50,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+    genreIds: filters.genreIds.length > 0 ? filters.genreIds : undefined,
+    studioIds: filters.studioIds.length > 0 ? filters.studioIds : undefined,
+    years: yearsParam,
+    statusFilter: filters.statusFilter ?? undefined,
+    minCommunityRating: filters.ratingMin ?? undefined,
+    isFavorite: filters.isFavorite || undefined,
+    limit: filters.platformIds.length > 0 ? 500 : 50,
   });
 
-  const items = useMemo(
+  const allItems = useMemo(
     () => data?.pages.flatMap((p) => p.Items) ?? [],
     [data],
   );
-  const totalCount = data?.pages[0]?.TotalRecordCount ?? 0;
+
+  // Filtre plateforme TMDB (côté client, via /api/tmdb/check-providers)
+  const { filteredItems: platformFiltered } = usePlatformFilter(allItems, filters.platformIds);
+  const items = filters.platformIds.length > 0 ? platformFiltered : allItems;
+  const totalCount = filters.platformIds.length > 0 ? items.length : (data?.pages[0]?.TotalRecordCount ?? 0);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const { itemsPerRow, containerWidth } = useItemsPerRow(gridRef);
@@ -73,11 +89,17 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
     return cardWidth / POSTER_ASPECT + TEXT_HEIGHT + GAP;
   }, [containerWidth, itemsPerRow]);
 
+  // scrollMargin dynamique — recalculé quand les filtres changent la hauteur du header
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useEffect(() => {
+    if (gridRef.current) setScrollMargin(gridRef.current.offsetTop);
+  }, [filters, debounced, isLoading]);
+
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
     estimateSize,
     overscan: 5,
-    scrollMargin: gridRef.current?.offsetTop ?? 0,
+    scrollMargin,
   });
 
   // Fetch next page when approaching the end
@@ -93,7 +115,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   // Reset scroll when filters change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [sortBy, sortOrder, debounced]);
+  }, [filters, debounced]);
 
   const navigate = useNavigate();
   const handleNavigate = useCallback(
@@ -103,30 +125,37 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
 
   return (
     <div>
-      {/* Search + Sort bar */}
-      <div className="mb-6 flex flex-col gap-3 px-4 sm:flex-row sm:items-center md:px-8">
+      {/* Search bar */}
+      <div className="mb-4 px-4 md:px-8">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("common:searchInLibrary", { name: libraryName })}
           className="w-full max-w-md rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
         />
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="rounded-xl bg-white/5 px-4 py-3 text-sm text-white/70 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value} className="bg-tentacle-bg text-white">
-              {t(`common:${o.labelKey}`)}
-            </option>
-          ))}
-        </select>
-        {!isLoading && totalCount > 0 && (
-          <span className="text-sm text-white/40">
-            {t("common:itemCount", { count: totalCount })}
-          </span>
-        )}
+      </div>
+
+      {/* Filtres rapides + avancés */}
+      <div className="mb-6 px-4 md:px-8">
+        <LibraryFilterBar
+          libraryId={libraryId}
+          filters={filters}
+          activeCount={activeCount}
+          hasActiveFilters={hasActiveFilters}
+          totalResults={totalCount > 0 ? totalCount : undefined}
+          onToggleGenre={toggleGenre}
+          onTogglePlatform={togglePlatform}
+          onStatusChange={setStatusFilter}
+          onYearFromChange={setYearFrom}
+          onYearToChange={setYearTo}
+          onRatingMinChange={setRatingMin}
+          onFavoriteChange={setIsFavorite}
+          onSortByChange={setSortBy}
+          onSortOrderChange={setSortOrder}
+          onReset={resetFilters}
+          onClearYears={clearYears}
+          onClearRating={clearRating}
+        />
       </div>
 
       {/* Grid */}
