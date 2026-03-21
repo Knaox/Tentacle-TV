@@ -14,6 +14,7 @@ import {
   setPairingBackendUrl,
   setPreferencesToken,
   setStreamingConfigBackendUrl,
+  setWsBackendUrl,
   useStreamingConfig,
   STREAMING_CONFIG_QUERY_KEY,
   fetchInterfaceLanguage,
@@ -68,6 +69,7 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setConfigBackendUrl(baseUrl);
   setPairingBackendUrl(baseUrl);
   setStreamingConfigBackendUrl(baseUrl);
+  setWsBackendUrl(baseUrl);
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
   const TV_VERSION: string = require("../package.json").version ?? "0.9.2";

@@ -8,6 +8,7 @@ import fastifyStatic from "@fastify/static";
 import { resolve } from "path";
 import { existsSync } from "fs";
 import { ZodError } from "zod";
+import websocket from "@fastify/websocket";
 
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
 import { detectAppState, getAppState } from "./services/configStore";
@@ -28,7 +29,9 @@ import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { sharedWatchlistRoutes } from "./routes/sharedWatchlists";
 import { tmdbRoutes } from "./routes/tmdb";
+import { wsRoutes } from "./routes/ws";
 import { startPairingCleanup } from "./services/pairingCleanup";
+import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -89,6 +92,7 @@ async function main() {
 
   await app.register(compress, { threshold: 1024 });
   await app.register(rateLimit, { max: RATE_LIMIT, timeWindow: "1 minute" });
+  await app.register(websocket);
 
   // Global error handler: hide internals on 5xx, pass 4xx, format ZodErrors
   app.setErrorHandler((error, _request, reply) => {
@@ -138,7 +142,7 @@ async function main() {
   app.addHook("onRequest", async (request, reply) => {
     const url = request.url;
     // Always allow: setup, health, static files
-    if (url.startsWith("/api/setup") || url.startsWith("/api/health") || !url.startsWith("/api/")) {
+    if (url.startsWith("/api/setup") || url.startsWith("/api/health") || url.startsWith("/api/ws") || !url.startsWith("/api/")) {
       return;
     }
     let state = getAppState();
@@ -181,6 +185,7 @@ async function main() {
   await app.register(pairRoutes, { prefix: "/api/pair" });
   await app.register(sharedWatchlistRoutes, { prefix: "/api/shared-watchlists" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
+  await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
 
@@ -237,6 +242,7 @@ async function main() {
   // Start background workers only when fully configured
   if (state === "running") {
     startPairingCleanup();
+    startJellyfinPoller();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }

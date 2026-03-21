@@ -26,6 +26,7 @@ import {
   setPairingBackendUrl,
   setSharedWatchlistsBackendUrl,
   setSharedWatchlistsToken,
+  setWsBackendUrl,
 } from "@tentacle-tv/api-client";
 import { setSessionExpired } from "@/auth/sessionState";
 import { attemptReAuth } from "@/auth/credentialManager";
@@ -194,6 +195,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
     setTicketsBackendUrl(serverUrl);
     setPairingBackendUrl(serverUrl);
     setSharedWatchlistsBackendUrl(serverUrl);
+    setWsBackendUrl(serverUrl);
 
     const token = storage.getItem("tentacle_token");
     if (token) {

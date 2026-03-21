@@ -6,7 +6,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useWatchlist,
-  useTentacleConfig,
+  useTentacleConfig, useHomeWebSocket,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -31,6 +31,7 @@ export function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
+  useHomeWebSocket({ token: storage.getItem("tentacle_token") });
   const { openSidebar, isVisible: sidebarOpen } = useSidebar();
 
   // Invalidate volatile queries when screen regains focus (e.g. after Player)

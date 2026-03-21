@@ -1,6 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
+import { broadcastToUser } from "../services/wsManager";
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -63,5 +65,55 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
     });
 
     return { success: true };
+  });
+
+  // DELETE /api/notifications/all — Delete all user's notifications
+  app.delete("/all", async (request) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+
+    const result = await prisma.notification.deleteMany({
+      where: { jellyfinUserId: user.userId },
+    });
+
+    broadcastToUser(user.userId, "notifications");
+    return { deleted: result.count };
+  });
+
+  // DELETE /api/notifications/batch — Delete multiple by IDs
+  const batchSchema = z.object({ ids: z.array(z.string()).min(1).max(100) });
+
+  app.delete("/batch", async (request, reply) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+
+    const parsed = batchSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ message: "ids: array of 1-100 strings required" });
+    }
+
+    const result = await prisma.notification.deleteMany({
+      where: { id: { in: parsed.data.ids }, jellyfinUserId: user.userId },
+    });
+
+    broadcastToUser(user.userId, "notifications");
+    return { deleted: result.count };
+  });
+
+  // DELETE /api/notifications/:id — Delete single notification
+  app.delete("/:id", async (request, reply) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+    const { id } = request.params as { id: string };
+
+    const notif = await prisma.notification.findUnique({ where: { id } });
+    if (!notif || notif.jellyfinUserId !== user.userId) {
+      return reply.status(404).send({ message: "Notification introuvable" });
+    }
+
+    await prisma.notification.delete({ where: { id } });
+
+    broadcastToUser(user.userId, "notifications");
+    return { deleted: 1 };
   });
 };

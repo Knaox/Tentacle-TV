@@ -89,3 +89,92 @@ export function useMarkRead() {
     },
   });
 }
+
+// ---------- Delete hooks (optimistic) ----------
+
+type NotifSnapshot = {
+  lists: Array<[readonly unknown[], AppNotification[] | undefined]>;
+  unread: { count: number } | undefined;
+};
+
+function snapshotNotifs(qc: ReturnType<typeof useQueryClient>): NotifSnapshot {
+  const lists: NotifSnapshot["lists"] = [];
+  const cache = qc.getQueriesData<AppNotification[]>({ queryKey: ["notifications"] });
+  for (const [key, data] of cache) {
+    if (Array.isArray(data)) lists.push([key, data]);
+  }
+  const unread = qc.getQueryData<{ count: number }>(["notifications", "unread-count"]);
+  return { lists, unread };
+}
+
+function rollback(qc: ReturnType<typeof useQueryClient>, snap: NotifSnapshot): void {
+  for (const [key, data] of snap.lists) qc.setQueryData(key, data);
+  if (snap.unread) qc.setQueryData(["notifications", "unread-count"], snap.unread);
+}
+
+export function useDeleteNotification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      notifFetch<{ deleted: number }>(`/${id}`, { method: "DELETE" }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const snap = snapshotNotifs(qc);
+      let wasUnread = false;
+      for (const [key, data] of snap.lists) {
+        if (!data) continue;
+        const target = data.find((n) => n.id === id);
+        if (target && !target.read) wasUnread = true;
+        qc.setQueryData(key, data.filter((n) => n.id !== id));
+      }
+      if (wasUnread && snap.unread) {
+        qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - 1) });
+      }
+      return snap;
+    },
+    onError: (_err, _id, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
+  });
+}
+
+export function useDeleteNotifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      notifFetch<{ deleted: number }>("/batch", { method: "DELETE", body: JSON.stringify({ ids }) }),
+    onMutate: async (ids) => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const snap = snapshotNotifs(qc);
+      const idSet = new Set(ids);
+      let unreadRemoved = 0;
+      for (const [key, data] of snap.lists) {
+        if (!data) continue;
+        for (const n of data) { if (idSet.has(n.id) && !n.read) unreadRemoved++; }
+        qc.setQueryData(key, data.filter((n) => !idSet.has(n.id)));
+      }
+      if (unreadRemoved > 0 && snap.unread) {
+        qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - unreadRemoved) });
+      }
+      return snap;
+    },
+    onError: (_err, _ids, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
+  });
+}
+
+export function useDeleteAllNotifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      notifFetch<{ deleted: number }>("/all", { method: "DELETE" }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const snap = snapshotNotifs(qc);
+      for (const [key] of snap.lists) qc.setQueryData(key, []);
+      qc.setQueryData(["notifications", "unread-count"], { count: 0 });
+      return snap;
+    },
+    onError: (_err, _vars, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
+  });
+}
