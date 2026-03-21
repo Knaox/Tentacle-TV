@@ -14,7 +14,7 @@ import { MediaCarousel } from "../components/MediaCarousel";
 import { PageTransition } from "../components/PageTransition";
 
 export function Home() {
-  useHomeWebSocket();
+  useHomeWebSocket({ token: localStorage.getItem("tentacle_token") });
   const { t } = useTranslation("common");
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();

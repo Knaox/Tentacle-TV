@@ -37,7 +37,7 @@ export function Login() {
       });
       if (!res.ok) throw new Error("Demo unavailable");
       const data = await res.json();
-      if (isTauriApp && data.AccessToken) {
+      if (data.AccessToken) {
         localStorage.setItem("tentacle_token", data.AccessToken);
       }
       localStorage.setItem("tentacle_user", JSON.stringify(data.user));

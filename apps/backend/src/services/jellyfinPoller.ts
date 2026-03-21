@@ -1,7 +1,7 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 300_000; // 5 min (fallback — le WebSocket Jellyfin gère le temps réel)
 let timer: ReturnType<typeof setInterval> | null = null;
 
 // In-memory snapshots for change detection
@@ -72,7 +72,7 @@ async function poll(): Promise<void> {
 
 export function startJellyfinPoller(): void {
   if (timer) return;
-  console.log("[JellyfinPoller] Started (interval: 30s)");
+  console.log("[JellyfinPoller] Started as fallback (interval: 5min)");
   timer = setInterval(poll, POLL_INTERVAL);
   // Initial poll after a short delay to let the server finish starting
   setTimeout(poll, 5_000);

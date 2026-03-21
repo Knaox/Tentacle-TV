@@ -11,6 +11,7 @@ import {
 } from "../services/configStore";
 import { getPrisma } from "../services/db";
 import { injectCorsHosts } from "../services/jellyfinCors";
+import { restartJellyfinWs } from "../services/jellyfinWs";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
 const jellyfinConfigSchema = z.object({
@@ -100,6 +101,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
     await setConfigValue("jellyfin_url", url);
     await setConfigValue("jellyfin_api_key", body.apiKey);
+    restartJellyfinWs();
     return { success: true };
   });
 

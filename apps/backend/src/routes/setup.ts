@@ -20,6 +20,7 @@ import {
 } from "../services/configStore";
 import { requireAdmin } from "../middleware/auth";
 import { injectCorsHosts } from "../services/jellyfinCors";
+import { restartJellyfinWs } from "../services/jellyfinWs";
 import { BACKEND_VERSION } from "../services/version";
 
 /**
@@ -148,6 +149,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
     try {
       await setConfigValue("jellyfin_url", url);
       await setConfigValue("jellyfin_api_key", body.apiKey);
+      restartJellyfinWs();
 
       // Injection CORS automatique (non-bloquant)
       const tentacleOrigin = (request.headers.origin as string) || process.env.TENTACLE_PUBLIC_URL;
