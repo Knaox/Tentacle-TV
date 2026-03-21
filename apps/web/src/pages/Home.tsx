@@ -7,12 +7,14 @@ import {
   useWatchedItems,
   useFeaturedItems,
   useWatchlist,
+  useHomeWebSocket,
 } from "@tentacle-tv/api-client";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { PageTransition } from "../components/PageTransition";
 
 export function Home() {
+  useHomeWebSocket();
   const { t } = useTranslation("common");
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();

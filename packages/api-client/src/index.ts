@@ -26,8 +26,15 @@ export { useCreateTicket, useMyTickets, useAllTickets, useTicketDetail, useReply
 export type { SupportTicket, TicketMessage, TicketsPage } from "./hooks/useTickets";
 
 // Notifications
-export { useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, setNotificationsBackendUrl } from "./hooks/useNotifications";
+export { useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, useDeleteNotification, useDeleteNotifications, useDeleteAllNotifications, setNotificationsBackendUrl } from "./hooks/useNotifications";
 export type { AppNotification } from "./hooks/useNotifications";
+
+// Notification route resolution
+export { resolveNotificationRoute } from "./utils/notificationRoute";
+export type { NotifPluginMeta } from "./utils/notificationRoute";
+
+// WebSocket real-time home updates
+export { useHomeWebSocket, setWsBackendUrl } from "./hooks/useHomeWebSocket";
 
 // Shared watchlists
 export {

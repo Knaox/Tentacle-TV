@@ -21,6 +21,7 @@ import {
   setPairingBackendUrl,
   setStreamingConfigBackendUrl,
   setSharedWatchlistsBackendUrl,
+  setWsBackendUrl,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -76,6 +77,7 @@ export function configureBackendUrls(url: string) {
   setPairingBackendUrl(url);
   setStreamingConfigBackendUrl(url);
   setSharedWatchlistsBackendUrl(url);
+  setWsBackendUrl(url);
 }
 
 configureBackendUrls(backendUrl);

@@ -45,6 +45,7 @@ export default {
         "pulse-glow": "pulseGlow 2s ease infinite",
         breathe: "breathe 2s ease infinite",
         "ken-burns": "kenBurns 20s ease-in-out infinite alternate",
+        "fade-out": "fadeOut 0.3s ease forwards",
       },
       keyframes: {
         shimmer: {
@@ -78,6 +79,10 @@ export default {
         kenBurns: {
           "0%": { transform: "scale(1)" },
           "100%": { transform: "scale(1.05)" },
+        },
+        fadeOut: {
+          from: { opacity: "1", transform: "translateX(0)" },
+          to: { opacity: "0", transform: "translateX(20px)" },
         },
       },
     },

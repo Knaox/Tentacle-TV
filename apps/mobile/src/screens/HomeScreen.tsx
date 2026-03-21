@@ -6,6 +6,7 @@ import {
   useLibraries, useLatestItems, useUserId,
   useWatchlist, useMySharedWatchlists, useAllSharedWatchlistItems,
   useJellyfinClient,
+  useHomeWebSocket, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,8 @@ export function HomeScreen() {
   const { t: te } = useTranslation("errors");
   const router = useRouter();
   const userId = useUserId();
+  const { storage } = useTentacleConfig();
+  useHomeWebSocket({ token: storage.getItem("tentacle_token") });
 
   const featured = useFeaturedItems();
   const resume = useResumeItems();

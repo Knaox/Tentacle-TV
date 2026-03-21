@@ -62,7 +62,7 @@ async function validateJellyfinToken(token: string): Promise<ValidationResult> {
   }
 }
 
-async function validateToken(token: string): Promise<ValidationResult> {
+export async function validateToken(token: string): Promise<ValidationResult> {
   // 1. Try Jellyfin token first (most common path)
   const jfResult = await validateJellyfinToken(token);
   if (jfResult.ok) return jfResult;
