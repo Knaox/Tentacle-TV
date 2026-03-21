@@ -32,6 +32,7 @@ import { tmdbRoutes } from "./routes/tmdb";
 import { wsRoutes } from "./routes/ws";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
+import { startJellyfinWs } from "./services/jellyfinWs";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -243,6 +244,7 @@ async function main() {
   if (state === "running") {
     startPairingCleanup();
     startJellyfinPoller();
+    startJellyfinWs();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }

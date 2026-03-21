@@ -28,6 +28,7 @@ export function useAuth() {
           const data = await res.json();
           // Token is in httpOnly cookie — also set accessToken for Jellyfin auth header
           client.setAccessToken(data.AccessToken);
+          storage.setItem("tentacle_token", data.AccessToken);
           storage.setItem("tentacle_user", JSON.stringify(data.User));
           return data as AuthResponse;
         }
