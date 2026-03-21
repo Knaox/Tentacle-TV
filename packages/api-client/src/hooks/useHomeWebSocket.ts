@@ -105,6 +105,8 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
 
         if (tokenRef.current && ws?.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "auth", token: tokenRef.current }));
+        } else if (!tokenRef.current) {
+          console.warn("[WS] No token available for WebSocket auth");
         }
 
         pingTimer = setInterval(() => {
@@ -117,7 +119,11 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
       ws.onmessage = (event) => {
         try {
           const msg: WsServerMessage = JSON.parse(String(event.data));
-          if (msg.type === "home:update") {
+          if (msg.type === "auth_ok") {
+            console.warn("[WS] Authenticated successfully");
+          } else if (msg.type === "auth_error") {
+            console.warn("[WS] Auth failed:", (msg as { reason?: string }).reason);
+          } else if (msg.type === "home:update") {
             invalidateCarousel(msg.carousel);
           } else if (msg.type === "notifications:update") {
             qcRef.current.invalidateQueries({ queryKey: ["notifications"] });

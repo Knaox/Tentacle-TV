@@ -8,13 +8,16 @@ import {
   useFeaturedItems,
   useWatchlist,
   useHomeWebSocket,
+  useJellyfinClient,
 } from "@tentacle-tv/api-client";
 import { HeroBanner } from "../components/HeroBanner";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { PageTransition } from "../components/PageTransition";
 
 export function Home() {
-  useHomeWebSocket({ token: localStorage.getItem("tentacle_token") });
+  const client = useJellyfinClient();
+  const wsToken = client.getAccessToken() || localStorage.getItem("tentacle_token");
+  useHomeWebSocket({ token: wsToken });
   const { t } = useTranslation("common");
   const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
