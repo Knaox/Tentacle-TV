@@ -58,7 +58,12 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
 
     // 1. Try cookie auth first (web clients — cookie sent on upgrade)
     const cookies = (request as unknown as { cookies?: Record<string, string> }).cookies;
-    const cookieToken = cookies?.tentacle_token;
+    // Fallback: parse cookie manually from raw header if @fastify/cookie didn't run
+    let cookieToken = cookies?.tentacle_token;
+    if (!cookieToken && request.headers.cookie) {
+      const match = request.headers.cookie.match(/(?:^|;\s*)tentacle_token=([^;]*)/);
+      if (match) cookieToken = decodeURIComponent(match[1]);
+    }
 
     if (cookieToken) {
       authenticateAndBind(socket, cookieToken).then((u) => {
