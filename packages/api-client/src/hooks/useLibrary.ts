@@ -21,14 +21,14 @@ export function useLibraries() {
             client
               .fetch<{ TotalRecordCount: number }>(
                 `/Users/${userId}/Items?ParentId=${lib.Id}` +
-                  `&IncludeItemTypes=Movie,Series&Recursive=true` +
+                  `&IncludeItemTypes=Movie,Series&Recursive=true&ExcludeLocationTypes=Virtual&IsMissing=false` +
                   `&Limit=0&EnableTotalRecordCount=true`
               )
               .catch(() => undefined),
             client
               .fetch<{ Items: Array<{ Id: string; BackdropImageTags?: string[]; ImageTags?: { Primary?: string } }> }>(
                 `/Users/${userId}/Items?ParentId=${lib.Id}` +
-                  `&IncludeItemTypes=Movie,Series&Recursive=true` +
+                  `&IncludeItemTypes=Movie,Series&Recursive=true&ExcludeLocationTypes=Virtual&IsMissing=false` +
                   `&SortBy=Random&Limit=5&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
               )
               .catch(() => undefined),
@@ -71,10 +71,13 @@ export function useLibraryItems(
     queryFn: () => {
       let url = `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}&IncludeItemTypes=Movie,Series` +
-        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio&Limit=${limit}` +
+        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio,RecursiveItemCount` +
+        `&ExcludeLocationTypes=Virtual&IsMissing=false&Limit=${limit}` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`;
       if (search.length >= 2) url += `&searchTerm=${encodeURIComponent(search)}`;
-      return client.fetch<{ Items: MediaItem[] }>(url).then((r) => r.Items);
+      return client.fetch<{ Items: MediaItem[] }>(url).then((r) =>
+        r.Items.filter((item) => item.Type !== "Series" || (item.RecursiveItemCount ?? 0) > 0)
+      );
     },
     enabled: !!userId && !!libraryId,
     staleTime: 2 * 60 * 1000,
@@ -260,7 +263,8 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
         `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}` +
         `&IncludeItemTypes=${itemTypes}&Recursive=true` +
-        `&Fields=Overview,PrimaryImageAspectRatio,ProviderIds,Studios` +
+        `&Fields=Overview,PrimaryImageAspectRatio,ProviderIds,Studios,RecursiveItemCount` +
+        `&ExcludeLocationTypes=Virtual&IsMissing=false` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1` +
         `&Limit=${limit}&StartIndex=${pageParam}` +
         `&EnableTotalRecordCount=true&EnableUserData=true`;
@@ -271,12 +275,18 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
       if (minCommunityRating != null) url += `&MinCommunityRating=${minCommunityRating}`;
       if (studioIds && studioIds.length > 0) url += `&StudioIds=${studioIds.join(",")}`;
       if (searchTerm && searchTerm.length >= 2) url += `&searchTerm=${encodeURIComponent(searchTerm)}`;
-      return client.fetch<{ Items: MediaItem[]; TotalRecordCount: number }>(url);
+      return client.fetch<{ Items: MediaItem[]; TotalRecordCount: number }>(url).then((res) => ({
+        Items: res.Items.filter((item) =>
+          item.Type !== "Series" || (item.RecursiveItemCount ?? 0) > 0
+        ),
+        TotalRecordCount: res.TotalRecordCount,
+        _serverCount: res.Items.length,
+      }));
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
-      const loaded = allPages.reduce((sum, p) => sum + p.Items.length, 0);
-      return loaded < lastPage.TotalRecordCount ? loaded : undefined;
+      const serverLoaded = allPages.reduce((sum, p) => sum + p._serverCount, 0);
+      return serverLoaded < lastPage.TotalRecordCount ? serverLoaded : undefined;
     },
     enabled: !!userId && !!libraryId,
     staleTime: 2 * 60 * 1000,

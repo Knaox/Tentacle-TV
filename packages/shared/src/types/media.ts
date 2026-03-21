@@ -53,6 +53,7 @@ export interface MediaItem {
   // Folder
   IsFolder?: boolean;
   ChildCount?: number;
+  RecursiveItemCount?: number;
   CollectionType?: string;
 
   // Studios
