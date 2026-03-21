@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" /></a>
-  <img src="https://img.shields.io/badge/version-1.0.0--beta-8b5cf6" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.0-8b5cf6" alt="Version" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white" alt="Node" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
@@ -33,7 +33,7 @@
 | **Web** | Available | React 19 + Vite 6 + Tailwind CSS |
 | **macOS** | Available | Tauri v2 + native mpv player (signed & notarized) |
 | **Windows** | Available | Tauri v2 + native mpv player (MSI / EXE) |
-| **iOS** | Coming soon | React Native + Expo |
+| **iOS** | TestFlight | React Native + Expo |
 | **Android** | Coming soon | React Native + Expo |
 | **Android TV** | Available | React Native + ExoPlayer/Media3 |
 | **Apple TV** | Coming soon | React Native (tvOS) |
@@ -168,6 +168,42 @@ Open `http://<your-server>:3000` in your browser. The setup wizard will guide yo
 3. **Admin account** — Sign in with your Jellyfin admin credentials
 
 That's it. You're ready to stream.
+
+---
+
+## Reverse Proxy (Nginx Proxy Manager)
+
+If you expose Tentacle TV through **Nginx Proxy Manager**, follow these steps to enable real-time features (WebSocket).
+
+### 1. Create a Proxy Host
+
+| Field | Value |
+|-------|-------|
+| **Domain Names** | `tentacle.example.com` |
+| **Scheme** | `http` |
+| **Forward Hostname / IP** | Your server IP (e.g. `192.168.1.100`) |
+| **Forward Port** | `3000` (or your configured `PORT`) |
+| **Websockets Support** | **Enable** (toggle ON) |
+
+> The **Websockets Support** toggle is required for the real-time home page updates and notification sync. Without it, WebSocket connections to `/api/ws` will fail and the app will fall back to 60-second polling.
+
+### 2. SSL (recommended)
+
+Go to the **SSL** tab and either:
+- Select **Request a new SSL Certificate** with Let's Encrypt
+- Or upload your own certificate
+
+Enable **Force SSL** and **HTTP/2 Support**.
+
+### 3. Advanced (optional)
+
+If you encounter Content Security Policy errors in the browser console, click the **gear icon** on the proxy host to open the Advanced tab and add:
+
+```nginx
+proxy_hide_header Content-Security-Policy;
+```
+
+This removes any CSP header that might block WebSocket connections (`wss://`). The application already handles its own CSP policy.
 
 ---
 
