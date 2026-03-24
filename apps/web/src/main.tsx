@@ -119,7 +119,10 @@ if (savedToken) {
 jellyfinClient.setOnAuthExpired(async () => {
   try {
     const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-    if (res.ok) return; // Session restored silently
+    if (res.ok) {
+      jellyfinClient.resetAuthState();
+      return;
+    }
     if (res.status !== 401) return; // 503 / server error — keep session
   } catch { return; } // Network error — keep session
 
@@ -128,6 +131,13 @@ jellyfinClient.setOnAuthExpired(async () => {
   storage.removeItem("tentacle_token");
   storage.removeItem("tentacle_user");
 });
+
+// Proactive cookie refresh for long-running tabs (renew well before 90-day expiry)
+setInterval(async () => {
+  try {
+    await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+  } catch { /* silent — next request will trigger reactive refresh */ }
+}, 12 * 60 * 60 * 1000);
 
 const queryClient = new QueryClient({
   defaultOptions: {

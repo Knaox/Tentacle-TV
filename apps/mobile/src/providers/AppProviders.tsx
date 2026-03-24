@@ -39,6 +39,9 @@ function timeoutSignal(ms: number): AbortSignal {
   return controller.signal;
 }
 
+/** Mutex to prevent concurrent auth refresh from onAuthExpired + foreground handler */
+let isRefreshing = false;
+
 interface AppProvidersProps {
   storage: StorageAdapter;
   uuid: UuidGenerator;
@@ -73,52 +76,11 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
   // Handle auth expiration: try to refresh before logging out
   useEffect(() => {
     client.setOnAuthExpired(async () => {
-      const token = storage.getItem("tentacle_token");
-      if (!token || !serverUrl) {
-        setSessionExpired(true);
-        setPreferencesToken(null);
-        setSharedWatchlistsToken(null);
-        client.setAccessToken(null);
-        queryClient.clear();
-        router.replace("/(auth)/login");
-        return;
-      }
-
+      if (isRefreshing) return;
+      isRefreshing = true;
       try {
-        const res = await fetch(`${serverUrl}/api/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-          signal: timeoutSignal(5000),
-        });
-
-        if (res.ok) {
-          // Token still valid — restore session silently
-          const data = await res.json();
-          client.setAccessToken(data.AccessToken);
-          setPreferencesToken(data.AccessToken);
-          setSharedWatchlistsToken(data.AccessToken);
-          console.debug("[AppProviders] Token refreshed successfully");
-          return;
-        }
-
-        if (res.status === 401) {
-          // Token truly expired — try re-auth via stored credentials
-          console.debug("[AppProviders] Token expired — attempting re-auth");
-          const reAuth = await attemptReAuth(storage, serverUrl);
-          if (reAuth) {
-            client.setAccessToken(reAuth.AccessToken);
-            storage.setItem("tentacle_token", reAuth.AccessToken);
-            storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
-            setPreferencesToken(reAuth.AccessToken);
-            setSharedWatchlistsToken(reAuth.AccessToken);
-            console.debug("[AppProviders] Re-auth succeeded");
-            return;
-          }
-          // Re-auth failed — redirect to login
-          console.debug("[AppProviders] Re-auth failed — redirecting to login");
-          storage.removeItem("tentacle_token");
-          storage.removeItem("tentacle_user");
+        const token = storage.getItem("tentacle_token");
+        if (!token || !serverUrl) {
           setSessionExpired(true);
           setPreferencesToken(null);
           setSharedWatchlistsToken(null);
@@ -128,11 +90,51 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           return;
         }
 
-        // Server error (503, etc.) — keep token, don't disconnect
-        console.debug("[AppProviders] Refresh failed (server unreachable) — keeping session");
-      } catch {
-        // Network error — don't disconnect
-        console.debug("[AppProviders] Refresh failed (network) — keeping session");
+        try {
+          const res = await fetch(`${serverUrl}/api/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+            signal: timeoutSignal(8000),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            client.setAccessToken(data.AccessToken);
+            setPreferencesToken(data.AccessToken);
+            setSharedWatchlistsToken(data.AccessToken);
+            client.resetAuthState();
+            return;
+          }
+
+          if (res.status === 401) {
+            const reAuth = await attemptReAuth(storage, serverUrl);
+            if (reAuth) {
+              client.setAccessToken(reAuth.AccessToken);
+              storage.setItem("tentacle_token", reAuth.AccessToken);
+              storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
+              setPreferencesToken(reAuth.AccessToken);
+              setSharedWatchlistsToken(reAuth.AccessToken);
+              client.resetAuthState();
+              return;
+            }
+            storage.removeItem("tentacle_token");
+            storage.removeItem("tentacle_user");
+            setSessionExpired(true);
+            setPreferencesToken(null);
+            setSharedWatchlistsToken(null);
+            client.setAccessToken(null);
+            queryClient.clear();
+            router.replace("/(auth)/login");
+            return;
+          }
+
+          // Server error (503, etc.) — keep token, don't disconnect
+        } catch {
+          // Network error / timeout — don't disconnect
+        }
+      } finally {
+        isRefreshing = false;
       }
     });
   }, [client, storage, router, serverUrl]);
@@ -141,15 +143,17 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
   useEffect(() => {
     const sub = AppState.addEventListener("change", async (state) => {
       if (state !== "active" || !serverUrl) return;
+      if (isRefreshing) return;
       const token = storage.getItem("tentacle_token");
       if (!token) return;
 
+      isRefreshing = true;
       try {
         const res = await fetch(`${serverUrl}/api/auth/refresh`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
-          signal: timeoutSignal(5000),
+          signal: timeoutSignal(8000),
         });
 
         if (res.ok) {
@@ -157,8 +161,8 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           client.setAccessToken(data.AccessToken);
           setPreferencesToken(data.AccessToken);
           setSharedWatchlistsToken(data.AccessToken);
+          client.resetAuthState();
         } else if (res.status === 401) {
-          // Try re-auth via stored credentials
           const reAuth = await attemptReAuth(storage, serverUrl);
           if (reAuth) {
             client.setAccessToken(reAuth.AccessToken);
@@ -166,6 +170,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setPreferencesToken(reAuth.AccessToken);
             setSharedWatchlistsToken(reAuth.AccessToken);
+            client.resetAuthState();
           } else {
             storage.removeItem("tentacle_token");
             storage.removeItem("tentacle_user");
@@ -180,6 +185,8 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
         // 503/network error: silently ignore, keep current session
       } catch {
         // Network error — keep session
+      } finally {
+        isRefreshing = false;
       }
     });
     return () => sub.remove();

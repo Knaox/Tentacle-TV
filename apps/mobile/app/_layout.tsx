@@ -97,11 +97,20 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
     const url = storage.getItem("tentacle_server_url");
     const token = storage.getItem("tentacle_token");
+    const disclaimerAccepted = storage.getItem("disclaimer_accepted") === "true";
 
     if (!url) {
-      const onSetup = segments[0] === "(auth)" && (segments as string[])[1] === "server-setup";
-      if (!onSetup) {
-        router.replace("/(auth)/server-setup");
+      // No server URL yet — show disclaimer first (once), then server-setup
+      if (!disclaimerAccepted) {
+        const onDisclaimer = inAuthGroup && (segments as string[])[1] === "disclaimer";
+        if (!onDisclaimer) {
+          router.replace("/(auth)/disclaimer");
+        }
+      } else {
+        const onSetup = inAuthGroup && (segments as string[])[1] === "server-setup";
+        if (!onSetup) {
+          router.replace("/(auth)/server-setup");
+        }
       }
     } else if (url && !token && !inAuthGroup) {
       router.replace("/(auth)/login");

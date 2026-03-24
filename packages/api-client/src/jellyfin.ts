@@ -28,14 +28,15 @@ export class JellyfinClient {
   private deviceName: string;
   private clientName: string;
   private version: string;
-  private authExpiredCallback?: () => void;
+  private authExpiredCallback?: () => void | Promise<void>;
   private directStreaming: DirectStreamingState | null = null;
   private directStreamingErrors = 0;
   private directStreamingFailCallback?: () => void;
   private static readonly DS_ERROR_THRESHOLD = 3;
   private _consecutive401Count = 0;
   private _isLoggingIn = false;
-  private static readonly AUTH_EXPIRE_THRESHOLD = 2;
+  private _authRefreshInProgress = false;
+  private static readonly AUTH_EXPIRE_THRESHOLD = 3;
   /** When true, send credentials: "include" (httpOnly cookies) instead of token headers. */
   useCredentials = false;
   constructor(
@@ -54,12 +55,18 @@ export class JellyfinClient {
     this.deviceId = this.getOrCreateDeviceId(uuid);
   }
 
-  setOnAuthExpired(cb: () => void) { this.authExpiredCallback = cb; }
+  setOnAuthExpired(cb: () => void | Promise<void>) { this.authExpiredCallback = cb; }
   setAccessToken(token: string | null) { this.accessToken = token; }
   getAccessToken() { return this.accessToken; }
   getToken() { return this.accessToken; }
   setLoggingIn(v: boolean) { this._isLoggingIn = v; }
   setBaseUrl(url: string) { this.baseUrl = url.replace(/\/$/, ""); }
+
+  /** Reset auth state after a successful token refresh. */
+  resetAuthState() {
+    this._consecutive401Count = 0;
+    this._authRefreshInProgress = false;
+  }
 
   getBaseUrl() { return this.baseUrl; }
 
@@ -146,9 +153,12 @@ export class JellyfinClient {
     if (!response.ok) {
       if (response.status === 401 && this.accessToken && !this._isLoggingIn) {
         this._consecutive401Count++;
-        if (this._consecutive401Count >= JellyfinClient.AUTH_EXPIRE_THRESHOLD) {
+        if (this._consecutive401Count >= JellyfinClient.AUTH_EXPIRE_THRESHOLD && !this._authRefreshInProgress) {
           this._consecutive401Count = 0;
-          this.authExpiredCallback?.();
+          this._authRefreshInProgress = true;
+          Promise.resolve(this.authExpiredCallback?.()).finally(() => {
+            this._authRefreshInProgress = false;
+          });
         }
       }
       throw new JellyfinError(response.status, response.statusText, path);

@@ -38,6 +38,8 @@ interface UseHomeWebSocketOptions {
   enabled?: boolean;
   /** Polling fallback interval (ms) when WS disconnected. Default: 60000. */
   fallbackInterval?: number;
+  /** Called when WebSocket receives an auth error (invalid token). */
+  onAuthError?: () => void;
 }
 
 const INITIAL_BACKOFF = 1_000;
@@ -45,7 +47,7 @@ const MAX_BACKOFF = 30_000;
 const PING_INTERVAL = 30_000;
 
 export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
-  const { token, enabled = true, fallbackInterval = 60_000 } = options;
+  const { token, enabled = true, fallbackInterval = 60_000, onAuthError } = options;
   const qc = useQueryClient();
 
   // Store volatile values in refs so the effect doesn't re-run on every render
@@ -53,6 +55,8 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
   tokenRef.current = token;
   const qcRef = useRef(qc);
   qcRef.current = qc;
+  const onAuthErrorRef = useRef(onAuthError);
+  onAuthErrorRef.current = onAuthError;
 
   useEffect(() => {
     if (!enabled || !_wsUrl) return;
@@ -63,6 +67,7 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
     let fallbackTimer: ReturnType<typeof setInterval> | null = null;
     let pingTimer: ReturnType<typeof setInterval> | null = null;
     let backoff = INITIAL_BACKOFF;
+    const authClosedRef = { current: false };
 
     function invalidateCarousel(carousel: CarouselId) {
       const keys = CAROUSEL_KEYS[carousel];
@@ -120,9 +125,16 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
         try {
           const msg: WsServerMessage = JSON.parse(String(event.data));
           if (msg.type === "auth_ok") {
-            console.warn("[WS] Authenticated successfully");
+            console.debug("[WS] Authenticated successfully");
           } else if (msg.type === "auth_error") {
-            console.warn("[WS] Auth failed:", (msg as { reason?: string }).reason);
+            const reason = (msg as { reason?: string }).reason;
+            console.warn("[WS] Auth failed:", reason);
+            // Close WS and notify caller — don't silently degrade
+            if (reason !== "server_unreachable") {
+              authClosedRef.current = true;
+              ws?.close();
+              onAuthErrorRef.current?.();
+            }
           } else if (msg.type === "home:update") {
             invalidateCarousel(msg.carousel);
           } else if (msg.type === "notifications:update") {
@@ -135,6 +147,12 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
         if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
         ws = null;
         if (!mounted) return;
+        // Don't reconnect on auth failure (invalid token) — only on network issues
+        if (authClosedRef.current) {
+          authClosedRef.current = false;
+          startFallback();
+          return;
+        }
         startFallback();
         const delay = backoff;
         backoff = Math.min(delay * 2, MAX_BACKOFF);

@@ -14,6 +14,7 @@ import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
 import { ToastProvider } from "./contexts/ToastContext";
 import { isTauriApp } from "./main";
+import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
@@ -103,6 +104,9 @@ export function App() {
   const authed = useIsAuthenticated();
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(
+    () => localStorage.getItem("disclaimer_accepted") === "true",
+  );
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const [backendDown, setBackendDown] = useState(false);
   // Desktop app: need server URL before anything else
@@ -141,12 +145,20 @@ export function App() {
     check();
   }, [needsServerUrl]);
 
-  // Desktop app: show simple server URL input
+  // Desktop app: show disclaimer before server URL input (first launch only)
   if (needsServerUrl) {
+    if (!disclaimerAccepted) {
+      return <Disclaimer onAccepted={() => setDisclaimerAccepted(true)} />;
+    }
     return <AppConnect onConnected={() => { setNeedsServerUrl(false); window.location.reload(); }} />;
   }
 
   if (setupRequired === null) return <PageSpinner />;
+
+  // Web first setup: show disclaimer before setup wizard
+  if (setupRequired && !disclaimerAccepted) {
+    return <Disclaimer onAccepted={() => setDisclaimerAccepted(true)} />;
+  }
 
   // Backend unreachable (502/503/crash) — show crying tentacle, reload on reconnect
   if (backendDown) {

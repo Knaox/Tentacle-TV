@@ -22,6 +22,7 @@ import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";
 import { MobileEpisodeList } from "../components/MobileEpisodeList";
 import { CastRow } from "../components/CastRow";
+import { LicenseAttribution } from "../components/LicenseAttribution";
 import { SharedWatchlistPickerSheet } from "../components/SharedWatchlistPickerSheet";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../constants/featureFlags";
 
@@ -264,6 +265,9 @@ export function MediaDetailScreen({ itemId }: Props) {
             <CastRow people={item.People} />
           </>
         )}
+
+        {/* License attribution (libre de droit / CC content) */}
+        <LicenseAttribution item={item} />
 
         {/* Episodes */}
         {isSeries && <MobileEpisodeList seriesId={item.Id} onPlay={(ep) => router.push(`/watch/${ep.Id}`)} />}

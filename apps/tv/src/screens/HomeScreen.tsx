@@ -7,6 +7,7 @@ import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useWatchlist,
   useTentacleConfig, useHomeWebSocket,
+  setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -93,7 +94,11 @@ export function HomeScreen({ navigation }: Props) {
     else if (screen === "Logout") {
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
-      navigation.replace("PairCode");
+      storage.removeItem("tentacle_jellyfin_token");
+      storage.removeItem("tentacle_jellyfin_url");
+      setPreferencesToken(null);
+      queryClient.clear();
+      navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
     } else if (screen.startsWith("Library_")) {
       const libId = screen.replace("Library_", "");
       const lib = libraries?.find((l) => l.Id === libId);
@@ -107,8 +112,12 @@ export function HomeScreen({ navigation }: Props) {
   const handleLogout = useCallback(() => {
     storage.removeItem("tentacle_token");
     storage.removeItem("tentacle_user");
-    navigation.replace("PairCode");
-  }, [storage, navigation]);
+    storage.removeItem("tentacle_jellyfin_token");
+    storage.removeItem("tentacle_jellyfin_url");
+    setPreferencesToken(null);
+    queryClient.clear();
+    navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
+  }, [storage, navigation, queryClient]);
 
   const renderPortraitCard = useCallback((item: MediaItem) => (
     <TVMediaCard item={item} variant="portrait" />

@@ -6,6 +6,7 @@ import type { RootStackParamList } from "./types";
 import { SkeletonLoader } from "./ScreenFallback";
 
 // Direct imports — initial screens, must load immediately
+import { DisclaimerScreen } from "../screens/DisclaimerScreen";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 
@@ -22,12 +23,16 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function AppNavigator() {
   const { storage } = useTentacleConfig();
+  const disclaimerAccepted = storage.getItem("disclaimer_accepted") === "true";
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const hasToken = !!storage.getItem("tentacle_token");
 
-  const initialRouteName = hasServerUrl
-    ? (hasToken ? "Home" : "Login")
-    : "PairCode";
+  // Disclaimer only on first launch (no server URL yet and never accepted)
+  const initialRouteName = !hasServerUrl && !disclaimerAccepted
+    ? "Disclaimer"
+    : hasServerUrl
+      ? (hasToken ? "Home" : "Login")
+      : "PairCode";
 
   return (
     <Suspense fallback={<SkeletonLoader />}>
@@ -40,6 +45,7 @@ export function AppNavigator() {
           statusBarHidden: true,
         }}
       >
+        <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
         <Stack.Screen name="PairCode" component={PairCodeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
