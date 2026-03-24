@@ -33,6 +33,8 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   const handleLogout = useCallback(() => {
     storage.removeItem("tentacle_token");
     storage.removeItem("tentacle_user");
+    storage.removeItem("tentacle_jellyfin_token");
+    storage.removeItem("tentacle_jellyfin_url");
     queryClient.clear();
     navigation.dispatch(
       CommonActions.reset({ index: 0, routes: [{ name: "PairCode" as never }] }),

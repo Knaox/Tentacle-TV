@@ -15,6 +15,7 @@ export function useServerReachable() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCheckedRef = useRef(false);
   const wasOfflineRef = useRef(false);
+  const lastReconnectRef = useRef(0);
 
   const checkServer = useCallback(async () => {
     try {
@@ -54,13 +55,26 @@ export function useServerReachable() {
     checkServer();
   }, [checkServer]);
 
-  // Invalide toutes les queries quand le serveur revient
+  // Invalide les queries quand le serveur revient (échelonné pour éviter un burst)
   useEffect(() => {
     if (!isReachable) {
       wasOfflineRef.current = true;
     } else if (wasOfflineRef.current) {
       wasOfflineRef.current = false;
-      queryClient.invalidateQueries();
+      // Debounce: ignore rapid offline→online transitions within 5s
+      if (Date.now() - lastReconnectRef.current < 5000) return;
+      lastReconnectRef.current = Date.now();
+      // Critical queries first
+      queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+      queryClient.invalidateQueries({ queryKey: ["next-up"] });
+      queryClient.invalidateQueries({ queryKey: ["featured"] });
+      // Stagger remaining queries to avoid request burst
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: ["libraries"] });
+      }, 2000);
     }
   }, [isReachable, queryClient]);
 

@@ -31,6 +31,13 @@ import { navigationRef } from "./navigation/navigationRef";
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
 
+/** AbortSignal.timeout() polyfill for React Native */
+function timeoutSignal(ms: number): AbortSignal {
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -94,13 +101,14 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
+        signal: timeoutSignal(10_000),
       });
 
       if (res.ok) {
-        // Token still valid — restore session silently
         const data = await res.json();
         jfClient.setAccessToken(data.AccessToken);
         setPreferencesToken(data.AccessToken);
+        jfClient.resetAuthState();
         return;
       }
 
@@ -109,17 +117,35 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
         return;
       }
     } catch {
-      // Network error — keep session
+      // Network error / timeout — keep session
       return;
     }
 
-    // 401 confirmed — token truly expired, logout
+    // 401 confirmed — retry once after 2s (Jellyfin may have been restarting)
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const retry = await fetch(`${serverUrl}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        signal: timeoutSignal(10_000),
+      });
+      if (retry.ok) {
+        const data = await retry.json();
+        jfClient.setAccessToken(data.AccessToken);
+        setPreferencesToken(data.AccessToken);
+        jfClient.resetAuthState();
+        return;
+      }
+    } catch { /* ignore — proceed to logout */ }
+
     doLogout();
 
     function doLogout() {
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
       storage.removeItem("tentacle_jellyfin_token");
+      storage.removeItem("tentacle_jellyfin_url");
       setPreferencesToken(null);
       queryClient.clear();
       if (navigationRef.isReady()) {

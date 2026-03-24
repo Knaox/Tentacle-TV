@@ -189,7 +189,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/auth/refresh — Verify token validity + renew cookie. */
-  app.post("/refresh", { config: { rateLimit: { max: 10, timeWindow: 60000 } } }, async (request, reply) => {
+  app.post("/refresh", { config: { rateLimit: { max: 20, timeWindow: 60000 } } }, async (request, reply) => {
     const body = (request.body as { token?: string } | undefined);
     const token = body?.token
       || (request as any).cookies?.tentacle_token;

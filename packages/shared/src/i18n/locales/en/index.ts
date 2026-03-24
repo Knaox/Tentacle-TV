@@ -13,9 +13,10 @@ import adminPlugins from "./adminPlugins";
 import media from "./media";
 import errors from "./errors";
 import profile from "./profile";
+import disclaimer from "./disclaimer";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
-  adminPlugins, media, errors, profile,
+  adminPlugins, media, errors, profile, disclaimer,
 };

@@ -3,7 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import { validateToken, type JellyfinUser } from "../middleware/auth";
 import { addConnection, removeConnection } from "../services/wsManager";
 
-const AUTH_TIMEOUT_MS = 10_000;
+const AUTH_TIMEOUT_MS = 15_000;
 const PING_INTERVAL_MS = 30_000;
 
 interface WsClientMessage {
@@ -33,8 +33,13 @@ async function authenticateAndBind(
 ): Promise<JellyfinUser | null> {
   const result = await validateToken(token);
   if (!result.ok) {
-    ws.send(JSON.stringify({ type: "auth_error", reason: result.reason }));
-    ws.close(4001, "Authentication failed");
+    if (result.reason === "unreachable") {
+      ws.send(JSON.stringify({ type: "auth_error", reason: "server_unreachable" }));
+      ws.close(4003, "Server unreachable");
+    } else {
+      ws.send(JSON.stringify({ type: "auth_error", reason: "invalid_token" }));
+      ws.close(4001, "Authentication failed");
+    }
     return null;
   }
 
