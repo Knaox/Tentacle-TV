@@ -183,6 +183,12 @@ export function usePlayerPlayback(itemId: string) {
             /([?&])(api_key|ApiKey)=[^&]*/i,
             `$1ApiKey=${encodeURIComponent(ds.jellyfinToken)}`
           );
+        } else if (Platform.OS === "ios") {
+          // iOS AirPlay: Apple TV needs api_key in the URL (no cookie support)
+          const token = client.getAccessToken();
+          if (token && !/api_key|ApiKey/i.test(transcodingPath)) {
+            transcodingPath += (transcodingPath.includes("?") ? "&" : "?") + `api_key=${encodeURIComponent(token)}`;
+          }
         }
         url = `${baseUrl}${transcodingPath}`;
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, StatusBar, Platform } from "react-native";
+import { View, Text, StatusBar, Platform, StyleSheet } from "react-native";
 import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { Feather } from "@expo/vector-icons";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
@@ -38,6 +39,7 @@ export function PlayerScreen({ itemId }: Props) {
   const retryingRef = useRef(false);
   const hasEverPlayed = useRef(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
+  const [isAirPlaying, setIsAirPlaying] = useState(false);
 
   // Orientation: landscape on mount, portrait on unmount
   useEffect(() => {
@@ -259,12 +261,15 @@ export function PlayerScreen({ itemId }: Props) {
           // Auth headers — Android only (iOS uses cookies / query string token)
           ...(Platform.OS === "android" && Object.keys(pb.headers).length > 0 ? { headers: pb.headers } : {}),
           startPosition: pb.startPositionMs > 0 ? pb.startPositionMs : undefined,
-          // Sideloaded VTT tracks — iOS direct play only (Android uses custom SubtitleOverlay)
-          textTracks: pb.isDirectPlay && pb.textTracks.length > 0 && Platform.OS === "ios"
+          // Sideloaded VTT tracks — Android only. iOS uses SubtitleOverlay to keep AirPlay working
+          // (sidecar textTracks create AVMutableComposition which force-disables external playback)
+          textTracks: pb.isDirectPlay && pb.textTracks.length > 0 && Platform.OS === "android"
             ? pb.textTracks as any
             : undefined,
           // Help ExoPlayer identify HLS streams (Jellyfin URLs may lack .m3u8 extension)
           ...(Platform.OS === "android" && !pb.isDirectPlay ? { type: "m3u8" } : {}),
+          // Now Playing metadata for lock screen / AirPlay / Control Center
+          metadata: { title: pb.item?.Name ?? "", artist: pb.item?.SeriesName ?? "" },
         }}
         style={{ flex: 1 }}
         resizeMode="contain"
@@ -284,13 +289,8 @@ export function PlayerScreen({ itemId }: Props) {
             : undefined
         }
         selectedTextTrack={
-          // iOS direct play: select sideloaded VTT track by index
-          videoReady && pb.isDirectPlay && pb.textTrackSelectedIndex >= 0 && Platform.OS === "ios"
-            ? { type: SelectedTrackType.INDEX, value: pb.textTrackSelectedIndex }
-            // Android + transcode: subtitles handled by custom SubtitleOverlay — disable native tracks
-            : videoReady
-              ? { type: SelectedTrackType.DISABLED }
-              : undefined
+          // All subtitles handled by custom SubtitleOverlay — disable native tracks
+          videoReady ? { type: SelectedTrackType.DISABLED } : undefined
         }
         onLoad={handleLoad}
         onProgress={handleProgress}
@@ -300,12 +300,32 @@ export function PlayerScreen({ itemId }: Props) {
         onReadyForDisplay={() => setIsBuffering(false)}
         progressUpdateInterval={250}
         preventsDisplaySleepDuringVideoPlayback
-        allowsExternalPlayback={pb.textTracks.length === 0}
-        // PiP only on iOS — Android needs manifest config
-        {...(Platform.OS === "ios" ? { enterPictureInPictureOnLeave: true } : {})}
+        showNotificationControls={Platform.OS === "ios"}
+        allowsExternalPlayback={Platform.OS === "ios"}
+        onExternalPlaybackChange={({ isExternalPlaybackActive }) => {
+          setIsAirPlaying(isExternalPlaybackActive);
+          // Restore position when AirPlay activates (AVPlayer reloads the stream)
+          if (isExternalPlaybackActive && currentTime > 1) {
+            setTimeout(() => videoRef.current?.seek(currentTime), 500);
+          }
+        }}
+        // iOS: background playback + PiP for AirPlay continuity
+        {...(Platform.OS === "ios" ? {
+          playInBackground: true,
+          playWhenInactive: true,
+          enterPictureInPictureOnLeave: true,
+        } : {})}
       />
 
       <SubtitleOverlay vttUrl={pb.subtitleVttUrl} currentTime={currentTime} headers={pb.headers} />
+
+      {/* AirPlay active indicator */}
+      {isAirPlaying && (
+        <View style={airplayStyles.overlay}>
+          <Feather name="airplay" size={48} color="rgba(255,255,255,0.6)" />
+          <Text style={airplayStyles.text}>{t("airplayActive")}</Text>
+        </View>
+      )}
 
       {isBuffering && !hasEverPlayed.current && <PlayerLoadingView />}
 
@@ -346,3 +366,18 @@ export function PlayerScreen({ itemId }: Props) {
     </View>
   );
 }
+
+const airplayStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    gap: 16,
+  },
+  text: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});
