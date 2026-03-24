@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Pressable, Animated, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
 import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
@@ -7,6 +7,11 @@ import { QUALITY_PRESETS, type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { PlayerPopupMenu } from "./player/PlayerPopupMenu";
 import { AutoPlayOverlay } from "./player/AutoPlayOverlay";
+
+// AirPlay button — iOS only (native AVRoutePickerView)
+const AirPlaySection = Platform.OS === "ios"
+  ? require("./player/AirPlayButton").AirPlaySection
+  : () => null;
 
 interface Track { index: number; label: string }
 
@@ -165,6 +170,7 @@ export function MobilePlayerOverlay({
               />
             </View>
             <View style={{ flexDirection: "row", gap: 6, marginBottom: 34 }}>
+              <AirPlaySection />
               {subtitleTracks.length > 0 && (
                 <Pressable
                   onPress={() => { setShowSubtitles(true); setShowSettings(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}

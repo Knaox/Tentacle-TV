@@ -21,6 +21,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["audio"],
+        "AVInitialRouteSharingPolicy": "LongFormVideo",
         "NSLocalNetworkUsageDescription": "Tentacle TV needs access to your local network to connect to your Jellyfin media server.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true

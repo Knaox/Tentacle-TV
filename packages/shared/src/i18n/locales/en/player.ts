@@ -32,4 +32,5 @@ export default {
   playbackError: "Video playback error",
   retry: "Retry",
   back: "Back",
+  airplayActive: "Playing on external display",
 } as const;

@@ -32,4 +32,5 @@ export default {
   playbackError: "Erreur de lecture vidéo",
   retry: "Réessayer",
   back: "Retour",
+  airplayActive: "Lecture sur un écran externe",
 } as const;
