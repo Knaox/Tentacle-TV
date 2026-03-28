@@ -31,10 +31,13 @@ export function useLatestItems(parentId: string | undefined) {
 
   return useQuery({
     queryKey: ["latest-items", parentId],
-    queryFn: () =>
-      client.fetch<MediaItem[]>(
+    queryFn: () => {
+      // Guard: ne jamais envoyer de requête avec un parentId vide
+      if (!parentId || !userId) return Promise.resolve([]);
+      return client.fetch<MediaItem[]>(
         `/Users/${userId}/Items/Latest?ParentId=${parentId}&Limit=16&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
-      ),
+      );
+    },
     enabled: !!userId && !!parentId,
     staleTime: 2 * 60 * 1000,
   });
