@@ -138,26 +138,34 @@ export async function tmdbRoutes(app: FastifyInstance) {
 
     const itemTypes = mediaType === "movie" ? "Movie" : "Series";
     try {
-      // Stratégie 1 : AnyProviderIdEquals + filtre exact côté serveur (100 résultats max)
+      const fields = "ProviderIds,ImageTags,BackdropImageTags";
+
+      // Stratégie 1 : AnyProviderIdEquals + filtre exact côté serveur
       const res = await fetch(
-        `${jellyfinUrl}/Items?AnyProviderIdEquals=tmdb.${tmdbId}&IncludeItemTypes=${itemTypes}&Recursive=true&Limit=100&Fields=ProviderIds`,
+        `${jellyfinUrl}/Items?AnyProviderIdEquals=tmdb.${tmdbId}&IncludeItemTypes=${itemTypes}&Recursive=true&Limit=100&Fields=${fields}`,
         { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(8_000) },
       );
       if (res.ok) {
-        const data = (await res.json()) as { Items?: Array<{ Id: string; ProviderIds?: Record<string, string> }> };
+        const data = (await res.json()) as { Items?: Array<{ Id: string; Name?: string; Type?: string; ProviderIds?: Record<string, string>; ImageTags?: Record<string, string> }> };
         const match = data.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
-        if (match) return { jellyfinId: match.Id };
+        if (match) {
+          console.log(`[TMDB] Resolved ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
+          return { jellyfinId: match.Id };
+        }
       }
 
-      // Stratégie 2 : Fallback — récupérer TOUS les items avec ProviderIds et chercher
+      // Stratégie 2 : Fallback — scan complet
       const allRes = await fetch(
-        `${jellyfinUrl}/Items?IncludeItemTypes=${itemTypes}&Recursive=true&Limit=10000&Fields=ProviderIds`,
+        `${jellyfinUrl}/Items?IncludeItemTypes=${itemTypes}&Recursive=true&Limit=10000&Fields=${fields}`,
         { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(15_000) },
       );
       if (allRes.ok) {
-        const allData = (await allRes.json()) as { Items?: Array<{ Id: string; ProviderIds?: Record<string, string> }> };
+        const allData = (await allRes.json()) as { Items?: Array<{ Id: string; Name?: string; Type?: string; ProviderIds?: Record<string, string>; ImageTags?: Record<string, string> }> };
         const match = allData.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
-        if (match) return { jellyfinId: match.Id };
+        if (match) {
+          console.log(`[TMDB] Resolved (fallback) ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
+          return { jellyfinId: match.Id };
+        }
       }
 
       return { jellyfinId: null };

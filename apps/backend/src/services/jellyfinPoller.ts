@@ -41,11 +41,13 @@ async function poll(): Promise<void> {
     }
 
     // 2. Check latest items (more granular change detection)
-    const latest = await jfFetch<Array<{ Id: string }>>(
-      "/Items/Latest?Limit=5&Fields=DateCreated",
+    // Note: /Users/{userId}/Items/Latest requiert parentId sur Jellyfin 10.10+
+    // On utilise /Items avec tri par DateCreated à la place
+    const latest = await jfFetch<{ Items: Array<{ Id: string }> }>(
+      "/Items?SortBy=DateCreated&SortOrder=Descending&Limit=5&Recursive=true&IncludeItemTypes=Movie,Series,Episode",
     );
-    if (latest) {
-      const ids = latest.map((i) => i.Id).join(",");
+    if (latest?.Items) {
+      const ids = latest.Items.map((i) => i.Id).join(",");
       if (lastLatestIds !== null && ids !== lastLatestIds) {
         broadcastAll("recently_added");
         broadcastAll("featured");
