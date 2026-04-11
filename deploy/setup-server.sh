@@ -80,8 +80,8 @@ if [ ! -f "/opt/tentacle-backend/.env" ]; then
 # ══════════════════════════════════════════════════
 
 # ─── Jellyfin (Backend only) ───
-JELLYFIN_URL=http://172.16.1.30:8096
-JELLYFIN_ADMIN_API_KEY=4a5785698c084c6d9bf99400517596e9
+JELLYFIN_URL=http://changeme:8096
+JELLYFIN_ADMIN_API_KEY=changeme
 
 # ─── MariaDB ───
 DATABASE_URL=mysql://tentacle:CHANGE_MOI_MOT_DE_PASSE@localhost:3306/tentacle
