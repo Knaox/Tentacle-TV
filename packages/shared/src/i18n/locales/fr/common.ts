@@ -63,6 +63,7 @@ export default {
   offlineHint: "Cela se résout généralement tout seul. Si le problème persiste, contactez votre administrateur.",
   retryConnection: "Réessayer la connexion",
   offlineLogout: "Se déconnecter",
+  changeServer: "Changer de serveur",
   resumeAt: "Reprendre à {{time}}",
   showMore: "Voir plus",
   showLess: "Voir moins",

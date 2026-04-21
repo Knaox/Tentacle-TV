@@ -78,5 +78,28 @@ export function useAuth() {
     },
   });
 
-  return { login, logout };
+  // Full reset that also wipes the server URL — required when the backend is
+  // unreachable or moved, so the client can be redirected to server-setup.
+  // Does not await the backend logout (server may be dead by design).
+  const changeServer = useMutation({
+    mutationFn: async () => {
+      if (client.useCredentials) {
+        const baseUrl = client.getBaseUrl().replace(/\/api\/jellyfin$/, "");
+        await fetch(`${baseUrl}/api/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        }).catch(() => {});
+      }
+      client.setAccessToken(null);
+      storage.removeItem("tentacle_token");
+      storage.removeItem("tentacle_user");
+      storage.removeItem("tentacle_server_url");
+      storage.removeItem("tentacle_jellyfin_token");
+      storage.removeItem("tentacle_jellyfin_url");
+      storage.removeItem("tentacle_credentials");
+      queryClient.clear();
+    },
+  });
+
+  return { login, logout, changeServer };
 }

@@ -14,6 +14,7 @@ import { useServerReachable } from "@/hooks/useServerReachable";
 import { clearCredentials } from "@/auth/credentialManager";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
+import { useServerUrl } from "@/providers/ServerUrlContext";
 import { colors } from "@/theme";
 
 // Prevent splash screen from auto-hiding
@@ -30,8 +31,9 @@ initI18n({ lng: "fr" });
 /** Composant interne — nécessite AppProviders comme parent */
 function OfflineOverlay() {
   const { isReachable, retry } = useServerReachable();
-  const { logout } = useAuth();
+  const { logout, changeServer } = useAuth();
   const { storage: appStorage } = useTentacleConfig();
+  const { setServerUrl } = useServerUrl();
   const router = useRouter();
 
   const handleLogout = useCallback(() => {
@@ -49,7 +51,23 @@ function OfflineOverlay() {
     });
   }, [logout, appStorage, router]);
 
-  return <OfflineBanner visible={!isReachable} onRetry={retry} onLogout={handleLogout} />;
+  const handleChangeServer = useCallback(() => {
+    changeServer.mutate(undefined, {
+      onSettled: () => {
+        setServerUrl(null);
+        router.replace("/(auth)/server-setup");
+      },
+    });
+  }, [changeServer, router, setServerUrl]);
+
+  return (
+    <OfflineBanner
+      visible={!isReachable}
+      onRetry={retry}
+      onLogout={handleLogout}
+      onChangeServer={handleChangeServer}
+    />
+  );
 }
 
 export default function RootLayout() {
@@ -119,9 +137,13 @@ export default function RootLayout() {
     }
   }, [ready, segments, router]);
 
-  // Callback exposed to server-setup screen
-  const handleSetServerUrl = useCallback((url: string) => {
-    storage.setItem("tentacle_server_url", url);
+  // Callback exposed to server-setup + changeServer flows
+  const handleSetServerUrl = useCallback((url: string | null) => {
+    if (url) {
+      storage.setItem("tentacle_server_url", url);
+    } else {
+      storage.removeItem("tentacle_server_url");
+    }
     setServerUrl(url);
   }, []);
 

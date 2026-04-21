@@ -15,7 +15,7 @@ export function Login() {
   const [forgotSent, setForgotSent] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation("auth");
-  const { login } = useAuth();
+  const { login, changeServer } = useAuth();
   const { data: config } = useAppConfig();
   const refreshPlugins = useRefreshPlugins();
   const [demoLoading, setDemoLoading] = useState(false);
@@ -141,7 +141,7 @@ export function Login() {
 
             {isTauriApp && (
               <button
-                onClick={() => { localStorage.removeItem("tentacle_server_url"); window.location.reload(); }}
+                onClick={() => changeServer.mutate(undefined, { onSettled: () => window.location.reload() })}
                 className="mt-4 w-full text-center text-sm text-white/30 transition-colors hover:text-white/60"
               >
                 {t("changeServer")}

@@ -9,6 +9,7 @@ export default {
   about: "About",
   admin: "Administration",
   logout: "Sign out",
+  changeServer: "Change server",
   profile: "Profile",
   search: "Search",
   discover: "Discover",

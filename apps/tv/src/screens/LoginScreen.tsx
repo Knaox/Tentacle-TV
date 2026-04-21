@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, ActivityIndicator, TVFocusGuideView } from "react-native";
-import { useTentacleConfig, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useAuth, useTentacleConfig, useJellyfinClient } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -17,6 +17,7 @@ export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const { storage } = useTentacleConfig();
   const jellyfinClient = useJellyfinClient();
+  const { changeServer } = useAuth();
 
   useTVRemote({ onBack: () => navigation.goBack() });
 
@@ -59,10 +60,9 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   const handleChangeServer = () => {
-    storage.removeItem("tentacle_server_url");
-    storage.removeItem("tentacle_token");
-    storage.removeItem("tentacle_user");
-    navigation.replace("PairCode");
+    changeServer.mutate(undefined, {
+      onSettled: () => navigation.replace("PairCode"),
+    });
   };
 
   return (

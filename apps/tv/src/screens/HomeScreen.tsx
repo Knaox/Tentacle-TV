@@ -6,7 +6,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useWatchlist,
-  useTentacleConfig, useHomeWebSocket,
+  useTentacleConfig, useHomeWebSocket, useAuth,
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -31,6 +31,7 @@ const HERO_H = Math.round(SCREEN_H * HeroConfig.heightRatio);
 export function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
+  const { changeServer } = useAuth();
   const queryClient = useQueryClient();
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
   const { openSidebar, isVisible: sidebarOpen } = useSidebar();
@@ -79,7 +80,8 @@ export function HomeScreen({ navigation }: Props) {
   const isLoading = (featuredQuery.isLoading || librariesQuery.isLoading) && !featured && !libraries;
 
   const navigateToDetail = useCallback((item: MediaItem) => {
-    navigation.navigate("MediaDetail", { itemId: item.Id });
+    const detailId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
+    navigation.navigate("MediaDetail", { itemId: detailId });
   }, [navigation]);
 
   const navigateToPlay = useCallback((item: MediaItem) => {
@@ -98,7 +100,14 @@ export function HomeScreen({ navigation }: Props) {
       storage.removeItem("tentacle_jellyfin_url");
       setPreferencesToken(null);
       queryClient.clear();
-      navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } else if (screen === "ChangeServer") {
+      changeServer.mutate(undefined, {
+        onSettled: () => {
+          setPreferencesToken(null);
+          navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
+        },
+      });
     } else if (screen.startsWith("Library_")) {
       const libId = screen.replace("Library_", "");
       const lib = libraries?.find((l) => l.Id === libId);
@@ -107,7 +116,7 @@ export function HomeScreen({ navigation }: Props) {
         libraryName: lib?.Name ?? "",
       });
     }
-  }, [navigation, storage, libraries]);
+  }, [navigation, storage, libraries, changeServer, queryClient]);
 
   const handleLogout = useCallback(() => {
     storage.removeItem("tentacle_token");
@@ -256,7 +265,7 @@ export function HomeScreen({ navigation }: Props) {
                 keyExtractor={(item) => item.Id}
                 itemWidth={CardConfig.landscape.width}
                 style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToDetail}
+                onItemPress={navigateToPlay}
                 onLayout={(e) => rowYMap.current.set("resume", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("resume")}
               />
@@ -266,9 +275,9 @@ export function HomeScreen({ navigation }: Props) {
               <FocusableRow
                 title={t("nextEpisodes")}
                 data={nextUp}
-                renderItem={renderLandscapeCard}
+                renderItem={renderPortraitCard}
                 keyExtractor={(item) => item.Id}
-                itemWidth={CardConfig.landscape.width}
+                itemWidth={CardConfig.portrait.width}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
                 onLayout={(e) => rowYMap.current.set("nextUp", e.nativeEvent.layout.y)}

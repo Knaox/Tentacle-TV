@@ -4,6 +4,7 @@ import { useAuth } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "./CryingTentacle";
 import { useServerReachable } from "../hooks/useServerReachable";
+import { isTauriApp } from "../main";
 
 interface OfflineBannerProps {
   /** Si true, recharge la page quand le serveur revient (mode backendDown initial) */
@@ -17,7 +18,7 @@ interface OfflineBannerProps {
 export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const { isReachable, retry } = useServerReachable();
-  const { logout } = useAuth();
+  const { logout, changeServer } = useAuth();
   const navigate = useNavigate();
   const wasOfflineRef = useRef(false);
 
@@ -32,8 +33,22 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
 
   if (isReachable) return null;
 
+  // Reload the page afterwards — the OfflineBanner renders at App root when
+  // backendDown is true, short-circuiting the router. Without a reload, calling
+  // navigate("/login") leaves the banner visible and the user feels stuck.
   const handleLogout = () => {
-    logout.mutate(undefined, { onSuccess: () => navigate("/login") });
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        if (reloadOnReconnect) window.location.reload();
+        else navigate("/login");
+      },
+    });
+  };
+
+  const handleChangeServer = () => {
+    changeServer.mutate(undefined, {
+      onSettled: () => window.location.reload(),
+    });
   };
 
   return (
@@ -64,6 +79,14 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
         >
           {t("offlineLogout")}
         </button>
+        {isTauriApp && (
+          <button
+            onClick={handleChangeServer}
+            className="mt-3 rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-sm font-semibold text-white/70 transition-all hover:bg-white/10 hover:scale-105 active:scale-95"
+          >
+            {t("changeServer")}
+          </button>
+        )}
       </div>
     </div>
   );

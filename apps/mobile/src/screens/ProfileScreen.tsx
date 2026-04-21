@@ -9,6 +9,7 @@ import { colors, spacing, typography } from "../theme";
 import { GlassCard, Badge, Button, Divider, FadeIn, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
 import { clearCredentials } from "../auth/credentialManager";
+import { useServerUrl } from "../providers/ServerUrlContext";
 
 // Read version directly from app.json (expo-constants bakes the value into the native build)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -19,8 +20,9 @@ const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVA
 export function ProfileScreen() {
   const { t } = useTranslation("profile");
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, changeServer } = useAuth();
   const { storage } = useTentacleConfig();
+  const { setServerUrl } = useServerUrl();
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
 
@@ -43,6 +45,28 @@ export function ProfileScreen() {
       },
     });
   };
+
+  const handleChangeServer = useCallback(() => {
+    Alert.alert(
+      t("changeServerTitle"),
+      t("changeServerMessage"),
+      [
+        { text: t("clearCacheCancel"), style: "cancel" },
+        {
+          text: t("changeServerConfirm"),
+          style: "destructive",
+          onPress: () => {
+            changeServer.mutate(undefined, {
+              onSettled: () => {
+                setServerUrl(null);
+                router.replace("/(auth)/server-setup");
+              },
+            });
+          },
+        },
+      ]
+    );
+  }, [t, changeServer, setServerUrl, router]);
 
   const handleClearCache = useCallback(() => {
     Alert.alert(
@@ -234,6 +258,20 @@ export function ProfileScreen() {
           >
             <Feather name="user-x" size={16} color={colors.danger} />
             <Text style={{ ...typography.bodyBold, color: colors.danger }}>{t("deleteAccount")}</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleChangeServer}
+            accessibilityRole="button"
+            accessibilityLabel={t("changeServer")}
+            style={{
+              flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm,
+              width: "100%", paddingVertical: 14, borderRadius: spacing.buttonRadius,
+              backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: colors.border,
+              marginBottom: spacing.md,
+            }}
+          >
+            <Feather name="server" size={16} color={colors.textSecondary} />
+            <Text style={{ ...typography.bodyBold, color: colors.textSecondary }}>{t("changeServer")}</Text>
           </Pressable>
           <Pressable
             onPress={handleClearCache}
