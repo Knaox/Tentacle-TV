@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useMyPairedDevices, useRevokeMyDevice, useAuth } from "@tentacle-tv/api-client";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 import { PageTransition } from "../components/PageTransition";
+import { isTauriApp } from "../main";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -138,9 +139,39 @@ export function Preferences() {
 
         {/* Paired devices section */}
         <PairedDevicesSection />
+
+        {/* Desktop only: change server URL */}
+        {isTauriApp && <ChangeServerSection />}
       </main>
     </div>
     </PageTransition>
+  );
+}
+
+function ChangeServerSection() {
+  const { t } = useTranslation(["profile", "common"]);
+  const { changeServer } = useAuth();
+
+  const handleChangeServer = () => {
+    const confirmed = window.confirm(t("profile:changeServerMessage"));
+    if (!confirmed) return;
+    changeServer.mutate(undefined, {
+      onSettled: () => window.location.reload(),
+    });
+  };
+
+  return (
+    <div className="mt-8 rounded-xl border border-white/5 bg-white/5 p-5">
+      <h3 className="mb-1 text-sm font-semibold text-white">{t("profile:changeServerTitle")}</h3>
+      <p className="mb-4 text-xs text-white/50">{t("profile:changeServerMessage")}</p>
+      <button
+        onClick={handleChangeServer}
+        disabled={changeServer.isPending}
+        className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/10 disabled:opacity-40"
+      >
+        {t("profile:changeServer")}
+      </button>
+    </div>
   );
 }
 

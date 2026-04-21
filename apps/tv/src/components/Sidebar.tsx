@@ -45,13 +45,14 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
   const { t } = useTranslation("nav");
   const { isVisible, closeSidebar } = useSidebar();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [changeServerModalVisible, setChangeServerModalVisible] = useState(false);
   const { data: libraries } = useLibraries();
 
   const slideX = useSharedValue(-Spacing.sidebarWidth);
   const dimOpacity = useSharedValue(0);
 
   // BACK button closes the sidebar
-  useTVRemote({ onBack: isVisible && !logoutModalVisible ? closeSidebar : undefined });
+  useTVRemote({ onBack: isVisible && !logoutModalVisible && !changeServerModalVisible ? closeSidebar : undefined });
 
   const wasVisible = useRef(false);
   useEffect(() => {
@@ -79,6 +80,10 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
       setLogoutModalVisible(true);
       return;
     }
+    if (key === "ChangeServer") {
+      setChangeServerModalVisible(true);
+      return;
+    }
     closeSidebar();
     onNavigate(key);
   }, [onNavigate, closeSidebar]);
@@ -88,6 +93,14 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
     if (value === "confirm") {
       closeSidebar();
       onNavigate("Logout");
+    }
+  }, [closeSidebar, onNavigate]);
+
+  const handleChangeServerSelect = useCallback((value: string) => {
+    setChangeServerModalVisible(false);
+    if (value === "confirm") {
+      closeSidebar();
+      onNavigate("ChangeServer");
     }
   }, [closeSidebar, onNavigate]);
 
@@ -199,12 +212,12 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
               </Text>
             </View>
 
-            {/* All navigation items — hide from focus graph when logout modal is open */}
+            {/* All navigation items — hide from focus graph when a modal is open */}
             <View
               // @ts-ignore — Android TV accessibility
-              importantForAccessibility={logoutModalVisible ? "no-hide-descendants" : "auto"}
+              importantForAccessibility={logoutModalVisible || changeServerModalVisible ? "no-hide-descendants" : "auto"}
             >
-              {renderItem("Home", t("home"), <HomeIcon size={ICON_SIZE} color={ICON_COLOR} />, isVisible && !logoutModalVisible)}
+              {renderItem("Home", t("home"), <HomeIcon size={ICON_SIZE} color={ICON_COLOR} />, isVisible && !logoutModalVisible && !changeServerModalVisible)}
               {renderItem("Search", t("search"), <SearchIcon size={ICON_SIZE} color={ICON_COLOR} />)}
 
               {divider}
@@ -221,6 +234,7 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
 
               {renderItem("Preferences", t("preferences"), <SettingsIcon size={ICON_SIZE} color={ICON_COLOR} />)}
               {renderItem("About", t("about"), <InfoIcon size={ICON_SIZE} color={ICON_COLOR} />)}
+              {renderItem("ChangeServer", t("changeServer"), <SettingsIcon size={ICON_SIZE} color={ICON_COLOR} />)}
               {renderItem("Logout", t("logout"), <LogoutIcon size={ICON_SIZE} color={Colors.error} />)}
             </View>
           </ScrollView>
@@ -238,6 +252,20 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
           selectedValue={null}
           onSelect={handleLogoutSelect}
           onClose={() => setLogoutModalVisible(false)}
+        />
+      )}
+
+      {/* Change server confirmation modal */}
+      {changeServerModalVisible && (
+        <SelectionModal
+          title={t("changeServer")}
+          options={[
+            { value: "confirm", label: t("changeServer") },
+            { value: "cancel", label: t("cancel", { defaultValue: "Cancel" }) },
+          ]}
+          selectedValue={null}
+          onSelect={handleChangeServerSelect}
+          onClose={() => setChangeServerModalVisible(false)}
         />
       )}
     </>

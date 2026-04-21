@@ -3,7 +3,7 @@ import { View, Text, TVFocusGuideView, StyleSheet } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { Colors } from "../theme/colors";
 import { CryingTentacle } from "./CryingTentacle";
@@ -18,6 +18,7 @@ interface OfflineBannerProps {
 export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
+  const { changeServer } = useAuth();
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const opacity = useSharedValue(0);
@@ -37,9 +38,19 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
     storage.removeItem("tentacle_jellyfin_url");
     queryClient.clear();
     navigation.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: "PairCode" as never }] }),
+      CommonActions.reset({ index: 0, routes: [{ name: "Login" as never }] }),
     );
   }, [storage, navigation, queryClient]);
+
+  const handleChangeServer = useCallback(() => {
+    changeServer.mutate(undefined, {
+      onSettled: () => {
+        navigation.dispatch(
+          CommonActions.reset({ index: 0, routes: [{ name: "PairCode" as never }] }),
+        );
+      },
+    });
+  }, [changeServer, navigation]);
 
   if (!visible) return null;
 

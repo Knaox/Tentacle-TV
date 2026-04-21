@@ -7,9 +7,10 @@ interface OfflineBannerProps {
   visible: boolean;
   onRetry: () => void;
   onLogout?: () => void;
+  onChangeServer?: () => void;
 }
 
-export function OfflineBanner({ visible, onRetry, onLogout }: OfflineBannerProps) {
+export function OfflineBanner({ visible, onRetry, onLogout, onChangeServer }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -35,6 +36,11 @@ export function OfflineBanner({ visible, onRetry, onLogout }: OfflineBannerProps
         {onLogout && (
           <Pressable style={styles.logoutButton} onPress={onLogout}>
             <Text style={styles.logoutButtonText}>{t("offlineLogout")}</Text>
+          </Pressable>
+        )}
+        {onChangeServer && (
+          <Pressable style={styles.changeServerButton} onPress={onChangeServer}>
+            <Text style={styles.changeServerButtonText}>{t("changeServer")}</Text>
           </Pressable>
         )}
       </View>
@@ -91,6 +97,20 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: "#ef4444",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  changeServerButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    marginTop: 12,
+  },
+  changeServerButtonText: {
+    color: "rgba(255, 255, 255, 0.7)",
     fontSize: 15,
     fontWeight: "600",
   },

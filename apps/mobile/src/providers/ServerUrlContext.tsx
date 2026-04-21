@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 
 export interface ServerUrlContextValue {
   serverUrl: string | null;
-  setServerUrl: (url: string) => void;
+  setServerUrl: (url: string | null) => void;
 }
 
 export const ServerUrlContext = createContext<ServerUrlContextValue>({

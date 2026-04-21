@@ -63,6 +63,7 @@ export default {
   offlineHint: "This usually resolves on its own. If the problem persists, contact your administrator.",
   retryConnection: "Retry connection",
   offlineLogout: "Sign out",
+  changeServer: "Change server",
   resumeAt: "Resume at {{time}}",
   showMore: "Show more",
   showLess: "Show less",
