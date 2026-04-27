@@ -4,6 +4,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { getPrisma, hasPrisma } from "../services/db";
 import { broadcastToUser } from "../services/wsManager";
+import { getCached, setCached, getCacheTtl } from "../services/jellyfinCache";
 
 /** Headers to skip when proxying (hop-by-hop). */
 const SKIP_REQUEST_HEADERS = new Set([
@@ -153,6 +154,21 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
+    // Cache lookup pour les routes lourdes en lecture (Latest/Resume/NextUp/Views).
+    // Ne s'applique qu'aux GET — les mutations passent toujours en direct.
+    const queryString = qs;
+    const cacheTtl = (request.method === "GET" || request.method === "HEAD")
+      ? getCacheTtl(wildcardPath) : null;
+    if (cacheTtl !== null) {
+      const cached = getCached(wildcardPath, queryString, incomingToken);
+      if (cached) {
+        reply.status(cached.status);
+        reply.header("content-type", cached.contentType);
+        reply.header("x-tentacle-cache", "HIT");
+        return reply.send(cached.body);
+      }
+    }
+
     // Forward request headers
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(request.headers)) {
@@ -236,6 +252,18 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Avoid piping an empty stream which can confuse some clients.
       if (response.status === 204 || !response.body) {
         return reply.send();
+      }
+
+      // Pour les routes cachables (Latest/Resume/NextUp/Views) on lit le body
+      // en mémoire afin de pouvoir le ré-utiliser. Pour les médias et autres
+      // routes, on stream comme avant pour ne pas charger des Go en RAM.
+      if (cacheTtl !== null && !isMediaResponse) {
+        const arrayBuf = await response.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        const contentType = response.headers.get("content-type") ?? "application/json";
+        setCached(wildcardPath, queryString, incomingToken, buf, contentType, response.status, cacheTtl);
+        reply.header("x-tentacle-cache", "MISS");
+        return reply.send(buf);
       }
 
       // Convert Web ReadableStream to Node.js Readable for Fastify

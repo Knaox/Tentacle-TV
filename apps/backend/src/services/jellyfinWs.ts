@@ -13,6 +13,13 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 let backoff = INITIAL_BACKOFF;
 let stopped = true;
+let wsConnected = false;
+
+/** Indique si le WebSocket Jellyfin est actuellement connecté.
+ *  Utilisé par jellyfinPoller pour se mettre en veille quand le WS fonctionne. */
+export function isJellyfinWsConnected(): boolean {
+  return wsConnected;
+}
 
 /** Construit l'URL WebSocket Jellyfin à partir de la config */
 function buildWsUrl(): string | null {
@@ -95,6 +102,7 @@ function connect(): void {
   ws.on("open", () => {
     console.log("[JellyfinWs] Connecté à Jellyfin");
     backoff = INITIAL_BACKOFF;
+    wsConnected = true;
 
     keepAliveTimer = setInterval(() => {
       if (ws?.readyState === WebSocket.OPEN) {
@@ -107,6 +115,7 @@ function connect(): void {
 
   ws.on("close", () => {
     if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+    wsConnected = false;
     ws = null;
     if (!stopped) scheduleReconnect();
   });

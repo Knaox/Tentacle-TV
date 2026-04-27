@@ -32,8 +32,10 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
       if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
     },
     onSuccess: () => {
-      // Remove from personal watchlist in Jellyfin DB
-      client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
+      // Effet de bord — non bloquant pour l'UI : différé au tick suivant
+      setTimeout(() => {
+        client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
+      }, 0);
     },
     onSettled: () => invalidateAllMediaQueries(qc, { itemId, seriesContext }),
   });

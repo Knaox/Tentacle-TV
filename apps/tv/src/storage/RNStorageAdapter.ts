@@ -30,6 +30,21 @@ export class RNStorageAdapter implements StorageAdapter {
     this.cache.delete(key);
     AsyncStorage.removeItem(key).catch(console.error);
   }
+
+  /**
+   * Variante awaitable pour les clés critiques (token, user, credentials)
+   * — garantit que la valeur est persistée disque avant qu'on continue,
+   * évite les pertes de session si l'OS tue l'app juste après login.
+   */
+  async setItemAsync(key: string, value: string): Promise<void> {
+    this.cache.set(key, value);
+    await AsyncStorage.setItem(key, value);
+  }
+
+  async removeItemAsync(key: string): Promise<void> {
+    this.cache.delete(key);
+    await AsyncStorage.removeItem(key);
+  }
 }
 
 /**

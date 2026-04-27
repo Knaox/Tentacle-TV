@@ -12,6 +12,7 @@ import { PluginIframe } from "./components/PluginIframe";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
+import { useMpvWarmup } from "./hooks/useMpvWarmup";
 import { ToastProvider } from "./contexts/ToastContext";
 import { isTauriApp } from "./main";
 import { Disclaimer } from "./pages/Disclaimer";
@@ -104,6 +105,8 @@ export function App() {
   const authed = useIsAuthenticated();
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
+  // Préchauffage mpv (no-op hors Tauri) — élimine le cold start Windows.
+  useMpvWarmup();
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(
     () => localStorage.getItem("disclaimer_accepted") === "true",
   );

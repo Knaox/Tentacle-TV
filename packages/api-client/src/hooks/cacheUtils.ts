@@ -25,25 +25,42 @@ const LIST_QUERY_PREFIXES = [
 interface InvalidateOptions {
   itemId?: string;
   seriesContext?: { seriesId: string; seasonId?: string };
+  /** Force le refetch immédiat des listes liées à la série (utile pour batch saison). */
+  refetchSeriesContext?: boolean;
 }
 
 /**
  * Invalide toutes les query keys qui affichent des MediaItem avec UserData.
+ *
+ * Stratégie en 2 niveaux pour éviter le délai ressenti après "mark watched" :
+ * - "active": refetch immédiat — uniquement les caches qui pilotent l'UI visible
+ *   du détail courant (["item", id]).
+ * - "none":   marqué stale, refetch au prochain mount/focus — les 13 listes
+ *   globales. L'optimistic update (updateItemUserDataInCache) a déjà patché
+ *   les listes en cache, donc l'utilisateur voit la bonne valeur sans payer
+ *   la cascade de refetchs.
  */
 export function invalidateAllMediaQueries(
   qc: QueryClient,
   opts?: InvalidateOptions,
 ): void {
-  for (const prefix of LIST_QUERY_PREFIXES) {
-    qc.invalidateQueries({ queryKey: [prefix] });
-  }
-
+  // Refetch immédiat sur l'item courant (et la série parente si contexte épisode)
   if (opts?.itemId) {
-    qc.invalidateQueries({ queryKey: ["item", opts.itemId] });
+    qc.invalidateQueries({ queryKey: ["item", opts.itemId], refetchType: "active" });
+  }
+  if (opts?.seriesContext) {
+    qc.invalidateQueries({
+      queryKey: ["item", opts.seriesContext.seriesId],
+      refetchType: "active",
+    });
   }
 
-  if (opts?.seriesContext) {
-    qc.invalidateQueries({ queryKey: ["item", opts.seriesContext.seriesId] });
+  // Listes globales : marquer stale uniquement (pas de cascade réseau)
+  // sauf si l'appelant veut explicitement rafraîchir le contexte série
+  // (ex. batch saison où on veut une source de vérité immédiate).
+  const listRefetch: "none" | "active" = opts?.refetchSeriesContext ? "active" : "none";
+  for (const prefix of LIST_QUERY_PREFIXES) {
+    qc.invalidateQueries({ queryKey: [prefix], refetchType: listRefetch });
   }
 }
 

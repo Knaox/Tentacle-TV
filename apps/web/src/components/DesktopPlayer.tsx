@@ -508,8 +508,13 @@ export function DesktopPlayer({
   const showSkipIntro = introSegment && actualPos >= introSegment.start && actualPos < introSegment.end - 1;
   const showSkipCredits = creditsSegment && actualPos >= creditsSegment.start && actualPos < creditsSegment.end - 1;
 
-  // Show loading overlay: initial load OR source change (quality/audio switch)
-  const showLoadingOverlay = sourceChanging || (!state.playing && !hasStartedRef.current);
+  // Show loading overlay: initial load OR source change (quality/audio switch).
+  // Sécurité anti-spinner-éternel : dès que mpv a une position > 0 (donc lit
+  // réellement quelque chose), on masque l'overlay même si l'event "playing"
+  // a été perdu (cas observé sur certaines configs Windows + EAC3 5.1).
+  const showLoadingOverlay = state.position > 0
+    ? false
+    : sourceChanging || (!state.playing && !hasStartedRef.current);
 
   if (error && onFallbackToWeb) { onFallbackToWeb(); return null; }
   if (error) return (

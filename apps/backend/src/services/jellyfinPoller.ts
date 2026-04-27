@@ -1,5 +1,6 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
+import { isJellyfinWsConnected } from "./jellyfinWs";
 
 const POLL_INTERVAL = 300_000; // 5 min (fallback — le WebSocket Jellyfin gère le temps réel)
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -27,6 +28,9 @@ async function jfFetch<T>(path: string): Promise<T | null> {
 }
 
 async function poll(): Promise<void> {
+  // Si le WebSocket Jellyfin est connecté, il gère déjà les notifications en
+  // temps réel — inutile de poller (économie de 3 requêtes / 5 min).
+  if (isJellyfinWsConnected()) return;
   try {
     // 1. Check item count changes (recently added)
     const counts = await jfFetch<{ MovieCount?: number; SeriesCount?: number; EpisodeCount?: number }>(
