@@ -146,8 +146,8 @@ function DbStep({ onNext }: { onNext: () => void }) {
       <h2 className="mb-1 text-lg font-semibold">{t("dbTitle")}</h2>
       <p className="mb-4 text-sm text-white/50">{t("dbSubtitle")}</p>
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2"><Inp label={t("dbHost")} value={host} set={setHost} /></div>
+        <div className="grid grid-cols-1 gap-3 xs:grid-cols-3">
+          <div className="xs:col-span-2"><Inp label={t("dbHost")} value={host} set={setHost} /></div>
           <Inp label={t("dbPort")} value={port} set={setPort} />
         </div>
         <Inp label={t("dbName")} value={database} set={setDatabase} />

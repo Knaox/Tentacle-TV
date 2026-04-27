@@ -120,13 +120,13 @@ function SharedListSection({ list }: { list: SharedWatchlistSummary }) {
       )}
       <div className="px-5 pb-5">
         {isLoading ? (
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {Array.from({ length: 4 }).map((_, i) => (<div key={i} className="aspect-[2/3] animate-pulse rounded-lg bg-white/5" />))}
           </div>
         ) : visibleItems.length === 0 ? (
           <p className="py-6 text-center text-sm text-white/30">{t("common:emptyWatchlist")}</p>
         ) : (
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {visibleItems.map((item) => (
               <SharedItemCard
                 key={item.id}

@@ -8,6 +8,13 @@ export default {
   ],
   theme: {
     extend: {
+      // Breakpoint extra-small pour les très petits écrans (iPhone SE 320px,
+      // anciens Android, mode "compact" du navigateur). Les breakpoints sm/md/lg
+      // standard de Tailwind partent à 640px — `xs:` permet de cibler les vraies
+      // contraintes mobiles avant ça.
+      screens: {
+        xs: "360px",
+      },
       fontFamily: {
         sans: ['"DM Sans"', "system-ui", "-apple-system", "sans-serif"],
       },

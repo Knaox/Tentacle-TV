@@ -162,6 +162,16 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
       {/* ── Separator ── */}
       <div className="mx-1 mb-3 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent)" }} />
 
+      {/* ── Action : jumeler une TV ── */}
+      <button
+        onClick={() => onNavigate("/pair-device")}
+        className="mb-3 flex w-full items-center gap-3 rounded-xl bg-tentacle-accent/10 px-3 py-3 text-left text-sm font-medium text-tentacle-accent ring-1 ring-tentacle-accent/30 transition-colors hover:bg-tentacle-accent/15"
+      >
+        <span className="flex-shrink-0"><TvPairIcon /></span>
+        <span className="truncate">{t("nav:pairDevice")}</span>
+        <span className="ml-auto text-xs text-tentacle-accent/60">›</span>
+      </button>
+
       {/* ── Libraries ── */}
       <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-white/30">
         {t("nav:libraries")}
@@ -179,6 +189,15 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
         ))}
       </div>
     </div>
+  );
+}
+
+function TvPairIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 9h6M9 12h4" />
+    </svg>
   );
 }
 

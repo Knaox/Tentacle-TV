@@ -156,12 +156,16 @@ export function PlayerControls({
   return (
     <div className="absolute inset-0 flex flex-col">
       {/* Top bar — stops propagation so clicks don't toggle play */}
-      <div className="bg-gradient-to-b from-black/70 to-transparent px-6 pb-10 pt-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="rounded-full p-2 hover:bg-white/10" aria-label={t("player:back")}><BackIcon /></button>
-          <div>
-            <h2 className="text-lg font-semibold text-white">{title}</h2>
-            {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
+      <div
+        className="bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5"
+        onClick={(e) => e.stopPropagation()}
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 1rem))" }}
+      >
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button onClick={onBack} className="rounded-full p-3 hover:bg-white/10 sm:p-2" aria-label={t("player:back")}><BackIcon /></button>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-base font-semibold text-white sm:text-lg">{title}</h2>
+            {subtitle && <p className="truncate text-xs text-white/50 sm:text-sm">{subtitle}</p>}
           </div>
         </div>
       </div>
@@ -170,7 +174,11 @@ export function PlayerControls({
       <div className="flex-1" />
 
       {/* Bottom bar — stops propagation */}
-      <div className="relative bg-gradient-to-t from-black/70 to-transparent px-6 pb-5 pt-10" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="relative bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-8 sm:px-6 sm:pb-5 sm:pt-10"
+        onClick={(e) => e.stopPropagation()}
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
+      >
         <AnimatePresence>
           {showSettings && hasSettings && (
             <TrackSelector
@@ -198,37 +206,39 @@ export function PlayerControls({
           )}
         </div>
 
-        {/* Button row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Button row — tactile-friendly: padding p-2.5 ≈ 44px target sur mobile */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-3">
             {hasPreviousEpisode && (
-              <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title={t("player:previousEpisode")}><PrevEpIcon /></button>
+              <button onClick={onPreviousEpisode} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" title={t("player:previousEpisode")} aria-label={t("player:previousEpisode")}><PrevEpIcon /></button>
             )}
-            <button onClick={() => onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-1.5 hover:bg-white/10" title={t("player:skipBack")}>
+            <button onClick={() => onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipBack")} aria-label={t("player:skipBack")}>
               <span className="text-xs font-bold text-white/70">-10</span>
             </button>
-            <button onClick={onTogglePlay} className="rounded-full p-2 hover:bg-white/10" aria-label={playing ? t("player:pause", "Pause") : t("player:play", "Play")}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
-            <button onClick={() => onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-1.5 hover:bg-white/10" title={t("player:skipForward")}>
+            <button onClick={onTogglePlay} className="rounded-full p-3 hover:bg-white/10 sm:p-2" aria-label={playing ? t("player:pause", "Pause") : t("player:play", "Play")}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
+            <button onClick={() => onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipForward")} aria-label={t("player:skipForward")}>
               <span className="text-xs font-bold text-white/70">+30</span>
             </button>
             {hasNextEpisode && (
-              <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title={t("player:nextEpisode")}><NextEpIcon /></button>
+              <button onClick={onNextEpisode} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" title={t("player:nextEpisode")} aria-label={t("player:nextEpisode")}><NextEpIcon /></button>
             )}
+            {/* Volume : icône seule sur mobile (slider trop encombrant), slider horizontal sur ≥sm au hover */}
             <div className="group/vol flex items-center gap-2">
-              <button onClick={onToggleMute} className="rounded-full p-2 hover:bg-white/10" aria-label={volume === 0 ? t("player:unmute", "Unmute") : t("player:mute", "Mute")}>
+              <button onClick={onToggleMute} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={volume === 0 ? t("player:unmute", "Unmute") : t("player:mute", "Mute")}>
                 {volume === 0 ? <MuteIcon /> : <VolumeIcon />}
               </button>
               <input type="range" min={0} max={1} step={0.05} value={volume}
                 onChange={(e) => onVolumeChange(Number(e.target.value))}
-                className="hidden w-20 accent-tentacle-accent group-hover/vol:block"
+                className="hidden w-20 accent-tentacle-accent sm:group-hover/vol:block"
                 aria-label={t("player:volume", "Volume")}
                 role="slider" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(volume * 100)} />
             </div>
-            <span className="text-sm text-white/60">{fmt(currentTime)} / {fmt(duration)}</span>
+            {/* Compteur temps : caché sur très petit écran pour libérer de la place aux contrôles */}
+            <span className="hidden whitespace-nowrap text-xs text-white/60 xs:inline sm:text-sm">{fmt(currentTime)} / {fmt(duration)}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {hasSettings && (
-              <button onClick={() => setShowSettings((p) => !p)} className="relative rounded-full p-2 hover:bg-white/10" aria-label={t("player:settings")}>
+              <button onClick={() => setShowSettings((p) => !p)} className="relative rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={t("player:settings")}>
                 <GearIcon />
                 {currentSubtitle !== null && (
                   <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-tentacle-accent" />
@@ -244,13 +254,13 @@ export function PlayerControls({
                     if (v) v.requestPictureInPicture().catch(() => {});
                   }
                 }}
-                className="rounded-full p-2 hover:bg-white/10"
+                className="hidden rounded-full p-2.5 hover:bg-white/10 sm:inline-flex sm:p-2"
                 aria-label={t("player:pip", "Picture in Picture")}
               >
                 <PipIcon />
               </button>
             )}
-            <button onClick={onToggleFullscreen} className="rounded-full p-2 hover:bg-white/10" aria-label={fullscreen ? t("player:exitFullscreen", "Exit fullscreen") : t("player:fullscreen", "Fullscreen")}>
+            <button onClick={onToggleFullscreen} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={fullscreen ? t("player:exitFullscreen", "Exit fullscreen") : t("player:fullscreen", "Fullscreen")}>
               {fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
             </button>
           </div>

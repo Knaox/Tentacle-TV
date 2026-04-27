@@ -85,8 +85,7 @@ function LibraryRow({
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="skeleton-shimmer flex-shrink-0 rounded-xl"
-              style={{ width: 165, aspectRatio: "2/3" }}
+              className="skeleton-shimmer aspect-[2/3] w-28 flex-shrink-0 rounded-xl xs:w-32 sm:w-40 lg:w-[165px]"
             />
           ))}
         </div>

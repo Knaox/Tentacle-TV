@@ -90,14 +90,14 @@ export function PairDevice() {
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-lg">
-        <h1 className="mb-2 text-2xl font-bold text-white">
+        <h1 className="mb-2 text-xl font-bold text-white sm:text-2xl">
           {t("pairing:pairYourTV")}
         </h1>
-        <p className="mb-8 text-sm text-white/50">
+        <p className="mb-6 text-sm text-white/50 sm:mb-8">
           {t("pairing:enterTVCode")}
         </p>
 
-        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-8">
+        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 xs:p-6 sm:p-8">
           {status === "success" ? (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="text-5xl text-green-400">&#x2713;</div>
@@ -107,13 +107,14 @@ export function PairDevice() {
             </div>
           ) : (
             <>
-              {/* Code input */}
-              <div className="flex justify-center gap-3">
+              {/* Code input — taille fluide pour ne jamais déborder sur petits écrans */}
+              <div className="flex justify-center gap-2 xs:gap-3">
                 {chars.map((char, i) => (
                   <input
                     key={i}
                     ref={(el) => { inputRefs.current[i] = el; }}
                     type="text"
+                    inputMode="text"
                     maxLength={1}
                     value={char}
                     onChange={(e) => handleChange(i, e.target.value)}
@@ -121,7 +122,7 @@ export function PairDevice() {
                     onPaste={i === 0 ? handlePaste : undefined}
                     autoFocus={i === 0}
                     disabled={status === "pairing"}
-                    className={`h-16 w-14 rounded-xl text-center text-2xl font-bold font-mono outline-none transition-all ${
+                    className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition-all xs:h-16 xs:w-14 xs:text-2xl ${
                       status === "error"
                         ? "bg-red-500/10 ring-2 ring-red-500 text-white"
                         : char
