@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, ActivityIndicator, AppState } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, ActivityIndicator, AppState, type AppStateStatus } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import {
@@ -107,7 +107,9 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
     if (isRefreshing) return;
     isRefreshing = true;
     try {
-      await runAuthRefreshFlow(jfClient);
+      // setOnAuthExpired = preuve forte que le token actuel est mort (5×401 sur
+      // les requêtes Jellyfin). Si tout échoue : doLogout, c'est légitime.
+      await runAuthRefreshFlow(jfClient, { softFail: false });
     } finally {
       isRefreshing = false;
     }
@@ -135,65 +137,106 @@ function doLogout(jfClient: JellyfinClient): void {
  * Stratégie complète de récupération de session :
  *  1. refreshWithRetry (3 tentatives avec backoff)
  *  2. Si "expired" confirmé → attemptReAuth avec credentials sauvés
- *  3. Si tout échoue → doLogout
+ *  3. Si tout échoue : doLogout (forte preuve) ou skip (soft fail)
  *
- * Toute erreur réseau / serveur conserve la session (pas de logout).
+ * `softFail = true` : appelé proactivement (ex. retour foreground) — si
+ * tout échoue on garde la session courante. Le token actuel marche peut-être
+ * encore pour les requêtes Jellyfin, et un cycle 5×401 légitime déclenchera
+ * un vrai logout via setOnAuthExpired.
+ *
+ * `softFail = false` : appelé après une preuve forte que le token est mort
+ * (cycle 5×401 atteint). Si tout échoue : logout.
  */
-async function runAuthRefreshFlow(jfClient: JellyfinClient): Promise<void> {
+async function runAuthRefreshFlow(
+  jfClient: JellyfinClient,
+  opts: { softFail: boolean },
+): Promise<void> {
   const token = storage.getItem("tentacle_token");
   const serverUrl = storage.getItem("tentacle_server_url");
   if (!token || !serverUrl) {
-    doLogout(jfClient);
+    if (!opts.softFail) doLogout(jfClient);
     return;
   }
 
-  const refresh = await refreshWithRetry({ serverUrl, token });
-  if (refresh.ok) {
-    jfClient.setAccessToken(refresh.accessToken);
-    setPreferencesToken(refresh.accessToken);
-    storage.setItem("tentacle_token", refresh.accessToken);
-    jfClient.resetAuthState();
-    return;
-  }
-
-  // Réseau/serveur down : garder la session intacte, l'utilisateur n'a rien fait de mal.
-  if (refresh.reason !== "expired") return;
-
-  // Token réellement expiré — tenter un re-login complet avec les credentials sauvés
-  const creds = readCredentials(storage);
-  if (creds) {
-    const newToken = await attemptReAuthHelper({
-      serverUrl,
-      username: creds.username,
-      password: creds.password,
-    });
-    if (newToken) {
-      jfClient.setAccessToken(newToken);
-      setPreferencesToken(newToken);
-      storage.setItem("tentacle_token", newToken);
+  // Pendant le refresh, marque le client comme "logging in" : les 401 reçus
+  // par les requêtes en vol ne s'accumulent pas dans le compteur AUTH_EXPIRE
+  // — sinon on déclenche un setOnAuthExpired récursif et on boucle.
+  jfClient.setLoggingIn(true);
+  try {
+    const refresh = await refreshWithRetry({ serverUrl, token });
+    if (refresh.ok) {
+      jfClient.setAccessToken(refresh.accessToken);
+      setPreferencesToken(refresh.accessToken);
+      storage.setItem("tentacle_token", refresh.accessToken);
       jfClient.resetAuthState();
       return;
     }
-  }
 
-  // Plus aucun moyen de récupérer la session — retour login
-  doLogout(jfClient);
+    // Réseau/serveur down : garder la session intacte.
+    if (refresh.reason !== "expired") return;
+
+    // Token réellement expiré — tenter un re-login avec les credentials sauvés
+    const creds = readCredentials(storage);
+    if (creds) {
+      const newToken = await attemptReAuthHelper({
+        serverUrl,
+        username: creds.username,
+        password: creds.password,
+      });
+      if (newToken) {
+        jfClient.setAccessToken(newToken);
+        setPreferencesToken(newToken);
+        storage.setItem("tentacle_token", newToken);
+        jfClient.resetAuthState();
+        return;
+      }
+    }
+
+    // Plus aucun moyen de récupérer la session.
+    // softFail (ex. retour foreground) : on n'éjecte pas l'utilisateur — le
+    // token actuel marche peut-être pour Jellyfin (le refresh endpoint peut
+    // être plus strict que les routes proxy), et le cycle 5×401 légitime
+    // se chargera de logout en dernier recours.
+    if (!opts.softFail) doLogout(jfClient);
+  } finally {
+    jfClient.setLoggingIn(false);
+  }
 }
 
 /** Validateur de session au retour au premier plan.
  *  Sur Android TV, l'app peut rester en arrière-plan plusieurs heures (utilisateur
- *  qui change de source HDMI). Au retour, on revalide silencieusement le token. */
+ *  qui change de source HDMI). Au retour, on revalide silencieusement le token.
+ *
+ *  Précautions critiques :
+ *  - On ne valide QUE sur une vraie transition `background|inactive → active`,
+ *    PAS au tout premier event (qui peut être spurious au cold start sur certaines
+ *    builds Android TV) — sinon, force-stop puis relance redirige sur Login.
+ *  - On utilise `softFail: true` : si tout échoue on garde la session, on laisse
+ *    le seuil 5×401 du JellyfinClient arbitrer si une vraie déconnexion s'impose.
+ */
 function ForegroundSessionValidator() {
   const client = useJellyfinClient();
+  const previousStateRef = useRef<AppStateStatus>(AppState.currentState);
+
   useEffect(() => {
     const sub = AppState.addEventListener("change", async (state) => {
-      if (state !== "active" || isRefreshing) return;
+      const previous = previousStateRef.current;
+      previousStateRef.current = state;
+
+      // Ne valide que les transitions background|inactive → active.
+      // Le cold start envoie souvent un event "active" depuis un état initial
+      // déjà "active" ou "unknown" — on ignore.
+      if (state !== "active") return;
+      if (previous === "active" || previous === "unknown") return;
+      if (isRefreshing) return;
+
       const token = storage.getItem("tentacle_token");
       const serverUrl = storage.getItem("tentacle_server_url");
       if (!token || !serverUrl) return;
+
       isRefreshing = true;
       try {
-        await runAuthRefreshFlow(client);
+        await runAuthRefreshFlow(client, { softFail: true });
       } finally {
         isRefreshing = false;
       }
