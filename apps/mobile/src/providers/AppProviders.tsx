@@ -27,7 +27,11 @@ import {
   setSharedWatchlistsBackendUrl,
   setSharedWatchlistsToken,
   setWsBackendUrl,
+  hydrateQueryClient,
+  attachQueryPersister,
+  HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setSessionExpired } from "@/auth/sessionState";
 import { attemptReAuth } from "@/auth/credentialManager";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
@@ -53,10 +57,24 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      gcTime: 30 * 60 * 1000, // aligné avec web — cache plus long pour la home
       retry: 1,
     },
   },
+});
+
+// Cold start instantané : hydrate le cache depuis AsyncStorage avant le premier
+// render. Le WebSocket pousse les vrais ajouts récents en parallèle.
+const mobilePersistStorage = {
+  getItem: (k: string) => AsyncStorage.getItem(k),
+  setItem: (k: string, v: string) => AsyncStorage.setItem(k, v),
+  removeItem: (k: string) => AsyncStorage.removeItem(k),
+};
+void hydrateQueryClient(queryClient, mobilePersistStorage, {
+  whitelist: HOME_PERSIST_WHITELIST,
+});
+attachQueryPersister(queryClient, mobilePersistStorage, {
+  whitelist: HOME_PERSIST_WHITELIST,
 });
 
 export function AppProviders({ storage, uuid, serverUrl, children }: AppProvidersProps) {

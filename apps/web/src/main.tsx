@@ -22,6 +22,9 @@ import {
   setStreamingConfigBackendUrl,
   setSharedWatchlistsBackendUrl,
   setWsBackendUrl,
+  hydrateQueryClient,
+  attachQueryPersister,
+  HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -151,6 +154,21 @@ const queryClient = new QueryClient({
       retry: false,
     },
   },
+});
+
+// Cold start instantané : hydrate le cache depuis localStorage avant le premier
+// render — la home affichera ses données précédentes pendant que les refetchs
+// arrière-plan se déclenchent (le WebSocket pousse les vrais nouveaux ajouts).
+const persistStorage = {
+  getItem: (k: string) => localStorage.getItem(k),
+  setItem: (k: string, v: string) => localStorage.setItem(k, v),
+  removeItem: (k: string) => localStorage.removeItem(k),
+};
+void hydrateQueryClient(queryClient, persistStorage, {
+  whitelist: HOME_PERSIST_WHITELIST,
+});
+attachQueryPersister(queryClient, persistStorage, {
+  whitelist: HOME_PERSIST_WHITELIST,
 });
 
 createRoot(document.getElementById("root")!).render(

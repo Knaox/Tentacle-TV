@@ -1,4 +1,5 @@
 import type { WebSocket } from "@fastify/websocket";
+import { invalidateByCarousel } from "./jellyfinCache";
 
 /** Carousel identifiers for home:update events. */
 export type CarouselId = string;
@@ -61,8 +62,11 @@ export function removeConnection(userId: string, ws: WebSocket): void {
 
 // ── Broadcasting ──
 
-/** Send a carousel refresh event to a specific user. */
+/** Send a carousel refresh event to a specific user.
+ *  Invalide aussi le cache backend des routes Jellyfin associées — sinon le
+ *  refetch déclenché par le client retomberait sur une réponse cachée stale. */
 export function broadcastToUser(userId: string, carousel: CarouselId): void {
+  invalidateByCarousel(carousel);
   if (!shouldEmit(userId, carousel)) return;
   const set = connections.get(userId);
   if (!set) return;
@@ -70,8 +74,11 @@ export function broadcastToUser(userId: string, carousel: CarouselId): void {
   for (const ws of set) send(ws, msg);
 }
 
-/** Send a carousel refresh event to all connected users. */
+/** Send a carousel refresh event to all connected users.
+ *  Invalide aussi le cache backend (toutes plateformes vont refetch — autant
+ *  ne pas leur servir une version stale). */
 export function broadcastAll(carousel: CarouselId): void {
+  invalidateByCarousel(carousel);
   for (const [userId, set] of connections) {
     if (!shouldEmit(userId, carousel)) continue;
     const msg: WsServerMessage = { type: "home:update", carousel, action: "refresh" };

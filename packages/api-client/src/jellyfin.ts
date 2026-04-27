@@ -36,7 +36,11 @@ export class JellyfinClient {
   private _consecutive401Count = 0;
   private _isLoggingIn = false;
   private _authRefreshInProgress = false;
-  private static readonly AUTH_EXPIRE_THRESHOLD = 3;
+  // Seuil à 5 (et non 3) pour absorber les 401 transitoires (Jellyfin qui rotate
+  // ses tokens, glitches DNS, redémarrage serveur de quelques secondes) sans
+  // déclencher un logout intempestif sur les clients qui n'ont pas de retry
+  // côté UI (TV notamment).
+  private static readonly AUTH_EXPIRE_THRESHOLD = 5;
   /** When true, send credentials: "include" (httpOnly cookies) instead of token headers. */
   useCredentials = false;
   constructor(

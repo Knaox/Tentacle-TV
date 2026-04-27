@@ -48,6 +48,54 @@ let api: PluginApi | null = null;
 // Prevents race condition when switching episodes (key={itemId} unmounts+remounts).
 let pendingDestroy: Promise<void> = Promise.resolve();
 
+/** Awaits `pendingDestroy` mais ne bloque jamais plus de `timeoutMs`. Si destroy
+ *  ne répond pas (Windows GL context lock, mpv freeze), on force le passage —
+ *  un nouvel `api.init()` recréera l'instance proprement. */
+async function awaitPendingDestroy(timeoutMs: number): Promise<void> {
+  await Promise.race([
+    pendingDestroy,
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
+/** Awaits une promesse avec timeout. Throw si le timeout expire. */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label}-timeout`)), ms)),
+  ]);
+}
+
+/** Préchauffage idempotent : charge libmpv + initialise/détruit une instance
+ *  minimale pour que le premier vrai play() soit instantané. Sur Windows, le
+ *  cold start peut prendre 1-3s à cause du chargement DLL + GL context.
+ *  Aucun effet secondaire utilisateur (vo: null, audio désactivé). */
+let warmupDone = false;
+let warmupInFlight: Promise<void> | null = null;
+export async function warmupMpv(): Promise<void> {
+  if (warmupDone || !isTauri()) return;
+  if (warmupInFlight) return warmupInFlight;
+  warmupInFlight = (async () => {
+    try {
+      const loaded = await loadApi();
+      if (!loaded || !api) return;
+      await pendingDestroy;
+      await withTimeout(api.init({
+        initialOptions: { vo: "null", "audio-display": "no", osc: "no" },
+        observedProperties: [],
+      }), 6000, "mpv-warmup");
+      pendingDestroy = api.destroy().catch(() => {});
+      await pendingDestroy;
+      warmupDone = true;
+    } catch {
+      // Échec silencieux — le vrai init refera le travail à la prochaine ouverture.
+    } finally {
+      warmupInFlight = null;
+    }
+  })();
+  return warmupInFlight;
+}
+
 const loadApi = async (): Promise<boolean> => {
   try {
     if (isMacOS()) {
@@ -85,6 +133,10 @@ export function useDesktopPlayer() {
   const [error, setError] = useState<string | null>(null);
   const unlistenRefs = useRef<(() => void)[]>([]);
   const pendingTracks = useRef<{ aid?: number; sid?: number } | null>(null);
+  // Watchdog: si playback-restart n'est pas émis dans les 8s après un loadfile,
+  // on force fileLoaded=true (les preferences de pistes utiliseront le fallback
+  // positionnel). Empêche un spinner éternel sur GPU/codec récalcitrant.
+  const playbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // High-frequency refs — synced to React state via throttle timer
   const positionRef = useRef(0);
   const bufferedRef = useRef(0);
@@ -99,14 +151,15 @@ export function useDesktopPlayer() {
       // Critical for episode switches: old DesktopPlayer unmounts (destroy) while
       // new one mounts (init) — without this gate, both Rust commands race on the
       // same RenderState causing a segfault (GL context / thread use-after-free).
-      await pendingDestroy;
+      // Timeout 3 s : empêche un destroy bloqué (Windows GL lock) de geler le mount.
+      await awaitPendingDestroy(3000);
 
       const loaded = await loadApi();
       if (!loaded || cancelled || !api) return;
 
       try {
         const macOS = isMacOS();
-        await api.init({
+        await withTimeout(api.init({
           initialOptions: {
             vo: "gpu-next",
             hwdec: "auto-safe",
@@ -133,7 +186,8 @@ export function useDesktopPlayer() {
             title: "Tentacle TV",
           },
           observedProperties: OBSERVED_PROPERTIES,
-        });
+        }), 8000, "mpv-init");
+        if (cancelled) return;
         setReady(true);
         // Restore persisted volume
         const sv = localStorage.getItem("tentacle_player_volume");
@@ -240,6 +294,12 @@ export function useDesktopPlayer() {
             break;
           }
           case "playback-restart": {
+            if (cancelled) return;
+            // playback-restart reçu : on annule le watchdog
+            if (playbackWatchdogRef.current) {
+              clearTimeout(playbackWatchdogRef.current);
+              playbackWatchdogRef.current = null;
+            }
             setState((prev) => ({ ...prev, playing: true, eof: false }));
             // Sync pause state to close startup race condition
             api?.getProperty("pause", "flag").then((p) => {
@@ -283,6 +343,10 @@ export function useDesktopPlayer() {
 
     return () => {
       cancelled = true;
+      if (playbackWatchdogRef.current) {
+        clearTimeout(playbackWatchdogRef.current);
+        playbackWatchdogRef.current = null;
+      }
       for (const unlisten of unlistenRefs.current) unlisten();
       unlistenRefs.current = [];
       pendingDestroy = api?.destroy().catch(() => {}) ?? Promise.resolve();
@@ -305,6 +369,14 @@ export function useDesktopPlayer() {
   const play = useCallback(async (options: PlayOptions) => {
     if (!api) return;
     setFileLoaded(false); // Reset — will be set again on file-loaded event
+    // Armement du watchdog : si playback-restart ne survient pas en 8s,
+    // on débloque l'UI en forçant fileLoaded=true (sécurité anti-spinner).
+    if (playbackWatchdogRef.current) clearTimeout(playbackWatchdogRef.current);
+    playbackWatchdogRef.current = setTimeout(() => {
+      console.warn("[mpv] playback-restart watchdog: forcing fileLoaded=true after 8s");
+      setFileLoaded(true);
+      playbackWatchdogRef.current = null;
+    }, 8000);
     try {
       if (options.startPosition != null && options.startPosition > 0) {
         console.debug("[mpv] play: setting start position", options.startPosition);

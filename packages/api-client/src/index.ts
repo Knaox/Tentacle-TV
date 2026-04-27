@@ -86,3 +86,11 @@ export type { NextEpisodeResult } from "./hooks/useWatchState";
 // App mode (standalone vs backend)
 export { AppModeProvider, useAppMode } from "./appMode";
 export type { AppMode, AppModeProviderProps } from "./appMode";
+
+// Persistance du cache TanStack Query (cold start instantané sur la home)
+export {
+  hydrateQueryClient,
+  attachQueryPersister,
+  HOME_PERSIST_WHITELIST,
+} from "./persist/queryPersister";
+export type { PersistStorage, PersisterOptions } from "./persist/queryPersister";

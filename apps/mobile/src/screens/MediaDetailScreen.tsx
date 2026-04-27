@@ -13,7 +13,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist, useWatchedToggle } from "@tentacle-tv/api-client";
 import { ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { colors, spacing, typography } from "../theme";
@@ -48,6 +48,12 @@ export function MediaDetailScreen({ itemId }: Props) {
   const actionTargetItem = isEpisode ? parentSeries : item;
   const favorite = useFavorite(actionTargetId);
   const watchlistToggle = useToggleWatchlist(actionTargetId);
+  const watched = useWatchedToggle(
+    actionTargetId,
+    isEpisode && item?.SeriesId
+      ? { seriesId: item.SeriesId, seasonId: item.SeasonId ?? undefined }
+      : undefined,
+  );
   const [expanded, setExpanded] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
@@ -215,6 +221,13 @@ export function MediaDetailScreen({ itemId }: Props) {
           active={false}
           activeColor={colors.accent}
           onPress={() => setSheetVisible(true)}
+        />
+        <ActionButton
+          icon="check-circle"
+          label={isWatched ? t("markUnwatched") : t("markWatched")}
+          active={isWatched}
+          activeColor={colors.accent}
+          onPress={() => isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()}
         />
       </Animated.View>
 

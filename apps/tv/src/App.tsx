@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, ActivityIndicator } from "react-native";
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { View, ActivityIndicator, AppState } from "react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import {
   JellyfinClient,
@@ -15,10 +15,12 @@ import {
   setPreferencesToken,
   setStreamingConfigBackendUrl,
   setWsBackendUrl,
-  useStreamingConfig,
-  STREAMING_CONFIG_QUERY_KEY,
   fetchInterfaceLanguage,
+  hydrateQueryClient,
+  attachQueryPersister,
+  HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initI18n, i18n } from "@tentacle-tv/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -27,16 +29,16 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
+import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./auth/tokenRefresh";
+import { readCredentials, clearCredentials } from "./auth/credentialManager";
+import { DirectStreamingSync } from "./components/DirectStreamingSync";
 
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
 
-/** AbortSignal.timeout() polyfill for React Native */
-function timeoutSignal(ms: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
-}
+/** Mutex global anti-concurrence : empêche que onAuthExpired et le validateur
+ *  AppState tentent un refresh en parallèle. */
+let isRefreshing = false;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,9 +46,22 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
-      cacheTime: 30 * 60 * 1000,
+      cacheTime: 30 * 60 * 1000, // TV est encore sur React Query v4 — `cacheTime` (renommé en `gcTime` à partir de v5)
     },
   },
+});
+
+// Cold start TV : hydrate le cache home depuis AsyncStorage avant render.
+const tvPersistStorage = {
+  getItem: (k: string) => AsyncStorage.getItem(k),
+  setItem: (k: string, v: string) => AsyncStorage.setItem(k, v),
+  removeItem: (k: string) => AsyncStorage.removeItem(k),
+};
+void hydrateQueryClient(queryClient, tvPersistStorage, {
+  whitelist: HOME_PERSIST_WHITELIST,
+});
+attachQueryPersister(queryClient, tvPersistStorage, {
+  whitelist: HOME_PERSIST_WHITELIST,
 });
 
 const darkTheme = {
@@ -89,129 +104,102 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   }
 
   jfClient.setOnAuthExpired(async () => {
-    const token = storage.getItem("tentacle_token");
-    const serverUrl = storage.getItem("tentacle_server_url");
-    if (!token || !serverUrl) {
-      doLogout();
-      return;
-    }
-
+    if (isRefreshing) return;
+    isRefreshing = true;
     try {
-      const res = await fetch(`${serverUrl}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-        signal: timeoutSignal(10_000),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        jfClient.setAccessToken(data.AccessToken);
-        setPreferencesToken(data.AccessToken);
-        jfClient.resetAuthState();
-        return;
-      }
-
-      if (res.status !== 401) {
-        // 503 / server error — keep session, don't disconnect
-        return;
-      }
-    } catch {
-      // Network error / timeout — keep session
-      return;
-    }
-
-    // 401 confirmed — retry once after 2s (Jellyfin may have been restarting)
-    await new Promise((r) => setTimeout(r, 2000));
-    try {
-      const retry = await fetch(`${serverUrl}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-        signal: timeoutSignal(10_000),
-      });
-      if (retry.ok) {
-        const data = await retry.json();
-        jfClient.setAccessToken(data.AccessToken);
-        setPreferencesToken(data.AccessToken);
-        jfClient.resetAuthState();
-        return;
-      }
-    } catch { /* ignore — proceed to logout */ }
-
-    doLogout();
-
-    function doLogout() {
-      storage.removeItem("tentacle_token");
-      storage.removeItem("tentacle_user");
-      storage.removeItem("tentacle_jellyfin_token");
-      storage.removeItem("tentacle_jellyfin_url");
-      setPreferencesToken(null);
-      queryClient.clear();
-      if (navigationRef.isReady()) {
-        navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
-      }
+      await runAuthRefreshFlow(jfClient);
+    } finally {
+      isRefreshing = false;
     }
   });
 
   return jfClient;
 }
 
-/** Sync direct streaming config from backend into JellyfinClient. */
-function DirectStreamingSync() {
-  const client = useJellyfinClient();
-  const qc = useQueryClient();
+/** Force le retour à l'écran de login en nettoyant la session locale. */
+function doLogout(jfClient: JellyfinClient): void {
+  storage.removeItem("tentacle_token");
+  storage.removeItem("tentacle_user");
+  storage.removeItem("tentacle_jellyfin_token");
+  storage.removeItem("tentacle_jellyfin_url");
+  clearCredentials(storage);
+  setPreferencesToken(null);
+  jfClient.setAccessToken(null);
+  queryClient.clear();
+  if (navigationRef.isReady()) {
+    navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+  }
+}
 
-  // Token must be reactive: after pairing/login the token changes but this
-  // component is already mounted — poll storage to pick up new tokens.
-  const [token, setToken] = useState<string | null>(storage.getItem("tentacle_token"));
-  useEffect(() => {
-    const id = setInterval(() => {
-      const current = storage.getItem("tentacle_token");
-      setToken((prev) => (current !== prev ? current : prev));
-    }, 2000);
-    return () => clearInterval(id);
-  }, []);
+/**
+ * Stratégie complète de récupération de session :
+ *  1. refreshWithRetry (3 tentatives avec backoff)
+ *  2. Si "expired" confirmé → attemptReAuth avec credentials sauvés
+ *  3. Si tout échoue → doLogout
+ *
+ * Toute erreur réseau / serveur conserve la session (pas de logout).
+ */
+async function runAuthRefreshFlow(jfClient: JellyfinClient): Promise<void> {
+  const token = storage.getItem("tentacle_token");
+  const serverUrl = storage.getItem("tentacle_server_url");
+  if (!token || !serverUrl) {
+    doLogout(jfClient);
+    return;
+  }
 
-  const { data, isError, isFetched } = useStreamingConfig(token);
+  const refresh = await refreshWithRetry({ serverUrl, token });
+  if (refresh.ok) {
+    jfClient.setAccessToken(refresh.accessToken);
+    setPreferencesToken(refresh.accessToken);
+    storage.setItem("tentacle_token", refresh.accessToken);
+    jfClient.resetAuthState();
+    return;
+  }
 
-  useEffect(() => {
-    if (data?.tokenExpired) {
-      // Jellyfin token from pairing has expired — force re-login
-      storage.removeItem("tentacle_jellyfin_token");
-      client.setDirectStreaming(null);
-      if (navigationRef.isReady()) {
-        navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
-      }
+  // Réseau/serveur down : garder la session intacte, l'utilisateur n'a rien fait de mal.
+  if (refresh.reason !== "expired") return;
+
+  // Token réellement expiré — tenter un re-login complet avec les credentials sauvés
+  const creds = readCredentials(storage);
+  if (creds) {
+    const newToken = await attemptReAuthHelper({
+      serverUrl,
+      username: creds.username,
+      password: creds.password,
+    });
+    if (newToken) {
+      jfClient.setAccessToken(newToken);
+      setPreferencesToken(newToken);
+      storage.setItem("tentacle_token", newToken);
+      jfClient.resetAuthState();
       return;
     }
-    if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
-      client.setDirectStreaming({
-        enabled: true,
-        mediaBaseUrl: data.mediaBaseUrl,
-        jellyfinToken: data.jellyfinToken,
-      });
-      // Cache for fallback when backend is unreachable
-      storage.setItem("tentacle_jellyfin_url", data.mediaBaseUrl);
-      storage.setItem("tentacle_jellyfin_token", data.jellyfinToken);
-    } else if (isError || (isFetched && (!data?.enabled || !data?.jellyfinToken))) {
-      // Fallback: try direct streaming from cached Jellyfin credentials
-      const jfUrl = storage.getItem("tentacle_jellyfin_url");
-      const jfToken = storage.getItem("tentacle_jellyfin_token");
-      if (jfUrl && jfToken) {
-        client.setDirectStreaming({ enabled: true, mediaBaseUrl: jfUrl, jellyfinToken: jfToken });
-      } else {
-        client.setDirectStreaming(null);
-      }
-    }
-  }, [client, data, isError, isFetched]);
+  }
 
+  // Plus aucun moyen de récupérer la session — retour login
+  doLogout(jfClient);
+}
+
+/** Validateur de session au retour au premier plan.
+ *  Sur Android TV, l'app peut rester en arrière-plan plusieurs heures (utilisateur
+ *  qui change de source HDMI). Au retour, on revalide silencieusement le token. */
+function ForegroundSessionValidator() {
+  const client = useJellyfinClient();
   useEffect(() => {
-    client.setOnDirectStreamingFail(() => {
-      qc.invalidateQueries({ queryKey: [STREAMING_CONFIG_QUERY_KEY] });
+    const sub = AppState.addEventListener("change", async (state) => {
+      if (state !== "active" || isRefreshing) return;
+      const token = storage.getItem("tentacle_token");
+      const serverUrl = storage.getItem("tentacle_server_url");
+      if (!token || !serverUrl) return;
+      isRefreshing = true;
+      try {
+        await runAuthRefreshFlow(client);
+      } finally {
+        isRefreshing = false;
+      }
     });
-  }, [client, qc]);
-
+    return () => sub.remove();
+  }, [client]);
   return null;
 }
 
@@ -220,7 +208,8 @@ function AppContent({ serverUrl }: { serverUrl: string | null }) {
   const { isReachable, retry } = useServerReachable(serverUrl);
   return (
     <>
-      <DirectStreamingSync />
+      <ForegroundSessionValidator />
+      <DirectStreamingSync storage={storage} />
       <SidebarProvider>
         <NavigationContainer ref={navigationRef} theme={darkTheme}>
           <AppNavigator />

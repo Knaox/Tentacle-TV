@@ -6,7 +6,7 @@ import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 
-export function WatchDesktop() {
+export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
@@ -129,6 +129,7 @@ export function WatchDesktop() {
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         itemId={itemId!}
+        onFallbackToWeb={onFallbackToWeb}
       />
     </PlayerTransition>
   );

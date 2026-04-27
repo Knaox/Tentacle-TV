@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, ActivityIndicator, TVFocusGuideView } from "react-native";
 import { useAuth, useTentacleConfig, useJellyfinClient } from "@tentacle-tv/api-client";
+import { storeCredentials } from "../auth/credentialManager";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -50,6 +51,9 @@ export function LoginScreen({ navigation }: Props) {
       jellyfinClient.setAccessToken(data.AccessToken);
       storage.setItem("tentacle_token", data.AccessToken);
       storage.setItem("tentacle_user", JSON.stringify(data.User));
+      // Stocke les credentials pour permettre la ré-authentification automatique
+      // en cas d'expiration du token (lutte contre les déconnexions intempestives).
+      storeCredentials(storage, username, password);
 
       navigation.replace("Home");
     } catch (err) {

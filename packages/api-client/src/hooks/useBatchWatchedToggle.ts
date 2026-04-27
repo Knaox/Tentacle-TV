@@ -22,7 +22,9 @@ export function useBatchWatchedToggle(ctx: BatchWatchedContext) {
           client.fetch(`/Users/${userId}/PlayedItems/${id}`, { method: "POST" })
         )
       ),
-    onSettled: () => invalidateAllMediaQueries(qc, { seriesContext }),
+    // Batch (saison entière) : refetch immédiat des listes liées à la série
+    // pour refléter l'état "tous les épisodes vus" sans attendre le prochain focus.
+    onSettled: () => invalidateAllMediaQueries(qc, { seriesContext, refetchSeriesContext: true }),
   });
 
   const markUnwatched = useMutation({
@@ -32,7 +34,7 @@ export function useBatchWatchedToggle(ctx: BatchWatchedContext) {
           client.fetch(`/Users/${userId}/PlayedItems/${id}`, { method: "DELETE" })
         )
       ),
-    onSettled: () => invalidateAllMediaQueries(qc, { seriesContext }),
+    onSettled: () => invalidateAllMediaQueries(qc, { seriesContext, refetchSeriesContext: true }),
   });
 
   return { markWatched, markUnwatched };
