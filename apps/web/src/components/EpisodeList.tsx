@@ -184,7 +184,7 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
       }`}>
       {/* Selection checkbox or thumbnail */}
       {isSelecting ? (
-        <div className="flex w-28 flex-shrink-0 items-center justify-center sm:w-44">
+        <div className="flex w-24 flex-shrink-0 xs:w-28 items-center justify-center sm:w-44">
           <div className={`h-5 w-5 rounded border-2 transition-colors ${
             isSelected ? "border-tentacle-accent bg-tentacle-accent" : "border-white/30"
           }`}>
@@ -196,7 +196,7 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
           </div>
         </div>
       ) : (
-        <div className="relative w-28 flex-shrink-0 overflow-hidden rounded-lg bg-tentacle-surface sm:w-44">
+        <div className="relative w-24 flex-shrink-0 xs:w-28 overflow-hidden rounded-lg bg-tentacle-surface sm:w-44">
           <div className="aspect-video">
             {thumbUrl && <FadeImage src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
           </div>

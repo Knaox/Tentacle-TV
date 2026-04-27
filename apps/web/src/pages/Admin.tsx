@@ -60,9 +60,9 @@ export function Admin() {
         <h2 className="mb-4 text-lg font-semibold text-white">{t("admin:generateInvite")}</h2>
         <div className="flex flex-wrap items-end gap-4">
           <div><label className={cls.lbl}>{t("admin:maxUses")}</label>
-            <input type="number" min={1} max={100} value={maxUses} onChange={e => setMaxUses(+e.target.value)} className="w-24 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-tentacle-accent" /></div>
+            <input type="number" min={1} max={100} value={maxUses} onChange={e => setMaxUses(+e.target.value)} className="w-20 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 xs:w-24 focus:ring-tentacle-accent" /></div>
           <div><label className={cls.lbl}>{t("admin:expiresInHours")}</label>
-            <input type="number" min={1} max={720} value={expiresHours} onChange={e => setExpiresHours(+e.target.value)} className="w-24 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-tentacle-accent" /></div>
+            <input type="number" min={1} max={720} value={expiresHours} onChange={e => setExpiresHours(+e.target.value)} className="w-20 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 xs:w-24 focus:ring-tentacle-accent" /></div>
           <button onClick={createInvite} disabled={creating} className="rounded-lg bg-tentacle-accent px-5 py-2 font-semibold text-white transition-transform hover:scale-105 disabled:opacity-50">{creating ? "..." : t("admin:generate")}</button>
         </div>
       </div>
@@ -122,7 +122,7 @@ function PlaybackSection() {
         <div className="flex items-center gap-3">
           <input type="number" min={0} max={30} step={0.5} value={minutes}
             onChange={e => setMinutes(Number(e.target.value))}
-            className="w-24 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-tentacle-accent" />
+            className="w-20 rounded-lg bg-white/5 px-3 py-2 text-white outline-none ring-1 ring-white/10 xs:w-24 focus:ring-tentacle-accent" />
           <span className="text-xs text-white/40">min</span>
           <button onClick={save} disabled={busy} className={cls.bp}>{busy ? "..." : t("admin:save")}</button>
           {msg && <span className={`text-xs ${msg.ok ? "text-green-400" : "text-red-400"}`}>{msg.t}</span>}

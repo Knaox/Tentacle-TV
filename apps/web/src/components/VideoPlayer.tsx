@@ -152,6 +152,11 @@ export function VideoPlayer({
   const [policyMuted, setPolicyMuted] = useState(false);
   const seekTargetRef = useRef<number | null>(null);
   const seekStallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Touch gestures : swipe horizontal pour seek (-10s / +30s), tap simple pour play/pause.
+  // Le scrubber a son propre `onTouchStart` qui stopPropagation, donc pas de collision.
+  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const SWIPE_THRESHOLD_PX = 50;
+  const SWIPE_MAX_DURATION_MS = 600;
   const currentTime = effectiveOffsetRef.current + displayTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
 
@@ -588,7 +593,29 @@ export function VideoPlayer({
         e.preventDefault();
         handleVolumeChange(Math.min(1, Math.max(0, volume + (e.deltaY < 0 ? 0.05 : -0.05))));
       }}
-      onTouchStart={() => { userInteractedRef.current = true; }}
+      onTouchStart={(e) => {
+        userInteractedRef.current = true;
+        const t = e.touches[0];
+        if (t) touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+      }}
+      onTouchEnd={(e) => {
+        const start = touchStartRef.current;
+        touchStartRef.current = null;
+        if (!start) return;
+        const t = e.changedTouches[0];
+        if (!t) return;
+        const dx = t.clientX - start.x;
+        const dy = t.clientY - start.y;
+        const dt = Date.now() - start.t;
+        // Reconnaît un swipe horizontal franc — pas un drag lent ni un tap.
+        if (dt > SWIPE_MAX_DURATION_MS) return;
+        if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+        if (Math.abs(dx) <= Math.abs(dy)) return; // composante verticale dominante = scroll
+        e.preventDefault();
+        e.stopPropagation();
+        if (dx > 0) handleSeek(Math.min((jellyfinDuration ?? videoDuration) || Infinity, currentTimeRef.current + 30));
+        else handleSeek(Math.max(0, currentTimeRef.current - 10));
+      }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         onTimeUpdate={(e) => {

@@ -20,12 +20,22 @@ export function AppLayout() {
 
       {!isMobile && <div data-host-chrome="sidebar"><Sidebar /></div>}
 
-      <div className={isMobile ? "pb-20 pt-14" : "pl-[62px]"}>
+      <div
+        className={isMobile ? "pb-20 pt-14" : "pl-[62px]"}
+        style={isMobile ? {
+          paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+        } : undefined}
+      >
         {/* Top bar: search + notifications + avatar */}
         <div
           data-host-chrome="topbar"
           className="fixed right-2 z-30 flex items-center gap-2 sm:right-4"
-          style={{ top: "max(0.75rem, env(safe-area-inset-top, 0.75rem))" }}
+          style={{
+            top: "max(0.75rem, env(safe-area-inset-top, 0.75rem))",
+            right: "max(0.5rem, env(safe-area-inset-right, 0.5rem))",
+          }}
         >
           {showSearch && <GlobalSearch />}
           {!isMobile && <NotificationBell />}
