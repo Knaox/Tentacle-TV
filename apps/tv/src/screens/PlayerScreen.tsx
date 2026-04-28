@@ -20,6 +20,7 @@ import { randomSessionId, formatTrackLabel } from "../utils/playerHelpers";
 import { MPVPlayer, type MPVPlayerHandle, type MpvTrack } from "../components/player/MPVPlayer";
 import { ExoPlayer } from "../components/player/ExoPlayer";
 import { Colors } from "../theme/colors";
+import { setPlayingMedia } from "../auth/playbackGuard";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
@@ -83,6 +84,14 @@ export function PlayerScreen({ route, navigation }: Props) {
   const userId = useUserId();
   const { data: item } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
+
+  // Verrou global : tant que ce screen est monté, AUCUN logout ne peut éjecter
+  // l'utilisateur (cf. apps/tv/src/auth/playbackGuard.ts). Empêche les
+  // déconnexions intempestives si le backend Tentacle redémarre pendant la lecture.
+  useEffect(() => {
+    setPlayingMedia(true);
+    return () => { setPlayingMedia(false); };
+  }, []);
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);

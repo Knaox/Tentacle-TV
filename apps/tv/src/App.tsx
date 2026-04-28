@@ -31,6 +31,7 @@ import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
 import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./auth/tokenRefresh";
 import { readCredentials, clearCredentials } from "./auth/credentialManager";
+import { isPlayingMedia } from "./auth/playbackGuard";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 
 const storage = new RNStorageAdapter();
@@ -118,8 +119,16 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   return jfClient;
 }
 
-/** Force le retour à l'écran de login en nettoyant la session locale. */
+/** Force le retour à l'écran de login en nettoyant la session locale.
+ *  Bloqué pendant la lecture : un user qui regarde un film ne doit JAMAIS être
+ *  éjecté à cause d'une erreur réseau ou d'un redémarrage backend transitoire.
+ *  Si le token est vraiment mort, on attendra la fin de la lecture pour
+ *  redemander une auth. */
 function doLogout(jfClient: JellyfinClient): void {
+  if (isPlayingMedia()) {
+    console.warn("[Auth] doLogout bloqué : lecture en cours — la session est conservée");
+    return;
+  }
   storage.removeItem("tentacle_token");
   storage.removeItem("tentacle_user");
   storage.removeItem("tentacle_jellyfin_token");

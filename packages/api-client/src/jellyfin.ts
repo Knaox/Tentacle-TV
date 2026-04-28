@@ -148,11 +148,49 @@ export class JellyfinClient {
       ...(init?.headers as Record<string, string>),
     };
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...init,
-      headers,
-      credentials: this.useCredentials ? "include" : undefined,
-    });
+    // Retry transparent pour absorber les redémarrages backend (5-15 s typiques) :
+    // 502/503/504 + erreurs réseau → on retente avec backoff exponentiel court.
+    // 401 → JAMAIS de retry (ce serait masquer un vrai problème d'auth).
+    // Mutations (POST/PUT/PATCH/DELETE) → un seul retry max pour éviter les doublons
+    // (par ex. mark watched envoyé deux fois → idempotent côté Jellyfin mais bruit).
+    const method = (init?.method ?? "GET").toUpperCase();
+    const isMutation = method !== "GET" && method !== "HEAD";
+    const RETRY_DELAYS_MS = isMutation ? [400] : [300, 700, 1500, 4000];
+
+    let response: Response | null = null;
+    let networkError: unknown = null;
+
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      try {
+        response = await fetch(`${this.baseUrl}${path}`, {
+          ...init,
+          headers,
+          credentials: this.useCredentials ? "include" : undefined,
+        });
+        networkError = null;
+        // Codes "backend en redémarrage" — on retente sans bruit
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          if (attempt < RETRY_DELAYS_MS.length) {
+            await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+            continue;
+          }
+        }
+        break; // Succès, ou 4xx (sauf 5xx retryables) → on sort
+      } catch (err) {
+        // Erreur réseau (offline, fetch refusé, timeout) — on retente
+        networkError = err;
+        if (attempt < RETRY_DELAYS_MS.length) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+          continue;
+        }
+        break;
+      }
+    }
+
+    if (!response) {
+      // Toutes les tentatives ont échoué côté réseau
+      throw networkError instanceof Error ? networkError : new Error("Network error");
+    }
 
     if (!response.ok) {
       if (response.status === 401 && this.accessToken && !this._isLoggingIn) {
