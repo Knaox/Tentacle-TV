@@ -3922,7 +3922,7 @@ dependencies = [
 
 [[package]]
 name = "tentacle-desktop"
-version = "1.4.1"
+version = "1.5.1"
 dependencies = [
  "libloading 0.8.9",
  "objc2",
@@ -3935,6 +3935,9 @@ dependencies = [
  "tauri-plugin-libmpv",
  "tauri-plugin-process",
  "tauri-plugin-updater",
+ "windows",
+ "windows-core 0.61.2",
+ "windows-future",
 ]
 
 [[package]]

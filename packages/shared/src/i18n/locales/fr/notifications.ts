@@ -18,8 +18,9 @@ export default {
   autoRetryFailed: "Échec définitif pour « {{title}} » après {{max}} tentatives",
   updateNow: "Mettre à jour",
   updateInstalling: "Installation en cours...",
-  updateRestarting: "Redémarrage...",
+  updateRestarting: "Redémarrage de l'application...",
   updateReleaseNotes: "Notes de mise à jour",
+  restartHint: "L'application va redémarrer pour appliquer la mise à jour",
   // Suppression
   deleteAll: "Tout supprimer",
   confirmDeleteAll: "Etes-vous sur ? Cette action est irreversible.",

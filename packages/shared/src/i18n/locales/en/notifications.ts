@@ -18,8 +18,9 @@ export default {
   autoRetryFailed: "Permanently failed for \"{{title}}\" after {{max}} attempts",
   updateNow: "Update now",
   updateInstalling: "Installing...",
-  updateRestarting: "Restarting...",
+  updateRestarting: "Restarting the app...",
   updateReleaseNotes: "Release notes",
+  restartHint: "The app will restart to apply the update",
   // Deletion
   deleteAll: "Delete all",
   confirmDeleteAll: "Are you sure? This cannot be undone.",

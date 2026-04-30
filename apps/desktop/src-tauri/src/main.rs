@@ -3,6 +3,9 @@
 
 mod video_surface;
 
+#[cfg(target_os = "windows")]
+mod msix_update;
+
 #[cfg(target_os = "macos")]
 mod macos;
 
@@ -37,7 +40,18 @@ fn main() {
             ]);
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        builder = builder.invoke_handler(tauri::generate_handler![
+            video_surface::toggle_fullscreen,
+            video_surface::is_fullscreen,
+            video_surface::exit_fullscreen,
+            msix_update::check_msix_update,
+            msix_update::download_and_install_msix_update,
+        ]);
+    }
+
+    #[cfg(target_os = "linux")]
     {
         builder = builder.invoke_handler(tauri::generate_handler![
             video_surface::toggle_fullscreen,
