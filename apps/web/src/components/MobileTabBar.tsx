@@ -103,7 +103,7 @@ export function MobileTabBar() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-white/10 bg-black/95 backdrop-blur-xl safe-area-pb">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-white/[0.08] bg-black/95 backdrop-blur-xl safe-area-pb">
         {tabs.map((tab) => {
           const active = isActive(tab);
           return (
@@ -116,10 +116,20 @@ export function MobileTabBar() {
                   navigate(tab.path);
                 }
               }}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                active ? "text-purple-400" : "text-white/40"
+              className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+                active ? "text-white" : "text-white/45"
               }`}
             >
+              {active && (
+                <span
+                  className="absolute inset-x-6 top-0 h-[2px] rounded-full"
+                  style={{
+                    background: "linear-gradient(90deg, #8B5CF6, #A78BFA)",
+                    boxShadow: "0 0 10px rgba(139,92,246,0.55)",
+                  }}
+                  aria-hidden
+                />
+              )}
               {tab.icon}
               <span>{tab.label}</span>
             </button>

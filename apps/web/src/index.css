@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "./theme/tokens.css";
 
 @tailwind base;
 @tailwind components;
@@ -6,17 +7,28 @@
 
 @layer base {
   :focus-visible {
-    outline: 2px solid rgba(139, 92, 246, 0.6);
+    outline: 2px solid var(--border-focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
 
+  html, body {
+    background: var(--surface-0);
+  }
+
   body {
-    @apply min-h-screen bg-tentacle-bg font-sans text-white;
+    @apply min-h-screen font-sans text-white antialiased;
+    font-feature-settings: "ss01", "cv11"; /* Inter — better digits + alt 'a' */
+    letter-spacing: -0.005em;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.018em;
   }
 
   ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -24,13 +36,24 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.32);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.5);
+    background: rgba(139, 92, 246, 0.55);
   }
+}
+
+/* Faint brand-tinted ambient glow — subtle Tentacle signature behind everything */
+.brand-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 35% at 15% 8%, rgba(139, 92, 246, 0.10), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 88% 82%, rgba(236, 72, 153, 0.06), transparent 70%);
 }
 
 @layer utilities {
@@ -53,15 +76,28 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  /* Safe area insets for notch / Dynamic Island */
-  .safe-area-pt {
-    padding-top: env(safe-area-inset-top, 0px);
+  .safe-area-pt { padding-top: env(safe-area-inset-top, 0px); }
+  .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .safe-area-top { top: env(safe-area-inset-top, 0px); }
+
+  /* Cinematic gradient — used for hero fade-to-black */
+  .cinema-fade-bottom {
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 50%, var(--surface-0) 100%);
   }
-  .safe-area-pb {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  .cinema-fade-left {
+    background: linear-gradient(90deg, var(--surface-0) 0%, rgba(0,0,0,0.6) 30%, transparent 70%);
   }
-  .safe-area-top {
-    top: env(safe-area-inset-top, 0px);
+
+  /* Row gutter — single source of truth */
+  .row-gutter {
+    padding-left: var(--row-gutter-mobile);
+    padding-right: var(--row-gutter-mobile);
+  }
+  @media (min-width: 768px) {
+    .row-gutter {
+      padding-left: var(--row-gutter-desktop);
+      padding-right: var(--row-gutter-desktop);
+    }
   }
 }
 
@@ -82,25 +118,14 @@ video::cue {
      0    2px 0 #000;
 }
 
-/* Ambient background glow */
-.ambient-glow {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 60% 40% at 20% 10%, rgba(139,92,246,0.06), transparent),
-    radial-gradient(ellipse 50% 50% at 80% 80%, rgba(59,130,246,0.04), transparent);
-}
-
-/* Noise texture overlay for hero */
+/* Noise texture overlay (kept for hero subtle grain) */
 .noise-texture {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-/* Shimmer skeleton loading */
+/* Skeleton shimmer — neutralized to gray (no purple) */
 .skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(139,92,246,0.04) 25%, rgba(139,92,246,0.10) 50%, rgba(139,92,246,0.04) 75%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease infinite;
 }
@@ -110,48 +135,21 @@ video::cue {
   100% { background-position: 200% 0; }
 }
 
-/* Crying tentacle animations */
-@keyframes tentacle-sway {
-  0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(2deg); }
-}
+/* Crying tentacle animations (kept) */
+@keyframes tentacle-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes tentacle-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes tentacle-wiggle { 0%, 100% { transform: rotate(0deg) scaleX(1); } 25% { transform: rotate(1deg) scaleX(0.98); } 75% { transform: rotate(-1deg) scaleX(1.02); } }
+@keyframes tear-fall-left { 0% { transform: translateY(0); opacity: 0.8; } 80% { transform: translateY(50px); opacity: 0.3; } 100% { transform: translateY(60px); opacity: 0; } }
+@keyframes tear-fall-right { 0% { transform: translateY(0); opacity: 0.8; } 80% { transform: translateY(50px); opacity: 0.3; } 100% { transform: translateY(60px); opacity: 0; } }
+@keyframes tentacle-look { 0%, 40%, 100% { transform: translateX(0); } 10% { transform: translateX(-3px); } 25% { transform: translateX(3px); } }
+@keyframes tentacle-tremble { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(1px); } 75% { transform: translateY(-1px); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-@keyframes tentacle-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-}
-
-@keyframes tentacle-wiggle {
-  0%, 100% { transform: rotate(0deg) scaleX(1); }
-  25% { transform: rotate(1deg) scaleX(0.98); }
-  75% { transform: rotate(-1deg) scaleX(1.02); }
-}
-
-@keyframes tear-fall-left {
-  0% { transform: translateY(0); opacity: 0.8; }
-  80% { transform: translateY(50px); opacity: 0.3; }
-  100% { transform: translateY(60px); opacity: 0; }
-}
-
-@keyframes tear-fall-right {
-  0% { transform: translateY(0); opacity: 0.8; }
-  80% { transform: translateY(50px); opacity: 0.3; }
-  100% { transform: translateY(60px); opacity: 0; }
-}
-
-@keyframes tentacle-look {
-  0%, 40%, 100% { transform: translateX(0); }
-  10% { transform: translateX(-3px); }
-  25% { transform: translateX(3px); }
-}
-
-@keyframes tentacle-tremble {
-  0%, 100% { transform: translateY(0); }
-  25% { transform: translateY(1px); }
-  75% { transform: translateY(-1px); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Reduced motion — kill heavy ambient animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
