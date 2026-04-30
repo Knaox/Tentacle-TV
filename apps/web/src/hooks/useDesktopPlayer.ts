@@ -31,6 +31,13 @@ export function isMacOS(): boolean {
   return /Macintosh|Mac OS X/i.test(navigator.userAgent);
 }
 
+/** Detect Windows — utilisé pour brancher l'updater MSIX sur le Microsoft Store. */
+export function isWindows(): boolean {
+  if (typeof navigator === "undefined") return false;
+  if (navigator.platform?.startsWith("Win")) return true;
+  return /Windows NT/i.test(navigator.userAgent);
+}
+
 export interface PlayOptions {
   url: string;
   startPosition?: number;
@@ -64,36 +71,6 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
     p,
     new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label}-timeout`)), ms)),
   ]);
-}
-
-/** Préchauffage idempotent : charge libmpv + initialise/détruit une instance
- *  minimale pour que le premier vrai play() soit instantané. Sur Windows, le
- *  cold start peut prendre 1-3s à cause du chargement DLL + GL context.
- *  Aucun effet secondaire utilisateur (vo: null, audio désactivé). */
-let warmupDone = false;
-let warmupInFlight: Promise<void> | null = null;
-export async function warmupMpv(): Promise<void> {
-  if (warmupDone || !isTauri()) return;
-  if (warmupInFlight) return warmupInFlight;
-  warmupInFlight = (async () => {
-    try {
-      const loaded = await loadApi();
-      if (!loaded || !api) return;
-      await pendingDestroy;
-      await withTimeout(api.init({
-        initialOptions: { vo: "null", "audio-display": "no", osc: "no" },
-        observedProperties: [],
-      }), 6000, "mpv-warmup");
-      pendingDestroy = api.destroy().catch(() => {});
-      await pendingDestroy;
-      warmupDone = true;
-    } catch {
-      // Échec silencieux — le vrai init refera le travail à la prochaine ouverture.
-    } finally {
-      warmupInFlight = null;
-    }
-  })();
-  return warmupInFlight;
 }
 
 const loadApi = async (): Promise<boolean> => {
