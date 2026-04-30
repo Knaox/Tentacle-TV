@@ -114,6 +114,12 @@ export function useDesktopPlayer() {
   // on force fileLoaded=true (les preferences de pistes utiliseront le fallback
   // positionnel). Empêche un spinner éternel sur GPU/codec récalcitrant.
   const playbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Wake-up Windows : sur cold start, mpv n'émet parfois pas playback-restart
+  // tant qu'on n'a pas seeké — la vidéo et l'UI restent figées. On force un
+  // mini-seek (+50 ms) à 600 ms pour réveiller le pipeline si nécessaire.
+  // 600 ms : assez long pour laisser un cold start sain finir sans seek,
+  // assez court pour que l'utilisateur ne perçoive pas le freeze.
+  const wakeupRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // High-frequency refs — synced to React state via throttle timer
   const positionRef = useRef(0);
   const bufferedRef = useRef(0);
@@ -272,10 +278,14 @@ export function useDesktopPlayer() {
           }
           case "playback-restart": {
             if (cancelled) return;
-            // playback-restart reçu : on annule le watchdog
+            // playback-restart reçu : on annule les watchdogs
             if (playbackWatchdogRef.current) {
               clearTimeout(playbackWatchdogRef.current);
               playbackWatchdogRef.current = null;
+            }
+            if (wakeupRef.current) {
+              clearTimeout(wakeupRef.current);
+              wakeupRef.current = null;
             }
             setState((prev) => ({ ...prev, playing: true, eof: false }));
             // Sync pause state to close startup race condition
@@ -324,6 +334,10 @@ export function useDesktopPlayer() {
         clearTimeout(playbackWatchdogRef.current);
         playbackWatchdogRef.current = null;
       }
+      if (wakeupRef.current) {
+        clearTimeout(wakeupRef.current);
+        wakeupRef.current = null;
+      }
       for (const unlisten of unlistenRefs.current) unlisten();
       unlistenRefs.current = [];
       pendingDestroy = api?.destroy().catch(() => {}) ?? Promise.resolve();
@@ -354,6 +368,15 @@ export function useDesktopPlayer() {
       setFileLoaded(true);
       playbackWatchdogRef.current = null;
     }, 8000);
+    // Wake-up : si playback-restart pas reçu en 600ms, on force un mini-seek
+    // (+50 ms) pour débloquer mpv (bug cold start Windows). Un seek 0-relatif
+    // est traité comme no-op par mpv → on prend +0.05 s, imperceptible.
+    if (wakeupRef.current) clearTimeout(wakeupRef.current);
+    wakeupRef.current = setTimeout(() => {
+      console.warn("[mpv] wake-up: nudging pipeline (+50ms seek)");
+      api?.command("seek", [0.05, "relative"]).catch(() => {});
+      wakeupRef.current = null;
+    }, 600);
     try {
       if (options.startPosition != null && options.startPosition > 0) {
         console.debug("[mpv] play: setting start position", options.startPosition);
