@@ -8,36 +8,50 @@ export default {
   ],
   theme: {
     extend: {
-      // Breakpoint extra-small pour les très petits écrans (iPhone SE 320px,
-      // anciens Android, mode "compact" du navigateur). Les breakpoints sm/md/lg
-      // standard de Tailwind partent à 640px — `xs:` permet de cibler les vraies
-      // contraintes mobiles avant ça.
       screens: {
         xs: "360px",
       },
       fontFamily: {
-        sans: ['"DM Sans"', "system-ui", "-apple-system", "sans-serif"],
+        sans: ['"Inter"', "system-ui", "-apple-system", "sans-serif"],
       },
       colors: {
+        // Semantic surface tokens (preferred — consume via theme)
+        surface: {
+          0: "var(--surface-0)",
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
+        },
+        brand: {
+          DEFAULT: "var(--brand)",
+          light: "var(--brand-light)",
+          dark: "var(--brand-dark)",
+        },
+        // Legacy tentacle namespace — kept for backwards compat during migration.
+        // Maps onto the new tokens so existing classes (`bg-tentacle-bg`) keep working.
         tentacle: {
-          bg: "#080812",
-          surface: "#12121a",
-          border: "#1e1e2e",
-          accent: "#8b5cf6",
-          "accent-dark": "#7C3AED",
-          "accent-light": "#a78bfa",
-          "accent-muted": "#C4B5FD",
+          bg: "var(--surface-0)",
+          surface: "var(--surface-1)",
+          border: "var(--border-subtle)",
+          accent: "var(--brand)",
+          "accent-dark": "var(--brand-dark)",
+          "accent-light": "var(--brand-light)",
+          "accent-muted": "var(--brand-light)",
         },
         status: {
-          success: "#10b981",
-          warning: "#f59e0b",
-          error: "#ef4444",
-          info: "#3b82f6",
+          success: "var(--status-success)",
+          warning: "var(--status-warning)",
+          error: "var(--status-error)",
+          info: "var(--status-info)",
         },
       },
       fontSize: {
-        "heading-1": ["2.25rem", { lineHeight: "1.2", fontWeight: "700" }],
-        "heading-2": ["1.5rem", { lineHeight: "1.3", fontWeight: "600" }],
+        // Cinematic display scale
+        "display-1": ["4.5rem", { lineHeight: "1.05", fontWeight: "800", letterSpacing: "-0.025em" }],
+        "display-2": ["3rem", { lineHeight: "1.1", fontWeight: "700", letterSpacing: "-0.022em" }],
+        "display-3": ["2rem", { lineHeight: "1.15", fontWeight: "700", letterSpacing: "-0.02em" }],
+        "heading-1": ["1.5rem", { lineHeight: "1.25", fontWeight: "600" }],
+        "heading-2": ["1.25rem", { lineHeight: "1.3", fontWeight: "600" }],
         "heading-3": ["1.125rem", { lineHeight: "1.4", fontWeight: "600" }],
       },
       backdropBlur: {

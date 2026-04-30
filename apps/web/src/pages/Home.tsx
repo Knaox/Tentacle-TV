@@ -10,8 +10,9 @@ import {
   useHomeWebSocket,
   useJellyfinClient,
 } from "@tentacle-tv/api-client";
-import { HeroBanner } from "../components/HeroBanner";
-import { MediaCarousel } from "../components/MediaCarousel";
+import { HeroBillboard } from "../components/hero/HeroBillboard";
+import { MediaRow } from "../components/rows/MediaRow";
+import { ContinueWatchingRow } from "../components/rows/ContinueWatchingRow";
 import { PageTransition } from "../components/PageTransition";
 
 export function Home() {
@@ -34,26 +35,46 @@ export function Home() {
 
   return (
     <PageTransition>
-      {/* Hero Banner */}
-      {heroLoading ? (
-        <div className="skeleton-shimmer h-[70vh] w-full" />
-      ) : (
-        <HeroBanner items={heroItems} />
-      )}
+      {/* Hero billboard — escapes AppLayout top padding so the transparent
+          TopNav floats over the backdrop (Netflix pattern). */}
+      <div className="-mt-[56px] md:-mt-[68px]">
+        {heroLoading ? (
+          <div className="skeleton-shimmer h-[80vh] w-full md:h-[88vh] lg:h-[92vh]" />
+        ) : (
+          <HeroBillboard items={heroItems} />
+        )}
+      </div>
 
-      {/* Content rows */}
-      <div className="space-y-0 pb-20 pt-6">
+      {/* Content rows — relative z-index above hero fade */}
+      <div className="relative z-10 -mt-12 space-y-0 pb-24 md:-mt-16">
         {resumeItems && resumeItems.length > 0 && (
-          <MediaCarousel title={t("common:resumeWatching")} items={resumeItems} animDelay={350} />
+          <ContinueWatchingRow
+            title={t("common:resumeWatching")}
+            items={resumeItems}
+            animDelay={150}
+          />
         )}
         {nextUp && nextUp.length > 0 && (
-          <MediaCarousel title={t("common:nextEpisodes")} items={nextUp} animDelay={450} />
+          <ContinueWatchingRow
+            title={t("common:nextEpisodes")}
+            items={nextUp}
+            animDelay={250}
+          />
         )}
         {watchlist && watchlist.length > 0 && (
-          <MediaCarousel title={t("common:myList")} items={watchlist} animDelay={500} href="/watchlist" />
+          <MediaRow
+            title={t("common:myList")}
+            items={watchlist}
+            animDelay={350}
+            href="/watchlist"
+          />
         )}
         {watchedItems && watchedItems.length > 0 && (
-          <MediaCarousel title={t("common:alreadyWatched")} items={watchedItems} animDelay={650} />
+          <MediaRow
+            title={t("common:alreadyWatched")}
+            items={watchedItems}
+            animDelay={450}
+          />
         )}
         {libraries?.map((lib, i) => (
           <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} delayIndex={i} />
@@ -77,15 +98,15 @@ function LibraryRow({
 
   if (isLoading) {
     return (
-      <section className="mb-10 px-4 md:px-8">
-        <h2 className="mb-3 text-lg font-semibold text-white/90">
+      <section className="row-gutter mb-10">
+        <h2 className="mb-3 text-base font-semibold text-white/90 md:text-lg">
           {t("common:latestAdditions", { name: libraryName })}
         </h2>
-        <div className="flex gap-4">
+        <div className="flex gap-3 overflow-hidden">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="skeleton-shimmer aspect-[2/3] w-28 flex-shrink-0 rounded-xl xs:w-32 sm:w-40 lg:w-[165px]"
+              className="skeleton-shimmer aspect-[2/3] w-32 flex-shrink-0 rounded-md sm:w-44 lg:w-52"
             />
           ))}
         </div>
@@ -96,10 +117,10 @@ function LibraryRow({
   if (!items || items.length === 0) return null;
 
   return (
-    <MediaCarousel
+    <MediaRow
       title={t("common:latestAdditions", { name: libraryName })}
       items={items}
-      animDelay={650 + delayIndex * 100}
+      animDelay={550 + delayIndex * 80}
       href={`/library/${libraryId}`}
     />
   );

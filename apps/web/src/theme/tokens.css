@@ -1,0 +1,100 @@
+/* Tentacle TV — Design Tokens (Netflix-inspired cinematic theme)
+ * Loaded by index.css before Tailwind layers.
+ * Use these via `var(--token)` or via Tailwind arbitrary values: bg-[color:var(--surface-1)]
+ */
+
+:root {
+  /* ── Surfaces (pure black, no navy) ─────────────────────────── */
+  --surface-0: #000000;        /* page background */
+  --surface-1: #0a0a0a;        /* cards default */
+  --surface-2: #141414;        /* hover, modal panels */
+  --surface-3: #1f1f1f;        /* elevated chrome (dropdowns) */
+  --surface-overlay: rgba(0, 0, 0, 0.7);
+
+  /* ── Brand (Tentacle violet — kept, used sparingly) ─────────── */
+  --brand: #8B5CF6;
+  --brand-light: #A78BFA;
+  --brand-dark: #7C3AED;
+  --brand-soft: rgba(139, 92, 246, 0.15);
+  --brand-glow: rgba(139, 92, 246, 0.4);
+
+  /* ── Text ───────────────────────────────────────────────────── */
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.78);
+  --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-quaternary: rgba(255, 255, 255, 0.34);
+  --text-disabled: rgba(255, 255, 255, 0.22);
+
+  /* ── Action / CTA (Netflix-style neutral primary) ───────────── */
+  --cta-primary-bg: #FFFFFF;
+  --cta-primary-bg-hover: rgba(255, 255, 255, 0.85);
+  --cta-primary-fg: #000000;
+
+  --cta-secondary-bg: rgba(109, 109, 110, 0.55);
+  --cta-secondary-bg-hover: rgba(109, 109, 110, 0.78);
+  --cta-secondary-fg: #FFFFFF;
+
+  --cta-ghost-bg: rgba(255, 255, 255, 0.08);
+  --cta-ghost-bg-hover: rgba(255, 255, 255, 0.14);
+
+  /* ── Borders ────────────────────────────────────────────────── */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-focus: rgba(139, 92, 246, 0.85);
+
+  /* ── Status ─────────────────────────────────────────────────── */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+  --status-info: #3b82f6;
+
+  /* ── Motion ─────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-base: 240ms;
+  --duration-slow: 400ms;
+  --duration-page: 600ms;
+
+  /* ── Card hover (Netflix signature) ─────────────────────────── */
+  --hover-delay: 800ms;
+  --hover-scale: 1.5;
+
+  /* ── Layout ─────────────────────────────────────────────────── */
+  --topnav-height: 68px;
+  --topnav-height-mobile: 56px;
+  --tabbar-height: 64px;
+
+  --row-gutter-mobile: 16px;
+  --row-gutter-desktop: 56px;
+
+  /* ── Elevation (shadows) ────────────────────────────────────── */
+  --elev-1: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --elev-3: 0 16px 48px rgba(0, 0, 0, 0.7);
+  --elev-card-hover: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  /* ── Radii ──────────────────────────────────────────────────── */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+}
+
+/* Reduced motion — kill all heavy motion when user opts out. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-page: 0ms;
+    --hover-delay: 0ms;
+    --hover-scale: 1;
+  }
+}
