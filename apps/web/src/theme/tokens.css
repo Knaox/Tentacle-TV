@@ -42,11 +42,44 @@
   --border-strong: rgba(255, 255, 255, 0.16);
   --border-focus: rgba(139, 92, 246, 0.85);
 
-  /* ── Status ─────────────────────────────────────────────────── */
+  /* ── Status (foreground) ────────────────────────────────────── */
   --status-success: #10b981;
   --status-warning: #f59e0b;
   --status-error: #ef4444;
   --status-info: #3b82f6;
+
+  /* ── Status pairs (bg + fg, for badges/toasts) ──────────────── */
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-success-fg: #34D399;
+  --status-error-bg: rgba(239, 68, 68, 0.15);
+  --status-error-fg: #F87171;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-warning-fg: #FBBF24;
+  --status-info-bg: rgba(59, 130, 246, 0.15);
+  --status-info-fg: #60A5FA;
+
+  /* ── Surface tiers — extended for popups/modals ─────────────── */
+  --surface-modal: rgba(15, 15, 21, 0.96);
+  --surface-dropdown: rgba(20, 20, 26, 0.95);
+  --surface-sheet: rgba(15, 15, 21, 0.96);
+  --surface-toolbar: rgba(20, 20, 26, 0.92);
+
+  /* ── Blur scale — unify all overlays ────────────────────────── */
+  --blur-overlay: 24px;
+  --blur-modal: 20px;
+  --blur-dropdown: 12px;
+  --blur-sheet: 16px;
+
+  /* ── Modal/dropdown shadow scale ────────────────────────────── */
+  --shadow-modal: 0 25px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-dropdown: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.5);
+
+  /* ── Logo sizes (single source of truth) ────────────────────── */
+  --logo-size-sm: 28px;
+  --logo-size-md: 36px;
+  --logo-size-lg: 56px;
+  --logo-size-xl: 96px;
 
   /* ── Motion ─────────────────────────────────────────────────── */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

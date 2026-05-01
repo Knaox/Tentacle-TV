@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle-tv/ui";
+import { TentacleLogo } from "../components/ui/TentacleLogo";
 
 type SetupStep = "db" | "jellyfin" | "admin";
 
@@ -91,8 +92,8 @@ function StepHeader({ step }: { step: SetupStep }) {
   const idx = steps.findIndex((s) => s.key === step);
 
   return (
-    <div className="mb-6 text-center">
-      <img src="/tentacle-logo-pirate.svg" alt="" className="mx-auto mb-3 h-14 w-14" />
+    <div className="mb-6 flex flex-col items-center text-center">
+      <TentacleLogo size="lg" variant="glow" />
       <h1 className="mb-4 text-2xl font-bold">
         <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
           {t("configTitle")}

@@ -4,6 +4,7 @@ import { useScrollOpacity } from "./useScrollOpacity";
 import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
+import { TentacleLogo } from "../ui/TentacleLogo";
 
 interface TopNavProps {
   showSearch?: boolean;
@@ -34,27 +35,13 @@ export function TopNav({ showSearch = true }: TopNavProps) {
       }}
     >
       <div className="flex h-full items-center gap-6 px-4 md:px-12">
-        {/* Logo */}
         <Link
           to="/"
-          className="flex flex-shrink-0 items-center gap-2 transition-opacity duration-200 hover:opacity-80"
+          className="flex flex-shrink-0 items-center transition-opacity duration-200 hover:opacity-80"
           aria-label="Tentacle TV — Accueil"
         >
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
-            style={{
-              background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
-              boxShadow: "0 2px 12px rgba(139,92,246,0.35)",
-            }}
-          >
-            <img src="/tentacle-logo-pirate.svg" alt="" className="h-5 w-5" />
-          </div>
-          <span
-            className="hidden text-base font-bold tracking-tight text-white sm:inline"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            Tentacle
-          </span>
+          <TentacleLogo size="md" variant="pill" wordmark className="hidden sm:inline-flex" />
+          <TentacleLogo size="md" variant="pill" className="sm:hidden" />
         </Link>
 
         {/* Primary nav (horizontal) */}

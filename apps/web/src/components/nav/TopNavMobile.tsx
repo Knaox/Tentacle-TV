@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useScrollOpacity } from "./useScrollOpacity";
 import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
+import { TentacleLogo } from "../ui/TentacleLogo";
 
 interface TopNavMobileProps {
   showSearch?: boolean;
@@ -31,18 +32,10 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
       <div className="flex h-full items-center justify-between px-3">
         <Link
           to="/"
-          className="flex flex-shrink-0 items-center gap-2"
+          className="flex flex-shrink-0 items-center"
           aria-label="Tentacle TV — Accueil"
         >
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-md"
-            style={{
-              background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
-              boxShadow: "0 2px 10px rgba(139,92,246,0.35)",
-            }}
-          >
-            <img src="/tentacle-logo-pirate.svg" alt="" className="h-4 w-4" />
-          </div>
+          <TentacleLogo size="sm" variant="pill" />
         </Link>
 
         <div className="flex flex-shrink-0 items-center gap-2">

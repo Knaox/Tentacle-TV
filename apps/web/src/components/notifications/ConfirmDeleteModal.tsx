@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+import { Modal } from "../ui/Modal";
 
 interface ConfirmDeleteModalProps {
   open: boolean;
@@ -14,38 +14,37 @@ interface ConfirmDeleteModalProps {
 export function ConfirmDeleteModal({
   open, onConfirm, onCancel, title, message, confirmLabel, cancelLabel, isPending,
 }: ConfirmDeleteModalProps) {
-  if (!open) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div
-        className="animate-scale-in w-full max-w-sm rounded-xl p-6"
-        style={{
-          background: "rgba(15,15,25,0.97)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-        }}
-      >
-        <h3 className="text-base font-semibold text-white">{title}</h3>
-        <p className="mt-2 text-sm text-white/50">{message}</p>
-        <div className="mt-5 flex justify-end gap-3">
+  return (
+    <Modal open={open} onClose={onCancel} maxWidth={400} labelledBy="confirm-delete-title">
+      <div className="p-6">
+        <h3 id="confirm-delete-title" className="text-base font-semibold text-white">
+          {title}
+        </h3>
+        <p className="mt-2 text-sm text-white/55">{message}</p>
+        <div className="mt-6 flex justify-end gap-3">
           <button
+            type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white/80"
+            className="rounded-lg px-4 py-2 text-sm text-white/65 transition-colors hover:bg-white/10 hover:text-white/90"
           >
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 ring-1 ring-red-500/30 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+            className="rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150 hover:scale-[1.03] disabled:opacity-50"
+            style={{
+              background: "var(--status-error-bg)",
+              color: "var(--status-error-fg)",
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+            }}
           >
             {isPending ? "..." : confirmLabel}
           </button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }
