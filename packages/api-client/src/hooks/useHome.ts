@@ -3,7 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
-import { dedupResumeBySeries, filterNextUpAgainstResume } from "../utils/mediaFilters";
+import {
+  dedupResumeBySeries,
+  filterNextUpAgainstResume,
+  buildSmartNextUp,
+} from "../utils/mediaFilters";
 
 const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
@@ -22,8 +26,6 @@ export function useResumeItems() {
             `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
-    // Dedup by series — never show two episodes of the same show.
-    // Jellyfin returns by DatePlayed desc, so the first occurrence wins (= latest watched).
     select: dedupResumeBySeries,
     enabled: !!userId,
     staleTime: 30_000,
@@ -37,7 +39,6 @@ export function useLatestItems(parentId: string | undefined) {
   return useQuery({
     queryKey: ["latest-items", parentId],
     queryFn: () => {
-      // Guard: ne jamais envoyer de requête avec un parentId vide
       if (!parentId || !userId) return Promise.resolve([]);
       return client.fetch<MediaItem[]>(
         `/Users/${userId}/Items/Latest?ParentId=${parentId}&Limit=16&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
@@ -48,12 +49,29 @@ export function useLatestItems(parentId: string | undefined) {
   });
 }
 
+/**
+ * "Prochains épisodes" — hybrid strategy.
+ *
+ * Jellyfin's /Shows/NextUp has known bugs with gaps (issue #13732, #15432):
+ * if you watched S05 entirely + S01E01-06, NextUp won't surface S01E07
+ * because it tracks "next after last watched", not "first unwatched".
+ *
+ * Approach (defensive — carousel never disappears):
+ *  1. PRIMARY : /Shows/NextUp (always returns valid data, fast).
+ *  2. SUPPLEMENT : smart "first unwatched per engaged series" fills the gaps
+ *     for series NOT covered by NextUp.
+ *  3. FILTER : drop series with an in-progress episode (those live in Resume).
+ *
+ * If the smart queries fail (e.g., unsupported SortBy on some Jellyfin
+ * versions), we still get the primary NextUp result — graceful degradation.
+ */
 export function useNextUp() {
   const client = useJellyfinClient();
   const userId = useUserId();
   const resume = useResumeItems();
 
-  const raw = useQuery({
+  // Primary: Jellyfin's official NextUp — always returns valid data.
+  const primary = useQuery({
     queryKey: ["next-up"],
     queryFn: () =>
       client
@@ -66,15 +84,76 @@ export function useNextUp() {
     staleTime: 30_000,
   });
 
-  // Hide "next up" entries for series the user is currently mid-way through.
-  // The current episode lives in Resume — advertising the *next* one before
-  // the current is finished feels premature.
-  const data = useMemo(() => {
-    if (!raw.data) return raw.data;
-    return filterNextUpAgainstResume(raw.data, resume.data ?? []);
-  }, [raw.data, resume.data]);
+  // Supplement: all unwatched episodes (sorted by season+episode number,
+  // which is universally supported — no SeriesSortName risk).
+  const unwatched = useQuery({
+    queryKey: ["next-up", "unwatched-episodes"],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?IncludeItemTypes=Episode&Filters=IsUnplayed&Recursive=true` +
+            `&SortBy=ParentIndexNumber,IndexNumber&Limit=500` +
+            `&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`,
+        )
+        .then((r) => r.Items),
+    enabled: !!userId,
+    staleTime: 60_000,
+    // Don't block the carousel if this fails — primary still has data.
+    retry: 1,
+  });
 
-  return { ...raw, data };
+  // Engagement source: watched episodes ordered by recency.
+  const engagement = useQuery({
+    queryKey: ["next-up", "engaged-series"],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?IncludeItemTypes=Episode&Filters=IsPlayed&Recursive=true` +
+            `&SortBy=DatePlayed&SortOrder=Descending&Limit=500&${USER_DATA}`,
+        )
+        .then((r) => r.Items),
+    enabled: !!userId,
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  const data = useMemo(() => {
+    const primaryItems = primary.data ?? [];
+
+    // Build a set of series already represented by the primary endpoint.
+    const coveredSeries = new Set<string>();
+    for (const it of primaryItems) {
+      if (it.Type === "Episode" && it.SeriesId) coveredSeries.add(it.SeriesId);
+    }
+
+    // Smart supplement — only adds series NOT in primary, so we never
+    // duplicate. Skipped entirely if the smart queries failed/empty.
+    let merged = primaryItems;
+    if (unwatched.data && engagement.data && unwatched.data.length > 0) {
+      const smart = buildSmartNextUp(unwatched.data, engagement.data, 24);
+      const supplementary = smart.filter(
+        (it) => it.SeriesId && !coveredSeries.has(it.SeriesId),
+      );
+      if (supplementary.length > 0) {
+        merged = [...primaryItems, ...supplementary].slice(0, 12);
+      }
+    }
+
+    // Final filter: hide series with an in-progress episode (already in Resume).
+    return filterNextUpAgainstResume(merged, resume.data ?? []);
+  }, [primary.data, unwatched.data, engagement.data, resume.data]);
+
+  return {
+    data,
+    isLoading: primary.isLoading,
+    isError: primary.isError,
+    error: primary.error,
+    refetch: () => {
+      primary.refetch();
+      unwatched.refetch();
+      engagement.refetch();
+    },
+  };
 }
 
 export function useWatchedItems() {
