@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { i18n } from "@tentacle-tv/shared";
+import { TentacleLogo } from "../components/ui/TentacleLogo";
 
 interface DisclaimerProps {
   onAccepted: () => void;
@@ -49,10 +50,9 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
       className="flex min-h-screen flex-col items-center justify-center bg-[#080812] px-4 opacity-0 transition-opacity duration-500"
     >
       <div className="w-full max-w-lg">
-        {/* Logo */}
         <div className="mb-6 flex flex-col items-center">
-          <img src="/tentacle-logo-pirate.svg" alt="Tentacle TV" className="h-14 w-14" />
-          <p className="mt-2 text-xs tracking-widest text-white/40">Tentacle TV</p>
+          <TentacleLogo size="lg" variant="glow" />
+          <p className="mt-3 text-xs tracking-[0.18em] text-white/40">TENTACLE TV</p>
         </div>
 
         {/* Language switcher */}

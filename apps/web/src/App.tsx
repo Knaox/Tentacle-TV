@@ -33,6 +33,7 @@ const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ defaul
 const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
 const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
+const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
 
 function PageSpinner() {
   return (
@@ -248,7 +249,7 @@ export function App() {
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
       <UpdateModal />

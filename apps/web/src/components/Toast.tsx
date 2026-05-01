@@ -8,9 +8,21 @@ interface ToastProps {
 }
 
 const COLORS = {
-  success: { bg: "rgba(16,185,129,0.15)", border: "rgba(16,185,129,0.3)", bar: "#10b981" },
-  error: { bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.3)", bar: "#ef4444" },
-  info: { bg: "rgba(139,92,246,0.15)", border: "rgba(139,92,246,0.3)", bar: "#8b5cf6" },
+  success: {
+    bg: "var(--status-success-bg)",
+    border: "rgba(16,185,129,0.32)",
+    bar: "var(--status-success-fg)",
+  },
+  error: {
+    bg: "var(--status-error-bg)",
+    border: "rgba(239,68,68,0.32)",
+    bar: "var(--status-error-fg)",
+  },
+  info: {
+    bg: "var(--brand-soft)",
+    border: "rgba(139,92,246,0.32)",
+    bar: "var(--brand)",
+  },
 };
 
 export function Toast({ type, message, onDismiss }: ToastProps) {
