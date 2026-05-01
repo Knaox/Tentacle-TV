@@ -6,7 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVMediaCard } from "../components/TVMediaCard";
+import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -184,7 +184,7 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
         nextFocusLeft={isFirstInRow ? nodeId : undefined}
         nextFocusRight={isLastInRow ? nodeId : undefined}
       >
-        <TVMediaCard item={item} variant="portrait" />
+        <TVPosterCard item={item} />
       </Focusable>
     </View>
   );

@@ -18,7 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
 import { FocusableRow } from "../components/focus/FocusableRow";
-import { TVMediaCard } from "../components/TVMediaCard";
+import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { TVEpisodeList } from "../components/TVEpisodeList";
 import { PlayIcon, BookmarkIcon, BookmarkFilledIcon } from "../components/icons/TVIcons";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -260,7 +260,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         <FocusableRow
           title={t("similarTitles")}
           data={similar}
-          renderItem={(s: MediaItem) => <TVMediaCard item={s} />}
+          renderItem={(s: MediaItem) => <TVPosterCard item={s} />}
           keyExtractor={(s) => s.Id}
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}

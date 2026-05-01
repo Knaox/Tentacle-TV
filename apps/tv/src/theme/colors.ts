@@ -1,34 +1,40 @@
 /** Tentacle TV — Premium Cinematic Design System */
 
+import { BRAND, SURFACE, TEXT, STATUS, BORDER } from "@tentacle-tv/shared";
+
 // ─── Color Palette ───────────────────────────────────────────────────────────
+// Brand + surface + text now come from packages/shared so web/TV/mobile
+// share a single source of truth. TV-specific tokens (focus, glassmorphism,
+// progress orange) stay local because they don't apply to other platforms.
 
 export const Colors = {
-  // Backgrounds
+  // Backgrounds — TV uses a slightly warmer #06060a for OLED legibility.
+  // Falls back to surface tokens for everything else.
   bgDeep: "#06060a",
-  bgSurface: "#0f0f18",
-  bgElevated: "#1a1a2e",
+  bgSurface: SURFACE.s1,
+  bgElevated: SURFACE.s3,
   bgCard: "#12121a",
 
-  // Accents
-  accentPurple: "#8b5cf6",
-  accentPurpleLight: "#a78bfa",
+  // Accents (shared)
+  accentPurple: BRAND.violet,
+  accentPurpleLight: BRAND.light,
   accentPink: "#ec4899",
 
-  // Text
-  textPrimary: "#ffffff",
-  textSecondary: "#e4e4e7",
-  textTertiary: "#71717a",
-  textMuted: "rgba(255,255,255,0.5)",
+  // Text (shared)
+  textPrimary: TEXT.primary,
+  textSecondary: TEXT.secondary,
+  textTertiary: TEXT.tertiary,
+  textMuted: TEXT.quaternary,
 
-  // Status
-  success: "#22c55e",
-  progressOrange: "#f59e0b",
-  error: "#ef4444",
-  ratingGold: "#fbbf24",
+  // Status (shared)
+  success: STATUS.success,
+  progressOrange: STATUS.warning,
+  error: STATUS.error,
+  ratingGold: STATUS.rating,
 
-  // Glassmorphism
+  // Glassmorphism (TV-specific — not used on web)
   glassBg: "rgba(15, 15, 24, 0.75)",
-  glassBorder: "rgba(255, 255, 255, 0.08)",
+  glassBorder: BORDER.subtle,
   glassBgHeavy: "rgba(15, 15, 24, 0.85)",
 
   // Overlays
@@ -37,35 +43,38 @@ export const Colors = {
   overlayGradientStart: "transparent",
   overlayGradientEnd: "#06060a",
 
-  // Focus
-  focusGlow: "rgba(139, 92, 246, 0.4)",
-  focusBorder: "#8b5cf6",
+  // Focus (shared brand glow)
+  focusGlow: BRAND.glow,
+  focusBorder: BRAND.violet,
 
   // Dividers
   divider: "rgba(255, 255, 255, 0.06)",
   border: "#1e1e2e",
 } as const;
 
+// Re-export shared tokens for convenience inside TV components.
+export { BRAND, SURFACE, TEXT, STATUS, BORDER };
+
 // ─── Spacing ─────────────────────────────────────────────────────────────────
 
 export const Spacing = {
-  /** Padding from screen edges */
+  /** Padding from screen edges (TV overscan-safe). */
   screenPadding: 32,
-  /** Gap between content sections/rows */
+  /** Gap between content sections/rows. */
   sectionGap: 28,
-  /** Gap between cards in a carousel */
+  /** Gap between cards in a carousel. */
   cardGap: 16,
-  /** Gap between buttons */
+  /** Gap between buttons. */
   buttonGap: 10,
-  /** Space between synopsis and buttons */
+  /** Space between synopsis and buttons. */
   synopsisToButtons: 16,
-  /** Space between hero title and metadata */
+  /** Space between hero title and metadata. */
   titleToMeta: 6,
-  /** Space between metadata and synopsis */
+  /** Space between metadata and synopsis. */
   metaToSynopsis: 10,
-  /** Internal padding of glassmorphism panels */
+  /** Internal padding of glassmorphism panels. */
   glassPadding: 16,
-  /** Sidebar width when open */
+  /** Sidebar width when open. */
   sidebarWidth: 220,
 } as const;
 
@@ -83,6 +92,8 @@ export const Typography = {
   buttonMedium: { fontSize: 16, fontWeight: "600" as const },
   body: { fontSize: 16, fontWeight: "400" as const },
   caption: { fontSize: 14, fontWeight: "400" as const },
+  /** Tagline above hero title — italic, dimmed. */
+  tagline: { fontSize: 15, fontWeight: "400" as const, fontStyle: "italic" as const },
 } as const;
 
 // ─── Border Radius ───────────────────────────────────────────────────────────
@@ -100,19 +111,19 @@ export const Radius = {
 // ─── Hero Banner ─────────────────────────────────────────────────────────────
 
 export const HeroConfig = {
-  /** Percentage of screen height for hero */
-  heightRatio: 0.55,
-  /** Auto-rotate interval in ms */
+  /** Percentage of screen height for hero — bumped to 0.65 for cinematic feel. */
+  heightRatio: 0.65,
+  /** Auto-rotate interval in ms. */
   rotateInterval: 10_000,
-  /** Crossfade duration in ms */
+  /** Crossfade duration in ms. */
   crossfadeDuration: 800,
-  /** Ken Burns zoom target */
+  /** Ken Burns zoom target. */
   kenBurnsScale: 1.05,
-  /** Ken Burns duration in ms */
+  /** Ken Burns duration in ms. */
   kenBurnsDuration: 15_000,
 } as const;
 
-// ─── Focus Animation ─────────────────────────────────────────────────────────
+// ─── Focus Animation (legacy — see ./focus.ts for full token set) ───────────
 
 export const FocusConfig = {
   scaleUp: 1.05,
@@ -121,7 +132,7 @@ export const FocusConfig = {
   glowRadius: 20,
   springDamping: 18,
   springStiffness: 200,
-  shadowColor: "#8B5CF6",
+  shadowColor: BRAND.violet,
   shadowOpacity: 0.5,
   shadowRadius: 12,
   elevation: 8,
@@ -131,12 +142,23 @@ export const FocusConfig = {
 
 export const CardConfig = {
   portrait: {
-    width: 160,
+    width: 180,           // bumped from 160 for better readability at 3m
     aspectRatio: 2 / 3,
   },
   landscape: {
-    width: 260,
+    width: 320,           // bumped from 260 for Continue Watching emphasis
     aspectRatio: 16 / 9,
   },
   progressBarHeight: 3,
+} as const;
+
+// ─── Ambient Backdrop ────────────────────────────────────────────────────────
+
+export const AmbientConfig = {
+  /** Crossfade duration when focused item changes. */
+  crossfadeDuration: 800,
+  /** Image opacity over the page background. */
+  imageOpacity: 0.32,
+  /** Subtle vertical scrim to keep content legible. */
+  scrimOpacity: 0.55,
 } as const;

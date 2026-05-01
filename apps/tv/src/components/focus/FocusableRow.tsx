@@ -17,6 +17,8 @@ interface FocusableRowProps<T> {
   onEdgeLeft?: () => void;
   /** Called when any item in this row receives focus */
   onRowFocus?: () => void;
+  /** Called when an individual item gains focus — used by ambient backdrop */
+  onItemFocus?: (item: T, index: number) => void;
   /** Layout callback for tracking row Y position */
   onLayout?: (event: LayoutChangeEvent) => void;
   onItemLongPress?: (item: T) => void;
@@ -33,6 +35,7 @@ export function FocusableRow<T>({
   onItemPress,
   onEdgeLeft,
   onRowFocus,
+  onItemFocus,
   onLayout,
   onItemLongPress,
 }: FocusableRowProps<T>) {
@@ -102,6 +105,7 @@ export function FocusableRow<T>({
                 rowHasFocusRef.current = true;
                 scrollToIndex(index);
                 onRowFocus?.();
+                onItemFocus?.(item, index);
               }}
               onBlur={() => {
                 if (focusedIndexRef.current === index) rowHasFocusRef.current = false;
