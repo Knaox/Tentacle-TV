@@ -99,6 +99,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
             itemId={item.Id}
             initialFavorite={item.UserData?.IsFavorite === true}
             initialWatchlist={item.UserData?.Likes === true}
+            initialWatched={item.UserData?.Played === true}
             variant="compact"
           />
         </div>

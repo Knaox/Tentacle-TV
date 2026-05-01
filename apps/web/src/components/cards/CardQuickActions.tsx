@@ -1,33 +1,42 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
+import { useToggleWatchlist, useFavorite, useAppConfig, useWatchedToggle } from "@tentacle-tv/api-client";
 import { SharedWatchlistPicker } from "../SharedWatchlistPicker";
 
 interface CardQuickActionsProps {
   itemId: string;
   initialFavorite: boolean;
   initialWatchlist: boolean;
+  initialWatched?: boolean;
   /** Visual variant — `compact` is the always-on top-right cluster on the card image,
    *  `inline` is the bigger row inside the hover preview panel. */
   variant?: "compact" | "inline";
 }
 
 /**
- * Favorite / Watchlist / Shared-watchlist toggles with optimistic state.
- * Refactored from CarouselCard.tsx so it can be reused by both card variants
- * and the hover preview panel.
+ * Favorite / Watchlist / Watched / Shared-watchlist toggles with optimistic state.
+ * Reused by both card variants (poster / episode) and the hover preview panel.
  */
-export function CardQuickActions({ itemId, initialFavorite, initialWatchlist, variant = "compact" }: CardQuickActionsProps) {
+export function CardQuickActions({
+  itemId,
+  initialFavorite,
+  initialWatchlist,
+  initialWatched = false,
+  variant = "compact",
+}: CardQuickActionsProps) {
   const { data: config } = useAppConfig();
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(itemId);
   const { add: addFav, remove: removeFav } = useFavorite(itemId);
+  const { markWatched, markUnwatched } = useWatchedToggle(itemId);
   const [fav, setFav] = useState(initialFavorite);
   const [list, setList] = useState(initialWatchlist);
+  const [watched, setWatched] = useState(initialWatched);
   const [sharedOpen, setSharedOpen] = useState<{ x: number; y: number } | null>(null);
   const [sharedAdded, setSharedAdded] = useState(false);
 
   useEffect(() => setFav(initialFavorite), [initialFavorite]);
   useEffect(() => setList(initialWatchlist), [initialWatchlist]);
+  useEffect(() => setWatched(initialWatched), [initialWatched]);
 
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); };
 
@@ -41,6 +50,12 @@ export function CardQuickActions({ itemId, initialFavorite, initialWatchlist, va
     stop(e);
     setList(!list);
     if (list) removeWatchlist.mutate(); else addWatchlist.mutate();
+  };
+
+  const toggleWatched = (e: React.MouseEvent) => {
+    stop(e);
+    setWatched(!watched);
+    if (watched) markUnwatched.mutate(); else markWatched.mutate();
   };
 
   const openShared = (e: React.MouseEvent) => {
@@ -61,8 +76,22 @@ export function CardQuickActions({ itemId, initialFavorite, initialWatchlist, va
       <div className={`flex ${dir} gap-1.5`}>
         <button
           type="button"
+          onClick={toggleWatched}
+          aria-label={watched ? "Marquer comme non vu" : "Marquer comme vu"}
+          title={watched ? "Marquer comme non vu" : "Marquer comme vu"}
+          className={`${sizeClass} flex items-center justify-center rounded-full border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${
+            watched
+              ? "border-emerald-400/80 text-emerald-300"
+              : "border-white/40 text-white hover:border-white"
+          }`}
+        >
+          {watched ? <EyeFilledIcon className={iconSize} /> : <EyeIcon className={iconSize} />}
+        </button>
+        <button
+          type="button"
           onClick={toggleFav}
           aria-label={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
+          title={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
           className={`${sizeClass} flex items-center justify-center rounded-full border border-white/40 bg-black/55 text-white transition hover:scale-105 hover:border-white hover:bg-black/70`}
         >
           {fav ? <HeartFilled className={iconSize} /> : <HeartOutline className={iconSize} />}
@@ -71,6 +100,7 @@ export function CardQuickActions({ itemId, initialFavorite, initialWatchlist, va
           type="button"
           onClick={toggleList}
           aria-label={list ? "Retirer de Ma liste" : "Ajouter à Ma liste"}
+          title={list ? "Retirer de Ma liste" : "Ajouter à Ma liste"}
           className={`${sizeClass} flex items-center justify-center rounded-full border border-white/40 bg-black/55 text-white transition hover:scale-105 hover:border-white hover:bg-black/70`}
         >
           {list ? <CheckIcon className={iconSize} /> : <PlusIcon className={iconSize} />}
@@ -80,6 +110,7 @@ export function CardQuickActions({ itemId, initialFavorite, initialWatchlist, va
             type="button"
             onClick={openShared}
             aria-label="Ajouter à une liste partagée"
+            title="Ajouter à une liste partagée"
             className={`${sizeClass} flex items-center justify-center rounded-full border border-white/40 bg-black/55 text-white transition hover:scale-105 hover:border-white hover:bg-black/70 ${sharedAdded ? "border-pink-400 text-pink-400" : ""}`}
           >
             <UsersIcon className={iconSize} />
@@ -122,4 +153,10 @@ function PlusIcon({ className }: { className: string }) {
 }
 function UsersIcon({ className }: { className: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>;
+}
+function EyeIcon({ className }: { className: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+}
+function EyeFilledIcon({ className }: { className: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M12 4.5C7.36 4.5 3.423 7.51 2.036 11.683a1.012 1.012 0 000 .639C3.423 16.49 7.36 19.5 12 19.5c4.638 0 8.573-3.007 9.963-7.178a1.011 1.011 0 000-.639C20.577 7.51 16.64 4.5 12 4.5zM12 9a3 3 0 100 6 3 3 0 000-6z" clipRule="evenodd" /></svg>;
 }
