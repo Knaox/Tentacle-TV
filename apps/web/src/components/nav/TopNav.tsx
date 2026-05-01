@@ -37,11 +37,16 @@ export function TopNav({ showSearch = true }: TopNavProps) {
       <div className="flex h-full items-center gap-6 px-4 md:px-12">
         <Link
           to="/"
-          className="flex flex-shrink-0 items-center transition-opacity duration-200 hover:opacity-80"
+          className="flex flex-shrink-0 items-center gap-2.5 transition-opacity duration-200 hover:opacity-80"
           aria-label="Tentacle TV — Accueil"
         >
-          <TentacleLogo size="md" variant="pill" wordmark className="hidden sm:inline-flex" />
-          <TentacleLogo size="md" variant="pill" className="sm:hidden" />
+          <TentacleLogo size="md" variant="bare" />
+          <span
+            className="hidden text-base font-bold tracking-tight text-white sm:inline"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            Tentacle
+          </span>
         </Link>
 
         {/* Primary nav (horizontal) */}
