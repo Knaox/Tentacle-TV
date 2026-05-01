@@ -80,6 +80,7 @@ export function PosterCard({ item, index, size = "md" }: PosterCardProps) {
             itemId={item.Id}
             initialFavorite={item.UserData?.IsFavorite === true}
             initialWatchlist={item.UserData?.Likes === true}
+            initialWatched={item.UserData?.Played === true}
             variant="compact"
           />
         </div>

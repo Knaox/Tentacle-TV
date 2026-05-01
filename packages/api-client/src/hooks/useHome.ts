@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
+import { dedupResumeBySeries, filterNextUpAgainstResume } from "../utils/mediaFilters";
 
 const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
@@ -20,6 +22,9 @@ export function useResumeItems() {
             `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
+    // Dedup by series — never show two episodes of the same show.
+    // Jellyfin returns by DatePlayed desc, so the first occurrence wins (= latest watched).
+    select: dedupResumeBySeries,
     enabled: !!userId,
     staleTime: 30_000,
   });
@@ -46,8 +51,9 @@ export function useLatestItems(parentId: string | undefined) {
 export function useNextUp() {
   const client = useJellyfinClient();
   const userId = useUserId();
+  const resume = useResumeItems();
 
-  return useQuery({
+  const raw = useQuery({
     queryKey: ["next-up"],
     queryFn: () =>
       client
@@ -59,6 +65,16 @@ export function useNextUp() {
     enabled: !!userId,
     staleTime: 30_000,
   });
+
+  // Hide "next up" entries for series the user is currently mid-way through.
+  // The current episode lives in Resume — advertising the *next* one before
+  // the current is finished feels premature.
+  const data = useMemo(() => {
+    if (!raw.data) return raw.data;
+    return filterNextUpAgainstResume(raw.data, resume.data ?? []);
+  }, [raw.data, resume.data]);
+
+  return { ...raw, data };
 }
 
 export function useWatchedItems() {
