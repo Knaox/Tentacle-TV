@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVSearchKeyboard } from "../components/TVSearchKeyboard";
-import { TVMediaCard } from "../components/TVMediaCard";
+import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { SkeletonCardPortrait } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -127,7 +127,7 @@ export function SearchScreen({ navigation }: Props) {
               })}
               renderItem={({ item, index }) => (
                 <Focusable variant="card" onPress={() => navigateToDetail(item)} onFocus={() => scrollToRow(index)}>
-                  <TVMediaCard item={item} variant="portrait" />
+                  <TVPosterCard item={item} />
                 </Focusable>
               )}
             />

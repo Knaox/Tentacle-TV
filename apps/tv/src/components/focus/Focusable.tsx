@@ -8,7 +8,7 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import type { FocusVariant } from "../../theme/focus";
-import { FocusSpring, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle } from "../../theme/focus";
+import { FocusSpring, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, FocusBorder } from "../../theme/focus";
 
 interface FocusableProps {
   onPress?: (e?: GestureResponderEvent) => void;
@@ -94,6 +94,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   const hasGap = HAS_GAP[variant];
   const isRow = variant === "row";
   const isButton = variant === "button";
+  const isCard = variant === "card";
 
   const scaleStyle = useAnimatedStyle(() => {
     const s = interpolate(progress.value, [0, 1], [FocusScale.normal, scaleTarget]);
@@ -128,6 +129,11 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   // Button variant: animated highlight overlay
   const buttonBgStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
+  }));
+
+  // Card variant: crisp violet border that fades in on focus
+  const cardBorderStyle = useAnimatedStyle(() => ({
+    opacity: progress.value * FocusBorder.opacity,
   }));
 
   const RING_GAP = 4;
@@ -208,6 +214,20 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
         )}
 
         {children}
+
+        {/* Card variant: crisp violet border drawn ON TOP of children. */}
+        {isCard && (
+          <Animated.View
+            pointerEvents="none"
+            style={[{
+              position: "absolute",
+              top: 0, left: 0, right: 0, bottom: 0,
+              borderRadius: focusRadius,
+              borderWidth: FocusBorder.width,
+              borderColor: FocusBorder.color,
+            }, cardBorderStyle]}
+          />
+        )}
       </Animated.View>
     </Pressable>
   );

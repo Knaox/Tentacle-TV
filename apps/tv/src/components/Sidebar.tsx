@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
+import LinearGradient from "react-native-linear-gradient";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useSidebar } from "../context/SidebarContext";
@@ -19,6 +20,7 @@ import {
 } from "./icons/TVIcons";
 import { SelectionModal } from "./SelectionModal";
 import { Colors, Spacing, Radius } from "../theme/colors";
+import { BRAND } from "@tentacle-tv/shared";
 
 interface SidebarProps {
   onNavigate: (screen: string, params?: Record<string, string>) => void;
@@ -29,7 +31,7 @@ interface SidebarProps {
 
 const ICON_SIZE = 20;
 const ICON_COLOR = Colors.accentPurpleLight;
-const ANIM_DURATION = 250;
+const ANIM_DURATION = 300;
 
 function getLibraryIcon(collectionType?: string) {
   switch (collectionType?.toLowerCase()) {
@@ -106,47 +108,68 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
 
   const isActive = (key: string) => currentRoute === key;
 
-  const renderItem = (key: string, label: string, icon: React.ReactNode, grabFocus = false) => (
-    <Focusable
-      key={key}
-      variant="row"
-      onPress={() => handlePress(key)}
-      hasTVPreferredFocus={grabFocus}
-    >
-      <View style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: Radius.small,
-        marginBottom: 2,
-        backgroundColor: isActive(key) ? "rgba(139, 92, 246, 0.15)" : "transparent",
-      }}>
-        {isActive(key) && (
-          <View style={{
-            position: "absolute",
-            left: 0, top: 6, bottom: 6,
-            width: 3,
-            backgroundColor: Colors.accentPurple,
-            borderRadius: 2,
-          }} />
-        )}
-        {icon}
-        <Text
-          numberOfLines={1}
-          style={{
-            color: key === "Logout" ? Colors.error : Colors.textPrimary,
-            fontSize: 15,
-            fontWeight: isActive(key) ? "600" : "400",
-            marginLeft: 14,
-            flex: 1,
-          }}
-        >
-          {label}
-        </Text>
-      </View>
-    </Focusable>
-  );
+  const renderItem = (key: string, label: string, icon: React.ReactNode, grabFocus = false) => {
+    const active = isActive(key);
+    return (
+      <Focusable
+        key={key}
+        variant="row"
+        onPress={() => handlePress(key)}
+        hasTVPreferredFocus={grabFocus}
+      >
+        <View style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          borderRadius: Radius.small,
+          marginBottom: 4,
+          overflow: "hidden",
+        }}>
+          {/* Active gradient background — fades violet → transparent */}
+          {active && (
+            <LinearGradient
+              colors={["rgba(139, 92, 246, 0.28)", "rgba(139, 92, 246, 0.06)"]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{
+                position: "absolute",
+                top: 0, left: 0, right: 0, bottom: 0,
+                borderRadius: Radius.small,
+              }}
+            />
+          )}
+          {/* Active left bar — wider with glow */}
+          {active && (
+            <View style={{
+              position: "absolute",
+              left: 0, top: 4, bottom: 4,
+              width: 4,
+              backgroundColor: BRAND.violet,
+              borderRadius: 2,
+              shadowColor: BRAND.violet,
+              shadowOpacity: 0.7,
+              shadowRadius: 8,
+              elevation: 6,
+            }} />
+          )}
+          {icon}
+          <Text
+            numberOfLines={1}
+            style={{
+              color: key === "Logout" ? Colors.error : Colors.textPrimary,
+              fontSize: 15,
+              fontWeight: active ? "700" : "400",
+              marginLeft: 14,
+              flex: 1,
+            }}
+          >
+            {label}
+          </Text>
+        </View>
+      </Focusable>
+    );
+  };
 
   const divider = (
     <View style={{ height: 1, backgroundColor: Colors.divider, marginVertical: 10, marginHorizontal: 8 }} />
