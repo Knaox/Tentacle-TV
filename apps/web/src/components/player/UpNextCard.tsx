@@ -95,18 +95,32 @@ export function UpNextCard({
         {/* Top-left badge — UP NEXT + countdown */}
         <div className="absolute left-4 top-3 flex items-center gap-2">
           <span
-            className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em]"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white"
             style={{
-              background: "var(--brand-soft)",
-              color: "var(--brand-light)",
-              border: "1px solid rgba(139,92,246,0.32)",
+              background: "rgba(0, 0, 0, 0.6)",
+              border: "1px solid rgba(139, 92, 246, 0.55)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
             }}
           >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{
+                background: "var(--brand-light)",
+                boxShadow: "0 0 8px var(--brand)",
+              }}
+            />
             {t("player:upNext")}
           </span>
           <span
-            className="text-[11px] font-medium tabular-nums text-white/80"
-            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}
+            className="rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white"
+            style={{
+              background: "rgba(0, 0, 0, 0.55)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
+            }}
           >
             {countdown}
             {t("player:secondsShort")}
