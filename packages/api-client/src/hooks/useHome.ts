@@ -120,27 +120,52 @@ export function useNextUp() {
   const data = useMemo(() => {
     const primaryItems = primary.data ?? [];
 
-    // Build a set of series already represented by the primary endpoint.
+    // Engagement rank map: SeriesId → position in DatePlayed-desc timeline
+    // (rank 0 = the show the user watched most recently). Used at the end to
+    // sort the merged carousel so "last watched series" appears first.
+    const rankBySeries = new Map<string, number>();
+    if (engagement.data) {
+      for (const ep of engagement.data) {
+        if (!ep.SeriesId || rankBySeries.has(ep.SeriesId)) continue;
+        rankBySeries.set(ep.SeriesId, rankBySeries.size);
+      }
+    }
+
+    // Series already covered by the primary endpoint (avoid duplicates).
     const coveredSeries = new Set<string>();
     for (const it of primaryItems) {
       if (it.Type === "Episode" && it.SeriesId) coveredSeries.add(it.SeriesId);
     }
 
-    // Smart supplement — only adds series NOT in primary, so we never
-    // duplicate. Skipped entirely if the smart queries failed/empty.
-    let merged = primaryItems;
+    // Smart supplement — only adds series NOT in primary. Skipped entirely
+    // if the smart queries failed/empty (graceful degradation).
+    let merged: MediaItem[] = [...primaryItems];
     if (unwatched.data && engagement.data && unwatched.data.length > 0) {
       const smart = buildSmartNextUp(unwatched.data, engagement.data, 24);
       const supplementary = smart.filter(
         (it) => it.SeriesId && !coveredSeries.has(it.SeriesId),
       );
       if (supplementary.length > 0) {
-        merged = [...primaryItems, ...supplementary].slice(0, 12);
+        merged = [...primaryItems, ...supplementary];
       }
     }
 
-    // Final filter: hide series with an in-progress episode (already in Resume).
-    return filterNextUpAgainstResume(merged, resume.data ?? []);
+    // Sort by engagement recency — most recently watched series first.
+    // Items without a known engagement rank (e.g., primary returned a
+    // never-watched series) sink to the end.
+    merged.sort((a, b) => {
+      const ra = a.SeriesId
+        ? rankBySeries.get(a.SeriesId) ?? Number.POSITIVE_INFINITY
+        : Number.POSITIVE_INFINITY;
+      const rb = b.SeriesId
+        ? rankBySeries.get(b.SeriesId) ?? Number.POSITIVE_INFINITY
+        : Number.POSITIVE_INFINITY;
+      return ra - rb;
+    });
+
+    // Hide series with an in-progress episode (those live in "Reprendre").
+    const filtered = filterNextUpAgainstResume(merged, resume.data ?? []);
+    return filtered.slice(0, 12);
   }, [primary.data, unwatched.data, engagement.data, resume.data]);
 
   return {
