@@ -35,7 +35,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
           className="flex flex-shrink-0 items-center"
           aria-label="Tentacle TV — Accueil"
         >
-          <TentacleLogo size="sm" variant="pill" />
+          <TentacleLogo size="sm" variant="bare" />
         </Link>
 
         <div className="flex flex-shrink-0 items-center gap-2">

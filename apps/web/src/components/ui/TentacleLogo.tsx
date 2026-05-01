@@ -10,40 +10,30 @@ interface TentacleLogoProps {
   wordmark?: boolean;
   /** Wordmark text — default "Tentacle". Use "Tentacle TV" for splash/about. */
   wordmarkText?: string;
-  /** Forward className to the root container. */
+  /** Forward className to the root container — controls layout/visibility. */
   className?: string;
 }
 
 /**
  * Single source of truth for the Tentacle logo.
- * Replaces 7 ad-hoc logo renderings (TopNav, TopNavMobile, About, Disclaimer,
- * ServerSetup, AppConnect, Navbar) that each used different sizes / chrome.
- *
- * Variants:
- *  - `pill`: gradient violet container (TopNav, chrome surfaces)
- *  - `bare`: SVG only (overlays where chrome would be visually noisy)
- *  - `glow`: XL hero treatment with violet ambient glow (About, splash)
+ * The SVG is already a colored violet→pink octopus, so by default we render
+ * it `bare` (no chrome behind it) for a clean look. `pill` is reserved for
+ * surfaces that need a strong brand stamp; `glow` for hero/splash screens.
  */
 export function TentacleLogo({
   size = "md",
-  variant = "pill",
+  variant = "bare",
   wordmark = false,
   wordmarkText = "Tentacle",
   className,
 }: TentacleLogoProps) {
   const px = SIZE_TO_PX[size];
-  const innerPx = Math.round(px * 0.62);
   const wordmarkSize = WORDMARK_SIZE[size];
-
-  const wrapStyle: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: size === "xl" ? 16 : 10,
-  };
+  const gap = size === "xl" ? "gap-4" : "gap-2.5";
 
   return (
-    <span style={wrapStyle} className={className} aria-label={`Tentacle TV logo`}>
-      <LogoMark size={px} innerSize={innerPx} variant={variant} />
+    <span className={`inline-flex items-center ${gap} ${className ?? ""}`} aria-label="Tentacle TV logo">
+      <LogoMark size={px} variant={variant} />
       {wordmark && (
         <span
           style={{
@@ -51,6 +41,7 @@ export function TentacleLogo({
             letterSpacing: "-0.02em",
             fontSize: wordmarkSize,
             color: "var(--text-primary)",
+            lineHeight: 1,
           }}
         >
           {wordmarkText}
@@ -62,52 +53,49 @@ export function TentacleLogo({
 
 interface LogoMarkProps {
   size: number;
-  innerSize: number;
   variant: LogoVariant;
 }
 
-function LogoMark({ size, innerSize, variant }: LogoMarkProps) {
-  const radius = Math.max(8, size * 0.22);
-
+function LogoMark({ size, variant }: LogoMarkProps) {
   const baseStyle: CSSProperties = {
     width: size,
     height: size,
-    borderRadius: radius,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
     flexShrink: 0,
+    display: "inline-block",
   };
 
   if (variant === "bare") {
+    // SVG is already a colored mascot — no chrome needed.
     return (
-      <span style={baseStyle}>
-        <img
-          src="/tentacle-logo-pirate.svg"
-          alt=""
-          style={{ width: size, height: size }}
-          draggable={false}
-        />
-      </span>
+      <img
+        src="/tentacle-logo-pirate.svg"
+        alt=""
+        style={baseStyle}
+        draggable={false}
+      />
     );
   }
 
   if (variant === "glow") {
+    // Hero treatment: ambient violet glow behind the SVG, no opaque container.
+    const wrapStyle: CSSProperties = {
+      width: size,
+      height: size,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "9999px",
+      background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, rgba(139,92,246,0.0) 70%)",
+      flexShrink: 0,
+    };
     return (
-      <span
-        style={{
-          ...baseStyle,
-          position: "relative",
-          background:
-            "radial-gradient(circle, rgba(139,92,246,0.45) 0%, rgba(139,92,246,0.0) 70%)",
-        }}
-      >
+      <span style={wrapStyle}>
         <img
           src="/tentacle-logo-pirate.svg"
           alt=""
           style={{
-            width: innerSize * 1.25,
-            height: innerSize * 1.25,
+            width: size,
+            height: size,
             filter: "drop-shadow(0 4px 24px rgba(139,92,246,0.55))",
           }}
           draggable={false}
@@ -116,19 +104,26 @@ function LogoMark({ size, innerSize, variant }: LogoMarkProps) {
     );
   }
 
-  // Default: pill (gradient violet)
+  // pill: gradient violet container (used sparingly — most surfaces use `bare`).
+  const radius = Math.max(8, size * 0.22);
+  const innerSize = Math.round(size * 0.62);
+  const pillStyle: CSSProperties = {
+    width: size,
+    height: size,
+    borderRadius: radius,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
+    boxShadow: "0 2px 12px rgba(139, 92, 246, 0.35)",
+  };
   return (
-    <span
-      style={{
-        ...baseStyle,
-        background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
-        boxShadow: "0 2px 12px rgba(139, 92, 246, 0.35)",
-      }}
-    >
+    <span style={pillStyle}>
       <img
         src="/tentacle-logo-pirate.svg"
         alt=""
-        style={{ width: innerSize, height: innerSize }}
+        style={{ width: innerSize, height: innerSize, filter: "brightness(0) invert(1)" }}
         draggable={false}
       />
     </span>
@@ -137,7 +132,7 @@ function LogoMark({ size, innerSize, variant }: LogoMarkProps) {
 
 const SIZE_TO_PX: Record<LogoSize, number> = {
   sm: 28,
-  md: 36,
+  md: 32,
   lg: 56,
   xl: 96,
 };
