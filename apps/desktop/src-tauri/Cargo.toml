@@ -1,6 +1,6 @@
 [package]
 name = "tentacle-desktop"
-version = "1.6.1"
+version = "1.6.2"
 edition = "2021"
 
 [dependencies]
@@ -18,6 +18,8 @@ windows = { version = "0.61", features = [
   "Foundation",
   "Foundation_Collections",
   "ApplicationModel",
+  "Win32_Foundation",
+  "Win32_UI_Shell",
 ] }
 windows-future = "0.2"
 windows-core = "0.61"

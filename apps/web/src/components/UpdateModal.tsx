@@ -50,6 +50,7 @@ function ModalContent({
   phase,
   notes,
   progress,
+  error,
   onInstall,
   onDismiss,
   t,
@@ -57,6 +58,7 @@ function ModalContent({
   phase: UpdatePhase;
   notes?: string;
   progress: number;
+  error: string | null;
   onInstall: () => void;
   onDismiss: () => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -100,6 +102,11 @@ function ModalContent({
           <p className="whitespace-pre-line text-sm text-white/60">{notes}</p>
         </div>
       )}
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <p className="text-sm text-red-300">{error}</p>
+        </div>
+      )}
       <div className="flex gap-3 pt-2">
         <button
           onClick={onInstall}
@@ -120,7 +127,7 @@ function ModalContent({
 
 export function UpdateModal() {
   const { t } = useTranslation("notifications");
-  const { available, phase, version, notes, progress, installUpdate, dismiss } = useAutoUpdate();
+  const { available, phase, version, notes, progress, error, installUpdate, dismiss } = useAutoUpdate();
 
 
   if (!available) return null;
@@ -155,6 +162,7 @@ export function UpdateModal() {
           phase={phase}
           notes={notes}
           progress={progress}
+          error={error}
           onInstall={installUpdate}
           onDismiss={dismiss}
           t={t}
