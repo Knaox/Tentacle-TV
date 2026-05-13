@@ -5,6 +5,7 @@ import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
 import { TentacleLogo } from "../ui/TentacleLogo";
+import { BrowseButton } from "./BrowseButton";
 
 interface TopNavProps {
   showSearch?: boolean;
@@ -49,7 +50,10 @@ export function TopNav({ showSearch = true }: TopNavProps) {
           </span>
         </Link>
 
-        {/* Primary nav (horizontal) */}
+        {/* Browse menu (libraries pin manager) */}
+        <BrowseButton />
+
+        {/* Primary nav (horizontal) — only shows pinned items */}
         <div className="min-w-0 flex-1">
           <TopNavLinks />
         </div>

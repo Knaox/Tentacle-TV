@@ -9,9 +9,15 @@ interface Props {
   onClose: () => void;
   isMobile: boolean;
   anchorRect?: DOMRect | null;
+  /**
+   * Desktop placement strategy:
+   * - "sidebar" (default, legacy): floats next to the old 62px sidebar.
+   * - "dropdown": anchored under `anchorRect` (e.g. a TopNav button).
+   */
+  placement?: "sidebar" | "dropdown";
 }
 
-export function PlusMenu({ onClose, isMobile, anchorRect }: Props) {
+export function PlusMenu({ onClose, isMobile, anchorRect, placement = "sidebar" }: Props) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
   const { data: libraries } = useLibraries();
@@ -40,26 +46,58 @@ export function PlusMenu({ onClose, isMobile, anchorRect }: Props) {
 
   if (isMobile) return createPortal(<MobileSheet onClose={onClose} />, document.body);
 
-  // Desktop: floating panel positioned next to the sidebar
-  const top = anchorRect ? anchorRect.top : 200;
+  // Desktop: floating panel — dropdown anchored under a button, or legacy sidebar adjacency.
+  const PANEL_WIDTH = 320;
+  const PANEL_MAX_HEIGHT = 480;
+  const margin = 12;
+
+  let panelLeft: number;
+  let panelTop: number;
+  let originX: string; // for scale-in animation
+  let originY: string;
+
+  if (placement === "dropdown" && anchorRect) {
+    // Align right edge of panel to right edge of anchor (so it stays inside viewport)
+    const preferredLeft = anchorRect.left;
+    const rightOverflow = preferredLeft + PANEL_WIDTH > window.innerWidth - margin;
+    panelLeft = rightOverflow
+      ? Math.max(margin, anchorRect.right - PANEL_WIDTH)
+      : preferredLeft;
+    panelTop = Math.min(
+      anchorRect.bottom + 8,
+      window.innerHeight - PANEL_MAX_HEIGHT - margin
+    );
+    originX = rightOverflow ? "right" : "left";
+    originY = "top";
+  } else {
+    const top = anchorRect ? anchorRect.top : 200;
+    panelLeft = 72;
+    panelTop = Math.min(top, window.innerHeight - 420);
+    originX = "left";
+    originY = "top";
+  }
 
   return createPortal(
     <div ref={overlayRef} className="fixed inset-0 z-50">
       <div
         className="absolute overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
         style={{
-          left: 72,
-          top: Math.min(top, window.innerHeight - 420),
-          width: 280,
+          left: panelLeft,
+          top: panelTop,
+          width: PANEL_WIDTH,
+          maxHeight: PANEL_MAX_HEIGHT,
+          overflowY: "auto",
           background: "rgba(12,12,22,0.96)",
           backdropFilter: "blur(24px)",
-          animation: "plusMenuIn 180ms ease forwards",
+          WebkitBackdropFilter: "blur(24px)",
+          transformOrigin: `${originX} ${originY}`,
+          animation: "plusMenuIn 180ms cubic-bezier(0.16,1,0.3,1) forwards",
         }}
       >
         <style>{`
           @keyframes plusMenuIn {
-            from { opacity: 0; transform: translateX(-8px) scale(0.96); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
+            from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
           }
         `}</style>
 
