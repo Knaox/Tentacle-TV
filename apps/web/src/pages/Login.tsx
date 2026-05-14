@@ -4,6 +4,13 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
 import { GlassCard } from "@tentacle-tv/ui";
 import { isTauriApp, backendUrl } from "../main";
+import { TentacleLogo } from "../components/ui/TentacleLogo";
+
+const CTA_PRIMARY =
+  "inline-flex h-11 w-full items-center justify-center rounded-lg bg-white text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
+const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(139,92,246,0.45)" };
+const INPUT_BASE =
+  "h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -18,10 +25,7 @@ export function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login.mutate(
-      { username, password },
-      { onSuccess: () => navigate("/") }
-    );
+    login.mutate({ username, password }, { onSuccess: () => navigate("/") });
   };
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
@@ -41,84 +45,105 @@ export function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <GlassCard className="w-full max-w-md p-8">
-        <h1 className="mb-2 text-center text-3xl font-bold">
-          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-80"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.18) 0%, rgba(139,92,246,0.04) 30%, transparent 70%)" }}
+      />
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <TentacleLogo size="lg" variant="glow" />
+          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-white">
             {t("tentacle")}
-          </span>
-        </h1>
-        <p className="mb-8 text-center text-sm text-white/50">
-          {t("signInSubtitle")}
-        </p>
+          </h1>
+          <p className="text-sm text-white/55">{t("signInSubtitle")}</p>
+        </div>
 
-        {showForgot ? (
-          <ForgotPasswordForm
-            t={t}
-            forgotUsername={forgotUsername}
-            setForgotUsername={setForgotUsername}
-            forgotSending={forgotSending}
-            forgotSent={forgotSent}
-            onSubmit={handleForgotSubmit}
-            onBack={() => { setShowForgot(false); setForgotSent(false); setForgotUsername(""); }}
-          />
-        ) : (
-          <>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text" placeholder={t("username")} value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
-                required
-              />
-              <input
-                type="password" placeholder={t("password")} value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
-                required
-              />
+        <GlassCard className="p-6">
+          {showForgot ? (
+            <ForgotPasswordForm
+              t={t}
+              forgotUsername={forgotUsername}
+              setForgotUsername={setForgotUsername}
+              forgotSending={forgotSending}
+              forgotSent={forgotSent}
+              onSubmit={handleForgotSubmit}
+              onBack={() => { setShowForgot(false); setForgotSent(false); setForgotUsername(""); }}
+            />
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div>
+                  <label htmlFor="username" className="mb-1 block text-xs font-medium text-white/60">
+                    {t("username")}
+                  </label>
+                  <input
+                    id="username" type="text" value={username} required
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={INPUT_BASE}
+                    autoComplete="username"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="mb-1 block text-xs font-medium text-white/60">
+                    {t("password")}
+                  </label>
+                  <input
+                    id="password" type="password" value={password} required
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={INPUT_BASE}
+                    autoComplete="current-password"
+                  />
+                </div>
 
-              {login.error && (
-                <p className="text-sm text-red-400">
-                  {login.error.message?.includes("401")
-                    ? t("invalidCredentials")
-                    : login.error.message?.includes("502") || login.error.message?.includes("503")
-                      ? t("common:offlineTitle")
-                      : login.error.message || t("loginFailed")}
-                </p>
-              )}
+                {login.error && (
+                  <p className="text-sm text-[var(--status-error-fg)]" role="alert">
+                    {login.error.message?.includes("401")
+                      ? t("invalidCredentials")
+                      : login.error.message?.includes("502") || login.error.message?.includes("503")
+                        ? t("common:offlineTitle")
+                        : login.error.message || t("loginFailed")}
+                  </p>
+                )}
 
-              <button type="submit" disabled={login.isPending}
-                className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50">
-                {login.isPending ? t("signingIn") : t("signIn")}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={login.isPending}
+                  className={CTA_PRIMARY}
+                  style={CTA_PRIMARY_HALO}
+                >
+                  {login.isPending ? t("signingIn") : t("signIn")}
+                </button>
+              </form>
 
-            <button
-              onClick={() => setShowForgot(true)}
-              className="mt-3 w-full text-center text-sm text-white/40 transition-colors hover:text-purple-400"
-            >
-              {t("forgotPassword")}
-            </button>
-
-            <p className="mt-6 text-center text-sm text-white/40">
-              {t("haveInviteKey")}{" "}
-              <Link to="/register" className="text-purple-400 hover:underline">
-                {t("createAccount")}
-              </Link>
-            </p>
-
-            {isTauriApp && (
               <button
-                onClick={() => changeServer.mutate(undefined, { onSettled: () => window.location.reload() })}
-                className="mt-4 w-full text-center text-sm text-white/30 transition-colors hover:text-white/60"
+                onClick={() => setShowForgot(true)}
+                className="mt-3 w-full text-center text-sm font-medium text-white/45 transition-colors hover:text-[var(--brand-light)]"
               >
-                {t("changeServer")}
+                {t("forgotPassword")}
               </button>
-            )}
-          </>
-        )}
-      </GlassCard>
+
+              <p className="mt-5 text-center text-sm text-white/45">
+                {t("haveInviteKey")}{" "}
+                <Link to="/register" className="font-semibold text-[var(--brand-light)] hover:underline">
+                  {t("createAccount")}
+                </Link>
+              </p>
+
+              {isTauriApp && (
+                <button
+                  onClick={() => changeServer.mutate(undefined, { onSettled: () => window.location.reload() })}
+                  className="mt-5 w-full text-center text-xs font-medium text-white/35 transition-colors hover:text-white/65"
+                >
+                  {t("changeServer")}
+                </button>
+              )}
+            </>
+          )}
+        </GlassCard>
+      </div>
     </div>
   );
 }
@@ -135,9 +160,8 @@ function ForgotPasswordForm({ t, forgotUsername, setForgotUsername, forgotSendin
   if (forgotSent) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-sm text-green-400">{t("forgotPasswordSuccess")}</p>
-        <button onClick={onBack}
-          className="text-sm text-purple-400 transition-colors hover:underline">
+        <p className="text-sm font-medium text-[var(--status-success-fg)]">{t("forgotPasswordSuccess")}</p>
+        <button onClick={onBack} className="text-sm font-semibold text-[var(--brand-light)] hover:underline">
           {t("signIn")}
         </button>
       </div>
@@ -146,20 +170,25 @@ function ForgotPasswordForm({ t, forgotUsername, setForgotUsername, forgotSendin
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h2 className="text-lg font-semibold text-white">{t("forgotPasswordTitle")}</h2>
-      <p className="text-sm text-white/50">{t("forgotPasswordDescription")}</p>
-      <input
-        type="text" placeholder={t("username")} value={forgotUsername}
-        onChange={(e) => setForgotUsername(e.target.value)}
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none"
-        required
-      />
-      <button type="submit" disabled={forgotSending}
-        className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+      <div className="space-y-1">
+        <h2 className="text-lg font-bold tracking-tight text-white">{t("forgotPasswordTitle")}</h2>
+        <p className="text-sm text-white/55">{t("forgotPasswordDescription")}</p>
+      </div>
+      <div>
+        <label htmlFor="forgot-username" className="mb-1 block text-xs font-medium text-white/60">
+          {t("username")}
+        </label>
+        <input
+          id="forgot-username" type="text" value={forgotUsername} required
+          onChange={(e) => setForgotUsername(e.target.value)}
+          className={INPUT_BASE}
+          autoFocus
+        />
+      </div>
+      <button type="submit" disabled={forgotSending} className={CTA_PRIMARY} style={CTA_PRIMARY_HALO}>
         {forgotSending ? t("common:sending") : t("sendRequest")}
       </button>
-      <button type="button" onClick={onBack}
-        className="w-full text-center text-sm text-white/40 transition-colors hover:text-purple-400">
+      <button type="button" onClick={onBack} className="w-full text-center text-sm font-medium text-white/45 transition-colors hover:text-[var(--brand-light)]">
         {t("signIn")}
       </button>
     </form>

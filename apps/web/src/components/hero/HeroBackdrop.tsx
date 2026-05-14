@@ -72,8 +72,13 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
         }}
       />
 
-      {/* Tiny grain to avoid banding on solid color zones */}
-      <div className="noise-texture absolute inset-0 opacity-[0.08] mix-blend-overlay" aria-hidden />
+      {/* Tiny grain to avoid banding on solid color zones.
+       * NB: pas de mix-blend-mode ici — sur macOS WKWebView (Tauri), mix-blend-*
+       * promeut le node en compositing layer sans backdrop opaque, ce qui
+       * combiné à une window `transparent: true` laisse passer l'écran derrière
+       * (rectangle blanc fantôme visible dans le hero). Un overlay plain
+       * opacity suffit pour casser le banding. */}
+      <div className="noise-texture absolute inset-0 opacity-[0.06]" aria-hidden />
     </>
   );
 }
