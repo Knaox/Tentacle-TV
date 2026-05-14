@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import Constants from "expo-constants";
 import {
   BORDER,
   BRAND,
@@ -25,8 +24,13 @@ const FEATURE_KEYS = [
   { key: "featureNotifications", icon: "bell" as const },
 ];
 
-const appVersion = Constants.expoConfig?.version ?? "1.0.0";
-const buildNumber = Constants.expoConfig?.ios?.buildNumber ?? "1";
+// Lecture directe depuis app.json — Constants.expoConfig peut être null en
+// build production (bundle natif), alors qu'app.json est embarqué via metro
+// resolver. Aligné sur ProfileScreen pour cohérence.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const appJsonExpo = require("../../app.json").expo ?? {};
+const appVersion: string = appJsonExpo.version ?? "1.0.0";
+const buildNumber: string = appJsonExpo.ios?.buildNumber ?? "1";
 
 export function AboutScreen() {
   const { t } = useTranslation("about");

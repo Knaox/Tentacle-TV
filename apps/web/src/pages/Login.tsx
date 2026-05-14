@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth, useAppConfig } from "@tentacle-tv/api-client";
-import { useRefreshPlugins } from "@tentacle-tv/plugins-api";
+import { useAuth } from "@tentacle-tv/api-client";
 import { GlassCard } from "@tentacle-tv/ui";
 import { isTauriApp, backendUrl } from "../main";
 
@@ -16,9 +15,6 @@ export function Login() {
   const navigate = useNavigate();
   const { t } = useTranslation("auth");
   const { login, changeServer } = useAuth();
-  const { data: config } = useAppConfig();
-  const refreshPlugins = useRefreshPlugins();
-  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,26 +22,6 @@ export function Login() {
       { username, password },
       { onSuccess: () => navigate("/") }
     );
-  };
-
-  const handleDemo = async () => {
-    setDemoLoading(true);
-    try {
-      const res = await fetch(`${backendUrl}/api/auth/demo`, {
-        method: "POST",
-        credentials: isTauriApp ? undefined : "include",
-      });
-      if (!res.ok) throw new Error("Demo unavailable");
-      const data = await res.json();
-      if (data.AccessToken) {
-        localStorage.setItem("tentacle_token", data.AccessToken);
-      }
-      localStorage.setItem("tentacle_user", JSON.stringify(data.user));
-      refreshPlugins();
-      navigate("/");
-    } catch {
-      setDemoLoading(false);
-    }
   };
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
@@ -124,13 +100,6 @@ export function Login() {
             >
               {t("forgotPassword")}
             </button>
-
-            {config?.features.demo && (
-              <button onClick={handleDemo} disabled={demoLoading}
-                className="mt-3 w-full rounded-xl border border-white/10 py-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50">
-                {demoLoading ? t("loadingDemo") : t("tryDemo")}
-              </button>
-            )}
 
             <p className="mt-6 text-center text-sm text-white/40">
               {t("haveInviteKey")}{" "}
