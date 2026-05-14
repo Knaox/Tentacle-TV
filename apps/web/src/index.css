@@ -26,22 +26,36 @@
     letter-spacing: -0.018em;
   }
 
+  /* Scrollbar custom — track + corner OBLIGATOIREMENT opaques.
+   * Sur macOS, la window Tauri est `transparent: true` (requis pour l'overlay
+   * MPV du player). Un track `background: transparent` laisse alors voir le
+   * bureau à travers la NSWindow → bande verticale qui montre le wallpaper.
+   * `-webkit-appearance: none` force la scrollbar custom à se substituer à la
+   * scrollbar native macOS (sinon WebKit superpose les deux et la native
+   * réintroduit le leak). `::-webkit-scrollbar-corner` couvre le carré en
+   * bas-droite quand H et V scrollbars coexistent. */
   ::-webkit-scrollbar {
+    -webkit-appearance: none;
     width: 8px;
     height: 8px;
+    background-color: var(--surface-0);
   }
 
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background-color: var(--surface-0);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.32);
+    background-color: rgba(139, 92, 246, 0.32);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.55);
+    background-color: rgba(139, 92, 246, 0.55);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background-color: var(--surface-0);
   }
 }
 
