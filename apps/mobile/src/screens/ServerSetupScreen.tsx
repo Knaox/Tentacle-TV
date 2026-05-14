@@ -23,7 +23,6 @@ import {
   GlassCard,
   FadeIn,
   authInputStyle,
-  authLinkStyle,
   authPrimaryCtaStyle,
   authSubtitleStyle,
   authTitleStyle,
@@ -225,20 +224,6 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
                 )}
               </Pressable>
             </GlassCard>
-          </FadeIn>
-
-          <FadeIn delay={180} translateY={10} style={{ marginTop: 24 }}>
-            <Pressable
-              onPress={() => onServerValidated("https://demo.tentacle.tv")}
-              accessibilityRole="link"
-              accessibilityLabel={t("tryDemo")}
-              style={({ pressed }) => [
-                { paddingVertical: 10, paddingHorizontal: 20, minHeight: 44, justifyContent: "center" },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Text style={authLinkStyle}>{t("tryDemo")}</Text>
-            </Pressable>
           </FadeIn>
         </View>
       </KeyboardAvoidingView>

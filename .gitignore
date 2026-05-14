@@ -72,3 +72,26 @@ download/
 context.md
 jellyfin-openapi-stable.json
 tentacle-tv-ui-demo.jsx
+# === Nextcloud sync — auto-managed (do not duplicate this block) ===
+# Dépendances et artefacts de build — exclus de Nextcloud et régénérés via _scripts/install.sh
+node_modules/
+vendor/
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+.vite/
+.svelte-kit/
+target/
+__pycache__/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+.nyc_output/
+.tentacle-ctl/
