@@ -1,14 +1,15 @@
 import { useRef, useEffect, useCallback, useState, type ReactNode } from "react";
 import {
-  Animated, Dimensions, Modal, PanResponder, Pressable, View,
+  Animated, Dimensions, Modal, PanResponder, Pressable, StyleSheet, View,
   type GestureResponderEvent, type PanResponderGestureState,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "@/theme";
+import { BlurView } from "expo-blur";
+import { SURFACE, BORDER, RADIUS, SHADOW_RN } from "@/theme";
 
 const SCREEN_H = Dimensions.get("window").height;
 const DISMISS_THRESHOLD = 80;
-const HANDLE_H = 20; // paddingTop(10) + paddingBottom(6) + bar(4)
+const HANDLE_H = 24; // paddingTop(12) + paddingBottom(8) + bar(4)
 
 interface BottomSheetProps {
   visible: boolean;
@@ -17,6 +18,11 @@ interface BottomSheetProps {
   children: ReactNode;
 }
 
+/**
+ * Bottom sheet Netflix-style — drag handle slim, BlurView backdrop, surface
+ * SURFACE.s1 avec border-top subtle, animation spring damping/stiffness pour
+ * un feel naturel. APIs préservées : visible / onClose / snapPoints / children.
+ */
 export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], children }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   const snapHeights = snapPoints.map((p) => Math.round(SCREEN_H * p));
@@ -25,7 +31,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Ref bag so PanResponder always reads fresh values
+  // Ref bag — PanResponder lit toujours des valeurs fraîches
   const ref = useRef({ currentSnap: 0, minH, maxH, onClose });
   ref.current.minH = minH;
   ref.current.maxH = maxH;
@@ -33,20 +39,21 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
 
   const animateTo = useCallback((toValue: number, onDone?: () => void) => {
     Animated.spring(translateY, {
-      toValue, useNativeDriver: true, damping: 20, stiffness: 200,
-    }).start(onDone);
+      toValue, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+    } as Animated.SpringAnimationConfig).start(onDone);
   }, [translateY]);
 
   const dismiss = useCallback(() => {
     setIsExpanded(false);
     ref.current.currentSnap = 0;
     Animated.parallel([
-      Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true, damping: 20, stiffness: 200 }),
-      Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.spring(translateY, {
+        toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+      } as Animated.SpringAnimationConfig),
+      Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start(() => ref.current.onClose());
   }, [translateY, overlayOpacity]);
 
-  // Track previous visible state to distinguish open/close from snapPoint changes
   const prevVisibleRef = useRef(false);
 
   useEffect(() => {
@@ -54,23 +61,25 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
     prevVisibleRef.current = visible;
 
     if (visible && !wasVisible) {
-      // Opening: animate from bottom
       ref.current.currentSnap = 0;
       setIsExpanded(false);
       translateY.setValue(SCREEN_H);
       Animated.parallel([
-        Animated.spring(translateY, { toValue: SCREEN_H - minH, useNativeDriver: true, damping: 20, stiffness: 200 }),
-        Animated.timing(overlayOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+        Animated.spring(translateY, {
+          toValue: SCREEN_H - minH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+        } as Animated.SpringAnimationConfig),
+        Animated.timing(overlayOpacity, { toValue: 1, duration: 260, useNativeDriver: true }),
       ]).start();
     } else if (visible && wasVisible) {
-      // Already open, snapPoints changed — smoothly animate to new snap 0
       ref.current.currentSnap = 0;
       setIsExpanded(false);
       animateTo(SCREEN_H - minH);
     } else if (!visible) {
       Animated.parallel([
-        Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true, damping: 20, stiffness: 200 }),
-        Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.spring(translateY, {
+          toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+        } as Animated.SpringAnimationConfig),
+        Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
       ]).start();
     }
   }, [visible, translateY, overlayOpacity, minH, animateTo]);
@@ -88,28 +97,16 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
       onPanResponderRelease: (_: GestureResponderEvent, g: PanResponderGestureState) => {
         const { currentSnap, minH: mH, maxH: xH } = ref.current;
 
-        // From half → dismiss
-        if (g.dy > DISMISS_THRESHOLD && currentSnap === 0) {
-          setIsExpanded(false);
-          dismiss();
-          return;
-        }
-        // From full → half
+        if (g.dy > DISMISS_THRESHOLD && currentSnap === 0) { setIsExpanded(false); dismiss(); return; }
         if (g.dy > DISMISS_THRESHOLD && currentSnap === 1) {
-          ref.current.currentSnap = 0;
-          setIsExpanded(false);
-          animateTo(SCREEN_H - mH);
-          return;
+          ref.current.currentSnap = 0; setIsExpanded(false);
+          animateTo(SCREEN_H - mH); return;
         }
-        // From half → full
         if (g.dy < -DISMISS_THRESHOLD && currentSnap === 0) {
-          ref.current.currentSnap = 1;
-          setIsExpanded(true);
-          animateTo(SCREEN_H - xH);
-          return;
+          ref.current.currentSnap = 1; setIsExpanded(true);
+          animateTo(SCREEN_H - xH); return;
         }
 
-        // Snap back to current position
         const snapTo = currentSnap === 0 ? SCREEN_H - mH : SCREEN_H - xH;
         animateTo(snapTo);
       },
@@ -119,28 +116,41 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   if (!visible) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={dismiss}>
+    <Modal visible transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
       <View style={{ flex: 1 }}>
-        <Animated.View style={{ ...styleOverlay, opacity: overlayOpacity }}>
-          <Pressable style={{ flex: 1 }} onPress={dismiss} />
+        {/* Backdrop: blur + scrim */}
+        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.55)" }]} />
+          <Pressable style={{ flex: 1 }} onPress={dismiss} accessibilityLabel="Fermer" />
         </Animated.View>
-        <Animated.View style={{
-          position: "absolute", left: 0, right: 0, height: maxH,
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          transform: [{ translateY }],
-          paddingBottom: insets.bottom,
-        }}>
-          {/* Safe area spacer — only when expanded to full screen */}
+
+        {/* Sheet panel */}
+        <Animated.View
+          style={[
+            styles.sheet,
+            SHADOW_RN.sheet,
+            {
+              height: maxH,
+              backgroundColor: SURFACE.s1,
+              transform: [{ translateY }],
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
           {isExpanded && <View style={{ height: insets.top }} />}
-          {/* Drag handle */}
-          <View {...panResponder.panHandlers} style={{ alignItems: "center", paddingTop: 10, paddingBottom: 6 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: "#4b5563", borderRadius: 2 }} />
+
+          {/* Drag handle area (gesture target) */}
+          <View {...panResponder.panHandlers} style={styles.handleArea}>
+            <View style={styles.handle} />
           </View>
-          <View style={{
-            flex: 1,
-            maxHeight: (isExpanded ? maxH : minH) - HANDLE_H - (isExpanded ? insets.top : 0) - insets.bottom,
-          }}>
+
+          <View
+            style={{
+              flex: 1,
+              maxHeight: (isExpanded ? maxH : minH) - HANDLE_H - (isExpanded ? insets.top : 0) - insets.bottom,
+            }}
+          >
             {children}
           </View>
         </Animated.View>
@@ -149,8 +159,28 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   );
 }
 
-const styleOverlay = {
-  position: "absolute" as const,
-  top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: "rgba(0,0,0,0.6)",
-};
+const styles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+  },
+  sheet: {
+    position: "absolute",
+    left: 0, right: 0, bottom: 0,
+    borderTopLeftRadius: RADIUS["2xl"],
+    borderTopRightRadius: RADIUS["2xl"],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: BORDER.subtle,
+  },
+  handleArea: {
+    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.28)",
+    borderRadius: 2,
+  },
+});

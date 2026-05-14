@@ -124,7 +124,7 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
         )}
         {isWatched && (
           <View style={styles.watchedBadge}>
-            <Text style={styles.watchedCheck}>{"\u2713"}</Text>
+            <Feather name="check" size={12} color="#000" />
           </View>
         )}
       </View>
@@ -145,8 +145,19 @@ const styles = StyleSheet.create({
   emptyTitle: { ...typography.subtitle, color: colors.textMuted, marginTop: spacing.md },
   emptyHint: { ...typography.caption, color: colors.textDim, marginTop: spacing.xs },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  watchedBadge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#8B5CF6", alignItems: "center", justifyContent: "center" },
-  watchedCheck: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  // R11 — Watched check unifié (web/mobile) : pill blanc + check noir + shadow.
+  // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
+  watchedBadge: {
+    position: "absolute", top: 7, right: 7,
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   itemTitle: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: spacing.xs + 2 },
   itemYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
 });

@@ -280,7 +280,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
 
           <div className="flex gap-2 sm:col-span-3">
             <button onClick={handleSave}
-              className="rounded-lg bg-tentacle-accent px-4 py-2 text-xs font-semibold text-white hover:bg-tentacle-accent/80">
+              className="rounded-lg h-11 px-5 bg-white text-black text-xs font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
               {t("common:save")}
             </button>
             {pref && (

@@ -65,7 +65,7 @@ export function InstalledTab() {
               onClick={() => toggleMut.mutate(p.id)}
               disabled={toggleMut.isPending}
               className={`relative h-6 w-11 rounded-full transition-colors ${
-                p.enabled ? "bg-purple-600" : "bg-white/10"
+                p.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-white/10"
               }`}
               title={p.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
             >

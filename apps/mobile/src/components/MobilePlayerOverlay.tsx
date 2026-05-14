@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
 import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
 import { QUALITY_PRESETS, type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { PlayerPopupMenu } from "./player/PlayerPopupMenu";
 import { AutoPlayOverlay } from "./player/AutoPlayOverlay";
+import { SkipButton } from "./player/SkipButton";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -53,8 +55,10 @@ export function MobilePlayerOverlay({
 }: Props) {
   const { t } = useTranslation("player");
   const { width: screenW, height: screenH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const playSize = Math.min(60, Math.round(screenH * 0.08));
   const centerGap = Math.min(36, Math.round(screenW * 0.05));
+  const hasNextEpisode = !!(nextEpisode && onNextEpisode);
   const [showSettings, setShowSettings] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false);
   const [showAutoPlay, setShowAutoPlay] = useState(false);
@@ -147,16 +151,26 @@ export function MobilePlayerOverlay({
             )}
           </View>
 
-          {/* Skip intro / credits */}
+          {/* Skip intro / credits — design aligné desktop (pill blur 24, border subtle, bottom-right safe-area) */}
           {showSkipIntro && introSegment && (
-            <View style={{ position: "absolute", bottom: Math.min(120, Math.round(screenH * 0.15)), right: 16 }}>
-              <SkipButton label={t("skipIntro")} onPress={() => onSeek(introSegment.end)} />
-            </View>
+            <SkipButton
+              label={t("skipIntro")}
+              onPress={() => onSeek(introSegment.end)}
+              bottom={Math.max(110, insets.bottom + 86)}
+              right={Math.max(20, insets.right + 16)}
+            />
           )}
           {showSkipCredits && creditsSegment && (
-            <View style={{ position: "absolute", bottom: Math.min(120, Math.round(screenH * 0.15)), right: 16 }}>
-              <SkipButton label={t("skipCredits")} onPress={() => onSeek(creditsSegment.end)} />
-            </View>
+            <SkipButton
+              label={hasNextEpisode ? t("nextEpisodeLabel") : t("skipCredits")}
+              showChevron={hasNextEpisode}
+              onPress={() => {
+                if (hasNextEpisode && onNextEpisode) onNextEpisode();
+                else onSeek(creditsSegment.end);
+              }}
+              bottom={Math.max(110, insets.bottom + 86)}
+              right={Math.max(20, insets.right + 16)}
+            />
           )}
 
           {/* Bottom bar: seek + track buttons */}
@@ -246,15 +260,4 @@ export function MobilePlayerOverlay({
   );
 }
 
-function SkipButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={{
-      backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.2)", borderRadius: 8,
-      paddingHorizontal: 20, paddingVertical: 10,
-    }}>
-      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{label}</Text>
-    </Pressable>
-  );
-}
 

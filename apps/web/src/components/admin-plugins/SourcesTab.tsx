@@ -79,7 +79,7 @@ export function SourcesTab() {
                   onClick={() => toggleMut.mutate(s.id)}
                   disabled={toggleMut.isPending}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
-                    s.enabled ? "bg-purple-600" : "bg-white/10"
+                    s.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-white/10"
                   }`}
                   title={s.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
                 >

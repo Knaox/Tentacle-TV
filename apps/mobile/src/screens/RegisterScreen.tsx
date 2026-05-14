@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
-  View,
   Text,
   TextInput,
   Pressable,
   ActivityIndicator,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +13,20 @@ import { useRouter } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
+import {
+  BRAND,
+  CTA,
+  FONT_FAMILY,
+  STATUS,
+  SubtleBackground,
+  GlassCard,
+  FadeIn,
+  authInputStyle,
+  authLinkStyle,
+  authPrimaryCtaStyle,
+  authSubtitleStyle,
+  authTitleStyle,
+} from "../components/auth/authStyles";
 
 export function RegisterScreen() {
   const { t } = useTranslation("auth");
@@ -28,7 +42,7 @@ export function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const passwordsMatch = password === confirmPassword;
-  const canSubmit = inviteKey && username && password && confirmPassword && passwordsMatch && !loading;
+  const canSubmit = !!inviteKey && !!username && !!password && !!confirmPassword && passwordsMatch && !loading;
 
   const handleRegister = async () => {
     if (!canSubmit) return;
@@ -61,118 +75,150 @@ export function RegisterScreen() {
     }
   };
 
+  const monospace = Platform.OS === "ios" ? "Menlo" : "monospace";
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#0a0a0f" }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={{
-        flex: 1, justifyContent: "center", alignItems: "center",
-        paddingHorizontal: 24, paddingTop: insets.top + 16,
-      }}>
-        <View style={{
-          width: "100%", maxWidth: 400, padding: 32,
-          backgroundColor: "#12121a", borderRadius: 16,
-          borderWidth: 1, borderColor: "#1e1e2e",
-        }}>
-          <View style={{ alignItems: "center", marginBottom: 8 }}>
-            <TentacleLogo size={80} />
-          </View>
-          <Text style={{ color: "#8b5cf6", fontSize: 28, fontWeight: "800", textAlign: "center", marginBottom: 4 }}>
-            {t("joinTentacle")}
-          </Text>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
-            {t("invitationOnly")}
-          </Text>
+    <SubtleBackground ambient>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 24,
+            paddingTop: insets.top + 24,
+            paddingBottom: insets.bottom + 24,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <FadeIn delay={0} translateY={12} style={{ alignItems: "center", marginBottom: 16 }}>
+            <TentacleLogo size={56} />
+          </FadeIn>
 
-          <TextInput
-            value={inviteKey}
-            onChangeText={setInviteKey}
-            placeholder={t("inviteKey")}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[inputStyle, { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }]}
-          />
-          <TextInput
-            value={username}
-            onChangeText={setUsername}
-            placeholder={t("username")}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[inputStyle, { marginTop: 12 }]}
-          />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t("password")}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            secureTextEntry
-            style={[inputStyle, { marginTop: 12 }]}
-          />
-          <TextInput
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder={t("confirmPassword")}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            secureTextEntry
-            style={[inputStyle, { marginTop: 12 }]}
-          />
-
-          {confirmPassword.length > 0 && !passwordsMatch && (
-            <Text style={{ color: "#ef4444", fontSize: 13, marginTop: 8 }}>
-              {t("passwordMismatch")}
-            </Text>
-          )}
-
-          {error && (
-            <Text style={{ color: "#ef4444", fontSize: 13, marginTop: 12 }}>{error}</Text>
-          )}
-
-          <Pressable
-            onPress={handleRegister}
-            disabled={!canSubmit}
-            accessibilityRole="button"
-            accessibilityLabel={t("createAccount")}
-            style={{
-              marginTop: 24, backgroundColor: "#8b5cf6", borderRadius: 10,
-              paddingVertical: 14, alignItems: "center",
-              opacity: canSubmit ? 1 : 0.4,
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
-                {t("createAccount")}
+          <FadeIn delay={80} translateY={14} style={{ width: "100%", maxWidth: 400 }}>
+            <GlassCard style={{ padding: 28 }}>
+              <Text style={authTitleStyle} accessibilityRole="header">
+                {t("joinTentacle")}
               </Text>
-            )}
-          </Pressable>
+              <Text style={authSubtitleStyle}>
+                {t("invitationOnly")}
+              </Text>
 
-          <Pressable
-            onPress={() => router.replace("/(auth)/login")}
-            accessibilityRole="button"
-            style={{ marginTop: 16, alignItems: "center", paddingVertical: 8 }}
-          >
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
-              {t("alreadyHaveAccount")}{" "}
-              <Text style={{ color: "#8b5cf6" }}>{t("signIn")}</Text>
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+              <TextInput
+                value={inviteKey}
+                onChangeText={setInviteKey}
+                placeholder={t("inviteKey")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                accessibilityLabel={t("inviteKey")}
+                style={[authInputStyle, { fontFamily: monospace, letterSpacing: 1.5 }]}
+              />
+              <TextInput
+                value={username}
+                onChangeText={setUsername}
+                placeholder={t("username")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel={t("username")}
+                style={[authInputStyle, { marginTop: 12 }]}
+              />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder={t("password")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                secureTextEntry
+                accessibilityLabel={t("password")}
+                style={[authInputStyle, { marginTop: 12 }]}
+              />
+              <TextInput
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder={t("confirmPassword")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                secureTextEntry
+                accessibilityLabel={t("confirmPassword")}
+                style={[
+                  authInputStyle,
+                  { marginTop: 12 },
+                  confirmPassword.length > 0 && !passwordsMatch && {
+                    borderColor: "rgba(239,68,68,0.5)",
+                  },
+                ]}
+              />
+
+              {confirmPassword.length > 0 && !passwordsMatch && (
+                <Text style={{
+                  color: STATUS.error,
+                  fontSize: 12,
+                  fontFamily: FONT_FAMILY.medium,
+                  marginTop: 8,
+                }}>
+                  {t("passwordMismatch")}
+                </Text>
+              )}
+
+              {error && (
+                <Text style={{
+                  color: STATUS.error,
+                  fontSize: 13,
+                  fontFamily: FONT_FAMILY.medium,
+                  marginTop: 12,
+                }}>{error}</Text>
+              )}
+
+              <Pressable
+                onPress={handleRegister}
+                disabled={!canSubmit}
+                accessibilityRole="button"
+                accessibilityLabel={t("createAccount")}
+                style={({ pressed }) => [
+                  authPrimaryCtaStyle,
+                  { marginTop: 24, opacity: !canSubmit ? 0.45 : (pressed ? 0.88 : 1) },
+                ]}
+              >
+                {loading ? (
+                  <ActivityIndicator color={CTA.primaryFg} />
+                ) : (
+                  <Text style={{
+                    color: CTA.primaryFg,
+                    fontSize: 15,
+                    fontFamily: FONT_FAMILY.bold,
+                    letterSpacing: 0.2,
+                  }}>
+                    {t("createAccount")}
+                  </Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.replace("/(auth)/login")}
+                accessibilityRole="link"
+                accessibilityLabel={t("signIn")}
+                style={({ pressed }) => [
+                  { marginTop: 16, alignItems: "center", paddingVertical: 8, minHeight: 44, justifyContent: "center" },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontSize: 13,
+                  fontFamily: FONT_FAMILY.regular,
+                }}>
+                  {t("alreadyHaveAccount")}{" "}
+                  <Text style={[authLinkStyle, { color: BRAND.light }]}>{t("signIn")}</Text>
+                </Text>
+              </Pressable>
+            </GlassCard>
+          </FadeIn>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SubtleBackground>
   );
 }
-
-const inputStyle = {
-  backgroundColor: "rgba(255,255,255,0.05)",
-  borderWidth: 1,
-  borderColor: "#1e1e2e",
-  borderRadius: 10,
-  paddingHorizontal: 16,
-  paddingVertical: 14,
-  color: "#fff",
-  fontSize: 16,
-};

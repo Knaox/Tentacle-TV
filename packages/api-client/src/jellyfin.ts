@@ -389,7 +389,7 @@ export class JellyfinError extends Error {
     public statusText: string,
     public path: string
   ) {
-    super(`Jellyfin API error ${status}: ${statusText} (${path})`);
+    super(`Media server API error ${status}: ${statusText} (${path})`);
     this.name = "JellyfinError";
   }
 }

@@ -8,7 +8,7 @@ import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
-import { colors, typography } from "@/theme";
+import { colors, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "@/theme";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
   try {
@@ -105,9 +105,19 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
         </Text>
         <TouchableOpacity
           onPress={handleRetry}
-          style={{ paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.accent, borderRadius: 8 }}
+          activeOpacity={0.88}
+          style={{
+            paddingHorizontal: 24, paddingVertical: 12, minHeight: 44,
+            backgroundColor: CTA.primaryBg, borderRadius: RADIUS.md,
+            alignItems: "center", justifyContent: "center",
+            shadowColor: BRAND.violet,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.45,
+            shadowRadius: 18,
+            elevation: 8,
+          }}
         >
-          <Text style={{ ...typography.body, color: "#fff" }}>
+          <Text style={{ ...typography.body, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 }}>
             {tc("retry") ?? "Réessayer"}
           </Text>
         </TouchableOpacity>

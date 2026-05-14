@@ -6,6 +6,7 @@ import { useLibraries } from "@tentacle-tv/api-client";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { PlusMenu } from "./PlusMenu";
 import { usePinnedNav } from "../hooks/usePinnedNav";
+import { AVATAR_GRADIENT_BG, getUserInfo } from "./userMenu/menuItems";
 
 interface Tab {
   path: string;
@@ -23,6 +24,7 @@ export function MobileTabBar() {
   const pinned = usePinnedNav();
   const { data: libraries } = useLibraries();
   const [plusOpen, setPlusOpen] = useState(false);
+  const { initial } = getUserInfo();
 
   const tabs: Tab[] = useMemo(() => {
     const list: Tab[] = [
@@ -86,14 +88,14 @@ export function MobileTabBar() {
       isPlus: true,
     });
 
-    // Profile at the end
+    // Profile at the end — mini-avatar avec initial pour identifier l'utilisateur
     list.push({
-      path: "/settings", label: t("profile"),
-      icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>,
+      path: "/profile", label: t("profile"),
+      icon: <ProfileTabIcon initial={initial} />,
     });
 
     return list;
-  }, [t, i18n.language, activePluginsMeta, pinned, libraries]);
+  }, [t, i18n.language, activePluginsMeta, pinned, libraries, initial]);
 
   const isActive = (tab: Tab) => {
     if (tab.isPlus) return plusOpen;
@@ -153,5 +155,17 @@ function PlusTabIcon() {
       <circle cx="12" cy="12" r="9" />
       <path d="M12 8v8M8 12h8" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function ProfileTabIcon({ initial }: { initial: string }) {
+  return (
+    <span
+      className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+      style={{ background: AVATAR_GRADIENT_BG }}
+      aria-hidden
+    >
+      {initial}
+    </span>
   );
 }

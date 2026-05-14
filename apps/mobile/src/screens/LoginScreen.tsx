@@ -15,6 +15,22 @@ import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
 import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
 import { storeCredentials, attemptReAuth } from "../auth/credentialManager";
+import {
+  BORDER,
+  BRAND,
+  CTA,
+  FONT_FAMILY,
+  RADIUS,
+  STATUS,
+  SubtleBackground,
+  GlassCard,
+  FadeIn,
+  authInputStyle,
+  authLinkStyle,
+  authPrimaryCtaStyle,
+  authSubtitleStyle,
+  authTitleStyle,
+} from "../components/auth/authStyles";
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
@@ -47,12 +63,10 @@ export function LoginScreen() {
       .then(async (res) => {
         if (cancelled) return;
         if (res.ok) {
-          // Token still valid — restore session
           client.setAccessToken(storedToken);
           setSessionExpired(false);
           router.replace("/(tabs)");
         } else {
-          // Token expired — try re-auth via stored credentials
           const reAuth = await attemptReAuth(storage, serverUrl);
           if (!cancelled && reAuth) {
             client.setAccessToken(reAuth.AccessToken);
@@ -62,7 +76,6 @@ export function LoginScreen() {
             router.replace("/(tabs)");
             return;
           }
-          // Re-auth failed — show login form
           storage.removeItem("tentacle_token");
           storage.removeItem("tentacle_user");
           setSessionExpired(false);
@@ -101,8 +114,6 @@ export function LoginScreen() {
       }
 
       const data = await response.json();
-
-      // Set the token on the JellyfinClient and persist in storage
       client.setAccessToken(data.AccessToken);
       storage.setItem("tentacle_token", data.AccessToken);
       storage.setItem("tentacle_user", JSON.stringify(data.User));
@@ -119,120 +130,157 @@ export function LoginScreen() {
 
   if (reconnecting) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#0a0a0f", justifyContent: "center", alignItems: "center" }}>
-        <TentacleLogo size={80} />
-        <ActivityIndicator color="#8b5cf6" style={{ marginTop: 24 }} size="large" />
-        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 12 }}>
-          {t("reconnecting")}
-        </Text>
-      </View>
+      <SubtleBackground ambient>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <TentacleLogo size={96} />
+          <ActivityIndicator color={BRAND.violet} style={{ marginTop: 28 }} size="large" />
+          <Text style={{
+            color: BRAND.light,
+            fontSize: 14,
+            fontFamily: FONT_FAMILY.medium,
+            letterSpacing: 0.3,
+            marginTop: 14,
+          }}>
+            {t("reconnecting")}
+          </Text>
+        </View>
+      </SubtleBackground>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#0a0a0f" }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24, paddingTop: insets.top + 16 }}>
-        <View style={{
-          width: "100%", maxWidth: 400, padding: 32,
-          backgroundColor: "#12121a", borderRadius: 16,
-          borderWidth: 1, borderColor: "#1e1e2e",
-        }}>
-          <View style={{ alignItems: "center", marginBottom: 8 }}>
-            <TentacleLogo size={80} />
-          </View>
-          <Text style={{ color: "#8b5cf6", fontSize: 28, fontWeight: "800", textAlign: "center", marginBottom: 4 }}>
-            Tentacle TV
-          </Text>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
-            {t("signInSubtitle")}
-          </Text>
+    <SubtleBackground ambient>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24, paddingTop: insets.top + 16 }}>
+          <FadeIn delay={0} translateY={12} style={{ alignItems: "center", marginBottom: 20 }}>
+            <TentacleLogo size={64} />
+          </FadeIn>
 
-          <TextInput
-            value={username}
-            onChangeText={setUsername}
-            placeholder={t("username")}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel={t("username")}
-            style={inputStyle}
-          />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t("password")}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            secureTextEntry
-            accessibilityLabel={t("password")}
-            style={[inputStyle, { marginTop: 12 }]}
-            onSubmitEditing={handleLogin}
-          />
+          <FadeIn delay={80} translateY={14} style={{ width: "100%", maxWidth: 400 }}>
+            <GlassCard style={{ padding: 28 }}>
+              <Text
+                style={authTitleStyle}
+                accessibilityRole="header"
+              >
+                Tentacle TV
+              </Text>
+              <Text style={authSubtitleStyle}>
+                {t("signInSubtitle")}
+              </Text>
 
-          {error && (
-            <Text style={{ color: "#ef4444", fontSize: 13, marginTop: 12 }}>{error}</Text>
-          )}
+              <TextInput
+                value={username}
+                onChangeText={setUsername}
+                placeholder={t("username")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel={t("username")}
+                style={authInputStyle}
+              />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder={t("password")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                secureTextEntry
+                accessibilityLabel={t("password")}
+                style={[authInputStyle, { marginTop: 12 }]}
+                onSubmitEditing={handleLogin}
+              />
 
-          <Pressable
-            onPress={handleLogin}
-            disabled={loading}
-            accessibilityRole="button"
-            accessibilityLabel={t("signIn")}
-            style={{
-              marginTop: 24, backgroundColor: "#8b5cf6", borderRadius: 10,
-              paddingVertical: 14, alignItems: "center",
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("signIn")}</Text>
-            )}
-          </Pressable>
+              {error && (
+                <Text style={{
+                  color: STATUS.error,
+                  fontSize: 13,
+                  fontFamily: FONT_FAMILY.medium,
+                  marginTop: 12,
+                }}>{error}</Text>
+              )}
 
-          <Pressable
-            onPress={() => router.push("/(auth)/forgot-password")}
-            accessibilityRole="button"
-            style={{ marginTop: 12, alignItems: "center", paddingVertical: 8 }}
-          >
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{t("forgotPassword")}</Text>
-          </Pressable>
+              <Pressable
+                onPress={handleLogin}
+                disabled={loading || !username || !password}
+                accessibilityRole="button"
+                accessibilityLabel={t("signIn")}
+                style={({ pressed }) => [
+                  authPrimaryCtaStyle,
+                  { marginTop: 24, opacity: (loading || !username || !password) ? 0.55 : (pressed ? 0.88 : 1) },
+                ]}
+              >
+                {loading ? (
+                  <ActivityIndicator color={CTA.primaryFg} />
+                ) : (
+                  <Text style={{
+                    color: CTA.primaryFg,
+                    fontSize: 15,
+                    fontFamily: FONT_FAMILY.bold,
+                    letterSpacing: 0.2,
+                  }}>{t("signIn")}</Text>
+                )}
+              </Pressable>
 
-          <Pressable
-            onPress={() => router.push("/(auth)/register")}
-            accessibilityRole="button"
-            style={{ marginTop: 8, alignItems: "center", paddingVertical: 8 }}
-          >
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
-              {t("noAccount")}{" "}
-              <Text style={{ color: "#8b5cf6" }}>{t("createAccount")}</Text>
-            </Text>
-          </Pressable>
+              <Pressable
+                onPress={() => router.push("/(auth)/forgot-password")}
+                accessibilityRole="link"
+                accessibilityLabel={t("forgotPassword")}
+                style={({ pressed }) => [
+                  { marginTop: 16, alignItems: "center", paddingVertical: 8, minHeight: 44, justifyContent: "center" },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={authLinkStyle}>{t("forgotPassword")}</Text>
+              </Pressable>
 
-          <Pressable
-            onPress={() => router.replace("/server-setup")}
-            accessibilityRole="button"
-            accessibilityLabel={t("changeServer")}
-            style={{ marginTop: 8, alignItems: "center", paddingVertical: 8 }}
-          >
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{t("changeServer")}</Text>
-          </Pressable>
+              <Pressable
+                onPress={() => router.push("/(auth)/register")}
+                accessibilityRole="link"
+                accessibilityLabel={t("createAccount")}
+                style={({ pressed }) => [
+                  { marginTop: 4, alignItems: "center", paddingVertical: 8, minHeight: 44, justifyContent: "center" },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontSize: 13,
+                  fontFamily: FONT_FAMILY.regular,
+                }}>
+                  {t("noAccount")}{" "}
+                  <Text style={authLinkStyle}>{t("createAccount")}</Text>
+                </Text>
+              </Pressable>
+
+              <View style={{
+                marginTop: 12,
+                paddingTop: 12,
+                borderTopWidth: 1,
+                borderTopColor: BORDER.subtle,
+              }}>
+                <Pressable
+                  onPress={() => router.replace("/server-setup")}
+                  accessibilityRole="link"
+                  accessibilityLabel={t("changeServer")}
+                  style={({ pressed }) => [
+                    { alignItems: "center", paddingVertical: 8, minHeight: 44, justifyContent: "center", borderRadius: RADIUS.md },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text style={{
+                    color: "rgba(255,255,255,0.5)",
+                    fontSize: 12,
+                    fontFamily: FONT_FAMILY.medium,
+                    letterSpacing: 0.3,
+                  }}>{t("changeServer")}</Text>
+                </Pressable>
+              </View>
+            </GlassCard>
+          </FadeIn>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SubtleBackground>
   );
 }
-
-const inputStyle = {
-  backgroundColor: "rgba(255,255,255,0.05)",
-  borderWidth: 1,
-  borderColor: "#1e1e2e",
-  borderRadius: 10,
-  paddingHorizontal: 16,
-  paddingVertical: 14,
-  color: "#fff",
-  fontSize: 16,
-};

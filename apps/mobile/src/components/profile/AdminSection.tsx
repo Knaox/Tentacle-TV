@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, Share } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { colors, spacing, typography } from "../../theme";
+import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "../../theme";
 import { GlassCard } from "../ui";
 
 interface InviteKey {
@@ -77,12 +77,27 @@ export function AdminSection() {
             <TextInput value={expiresHours} onChangeText={setExpiresHours} keyboardType="number-pad" style={inputStyle} />
           </View>
         </View>
-        <Pressable onPress={createInvite} disabled={creating} style={{
-          marginTop: spacing.md, backgroundColor: colors.accent, borderRadius: spacing.buttonRadius,
-          paddingVertical: 10, alignItems: "center", opacity: creating ? 0.6 : 1,
-        }}>
-          {creating ? <ActivityIndicator color="#fff" size="small" /> : (
-            <Text style={{ ...typography.bodyBold, color: "#fff" }}>{t("generate")}</Text>
+        <Pressable
+          onPress={createInvite}
+          disabled={creating}
+          style={({ pressed }) => [{
+            marginTop: spacing.md,
+            backgroundColor: CTA.primaryBg,
+            borderRadius: RADIUS.md,
+            paddingVertical: 12,
+            alignItems: "center",
+            opacity: creating ? 0.6 : (pressed ? 0.88 : 1),
+            shadowColor: BRAND.violet,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.45,
+            shadowRadius: 18,
+            elevation: 8,
+          }]}
+          accessibilityRole="button"
+          accessibilityLabel={t("generate")}
+        >
+          {creating ? <ActivityIndicator color={CTA.primaryFg} size="small" /> : (
+            <Text style={{ ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 }}>{t("generate")}</Text>
           )}
         </Pressable>
       </GlassCard>

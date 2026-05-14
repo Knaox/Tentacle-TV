@@ -102,6 +102,11 @@ export default {
   removeFromMyList: "Remove from My List",
   addToFavorites: "Add to Favorites",
   removeFromFavorites: "Remove from Favorites",
+  // Action shortcuts (short labels ≤ 2 words — toggle via color)
+  actionFavorite: "Favorites",
+  actionMyList: "My List",
+  actionShare: "Share",
+  actionWatched: "Watched",
   myFavorites: "My Favorites",
   filters: "Filters",
   advancedFilters: "Advanced Filters",

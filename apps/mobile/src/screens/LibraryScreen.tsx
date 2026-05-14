@@ -7,9 +7,10 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { useLibraryCatalog, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors, spacing, typography } from "../theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY } from "../theme";
 import { PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
 
 interface Props {
@@ -226,7 +227,7 @@ const LibraryItemCard = memo(function LibraryItemCard({ item, numColumns, client
         )}
         {isWatched && (
           <View style={styles.watchedBadge}>
-            <Text style={styles.watchedCheck}>{"\u2713"}</Text>
+            <Feather name="check" size={12} color="#000" />
           </View>
         )}
       </View>
@@ -264,40 +265,21 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     ...typography.body,
   },
-  sortRow: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.screenPadding,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  sortChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceElevated,
-  },
-  sortChipActive: { backgroundColor: colors.accent },
-  sortChipText: { ...typography.caption, color: colors.textSecondary },
-  sortChipTextActive: { color: colors.textPrimary, fontWeight: "600" },
-  skeletonGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: spacing.screenPadding,
-    gap: ITEM_GAP,
-  },
+  sortRow: { flexDirection: "row", paddingHorizontal: spacing.screenPadding, gap: spacing.sm, marginBottom: spacing.lg },
+  sortChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: 20, backgroundColor: colors.surfaceElevated },
+  sortChipActive: { backgroundColor: BRAND.soft, borderWidth: 1, borderColor: "rgba(139,92,246,0.45)" },
+  sortChipText: { ...typography.caption, color: "rgba(255,255,255,0.6)", fontFamily: FONT_FAMILY.medium },
+  sortChipTextActive: { color: BRAND.light, fontFamily: FONT_FAMILY.semibold },
+  skeletonGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: spacing.screenPadding, gap: ITEM_GAP },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyText: { ...typography.body, color: colors.textMuted },
   gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxl },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  watchedBadge: { position: "absolute", top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#8B5CF6", alignItems: "center", justifyContent: "center" },
-  watchedCheck: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  // R11 — Watched check unifié (web/mobile) : pill blanc + check noir + shadow.
+  // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
+  watchedBadge: { position: "absolute", top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
   itemTitle: { color: colors.textPrimary, fontWeight: "600", marginTop: spacing.xs + 2 },
   itemYear: { color: colors.textMuted },
-  footerCount: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textAlign: "center",
-    paddingVertical: spacing.lg,
-  },
+  footerCount: { ...typography.caption, color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },
   refreshIndicator: { position: "absolute", top: 100, alignSelf: "center" },
 });

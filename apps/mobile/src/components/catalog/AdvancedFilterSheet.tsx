@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useGenres } from "@tentacle-tv/api-client";
 import { PLATFORMS } from "./PlatformFilter";
 import { BottomSheet } from "@/components/ui";
-import { colors, spacing, typography } from "@/theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY } from "@/theme";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const RATING_STEPS = [null, 5, 6, 7, 8, 9] as const;
@@ -226,9 +226,9 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.caption, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: spacing.sm, fontWeight: "600" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   chip: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.borderAccent, alignItems: "center", justifyContent: "center" },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
-  chipTextActive: { color: colors.textPrimary, fontWeight: "600" },
+  chipActive: { backgroundColor: BRAND.soft, borderColor: "rgba(139,92,246,0.45)" },
+  chipText: { ...typography.caption, color: "rgba(255,255,255,0.6)", lineHeight: 16, fontFamily: FONT_FAMILY.medium },
+  chipTextActive: { color: BRAND.light, fontFamily: FONT_FAMILY.semibold },
   yearRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   yearSep: { ...typography.body, color: colors.textDim, marginBottom: spacing.sm },
   yearLabel: { ...typography.badge, color: colors.textMuted, marginBottom: 4 },

@@ -93,12 +93,12 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
             onClick={() => setChecked((v) => !v)}
             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
               checked
-                ? "border-purple-500 bg-purple-500"
+                ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]"
                 : "border-white/30 bg-transparent"
             }`}
           >
             {checked && (
-              <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <svg className="h-4 w-4 text-[var(--brand-light)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             )}
@@ -111,11 +111,10 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
           type="button"
           onClick={handleAccept}
           disabled={!checked}
-          className={`mt-6 w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-opacity ${
-            checked
-              ? "bg-purple-500 hover:bg-purple-600"
-              : "bg-purple-500 opacity-40 cursor-not-allowed"
+          className={`mt-6 w-full rounded-xl h-11 text-sm font-bold transition-opacity bg-white text-black hover:bg-white/90 ${
+            checked ? "" : "opacity-40 cursor-not-allowed"
           }`}
+          style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}
         >
           {t("accept")}
         </button>

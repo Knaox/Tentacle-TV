@@ -57,7 +57,7 @@ export function SeriesDetail() {
                 onClick={() => setSelectedSeasonId(s.Id)}
                 className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   selectedSeasonId === s.Id
-                    ? "bg-tentacle-accent text-white"
+                    ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]"
                     : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
                 }`}
               >

@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipActive: { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.45)" },
   chipText: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
-  chipTextActive: { color: colors.textPrimary, fontWeight: "600" },
+  chipTextActive: { color: "#A78BFA", fontWeight: "600" },
 });
