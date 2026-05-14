@@ -52,6 +52,33 @@ const createAdminSchema = z.object({
 });
 
 export const setupRoutes: FastifyPluginAsync = async (app) => {
+  /**
+   * GET /api/setup/db-defaults — Returns DB connection defaults parsed from
+   * process.env.DATABASE_URL (dev convenience: pre-fills the setup form).
+   * Only available while setup is in progress; once the app is running the
+   * password is never re-exposed.
+   */
+  app.get("/db-defaults", async (_request, reply) => {
+    if (getAppState() === "running") {
+      return reply.status(403).send({ message: "Setup already completed" });
+    }
+    const raw = process.env.DATABASE_URL;
+    if (!raw) return { hasDefaults: false };
+    try {
+      const u = new URL(raw);
+      return {
+        hasDefaults: true,
+        host: u.hostname,
+        port: u.port ? Number(u.port) : 3306,
+        database: u.pathname.replace(/^\//, ""),
+        user: decodeURIComponent(u.username),
+        password: decodeURIComponent(u.password),
+      };
+    } catch {
+      return { hasDefaults: false };
+    }
+  });
+
   /** GET /api/setup/status — Current setup state (auto-recovers if DB is reachable). */
   app.get("/status", async () => {
     let state = getAppState();

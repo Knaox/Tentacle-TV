@@ -32,7 +32,7 @@ export function NotifRow({
             onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
             className={`mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors ${
               isSelected
-                ? "border-purple-500 bg-purple-500"
+                ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
                 : "border-white/30 bg-transparent hover:border-white/50"
             }`}
           >

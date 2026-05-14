@@ -1,19 +1,20 @@
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions, type ViewToken } from "react-native";
+import {
+  FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions,
+  type NativeScrollEvent, type NativeSyntheticEvent,
+} from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import Animated, {
-  useSharedValue, useAnimatedStyle, useAnimatedReaction,
-  withDelay, withTiming, type SharedValue,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { GradientOverlay } from "@/components/ui";
-import { colors, spacing, typography } from "@/theme";
+import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, STATUS } from "@/theme";
 
-const ROTATE_MS = 6000;
+const ROTATE_MS = 9000;
+const FADE_MS = 900;
 
 interface HeroBannerProps {
   items: MediaItem[];
@@ -29,166 +30,79 @@ function formatRuntime(ticks: number): string {
   return m > 0 ? `${h}h${m}` : `${h}h`;
 }
 
+/**
+ * Hero Billboard cinematic — swipe horizontal pageEnabled + crossfade backdrop
+ * + auto-rotate 9s. Logo image si dispo, halo violet sur CTA Lecture.
+ */
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
-  const { t } = useTranslation("common");
   const { width: SCREEN_W, height: screenH } = useWindowDimensions();
-  const BANNER_H = Math.min(420, Math.round(screenH * 0.45));
+  const BANNER_H = Math.min(720, Math.round(screenH * 0.82));
   const insets = useSafeAreaInsets();
-  const client = useJellyfinClient();
   const listRef = useRef<FlatList<MediaItem>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const [active, setActive] = useState(0);
-  const activeShared = useSharedValue(0);
-  useEffect(() => { activeShared.value = active; }, [active, activeShared]);
+  const [index, setIndex] = useState(0);
+  const userScrollingRef = useRef(false);
 
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (items.length <= 1) return;
     timerRef.current = setInterval(() => {
-      setActive((p) => {
-        const n = (p + 1) % items.length;
-        listRef.current?.scrollToOffset({ offset: n * SCREEN_W, animated: true });
-        return n;
+      if (userScrollingRef.current) return;
+      setIndex((p) => {
+        const next = (p + 1) % items.length;
+        listRef.current?.scrollToOffset({ offset: next * SCREEN_W, animated: true });
+        return next;
       });
     }, ROTATE_MS);
   }, [items.length, SCREEN_W]);
 
-  useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, [startTimer]);
+  useEffect(() => { startTimer(); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, [startTimer]);
 
-  const viewCfg = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
-  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems[0]?.index != null) setActive(viewableItems[0].index);
-  }).current;
-
-  const [bgErrors, setBgErrors] = useState<Set<string>>(new Set());
-  const onBgError = useCallback((id: string) => {
-    setBgErrors((prev) => new Set(prev).add(id));
-  }, []);
-
-  const renderSlide = useCallback(({ item, index }: { item: MediaItem; index: number }) => {
-    const isEpisode = item.Type === "Episode";
-    const useParentBackdrop = isEpisode && item.ParentBackdropItemId && (item.ParentBackdropImageTags?.length ?? 0) > 0;
-    const bgId = useParentBackdrop ? item.ParentBackdropItemId! : item.Id;
-    const hasBackdrop = useParentBackdrop || (item.BackdropImageTags && item.BackdropImageTags.length > 0);
-    const hasPrimary = !!item.ImageTags?.Primary;
-    const hasBgError = bgErrors.has(item.Id);
-
-    let bgUrl: string | null = null;
-    if (!hasBgError) {
-      if (hasBackdrop) {
-        bgUrl = client.getImageUrl(bgId, "Backdrop", { width: 800, quality: 80 });
-      } else if (isEpisode && item.SeriesId) {
-        bgUrl = client.getImageUrl(item.SeriesId, "Primary", { width: 800, quality: 80 });
-      } else if (hasPrimary) {
-        bgUrl = client.getImageUrl(item.Id, "Primary", { width: 800, quality: 80 });
-      }
-    }
-
-    const progress = item.UserData?.PlayedPercentage ?? 0;
-    const hasProgress = progress > 0 && progress < 100;
-    const isWatched = item.UserData?.Played === true;
-    const genres = item.Genres?.slice(0, 2) ?? [];
-    const runtime = item.RunTimeTicks ? formatRuntime(item.RunTimeTicks) : null;
-
-    return (
-      <View style={[s.slide, { width: SCREEN_W, height: BANNER_H, paddingTop: insets.top }]}>
-        {bgUrl ? (
-          <Image
-            source={{ uri: bgUrl }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            onError={() => onBgError(item.Id)}
-          />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceElevated }]} />
-        )}
-        <GradientOverlay direction="bottom" height={BANNER_H * 0.85} color={colors.background} />
-        <GradientOverlay direction="top" height={100 + insets.top} color="rgba(0,0,0,0.6)" />
-        <AnimatedSlideContent activeIndex={activeShared} slideIndex={index}>
-          <View style={[s.content, { paddingBottom: Math.min(40, Math.round(screenH * 0.05)) }]}>
-            {hasProgress && (
-              <View style={s.continueBadge}>
-                <Text style={s.continueTxt}>{t("continueLabel")}</Text>
-              </View>
-            )}
-            {isWatched && !hasProgress && (
-              <View style={s.watchedBadge}>
-                <Feather name="check" size={12} color="#fff" />
-                <Text style={s.continueTxt}>{t("watched")}</Text>
-              </View>
-            )}
-            <View style={s.meta}>
-              {item.ProductionYear != null && <Text style={s.metaTxt}>{item.ProductionYear}</Text>}
-              {item.CommunityRating != null && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-                  <Feather name="star" size={12} color={colors.gold} />
-                  <Text style={s.rating}>{item.CommunityRating.toFixed(1)}</Text>
-                </View>
-              )}
-              {item.OfficialRating != null && (
-                <View style={s.rBadge}><Text style={s.rBadgeTxt}>{item.OfficialRating}</Text></View>
-              )}
-              {genres.map((g) => <Text key={g} style={s.metaTxt}>{g}</Text>)}
-              {runtime && <Text style={s.metaTxt}>{runtime}</Text>}
-            </View>
-            {isEpisode && item.SeriesName != null && (
-              <Text numberOfLines={1} style={s.metaTxt}>{item.SeriesName}</Text>
-            )}
-            <Text style={s.title} numberOfLines={2} maxFontSizeMultiplier={1.2}>
-              {isEpisode && item.IndexNumber != null
-                ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} \u00b7 `
-                : ""}{item.Name}
-            </Text>
-            {item.Overview != null && <Text style={s.overview} numberOfLines={2}>{item.Overview}</Text>}
-            {hasProgress && (
-              <View style={[s.progRow, { maxWidth: Math.min(200, Math.round(SCREEN_W * 0.5)) }]}>
-                <View style={s.progTrack}>
-                  <View style={[s.progFill, { width: `${progress}%` as unknown as number }]} />
-                </View>
-                <Text style={s.progLbl}>{Math.round(progress)}%</Text>
-              </View>
-            )}
-            <View style={s.btns}>
-              <Pressable style={s.playBtn} onPress={() => onPlay(item)} accessibilityRole="button" accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Feather name="play" size={16} color={colors.textPrimary} />
-                  <Text style={s.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
-                </View>
-              </Pressable>
-              <Pressable style={s.infoBtn} onPress={() => onInfo(item)} accessibilityRole="button" accessibilityLabel={`${t("moreInfo")} ${item.Name}`}>
-                <Text style={s.infoTxt}>{t("moreInfo")}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </AnimatedSlideContent>
-      </View>
-    );
-  }, [client, insets.top, onPlay, onInfo, t, bgErrors, onBgError, activeShared, SCREEN_W, BANNER_H, screenH]);
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const newIndex = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    setIndex(newIndex);
+    userScrollingRef.current = false;
+    startTimer();
+  };
 
   if (!items.length) return <View style={{ height: BANNER_H }} />;
 
   return (
-    <View>
+    <View style={{ width: SCREEN_W, height: BANNER_H, overflow: "hidden", backgroundColor: SURFACE.s0 }}>
+      {/* Backdrop crossfade entre tous les slides (en arrière-plan, derrière la list scrollable) */}
+      <BackdropStack items={items} activeIndex={index} />
+
+      {/* Triple gradient cinema overlay */}
+      <GradientOverlay direction="top" height={120 + insets.top} color="#000000" intensity="soft" />
+      <GradientOverlay direction="bottom" height={BANNER_H * 0.62} color="#000000" intensity="strong" />
+
+      {/* FlatList horizontal pageEnabled pour le swipe — content uniquement, backdrop derrière */}
       <FlatList
         ref={listRef}
         data={items}
-        renderItem={renderSlide}
         keyExtractor={(it) => it.Id}
         horizontal
         pagingEnabled
-        snapToInterval={SCREEN_W}
-        decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewable}
-        viewabilityConfig={viewCfg}
-        onScrollBeginDrag={() => clearInterval(timerRef.current)}
-        onScrollEndDrag={startTimer}
+        decelerationRate="fast"
+        onScrollBeginDrag={() => { userScrollingRef.current = true; if (timerRef.current) clearInterval(timerRef.current); }}
+        onMomentumScrollEnd={onScrollEnd}
         getItemLayout={(_, i) => ({ length: SCREEN_W, offset: SCREEN_W * i, index: i })}
+        style={StyleSheet.absoluteFillObject}
+        renderItem={({ item }) => (
+          <View style={[st.slide, { width: SCREEN_W, height: BANNER_H, paddingTop: insets.top + 28 }]}>
+            <View style={st.contentInner}>
+              <HeroContent item={item} onPlay={onPlay} onInfo={onInfo} />
+            </View>
+          </View>
+        )}
       />
+
+      {/* Dots indicateurs */}
       {items.length > 1 && (
-        <View style={s.dots}>
+        <View style={[st.dots, { bottom: BANNER_H * 0.04 }]} pointerEvents="none">
           {items.map((_, i) => (
-            <View key={i} style={[s.dot, i === active ? s.dotOn : s.dotOff]} />
+            <View key={i} style={[st.dot, i === index ? st.dotOn : st.dotOff]} />
           ))}
         </View>
       )}
@@ -196,79 +110,179 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   );
 });
 
-/* ── Animated slide content (fade-in + translateY on slide change) ── */
+/* ── Backdrop stack (crossfade) ─────────────────────────────────────────── */
 
-function AnimatedSlideContent({ activeIndex, slideIndex, children }: {
-  activeIndex: SharedValue<number>;
-  slideIndex: number;
-  children: ReactNode;
-}) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(16);
-
-  useAnimatedReaction(
-    () => activeIndex.value,
-    (current, previous) => {
-      if (current === slideIndex && previous !== slideIndex) {
-        opacity.value = 0;
-        translateY.value = 16;
-        opacity.value = withDelay(150, withTiming(1, { duration: 250 }));
-        translateY.value = withDelay(150, withTiming(0, { duration: 250 }));
-      } else if (current !== slideIndex) {
-        opacity.value = 0;
-        translateY.value = 16;
-      }
-    },
-    [slideIndex],
+function BackdropStack({ items, activeIndex }: { items: MediaItem[]; activeIndex: number }) {
+  const client = useJellyfinClient();
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      {items.map((it, i) => {
+        const isEp = it.Type === "Episode";
+        const hasParentBackdrop = (it.ParentBackdropImageTags?.length ?? 0) > 0;
+        const hasOwnBackdrop = (it.BackdropImageTags?.length ?? 0) > 0;
+        if (!hasParentBackdrop && !hasOwnBackdrop && !it.ImageTags?.Primary) return null;
+        const backdropId = isEp
+          ? (hasParentBackdrop ? (it.ParentBackdropItemId ?? it.SeriesId ?? it.Id) : it.Id)
+          : it.Id;
+        const url = (hasParentBackdrop || hasOwnBackdrop)
+          ? client.getImageUrl(backdropId, "Backdrop", { width: 1280, quality: 85 })
+          : client.getImageUrl(it.Id, "Primary", { width: 1280, quality: 85 });
+        return <CrossfadeImage key={it.Id} url={url} active={i === activeIndex} />;
+      })}
+    </View>
   );
-
-  // Premier slide animé au mount
-  useEffect(() => {
-    if (slideIndex === 0) {
-      opacity.value = withDelay(300, withTiming(1, { duration: 300 }));
-      translateY.value = withDelay(300, withTiming(0, { duration: 300 }));
-    }
-  }, [slideIndex, opacity, translateY]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
-const s = StyleSheet.create({
-  slide: { justifyContent: "flex-end" as const },
-  content: { paddingHorizontal: spacing.screenPadding },
-  continueBadge: {
-    alignSelf: "flex-start", backgroundColor: colors.accent,
-    borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
+function CrossfadeImage({ url, active }: { url: string; active: boolean }) {
+  const opacity = useSharedValue(active ? 1 : 0);
+  useEffect(() => {
+    opacity.value = withTiming(active ? 1 : 0, { duration: FADE_MS, easing: Easing.out(Easing.cubic) });
+  }, [active, opacity]);
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
+      <Image source={{ uri: url }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={0} />
+    </Animated.View>
+  );
+}
+
+/* ── Hero content (logo / titre + CTAs avec halo brand) ─────────────────── */
+
+interface HeroContentProps {
+  item: MediaItem;
+  onPlay: (item: MediaItem) => void;
+  onInfo: (item: MediaItem) => void;
+}
+
+function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
+  const { t } = useTranslation("common");
+  const client = useJellyfinClient();
+  const isEpisode = item.Type === "Episode";
+  const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
+  const hasLogo = item.ImageTags?.Logo != null;
+  const logoUrl = hasLogo ? client.getImageUrl(logoId, "Logo", { width: 500, quality: 90 }) : null;
+  const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
+  const episodeLabel = isEpisode
+    ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber ?? 1).padStart(2, "0")} · ${item.Name}`
+    : null;
+  const progress = item.UserData?.PlayedPercentage ?? 0;
+  const hasProgress = progress > 0 && progress < 100;
+  const isWatched = item.UserData?.Played === true;
+  const genres = item.Genres?.slice(0, 2) ?? [];
+  const runtime = item.RunTimeTicks ? formatRuntime(item.RunTimeTicks) : null;
+
+  return (
+    <View>
+      {(hasProgress || isWatched || episodeLabel) && (
+        <View style={st.tagRow}>
+          {hasProgress && (
+            <View style={st.continueTag}>
+              <Feather name="play" size={9} color="#fff" fill="#fff" />
+              <Text style={st.continueTagTxt}>{t("continueLabel")}</Text>
+            </View>
+          )}
+          {isWatched && !hasProgress && (
+            <View style={st.continueTag}>
+              <Feather name="check" size={10} color="#000" />
+              <Text style={st.continueTagTxt}>{t("watched")}</Text>
+            </View>
+          )}
+          {episodeLabel && <Text style={st.epLabel} numberOfLines={1}>{episodeLabel}</Text>}
+        </View>
+      )}
+
+      {logoUrl ? (
+        <Image source={{ uri: logoUrl }} style={st.logo} contentFit="contain" />
+      ) : (
+        <Text style={st.title} numberOfLines={2} maxFontSizeMultiplier={1.2}>{displayName}</Text>
+      )}
+
+      <View style={st.meta}>
+        {item.ProductionYear != null && <Text style={st.metaTxt}>{item.ProductionYear}</Text>}
+        {item.OfficialRating != null && (
+          <View style={st.rBadge}><Text style={st.rBadgeTxt}>{item.OfficialRating}</Text></View>
+        )}
+        {item.CommunityRating != null && (
+          <View style={st.ratingBox}>
+            <Feather name="star" size={11} color={STATUS.rating} />
+            <Text style={st.rating}>{item.CommunityRating.toFixed(1)}</Text>
+          </View>
+        )}
+        {runtime && <Text style={st.metaTxt}>{runtime}</Text>}
+        {genres.map((g) => <Text key={g} style={st.metaTxtMuted}>· {g}</Text>)}
+      </View>
+
+      {item.Overview != null && <Text style={st.overview} numberOfLines={2}>{item.Overview}</Text>}
+
+      {hasProgress && (
+        <View style={st.progRow}>
+          <View style={st.progTrack}>
+            <View style={[st.progFill, { width: `${progress}%` as unknown as number }]} />
+          </View>
+          <Text style={st.progLbl}>{Math.round(progress)}%</Text>
+        </View>
+      )}
+
+      <View style={st.btns}>
+        <Pressable
+          style={({ pressed }) => [st.playBtn, pressed && { opacity: 0.88 }]}
+          onPress={() => onPlay(item)}
+          accessibilityRole="button"
+          accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}
+        >
+          <Feather name="play" size={20} color={CTA.primaryFg} fill={CTA.primaryFg} />
+          <Text style={st.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [st.infoBtn, pressed && { opacity: 0.88 }]}
+          onPress={() => onInfo(item)}
+          accessibilityRole="button"
+          accessibilityLabel={`${t("moreInfo")} ${item.Name}`}
+        >
+          <Feather name="info" size={16} color="#fff" />
+          <Text style={st.infoTxt}>{t("moreInfo")}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const st = StyleSheet.create({
+  slide: { justifyContent: "flex-end" as const, paddingHorizontal: spacing.screenPadding, paddingBottom: 56 },
+  contentInner: { width: "100%" as const },
+  tagRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 12, flexWrap: "wrap" as const },
+  continueTag: { flexDirection: "row" as const, alignItems: "center" as const, gap: 5, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 3, paddingHorizontal: 7, paddingVertical: 3 },
+  continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: "#000", letterSpacing: 1.6, textTransform: "uppercase" as const },
+  epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)", letterSpacing: 0.2 },
+  logo: { width: 280, maxWidth: "85%", height: 92, marginBottom: 14 },
+  title: { fontSize: 38, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, marginBottom: 14, letterSpacing: -0.8, lineHeight: 42, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
+  meta: { flexDirection: "row" as const, alignItems: "center" as const, gap: 9, marginBottom: 10, flexWrap: "wrap" as const },
+  metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: "rgba(255,255,255,0.88)" },
+  metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)" },
+  rBadge: { borderWidth: 1, borderColor: "rgba(255,255,255,0.45)", borderRadius: 3, paddingHorizontal: 5, paddingVertical: 0.5 },
+  rBadgeTxt: { fontSize: 9, fontFamily: FONT_FAMILY.bold, color: "rgba(255,255,255,0.85)", letterSpacing: 0.6 },
+  ratingBox: { flexDirection: "row" as const, alignItems: "center" as const, gap: 3 },
+  rating: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: STATUS.rating },
+  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: "rgba(255,255,255,0.85)", lineHeight: 21, marginBottom: 18, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  progRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 18, maxWidth: 280 },
+  progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.22)", overflow: "hidden" as const },
+  progFill: { height: "100%" as const, borderRadius: 2, backgroundColor: BRAND.violet },
+  progLbl: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: "rgba(255,255,255,0.65)" },
+  btns: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10 },
+  playBtn: {
+    flexDirection: "row" as const, alignItems: "center" as const, gap: 9,
+    backgroundColor: CTA.primaryBg, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 26,
+    shadowColor: BRAND.violet, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.55, shadowRadius: 22, elevation: 12,
   },
-  watchedBadge: {
-    alignSelf: "flex-start", backgroundColor: "#8B5CF6",
-    borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
-    flexDirection: "row" as const, alignItems: "center" as const, gap: 4,
+  playTxt: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 },
+  infoBtn: {
+    flexDirection: "row" as const, alignItems: "center" as const, gap: 6,
+    backgroundColor: BRAND.ghost, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 18,
+    borderWidth: 1, borderColor: "rgba(139,92,246,0.4)",
   },
-  continueTxt: { ...typography.badge, color: "#fff", fontWeight: "800", textTransform: "uppercase" as const },
-  meta: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" as const },
-  metaTxt: { ...typography.caption, color: colors.textSecondary },
-  rating: { ...typography.caption, color: colors.gold },
-  rBadge: { borderWidth: 1, borderColor: "rgba(255,255,255,0.3)", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
-  rBadgeTxt: { ...typography.badge, color: colors.textSecondary },
-  title: { ...typography.hero, color: colors.textPrimary, marginBottom: 6 },
-  overview: { ...typography.caption, color: colors.textSecondary, lineHeight: 18, marginBottom: 10 },
-  progRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
-  progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" },
-  progFill: { height: "100%", borderRadius: 2, backgroundColor: colors.accent },
-  progLbl: { ...typography.badge, color: colors.textMuted },
-  btns: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
-  playBtn: { backgroundColor: colors.accent, borderRadius: spacing.buttonRadius, paddingVertical: 12, paddingHorizontal: 22 },
-  playTxt: { ...typography.bodyBold, color: colors.textPrimary },
-  infoBtn: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: spacing.buttonRadius, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border },
-  infoTxt: { ...typography.bodyBold, color: colors.textSecondary },
-  dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, position: "absolute", bottom: 14, left: 0, right: 0 },
-  dot: { height: 6, borderRadius: 3 },
-  dotOn: { width: 24, backgroundColor: colors.accent },
-  dotOff: { width: 6, backgroundColor: "rgba(255,255,255,0.3)" },
+  infoTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold, color: "#fff" },
+  dots: { position: "absolute" as const, left: 0, right: 0, flexDirection: "row" as const, justifyContent: "center" as const, alignItems: "center" as const, gap: 5 },
+  dot: { height: 3, borderRadius: 2 },
+  dotOn: { width: 22, backgroundColor: BRAND.violet, shadowColor: BRAND.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
+  dotOff: { width: 6, backgroundColor: "rgba(255,255,255,0.32)" },
 });

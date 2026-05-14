@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useSeasons, useEpisodes, useJellyfinClient, useWatchedToggle, useBatchWatchedToggle } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors } from "@/theme";
+import { colors, BRAND, BORDER, FONT_FAMILY, RADIUS } from "@/theme";
 
 let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
 try { Haptics = require("expo-haptics"); } catch { /* native module not available */ }
@@ -32,22 +32,35 @@ export function MobileEpisodeList({ seriesId, onPlay }: Props) {
           keyExtractor={(s) => s.Id}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, gap: 8, marginBottom: 12 }}
-          renderItem={({ item: season }) => (
-            <Pressable
-              onPress={() => setSelectedSeason(season.Id)}
-              style={{
-                backgroundColor: activeSeason === season.Id ? colors.accent : "rgba(255,255,255,0.05)",
-                paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8,
-              }}
-            >
-              <Text style={{
-                color: activeSeason === season.Id ? "#fff" : "rgba(255,255,255,0.6)",
-                fontSize: 13, fontWeight: "600",
-              }}>
-                {season.Name}
-              </Text>
-            </Pressable>
-          )}
+          renderItem={({ item: season }) => {
+            const isActive = activeSeason === season.Id;
+            return (
+              <Pressable
+                onPress={() => setSelectedSeason(season.Id)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                style={{
+                  backgroundColor: isActive ? BRAND.soft : "rgba(255,255,255,0.05)",
+                  borderWidth: 1,
+                  borderColor: isActive ? "rgba(139,92,246,0.45)" : BORDER.subtle,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: RADIUS.pill,
+                  minHeight: 36,
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{
+                  color: isActive ? BRAND.light : "rgba(255,255,255,0.6)",
+                  fontSize: 13,
+                  fontFamily: isActive ? FONT_FAMILY.semibold : FONT_FAMILY.medium,
+                  letterSpacing: 0.1,
+                }}>
+                  {season.Name}
+                </Text>
+              </Pressable>
+            );
+          }}
         />
       )}
 
@@ -177,7 +190,7 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay }: {
           <EpisodeThumb ep={ep} seriesId={seriesId} client={client} />
           {progress != null && progress > 0 && (
             <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.2)" }}>
-              <View style={{ height: "100%", width: `${progress}%`, backgroundColor: colors.accent }} />
+              <View style={{ height: "100%", width: `${progress}%`, backgroundColor: BRAND.violet }} />
             </View>
           )}
         </View>
@@ -207,16 +220,18 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay }: {
           style={[
             animStyle,
             {
-              width: 28,
-              height: 28,
-              borderRadius: 14,
+              width: 30,
+              height: 30,
+              borderRadius: 15,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: played ? colors.accent : "rgba(255,255,255,0.06)",
+              backgroundColor: played ? BRAND.soft : "rgba(255,255,255,0.06)",
+              borderWidth: 1,
+              borderColor: played ? "rgba(139,92,246,0.45)" : BORDER.subtle,
             },
           ]}
         >
-          <Feather name="check" size={16} color={played ? "#fff" : "rgba(255,255,255,0.25)"} />
+          <Feather name="check" size={16} color={played ? BRAND.light : "rgba(255,255,255,0.25)"} />
         </Animated.View>
       </Pressable>
     </View>

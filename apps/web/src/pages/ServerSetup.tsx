@@ -103,7 +103,7 @@ function StepHeader({ step }: { step: SetupStep }) {
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
             <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              i < idx ? "bg-green-500 text-white" : i === idx ? "bg-purple-500 text-white" : "bg-white/10 text-white/40"
+              i < idx ? "bg-green-500/20 border border-green-400/45 text-green-300" : i === idx ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-white/10 text-white/40"
             }`}>{i < idx ? "\u2713" : i + 1}</div>
             <span className={`text-xs ${i === idx ? "text-white" : "text-white/40"}`}>{s.label}</span>
             {i < steps.length - 1 && <div className="h-px w-6 bg-white/20" />}
@@ -125,6 +125,21 @@ function DbStep({ onNext }: { onNext: () => void }) {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState(false);
+
+  // Pre-fill from DATABASE_URL in .env (dev convenience).
+  useEffect(() => {
+    fetch("/api/setup/db-defaults")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.hasDefaults) return;
+        if (d.host) setHost(d.host);
+        if (d.port) setPort(String(d.port));
+        if (d.database) setDatabase(d.database);
+        if (d.user) setUser(d.user);
+        if (d.password) setPassword(d.password);
+      })
+      .catch(() => { /* ignore — user fills manually */ });
+  }, []);
 
   const handleTest = async () => {
     setError(""); setTesting(true); setOk(false);

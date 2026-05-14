@@ -1,5 +1,6 @@
-import { Pressable, Text, ActivityIndicator, type ViewStyle } from "react-native";
-import { colors, typography, spacing } from "../../theme";
+import { Pressable, Text, ActivityIndicator, type ViewStyle, type TextStyle } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "../../theme";
 
 // expo-haptics may not be available in all Expo Go builds
 let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
@@ -22,46 +23,103 @@ interface Props {
   accessibilityLabel?: string;
 }
 
-const variants: Record<Variant, { bg: string; text: string; border?: string }> = {
-  primary: { bg: colors.accent, text: "#fff" },
-  secondary: { bg: "rgba(255,255,255,0.08)", text: "rgba(255,255,255,0.8)" },
-  danger: { bg: colors.dangerSurface, text: colors.danger, border: colors.dangerBorder },
-  ghost: { bg: "transparent", text: colors.textSecondary },
+interface VariantStyle {
+  bg: string;
+  text: string;
+  border?: string;
+  shadow?: ViewStyle;
+}
+
+const variants: Record<Variant, VariantStyle> = {
+  // Netflix CTA principal — white pill, black text, soft shadow
+  primary: {
+    bg: CTA.primaryBg,
+    text: CTA.primaryFg,
+    shadow: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 4,
+    },
+  },
+  // Netflix CTA secondaire — gris translucide cinematic
+  secondary: {
+    bg: CTA.secondaryBg,
+    text: CTA.secondaryFg,
+  },
+  // Danger — rouge sur surface tinted
+  danger: {
+    bg: colors.dangerSurface,
+    text: colors.danger,
+    border: colors.dangerBorder,
+  },
+  // Ghost — transparent, hover/press tint
+  ghost: {
+    bg: "transparent",
+    text: colors.textSecondary,
+  },
+};
+
+const labelStyle: TextStyle = {
+  ...typography.bodyBold,
+  fontFamily: FONT_FAMILY.semibold,
+  letterSpacing: 0.1,
 };
 
 export function Button({ title, onPress, variant = "primary", loading, disabled, style, fullWidth, accessibilityLabel }: Props) {
   const v = variants[variant];
   const isDisabled = disabled || loading;
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97, { damping: 18, stiffness: 280, mass: 0.7 });
+  };
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 18, stiffness: 280, mass: 0.7 });
+  };
   const handlePress = () => {
-    Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics?.impactAsync(variant === "danger" ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
     onPress();
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      disabled={isDisabled}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
-      accessibilityState={{ disabled: isDisabled }}
-      style={[{
-        backgroundColor: v.bg,
-        borderRadius: spacing.buttonRadius,
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        alignItems: "center" as const,
-        opacity: isDisabled ? 0.5 : 1,
-        borderWidth: v.border ? 1 : 0,
-        borderColor: v.border,
-        width: fullWidth ? "100%" : undefined,
-      }, style]}
-    >
-      {loading ? (
-        <ActivityIndicator color={v.text} size="small" />
-      ) : (
-        <Text style={{ ...typography.bodyBold, color: v.text }}>{title}</Text>
-      )}
-    </Pressable>
+    <Animated.View style={[animStyle, fullWidth ? { width: "100%" } : null]}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={isDisabled}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityState={{ disabled: isDisabled }}
+        style={[{
+          backgroundColor: v.bg,
+          borderRadius: RADIUS.md,
+          paddingVertical: 14,
+          paddingHorizontal: 22,
+          alignItems: "center" as const,
+          justifyContent: "center" as const,
+          flexDirection: "row" as const,
+          opacity: isDisabled ? 0.45 : 1,
+          borderWidth: v.border ? 1 : 0,
+          borderColor: v.border,
+          gap: spacing.sm,
+          ...(v.shadow ?? {}),
+        }, style]}
+      >
+        {loading ? (
+          <ActivityIndicator color={v.text} size="small" />
+        ) : (
+          <Text style={{ ...labelStyle, color: v.text }} numberOfLines={1}>
+            {title}
+          </Text>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
+
+/** Exporté pour permettre des CTAs cohérents en grand format (Hero billboard). */
+export const BUTTON_BRAND_TINT = BRAND.violet;

@@ -33,6 +33,7 @@ const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ defaul
 const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
 const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
+const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
 const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
 
 function PageSpinner() {
@@ -202,6 +203,7 @@ export function App() {
 
             <Route path="support" element={<Support />} />
             <Route path="settings" element={<Preferences />} />
+            <Route path="profile" element={<MobileProfile />} />
             <Route path="pair-device" element={<PairDevice />} />
             <Route path="admin" element={<Admin />} />
             <Route path="admin/plugins" element={<AdminPlugins />} />

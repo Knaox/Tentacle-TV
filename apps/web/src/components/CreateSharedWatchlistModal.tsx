@@ -140,7 +140,7 @@ export function CreateSharedWatchlistModal({ onClose }: Props) {
                       </div>
 
                       <button onClick={() => toggleUser(user.Id, user.Name)} className="shrink-0">
-                        <div className={`relative h-6 w-11 rounded-full transition-colors duration-200 ${isSelected ? "bg-purple-500" : "bg-white/10"}`}>
+                        <div className={`relative h-6 w-11 rounded-full transition-colors duration-200 ${isSelected ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-white/10"}`}>
                           <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${isSelected ? "translate-x-5" : "translate-x-0.5"}`} />
                         </div>
                       </button>

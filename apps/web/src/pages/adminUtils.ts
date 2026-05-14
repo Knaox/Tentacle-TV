@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { backendUrl, isTauriApp } from "../main";
 
 export const BACKEND = backendUrl;
@@ -13,12 +14,34 @@ export const hdrs = (): Record<string, string> => {
 export const creds = (): RequestCredentials | undefined =>
   isTauriApp ? undefined : "include";
 
+/**
+ * Tokens visuels admin alignés sur le MASTER design-system.
+ * - CTA Netflix : pill blanc + halo violet signature (bp + bpStyle inline)
+ * - Buttons height 44 (h-11), touch target ≥ 44pt garanti
+ * - Tokens-only : aucune valeur hex hardcodée (var(--brand), var(--status-*))
+ */
 export const cls = {
-  card: "mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-6",
-  sub: "rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-3",
-  inp: "w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none ring-1 ring-white/10 focus:ring-purple-500",
-  lbl: "mb-1 block text-xs text-white/40",
-  bp: "rounded-lg bg-purple-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-purple-500 disabled:opacity-40 transition",
-  bs: "rounded-lg bg-white/10 px-4 py-1.5 text-xs font-medium text-white/80 hover:bg-white/20 disabled:opacity-40 transition",
-  bd: "rounded-lg bg-red-600/20 px-4 py-1.5 text-xs font-medium text-red-400 hover:bg-red-600/30 disabled:opacity-40 transition",
+  // Card layouts (radius 12, border subtle, surface white/3)
+  card: "mb-8 rounded-xl border border-white/[0.06] bg-white/[0.03] p-6",
+  sub: "rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3",
+
+  // Inputs (height 44, focus ring violet)
+  inp: "w-full h-11 rounded-lg bg-white/[0.06] border border-white/[0.08] px-3 text-sm text-white outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 placeholder:text-white/35",
+  lbl: "mb-1 block text-xs font-medium text-white/60",
+
+  // CTA primary (Netflix — white pill + halo violet via bpStyle inline)
+  bp: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-white text-black text-sm font-bold transition-all hover:bg-white/90 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
+  bpStyle: { boxShadow: "0 8px 22px rgba(139,92,246,0.45)" } as CSSProperties,
+
+  // CTA secondary (gris translucide)
+  bs: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-white/10 border border-white/[0.08] text-white/90 text-sm font-semibold transition hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed",
+
+  // CTA brand (violet ghost) — actions intermédiaires non-CTA primaire
+  bbrand: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[var(--brand-soft)] border border-[var(--brand)]/35 text-white text-sm font-semibold transition hover:bg-[var(--brand)]/25 disabled:opacity-50 disabled:cursor-not-allowed",
+
+  // CTA danger (surface error tokenisée)
+  bd: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[var(--status-error-bg)] border border-[var(--status-error)]/30 text-[var(--status-error-fg)] text-sm font-semibold transition hover:bg-[var(--status-error)]/25 disabled:opacity-50 disabled:cursor-not-allowed",
+
+  // Status pill / chip
+  chip: "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-semibold tracking-wide",
 };

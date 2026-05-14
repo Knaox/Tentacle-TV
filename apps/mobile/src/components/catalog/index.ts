@@ -6,3 +6,4 @@ export { StatusFilter } from "./StatusFilter";
 export { CatalogGrid } from "./CatalogGrid";
 export { AdvancedFilterSheet } from "./AdvancedFilterSheet";
 export type { AdvancedFilters } from "./AdvancedFilterSheet";
+export { YearSheet } from "./YearSheet";

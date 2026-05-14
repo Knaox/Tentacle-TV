@@ -3,7 +3,7 @@
     "name": "Tentacle TV",
     "slug": "tentacle-mobile",
     "version": "1.1.0",
-    "description": "Tentacle TV is a premium media client for Jellyfin. Stream your movies, series, and music from your self-hosted Jellyfin server with a beautiful, native iOS experience.",
+    "description": "Tentacle TV is a premium media client for self-hosted media servers. Stream your movies, series, and music from your personal library with a beautiful, native iOS experience.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -17,12 +17,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tentacle.mobile",
-      "buildNumber": "21",
+      "buildNumber": "22",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["audio"],
         "AVInitialRouteSharingPolicy": "LongFormVideo",
-        "NSLocalNetworkUsageDescription": "Tentacle TV needs access to your local network to connect to your Jellyfin media server.",
+        "NSLocalNetworkUsageDescription": "Tentacle TV needs access to your local network to connect to your self-hosted media server.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }

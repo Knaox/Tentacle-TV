@@ -1,8 +1,9 @@
 import { memo, useCallback } from "react";
 import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { colors, spacing, typography } from "@/theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY } from "@/theme";
 
 interface Props {
   title: string;
@@ -11,6 +12,10 @@ interface Props {
   onSeeAll?: () => void;
 }
 
+/**
+ * Row horizontal cinematic — header avec heading-3 + lien "Voir tout" chevron
+ * subtle violet. Gap 14px entre cards, scroll snap horizontal edge-to-edge.
+ */
 export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeAll }: Props) {
   const { t } = useTranslation("common");
   const renderFlatItem = useCallback(
@@ -21,10 +26,11 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
   return (
     <View style={st.root}>
       <View style={st.header}>
-        <Text style={st.title}>{title}</Text>
+        <Text style={st.title} numberOfLines={1}>{title}</Text>
         {onSeeAll != null && (
-          <Pressable onPress={onSeeAll} hitSlop={8}>
-            <Text style={st.seeAll}>{t("seeAll")} {"\u203A"}</Text>
+          <Pressable onPress={onSeeAll} hitSlop={10} style={st.seeAllBtn}>
+            <Text style={st.seeAll}>{t("seeAll")}</Text>
+            <Feather name="chevron-right" size={14} color={BRAND.light} />
           </Pressable>
         )}
       </View>
@@ -43,9 +49,36 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
 });
 
 const st = StyleSheet.create({
-  root: { marginTop: spacing.xl },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, marginBottom: spacing.md },
-  title: { ...typography.subtitle, color: colors.textPrimary },
-  seeAll: { ...typography.caption, color: colors.accent },
-  list: { paddingHorizontal: spacing.screenPadding, gap: 12 },
+  root: { marginTop: spacing.xxl },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.screenPadding,
+    marginBottom: 14,
+  },
+  title: {
+    ...typography.subtitle,
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+    flex: 1,
+  },
+  seeAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingLeft: 8,
+  },
+  seeAll: {
+    ...typography.caption,
+    fontFamily: FONT_FAMILY.semibold,
+    color: BRAND.light,
+    letterSpacing: 0.1,
+  },
+  list: {
+    paddingHorizontal: spacing.screenPadding,
+    gap: 14,
+  },
 });

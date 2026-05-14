@@ -69,7 +69,7 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
               onClick={() => setSelectedSeasonId(s.Id)}
               className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 selectedSeasonId === s.Id
-                  ? "bg-tentacle-accent text-white"
+                  ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]"
                   : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
               }`}
             >
@@ -186,10 +186,10 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
       {isSelecting ? (
         <div className="flex w-24 flex-shrink-0 xs:w-28 items-center justify-center sm:w-44">
           <div className={`h-5 w-5 rounded border-2 transition-colors ${
-            isSelected ? "border-tentacle-accent bg-tentacle-accent" : "border-white/30"
+            isSelected ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]" : "border-white/30"
           }`}>
             {isSelected && (
-              <svg className="h-full w-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <svg className="h-full w-full text-[var(--brand-light)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <path d="M5 13l4 4L19 7" />
               </svg>
             )}

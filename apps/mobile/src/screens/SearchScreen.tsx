@@ -1,21 +1,35 @@
-import { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, InteractionManager } from "react-native";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, InteractionManager, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import { MobileMediaCard } from "../components/MobileMediaCard";
-import { FadeIn } from "../components/ui";
-import { colors, spacing, typography } from "../theme";
+import { FadeIn, SubtleBackground } from "../components/ui";
+import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SURFACE } from "../theme";
+
+/**
+ * Search — modal full-screen avec input top auto-focus, suggestions de
+ * démarrage, résultats 2 colonnes. BlurView header pour effet glass.
+ */
+const GRID_GAP = 14;
 
 export function SearchScreen() {
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
+  const { width: SCREEN_W } = useWindowDimensions();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
+
+  // Largeur de card calculée pour 2 colonnes — espacement strictement uniforme
+  const cardWidth = useMemo(
+    () => Math.floor((SCREEN_W - 2 * spacing.screenPadding - GRID_GAP) / 2),
+    [SCREEN_W],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query.trim()), 300);
@@ -28,57 +42,69 @@ export function SearchScreen() {
 
   const { data: results, isLoading } = useSearchItems(debounced);
 
+  const handleResultPress = (id: string) => {
+    router.dismiss();
+    InteractionManager.runAfterInteractions(() => { router.push(`/media/${id}`); });
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.95)" }}>
-      <View style={{
-        paddingHorizontal: spacing.screenPadding,
-        paddingTop: insets.top + spacing.md,
-        paddingBottom: spacing.md,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.sm,
-      }}>
-        <View style={{
-          flex: 1, flexDirection: "row", alignItems: "center",
-          backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: colors.surfaceElevated,
-          borderRadius: spacing.cardRadius, paddingHorizontal: spacing.md,
-        }}>
-          <Feather name="search" size={16} color={colors.textDim} />
-          <TextInput
-            ref={inputRef}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t("searchMediaLong")}
-            placeholderTextColor={colors.textDim}
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel={t("searchMediaLong")}
-            style={{
-              flex: 1, paddingHorizontal: spacing.sm, paddingVertical: spacing.md,
-              color: colors.textPrimary, ...typography.body,
-            }}
-          />
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery("")} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("clearSearch")}>
-              <Feather name="x" size={16} color={colors.textMuted} />
-            </Pressable>
-          )}
+    <SubtleBackground ambient>
+      {/* Header glass — input search + close button */}
+      <View style={[st.headerWrap, { paddingTop: insets.top + spacing.md }]}>
+        <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.45)" }]} />
+        <View style={st.headerRow}>
+          <View style={st.searchWrap}>
+            <Feather name="search" size={16} color="rgba(255,255,255,0.55)" />
+            <TextInput
+              ref={inputRef}
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t("searchMediaLong")}
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel={t("searchMediaLong")}
+              style={st.input}
+              returnKeyType="search"
+            />
+            {query.length > 0 && (
+              <Pressable
+                onPress={() => setQuery("")}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t("clearSearch")}
+                style={st.clearBtn}
+              >
+                <Feather name="x" size={14} color="rgba(255,255,255,0.65)" />
+              </Pressable>
+            )}
+          </View>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t("cancel")}
+            style={st.cancelBtn}
+          >
+            <Text style={st.cancelTxt}>{t("cancel")}</Text>
+          </Pressable>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("close")}>
-          <Feather name="x" size={22} color={colors.textSecondary} />
-        </Pressable>
       </View>
 
+      {/* Body */}
       {isLoading && debounced.length >= 2 && (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color={colors.accent} />
+        <View style={st.center}>
+          <ActivityIndicator size="large" color={BRAND.violet} />
         </View>
       )}
 
       {!isLoading && debounced.length >= 2 && (!results || results.length === 0) && (
         <FadeIn style={{ flex: 1 }}>
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ ...typography.body, color: colors.textMuted }}>{t("noResults")}</Text>
+          <View style={st.center}>
+            <Feather name="search" size={48} color={BRAND.light} style={{ opacity: 0.5, marginBottom: 16 }} />
+            <Text style={st.emptyTitle}>{t("noResults")}</Text>
+            <Text style={st.emptyHint}>{t("noResultsHint", { defaultValue: "Essayez d'autres mots-clés" })}</Text>
           </View>
         </FadeIn>
       )}
@@ -89,17 +115,19 @@ export function SearchScreen() {
             data={results}
             numColumns={2}
             keyExtractor={(item) => item.Id}
-            contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingBottom: insets.bottom + 100 }}
-            columnWrapperStyle={{ gap: spacing.sm, marginBottom: spacing.sm }}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.screenPadding,
+              paddingTop: spacing.lg,
+              paddingBottom: insets.bottom + 100,
+            }}
+            columnWrapperStyle={{ gap: GRID_GAP, marginBottom: GRID_GAP }}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
-              <View style={{ flex: 1, maxWidth: "50%" }}>
-                <MobileMediaCard item={item} onPress={() => {
-                  router.dismiss();
-                  InteractionManager.runAfterInteractions(() => {
-                    router.push(`/media/${item.Id}`);
-                  });
-                }} />
-              </View>
+              <MobileMediaCard
+                item={item}
+                width={cardWidth}
+                onPress={() => handleResultPress(item.Id)}
+              />
             )}
           />
         </FadeIn>
@@ -107,14 +135,46 @@ export function SearchScreen() {
 
       {debounced.length < 2 && !isLoading && (
         <FadeIn style={{ flex: 1 }}>
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Feather name="search" size={48} color={colors.textDim} style={{ marginBottom: 16 }} />
-            <Text style={{ ...typography.body, color: colors.textDim }}>
-              {t("typeMinChars")}
-            </Text>
+          <View style={st.center}>
+            <View style={st.iconRing}>
+              <Feather name="search" size={32} color={BRAND.violet} />
+            </View>
+            <Text style={st.startTitle}>{t("searchTitle", { defaultValue: "Rechercher" })}</Text>
+            <Text style={st.startHint}>{t("typeMinChars")}</Text>
           </View>
         </FadeIn>
       )}
-    </View>
+    </SubtleBackground>
   );
 }
+
+const st = StyleSheet.create({
+  headerWrap: { paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER.subtle },
+  headerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm, paddingHorizontal: spacing.screenPadding },
+  searchWrap: {
+    flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm,
+    backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: BORDER.subtle,
+    borderRadius: RADIUS.lg, paddingHorizontal: spacing.md, height: 44,
+  },
+  input: {
+    flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular,
+    color: colors.textPrimary, paddingVertical: 0, letterSpacing: -0.1,
+  },
+  clearBtn: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center" as const, justifyContent: "center" as const,
+  },
+  cancelBtn: { paddingHorizontal: 4, paddingVertical: 8 },
+  cancelTxt: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: BRAND.light, letterSpacing: 0.1 },
+  center: { flex: 1, justifyContent: "center" as const, alignItems: "center" as const, padding: spacing.xl },
+  emptyTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 17, color: colors.textPrimary, marginBottom: 6 },
+  emptyHint: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: colors.textMuted, textAlign: "center" as const, maxWidth: 280 },
+  iconRing: {
+    width: 84, height: 84, borderRadius: 42,
+    backgroundColor: SURFACE.s2, borderWidth: 1, borderColor: "rgba(139,92,246,0.25)",
+    alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 18,
+  },
+  startTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.4, marginBottom: 6 },
+  startHint: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, textAlign: "center" as const, maxWidth: 280, lineHeight: 21 },
+});

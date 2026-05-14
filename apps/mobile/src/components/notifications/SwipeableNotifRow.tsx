@@ -2,7 +2,7 @@ import { useRef, useCallback } from "react";
 import { View, Text, Pressable, Animated, PanResponder, Dimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { AppNotification } from "@tentacle-tv/api-client";
-import { colors, typography } from "@/theme";
+import { colors, typography, BRAND } from "@/theme";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
 try { Haptics = require("expo-haptics"); } catch {}
@@ -87,22 +87,24 @@ export function SwipeableNotifRow({
           {selectionMode ? (
             <Pressable
               onPress={onToggleSelect}
-              hitSlop={8}
+              hitSlop={16}
               style={{
                 width: 22, height: 22, borderRadius: 4, marginTop: 2,
                 borderWidth: 2,
-                borderColor: isSelected ? colors.accent : "rgba(255,255,255,0.3)",
-                backgroundColor: isSelected ? colors.accent : "transparent",
+                borderColor: isSelected ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.3)",
+                backgroundColor: isSelected ? BRAND.soft : "transparent",
                 alignItems: "center", justifyContent: "center",
               }}
             >
-              {isSelected && <Feather name="check" size={14} color="#fff" />}
+              {isSelected && <Feather name="check" size={14} color={BRAND.light} />}
             </Pressable>
           ) : (
             !notif.read && (
               <View style={{
                 width: 8, height: 8, borderRadius: 4,
-                backgroundColor: colors.accent, marginTop: 6,
+                backgroundColor: BRAND.ghost,
+                borderWidth: 1, borderColor: "rgba(139,92,246,0.5)",
+                marginTop: 6,
               }} />
             )
           )}

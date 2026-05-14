@@ -16,6 +16,7 @@ import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { colors } from "@/theme";
+import { useAppFonts } from "@/theme/fonts";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -75,6 +76,7 @@ export default function RootLayout() {
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const segments = useSegments();
   const router = useRouter();
+  const [fontsLoaded, fontError] = useAppFonts();
 
   // Hydrate storage, read persisted values, init i18n
   // Timeout 5s to prevent infinite splash on real iPhone if AsyncStorage hangs
@@ -101,12 +103,19 @@ export default function RootLayout() {
 
       setServerUrl(url);
       setReady(true);
-      await SplashScreen.hideAsync();
     }
 
     init();
     return () => { mounted = false; };
   }, []);
+
+  // Hide splash only when storage hydrated AND fonts loaded (or font error —
+  // fallback system font is acceptable). Prevents flash of unstyled text.
+  useEffect(() => {
+    if (ready && (fontsLoaded || fontError)) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [ready, fontsLoaded, fontError]);
 
   // Auth guard: redirect based on stored credentials
   useEffect(() => {
@@ -170,7 +179,7 @@ export default function RootLayout() {
               <Stack.Screen name="credits" options={{ presentation: "card" }} />
             </Stack>
             <OfflineOverlay />
-            {!ready && (
+            {(!ready || (!fontsLoaded && !fontError)) && (
               <View style={styles.loading}>
                 <ActivityIndicator size="large" color={colors.accent} />
               </View>

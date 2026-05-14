@@ -12,7 +12,7 @@ import {
   type ShareRole,
 } from "@tentacle-tv/api-client";
 import { BottomSheet } from "./ui";
-import { colors, spacing, typography } from "@/theme";
+import { colors, spacing, typography, BRAND } from "@/theme";
 
 interface Props {
   visible: boolean;
@@ -93,10 +93,11 @@ export function ManageMembersSheet({ visible, watchlistId, watchlistName, onClos
               >
                 <View style={{
                   width: 32, height: 32, borderRadius: 16,
-                  backgroundColor: colors.accent,
+                  backgroundColor: BRAND.soft,
+                  borderWidth: 1, borderColor: "rgba(139,92,246,0.45)",
                   alignItems: "center", justifyContent: "center",
                 }}>
-                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>
+                  <Text style={{ color: BRAND.light, fontWeight: "700", fontSize: 13 }}>
                     {user.Name.charAt(0).toUpperCase()}
                   </Text>
                 </View>
@@ -146,10 +147,11 @@ function MemberRow({ member, onRoleChange, onRemove, t }: {
     }}>
       <View style={{
         width: 32, height: 32, borderRadius: 16,
-        backgroundColor: colors.accent,
+        backgroundColor: BRAND.soft,
+        borderWidth: 1, borderColor: "rgba(139,92,246,0.45)",
         alignItems: "center", justifyContent: "center",
       }}>
-        <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>
+        <Text style={{ color: BRAND.light, fontWeight: "700", fontSize: 13 }}>
           {member.username.charAt(0).toUpperCase()}
         </Text>
       </View>

@@ -27,4 +27,5 @@ export default {
   pinned: "Pinned",
   pin: "Pin",
   unpin: "Unpin",
+  credits: "Credits",
 } as const;

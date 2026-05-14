@@ -1,22 +1,24 @@
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, RefreshControl, View, Text, FlatList, Pressable, StyleSheet, Image } from "react-native";
+import { ScrollView, RefreshControl, View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { Image } from "expo-image";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useUserId,
   useWatchlist, useMySharedWatchlists, useAllSharedWatchlistItems,
-  useJellyfinClient,
-  useHomeWebSocket, useTentacleConfig,
+  useJellyfinClient, useHomeWebSocket, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { SkeletonHero, SkeletonRow, FadeIn } from "@/components/ui";
+import { SkeletonHero, SkeletonRow, FadeIn, SubtleBackground, ProgressBar } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { MediaRow } from "@/components/MediaRow";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
-import { colors, spacing, typography } from "@/theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY, RADIUS, SHADOW_RN, SURFACE } from "@/theme";
 
+/** Home — ambient orbe + HeroBanner cinematic + rangées cascade + skeleton stylé. */
 export function HomeScreen() {
   const { t } = useTranslation("common");
   const { t: te } = useTranslation("errors");
@@ -37,10 +39,26 @@ export function HomeScreen() {
 
   const isLoading = featured.isLoading || resume.isLoading;
 
-  // Hero: prioritize resume items (quick resume), fallback to featured
+  // Hero priorité : resume → featured
   const heroItems = resume.data && resume.data.length > 0
     ? resume.data.slice(0, 5)
     : featured.data ?? [];
+  const heroIsResume = resume.data && resume.data.length > 0;
+
+  // Row "Continuer à regarder" — fusionne resume + nextUp, dédupliqué, hors hero.
+  const continueWatchingItems = useMemo(() => {
+    const seen = new Set<string>();
+    const result: MediaItem[] = [];
+    const heroIds = heroIsResume ? new Set((resume.data ?? []).slice(0, 5).map((i) => i.Id)) : new Set<string>();
+    for (const list of [resume.data ?? [], nextUp.data ?? []]) {
+      for (const item of list) {
+        if (heroIds.has(item.Id) || seen.has(item.Id)) continue;
+        seen.add(item.Id);
+        result.push(item);
+      }
+    }
+    return result;
+  }, [resume.data, nextUp.data, heroIsResume]);
 
   const handleRefresh = useCallback(() => {
     featured.refetch();
@@ -49,14 +67,8 @@ export function HomeScreen() {
     libraries.refetch();
   }, [featured, resume, nextUp, libraries]);
 
-  const handlePress = useCallback((item: MediaItem) => {
-    router.push(`/media/${item.Id}`);
-  }, [router]);
-
-  const handlePlay = useCallback((item: MediaItem) => {
-    router.push(`/watch/${item.Id}`);
-  }, [router]);
-
+  const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}`); }, [router]);
+  const handlePlay = useCallback((item: MediaItem) => { router.push(`/watch/${item.Id}`); }, [router]);
   const handleLongPress = useCallback((item: MediaItem) => {
     setLongPressItemId(item.Id);
     setActionSheetVisible(true);
@@ -66,34 +78,30 @@ export function HomeScreen() {
     <MobileMediaCard item={item} onPress={() => handlePress(item)} onLongPress={() => handleLongPress(item)} />
   ), [handlePress, handleLongPress]);
 
-  // Show skeleton while truly loading (not just disabled)
   const anyFetching = featured.isFetching || resume.isFetching;
   if (isLoading || (!userId && anyFetching)) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <SubtleBackground ambient>
         <SkeletonHero />
         <View style={{ marginTop: spacing.xl }}><SkeletonRow /></View>
         <View style={{ marginTop: spacing.xl }}><SkeletonRow /></View>
-      </View>
+        <View style={{ marginTop: spacing.xl }}><SkeletonRow /></View>
+      </SubtleBackground>
     );
   }
 
-  // If userId is null, queries are disabled — show diagnostic
   if (!userId) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.subtitle, color: colors.textPrimary, marginBottom: 8 }}>
-          {te("sessionNotInitialized")}
-        </Text>
-        <Text style={{ ...typography.caption, color: colors.textMuted, textAlign: "center" }}>
-          {te("sessionNotInitializedMessage")}
-        </Text>
-      </View>
+      <SubtleBackground ambient style={{ justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Feather name="alert-circle" size={36} color={BRAND.light} style={{ marginBottom: spacing.md }} />
+        <Text style={st.errTitle}>{te("sessionNotInitialized")}</Text>
+        <Text style={st.errMsg}>{te("sessionNotInitializedMessage")}</Text>
+      </SubtleBackground>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SubtleBackground ambient>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -102,35 +110,28 @@ export function HomeScreen() {
           <RefreshControl
             refreshing={featured.isFetching && !featured.isLoading}
             onRefresh={handleRefresh}
-            tintColor={colors.accent}
-            progressBackgroundColor={colors.surface}
+            tintColor={BRAND.violet}
+            progressBackgroundColor={SURFACE.s1}
           />
         }
       >
-        {/* Hero Carousel — resume items priority, fallback to featured */}
+        {/* Hero Carousel */}
         {heroItems.length > 0 && (
           <HeroBanner items={heroItems} onPlay={handlePlay} onInfo={handlePress} />
         )}
 
-        {/* Resume Watching (only if hero is NOT showing resume items) */}
-        {resume.data && resume.data.length > 0 && heroItems !== resume.data.slice(0, 5) && (
+        {/* Continuer à regarder — resume + nextUp fusionnés, dédupliqués */}
+        {continueWatchingItems.length > 0 && (
           <FadeIn delay={100}>
-            <MediaRow title={t("resumeWatching")} data={resume.data} renderItem={renderCard} />
+            <MediaRow title={t("resumeWatching")} data={continueWatchingItems} renderItem={renderCard} />
           </FadeIn>
         )}
 
-        {/* Next Up */}
-        {nextUp.data && nextUp.data.length > 0 && (
-          <FadeIn delay={200}>
-            <MediaRow title={t("nextEpisodes")} data={nextUp.data} renderItem={renderCard} />
-          </FadeIn>
-        )}
-
-        {/* À regarder */}
-        <FadeIn delay={250}>
+        {/* Ma liste */}
+        <FadeIn delay={240}>
           <MyListRow
             personalItems={watchlist.data ?? []}
-            sharedListIds={(sharedLists.data ?? []).map(l => l.id)}
+            sharedListIds={(sharedLists.data ?? []).map((l) => l.id)}
             onSeeAll={() => router.push("/watchlist")}
             onItemPress={(jellyfinId) => router.push(`/media/${jellyfinId}`)}
             onItemLongPress={(jellyfinId) => { setLongPressItemId(jellyfinId); setActionSheetVisible(true); }}
@@ -156,11 +157,11 @@ export function HomeScreen() {
           onClose={() => setActionSheetVisible(false)}
         />
       )}
-    </View>
+    </SubtleBackground>
   );
 }
 
-/* ── Carrousel "À regarder" ────────────────────────── */
+/* ── Carrousel "Ma liste" — déduplique personal + shared ────────────────── */
 
 interface CarouselItem {
   key: string;
@@ -168,6 +169,7 @@ interface CarouselItem {
   name: string;
   year?: number;
   played?: boolean;
+  progress?: number;
 }
 
 function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItemLongPress }: {
@@ -184,16 +186,16 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
   const merged = useMemo<CarouselItem[]>(() => {
     const seen = new Set<string>();
     const result: CarouselItem[] = [];
-
-    // Personal items first
     for (const item of personalItems) {
       if (!seen.has(item.Id)) {
         seen.add(item.Id);
-        result.push({ key: item.Id, jellyfinId: item.Id, name: item.Name, year: item.ProductionYear, played: item.UserData?.Played === true });
+        result.push({
+          key: item.Id, jellyfinId: item.Id, name: item.Name, year: item.ProductionYear,
+          played: item.UserData?.Played === true,
+          progress: item.UserData?.PlayedPercentage ?? undefined,
+        });
       }
     }
-
-    // Then shared items (deduplicated)
     for (const q of sharedQueries) {
       if (!q.data) continue;
       for (const item of q.data) {
@@ -203,7 +205,6 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
         }
       }
     }
-
     return result;
   }, [personalItems, sharedQueries]);
 
@@ -211,17 +212,25 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
 
   const renderItem = ({ item }: { item: CarouselItem }) => {
     const poster = client.getImageUrl(item.jellyfinId, "Primary", { width: 300, quality: 80 });
+    const hasProgress = item.progress != null && item.progress > 0 && item.progress < 100;
     return (
       <Pressable
         onPress={() => onItemPress(item.jellyfinId)}
         onLongPress={() => onItemLongPress(item.jellyfinId)}
         style={mlst.card}
+        accessibilityRole="button"
+        accessibilityLabel={item.name}
       >
-        <View style={{ borderRadius: 10, overflow: "hidden" }}>
-          <Image source={{ uri: poster }} style={mlst.poster} />
+        <View style={mlst.posterWrap}>
+          <Image source={{ uri: poster }} style={mlst.poster} contentFit="cover" transition={250} />
           {item.played && (
             <View style={mlst.watchedBadge}>
-              <Text style={mlst.watchedCheck}>{"\u2713"}</Text>
+              <Feather name="check" size={11} color="#000" />
+            </View>
+          )}
+          {hasProgress && (
+            <View style={mlst.progWrap}>
+              <ProgressBar progress={(item.progress ?? 0) / 100} height={3} tint={BRAND.violet} />
             </View>
           )}
         </View>
@@ -235,8 +244,9 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
     <View style={mlst.root}>
       <View style={mlst.header}>
         <Text style={mlst.title}>{t("toWatch")}</Text>
-        <Pressable onPress={onSeeAll} hitSlop={8}>
-          <Text style={mlst.seeAll}>{t("seeAll")} {"\u203A"}</Text>
+        <Pressable onPress={onSeeAll} hitSlop={10} style={mlst.seeAllBtn} accessibilityRole="button" accessibilityLabel={t("seeAll")}>
+          <Text style={mlst.seeAll}>{t("seeAll")}</Text>
+          <Feather name="chevron-right" size={14} color={BRAND.light} />
         </Pressable>
       </View>
       <FlatList
@@ -252,18 +262,25 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
   );
 }
 
+const st = StyleSheet.create({
+  errTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: colors.textPrimary, marginBottom: 8, textAlign: "center" as const },
+  errMsg: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: colors.textMuted, textAlign: "center" as const, maxWidth: 320 },
+});
+
 const mlst = StyleSheet.create({
-  root: { marginTop: spacing.xl },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, marginBottom: spacing.md },
-  title: { ...typography.subtitle, color: colors.textPrimary },
-  seeAll: { ...typography.caption, color: colors.accent },
-  list: { paddingHorizontal: spacing.screenPadding, gap: 12 },
+  root: { marginTop: spacing.xxl },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, marginBottom: 14 },
+  title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 18, color: colors.textPrimary, letterSpacing: -0.3 },
+  seeAllBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
+  seeAll: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: BRAND.light },
+  list: { paddingHorizontal: spacing.screenPadding, gap: 14 },
   card: { width: 130 },
-  poster: { width: 130, aspectRatio: 2 / 3, borderRadius: 10, backgroundColor: colors.surfaceElevated },
-  cardName: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: 6 },
-  cardYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
-  watchedBadge: { position: "absolute" as const, top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#8B5CF6", alignItems: "center" as const, justifyContent: "center" as const },
-  watchedCheck: { color: "#fff", fontSize: 12, fontWeight: "800" as const },
+  posterWrap: { borderRadius: RADIUS.lg, overflow: "hidden", ...SHADOW_RN.elev2 },
+  poster: { width: 130, aspectRatio: 2 / 3, backgroundColor: SURFACE.s2 },
+  cardName: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: colors.textPrimary, marginTop: 8, letterSpacing: -0.1 },
+  cardYear: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, marginTop: 2 },
+  watchedBadge: { position: "absolute" as const, top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF", alignItems: "center" as const, justifyContent: "center" as const, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 }, // R11 watched unifié (cf PosterCard.tsx:90)
+  progWrap: { position: "absolute" as const, bottom: 0, left: 0, right: 0, paddingHorizontal: 6, paddingBottom: 6 },
 });
 
 function LibraryRow({ libraryId, libraryName, renderCard, index }: {
@@ -276,12 +293,8 @@ function LibraryRow({ libraryId, libraryName, renderCard, index }: {
   const { data } = useLatestItems(libraryId);
   if (!data || data.length === 0) return null;
   return (
-    <FadeIn delay={300 + index * 100}>
-      <MediaRow
-        title={t("latestAdditions", { name: libraryName })}
-        data={data}
-        renderItem={renderCard}
-      />
+    <FadeIn delay={320 + index * 90}>
+      <MediaRow title={t("latestAdditions", { name: libraryName })} data={data} renderItem={renderCard} />
     </FadeIn>
   );
 }

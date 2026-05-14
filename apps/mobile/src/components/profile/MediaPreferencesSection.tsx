@@ -7,7 +7,7 @@ import {
   useSetLibraryPreference,
   type LibraryPreference,
 } from "@tentacle-tv/api-client";
-import { colors, spacing, typography } from "../../theme";
+import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY } from "../../theme";
 
 const LANGUAGES: { code: string; labelKey: string }[] = [
   { code: "fre", labelKey: "langFr" },
@@ -141,13 +141,22 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
 
           <Pressable
             onPress={handleSave}
-            style={{
-              backgroundColor: colors.accent,
+            style={({ pressed }) => [{
+              backgroundColor: CTA.primaryBg,
               borderRadius: spacing.buttonRadius,
-              paddingVertical: 10, alignItems: "center", marginTop: spacing.lg,
-            }}
+              paddingVertical: 12,
+              alignItems: "center",
+              marginTop: spacing.lg,
+              opacity: pressed ? 0.88 : 1,
+              shadowColor: BRAND.violet,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.45,
+              shadowRadius: 18,
+              elevation: 8,
+            }]}
+            accessibilityRole="button"
           >
-            <Text style={{ ...typography.bodyBold, color: "#fff" }}>
+            <Text style={{ ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 }}>
               {setMut.isPending ? "..." : t("common:save")}
             </Text>
           </Pressable>
@@ -166,26 +175,36 @@ function ChipRow({ items, selected, onSelect, t }: {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
-        {items.map((item) => (
-          <Pressable
-            key={item.code}
-            onPress={() => onSelect(item.code)}
-            style={{
-              paddingHorizontal: 14, paddingVertical: 8,
-              borderRadius: spacing.buttonRadius,
-              backgroundColor: selected === item.code ? colors.accent : "rgba(255,255,255,0.05)",
-              borderWidth: 1,
-              borderColor: selected === item.code ? colors.accent : colors.border,
-            }}
-          >
-            <Text style={{
-              fontSize: 12, fontWeight: "600",
-              color: selected === item.code ? "#fff" : colors.textSecondary,
-            }}>
-              {t(item.labelKey)}
-            </Text>
-          </Pressable>
-        ))}
+        {items.map((item) => {
+          const isActive = selected === item.code;
+          return (
+            <Pressable
+              key={item.code}
+              onPress={() => onSelect(item.code)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: isActive ? BRAND.soft : "rgba(255,255,255,0.05)",
+                borderWidth: 1,
+                borderColor: isActive ? "rgba(139,92,246,0.45)" : colors.border,
+                minHeight: 32,
+                justifyContent: "center",
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={{
+                fontSize: 12,
+                fontFamily: isActive ? FONT_FAMILY.semibold : FONT_FAMILY.medium,
+                color: isActive ? BRAND.light : colors.textSecondary,
+                letterSpacing: 0.1,
+              }}>
+                {t(item.labelKey)}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </ScrollView>
   );

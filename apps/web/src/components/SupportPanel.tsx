@@ -41,7 +41,7 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-white">{t("tickets:myTickets")}</h2>
-        <button onClick={onNew} className="flex-shrink-0 rounded-lg bg-tentacle-accent px-4 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80">
+        <button onClick={onNew} className="flex-shrink-0 rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
           {t("tickets:newTicket")}
         </button>
       </div>
@@ -54,7 +54,7 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
           { key: "closed", label: t("tickets:closed") },
         ].map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.key ? "bg-purple-600 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}>{f.label}</button>
+            className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.key ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-white/5 text-white/60 hover:bg-white/10"}`}>{f.label}</button>
         ))}
       </div>
       {isLoading && <Spinner />}
@@ -264,7 +264,7 @@ function SeriesEpisodePicker({ series, seasons, episodes, selectedSeasonId, onSe
         <div className="flex gap-1 overflow-x-auto border-b border-white/5 px-3 py-2">
           {seasons.map((s) => (
             <button key={s.Id} type="button" onClick={() => onSeasonChange(s.Id)}
-              className={`flex-shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${selectedSeasonId === s.Id ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"}`}>
+              className={`flex-shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${selectedSeasonId === s.Id ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-white/5 text-white/50 hover:bg-white/10"}`}>
               {s.Name}
             </button>
           ))}
@@ -351,7 +351,7 @@ function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (
             className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50 resize-none" maxLength={5000} />
         </div>
         <button type="submit" disabled={createMut.isPending || !subject.trim() || !body.trim()}
-          className="rounded-lg bg-tentacle-accent px-6 py-2.5 text-sm font-semibold text-white hover:bg-tentacle-accent/80 disabled:opacity-50">
+          className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
           {createMut.isPending ? t("common:sending") : t("tickets:createTicket")}
         </button>
       </form>
@@ -425,7 +425,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
           <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("tickets:replyPlaceholder")} rows={3}
             className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50 resize-none" maxLength={5000} />
           <button type="submit" disabled={replyMut.isPending || !reply.trim()}
-            className="mt-2 rounded-lg bg-tentacle-accent px-5 py-2 text-sm font-semibold text-white hover:bg-tentacle-accent/80 disabled:opacity-50">
+            className="mt-2 rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
             {replyMut.isPending ? t("common:sending") : t("common:send")}
           </button>
         </form>
