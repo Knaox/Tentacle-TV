@@ -5,6 +5,7 @@ import { useMediaItem, useSeasons, useEpisodes, useJellyfinClient } from "@tenta
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Navbar } from "../components/Navbar";
+import { HorizontalScrollRow } from "../components/HorizontalScrollRow";
 
 export function SeriesDetail() {
   const { t } = useTranslation("common");
@@ -50,7 +51,7 @@ export function SeriesDetail() {
         {seasonsLoading ? (
           <div className="flex gap-3">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="100px" height="36px" />)}</div>
         ) : (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <HorizontalScrollRow className="gap-2" ariaLabel={t("common:seasons", "Saisons")}>
             {seasons?.map((s) => (
               <button
                 key={s.Id}
@@ -64,7 +65,7 @@ export function SeriesDetail() {
                 {s.Name}
               </button>
             ))}
-          </div>
+          </HorizontalScrollRow>
         )}
       </div>
 

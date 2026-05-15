@@ -8,7 +8,9 @@ import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, Fullscre
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import type { MpvTrack } from "../hooks/useDesktopPlayer";
-import type { SegmentTimestamps } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps } from "@tentacle-tv/shared";
+import { TrickplayPreview } from "./TrickplayPreview";
+import { useTrickplay } from "../hooks/useTrickplay";
 
 const DBG = "[DesktopPlayer]";
 
@@ -30,6 +32,8 @@ interface DesktopPlayerProps {
   nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
   autoplayCreditsSeconds?: number;
   itemId?: string;
+  item?: MediaItem;
+  mediaSourceId?: string;
   onNextEpisode?: () => void; onPreviousEpisode?: () => void; onFallbackToWeb?: () => void;
 }
 
@@ -115,7 +119,7 @@ export function DesktopPlayer({
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   autoplayCreditsSeconds,
-  itemId,
+  itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
 }: DesktopPlayerProps) {
   const { t } = useTranslation("player");
@@ -132,6 +136,11 @@ export function DesktopPlayer({
   const isDragging = useRef(false);
   const wasPlayingBeforeDrag = useRef(false);
   const seekBarRef = useRef<HTMLDivElement>(null);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverX, setHoverX] = useState(0);
+  const [barWidth, setBarWidth] = useState(0);
+  const rafIdRef = useRef<number | null>(null);
+  const pendingHoverRef = useRef<{ time: number; x: number; width: number } | null>(null);
   const hasStartedRef = useRef(false);
   // State (not ref!) — transitioning to true triggers preference effect re-runs
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -498,6 +507,32 @@ export function DesktopPlayer({
   const bufProg = dur > 0 ? Math.min((actualPos + state.buffered) / dur, 1) : 0;
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
 
+  // ── Trickplay hover preview ──
+  const trickplay = useTrickplay(item, mediaSourceId);
+  const trickplayFrame = useMemo(
+    () => (hoverTime !== null ? trickplay.getFrameAt(hoverTime * 1000) : null),
+    [hoverTime, trickplay],
+  );
+  useEffect(() => {
+    if (trickplayFrame) trickplay.preloadNeighbors(trickplayFrame.tileIndex);
+  }, [trickplayFrame, trickplay]);
+  useEffect(() => () => {
+    if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+  }, []);
+  const onBarMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isDragging.current || dur <= 0) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    pendingHoverRef.current = { time: pct * dur, x: e.clientX - r.left, width: r.width };
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      const p = pendingHoverRef.current;
+      if (!p) return;
+      setHoverTime(p.time); setHoverX(p.x); setBarWidth(p.width);
+    });
+  }, [dur]);
+
   // Map MPV state back to Jellyfin indices for the selector highlight.
   // Use React state (currentAudio/currentSubtitle) as source of truth — mpv state
   // updates are async (Tauri IPC delay) and would show stale values briefly.
@@ -614,13 +649,24 @@ export function DesktopPlayer({
             {/* Progress bar with buffer + drag scrub */}
             <div ref={seekBarRef}
               className={`group/bar relative mb-3 flex h-1.5 cursor-pointer items-center rounded-full bg-white/20 transition-all ${dragProgress != null ? "h-2.5" : "hover:h-2.5"}`}
-              onMouseDown={onScrubStart}>
+              onMouseDown={onScrubStart}
+              onMouseMove={onBarMouseMove}
+              onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}
+              onMouseLeave={() => { if (!isDragging.current) setHoverTime(null); }}>
               {/* Buffer bar */}
               <div className="absolute h-full rounded-full bg-white/10" style={{ width: `${bufProg * 100}%` }} />
               {/* Progress bar */}
               <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${displayProgress * 100}%` }}>
                 <div className={`absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow transition-opacity ${dragProgress != null ? "opacity-100" : "opacity-0 group-hover/bar:opacity-100"}`} />
               </div>
+              <TrickplayPreview
+                visible={hoverTime !== null}
+                positionSeconds={hoverTime ?? 0}
+                frame={trickplayFrame}
+                info={trickplay.info}
+                anchorX={hoverX}
+                parentWidth={barWidth}
+              />
             </div>
 
             <div className="flex items-center justify-between">

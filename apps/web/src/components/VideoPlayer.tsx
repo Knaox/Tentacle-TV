@@ -5,7 +5,7 @@ import Hls from "hls.js";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
-import type { SegmentTimestamps } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps } from "@tentacle-tv/shared";
 
 export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
 export interface AudioTrack { index: number; label: string; lang?: string }
@@ -13,6 +13,8 @@ export interface AudioTrack { index: number; label: string; lang?: string }
 interface VideoPlayerProps {
   src: string;
   itemId: string;
+  item?: MediaItem;
+  mediaSourceId?: string;
   title: string;
   subtitle?: string;
   startPositionSeconds?: number;
@@ -79,7 +81,7 @@ function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
 }
 
 export function VideoPlayer({
-  src, itemId, title, subtitle, startPositionSeconds, jellyfinDuration,
+  src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
   currentAudio, currentSubtitle, currentQuality,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
@@ -731,6 +733,7 @@ export function VideoPlayer({
         <PlayerControls
           playing={playing} currentTime={currentTime} duration={duration}
           buffered={buffered} volume={volume} fullscreen={fullscreen}
+          item={item} itemId={itemId} mediaSourceId={mediaSourceId}
           title={title} subtitle={subtitle}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality}

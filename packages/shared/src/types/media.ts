@@ -50,6 +50,10 @@ export interface MediaItem {
   // External IDs
   ProviderIds?: Record<string, string>;
 
+  // Trickplay (Jellyfin 10.9+) — manifest of preview tile mosaics
+  // Shape: { [mediaSourceId]: { [width as string]: TrickplayInfo } }
+  Trickplay?: TrickplayManifest;
+
   // Folder
   IsFolder?: boolean;
   ChildCount?: number;
@@ -127,6 +131,22 @@ export interface ChapterInfo {
   StartPositionTicks: number;
   Name: string;
 }
+
+/** Per-width Trickplay manifest entry (Jellyfin 10.9+). */
+export interface TrickplayInfo {
+  Width: number;
+  Height: number;
+  TileWidth: number;
+  TileHeight: number;
+  ThumbnailCount: number;
+  /** Interval between frames, in milliseconds. */
+  Interval: number;
+  /** Approximate bandwidth of tiles, in bits/s. */
+  Bandwidth: number;
+}
+
+/** Outer key = mediaSourceId, inner key = width (as string). */
+export type TrickplayManifest = Record<string, Record<string, TrickplayInfo>>;
 
 export interface SegmentTimestamps {
   start: number;
