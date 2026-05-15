@@ -3,7 +3,9 @@ mod events;
 mod gl_surface;
 mod mpv_ffi;
 mod render;
+pub mod sleep_assertion;
 mod util;
 
 pub use mpv_ffi::MpvLib;
 pub use render::RenderState;
+pub use sleep_assertion::SleepAssertion;
