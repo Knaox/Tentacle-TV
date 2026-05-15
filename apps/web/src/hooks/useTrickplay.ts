@@ -78,7 +78,7 @@ export function useTrickplay(
       const img = new Image();
       img.src = url;
       cache.set(tileIndex, img);
-      if (process.env.NODE_ENV === "development" && cache.size > DEV_CACHE_SOFT_CAP) {
+      if (import.meta.env.DEV && cache.size > DEV_CACHE_SOFT_CAP) {
         console.warn(
           `[useTrickplay] in-memory cache size ${cache.size} exceeds soft cap ${DEV_CACHE_SOFT_CAP} — likely a regression (bulk preload?)`,
         );
