@@ -25,9 +25,11 @@ fn main() {
     {
         let mpv_lib = macos::MpvLib::load().expect("Failed to load libmpv");
         let render_state = std::sync::Arc::new(macos::RenderState::new(mpv_lib));
+        let sleep_assertion = macos::SleepAssertion::new();
 
         builder = builder
             .manage(render_state)
+            .manage(sleep_assertion)
             .invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
@@ -37,6 +39,8 @@ fn main() {
                 macos::commands::mpv_set_property,
                 macos::commands::mpv_get_property,
                 macos::commands::mpv_destroy,
+                macos::sleep_assertion::prevent_display_sleep_start,
+                macos::sleep_assertion::prevent_display_sleep_stop,
             ]);
     }
 

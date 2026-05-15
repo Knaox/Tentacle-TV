@@ -357,6 +357,33 @@ export function useDesktopPlayer() {
     return () => clearInterval(id);
   }, []);
 
+  // macOS uniquement : empêche la mise en veille de l'écran pendant la lecture.
+  // Sur Windows/Linux, libmpv gère stop-screensaver via sa propre fenêtre.
+  // Sur macOS (vo=libmpv, render API), aucune fenêtre native → on doit créer
+  // nous-mêmes une IOPMAssertion côté Rust. Voir apps/desktop/src-tauri/src/macos/sleep_assertion.rs
+  useEffect(() => {
+    if (!isTauri() || !isMacOS()) return;
+    const shouldKeepAwake = state.playing && !state.paused;
+    let cancelled = false;
+    import("@tauri-apps/api/core").then(({ invoke }) => {
+      if (cancelled) return;
+      const cmd = shouldKeepAwake ? "prevent_display_sleep_start" : "prevent_display_sleep_stop";
+      invoke(cmd).catch((e) => console.warn(`[mpv] ${cmd} failed:`, e));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [state.playing, state.paused]);
+
+  // Filet de sécurité : libère toujours l'assertion au démontage du player,
+  // même si l'effet ci-dessus n'a pas eu le temps de se déclencher.
+  useEffect(() => {
+    return () => {
+      if (!isTauri() || !isMacOS()) return;
+      import("@tauri-apps/api/core").then(({ invoke }) => {
+        invoke("prevent_display_sleep_stop").catch(() => {});
+      }).catch(() => {});
+    };
+  }, []);
+
   const play = useCallback(async (options: PlayOptions) => {
     if (!api) return;
     setFileLoaded(false); // Reset — will be set again on file-loaded event

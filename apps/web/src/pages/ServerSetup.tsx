@@ -3,6 +3,15 @@ import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle-tv/ui";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 
+// Mêmes CTA que Login/Register (refonte auth, commit 05759c5) — pour que les
+// boutons du setup soient raccord avec le reste de l'app : blanc/bold + halo
+// purple en primary, surface glass légère en secondary.
+const CTA_PRIMARY =
+  "inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
+const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(139,92,246,0.45)" };
+const CTA_SECONDARY =
+  "inline-flex h-11 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.06] px-5 text-sm font-semibold text-white transition-all hover:border-white/[0.14] hover:bg-white/[0.10] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40";
+
 type SetupStep = "db" | "jellyfin" | "admin";
 
 interface SetupProps {
@@ -284,7 +293,7 @@ function Inp({ label, value, set, placeholder, type = "text" }: {
     <div>
       <label className="mb-1 block text-xs font-medium text-white/60">{label}</label>
       <input type={type} value={value} onChange={(e) => set(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-purple-500 focus:outline-none" />
+        className="h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30" />
     </div>
   );
 }
@@ -293,12 +302,13 @@ function Btn({ children, onClick, disabled, secondary, className = "" }: {
   children: React.ReactNode; onClick: () => void; disabled?: boolean;
   secondary?: boolean; className?: string;
 }) {
-  const base = secondary
-    ? "rounded-lg bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20"
-    : "rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 text-sm font-semibold hover:opacity-90";
   return (
-    <button onClick={onClick} disabled={disabled}
-      className={`${base} transition disabled:opacity-40 ${className}`}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${secondary ? CTA_SECONDARY : CTA_PRIMARY} ${className}`}
+      style={secondary ? undefined : CTA_PRIMARY_HALO}
+    >
       {children}
     </button>
   );
