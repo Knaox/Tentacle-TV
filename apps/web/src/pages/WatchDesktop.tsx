@@ -128,7 +128,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
-        itemId={itemId!}
+        itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
         onFallbackToWeb={onFallbackToWeb}
       />
     </PlayerTransition>

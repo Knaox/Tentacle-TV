@@ -24,6 +24,7 @@ import { updateRoutes } from "./routes/update";
 import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
 import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
+import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
 import { adminRoutes } from "./routes/admin";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
@@ -189,6 +190,9 @@ async function main() {
   await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
+
+  // ── Jellyfin trickplay tiles (specific route — must register BEFORE the wildcard proxy) ──
+  await app.register(jellyfinTrickplayRoutes, { prefix: "/api/jellyfin" });
 
   // ── Jellyfin proxy (all Jellyfin API calls go through here) ──
   await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });

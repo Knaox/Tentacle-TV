@@ -1,7 +1,12 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { TrackSelector } from "./TrackSelector";
+import { TrickplayPreview } from "./TrickplayPreview";
+import { formatDuration } from "./playerControls/utils";
+import { useScrubListeners } from "./playerControls/useScrubListeners";
+import { useTrickplay } from "../hooks/useTrickplay";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon,
   GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, PipIcon,
@@ -14,6 +19,9 @@ export interface PlayerControlsProps {
   buffered: number;
   volume: number;
   fullscreen: boolean;
+  item?: MediaItem;
+  itemId?: string;
+  mediaSourceId?: string;
   title: string;
   subtitle?: string;
   audioTracks: { index: number; label: string }[];
@@ -38,6 +46,7 @@ export interface PlayerControlsProps {
 
 export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
+  item, mediaSourceId,
   title, subtitle, audioTracks, subtitleTracks,
   currentAudio, currentSubtitle, currentQuality,
   hasNextEpisode, hasPreviousEpisode,
@@ -48,12 +57,27 @@ export function PlayerControls({
   const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const [barWidth, setBarWidth] = useState(0);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverX, setHoverX] = useState(0);
   const isScrubbing = useRef(false);
   const scrubPct = useRef(0);
   const [scrubbing, setScrubbing] = useState(false);
   const thumbRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
+  const pendingHoverRef = useRef<{ time: number; x: number; width: number } | null>(null);
+
+  const trickplay = useTrickplay(item, mediaSourceId);
+  const currentFrame = useMemo(
+    () => (hoverTime !== null ? trickplay.getFrameAt(hoverTime * 1000) : null),
+    [hoverTime, trickplay],
+  );
+  useEffect(() => {
+    if (currentFrame) trickplay.preloadNeighbors(currentFrame.tileIndex);
+  }, [currentFrame, trickplay]);
+  useEffect(() => () => {
+    if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+  }, []);
 
   const playbackProgress = duration > 0 ? currentTime / duration : 0;
   // During scrub, use the scrub position so React doesn't override ref updates
@@ -92,65 +116,25 @@ export function PlayerControls({
     setHoverX(touch.clientX - (barRef.current?.getBoundingClientRect().left ?? 0));
   }, [getPctFromEvent, duration]);
 
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isScrubbing.current) return;
-      e.preventDefault();
-      const pct = getPctFromEvent(e.clientX);
-      scrubPct.current = pct;
-      setHoverTime(pct * duration);
-      const barLeft = barRef.current?.getBoundingClientRect().left ?? 0;
-      setHoverX(e.clientX - barLeft);
-    };
-    const onMouseUp = (e: MouseEvent) => {
-      if (!isScrubbing.current) return;
-      isScrubbing.current = false;
-      setScrubbing(false);
-      const pct = getPctFromEvent(e.clientX);
-      onSeek(pct * duration);
-      setHoverTime(null);
-      if (thumbRef.current) thumbRef.current.style.opacity = '';
-      if (barRef.current) barRef.current.style.height = '';
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isScrubbing.current) return;
-      const touch = e.touches[0];
-      if (!touch) return;
-      const pct = getPctFromEvent(touch.clientX);
-      scrubPct.current = pct;
-      setHoverTime(pct * duration);
-      const barLeft = barRef.current?.getBoundingClientRect().left ?? 0;
-      setHoverX(touch.clientX - barLeft);
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!isScrubbing.current) return;
-      isScrubbing.current = false;
-      setScrubbing(false);
-      const touch = e.changedTouches[0];
-      const pct = touch ? getPctFromEvent(touch.clientX) : scrubPct.current;
-      onSeek(pct * duration);
-      setHoverTime(null);
-      if (thumbRef.current) thumbRef.current.style.opacity = '';
-      if (barRef.current) barRef.current.style.height = '';
-    };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    document.addEventListener("touchmove", onTouchMove, { passive: false });
-    document.addEventListener("touchend", onTouchEnd);
-    return () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [getPctFromEvent, duration, onSeek]);
+  useScrubListeners({
+    isScrubbing, scrubPct, thumbRef, barRef, duration, getPctFromEvent,
+    setScrubbing, setHoverTime, setHoverX, onSeek,
+  });
 
   const handleBarHover = useCallback((e: React.MouseEvent) => {
     if (isScrubbing.current) return;
     const r = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-    setHoverTime(pct * duration);
-    setHoverX(e.clientX - r.left);
+    pendingHoverRef.current = { time: pct * duration, x: e.clientX - r.left, width: r.width };
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      const pending = pendingHoverRef.current;
+      if (!pending) return;
+      setHoverTime(pending.time);
+      setHoverX(pending.x);
+      setBarWidth(pending.width);
+    });
   }, [duration]);
 
   return (
@@ -193,17 +177,23 @@ export function PlayerControls({
         {/* Progress bar */}
         <div ref={barRef}
           className="group/bar relative mb-3 h-1.5 cursor-pointer rounded-full bg-white/20 transition-all hover:h-2.5"
-          onMouseDown={handleScrubStart} onTouchStart={handleTouchScrubStart} onMouseMove={handleBarHover} onMouseLeave={() => { if (!isScrubbing.current) setHoverTime(null); }}
+          onMouseDown={handleScrubStart} onTouchStart={handleTouchScrubStart} onMouseMove={handleBarHover}
+          onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}
+          onMouseLeave={() => { if (!isScrubbing.current) setHoverTime(null); }}
           role="slider" aria-label={t("player:seekbar", "Seek")} aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(currentTime)}>
           <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${buffered * 100}%` }} />
           <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${progress * 100}%` }}>
             <div ref={thumbRef} className="absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100" />
           </div>
-          {hoverTime !== null && (
-            <div className="absolute -top-8 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-xs text-white" style={{ left: hoverX }}>
-              {fmt(hoverTime)}
-            </div>
-          )}
+          <TrickplayPreview
+            visible={hoverTime !== null}
+            positionSeconds={hoverTime ?? 0}
+            frame={currentFrame}
+            info={trickplay.info}
+            anchorX={hoverX}
+            parentWidth={barWidth}
+            isTouch={scrubbing}
+          />
         </div>
 
         {/* Button row — tactile-friendly: padding p-2.5 ≈ 44px target sur mobile */}
@@ -234,7 +224,7 @@ export function PlayerControls({
                 role="slider" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(volume * 100)} />
             </div>
             {/* Compteur temps : caché sur très petit écran pour libérer de la place aux contrôles */}
-            <span className="hidden whitespace-nowrap text-xs text-white/60 xs:inline sm:text-sm">{fmt(currentTime)} / {fmt(duration)}</span>
+            <span className="hidden whitespace-nowrap text-xs text-white/60 xs:inline sm:text-sm">{formatDuration(currentTime)} / {formatDuration(duration)}</span>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {hasSettings && (
@@ -270,12 +260,3 @@ export function PlayerControls({
   );
 }
 
-function fmt(s: number) {
-  if (!isFinite(s) || s < 0) s = 0;
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = Math.floor(s % 60);
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-    : `${m}:${String(sec).padStart(2, "0")}`;
-}

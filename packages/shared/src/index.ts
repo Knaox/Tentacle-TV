@@ -1,5 +1,6 @@
 export * from "./types/media";
 export * from "./types/auth";
+export * from "./utils/trickplay";
 export * from "./types/websocket";
 export * from "./constants";
 export * from "./watchState";

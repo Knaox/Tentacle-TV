@@ -155,7 +155,8 @@ export function WatchWeb() {
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
           nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
           onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
-          itemId={itemId!} isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
+          itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
+          isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         />

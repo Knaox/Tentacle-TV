@@ -7,6 +7,7 @@ import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FadeImage } from "./FadeImage";
 import { useMultiSelect } from "../hooks/useMultiSelect";
+import { HorizontalScrollRow } from "./HorizontalScrollRow";
 
 export function EpisodeList({ seriesId }: { seriesId: string }) {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
       {seasonsLoading ? (
         <div className="flex gap-3">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="100px" height="36px" />)}</div>
       ) : (
-        <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide">
+        <HorizontalScrollRow className="gap-2" wrapperClassName="mb-4" ariaLabel={t("common:seasons", "Saisons")}>
           {seasons?.map((s) => (
             <button
               key={s.Id}
@@ -76,7 +77,7 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
               {s.Name}
             </button>
           ))}
-        </div>
+        </HorizontalScrollRow>
       )}
 
       {/* Season actions bar */}
