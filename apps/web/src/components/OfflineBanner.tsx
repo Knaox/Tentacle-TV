@@ -67,22 +67,29 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
         <p className="mt-2 max-w-md text-xs leading-relaxed text-white/35">
           {t("offlineHint")}
         </p>
+        {/* Boutons alignés sur le design system (Hero Play/More Info) :
+            rayon rounded-md, scale-[1.03] au hover, var(--brand) au lieu
+            de raw hex, mêmes paddings horizontaux pour une largeur cohérente. */}
         <button
           onClick={retry}
-          className="mt-8 rounded-xl bg-[#8b5cf6] px-8 py-3 text-sm font-semibold text-white transition-all hover:bg-[#7c3aed] hover:scale-105 active:scale-95"
+          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+          style={{
+            background: "var(--brand)",
+            boxShadow: "0 8px 30px rgba(139,92,246,0.35), inset 0 0 0 1px rgba(255,255,255,0.10)",
+          }}
         >
           {t("retryConnection")}
         </button>
         <button
           onClick={handleLogout}
-          className="mt-3 rounded-xl border border-red-500/30 bg-red-500/15 px-8 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/25 hover:scale-105 active:scale-95"
+          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-red-500/40 bg-red-500/12 px-7 py-3 text-sm font-semibold text-red-300 backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-red-500/20 active:scale-[0.98]"
         >
           {t("offlineLogout")}
         </button>
         {isTauriApp && (
           <button
             onClick={handleChangeServer}
-            className="mt-3 rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-sm font-semibold text-white/70 transition-all hover:bg-white/10 hover:scale-105 active:scale-95"
+            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-white/15 bg-white/5 px-7 py-3 text-sm font-semibold text-white/80 backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-white/10 active:scale-[0.98]"
           >
             {t("changeServer")}
           </button>
