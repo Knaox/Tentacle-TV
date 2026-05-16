@@ -32,6 +32,9 @@ interface Props {
   creditsSegment?: SegmentTimestamps | null;
   nextEpisode?: MediaItem | null;
   previousEpisode?: MediaItem | null;
+  /** Current item — passed to the seekbar so it can fetch trickplay tiles. */
+  item?: MediaItem;
+  mediaSourceId?: string;
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
@@ -48,6 +51,7 @@ export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey,
   introSegment, creditsSegment, nextEpisode, previousEpisode,
+  item, mediaSourceId,
   onPlayPause, onSeek, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode,
@@ -181,6 +185,8 @@ export function MobilePlayerOverlay({
                 duration={duration}
                 bufferedTime={bufferedTime}
                 onSeek={(s) => { onSeek(s); resetHideTimer(); }}
+                item={item}
+                mediaSourceId={mediaSourceId}
               />
             </View>
             <View style={{ flexDirection: "row", gap: 6, marginBottom: 34 }}>
