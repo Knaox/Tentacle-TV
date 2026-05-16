@@ -128,6 +128,18 @@ export function usePlaybackInfo() {
         streamOffset,
         isLoading: false,
       });
+
+      // Synthetic log so users can see at a glance, in DevTools, whether
+      // Direct Streaming is engaged and which decode path is used.
+      const transport = ds && url.startsWith(ds.mediaBaseUrl) ? "direct" : "proxy";
+      const mode = directPlay ? "DirectPlay" : directStream ? "DirectStream" : "Transcode";
+      console.log("[Tentacle:Playback]", {
+        mode,
+        transport,
+        directStreamingConfigured: !!ds,
+        isHls: url.includes(".m3u8"),
+        url: url.length > 80 ? `${url.slice(0, 80)}…` : url,
+      });
     } catch (err) {
       if (fetchId.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);

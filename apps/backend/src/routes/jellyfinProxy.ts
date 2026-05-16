@@ -1,86 +1,45 @@
 import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
+import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { getPrisma, hasPrisma } from "../services/db";
-import { broadcastToUser } from "../services/wsManager";
 import { getCached, setCached, getCacheTtl } from "../services/jellyfinCache";
+import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
+import { isAllowedProxyPath } from "./jellyfinProxy/patterns";
+import {
+  SKIP_RESPONSE_HEADERS,
+  SKIP_API_RESPONSE_HEADERS,
+  buildForwardHeaders,
+} from "./jellyfinProxy/headers";
+import { emitProxyEvents } from "./jellyfinProxy/events";
 
-/** Headers to skip when proxying (hop-by-hop). */
-const SKIP_REQUEST_HEADERS = new Set([
-  "host", "connection", "keep-alive", "transfer-encoding",
-  "te", "trailer", "upgrade", "proxy-authorization", "proxy-authenticate",
-  // Fastify parses then re-serializes JSON bodies — Content-Length may change.
-  // Let Node.js fetch recalculate it from the actual body.
-  "content-length",
-]);
+/** Resolve the API key to forward to Jellyfin:
+ *  - Anonymous / native token → no override, pass-through whatever client sent.
+ *  - Verified device JWT → use admin API key so Jellyfin accepts the request.
+ *  - Session-attribution endpoints → swap to the user's stored Jellyfin token
+ *    so playback progress is recorded against the correct account. */
+async function resolveApiKeyOverride(
+  incomingToken: string | undefined,
+  wildcardPath: string,
+): Promise<string | undefined> {
+  if (!incomingToken) return undefined;
+  const payload = await verifyDeviceToken(incomingToken);
+  if (!payload) return undefined;
 
-const SKIP_RESPONSE_HEADERS = new Set([
-  "transfer-encoding", "connection", "keep-alive",
-]);
-
-/** Extra headers to strip for non-media (API/JSON) responses.
- *  Node fetch auto-decompresses gzipped JSON — content-length/encoding change.
- *  Media streams pass through raw bytes, so these headers stay accurate. */
-const SKIP_API_RESPONSE_HEADERS = new Set([
-  "content-encoding", "content-length",
-]);
-
-/** Whitelist of allowed Jellyfin proxy path patterns. */
-const ALLOWED_PROXY_PATTERNS: RegExp[] = [
-  // Streaming — Videos/{id}/... or Videos/{id}/{mediaSourceId}/...
-  /^Videos\/[^/]+\/(stream|stream\.mp4|PlaybackInfo)/,
-  /^Videos\/[^/]+\/[^/]+\/(master\.m3u8|main\.m3u8|Subtitles)/,
-  /^Videos\/[^/]+\/(master\.m3u8|main\.m3u8|Subtitles)/,
-  /^Audio\/[^/]+\//,
-  /^(Videos\/[^/]+\/)?hls1\//,
-  /^Videos\/ActiveEncodings$/,
-
-  // Items & metadata
-  /^Items(\/[^/]+)?(\/Images|\/Similar|\/Ancestors|\/PlaybackInfo)?$/,
-  /^Items\/[^/]+\/Images\//,
-
-  // User data
-  /^Users\/[^/]+\/Items/,
-  /^Users\/[^/]+\/FavoriteItems\/[^/]+$/,
-  /^Users\/[^/]+\/PlayedItems\/[^/]+$/,
-  /^Users\/[^/]+\/Views$/,
-  /^Users\/Me$/,
-  /^Users\/AuthenticateByName$/,
-
-  // Shows
-  /^Shows\/NextUp$/,
-  /^Shows\/[^/]+\/(Seasons|Episodes|NextUp)$/,
-
-  // Playback reporting
-  /^Sessions\/Playing(\/Progress|\/Stopped)?$/,
-  /^Sessions\/Logout$/,
-
-  // Media analysis
-  /^MediaSegments\/[^/]+$/,
-  /^Episode\/[^/]+\/(IntroSkipperSegments|Timestamps)$/,
-
-  // System
-  /^System\/Info\/Public$/,
-  /^Branding\/Configuration$/,
-
-  // Search
-  /^Search\/Hints$/,
-
-  // Display preferences
-  /^DisplayPreferences\//,
-
-  // Filters
-  /^(Genres|Studios|Persons|Artists)(\/|$)/,
-];
-
-/** Pre-computed case-insensitive versions of ALLOWED_PROXY_PATTERNS. */
-const ALLOWED_PROXY_PATTERNS_CI = ALLOWED_PROXY_PATTERNS.map(
-  (p) => new RegExp(p.source, "i")
-);
-
-function isAllowedProxyPath(path: string): boolean {
-  return ALLOWED_PROXY_PATTERNS_CI.some((pattern) => pattern.test(path));
+  let apiKey = getJellyfinApiKey();
+  const isSessionRoute = /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath);
+  if (apiKey && isSessionRoute && hasPrisma()) {
+    try {
+      const prisma = getPrisma();
+      const device = await prisma.pairedDevice.findUnique({
+        where: { tokenHash: hashToken(incomingToken) },
+        select: { jellyfinAccessToken: true },
+      });
+      if (device?.jellyfinAccessToken) apiKey = device.jellyfinAccessToken;
+    } catch { /* keep admin API key as fallback */ }
+  }
+  return apiKey;
 }
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
@@ -90,10 +49,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(503).send({ message: "Jellyfin not configured" });
     }
 
-    // Build target URL: strip the prefix that Fastify already consumed
     const wildcardPath = (request.params as Record<string, string>)["*"] || "";
 
-    // Whitelist check: only allow known Jellyfin API paths
     if (!isAllowedProxyPath(wildcardPath)) {
       console.log("[PROXY BLOCKED]", wildcardPath);
       return reply.status(403).send({ error: "Forbidden proxy path" });
@@ -128,34 +85,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header
-    const cookieToken = (request as any).cookies?.tentacle_token;
+    const cookieToken = (request as { cookies?: { tentacle_token?: string } }).cookies?.tentacle_token;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken;
-    let apiKeyOverride: string | undefined;
-    if (incomingToken) {
-      const payload = await verifyDeviceToken(incomingToken);
-      if (payload) {
-        apiKeyOverride = getJellyfinApiKey();
+    const apiKeyOverride = await resolveApiKeyOverride(incomingToken, wildcardPath);
 
-        // For session endpoints, use the user's actual Jellyfin token instead of
-        // admin API key so Jellyfin can attribute the session to the correct user.
-        // Admin API key authenticates the request but loses user context → progress not saved.
-        if (apiKeyOverride && /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath) && hasPrisma()) {
-          try {
-            const prisma = getPrisma();
-            const device = await prisma.pairedDevice.findUnique({
-              where: { tokenHash: hashToken(incomingToken) },
-              select: { jellyfinAccessToken: true },
-            });
-            if (device?.jellyfinAccessToken) {
-              apiKeyOverride = device.jellyfinAccessToken;
-            }
-          } catch { /* keep admin API key as fallback */ }
-        }
-      }
-    }
-
-    // Cache lookup pour les routes lourdes en lecture (Latest/Resume/NextUp/Views).
-    // Ne s'applique qu'aux GET — les mutations passent toujours en direct.
+    // Cache lookup for heavy read routes (Latest/Resume/NextUp/Views).
+    // Only applies to GET — mutations always go direct.
     const queryString = qs;
     const cacheTtl = (request.method === "GET" || request.method === "HEAD")
       ? getCacheTtl(wildcardPath) : null;
@@ -169,25 +104,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    // Forward request headers
-    const headers: Record<string, string> = {};
-    for (const [key, value] of Object.entries(request.headers)) {
-      if (!SKIP_REQUEST_HEADERS.has(key.toLowerCase()) && typeof value === "string") {
-        const lower = key.toLowerCase();
-        if (apiKeyOverride) {
-          // Replace device JWT with admin API key so Jellyfin accepts the request
-          if (lower === "x-emby-token") {
-            headers[key] = apiKeyOverride;
-            continue;
-          }
-          if (lower === "x-emby-authorization") {
-            headers[key] = value.replace(/Token="[^"]*"/, `Token="${apiKeyOverride}"`);
-            continue;
-          }
-        }
-        headers[key] = value;
-      }
-    }
+    const headers = buildForwardHeaders(request.headers as Record<string, string | string[] | undefined>, apiKeyOverride);
 
     // Cookie-based auth: inject token as X-Emby-Token if not already present from headers.
     // Use apiKeyOverride (admin API key) when the cookie was a verified device JWT,
@@ -201,11 +118,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const isProgressiveStream = /Videos\/.*\/stream/.test(wildcardPath);
     const timeout = isProgressiveStream ? 4 * 60 * 60 * 1000 : 120_000;
 
-    // Build fetch options
-    const fetchInit: RequestInit = {
+    const fetchInit: UndiciRequestInit = {
       method: request.method,
       headers,
       signal: AbortSignal.timeout(timeout),
+      // Reuse the keep-alive pool to avoid a TCP+TLS handshake on every
+      // HLS segment / API call (~30-50 ms saved per request).
+      dispatcher: getJellyfinDispatcher(),
     };
 
     // Forward body for POST/PUT/PATCH/DELETE
@@ -213,7 +132,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       const rawBody = request.body;
       if (rawBody !== undefined && rawBody !== null) {
         if (typeof rawBody === "string" || Buffer.isBuffer(rawBody)) {
-          fetchInit.body = rawBody as any;
+          fetchInit.body = rawBody as string | Buffer;
         } else {
           fetchInit.body = JSON.stringify(rawBody);
         }
@@ -221,9 +140,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const response = await fetch(targetUrl, fetchInit);
-
-      // Set status
+      const response = await undiciFetch(targetUrl, fetchInit);
       reply.status(response.status);
 
       // Media streams: forward content-length/encoding so the browser can
@@ -236,11 +153,14 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         reply.header(key, value);
       }
 
-      // Log Jellyfin error responses for debugging
+      // Log Jellyfin error responses for debugging — without buffering the
+      // whole body, which would force the entire (potentially multi-MB) error
+      // payload into RAM and add 200-500 ms of latency on every 4xx/5xx.
       if (response.status >= 400) {
-        const body = await response.text();
-        request.log.warn({ status: response.status, path: wildcardPath, method: request.method, body: body.substring(0, 500) }, "Jellyfin error");
-        return reply.send(body);
+        request.log.warn(
+          { status: response.status, path: wildcardPath, method: request.method },
+          "Jellyfin error",
+        );
       }
 
       // Emit WS events on successful mutations
@@ -249,15 +169,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // 204 No Content: must not include a body per HTTP spec.
-      // Avoid piping an empty stream which can confuse some clients.
       if (response.status === 204 || !response.body) {
         return reply.send();
       }
 
-      // Pour les routes cachables (Latest/Resume/NextUp/Views) on lit le body
-      // en mémoire afin de pouvoir le ré-utiliser. Pour les médias et autres
-      // routes, on stream comme avant pour ne pas charger des Go en RAM.
-      if (cacheTtl !== null && !isMediaResponse) {
+      // Cacheable routes (Latest/Resume/NextUp/Views): buffer once in RAM so
+      // future hits can reply from cache. Media/error routes: stream as-is.
+      if (cacheTtl !== null && !isMediaResponse && response.status < 400) {
         const arrayBuf = await response.arrayBuffer();
         const buf = Buffer.from(arrayBuf);
         const contentType = response.headers.get("content-type") ?? "application/json";
@@ -266,8 +184,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         return reply.send(buf);
       }
 
-      // Convert Web ReadableStream to Node.js Readable for Fastify
-      const nodeStream = Readable.fromWeb(response.body as any);
+      const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
       return reply.send(nodeStream);
     } catch (err) {
       if (err instanceof DOMException && err.name === "TimeoutError") {
@@ -279,44 +196,3 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 };
-
-/** Extract userId from proxy paths like Users/{userId}/FavoriteItems/... */
-function extractUserIdFromPath(path: string): string | null {
-  const match = path.match(/^Users\/([^/]+)\//);
-  return match ? match[1] : null;
-}
-
-/** Emit WS events based on successful Jellyfin proxy mutations. */
-function emitProxyEvents(wildcardPath: string, request: unknown): void {
-  // FavoriteItems → watchlist changed
-  if (/FavoriteItems/.test(wildcardPath)) {
-    const userId = extractUserIdFromPath(wildcardPath);
-    if (userId) broadcastToUser(userId, "watchlist");
-  }
-
-  // PlayedItems → watched status changed
-  if (/PlayedItems/.test(wildcardPath)) {
-    const userId = extractUserIdFromPath(wildcardPath);
-    if (userId) {
-      broadcastToUser(userId, "watched");
-      broadcastToUser(userId, "continue_watching");
-    }
-  }
-
-  // Playback stopped → continue watching + next up changed
-  if (/Sessions\/Playing\/Stopped/.test(wildcardPath)) {
-    const user = (request as { user?: { userId: string } }).user;
-    if (user) {
-      broadcastToUser(user.userId, "continue_watching");
-      broadcastToUser(user.userId, "next_up");
-    }
-  }
-
-  // Playback progress → continue watching (debounced by wsManager)
-  if (/Sessions\/Playing\/Progress/.test(wildcardPath)) {
-    const user = (request as { user?: { userId: string } }).user;
-    if (user) {
-      broadcastToUser(user.userId, "continue_watching");
-    }
-  }
-}

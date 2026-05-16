@@ -78,6 +78,13 @@ function DirectStreamingSync() {
   const { data } = useStreamingConfig(token);
 
   useEffect(() => {
+    // Direct Streaming is applied on every client (web/native) when the admin
+    // enabled it. On web, CORS may block the direct call — the transparent
+    // fallback lives in 3 places:
+    //   - packages/api-client/src/jellyfin.ts (getPlaybackInfo direct → proxy)
+    //   - apps/web/src/components/VideoPlayer.tsx (HLS manifestLoadError → DS off + refetch)
+    //   - apps/web/src/hooks/useDirectStreamingGuard.ts (auto-disable after N <img>/<video> errors)
+    // The admin config is never touched; only the in-memory session flag is cleared.
     if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
       client.setDirectStreaming({
         enabled: true,
