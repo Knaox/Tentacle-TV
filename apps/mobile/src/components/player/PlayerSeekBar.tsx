@@ -16,6 +16,9 @@ interface Props {
   bufferedTime?: number;
   onSeek: (seconds: number) => void;
   onSeeking?: (seconds: number) => void;
+  /** Fired when the user starts/stops scrubbing — lets the parent overlay
+      suspend its auto-hide timer while the finger is down. */
+  onScrubStateChange?: (active: boolean) => void;
   /** When provided, enables trickplay preview above the bar while scrubbing. */
   item?: MediaItem;
   mediaSourceId?: string;
@@ -31,7 +34,7 @@ function formatTime(s: number): string {
 }
 
 export function PlayerSeekBar({
-  currentTime, duration, bufferedTime, onSeek, onSeeking,
+  currentTime, duration, bufferedTime, onSeek, onSeeking, onScrubStateChange,
   item, mediaSourceId,
 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
@@ -51,6 +54,7 @@ export function PlayerSeekBar({
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (e) => {
       setIsDragging(true);
+      onScrubStateChange?.(true);
       const x = Math.max(0, Math.min(barWidth.current, e.nativeEvent.locationX));
       const pct = barWidth.current > 0 ? x / barWidth.current : 0;
       dragProgressRef.current = pct;
@@ -68,12 +72,14 @@ export function PlayerSeekBar({
     },
     onPanResponderRelease: () => {
       setIsDragging(false);
+      onScrubStateChange?.(false);
       onSeek(pctToTime(dragProgressRef.current));
     },
     onPanResponderTerminate: () => {
       setIsDragging(false);
+      onScrubStateChange?.(false);
     },
-  }), [onSeek, onSeeking, pctToTime]);
+  }), [onSeek, onSeeking, onScrubStateChange, pctToTime]);
 
   const progress = isDragging ? dragProgress : (duration > 0 ? currentTime / duration : 0);
   const buffered = duration > 0 && bufferedTime ? Math.min(1, bufferedTime / duration) : 0;

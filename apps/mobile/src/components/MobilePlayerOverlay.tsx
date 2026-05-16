@@ -185,6 +185,13 @@ export function MobilePlayerOverlay({
                 duration={duration}
                 bufferedTime={bufferedTime}
                 onSeek={(s) => { onSeek(s); resetHideTimer(); }}
+                onScrubStateChange={(active) => {
+                  if (active) {
+                    if (hideTimer.current) clearTimeout(hideTimer.current);
+                  } else {
+                    resetHideTimer();
+                  }
+                }}
                 item={item}
                 mediaSourceId={mediaSourceId}
               />
