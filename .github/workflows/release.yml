@@ -1,8 +1,8 @@
 # Tentacle TV — Automated Release Build
 #
 # Triggers on push of a tag matching v* (e.g. v1.0.0, v0.9.2-beta.1)
-# Builds the Tauri desktop app for Windows and macOS, then creates a draft
-# GitHub Release with all installers attached.
+# Builds the Tauri desktop app for macOS only — Windows is distributed
+# exclusively via the Microsoft Store (see release-store.yml).
 #
 # Secrets requis (GitHub → Settings → Secrets → Actions) :
 #
@@ -42,9 +42,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            label: Windows
           - os: macos-latest
             target: aarch64-apple-darwin
             label: macOS
@@ -160,12 +157,12 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Tentacle-TV ${{ github.ref_name }}"
           releaseBody: |
-            Voir le [changelog](https://github.com/Knaox/Tentacle-TV/blob/main/CHANGELOG.md) pour les détails.
+            See the [changelog](https://github.com/Knaox/Tentacle-TV/blob/main/CHANGELOG.md) for details.
 
             ## Installation
-            - **macOS** : télécharger le fichier `.dmg` (signé et notarisé)
-            - **Windows (installeur)** : télécharger le fichier `-setup.exe`
-            - **Windows (MSI)** : télécharger le fichier `.msi`
+            - **macOS** — download the `.dmg` (signed & notarized) or get it on [tentacletv.app](https://tentacletv.app/)
+            - **Windows** — install from the [Microsoft Store](https://apps.microsoft.com/detail/9NKHL0T84245)
+            - **iOS** — install from the [App Store](https://apps.apple.com/app/id6760205634)
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
