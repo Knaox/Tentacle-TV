@@ -1,0 +1,35 @@
+# Default: treat everything as text and normalize to LF in the repo.
+# Without this, files edited from Windows enter the repo with CRLF and every
+# subsequent macOS/Linux checkout shows them as fully "modified" in git status.
+* text=auto eol=lf
+
+# Force LF endings on scripts that must run on macOS/Linux,
+# regardless of the OS used by collaborators (Windows checkouts won't get CRLF).
+# Sans ça, un script committé depuis Windows casse au lancement Mac/Linux
+# (erreur "/bin/bash^M: bad interpreter").
+*.sh        text eol=lf
+*.bash      text eol=lf
+Dockerfile  text eol=lf
+
+# Windows-only scripts: force CRLF for consistency.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Binaries — never touch.
+*.dylib     binary
+*.dll       binary
+*.so        binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.icns      binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.pdf       binary
+*.zip       binary
+*.tar.gz    binary
