@@ -352,6 +352,8 @@ export function PlayerScreen({ itemId }: Props) {
         creditsSegment={pb.skipSegments.credits}
         nextEpisode={pb.episodeNav.nextEpisode}
         previousEpisode={pb.episodeNav.previousEpisode}
+        item={pb.item}
+        mediaSourceId={pb.mediaSourceId}
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
         onBack={invalidateAndGoBack}
