@@ -116,7 +116,7 @@ function DolbyChip({ label }: { label: "VISION" | "ATMOS" | "DIGITAL" }) {
       className="inline-flex items-center gap-1 rounded-[4px] px-1.5 py-[2px] text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md"
       style={{
         background: "linear-gradient(180deg, rgba(20,20,30,0.85) 0%, rgba(6,6,12,0.92) 100%)",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.16)",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.55), inset 0 0 0 1px var(--border-strong)",
         textShadow: "0 1px 2px rgba(0,0,0,0.45)",
         fontFamily: "ui-sans-serif, system-ui, sans-serif",
       }}
@@ -161,7 +161,7 @@ function PremiumChip({
       style={{
         background: "linear-gradient(180deg, rgba(20,20,30,0.78) 0%, rgba(8,8,15,0.86) 100%)",
         color: "rgba(255,255,255,0.92)",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.16)",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.55), inset 0 0 0 1px var(--border-strong)",
         textShadow: "0 1px 2px rgba(0,0,0,0.45)",
       }}
     >
@@ -190,7 +190,7 @@ function FourKBadge({ label, title }: { label: string; title?: string }) {
         background:
           "linear-gradient(180deg, rgba(45,28,75,0.85) 0%, rgba(20,12,40,0.92) 100%)",
         boxShadow:
-          "0 2px 10px rgba(139,92,246,0.45), inset 0 0 0 1px rgba(167,139,250,0.55)",
+          "0 2px 10px rgba(var(--brand-rgb), 0.45), inset 0 0 0 1px rgba(167,139,250,0.55)",
         textShadow: "0 1px 2px rgba(0,0,0,0.55)",
       }}
     >

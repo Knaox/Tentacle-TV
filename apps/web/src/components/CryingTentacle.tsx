@@ -18,21 +18,21 @@ export function CryingTentacle({ size = 120 }: CryingTentacleProps) {
     >
       <defs>
         <linearGradient id="ct-bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="0%" stopColor="var(--brand)" />
           <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="#EC4899" />
+          <stop offset="100%" stopColor="var(--brand-accent)" />
         </linearGradient>
         <linearGradient id="ct-tg1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7C3AED" />
+          <stop offset="0%" stopColor="var(--brand-dark)" />
           <stop offset="100%" stopColor="#DB2777" />
         </linearGradient>
         <linearGradient id="ct-tg2" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#9333EA" />
-          <stop offset="100%" stopColor="#F472B6" />
+          <stop offset="100%" stopColor="var(--brand-accent-light)" />
         </linearGradient>
         <linearGradient id="ct-cheek" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#F9A8D4" />
-          <stop offset="100%" stopColor="#F472B6" />
+          <stop offset="100%" stopColor="var(--brand-accent-light)" />
         </linearGradient>
         <linearGradient id="ct-shine" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="white" stopOpacity={0.35} />
@@ -43,9 +43,9 @@ export function CryingTentacle({ size = 120 }: CryingTentacleProps) {
           <stop offset="100%" stopColor="#1A1A1A" />
         </linearGradient>
         <linearGradient id="ct-band" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="0%" stopColor="var(--brand)" />
           <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="#EC4899" />
+          <stop offset="100%" stopColor="var(--brand-accent)" />
         </linearGradient>
         <linearGradient id="ct-skull" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#FFFFFF" />
@@ -53,7 +53,7 @@ export function CryingTentacle({ size = 120 }: CryingTentacleProps) {
         </linearGradient>
         <linearGradient id="ct-tearGrad" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#93C5FD" />
-          <stop offset="100%" stopColor="#3B82F6" />
+          <stop offset="100%" stopColor="var(--status-info)" />
         </linearGradient>
       </defs>
 

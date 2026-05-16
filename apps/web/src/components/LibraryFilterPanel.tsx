@@ -91,14 +91,14 @@ export function LibraryFilterPanel({
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-white">{t("filters")}</h3>
             {activeFilterCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8b5cf6] text-[10px] font-bold text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">
                 {activeFilterCount}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
             {activeFilterCount > 0 && (
-              <button onClick={onReset} className="text-xs text-[#8b5cf6] hover:text-purple-300">
+              <button onClick={onReset} className="text-xs text-[var(--brand)] hover:text-[var(--brand-light)]">
                 {t("resetFilters")}
               </button>
             )}
@@ -114,7 +114,7 @@ export function LibraryFilterPanel({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5" style={{ scrollbarWidth: "thin", scrollbarColor: "#8b5cf6 transparent" }}>
+        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5" style={{ scrollbarWidth: "thin", scrollbarColor: "var(--brand) transparent" }}>
           {/* Sort */}
           <div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
@@ -127,7 +127,7 @@ export function LibraryFilterPanel({
                   onClick={() => onSortByChange(opt.value)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                     filters.sortBy === opt.value
-                      ? "bg-[#8b5cf6] text-white"
+                      ? "bg-[var(--brand)] text-white"
                       : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
                   }`}
                 >
@@ -165,7 +165,7 @@ export function LibraryFilterPanel({
                       onClick={() => onToggleGenre(g.Id)}
                       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                         active
-                          ? "bg-[#8b5cf6]/20 text-[#8b5cf6] ring-1 ring-[#8b5cf6]/50"
+                          ? "bg-[var(--brand)]/20 text-[var(--brand)] ring-1 ring-[var(--brand)]/50"
                           : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
                       }`}
                     >
@@ -191,7 +191,7 @@ export function LibraryFilterPanel({
                     onClick={() => onTogglePlatform(p.id)}
                     className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                       active
-                        ? "border border-[#8b5cf6]/50 bg-[#8b5cf6]/10 text-[#8b5cf6]"
+                        ? "border border-[var(--brand)]/50 bg-[var(--brand)]/10 text-[var(--brand)]"
                         : "border border-white/5 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
                     }`}
                   >
@@ -220,7 +220,7 @@ export function LibraryFilterPanel({
                 placeholder={t("yearFrom")}
                 value={filters.yearFrom ?? ""}
                 onChange={(e) => onYearFromChange(parseYear(e.target.value))}
-                className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-purple-500/40"
+                className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-[rgba(var(--brand-rgb),0.4)]"
               />
               <span className="text-xs text-white/30">&mdash;</span>
               <input
@@ -230,7 +230,7 @@ export function LibraryFilterPanel({
                 placeholder={t("yearTo")}
                 value={filters.yearTo ?? ""}
                 onChange={(e) => onYearToChange(parseYear(e.target.value))}
-                className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-purple-500/40"
+                className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-[rgba(var(--brand-rgb),0.4)]"
               />
             </div>
           </div>
@@ -255,7 +255,7 @@ export function LibraryFilterPanel({
                 const v = parseFloat(e.target.value);
                 onRatingMinChange(v > 0 ? v : null);
               }}
-              className="w-full accent-[#8b5cf6]"
+              className="w-full accent-[var(--brand)]"
             />
             <div className="mt-1 flex justify-between text-[10px] text-white/20">
               <span>0</span>

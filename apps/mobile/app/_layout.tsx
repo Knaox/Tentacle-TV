@@ -162,11 +162,21 @@ export default function RootLayout() {
         <ServerUrlContext.Provider value={{ serverUrl, setServerUrl: handleSetServerUrl }}>
           <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl}>
             <StatusBar style="light" />
-            <Stack screenOptions={{ headerShown: false, gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                gestureEnabled: true,
+                contentStyle: { backgroundColor: colors.background },
+                // App-wide default: portrait only. Declarative per-screen via
+                // react-native-screens — `watch/[itemId]` overrides with "all"
+                // so phones rotate freely only inside the video player.
+                orientation: "portrait_up",
+              }}
+            >
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
-              <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal" }} />
+              <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
               <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
               <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
               <Stack.Screen name="watchlist" options={{ presentation: "card" }} />

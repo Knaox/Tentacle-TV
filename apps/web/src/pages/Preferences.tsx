@@ -225,7 +225,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
           {pref && !editing && (
             <div className="flex items-center gap-2 text-xs text-white/50">
               {pref.audioLang && (
-                <span className="rounded bg-purple-500/20 px-2 py-0.5 text-purple-300">
+                <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-[var(--brand-light)]">
                   {t("preferences:audio")}: {languages.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
                 </span>
               )}
@@ -280,7 +280,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
 
           <div className="flex gap-2 sm:col-span-3">
             <button onClick={handleSave}
-              className="rounded-lg h-11 px-5 bg-white text-black text-xs font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
+              className="rounded-lg h-11 px-5 bg-white text-black text-xs font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
               {t("common:save")}
             </button>
             {pref && (

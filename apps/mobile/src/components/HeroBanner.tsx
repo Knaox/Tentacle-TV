@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -13,8 +14,12 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "
 import { GradientOverlay } from "@/components/ui";
 import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, STATUS } from "@/theme";
 
-const ROTATE_MS = 9000;
-const FADE_MS = 900;
+// Synced with web/HeroBackdrop : the new slide arrives exactly when the
+// scale 1 → 1.06 zoom cycle ends, so the carousel feels like an uninterrupted
+// camera travel rather than a snapping slideshow.
+const ROTATE_MS = 8000;
+const FADE_MS = 1200;
+const ZOOM_TARGET = 1.06;
 
 interface HeroBannerProps {
   items: MediaItem[];
@@ -30,17 +35,18 @@ function formatRuntime(ticks: number): string {
   return m > 0 ? `${h}h${m}` : `${h}h`;
 }
 
-/**
- * Hero Billboard cinematic — swipe horizontal pageEnabled + crossfade backdrop
- * + auto-rotate 9s. Logo image si dispo, halo violet sur CTA Lecture.
- */
+/** Hero Billboard cinematic — swipe pageEnabled + Ken Burns backdrop synced with auto-rotate (see ROTATE_MS). */
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
   const { width: SCREEN_W, height: screenH } = useWindowDimensions();
-  const BANNER_H = Math.min(720, Math.round(screenH * 0.82));
+  // 0.74 instead of 0.82 — leaves room below the hero for "Reprendre la lecture"
+  // section header to be fully visible above the floating tab bar on iPhone 17.
+  const BANNER_H = Math.min(660, Math.round(screenH * 0.74));
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<MediaItem>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [index, setIndex] = useState(0);
+  const indexRef = useRef(index);
+  useEffect(() => { indexRef.current = index; }, [index]);
   const userScrollingRef = useRef(false);
 
   const startTimer = useCallback(() => {
@@ -56,7 +62,13 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
     }, ROTATE_MS);
   }, [items.length, SCREEN_W]);
 
-  useEffect(() => { startTimer(); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, [startTimer]);
+  // Resync scroll on focus via indexRef — reading `index` directly would re-run
+  // this effect on every auto-advance, killing the FlatList's animated scroll.
+  useFocusEffect(useCallback(() => {
+    const raf = requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: indexRef.current * SCREEN_W, animated: false }));
+    startTimer();
+    return () => { cancelAnimationFrame(raf); if (timerRef.current) clearInterval(timerRef.current); };
+  }, [startTimer, SCREEN_W]));
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
@@ -69,14 +81,9 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
 
   return (
     <View style={{ width: SCREEN_W, height: BANNER_H, overflow: "hidden", backgroundColor: SURFACE.s0 }}>
-      {/* Backdrop crossfade entre tous les slides (en arrière-plan, derrière la list scrollable) */}
       <BackdropStack items={items} activeIndex={index} />
-
-      {/* Triple gradient cinema overlay */}
       <GradientOverlay direction="top" height={120 + insets.top} color="#000000" intensity="soft" />
       <GradientOverlay direction="bottom" height={BANNER_H * 0.62} color="#000000" intensity="strong" />
-
-      {/* FlatList horizontal pageEnabled pour le swipe — content uniquement, backdrop derrière */}
       <FlatList
         ref={listRef}
         data={items}
@@ -98,7 +105,6 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         )}
       />
 
-      {/* Dots indicateurs */}
       {items.length > 1 && (
         <View style={[st.dots, { bottom: BANNER_H * 0.04 }]} pointerEvents="none">
           {items.map((_, i) => (
@@ -134,11 +140,17 @@ function BackdropStack({ items, activeIndex }: { items: MediaItem[]; activeIndex
 }
 
 function CrossfadeImage({ url, active }: { url: string; active: boolean }) {
+  // Linear scale 1 → 1.06 over ROTATE_MS — perceived as constant-speed travel.
+  // No reset when becoming inactive: the image fades to opacity 0 first, then
+  // the next activation snaps scale back to 1 *while invisible*, avoiding the
+  // visible "scale pop" that would happen otherwise.
   const opacity = useSharedValue(active ? 1 : 0);
+  const scale = useSharedValue(active ? ZOOM_TARGET : 1);
   useEffect(() => {
     opacity.value = withTiming(active ? 1 : 0, { duration: FADE_MS, easing: Easing.out(Easing.cubic) });
-  }, [active, opacity]);
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+    if (active) { scale.value = 1; scale.value = withTiming(ZOOM_TARGET, { duration: ROTATE_MS, easing: Easing.linear }); }
+  }, [active, opacity, scale]);
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
   return (
     <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
       <Image source={{ uri: url }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={0} />
@@ -194,7 +206,7 @@ function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
       {logoUrl ? (
         <Image source={{ uri: logoUrl }} style={st.logo} contentFit="contain" />
       ) : (
-        <Text style={st.title} numberOfLines={2} maxFontSizeMultiplier={1.2}>{displayName}</Text>
+        <Text style={st.title} numberOfLines={3} maxFontSizeMultiplier={1.15}>{displayName}</Text>
       )}
 
       <View style={st.meta}>
@@ -255,7 +267,7 @@ const st = StyleSheet.create({
   continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: "#000", letterSpacing: 1.6, textTransform: "uppercase" as const },
   epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)", letterSpacing: 0.2 },
   logo: { width: 280, maxWidth: "85%", height: 92, marginBottom: 14 },
-  title: { fontSize: 38, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, marginBottom: 14, letterSpacing: -0.8, lineHeight: 42, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
+  title: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, marginBottom: 14, letterSpacing: -0.6, lineHeight: 36, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
   meta: { flexDirection: "row" as const, alignItems: "center" as const, gap: 9, marginBottom: 10, flexWrap: "wrap" as const },
   metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: "rgba(255,255,255,0.88)" },
   metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)" },

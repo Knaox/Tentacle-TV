@@ -45,7 +45,7 @@ export function MediaCard({
       {progress !== undefined && progress > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
           <div
-            className="h-full bg-purple-500"
+            className="h-full bg-[var(--brand)]"
             style={{ width: `${Math.min(progress, 100)}%` }}
           />
         </div>

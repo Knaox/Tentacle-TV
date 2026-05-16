@@ -73,7 +73,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
         style={{
           transform: hovered ? "scale(1.03) translateY(-2px)" : "scale(1)",
           boxShadow: hovered
-            ? "0 12px 28px rgba(0,0,0,0.7), 0 0 0 2px rgba(139,92,246,0.7), 0 0 28px rgba(139,92,246,0.25)"
+            ? "0 12px 28px var(--surface-overlay), 0 0 0 2px rgba(var(--brand-rgb), 0.7), 0 0 28px rgba(var(--brand-rgb), 0.25)"
             : "0 2px 8px rgba(0,0,0,0.45)",
         }}
       >

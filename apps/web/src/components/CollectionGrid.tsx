@@ -75,7 +75,7 @@ export function CollectionGrid({
             onClick={() => setFilter(tab.key)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
               filter === tab.key
-                ? "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
+                ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
                 : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
             }`}
           >
@@ -156,7 +156,7 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
       onTouchEnd={isSelecting ? undefined : clearLongPress}
       onTouchMove={isSelecting ? undefined : clearLongPress}
       className={`group relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
-        isSelected ? "ring-2 ring-purple-500" : ""
+        isSelected ? "ring-2 ring-[var(--brand)]" : ""
       }`}
       style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${index * 40}ms` }}
     >
@@ -205,7 +205,7 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
             }}
           >
             {localWatchlist ? (
-              <svg className="h-3.5 w-3.5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
+              <svg className="h-3.5 w-3.5 text-[var(--brand)]" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
             ) : (
               <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
             )}

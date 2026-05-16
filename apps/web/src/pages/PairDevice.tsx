@@ -126,9 +126,9 @@ export function PairDevice() {
                       status === "error"
                         ? "bg-red-500/10 ring-2 ring-red-500 text-white"
                         : char
-                        ? "bg-purple-500/10 ring-2 ring-purple-500 text-white"
+                        ? "bg-[rgba(var(--brand-rgb),0.1)] ring-2 ring-[var(--brand)] text-white"
                         : "bg-white/[0.03] ring-1 ring-white/10 text-white"
-                    } focus:ring-2 focus:ring-purple-400 disabled:opacity-50`}
+                    } focus:ring-2 focus:ring-[var(--brand)] disabled:opacity-50`}
                   />
                 ))}
               </div>
@@ -146,7 +146,7 @@ export function PairDevice() {
                   <button
                     onClick={handleReset}
                     className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90"
-                    style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}
+                    style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
                   >
                     {t("common:retry")}
                   </button>
@@ -155,7 +155,7 @@ export function PairDevice() {
                     onClick={handleSubmit}
                     disabled={!canSubmit}
                     className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
-                    style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}
+                    style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
                   >
                     {status === "pairing" ? (
                       <span className="flex items-center gap-2">

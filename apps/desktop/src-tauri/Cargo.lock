@@ -3922,7 +3922,7 @@ dependencies = [
 
 [[package]]
 name = "tentacle-desktop"
-version = "1.6.6"
+version = "1.7.0"
 dependencies = [
  "libloading 0.8.9",
  "objc2",

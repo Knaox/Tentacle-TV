@@ -1,101 +1,37 @@
-import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { View, Text, Pressable, TouchableOpacity, ActivityIndicator, AppState, Dimensions, type ViewStyle } from "react-native";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  useJellyfinClient, useUserId, useMediaItem, useItemAncestors, usePlaybackReporting,
-  useResolveMediaTracks, useIntroSkipper, useEpisodeNavigation,
-} from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
+import { useState, useRef, useCallback, useEffect, useMemo, type ElementRef } from "react";
+import { View, TouchableOpacity, Dimensions, type ViewStyle } from "react-native";
+import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting, useIntroSkipper, useEpisodeNavigation } from "@tentacle-tv/api-client";
+import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVPlayerOverlay } from "../components/TVPlayerOverlay";
-import { TVTrackSelector } from "../components/TVTrackSelector";
-import { TVSkipSegmentButton } from "../components/TVSkipSegmentButton";
-import { TVAutoPlayOverlay } from "../components/TVAutoPlayOverlay";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
 import { useAutoPlay } from "../hooks/useAutoPlay";
-import { randomSessionId, formatTrackLabel } from "../utils/playerHelpers";
-import { MPVPlayer, type MPVPlayerHandle, type MpvTrack } from "../components/player/MPVPlayer";
-import { ExoPlayer } from "../components/player/ExoPlayer";
-import { Colors } from "../theme/colors";
-import { setPlayingMedia } from "../auth/playbackGuard";
+import { formatTrackLabel } from "../utils/playerHelpers";
+import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
+import { TVPlayerView } from "../components/player/TVPlayerView";
+import { useTVPlaybackQuality } from "../hooks/useTVPlaybackQuality";
+import { useTVPlaybackLifecycle } from "../hooks/useTVPlaybackLifecycle";
+import { useTVMpvTracks } from "../hooks/useTVMpvTracks";
+import { useTVTrackResolution } from "../hooks/useTVTrackResolution";
+import { useTVPlayerEventHandlers } from "../hooks/useTVPlayerEventHandlers";
+import { useTVStreamUrl } from "../hooks/useTVStreamUrl";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
 const SCREEN = Dimensions.get("window");
 
-interface MemoizedPlayerProps {
-  useExoPlayer: boolean;
-  exoRef: React.Ref<MPVPlayerHandle>;
-  mpvRef: React.Ref<MPVPlayerHandle>;
-  source: string;
-  paused: boolean;
-  playerStyle: ViewStyle;
-  onLoad: (duration: number) => void;
-  onProgress: (currentTime: number, buffered: number) => void;
-  onEnd: () => void;
-  onError: (error: string) => void;
-  onTracks: (tracks: MpvTrack[]) => void;
-  onVideoSize: (width: number, height: number, pixelRatio: number) => void;
-}
-
-const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused, playerStyle,
-  onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
-}: MemoizedPlayerProps) {
-  return isExo ? (
-    <ExoPlayer
-      ref={exoRef}
-      source={source}
-      paused={paused}
-      progressInterval={1000}
-      audioPassthrough
-      style={playerStyle}
-      onLoad={onLoad}
-      onProgress={onProgress}
-      onEnd={onEnd}
-      onError={onError}
-      onTracks={onTracks}
-      onVideoSize={onVideoSize}
-    />
-  ) : (
-    <MPVPlayer
-      ref={mpvRef}
-      source={source}
-      paused={paused}
-      progressInterval={1000}
-      style={playerStyle}
-      onLoad={onLoad}
-      onProgress={onProgress}
-      onEnd={onEnd}
-      onError={onError}
-      onTracks={onTracks}
-      onVideoSize={onVideoSize}
-    />
-  );
-});
-
 export function PlayerScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
-  const { t } = useTranslation("player");
   const client = useJellyfinClient();
-  const userId = useUserId();
   const { data: item } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
-
-  // Verrou global : tant que ce screen est monté, AUCUN logout ne peut éjecter
-  // l'utilisateur (cf. apps/tv/src/auth/playbackGuard.ts). Empêche les
-  // déconnexions intempestives si le backend Tentacle redémarre pendant la lecture.
-  useEffect(() => {
-    setPlayingMedia(true);
-    return () => { setPlayingMedia(false); };
-  }, []);
+  const queryClient = useQueryClient();
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);
-  const backgroundRef = useRef<TouchableOpacity>(null);
+  const backgroundRef = useRef<ElementRef<typeof TouchableOpacity>>(null);
   const [paused, setPaused] = useState(false);
   const [displayTime, setDisplayTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -109,69 +45,53 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [startTicks, setStartTicks] = useState(0);
   const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
-  const prefsApplied = useRef(false);
   const resumeApplied = useRef(false);
   const [videoError, setVideoError] = useState<string | null>(null);
-  const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
   const seekBarFocusedRef = useRef(false);
-  const externalSubsLoaded = useRef(false);
-  const [videoAspect, setVideoAspect] = useState<number | null>(null);
-
-  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const lastProgressTime = useRef(Date.now());
+
+  const quality = useTVPlaybackQuality();
+  const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
 
-  // Always use ExoPlayer — hardware MediaCodec renders directly to surface
-  // without the mediacodec-copy overhead that causes lag in MPV on Android TV.
+  // ExoPlayer rend directement à la surface (pas de copie mediacodec lag-inducing comme MPV).
+  // Forcé sur MPV uniquement quand un transcode est en cours.
   const useExoPlayer = !forceTranscode;
-  // Unified ref — points to whichever player is active
   const playerRef = useExoPlayer ? exoRef : mpvRef;
 
   const defaultAudio = useMemo(() =>
     streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
     ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0,
-    [streams]
+    [streams],
   );
 
+  const resetPrefsAppliedRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (defaultAudio !== undefined) {
       setAudioIndex(defaultAudio);
       setSubtitleIndex(-1);
       setStartTicks(0);
       positionRef.current = 0;
-      prefsApplied.current = false;
-      externalSubsLoaded.current = false;
+      resetPrefsAppliedRef.current?.();
+      quality.reset();
     }
-  }, [itemId, defaultAudio]);
+  }, [itemId, defaultAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // MPV handles all codecs natively — direct play unless forced transcode
-  const isDirectPlay = !forceTranscode;
+  // Direct play tant qu'aucun transcode n'est imposé (codec, audio ou qualité user)
+  const isDirectPlay = !forceTranscode && !quality.isTranscodingQuality;
   const isDirectStream = false;
 
-  const playSessionId = useMemo(() => {
-    if (isDirectPlay) return undefined;
-    return randomSessionId();
-  }, [audioIndex, startTicks, isDirectPlay, forceTranscode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
-
-  const streamUrl = useMemo(() => {
-    if (!itemId) return null;
-    if (forceTranscode) {
-      return client.getStreamUrl(itemId, {
-        mediaSourceId, audioIndex, directPlay: false, maxBitrate: 8_000_000,
-        startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
-      });
-    }
-    return client.getStreamUrl(itemId, {
-      mediaSourceId, directPlay: true,
-      playSessionId, sourceVideoCodec,
-    });
-  }, [client, itemId, mediaSourceId, startTicks, playSessionId, sourceVideoCodec, forceTranscode]);
+  const { streamUrl, playSessionId } = useTVStreamUrl({
+    itemId, mediaSourceId, streams, audioIndex, startTicks,
+    forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
+    maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
+    isDirectPlay,
+  });
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -181,42 +101,20 @@ export function PlayerScreen({ route, navigation }: Props) {
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
 
-  // Refs for stable access in AppState listener ([] deps)
+  // Refs stables pour les listeners avec [] deps
   const pausedStateRef = useRef(paused);
   pausedStateRef.current = paused;
   const reportSeekRef = useRef(reportSeek);
   reportSeekRef.current = reportSeek;
 
-  // Resolve preferred audio/subtitle tracks
-  const resolveTracks = useResolveMediaTracks();
-  useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item || !ancestors) return;
-    const parentId = item.ParentId;
-    const seriesId = item.SeriesId;
-    const ancestorIds = ancestors.map((a: { Id: string }) => a.Id);
-    const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
-    if (allCandidates.length === 0) return;
-    prefsApplied.current = true;
-    resolveTracks.mutate({
-      libraryId: allCandidates[0], libraryIds: allCandidates,
-      audioTracks: streams.filter((s) => s.Type === "Audio")
-        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
-      subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
-        .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
-    }, {
-      onSuccess: (result) => {
-        if (result.audioIndex != null) {
-          if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
-          setAudioIndex(result.audioIndex);
-        }
-        if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
-      },
-    });
-  }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
+  const trackRes = useTVTrackResolution({
+    streams, item, ancestors,
+    positionRef, setAudioIndex, setSubtitleIndex, setStartTicks,
+  });
+  resetPrefsAppliedRef.current = trackRes.resetPrefsApplied;
 
   const skipSegments = useIntroSkipper(itemId, item);
 
-  // Auto-play next episode (credits detection + countdown)
   const navigateToEpisode = useCallback((episodeId: string) => {
     reportStop();
     queryClient.invalidateQueries({ queryKey: ["item", itemId] });
@@ -225,14 +123,10 @@ export function PlayerScreen({ route, navigation }: Props) {
     navigation.replace("Player", { itemId: episodeId });
   }, [reportStop, queryClient, itemId, navigation]);
 
-  const autoPlay = useAutoPlay(
-    item, jellyfinDuration ?? 0,
-    skipSegments.credits, navigateToEpisode,
-  );
-
+  const autoPlay = useAutoPlay(item, jellyfinDuration ?? 0, skipSegments.credits, navigateToEpisode);
   const { previousEpisode } = useEpisodeNavigation(item);
 
-  // For transcoded/HLS streams, include resume position in the URL
+  // Resume position pour les streams transcodés / HLS
   useEffect(() => {
     if (resumeApplied.current || isDirectPlay) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks;
@@ -242,105 +136,21 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [item, isDirectPlay, startTicks]);
 
-  const invalidateAndGoBack = useCallback(async () => {
-    await reportStop();
-    client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    navigation.goBack();
-  }, [reportStop, queryClient, itemId, navigation, client, userId]);
+  const lifecycle = useTVPlaybackLifecycle({
+    itemId, seriesId: item?.SeriesId, navigation,
+    reportStop, positionRef, pausedStateRef, reportSeekRef,
+    onBackground: () => setPaused(true),
+  });
 
-  /** When episode finishes, navigate to series detail instead of just going back */
-  const handleFinished = useCallback(async () => {
-    await reportStop();
-    client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    const seriesId = item?.SeriesId;
-    if (seriesId) {
-      navigation.replace("MediaDetail", { itemId: seriesId });
-    } else {
-      navigation.goBack();
-    }
-  }, [reportStop, queryClient, itemId, item?.SeriesId, navigation, client, userId]);
-
-  useEffect(() => () => {
-    reportStop();
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-  }, [reportStop]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Pause video + save progress when app goes to background (Home button)
-  // Use reportSeek (Progress report) instead of reportStop to keep startedRef alive,
-  // so Back after returning still sends a proper Stop with the saved position.
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "background" || state === "inactive") {
-        setPaused(true);
-        reportSeekRef.current(positionRef.current, true);
-      } else if (state === "active") {
-        // Restart reporting after returning from background
-        reportSeekRef.current(positionRef.current, pausedStateRef.current);
-      }
-    });
-    return () => sub.remove();
-  }, []); // stable — refs avoid dep on reportSeek/paused
-
-  // Build MPV track map when tracks arrive (Jellyfin index → MPV track ID)
-  // Also load external subtitle files that MPV doesn't find in the container.
-  const handleTracks = useCallback((tracks: MpvTrack[]) => {
-    const audioTracks = tracks.filter((t) => t.type === "audio");
-    const subTracks = tracks.filter((t) => t.type === "sub");
-    const jellyfinAudio = streams.filter((s) => s.Type === "Audio");
-    const jellyfinSubs = streams.filter((s) => s.Type === "Subtitle");
-    const map: Record<number, number> = {};
-    jellyfinAudio.forEach((s, i) => {
-      if (i < audioTracks.length) map[s.Index] = audioTracks[i].id;
-    });
-    jellyfinSubs.forEach((s, i) => {
-      if (i < subTracks.length) map[s.Index] = subTracks[i].id;
-    });
-    setMpvTrackMap(map);
-
-    // Load subtitle tracks that MPV didn't find in the container (external subs).
-    // Uses count comparison instead of IsExternal (field may be absent from API).
-    // Uses direct Jellyfin URL when available (MPV makes native HTTP requests
-    // without auth headers — proxy would strip api_key and reject).
-    if (!externalSubsLoaded.current && isDirectPlay && itemId && mediaSourceId) {
-      const missingCount = jellyfinSubs.length - subTracks.length;
-      if (missingCount > 0) {
-        externalSubsLoaded.current = true;
-        const ds = client.getDirectStreaming?.();
-        for (let i = subTracks.length; i < jellyfinSubs.length; i++) {
-          const sub = jellyfinSubs[i];
-          let url: string;
-          if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
-            url = `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${sub.Index}/Stream.vtt?api_key=${encodeURIComponent(ds.jellyfinToken)}`;
-          } else {
-            url = client.getSubtitleUrl(itemId, mediaSourceId, sub.Index);
-          }
-          playerRef.current?.addSubtitleTrack(url);
-        }
-      }
-    }
-  }, [streams, isDirectPlay, itemId, mediaSourceId, client]);
-
-  // Count of stale progress callbacks to skip after a seek
-  const skipProgressCountRef = useRef(0);
+  const mpvTracks = useTVMpvTracks({
+    playerRef, streams, audioIndex, subtitleIndex,
+    isDirectPlay, itemId, mediaSourceId,
+  });
 
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    skipProgressCountRef.current = 1; // skip next 1 stale callback
+    skipProgressCountRef.current = 1;
     displayTimeRef.current = clamped;
     positionRef.current = clamped;
     setDisplayTime(clamped);
@@ -354,9 +164,8 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
     reportSeek(clamped, paused);
     checkTriggerRef.current(clamped);
-  }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks]);
+  }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks, playerRef]);
 
-  // Restart episode (single click) or previous episode (double click < 500ms)
   const prevClickTimeRef = useRef(0);
   const handlePrevEpisode = useCallback(() => {
     const now = Date.now();
@@ -380,14 +189,13 @@ export function PlayerScreen({ route, navigation }: Props) {
     onBack: () => {
       if (autoPlay.countdown !== null) { autoPlay.cancelAutoPlay(); return; }
       if (showSettingsRef.current) { setShowSettings(false); showSettingsRef.current = false; return; }
-      invalidateAndGoBack();
+      lifecycle.invalidateAndGoBack();
     },
     onPlayPause: handlePlayPause,
     seekBarFocusedRef,
     settingsOpen: showSettings,
   });
 
-  // Sync display time immediately when overlay appears
   useEffect(() => {
     if (controls.overlayVisible) {
       setDisplayTime(displayTimeRef.current);
@@ -396,130 +204,31 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [controls.overlayVisible]);
 
-  // Stable refs for native player callbacks — native side keeps the initial
-  // JS callback, so these must have [] deps to avoid stale closures in release builds.
-  const checkTriggerRef = useRef(autoPlay.checkTrigger);
-  checkTriggerRef.current = autoPlay.checkTrigger;
-  const reportStartRef = useRef(reportStart);
-  reportStartRef.current = reportStart;
-  const isDirectPlayRef = useRef(isDirectPlay);
-  isDirectPlayRef.current = isDirectPlay;
-  const startTicksRef = useRef(startTicks);
-  startTicksRef.current = startTicks;
-  const updatePositionRef = useRef(updatePosition);
-  updatePositionRef.current = updatePosition;
-
-  const handleLoad = useCallback((duration: number) => {
-    if (isDirectPlayRef.current) {
-      const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-      if (resumeTicks) playerRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
-    }
-    setIsLoading(false);
-    reportStartRef.current();
-  }, [item]);
-
-  const handleProgress = useCallback((currentTime: number, buffered: number) => {
-    const raw = Math.max(0, currentTime);
-    const offset = !isDirectPlayRef.current && startTicksRef.current > 0
-      ? startTicksRef.current / TICKS_PER_SECOND : 0;
-    const t = raw + offset;
-    const bufferedAbs = Math.max(0, buffered) + offset;
-
-    // After a seek, skip 1 stale progress callback (native reports old position).
-    // Keep lastProgressTime updated to prevent false rebuffering detection.
-    if (skipProgressCountRef.current > 0) {
-      skipProgressCountRef.current--;
-      bufferedTimeRef.current = bufferedAbs;
-      lastProgressTime.current = Date.now();
-      setIsLoading(false);
-      return;
-    }
-
-    positionRef.current = t;
-    controls.currentTimeRef.current = t;
-    displayTimeRef.current = t;
-    bufferedTimeRef.current = bufferedAbs;
-    lastProgressTime.current = Date.now();
-    setIsLoading(false);
-    const now = Date.now();
-    if (now - lastDisplayUpdate.current >= 1000) {
-      lastDisplayUpdate.current = now;
-      setDisplayTime(t);
-      setBufferedTime(bufferedAbs);
-    }
-    updatePositionRef.current(t, pausedStateRef.current);
-    // Check auto-play trigger on every progress tick (not dependent on re-renders)
-    checkTriggerRef.current(t);
-  }, [controls.currentTimeRef]);
-
-  // Detect rebuffering: no progress callback for >2s while playing
-  useEffect(() => {
-    if (paused) return;
-    const interval = setInterval(() => {
-      if (!paused && Date.now() - lastProgressTime.current > 2000) {
-        setIsLoading(true);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [paused]);
-
-  // Refs for stable handleEnd — native player keeps the initial JS callback,
-  // so deps must not change or the native side calls a stale closure.
-  const autoPlayRef = useRef(autoPlay);
-  autoPlayRef.current = autoPlay;
-  const invalidateAndGoBackRef = useRef(invalidateAndGoBack);
-  invalidateAndGoBackRef.current = invalidateAndGoBack;
-  const handleFinishedRef = useRef(handleFinished);
-  handleFinishedRef.current = handleFinished;
-
-  const handleEnd = useCallback(() => {
-    const ap = autoPlayRef.current;
-    if (ap.nextEpisode && ap.countdown === null) {
-      ap.startAutoPlay();
-    } else if (ap.countdown !== null) {
-      // Countdown already running — let it finish
-    } else {
-      // No next episode OR user dismissed — go to series detail or back
-      handleFinishedRef.current();
-    }
-  }, []);
+  const events = useTVPlayerEventHandlers({
+    item, playerRef, paused, isDirectPlay, startTicks,
+    positionRef, pausedStateRef, displayTimeRef, bufferedTimeRef,
+    lastDisplayUpdate, lastProgressTime, controlsCurrentTimeRef: controls.currentTimeRef,
+    setDisplayTime, setBufferedTime, setIsLoading,
+    reportStart, updatePosition,
+    autoPlay, handleFinished: lifecycle.handleFinished,
+  });
+  const { handleLoad, handleProgress, handleEnd, skipProgressCountRef, checkTriggerRef } = events;
 
   const handleAudioChange = useCallback((newIndex: number) => {
     if (isDirectPlay) {
-      // MPV: switch track directly, no URL change needed
-      const mpvId = mpvTrackMap[newIndex];
+      const mpvId = mpvTracks.mpvTrackMap[newIndex];
       if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
       setAudioIndex(newIndex);
     } else {
-      // Transcode fallback: change URL (server-side track selection)
       if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
       setAudioIndex(newIndex);
     }
-  }, [isDirectPlay, mpvTrackMap]);
+  }, [isDirectPlay, mpvTracks.mpvTrackMap, playerRef]);
 
-  // Apply subtitle track — load as external VTT from Jellyfin (Media3 SSA extraction broken)
-  useEffect(() => {
-    if (!isDirectPlay) return;
-    if (subtitleIndex < 0) {
-      playerRef.current?.loadSubtitle?.(null);
-    } else if (itemId && mediaSourceId) {
-      const ds = client.getDirectStreaming?.();
-      let url: string;
-      if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
-        url = `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${subtitleIndex}/Stream.vtt?api_key=${encodeURIComponent(ds.jellyfinToken)}`;
-      } else {
-        url = client.getSubtitleUrl(itemId, mediaSourceId, subtitleIndex);
-      }
-      playerRef.current?.loadSubtitle?.(url);
-    }
-  }, [subtitleIndex, isDirectPlay, itemId, mediaSourceId, client]);
-
-  // Apply audio track via MPV when in direct play
-  useEffect(() => {
-    if (!isDirectPlay) return;
-    const mpvId = mpvTrackMap[audioIndex];
-    if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
-  }, [audioIndex, isDirectPlay, mpvTrackMap]);
+  const handleQualityChange = useCallback((key: typeof quality.qualityKey) => {
+    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+    quality.setQualityKey(key);
+  }, [quality]);
 
   const handleError = useCallback((error: string) => {
     const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
@@ -528,18 +237,14 @@ export function PlayerScreen({ route, navigation }: Props) {
     setVideoError(error);
   }, [forceTranscode]);
 
-  // Track lists for UI
-  const audioTracks = useMemo(() =>
+  const audioTracksList = useMemo(() =>
     streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
-  const subtitleTracks = useMemo(() =>
+  const subtitleTracksList = useMemo(() =>
     streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
 
   const handleVideoSize = useCallback((width: number, height: number, pixelRatio: number) => {
-    if (width > 0 && height > 0) {
-      setVideoAspect((width / height) * pixelRatio);
-    }
+    if (width > 0 && height > 0) setVideoAspect((width / height) * pixelRatio);
   }, []);
-
 
   const playerStyle = useMemo<ViewStyle>(() => {
     if (!videoAspect) return { width: SCREEN.width, height: SCREEN.height };
@@ -554,123 +259,41 @@ export function PlayerScreen({ route, navigation }: Props) {
   const autoPlayActive = autoPlay.countdown !== null;
   if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
 
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+    showSettingsRef.current = false;
+    controls.showOverlay();
+    setTimeout(() => {
+      (backgroundRef.current as unknown as { setNativeProps?: (p: Record<string, unknown>) => void })?.setNativeProps?.({ hasTVPreferredFocus: true });
+    }, 1);
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
-      <MemoizedPlayer
-        useExoPlayer={useExoPlayer}
-        exoRef={exoRef}
-        mpvRef={mpvRef}
-        source={streamUrl}
-        paused={paused}
-        playerStyle={playerStyle}
-        onLoad={handleLoad}
-        onProgress={handleProgress}
-        onEnd={handleEnd}
-        onError={handleError}
-        onTracks={handleTracks}
-        onVideoSize={handleVideoSize}
-      />
-      <TouchableOpacity
-        ref={backgroundRef}
-        activeOpacity={1}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        onPress={controls.showOverlay}
-        // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!showSettings && !autoPlayActive}
-        accessible={!showSettings && !autoPlayActive}
-        importantForAccessibility={showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
-      >
-        <View style={{ flex: 1 }} />
-      </TouchableOpacity>
-      {isLoading && (
-        <View style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          justifyContent: "center", alignItems: "center",
-          backgroundColor: "rgba(0,0,0,0.3)",
-          zIndex: 50, elevation: 50,
-        }} pointerEvents="none">
-          <ActivityIndicator size="large" color={Colors.accentPurple} />
-        </View>
-      )}
-      {videoError && (
-        <View style={{
-          position: "absolute", top: 60, left: 40, right: 40,
-          backgroundColor: "rgba(239,68,68,0.9)", borderRadius: 8, padding: 16,
-        }}>
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>{t("playbackError")}</Text>
-          <Text style={{ color: "#fff", fontSize: 14, marginTop: 4 }}>{videoError}</Text>
-        </View>
-      )}
-      <TVPlayerOverlay
-        title={item?.Name ?? ""}
-        currentTime={controls.scrubbing ? controls.scrubPosition : displayTime}
-        bufferedTime={bufferedTime}
-        duration={displayDuration} paused={paused}
-        visible={controls.overlayVisible && !autoPlayActive}
-        speedLabel={controls.speedLabel} seekActive={controls.seekActive}
-        onPlayPause={() => { handlePlayPause(); controls.showOverlay(); }}
-        onSkipBack={() => { controls.handleSkipBack(); controls.showOverlay(); }}
-        onSkipForward={() => { controls.handleSkipForward(); controls.showOverlay(); }}
-        onBack={invalidateAndGoBack}
-        onSettings={() => {
-          setShowSettings((v) => { showSettingsRef.current = !v; return !v; });
-          controls.showOverlay();
-        }}
-        onSeekBarFocus={() => { seekBarFocusedRef.current = true; }}
-        onSeekBarBlur={() => { seekBarFocusedRef.current = false; }}
-        onNextEpisode={handleNextEpisode}
-        onPrevEpisode={handlePrevEpisode}
-        hasNextEpisode={!!autoPlay.nextEpisode}
-        hasPreviousEpisode={!!previousEpisode}
-      />
-      {/* Skip intro/credits — hidden during auto-play overlay */}
-      {!autoPlayActive && (
-        <>
-          <TVSkipSegmentButton
-            type="intro"
-            segment={skipSegments.intro}
-            currentTime={displayTime}
-            onSkip={() => handleSeek(skipSegments.intro!.end)}
-            overlayVisible={controls.overlayVisible}
-            showSettings={showSettings}
-          />
-          <TVSkipSegmentButton
-            type="credits"
-            segment={skipSegments.credits}
-            currentTime={displayTime}
-            onSkip={() => handleSeek(skipSegments.credits!.end)}
-            overlayVisible={controls.overlayVisible}
-            showSettings={showSettings}
-          />
-        </>
-      )}
-      {showSettings && (
-        <TVTrackSelector
-          audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-          selectedAudio={audioIndex} selectedSubtitle={subtitleIndex}
-          onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
-          onClose={() => {
-            setShowSettings(false);
-            showSettingsRef.current = false;
-            controls.showOverlay();
-            // Force focus back via native props (1ms delay per react-native-tvos #398)
-            setTimeout(() => {
-              (backgroundRef.current as any)?.setNativeProps?.({ hasTVPreferredFocus: true });
-            }, 1);
-          }}
-          onInteraction={controls.showOverlay}
-        />
-      )}
-      {autoPlayActive && (
-        <TVAutoPlayOverlay
-          countdown={autoPlay.countdown!}
-          episodeTitle={autoPlay.nextEpisodeTitle}
-          episodeDescription={autoPlay.nextEpisodeDescription}
-          episodeImageUrl={autoPlay.nextEpisodeImageUrl}
-          onPlayNow={autoPlay.navigateToNextEpisode}
-          onDismiss={autoPlay.cancelAutoPlay}
-        />
-      )}
-    </View>
+    <TVPlayerView
+      item={item} streamUrl={streamUrl} paused={paused} isLoading={isLoading}
+      videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
+      displayDuration={displayDuration} showSettings={showSettings}
+      autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
+      useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
+      backgroundRef={backgroundRef} playerStyle={playerStyle}
+      audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
+      audioIndex={audioIndex} subtitleIndex={subtitleIndex}
+      qualityKey={quality.qualityKey} sourceQuality={sourceQuality}
+      skipSegments={skipSegments} autoPlay={autoPlay} controls={controls}
+      onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd}
+      onError={handleError} onTracks={mpvTracks.handleTracks} onVideoSize={handleVideoSize}
+      onPlayPause={handlePlayPause} onSeek={handleSeek}
+      onBack={lifecycle.invalidateAndGoBack}
+      onToggleSettings={() => {
+        setShowSettings((v) => { showSettingsRef.current = !v; return !v; });
+        controls.showOverlay();
+      }}
+      onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
+      onSelectQuality={handleQualityChange}
+      onCloseSettings={handleCloseSettings}
+      onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
+      onSeekBarFocus={() => { seekBarFocusedRef.current = true; }}
+      onSeekBarBlur={() => { seekBarFocusedRef.current = false; }}
+    />
   );
 }

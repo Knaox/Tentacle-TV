@@ -27,7 +27,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
           className="mb-5 flex h-16 w-16 items-center justify-center rounded-full"
           style={{
             background: "var(--brand-soft)",
-            border: "1px solid rgba(139,92,246,0.25)",
+            border: "1px solid rgba(var(--brand-rgb), 0.25)",
             color: "var(--brand-light)",
           }}
         >

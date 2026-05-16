@@ -8,7 +8,7 @@ import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, Fullscre
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import type { MpvTrack } from "../hooks/useDesktopPlayer";
-import type { MediaItem, SegmentTimestamps } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { TrickplayPreview } from "./TrickplayPreview";
 import { useTrickplay } from "../hooks/useTrickplay";
 
@@ -22,9 +22,10 @@ interface DesktopPlayerProps {
   src: string; title: string; subtitle?: string;
   startPositionSeconds?: number; jellyfinDuration?: number;
   audioTracks?: AudioTrack[]; subtitleTracks?: SubtitleTrack[];
-  currentAudio: number; currentSubtitle: number | null; currentQuality: number | null;
+  currentAudio: number; currentSubtitle: number | null; currentQuality: QualityKey;
+  sourceQuality?: SourceQuality;
   onAudioChange: (index: number) => void; onSubtitleChange: (index: number | null) => void;
-  onQualityChange: (bitrate: number | null) => void;
+  onQualityChange: (key: QualityKey) => void;
   onProgress?: (seconds: number, paused: boolean) => void; onStarted?: () => void;
   isDirectPlay?: boolean; streamOffset?: number; posterUrl?: string;
   introSegment?: SegmentTimestamps | null; creditsSegment?: SegmentTimestamps | null;
@@ -111,7 +112,7 @@ function findMpvTrack(
 export function DesktopPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   audioTracks = [], subtitleTracks = [],
-  currentAudio, currentSubtitle, currentQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
@@ -555,7 +556,7 @@ export function DesktopPlayer({
   if (error) return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
       <p className="text-lg text-red-400">{t("player:mpvError", { error })}</p>
-      <button onClick={() => goBack()} className="rounded-lg h-11 px-5 bg-white text-black font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>{t("common:back")}</button>
+      <button onClick={() => goBack()} className="rounded-lg h-11 px-5 bg-white text-black font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>{t("common:back")}</button>
     </div>
   );
   if (!ready) return (
@@ -621,9 +622,9 @@ export function DesktopPlayer({
                 {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
               </div>
               {import.meta.env.DEV && (
-                <div className="ml-auto flex items-center gap-2 rounded-full bg-purple-600/30 px-3 py-1">
-                  <span className="h-2 w-2 rounded-full bg-purple-400" />
-                  <span className="text-xs text-purple-200">mpv{isDirectPlay ? "" : " (transcode)"}</span>
+                <div className="ml-auto flex items-center gap-2 rounded-full bg-[rgba(var(--brand-rgb),0.3)] px-3 py-1">
+                  <span className="h-2 w-2 rounded-full bg-[var(--brand)]" />
+                  <span className="text-xs text-[var(--brand-light)]">mpv{isDirectPlay ? "" : " (transcode)"}</span>
                 </div>
               )}
             </div>
@@ -638,7 +639,7 @@ export function DesktopPlayer({
                 <TrackSelector
                   audioTracks={displayAudio} subtitleTracks={displaySubs}
                   currentAudio={curAudio} currentSubtitle={curSub}
-                  currentQuality={currentQuality}
+                  currentQuality={currentQuality} sourceQuality={sourceQuality}
                   onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
                   onQualityChange={onQualityChange}
                   onClose={() => setShowSettings(false)}

@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { TrackSelector } from "./TrackSelector";
 import { TrickplayPreview } from "./TrickplayPreview";
 import { formatDuration } from "./playerControls/utils";
@@ -28,7 +28,8 @@ export interface PlayerControlsProps {
   subtitleTracks: { index: number; label: string }[];
   currentAudio: number;
   currentSubtitle: number | null;
-  currentQuality: number | null;
+  currentQuality: QualityKey;
+  sourceQuality?: SourceQuality;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   onTogglePlay: () => void;
@@ -39,7 +40,7 @@ export interface PlayerControlsProps {
   onBack: () => void;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  onQualityChange?: (bitrate: number | null) => void;
+  onQualityChange?: (key: QualityKey) => void;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
 }
@@ -48,7 +49,7 @@ export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
   item, mediaSourceId,
   title, subtitle, audioTracks, subtitleTracks,
-  currentAudio, currentSubtitle, currentQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality,
   hasNextEpisode, hasPreviousEpisode,
   onTogglePlay, onSeek, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
@@ -167,7 +168,8 @@ export function PlayerControls({
           {showSettings && hasSettings && (
             <TrackSelector
               audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-              currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality}
+              currentAudio={currentAudio} currentSubtitle={currentSubtitle}
+              currentQuality={currentQuality} sourceQuality={sourceQuality}
               onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={onQualityChange}
               onClose={() => setShowSettings(false)}
             />

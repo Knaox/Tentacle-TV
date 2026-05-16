@@ -8,7 +8,7 @@ import { TentacleLogo } from "../components/ui/TentacleLogo";
 // purple en primary, surface glass légère en secondary.
 const CTA_PRIMARY =
   "inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
-const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(139,92,246,0.45)" };
+const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" };
 const CTA_SECONDARY =
   "inline-flex h-11 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.06] px-5 text-sm font-semibold text-white transition-all hover:border-white/[0.14] hover:bg-white/[0.10] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -53,7 +53,7 @@ export function ServerSetup({ onComplete }: SetupProps) {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--brand)] border-t-transparent" />
       </div>
     );
   }
@@ -73,7 +73,7 @@ export function ServerSetup({ onComplete }: SetupProps) {
             onClick={() => switchLang(lng)}
             className={`px-3 py-1.5 text-xs font-medium transition ${
               i18n.language === lng
-                ? "bg-purple-500/30 text-purple-300"
+                ? "bg-[rgba(var(--brand-rgb),0.3)] text-[var(--brand-light)]"
                 : "text-white/40 hover:text-white/60"
             }`}
           >
@@ -104,7 +104,7 @@ function StepHeader({ step }: { step: SetupStep }) {
     <div className="mb-6 flex flex-col items-center text-center">
       <TentacleLogo size="lg" variant="glow" />
       <h1 className="mb-4 text-2xl font-bold">
-        <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] bg-clip-text text-transparent">
           {t("configTitle")}
         </span>
       </h1>

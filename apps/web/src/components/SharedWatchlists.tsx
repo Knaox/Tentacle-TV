@@ -43,9 +43,9 @@ function SharedListSection({ list }: { list: SharedWatchlistSummary }) {
   const canAdd = isCreator || list.myRole === "contributor";
   const roleBadge = isCreator ? t("common:creator") : list.myRole === "contributor" ? t("common:contributor") : t("common:reader");
   const roleBadgeClass = isCreator
-    ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 ring-1 ring-purple-500/30"
+    ? "bg-gradient-to-r from-[rgba(var(--brand-rgb),0.2)] to-[rgba(var(--brand-accent-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
     : list.myRole === "contributor"
-    ? "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
+    ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
     : "bg-white/10 text-white/50 ring-1 ring-white/10";
 
   const visibleItems = useMemo(() => {
@@ -67,7 +67,7 @@ function SharedListSection({ list }: { list: SharedWatchlistSummary }) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-sm font-bold text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-sm font-bold text-white">
             {list.name.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -90,14 +90,14 @@ function SharedListSection({ list }: { list: SharedWatchlistSummary }) {
           )}
           {canAdd && (
             <button onClick={() => setAddModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-300 ring-1 ring-purple-500/20 transition-all hover:bg-purple-500/20">
+              className="flex items-center gap-1.5 rounded-lg bg-[rgba(var(--brand-rgb),0.1)] px-3 py-1.5 text-xs font-medium text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.2)] transition-all hover:bg-[rgba(var(--brand-rgb),0.2)]">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
               {t("common:addMedia")}
             </button>
           )}
           {isCreator && (
             <button onClick={() => setMembersModalOpen(true)}
-              className="shrink-0 rounded-lg p-1.5 text-white/20 transition-colors hover:bg-purple-500/10 hover:text-purple-400"
+              className="shrink-0 rounded-lg p-1.5 text-white/20 transition-colors hover:bg-[rgba(var(--brand-rgb),0.1)] hover:text-[var(--brand)]"
               title={t("common:manageMembers")}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
             </button>
@@ -219,7 +219,7 @@ function SharedItemCard({ item, isSelecting, isSelected, onToggleSelect }: {
       onTouchStart={isSelecting ? undefined : handleTouchStart}
       onTouchEnd={isSelecting ? undefined : clearLongPress}
       onTouchMove={isSelecting ? undefined : clearLongPress}
-      className={`group relative cursor-pointer ${isSelected ? "ring-2 ring-purple-500 rounded-lg" : ""}`}
+      className={`group relative cursor-pointer ${isSelected ? "ring-2 ring-[var(--brand)] rounded-lg" : ""}`}
     >
       {isSelecting && (
         <SelectionCheckbox checked={isSelected} onClick={onToggleSelect} />
@@ -247,7 +247,7 @@ function SharedItemCard({ item, isSelecting, isSelected, onToggleSelect }: {
               style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
               onClick={(e) => { e.stopPropagation(); setLocalWatchlist(!localWatchlist); if (localWatchlist) removeWatchlist.mutate(); else addWatchlist.mutate(); }}>
               {localWatchlist
-                ? <svg className="h-3 w-3 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
+                ? <svg className="h-3 w-3 text-[var(--brand)]" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
                 : <svg className="h-3 w-3 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>}
             </button>
           </div>

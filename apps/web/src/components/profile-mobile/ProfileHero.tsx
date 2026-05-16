@@ -28,7 +28,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
           {name || t("defaultUsername")}
         </h1>
         {isAdmin ? (
-          <span className="mt-2 inline-flex items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-purple-300">
+          <span className="mt-2 inline-flex items-center rounded-full border border-[rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.15)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-light)]">
             {tNav("admin")}
           </span>
         ) : (

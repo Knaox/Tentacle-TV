@@ -55,7 +55,7 @@ export function UpNextCard({
         background: "var(--surface-modal)",
         border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-xl)",
-        boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.18), 0 0 32px rgba(139,92,246,0.18)",
+        boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb), 0.18), 0 0 32px rgba(var(--brand-rgb), 0.18)",
         backdropFilter: "blur(var(--blur-modal))",
         WebkitBackdropFilter: "blur(var(--blur-modal))",
       }}
@@ -67,7 +67,7 @@ export function UpNextCard({
           style={{
             width: `${progress}%`,
             background: "linear-gradient(90deg, var(--brand-light), var(--brand))",
-            boxShadow: "0 0 12px rgba(139,92,246,0.6)",
+            boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
           }}
         />
       </div>
@@ -98,7 +98,7 @@ export function UpNextCard({
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white"
             style={{
               background: "rgba(0, 0, 0, 0.6)",
-              border: "1px solid rgba(139, 92, 246, 0.55)",
+              border: "1px solid rgba(var(--brand-rgb), 0.55)",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
               textShadow: "0 1px 3px rgba(0,0,0,0.85)",
@@ -163,7 +163,7 @@ export function UpNextCard({
             type="button"
             onClick={onPlay}
             className="group/play flex flex-1 items-center justify-center gap-2 rounded-md bg-white py-2.5 text-sm font-bold text-black transition-all duration-150 hover:scale-[1.02] hover:bg-white/90"
-            style={{ boxShadow: "0 6px 22px rgba(139,92,246,0.4)" }}
+            style={{ boxShadow: "0 6px 22px var(--brand-glow)" }}
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />

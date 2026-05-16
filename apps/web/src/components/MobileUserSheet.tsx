@@ -93,7 +93,7 @@ export function MobileUserSheet({ onClose }: Props) {
             </p>
             {isAdmin && (
               <span
-                className="mt-1 inline-flex items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-purple-300"
+                className="mt-1 inline-flex items-center rounded-full border border-[rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.15)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--brand-light)]"
               >
                 {t("admin")}
               </span>

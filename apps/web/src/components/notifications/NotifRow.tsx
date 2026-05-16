@@ -23,7 +23,7 @@ export function NotifRow({
     <div
       onClick={selectionMode ? onToggleSelect : onClick}
       className={`group cursor-pointer border-b border-white/5 px-4 py-3 transition-all duration-300 hover:bg-white/5 ${
-        !notif.read ? "bg-purple-500/5" : ""
+        !notif.read ? "bg-[rgba(var(--brand-rgb),0.05)]" : ""
       } ${isDeleting ? "animate-fade-out pointer-events-none" : ""}`}
     >
       <div className="flex items-start gap-2">
@@ -39,7 +39,7 @@ export function NotifRow({
             {isSelected && <CheckIcon />}
           </button>
         ) : (
-          !notif.read && <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-purple-500" />
+          !notif.read && <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[var(--brand)]" />
         )}
         <div className="min-w-0 flex-1">
           <p className={`text-sm ${!notif.read ? "font-medium text-white" : "text-white/70"}`}>

@@ -20,7 +20,7 @@ const COLORS = {
   },
   info: {
     bg: "var(--brand-soft)",
-    border: "rgba(139,92,246,0.32)",
+    border: "rgba(var(--brand-rgb), 0.32)",
     bar: "var(--brand)",
   },
 };

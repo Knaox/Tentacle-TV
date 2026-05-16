@@ -41,7 +41,7 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-white">{t("tickets:myTickets")}</h2>
-        <button onClick={onNew} className="flex-shrink-0 rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
+        <button onClick={onNew} className="flex-shrink-0 rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
           {t("tickets:newTicket")}
         </button>
       </div>
@@ -74,7 +74,7 @@ function TicketRow({ ticket, onClick }: { ticket: SupportTicket; onClick: () => 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     open: { label: t("tickets:statusOpen"), color: "bg-green-500/20 text-green-400" },
     in_progress: { label: t("tickets:statusInProgress"), color: "bg-blue-500/20 text-blue-400" },
-    resolved: { label: t("tickets:statusResolved"), color: "bg-purple-500/20 text-purple-400" },
+    resolved: { label: t("tickets:statusResolved"), color: "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand)]" },
     closed: { label: t("tickets:statusClosed"), color: "bg-white/10 text-white/40" },
   };
 
@@ -98,7 +98,7 @@ function TicketRow({ ticket, onClick }: { ticket: SupportTicket; onClick: () => 
           {ticket._count && <span className="ml-2">{t("tickets:messagesCount", { count: ticket._count.messages })}</span>}
         </p>
         {ticket.mediaItemName && (
-          <p className="mt-1 text-xs text-purple-400 truncate">{ticket.mediaItemName}</p>
+          <p className="mt-1 text-xs text-[var(--brand)] truncate">{ticket.mediaItemName}</p>
         )}
       </div>
       {status && <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${status.color}`}>{status.label}</span>}
@@ -169,8 +169,8 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
 
   if (selection) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2">
-        <span className="flex-1 text-sm text-purple-300 truncate">{selection.displayName}</span>
+      <div className="flex items-center gap-2 rounded-lg border border-[rgba(var(--brand-rgb),0.3)] bg-[rgba(var(--brand-rgb),0.1)] px-3 py-2">
+        <span className="flex-1 text-sm text-[var(--brand-light)] truncate">{selection.displayName}</span>
         <button onClick={clear} className="text-white/40 hover:text-white" type="button">&times;</button>
       </div>
     );
@@ -183,7 +183,7 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
         onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); setPickedSeries(null); }}
         onFocus={() => setShowDropdown(true)}
         placeholder={t("tickets:searchMedia")}
-        className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50"
+        className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)]"
       />
 
       {showDropdown && (
@@ -332,7 +332,7 @@ function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (
         <div>
           <label className="mb-1 block text-xs text-white/50">{t("tickets:subject")}</label>
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("tickets:subjectPlaceholder")}
-            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50" maxLength={300} />
+            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)]" maxLength={300} />
         </div>
         <div>
           <label className="mb-1 block text-xs text-white/50">{t("tickets:category")}</label>
@@ -348,10 +348,10 @@ function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (
         <div>
           <label className="mb-1 block text-xs text-white/50">{t("tickets:message")}</label>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("tickets:messagePlaceholder")} rows={6}
-            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50 resize-none" maxLength={5000} />
+            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)] resize-none" maxLength={5000} />
         </div>
         <button type="submit" disabled={createMut.isPending || !subject.trim() || !body.trim()}
-          className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
+          className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
           {createMut.isPending ? t("common:sending") : t("tickets:createTicket")}
         </button>
       </form>
@@ -367,7 +367,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     open: { label: t("tickets:statusOpen"), color: "bg-green-500/20 text-green-400" },
     in_progress: { label: t("tickets:statusInProgress"), color: "bg-blue-500/20 text-blue-400" },
-    resolved: { label: t("tickets:statusResolved"), color: "bg-purple-500/20 text-purple-400" },
+    resolved: { label: t("tickets:statusResolved"), color: "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand)]" },
     closed: { label: t("tickets:statusClosed"), color: "bg-white/10 text-white/40" },
   };
 
@@ -405,15 +405,15 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
           {CATEGORIES[ticket.category] ?? ticket.category} — {new Date(ticket.createdAt).toLocaleDateString()}
         </p>
         {ticket.mediaItemName && (
-          <p className="mt-2 text-xs text-purple-400">{ticket.mediaItemName}</p>
+          <p className="mt-2 text-xs text-[var(--brand)]">{ticket.mediaItemName}</p>
         )}
       </div>
       <div className="max-w-3xl space-y-3">
         {ticket.messages?.map((msg) => (
-          <div key={msg.id} className={`rounded-xl p-4 ${msg.isAdmin ? "border border-purple-500/20 bg-purple-500/10" : "bg-white/5"}`}>
+          <div key={msg.id} className={`rounded-xl p-4 ${msg.isAdmin ? "border border-[rgba(var(--brand-rgb),0.2)] bg-[rgba(var(--brand-rgb),0.1)]" : "bg-white/5"}`}>
             <div className="mb-2 flex items-center gap-2 text-xs">
-              <span className={`font-medium ${msg.isAdmin ? "text-purple-400" : "text-white/70"}`}>{msg.username}</span>
-              {msg.isAdmin && <span className="rounded bg-purple-500/30 px-1.5 py-0.5 text-[10px] text-purple-300">{t("tickets:adminBadge")}</span>}
+              <span className={`font-medium ${msg.isAdmin ? "text-[var(--brand)]" : "text-white/70"}`}>{msg.username}</span>
+              {msg.isAdmin && <span className="rounded bg-[rgba(var(--brand-rgb),0.3)] px-1.5 py-0.5 text-[10px] text-[var(--brand-light)]">{t("tickets:adminBadge")}</span>}
               <span className="text-white/30">{new Date(msg.createdAt).toLocaleString()}</span>
             </div>
             <p className="whitespace-pre-wrap text-sm text-white/80">{msg.body}</p>
@@ -423,9 +423,9 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
       {!isClosed && (
         <form onSubmit={handleReply} className="mt-6 max-w-3xl">
           <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("tickets:replyPlaceholder")} rows={3}
-            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-purple-500/50 resize-none" maxLength={5000} />
+            className="w-full rounded-lg border border-white/10 bg-tentacle-surface px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)] resize-none" maxLength={5000} />
           <button type="submit" disabled={replyMut.isPending || !reply.trim()}
-            className="mt-2 rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}>
+            className="mt-2 rounded-lg h-11 px-5 bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
             {replyMut.isPending ? t("common:sending") : t("common:send")}
           </button>
         </form>

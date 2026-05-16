@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
 import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
+import { extractSourceQuality, formatBitrateMbps } from "@tentacle-tv/shared";
 import { QUALITY_PRESETS, type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { PlayerPopupMenu } from "./player/PlayerPopupMenu";
@@ -69,6 +70,8 @@ export function MobilePlayerOverlay({
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const autoPlayDismissed = useRef(false);
+
+  const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -242,9 +245,25 @@ export function MobilePlayerOverlay({
           }] : []),
           {
             title: t("quality").toUpperCase(),
-            options: QUALITY_PRESETS.map((p) => ({
-              key: p.key, label: t(p.key), active: qualityKey === p.key,
-            })),
+            options: QUALITY_PRESETS.map((p) => {
+              const isOriginal = p.key === "original";
+              const badges = isOriginal ? [
+                ...(sourceQuality.isDolbyVision ? [{ label: "DV", tone: "purple" as const }] : []),
+                ...(sourceQuality.isHDR ? [{ label: "HDR", tone: "amber" as const }] : []),
+                ...(sourceQuality.isDolbyAtmos ? [{ label: "Atmos", tone: "amber" as const }] : []),
+              ] : undefined;
+              const suffix = isOriginal && sourceQuality.resolution ? `— ${sourceQuality.resolution}` : undefined;
+              const rightChip = !isOriginal && p.bitrate
+                ? { label: formatBitrateMbps(p.bitrate), tone: "zinc" as const } : undefined;
+              return {
+                key: p.key,
+                label: t(p.key),
+                active: qualityKey === p.key,
+                suffix,
+                badges,
+                rightChip,
+              };
+            }),
             onSelect: (k: string | number) => { onSelectQuality(k as QualityKey); setShowSettings(false); },
           },
         ]}

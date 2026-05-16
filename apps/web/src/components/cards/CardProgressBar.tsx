@@ -25,7 +25,7 @@ export function CardProgressBar({ percent, border = false }: CardProgressBarProp
         className="h-full bg-brand"
         style={{
           width: `${Math.min(100, Math.max(0, percent))}%`,
-          boxShadow: "0 0 8px rgba(139,92,246,0.45)",
+          boxShadow: "0 0 8px rgba(var(--brand-rgb), 0.45)",
         }}
       />
     </div>

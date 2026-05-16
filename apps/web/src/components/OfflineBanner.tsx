@@ -75,7 +75,7 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
           className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
           style={{
             background: "var(--brand)",
-            boxShadow: "0 8px 30px rgba(139,92,246,0.35), inset 0 0 0 1px rgba(255,255,255,0.10)",
+            boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35), inset 0 0 0 1px rgba(255,255,255,0.10)",
           }}
         >
           {t("retryConnection")}

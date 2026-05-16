@@ -6,7 +6,7 @@ import { AnimatePresence } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
-import type { MediaItem, SegmentTimestamps } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 
 export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
 export interface AudioTrack { index: number; label: string; lang?: string }
@@ -24,14 +24,15 @@ interface VideoPlayerProps {
   audioTracks?: AudioTrack[];
   currentAudio: number;
   currentSubtitle: number | null;
-  currentQuality: number | null;
+  currentQuality: QualityKey;
+  sourceQuality?: SourceQuality;
   isDirectPlay?: boolean;
   streamOffset?: number;
   /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */
   useNativeHls?: boolean;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  onQualityChange?: (bitrate: number | null) => void;
+  onQualityChange?: (key: QualityKey) => void;
   onProgress?: (seconds: number, paused: boolean) => void;
   onStarted?: () => void;
   onSeekRequest?: (seconds: number) => void;
@@ -84,7 +85,7 @@ function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
 export function VideoPlayer({
   src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
-  currentAudio, currentSubtitle, currentQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted, onSeekRequest, onSeekComplete,
@@ -613,10 +614,6 @@ export function VideoPlayer({
         togglePlay();
       }}
       onDoubleClick={toggleFullscreen}
-      onWheel={(e) => {
-        e.preventDefault();
-        handleVolumeChange(Math.min(1, Math.max(0, volume + (e.deltaY < 0 ? 0.05 : -0.05))));
-      }}
       onTouchStart={(e) => {
         userInteractedRef.current = true;
         const t = e.touches[0];
@@ -764,7 +761,7 @@ export function VideoPlayer({
           item={item} itemId={itemId} mediaSourceId={mediaSourceId}
           title={title} subtitle={subtitle}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-          currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality}
+          currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality} sourceQuality={sourceQuality}
           hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
           onTogglePlay={togglePlay} onSeek={handleSeek}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}

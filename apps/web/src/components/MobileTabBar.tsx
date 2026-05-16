@@ -126,8 +126,8 @@ export function MobileTabBar() {
                 <span
                   className="absolute inset-x-6 top-0 h-[2px] rounded-full"
                   style={{
-                    background: "linear-gradient(90deg, #8B5CF6, #A78BFA)",
-                    boxShadow: "0 0 10px rgba(139,92,246,0.55)",
+                    background: "linear-gradient(90deg, var(--brand), var(--brand-light))",
+                    boxShadow: "0 0 10px rgba(var(--brand-rgb), 0.55)",
                   }}
                   aria-hidden
                 />

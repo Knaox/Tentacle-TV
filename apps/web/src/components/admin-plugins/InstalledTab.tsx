@@ -29,7 +29,7 @@ export function InstalledTab() {
   if (isLoading) {
     return (
       <div className={cls.spinner}>
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
       </div>
     );
   }

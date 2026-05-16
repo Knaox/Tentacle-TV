@@ -111,7 +111,7 @@ export function CardQuickActions({
             onClick={openShared}
             aria-label="Ajouter à une liste partagée"
             title="Ajouter à une liste partagée"
-            className={`${sizeClass} flex items-center justify-center rounded-full border border-white/40 bg-black/55 text-white transition hover:scale-105 hover:border-white hover:bg-black/70 ${sharedAdded ? "border-pink-400 text-pink-400" : ""}`}
+            className={`${sizeClass} flex items-center justify-center rounded-full border border-white/40 bg-black/55 text-white transition hover:scale-105 hover:border-white hover:bg-black/70 ${sharedAdded ? "border-[var(--brand-accent)] text-[var(--brand-accent)]" : ""}`}
           >
             <UsersIcon className={iconSize} />
           </button>

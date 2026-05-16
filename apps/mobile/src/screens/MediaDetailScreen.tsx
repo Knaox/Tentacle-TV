@@ -57,13 +57,15 @@ export function MediaDetailScreen({ itemId }: Props) {
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
   const badges = useMemo(() => computeBadges(item), [item]);
 
-  // Parallax scroll
+  // Parallax + one-shot Ken Burns zoom (scale 1 → 1.06 over 8s, then frozen).
   const scrollY = useSharedValue(0);
+  const zoomScale = useSharedValue(1);
   const scrollHandler = useAnimatedScrollHandler((e) => { scrollY.value = e.contentOffset.y; });
+  useEffect(() => { zoomScale.value = 1; zoomScale.value = withTiming(1.06, { duration: 8000, easing: Easing.linear }); }, [zoomScale]);
   const backdropStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: interpolate(scrollY.value, [0, BACKDROP_H], [0, -BACKDROP_H * 0.45], Extrapolation.CLAMP) },
-      { scale: interpolate(scrollY.value, [-BACKDROP_H, 0], [1.4, 1], Extrapolation.CLAMP) },
+      { scale: interpolate(scrollY.value, [-BACKDROP_H, 0], [1.4, 1], Extrapolation.CLAMP) * zoomScale.value },
     ],
   }));
 

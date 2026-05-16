@@ -74,8 +74,8 @@ export function BrowseButton() {
             aria-hidden
             className="pointer-events-none absolute -right-0.5 -top-0.5 h-2 w-2"
           >
-            <span className="absolute inset-0 animate-ping rounded-full bg-purple-400/70" />
-            <span className="absolute inset-0 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
+            <span className="absolute inset-0 animate-ping rounded-full bg-[rgba(var(--brand-rgb),0.7)]" />
+            <span className="absolute inset-0 rounded-full bg-[var(--brand)] shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
           </span>
         )}
       </button>

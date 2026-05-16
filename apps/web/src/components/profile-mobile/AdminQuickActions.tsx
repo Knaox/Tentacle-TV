@@ -53,9 +53,9 @@ export function AdminQuickActions() {
             key={a.key}
             type="button"
             onClick={() => navigate(a.path)}
-            className="flex items-center gap-3 rounded-xl border border-purple-400/20 bg-purple-500/[0.08] p-3 text-left transition-colors duration-150 active:bg-purple-500/[0.14] xs:flex-col xs:items-start"
+            className="flex items-center gap-3 rounded-xl border border-[rgba(var(--brand-rgb),0.2)] bg-[var(--brand)]/[0.08] p-3 text-left transition-colors duration-150 active:bg-[var(--brand)]/[0.14] xs:flex-col xs:items-start"
           >
-            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-purple-500/20 text-purple-300">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)]">
               {a.icon}
             </span>
             <span className="min-w-0 flex-1">

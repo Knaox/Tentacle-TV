@@ -8,9 +8,14 @@ export function About() {
   const { t } = useTranslation("about");
   const platform = isTauriApp ? "Desktop" : "Web";
   const rawVersion = isTauriApp ? __APP_VERSION_DESKTOP__ : __APP_VERSION_WEB__;
-  // Detect pre-release: "1.0.0-beta", "1.0.0-beta.2", "2.0.0-rc.1"…
-  const preReleaseMatch = rawVersion.match(/-([a-z]+)/i);
-  const preReleaseTag = preReleaseMatch ? preReleaseMatch[1].toUpperCase() : null;
+  // Detect pre-release with optional iteration: "1.0.0-beta" → "BETA",
+  // "1.0.0-beta.2" → "BETA 2", "2.0.0-rc.1" → "RC 1".
+  const preReleaseMatch = rawVersion.match(/-([a-z]+)(?:\.(\d+))?/i);
+  const preReleaseTag = preReleaseMatch
+    ? (preReleaseMatch[2]
+        ? `${preReleaseMatch[1].toUpperCase()} ${preReleaseMatch[2]}`
+        : preReleaseMatch[1].toUpperCase())
+    : null;
   const versionLabel = rawVersion.replace(/-[a-z]+(\..+)?$/i, "");
 
   return (
@@ -23,10 +28,10 @@ export function About() {
             <h1 className="text-4xl font-bold tracking-tight text-white">Tentacle TV</h1>
             {preReleaseTag && (
               <span
-                className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-100 ring-1 ring-violet-400/50 backdrop-blur-md"
+                className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] backdrop-blur-md"
                 style={{
-                  background: "linear-gradient(180deg, rgba(139,92,246,0.32) 0%, rgba(139,92,246,0.18) 100%)",
-                  boxShadow: "0 2px 10px rgba(139,92,246,0.35)",
+                  background: "linear-gradient(180deg, rgba(var(--brand-rgb), 0.32) 0%, rgba(var(--brand-rgb), 0.18) 100%)",
+                  boxShadow: "0 2px 10px rgba(var(--brand-rgb), 0.35)",
                   textShadow: "0 1px 2px rgba(0,0,0,0.45)",
                 }}
               >

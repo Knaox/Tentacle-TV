@@ -53,8 +53,8 @@ export function Card({
 
 function cardHover(e: React.MouseEvent<HTMLElement>) {
   const el = e.currentTarget;
-  el.style.borderColor = "rgba(139,92,246,0.35)";
-  el.style.boxShadow = "0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.2)";
+  el.style.borderColor = "rgba(var(--brand-rgb), 0.35)";
+  el.style.boxShadow = "0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(var(--brand-rgb), 0.2)";
 }
 
 function cardLeave(e: React.MouseEvent<HTMLElement>) {

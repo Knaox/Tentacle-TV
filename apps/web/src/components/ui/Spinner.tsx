@@ -42,13 +42,13 @@ export function Spinner({
 }
 
 const TONE_RING: Record<SpinnerTone, string> = {
-  brand: "rgba(139, 92, 246, 0.18)",
+  brand: "rgba(var(--brand-rgb), 0.18)",
   neutral: "rgba(255, 255, 255, 0.12)",
   white: "rgba(255, 255, 255, 0.18)",
 };
 
 const TONE_HEAD: Record<SpinnerTone, string> = {
   brand: "var(--brand)",
-  neutral: "rgba(255, 255, 255, 0.85)",
+  neutral: "var(--cta-primary-bg-hover)",
   white: "#FFFFFF",
 };

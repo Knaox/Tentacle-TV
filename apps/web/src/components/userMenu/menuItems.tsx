@@ -71,6 +71,6 @@ export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
 export const AVATAR_GRADIENT_BG = "linear-gradient(135deg, var(--brand-dark), var(--brand))";
 export const AVATAR_RING_STYLE = {
   background: AVATAR_GRADIENT_BG,
-  border: "2px solid rgba(139,92,246,0.32)",
-  boxShadow: "0 2px 12px rgba(139,92,246,0.35)",
+  border: "2px solid rgba(var(--brand-rgb), 0.32)",
+  boxShadow: "0 2px 12px rgba(var(--brand-rgb), 0.35)",
 } as const;

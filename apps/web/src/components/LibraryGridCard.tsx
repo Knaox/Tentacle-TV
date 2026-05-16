@@ -98,7 +98,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
             }}
           >
             {localWatchlist ? (
-              <svg className="h-3.5 w-3.5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
+              <svg className="h-3.5 w-3.5 text-[var(--brand)]" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
             ) : (
               <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
             )}
@@ -116,7 +116,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
                 });
               }}
             >
-              <svg className={`h-3.5 w-3.5 ${addedToShared ? "text-pink-400" : "text-white/60"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <svg className={`h-3.5 w-3.5 ${addedToShared ? "text-[var(--brand-accent)]" : "text-white/60"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h6m3 0h3m-1.5-1.5v3" />
               </svg>
             </button>

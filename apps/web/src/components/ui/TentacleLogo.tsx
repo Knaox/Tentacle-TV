@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { TentacleSvg } from "./TentacleSvg";
 
 export type LogoSize = "sm" | "md" | "lg" | "xl";
 export type LogoVariant = "pill" | "bare" | "glow";
@@ -65,19 +66,10 @@ function LogoMark({ size, variant }: LogoMarkProps) {
   };
 
   if (variant === "bare") {
-    // SVG is already a colored mascot — no chrome needed.
-    return (
-      <img
-        src="/tentacle-logo-pirate.svg"
-        alt=""
-        style={baseStyle}
-        draggable={false}
-      />
-    );
+    return <TentacleSvg size={size} style={baseStyle} />;
   }
 
   if (variant === "glow") {
-    // Hero treatment: ambient violet glow behind the SVG, no opaque container.
     const wrapStyle: CSSProperties = {
       width: size,
       height: size,
@@ -85,26 +77,22 @@ function LogoMark({ size, variant }: LogoMarkProps) {
       alignItems: "center",
       justifyContent: "center",
       borderRadius: "9999px",
-      background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, rgba(139,92,246,0.0) 70%)",
+      background: "radial-gradient(circle, rgba(var(--brand-rgb), 0.45) 0%, rgba(var(--brand-rgb), 0.0) 70%)",
       flexShrink: 0,
     };
     return (
       <span style={wrapStyle}>
-        <img
-          src="/tentacle-logo-pirate.svg"
-          alt=""
+        <TentacleSvg
+          size={size}
           style={{
-            width: size,
-            height: size,
-            filter: "drop-shadow(0 4px 24px rgba(139,92,246,0.55))",
+            filter: "drop-shadow(0 4px 24px rgba(var(--brand-rgb), 0.55))",
           }}
-          draggable={false}
         />
       </span>
     );
   }
 
-  // pill: gradient violet container (used sparingly — most surfaces use `bare`).
+  // pill: gradient brand container with white-stamped SVG inside.
   const radius = Math.max(8, size * 0.22);
   const innerSize = Math.round(size * 0.62);
   const pillStyle: CSSProperties = {
@@ -116,15 +104,13 @@ function LogoMark({ size, variant }: LogoMarkProps) {
     justifyContent: "center",
     flexShrink: 0,
     background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
-    boxShadow: "0 2px 12px rgba(139, 92, 246, 0.35)",
+    boxShadow: "0 2px 12px rgba(var(--brand-rgb), 0.35)",
   };
   return (
     <span style={pillStyle}>
-      <img
-        src="/tentacle-logo-pirate.svg"
-        alt=""
-        style={{ width: innerSize, height: innerSize, filter: "brightness(0) invert(1)" }}
-        draggable={false}
+      <TentacleSvg
+        size={innerSize}
+        style={{ filter: "brightness(0) invert(1)" }}
       />
     </span>
   );

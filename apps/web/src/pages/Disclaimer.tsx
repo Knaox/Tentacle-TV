@@ -64,7 +64,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
               onClick={() => switchLang(l.code)}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 lang === l.code
-                  ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                  ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand)] border border-[rgba(var(--brand-rgb),0.3)]"
                   : "text-white/30 hover:text-white/50 border border-transparent"
               }`}
             >
@@ -75,7 +75,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
 
         {/* Title */}
         <h1 className="text-center text-2xl font-bold text-white">{t("title")}</h1>
-        <p className="mt-1 text-center text-sm text-purple-400">{t("heading")}</p>
+        <p className="mt-1 text-center text-sm text-[var(--brand)]">{t("heading")}</p>
 
         {/* Glass body */}
         <div className="mt-6 max-h-64 overflow-y-auto rounded-2xl border border-white/[0.07] bg-white/[0.035] p-5">
@@ -114,7 +114,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
           className={`mt-6 w-full rounded-xl h-11 text-sm font-bold transition-opacity bg-white text-black hover:bg-white/90 ${
             checked ? "" : "opacity-40 cursor-not-allowed"
           }`}
-          style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}
+          style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
         >
           {t("accept")}
         </button>

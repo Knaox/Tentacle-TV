@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
@@ -11,7 +11,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    quality, setQuality, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
@@ -48,13 +48,13 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const handleAudioChange = useCallback(async (idx: number) => {
     audioOverrideRef.current = true;
     // In transcode mode (quality override), kill old ffmpeg before URL rebuild
-    if (quality != null) {
+    if (qualityKey !== "original") {
       await killTranscode();
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
     }
     setAudioIndex(idx);
-  }, [quality, killTranscode, getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
+  }, [qualityKey, killTranscode, getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
 
   const handleSubtitleChange = useCallback(async (idx: number | null) => {
     subtitleOverrideRef.current = true;
@@ -81,12 +81,12 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     setSubtitleIndex(idx);
   }, [isDirectPlay, streams, killTranscode, getPositionTicks, burnInSubtitleIndex, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
 
-  const handleQualityChange = useCallback(async (bitrate: number | null) => {
+  const handleQualityChange = useCallback(async (key: QualityKey) => {
     await killTranscode();
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
-    setQuality(bitrate);
-  }, [killTranscode, getPositionTicks, setQuality, setStartTicks]);
+    setQualityKey(key);
+  }, [killTranscode, getPositionTicks, setQualityKey, setStartTicks]);
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
@@ -119,7 +119,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
         startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-        currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={quality}
+        currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
         onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
         onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}

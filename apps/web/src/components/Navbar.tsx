@@ -41,7 +41,7 @@ export function Navbar() {
         className="flex cursor-pointer items-center gap-3"
       >
         <img src="/tentacle-logo-pirate.svg" alt="Tentacle TV" className="h-9 w-9" />
-        <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] bg-clip-text text-transparent">
           Tentacle TV
         </span>
       </div>

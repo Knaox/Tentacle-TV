@@ -41,7 +41,7 @@ export function NotFound() {
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-md bg-white px-7 py-3 text-base font-bold text-black transition-all duration-200 hover:scale-[1.03] hover:bg-white/90"
-          style={{ boxShadow: "0 8px 30px rgba(139,92,246,0.35)" }}
+          style={{ boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35)" }}
         >
           {t("common:backHome", { defaultValue: "Retour à l'accueil" })}
         </Link>

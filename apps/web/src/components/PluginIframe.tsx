@@ -16,7 +16,7 @@ function PluginLoader({ lang, error }: { lang: string; error?: string }) {
         <img
           src="/tentacle-logo-pirate.svg"
           alt="Tentacle"
-          className="h-16 w-16 drop-shadow-[0_0_20px_rgba(139,92,246,0.5)]"
+          className="h-16 w-16 drop-shadow-[0_0_20px_rgba(var(--brand-rgb), 0.5)]"
         />
         {!error && (
           <div className="absolute -inset-3 animate-spin rounded-full border-2 border-transparent border-t-purple-500/60"

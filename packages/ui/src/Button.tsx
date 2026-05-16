@@ -9,14 +9,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: "text-white shadow-lg shadow-purple-500/20",
+  primary: "text-white shadow-lg shadow-[rgba(var(--brand-rgb),0.2)]",
   secondary: "bg-white/10 text-white hover:bg-white/15 border border-white/10",
   ghost: "text-white/70 hover:bg-white/10 hover:text-white",
   danger: "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20",
 };
 
 const variantStyles: Record<Variant, Record<string, string>> = {
-  primary: { background: "linear-gradient(135deg, #8B5CF6, #7C3AED)" },
+  primary: { background: "linear-gradient(135deg, var(--brand), var(--brand-dark))" },
   secondary: {},
   ghost: {},
   danger: {},

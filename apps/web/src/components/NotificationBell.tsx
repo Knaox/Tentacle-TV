@@ -109,7 +109,7 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
         {count > 0 && (
           <div
             className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full animate-pulse-glow"
-            style={{ background: "#8B5CF6", boxShadow: "0 0 6px rgba(139,92,246,0.6)" }}
+            style={{ background: "var(--brand)", boxShadow: "0 0 6px rgba(var(--brand-rgb), 0.6)" }}
           />
         )}
       </button>
@@ -151,7 +151,7 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
                   {count > 0 && (
                     <button
                       onClick={(e) => { e.stopPropagation(); markAllMut.mutate(); }}
-                      className="rounded-lg px-2 py-1 text-xs text-purple-400 hover:bg-white/10 hover:text-purple-300"
+                      className="rounded-lg px-2 py-1 text-xs text-[var(--brand)] hover:bg-white/10 hover:text-[var(--brand-light)]"
                     >
                       {t("notifications:markAllRead")}
                     </button>

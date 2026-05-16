@@ -100,7 +100,7 @@ function TrickplayPreviewImpl({
             width: cardWidth,
             height: cardHeight,
             boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.22), 0 14px 40px -10px rgba(0,0,0,0.85), 0 4px 12px -2px rgba(0,0,0,0.6)",
+              "0 0 0 1px var(--text-disabled), 0 14px 40px -10px rgba(0,0,0,0.85), 0 4px 12px -2px rgba(0,0,0,0.6)",
             backgroundImage: `url(${frame.url})`,
             backgroundRepeat: "no-repeat",
             backgroundSize: `${Math.round(info.Width * info.TileWidth * scale)}px ${Math.round(info.Height * info.TileHeight * scale)}px`,
@@ -141,7 +141,7 @@ function TrickplayPreviewImpl({
           style={{
             height: TIMESTAMP_PILL_HEIGHT,
             boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.18), 0 6px 16px -4px rgba(0,0,0,0.7)",
+              "0 0 0 1px rgba(255,255,255,0.18), 0 6px 16px -4px var(--surface-overlay)",
           }}
         >
           <span

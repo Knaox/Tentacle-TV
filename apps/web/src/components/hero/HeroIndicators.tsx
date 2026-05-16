@@ -58,9 +58,9 @@ export function HeroIndicators({ count, activeIndex, onSelect, onPrev, onNext }:
               style={{
                 width: active ? 36 : 12,
                 background: active
-                  ? "linear-gradient(90deg, #8B5CF6, #A78BFA)"
+                  ? "linear-gradient(90deg, var(--brand), var(--brand-light))"
                   : "rgba(255,255,255,0.28)",
-                boxShadow: active ? "0 0 12px rgba(139,92,246,0.55)" : "none",
+                boxShadow: active ? "0 0 12px rgba(var(--brand-rgb), 0.55)" : "none",
               }}
             />
           );

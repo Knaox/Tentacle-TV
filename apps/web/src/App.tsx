@@ -31,6 +31,9 @@ const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
 const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
 const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
+const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({ default: m.AdminTheme })));
+const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").then((m) => ({ default: m.AdminThemeTokens })));
+const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
 const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
 const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
@@ -214,6 +217,9 @@ export function App() {
             <Route path="pair-device" element={<PairDevice />} />
             <Route path="admin" element={<Admin />} />
             <Route path="admin/plugins" element={<AdminPlugins />} />
+            <Route path="admin/theme" element={<AdminTheme />} />
+            <Route path="admin/theme/tokens" element={<AdminThemeTokens />} />
+            <Route path="admin/theme/reference" element={<AdminThemeReference />} />
 
             {/* Dynamic plugin admin routes (sandboxed iframes) — convention: /admin/plugins/:pluginId */}
             {activePluginsMeta
