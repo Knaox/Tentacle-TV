@@ -6,19 +6,20 @@ import {
 } from "@tentacle-tv/shared";
 import type { DeviceProfile, PlaybackInfoResponse } from "@tentacle-tv/shared";
 import type { StorageAdapter, UuidGenerator } from "./storage";
+import { DirectStreamingState, JellyfinError, buildQuery } from "./jellyfin/types";
+import {
+  buildImageUrl,
+  buildStreamUrl,
+  buildSubtitleUrl,
+  type ImageType,
+  type ImageUrlOptions,
+  type StreamUrlOptions,
+} from "./jellyfin/urlBuilder";
+import { fetchWithRetry, type FetchWithRetryState } from "./jellyfin/fetchWithRetry";
 
-/** Build query string — compatible Hermes (pas de URLSearchParams.set). */
-function buildQuery(entries: Record<string, string>): string {
-  return Object.entries(entries)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join("&");
-}
-
-export interface DirectStreamingState {
-  enabled: boolean;
-  mediaBaseUrl: string;
-  jellyfinToken: string;
-}
+// Re-exports for backward-compatible public API.
+export { JellyfinError } from "./jellyfin/types";
+export type { DirectStreamingState } from "./jellyfin/types";
 
 export class JellyfinClient {
   private baseUrl: string;
@@ -33,16 +34,18 @@ export class JellyfinClient {
   private directStreamingErrors = 0;
   private directStreamingFailCallback?: () => void;
   private static readonly DS_ERROR_THRESHOLD = 3;
-  private _consecutive401Count = 0;
   private _isLoggingIn = false;
-  private _authRefreshInProgress = false;
   // Seuil à 5 (et non 3) pour absorber les 401 transitoires (Jellyfin qui rotate
   // ses tokens, glitches DNS, redémarrage serveur de quelques secondes) sans
   // déclencher un logout intempestif sur les clients qui n'ont pas de retry
   // côté UI (TV notamment).
-  private static readonly AUTH_EXPIRE_THRESHOLD = 5;
+  private fetchState: FetchWithRetryState = {
+    consecutive401Count: 0,
+    authRefreshInProgress: false,
+  };
   /** When true, send credentials: "include" (httpOnly cookies) instead of token headers. */
   useCredentials = false;
+
   constructor(
     baseUrl: string,
     storage: StorageAdapter,
@@ -68,8 +71,8 @@ export class JellyfinClient {
 
   /** Reset auth state after a successful token refresh. */
   resetAuthState() {
-    this._consecutive401Count = 0;
-    this._authRefreshInProgress = false;
+    this.fetchState.consecutive401Count = 0;
+    this.fetchState.authRefreshInProgress = false;
   }
 
   getBaseUrl() { return this.baseUrl; }
@@ -98,7 +101,7 @@ export class JellyfinClient {
 
   /** Resolve a media URL: use direct Jellyfin URL if active, otherwise proxy.
    *  Also replaces api_key/ApiKey with the user's own Jellyfin token. */
-  private resolveMediaUrl(proxyUrl: string): string {
+  private resolveMediaUrl = (proxyUrl: string): string => {
     if (!this.directStreaming) return proxyUrl;
     const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
     const path = proxyUrl.replace(this.baseUrl, "");
@@ -112,7 +115,7 @@ export class JellyfinClient {
       url += (url.includes("?") ? "&" : "?") + `api_key=${encoded}`;
     }
     return url;
-  }
+  };
 
   getDeviceId() {
     return this.deviceId;
@@ -138,193 +141,60 @@ export class JellyfinClient {
     return parts.join(", ");
   }
 
-  async fetch<T>(path: string, init?: RequestInit): Promise<T> {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      [JELLYFIN_AUTH_HEADER]: this.getAuthHeader(),
-      ...(this.accessToken
-        ? { [JELLYFIN_TOKEN_HEADER]: this.accessToken }
-        : {}),
-      ...(init?.headers as Record<string, string>),
-    };
-
-    // Retry transparent pour absorber les redémarrages backend (5-15 s typiques) :
-    // 502/503/504 + erreurs réseau → on retente avec backoff exponentiel court.
-    // 401 → JAMAIS de retry (ce serait masquer un vrai problème d'auth).
-    // Mutations (POST/PUT/PATCH/DELETE) → un seul retry max pour éviter les doublons
-    // (par ex. mark watched envoyé deux fois → idempotent côté Jellyfin mais bruit).
-    const method = (init?.method ?? "GET").toUpperCase();
-    const isMutation = method !== "GET" && method !== "HEAD";
-    const RETRY_DELAYS_MS = isMutation ? [400] : [300, 700, 1500, 4000];
-
-    let response: Response | null = null;
-    let networkError: unknown = null;
-
-    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-      try {
-        response = await fetch(`${this.baseUrl}${path}`, {
-          ...init,
-          headers,
-          credentials: this.useCredentials ? "include" : undefined,
-        });
-        networkError = null;
-        // Codes "backend en redémarrage" — on retente sans bruit
-        if (response.status === 502 || response.status === 503 || response.status === 504) {
-          if (attempt < RETRY_DELAYS_MS.length) {
-            await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
-            continue;
-          }
-        }
-        break; // Succès, ou 4xx (sauf 5xx retryables) → on sort
-      } catch (err) {
-        // Erreur réseau (offline, fetch refusé, timeout) — on retente
-        networkError = err;
-        if (attempt < RETRY_DELAYS_MS.length) {
-          await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
-          continue;
-        }
-        break;
-      }
-    }
-
-    if (!response) {
-      // Toutes les tentatives ont échoué côté réseau
-      throw networkError instanceof Error ? networkError : new Error("Network error");
-    }
-
-    if (!response.ok) {
-      if (response.status === 401 && this.accessToken && !this._isLoggingIn) {
-        this._consecutive401Count++;
-        if (this._consecutive401Count >= JellyfinClient.AUTH_EXPIRE_THRESHOLD && !this._authRefreshInProgress) {
-          this._consecutive401Count = 0;
-          this._authRefreshInProgress = true;
-          Promise.resolve(this.authExpiredCallback?.()).finally(() => {
-            this._authRefreshInProgress = false;
-          });
-        }
-      }
-      throw new JellyfinError(response.status, response.statusText, path);
-    }
-    this._consecutive401Count = 0;
-    if (response.status === 204) return undefined as T;
-    const text = await response.text();
-    return text ? JSON.parse(text) : (undefined as T);
+  fetch<T>(path: string, init?: RequestInit): Promise<T> {
+    return fetchWithRetry<T>(
+      {
+        baseUrl: this.baseUrl,
+        path,
+        init,
+        accessToken: this.accessToken,
+        useCredentials: this.useCredentials,
+        authHeader: this.getAuthHeader(),
+        onAuthExpired: this.authExpiredCallback,
+        isLoggingIn: this._isLoggingIn,
+      },
+      this.fetchState,
+    );
   }
 
   getImageUrl(
     itemId: string,
-    imageType: "Primary" | "Backdrop" | "Logo" | "Thumb" = "Primary",
-    options?: { width?: number; height?: number; quality?: number; tag?: string; index?: number }
+    imageType: ImageType = "Primary",
+    options?: ImageUrlOptions,
   ): string {
-    const p: Record<string, string> = {};
-    if (options?.width) p.maxWidth = String(options.width);
-    if (options?.height) p.maxHeight = String(options.height);
-    if (options?.quality) p.quality = String(options.quality);
-    if (options?.tag) p.tag = options.tag;
-    const idx = options?.index ?? 0;
-    const suffix = imageType === "Backdrop" && idx > 0 ? `/${idx}` : "";
-    const url = `${this.baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${buildQuery(p)}`;
-    return this.resolveMediaUrl(url);
+    return buildImageUrl(this.baseUrl, itemId, imageType, options, this.resolveMediaUrl);
   }
 
-  getStreamUrl(itemId: string, options?: {
-    audioIndex?: number;
-    mediaSourceId?: string;
-    maxBitrate?: number;
-    maxHeight?: number;
-    directPlay?: boolean;
-    startTimeTicks?: number;
-    playSessionId?: string;
-    /** @deprecated Kept for mobile/TV compat — remux always uses h264 fallback. */
-    sourceVideoCodec?: string;
-    /** Progressive remux (default true). Set false for Safari/iOS (no Range support). */
-    useProgressiveRemux?: boolean;
-    /** Bitmap subtitle burn-in index (PGS/DVDSUB). */
-    subtitleStreamIndex?: number;
-  }): string {
-    const p: Record<string, string> = {};
-    // When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
-    // Mobile/desktop still need api_key in the URL for stream requests.
-    if (!this.useCredentials) {
-      p.api_key = this.accessToken ?? "";
-    }
-    if (options?.mediaSourceId) p.MediaSourceId = options.mediaSourceId;
-    if (options?.audioIndex != null) p.AudioStreamIndex = String(options.audioIndex);
-    if (options?.startTimeTicks) p.StartTimeTicks = String(options.startTimeTicks);
-    // Server-side burn-in for bitmap subtitles (PGS/DVDSUB)
-    if (options?.subtitleStreamIndex != null) p.SubtitleStreamIndex = String(options.subtitleStreamIndex);
-
-    // Direct play — raw file, browser handles codec/track selection
-    if (options?.directPlay !== false && !options?.maxBitrate) {
-      p.Static = "true";
-      return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/stream?${buildQuery(p)}`);
-    }
-
-    // Shared transcode/remux params
-    p.DeviceId = this.deviceId;
-    if (options?.playSessionId) p.PlaySessionId = options.playSessionId;
-    p.TranscodingMaxAudioChannels = "6";
-    p.RequireAvc = "false";
-    p.context = "Streaming";
-
-    if (!options?.maxBitrate) {
-      // Remux: video copy + audio transcode. h264 fallback codec for HW encoding.
-      // VideoBitrate/MaxWidth are safety nets if Jellyfin can't copy (HDR tonemapping).
-      p.VideoCodec = "h264";
-      p.AllowVideoStreamCopy = "true";
-      p.AllowAudioStreamCopy = "false";
-      p.AudioCodec = "aac";
-      p.CopyTimestamps = "true";
-      p.VideoBitrate = "139616000";
-      p.AudioBitrate = "384000";
-      p.MaxWidth = "1920";
-
-      if (options?.useProgressiveRemux !== false) {
-        return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`);
-      }
-      // HLS remux fallback (Safari/iOS) — TS segments
-      return this.resolveHls(itemId, p);
-    }
-
-    // Quality transcode via HLS — full re-encode with bitrate limit.
-    p.AllowVideoStreamCopy = "false";
-    p.AllowAudioStreamCopy = "false";
-    p.EnableAudioVbrEncoding = "true";
-    p.CopyTimestamps = "true";
-    p.VideoCodec = "h264";
-    p.AudioCodec = "aac";
-    const audioBitrate = 384000;
-    p.VideoBitrate = String(Math.max(options.maxBitrate - audioBitrate, 500000));
-    p.AudioBitrate = String(audioBitrate);
-    p.MaxWidth = "1920";
-    if (options?.maxHeight) p.MaxHeight = String(options.maxHeight);
-    return this.resolveHls(itemId, p);
-  }
-
-  private resolveHls(itemId: string, p: Record<string, string>): string {
-    // Jellyfin 10.10+ rejects StartTimeTicks on individual .ts segment requests,
-    // but propagates all master.m3u8 query params to segment URLs → error.
-    // The client must seek to the desired position instead.
-    delete p.StartTimeTicks;
-    p.BreakOnNonKeyFrames = "true";
-    p.RequireNonAnamorphic = "false";
-    p.EnableSubtitlesInManifest = "true";
-    p.SegmentContainer = "ts";
-    p.MinSegments = "2";
-    return this.resolveMediaUrl(`${this.baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);
+  getStreamUrl(itemId: string, options?: StreamUrlOptions): string {
+    return buildStreamUrl(
+      {
+        baseUrl: this.baseUrl,
+        deviceId: this.deviceId,
+        accessToken: this.accessToken,
+        useCredentials: this.useCredentials,
+        resolveMediaUrl: this.resolveMediaUrl,
+      },
+      itemId,
+      options,
+    );
   }
 
   getSubtitleUrl(itemId: string, mediaSourceId: string, streamIndex: number, format = "vtt"): string {
-    // Always proxy — <track> elements enforce CORS; cross-origin tracks are blocked
-    // (and on browsers with crossOrigin="anonymous", they corrupt the <video> element).
-    const base = `${this.baseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${streamIndex}/Stream.${format}`;
-    // When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
-    return this.useCredentials ? base : `${base}?api_key=${this.accessToken}`;
+    return buildSubtitleUrl(
+      this.baseUrl,
+      itemId,
+      mediaSourceId,
+      streamIndex,
+      format,
+      this.accessToken,
+      this.useCredentials,
+    );
   }
 
   /** POST /Items/{id}/PlaybackInfo — server-driven stream selection.
    *  When direct streaming is active, sends directly to Jellyfin so the
-   *  transcode session uses the user's token (not the admin API key). */
+   *  transcode session uses the user's token (not the admin API key).
+   *  Falls back to the same-origin proxy on CORS / network error. */
   async getPlaybackInfo(
     itemId: string,
     options: {
@@ -376,20 +246,13 @@ export class JellyfinClient {
       } catch (e) {
         if (e instanceof JellyfinError) throw e;
         // CORS preflight blocked (Safari/iOS) — fall back to proxy
+        console.warn(
+          "[Tentacle:PlaybackInfo] direct call failed, falling back to proxy:",
+          (e as Error)?.message ?? e,
+        );
       }
     }
 
     return this.fetch<PlaybackInfoResponse>(path, { method: "POST", body });
-  }
-}
-
-export class JellyfinError extends Error {
-  constructor(
-    public status: number,
-    public statusText: string,
-    public path: string
-  ) {
-    super(`Media server API error ${status}: ${statusText} (${path})`);
-    this.name = "JellyfinError";
   }
 }

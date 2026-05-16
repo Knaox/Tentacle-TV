@@ -195,19 +195,101 @@ Go to the **SSL** tab and either:
 
 Enable **Force SSL** and **HTTP/2 Support**.
 
-### 3. Advanced (optional)
+### 3. Advanced (strongly recommended)
 
-If you encounter Content Security Policy errors in the browser console, click the **gear icon** on the proxy host to open the Advanced tab and add:
+Click the **gear icon** on the proxy host to open the Advanced tab and paste:
 
 ```nginx
 proxy_hide_header Content-Security-Policy;
+proxy_read_timeout 86400s;
+proxy_send_timeout 86400s;
 ```
 
-This removes any CSP header that might block WebSocket connections (`wss://`). The application already handles its own CSP policy.
+- `proxy_hide_header Content-Security-Policy` removes any upstream CSP header that can block the app's WebSocket (`wss://`). The application ships its own CSP policy.
+- `proxy_read_timeout 86400s` and `proxy_send_timeout 86400s` keep long-lived WebSocket connections (real-time home updates, notifications) alive for up to 24 h instead of being dropped by NPM's default 60 s idle timeout. Without these, the WS reconnects every minute and the home feed flickers.
 
-### 4. Direct Streaming with a separate Jellyfin subdomain (CORS)
+### 4. Direct Streaming via same-domain Jellyfin (recommended)
 
-If you enable **Direct Streaming** in the admin panel and your Jellyfin server is exposed on a **different subdomain** than Tentacle TV (e.g. `tentacle.example.com` for the client and `jellyfin.example.com` for the media server), the browser will send cross-origin requests to `PlaybackInfo` and to the HLS `master.m3u8`. You will see errors like:
+If you enable **Direct Streaming** in the admin panel, the browser will issue XHR requests directly to your Jellyfin server. The **cleanest, CORS-free way** to expose Jellyfin to the browser is to serve it under a **sub-path of the same domain as Tentacle TV** (e.g. `tentacle.example.com/jellyfin`). Same origin → no preflight, no `Access-Control-Allow-Origin` headers to maintain, no Cloudflare worker.
+
+#### Step 1 — Tell Jellyfin to live under `/jellyfin`
+
+In **Jellyfin → Dashboard → Networking → Base URL**, set:
+
+```
+/jellyfin
+```
+
+Save and **restart Jellyfin** (`docker restart jellyfin` or the equivalent). Without a restart Jellyfin keeps using the old base URL.
+
+#### Step 2 — Trust the reverse proxy
+
+In **Jellyfin → Dashboard → Networking → Known Proxies**, add the IP of your NPM container (e.g. `172.16.1.30`). Otherwise Jellyfin discards `X-Forwarded-For` / `X-Forwarded-Proto` and may reject HLS requests with `401`.
+
+In **Jellyfin → Dashboard → Networking → Published Server URIs**, add:
+
+```
+all=https://tentacle.example.com
+```
+
+This is the URL Jellyfin advertises to clients (including Tentacle TV mobile/desktop) — it must match what the browser sees.
+
+#### Step 3 — Add a Custom Location in NPM
+
+On the existing **Tentacle proxy host** (`tentacle.example.com`), open the **Custom locations** tab and **Add location**:
+
+| Field | Value |
+|-------|-------|
+| **Location** | `/jellyfin` |
+| **Scheme** | `http` |
+| **Forward Hostname / IP** | your Jellyfin container IP (e.g. `172.16.1.30`) |
+| **Forward Port** | `8096` |
+
+Click the **gear icon next to the location** (not the one at the top of the modal) → toggle **Enable Websockets Support** ON. Jellyfin's SyncPlay and live updates need it.
+
+#### Step 4 — Cloudflare DNS only (if you use Cloudflare)
+
+In your Cloudflare DNS panel, set the record for `tentacle.example.com` to **DNS only** (grey cloud, not orange). Cloudflare's proxy combined with Jellyfin sub-paths consistently breaks HTTP/2 and WebSocket upgrades. Keep it grey for streaming.
+
+#### Step 5 — Configure Tentacle's Direct Streaming admin
+
+In **Tentacle admin → Direct Streaming**, set both URLs to the new same-domain URL:
+
+```
+Public URL  : https://tentacle.example.com/jellyfin
+Private URL : https://tentacle.example.com/jellyfin
+```
+
+(Or your LAN URL on the private side if your LAN clients should hit Jellyfin directly.)
+
+#### Verify
+
+```bash
+curl -sI "https://tentacle.example.com/jellyfin/web/main.jellyfin.bundle.js" \
+  | grep -iE "content-type|server"
+```
+
+You must see `content-type: application/javascript`. If you see `text/html`, the Custom Location didn't take effect (the request is hitting Tentacle's SPA shell) — double-check the location path and reload NPM.
+
+#### Recovery if you mistyped Jellyfin's BaseURL
+
+If you set the wrong BaseURL in Jellyfin and locked yourself out of the dashboard, edit `network.xml` in place:
+
+```bash
+# Reset BaseURL to empty (root)
+docker exec jellyfin sed -i 's|<BaseUrl>.*</BaseUrl>|<BaseUrl />|' /config/network.xml
+docker restart jellyfin
+
+# Or set it explicitly to /jellyfin
+docker exec jellyfin sed -i 's|<BaseUrl>.*</BaseUrl>|<BaseUrl>/jellyfin</BaseUrl>|' /config/network.xml
+docker restart jellyfin
+```
+
+> **Note for users with other Jellyfin clients** (official mobile app, Findroid, Streamyfin, Sonarr/Radarr integrations): they'll need their server URL updated to include the new `/jellyfin` sub-path. If that's not acceptable, keep your existing `jellyfin.example.com` subdomain as a mirror proxy host in NPM and follow section 5 below to handle CORS instead.
+
+### 5. Direct Streaming with a separate Jellyfin subdomain (CORS) — alternative
+
+If you must keep Jellyfin on its own subdomain (e.g. `jellyfin.example.com`) for legacy clients, the browser will issue cross-origin requests for `PlaybackInfo` and the HLS `master.m3u8`. You will see errors like:
 
 ```
 Origin https://tentacle.example.com is not allowed by Access-Control-Allow-Origin.
@@ -259,9 +341,16 @@ You should see **exactly one** `access-control-allow-origin: https://tentacle.ex
 
 In **Jellyfin → Dashboard → Networking → Known Proxies**, add the IP (or subnet) of your NPM container. Without this, Jellyfin discards `X-Forwarded-*` headers and may reject HLS requests with `401`, which masquerades as a CORS error in the browser.
 
-**Alternative — disable Direct Streaming**
+**Automatic fallback (always on)**
 
-If you only have a single Tentacle subdomain (e.g. you serve Jellyfin only through `/api/jellyfin/*` via the Tentacle backend), simply leave **Direct Streaming** disabled in the admin panel. All Jellyfin calls then go through the same-origin backend proxy and no CORS configuration is required. Trade-off: a bit more CPU/RAM on the Tentacle container.
+If your CORS config is broken or partially missing, the web client detects the failure (CORS-blocked `PlaybackInfo` or HLS `manifestLoadError`) and **transparently falls back** to the same-origin backend proxy `/api/jellyfin/*` for that browser session. Playback still works. You'll see in DevTools console:
+
+```
+[Tentacle:PlaybackInfo] direct call failed, falling back to proxy: TypeError: Load failed
+[Tentacle:Playback] { mode: "Transcode", transport: "proxy", directStreamingConfigured: true, … }
+```
+
+The `directStreamingConfigured: true` confirms the admin toggle stays ON; `transport: "proxy"` confirms the per-session fallback engaged. Native apps (Tauri desktop, mobile, Android TV) are unaffected — they have no CORS and continue full-direct.
 
 ---
 

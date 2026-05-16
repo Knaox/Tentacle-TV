@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Hls from "hls.js";
 import { AnimatePresence } from "framer-motion";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import type { MediaItem, SegmentTimestamps } from "@tentacle-tv/shared";
@@ -98,6 +99,7 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
+  const jfClient = useJellyfinClient();
   const { t } = useTranslation("player");
 
   const [playing, setPlaying] = useState(false);
@@ -383,6 +385,26 @@ export function VideoPlayer({
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           console.error(DBG, "HLS fatal error:", data.type, data.details);
+          // CORS / cross-origin direct streaming blocked the manifest fetch.
+          // Disable DS for this session (admin config stays ON) and ask the
+          // parent to re-fetch PlaybackInfo, which will now go through the
+          // same-origin proxy at /api/jellyfin/* (no CORS).
+          if (
+            data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
+            jfClient.getDirectStreaming()
+          ) {
+            console.warn(
+              DBG,
+              "manifestLoadError on direct streaming — disabling DS for this session and falling back to proxy",
+            );
+            jfClient.setDirectStreaming(null);
+            clearTimeout(failsafe);
+            sourceChangingRef.current = false;
+            hls.destroy();
+            hlsRef.current = null;
+            onSeekRequest?.(currentTimeRef.current);
+            return;
+          }
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
           else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
           else { clearTimeout(failsafe); sourceChangingRef.current = false; setLoading(false); setShowPlayButton(true); }
@@ -672,7 +694,13 @@ export function VideoPlayer({
         onSeeked={() => { clearTimeout(seekStallTimer.current); }}
         onPlaying={() => { clearTimeout(waitingTimer.current); clearTimeout(seekStallTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
         onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
-        onStalled={() => { console.warn(DBG, "video stalled", { src: src.slice(0, 120), readyState: videoRef.current?.readyState, networkState: videoRef.current?.networkState }); }}
+        onStalled={() => {
+          // HTML5 `stalled` fires frequently during HLS playback (segment switch,
+          // network jitter, paused tab) even when playback recovers immediately.
+          // Demoted to console.debug so it stays out of the default console output
+          // — set DevTools log level to "Verbose" to see it during deep debugging.
+          console.debug(DBG, "video stalled", { src: src.slice(0, 120), readyState: videoRef.current?.readyState, networkState: videoRef.current?.networkState });
+        }}
         onError={(e) => {
           const err = e.currentTarget.error;
           console.error(DBG, "video error", { code: err?.code, message: err?.message, src: src.slice(0, 120), networkState: e.currentTarget.networkState });
