@@ -43,22 +43,9 @@ export function HomeScreen() {
   const heroItems = resume.data && resume.data.length > 0
     ? resume.data.slice(0, 5)
     : featured.data ?? [];
-  const heroIsResume = resume.data && resume.data.length > 0;
 
-  // Row "Continuer à regarder" — fusionne resume + nextUp, dédupliqué, hors hero.
-  const continueWatchingItems = useMemo(() => {
-    const seen = new Set<string>();
-    const result: MediaItem[] = [];
-    const heroIds = heroIsResume ? new Set((resume.data ?? []).slice(0, 5).map((i) => i.Id)) : new Set<string>();
-    for (const list of [resume.data ?? [], nextUp.data ?? []]) {
-      for (const item of list) {
-        if (heroIds.has(item.Id) || seen.has(item.Id)) continue;
-        seen.add(item.Id);
-        result.push(item);
-      }
-    }
-    return result;
-  }, [resume.data, nextUp.data, heroIsResume]);
+  const resumeRowItems = resume.data ?? [];
+  const nextUpRowItems = nextUp.data ?? [];
 
   const handleRefresh = useCallback(() => {
     featured.refetch();
@@ -120,10 +107,17 @@ export function HomeScreen() {
           <HeroBanner items={heroItems} onPlay={handlePlay} onInfo={handlePress} />
         )}
 
-        {/* Continuer à regarder — resume + nextUp fusionnés, dédupliqués */}
-        {continueWatchingItems.length > 0 && (
+        {/* Reprendre la lecture — strict parité avec le desktop (hero inclus). */}
+        {resumeRowItems.length > 0 && (
           <FadeIn delay={100}>
-            <MediaRow title={t("resumeWatching")} data={continueWatchingItems} renderItem={renderCard} />
+            <MediaRow title={t("resumeWatching")} data={resumeRowItems} renderItem={renderCard} />
+          </FadeIn>
+        )}
+
+        {/* Prochains épisodes — row séparée comme sur le desktop. */}
+        {nextUpRowItems.length > 0 && (
+          <FadeIn delay={170}>
+            <MediaRow title={t("nextEpisodes")} data={nextUpRowItems} renderItem={renderCard} />
           </FadeIn>
         )}
 
