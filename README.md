@@ -205,6 +205,64 @@ proxy_hide_header Content-Security-Policy;
 
 This removes any CSP header that might block WebSocket connections (`wss://`). The application already handles its own CSP policy.
 
+### 4. Direct Streaming with a separate Jellyfin subdomain (CORS)
+
+If you enable **Direct Streaming** in the admin panel and your Jellyfin server is exposed on a **different subdomain** than Tentacle TV (e.g. `tentacle.example.com` for the client and `jellyfin.example.com` for the media server), the browser will send cross-origin requests to `PlaybackInfo` and to the HLS `master.m3u8`. You will see errors like:
+
+```
+Origin https://tentacle.example.com is not allowed by Access-Control-Allow-Origin.
+```
+
+Jellyfin does not let you configure CORS in its UI, so the headers must be added by the reverse proxy in front of Jellyfin. In NPM, open the **Jellyfin** proxy host → gear icon → **Advanced** tab and paste:
+
+```nginx
+proxy_hide_header Content-Security-Policy;
+proxy_read_timeout 86400s;
+proxy_send_timeout 86400s;
+
+# Strip any CORS headers Jellyfin sets itself, to avoid duplicates
+proxy_hide_header Access-Control-Allow-Origin;
+proxy_hide_header Access-Control-Allow-Credentials;
+proxy_hide_header Access-Control-Allow-Methods;
+proxy_hide_header Access-Control-Allow-Headers;
+proxy_hide_header Access-Control-Expose-Headers;
+
+# Add CORS headers for the Tentacle TV web client (replace with your origin)
+add_header Access-Control-Allow-Origin      "https://tentacle.example.com" always;
+add_header Access-Control-Allow-Credentials "true" always;
+add_header Access-Control-Allow-Methods     "GET, POST, OPTIONS, DELETE, PUT, PATCH" always;
+add_header Access-Control-Allow-Headers     "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control" always;
+add_header Access-Control-Expose-Headers    "Content-Length, Content-Range, Date, Server" always;
+add_header Access-Control-Max-Age           "1728000" always;
+```
+
+**Important rules**
+
+- Replace `https://tentacle.example.com` with the **exact** origin of your Tentacle TV client (scheme + host, no trailing slash).
+- Every `add_header` value **must stay on a single line** inside its quotes — nginx does not allow line breaks in quoted strings. A broken value will fail `nginx -t` and NPM will refuse to reload, taking **all** your hosts offline (and Cloudflare will show error **525 SSL handshake failed**).
+- Do not use a `map` directive in this tab. `map` only works at the `http {}` level, but NPM injects this block inside `server {}` and nginx will reject the config.
+- Do not wrap the preflight in `if ($request_method = OPTIONS)`. Jellyfin already responds `204` to the preflight; the `always` flag on `add_header` is enough to attach the CORS headers to that 204.
+- Specifying `Access-Control-Allow-Origin: *` is **not enough** here because Tentacle TV sends an `Authorization` header — the browser requires an explicit origin in that case.
+
+**Verify**
+
+From any machine, just after saving:
+
+```bash
+curl -sI https://jellyfin.example.com/System/Info/Public \
+  -H "Origin: https://tentacle.example.com"
+```
+
+You should see **exactly one** `access-control-allow-origin: https://tentacle.example.com` line. If you also see a `*`, your `proxy_hide_header` did not take effect — check the host order and reload NPM (`docker restart nginx-proxy-manager`).
+
+**Don't forget Jellyfin's Known Proxies**
+
+In **Jellyfin → Dashboard → Networking → Known Proxies**, add the IP (or subnet) of your NPM container. Without this, Jellyfin discards `X-Forwarded-*` headers and may reject HLS requests with `401`, which masquerades as a CORS error in the browser.
+
+**Alternative — disable Direct Streaming**
+
+If you only have a single Tentacle subdomain (e.g. you serve Jellyfin only through `/api/jellyfin/*` via the Tentacle backend), simply leave **Direct Streaming** disabled in the admin panel. All Jellyfin calls then go through the same-origin backend proxy and no CORS configuration is required. Trade-off: a bit more CPU/RAM on the Tentacle container.
+
 ---
 
 ## Desktop App
