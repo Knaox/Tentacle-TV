@@ -1,6 +1,6 @@
 {
   "name": "@tentacle-tv/web",
-  "version": "1.0.0-beta",
+  "version": "1.0.0-beta.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "@tentacle-tv/api-client": "workspace:*",
     "@tentacle-tv/plugins-api": "workspace:*",
     "@tentacle-tv/shared": "workspace:*",
+    "@tentacle-tv/theme": "workspace:*",
     "@tentacle-tv/ui": "workspace:*",
     "framer-motion": "^11.15.0",
     "hls.js": "^1.6.15",

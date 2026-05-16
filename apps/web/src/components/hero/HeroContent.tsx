@@ -80,7 +80,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           <img
             src={logoUrl}
             alt={displayName}
-            className="mb-4 h-20 max-w-[440px] object-contain object-left drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)] md:h-28 lg:h-32"
+            className="mb-4 h-20 max-w-[440px] object-contain object-left drop-shadow-[0_4px_24px_var(--surface-overlay)] md:h-28 lg:h-32"
             draggable={false}
           />
         ) : (
@@ -164,7 +164,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             type="button"
             onClick={handlePlay}
             className="flex items-center gap-2.5 rounded-md bg-white px-7 py-3 text-base font-bold text-black transition-all duration-200 hover:scale-[1.03] hover:bg-white/90"
-            style={{ boxShadow: "0 8px 30px rgba(139,92,246,0.35), 0 0 0 1px rgba(255,255,255,0.7) inset" }}
+            style={{ boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35), 0 0 0 1px rgba(255,255,255,0.7) inset" }}
           >
             <PlayIcon />
             {hasProgress ? t("common:resume") : t("common:play")}
@@ -174,8 +174,8 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             onClick={() => navigate(`/media/${detailId}`)}
             className="flex items-center gap-2.5 rounded-md px-6 py-3 text-base font-semibold text-white transition-all duration-200 hover:scale-[1.03]"
             style={{
-              background: "rgba(139,92,246,0.18)",
-              border: "1px solid rgba(139,92,246,0.35)",
+              background: "rgba(var(--brand-rgb), 0.18)",
+              border: "1px solid rgba(var(--brand-rgb), 0.35)",
               backdropFilter: "blur(10px)",
               WebkitBackdropFilter: "blur(10px)",
             }}

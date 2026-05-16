@@ -31,7 +31,7 @@ export const cls = {
 
   // CTA primary (Netflix — white pill + halo violet via bpStyle inline)
   bp: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-white text-black text-sm font-bold transition-all hover:bg-white/90 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
-  bpStyle: { boxShadow: "0 8px 22px rgba(139,92,246,0.45)" } as CSSProperties,
+  bpStyle: { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" } as CSSProperties,
 
   // CTA secondary (gris translucide)
   bs: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-white/10 border border-white/[0.08] text-white/90 text-sm font-semibold transition hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed",

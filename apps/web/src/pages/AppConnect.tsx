@@ -53,7 +53,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-80"
         style={{
-          background: "radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.18) 0%, rgba(139,92,246,0.04) 30%, transparent 70%)",
+          background: "radial-gradient(ellipse at 50% 0%, rgba(var(--brand-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.04) 30%, transparent 70%)",
         }}
       />
 
@@ -114,7 +114,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
             onClick={handleConnect}
             disabled={testing || !url}
             className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-white text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-            style={{ boxShadow: "0 8px 22px rgba(139,92,246,0.45)" }}
+            style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
           >
             {testing ? t("connecting") : t("signIn")}
           </button>

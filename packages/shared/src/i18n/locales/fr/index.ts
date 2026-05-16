@@ -10,6 +10,7 @@ import about from "./about";
 import notifications from "./notifications";
 import nav from "./nav";
 import adminPlugins from "./adminPlugins";
+import adminTheme from "./adminTheme";
 import media from "./media";
 import errors from "./errors";
 import profile from "./profile";
@@ -18,5 +19,5 @@ import disclaimer from "./disclaimer";
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
-  adminPlugins, media, errors, profile, disclaimer,
+  adminPlugins, adminTheme, media, errors, profile, disclaimer,
 };

@@ -8,10 +8,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import type { QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { CheckIcon } from "./icons/TVIcons";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { Colors, Radius } from "../theme/colors";
+import { TVQualitySection } from "./player/TVQualitySection";
 
 interface Track {
   index: number;
@@ -23,8 +25,11 @@ interface TVTrackSelectorProps {
   subtitleTracks: Track[];
   selectedAudio: number;
   selectedSubtitle: number;
+  qualityKey?: QualityKey;
+  sourceQuality?: SourceQuality;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
+  onSelectQuality?: (key: QualityKey) => void;
   onClose: () => void;
   /** Called on any user interaction to reset overlay auto-hide timer */
   onInteraction?: () => void;
@@ -34,7 +39,8 @@ const TRACK_ITEM_HEIGHT = 52; // paddingVertical 14*2 + text ~24
 
 export function TVTrackSelector({
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
-  onSelectAudio, onSelectSubtitle, onClose, onInteraction,
+  qualityKey, sourceQuality,
+  onSelectAudio, onSelectSubtitle, onSelectQuality, onClose, onInteraction,
 }: TVTrackSelectorProps) {
   const { t } = useTranslation("player");
   const slideX = useSharedValue(380);
@@ -138,6 +144,18 @@ export function TVTrackSelector({
 
           {subtitleTracks.map((track, i) =>
             renderTrack(track, track.index === selectedSubtitle, () => onSelectSubtitle(track.index), false, audioTracks.length + 1 + i)
+          )}
+
+          {/* Quality section */}
+          {onSelectQuality && qualityKey && (
+            <TVQualitySection
+              qualityKey={qualityKey}
+              sourceQuality={sourceQuality}
+              onSelectQuality={onSelectQuality}
+              onInteraction={onInteraction}
+              makeOnFocus={makeOnFocus}
+              scrollOffsetStart={audioTracks.length + 1 + subtitleTracks.length}
+            />
           )}
         </ScrollView>
       </TVFocusGuideView>

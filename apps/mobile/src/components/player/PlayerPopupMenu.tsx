@@ -3,9 +3,26 @@ import { View, Text, Pressable, ScrollView, Animated, useWindowDimensions } from
 import { X } from "lucide-react-native";
 import { parseTrackLabel } from "../../lib/playerUtils";
 
+export interface PopupBadge {
+  label: string;
+  tone?: "purple" | "amber" | "zinc";
+}
+
+export interface PopupOption {
+  key: string | number;
+  label: string;
+  active: boolean;
+  /** Suffixe gris affiché à droite du label (ex. "— 4K"). */
+  suffix?: string;
+  /** Chips colorés affichés inline (HDR, DV, Atmos). */
+  badges?: PopupBadge[];
+  /** Chip aligné à droite (typiquement le débit "30 Mbps"). */
+  rightChip?: { label: string; tone?: "purple" | "amber" | "zinc" };
+}
+
 export interface PopupSection {
   title: string;
-  options: { key: string | number; label: string; active: boolean }[];
+  options: PopupOption[];
   onSelect: (key: string | number) => void;
   showDisabled?: { label: string; active: boolean; onSelect: () => void };
 }
@@ -81,6 +98,9 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
                   key={opt.key}
                   label={opt.label}
                   active={opt.active}
+                  suffix={opt.suffix}
+                  badges={opt.badges}
+                  rightChip={opt.rightChip}
                   onPress={() => section.onSelect(opt.key)}
                 />
               ))}
@@ -92,7 +112,16 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
   );
 }
 
-function OptionRow({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function OptionRow({
+  label, active, suffix, badges, rightChip, onPress,
+}: {
+  label: string;
+  active: boolean;
+  suffix?: string;
+  badges?: PopupBadge[];
+  rightChip?: { label: string; tone?: "purple" | "amber" | "zinc" };
+  onPress: () => void;
+}) {
   const { title, lang, codec } = parseTrackLabel(label);
 
   return (
@@ -108,32 +137,40 @@ function OptionRow({ label, active, onPress }: { label: string; active: boolean;
         width: 6, height: 6, borderRadius: 3,
         backgroundColor: active ? "#8b5cf6" : "transparent",
       }} />
-      <Text
-        numberOfLines={1}
-        style={{ flex: 1, fontSize: 13, color: active ? "#a78bfa" : "rgba(255,255,255,0.7)" }}
-      >
-        {title}
-      </Text>
-      {lang && (
-        <Text style={{
-          backgroundColor: "rgba(139,92,246,0.2)", color: "#c4b5fd",
-          fontSize: 10, fontWeight: "600",
-          paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3,
-          overflow: "hidden",
-        }}>
-          {lang}
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 13, color: active ? "#a78bfa" : "rgba(255,255,255,0.7)" }}
+        >
+          {title}
         </Text>
-      )}
-      {codec && (
-        <Text style={{
-          backgroundColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)",
-          fontSize: 10, fontWeight: "600",
-          paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3,
-          overflow: "hidden",
-        }}>
-          {codec}
-        </Text>
-      )}
+        {suffix && (
+          <Text numberOfLines={1} style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
+            {suffix}
+          </Text>
+        )}
+        {badges?.map((b, i) => <Chip key={`${b.label}-${i}`} label={b.label} tone={b.tone ?? "purple"} />)}
+      </View>
+      {lang && <Chip label={lang} tone="purple" />}
+      {codec && <Chip label={codec} tone="zinc" />}
+      {rightChip && <Chip label={rightChip.label} tone={rightChip.tone ?? "zinc"} />}
     </Pressable>
+  );
+}
+
+function Chip({ label, tone }: { label: string; tone: "purple" | "amber" | "zinc" }) {
+  const palette = tone === "purple"
+    ? { bg: "rgba(139,92,246,0.2)", fg: "#c4b5fd" }
+    : tone === "amber"
+      ? { bg: "rgba(245,158,11,0.2)", fg: "#fcd34d" }
+      : { bg: "rgba(255,255,255,0.1)", fg: "rgba(255,255,255,0.55)" };
+  return (
+    <Text style={{
+      backgroundColor: palette.bg, color: palette.fg,
+      fontSize: 10, fontWeight: "600",
+      paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3, overflow: "hidden",
+    }}>
+      {label}
+    </Text>
   );
 }

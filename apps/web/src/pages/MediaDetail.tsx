@@ -82,7 +82,7 @@ export function MediaDetail() {
             <div className="flex-1 pt-4">
               <motion.h1
                 variants={fadeUp}
-                className="text-display-3 font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] line-clamp-2 break-words max-w-3xl md:text-display-2"
+                className="text-display-3 font-bold text-white drop-shadow-[0_4px_20px_var(--surface-overlay)] line-clamp-2 break-words max-w-3xl md:text-display-2"
               >
                 {item.Name}
               </motion.h1>

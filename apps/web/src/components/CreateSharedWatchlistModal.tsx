@@ -108,7 +108,7 @@ export function CreateSharedWatchlistModal({ onClose }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t("common:listNamePlaceholder")}
-            className="w-full rounded-lg bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
+            className="w-full rounded-lg bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-[rgba(var(--brand-rgb),0.5)]"
           />
         </div>
 
@@ -133,7 +133,7 @@ export function CreateSharedWatchlistModal({ onClose }: Props) {
                   <div key={user.Id} className="rounded-lg bg-white/[0.02] px-4 py-3 transition-colors hover:bg-white/[0.04]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-sm font-bold text-white">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-sm font-bold text-white">
                           {user.Name.charAt(0).toUpperCase()}
                         </div>
                         <span className="text-sm font-medium text-white">{user.Name}</span>
@@ -173,7 +173,7 @@ export function CreateSharedWatchlistModal({ onClose }: Props) {
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || createList.isPending}
-            className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-purple-500/25 disabled:opacity-40"
+            className="w-full rounded-xl bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-[rgba(var(--brand-rgb),0.25)] disabled:opacity-40"
           >
             {createList.isPending ? t("common:loading") : t("common:createList")}
           </button>
@@ -204,7 +204,7 @@ function RolePill({ active, label, onClick, accent }: {
   accent?: boolean;
 }) {
   const activeClass = accent
-    ? "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
+    ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
     : "bg-white/10 text-white/70 ring-1 ring-white/20";
 
   return (

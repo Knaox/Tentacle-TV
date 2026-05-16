@@ -7,7 +7,7 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<Variant, string> = {
-  quality: "border-purple-500/40 bg-purple-500/10 text-purple-300 font-semibold",
+  quality: "border-[rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.1)] text-[var(--brand-light)] font-semibold",
   status: "border-white/20 bg-white/10 text-white/70",
   genre: "border-transparent bg-white/5 text-white/60",
 };

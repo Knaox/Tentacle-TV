@@ -9,7 +9,7 @@ const BACKEND_URL = backendUrl;
 
 const CTA_PRIMARY =
   "inline-flex h-11 w-full items-center justify-center rounded-lg bg-white text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
-const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(139,92,246,0.45)" };
+const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" };
 const INPUT_BASE =
   "h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
 
@@ -53,7 +53,7 @@ export function Register() {
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-80"
-        style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.18) 0%, rgba(139,92,246,0.04) 30%, transparent 70%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(var(--brand-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.04) 30%, transparent 70%)" }}
       />
 
       <div className="relative z-10 w-full max-w-md">

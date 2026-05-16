@@ -20,6 +20,7 @@ import { getUserInfo } from "../components/userMenu/menuItems";
  */
 export function Admin() {
   const { t } = useTranslation("admin");
+  const { t: tTheme } = useTranslation("adminTheme");
   const navigate = useNavigate();
   const { isAdmin } = getUserInfo();
 
@@ -45,6 +46,23 @@ export function Admin() {
                 style={cls.bpStyle}
               >
                 {t("managePlugins")}
+              </button>
+            </div>
+          </div>
+
+          {/* Theme shortcut */}
+          <div className={cls.card}>
+            <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">{tTheme("adminCardTitle")}</h2>
+                <p className="mt-1 text-sm text-white/40">{tTheme("adminCardDescription")}</p>
+              </div>
+              <button
+                onClick={() => navigate("/admin/theme")}
+                className={`${cls.bp} self-start xs:self-auto`}
+                style={cls.bpStyle}
+              >
+                {tTheme("adminCardButton")}
               </button>
             </div>
           </div>

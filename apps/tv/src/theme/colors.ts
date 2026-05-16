@@ -7,34 +7,70 @@ import { BRAND, SURFACE, TEXT, STATUS, BORDER } from "@tentacle-tv/shared";
 // share a single source of truth. TV-specific tokens (focus, glassmorphism,
 // progress orange) stay local because they don't apply to other platforms.
 
-export const Colors = {
+/**
+ * TV colour namespace — getters bind every shared-token-derived field to the
+ * live `BRAND` / `SURFACE` / `TEXT` / `STATUS` / `BORDER` exports from
+ * `@tentacle-tv/shared`. After `applyThemeOverride()` runs at boot
+ * (post `/api/theme` fetch), inline-style consumers reading `Colors.accentPurple`
+ * etc. immediately reflect the admin's override. TV-specific values
+ * (`bgDeep` OLED black, `bgCard`, glass tints) stay hardcoded by design.
+ */
+interface TvColors {
+  readonly bgDeep: string;
+  readonly bgSurface: string;
+  readonly bgElevated: string;
+  readonly bgCard: string;
+  readonly accentPurple: string;
+  readonly accentPurpleLight: string;
+  readonly accentPink: string;
+  readonly textPrimary: string;
+  readonly textSecondary: string;
+  readonly textTertiary: string;
+  readonly textMuted: string;
+  readonly success: string;
+  readonly progressOrange: string;
+  readonly error: string;
+  readonly ratingGold: string;
+  readonly glassBg: string;
+  readonly glassBorder: string;
+  readonly glassBgHeavy: string;
+  readonly overlayDim: string;
+  readonly overlayHeavy: string;
+  readonly overlayGradientStart: string;
+  readonly overlayGradientEnd: string;
+  readonly focusGlow: string;
+  readonly focusBorder: string;
+  readonly divider: string;
+  readonly border: string;
+}
+
+export const Colors: TvColors = {
   // Backgrounds — TV uses a slightly warmer #06060a for OLED legibility.
-  // Falls back to surface tokens for everything else.
   bgDeep: "#06060a",
-  bgSurface: SURFACE.s1,
-  bgElevated: SURFACE.s3,
+  get bgSurface() { return SURFACE.s1; },
+  get bgElevated() { return SURFACE.s3; },
   bgCard: "#12121a",
 
-  // Accents (shared)
-  accentPurple: BRAND.violet,
-  accentPurpleLight: BRAND.light,
+  // Accents (live from shared)
+  get accentPurple() { return BRAND.violet; },
+  get accentPurpleLight() { return BRAND.light; },
   accentPink: "#ec4899",
 
-  // Text (shared)
-  textPrimary: TEXT.primary,
-  textSecondary: TEXT.secondary,
-  textTertiary: TEXT.tertiary,
-  textMuted: TEXT.quaternary,
+  // Text (live)
+  get textPrimary() { return TEXT.primary; },
+  get textSecondary() { return TEXT.secondary; },
+  get textTertiary() { return TEXT.tertiary; },
+  get textMuted() { return TEXT.quaternary; },
 
-  // Status (shared)
-  success: STATUS.success,
-  progressOrange: STATUS.warning,
-  error: STATUS.error,
-  ratingGold: STATUS.rating,
+  // Status (live)
+  get success() { return STATUS.success; },
+  get progressOrange() { return STATUS.warning; },
+  get error() { return STATUS.error; },
+  get ratingGold() { return STATUS.rating; },
 
-  // Glassmorphism (TV-specific — not used on web)
+  // Glassmorphism (TV-specific — not theme-driven)
   glassBg: "rgba(15, 15, 24, 0.75)",
-  glassBorder: BORDER.subtle,
+  get glassBorder() { return BORDER.subtle; },
   glassBgHeavy: "rgba(15, 15, 24, 0.85)",
 
   // Overlays
@@ -43,14 +79,14 @@ export const Colors = {
   overlayGradientStart: "transparent",
   overlayGradientEnd: "#06060a",
 
-  // Focus (shared brand glow)
-  focusGlow: BRAND.glow,
-  focusBorder: BRAND.violet,
+  // Focus (live brand glow)
+  get focusGlow() { return BRAND.glow; },
+  get focusBorder() { return BRAND.violet; },
 
   // Dividers
   divider: "rgba(255, 255, 255, 0.06)",
   border: "#1e1e2e",
-} as const;
+};
 
 // Re-export shared tokens for convenience inside TV components.
 export { BRAND, SURFACE, TEXT, STATUS, BORDER };

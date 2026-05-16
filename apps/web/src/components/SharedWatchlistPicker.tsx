@@ -107,7 +107,7 @@ export function SharedWatchlistPicker({ itemId, onDone, onSuccess }: Props) {
           <p className="text-xs text-white/30">{t("common:noSharedLists")}</p>
           <button
             onClick={() => setCreating(true)}
-            className="text-xs font-medium text-purple-400 hover:text-purple-300"
+            className="text-xs font-medium text-[var(--brand)] hover:text-[var(--brand-light)]"
           >
             {t("common:createFirstList")}
           </button>
@@ -126,7 +126,7 @@ export function SharedWatchlistPicker({ itemId, onDone, onSuccess }: Props) {
                   checked={selected.has(list.id) || alreadyIn}
                   disabled={alreadyIn}
                   onChange={() => !alreadyIn && toggleList(list.id)}
-                  className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/30 disabled:opacity-50"
+                  className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 text-[var(--brand)] focus:ring-[rgba(var(--brand-rgb),0.3)] disabled:opacity-50"
                 />
                 <span className="flex-1 truncate text-xs text-white/70">{list.name}</span>
                 <span className="text-[10px] text-white/30">
@@ -142,7 +142,7 @@ export function SharedWatchlistPicker({ itemId, onDone, onSuccess }: Props) {
                 type="checkbox"
                 checked={alsoMyList}
                 onChange={() => setAlsoMyList(!alsoMyList)}
-                className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/30"
+                className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 text-[var(--brand)] focus:ring-[rgba(var(--brand-rgb),0.3)]"
               />
               <span className="flex-1 text-xs text-white/70">{t("common:alsoAddToMyList")}</span>
             </label>
@@ -151,7 +151,7 @@ export function SharedWatchlistPicker({ itemId, onDone, onSuccess }: Props) {
           {!creating ? (
             <button
               onClick={() => setCreating(true)}
-              className="mt-1 flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300"
+              className="mt-1 flex items-center gap-1.5 text-xs text-[var(--brand)] hover:text-[var(--brand-light)]"
             >
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -166,12 +166,12 @@ export function SharedWatchlistPicker({ itemId, onDone, onSuccess }: Props) {
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateInline()}
                 placeholder={t("common:listNamePlaceholder")}
-                className="flex-1 rounded bg-white/5 px-2 py-1 text-xs text-white placeholder-white/30 outline-none ring-1 ring-white/10 focus:ring-purple-500/50"
+                className="flex-1 rounded bg-white/5 px-2 py-1 text-xs text-white placeholder-white/30 outline-none ring-1 ring-white/10 focus:ring-[rgba(var(--brand-rgb),0.5)]"
               />
               <button
                 onClick={handleCreateInline}
                 disabled={!newName.trim() || createList.isPending}
-                className="rounded bg-purple-500/20 px-2 py-1 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-500/30 disabled:opacity-40"
+                className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-1 text-xs font-medium text-[var(--brand-light)] transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] disabled:opacity-40"
               >
                 OK
               </button>
@@ -181,7 +181,7 @@ export function SharedWatchlistPicker({ itemId, onDone, onSuccess }: Props) {
           <button
             onClick={handleConfirm}
             disabled={[...selected].filter((id) => !alreadyInLists.has(id)).length === 0 && !alsoMyList}
-            className="mt-2 w-full rounded-lg bg-purple-500/20 py-2 text-xs font-medium text-purple-300 ring-1 ring-purple-500/30 transition-all hover:bg-purple-500/30 disabled:opacity-30"
+            className="mt-2 w-full rounded-lg bg-[rgba(var(--brand-rgb),0.2)] py-2 text-xs font-medium text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)] transition-all hover:bg-[rgba(var(--brand-rgb),0.3)] disabled:opacity-30"
           >
             {t("common:confirm")}
           </button>

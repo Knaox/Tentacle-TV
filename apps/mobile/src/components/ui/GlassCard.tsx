@@ -34,7 +34,14 @@ export function GlassCard({ children, style, noPadding }: Props) {
         tint="dark"
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={noPadding ? undefined : { padding: spacing.lg }}>{children}</View>
+      {/* noPadding consumers (e.g. Disclaimer) embed a `flex: 1` ScrollView that
+       *  needs a sized parent — without `flex: 1` here, the ScrollView collapses
+       *  to 0px height and the legal text becomes invisible. */}
+      <View style={noPadding ? styles.fill : { padding: spacing.lg }}>{children}</View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+});

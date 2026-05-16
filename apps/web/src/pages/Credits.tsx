@@ -39,7 +39,7 @@ export function Credits() {
           <li key={tk.name} className="flex items-center justify-between py-2.5">
             <div>
               <a href={tk.url} target="_blank" rel="noopener noreferrer"
-                className="text-sm font-medium text-purple-400 hover:underline">
+                className="text-sm font-medium text-[var(--brand)] hover:underline">
                 {tk.name}
               </a>
               <p className="text-xs text-white/40">{tk.desc}</p>
@@ -55,7 +55,7 @@ export function Credits() {
           <li key={s.name} className="flex items-center justify-between py-2.5">
             <div>
               <a href={s.url} target="_blank" rel="noopener noreferrer"
-                className="text-sm font-medium text-purple-400 hover:underline">
+                className="text-sm font-medium text-[var(--brand)] hover:underline">
                 {s.name}
               </a>
               <p className="text-xs text-white/40">{s.desc}</p>

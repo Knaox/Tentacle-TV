@@ -83,7 +83,7 @@ export function AddMediaModal({ watchlistId, onClose }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("common:searchMedia")}
-            className="w-full rounded-lg bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
+            className="w-full rounded-lg bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-[rgba(var(--brand-rgb),0.5)]"
           />
         </div>
 
@@ -130,7 +130,7 @@ export function AddMediaModal({ watchlistId, onClose }: Props) {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-purple-500/90 px-5 py-2.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-[rgba(var(--brand-rgb),0.9)] px-5 py-2.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm">
           {toast}
         </div>
       )}

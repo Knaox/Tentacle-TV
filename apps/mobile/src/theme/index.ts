@@ -17,3 +17,14 @@ export { spacing } from "./spacing";
 export * from "./tokens";
 export * as motion from "./motion";
 export * as effects from "./effects";
+
+// Runtime theming (Phase 4 — consumes `@tentacle-tv/theme` + `/api/theme`).
+export {
+  ThemeProvider,
+  ThemeContext,
+  useTheme,
+  type ThemeContextValue,
+} from "./ThemeProvider";
+export { fetchThemeState } from "./themeApi";
+export type { BackendThemeState } from "./types";
+export { parsePx, parseMs, parseScale } from "./utils";

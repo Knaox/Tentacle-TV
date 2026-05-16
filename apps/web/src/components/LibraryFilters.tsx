@@ -96,9 +96,9 @@ function chipCls(active: boolean, accent: "violet" | "rose" = "violet"): string 
     return `${base} bg-white/5 text-white/70 ring-1 ring-white/10 hover:bg-white/10 hover:text-white`;
   }
   if (accent === "rose") {
-    return `${base} bg-rose-500/18 text-rose-200 ring-1 ring-rose-400/45`;
+    return `${base} bg-[rgba(var(--brand-accent-rgb),0.18)] text-[var(--brand-accent-light)] ring-1 ring-[rgba(var(--brand-accent-rgb),0.45)]`;
   }
-  return `${base} bg-violet-500/20 text-violet-100 ring-1 ring-violet-400/50`;
+  return `${base} bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)]`;
 }
 
 function HeartIcon({ filled }: { filled: boolean }) {
@@ -183,7 +183,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
           </svg>
           {t("common:advancedFilters")}
           {props.activeCount > 0 && (
-            <span className="ml-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-violet-500/40 px-1 text-[10px] font-bold text-violet-100 ring-1 ring-violet-400/50">
+            <span className="ml-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(var(--brand-rgb),0.4)] px-1 text-[10px] font-bold text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)]">
               {props.activeCount}
             </span>
           )}

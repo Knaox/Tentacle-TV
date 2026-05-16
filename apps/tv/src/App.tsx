@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { View, ActivityIndicator, AppState, type AppStateStatus } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
+import { DEFAULT_THEME } from "@tentacle-tv/theme";
 import {
   JellyfinClient,
   JellyfinClientContext,
@@ -33,6 +34,7 @@ import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./auth/t
 import { readCredentials, clearCredentials } from "./auth/credentialManager";
 import { isPlayingMedia } from "./auth/playbackGuard";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
+import { ThemeProvider, useTheme } from "./theme";
 
 const storage = new RNStorageAdapter();
 const uuid = new RNUuidGenerator();
@@ -65,22 +67,15 @@ attachQueryPersister(queryClient, tvPersistStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
 });
 
-const darkTheme = {
-  dark: true as const,
-  colors: {
-    primary: "#8b5cf6",
-    background: "#0a0a0f",
-    card: "#12121a",
-    text: "#ffffff",
-    border: "#1e1e2e",
-    notification: "#8b5cf6",
-  },
-  fonts: {
-    regular: { fontFamily: "System", fontWeight: "400" as const },
-    medium: { fontFamily: "System", fontWeight: "500" as const },
-    bold: { fontFamily: "System", fontWeight: "700" as const },
-    heavy: { fontFamily: "System", fontWeight: "900" as const },
-  },
+/** React Navigation theme — `#0a0a0f`, `#12121a`, `#1e1e2e` n'ont pas de token
+ *  équivalent dans `@tentacle-tv/theme` (couleurs TV-spécifiques OLED) ; gardés
+ *  en littéral pour rester strictement lossless. Les tokens qui MATCHENT sont
+ *  lus dynamiquement via `useTheme()` dans `AppContent`. */
+const navFonts = {
+  regular: { fontFamily: "System", fontWeight: "400" as const },
+  medium: { fontFamily: "System", fontWeight: "500" as const },
+  bold: { fontFamily: "System", fontWeight: "700" as const },
+  heavy: { fontFamily: "System", fontWeight: "900" as const },
 };
 
 function initializeBackend(tentacleUrl: string | null): JellyfinClient {
@@ -255,15 +250,31 @@ function ForegroundSessionValidator() {
   return null;
 }
 
-/** Contenu principal — nécessite QueryClientProvider comme parent */
+/** Contenu principal — nécessite QueryClientProvider + ThemeProvider comme parents */
 function AppContent({ serverUrl }: { serverUrl: string | null }) {
   const { isReachable, retry } = useServerReachable(serverUrl);
+  const { theme } = useTheme();
+  const navTheme = useMemo(
+    () => ({
+      dark: true as const,
+      colors: {
+        primary: theme.tokens.color.brand.base,
+        background: "#0a0a0f",
+        card: "#12121a",
+        text: theme.tokens.color.text.primary,
+        border: "#1e1e2e",
+        notification: theme.tokens.color.brand.base,
+      },
+      fonts: navFonts,
+    }),
+    [theme],
+  );
   return (
     <>
       <ForegroundSessionValidator />
       <DirectStreamingSync storage={storage} />
       <SidebarProvider>
-        <NavigationContainer ref={navigationRef} theme={darkTheme}>
+        <NavigationContainer ref={navigationRef} theme={navTheme}>
           <AppNavigator />
           <OfflineBanner visible={!isReachable} onRetry={retry} />
         </NavigationContainer>
@@ -304,9 +315,11 @@ export function App() {
   }, []);
 
   if (!ready || !client) {
+    // Pre-provider mount: use DEFAULT_THEME static brand color (admin override
+    // not yet fetched). `#0a0a0f` has no matching token — kept as literal.
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0a0a0f" }}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+        <ActivityIndicator size="large" color={DEFAULT_THEME.tokens.color.brand.base} />
       </View>
     );
   }
@@ -314,11 +327,13 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TentacleConfigContext.Provider value={{ storage, uuid }}>
-          <JellyfinClientContext.Provider value={client}>
-            <AppContent serverUrl={serverUrl} />
-          </JellyfinClientContext.Provider>
-        </TentacleConfigContext.Provider>
+        <ThemeProvider backendUrl={serverUrl}>
+          <TentacleConfigContext.Provider value={{ storage, uuid }}>
+            <JellyfinClientContext.Provider value={client}>
+              <AppContent serverUrl={serverUrl} />
+            </JellyfinClientContext.Provider>
+          </TentacleConfigContext.Provider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

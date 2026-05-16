@@ -4,7 +4,7 @@ import { useAutoUpdate, type UpdatePhase } from "../hooks/useAutoUpdate";
 
 function Spinner() {
   return (
-    <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
   );
 }
 
@@ -14,7 +14,7 @@ function SparkleIcon() {
       <defs>
         <linearGradient id="sparkleGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#A855F7" />
-          <stop offset="1" stopColor="#EC4899" />
+          <stop offset="1" stopColor="var(--brand-accent)" />
         </linearGradient>
       </defs>
       <path
@@ -30,7 +30,7 @@ function ProgressBar({ progress }: { progress: number }) {
     <div className="w-full space-y-2">
       <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-white/10">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+          className="h-full rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
         {/* Shimmer overlay */}
@@ -110,7 +110,7 @@ function ModalContent({
       <div className="flex gap-3 pt-2">
         <button
           onClick={onInstall}
-          className="flex-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 transition-all hover:shadow-purple-500/50 hover:brightness-110"
+          className="flex-1 rounded-xl bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--brand-rgb),0.3)] transition-all hover:shadow-[rgba(var(--brand-rgb),0.5)] hover:brightness-110"
         >
           {t("notifications:updateNow")}
         </button>
@@ -152,7 +152,7 @@ export function UpdateModal() {
             </h2>
           </div>
           {version && (
-            <span className="rounded-full bg-purple-500/20 px-3 py-0.5 text-xs font-medium text-purple-300">
+            <span className="rounded-full bg-[rgba(var(--brand-rgb),0.2)] px-3 py-0.5 text-xs font-medium text-[var(--brand-light)]">
               v{version}
             </span>
           )}

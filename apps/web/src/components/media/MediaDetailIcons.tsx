@@ -1,6 +1,6 @@
 export function QualityBadge({ label }: { label: string }) {
   return (
-    <span className="rounded border border-purple-500/40 bg-purple-500/10 px-1.5 py-0.5 text-xs font-semibold text-purple-300 backdrop-blur-sm transition-shadow duration-200 hover:shadow-[0_0_12px_rgba(139,92,246,0.4)]">
+    <span className="rounded border border-[rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.1)] px-1.5 py-0.5 text-xs font-semibold text-[var(--brand-light)] backdrop-blur-sm transition-shadow duration-200 hover:shadow-[0_0_12px_var(--brand-glow)]">
       {label}
     </span>
   );
@@ -28,7 +28,7 @@ export function HeartIcon({ filled }: { filled: boolean }) {
 
 export function BookmarkIcon({ filled }: { filled: boolean }) {
   return filled ? (
-    <svg className="h-5 w-5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
+    <svg className="h-5 w-5 text-[var(--brand)]" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
   ) : (
     <svg className="h-5 w-5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
   );

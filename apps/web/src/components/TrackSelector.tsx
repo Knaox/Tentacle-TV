@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import {
+  QUALITY_PRESETS, formatBitrateMbps,
+  type QualityKey, type SourceQuality,
+} from "@tentacle-tv/shared";
 
 interface Track {
   index: number;
@@ -11,23 +15,18 @@ interface TrackSelectorProps {
   subtitleTracks: Track[];
   currentAudio: number;
   currentSubtitle: number | null;
-  currentQuality: number | null;
+  currentQuality: QualityKey;
+  /** Qualité de la source détectée depuis les MediaStreams. */
+  sourceQuality?: SourceQuality;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  onQualityChange?: (bitrate: number | null) => void;
+  onQualityChange?: (key: QualityKey) => void;
   onClose: () => void;
 }
 
-const QUALITIES = [
-  { key: "player:original", bitrate: null },
-  { key: "player:quality1080p", bitrate: 20_000_000 },
-  { key: "player:quality720p", bitrate: 8_000_000 },
-  { key: "player:quality480p", bitrate: 4_000_000 },
-] as const;
-
 export function TrackSelector({
   audioTracks, subtitleTracks,
-  currentAudio, currentSubtitle, currentQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality,
   onAudioChange, onSubtitleChange, onQualityChange, onClose,
 }: TrackSelectorProps) {
   const { t } = useTranslation("player");
@@ -47,12 +46,12 @@ export function TrackSelector({
       <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
         {audioTracks.length > 0 && (
           <Section title={t("player:audio")}>
-            {audioTracks.map((t) => (
+            {audioTracks.map((tr) => (
               <TrackOption
-                key={t.index}
-                label={t.label}
-                active={currentAudio === t.index}
-                onClick={() => onAudioChange(t.index)}
+                key={tr.index}
+                label={tr.label}
+                active={currentAudio === tr.index}
+                onClick={() => onAudioChange(tr.index)}
               />
             ))}
           </Section>
@@ -61,12 +60,12 @@ export function TrackSelector({
         {subtitleTracks.length > 0 && (
           <Section title={t("player:subtitles")}>
             <TrackOption label={t("player:subtitlesDisabled")} active={currentSubtitle === null} onClick={() => onSubtitleChange(null)} />
-            {subtitleTracks.map((t) => (
+            {subtitleTracks.map((tr) => (
               <TrackOption
-                key={t.index}
-                label={t.label}
-                active={currentSubtitle === t.index}
-                onClick={() => onSubtitleChange(t.index)}
+                key={tr.index}
+                label={tr.label}
+                active={currentSubtitle === tr.index}
+                onClick={() => onSubtitleChange(tr.index)}
               />
             ))}
           </Section>
@@ -74,12 +73,15 @@ export function TrackSelector({
 
         {onQualityChange && (
           <Section title={t("player:quality")}>
-            {QUALITIES.map((q) => (
-              <TrackOption
-                key={q.key}
-                label={t(q.key)}
-                active={currentQuality === q.bitrate}
-                onClick={() => onQualityChange(q.bitrate)}
+            {QUALITY_PRESETS.map((preset) => (
+              <QualityOption
+                key={preset.key}
+                presetKey={preset.key}
+                bitrate={preset.bitrate}
+                active={currentQuality === preset.key}
+                sourceQuality={sourceQuality}
+                onClick={() => onQualityChange(preset.key)}
+                t={t}
               />
             ))}
           </Section>
@@ -98,6 +100,41 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function QualityOption({
+  presetKey, bitrate, active, sourceQuality, onClick, t,
+}: {
+  presetKey: QualityKey;
+  bitrate: number | null;
+  active: boolean;
+  sourceQuality?: SourceQuality;
+  onClick: () => void;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}) {
+  const isOriginal = presetKey === "original";
+  const label = isOriginal ? t("player:original") : t(`player:${presetKey}`);
+  const resSuffix = isOriginal && sourceQuality?.resolution ? sourceQuality.resolution : null;
+  const mbpsChip = !isOriginal && bitrate ? formatBitrateMbps(bitrate) : null;
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+        active ? "bg-tentacle-accent/25 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"
+      }`}
+    >
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-white/20"}`} />
+      <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
+        <span className="truncate">{label}</span>
+        {resSuffix && <span className="text-white/40">— {resSuffix}</span>}
+        {isOriginal && sourceQuality?.isDolbyVision && <Badge color="purple">DV</Badge>}
+        {isOriginal && sourceQuality?.isHDR && <Badge color="amber">HDR</Badge>}
+        {isOriginal && sourceQuality?.isDolbyAtmos && <Badge color="amber">Atmos</Badge>}
+        {mbpsChip && <span className="ml-auto"><Badge color="zinc">{mbpsChip}</Badge></span>}
+      </span>
+    </button>
+  );
+}
+
 function TrackOption({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   const { lang, codec, title } = parseTrackLabel(label);
 
@@ -108,7 +145,7 @@ function TrackOption({ label, active, onClick }: { label: string; active: boolea
         active ? "bg-tentacle-accent/25 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"
       }`}
     >
-      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(139,92,246,0.6)]" : "bg-white/20"}`} />
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-white/20"}`} />
       <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
         <span className="truncate">{title}</span>
         {lang && <Badge color="purple">{lang}</Badge>}
@@ -118,10 +155,12 @@ function TrackOption({ label, active, onClick }: { label: string; active: boolea
   );
 }
 
-function Badge({ color, children }: { color: "purple" | "zinc"; children: React.ReactNode }) {
+function Badge({ color, children }: { color: "purple" | "zinc" | "amber"; children: React.ReactNode }) {
   const cls = color === "purple"
-    ? "bg-purple-500/20 text-purple-300"
-    : "bg-white/10 text-white/50";
+    ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)]"
+    : color === "amber"
+      ? "bg-amber-500/20 text-amber-300"
+      : "bg-white/10 text-white/50";
   return <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>{children}</span>;
 }
 

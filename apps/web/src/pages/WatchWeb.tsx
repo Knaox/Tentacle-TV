@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, formatDuration } from "@tentacle-tv/shared";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerTransition } from "../components/PlayerTransition";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
@@ -15,7 +15,7 @@ export function WatchWeb() {
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    quality, setQuality, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
@@ -80,11 +80,11 @@ export function WatchWeb() {
     setSubtitleIndex(idx);
   }, [streams, getPositionTicks, burnInSubtitleIndex, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
 
-  const handleQualityChange = useCallback((bitrate: number | null) => {
+  const handleQualityChange = useCallback((key: QualityKey) => {
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
-    setQuality(bitrate);
-  }, [getPositionTicks, setStartTicks, setQuality]);
+    setQualityKey(key);
+  }, [getPositionTicks, setStartTicks, setQualityKey]);
 
   // HLS seek fallback: kill old transcode, PlaybackInfo re-fetches with new position.
   const handleSeekRequest = useCallback((targetSeconds: number) => {
@@ -148,7 +148,7 @@ export function WatchWeb() {
           key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
           startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-          currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={quality}
+          currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
           onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
           onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}

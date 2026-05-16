@@ -43,7 +43,7 @@ function UltraHDBadge({ compact }: { compact: boolean }) {
       className={`relative inline-flex items-center gap-1 overflow-hidden rounded-md ${padding} ${fontSize} font-black uppercase tracking-[0.14em] text-white shadow-[0_4px_18px_rgba(245,158,11,0.45),0_0_0_1px_rgba(255,255,255,0.18)_inset]`}
       style={{
         background:
-          "linear-gradient(135deg, #FACC15 0%, #F59E0B 35%, #D97706 55%, #8B5CF6 100%)",
+          "linear-gradient(135deg, #FACC15 0%, var(--status-warning) 35%, #D97706 55%, var(--brand) 100%)",
         textShadow: "0 1px 2px rgba(0,0,0,0.45)",
       }}
       aria-label="Ultra HD 4K"
@@ -58,7 +58,7 @@ function UltraHDBadge({ compact }: { compact: boolean }) {
         className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 motion-reduce:hidden"
         style={{
           background:
-            "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%)",
+            "linear-gradient(115deg, transparent 30%, var(--text-tertiary) 50%, transparent 70%)",
           animation: "qualityShine 3.4s ease-in-out infinite",
         }}
       />
@@ -91,7 +91,7 @@ function FeatureChip({
   const palette =
     tone === "amber"
       ? { bg: "rgba(245,158,11,0.18)", ring: "rgba(245,158,11,0.45)", color: "rgb(252,211,77)" }
-      : { bg: "rgba(139,92,246,0.18)", ring: "rgba(139,92,246,0.45)", color: "rgb(196,181,253)" };
+      : { bg: "rgba(var(--brand-rgb), 0.18)", ring: "rgba(var(--brand-rgb), 0.45)", color: "rgb(196,181,253)" };
   return (
     <span
       className={`inline-flex items-center rounded-md ${padding} text-[10px] font-bold uppercase tracking-[0.14em] backdrop-blur-md`}

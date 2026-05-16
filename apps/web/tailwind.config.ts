@@ -1,6 +1,14 @@
 import type { Config } from "tailwindcss";
+import { tentacleTailwindPreset } from "@tentacle-tv/theme/tailwind";
 
+/**
+ * Token-driven entries (colors, fontFamily, fontSize, screens, backdropBlur)
+ * live in the shared `@tentacle-tv/theme` preset — single source of truth for
+ * the design system. App-specific animations/keyframes stay here because they
+ * reference component-level visuals that don't belong to the token tree.
+ */
 export default {
+  presets: [tentacleTailwindPreset],
   content: [
     "./index.html",
     "./src/**/*.{ts,tsx}",
@@ -8,55 +16,6 @@ export default {
   ],
   theme: {
     extend: {
-      screens: {
-        xs: "360px",
-      },
-      fontFamily: {
-        sans: ['"Inter"', "system-ui", "-apple-system", "sans-serif"],
-      },
-      colors: {
-        // Semantic surface tokens (preferred — consume via theme)
-        surface: {
-          0: "var(--surface-0)",
-          1: "var(--surface-1)",
-          2: "var(--surface-2)",
-          3: "var(--surface-3)",
-        },
-        brand: {
-          DEFAULT: "var(--brand)",
-          light: "var(--brand-light)",
-          dark: "var(--brand-dark)",
-        },
-        // Legacy tentacle namespace — kept for backwards compat during migration.
-        // Maps onto the new tokens so existing classes (`bg-tentacle-bg`) keep working.
-        tentacle: {
-          bg: "var(--surface-0)",
-          surface: "var(--surface-1)",
-          border: "var(--border-subtle)",
-          accent: "var(--brand)",
-          "accent-dark": "var(--brand-dark)",
-          "accent-light": "var(--brand-light)",
-          "accent-muted": "var(--brand-light)",
-        },
-        status: {
-          success: "var(--status-success)",
-          warning: "var(--status-warning)",
-          error: "var(--status-error)",
-          info: "var(--status-info)",
-        },
-      },
-      fontSize: {
-        // Cinematic display scale
-        "display-1": ["4.5rem", { lineHeight: "1.05", fontWeight: "800", letterSpacing: "-0.025em" }],
-        "display-2": ["3rem", { lineHeight: "1.1", fontWeight: "700", letterSpacing: "-0.022em" }],
-        "display-3": ["2rem", { lineHeight: "1.15", fontWeight: "700", letterSpacing: "-0.02em" }],
-        "heading-1": ["1.5rem", { lineHeight: "1.25", fontWeight: "600" }],
-        "heading-2": ["1.25rem", { lineHeight: "1.3", fontWeight: "600" }],
-        "heading-3": ["1.125rem", { lineHeight: "1.4", fontWeight: "600" }],
-      },
-      backdropBlur: {
-        xs: "2px",
-      },
       animation: {
         shimmer: "shimmer 1.5s ease infinite",
         "fade-slide-up": "fadeSlideUp 0.5s ease both",
@@ -94,8 +53,8 @@ export default {
           "50%": { opacity: "0.8" },
         },
         breathe: {
-          "0%, 100%": { boxShadow: "0 0 15px rgba(139,92,246,0.3)" },
-          "50%": { boxShadow: "0 0 25px rgba(139,92,246,0.5)" },
+          "0%, 100%": { boxShadow: "0 0 15px rgba(var(--brand-rgb), 0.3)" },
+          "50%": { boxShadow: "0 0 25px rgba(var(--brand-rgb), 0.5)" },
         },
         kenBurns: {
           "0%":   { transform: "scale(1) translate3d(0, 0, 0)" },

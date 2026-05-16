@@ -11,7 +11,7 @@ export function MarketplaceTab() {
   if (isLoading) {
     return (
       <div className={cls.spinner}>
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
       </div>
     );
   }
@@ -34,7 +34,7 @@ export function MarketplaceTab() {
                 <span className="text-sm font-medium text-white">{p.name}</span>
                 <span className="text-xs text-white/40">v{p.version}</span>
                 {p.official && (
-                  <span className="rounded bg-purple-500/20 px-2 py-0.5 text-xs text-purple-300">
+                  <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-xs text-[var(--brand-light)]">
                     {t("adminPlugins:official")}
                   </span>
                 )}

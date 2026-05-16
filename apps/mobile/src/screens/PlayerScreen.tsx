@@ -3,7 +3,6 @@ import { View, Text, StatusBar, Platform, StyleSheet } from "react-native";
 import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import * as ScreenOrientation from "expo-screen-orientation";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
@@ -41,12 +40,11 @@ export function PlayerScreen({ itemId }: Props) {
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [isAirPlaying, setIsAirPlaying] = useState(false);
 
-  // Orientation: landscape on mount, portrait on unmount
-  useEffect(() => {
-    if (Platform.OS !== "ios" && Platform.OS !== "android") return;
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    return () => { ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); };
-  }, []);
+  // Orientation: handled declaratively at the Stack.Screen level in
+  // `app/_layout.tsx` (`watch/[itemId]` has `orientation: "all"` while the
+  // app default is `portrait_up`). React-native-screens applies the mask at
+  // the UIViewController level, which is more reliable than imperative
+  // `ScreenOrientation.lockAsync` for per-route rotation control.
 
   // StatusBar: hide/show
   useEffect(() => {

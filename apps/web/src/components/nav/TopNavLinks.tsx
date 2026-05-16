@@ -76,8 +76,8 @@ export function TopNavLinks() {
               <span
                 className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full"
                 style={{
-                  background: "linear-gradient(90deg, #8B5CF6, #A78BFA)",
-                  boxShadow: "0 0 10px rgba(139,92,246,0.6)",
+                  background: "linear-gradient(90deg, var(--brand), var(--brand-light))",
+                  boxShadow: "0 0 10px rgba(var(--brand-rgb), 0.6)",
                 }}
                 aria-hidden
               />

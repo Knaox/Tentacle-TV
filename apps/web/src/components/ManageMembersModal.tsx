@@ -120,7 +120,7 @@ export function ManageMembersModal({ watchlistId, watchlistName, onClose }: Prop
                 {users?.filter((u) => !memberIds.has(u.Id)).map((user) => (
                   <div key={user.Id} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-4 py-2.5 transition-colors hover:bg-white/[0.04]">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xs font-bold text-white">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-xs font-bold text-white">
                         {user.Name.charAt(0).toUpperCase()}
                       </div>
                       <span className="text-sm text-white/70">{user.Name}</span>
@@ -128,7 +128,7 @@ export function ManageMembersModal({ watchlistId, watchlistName, onClose }: Prop
                     <button
                       onClick={() => handleInvite(user.Id, user.Name)}
                       disabled={addMember.isPending}
-                      className="rounded-lg bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-300 ring-1 ring-purple-500/20 transition-all hover:bg-purple-500/20 disabled:opacity-40"
+                      className="rounded-lg bg-[rgba(var(--brand-rgb),0.1)] px-3 py-1.5 text-xs font-medium text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.2)] transition-all hover:bg-[rgba(var(--brand-rgb),0.2)] disabled:opacity-40"
                     >
                       +
                     </button>
@@ -160,7 +160,7 @@ function MemberRow({
   return (
     <div className="flex items-center justify-between rounded-lg bg-white/[0.02] px-4 py-2.5">
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xs font-bold text-white">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-xs font-bold text-white">
           {member.username.charAt(0).toUpperCase()}
         </div>
         <span className="text-sm text-white/70">{member.username}</span>
@@ -196,7 +196,7 @@ function RolePill({ active, label, onClick, accent }: {
   active: boolean; label: string; onClick: () => void; accent?: boolean;
 }) {
   const activeClass = accent
-    ? "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
+    ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
     : "bg-white/10 text-white/70 ring-1 ring-white/20";
   return (
     <button

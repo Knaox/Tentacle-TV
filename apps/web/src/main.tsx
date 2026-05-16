@@ -31,6 +31,7 @@ import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import * as PluginsAPI from "@tentacle-tv/plugins-api";
 import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { App } from "./App";
+import { ThemeProvider } from "./theme";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -174,15 +175,17 @@ attachQueryPersister(queryClient, persistStorage, {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <TentacleConfigContext.Provider value={{ storage, uuid }}>
-        <JellyfinClientContext.Provider value={jellyfinClient}>
-          <PluginProvider backendUrl={backendUrl}>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </PluginProvider>
-        </JellyfinClientContext.Provider>
-      </TentacleConfigContext.Provider>
+      <ThemeProvider backendUrl={backendUrl}>
+        <TentacleConfigContext.Provider value={{ storage, uuid }}>
+          <JellyfinClientContext.Provider value={jellyfinClient}>
+            <PluginProvider backendUrl={backendUrl}>
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </PluginProvider>
+          </JellyfinClientContext.Provider>
+        </TentacleConfigContext.Provider>
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>
 );

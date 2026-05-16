@@ -66,21 +66,21 @@ export function SplashOctopus({ phase, size = 180 }: SplashOctopusProps) {
       <defs>
         <style>{cssKeyframes}</style>
         <linearGradient id="sp-body" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="0%" stopColor="var(--brand)" />
           <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="#EC4899" />
+          <stop offset="100%" stopColor="var(--brand-accent)" />
         </linearGradient>
         <linearGradient id="sp-t1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7C3AED" />
+          <stop offset="0%" stopColor="var(--brand-dark)" />
           <stop offset="100%" stopColor="#DB2777" />
         </linearGradient>
         <linearGradient id="sp-t2" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#9333EA" />
-          <stop offset="100%" stopColor="#F472B6" />
+          <stop offset="100%" stopColor="var(--brand-accent-light)" />
         </linearGradient>
         <linearGradient id="sp-cheek" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#F9A8D4" />
-          <stop offset="100%" stopColor="#F472B6" />
+          <stop offset="100%" stopColor="var(--brand-accent-light)" />
         </linearGradient>
         <linearGradient id="sp-shine" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="white" stopOpacity={0.35} />
@@ -91,9 +91,9 @@ export function SplashOctopus({ phase, size = 180 }: SplashOctopusProps) {
           <stop offset="100%" stopColor="#1A1A1A" />
         </linearGradient>
         <linearGradient id="sp-band" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="0%" stopColor="var(--brand)" />
           <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="#EC4899" />
+          <stop offset="100%" stopColor="var(--brand-accent)" />
         </linearGradient>
         <linearGradient id="sp-skull" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#FFFFFF" />

@@ -30,6 +30,7 @@ import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { sharedWatchlistRoutes } from "./routes/sharedWatchlists";
 import { tmdbRoutes } from "./routes/tmdb";
+import { themeRoutes } from "./routes/theme";
 import { wsRoutes } from "./routes/ws";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
@@ -139,12 +140,15 @@ async function main() {
   await app.register(setupRoutes, { prefix: "/api/setup" });
   await app.register(healthRoutes, { prefix: "/api" });
 
+  // ── Theme routes (always available — clients need them pre-setup to boot) ──
+  await app.register(themeRoutes, { prefix: "/api/theme" });
+
   // ── Setup guard: block most API routes until setup is complete ──
   let lastRecoveryAttempt = 0;
   app.addHook("onRequest", async (request, reply) => {
     const url = request.url;
-    // Always allow: setup, health, static files
-    if (url.startsWith("/api/setup") || url.startsWith("/api/health") || url.startsWith("/api/ws") || !url.startsWith("/api/")) {
+    // Always allow: setup, health, theme (read-only public), websocket, static files
+    if (url.startsWith("/api/setup") || url.startsWith("/api/health") || url.startsWith("/api/ws") || url.startsWith("/api/theme") || !url.startsWith("/api/")) {
       return;
     }
     let state = getAppState();

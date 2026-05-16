@@ -198,7 +198,7 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
       </div>
 
       {/* ── Separator ── */}
-      <div className="mx-1 mb-3 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent)" }} />
+      <div className="mx-1 mb-3 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(var(--brand-rgb), 0.2), transparent)" }} />
 
       {/* ── Action : jumeler une TV ── */}
       <button
@@ -267,7 +267,7 @@ function PinnableRow({
         onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
         className={`mr-2 flex-shrink-0 rounded-lg p-2 transition-all ${
           isPinned
-            ? "text-purple-400 hover:bg-purple-500/10"
+            ? "text-[var(--brand)] hover:bg-[rgba(var(--brand-rgb),0.1)]"
             : "text-white/25 hover:bg-white/5 hover:text-white/50"
         }`}
         title={isPinned ? "Unpin" : "Pin"}

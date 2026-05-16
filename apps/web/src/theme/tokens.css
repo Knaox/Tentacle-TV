@@ -13,10 +13,18 @@
 
   /* ── Brand (Tentacle violet — kept, used sparingly) ─────────── */
   --brand: #8B5CF6;
+  /* RGB triplet — single source for every rgba() brand variant. Override this
+   * (e.g. to "239, 68, 68" for red) and ALL opacity variants below follow. */
+  --brand-rgb: 139, 92, 246;
   --brand-light: #A78BFA;
   --brand-dark: #7C3AED;
-  --brand-soft: rgba(139, 92, 246, 0.15);
-  --brand-glow: rgba(139, 92, 246, 0.4);
+  --brand-soft: rgba(var(--brand-rgb), 0.15);
+  --brand-glow: rgba(var(--brand-rgb), 0.4);
+
+  /* Secondary accent (rose/pink end of the signature brand gradient). */
+  --brand-accent: #EC4899;
+  --brand-accent-rgb: 236, 72, 153;
+  --brand-accent-light: #F472B6;
 
   /* ── Text ───────────────────────────────────────────────────── */
   --text-primary: #FFFFFF;
@@ -40,7 +48,7 @@
   /* ── Borders ────────────────────────────────────────────────── */
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-focus: rgba(139, 92, 246, 0.85);
+  --border-focus: rgba(var(--brand-rgb), 0.85);
 
   /* ── Status (foreground) ────────────────────────────────────── */
   --status-success: #10b981;

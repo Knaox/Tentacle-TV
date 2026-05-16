@@ -1,0 +1,33 @@
+import type { Theme, ThemeTokens } from "./types";
+import {
+  DEFAULT_COLOR_TOKENS,
+  DEFAULT_BLUR_TOKENS,
+  DEFAULT_SHADOW_TOKENS,
+  DEFAULT_RADIUS_TOKENS,
+  DEFAULT_MOTION_TOKENS,
+  DEFAULT_LAYOUT_TOKENS,
+  DEFAULT_COMPONENT_TOKENS,
+  DEFAULT_SPACING_TOKENS,
+  DEFAULT_TYPOGRAPHY_TOKENS,
+} from "./tokens";
+
+export const DEFAULT_THEME_TOKENS: ThemeTokens = {
+  color: DEFAULT_COLOR_TOKENS,
+  blur: DEFAULT_BLUR_TOKENS,
+  shadow: DEFAULT_SHADOW_TOKENS,
+  radius: DEFAULT_RADIUS_TOKENS,
+  motion: DEFAULT_MOTION_TOKENS,
+  layout: DEFAULT_LAYOUT_TOKENS,
+  component: DEFAULT_COMPONENT_TOKENS,
+  spacing: DEFAULT_SPACING_TOKENS,
+  typography: DEFAULT_TYPOGRAPHY_TOKENS,
+};
+
+export const DEFAULT_THEME_ID = "tentacle-default";
+export const DEFAULT_THEME_NAME = "Tentacle Default";
+
+export const DEFAULT_THEME: Theme = {
+  id: DEFAULT_THEME_ID,
+  name: DEFAULT_THEME_NAME,
+  tokens: DEFAULT_THEME_TOKENS,
+};

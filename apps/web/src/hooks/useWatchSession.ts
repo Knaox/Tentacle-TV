@@ -2,8 +2,8 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMediaItem, useItemAncestors, useJellyfinClient, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper, useAppConfig } from "@tentacle-tv/api-client";
-import { ticksToSeconds, TICKS_PER_SECOND } from "@tentacle-tv/shared";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
 
@@ -63,7 +63,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
 
   const [audioIndex, setAudioIndex] = useState<number>(defaultAudio);
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
-  const [quality, setQuality] = useState<number | null>(null);
+  const [qualityKey, setQualityKey] = useState<QualityKey>("original");
+  const qualityPreset = findPreset(qualityKey);
+  const quality = qualityPreset.bitrate; // legacy bitrate ref (null = Original/direct)
   const [startTicks, setStartTicks] = useState<number>(0);
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
@@ -78,7 +80,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
 
   useEffect(() => {
     console.debug(DBG, "episode switch — resetting state", { itemId });
-    setStartTicks(0); setQuality(null); setSubtitleIndex(null); setPrefsReady(false);
+    setStartTicks(0); setQualityKey("original"); setSubtitleIndex(null); setPrefsReady(false);
     setBurnInSubtitleIndex(undefined); positionRef.current = 0;
     prefsApplied.current = false; audioOverrideRef.current = false;
     subtitleOverrideRef.current = false; resumeApplied.current = false;
@@ -221,8 +223,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Desktop: client-side stream URL ──
-  const qualityMaxHeight = quality != null
-    ? (quality <= 4_000_000 ? 480 : quality <= 8_000_000 ? 720 : quality <= 20_000_000 ? 1080 : undefined) : undefined;
+  const qualityMaxHeight = qualityPreset.height ?? undefined;
   const urlAudioIndex = desktopIsDirectPlay ? undefined : audioIndex;
 
   const desktopStreamUrl = useMemo(() => {
@@ -256,6 +257,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     [streams, client, itemId, mediaSourceId, t]);
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
   const posterUrl = useMemo(() => {
     if (!itemId) return undefined;
     const hasParentBackdrop = (item?.ParentBackdropImageTags?.length ?? 0) > 0;
@@ -281,7 +283,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    quality, setQuality, startTicks, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality,
+    startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,

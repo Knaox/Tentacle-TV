@@ -128,7 +128,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("common:searchInLibrary", { name: libraryName })}
-          className="w-full max-w-md rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-purple-500/50"
+          className="w-full max-w-md rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-[rgba(var(--brand-rgb),0.5)]"
         />
       </div>
 
@@ -195,7 +195,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
                   >
                     {isLoaderRow ? (
                       <div className="flex h-full items-center justify-center">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
                         <span className="ml-2 text-sm text-white/40">{t("common:loadingMore")}</span>
                       </div>
                     ) : (
@@ -222,7 +222,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
 
             {isFetchingNextPage && (
               <div className="flex items-center justify-center py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
                 <span className="ml-2 text-sm text-white/40">{t("common:loadingMore")}</span>
               </div>
             )}

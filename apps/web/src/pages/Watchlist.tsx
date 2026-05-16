@@ -55,7 +55,7 @@ export function Watchlist() {
               <h2 className="text-xl font-bold text-white">{t("common:mySharedLists")}</h2>
               <button
                 onClick={() => setCreateOpen(true)}
-                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-2 text-sm font-medium text-purple-300 ring-1 ring-purple-500/20 transition-all hover:from-purple-500/20 hover:to-pink-500/20"
+                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[rgba(var(--brand-rgb),0.1)] to-[rgba(var(--brand-accent-rgb),0.1)] px-4 py-2 text-sm font-medium text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.2)] transition-all hover:from-[rgba(var(--brand-rgb),0.2)] hover:to-[rgba(var(--brand-accent-rgb),0.2)]"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

@@ -1,6 +1,6 @@
 [package]
 name = "tentacle-desktop"
-version = "1.6.7"
+version = "1.7.0"
 edition = "2021"
 
 [dependencies]

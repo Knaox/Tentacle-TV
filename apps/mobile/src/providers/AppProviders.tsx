@@ -35,6 +35,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setSessionExpired } from "@/auth/sessionState";
 import { attemptReAuth } from "@/auth/credentialManager";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
+import { ThemeProvider } from "@/theme";
 
 /** AbortSignal.timeout() polyfill for React Native */
 function timeoutSignal(ms: number): AbortSignal {
@@ -237,12 +238,14 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TentacleConfigContext.Provider value={configValue}>
-        <JellyfinClientContext.Provider value={client}>
-          <DirectStreamingSync storage={storage} />
-          {children}
-        </JellyfinClientContext.Provider>
-      </TentacleConfigContext.Provider>
+      <ThemeProvider backendUrl={serverUrl}>
+        <TentacleConfigContext.Provider value={configValue}>
+          <JellyfinClientContext.Provider value={client}>
+            <DirectStreamingSync storage={storage} />
+            {children}
+          </JellyfinClientContext.Provider>
+        </TentacleConfigContext.Provider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
