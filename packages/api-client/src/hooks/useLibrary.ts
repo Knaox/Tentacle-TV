@@ -71,7 +71,7 @@ export function useLibraryItems(
     queryFn: () => {
       let url = `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}&IncludeItemTypes=Movie,Series` +
-        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio,RecursiveItemCount` +
+        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio,RecursiveItemCount,MediaSources` +
         `&ExcludeLocationTypes=Virtual&IsMissing=false&Limit=${limit}` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`;
       if (search.length >= 2) url += `&searchTerm=${encodeURIComponent(search)}`;
@@ -144,7 +144,7 @@ export function useSearchItems(query: string) {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?searchTerm=${encodeURIComponent(query)}&Recursive=true` +
-            `&IncludeItemTypes=Movie,Series&Limit=24&Fields=Overview,PrimaryImageAspectRatio` +
+            `&IncludeItemTypes=Movie,Series&Limit=24&Fields=Overview,PrimaryImageAspectRatio,MediaSources` +
             `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
         )
         .then((r) => r.Items),
@@ -178,7 +178,7 @@ export function useSimilarItems(itemId: string | undefined, parentId?: string) {
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
-          `/Items/${itemId}/Similar?userId=${userId}&Limit=24&Fields=Overview,PrimaryImageAspectRatio,ParentId` +
+          `/Items/${itemId}/Similar?userId=${userId}&Limit=24&Fields=Overview,PrimaryImageAspectRatio,ParentId,MediaSources` +
             `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
         )
         .then((r) => r.Items),
@@ -263,7 +263,7 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
         `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}` +
         `&IncludeItemTypes=${itemTypes}&Recursive=true` +
-        `&Fields=Overview,PrimaryImageAspectRatio,ProviderIds,Studios,RecursiveItemCount` +
+        `&Fields=Overview,PrimaryImageAspectRatio,ProviderIds,Studios,RecursiveItemCount,MediaSources` +
         `&ExcludeLocationTypes=Virtual&IsMissing=false` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1` +
         `&Limit=${limit}&StartIndex=${pageParam}` +

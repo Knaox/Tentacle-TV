@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { formatDuration } from "@tentacle-tv/shared";
-import type { MediaItem } from "@tentacle-tv/shared";
-import type { MediaStream } from "@tentacle-tv/shared";
+import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import { StarIcon, QualityBadge } from "../media/MediaDetailIcons";
+import { extractMediaQuality } from "../../lib/mediaQuality";
+import { PremiumQualityBadges } from "../media/PremiumQualityBadges";
 
 interface DetailMetadataProps {
   item: MediaItem;
@@ -15,20 +16,16 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
 /**
  * Year / rating / runtime / season info / quality badges / genres.
  * Pure presentation; no mutations or navigation.
+ *
+ * Détection qualité centralisée dans extractMediaQuality — même logique que
+ * le badge overlay du hero, pour éviter les divergences (ex : Dolby Vision
+ * affiché en "HDR" simple côté metadata).
  */
-export function DetailMetadata({ item, streams }: DetailMetadataProps) {
+export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps) {
   const { t } = useTranslation("common");
   const isSeries = item.Type === "Series";
   const runtime = formatDuration(item.RunTimeTicks);
-
-  const videoStream = streams.find((s) => s.Type === "Video");
-  const audioStream = streams.find((s) => s.Type === "Audio");
-  const is4K = videoStream && videoStream.Width != null && videoStream.Width >= 3840;
-  const isHDR = videoStream?.VideoRangeType != null && videoStream.VideoRangeType !== "SDR";
-  const audioChannels = audioStream?.Channels ?? 0;
-  const audioLabel = audioChannels >= 8 ? "7.1" : audioChannels >= 6 ? "5.1" : null;
-  const isAtmos = audioStream?.Codec != null &&
-    (audioStream.Codec.includes("truehd") || audioStream.Codec.includes("eac3"));
+  const quality = extractMediaQuality(item);
 
   return (
     <>
@@ -56,10 +53,8 @@ export function DetailMetadata({ item, streams }: DetailMetadataProps) {
             {item.Status === "Continuing" ? t("common:ongoing") : t("common:ended")}
           </span>
         )}
-        {is4K && <QualityBadge label="4K" />}
-        {isHDR && <QualityBadge label="HDR" />}
-        {audioLabel && <QualityBadge label={audioLabel} />}
-        {isAtmos && <QualityBadge label="Atmos" />}
+        <PremiumQualityBadges quality={quality} compact />
+        {quality.surroundLabel && <QualityBadge label={quality.surroundLabel} />}
       </motion.div>
 
       {item.Genres && item.Genres.length > 0 && (

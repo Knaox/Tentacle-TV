@@ -1,19 +1,27 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
+import { PremiumQualityBadges } from "../media/PremiumQualityBadges";
+import { extractMediaQuality } from "../../lib/mediaQuality";
 
 interface DetailHeroProps {
   backdropUrl: string | null;
+  /** Item courant — sert à extraire 4K / HDR / Dolby pour le badge top-left. */
+  item?: MediaItem;
 }
 
 /**
  * Cinematic backdrop hero for the media detail page.
- * Includes a translucent back button + ken-burns crossfade entry.
+ * Includes a translucent back button + ken-burns zoom (32s ease-out alternate).
+ * Affiche un badge qualité (4K / HDR / Dolby Vision / Atmos) en haut à droite,
+ * sous la TopNav et au-dessus des gradients.
  */
-export function DetailHero({ backdropUrl }: DetailHeroProps) {
+export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
+  const quality = item ? extractMediaQuality(item) : null;
 
   return (
     <div className="relative h-[70vh] w-full overflow-hidden md:h-[78vh]">
@@ -27,6 +35,17 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
         {t("common:back")}
       </button>
 
+      {/* Badge qualité — top-left aligné avec le bouton Retour, mais décalé
+          dessous pour ne pas le chevaucher. Au-dessus des gradients (z-20). */}
+      {quality && (
+        <div
+          className="pointer-events-none absolute left-4 top-16 z-20 md:left-8 md:top-24"
+          style={{ animation: "fadeIn 0.7s ease-out 0.2s both" }}
+        >
+          <PremiumQualityBadges quality={quality} />
+        </div>
+      )}
+
       {backdropUrl && (
         <motion.img
           src={backdropUrl}
@@ -35,7 +54,7 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
           initial={{ opacity: 0, scale: 1.12 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 h-full w-full object-cover animate-ken-burns"
+          className="absolute inset-0 h-full w-full object-cover animate-ken-burns motion-reduce:animate-none"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
       )}

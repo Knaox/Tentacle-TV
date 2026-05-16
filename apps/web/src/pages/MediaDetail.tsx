@@ -12,6 +12,7 @@ import { DetailHero } from "../components/detail/DetailHero";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
 import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
+import { CardMetaOverlay } from "../components/media/CardMetaOverlay";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
 const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
@@ -50,7 +51,7 @@ export function MediaDetail() {
   return (
     <PageTransition>
       <div className="min-h-screen bg-surface-0">
-        <DetailHero backdropUrl={backdropUrl} />
+        <DetailHero backdropUrl={backdropUrl} item={item} />
 
         <motion.div
           className="-mt-48 relative z-10 px-4 md:px-12"
@@ -61,7 +62,7 @@ export function MediaDetail() {
           <div className="flex gap-4 md:gap-8">
             {posterUrl && (
               <motion.div
-                className="flex-shrink-0"
+                className="relative flex-shrink-0 overflow-hidden rounded-md"
                 initial={{ opacity: 0, x: -32 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
@@ -69,16 +70,19 @@ export function MediaDetail() {
                 <img
                   src={posterUrl}
                   alt={item.Name}
-                  className="w-24 rounded-md shadow-2xl ring-1 ring-white/10 md:w-56"
+                  className="w-24 shadow-2xl ring-1 ring-white/10 md:w-56"
                   draggable={false}
                 />
+                {/* Overlay qualité + drapeaux directement sur le poster, comme
+                    sur les miniatures — cohérence visuelle d'un bout à l'autre. */}
+                <CardMetaOverlay item={item} />
               </motion.div>
             )}
 
             <div className="flex-1 pt-4">
               <motion.h1
                 variants={fadeUp}
-                className="text-display-3 font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-display-2"
+                className="text-display-3 font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] line-clamp-2 break-words max-w-3xl md:text-display-2"
               >
                 {item.Name}
               </motion.h1>

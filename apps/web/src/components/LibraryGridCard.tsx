@@ -1,125 +1,27 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useToggleWatchlist, useFavorite } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "./MediaContextMenu";
-import { SelectionCheckbox } from "./SelectionCheckbox";
+import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
 import { CardMetaOverlay } from "./media/CardMetaOverlay";
 
-type FilterTab = "all" | "Movie" | "Series";
-
-export interface SelectionMode {
-  isSelecting: boolean;
-  selected: Set<string>;
-  toggle: (id: string) => void;
-  isSelected: (id: string) => boolean;
+interface Props {
+  item: MediaItem;
+  onNavigate: (id: string) => void;
 }
 
-interface CollectionGridProps {
-  title: string;
-  items: MediaItem[] | undefined;
-  isLoading: boolean;
-  emptyMessage: string;
-  emptyHint?: string;
-  emptyIcon?: ReactNode;
-  actions?: ReactNode;
-  selectionMode?: SelectionMode;
-  onFilteredIdsChange?: (ids: string[]) => void;
-}
-
-export function CollectionGrid({
-  title, items, isLoading, emptyMessage, emptyHint, emptyIcon, actions, selectionMode, onFilteredIdsChange,
-}: CollectionGridProps) {
+/** Card grid de la page Bibliothèque — extraite de LibraryGrid.tsx pour
+ *  garder ce dernier sous 300 lignes. Comportement inchangé : poster 2:3,
+ *  hover-actions (fav / watchlist / shared list), context menu long-press,
+ *  CardMetaOverlay compact (1 chip dominant + 1 drapeau). */
+export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate }: Props) {
   const { t } = useTranslation("common");
-  const navigate = useNavigate();
-  const [filter, setFilter] = useState<FilterTab>("all");
-
-  const filtered = items?.filter((item) => filter === "all" || item.Type === filter);
-
-  const filteredIdsRef = useRef<string[]>([]);
-  const filteredIds = filtered?.map((i) => i.Id) ?? [];
-  if (filteredIds.join(",") !== filteredIdsRef.current.join(",")) {
-    filteredIdsRef.current = filteredIds;
-  }
-  useEffect(() => {
-    onFilteredIdsChange?.(filteredIdsRef.current);
-  }, [filteredIdsRef.current, onFilteredIdsChange]);
-
-  const tabs: { key: FilterTab; label: string }[] = [
-    { key: "all", label: t("common:allFilter") },
-    { key: "Movie", label: t("common:moviesFilter") },
-    { key: "Series", label: t("common:seriesFilter") },
-  ];
-
-  return (
-    <div className="px-4 pt-6 md:px-12">
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-white/70 transition-colors hover:bg-white/10"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="text-2xl font-bold text-white truncate">{title}</h1>
-      </div>
-
-      {/* Filter tabs + actions */}
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              filter === tab.key
-                ? "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
-                : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-        {actions && (
-          <div className="ml-auto flex items-center gap-2 sm:ml-auto">{actions}</div>
-        )}
-      </div>
-
-      {/* Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-          {Array.from({ length: 24 }).map((_, i) => (
-            <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-white/5" />
-          ))}
-        </div>
-      ) : !filtered || filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center">
-          {emptyIcon && <div className="mb-4 text-5xl opacity-40">{emptyIcon}</div>}
-          <p className="text-lg text-white/40">{emptyMessage}</p>
-          {emptyHint && <p className="mt-2 text-sm text-white/25">{emptyHint}</p>}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-          {filtered.map((item, i) => (
-            <CollectionGridCard key={item.Id} item={item} index={i} selectionMode={selectionMode} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; index: number; selectionMode?: SelectionMode }) {
-  const { t } = useTranslation("common");
-  const navigate = useNavigate();
   const client = useJellyfinClient();
   const [imgLoaded, setImgLoaded] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSelecting = selectionMode?.isSelecting ?? false;
-  const isSelected = selectionMode?.isSelected(item.Id) ?? false;
 
   const [localFavorite, setLocalFavorite] = useState(item.UserData?.IsFavorite === true);
   const [localWatchlist, setLocalWatchlist] = useState(item.UserData?.Likes === true);
@@ -128,6 +30,9 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
 
   const { add: addFav, remove: removeFav } = useFavorite(item.Id);
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(item.Id);
+  const { data: config } = useAppConfig();
+  const [sharedPickerPos, setSharedPickerPos] = useState<{ x: number; y: number } | null>(null);
+  const [addedToShared, setAddedToShared] = useState(false);
 
   const poster = client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
   const progress = item.UserData?.PlayedPercentage;
@@ -147,22 +52,13 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
 
   return (
     <div
-      onClick={() => {
-        if (isSelecting) { selectionMode?.toggle(item.Id); return; }
-        if (!ctxMenu) navigate(`/media/${item.Id}`);
-      }}
-      onContextMenu={isSelecting ? undefined : handleContextMenu}
-      onTouchStart={isSelecting ? undefined : handleTouchStart}
-      onTouchEnd={isSelecting ? undefined : clearLongPress}
-      onTouchMove={isSelecting ? undefined : clearLongPress}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
-        isSelected ? "ring-2 ring-purple-500" : ""
-      }`}
-      style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${index * 40}ms` }}
+      onClick={() => { if (!ctxMenu) onNavigate(item.Id); }}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={clearLongPress}
+      onTouchMove={clearLongPress}
+      className="group relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-transform duration-300 hover:scale-[1.03]"
     >
-      {isSelecting && (
-        <SelectionCheckbox checked={isSelected} onClick={() => selectionMode?.toggle(item.Id)} />
-      )}
       <div className="relative aspect-[2/3] bg-tentacle-surface">
         <img
           src={poster} alt={item.Name}
@@ -171,13 +67,10 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
           onLoad={() => setImgLoaded(true)}
           style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}
         />
-        {/* Même overlay qualité+drapeaux que Home — Watchlist + Favoris
-            partagent CollectionGrid donc une seule édition les couvre tous. */}
         <CardMetaOverlay item={item} density="compact" />
       </div>
 
-      {/* Hover action buttons */}
-      <div className={`absolute right-1.5 top-1.5 z-10 flex flex-col gap-1 transition-opacity ${isSelecting ? "hidden" : "opacity-0 group-hover:opacity-100"}`}
+      <div className="absolute right-1.5 top-1.5 z-10 flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100"
         style={{ pointerEvents: "none" }}>
         <div style={{ pointerEvents: "auto" }} className="flex flex-col gap-1">
           <button
@@ -210,6 +103,24 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
               <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
             )}
           </button>
+          {config?.features.sharedWatchlists && (
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110"
+              style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setSharedPickerPos(sharedPickerPos ? null : {
+                  x: Math.min(rect.right + 8, window.innerWidth - 280),
+                  y: rect.top,
+                });
+              }}
+            >
+              <svg className={`h-3.5 w-3.5 ${addedToShared ? "text-pink-400" : "text-white/60"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h6m3 0h3m-1.5-1.5v3" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -226,7 +137,7 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
         </div>
       )}
 
-      {!isSelecting && ctxMenu && (
+      {ctxMenu && (
         <MediaContextMenu
           itemId={item.Id}
           isFavorite={localFavorite}
@@ -238,6 +149,20 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
           onToggleWatchlist={() => setLocalWatchlist(!localWatchlist)}
         />
       )}
+
+      {sharedPickerPos && createPortal(
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setSharedPickerPos(null)} />
+          <div
+            className="fixed z-50 w-[260px] overflow-hidden rounded-xl border border-white/10 bg-[#12121a]/95 shadow-2xl backdrop-blur-lg"
+            style={{ left: sharedPickerPos.x, top: sharedPickerPos.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SharedWatchlistPicker itemId={item.Id} onDone={() => setSharedPickerPos(null)} onSuccess={() => setAddedToShared(true)} />
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
-}
+});
