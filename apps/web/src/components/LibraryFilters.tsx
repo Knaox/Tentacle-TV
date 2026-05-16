@@ -83,6 +83,36 @@ export function useLibraryFilters() {
   };
 }
 
+/**
+ * Style commun à tous les chips de la barre de filtre (status, favoris,
+ * filtres avancés, genres). Pill rounded-full glass — état actif violet
+ * brand semi-transparent + ring, aligné sur PremiumChip et QualityBadge.
+ * Variante "rose" pour le filtre Favoris (sémantique cœur rouge).
+ */
+function chipCls(active: boolean, accent: "violet" | "rose" = "violet"): string {
+  const base =
+    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors backdrop-blur-md";
+  if (!active) {
+    return `${base} bg-white/5 text-white/70 ring-1 ring-white/10 hover:bg-white/10 hover:text-white`;
+  }
+  if (accent === "rose") {
+    return `${base} bg-rose-500/18 text-rose-200 ring-1 ring-rose-400/45`;
+  }
+  return `${base} bg-violet-500/20 text-violet-100 ring-1 ring-violet-400/50`;
+}
+
+function HeartIcon({ filled }: { filled: boolean }) {
+  return filled ? (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 21s-7.5-4.5-9.5-9.2C1 8.2 3.2 5 6.5 5c2 0 3.6 1.1 4.5 2.4 1-1.3 2.5-2.4 4.5-2.4 3.3 0 5.5 3.2 4 6.8C19.5 16.5 12 21 12 21z" />
+    </svg>
+  ) : (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+    </svg>
+  );
+}
+
 /* ── Quick filter bar + advanced panel trigger ────── */
 
 const STATUS_QUICK = [
@@ -118,61 +148,54 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
 
   return (
     <>
-      {/* Quick filters: status + favorites + advanced button */}
+      {/* Quick filters — même langage visuel que les genres : pill (rounded-full)
+          + état actif glass violet (jamais de fond plein qui crashe avec le
+          reste du design system Tentacle). */}
       <div className="flex flex-wrap items-center gap-2">
         {STATUS_QUICK.map((opt) => (
           <button
             key={opt.key}
             onClick={() => { props.onStatusChange(opt.value); props.onFavoriteChange(false); }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-              props.filters.statusFilter === opt.value && !props.filters.isFavorite
-                ? "bg-[#8b5cf6] text-white shadow-lg shadow-purple-500/20"
-                : "bg-white/5 text-white/50 hover:bg-white/10"
-            }`}
+            className={chipCls(
+              props.filters.statusFilter === opt.value && !props.filters.isFavorite,
+            )}
           >
             {t(`common:${opt.key}`)}
           </button>
         ))}
         <button
           onClick={() => { props.onFavoriteChange(!props.filters.isFavorite); if (!props.filters.isFavorite) props.onStatusChange(null); }}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-            props.filters.isFavorite
-              ? "bg-red-500/20 text-red-400 shadow-lg shadow-red-500/10"
-              : "bg-white/5 text-white/50 hover:bg-white/10"
-          }`}
+          className={`${chipCls(props.filters.isFavorite, "rose")} inline-flex items-center gap-1.5`}
         >
-          ♥ {t("common:favorites")}
+          <HeartIcon filled={props.filters.isFavorite} />
+          {t("common:favorites")}
         </button>
 
         <div className="mx-1 h-5 w-px bg-white/10" />
 
-        {/* Advanced filter button — exact Seer style */}
+        {/* Bouton "Filtres avancés" — même pill que le reste, juste avec icône. */}
         <button
           onClick={() => setPanelOpen(true)}
-          className="relative flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white/80"
+          className={`${chipCls(props.activeCount > 0)} inline-flex items-center gap-1.5`}
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
           </svg>
           {t("common:advancedFilters")}
           {props.activeCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8b5cf6] text-[10px] font-bold text-white">
+            <span className="ml-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-violet-500/40 px-1 text-[10px] font-bold text-violet-100 ring-1 ring-violet-400/50">
               {props.activeCount}
             </span>
           )}
         </button>
       </div>
 
-      {/* Genre chips — always visible */}
+      {/* Genre chips — exactement le même chipCls que les quick filters. */}
       {genres && genres.length > 0 && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           <button
             onClick={() => props.filters.genreIds.forEach(props.onToggleGenre)}
-            className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-all ${
-              props.filters.genreIds.length === 0
-                ? "bg-[#8b5cf6] text-white"
-                : "bg-white/5 text-white/50 hover:bg-white/10"
-            }`}
+            className={`${chipCls(props.filters.genreIds.length === 0)} flex-shrink-0`}
           >
             {t("common:allGenres")}
           </button>
@@ -180,11 +203,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
             <button
               key={g.Id}
               onClick={() => props.onToggleGenre(g.Id)}
-              className={`flex-shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                props.filters.genreIds.includes(g.Id)
-                  ? "bg-[#8b5cf6]/20 text-[#8b5cf6] ring-1 ring-[#8b5cf6]/50"
-                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
-              }`}
+              className={`${chipCls(props.filters.genreIds.includes(g.Id))} flex-shrink-0 whitespace-nowrap`}
             >
               {g.Name}
             </button>

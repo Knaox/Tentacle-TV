@@ -4,7 +4,9 @@ import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 import { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot } from "./cacheUtils";
 
-const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
+// MediaSources requis pour afficher le badge qualité (4K/HEVC/DV/etc.) sur
+// les cards des rangées Ma Liste / Favoris (web CardMetaOverlay).
+const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 
 export function useWatchlist() {

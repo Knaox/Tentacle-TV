@@ -7,6 +7,7 @@ import { CardProgressBar } from "./CardProgressBar";
 import { CardQuickActions } from "./CardQuickActions";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
+import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { POSTER_WIDTH, type CardSize } from "./cardSizes";
 
 interface PosterCardProps {
@@ -63,6 +64,11 @@ export function PosterCard({ item, index, size = "md" }: PosterCardProps) {
         }}
       >
         <CardImage src={imageUrl} alt={item.Name} />
+
+        {/* Overlay ultra-discret en mode compact : sur un portrait étroit
+            (2:3), on ne montre QUE le chip premium dominant + 1 drapeau —
+            empiler 4-5 chips noyait visuellement l'affiche. */}
+        <CardMetaOverlay item={item} density="compact" />
 
         {/* Bottom dark fade so quick-actions stay readable on bright posters */}
         <div

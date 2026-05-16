@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { HeroBackdrop } from "./HeroBackdrop";
+import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 
 interface HeroBillboardProps {
   items: MediaItem[];
-  /** Auto-rotate interval in ms. Set to 0 to disable. Default 9000ms. */
+  /** Auto-rotate interval in ms. Set to 0 to disable. Default = zoom duration. */
   rotateMs?: number;
 }
 
-const DEFAULT_ROTATE_MS = 9000;
+// Synchronisé avec le zoom du backdrop : on change de slide pile à la fin
+// du cycle scale 1 → 1.10 pour un enchaînement perçu comme continu.
+const DEFAULT_ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
 
 /**
  * Cinematic full-bleed billboard — the centerpiece of the home page.
@@ -67,11 +69,14 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
     return <div className="h-[80vh] w-full md:h-[88vh] lg:h-[92vh]" />;
   }
 
+  // NB: pas de onMouseEnter={pause}/onMouseLeave={resume} sur la section —
+  // le hero couvre ~90vh, le curseur le survole quasi en permanence, ce qui
+  // figeait le carrousel à la première slide. Le timer continue de tourner ;
+  // l'utilisateur peut toujours interrompre via les flèches / indicateurs
+  // (qui font un pause éphémère 100ms pour absorber le clic).
   return (
     <section
       className="group/billboard relative w-full overflow-hidden h-[80vh] md:h-[88vh] lg:h-[92vh]"
-      onMouseEnter={pause}
-      onMouseLeave={resume}
       aria-label="Featured content"
     >
       <HeroBackdrop items={items} activeIndex={index} />

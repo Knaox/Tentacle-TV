@@ -1,9 +1,12 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, StarIcon } from "../icons/HeroIcons";
+import { extractMediaQuality } from "../../lib/mediaQuality";
+import { PremiumChip, DolbyChip } from "../media/CardMetaOverlay";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -37,6 +40,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
   const runtime = formatDuration(item.RunTimeTicks);
   const progress = item.UserData?.PlayedPercentage ?? 0;
   const hasProgress = progress > 0 && progress < 100;
+  const quality = useMemo(() => extractMediaQuality(item), [item]);
 
   const detailId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
 
@@ -70,7 +74,8 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           </div>
         )}
 
-        {/* Logo / Title */}
+        {/* Logo / Title — bornés à la colonne hero (max-w-xl du parent) pour
+            ne jamais déborder vers les flèches du carrousel à droite. */}
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -79,7 +84,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             draggable={false}
           />
         ) : (
-          <h1 className="mb-4 text-display-3 font-bold text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] md:text-display-2 lg:text-display-1">
+          <h1 className="mb-4 text-display-3 font-bold text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] line-clamp-2 break-words md:text-display-2 lg:text-display-1">
             {displayName}
           </h1>
         )}
@@ -101,11 +106,41 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           {item.Genres?.slice(0, 3).map((g) => (
             <span key={g} className="text-white/65">· {g}</span>
           ))}
+          {/* Qualité + drapeaux audio inline — alimentés par extractMediaQuality
+              comme les cards, mais rendus sans positioning absolu pour
+              s'insérer dans la rangée meta. */}
+          {(quality.resolution || quality.isHEVC || quality.isDolbyVision ||
+            quality.isHDR || quality.isDolbyAtmos || quality.isDolbyDigital) && (
+            <span aria-hidden className="mx-1 text-white/30">·</span>
+          )}
+          {quality.resolution === "4K" && <PremiumChip label="4K" tone="accent" />}
+          {quality.resolution === "FHD" && <PremiumChip label="1080P" tone="glass" />}
+          {quality.resolution === "HD" && <PremiumChip label="720P" tone="glass" />}
+          {quality.isHEVC && <PremiumChip label="HEVC" tone="glass" title="HEVC / H.265" />}
+          {quality.isDolbyVision && <DolbyChip label="VISION" />}
+          {!quality.isDolbyVision && quality.isHDR && <PremiumChip label="HDR" tone="glass" />}
+          {quality.isDolbyAtmos && <DolbyChip label="ATMOS" />}
+          {!quality.isDolbyAtmos && quality.isDolbyDigital && <DolbyChip label="DIGITAL" />}
+          {quality.audioFlags.slice(0, 4).map((f) => (
+            <span
+              key={f.countryCode}
+              aria-label={`Audio : ${f.languageCode.toUpperCase()}${f.secondaryFlag ? " (Canadien)" : ""}`}
+              className="inline-flex h-[18px] items-center justify-center gap-[1px] rounded-[3px] px-[3px] text-[13px] leading-none"
+              style={{
+                background: "rgba(0,0,0,0.55)",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.18) inset",
+              }}
+            >
+              {f.flag}
+              {f.secondaryFlag && <span>{f.secondaryFlag}</span>}
+            </span>
+          ))}
         </div>
 
-        {/* Overview — clipped to 3 lines, hidden on tiny screens */}
+        {/* Overview — clamped to 2 lines (max-w-xl du parent borne la largeur)
+            pour que la description reste strictement dans la colonne hero. */}
         {item.Overview && (
-          <p className="mb-6 hidden max-w-2xl text-base leading-relaxed text-white/85 line-clamp-3 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:block">
+          <p className="mb-6 hidden text-base leading-relaxed text-white/85 line-clamp-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:block">
             {item.Overview}
           </p>
         )}

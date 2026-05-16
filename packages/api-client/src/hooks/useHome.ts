@@ -9,7 +9,9 @@ import {
   buildSmartNextUp,
 } from "../utils/mediaFilters";
 
-const FIELDS = "Overview,Genres,PrimaryImageAspectRatio";
+// MediaSources est requis pour afficher le badge qualité (4K / HDR / Dolby)
+// sur les items du hero. Payload +~5KB par item — acceptable pour un Limit=12.
+const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 const USER_DATA = "EnableUserData=true";
 
@@ -209,7 +211,7 @@ export function useFeaturedItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?SortBy=Random&Limit=5&Recursive=true` +
-            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines&HasBackdrop=true&${IMAGE_OPTS}&${USER_DATA}`
+            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines,MediaSources&HasBackdrop=true&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
