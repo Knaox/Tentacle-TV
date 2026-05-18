@@ -123,6 +123,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             setPreferencesToken(data.AccessToken);
             setSharedWatchlistsToken(data.AccessToken);
             client.resetAuthState();
+            queryClient.invalidateQueries();
             return;
           }
 
@@ -135,6 +136,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
               setPreferencesToken(reAuth.AccessToken);
               setSharedWatchlistsToken(reAuth.AccessToken);
               client.resetAuthState();
+              queryClient.invalidateQueries();
               return;
             }
             storage.removeItem("tentacle_token");
@@ -181,6 +183,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           setPreferencesToken(data.AccessToken);
           setSharedWatchlistsToken(data.AccessToken);
           client.resetAuthState();
+          queryClient.invalidateQueries();
         } else if (res.status === 401) {
           const reAuth = await attemptReAuth(storage, serverUrl);
           if (reAuth) {
@@ -190,6 +193,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             setPreferencesToken(reAuth.AccessToken);
             setSharedWatchlistsToken(reAuth.AccessToken);
             client.resetAuthState();
+            queryClient.invalidateQueries();
           } else {
             storage.removeItem("tentacle_token");
             storage.removeItem("tentacle_user");

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, InteractionManager, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,8 +43,12 @@ export function SearchScreen() {
   const { data: results, isLoading } = useSearchItems(debounced);
 
   const handleResultPress = (id: string) => {
+    // Dismiss the modal first, then push the detail route on the underlying
+    // stack. setTimeout(0) defers push to the next tick so the modal dismiss
+    // is queued first — InteractionManager.runAfterInteractions is unreliable
+    // here (callback may never fire when prior screens are still doing work).
     router.dismiss();
-    InteractionManager.runAfterInteractions(() => { router.push(`/media/${id}`); });
+    setTimeout(() => router.push(`/media/${id}`), 0);
   };
 
   return (
