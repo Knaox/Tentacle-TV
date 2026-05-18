@@ -1,6 +1,7 @@
 import { useMemo, type ReactElement } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { extractMediaQuality } from "../../lib/mediaQuality";
+import { CountryFlag } from "./CountryFlag";
 
 interface Props {
   item: MediaItem;
@@ -57,18 +58,12 @@ export function CardMetaOverlay({ item, density = "full" }: Props) {
           aria-label={`Langues audio : ${flags.map((f) => f.languageCode.toUpperCase()).join(", ")}`}
         >
           {flags.map((f) => (
-            <span
-              key={f.countryCode}
-              className="inline-flex h-[18px] items-center justify-center gap-[1px] rounded-[3px] px-[3px] text-[13px] leading-none"
-              style={{
-                background: "rgba(0,0,0,0.55)",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.18) inset",
-              }}
-              aria-hidden
-            >
-              {f.flag}
-              {f.secondaryFlag && <span>{f.secondaryFlag}</span>}
-            </span>
+            <CountryFlag
+              key={`${f.countryCode}-${f.secondaryCountryCode ?? ""}`}
+              code={f.countryCode}
+              secondary={f.secondaryCountryCode}
+              languageCode={f.languageCode}
+            />
           ))}
         </div>
       )}

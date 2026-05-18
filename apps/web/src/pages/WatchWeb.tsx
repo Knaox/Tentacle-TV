@@ -121,8 +121,17 @@ export function WatchWeb() {
     ? `S${item.ParentIndexNumber}E${item.IndexNumber} — ${item.Name}` : undefined;
   const nextEpTitle = nextEpisode
     ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}` : undefined;
-  const nextEpisodeImageUrl = nextEpisode?.Id
-    ? client.getImageUrl(nextEpisode.Id, "Primary", { height: 200, quality: 85 }) : undefined;
+  const nextEpisodeImageUrl = (() => {
+    if (!nextEpisode?.Id) return undefined;
+    const hasOwnBackdrop = (nextEpisode.BackdropImageTags?.length ?? 0) > 0;
+    const hasParentBackdrop = (nextEpisode.ParentBackdropImageTags?.length ?? 0) > 0;
+    const isEpisode = nextEpisode.Type === "Episode";
+    const backdropId = isEpisode
+      ? (hasOwnBackdrop ? nextEpisode.Id : (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id))
+      : nextEpisode.Id;
+    const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
+    return client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 });
+  })();
   const nextEpisodeDescription = nextEpisode?.Overview
     ? (nextEpisode.Overview.length > 120 ? nextEpisode.Overview.slice(0, 120) + "…" : nextEpisode.Overview) : undefined;
 

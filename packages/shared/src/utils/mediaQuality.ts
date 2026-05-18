@@ -4,12 +4,10 @@ export type Resolution = "4K" | "FHD" | "HD" | "SD";
 export type SourceResolution = "4K" | "1080p" | "720p" | "SD";
 
 export interface AudioFlag {
-  /** ISO 3166-1 alpha-2 (FR, JP, US…) ou composite ("FR-CA" pour VF Québec). */
+  /** ISO 3166-1 alpha-2 du drapeau primaire (FR, JP, US…). */
   countryCode: string;
-  /** Emoji drapeau primaire prêt à rendre (Apple Color Emoji macOS/iOS). */
-  flag: string;
-  /** Drapeau secondaire optionnel — utilisé pour VF Canadien (CA après FR). */
-  secondaryFlag?: string;
+  /** Drapeau secondaire ISO 3166-1 alpha-2 — "CA" pour VF Québec. */
+  secondaryCountryCode?: string;
   /** Code langue ISO 639 d'origine (fra/fre/jpn…), utile pour aria-label. */
   languageCode: string;
 }
@@ -143,17 +141,6 @@ const LANGUAGE_TO_COUNTRY: Record<string, string> = {
   fin: "FI", fi: "FI",
 };
 
-function countryToFlag(cc: string): string {
-  const code = cc.toUpperCase();
-  if (code.length !== 2) return "";
-  const A = 0x41;
-  const RIS = 0x1f1e6;
-  return String.fromCodePoint(
-    code.charCodeAt(0) - A + RIS,
-    code.charCodeAt(1) - A + RIS,
-  );
-}
-
 function isFrenchCanadian(stream: MediaStream): boolean {
   const probe = `${stream.DisplayTitle ?? ""} ${stream.Title ?? ""}`.toLowerCase();
   return /\b(canad|qu[ée]bec|vfq|qc\b)/i.test(probe);
@@ -172,14 +159,13 @@ function extractAudioFlags(streams: MediaStream[]): AudioFlag[] {
     if (!cc) continue;
 
     const isFRCA = cc === "FR" && isFrenchCanadian(s);
-    const key = isFRCA ? "FR-CA" : cc;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const dedupKey = isFRCA ? "FR-CA" : cc;
+    if (seen.has(dedupKey)) continue;
+    seen.add(dedupKey);
 
     result.push({
-      countryCode: key,
-      flag: countryToFlag(cc),
-      secondaryFlag: isFRCA ? countryToFlag("CA") : undefined,
+      countryCode: cc,
+      secondaryCountryCode: isFRCA ? "CA" : undefined,
       languageCode: lang,
     });
   }

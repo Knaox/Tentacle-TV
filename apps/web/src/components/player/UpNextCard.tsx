@@ -49,7 +49,7 @@ export function UpNextCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 24, scale: 0.96, transition: { duration: 0.16 } }}
       transition={{ type: "spring", damping: 22, stiffness: 280 }}
-      className="absolute bottom-6 right-6 z-30 w-[420px] overflow-hidden"
+      className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
       onClick={(e) => e.stopPropagation()}
       style={{
         background: "var(--surface-modal)",
