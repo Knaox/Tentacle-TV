@@ -84,10 +84,13 @@ export function buildStreamUrl(opts: {
 
   let url = `${root}${transcodingPath}`;
 
-  // Always force subtitles in HLS manifest for iOS AVPlayer
-  url = url.replace(/EnableSubtitlesInManifest=false/i, "EnableSubtitlesInManifest=true");
+  // Disable subtitle sidecar in the HLS manifest. Mobile renders text subs
+  // via the custom `SubtitleOverlay` (and burns-in bitmap subs server-side
+  // through SubtitleStreamIndex below). Leaving them in the manifest causes
+  // AVPlayer to also display them → double-subtitles on iOS for some animes.
+  url = url.replace(/EnableSubtitlesInManifest=true/i, "EnableSubtitlesInManifest=false");
   if (!/EnableSubtitlesInManifest/i.test(url)) {
-    url += (url.includes("?") ? "&" : "?") + "EnableSubtitlesInManifest=true";
+    url += (url.includes("?") ? "&" : "?") + "EnableSubtitlesInManifest=false";
   }
   if (subIdx >= 0 && !/SubtitleStreamIndex/i.test(url)) {
     url += `&SubtitleStreamIndex=${subIdx}`;
