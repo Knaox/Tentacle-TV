@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { View, Text, ScrollView, RefreshControl, InteractionManager, useWindowDimensions, Pressable, StyleSheet } from "react-native";
+import { View, Text, ScrollView, RefreshControl, useWindowDimensions, Pressable, StyleSheet } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, withSpring, withDelay, withTiming, Easing, interpolate, Extrapolation } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -81,14 +81,11 @@ export function MediaDetailScreen({ itemId }: Props) {
     if (!item || animatedForId.current === itemId) return;
     animatedForId.current = itemId;
     posterAnim.value = 0; titleAnim.value = 0; metaAnim.value = 0; actionsAnim.value = 0; contentAnim.value = 0;
-    const handle = InteractionManager.runAfterInteractions(() => {
-      posterAnim.value = withSpring(1, { damping: 18, stiffness: 140, mass: 0.9 });
-      titleAnim.value = withDelay(120, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
-      metaAnim.value = withDelay(220, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
-      actionsAnim.value = withDelay(320, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
-      contentAnim.value = withDelay(440, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
-    });
-    return () => handle.cancel();
+    posterAnim.value = withDelay(16, withSpring(1, { damping: 18, stiffness: 140, mass: 0.9 }));
+    titleAnim.value = withDelay(120, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
+    metaAnim.value = withDelay(220, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
+    actionsAnim.value = withDelay(320, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
+    contentAnim.value = withDelay(440, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
   }, [item, itemId, posterAnim, titleAnim, metaAnim, actionsAnim, contentAnim]);
 
   const posterStyle = useAnimatedStyle(() => ({

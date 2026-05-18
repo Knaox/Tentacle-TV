@@ -18,6 +18,15 @@ const AirPlaySection = Platform.OS === "ios"
 
 interface Track { index: number; label: string }
 
+/** Countdown shown in the AutoPlay card before navigating to next episode. */
+const AUTOPLAY_COUNTDOWN_SEC = 10;
+/** Fallback window (s) before the video ends to surface the AutoPlay overlay
+ * when intro-skipper / MediaSegments don't expose a credits segment.
+ * Matches desktop default (`autoplayCreditsMinutes: 2`). */
+const AUTOPLAY_END_FALLBACK_SEC = 120;
+/** Don't auto-trigger fallback on short clips (< 5 min) — same as desktop. */
+const MIN_DURATION_FOR_FALLBACK_SEC = 300;
+
 interface Props {
   title: string;
   currentTime: number;
@@ -67,9 +76,12 @@ export function MobilePlayerOverlay({
   const [showSettings, setShowSettings] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false);
   const [showAutoPlay, setShowAutoPlay] = useState(false);
+  const [autoPlayCountdown, setAutoPlayCountdown] = useState<number>(AUTOPLAY_COUNTDOWN_SEC);
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const autoPlayDismissed = useRef(false);
+  const autoPlayTriggered = useRef(false);
+  const autoPlayTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
@@ -90,13 +102,53 @@ export function MobilePlayerOverlay({
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [visible, resetHideTimer, opacity]);
 
-  // AutoPlay: show overlay when credits start
+  // Start countdown once. The interval ONLY decrements state — navigation
+  // (onNextEpisode → router.replace) is handled by the effect below so we
+  // don't trigger router updates from inside a setState updater (that warns
+  // "Cannot update a component while rendering another").
+  const startAutoPlay = useCallback(() => {
+    if (!nextEpisode || !onNextEpisode) return;
+    if (autoPlayTriggered.current) return;
+    autoPlayTriggered.current = true;
+    setAutoPlayCountdown(AUTOPLAY_COUNTDOWN_SEC);
+    setShowAutoPlay(true);
+    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
+    autoPlayTimer.current = setInterval(() => {
+      setAutoPlayCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+  }, [nextEpisode, onNextEpisode]);
+
+  useEffect(() => () => { if (autoPlayTimer.current) clearInterval(autoPlayTimer.current); }, []);
+
+  // Countdown reached zero — clear timer and fire navigation outside render.
+  const autoPlayNavigated = useRef(false);
   useEffect(() => {
-    if (!creditsSegment || !nextEpisode || autoPlayDismissed.current) return;
-    if (currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1) {
-      setShowAutoPlay(true);
+    if (!autoPlayTriggered.current) return;
+    if (autoPlayNavigated.current) return;
+    if (autoPlayCountdown !== 0) return;
+    autoPlayNavigated.current = true;
+    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
+    onNextEpisode?.();
+  }, [autoPlayCountdown, onNextEpisode]);
+
+  // Same conditions as desktop VideoPlayer:
+  //   triggerAt = creditsSegment?.start ?? (duration > 300 ? duration - 120 : null)
+  useEffect(() => {
+    if (autoPlayTriggered.current || autoPlayDismissed.current) return;
+    if (!nextEpisode || !onNextEpisode) return;
+    const triggerAt = creditsSegment
+      ? creditsSegment.start
+      : (duration > MIN_DURATION_FOR_FALLBACK_SEC ? duration - AUTOPLAY_END_FALLBACK_SEC : null);
+    if (triggerAt != null && currentTime >= triggerAt) {
+      startAutoPlay();
     }
-  }, [currentTime, creditsSegment, nextEpisode]);
+  }, [currentTime, creditsSegment, nextEpisode, onNextEpisode, duration, startAutoPlay]);
+
+  const dismissAutoPlay = useCallback(() => {
+    autoPlayDismissed.current = true;
+    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
+    setShowAutoPlay(false);
+  }, []);
 
   const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1 && !showAutoPlay;
@@ -226,8 +278,10 @@ export function MobilePlayerOverlay({
       {showAutoPlay && nextEpisode && onNextEpisode && (
         <AutoPlayOverlay
           nextEpisode={nextEpisode}
+          countdown={autoPlayCountdown}
+          totalSeconds={AUTOPLAY_COUNTDOWN_SEC}
           onPlay={onNextEpisode}
-          onDismiss={() => { setShowAutoPlay(false); autoPlayDismissed.current = true; }}
+          onDismiss={dismissAutoPlay}
         />
       )}
 
