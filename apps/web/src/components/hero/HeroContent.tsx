@@ -7,6 +7,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, StarIcon } from "../icons/HeroIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { PremiumChip, DolbyChip } from "../media/CardMetaOverlay";
+import { CountryFlag } from "../media/CountryFlag";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -122,18 +123,12 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           {quality.isDolbyAtmos && <DolbyChip label="ATMOS" />}
           {!quality.isDolbyAtmos && quality.isDolbyDigital && <DolbyChip label="DIGITAL" />}
           {quality.audioFlags.slice(0, 4).map((f) => (
-            <span
-              key={f.countryCode}
-              aria-label={`Audio : ${f.languageCode.toUpperCase()}${f.secondaryFlag ? " (Canadien)" : ""}`}
-              className="inline-flex h-[18px] items-center justify-center gap-[1px] rounded-[3px] px-[3px] text-[13px] leading-none"
-              style={{
-                background: "rgba(0,0,0,0.55)",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.18) inset",
-              }}
-            >
-              {f.flag}
-              {f.secondaryFlag && <span>{f.secondaryFlag}</span>}
-            </span>
+            <CountryFlag
+              key={`${f.countryCode}-${f.secondaryCountryCode ?? ""}`}
+              code={f.countryCode}
+              secondary={f.secondaryCountryCode}
+              languageCode={f.languageCode}
+            />
           ))}
         </div>
 
