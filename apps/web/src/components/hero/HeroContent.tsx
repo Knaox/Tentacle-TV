@@ -85,7 +85,14 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             draggable={false}
           />
         ) : (
-          <h1 className="mb-4 text-display-3 font-bold text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] line-clamp-2 break-words md:text-display-2 lg:text-display-1">
+          <h1
+            className="mb-4 font-bold text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] line-clamp-2 break-words tracking-tight"
+            style={{
+              fontSize: "clamp(1.75rem, 3.6vw, 3.25rem)",
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
+            }}
+          >
             {displayName}
           </h1>
         )}
