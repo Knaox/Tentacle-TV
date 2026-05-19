@@ -19,8 +19,10 @@ interface TopNavProps {
 export function TopNav({ showSearch = true }: TopNavProps) {
   const scrollProgress = useScrollOpacity(120);
 
-  // Background opacity ramps faster than border so border barely shows over hero.
-  const bgOpacity = Math.min(0.92, scrollProgress * 1.2);
+  // Baseline opacity 0.28 even at scroll=0 garantit la lisibilité du nav par-dessus
+  // n'importe quel backdrop hero ; ramp jusqu'à 0.92 au scroll pour rester
+  // cohérent avec le pattern Netflix « transparent en haut, opaque sur les rows ».
+  const bgOpacity = Math.min(0.92, 0.28 + scrollProgress * 0.85);
   const borderOpacity = scrollProgress > 0.95 ? 0.08 : 0;
 
   return (
@@ -30,8 +32,8 @@ export function TopNav({ showSearch = true }: TopNavProps) {
       style={{
         background: `rgba(0, 0, 0, ${bgOpacity})`,
         borderBottom: `1px solid rgba(255, 255, 255, ${borderOpacity})`,
-        backdropFilter: scrollProgress > 0.3 ? "blur(12px)" : "none",
-        WebkitBackdropFilter: scrollProgress > 0.3 ? "blur(12px)" : "none",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}
     >

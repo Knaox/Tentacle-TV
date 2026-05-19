@@ -50,12 +50,13 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
             "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 55%, var(--surface-0) 100%)",
         }}
       />
-      {/* Subtle top vignette so the transparent topnav has contrast */}
+      {/* Top vignette under the TopNav — renforcée pour garantir la lisibilité
+          de la nav par-dessus un backdrop clair (Ryland Grace, kiosques lumineux…). */}
       <div
-        className="absolute inset-x-0 top-0 h-32"
+        className="absolute inset-x-0 top-0 h-40"
         style={{
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 45%, transparent 100%)",
         }}
       />
       {/* Tiny grain to avoid banding on solid color zones — pas de mix-blend-mode
