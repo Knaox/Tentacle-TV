@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "./TrackSelector";
+import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
 import { NextEpisodeOverlay } from "./NextEpisodeOverlay";
-import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon } from "./PlayerIcons";
+import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon } from "./PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
+import { useSmtc } from "../hooks/useSmtc";
 import type { MpvTrack } from "../hooks/useDesktopPlayer";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { TrickplayPreview } from "./TrickplayPreview";
@@ -131,6 +133,8 @@ export function DesktopPlayer({
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showEpisodes, setShowEpisodes] = useState(false);
+  const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const [sourceChanging, setSourceChanging] = useState(false);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
@@ -436,6 +440,20 @@ export function DesktopPlayer({
     }, 3000);
   }, [state.paused]);
 
+  // Contrôles média système Windows (SMTC) : touches média + overlay + Stream Deck.
+  useSmtc({
+    title,
+    artist: subtitle,
+    cover: posterUrl,
+    paused: state.paused,
+    onToggle: togglePause,
+    onPlay: () => setPause(false),
+    onPause: () => setPause(true),
+    onStop: goBack,
+    onNext: hasNextEpisode ? onNextEpisode : undefined,
+    onPrevious: hasPreviousEpisode ? onPreviousEpisode : undefined,
+  });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePause(); }
@@ -571,7 +589,7 @@ export function DesktopPlayer({
   return (
     <div onMouseMove={scheduleHide} className="relative flex h-screen w-screen items-center justify-center" style={{ background: "transparent" }}>
       {/* Click catcher — toggle pause / fullscreen on video area */}
-      <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); }} onDoubleClick={() => toggleFullscreen()} />
+      <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 
       {/* Loading overlay — initial load + source changes (quality/audio) */}
       {showLoadingOverlay && posterUrl && (
@@ -645,6 +663,14 @@ export function DesktopPlayer({
                   onClose={() => setShowSettings(false)}
                 />
               )}
+              {showEpisodes && isEpisode && item?.SeriesId && (
+                <EpisodeSelectorPanel
+                  seriesId={item.SeriesId}
+                  currentEpisodeId={item.Id}
+                  currentSeasonId={item.SeasonId}
+                  onClose={() => setShowEpisodes(false)}
+                />
+              )}
             </AnimatePresence>
 
             {/* Progress bar with buffer + drag scrub */}
@@ -698,8 +724,18 @@ export function DesktopPlayer({
                 <span className="text-sm text-white/60">{fmt(dragProgress != null ? dragProgress * dur : actualPos)} / {fmt(dur)}</span>
               </div>
               <div className="flex items-center gap-2">
+                {isEpisode && (
+                  <button
+                    onClick={() => { setShowEpisodes((p) => !p); setShowSettings(false); }}
+                    className={`rounded-full p-2 hover:bg-white/10 ${showEpisodes ? "bg-white/10" : ""}`}
+                    title={t("player:episodes")}
+                    aria-label={t("player:episodes")}
+                  >
+                    <EpisodesIcon />
+                  </button>
+                )}
                 {hasSettings && (
-                  <button onClick={() => setShowSettings((p) => !p)} className="rounded-full p-2 hover:bg-white/10"><GearIcon /></button>
+                  <button onClick={() => { setShowSettings((p) => !p); setShowEpisodes(false); }} className="rounded-full p-2 hover:bg-white/10"><GearIcon /></button>
                 )}
                 <button onClick={() => toggleFullscreen()} className="rounded-full p-2 hover:bg-white/10" title="(F)">
                   {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}

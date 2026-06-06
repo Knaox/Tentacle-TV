@@ -1,6 +1,6 @@
 [package]
 name = "tentacle-desktop"
-version = "1.7.1"
+version = "1.8.0"
 edition = "2021"
 
 [dependencies]
@@ -20,9 +20,13 @@ windows = { version = "0.61", features = [
   "ApplicationModel",
   "Win32_Foundation",
   "Win32_UI_Shell",
+  "Win32_Media_Audio",
+  "Win32_System_Com",
 ] }
 windows-future = "0.2"
 windows-core = "0.61"
+# Contrôles média système (SMTC) : touches média + overlay "lecture en cours".
+souvlaki = "0.8"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

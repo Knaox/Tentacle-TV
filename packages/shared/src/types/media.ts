@@ -47,6 +47,9 @@ export interface MediaItem {
   // External URLs
   ExternalUrls?: Array<{ Name: string; Url: string }>;
 
+  // Bandes-annonces distantes (quasi toujours YouTube). Demandé via Fields=RemoteTrailers.
+  RemoteTrailers?: Array<{ Url: string; Name?: string }>;
+
   // External IDs
   ProviderIds?: Record<string, string>;
 
@@ -59,6 +62,10 @@ export interface MediaItem {
   ChildCount?: number;
   RecursiveItemCount?: number;
   CollectionType?: string;
+
+  // Tentacle-only : nombre d'épisodes récemment ajoutés pour une série groupée
+  // dans la rangée « Derniers ajouts ». Calculé côté client, jamais renvoyé par Jellyfin.
+  RecentlyAddedCount?: number;
 
   // Studios
   Studios?: Array<{ Name: string; Id: string }>;

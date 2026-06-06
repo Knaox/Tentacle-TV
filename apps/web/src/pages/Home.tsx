@@ -73,11 +73,18 @@ export function Home() {
           <MediaRow
             title={t("common:alreadyWatched")}
             items={watchedItems}
+            variant="episode"
             animDelay={450}
           />
         )}
         {libraries?.map((lib, i) => (
-          <LibraryRow key={lib.Id} libraryId={lib.Id} libraryName={lib.Name} delayIndex={i} />
+          <LibraryRow
+            key={lib.Id}
+            libraryId={lib.Id}
+            libraryName={lib.Name}
+            collectionType={lib.CollectionType}
+            delayIndex={i}
+          />
         ))}
       </div>
     </PageTransition>
@@ -87,14 +94,16 @@ export function Home() {
 function LibraryRow({
   libraryId,
   libraryName,
+  collectionType,
   delayIndex,
 }: {
   libraryId: string;
   libraryName: string;
+  collectionType?: string;
   delayIndex: number;
 }) {
   const { t } = useTranslation("common");
-  const { data: items, isLoading } = useLatestItems(libraryId);
+  const { data: items, isLoading } = useLatestItems(libraryId, { collectionType });
 
   if (isLoading) {
     return (
@@ -122,6 +131,7 @@ function LibraryRow({
       items={items}
       animDelay={550 + delayIndex * 80}
       href={`/library/${libraryId}`}
+      posterImageMode="series"
     />
   );
 }

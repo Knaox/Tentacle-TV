@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardImage } from "./CardImage";
@@ -8,12 +9,15 @@ import { CardQuickActions } from "./CardQuickActions";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
+import { resolvePosterImage, type PosterImageMode } from "./resolveCardImage";
 import { POSTER_WIDTH, type CardSize } from "./cardSizes";
 
 interface PosterCardProps {
   item: MediaItem;
   index: number;
   size?: CardSize;
+  /** `series` force le poster de la série pour un épisode (utilisé par « Derniers ajouts »). */
+  posterImageMode?: PosterImageMode;
 }
 
 /**
@@ -21,20 +25,28 @@ interface PosterCardProps {
  * Hover effect: subtle scale + violet brand ring + quick actions reveal.
  * No detached popover (which was the source of the row-overlap bug).
  */
-export function PosterCard({ item, index, size = "md" }: PosterCardProps) {
+export function PosterCard({ item, index, size = "md", posterImageMode = "auto" }: PosterCardProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
+  const { t } = useTranslation("common");
   const [hovered, setHovered] = useState(false);
   const ctx = useCardContextMenu();
 
   const isEpisode = item.Type === "Episode";
-  const detailId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const imageId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const imageUrl = client.getImageUrl(imageId, "Primary", { height: 450, quality: 90 });
+  // Tuile série groupée « Derniers ajouts » : N épisodes ajoutés d'un coup.
+  const addedCount = item.RecentlyAddedCount ?? 0;
+  // Épisode → on ouvre la fiche de l'épisode lui-même (« le media detail du media »).
+  const detailId = item.Id;
+  // Épisode → affiche réelle de l'épisode (sa Primary), repli poster série.
+  const { id: imageId, type: imageType } = resolvePosterImage(item, posterImageMode);
+  const imageUrl = client.getImageUrl(imageId, imageType, { height: 450, quality: 90 });
 
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
   const widths = POSTER_WIDTH[size];
+  const epLabel = isEpisode
+    ? `S${String(item.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(item.IndexNumber ?? 0).padStart(2, "0")}`
+    : null;
 
   const handleClick = () => {
     if (ctx.ctxMenu) return;
@@ -64,6 +76,13 @@ export function PosterCard({ item, index, size = "md" }: PosterCardProps) {
         }}
       >
         <CardImage src={imageUrl} alt={item.Name} />
+
+        {/* Badge compteur d'épisodes récemment ajoutés (tuile série groupée). */}
+        {addedCount > 1 && (
+          <div className="absolute left-1.5 top-1.5 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-[0_2px_8px_rgba(var(--brand-rgb),0.45)]">
+            +{addedCount}
+          </div>
+        )}
 
         {/* Overlay ultra-discret en mode compact : sur un portrait étroit
             (2:3), on ne montre QUE le chip premium dominant + 1 drapeau —
@@ -105,8 +124,18 @@ export function PosterCard({ item, index, size = "md" }: PosterCardProps) {
         <h3 className="truncate text-sm font-medium text-white/90">
           {isEpisode ? (item.SeriesName ?? item.Name) : item.Name}
         </h3>
-        {item.ProductionYear && (
-          <p className="mt-0.5 text-xs text-white/45">{item.ProductionYear}</p>
+        {addedCount > 1 ? (
+          <p className="mt-0.5 truncate text-xs text-white/45">
+            {t("common:addedEpisodes", { count: addedCount })}
+          </p>
+        ) : isEpisode ? (
+          <p className="mt-0.5 truncate text-xs text-white/45">
+            {[epLabel, item.Name].filter(Boolean).join(" · ")}
+          </p>
+        ) : (
+          item.ProductionYear && (
+            <p className="mt-0.5 text-xs text-white/45">{item.ProductionYear}</p>
+          )
         )}
       </div>
 

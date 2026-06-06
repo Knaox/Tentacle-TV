@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
   "productName": "Tentacle TV",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "identifier": "com.tentacle.media",
   "build": {
     "frontendDist": "../../web/dist",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:5174",
     "beforeDevCommand": "",
     "beforeBuildCommand": "pnpm --filter @tentacle-tv/web build"
   },
@@ -23,7 +23,7 @@
     ],
     "macOSPrivateApi": true,
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: http:; media-src 'self' blob: https: http:; connect-src 'self' https: http: ws: wss: http://ipc.localhost ipc:; font-src 'self' https://fonts.gstatic.com; frame-src 'self' blob: data:; child-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self';",
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: http:; media-src 'self' blob: https: http:; connect-src 'self' https: http: ws: wss: http://ipc.localhost ipc:; font-src 'self' https://fonts.gstatic.com; frame-src 'self' blob: data: https://www.youtube-nocookie.com https://www.youtube.com; child-src 'self' blob: data: https://www.youtube-nocookie.com https://www.youtube.com; object-src 'none'; base-uri 'self'; form-action 'self';",
       "dangerousDisableAssetCspModification": true
     }
   },
