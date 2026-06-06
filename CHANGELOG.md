@@ -3,6 +3,13 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.8.1] - 2026-06-06
+
+Desktop 1.8.1
+
+### Corrigé
+- Bandes-annonces YouTube : erreur 153 (« referrer manquant »). L'embed force désormais une `referrerPolicy` explicite, ce qui corrige la prod web (header `Referrer-Policy: no-referrer`) et vise le client macOS (WKWebView, origine `tauri://`). Le desktop Windows (WebView2, origine `http://tauri.localhost`) n'était pas affecté.
+
 ## [1.8.0] - 2026-06-06
 
 Desktop 1.8.0 — Web 1.0.0-beta.3
