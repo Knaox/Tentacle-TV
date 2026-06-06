@@ -1,0 +1,30 @@
+# Changelog
+
+Toutes les évolutions notables de Tentacle TV.
+Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
+
+## [1.8.0] - 2026-06-06
+
+Desktop 1.8.0 — Web 1.0.0-beta.3
+
+### Ajouté
+- Bouton « Plus d'infos » discret au survol des cartes Reprendre la lecture et Prochains épisodes (ouvre la fiche détaillée ; le clic sur la carte lance toujours la lecture).
+- Bandes-annonces dans la fiche média : les trailers locaux se lisent dans le lecteur ; les trailers YouTube s'ouvrent dans une fenêtre intégrée avec un repli « Ouvrir sur YouTube ». Liste complète (bandes-annonces et teasers) via Jellyseerr/TMDB, fusionnée avec celles de Jellyfin et priorisée selon la langue de l'interface.
+- Section « Extras » regroupée par saison.
+- Accès rapide à la série depuis la fiche d'un épisode.
+- Sélecteur saison/épisode intégré au lecteur (web et desktop).
+- Windows : contrôles média système (SMTC) — touches média (lecture, pause, stop, suivant, précédent) et overlay « En cours de lecture » (titre, série, affiche) ; nommage de la session audio (« Tentacle TV ») dans le mélangeur de volume.
+
+### Modifié
+- Les cartes affichent la vraie image de l'épisode (16:9), avec repli sur le backdrop de la série.
+- « Derniers ajouts » liste désormais les épisodes individuels : regroupement en collection (badge « +N ») uniquement pour des ajouts consécutifs d'une même série ; la tuile groupée utilise le poster de la série tout en gardant le libellé d'épisode ; les éléments déjà vus restent affichés dans la rangée.
+
+### Corrigé
+- Intégration YouTube autorisée par la politique de sécurité (CSP) de l'application.
+- « Derniers ajouts — Séries » n'est plus tronqué lors d'un ajout massif d'épisodes.
+- Le sélecteur de bande-annonce lance bien la vidéo sur laquelle on clique ; contrôles aux couleurs du thème.
+
+---
+
+Les versions antérieures sont disponibles sur la page des releases :
+https://github.com/Knaox/Tentacle-TV/releases
