@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Page intermediaire servie en HTTP(S) par le backend : elle fournit a
+         l'embed YouTube une origine/referrer valides, ce que l'origine tauri://
+         de WKWebView (macOS) ne permet pas (erreur 153). -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>Trailer</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      iframe { border: 0; width: 100%; height: 100%; display: block; }
+    </style>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var v = new URLSearchParams(location.search).get("v") || "";
+        if (!/^[\w-]{11}$/.test(v)) return;
+        var f = document.createElement("iframe");
+        f.src = "https://www.youtube-nocookie.com/embed/" + v + "?rel=0&autoplay=1";
+        f.allow =
+          "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        f.allowFullscreen = true;
+        // Force l'envoi du Referer malgre un eventuel header Referrer-Policy: no-referrer.
+        f.referrerPolicy = "strict-origin-when-cross-origin";
+        document.body.appendChild(f);
+      })();
+    </script>
+  </body>
+</html>

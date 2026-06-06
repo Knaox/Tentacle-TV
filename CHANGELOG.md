@@ -3,6 +3,13 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.8.2] - 2026-06-07
+
+Desktop 1.8.2
+
+### Corrigé
+- Bandes-annonces YouTube sur macOS (erreur 153) : le moteur WKWebView (origine `tauri://`) n'envoie aucun referrer HTTP valide, ce que `referrerPolicy` seul ne corrige pas. L'embed passe désormais, sur macOS desktop, par une page intermédiaire servie en HTTP(S) par le backend (`/yt-embed.html`) qui relaie l'embed avec une origine valide. Web et Windows conservent l'embed direct.
+
 ## [1.8.1] - 2026-06-06
 
 Desktop 1.8.1

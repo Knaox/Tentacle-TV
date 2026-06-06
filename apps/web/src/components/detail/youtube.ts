@@ -28,3 +28,24 @@ export function parseYouTubeId(url: string | undefined): string | null {
   }
   return null;
 }
+
+/**
+ * Source à donner à l'iframe pour lire `youtubeId`.
+ *
+ * Sur macOS desktop (Tauri/WKWebView), l'origine `tauri://` ne fournit aucun
+ * referrer HTTP valide → YouTube renvoie l'erreur 153. On passe donc par une page
+ * intermédiaire servie en HTTP(S) par le backend (`/yt-embed.html`) qui relaie
+ * l'embed avec une origine valide. Ailleurs (web, Windows desktop où l'origine
+ * est `http://tauri.localhost`), on garde l'embed direct.
+ */
+export function youtubeEmbedSrc(youtubeId: string): string {
+  const direct = `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&autoplay=1`;
+  if (typeof window === "undefined") return direct;
+  const isTauri = "__TAURI_INTERNALS__" in window;
+  const isMac = /mac/i.test(navigator.userAgent);
+  if (isTauri && isMac) {
+    const backend = (localStorage.getItem("tentacle_backend_url") || "").replace(/\/$/, "");
+    if (backend) return `${backend}/yt-embed.html?v=${youtubeId}`;
+  }
+  return direct;
+}
