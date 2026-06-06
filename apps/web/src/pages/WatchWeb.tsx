@@ -47,7 +47,15 @@ export function WatchWeb() {
         queryClient.invalidateQueries({ queryKey: ["watched-items"] });
         queryClient.invalidateQueries({ queryKey: ["watchlist"] });
       };
-      lastStopPromiseRef.current.then(invalidateAll, invalidateAll);
+      // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
+      // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
+      // stop promise. On défère donc la lecture du ref à un microtask pour
+      // chaîner l'invalidation APRÈS le /Sessions/Playing/Stopped, sinon
+      // Jellyfin n'a pas encore mis à jour DatePlayed → l'ordre du carrousel
+      // "Reprendre la lecture" ne bouge pas au retour sur la home.
+      queueMicrotask(() => {
+        lastStopPromiseRef.current.then(invalidateAll, invalidateAll);
+      });
     };
   }, [itemId, queryClient, lastStopPromiseRef, jfClient, jfUserId]);
 
