@@ -31,10 +31,8 @@ Correctifs livrés :
    - bouton **« Ouvrir sur YouTube »** → doit ouvrir le navigateur système (valide 1.8.4).
 5. Si l'embed échoue toujours sur macOS → basculer en **option (a)** : ouvrir la bande-annonce dans le navigateur externe sur macOS (réutiliser `openExternal`), en 1.8.5.
 
-## Etape en attente côté release
-- La release **`v1.8.4`** est créée par la CI (tauri-action) avec un corps générique. **Reposer les notes FR** dessus une fois la CI finie :
-  `gh release edit v1.8.4 --title "v1.8.4 — Correctif liens externes (Ouvrir sur YouTube)" --notes-file <notes>`
-  (les notes 1.8.2/1.8.1/1.8.0 ont déjà été francisées). Penser `chcp 65001` pour les accents.
+## Releases GitHub — toutes finalisées
+- `v1.8.0`, `v1.8.1`, `v1.8.2`, `v1.8.4` sont **publiées avec titre + notes FR** et le dmg macOS + `latest.json`. CI v1.8.4 verte (capability `opener` validée). Rien en attente côté release.
 
 ## Repères techniques
 - Trailers data : `packages/api-client/src/hooks/useTrailers.ts`, fusion `apps/web/src/components/detail/mergeTrailers.ts`, tri langue `trailerLang.ts`, hook `apps/web/src/hooks/useItemRemoteTrailers.ts`, route backend `apps/backend/src/routes/tmdb.ts` (`/api/tmdb/trailers`, via Jellyseerr).
