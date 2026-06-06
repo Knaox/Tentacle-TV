@@ -76,6 +76,18 @@ async function main() {
     hsts: { maxAge: 31536000, includeSubDomains: true },
   });
 
+  // yt-embed.html doit être framable depuis l'origine tauri:// (macOS webview)
+  // et envoyer un Referer à YouTube → on neutralise X-Frame-Options et on impose
+  // Referrer-Policy: strict-origin-when-cross-origin uniquement pour ce chemin.
+  app.addHook("onSend", async (request, reply, payload) => {
+    if (request.url.split("?")[0] === "/yt-embed.html") {
+      reply.raw.removeHeader("X-Frame-Options");
+      reply.header("referrer-policy", "strict-origin-when-cross-origin");
+      reply.header("content-security-policy", "frame-ancestors *;");
+    }
+    return payload;
+  });
+
   // Cookie support (httpOnly auth cookies for web)
   await app.register(cookie);
 
