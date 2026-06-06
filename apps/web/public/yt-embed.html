@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <!-- Page intermediaire servie en HTTP(S) par le backend : elle fournit a
          l'embed YouTube une origine/referrer valides, ce que l'origine tauri://
          de WKWebView (macOS) ne permet pas (erreur 153). -->
@@ -10,22 +10,33 @@
     <title>Trailer</title>
     <style>
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-      iframe { border: 0; width: 100%; height: 100%; display: block; }
+      #player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
     </style>
   </head>
   <body>
+    <!-- L'iframe est pre-declaree en HTML avec referrerpolicy declaratif : sur
+         WKWebView (DMG macOS), assigner iframe.referrerPolicy APRES iframe.src
+         via JS n'est pas pris en compte pour la requete initiale. La declaration
+         HTML statique est appliquee avant tout chargement. -->
+    <iframe
+      id="player"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen
+    ></iframe>
     <script>
       (function () {
         var v = new URLSearchParams(location.search).get("v") || "";
         if (!/^[\w-]{11}$/.test(v)) return;
-        var f = document.createElement("iframe");
-        f.src = "https://www.youtube-nocookie.com/embed/" + v + "?rel=0&autoplay=1";
-        f.allow =
-          "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-        f.allowFullscreen = true;
-        // Force l'envoi du Referer malgre un eventuel header Referrer-Policy: no-referrer.
-        f.referrerPolicy = "strict-origin-when-cross-origin";
-        document.body.appendChild(f);
+        // origin: requis par l'IFrame API YouTube pour valider la requete
+        //   (sinon erreur 153 meme avec un Referer valide).
+        // playsinline=1: necessaire sur WKWebView (sinon le player tente
+        //   parfois de basculer en plein ecran natif et echoue).
+        var src =
+          "https://www.youtube-nocookie.com/embed/" + v +
+          "?rel=0&autoplay=1&playsinline=1" +
+          "&origin=" + encodeURIComponent(location.origin);
+        document.getElementById("player").src = src;
       })();
     </script>
   </body>
