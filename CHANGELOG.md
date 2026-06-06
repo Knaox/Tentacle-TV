@@ -3,6 +3,13 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.8.4] - 2026-06-07
+
+Desktop 1.8.4
+
+### Corrigé
+- Liens externes du desktop : le bouton « Ouvrir sur YouTube » (et les liens des pages Crédits / attributions de licence) n'ouvraient pas le navigateur dans le webview Tauri (notamment WKWebView/macOS). Ajout du plugin `opener` ; les liens externes s'ouvrent désormais dans le navigateur système.
+
 ## [1.8.2] - 2026-06-07
 
 Desktop 1.8.2

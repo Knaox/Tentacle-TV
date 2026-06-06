@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageTransition } from "../components/PageTransition";
+import { externalLinkHandler } from "../lib/openExternal";
 
 export function Credits() {
   const { t } = useTranslation("about");
@@ -39,6 +40,7 @@ export function Credits() {
           <li key={tk.name} className="flex items-center justify-between py-2.5">
             <div>
               <a href={tk.url} target="_blank" rel="noopener noreferrer"
+                onClick={externalLinkHandler(tk.url)}
                 className="text-sm font-medium text-[var(--brand)] hover:underline">
                 {tk.name}
               </a>
@@ -55,6 +57,7 @@ export function Credits() {
           <li key={s.name} className="flex items-center justify-between py-2.5">
             <div>
               <a href={s.url} target="_blank" rel="noopener noreferrer"
+                onClick={externalLinkHandler(s.url)}
                 className="text-sm font-medium text-[var(--brand)] hover:underline">
                 {s.name}
               </a>
