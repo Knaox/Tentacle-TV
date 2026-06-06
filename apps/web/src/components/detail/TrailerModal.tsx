@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "../ui/Modal";
 import { ModalHeader } from "../ui/ModalHeader";
 import { ExternalLinkIcon } from "../media/MediaDetailIcons";
-import { parseYouTubeId } from "./youtube";
+import { parseYouTubeId, youtubeEmbedSrc } from "./youtube";
 
 interface RemoteTrailer {
   Url: string;
@@ -50,7 +50,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
             <iframe
               key={current.Url}
-              src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&autoplay=1`}
+              src={youtubeEmbedSrc(ytId)}
               title={title}
               className="absolute inset-0 h-full w-full"
               // YouTube refuse l'embed sans Referer (erreur 153). En prod le header
