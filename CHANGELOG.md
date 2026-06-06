@@ -3,6 +3,14 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.8.5] - 2026-06-07
+
+Desktop 1.8.5 — Web 1.0.0-beta.4
+
+### Corrigé
+- Backend : page `yt-embed.html` framable depuis l'origine `tauri://` (DMG macOS). Helmet posait `X-Frame-Options: SAMEORIGIN` qui bloquait l'iframe → erreur 153 persistante. Hook ciblé qui retire XFO et impose `Referrer-Policy: strict-origin-when-cross-origin` uniquement pour ce chemin.
+- Carrousel « Reprendre la lecture » : au retour sur la home après lecture, l'item venait d'être lu n'était pas remonté en tête sans refresh. Les cleanups React s'exécutaient en ordre inverse, déclenchant l'invalidation des queries AVANT le report `/Sessions/Playing/Stopped` → Jellyfin n'avait pas mis à jour `DatePlayed`. L'invalidation est désormais différée à un microtask, ce qui chaîne correctement après le stop.
+
 ## [1.8.4] - 2026-06-07
 
 Desktop 1.8.4
