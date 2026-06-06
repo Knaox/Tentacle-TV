@@ -5,6 +5,8 @@ import { useLocalTrailers } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FilmIcon } from "../media/MediaDetailIcons";
 import { TrailerModal } from "./TrailerModal";
+import { shouldOpenYouTubeExternally } from "./youtube";
+import { openExternal } from "../../lib/openExternal";
 import { useItemRemoteTrailers } from "../../hooks/useItemRemoteTrailers";
 
 /**
@@ -29,6 +31,13 @@ export function TrailerButton({ item }: { item: MediaItem }) {
   const handleClick = () => {
     if (local.length > 0) {
       navigate(`/watch/${local[0].Id}`);
+      return;
+    }
+    // macOS DMG : WKWebView strip le Referer pour les iframes sous frame racine
+    // tauri:// → YouTube refuse l'embed (erreur 153). On ouvre dans le navigateur
+    // système où le top-level est youtube.com (pas de problème de Referer).
+    if (shouldOpenYouTubeExternally() && remote[0]?.Url) {
+      void openExternal(remote[0].Url);
       return;
     }
     setModalOpen(true);
