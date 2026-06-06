@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { getBackendBase } from "../lib/backendBase";
 
 /** TMDB Watch Provider IDs — identique au plugin Seer */
 export const PLATFORMS = [
@@ -18,9 +19,6 @@ export const PLATFORMS = [
 
 function getToken(): string {
   return localStorage.getItem("tentacle_token") ?? "";
-}
-function getBackendUrl(): string {
-  return localStorage.getItem("tentacle_backend_url") || window.location.origin;
 }
 
 /**
@@ -70,7 +68,7 @@ export function usePlatformFilter(items: MediaItem[], selectedPlatformIds: numbe
     setTmdbLoading(true);
     Promise.all(
       selectedPlatformIds.map((pid) =>
-        fetch(`${getBackendUrl()}/api/tmdb/check-platform`, {
+        fetch(`${getBackendBase()}/api/tmdb/check-platform`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
           body: JSON.stringify({ tmdbIds: tmdbItems, platformId: pid }),

@@ -1,3 +1,5 @@
+import { getBackendBase } from "../../lib/backendBase";
+
 /**
  * Extrait l'identifiant vidéo YouTube d'une URL de trailer distant Jellyfin.
  *
@@ -44,7 +46,7 @@ export function youtubeEmbedSrc(youtubeId: string): string {
   const isTauri = "__TAURI_INTERNALS__" in window;
   const isMac = /mac/i.test(navigator.userAgent);
   if (isTauri && isMac) {
-    const backend = (localStorage.getItem("tentacle_backend_url") || "").replace(/\/$/, "");
+    const backend = getBackendBase().replace(/\/$/, "");
     if (backend) return `${backend}/yt-embed.html?v=${youtubeId}`;
   }
   return direct;

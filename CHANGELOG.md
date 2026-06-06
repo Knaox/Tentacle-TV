@@ -3,6 +3,13 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.8.6] - 2026-06-07
+
+Desktop 1.8.6 — Web 1.0.0-beta.4
+
+### Corrigé
+- Bandes-annonces et extras TMDB absents/non localisés sur desktop (Tauri) : la BA s'affichait en anglais VOSTFR et la rangée « Extras » TMDB était vide, alors que le web fonctionnait. Cause : les appels à la route backend `/api/tmdb/trailers` (et `/api/tmdb/check-platform`) résolvaient l'URL backend via la clé `localStorage` `tentacle_backend_url`, jamais écrite côté desktop (qui n'enregistre que `tentacle_server_url`). Le fallback `window.location.origin` valait alors `tauri://`/`tauri.localhost` → le fetch échouait silencieusement, donc aucune vidéo TMDB n'arrivait (plus de tri VF possible, plus d'extras). Sur web, ce même fallback pointait par chance vers le backend same-origin. Résolution alignée sur le `backendUrl` canonique de l'app via un helper unique `lib/backendBase.ts` (`tentacle_server_url` sur desktop, same-origin sur web). Corrige aussi le filtre par plateforme TMDB et le relais `yt-embed.html` (macOS) qui souffraient du même bug.
+
 ## [1.8.5] - 2026-06-07
 
 Desktop 1.8.5 — Web 1.0.0-beta.4

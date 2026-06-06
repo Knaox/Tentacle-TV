@@ -32,6 +32,7 @@ import * as PluginsAPI from "@tentacle-tv/plugins-api";
 import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
+import { getBackendBase } from "./lib/backendBase";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -68,9 +69,8 @@ const deviceName = isTauriApp ? "Desktop" : "Web";
 
 // Web: same-origin (or VITE_BACKEND_URL for dev).
 // Desktop: saved Tentacle server URL from localStorage.
-export const backendUrl = isTauriApp
-  ? (localStorage.getItem("tentacle_server_url") || "")
-  : (import.meta.env.VITE_BACKEND_URL || "");
+// Single source of truth shared with the trailer/platform helpers (lib/backendBase).
+export const backendUrl = getBackendBase();
 
 /** Reconfigure all backend service URLs for a given base URL */
 export function configureBackendUrls(url: string) {
