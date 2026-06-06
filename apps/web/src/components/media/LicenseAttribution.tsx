@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMediaLicense } from "../../hooks/useMediaLicense";
+import { externalLinkHandler } from "../../lib/openExternal";
 
 const ROLE_I18N_KEYS: Record<string, string> = {
   Director: "media:licenseDirector",
@@ -34,6 +35,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
           href={license.license.url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={externalLinkHandler(license.license.url)}
           className="group inline-flex flex-col gap-2"
         >
           {license.license.badgeUrl && (
@@ -63,6 +65,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
                     href={creator.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={externalLinkHandler(creator.url)}
                     className="text-tentacle-accent-light transition-colors hover:text-tentacle-accent"
                   >
                     {creator.name}
@@ -84,6 +87,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
             href={license.attribution.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={externalLinkHandler(license.attribution.sourceUrl)}
             className="mt-0.5 inline-flex items-center gap-1 text-sm text-tentacle-accent-light transition-colors hover:text-tentacle-accent"
           >
             {license.attribution.sourceName || license.attribution.sourceUrl}

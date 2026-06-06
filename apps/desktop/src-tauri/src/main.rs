@@ -18,7 +18,8 @@ mod macos;
 fn main() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init());
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_opener::init());
 
     // Windows/Linux: use tauri-plugin-libmpv
     #[cfg(not(target_os = "macos"))]

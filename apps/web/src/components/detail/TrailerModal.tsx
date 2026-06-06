@@ -4,6 +4,7 @@ import { Modal } from "../ui/Modal";
 import { ModalHeader } from "../ui/ModalHeader";
 import { ExternalLinkIcon } from "../media/MediaDetailIcons";
 import { parseYouTubeId, youtubeEmbedSrc } from "./youtube";
+import { externalLinkHandler } from "../../lib/openExternal";
 
 interface RemoteTrailer {
   Url: string;
@@ -71,6 +72,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
           href={current.Url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={externalLinkHandler(current.Url)}
           className="mt-3 inline-flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-sm font-medium text-white/85 transition-colors hover:border-white/50 hover:text-white"
         >
           <ExternalLinkIcon /> {t("common:openOnYoutube")}
