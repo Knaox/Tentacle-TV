@@ -93,7 +93,7 @@ export function useSeasons(seriesId: string | undefined) {
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
-          `/Shows/${seriesId}/Seasons?userId=${userId}&Fields=PrimaryImageAspectRatio`
+          `/Shows/${seriesId}/Seasons?userId=${userId}&Fields=PrimaryImageAspectRatio,RemoteTrailers`
         )
         .then((r) => r.Items),
     enabled: !!userId && !!seriesId,
@@ -127,7 +127,7 @@ export function useMediaItem(itemId: string | undefined) {
     queryKey: ["item", itemId],
     queryFn: () =>
       client.fetch<MediaItem>(
-        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay`
+        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers`
       ),
     enabled: !!userId && !!itemId,
     staleTime: 5 * 60 * 1000,

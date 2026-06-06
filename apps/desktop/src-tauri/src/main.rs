@@ -6,6 +6,12 @@ mod video_surface;
 #[cfg(target_os = "windows")]
 mod msix_update;
 
+#[cfg(target_os = "windows")]
+mod smtc;
+
+#[cfg(target_os = "windows")]
+mod audio_session;
+
 #[cfg(target_os = "macos")]
 mod macos;
 
@@ -46,13 +52,20 @@ fn main() {
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder.invoke_handler(tauri::generate_handler![
-            video_surface::toggle_fullscreen,
-            video_surface::is_fullscreen,
-            video_surface::exit_fullscreen,
-            msix_update::check_msix_update,
-            msix_update::download_and_install_msix_update,
-        ]);
+        builder = builder
+            .manage(smtc::SmtcState::default())
+            .invoke_handler(tauri::generate_handler![
+                video_surface::toggle_fullscreen,
+                video_surface::is_fullscreen,
+                video_surface::exit_fullscreen,
+                msix_update::check_msix_update,
+                msix_update::download_and_install_msix_update,
+                smtc::smtc_init,
+                smtc::smtc_set_playback,
+                smtc::smtc_set_metadata,
+                smtc::smtc_clear,
+                audio_session::set_audio_session_name,
+            ]);
     }
 
     #[cfg(target_os = "linux")]

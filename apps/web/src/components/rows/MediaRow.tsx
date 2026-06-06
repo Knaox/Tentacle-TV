@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "../cards/PosterCard";
 import { EpisodeCard } from "../cards/EpisodeCard";
+import type { PosterImageMode } from "../cards/resolveCardImage";
 import { RowHeader } from "./RowHeader";
 import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
@@ -18,13 +19,15 @@ interface MediaRowProps {
   animDelay?: number;
   /** Optional href for the "Tout voir" link. */
   href?: string;
+  /** Pour les épisodes en carte poster : `series` force le poster de la série. */
+  posterImageMode?: PosterImageMode;
 }
 
 /**
  * Horizontal scrolling row of media cards. Replacement for `MediaCarousel`.
  * Lazy-renders cards only after the row enters the viewport.
  */
-export function MediaRow({ title, items, variant = "poster", animDelay = 0, href }: MediaRowProps) {
+export function MediaRow({ title, items, variant = "poster", animDelay = 0, href, posterImageMode }: MediaRowProps) {
   const { t } = useTranslation("common");
   const rowRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
@@ -55,7 +58,6 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
     );
   }
 
-  const Card = variant === "episode" ? EpisodeCard : PosterCard;
 
   return (
     <section
@@ -85,7 +87,13 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
           onScroll={onScroll}
           className="row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-12 pt-2 scrollbar-hide"
         >
-          {visible && items.map((item, i) => <Card key={item.Id} item={item} index={i} />)}
+          {visible && items.map((item, i) =>
+            variant === "episode" ? (
+              <EpisodeCard key={item.Id} item={item} index={i} />
+            ) : (
+              <PosterCard key={item.Id} item={item} index={i} posterImageMode={posterImageMode} />
+            ),
+          )}
         </div>
       </div>
     </section>

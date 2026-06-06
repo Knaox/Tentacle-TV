@@ -4,6 +4,7 @@ export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinCli
 export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useSearchItems, useGenres, useStudios, useLibraryCatalog } from "./hooks/useLibrary";
 export type { CatalogFilters } from "./hooks/useLibrary";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
+export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
 export { useFavorite } from "./hooks/useFavorite";
 export { useWatchlist, useToggleWatchlist, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";

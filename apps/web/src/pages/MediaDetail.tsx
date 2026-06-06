@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
@@ -12,6 +12,8 @@ import { DetailHero } from "../components/detail/DetailHero";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
 import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
+import { ExtrasSection } from "../components/detail/ExtrasSection";
+import { ChevronRightIcon } from "../components/media/MediaDetailIcons";
 import { CardMetaOverlay } from "../components/media/CardMetaOverlay";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
@@ -19,6 +21,7 @@ const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
 
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
+  const navigate = useNavigate();
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
@@ -91,10 +94,20 @@ export function MediaDetail() {
                   {item.OriginalTitle}
                 </motion.p>
               )}
-              {isEpisode && item.SeriesName && (
-                <motion.p variants={fadeUp} className="mt-1 text-lg text-white/60">
-                  {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}
-                </motion.p>
+              {isEpisode && item.SeriesName && item.SeriesId && (
+                <motion.button
+                  variants={fadeUp}
+                  type="button"
+                  onClick={() => navigate(`/media/${item.SeriesId}`)}
+                  aria-label={t("common:goToSeries")}
+                  title={t("common:goToSeries")}
+                  className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-white/60 transition-colors hover:text-white"
+                >
+                  <span className="underline-offset-4 group-hover/series:underline">
+                    {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}
+                  </span>
+                  <ChevronRightIcon />
+                </motion.button>
               )}
 
               <DetailMetadata item={item} streams={streams} />
@@ -123,6 +136,10 @@ export function MediaDetail() {
             <EpisodeList seriesId={itemId} />
           </motion.section>
         )}
+
+        <div className="mt-10">
+          <ExtrasSection item={item} />
+        </div>
 
         {(item.People?.length || item.Studios?.length) && (
           <motion.section

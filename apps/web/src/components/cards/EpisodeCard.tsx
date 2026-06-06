@@ -6,9 +6,11 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
 import { CardQuickActions } from "./CardQuickActions";
+import { CardMoreInfoButton } from "./CardMoreInfoButton";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
+import { resolveBannerImage } from "./resolveCardImage";
 import { EPISODE_WIDTH, type CardSize } from "./cardSizes";
 
 interface EpisodeCardProps {
@@ -30,14 +32,9 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
 
   const isEpisode = item.Type === "Episode";
 
-  // Backdrop preferred for landscape; fall back to thumb / parent backdrop / primary.
-  const hasOwnBackdrop = (item.BackdropImageTags?.length ?? 0) > 0;
-  const hasParentBackdrop = (item.ParentBackdropImageTags?.length ?? 0) > 0;
-  const backdropId = isEpisode
-    ? (hasOwnBackdrop ? item.Id : (item.ParentBackdropItemId ?? item.SeriesId ?? item.Id))
-    : item.Id;
-  const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
-  const imageUrl = client.getImageUrl(backdropId, imageType, { width: 720, quality: 80 });
+  // Pour un épisode : vraie image de l'épisode d'abord, repli backdrop série.
+  const { id: imageId, type: imageType } = resolveBannerImage(item);
+  const imageUrl = client.getImageUrl(imageId, imageType, { width: 720, quality: 80 });
 
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
@@ -85,7 +82,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
         {/* Bottom-fade so episode label stays readable on bright scenes */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
-        <div className="absolute inset-x-0 bottom-1.5 px-3 text-white">
+        <div className="absolute inset-x-0 bottom-1.5 pl-3 pr-28 text-white">
           {epLabel && (
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">{epLabel}</p>
           )}
@@ -107,6 +104,9 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
             variant="compact"
           />
         </div>
+
+        {/* Bouton discret « Plus d'infos » — clic carte = lecture, ce bouton = fiche détail */}
+        <CardMoreInfoButton detailId={item.Id} visible={hovered} />
 
         {!watched && <CardProgressBar percent={progress} border />}
       </div>

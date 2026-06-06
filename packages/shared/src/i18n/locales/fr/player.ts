@@ -33,4 +33,7 @@ export default {
   retry: "Réessayer",
   back: "Retour",
   airplayActive: "Lecture sur un écran externe",
+  episodes: "Épisodes",
+  noEpisodes: "Aucun épisode",
+  close: "Fermer",
 } as const;

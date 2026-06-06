@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import type { MediaItem, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { TrackSelector } from "./TrackSelector";
+import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
 import { TrickplayPreview } from "./TrickplayPreview";
 import { formatDuration } from "./playerControls/utils";
 import { useScrubListeners } from "./playerControls/useScrubListeners";
 import { useTrickplay } from "../hooks/useTrickplay";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon,
-  GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, PipIcon,
+  GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, PipIcon, EpisodesIcon,
 } from "./PlayerIcons";
 
 export interface PlayerControlsProps {
@@ -57,6 +58,8 @@ export function PlayerControls({
 }: PlayerControlsProps) {
   const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
+  const [showEpisodes, setShowEpisodes] = useState(false);
+  const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const barRef = useRef<HTMLDivElement>(null);
   const [barWidth, setBarWidth] = useState(0);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -174,6 +177,14 @@ export function PlayerControls({
               onClose={() => setShowSettings(false)}
             />
           )}
+          {showEpisodes && isEpisode && item?.SeriesId && (
+            <EpisodeSelectorPanel
+              seriesId={item.SeriesId}
+              currentEpisodeId={item.Id}
+              currentSeasonId={item.SeasonId}
+              onClose={() => setShowEpisodes(false)}
+            />
+          )}
         </AnimatePresence>
 
         {/* Progress bar */}
@@ -229,8 +240,18 @@ export function PlayerControls({
             <span className="hidden whitespace-nowrap text-xs text-white/60 xs:inline sm:text-sm">{formatDuration(currentTime)} / {formatDuration(duration)}</span>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            {isEpisode && (
+              <button
+                onClick={() => { setShowEpisodes((p) => !p); setShowSettings(false); }}
+                className={`rounded-full p-2.5 hover:bg-white/10 sm:p-2 ${showEpisodes ? "bg-white/10" : ""}`}
+                title={t("player:episodes")}
+                aria-label={t("player:episodes")}
+              >
+                <EpisodesIcon />
+              </button>
+            )}
             {hasSettings && (
-              <button onClick={() => setShowSettings((p) => !p)} className="relative rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={t("player:settings")}>
+              <button onClick={() => { setShowSettings((p) => !p); setShowEpisodes(false); }} className="relative rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={t("player:settings")}>
                 <GearIcon />
                 {currentSubtitle !== null && (
                   <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-tentacle-accent" />

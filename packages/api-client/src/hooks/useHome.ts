@@ -7,6 +7,7 @@ import {
   dedupResumeBySeries,
   filterNextUpAgainstResume,
   buildSmartNextUp,
+  groupLatestByRuns,
 } from "../utils/mediaFilters";
 
 // MediaSources est requis pour afficher le badge qualité (4K / HDR / Dolby)
@@ -34,18 +35,54 @@ export function useResumeItems() {
   });
 }
 
-export function useLatestItems(parentId: string | undefined) {
+interface LatestItemsOptions {
+  /** CollectionType de la bibliothèque (ex: "tvshows", "movies"). Quand "tvshows",
+   *  la rangée renvoie des épisodes, regroupés en collection par runs consécutifs
+   *  d'une même série (cf. groupLatestByRuns). */
+  collectionType?: string;
+}
+
+// Champs légers pour le rendu épisode (image, label SxxExx, navigation). On
+// retire Overview/Genres/MediaSources : inutiles ici et trop lourds à Limit élevé.
+const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber";
+
+// Fenêtre d'épisodes récupérée avant regroupement par série. Élevée car une série
+// fraîchement ajoutée en masse (saison complète) consomme beaucoup de slots ; sans
+// ça, les séries ajoutées avant disparaissent de la rangée.
+const EPISODE_LATEST_LIMIT = 200;
+
+export function useLatestItems(parentId: string | undefined, options?: LatestItemsOptions) {
   const client = useJellyfinClient();
   const userId = useUserId();
+  const episodeMode = options?.collectionType === "tvshows";
 
   return useQuery({
-    queryKey: ["latest-items", parentId],
+    // Le 3e segment évite qu'un cache "série groupée" serve un consommateur "épisodes".
+    queryKey: ["latest-items", parentId, episodeMode ? "episodes" : "default"],
     queryFn: () => {
       if (!parentId || !userId) return Promise.resolve([]);
-      return client.fetch<MediaItem[]>(
-        `/Users/${userId}/Items/Latest?ParentId=${parentId}&Limit=16&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
-      );
+      if (episodeMode) {
+        // Épisodes triés par date d'ajout, SANS filtre "non lu" (un épisode vu
+        // reste présent). Large fenêtre car on regroupe ensuite par runs.
+        return client
+          .fetch<{ Items: MediaItem[] }>(
+            `/Users/${userId}/Items?ParentId=${parentId}&Recursive=true&IncludeItemTypes=Episode` +
+              `&SortBy=DateCreated&SortOrder=Descending&Limit=${EPISODE_LATEST_LIMIT}` +
+              `&Fields=${EPISODE_FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
+          )
+          .then((r) => r.Items);
+      }
+      // Films (ou autres) : derniers ajoutés par date, SANS filtre "non lu".
+      const typeFilter = options?.collectionType === "movies" ? "&IncludeItemTypes=Movie" : "";
+      return client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?ParentId=${parentId}&Recursive=true${typeFilter}` +
+            `&SortBy=DateCreated&SortOrder=Descending&Limit=16` +
+            `&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
+        )
+        .then((r) => r.Items);
     },
+    select: episodeMode ? groupLatestByRuns : undefined,
     enabled: !!userId && !!parentId,
     staleTime: 2 * 60 * 1000,
   });

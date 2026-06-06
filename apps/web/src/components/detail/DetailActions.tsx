@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
+import { TrailerButton } from "./TrailerButton";
 
 interface DetailActionsProps {
   item: MediaItem;
@@ -64,6 +65,8 @@ export function DetailActions({ item }: DetailActionsProps) {
           <PlayIcon /> {playLabel}
         </motion.button>
       )}
+
+      <TrailerButton item={item} />
 
       <CircleAction
         active={isFavorite}

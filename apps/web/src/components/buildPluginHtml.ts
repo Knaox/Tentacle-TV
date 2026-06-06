@@ -1,3 +1,8 @@
+// CSS tokens du host injectés dans l'iframe pour que les plugins suivent automatiquement
+// le thème (couleurs, blur, shadows, radii, motion). Si Tentacle change ses tokens.css,
+// les plugins suivent au prochain rebuild — pas de couleurs hardcodées côté plugin.
+import tentacleTokensCss from "../theme/tokens.css?inline";
+
 interface BuildPluginHtmlParams {
   backendUrl: string;
   lang: string;
@@ -34,16 +39,89 @@ export function buildPluginHtml({
     tailwind.config = {
       theme: {
         extend: {
+          // Couleurs sémantiques mappées sur les CSS variables Tentacle.
+          // Utiliser bg-tentacle-surface-1 / text-tentacle-brand / border-tentacle-subtle
+          // au lieu de classes hardcodées : si le thème change, le plugin suit.
           colors: {
             tentacle: {
-              bg: "#080812",
-              surface: "#12121a",
-              border: "#1e1e2e",
-              accent: "#8b5cf6",
-              "accent-dark": "#7C3AED",
-              "accent-light": "#a78bfa",
-              "accent-muted": "#C4B5FD",
+              "surface-0": "var(--surface-0)",
+              "surface-1": "var(--surface-1)",
+              "surface-2": "var(--surface-2)",
+              "surface-3": "var(--surface-3)",
+              "surface-modal": "var(--surface-modal)",
+              "surface-dropdown": "var(--surface-dropdown)",
+              "surface-toolbar": "var(--surface-toolbar)",
+              brand: "var(--brand)",
+              "brand-light": "var(--brand-light)",
+              "brand-dark": "var(--brand-dark)",
+              "brand-accent": "var(--brand-accent)",
+              "text-primary": "var(--text-primary)",
+              "text-secondary": "var(--text-secondary)",
+              "text-tertiary": "var(--text-tertiary)",
+              "text-quaternary": "var(--text-quaternary)",
+              "text-disabled": "var(--text-disabled)",
+              "cta-primary": "var(--cta-primary-bg)",
+              "cta-primary-fg": "var(--cta-primary-fg)",
+              "cta-secondary": "var(--cta-secondary-bg)",
+              "cta-secondary-fg": "var(--cta-secondary-fg)",
+              "cta-ghost": "var(--cta-ghost-bg)",
+              "border-subtle": "var(--border-subtle)",
+              "border-strong": "var(--border-strong)",
+              "border-focus": "var(--border-focus)",
+              "status-success": "var(--status-success)",
+              "status-success-bg": "var(--status-success-bg)",
+              "status-success-fg": "var(--status-success-fg)",
+              "status-warning": "var(--status-warning)",
+              "status-warning-bg": "var(--status-warning-bg)",
+              "status-warning-fg": "var(--status-warning-fg)",
+              "status-error": "var(--status-error)",
+              "status-error-bg": "var(--status-error-bg)",
+              "status-error-fg": "var(--status-error-fg)",
+              "status-info": "var(--status-info)",
+              "status-info-bg": "var(--status-info-bg)",
+              "status-info-fg": "var(--status-info-fg)",
+              // Aliases rétro-compatibilité (anciens plugins)
+              bg: "var(--surface-0)",
+              surface: "var(--surface-1)",
+              border: "var(--border-subtle)",
+              accent: "var(--brand)",
+              "accent-dark": "var(--brand-dark)",
+              "accent-light": "var(--brand-light)",
+              "accent-muted": "var(--brand-light)",
             },
+          },
+          borderRadius: {
+            "tentacle-xs": "var(--radius-xs)",
+            "tentacle-sm": "var(--radius-sm)",
+            "tentacle-md": "var(--radius-md)",
+            "tentacle-lg": "var(--radius-lg)",
+            "tentacle-xl": "var(--radius-xl)",
+            "tentacle-pill": "var(--radius-pill)",
+          },
+          boxShadow: {
+            "tentacle-elev-1": "var(--elev-1)",
+            "tentacle-elev-2": "var(--elev-2)",
+            "tentacle-elev-3": "var(--elev-3)",
+            "tentacle-modal": "var(--shadow-modal)",
+            "tentacle-dropdown": "var(--shadow-dropdown)",
+            "tentacle-sheet": "var(--shadow-sheet)",
+          },
+          backdropBlur: {
+            "tentacle-overlay": "var(--blur-overlay)",
+            "tentacle-modal": "var(--blur-modal)",
+            "tentacle-dropdown": "var(--blur-dropdown)",
+            "tentacle-sheet": "var(--blur-sheet)",
+          },
+          transitionTimingFunction: {
+            "tentacle-out": "var(--ease-out)",
+            "tentacle-in-out": "var(--ease-in-out)",
+            "tentacle-spring": "var(--ease-spring)",
+          },
+          transitionDuration: {
+            "tentacle-instant": "var(--duration-instant)",
+            "tentacle-fast": "var(--duration-fast)",
+            "tentacle-base": "var(--duration-base)",
+            "tentacle-slow": "var(--duration-slow)",
           },
           animation: {
             shimmer: "shimmer 1.5s ease infinite",
@@ -89,17 +167,20 @@ export function buildPluginHtml({
     };
   <\/script>
   <style>
+    /* Tokens du host Tentacle — copiés depuis apps/web/src/theme/tokens.css à chaque build.
+       Tout plugin peut désormais utiliser var(--brand), var(--surface-1), etc. */
+    ${tentacleTokensCss}
+    /* Aliases rétro-compatibilité pour anciens plugins */
     :root {
-      --bg: #080812;
-      --surface: #12121a;
-      --accent: #8b5cf6;
-      --text: #fff;
-      --text-secondary: #9ca3af;
+      --bg: var(--surface-0);
+      --surface: var(--surface-1);
+      --accent: var(--brand);
+      --text: var(--text-primary);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--surface-0);
+      color: var(--text-primary);
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
     #plugin-root { min-height: 100vh; }

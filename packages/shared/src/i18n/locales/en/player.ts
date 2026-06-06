@@ -33,4 +33,7 @@ export default {
   retry: "Retry",
   back: "Back",
   airplayActive: "Playing on external display",
+  episodes: "Episodes",
+  noEpisodes: "No episodes",
+  close: "Close",
 } as const;
