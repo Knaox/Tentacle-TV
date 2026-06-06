@@ -53,6 +53,10 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
               src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&autoplay=1`}
               title={title}
               className="absolute inset-0 h-full w-full"
+              // YouTube refuse l'embed sans Referer (erreur 153). En prod le header
+              // Referrer-Policy: no-referrer (Helmet) le supprime → on force l'envoi
+              // de l'origine pour CETTE iframe (l'attribut prime sur la politique doc).
+              referrerPolicy="strict-origin-when-cross-origin"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
