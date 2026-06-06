@@ -9,7 +9,7 @@ Desktop 1.8.5 — Web 1.0.0-beta.4
 
 ### Corrigé
 - Backend : page `yt-embed.html` framable depuis l'origine `tauri://` (DMG macOS). Helmet posait `X-Frame-Options: SAMEORIGIN` qui bloquait l'iframe → erreur 153 persistante. Hook ciblé qui retire XFO et impose `Referrer-Policy: strict-origin-when-cross-origin` uniquement pour ce chemin.
-- Bandes-annonces YouTube macOS DMG (erreur 153, suite) : l'iframe interne de `yt-embed.html` est désormais pré-déclarée en HTML avec `referrerpolicy="strict-origin-when-cross-origin"` (l'attribut posé via JS après `src` n'était pas honoré par WKWebView pour la requête initiale). Ajout du paramètre `origin=` requis par l'IFrame API et de `playsinline=1` (stabilité WKWebView).
+- Bandes-annonces YouTube macOS DMG (erreur 153, définitif) : WKWebView strip le Referer pour TOUTES les requêtes des frames descendants quand le frame racine est `tauri://`, peu importe `Referrer-Policy`, `referrerpolicy` iframe ou `&origin=` (limitation Tauri/WebKit, cf. tauri#14422 / #14278). Sur macOS DMG uniquement, les bandes-annonces et trailers d'extras s'ouvrent désormais directement dans le navigateur système (où le top-level est `youtube.com`, donc pas de problème de Referer). Web, Windows desktop et dev macOS conservent l'embed inline.
 - Carrousel « Reprendre la lecture » : au retour sur la home après lecture, l'item venait d'être lu n'était pas remonté en tête sans refresh. Les cleanups React s'exécutaient en ordre inverse, déclenchant l'invalidation des queries AVANT le report `/Sessions/Playing/Stopped` → Jellyfin n'avait pas mis à jour `DatePlayed`. L'invalidation est désormais différée à un microtask, ce qui chaîne correctement après le stop.
 
 ## [1.8.4] - 2026-06-07

@@ -49,3 +49,20 @@ export function youtubeEmbedSrc(youtubeId: string): string {
   }
   return direct;
 }
+
+/**
+ * DMG macOS : limitation fondamentale WKWebView + frame racine `tauri://`,
+ * le Referer est stripé pour TOUTES les requêtes des frames descendants, peu
+ * importe `Referrer-Policy`, l'attribut iframe ou `&origin=` (cf. tauri#14422,
+ * #14278). Aucune page intermédiaire ne peut le corriger → sur macOS DMG on
+ * ouvre directement la bande-annonce dans le navigateur système.
+ *
+ * Le mode dev macOS (`__TAURI_INTERNALS__` présent mais top-level HTTP via Vite)
+ * garde l'embed inline qui fonctionne.
+ */
+export function shouldOpenYouTubeExternally(): boolean {
+  if (typeof window === "undefined") return false;
+  const isTauri = "__TAURI_INTERNALS__" in window;
+  const isMac = /mac/i.test(navigator.userAgent);
+  return isTauri && isMac && import.meta.env.PROD;
+}

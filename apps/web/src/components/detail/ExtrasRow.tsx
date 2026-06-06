@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useSpecialFeatures, useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { TrailerModal } from "./TrailerModal";
-import { parseYouTubeId } from "./youtube";
+import { parseYouTubeId, shouldOpenYouTubeExternally } from "./youtube";
+import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
 
 interface ExtrasRowProps {
@@ -56,6 +57,11 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
               sublabel={tr.type || "YouTube"}
               thumb={yt ? `https://i.ytimg.com/vi/${yt}/mqdefault.jpg` : undefined}
               onClick={() => {
+                // macOS DMG : ouverture dans le navigateur système (cf. TrailerButton).
+                if (shouldOpenYouTubeExternally()) {
+                  void openExternal(tr.Url);
+                  return;
+                }
                 setStartIndex(i);
                 setModalOpen(true);
               }}
