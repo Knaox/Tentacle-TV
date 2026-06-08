@@ -259,13 +259,21 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
   const posterUrl = useMemo(() => {
-    if (!itemId) return undefined;
-    const hasParentBackdrop = (item?.ParentBackdropImageTags?.length ?? 0) > 0;
-    const hasOwnBackdrop = (item?.BackdropImageTags?.length ?? 0) > 0;
-    if (!hasParentBackdrop && !hasOwnBackdrop) return undefined;
-    const id = hasParentBackdrop ? (item?.ParentBackdropItemId ?? itemId) : itemId;
-    return client.getImageUrl(id, "Backdrop", { quality: 80 });
-  }, [client, itemId, item]);
+    if (!item) return undefined;
+    // Chaîne de repli pour toujours avoir une bannière quand l'item est chargé :
+    // backdrop propre (films) → backdrop du parent (épisodes) → backdrop de la
+    // série via SeriesId (épisodes dont les champs ParentBackdrop* manquent).
+    if ((item.BackdropImageTags?.length ?? 0) > 0) {
+      return client.getImageUrl(item.Id, "Backdrop", { width: 1920, quality: 80 });
+    }
+    if ((item.ParentBackdropImageTags?.length ?? 0) > 0 && item.ParentBackdropItemId) {
+      return client.getImageUrl(item.ParentBackdropItemId, "Backdrop", { width: 1920, quality: 80 });
+    }
+    if (item.SeriesId) {
+      return client.getImageUrl(item.SeriesId, "Backdrop", { width: 1920, quality: 80 });
+    }
+    return undefined;
+  }, [client, item]);
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
     return ticks ? ticks / TICKS_PER_SECOND : undefined;

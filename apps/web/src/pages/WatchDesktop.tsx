@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
-import { PlayerTransition } from "../components/PlayerTransition";
+import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
@@ -101,19 +101,14 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     updatePosition(seconds, paused);
   }, [updatePosition, positionRef]);
 
-  if (isLoading || !streamUrl) {
-    return (
-      <PlayerTransition transparent>
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-        </div>
-      </PlayerTransition>
-    );
-  }
-
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
     ? `S${item.ParentIndexNumber}E${item.IndexNumber} — ${item.Name}` : undefined;
+
+  if (isLoading || !streamUrl) {
+    return <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />;
+  }
+
   const nextEpTitle = nextEpisode
     ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}` : undefined;
   const nextEpisodeImageUrl = (() => {
@@ -131,7 +126,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     ? (nextEpisode.Overview.length > 120 ? nextEpisode.Overview.slice(0, 120) + "…" : nextEpisode.Overview) : undefined;
 
   return (
-    <PlayerTransition transparent>
+    <div className="relative h-screen w-screen">
       <DesktopPlayer
         key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
         startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
@@ -148,6 +143,6 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
         onFallbackToWeb={onFallbackToWeb}
       />
-    </PlayerTransition>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "./TrackSelector";
 import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
+import { LoadingBar } from "./player/PlayerLoadingScreen";
 import { NextEpisodeOverlay } from "./NextEpisodeOverlay";
 import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon } from "./PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
@@ -591,19 +592,16 @@ export function DesktopPlayer({
       {/* Click catcher — toggle pause / fullscreen on video area */}
       <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 
-      {/* Loading overlay — initial load + source changes (quality/audio) */}
-      {showLoadingOverlay && posterUrl && (
+      {/* Loading overlay — initial load + source changes (quality/audio) :
+          bannière (backdrop) + barre de chargement, en continuité avec
+          PlayerLoadingScreen affiché avant le montage du player. */}
+      {showLoadingOverlay && (
         <div className="pointer-events-none absolute inset-0 z-[5]">
-          <img src={posterUrl} className="h-full w-full object-cover" alt="" />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+          {posterUrl && <img src={posterUrl} className="h-full w-full object-cover" alt="" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30" />
+          <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20">
+            <LoadingBar />
           </div>
-        </div>
-      )}
-      {/* Spinner without poster (no poster URL available) */}
-      {showLoadingOverlay && !posterUrl && (
-        <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
         </div>
       )}
 

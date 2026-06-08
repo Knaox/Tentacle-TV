@@ -6,6 +6,7 @@ import { AnimatePresence } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayerControls } from "./PlayerControls";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
+import { LoadingBar } from "./player/PlayerLoadingScreen";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 
 export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
@@ -47,6 +48,8 @@ interface VideoPlayerProps {
   onPreviousEpisode?: () => void;
   introSegment?: SegmentTimestamps | null;
   creditsSegment?: SegmentTimestamps | null;
+  /** Backdrop affiché pendant le chargement initial du média. */
+  posterUrl?: string;
 }
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -93,7 +96,7 @@ export function VideoPlayer({
   nextEpisodeImageUrl, nextEpisodeDescription,
   autoplayCreditsSeconds,
   onNextEpisode, onPreviousEpisode,
-  introSegment, creditsSegment,
+  introSegment, creditsSegment, posterUrl,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -711,9 +714,20 @@ export function VideoPlayer({
       </video>
 
       {loading && (playing || sourceChangingRef.current) && (
-        <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center ${sourceChangingRef.current && !hasStartedRef.current ? "bg-black" : ""}`} onClick={(e) => e.stopPropagation()}>
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-        </div>
+        sourceChangingRef.current && !hasStartedRef.current ? (
+          // Chargement INITIAL du média : bannière (backdrop) + barre de chargement.
+          <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-[#0a0a12]" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(var(--brand-rgb),0.20),transparent_60%)]" />
+            {posterUrl && <img src={posterUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
+            <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20"><LoadingBar /></div>
+          </div>
+        ) : (
+          // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+          </div>
+        )
       )}
 
       {showPlayButton && (
