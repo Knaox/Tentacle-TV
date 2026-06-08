@@ -26,6 +26,7 @@ export default {
         breathe: "breathe 2s ease infinite",
         "ken-burns": "kenBurns 32s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate",
         "fade-out": "fadeOut 0.3s ease forwards",
+        "loading-bar": "loadingBar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite",
       },
       keyframes: {
         shimmer: {
@@ -59,6 +60,10 @@ export default {
         kenBurns: {
           "0%":   { transform: "scale(1) translate3d(0, 0, 0)" },
           "100%": { transform: "scale(1.18) translate3d(-2%, 1.2%, 0)" },
+        },
+        loadingBar: {
+          "0%":   { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(400%)" },
         },
         fadeOut: {
           from: { opacity: "1", transform: "translateX(0)" },

@@ -36,4 +36,6 @@ export default {
   episodes: "Episodes",
   noEpisodes: "No episodes",
   close: "Close",
+  loading: "Loading…",
+  loadingMedia: "Loading {{title}}…",
 } as const;

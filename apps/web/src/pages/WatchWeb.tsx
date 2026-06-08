@@ -5,7 +5,7 @@ import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv
 import { TICKS_PER_SECOND, formatDuration } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
-import { PlayerTransition } from "../components/PlayerTransition";
+import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 import { isTauri, isMacOS } from "../hooks/useDesktopPlayer";
 
@@ -20,7 +20,7 @@ export function WatchWeb() {
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
     audioTracks, subtitleTracks,
-    jellyfinDuration, startPositionSeconds,
+    jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     skipSegments, autoplayCreditsSeconds, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
@@ -110,19 +110,18 @@ export function WatchWeb() {
     reportSeek(seconds, paused);
   }, [reportSeek, positionRef]);
 
-  const [splashDone, setSplashDone] = useState(false);
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  const showPlayer = !isLoading && !!streamUrl;
+
   useEffect(() => {
-    if (splashDone && startPositionSeconds && startPositionSeconds > 0) {
+    if (showPlayer && startPositionSeconds && startPositionSeconds > 0) {
       setShowResumeIndicator(true);
       resumeTimerRef.current = setTimeout(() => setShowResumeIndicator(false), 3000);
     }
     return () => clearTimeout(resumeTimerRef.current);
-  }, [splashDone, startPositionSeconds]);
-
-  const showPlayer = splashDone && !isLoading && !!streamUrl;
+  }, [showPlayer, startPositionSeconds]);
 
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
@@ -147,7 +146,7 @@ export function WatchWeb() {
     ? formatDuration(Math.round(startPositionSeconds) * 10_000_000) : null;
 
   return (
-    <PlayerTransition transparent={false} onComplete={() => setSplashDone(true)}>
+    <div className="relative h-screen w-screen bg-black">
       {showResumeIndicator && resumeTimeFormatted && (
         <div
           className="absolute left-1/2 top-16 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm text-white/80 transition-opacity duration-500"
@@ -172,16 +171,14 @@ export function WatchWeb() {
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
           nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
           onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
-          itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
+          itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          {splashDone && <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />}
-        </div>
+        <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />
       )}
-    </PlayerTransition>
+    </div>
   );
 }
