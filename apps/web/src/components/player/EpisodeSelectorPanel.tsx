@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { HorizontalScrollRow } from "../HorizontalScrollRow";
 
 interface EpisodeSelectorPanelProps {
   seriesId: string;
@@ -53,12 +54,16 @@ export function EpisodeSelectorPanel({
       </div>
 
       {seasons && seasons.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-4 py-2 scrollbar-hide">
+        <HorizontalScrollRow
+          wrapperClassName="border-b border-white/10"
+          className="items-center gap-2 px-4 py-2"
+          ariaLabel={t("player:episodes")}
+        >
           {seasons.map((s) => (
             <button
               key={s.Id}
               onClick={() => setSeasonId(s.Id)}
-              className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
                 s.Id === effectiveSeasonId
                   ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
@@ -67,7 +72,7 @@ export function EpisodeSelectorPanel({
               {s.Name}
             </button>
           ))}
-        </div>
+        </HorizontalScrollRow>
       )}
 
       <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">

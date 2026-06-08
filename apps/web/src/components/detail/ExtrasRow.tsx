@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSpecialFeatures, useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayIcon } from "../media/MediaDetailIcons";
+import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { TrailerModal } from "./TrailerModal";
 import { parseYouTubeId, shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
@@ -38,7 +39,10 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
       <h2 className="mb-3 text-base font-semibold text-white/90 md:text-lg">
         {title ? `${t("common:extras")} — ${title}` : t("common:extras")}
       </h2>
-      <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-2 scrollbar-hide">
+      <HorizontalScrollRow
+        className="gap-3 overflow-y-visible pb-2"
+        ariaLabel={t("common:extras")}
+      >
         {local.map((ex) => (
           <ExtraTile
             key={ex.Id}
@@ -55,7 +59,7 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
               key={tr.Url}
               label={tr.Name || t("common:trailer")}
               sublabel={tr.type || "YouTube"}
-              thumb={yt ? `https://i.ytimg.com/vi/${yt}/mqdefault.jpg` : undefined}
+              youtubeId={yt ?? undefined}
               onClick={() => {
                 // macOS DMG : ouverture dans le navigateur système (cf. TrailerButton).
                 if (shouldOpenYouTubeExternally()) {
@@ -68,7 +72,7 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
             />
           );
         })}
-      </div>
+      </HorizontalScrollRow>
       {remote.length > 0 && (
         <TrailerModal
           open={modalOpen}
@@ -85,13 +89,22 @@ function ExtraTile({
   label,
   sublabel,
   thumb,
+  youtubeId,
   onClick,
 }: {
   label: string;
   sublabel?: string;
   thumb?: string;
+  /** Si présent : vignette YouTube + détection vidéo indisponible/privée. */
+  youtubeId?: string;
   onClick: () => void;
 }) {
+  // YouTube renvoie un placeholder gris 120x90 sur hqdefault.jpg pour les vidéos
+  // supprimées ou privées → on masque la tuile au chargement de la vignette.
+  const [unavailable, setUnavailable] = useState(false);
+  const src = youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : thumb;
+  if (unavailable) return null;
+
   return (
     <button
       type="button"
@@ -99,8 +112,23 @@ function ExtraTile({
       className="group/extra flex w-44 flex-shrink-0 cursor-pointer flex-col text-left sm:w-52"
     >
       <div className="relative aspect-video overflow-hidden rounded-md bg-surface-2 transition-transform duration-200 group-hover/extra:scale-[1.03]">
-        {thumb ? (
-          <img src={thumb} alt={label} loading="lazy" className="h-full w-full object-cover" />
+        {src ? (
+          <img
+            src={src}
+            alt={label}
+            loading="lazy"
+            className="h-full w-full object-cover"
+            onLoad={
+              youtubeId
+                ? (e) => {
+                    if (e.currentTarget.naturalWidth > 0 && e.currentTarget.naturalWidth <= 120) {
+                      setUnavailable(true);
+                    }
+                  }
+                : undefined
+            }
+            onError={youtubeId ? () => setUnavailable(true) : undefined}
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-white/25">
             <PlayIcon />
