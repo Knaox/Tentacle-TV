@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { SharedListItem } from "@tentacle-tv/api-client";
-import { ChevronDownIcon } from "../icons/HeroIcons";
 
 interface Props {
   items: SharedListItem[];
@@ -20,9 +19,9 @@ function posterUrl(item: SharedListItem): string {
 }
 
 /**
- * Grille d'une liste partagée. Tap sur la vignette = sélection (connecté) ou
- * fiche détail (déconnecté) ; le chevron « plus d'infos » ouvre toujours la
- * fiche détail publique (résumé + bandes-annonces, sans saisons ni lecture).
+ * Grille d'une liste partagée. Le clic sur la vignette ouvre la fiche détail
+ * publique (résumé + bandes-annonces, sans saisons ni lecture). La sélection
+ * (pour ajouter à sa liste) se fait via la case à cocher, connecté uniquement.
  */
 export function SharedListGrid({ items, authed, selected, onToggle, token }: Props) {
   const navigate = useNavigate();
@@ -37,40 +36,34 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
           <div key={item.Id} className="group relative overflow-hidden rounded-xl bg-tentacle-surface">
             <button
               type="button"
-              onClick={() => (authed ? onToggle(item.Id) : openDetail(item.Id))}
+              onClick={() => openDetail(item.Id)}
               className="block w-full text-left transition-transform hover:scale-[1.02]"
             >
               <div className="relative aspect-[2/3]">
                 <img src={posterUrl(item)} alt={item.Name} loading="lazy" className="h-full w-full object-cover" />
-                {authed && (
-                  <div
-                    className={`absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
-                      isSel ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-white/60 bg-black/40 text-transparent"
-                    }`}
-                    aria-hidden
-                  >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
               </div>
-              <div className="p-2 pr-9">
+              <div className="p-2">
                 <p className="line-clamp-1 text-sm font-medium text-white">{item.Name}</p>
                 {item.ProductionYear && <p className="text-xs text-white/45">{item.ProductionYear}</p>}
               </div>
             </button>
 
-            {/* Chevron « plus d'infos » (même design que l'accueil) → fiche détail publique. */}
-            <button
-              type="button"
-              onClick={() => openDetail(item.Id)}
-              aria-label={t("moreInfo")}
-              title={t("moreInfo")}
-              className="absolute bottom-1.5 right-1.5 flex h-7 w-7 items-center justify-center text-white/85 transition-transform hover:scale-110 hover:text-white"
-            >
-              <ChevronDownIcon className="h-5 w-5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]" />
-            </button>
+            {/* Case de sélection (connecté) — toggle sans ouvrir la fiche. */}
+            {authed && (
+              <button
+                type="button"
+                onClick={() => onToggle(item.Id)}
+                aria-label={t("select")}
+                aria-pressed={isSel}
+                className={`absolute left-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
+                  isSel ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-white/60 bg-black/45 text-transparent hover:text-white/50"
+                }`}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
           </div>
         );
       })}
