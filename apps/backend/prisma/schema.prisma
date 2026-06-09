@@ -144,13 +144,16 @@ model ShareLink {
   @@map("share_links")
 }
 
-// Plugin Seer — tables gérées par le plugin, déclarées ici pour que prisma db push ne les supprime pas
+// Plugin Seer — tables gérées par le plugin, déclarées ici pour que prisma db push ne les supprime pas.
+// Colonnes nullable / defaultées : la table est créée et migrée par le plugin lui-même ;
+// on les garde additives pour que `db push` puisse les ajouter sur des bases legacy
+// (anciennes lignes sans ces champs) sans échouer ni perdre de données.
 model SeerRequest {
   id               String    @id @db.VarChar(36)
-  jellyfinUserId   String    @db.VarChar(255)
+  jellyfinUserId   String?   @db.VarChar(255)
   username         String    @db.VarChar(255)
-  mediaType        String    @db.VarChar(10)
-  tmdbId           Int
+  mediaType        String?   @db.VarChar(10)
+  tmdbId           Int?
   title            String    @db.VarChar(500)
   posterPath       String?   @db.VarChar(500)
   backdropPath     String?   @db.VarChar(500)
@@ -166,7 +169,7 @@ model SeerRequest {
   lastError        String?   @db.Text
   priority         Int       @default(0)
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  updatedAt        DateTime  @default(now()) @updatedAt
   sentAt           DateTime?
   completedAt      DateTime?
 
