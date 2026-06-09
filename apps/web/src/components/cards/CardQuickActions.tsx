@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
-import { useToggleWatchlist, useFavorite, useWatchedToggle } from "@tentacle-tv/api-client";
+import {
+  useToggleWatchlistForItem,
+  useFavoriteForItem,
+  useWatchedToggle,
+  useWatchlistSeriesIds,
+  useFavoriteSeriesIds,
+} from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface CardQuickActionsProps {
-  itemId: string;
-  initialFavorite: boolean;
-  initialWatchlist: boolean;
-  initialWatched?: boolean;
+  item: MediaItem;
   /** Visual variant — `compact` is the always-on top-right cluster on the card image,
    *  `inline` is the bigger row inside the hover preview panel. */
   variant?: "compact" | "inline";
@@ -13,43 +16,43 @@ interface CardQuickActionsProps {
 
 /**
  * Favorite / Watchlist / Watched toggles with optimistic state.
- * Reused by both card variants (poster / episode) and the hover preview panel.
+ *
+ * Ma liste & Favoris agissent au niveau SÉRIE : sur un épisode, l'action porte
+ * sur la série parente, et l'état affiché dérive de l'appartenance de la série
+ * (Sets `watchlist-series-ids` / `favorite-series-ids`). Pour Movie/Series, on
+ * lit directement `item.UserData`. Tout est piloté par le cache → mises à jour
+ * optimistes instantanées sans état local.
  */
-export function CardQuickActions({
-  itemId,
-  initialFavorite,
-  initialWatchlist,
-  initialWatched = false,
-  variant = "compact",
-}: CardQuickActionsProps) {
-  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(itemId);
-  const { add: addFav, remove: removeFav } = useFavorite(itemId);
-  const { markWatched, markUnwatched } = useWatchedToggle(itemId);
-  const [fav, setFav] = useState(initialFavorite);
-  const [list, setList] = useState(initialWatchlist);
-  const [watched, setWatched] = useState(initialWatched);
+export function CardQuickActions({ item, variant = "compact" }: CardQuickActionsProps) {
+  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
+  const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
+  const { markWatched, markUnwatched } = useWatchedToggle(item.Id, {
+    seriesId: item.SeriesId,
+    seasonId: item.SeasonId,
+    itemType: item.Type,
+  });
+  const watchlistSeries = useWatchlistSeriesIds();
+  const favoriteSeries = useFavoriteSeriesIds();
 
-  useEffect(() => setFav(initialFavorite), [initialFavorite]);
-  useEffect(() => setList(initialWatchlist), [initialWatchlist]);
-  useEffect(() => setWatched(initialWatched), [initialWatched]);
+  const isEpisode = item.Type === "Episode";
+  const list = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
+  const fav = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
+  const watched = item.UserData?.Played === true;
 
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); };
 
   const toggleFav = (e: React.MouseEvent) => {
     stop(e);
-    setFav(!fav);
     if (fav) removeFav.mutate(); else addFav.mutate();
   };
 
   const toggleList = (e: React.MouseEvent) => {
     stop(e);
-    setList(!list);
     if (list) removeWatchlist.mutate(); else addWatchlist.mutate();
   };
 
   const toggleWatched = (e: React.MouseEvent) => {
     stop(e);
-    setWatched(!watched);
     if (watched) markUnwatched.mutate(); else markWatched.mutate();
   };
 

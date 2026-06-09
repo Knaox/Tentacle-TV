@@ -1,6 +1,6 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
@@ -26,32 +26,27 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
   });
 
-  const jfClient = useJellyfinClient();
-  const jfUserId = useUserId();
+  const runStopInvalidation = useWatchStopInvalidation();
+  const itemRef = useRef(item);
+  itemRef.current = item;
 
   useEffect(() => {
     return () => {
       const id = itemId;
+      const snap = itemRef.current;
       queryClient.removeQueries({ queryKey: ["item", id] });
-      const invalidateAll = () => {
-        jfClient.fetch(`/Users/${jfUserId}/Items/${id}/Rating`, { method: "DELETE" }).catch(() => {});
-        queryClient.invalidateQueries({ queryKey: ["item", id] });
-        queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-        queryClient.invalidateQueries({ queryKey: ["next-up"] });
-        queryClient.invalidateQueries({ queryKey: ["watched-items"] });
-        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-      };
       // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
       // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
       // stop promise. On défère donc la lecture du ref à un microtask pour
-      // chaîner l'invalidation APRÈS le /Sessions/Playing/Stopped, sinon
-      // Jellyfin n'a pas encore mis à jour DatePlayed → l'ordre du carrousel
-      // "Reprendre la lecture" ne bouge pas au retour sur la home.
+      // chaîner l'invalidation APRÈS le /Sessions/Playing/Stopped (Jellyfin a
+      // alors mis à jour Played/DatePlayed → décision « 100% vu » fiable).
       queueMicrotask(() => {
-        lastStopPromiseRef.current.then(invalidateAll, invalidateAll);
+        const run = () =>
+          runStopInvalidation({ itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type });
+        lastStopPromiseRef.current.then(run, run);
       });
     };
-  }, [itemId, queryClient, lastStopPromiseRef, jfClient, jfUserId]);
+  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation]);
 
   const handleAudioChange = useCallback(async (idx: number) => {
     audioOverrideRef.current = true;

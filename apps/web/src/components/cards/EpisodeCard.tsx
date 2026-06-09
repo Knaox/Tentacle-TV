@@ -96,13 +96,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
           className="absolute right-1.5 top-1.5 transition-opacity duration-150"
           style={{ opacity: hovered ? 1 : 0, pointerEvents: hovered ? "auto" : "none" }}
         >
-          <CardQuickActions
-            itemId={item.Id}
-            initialFavorite={item.UserData?.IsFavorite === true}
-            initialWatchlist={item.UserData?.Likes === true}
-            initialWatched={item.UserData?.Played === true}
-            variant="compact"
-          />
+          <CardQuickActions item={item} variant="compact" />
         </div>
 
         {/* Bouton discret « Plus d'infos » — clic carte = lecture, ce bouton = fiche détail */}
@@ -118,9 +112,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
 
       {ctx.ctxMenu && (
         <MediaContextMenu
-          itemId={item.Id}
-          isFavorite={item.UserData?.IsFavorite === true}
-          isInWatchlist={item.UserData?.Likes === true}
+          item={item}
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}

@@ -1,7 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
+import {
+  useFavoriteForItem,
+  useToggleWatchlistForItem,
+  useWatchedToggle,
+  useSeriesWatchState,
+  useWatchlistSeriesIds,
+  useFavoriteSeriesIds,
+} from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
 import { TrailerButton } from "./TrailerButton";
@@ -20,13 +27,21 @@ export function DetailActions({ item }: DetailActionsProps) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const isSeries = item.Type === "Series";
+  const isEpisode = item.Type === "Episode";
   const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
-  const { add: addFav, remove: removeFav } = useFavorite(item.Id);
-  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(item.Id);
-  const { markWatched, markUnwatched } = useWatchedToggle(item.Id);
+  const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
+  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
+  const { markWatched, markUnwatched } = useWatchedToggle(item.Id, {
+    seriesId: item.SeriesId,
+    seasonId: item.SeasonId,
+    itemType: item.Type,
+  });
+  const watchlistSeries = useWatchlistSeriesIds();
+  const favoriteSeries = useFavoriteSeriesIds();
 
-  const isFavorite = item.UserData?.IsFavorite === true;
-  const isInWatchlist = item.UserData?.Likes === true;
+  // Un épisode reflète l'état de sa série ; Movie/Series lisent UserData.
+  const isFavorite = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
+  const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
   const isWatched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
   const hasResume = progress != null && progress > 0 && progress < 100;

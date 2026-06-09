@@ -1,12 +1,16 @@
 import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useFavorite, useToggleWatchlist } from "@tentacle-tv/api-client";
+import {
+  useFavoriteForItem,
+  useToggleWatchlistForItem,
+  useWatchlistSeriesIds,
+  useFavoriteSeriesIds,
+} from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 interface Props {
-  itemId: string;
-  isFavorite: boolean;
-  isInWatchlist: boolean;
+  item: MediaItem;
   x: number;
   y: number;
   onClose: () => void;
@@ -14,11 +18,18 @@ interface Props {
   onToggleWatchlist?: () => void;
 }
 
-export function MediaContextMenu({ itemId, isFavorite, isInWatchlist, x, y, onClose, onToggleFavorite, onToggleWatchlist }: Props) {
+export function MediaContextMenu({ item, x, y, onClose, onToggleFavorite, onToggleWatchlist }: Props) {
   const { t } = useTranslation("common");
   const menuRef = useRef<HTMLDivElement>(null);
-  const { add: addFav, remove: removeFav } = useFavorite(itemId);
-  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(itemId);
+  const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
+  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
+  const watchlistSeries = useWatchlistSeriesIds();
+  const favoriteSeries = useFavoriteSeriesIds();
+
+  // Un épisode reflète l'état de sa SÉRIE ; Movie/Series lisent UserData.
+  const isEpisode = item.Type === "Episode";
+  const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
+  const isFavorite = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
 
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {

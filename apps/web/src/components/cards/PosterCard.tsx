@@ -102,13 +102,7 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
           className="absolute right-1.5 top-1.5 transition-opacity duration-150"
           style={{ opacity: hovered ? 1 : 0, pointerEvents: hovered ? "auto" : "none" }}
         >
-          <CardQuickActions
-            itemId={item.Id}
-            initialFavorite={item.UserData?.IsFavorite === true}
-            initialWatchlist={item.UserData?.Likes === true}
-            initialWatched={item.UserData?.Played === true}
-            variant="compact"
-          />
+          <CardQuickActions item={item} variant="compact" />
         </div>
 
         {/* Watched check (replaces quick actions when watched) */}
@@ -142,9 +136,7 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
 
       {ctx.ctxMenu && (
         <MediaContextMenu
-          itemId={item.Id}
-          isFavorite={item.UserData?.IsFavorite === true}
-          isInWatchlist={item.UserData?.Likes === true}
+          item={item}
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}
