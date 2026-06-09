@@ -3,6 +3,29 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.9.2] - 2026-06-10
+
+Desktop 1.9.2 — Web 1.0.0-beta.5
+
+### Ajouté
+- **« Ma liste » au niveau série** : le « + » (et le cœur Favoris) sur un **épisode** agit désormais sur la **série parente** ; tous les épisodes d'une série affichent l'état « ajouté » dès qu'elle est dans la liste, sans refresh.
+- **Reset à l'ajout** : ajouter à Ma liste une série / un film **déjà vu à 100 %** le remet à zéro (re-regarder à neuf) ; s'il est seulement **commencé**, la reprise est conservée.
+
+### Modifié
+- Carrousel et page **Ma liste / Favoris** : mise à jour **instantanée** à l'ajout comme au retrait (insertion/retrait optimiste + resynchronisation).
+- **Retrait automatique de Ma liste** quand un film / une série est vu à 100 % (à la complétion réelle, plus au simple lancement du lecteur ; pour une série, au visionnage du dernier épisode). **Exception** : une série **en cours de diffusion** (`Continuing`) n'est jamais retirée, même si tous les épisodes diffusés sont vus.
+
+### Corrigé
+- Bouton « Ma liste » de la fiche détail qui n'affichait jamais l'état « ajouté » (UserData non chargé sur la requête de détail).
+
+## [1.9.1] - 2026-06-10
+
+Desktop 1.9.1 — Web 1.0.0-beta.5
+
+### Corrigé
+- **Lien « Partager ma liste » sur desktop** : le lien généré pointait vers `tauri.localhost` au lieu de l'URL publique du serveur → inutilisable. Il est désormais construit depuis l'URL serveur configurée (`tentacle_server_url`).
+- **Déploiement prod** : le core ne gère plus les tables du plugin Seer via `prisma db push` (régénération du client Prisma au démarrage + tables core appliquées de façon additive). Corrige les erreurs 500 sur `/api/share`.
+
 ## [1.9.0] - 2026-06-09
 
 Desktop 1.9.0 — Web 1.0.0-beta.5 — Mobile 1.2.0
