@@ -3,6 +3,28 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.9.0] - 2026-06-09
+
+Desktop 1.9.0 — Web 1.0.0-beta.5 — Mobile 1.2.0
+
+### Ajouté
+- **Partage de liste par lien** : bouton « Partager ma liste » (web/desktop/mobile) générant un lien public `/share/:token`. Lien **Live** (reflète la watchlist actuelle du propriétaire). Page publique en lecture seule si déconnecté ; sélection multiple + « Ajouter à ma liste » + « Tout sélectionner » si connecté. Se connecter depuis le lien renvoie automatiquement vers le lien.
+- **Fiche détail publique de partage** (`/share/:token/:itemId`) : bouton « plus d'infos » sur chaque vignette → résumé du média (backdrop, synopsis, casting) + bandes-annonces visibles par tous, **sans saisons ni lecture** du contenu.
+- **Méta-tokens qualité/langues** unifiés (`MetaChips`) : tokens texte discrets (VF / VFQ / VOSTFR / EN / JP…) en remplacement des drapeaux pays ; chips qualité monochromes (4K seul accent). Révélés au survol sur toutes les cartes (accueil, bibliothèque, favoris, ma liste).
+- **Mobile — parité fiche détail** : extras / bandes-annonces (films, séries, épisodes), liste « Saisons & Épisodes » sur fiches série ET épisode avec épisode courant/à reprendre surligné, navigation vers la série depuis un épisode.
+- **Mobile — lecteur** : sélecteur saison/épisode intégré ; support portrait + paysage.
+
+### Modifié
+- Fiches détail : qualité affichée à côté du titre (retirée de la bannière) ; extras déplacés au-dessus de « Saisons & Épisodes » ; extras de la série aussi affichés sur la fiche épisode ; épisode courant/à reprendre surligné. Méta des épisodes affichée à côté du titre (plus sur la miniature).
+- Bannière d'épisode (accueil) : qualité/langues en texte sobre à côté du titre.
+- Bouton « plus d'infos » des cartes 16/9 : grande flèche sans cercle + assombrissement du bas au survol (sans chevaucher le titre).
+- Suppression complète de l'ancienne feature « listes partagées » collaboratives (web, mobile, backend, base de données).
+
+### Corrigé
+- **Déploiement prod** : `prisma db push` ne supprime plus les tables du plugin Seer (`seer_user_settings` désormais déclarée au schéma).
+- Mobile — lecteur : titre masqué/chevauchant la barre d'état en portrait (safe-area) ; un tap sur l'écran masque/affiche l'overlay pendant la lecture.
+- Méta des ajouts récents (épisodes uniques) désormais visible au survol.
+
 ## [1.8.6] - 2026-06-07
 
 Desktop 1.8.6 — Web 1.0.0-beta.4

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 /**
  * « Partager ma liste » — hooks du lien de partage.
@@ -86,6 +87,17 @@ export function useSharedListView(token: string | null | undefined) {
     queryFn: () => shareFetch<SharedListData>(`/${token}`),
     enabled: !!token,
     staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/** Détail PUBLIC d'un média de la liste partagée (résumé + bandes-annonces). */
+export function useSharedItem(token: string | null | undefined, itemId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["share", "item", token, itemId],
+    queryFn: () => shareFetch<MediaItem>(`/${token}/item/${itemId}`),
+    enabled: !!token && !!itemId,
+    staleTime: 60_000,
     retry: false,
   });
 }

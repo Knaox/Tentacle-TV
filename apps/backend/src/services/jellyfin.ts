@@ -144,3 +144,25 @@ export async function getUserWatchlist(userId: string): Promise<{ Items: { Id: s
 
   return res.json();
 }
+
+/** Détail enrichi d'un item (via clé admin) — pour la fiche publique de partage. */
+export async function getItemDetail(userId: string, itemId: string): Promise<Record<string, unknown>> {
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+
+  if (!jellyfinUrl || !apiKey) {
+    throw new Error("Jellyfin n'est pas configuré");
+  }
+
+  const res = await fetch(
+    `${jellyfinUrl}/Users/${userId}/Items/${itemId}` +
+      `?Fields=Overview,Genres,Taglines,People,Studios,ProviderIds,RemoteTrailers,RunTimeTicks,ParentBackdropImageTags,ParentBackdropItemId`,
+    { headers: { "X-Emby-Token": apiKey } }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Item introuvable: ${res.status}`);
+  }
+
+  return res.json();
+}

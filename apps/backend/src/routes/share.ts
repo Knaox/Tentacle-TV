@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { getUserWatchlist } from "../services/jellyfin";
+import { getUserWatchlist, getItemDetail } from "../services/jellyfin";
 
 function generateToken(): string {
   return crypto.randomBytes(8).toString("hex");
@@ -68,6 +68,25 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
       return { ownerUsername: link.ownerUsername, items };
     } catch {
       return reply.status(502).send({ message: "Liste indisponible" });
+    }
+  });
+
+  // ── GET /:token/item/:itemId — détail PUBLIC (résumé + bandes-annonces) d'un
+  //    média de la liste partagée. Sécurité : l'item doit être dans la watchlist
+  //    du propriétaire (pas d'énumération de la bibliothèque via un token). ──
+  app.get("/:token/item/:itemId", async (request, reply) => {
+    const { token, itemId } = request.params as { token: string; itemId: string };
+    const prisma = getPrisma();
+    const link = await prisma.shareLink.findUnique({ where: { token } });
+    if (!link) return reply.status(404).send({ message: "Lien introuvable" });
+
+    try {
+      const wl = await getUserWatchlist(link.ownerUserId);
+      const inList = (wl.Items ?? []).some((i) => i.Id === itemId);
+      if (!inList) return reply.status(404).send({ message: "Média introuvable" });
+      return await getItemDetail(link.ownerUserId, itemId);
+    } catch {
+      return reply.status(502).send({ message: "Média indisponible" });
     }
   });
 };

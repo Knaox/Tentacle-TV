@@ -90,7 +90,7 @@ export function SharedListView() {
                 </button>
               </div>
             )}
-            <SharedListGrid items={data.items} authed={authed} selected={selected} onToggle={toggle} />
+            <SharedListGrid items={data.items} authed={authed} selected={selected} onToggle={toggle} token={token} />
             {authed && (
               <SharedListAddBar
                 count={selected.size}
