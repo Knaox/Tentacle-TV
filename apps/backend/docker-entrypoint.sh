@@ -25,7 +25,14 @@ if [ -d /app/shared-deps-seed ]; then
   echo "[Entrypoint] Shared deps updated from image"
 fi
 
-# --- 3. DB wait + migrations, or setup mode ---
+# --- 3. Regenerate Prisma client to match the schema baked into this image ---
+# Filet de sécurité : garantit que le client Prisma correspond toujours au
+# schema.prisma présent dans l'image, même si le client buildé était périmé
+# (ex. nouveau modèle ajouté). Sans ça, prisma.<model> est undefined → 500.
+echo "[Entrypoint] Generating Prisma client..."
+npx prisma generate || echo "[Entrypoint] WARNING: prisma generate failed — using prebuilt client."
+
+# --- 4. DB wait + migrations, or setup mode ---
 if [ -n "$DATABASE_URL" ]; then
   echo "[Entrypoint] Waiting for database to be ready..."
 
