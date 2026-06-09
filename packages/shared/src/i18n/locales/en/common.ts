@@ -144,6 +144,7 @@ export default {
   shareMyList: "Share my list",
   shareLinkDescription: "Create a link to your list. Anyone with the link can view it; signed in, they can add media to their own list.",
   generateLink: "Generate link",
+  shareLinkError: "Couldn't generate the link. Check your server connection and try again.",
   copyLink: "Copy",
   linkCopied: "Copied!",
   revokeLink: "Revoke link",

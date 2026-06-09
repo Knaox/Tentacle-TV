@@ -93,12 +93,16 @@ async function main() {
 
   // CORS: restrictive in production, permissive in dev
   const corsOrigins = process.env.CORS_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean);
+  // Origines des webviews de l'app desktop (Tauri) — toujours autorisées car
+  // émises uniquement par l'app native, jamais par un navigateur tiers.
+  // macOS (WKWebView) → tauri://localhost ; Windows (WebView2) → https://tauri.localhost.
+  const TAURI_ORIGINS = ["tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"];
   await app.register(cors, {
     origin: corsOrigins?.length
       ? (origin, cb) => {
           // Allow requests with no origin (mobile apps, curl, server-to-server)
           if (!origin) return cb(null, true);
-          if (corsOrigins.includes(origin)) return cb(null, true);
+          if (corsOrigins.includes(origin) || TAURI_ORIGINS.includes(origin)) return cb(null, true);
           cb(new Error("CORS origin not allowed"), false);
         }
       : true,

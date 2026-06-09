@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, StyleSheet, Share } from "react-native";
+import { Pressable, Text, StyleSheet, Share, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCreateShareLink } from "@tentacle-tv/api-client";
@@ -21,10 +21,21 @@ export function ShareMyListButton() {
     setBusy(true);
     try {
       const { token } = await create.mutateAsync();
-      const url = `${(serverUrl ?? "").replace(/\/$/, "")}/share/${token}`;
-      await Share.share({ message: url, url });
-    } catch {
-      /* annulé / hors-ligne */
+      const base = (serverUrl ?? "").replace(/\/$/, "");
+      const url = `${base}/share/${token}`;
+      // iOS exige une URL absolue valide, sinon la conversion NSURL échoue et la
+      // feuille de partage ne s'affiche pas (silencieux) — surtout sur appareil
+      // physique, plus strict que le simulateur.
+      if (!/^https?:\/\//.test(url)) {
+        throw new Error(`URL de partage invalide: ${url}`);
+      }
+      // Sur iOS, ne passer QUE `url` (le message dupliqué casse l'aperçu / la
+      // présentation de la feuille). Android préfère `message`.
+      await Share.share(Platform.OS === "ios" ? { url } : { message: url });
+    } catch (e) {
+      // L'utilisateur a peut-être juste annulé ; on logue pour diagnostiquer les
+      // échecs réels (URL invalide, hors-ligne) au lieu de les masquer.
+      if (__DEV__) console.warn("[ShareMyList] partage échoué", e);
     } finally {
       setBusy(false);
     }
