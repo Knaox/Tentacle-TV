@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { View, Text, ScrollView, RefreshControl, useWindowDimensions, Pressable, StyleSheet } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, withSpring, withDelay, withTiming, Easing, interpolate, Extrapolation } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,7 +19,8 @@ import { LicenseAttribution } from "../components/LicenseAttribution";
 import { DetailActionsRow } from "../components/detail/DetailActionsRow";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
 import { MobileExtrasSection } from "../components/detail/MobileExtrasSection";
-import { computeBadges, buildSeriesPlayLabel, formatTime } from "../components/detail/computeBadges";
+import { MetaTokens } from "../components/detail/MetaTokens";
+import { buildSeriesPlayLabel, formatTime } from "../components/detail/computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../constants/featureFlags";
 import { st } from "./mediaDetailStyles";
 
@@ -55,7 +56,6 @@ export function MediaDetailScreen({ itemId }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [overviewTruncated, setOverviewTruncated] = useState(false);
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
-  const badges = useMemo(() => computeBadges(item), [item]);
 
   // Parallax + one-shot Ken Burns zoom (scale 1 → 1.06 over 8s, then frozen).
   const scrollY = useSharedValue(0);
@@ -200,11 +200,9 @@ export function MediaDetailScreen({ itemId }: Props) {
                 <Text style={st.metaItem}>· {t("seasonsCount", { count: item.ChildCount })}</Text>
               )}
             </Animated.View>
-            {badges.length > 0 && (
-              <Animated.View style={[st.badgeRow, metaStyle]}>
-                {badges.map((b) => <Badge key={b} label={b} variant="brand" />)}
-              </Animated.View>
-            )}
+            <Animated.View style={metaStyle}>
+              <MetaTokens item={item} />
+            </Animated.View>
           </Animated.View>
         </View>
 

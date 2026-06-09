@@ -3,11 +3,16 @@ import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSharedItem, useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailHero } from "../components/detail/DetailHero";
 import { CastRow } from "../components/CastRow";
 import { TrailerModal } from "../components/detail/TrailerModal";
 import { parseYouTubeId } from "../components/detail/youtube";
+import { useItemRemoteTrailers } from "../hooks/useItemRemoteTrailers";
 import { StarIcon } from "../components/icons/HeroIcons";
+
+/** Item de repli stable pendant le chargement (les hooks doivent rester appelés). */
+const EMPTY_ITEM = {} as MediaItem;
 
 /**
  * Fiche détail PUBLIQUE d'un média de la liste partagée (/share/:token/:itemId).
@@ -19,6 +24,9 @@ export function SharedItemDetail() {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { data: item, isLoading, isError } = useSharedItem(token, itemId);
+  // Extras triés selon la langue d'interface (= préférence utilisateur si
+  // connecté) — même pipeline que les extras standard (Jellyfin + TMDB).
+  const remoteTrailers = useItemRemoteTrailers(item ?? EMPTY_ITEM);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [trailerIndex, setTrailerIndex] = useState(0);
 
@@ -43,7 +51,7 @@ export function SharedItemDetail() {
 
   const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1920, quality: 85 });
   const poster = client.getImageUrl(item.Id, "Primary", { height: 500, quality: 90 });
-  const trailers = (item.RemoteTrailers ?? []).filter((tr) => parseYouTubeId(tr.Url));
+  const trailers = remoteTrailers.filter((tr) => parseYouTubeId(tr.Url));
   const runtime = formatDuration(item.RunTimeTicks);
 
   return (

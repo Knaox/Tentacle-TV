@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSeasons, useEpisodes, useJellyfinClient, useWatchedToggle, useBatchWatchedToggle } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { colors, BRAND, BORDER, FONT_FAMILY, RADIUS } from "@/theme";
+import { MetaTokens } from "./detail/MetaTokens";
 
 let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
 try { Haptics = require("expo-haptics"); } catch { /* native module not available */ }
@@ -213,6 +214,7 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
             )}
             {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("minutesShort", { count: runtime })}</Text>}
           </View>
+          <MetaTokens item={ep} compact />
           {ep.Overview && (
             <Text numberOfLines={2} style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4, lineHeight: 15 }}>
               {ep.Overview}
