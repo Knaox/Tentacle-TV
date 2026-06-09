@@ -63,8 +63,12 @@ if [ -n "$DATABASE_URL" ]; then
   if [ "$attempt" -gt "$MAX_RETRIES" ]; then
     echo "[Entrypoint] ERROR: Database not reachable after $MAX_RETRIES attempts. Starting server anyway."
   else
-    echo "[Entrypoint] Running database migrations..."
-    npx prisma db push || echo "[Entrypoint] WARNING: Migration failed — server will start in setup mode."
+    # Tables CORE uniquement, de façon additive (CREATE TABLE IF NOT EXISTS).
+    # On n'utilise PAS `prisma db push` : il supprimerait les tables du plugin
+    # Seer (non déclarées dans schema.prisma). Voir prisma/core-init.sql.
+    echo "[Entrypoint] Applying core schema (additive, ne touche pas aux tables plugin)..."
+    npx prisma db execute --schema prisma/schema.prisma --file prisma/core-init.sql \
+      || echo "[Entrypoint] WARNING: core schema init failed — server will start in setup mode."
   fi
 else
   echo "[Entrypoint] No DATABASE_URL — starting in setup mode"
