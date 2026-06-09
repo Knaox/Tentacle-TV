@@ -144,75 +144,8 @@ model ShareLink {
   @@map("share_links")
 }
 
-// Plugin Seer — tables gérées par le plugin, déclarées ici pour que prisma db push ne les supprime pas.
-// Colonnes nullable / defaultées : la table est créée et migrée par le plugin lui-même ;
-// on les garde additives pour que `db push` puisse les ajouter sur des bases legacy
-// (anciennes lignes sans ces champs) sans échouer ni perdre de données.
-model SeerRequest {
-  id               String    @id @db.VarChar(36)
-  jellyfinUserId   String?   @db.VarChar(255)
-  username         String    @db.VarChar(255)
-  mediaType        String?   @db.VarChar(10)
-  tmdbId           Int?
-  title            String    @db.VarChar(500)
-  posterPath       String?   @db.VarChar(500)
-  backdropPath     String?   @db.VarChar(500)
-  overview         String?   @db.Text
-  year             String?   @db.VarChar(10)
-  seasons          Json?
-  status           String    @default("queued") @db.VarChar(30)
-  seerrRequestId   Int?
-  seerrMediaId     Int?
-  seerrMediaStatus Int?
-  retryCount       Int       @default(0)
-  maxRetries       Int       @default(10)
-  lastError        String?   @db.Text
-  priority         Int       @default(0)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @default(now()) @updatedAt
-  sentAt           DateTime?
-  completedAt      DateTime?
-
-  @@index([jellyfinUserId])
-  @@index([status])
-  @@index([status, priority(sort: Desc), createdAt])
-  @@map("seer_requests")
-}
-
-model SeerCleanupQueue {
-  id             String    @id @db.VarChar(36)
-  action         String    @db.VarChar(20)
-  mediaType      String    @db.VarChar(10)
-  tmdbId         Int
-  title          String    @db.VarChar(500)
-  seerrRequestId Int?
-  seerrMediaId   Int?
-  deleteFiles    Boolean   @default(true)
-  retryCount     Int       @default(0)
-  maxRetries     Int       @default(20)
-  lastError      String?   @db.Text
-  status         String    @default("pending") @db.VarChar(20)
-  createdAt      DateTime  @default(now())
-  nextRetryAt    DateTime  @default(now())
-
-  @@index([status, nextRetryAt])
-  @@map("seer_cleanup_queue")
-}
-
-// Déclarée pour que `prisma db push` (dev + hook de déploiement prod) NE la
-// supprime JAMAIS. Gérée par le plugin Seer ; structure introspectée du DB.
-model seer_user_settings {
-  jellyfin_user_id     String    @id @db.VarChar(255)
-  username             String    @db.VarChar(255)
-  blocked              Boolean   @default(false)
-  daily_limit          Int?
-  allow_movies         Boolean   @default(true)
-  allow_tv             Boolean   @default(true)
-  allow_anime          Boolean   @default(true)
-  jellyseerr_user_id   Int?
-  jellyseerr_last_sync DateTime? @db.DateTime(0)
-  created_at           DateTime  @default(now()) @db.DateTime(0)
-  updated_at           DateTime  @default(now()) @db.DateTime(0)
-
-  @@index([jellyseerr_user_id], map: "idx_seer_user_seerrid")
-}
+// NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
+// seer_user_settings) ne sont volontairement PAS déclarées ici. Elles sont
+// créées et migrées par le plugin lui-même (raw SQL, colonnes snake_case).
+// Le core ne doit pas tenter de les gérer via prisma db push — voir
+// docker-entrypoint.sh (db push ciblé core uniquement).
