@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
-import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings } from "lucide-react-native";
+import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
-import { extractSourceQuality, formatBitrateMbps } from "@tentacle-tv/shared";
-import { QUALITY_PRESETS, type QualityKey } from "../hooks/usePlayerPlayback";
+import { extractSourceQuality } from "@tentacle-tv/shared";
+import { type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
-import { PlayerPopupMenu } from "./player/PlayerPopupMenu";
+import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { AutoPlayOverlay } from "./player/AutoPlayOverlay";
 import { SkipButton } from "./player/SkipButton";
+import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
+import { useAutoPlayNext, AUTOPLAY_TOTAL_SEC } from "../hooks/useAutoPlayNext";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -17,15 +19,6 @@ const AirPlaySection = Platform.OS === "ios"
   : () => null;
 
 interface Track { index: number; label: string }
-
-/** Countdown shown in the AutoPlay card before navigating to next episode. */
-const AUTOPLAY_COUNTDOWN_SEC = 10;
-/** Fallback window (s) before the video ends to surface the AutoPlay overlay
- * when intro-skipper / MediaSegments don't expose a credits segment.
- * Matches desktop default (`autoplayCreditsMinutes: 2`). */
-const AUTOPLAY_END_FALLBACK_SEC = 120;
-/** Don't auto-trigger fallback on short clips (< 5 min) — same as desktop. */
-const MIN_DURATION_FOR_FALLBACK_SEC = 300;
 
 interface Props {
   title: string;
@@ -75,15 +68,15 @@ export function MobilePlayerOverlay({
   const hasNextEpisode = !!(nextEpisode && onNextEpisode);
   const [showSettings, setShowSettings] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false);
-  const [showAutoPlay, setShowAutoPlay] = useState(false);
-  const [autoPlayCountdown, setAutoPlayCountdown] = useState<number>(AUTOPLAY_COUNTDOWN_SEC);
+  const [showEpisodes, setShowEpisodes] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const autoPlayDismissed = useRef(false);
-  const autoPlayTriggered = useRef(false);
-  const autoPlayTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
+
+  const { showAutoPlay, countdown: autoPlayCountdown, dismiss: dismissAutoPlay } = useAutoPlayNext({
+    currentTime, duration, creditsSegment, nextEpisode, onNextEpisode,
+  });
 
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -102,54 +95,6 @@ export function MobilePlayerOverlay({
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [visible, resetHideTimer, opacity]);
 
-  // Start countdown once. The interval ONLY decrements state — navigation
-  // (onNextEpisode → router.replace) is handled by the effect below so we
-  // don't trigger router updates from inside a setState updater (that warns
-  // "Cannot update a component while rendering another").
-  const startAutoPlay = useCallback(() => {
-    if (!nextEpisode || !onNextEpisode) return;
-    if (autoPlayTriggered.current) return;
-    autoPlayTriggered.current = true;
-    setAutoPlayCountdown(AUTOPLAY_COUNTDOWN_SEC);
-    setShowAutoPlay(true);
-    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
-    autoPlayTimer.current = setInterval(() => {
-      setAutoPlayCountdown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-  }, [nextEpisode, onNextEpisode]);
-
-  useEffect(() => () => { if (autoPlayTimer.current) clearInterval(autoPlayTimer.current); }, []);
-
-  // Countdown reached zero — clear timer and fire navigation outside render.
-  const autoPlayNavigated = useRef(false);
-  useEffect(() => {
-    if (!autoPlayTriggered.current) return;
-    if (autoPlayNavigated.current) return;
-    if (autoPlayCountdown !== 0) return;
-    autoPlayNavigated.current = true;
-    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
-    onNextEpisode?.();
-  }, [autoPlayCountdown, onNextEpisode]);
-
-  // Same conditions as desktop VideoPlayer:
-  //   triggerAt = creditsSegment?.start ?? (duration > 300 ? duration - 120 : null)
-  useEffect(() => {
-    if (autoPlayTriggered.current || autoPlayDismissed.current) return;
-    if (!nextEpisode || !onNextEpisode) return;
-    const triggerAt = creditsSegment
-      ? creditsSegment.start
-      : (duration > MIN_DURATION_FOR_FALLBACK_SEC ? duration - AUTOPLAY_END_FALLBACK_SEC : null);
-    if (triggerAt != null && currentTime >= triggerAt) {
-      startAutoPlay();
-    }
-  }, [currentTime, creditsSegment, nextEpisode, onNextEpisode, duration, startAutoPlay]);
-
-  const dismissAutoPlay = useCallback(() => {
-    autoPlayDismissed.current = true;
-    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
-    setShowAutoPlay(false);
-  }, []);
-
   const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1 && !showAutoPlay;
 
@@ -167,16 +112,17 @@ export function MobilePlayerOverlay({
             onPress={onToggle}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           />
-          {/* Top bar */}
-          <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 12, paddingHorizontal: 16, gap: 12 }}>
+          {/* Top bar — safe-area pour ne pas chevaucher la status bar (portrait). */}
+          <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "center", paddingTop: Math.max(12, insets.top), paddingLeft: Math.max(16, insets.left), paddingRight: Math.max(16, insets.right), gap: 12 }}>
             <Pressable onPress={onBack} hitSlop={16} style={{ padding: 4 }}>
               <ArrowLeft size={26} color="#fff" />
             </Pressable>
             <Text numberOfLines={1} style={{ color: "#fff", fontSize: 16, fontWeight: "600", flex: 1 }}>{title}</Text>
           </View>
 
-          {/* Center controls */}
-          <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap }}>
+          {/* Center controls — box-none : les zones vides laissent passer le tap
+              vers le Pressable de fond (toggle overlay), seuls les boutons captent. */}
+          <View pointerEvents="box-none" style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap }}>
             {previousEpisode && onPreviousEpisode && (
               <Pressable onPress={onPreviousEpisode} hitSlop={16} style={{ padding: 8 }}>
                 <SkipBack size={22} color="rgba(255,255,255,0.8)" />
@@ -233,7 +179,7 @@ export function MobilePlayerOverlay({
           )}
 
           {/* Bottom bar: seek + track buttons */}
-          <View style={{ flexDirection: "row", alignItems: "flex-end", paddingRight: 8 }}>
+          <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "flex-end", paddingRight: 8 }}>
             <View style={{ flex: 1 }}>
               <PlayerSeekBar
                 currentTime={currentTime}
@@ -253,6 +199,15 @@ export function MobilePlayerOverlay({
             </View>
             <View style={{ flexDirection: "row", gap: 6, marginBottom: 34 }}>
               <AirPlaySection />
+              {item?.SeriesId && (
+                <Pressable
+                  onPress={() => { setShowEpisodes(true); if (hideTimer.current) clearTimeout(hideTimer.current); }}
+                  hitSlop={12}
+                  style={{ padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
+                >
+                  <List size={18} color="rgba(255,255,255,0.8)" />
+                </Pressable>
+              )}
               {subtitleTracks.length > 0 && (
                 <Pressable
                   onPress={() => { setShowSubtitles(true); setShowSettings(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}
@@ -279,69 +234,39 @@ export function MobilePlayerOverlay({
         <AutoPlayOverlay
           nextEpisode={nextEpisode}
           countdown={autoPlayCountdown}
-          totalSeconds={AUTOPLAY_COUNTDOWN_SEC}
+          totalSeconds={AUTOPLAY_TOTAL_SEC}
           onPlay={onNextEpisode}
           onDismiss={dismissAutoPlay}
         />
       )}
 
-      {/* Popup Paramètres — audio + qualité */}
-      <PlayerPopupMenu
-        visible={showSettings}
-        title={t("settings")}
-        sections={[
-          ...(audioTracks.length > 0 ? [{
-            title: t("audioLabel"),
-            options: audioTracks.map((tr) => ({
-              key: tr.index, label: tr.label, active: selectedAudio === tr.index,
-            })),
-            onSelect: (k: string | number) => { onSelectAudio(k as number); setShowSettings(false); },
-          }] : []),
-          {
-            title: t("quality").toUpperCase(),
-            options: QUALITY_PRESETS.map((p) => {
-              const isOriginal = p.key === "original";
-              const badges = isOriginal ? [
-                ...(sourceQuality.isDolbyVision ? [{ label: "DV", tone: "purple" as const }] : []),
-                ...(sourceQuality.isHDR ? [{ label: "HDR", tone: "amber" as const }] : []),
-                ...(sourceQuality.isDolbyAtmos ? [{ label: "Atmos", tone: "amber" as const }] : []),
-              ] : undefined;
-              const suffix = isOriginal && sourceQuality.resolution ? `— ${sourceQuality.resolution}` : undefined;
-              const rightChip = !isOriginal && p.bitrate
-                ? { label: formatBitrateMbps(p.bitrate), tone: "zinc" as const } : undefined;
-              return {
-                key: p.key,
-                label: t(p.key),
-                active: qualityKey === p.key,
-                suffix,
-                badges,
-                rightChip,
-              };
-            }),
-            onSelect: (k: string | number) => { onSelectQuality(k as QualityKey); setShowSettings(false); },
-          },
-        ]}
-        onClose={() => { setShowSettings(false); resetHideTimer(); }}
+      {/* Pop-ups Réglages + Sous-titres (extraits pour rester sous 300 lignes). */}
+      <PlayerSettingsMenus
+        showSettings={showSettings}
+        showSubtitles={showSubtitles}
+        audioTracks={audioTracks}
+        subtitleTracks={subtitleTracks}
+        selectedAudio={selectedAudio}
+        selectedSubtitle={selectedSubtitle}
+        qualityKey={qualityKey}
+        sourceQuality={sourceQuality}
+        onSelectAudio={onSelectAudio}
+        onSelectSubtitle={onSelectSubtitle}
+        onSelectQuality={onSelectQuality}
+        onCloseSettings={() => { setShowSettings(false); resetHideTimer(); }}
+        onCloseSubtitles={() => { setShowSubtitles(false); resetHideTimer(); }}
       />
 
-      {/* Popup Sous-titres */}
-      <PlayerPopupMenu
-        visible={showSubtitles}
-        title={t("subtitles")}
-        sections={[{
-          title: t("subtitlesLabel"),
-          options: subtitleTracks.map((tr) => ({
-            key: tr.index, label: tr.label, active: selectedSubtitle === tr.index,
-          })),
-          onSelect: (k: string | number) => { onSelectSubtitle(k as number); setShowSubtitles(false); },
-          showDisabled: {
-            label: t("disabled"),
-            active: selectedSubtitle === -1,
-            onSelect: () => { onSelectSubtitle(-1); setShowSubtitles(false); },
-          },
-        }]}
-        onClose={() => { setShowSubtitles(false); resetHideTimer(); }}
-      />
+      {/* Sélecteur saison/épisode (séries) */}
+      {item?.SeriesId && (
+        <PlayerEpisodePicker
+          visible={showEpisodes}
+          seriesId={item.SeriesId}
+          currentEpisodeId={item.Id}
+          initialSeasonId={item.SeasonId}
+          onClose={() => { setShowEpisodes(false); resetHideTimer(); }}
+        />
+      )}
     </>
   );
 }

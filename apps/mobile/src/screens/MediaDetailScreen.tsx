@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS, SHADOW_RN, SURFACE, STATUS } from "../theme";
+import { spacing, BRAND, CTA, RADIUS, SURFACE, STATUS } from "../theme";
 import { Badge, GradientOverlay, ProgressBar, IconButton } from "../components/ui";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";
@@ -18,8 +18,10 @@ import { CastRow } from "../components/CastRow";
 import { LicenseAttribution } from "../components/LicenseAttribution";
 import { DetailActionsRow } from "../components/detail/DetailActionsRow";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
+import { MobileExtrasSection } from "../components/detail/MobileExtrasSection";
 import { computeBadges, buildSeriesPlayLabel, formatTime } from "../components/detail/computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../constants/featureFlags";
+import { st } from "./mediaDetailStyles";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -101,6 +103,12 @@ export function MediaDetailScreen({ itemId }: Props) {
   const posterId = item.Type === "Episode" ? (item.SeriesId ?? item.Id) : item.Id;
   const poster = client.getImageUrl(posterId, "Primary", { height: 500, quality: 90 });
   const isSeries = item.Type === "Series";
+  // Liste saisons/épisodes : série (son id) ou épisode (série parente). Épisode
+  // courant à surligner = l'épisode (fiche épisode) ou l'épisode à reprendre (série).
+  const episodeListSeriesId = isSeries ? item.Id : isEpisode ? item.SeriesId : undefined;
+  const seriesResumeEp = isSeries && seriesWatchState && seriesWatchState.type !== "completed" ? seriesWatchState.episode : undefined;
+  const highlightEpisodeId = isEpisode ? item.Id : seriesResumeEp?.Id;
+  const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
   const year = item.ProductionYear;
   const rating = item.CommunityRating?.toFixed(1);
   const runtimeMin = item.RunTimeTicks ? Math.round(ticksToSeconds(item.RunTimeTicks) / 60) : null;
@@ -157,7 +165,20 @@ export function MediaDetailScreen({ itemId }: Props) {
           </Animated.View>
           <Animated.View style={[{ flex: 1, marginLeft: spacing.lg, justifyContent: "flex-end" }, titleStyle]}>
             {isEpisode && item.SeriesName && (
-              <Text numberOfLines={1} style={st.seriesLabel}>{item.SeriesName}</Text>
+              item.SeriesId ? (
+                <Pressable
+                  onPress={() => router.push(`/media/${item.SeriesId}`)}
+                  hitSlop={6}
+                  accessibilityRole="link"
+                  accessibilityLabel={item.SeriesName}
+                  style={st.seriesLink}
+                >
+                  <Text numberOfLines={1} style={st.seriesLabel}>{item.SeriesName}</Text>
+                  <Feather name="chevron-right" size={14} color={BRAND.light} />
+                </Pressable>
+              ) : (
+                <Text numberOfLines={1} style={st.seriesLabel}>{item.SeriesName}</Text>
+              )
             )}
             <Text style={st.title} numberOfLines={3}>
               {isEpisode && item.IndexNumber != null
@@ -250,8 +271,24 @@ export function MediaDetailScreen({ itemId }: Props) {
           )}
 
           {item.People && item.People.length > 0 && <CastRow people={item.People} />}
+
+          {/* Extras (au-dessus de Saisons & Épisodes) — épisode : extras série en repli. */}
+          <MobileExtrasSection item={item} seriesItem={isEpisode ? parentSeries : undefined} />
+
+          {/* Saisons & Épisodes — séries ET épisodes (parité desktop), épisode courant surligné. */}
+          {episodeListSeriesId && (
+            <>
+              <Text style={st.sectionTitle}>{t("seasonsEpisodes")}</Text>
+              <MobileEpisodeList
+                seriesId={episodeListSeriesId}
+                currentEpisodeId={highlightEpisodeId}
+                initialSeasonId={highlightSeasonId}
+                onPlay={(ep) => router.push(`/watch/${ep.Id}`)}
+              />
+            </>
+          )}
+
           <LicenseAttribution item={item} />
-          {isSeries && <MobileEpisodeList seriesId={item.Id} onPlay={(ep) => router.push(`/watch/${ep.Id}`)} />}
           {similar && similar.length > 0 && (
             <MediaRow title={t("recommendations")} data={similar}
               renderItem={(s: MediaItem) => <MobileMediaCard item={s} onPress={() => router.push(`/media/${s.Id}`)} />} />
@@ -261,30 +298,3 @@ export function MediaDetailScreen({ itemId }: Props) {
     </View>
   );
 }
-
-const st = StyleSheet.create({
-  // R11 — Watched check unifié (web/mobile) : pill blanc + check noir + shadow.
-  // Variante "Detail" : 28×28 (au lieu de 22) sur le poster du Detail Screen.
-  // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
-  watchedRing: { position: "absolute" as const, top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
-  seriesLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: BRAND.light, marginBottom: 4, letterSpacing: 0.2 },
-  title: { fontSize: 26, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, lineHeight: 30, letterSpacing: -0.6, textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
-  metaRow: { flexDirection: "row" as const, gap: 6, marginTop: 8, flexWrap: "wrap" as const, alignItems: "center" as const },
-  metaItem: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.78)" },
-  metaDot: { ...typography.caption, color: "rgba(255,255,255,0.34)" },
-  ratingRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 3 },
-  ratingTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: STATUS.rating },
-  badgeRow: { flexDirection: "row" as const, gap: 6, marginTop: 10, flexWrap: "wrap" as const },
-  playBtn: {
-    flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const,
-    gap: 10, backgroundColor: CTA.primaryBg, borderRadius: RADIUS.md, height: 52, paddingHorizontal: 28, ...SHADOW_RN.elev2,
-  },
-  playBtnTxt: { ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.2, fontSize: 16 },
-  actionsRow: {
-    flexDirection: "row" as const, justifyContent: "space-around" as const,
-    gap: spacing.sm, marginTop: spacing.xl, paddingHorizontal: spacing.screenPadding,
-  },
-  genreRow: { flexDirection: "row" as const, gap: 6, marginTop: spacing.xl, paddingHorizontal: spacing.screenPadding, flexWrap: "wrap" as const },
-  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: "rgba(255,255,255,0.82)", lineHeight: 22 },
-  expandLink: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: BRAND.light, marginTop: 8 },
-});

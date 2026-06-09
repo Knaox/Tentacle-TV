@@ -39,7 +39,7 @@ export { useHomeWebSocket, setWsBackendUrl } from "./hooks/useHomeWebSocket";
 
 // Share link ("Partager ma liste")
 export {
-  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView,
+  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedItem,
   setShareLinkBackendUrl, setShareLinkToken,
 } from "./hooks/useShareLink";
 export type { SharedListData, SharedListItem } from "./hooks/useShareLink";

@@ -14,13 +14,17 @@ try { Haptics = require("expo-haptics"); } catch { /* native module not availabl
 interface Props {
   seriesId: string;
   onPlay: (episode: MediaItem) => void;
+  /** Épisode à surligner (« épisode actuel » / à reprendre). */
+  currentEpisodeId?: string;
+  /** Saison à présélectionner (saison de l'épisode courant). */
+  initialSeasonId?: string;
 }
 
-export function MobileEpisodeList({ seriesId, onPlay }: Props) {
+export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId }: Props) {
   const { data: seasons } = useSeasons(seriesId);
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
 
-  const activeSeason = selectedSeason ?? seasons?.[0]?.Id;
+  const activeSeason = selectedSeason ?? initialSeasonId ?? seasons?.[0]?.Id;
 
   return (
     <View style={{ marginTop: 24 }}>
@@ -65,7 +69,7 @@ export function MobileEpisodeList({ seriesId, onPlay }: Props) {
       )}
 
       {activeSeason && (
-        <EpisodeItems seriesId={seriesId} seasonId={activeSeason} onPlay={onPlay} />
+        <EpisodeItems seriesId={seriesId} seasonId={activeSeason} onPlay={onPlay} currentEpisodeId={currentEpisodeId} />
       )}
     </View>
   );
@@ -151,9 +155,9 @@ function EpisodeThumb({ ep, seriesId, client }: {
 
 /* ── Single episode row with watched toggle ──────── */
 
-function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay }: {
+function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
   ep: MediaItem; seriesId: string; seasonId: string;
-  client: ReturnType<typeof useJellyfinClient>; onPlay: (ep: MediaItem) => void;
+  client: ReturnType<typeof useJellyfinClient>; onPlay: (ep: MediaItem) => void; isCurrent?: boolean;
 }) {
   const { t } = useTranslation("common");
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
@@ -195,10 +199,18 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay }: {
           )}
         </View>
         <View style={{ flex: 1, padding: 10, justifyContent: "center" }}>
-          <Text numberOfLines={1} style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
-            {epLabel}{ep.Name}
-          </Text>
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {isCurrent && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: BRAND.violet }} />}
+            <Text numberOfLines={1} style={{ flex: 1, color: "#fff", fontSize: 13, fontWeight: isCurrent ? "800" : "600" }}>
+              {epLabel}{ep.Name}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
+            {isCurrent && (
+              <Text style={{ color: BRAND.light, fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" }}>
+                {t("currentEpisode")}
+              </Text>
+            )}
             {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("minutesShort", { count: runtime })}</Text>}
           </View>
           {ep.Overview && (
@@ -240,8 +252,8 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay }: {
 
 /* ── Episode list for a season ──────────────────── */
 
-function EpisodeItems({ seriesId, seasonId, onPlay }: {
-  seriesId: string; seasonId: string; onPlay: (ep: MediaItem) => void;
+function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId }: {
+  seriesId: string; seasonId: string; onPlay: (ep: MediaItem) => void; currentEpisodeId?: string;
 }) {
   const client = useJellyfinClient();
   const { data: episodes } = useEpisodes(seriesId, seasonId);
@@ -253,7 +265,7 @@ function EpisodeItems({ seriesId, seasonId, onPlay }: {
       <SeasonActionBar seriesId={seriesId} seasonId={seasonId} episodes={episodes} />
       <View style={{ paddingHorizontal: 16, gap: 8 }}>
         {episodes.map((ep) => (
-          <EpisodeItemRow key={ep.Id} ep={ep} seriesId={seriesId} seasonId={seasonId} client={client} onPlay={onPlay} />
+          <EpisodeItemRow key={ep.Id} ep={ep} seriesId={seriesId} seasonId={seasonId} client={client} onPlay={onPlay} isCurrent={ep.Id === currentEpisodeId} />
         ))}
       </View>
     </View>
