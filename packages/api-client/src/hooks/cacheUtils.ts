@@ -67,62 +67,76 @@ export function invalidateAllMediaQueries(
 type UserDataUpdater = (prev: UserItemData) => Partial<UserItemData>;
 
 /**
- * Propage une mise à jour optimiste de UserData dans toutes les queries en cache.
+ * Cible d'une mise à jour optimiste : soit un itemId unique (rétro-compat),
+ * soit un sélecteur. `matchSeriesId` patche LA série (Id === matchSeriesId) ET
+ * TOUS ses épisodes en cache (SeriesId === matchSeriesId) → propagation
+ * « ajouter la série » vers tous les épisodes sans refresh.
+ */
+export type CacheTarget = string | { matchId?: string; matchSeriesId?: string };
+
+function buildMatcher(target: CacheTarget): (item: MediaItem) => boolean {
+  const { matchId, matchSeriesId } =
+    typeof target === "string" ? { matchId: target, matchSeriesId: undefined } : target;
+  return (item: MediaItem) =>
+    (!!matchId && item.Id === matchId) ||
+    (!!matchSeriesId && (item.Id === matchSeriesId || item.SeriesId === matchSeriesId));
+}
+
+/** Applique l'updater à un item (immuable) si il a un UserData. */
+function patchItem(item: MediaItem, updater: UserDataUpdater): MediaItem {
+  if (!item.UserData) return item;
+  return { ...item, UserData: { ...item.UserData, ...updater(item.UserData) } };
+}
+
+/**
+ * Propage une mise à jour optimiste de UserData dans toutes les queries en cache
+ * (item détail + listes), pour TOUS les items correspondant à la cible.
  * Retourne un snapshot pour rollback.
  */
 export function updateItemUserDataInCache(
   qc: QueryClient,
-  itemId: string,
+  target: CacheTarget,
   updater: UserDataUpdater,
 ): Map<string, unknown> {
   const snapshot = new Map<string, unknown>();
+  const matches = buildMatcher(target);
 
-  // 1. Mise à jour directe sur ["item", itemId]
-  const itemKey = JSON.stringify(["item", itemId]);
-  const itemData = qc.getQueryData<MediaItem>(["item", itemId]);
-  if (itemData) {
-    snapshot.set(itemKey, itemData);
-    if (itemData.UserData) {
-      qc.setQueryData<MediaItem>(["item", itemId], {
-        ...itemData,
-        UserData: { ...itemData.UserData, ...updater(itemData.UserData) },
-      });
-    }
-  }
-
-  // 2. Parcourir toutes les queries en cache
-  const allQueries = qc.getQueryCache().findAll();
-
-  for (const query of allQueries) {
+  for (const query of qc.getQueryCache().findAll()) {
     const key = query.queryKey;
-    const keyStr = JSON.stringify(key);
-
-    // Skip si déjà traité
-    if (keyStr === itemKey) continue;
-
-    // Vérifier si c'est une query de liste connue
     const prefix = key[0];
-    if (typeof prefix !== "string" || !LIST_QUERY_PREFIXES.includes(prefix as typeof LIST_QUERY_PREFIXES[number])) {
-      continue;
-    }
+    if (typeof prefix !== "string") continue;
 
     const data = query.state.data;
     if (!data) continue;
+    const keyStr = JSON.stringify(key);
+
+    // Détail d'un item : ["item", id] → MediaItem unique
+    if (prefix === "item") {
+      const item = data as MediaItem;
+      if (item.Id && matches(item) && item.UserData) {
+        snapshot.set(keyStr, data);
+        qc.setQueryData<MediaItem>(key, patchItem(item, updater));
+      }
+      continue;
+    }
+
+    // Listes connues uniquement
+    if (!LIST_QUERY_PREFIXES.includes(prefix as typeof LIST_QUERY_PREFIXES[number])) {
+      continue;
+    }
 
     // Listes flat (MediaItem[])
     if (Array.isArray(data)) {
-      const idx = (data as MediaItem[]).findIndex((item) => item.Id === itemId);
-      if (idx !== -1) {
-        const item = (data as MediaItem[])[idx];
-        if (item.UserData) {
-          snapshot.set(keyStr, data);
-          const updated = [...(data as MediaItem[])];
-          updated[idx] = {
-            ...item,
-            UserData: { ...item.UserData, ...updater(item.UserData) },
-          };
-          qc.setQueryData(key, updated);
-        }
+      const list = data as MediaItem[];
+      let changed = false;
+      const updated = list.map((item) => {
+        if (!matches(item) || !item.UserData) return item;
+        changed = true;
+        return patchItem(item, updater);
+      });
+      if (changed) {
+        snapshot.set(keyStr, data);
+        qc.setQueryData(key, updated);
       }
       continue;
     }
@@ -135,26 +149,21 @@ export function updateItemUserDataInCache(
       Array.isArray((data as InfiniteData<unknown>).pages)
     ) {
       const infiniteData = data as InfiniteData<{ Items?: MediaItem[] }>;
-      let found = false;
+      let changed = false;
 
       const updatedPages = infiniteData.pages.map((page) => {
         if (!page.Items) return page;
-        const idx = page.Items.findIndex((item) => item.Id === itemId);
-        if (idx === -1) return page;
-
-        const item = page.Items[idx];
-        if (!item.UserData) return page;
-
-        found = true;
-        const updatedItems = [...page.Items];
-        updatedItems[idx] = {
-          ...item,
-          UserData: { ...item.UserData, ...updater(item.UserData) },
-        };
-        return { ...page, Items: updatedItems };
+        let pageChanged = false;
+        const updatedItems = page.Items.map((item) => {
+          if (!matches(item) || !item.UserData) return item;
+          pageChanged = true;
+          changed = true;
+          return patchItem(item, updater);
+        });
+        return pageChanged ? { ...page, Items: updatedItems } : page;
       });
 
-      if (found) {
+      if (changed) {
         snapshot.set(keyStr, data);
         qc.setQueryData(key, { ...infiniteData, pages: updatedPages });
       }
@@ -162,6 +171,71 @@ export function updateItemUserDataInCache(
   }
 
   return snapshot;
+}
+
+/**
+ * Met à jour optimiste un Set d'IDs de séries en cache (string[] : liste des
+ * SeriesId likées / favorites). No-op si la query n'est pas encore chargée
+ * (le refetch onSettled resynchronisera). Enregistre l'état précédent dans le
+ * snapshot fourni pour rollback.
+ */
+export function patchSeriesIdSet(
+  qc: QueryClient,
+  queryKey: readonly unknown[],
+  seriesId: string | undefined,
+  add: boolean,
+  snapshot?: Map<string, unknown>,
+): void {
+  if (!seriesId) return;
+  const data = qc.getQueryData<string[]>(queryKey);
+  if (data === undefined) return;
+
+  const has = data.includes(seriesId);
+  if (add === has) return; // déjà dans l'état voulu
+
+  const keyStr = JSON.stringify(queryKey);
+  if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
+
+  qc.setQueryData<string[]>(
+    queryKey,
+    add ? [...data, seriesId] : data.filter((id) => id !== seriesId),
+  );
+}
+
+/**
+ * Insère un item en tête des listes flat fournies (Ma liste / Favoris) s'il est
+ * absent. Mise à jour optimiste → le carrousel se met à jour instantanément.
+ */
+export function addItemToLists(
+  qc: QueryClient,
+  listKeys: readonly (readonly unknown[])[],
+  item: MediaItem,
+  snapshot?: Map<string, unknown>,
+): void {
+  for (const key of listKeys) {
+    const data = qc.getQueryData<MediaItem[]>(key);
+    if (!Array.isArray(data) || data.some((i) => i.Id === item.Id)) continue;
+    const keyStr = JSON.stringify(key);
+    if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
+    qc.setQueryData<MediaItem[]>(key, [item, ...data]);
+  }
+}
+
+/** Retire un item (par id) des listes flat fournies. Mise à jour optimiste. */
+export function removeItemFromLists(
+  qc: QueryClient,
+  listKeys: readonly (readonly unknown[])[],
+  id: string | undefined,
+  snapshot?: Map<string, unknown>,
+): void {
+  if (!id) return;
+  for (const key of listKeys) {
+    const data = qc.getQueryData<MediaItem[]>(key);
+    if (!Array.isArray(data) || !data.some((i) => i.Id === id)) continue;
+    const keyStr = JSON.stringify(key);
+    if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
+    qc.setQueryData<MediaItem[]>(key, data.filter((i) => i.Id !== id));
+  }
 }
 
 /**

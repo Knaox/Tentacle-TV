@@ -5,9 +5,11 @@ export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, u
 export type { CatalogFilters } from "./hooks/useLibrary";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
 export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
-export { useFavorite } from "./hooks/useFavorite";
-export { useWatchlist, useToggleWatchlist, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
+export { useFavorite, useFavoriteForItem } from "./hooks/useFavorite";
+export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
+export { useWatchlistSeriesIds, useFavoriteSeriesIds } from "./hooks/useSeriesListMembership";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
+export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream } from "./hooks/useStream";
 export type { StreamOptions } from "./hooks/useStream";
 export { useAuth } from "./hooks/useAuth";
@@ -51,7 +53,9 @@ export { useBatchRemoveFavorites, useBatchRemoveWatchlist } from "./hooks/useBat
 export { useBatchWatchedToggle } from "./hooks/useBatchWatchedToggle";
 
 // Cache utilities for cross-platform state sync
-export { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot } from "./hooks/cacheUtils";
+export { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet } from "./hooks/cacheUtils";
+export type { CacheTarget } from "./hooks/cacheUtils";
+export { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY, FAVORITE_SERIES_IDS_KEY } from "./hooks/watchlistEffects";
 
 // App config & feature flags
 export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";

@@ -127,7 +127,7 @@ export function useMediaItem(itemId: string | undefined) {
     queryKey: ["item", itemId],
     queryFn: () =>
       client.fetch<MediaItem>(
-        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers`
+        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status&EnableUserData=true`
       ),
     enabled: !!userId && !!itemId,
     staleTime: 5 * 60 * 1000,

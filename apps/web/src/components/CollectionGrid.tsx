@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useToggleWatchlist, useFavorite } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useToggleWatchlistForItem, useFavoriteForItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "./MediaContextMenu";
 import { SelectionCheckbox } from "./SelectionCheckbox";
@@ -126,8 +126,8 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
   useEffect(() => { setLocalFavorite(item.UserData?.IsFavorite === true); }, [item.UserData?.IsFavorite]);
   useEffect(() => { setLocalWatchlist(item.UserData?.Likes === true); }, [item.UserData?.Likes]);
 
-  const { add: addFav, remove: removeFav } = useFavorite(item.Id);
-  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(item.Id);
+  const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
+  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
 
   const poster = client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
   const progress = item.UserData?.PlayedPercentage;
@@ -228,9 +228,7 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
 
       {!isSelecting && ctxMenu && (
         <MediaContextMenu
-          itemId={item.Id}
-          isFavorite={localFavorite}
-          isInWatchlist={localWatchlist}
+          item={item}
           x={ctxMenu.x}
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
