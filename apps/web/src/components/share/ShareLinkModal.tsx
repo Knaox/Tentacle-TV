@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMyShareLink, useCreateShareLink, useRevokeShareLink } from "@tentacle-tv/api-client";
+import { getBackendBase } from "../../lib/backendBase";
 
 interface Props {
   onClose: () => void;
@@ -18,7 +19,12 @@ export function ShareLinkModal({ onClose }: Props) {
   const [copied, setCopied] = useState(false);
 
   const token = createLink.data?.token ?? data?.token ?? null;
-  const url = token ? `${window.location.origin}/share/${token}` : "";
+  // Desktop (Tauri) : `window.location.origin` vaut `tauri://localhost` (macOS) ou
+  // `https://tauri.localhost` (WebView2 Windows) → lien inutilisable. On pointe
+  // vers l'origine publique du serveur (getBackendBase), comme le mobile.
+  // Web : getBackendBase() == "" → on garde l'origine same-origin.
+  const origin = getBackendBase().replace(/\/$/, "") || window.location.origin;
+  const url = token ? `${origin}/share/${token}` : "";
 
   const copy = async () => {
     try {
@@ -84,14 +90,21 @@ export function ShareLinkModal({ onClose }: Props) {
             </div>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => createLink.mutate()}
-            disabled={createLink.isPending}
-            className="mt-5 w-full rounded-lg bg-[rgba(var(--brand-rgb),0.22)] px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-[rgba(var(--brand-rgb),0.4)] transition-transform hover:scale-[1.01] disabled:opacity-50"
-          >
-            {t("common:generateLink")}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => createLink.mutate()}
+              disabled={createLink.isPending}
+              className="mt-5 w-full rounded-lg bg-[rgba(var(--brand-rgb),0.22)] px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-[rgba(var(--brand-rgb),0.4)] transition-transform hover:scale-[1.01] disabled:opacity-50"
+            >
+              {createLink.isPending ? t("common:loading") : t("common:generateLink")}
+            </button>
+            {createLink.isError && (
+              <p className="mt-3 text-center text-sm text-red-400/90">
+                {t("common:shareLinkError")}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
