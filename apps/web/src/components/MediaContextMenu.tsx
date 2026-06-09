@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useFavorite, useToggleWatchlist, useAppConfig } from "@tentacle-tv/api-client";
-import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
+import { useFavorite, useToggleWatchlist } from "@tentacle-tv/api-client";
 
 interface Props {
   itemId: string;
@@ -20,8 +19,6 @@ export function MediaContextMenu({ itemId, isFavorite, isInWatchlist, x, y, onCl
   const menuRef = useRef<HTMLDivElement>(null);
   const { add: addFav, remove: removeFav } = useFavorite(itemId);
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(itemId);
-  const { data: config } = useAppConfig();
-  const [showSharedPicker, setShowSharedPicker] = useState(false);
 
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {
@@ -32,10 +29,7 @@ export function MediaContextMenu({ itemId, isFavorite, isInWatchlist, x, y, onCl
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (showSharedPicker) setShowSharedPicker(false);
-        else onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKey);
@@ -45,7 +39,7 @@ export function MediaContextMenu({ itemId, isFavorite, isInWatchlist, x, y, onCl
       document.removeEventListener("keydown", handleKey);
       window.removeEventListener("scroll", onClose, true);
     };
-  }, [handleClickOutside, onClose, showSharedPicker]);
+  }, [handleClickOutside, onClose]);
 
   // Clamp position to viewport
   const clampedX = Math.min(x, window.innerWidth - 260);
@@ -82,10 +76,6 @@ export function MediaContextMenu({ itemId, isFavorite, isInWatchlist, x, y, onCl
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
         }
-        @keyframes ctxPickerSlide {
-          from { opacity: 0; max-height: 0; }
-          to { opacity: 1; max-height: 300px; }
-        }
       `}</style>
 
       <button
@@ -107,28 +97,6 @@ export function MediaContextMenu({ itemId, isFavorite, isInWatchlist, x, y, onCl
         <BookmarkSmall filled={isInWatchlist} />
         {isInWatchlist ? t("common:removeFromMyList") : t("common:addToMyList")}
       </button>
-
-      {config?.features.sharedWatchlists && (
-        <>
-          <div className="mx-3 border-t border-white/5" />
-
-          <button
-            role="menuitem"
-            onClick={() => setShowSharedPicker(!showSharedPicker)}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/80 transition-colors hover:bg-white/10"
-          >
-            <ListPlusSmall />
-            {t("common:addToSharedList")}
-          </button>
-
-          {showSharedPicker && (
-            <div style={{ animation: "ctxPickerSlide 200ms ease forwards", overflow: "hidden" }}>
-              <div className="mx-3 border-t border-white/5" />
-              <SharedWatchlistPicker itemId={itemId} onDone={onClose} />
-            </div>
-          )}
-        </>
-      )}
     </div>,
     document.body
   );
@@ -150,10 +118,3 @@ function BookmarkSmall({ filled }: { filled: boolean }) {
   );
 }
 
-function ListPlusSmall() {
-  return (
-    <svg className="h-4 w-4 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h6m3 0h3m-1.5-1.5v3" />
-    </svg>
-  );
-}

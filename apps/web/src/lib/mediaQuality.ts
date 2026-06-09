@@ -11,7 +11,7 @@ export {
 export type {
   Resolution,
   SourceResolution,
-  AudioFlag,
+  AudioLabel,
   MediaQuality,
   SourceQuality,
   QualityKey,

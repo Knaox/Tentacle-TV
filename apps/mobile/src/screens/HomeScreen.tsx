@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useLatestItems, useUserId,
-  useWatchlist, useMySharedWatchlists, useAllSharedWatchlistItems,
+  useWatchlist,
   useJellyfinClient, useHomeWebSocket, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -32,7 +32,6 @@ export function HomeScreen() {
   const nextUp = useNextUp();
   const libraries = useLibraries();
   const watchlist = useWatchlist();
-  const sharedLists = useMySharedWatchlists();
 
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -125,7 +124,6 @@ export function HomeScreen() {
         <FadeIn delay={240}>
           <MyListRow
             personalItems={watchlist.data ?? []}
-            sharedListIds={(sharedLists.data ?? []).map((l) => l.id)}
             onSeeAll={() => router.push("/watchlist")}
             onItemPress={(jellyfinId) => router.push(`/media/${jellyfinId}`)}
             onItemLongPress={(jellyfinId) => { setLongPressItemId(jellyfinId); setActionSheetVisible(true); }}
@@ -166,16 +164,14 @@ interface CarouselItem {
   progress?: number;
 }
 
-function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItemLongPress }: {
+function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
   personalItems: MediaItem[];
-  sharedListIds: string[];
   onSeeAll: () => void;
   onItemPress: (jellyfinId: string) => void;
   onItemLongPress: (jellyfinId: string) => void;
 }) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const sharedQueries = useAllSharedWatchlistItems(sharedListIds);
 
   const merged = useMemo<CarouselItem[]>(() => {
     const seen = new Set<string>();
@@ -190,17 +186,8 @@ function MyListRow({ personalItems, sharedListIds, onSeeAll, onItemPress, onItem
         });
       }
     }
-    for (const q of sharedQueries) {
-      if (!q.data) continue;
-      for (const item of q.data) {
-        if (!seen.has(item.jellyfinItemId)) {
-          seen.add(item.jellyfinItemId);
-          result.push({ key: item.jellyfinItemId, jellyfinId: item.jellyfinItemId, name: item.name, year: item.year });
-        }
-      }
-    }
     return result;
-  }, [personalItems, sharedQueries]);
+  }, [personalItems]);
 
   if (merged.length === 0) return null;
 

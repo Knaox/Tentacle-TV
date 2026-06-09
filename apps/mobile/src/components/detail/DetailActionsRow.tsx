@@ -15,15 +15,13 @@ interface Props {
   favorite: FavHandle;
   watchlist: ToggleHandle;
   watched: WatchedHandle;
-  onOpenShareSheet: () => void;
 }
 
 /**
- * Row des 4 actions (Favoris / Ma liste / Partager / Vu) — pattern Apple TV,
- * grille 4 colonnes fixes. Labels courts via i18n `actionFavorite`/`actionMyList`/
- * `actionShare`/`actionWatched` (R2 MASTER design-system).
+ * Row des actions (Favoris / Ma liste / Vu) — pattern Apple TV, colonnes fixes.
+ * Labels courts via i18n `actionFavorite`/`actionMyList`/`actionWatched`.
  */
-export function DetailActionsRow({ target, isWatched, favorite, watchlist, watched, onOpenShareSheet }: Props) {
+export function DetailActionsRow({ target, isWatched, favorite, watchlist, watched }: Props) {
   const { t } = useTranslation("common");
   const isFav = !!target?.UserData?.IsFavorite;
   const isInList = !!target?.UserData?.Likes;
@@ -46,13 +44,6 @@ export function DetailActionsRow({ target, isWatched, favorite, watchlist, watch
         active={isInList}
         activeColor={BRAND.violet}
         onPress={() => isInList ? watchlist.remove.mutate() : watchlist.add.mutate()}
-      />
-      <DetailActionButton
-        icon="users"
-        label={t("actionShare")}
-        active={false}
-        activeColor={BRAND.violet}
-        onPress={onOpenShareSheet}
       />
       <DetailActionButton
         icon="check-circle"

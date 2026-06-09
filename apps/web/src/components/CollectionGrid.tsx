@@ -155,7 +155,7 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
       onTouchStart={isSelecting ? undefined : handleTouchStart}
       onTouchEnd={isSelecting ? undefined : clearLongPress}
       onTouchMove={isSelecting ? undefined : clearLongPress}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
+      className={`group group/card relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
         isSelected ? "ring-2 ring-[var(--brand)]" : ""
       }`}
       style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${index * 40}ms` }}
@@ -171,9 +171,9 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
           onLoad={() => setImgLoaded(true)}
           style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}
         />
-        {/* Même overlay qualité+drapeaux que Home — Watchlist + Favoris
-            partagent CollectionGrid donc une seule édition les couvre tous. */}
-        <CardMetaOverlay item={item} density="compact" />
+        {/* Même comportement que Home : méta révélée au hover (Watchlist +
+            Favoris partagent CollectionGrid → une seule édition les couvre). */}
+        <CardMetaOverlay item={item} density="compact" reveal="hover" />
       </div>
 
       {/* Hover action buttons */}

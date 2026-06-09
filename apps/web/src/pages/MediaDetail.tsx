@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useMediaItem, useSimilarItems, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaRow } from "../components/rows/MediaRow";
@@ -27,6 +27,9 @@ export function MediaDetail() {
   const { data: item, isLoading } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
+  // Sur une fiche SÉRIE, on récupère l'épisode "à reprendre" pour le surligner
+  // dans la liste (même traitement que l'épisode courant sur une fiche épisode).
+  const { data: seriesWatchState } = useSeriesWatchState(item?.Type === "Series" ? item.Id : undefined);
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
@@ -40,6 +43,16 @@ export function MediaDetail() {
   }
 
   const isSeries = item.Type === "Series";
+  // Liste saisons/épisodes : sur une série (son propre id) comme sur un épisode
+  // (id de la série parente), afin de situer l'épisode courant dans la saison.
+  const episodeListSeriesId = isSeries ? itemId : isEpisode ? item.SeriesId : undefined;
+  // Épisode à surligner dans la liste : l'épisode courant (fiche épisode) ou
+  // l'épisode "à reprendre" (fiche série).
+  const seriesResumeEp = isSeries && seriesWatchState && seriesWatchState.type !== "completed"
+    ? seriesWatchState.episode
+    : undefined;
+  const highlightEpisodeId = isEpisode ? item.Id : seriesResumeEp?.Id;
+  const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
   const hasParentBackdrop = (item.ParentBackdropImageTags?.length ?? 0) > 0;
   const hasOwnBackdrop = (item.BackdropImageTags?.length ?? 0) > 0;
   const backdropId = hasParentBackdrop ? (item.ParentBackdropItemId ?? item.Id) : item.Id;
@@ -54,7 +67,7 @@ export function MediaDetail() {
   return (
     <PageTransition>
       <div className="min-h-screen bg-surface-0">
-        <DetailHero backdropUrl={backdropUrl} item={item} />
+        <DetailHero backdropUrl={backdropUrl} />
 
         <motion.div
           className="-mt-48 relative z-10 px-4 md:px-12"
@@ -123,7 +136,13 @@ export function MediaDetail() {
           </div>
         </motion.div>
 
-        {isSeries && itemId && (
+        {/* Extras AU-DESSUS de Saisons & Épisodes. Sur une fiche épisode, on
+            passe la série parente pour afficher ses extras en repli. */}
+        <div className="mt-10">
+          <ExtrasSection item={item} seriesItem={isEpisode ? parentSeries : undefined} />
+        </div>
+
+        {episodeListSeriesId && (
           <motion.section
             className="mt-10"
             variants={fadeIn}
@@ -133,13 +152,13 @@ export function MediaDetail() {
             transition={{ duration: 0.5 }}
           >
             <h2 className="row-gutter text-xl font-semibold text-white">{t("common:seasonsEpisodes")}</h2>
-            <EpisodeList seriesId={itemId} />
+            <EpisodeList
+              seriesId={episodeListSeriesId}
+              currentEpisodeId={highlightEpisodeId}
+              initialSeasonId={highlightSeasonId}
+            />
           </motion.section>
         )}
-
-        <div className="mt-10">
-          <ExtrasSection item={item} />
-        </div>
 
         {(item.People?.length || item.Studios?.length) && (
           <motion.section

@@ -42,9 +42,10 @@ interface LatestItemsOptions {
   collectionType?: string;
 }
 
-// Champs légers pour le rendu épisode (image, label SxxExx, navigation). On
-// retire Overview/Genres/MediaSources : inutiles ici et trop lourds à Limit élevé.
-const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber";
+// Champs pour le rendu épisode (image, label SxxExx, navigation). MediaSources
+// inclus pour alimenter la méta qualité/langues (CardMetaOverlay au hover sur
+// les ajouts récents d'épisodes uniques). Overview/Genres restent exclus.
+const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,MediaSources";
 
 // Fenêtre d'épisodes récupérée avant regroupement par série. Élevée car une série
 // fraîchement ajoutée en masse (saison complète) consomme beaucoup de slots ; sans

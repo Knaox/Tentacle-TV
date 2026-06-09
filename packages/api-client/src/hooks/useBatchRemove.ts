@@ -34,36 +34,3 @@ export function useBatchRemoveWatchlist() {
     onSettled: () => invalidateAllMediaQueries(qc),
   });
 }
-
-function getAuthHeader(): Record<string, string> {
-  const token = typeof localStorage !== "undefined"
-    ? localStorage.getItem("tentacle_token")
-    : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-export function useBatchRemoveSharedItems(watchlistId: string) {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: (itemIds: string[]) => {
-      const headers = getAuthHeader();
-      const hasToken = !!localStorage.getItem("tentacle_token");
-      return Promise.allSettled(
-        itemIds.map((id) =>
-          fetch(`/api/shared-watchlists/${watchlistId}/items/${id}`, {
-            method: "DELETE",
-            headers,
-            credentials: hasToken ? undefined : "include",
-          }).then((r) => {
-            if (!r.ok) throw new Error(`${r.status}`);
-          })
-        )
-      );
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["sw", "items", watchlistId] });
-      qc.invalidateQueries({ queryKey: ["sw", "lists"] });
-    },
-  });
-}

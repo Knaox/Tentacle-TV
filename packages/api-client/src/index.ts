@@ -37,20 +37,15 @@ export type { NotifPluginMeta } from "./utils/notificationRoute";
 // WebSocket real-time home updates
 export { useHomeWebSocket, setWsBackendUrl } from "./hooks/useHomeWebSocket";
 
-// Shared watchlists
+// Share link ("Partager ma liste")
 export {
-  useShareableUsers, useMySharedWatchlists, useSharedWatchlistMembers, useSharedWatchlistItems, useAllSharedWatchlistItems,
-  useCreateSharedWatchlist, useUpdateSharedWatchlist, useDeleteSharedWatchlist,
-  useAddSharedWatchlistMember, useUpdateMemberRole, useRemoveMember,
-  useAddSharedWatchlistItem, useRemoveSharedWatchlistItem,
-  useBatchAddToSharedWatchlists,
-  setSharedWatchlistsBackendUrl,
-  setSharedWatchlistsToken,
-} from "./hooks/useSharedWatchlists";
-export type { SharedWatchlistSummary, SharedWatchlistMember, SharedWatchlistItemData, ShareRole, BatchAddResult } from "./hooks/useSharedWatchlists";
+  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView,
+  setShareLinkBackendUrl, setShareLinkToken,
+} from "./hooks/useShareLink";
+export type { SharedListData, SharedListItem } from "./hooks/useShareLink";
 
 // Batch remove
-export { useBatchRemoveFavorites, useBatchRemoveWatchlist, useBatchRemoveSharedItems } from "./hooks/useBatchRemove";
+export { useBatchRemoveFavorites, useBatchRemoveWatchlist } from "./hooks/useBatchRemove";
 
 // Batch watched toggle
 export { useBatchWatchedToggle } from "./hooks/useBatchWatchedToggle";

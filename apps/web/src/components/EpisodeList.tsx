@@ -1,16 +1,25 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient, useWatchedToggle, useBatchWatchedToggle } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FadeImage } from "./FadeImage";
-import { CardMetaOverlay } from "./media/CardMetaOverlay";
+import { QualityChips, LanguagePill } from "./media/MetaChips";
+import { extractMediaQuality } from "../lib/mediaQuality";
 import { WatchedSelectionToolbar } from "./WatchedSelectionToolbar";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { HorizontalScrollRow } from "./HorizontalScrollRow";
 
-export function EpisodeList({ seriesId }: { seriesId: string }) {
+interface EpisodeListProps {
+  seriesId: string;
+  /** Épisode en cours de consultation — surligné + scroll auto (fiche épisode). */
+  currentEpisodeId?: string;
+  /** Saison à présélectionner (saison de l'épisode courant). */
+  initialSeasonId?: string;
+}
+
+export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: EpisodeListProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
@@ -23,8 +32,13 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
   const { markWatched: batchMarkWatched, markUnwatched: batchMarkUnwatched } = useBatchWatchedToggle(batchCtx);
 
   useEffect(() => {
-    if (seasons?.length && !selectedSeasonId) setSelectedSeasonId(seasons[0].Id);
-  }, [seasons, selectedSeasonId]);
+    if (!seasons?.length || selectedSeasonId) return;
+    const preferred =
+      initialSeasonId && seasons.some((s) => s.Id === initialSeasonId)
+        ? initialSeasonId
+        : seasons[0].Id;
+    setSelectedSeasonId(preferred);
+  }, [seasons, selectedSeasonId, initialSeasonId]);
 
   // Reset selection on season change
   useEffect(() => {
@@ -116,6 +130,7 @@ export function EpisodeList({ seriesId }: { seriesId: string }) {
               seasonId={selectedSeasonId}
               isSelecting={ms.isSelecting}
               isSelected={ms.isSelected(ep.Id)}
+              isCurrent={ep.Id === currentEpisodeId}
               onToggleSelect={() => ms.toggle(ep.Id)}
               onPlay={() => navigate(`/watch/${ep.Id}`)}
             />
@@ -145,13 +160,23 @@ interface EpisodeRowProps {
   seasonId?: string;
   isSelecting: boolean;
   isSelected: boolean;
+  isCurrent?: boolean;
   onToggleSelect: () => void;
   onPlay: () => void;
 }
 
-function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, onToggleSelect, onPlay }: EpisodeRowProps) {
+function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay }: EpisodeRowProps) {
   const { t } = useTranslation("common");
+  const rowRef = useRef<HTMLDivElement>(null);
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
+  const quality = useMemo(() => extractMediaQuality(ep), [ep]);
+
+  // Épisode courant : on le ramène au centre du viewport au montage.
+  useEffect(() => {
+    if (!isCurrent || !rowRef.current) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    rowRef.current.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  }, [isCurrent]);
   const thumbUrl = ep.ImageTags?.Primary
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
@@ -178,7 +203,7 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
   };
 
   return (
-    <div onClick={handleClick}
+    <div ref={rowRef} onClick={handleClick}
       className={`group flex cursor-pointer gap-4 rounded-xl p-3 transition-colors ${
         isSelecting && isSelected
           ? "bg-tentacle-accent/10 ring-1 ring-tentacle-accent/40"
@@ -202,8 +227,6 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
           <div className="aspect-video">
             {thumbUrl && <FadeImage src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
           </div>
-          {/* Overlay qualité + drapeaux, identique aux cards (top-left). */}
-          <CardMetaOverlay item={ep} />
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90">
               <svg className="ml-0.5 h-5 w-5 text-tentacle-bg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
@@ -220,9 +243,20 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
       {/* Info */}
       <div className="flex-1 py-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">
+          <span className={`text-sm text-white ${isCurrent ? "font-bold" : "font-semibold"}`}>
+            {isCurrent && (
+              <span
+                className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brand)] align-middle shadow-[0_0_8px_rgba(var(--brand-rgb),0.7)]"
+                aria-hidden
+              />
+            )}
             {ep.IndexNumber}. {ep.Name}
           </span>
+          {isCurrent && (
+            <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-light)]">
+              {t("common:currentEpisode")}
+            </span>
+          )}
           {!isSelecting && (
             <button
               onClick={handleWatchedToggle}
@@ -243,9 +277,12 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
             </button>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
+          {/* Méta qualité + langues à côté du titre (plus sur la miniature). */}
+          <QualityChips quality={quality} density="full" />
+          <LanguagePill labels={quality.audioLabels} max={3} />
         </div>
         {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2">{ep.Overview}</p>}
       </div>

@@ -16,7 +16,6 @@ import { MediaRow } from "../components/MediaRow";
 import { MobileEpisodeList } from "../components/MobileEpisodeList";
 import { CastRow } from "../components/CastRow";
 import { LicenseAttribution } from "../components/LicenseAttribution";
-import { SharedWatchlistPickerSheet } from "../components/SharedWatchlistPickerSheet";
 import { DetailActionsRow } from "../components/detail/DetailActionsRow";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
 import { computeBadges, buildSeriesPlayLabel, formatTime } from "../components/detail/computeBadges";
@@ -53,7 +52,6 @@ export function MediaDetailScreen({ itemId }: Props) {
   );
   const [expanded, setExpanded] = useState(false);
   const [overviewTruncated, setOverviewTruncated] = useState(false);
-  const [sheetVisible, setSheetVisible] = useState(false);
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
   const badges = useMemo(() => computeBadges(item), [item]);
 
@@ -215,13 +213,8 @@ export function MediaDetailScreen({ itemId }: Props) {
           <DetailActionsRow
             target={actionTargetItem} isWatched={isWatched}
             favorite={favorite} watchlist={watchlistToggle} watched={watched}
-            onOpenShareSheet={() => setSheetVisible(true)}
           />
         </Animated.View>
-
-        <SharedWatchlistPickerSheet visible={sheetVisible} itemId={actionTargetId}
-          alreadyInWatchlist={!!actionTargetItem?.UserData?.Likes}
-          onClose={() => setSheetVisible(false)} />
 
         {/* Content — fades in last */}
         <Animated.View style={contentStyle}>

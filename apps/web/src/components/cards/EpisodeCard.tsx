@@ -76,8 +76,8 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
       >
         <CardImage src={imageUrl} alt={item.Name} />
 
-        {/* Overlay discret qualité + drapeau (top-left, sans surcharge). */}
-        <CardMetaOverlay item={item} />
+        {/* Méta discrète (qualité + langues), révélée au survol — image propre au repos. */}
+        <CardMetaOverlay item={item} reveal="hover" />
 
         {/* Bottom-fade so episode label stays readable on bright scenes */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />

@@ -84,10 +84,11 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
           </div>
         )}
 
-        {/* Overlay ultra-discret en mode compact : sur un portrait étroit
-            (2:3), on ne montre QUE le chip premium dominant + 1 drapeau —
-            empiler 4-5 chips noyait visuellement l'affiche. */}
-        <CardMetaOverlay item={item} density="compact" />
+        {/* Méta ultra-discrète révélée au survol : sur un portrait étroit (2:3),
+            un seul chip qualité dominant + la pastille langues, image propre au repos.
+            Masquée sur les regroupements d'épisodes (tuiles +N) : la méta d'un seul
+            épisode n'aurait pas de sens pour un lot. */}
+        {addedCount <= 1 && <CardMetaOverlay item={item} density="compact" reveal="hover" />}
 
         {/* Bottom dark fade so quick-actions stay readable on bright posters */}
         <div

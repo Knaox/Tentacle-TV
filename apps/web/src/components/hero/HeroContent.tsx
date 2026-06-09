@@ -6,8 +6,7 @@ import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, StarIcon } from "../icons/HeroIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
-import { PremiumChip, DolbyChip } from "../media/CardMetaOverlay";
-import { CountryFlag } from "../media/CountryFlag";
+import { LanguagePill, QualityChips, hasQualityChips, soberMetaText } from "../media/MetaChips";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -42,8 +41,9 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
   const progress = item.UserData?.PlayedPercentage ?? 0;
   const hasProgress = progress > 0 && progress < 100;
   const quality = useMemo(() => extractMediaQuality(item), [item]);
-
-  const detailId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
+  // Pour un épisode, la qualité/langues va en version sobre à droite de la
+  // ligne titre (la rangée méta est déjà bien remplie). Films/séries : chips.
+  const episodeSoberMeta = isEpisode ? soberMetaText(quality) : "";
 
   const handlePlay = () => {
     if (isSeries) {
@@ -71,6 +71,9 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             )}
             {episodeLabel && (
               <span className="text-white/55 normal-case tracking-normal">{episodeLabel}</span>
+            )}
+            {episodeSoberMeta && (
+              <span className="text-white/45 tracking-[0.12em]">{episodeSoberMeta}</span>
             )}
           </div>
         )}
@@ -114,29 +117,20 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           {item.Genres?.slice(0, 3).map((g) => (
             <span key={g} className="text-white/65">· {g}</span>
           ))}
-          {/* Qualité + drapeaux audio inline — alimentés par extractMediaQuality
-              comme les cards, mais rendus sans positioning absolu pour
-              s'insérer dans la rangée meta. */}
-          {(quality.resolution || quality.isHEVC || quality.isDolbyVision ||
-            quality.isHDR || quality.isDolbyAtmos || quality.isDolbyDigital) && (
-            <span aria-hidden className="mx-1 text-white/30">·</span>
+          {/* Qualité + langues — chips inline pour films/séries. Pour un épisode,
+              la rangée serait trop chargée : la méta passe en version sobre à
+              droite de la ligne titre (cf. episodeSoberMeta au-dessus). */}
+          {!isEpisode && (
+            <>
+              {(hasQualityChips(quality) || quality.audioLabels.length > 0) && (
+                <span aria-hidden className="mx-1 text-white/30">·</span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <QualityChips quality={quality} density="full" />
+                <LanguagePill labels={quality.audioLabels} max={4} />
+              </span>
+            </>
           )}
-          {quality.resolution === "4K" && <PremiumChip label="4K" tone="accent" />}
-          {quality.resolution === "FHD" && <PremiumChip label="1080P" tone="glass" />}
-          {quality.resolution === "HD" && <PremiumChip label="720P" tone="glass" />}
-          {quality.isHEVC && <PremiumChip label="HEVC" tone="glass" title="HEVC / H.265" />}
-          {quality.isDolbyVision && <DolbyChip label="VISION" />}
-          {!quality.isDolbyVision && quality.isHDR && <PremiumChip label="HDR" tone="glass" />}
-          {quality.isDolbyAtmos && <DolbyChip label="ATMOS" />}
-          {!quality.isDolbyAtmos && quality.isDolbyDigital && <DolbyChip label="DIGITAL" />}
-          {quality.audioFlags.slice(0, 4).map((f) => (
-            <CountryFlag
-              key={`${f.countryCode}-${f.secondaryCountryCode ?? ""}`}
-              code={f.countryCode}
-              secondary={f.secondaryCountryCode}
-              languageCode={f.languageCode}
-            />
-          ))}
         </div>
 
         {/* Overview — clamped to 2 lines (max-w-xl du parent borne la largeur)
@@ -160,7 +154,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           </div>
         )}
 
-        {/* CTAs — white Play with subtle Tentacle violet halo, ghost More Info */}
+        {/* CTA — Play unique sur la bannière (pas de bouton « Plus d'infos » ici). */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -170,20 +164,6 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           >
             <PlayIcon />
             {hasProgress ? t("common:resume") : t("common:play")}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/media/${detailId}`)}
-            className="flex items-center gap-2.5 rounded-md px-6 py-3 text-base font-semibold text-white transition-all duration-200 hover:scale-[1.03]"
-            style={{
-              background: "rgba(var(--brand-rgb), 0.18)",
-              border: "1px solid rgba(var(--brand-rgb), 0.35)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-            }}
-          >
-            <span aria-hidden>ⓘ</span>
-            {t("common:moreInfo")}
           </button>
         </div>
       </div>
