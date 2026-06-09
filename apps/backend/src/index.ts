@@ -28,7 +28,7 @@ import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
 import { adminRoutes } from "./routes/admin";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
-import { sharedWatchlistRoutes } from "./routes/sharedWatchlists";
+import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
 import { themeRoutes } from "./routes/theme";
 import { wsRoutes } from "./routes/ws";
@@ -201,7 +201,7 @@ async function main() {
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
-  await app.register(sharedWatchlistRoutes, { prefix: "/api/shared-watchlists" });
+  await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
   await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(configRoutes, { prefix: "/api" });

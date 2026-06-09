@@ -15,7 +15,6 @@ import { Feather } from "@expo/vector-icons";
 import {
   useWatchlistAll,
   useJellyfinClient,
-  useMySharedWatchlists,
   useBatchRemoveWatchlist,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -24,7 +23,7 @@ import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { SelectionBar } from "@/components/SelectionBar";
 import { ListHeader } from "@/components/watchlist/ListHeader";
 import { SelectableGridCard } from "@/components/watchlist/SelectableGridCard";
-import { SharedListsSection } from "@/components/watchlist/SharedListsSection";
+import { ShareMyListButton } from "@/components/watchlist/ShareMyListButton";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import {
   colors,
@@ -55,7 +54,6 @@ export function WatchlistScreen() {
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
   const { data, isLoading, refetch, isRefetching } = useWatchlistAll();
-  const { data: sharedLists } = useMySharedWatchlists();
   const [numColumns, setNumColumns] = useState(getNumColumns);
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -131,16 +129,6 @@ export function WatchlistScreen() {
     ));
   }, [numColumns, cardWidth]);
 
-  const sharedFooter = useMemo(
-    () => (
-      <SharedListsSection
-        lists={sharedLists ?? []}
-        onPressList={(id) => router.push(`/shared-watchlist/${id}`)}
-      />
-    ),
-    [sharedLists, router],
-  );
-
   const count = data?.length ?? 0;
   const subtitle = isLoading
     ? ""
@@ -160,6 +148,12 @@ export function WatchlistScreen() {
           canSelect={count > 0 && !selection.active}
         />
 
+        {!selection.active && (
+          <View style={styles.shareRow}>
+            <ShareMyListButton />
+          </View>
+        )}
+
         {isLoading ? (
           <View style={styles.skeletonGrid}>{skeletons}</View>
         ) : count === 0 ? (
@@ -173,7 +167,6 @@ export function WatchlistScreen() {
               <Text style={styles.emptyTitle}>{t("emptyWatchlist")}</Text>
               <Text style={styles.emptyHint}>{t("emptyWatchlistHint")}</Text>
             </View>
-            {sharedFooter}
           </ScrollView>
         ) : (
           <FadeIn delay={80} style={{ flex: 1 }}>
@@ -183,7 +176,6 @@ export function WatchlistScreen() {
               numColumns={numColumns}
               keyExtractor={keyExtractor}
               renderItem={renderItem}
-              ListFooterComponent={sharedFooter}
               contentContainerStyle={[
                 styles.gridContent,
                 selection.active && { paddingBottom: spacing.xxxl + 100 },
@@ -225,6 +217,11 @@ export function WatchlistScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  shareRow: {
+    flexDirection: "row",
+    paddingHorizontal: spacing.screenPadding,
+    paddingBottom: spacing.sm,
+  },
   skeletonGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

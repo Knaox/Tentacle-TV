@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, Animated, Dimensions, PanResponder } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -6,7 +6,6 @@ import { BlurView } from "expo-blur";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient } from "@tentacle-tv/api-client";
-import { SharedWatchlistPickerContent } from "./SharedWatchlistPickerSheet";
 import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, SURFACE } from "@/theme";
 
 // expo-haptics optional
@@ -50,7 +49,6 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
     isEpisode && item?.SeriesId ? { seriesId: item.SeriesId, seasonId: item.SeasonId ?? undefined } : undefined,
   );
 
-  const [showPicker, setShowPicker] = useState(false);
   const isFav = target?.UserData?.IsFavorite === true;
   const isInList = target?.UserData?.Likes === true;
   const isWatched = target?.UserData?.Played === true;
@@ -62,7 +60,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
     Animated.parallel([
       Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(() => { setShowPicker(false); onClose(); });
+    ]).start(() => { onClose(); });
   }, [translateY, overlayOpacity, onClose]);
 
   useEffect(() => {
@@ -114,16 +112,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
           <View style={st.handle} />
         </View>
 
-        {showPicker ? (
-          <View style={{ flex: 1, paddingHorizontal: spacing.screenPadding }}>
-            <Pressable onPress={() => setShowPicker(false)} style={st.backLink} hitSlop={8}>
-              <Feather name="chevron-left" size={16} color={BRAND.light} />
-              <Text style={st.backLinkTxt}>{t("back")}</Text>
-            </Pressable>
-            <SharedWatchlistPickerContent itemId={targetId} alreadyInWatchlist={isInList} onClose={dismiss} />
-          </View>
-        ) : (
-          <>
+        <>
             {/* Hero header — backdrop blur + poster overlay + titre */}
             {display && (
               <View style={st.hero}>
@@ -168,13 +157,6 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
                 onPress={handleAction(() => (isInList ? watchlist.remove.mutate() : watchlist.add.mutate()))}
               />
               <ActionCell
-                icon="users"
-                label={t("addToSharedList")}
-                active={false}
-                activeColor={BRAND.violet}
-                onPress={() => { Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPicker(true); }}
-              />
-              <ActionCell
                 icon="check-circle"
                 label={isWatched ? t("markUnwatched") : t("markWatched")}
                 active={isWatched}
@@ -182,8 +164,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
                 onPress={handleAction(() => (isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()))}
               />
             </View>
-          </>
-        )}
+        </>
       </Animated.View>
     </Modal>
   );

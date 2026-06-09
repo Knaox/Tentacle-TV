@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useToggleWatchlist, useFavorite, useAppConfig } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useToggleWatchlist, useFavorite } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "./MediaContextMenu";
-import { SharedWatchlistPicker } from "./SharedWatchlistPicker";
 import { CardMetaOverlay } from "./media/CardMetaOverlay";
 
 interface Props {
@@ -14,7 +12,7 @@ interface Props {
 
 /** Card grid de la page Bibliothèque — extraite de LibraryGrid.tsx pour
  *  garder ce dernier sous 300 lignes. Comportement inchangé : poster 2:3,
- *  hover-actions (fav / watchlist / shared list), context menu long-press,
+ *  hover-actions (fav / watchlist), context menu long-press,
  *  CardMetaOverlay compact (1 chip dominant + 1 drapeau). */
 export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate }: Props) {
   const { t } = useTranslation("common");
@@ -30,9 +28,6 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
 
   const { add: addFav, remove: removeFav } = useFavorite(item.Id);
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlist(item.Id);
-  const { data: config } = useAppConfig();
-  const [sharedPickerPos, setSharedPickerPos] = useState<{ x: number; y: number } | null>(null);
-  const [addedToShared, setAddedToShared] = useState(false);
 
   const poster = client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
   const progress = item.UserData?.PlayedPercentage;
@@ -57,7 +52,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
       onTouchStart={handleTouchStart}
       onTouchEnd={clearLongPress}
       onTouchMove={clearLongPress}
-      className="group relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-transform duration-300 hover:scale-[1.03]"
+      className="group group/card relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-transform duration-300 hover:scale-[1.03]"
     >
       <div className="relative aspect-[2/3] bg-tentacle-surface">
         <img
@@ -67,7 +62,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
           onLoad={() => setImgLoaded(true)}
           style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}
         />
-        <CardMetaOverlay item={item} density="compact" />
+        <CardMetaOverlay item={item} density="compact" reveal="hover" />
       </div>
 
       <div className="absolute right-1.5 top-1.5 z-10 flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100"
@@ -103,24 +98,6 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
               <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
             )}
           </button>
-          {config?.features.sharedWatchlists && (
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110"
-              style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                setSharedPickerPos(sharedPickerPos ? null : {
-                  x: Math.min(rect.right + 8, window.innerWidth - 280),
-                  y: rect.top,
-                });
-              }}
-            >
-              <svg className={`h-3.5 w-3.5 ${addedToShared ? "text-[var(--brand-accent)]" : "text-white/60"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h6m3 0h3m-1.5-1.5v3" />
-              </svg>
-            </button>
-          )}
         </div>
       </div>
 
@@ -148,20 +125,6 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
           onToggleFavorite={() => setLocalFavorite(!localFavorite)}
           onToggleWatchlist={() => setLocalWatchlist(!localWatchlist)}
         />
-      )}
-
-      {sharedPickerPos && createPortal(
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setSharedPickerPos(null)} />
-          <div
-            className="fixed z-50 w-[260px] overflow-hidden rounded-xl border border-white/10 bg-[#12121a]/95 shadow-2xl backdrop-blur-lg"
-            style={{ left: sharedPickerPos.x, top: sharedPickerPos.y }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SharedWatchlistPicker itemId={item.Id} onDone={() => setSharedPickerPos(null)} onSuccess={() => setAddedToShared(true)} />
-          </div>
-        </>,
-        document.body
       )}
     </div>
   );

@@ -3,13 +3,11 @@ import type { MediaItem, MediaStream } from "../types/media";
 export type Resolution = "4K" | "FHD" | "HD" | "SD";
 export type SourceResolution = "4K" | "1080p" | "720p" | "SD";
 
-export interface AudioFlag {
-  /** ISO 3166-1 alpha-2 du drapeau primaire (FR, JP, US…). */
-  countryCode: string;
-  /** Drapeau secondaire ISO 3166-1 alpha-2 — "CA" pour VF Québec. */
-  secondaryCountryCode?: string;
-  /** Code langue ISO 639 d'origine (fra/fre/jpn…), utile pour aria-label. */
-  languageCode: string;
+export interface AudioLabel {
+  /** Token court affiché à l'écran : "VF", "VFQ", "VOSTFR", "EN", "JP"… */
+  token: string;
+  /** Libellé complet pour l'aria-label / le title ("Français", "Japonais"…). */
+  full: string;
 }
 
 export interface MediaQuality {
@@ -25,8 +23,12 @@ export interface MediaQuality {
   isDolbyDigital: boolean;
   /** Surround channel layout label (e.g. "5.1", "7.1") if available. */
   surroundLabel: "5.1" | "7.1" | null;
-  /** Pistes audio uniques (défaut en premier), dédupliquées par drapeau. */
-  audioFlags: AudioFlag[];
+  /**
+   * Langues audio résumées en tokens texte (VF / VFQ / VOSTFR / EN / JP…),
+   * défaut en premier, dédupliquées. Remplace les drapeaux pays : plus
+   * discret et parfaitement cohérent avec l'UI sombre.
+   */
+  audioLabels: AudioLabel[];
 }
 
 /** Forme compacte utilisée par les sélecteurs de qualité in-player. */
@@ -141,33 +143,78 @@ const LANGUAGE_TO_COUNTRY: Record<string, string> = {
   fin: "FI", fi: "FI",
 };
 
+/**
+ * Pays ISO 3166-1 → token audio texte + libellé complet.
+ * On garde une convention "version" pour le français (VF) et des codes
+ * langue courts et lisibles pour le reste (EN, JP, ES…), façon plateformes FR.
+ */
+const COUNTRY_TO_AUDIO: Record<string, { token: string; full: string }> = {
+  FR: { token: "VF", full: "Français" },
+  US: { token: "EN", full: "Anglais" },
+  JP: { token: "JP", full: "Japonais" },
+  ES: { token: "ES", full: "Espagnol" },
+  DE: { token: "DE", full: "Allemand" },
+  IT: { token: "IT", full: "Italien" },
+  BR: { token: "PT", full: "Portugais" },
+  KR: { token: "KR", full: "Coréen" },
+  CN: { token: "ZH", full: "Chinois" },
+  RU: { token: "RU", full: "Russe" },
+  SA: { token: "AR", full: "Arabe" },
+  IN: { token: "HI", full: "Hindi" },
+  NL: { token: "NL", full: "Néerlandais" },
+  PL: { token: "PL", full: "Polonais" },
+  TR: { token: "TR", full: "Turc" },
+  SE: { token: "SV", full: "Suédois" },
+  NO: { token: "NO", full: "Norvégien" },
+  DK: { token: "DA", full: "Danois" },
+  FI: { token: "FI", full: "Finnois" },
+};
+
 function isFrenchCanadian(stream: MediaStream): boolean {
   const probe = `${stream.DisplayTitle ?? ""} ${stream.Title ?? ""}`.toLowerCase();
   return /\b(canad|qu[ée]bec|vfq|qc\b)/i.test(probe);
 }
 
-function extractAudioFlags(streams: MediaStream[]): AudioFlag[] {
+function hasFrenchSubtitle(streams: MediaStream[]): boolean {
+  return streams.some(
+    (s) => s.Type === "Subtitle" && /^(fr|fra|fre)/.test((s.Language ?? "").toLowerCase()),
+  );
+}
+
+/**
+ * Résume les pistes audio (+ sous-titres) en tokens texte discrets :
+ *  • Français → VF (VFQ si variante québécoise détectée dans le titre)
+ *  • Autres langues → code court (EN, JP, ES, DE…)
+ *  • VOSTFR ajouté en tête si AUCUN audio français mais sous-titres FR présents.
+ * Défaut en premier, dédupliqué par token.
+ */
+function extractAudioLabels(streams: MediaStream[]): AudioLabel[] {
   const audios = streams
     .filter((s) => s.Type === "Audio" && s.Language)
     .sort((a, b) => Number(b.IsDefault) - Number(a.IsDefault));
 
   const seen = new Set<string>();
-  const result: AudioFlag[] = [];
+  const result: AudioLabel[] = [];
   for (const s of audios) {
     const lang = (s.Language ?? "").toLowerCase().slice(0, 3);
     const cc = LANGUAGE_TO_COUNTRY[lang] ?? LANGUAGE_TO_COUNTRY[lang.slice(0, 2)];
-    if (!cc) continue;
+    const base = cc ? COUNTRY_TO_AUDIO[cc] : undefined;
+    if (!base) continue;
 
-    const isFRCA = cc === "FR" && isFrenchCanadian(s);
-    const dedupKey = isFRCA ? "FR-CA" : cc;
-    if (seen.has(dedupKey)) continue;
-    seen.add(dedupKey);
+    let token = base.token;
+    let full = base.full;
+    if (cc === "FR" && isFrenchCanadian(s)) {
+      token = "VFQ";
+      full = "Français (Québec)";
+    }
+    if (seen.has(token)) continue;
+    seen.add(token);
+    result.push({ token, full });
+  }
 
-    result.push({
-      countryCode: cc,
-      secondaryCountryCode: isFRCA ? "CA" : undefined,
-      languageCode: lang,
-    });
+  // VOSTFR : version originale sous-titrée français (pas de doublage FR).
+  if (!seen.has("VF") && !seen.has("VFQ") && hasFrenchSubtitle(streams)) {
+    result.unshift({ token: "VOSTFR", full: "Version originale sous-titrée français" });
   }
   return result;
 }
@@ -181,7 +228,7 @@ export function extractMediaQuality(item: MediaItem | undefined | null): MediaQu
     isDolbyAtmos: false,
     isDolbyDigital: false,
     surroundLabel: null,
-    audioFlags: [],
+    audioLabels: [],
   };
   if (!item) return empty;
 
@@ -204,7 +251,7 @@ export function extractMediaQuality(item: MediaItem | undefined | null): MediaQu
     isDolbyAtmos: detectAtmos(audio),
     isDolbyDigital: acodec === "ac3" || acodec === "eac3",
     surroundLabel: surroundFromChannels(audio?.Channels),
-    audioFlags: extractAudioFlags(streams),
+    audioLabels: extractAudioLabels(streams),
   };
 }
 

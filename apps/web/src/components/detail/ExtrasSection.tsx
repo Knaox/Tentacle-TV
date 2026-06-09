@@ -14,11 +14,27 @@ import type { RichTrailer } from "./trailerLang";
  *
  * Chaque rangée se masque d'elle-même si elle n'a aucun extra.
  */
-export function ExtrasSection({ item }: { item: MediaItem }) {
+export function ExtrasSection({ item, seriesItem }: { item: MediaItem; seriesItem?: MediaItem }) {
   // Trailers distants fusionnés Jellyfin + TMDB (toutes saisons + teasers), triés langue.
   const remote = useItemRemoteTrailers(item);
-  if (item.Type === "Series") return <SeriesExtras item={item} seriesTrailers={remote} />;
+  if (item.Type === "Series") return <SeriesExtrasAuto item={item} />;
+  // Épisode : sa propre rangée (trailer/special features de l'épisode si dispo,
+  // se masque sinon) PUIS les extras de la série parente en repli.
+  if (item.Type === "Episode") {
+    return (
+      <>
+        <ExtrasRow itemId={item.Id} remoteTrailers={remote} />
+        {seriesItem && <SeriesExtrasAuto item={seriesItem} />}
+      </>
+    );
+  }
   return <ExtrasRow itemId={item.Id} remoteTrailers={remote} />;
+}
+
+/** Calcule les trailers distants de la série puis délègue à SeriesExtras. */
+function SeriesExtrasAuto({ item }: { item: MediaItem }) {
+  const trailers = useItemRemoteTrailers(item);
+  return <SeriesExtras item={item} seriesTrailers={trailers} />;
 }
 
 function SeriesExtras({ item, seriesTrailers }: { item: MediaItem; seriesTrailers: RichTrailer[] }) {

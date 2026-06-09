@@ -20,6 +20,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
 const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
 const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m.Register })));
+const SharedListView = lazy(() => import("./pages/SharedListView").then((m) => ({ default: m.SharedListView })));
 const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
 const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
@@ -199,6 +200,7 @@ export function App() {
           {/* Public */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/share/:token" element={<SharedListView />} />
 
           {/* Protected — immersive (no sidebar/tabbar) */}
           <Route path="/watch/:itemId" element={guard(<Watch />)} />

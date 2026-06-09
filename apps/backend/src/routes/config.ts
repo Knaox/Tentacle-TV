@@ -17,7 +17,6 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       features: {
         downloads: false,
         demo: DEMO_MODE,
-        sharedWatchlists: true,
       },
       autoplayCreditsMinutes: creditsMin != null ? Number(creditsMin) : 2,
     };

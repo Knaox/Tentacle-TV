@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
 import { GlassCard } from "@tentacle-tv/ui";
@@ -20,12 +20,20 @@ export function Login() {
   const [forgotSending, setForgotSending] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation("auth");
   const { login, changeServer } = useAuth();
 
+  // Destination après connexion : ?redirect=/share/... (chemin interne only),
+  // sinon accueil. Garde-fou : on n'autorise qu'un chemin relatif.
+  const redirectParam = searchParams.get("redirect");
+  const redirectTo = redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+    ? redirectParam
+    : "/";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login.mutate({ username, password }, { onSuccess: () => navigate("/") });
+    login.mutate({ username, password }, { onSuccess: () => navigate(redirectTo, { replace: true }) });
   };
 
   const handleForgotSubmit = async (e: React.FormEvent) => {

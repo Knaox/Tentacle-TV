@@ -130,45 +130,18 @@ model PairedDevice {
   @@map("paired_devices")
 }
 
-model SharedWatchlist {
-  id              String   @id @default(cuid())
-  name            String   @db.VarChar(100)
-  creatorId       String   @db.VarChar(255)
-  creatorUsername  String   @db.VarChar(255)
-  createdAt       DateTime @default(now())
-  members         SharedWatchlistMember[]
-  items           SharedWatchlistItem[]
+// Lien de partage « Partager ma liste » — 1 lien actif par propriétaire.
+// Le lien est Live : à l'ouverture, le backend relit la watchlist Jellyfin
+// du propriétaire (via la clé admin), aucun item n'est stocké ici.
+model ShareLink {
+  id            String   @id @default(cuid())
+  token         String   @unique @db.VarChar(32)
+  ownerUserId   String   @unique @db.VarChar(255)
+  ownerUsername String   @db.VarChar(255)
+  createdAt     DateTime @default(now())
 
-  @@index([creatorId])
-  @@map("shared_watchlists")
-}
-
-model SharedWatchlistMember {
-  id          String   @id @default(cuid())
-  watchlistId String
-  watchlist   SharedWatchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
-  userId      String   @db.VarChar(255)
-  username    String   @db.VarChar(255)
-  role        String   @default("reader") @db.VarChar(20)
-  createdAt   DateTime @default(now())
-
-  @@unique([watchlistId, userId])
-  @@index([userId])
-  @@map("shared_watchlist_members")
-}
-
-model SharedWatchlistItem {
-  id              String   @id @default(cuid())
-  watchlistId     String
-  watchlist       SharedWatchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
-  jellyfinItemId  String   @db.VarChar(255)
-  addedById       String   @db.VarChar(255)
-  addedByUsername  String   @db.VarChar(255)
-  createdAt       DateTime @default(now())
-
-  @@unique([watchlistId, jellyfinItemId])
-  @@index([watchlistId])
-  @@map("shared_watchlist_items")
+  @@index([token])
+  @@map("share_links")
 }
 
 // Plugin Seer — tables gérées par le plugin, déclarées ici pour que prisma db push ne les supprime pas
@@ -221,4 +194,22 @@ model SeerCleanupQueue {
 
   @@index([status, nextRetryAt])
   @@map("seer_cleanup_queue")
+}
+
+// Déclarée pour que `prisma db push` (dev + hook de déploiement prod) NE la
+// supprime JAMAIS. Gérée par le plugin Seer ; structure introspectée du DB.
+model seer_user_settings {
+  jellyfin_user_id     String    @id @db.VarChar(255)
+  username             String    @db.VarChar(255)
+  blocked              Boolean   @default(false)
+  daily_limit          Int?
+  allow_movies         Boolean   @default(true)
+  allow_tv             Boolean   @default(true)
+  allow_anime          Boolean   @default(true)
+  jellyseerr_user_id   Int?
+  jellyseerr_last_sync DateTime? @db.DateTime(0)
+  created_at           DateTime  @default(now()) @db.DateTime(0)
+  updated_at           DateTime  @default(now()) @db.DateTime(0)
+
+  @@index([jellyseerr_user_id], map: "idx_seer_user_seerrid")
 }

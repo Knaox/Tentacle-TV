@@ -24,8 +24,8 @@ import {
   setNotificationsBackendUrl,
   setTicketsBackendUrl,
   setPairingBackendUrl,
-  setSharedWatchlistsBackendUrl,
-  setSharedWatchlistsToken,
+  setShareLinkBackendUrl,
+  setShareLinkToken,
   setWsBackendUrl,
   hydrateQueryClient,
   attachQueryPersister,
@@ -102,7 +102,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
         if (!token || !serverUrl) {
           setSessionExpired(true);
           setPreferencesToken(null);
-          setSharedWatchlistsToken(null);
+          setShareLinkToken(null);
           client.setAccessToken(null);
           queryClient.clear();
           router.replace("/(auth)/login");
@@ -121,7 +121,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             const data = await res.json();
             client.setAccessToken(data.AccessToken);
             setPreferencesToken(data.AccessToken);
-            setSharedWatchlistsToken(data.AccessToken);
+            setShareLinkToken(data.AccessToken);
             client.resetAuthState();
             queryClient.invalidateQueries();
             return;
@@ -134,7 +134,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
               storage.setItem("tentacle_token", reAuth.AccessToken);
               storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
               setPreferencesToken(reAuth.AccessToken);
-              setSharedWatchlistsToken(reAuth.AccessToken);
+              setShareLinkToken(reAuth.AccessToken);
               client.resetAuthState();
               queryClient.invalidateQueries();
               return;
@@ -143,7 +143,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.removeItem("tentacle_user");
             setSessionExpired(true);
             setPreferencesToken(null);
-            setSharedWatchlistsToken(null);
+            setShareLinkToken(null);
             client.setAccessToken(null);
             queryClient.clear();
             router.replace("/(auth)/login");
@@ -181,7 +181,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           const data = await res.json();
           client.setAccessToken(data.AccessToken);
           setPreferencesToken(data.AccessToken);
-          setSharedWatchlistsToken(data.AccessToken);
+          setShareLinkToken(data.AccessToken);
           client.resetAuthState();
           queryClient.invalidateQueries();
         } else if (res.status === 401) {
@@ -191,7 +191,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setPreferencesToken(reAuth.AccessToken);
-            setSharedWatchlistsToken(reAuth.AccessToken);
+            setShareLinkToken(reAuth.AccessToken);
             client.resetAuthState();
             queryClient.invalidateQueries();
           } else {
@@ -199,7 +199,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.removeItem("tentacle_user");
             setSessionExpired(true);
             setPreferencesToken(null);
-            setSharedWatchlistsToken(null);
+            setShareLinkToken(null);
             client.setAccessToken(null);
             queryClient.clear();
             router.replace("/(auth)/login");
@@ -224,14 +224,14 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
     setNotificationsBackendUrl(serverUrl);
     setTicketsBackendUrl(serverUrl);
     setPairingBackendUrl(serverUrl);
-    setSharedWatchlistsBackendUrl(serverUrl);
+    setShareLinkBackendUrl(serverUrl);
     setWsBackendUrl(serverUrl);
 
     const token = storage.getItem("tentacle_token");
     if (token) {
       client.setAccessToken(token);
       setPreferencesToken(token);
-      setSharedWatchlistsToken(token);
+      setShareLinkToken(token);
     }
   }, [serverUrl, client, storage]);
 
