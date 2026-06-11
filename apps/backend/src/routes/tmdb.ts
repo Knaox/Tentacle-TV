@@ -127,18 +127,33 @@ export async function tmdbRoutes(app: FastifyInstance) {
     return { matchingIds, cacheReady: isPlatformCached(body.platformId) };
   });
 
-  /** GET /api/tmdb/resolve?tmdbId=123&mediaType=movie → { jellyfinId: "xxx" } */
+  /**
+   * GET /api/tmdb/resolve?tmdbId=123&mediaType=movie
+   * → { jellyfinId: "xxx", remoteTrailers: [{ Url, Name }] }
+   * remoteTrailers : RemoteTrailers Jellyfin de l'item résolu (consommé par le
+   * plugin Seer pour fusionner avec les vidéos TMDB, comme MediaDetail).
+   */
   app.get("/resolve", async (request: FastifyRequest, _reply: FastifyReply) => {
     const { tmdbId, mediaType } = request.query as { tmdbId?: string; mediaType?: string };
-    if (!tmdbId || !mediaType) return { jellyfinId: null };
+    if (!tmdbId || !mediaType) return { jellyfinId: null, remoteTrailers: [] };
 
     const jellyfinUrl = getJellyfinUrl();
     const apiKey = getJellyfinApiKey();
-    if (!jellyfinUrl || !apiKey) return { jellyfinId: null };
+    if (!jellyfinUrl || !apiKey) return { jellyfinId: null, remoteTrailers: [] };
+
+    type ResolvedItem = {
+      Id: string; Name?: string; Type?: string;
+      ProviderIds?: Record<string, string>; ImageTags?: Record<string, string>;
+      RemoteTrailers?: Array<{ Url?: string; Name?: string }>;
+    };
+    const toResult = (match: ResolvedItem) => ({
+      jellyfinId: match.Id,
+      remoteTrailers: (match.RemoteTrailers ?? []).filter((t) => t.Url),
+    });
 
     const itemTypes = mediaType === "movie" ? "Movie" : "Series";
     try {
-      const fields = "ProviderIds,ImageTags,BackdropImageTags";
+      const fields = "ProviderIds,ImageTags,BackdropImageTags,RemoteTrailers";
 
       // Stratégie 1 : AnyProviderIdEquals + filtre exact côté serveur
       const res = await fetch(
@@ -146,11 +161,11 @@ export async function tmdbRoutes(app: FastifyInstance) {
         { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(8_000) },
       );
       if (res.ok) {
-        const data = (await res.json()) as { Items?: Array<{ Id: string; Name?: string; Type?: string; ProviderIds?: Record<string, string>; ImageTags?: Record<string, string> }> };
+        const data = (await res.json()) as { Items?: ResolvedItem[] };
         const match = data.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
         if (match) {
           console.log(`[TMDB] Resolved ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
-          return { jellyfinId: match.Id };
+          return toResult(match);
         }
       }
 
@@ -160,17 +175,17 @@ export async function tmdbRoutes(app: FastifyInstance) {
         { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(15_000) },
       );
       if (allRes.ok) {
-        const allData = (await allRes.json()) as { Items?: Array<{ Id: string; Name?: string; Type?: string; ProviderIds?: Record<string, string>; ImageTags?: Record<string, string> }> };
+        const allData = (await allRes.json()) as { Items?: ResolvedItem[] };
         const match = allData.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
         if (match) {
           console.log(`[TMDB] Resolved (fallback) ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
-          return { jellyfinId: match.Id };
+          return toResult(match);
         }
       }
 
-      return { jellyfinId: null };
+      return { jellyfinId: null, remoteTrailers: [] };
     } catch {
-      return { jellyfinId: null };
+      return { jellyfinId: null, remoteTrailers: [] };
     }
   });
 
