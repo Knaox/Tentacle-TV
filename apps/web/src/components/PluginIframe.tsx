@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { backendUrl } from "../main";
+import { openExternal } from "../lib/openExternal";
 
 const LOADER_TEXTS = {
   fr: { loading: "Chargement du plugin…", error: "Erreur de chargement" },
@@ -197,6 +198,14 @@ export function PluginIframe({
 
         case "NAVIGATE":
           if (typeof data.path === "string") navigate(data.path);
+          break;
+
+        // Lien externe demandé par le plugin (sandbox sans allow-popups) —
+        // ouvert via le host : plugin opener sous Tauri, window.open sur web.
+        case "OPEN_EXTERNAL":
+          if (typeof data.url === "string" && /^https?:\/\//i.test(data.url)) {
+            void openExternal(data.url);
+          }
           break;
 
 
