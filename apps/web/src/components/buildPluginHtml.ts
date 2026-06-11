@@ -308,6 +308,14 @@ export function buildPluginHtml({
       openExternal: function(url) {
         parent.postMessage({ type: "OPEN_EXTERNAL", url: url }, "*");
       },
+      // Lecture de bandes-annonces par le HOST (TrailerModal core).
+      // Indispensable : un embed YouTube imbriqué dans cette iframe sandboxée
+      // hérite de la sandbox (pas d'allow-same-origin) → le player YouTube
+      // plante (SecurityError caches / writeEmbed). Le host, lui, n'est pas
+      // sandboxé.
+      openTrailer: function(trailers, index) {
+        parent.postMessage({ type: "OPEN_TRAILER", trailers: trailers, index: index || 0 }, "*");
+      },
     };
 
     // ── Fetch interceptor: route backend API calls through postMessage bridge ──
