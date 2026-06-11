@@ -141,10 +141,11 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         />
       </View>
 
-      {/* Content zone */}
+      {/* Content zone — remonté pour que les boutons d'action restent
+          visibles malgré chips qualité + genres + synopsis */}
       <View style={{
         paddingHorizontal: Spacing.screenPadding,
-        marginTop: -Math.round(SCREEN_H * 0.22),
+        marginTop: -Math.round(SCREEN_H * 0.28),
       }}>
         {/* Title */}
         <Animated.View style={titleStyle}>
@@ -196,14 +197,13 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           ))}
         </Animated.View>
 
-        {/* Synopsis — not focusable, content scrolls via nestedScrollEnabled */}
+        {/* Synopsis — clampé à 3 lignes comme le web (sinon le bloc pousse
+            les boutons d'action hors écran) */}
         {item.Overview && (
           <Animated.View style={[{ marginTop: Spacing.metaToSynopsis, maxWidth: SCREEN_W * 0.55 }, synopsisStyle]}>
-            <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
-              <Text style={{ color: Colors.textSecondary, ...Typography.synopsis, lineHeight: 28 }}>
-                {item.Overview}
-              </Text>
-            </ScrollView>
+            <Text numberOfLines={3} style={{ color: Colors.textSecondary, ...Typography.synopsis, lineHeight: 26 }}>
+              {item.Overview}
+            </Text>
           </Animated.View>
         )}
 
