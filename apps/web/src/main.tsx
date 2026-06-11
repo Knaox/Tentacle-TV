@@ -120,17 +120,22 @@ if (savedToken) {
 
 // On 401 — try refresh before logging out (avoids disconnect on Jellyfin restart).
 // Web uses httpOnly cookies so the cookie is sent automatically.
+// Deux tentatives espacées de 5 s : un 401 isolé pendant un redémarrage
+// Jellyfin ne doit pas suffire à purger la session (symétrique du retry TV).
 jellyfinClient.setOnAuthExpired(async () => {
-  try {
-    const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-    if (res.ok) {
-      jellyfinClient.resetAuthState();
-      return;
-    }
-    if (res.status !== 401) return; // 503 / server error — keep session
-  } catch { return; } // Network error — keep session
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 5000));
+    try {
+      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+      if (res.ok) {
+        jellyfinClient.resetAuthState();
+        return;
+      }
+      if (res.status !== 401) return; // 503 / server error — keep session
+    } catch { return; } // Network error — keep session
+  }
 
-  // 401 confirmed — token truly expired, logout
+  // 401 confirmed twice — token truly expired, logout
   jellyfinClient.setAccessToken(null);
   storage.removeItem("tentacle_token");
   storage.removeItem("tentacle_user");

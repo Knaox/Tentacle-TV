@@ -45,7 +45,17 @@ async function validateJellyfinToken(token: string): Promise<ValidationResult> {
       headers: { "X-Emby-Token": token },
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return { ok: false, reason: "invalid" };
+    if (!res.ok) {
+      // Seul un refus explicite (401/403) invalide le token. Un 5xx pendant un
+      // redémarrage Jellyfin ne doit pas déconnecter les clients → unreachable
+      // (503 côté requireAuth, session conservée) avec repli cache stale.
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, reason: "invalid" };
+      }
+      const stale = tokenCache.get(token);
+      if (stale) return { ok: true, user: stale.user };
+      return { ok: false, reason: "unreachable" };
+    }
     const data = await res.json();
     const user: JellyfinUser = {
       userId: data.Id,
