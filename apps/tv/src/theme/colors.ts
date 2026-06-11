@@ -42,14 +42,21 @@ interface TvColors {
   readonly focusBorder: string;
   readonly divider: string;
   readonly border: string;
+  readonly ctaPrimaryBg: string;
+  readonly ctaPrimaryFg: string;
+  readonly ctaPrimaryBgPressed: string;
+  readonly ctaSecondaryBg: string;
+  readonly ctaGhostBg: string;
+  readonly ctaGhostBorder: string;
 }
 
 export const Colors: TvColors = {
-  // Backgrounds — TV uses a slightly warmer #06060a for OLED legibility.
-  bgDeep: "#06060a",
+  // Backgrounds — alignés sur tokens.css web : surface-0 noir pur (OLED),
+  // surface-1 pour les cartes. Même rendu que le desktop.
+  bgDeep: "#000000",
   get bgSurface() { return SURFACE.s1; },
   get bgElevated() { return SURFACE.s3; },
-  bgCard: "#12121a",
+  bgCard: "#0a0a0a",
 
   // Accents (live from shared)
   get accentPurple() { return BRAND.violet; },
@@ -68,24 +75,32 @@ export const Colors: TvColors = {
   get error() { return STATUS.error; },
   get ratingGold() { return STATUS.rating; },
 
-  // Glassmorphism (TV-specific — not theme-driven)
-  glassBg: "rgba(15, 15, 24, 0.75)",
+  // Glassmorphism — teinte alignée sur --surface-modal web rgba(15,15,21,…)
+  glassBg: "rgba(15, 15, 21, 0.80)",
   get glassBorder() { return BORDER.subtle; },
-  glassBgHeavy: "rgba(15, 15, 24, 0.85)",
+  glassBgHeavy: "rgba(15, 15, 21, 0.92)",
 
   // Overlays
   overlayDim: "rgba(0, 0, 0, 0.20)",
   overlayHeavy: "rgba(0, 0, 0, 0.60)",
   overlayGradientStart: "transparent",
-  overlayGradientEnd: "#06060a",
+  overlayGradientEnd: "#000000",
 
   // Focus (live brand glow)
   get focusGlow() { return BRAND.glow; },
   get focusBorder() { return BRAND.violet; },
 
-  // Dividers
+  // Dividers — --border-subtle web
   divider: "rgba(255, 255, 255, 0.06)",
-  border: "#1e1e2e",
+  border: "rgba(255, 255, 255, 0.08)",
+
+  // CTA façon web/Netflix (--cta-* de tokens.css)
+  ctaPrimaryBg: "#FFFFFF",
+  ctaPrimaryFg: "#000000",
+  ctaPrimaryBgPressed: "rgba(255, 255, 255, 0.85)",
+  ctaSecondaryBg: "rgba(109, 109, 110, 0.55)",
+  ctaGhostBg: "rgba(255, 255, 255, 0.08)",
+  ctaGhostBorder: "rgba(255, 255, 255, 0.25)",
 };
 
 // Re-export shared tokens for convenience inside TV components.
@@ -116,20 +131,33 @@ export const Spacing = {
 
 // ─── Typography ──────────────────────────────────────────────────────────────
 
+/**
+ * Familles Inter par graisse (Android résout chaque fichier TTF comme une
+ * famille distincte — `fontWeight` seul ne suffit pas pour 500/600/800).
+ * Même police que le web (`tailwind.config.ts` → Inter).
+ */
+export const Fonts = {
+  regular: "Inter-Regular",
+  medium: "Inter-Medium",
+  semibold: "Inter-SemiBold",
+  bold: "Inter-Bold",
+  extrabold: "Inter-ExtraBold",
+} as const;
+
 export const Typography = {
-  heroTitle: { fontSize: 32, fontWeight: "800" as const },
-  sectionTitle: { fontSize: 20, fontWeight: "600" as const },
-  pageTitle: { fontSize: 22, fontWeight: "800" as const },
-  detailTitle: { fontSize: 28, fontWeight: "800" as const },
-  cardTitle: { fontSize: 16, fontWeight: "500" as const },
-  meta: { fontSize: 16, fontWeight: "400" as const },
-  synopsis: { fontSize: 16, fontWeight: "400" as const },
-  buttonLarge: { fontSize: 16, fontWeight: "700" as const },
-  buttonMedium: { fontSize: 16, fontWeight: "600" as const },
-  body: { fontSize: 16, fontWeight: "400" as const },
-  caption: { fontSize: 14, fontWeight: "400" as const },
+  heroTitle: { fontSize: 34, fontWeight: "800" as const, fontFamily: Fonts.extrabold },
+  sectionTitle: { fontSize: 20, fontWeight: "600" as const, fontFamily: Fonts.semibold },
+  pageTitle: { fontSize: 22, fontWeight: "800" as const, fontFamily: Fonts.extrabold },
+  detailTitle: { fontSize: 30, fontWeight: "800" as const, fontFamily: Fonts.extrabold },
+  cardTitle: { fontSize: 16, fontWeight: "500" as const, fontFamily: Fonts.medium },
+  meta: { fontSize: 16, fontWeight: "400" as const, fontFamily: Fonts.regular },
+  synopsis: { fontSize: 16, fontWeight: "400" as const, fontFamily: Fonts.regular },
+  buttonLarge: { fontSize: 16, fontWeight: "700" as const, fontFamily: Fonts.bold },
+  buttonMedium: { fontSize: 16, fontWeight: "600" as const, fontFamily: Fonts.semibold },
+  body: { fontSize: 16, fontWeight: "400" as const, fontFamily: Fonts.regular },
+  caption: { fontSize: 14, fontWeight: "400" as const, fontFamily: Fonts.regular },
   /** Tagline above hero title — italic, dimmed. */
-  tagline: { fontSize: 15, fontWeight: "400" as const, fontStyle: "italic" as const },
+  tagline: { fontSize: 15, fontWeight: "400" as const, fontStyle: "italic" as const, fontFamily: Fonts.regular },
 } as const;
 
 // ─── Border Radius ───────────────────────────────────────────────────────────
@@ -147,10 +175,10 @@ export const Radius = {
 // ─── Hero Banner ─────────────────────────────────────────────────────────────
 
 export const HeroConfig = {
-  /** Percentage of screen height for hero — bumped to 0.65 for cinematic feel. */
-  heightRatio: 0.65,
-  /** Auto-rotate interval in ms. */
-  rotateInterval: 10_000,
+  /** Percentage of screen height for hero — cinématique, aligné web (88-92vh ramené TV). */
+  heightRatio: 0.72,
+  /** Auto-rotate interval in ms (aligné HeroBillboard web : 8 s). */
+  rotateInterval: 8_000,
   /** Crossfade duration in ms. */
   crossfadeDuration: 800,
   /** Ken Burns zoom target. */

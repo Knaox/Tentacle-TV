@@ -18,6 +18,7 @@ const SearchScreen = React.lazy(() => import("../screens/SearchScreen").then(m =
 const PreferencesScreen = React.lazy(() => import("../screens/PreferencesScreen").then(m => ({ default: m.PreferencesScreen })));
 const AboutScreen = React.lazy(() => import("../screens/AboutScreen").then(m => ({ default: m.AboutScreen })));
 const LibraryScreen = React.lazy(() => import("../screens/LibraryScreen").then(m => ({ default: m.LibraryScreen })));
+const TrailerScreen = React.lazy(() => import("../screens/TrailerScreen").then(m => ({ default: m.TrailerScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -52,6 +53,7 @@ export function AppNavigator() {
         <Stack.Screen name="Library" component={LibraryScreen} />
         <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
         <Stack.Screen name="Player" component={PlayerScreen} />
+        <Stack.Screen name="Trailer" component={TrailerScreen} />
         <Stack.Screen name="Search" component={SearchScreen} />
         <Stack.Screen name="Preferences" component={PreferencesScreen} />
         <Stack.Screen name="About" component={AboutScreen} />

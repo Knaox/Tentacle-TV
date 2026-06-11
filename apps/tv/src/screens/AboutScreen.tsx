@@ -8,6 +8,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
 import { TentacleLogo } from "../components/icons/TentacleLogo";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { TVShell } from "../components/nav/TVShell";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "About">;
@@ -37,25 +38,13 @@ export function AboutScreen({ navigation }: Props) {
   ];
 
   return (
+    <TVShell currentRoute="About">
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <ScrollView contentContainerStyle={{
         paddingHorizontal: 80,
         paddingVertical: 32,
         paddingBottom: 60,
       }}>
-        {/* Back button — alignSelf so focus ring wraps just the button */}
-        <Focusable variant="button" onPress={() => navigation.goBack()} hasTVPreferredFocus style={{ alignSelf: "flex-start", marginBottom: 28 }}>
-          <View style={{
-            paddingHorizontal: 16, paddingVertical: 8,
-            borderRadius: Radius.small,
-            backgroundColor: "rgba(255,255,255,0.06)",
-            borderWidth: 1, borderColor: Colors.glassBorder,
-          }}>
-            <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "600" }}>
-              {t("common:back")}
-            </Text>
-          </View>
-        </Focusable>
 
         {/* Logo + title */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>
@@ -137,6 +126,7 @@ export function AboutScreen({ navigation }: Props) {
         </Text>
       </ScrollView>
     </View>
+    </TVShell>
   );
 }
 

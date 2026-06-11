@@ -10,6 +10,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { i18n } from "@tentacle-tv/shared";
 import { getLanguageDisplayName } from "../utils/languageNames";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
+import { TVShell } from "../components/nav/TVShell";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preferences">;
@@ -159,6 +160,7 @@ export function PreferencesScreen({ navigation }: Props) {
   }));
 
   return (
+    <TVShell currentRoute="Preferences">
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <ScrollView
         ref={scrollRef}
@@ -166,17 +168,7 @@ export function PreferencesScreen({ navigation }: Props) {
       >
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-          <Focusable variant="button" onPress={() => navigation.goBack()} hasTVPreferredFocus={!modal} style={{ alignSelf: "flex-start" }}>
-            <View style={{
-              paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.small,
-              backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: Colors.glassBorder,
-            }}>
-              <Text style={{ color: Colors.accentPurpleLight, fontSize: 16, fontWeight: "600" }}>
-                {t("common:back")}
-              </Text>
-            </View>
-          </Focusable>
-          <Text style={{ color: Colors.textPrimary, fontSize: 22, fontWeight: "700", marginLeft: 20 }}>
+          <Text style={{ color: Colors.textPrimary, ...Typography.pageTitle }}>
             {t("preferences:title")}
           </Text>
           {saving && <ActivityIndicator size="small" color={Colors.accentPurple} style={{ marginLeft: 12 }} />}
@@ -263,6 +255,7 @@ export function PreferencesScreen({ navigation }: Props) {
         />
       )}
     </View>
+    </TVShell>
   );
 }
 

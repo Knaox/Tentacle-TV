@@ -74,8 +74,7 @@ export function DisclaimerScreen() {
       <Focusable
         variant="button"
         onPress={() => setChecked((v) => !v)}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked }}
+        accessibilityLabel={t("checkboxLabel")}
       >
         <View style={styles.checkboxRow}>
           <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
@@ -89,8 +88,7 @@ export function DisclaimerScreen() {
       <View style={styles.buttonsRow}>
         <Focusable
           variant="button"
-          onPress={handleAccept}
-          disabled={!checked}
+          onPress={checked ? handleAccept : undefined}
           hasTVPreferredFocus={false}
         >
           <View style={[styles.acceptButton, !checked && styles.acceptButtonDisabled]}>
@@ -152,7 +150,7 @@ const styles = StyleSheet.create({
     color: Colors.accentPurple,
   },
   title: {
-    ...Typography.heading,
+    ...Typography.pageTitle,
     color: Colors.textPrimary,
     textAlign: "center",
     marginBottom: 4,
@@ -169,7 +167,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.07)",
     backgroundColor: "rgba(255, 255, 255, 0.035)",
-    padding: Spacing.lg,
+    padding: Spacing.glassPadding,
     marginBottom: 24,
   },
   body: {

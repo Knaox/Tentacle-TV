@@ -289,6 +289,9 @@ importers:
       react-native-video:
         specifier: ^6.9.0
         version: 6.19.0(patch_hash=f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293)(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))(react@18.3.1)
+      react-native-webview:
+        specifier: ^13.12.5
+        version: 13.12.5(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@react-native-community/cli':
         specifier: ^14.1.2
@@ -11929,6 +11932,13 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-native: 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@19.2.14)(react@18.3.1)
+
+  react-native-webview@13.12.5(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))(react@18.3.1):
+    dependencies:
+      escape-string-regexp: 4.0.0
+      invariant: 2.2.4
+      react: 18.3.1
+      react-native: react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1)
 
   react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli@20.1.2(typescript@5.9.3))(@types/react@19.2.14)(react@18.3.1))(react@18.3.1):
     dependencies:

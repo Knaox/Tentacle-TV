@@ -74,7 +74,7 @@ export const TVHeroBackdrop = memo(function TVHeroBackdrop({
 
       {/* Bottom fade-to-bg */}
       <LinearGradient
-        colors={["transparent", "rgba(6,6,10,0.55)", Colors.bgDeep]}
+        colors={["transparent", "rgba(0,0,0,0.55)", Colors.bgDeep]}
         locations={[0, 0.45, 0.92]}
         style={{
           position: "absolute",
@@ -97,9 +97,9 @@ export const TVHeroBackdrop = memo(function TVHeroBackdrop({
         }}
       />
 
-      {/* Left horizontal scrim for text legibility */}
+      {/* Left horizontal scrim for text legibility (aligné DetailHero web) */}
       <LinearGradient
-        colors={[Colors.bgDeep, "rgba(6,6,10,0.55)", "transparent"]}
+        colors={[Colors.bgDeep, "rgba(0,0,0,0.55)", "transparent"]}
         locations={[0, 0.32, 0.72]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}

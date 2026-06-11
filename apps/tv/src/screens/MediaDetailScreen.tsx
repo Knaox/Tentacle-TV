@@ -20,9 +20,11 @@ import { Focusable } from "../components/focus/Focusable";
 import { FocusableRow } from "../components/focus/FocusableRow";
 import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { TVEpisodeList } from "../components/TVEpisodeList";
-import { PlayIcon, BookmarkIcon, BookmarkFilledIcon } from "../components/icons/TVIcons";
+import { TVExtrasRow } from "../components/detail/TVExtrasRow";
+import { PlayIcon, BookmarkIcon, BookmarkFilledIcon, MovieIcon } from "../components/icons/TVIcons";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
+import { useTvTrailers } from "../hooks/useTvTrailers";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -40,6 +42,8 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
   const { add: addToWatchlist, remove: removeFromWatchlist } = useToggleWatchlist(itemId);
+  // Bandes-annonces Jellyfin + TMDB, triées par langue du profil (DB Tentacle)
+  const trailers = useTvTrailers(item);
 
   const scrollRef = useRef<ScrollView>(null);
   const playBtnRef = useRef<View>(null);
@@ -131,12 +135,12 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           resizeMode="cover"
         />
         <LinearGradient
-          colors={["transparent", "rgba(6,6,10,0.5)", Colors.bgDeep]}
+          colors={["transparent", "rgba(0,0,0,0.5)", Colors.bgDeep]}
           locations={[0, 0.5, 1]}
           style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "70%" }}
         />
         <LinearGradient
-          colors={[Colors.bgDeep, "rgba(6,6,10,0.7)", "transparent"]}
+          colors={[Colors.bgDeep, "rgba(0,0,0,0.7)", "transparent"]}
           locations={[0, 0.4, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -213,26 +217,47 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           </Animated.View>
         )}
 
-        {/* Buttons */}
+        {/* Buttons — CTA blanc façon web/Netflix + bande-annonce + Ma liste */}
         <Animated.View style={[{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }, buttonsStyle]}>
           <TVFocusGuideView autoFocus style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
           <Focusable ref={playBtnRef} variant="button" onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus onFocus={scrollToButtons}>
             <View style={{
-              backgroundColor: Colors.accentPurple,
+              backgroundColor: Colors.ctaPrimaryBg,
               paddingHorizontal: 40, paddingVertical: 16,
               borderRadius: Radius.buttonLarge,
               flexDirection: "row", alignItems: "center", gap: 10,
             }}>
-              <PlayIcon size={20} color={Colors.textPrimary} />
-              <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>{resumeLabel}</Text>
+              <PlayIcon size={20} color={Colors.ctaPrimaryFg} />
+              <Text style={{ color: Colors.ctaPrimaryFg, ...Typography.buttonLarge }}>{resumeLabel}</Text>
             </View>
           </Focusable>
+          {trailers.length > 0 && (
+            <Focusable
+              variant="button"
+              onPress={() => navigation.navigate("Trailer", { url: trailers[0].Url, name: trailers[0].Name })}
+              onFocus={scrollToButtons}
+              accessibilityLabel={t("trailer", { defaultValue: "Bande-annonce" })}
+            >
+              <View style={{
+                backgroundColor: Colors.ctaGhostBg,
+                paddingHorizontal: 28, paddingVertical: 16,
+                borderRadius: Radius.buttonLarge,
+                borderWidth: 1, borderColor: Colors.ctaGhostBorder,
+                flexDirection: "row", alignItems: "center", gap: 10,
+              }}>
+                <MovieIcon size={18} color={Colors.textPrimary} />
+                <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>
+                  {t("trailer", { defaultValue: "Bande-annonce" })}
+                </Text>
+              </View>
+            </Focusable>
+          )}
           <Focusable variant="button" onPress={() => item.UserData?.Likes ? removeFromWatchlist.mutate() : addToWatchlist.mutate()} onFocus={scrollToButtons}>
             <View style={{
-              backgroundColor: Colors.glassBg,
+              backgroundColor: Colors.ctaGhostBg,
               paddingHorizontal: 28, paddingVertical: 16,
               borderRadius: Radius.buttonLarge,
-              borderWidth: 1, borderColor: Colors.glassBorder,
+              borderWidth: 1, borderColor: Colors.ctaGhostBorder,
               flexDirection: "row", alignItems: "center", gap: 10,
             }}>
               {item.UserData?.Likes
@@ -247,6 +272,15 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           </TVFocusGuideView>
         </Animated.View>
       </View>
+
+      {/* Extras (bandes-annonces + teasers) — AU-DESSUS des saisons, comme le web */}
+      {trailers.length > 0 && (
+        <TVExtrasRow
+          trailers={trailers}
+          onSelect={(tr) => navigation.navigate("Trailer", { url: tr.Url, name: tr.Name })}
+          style={{ marginTop: Spacing.sectionGap }}
+        />
+      )}
 
       {/* Episodes for series */}
       {isSeries && (

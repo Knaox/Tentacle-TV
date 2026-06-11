@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Library: { libraryId: string; libraryName: string };
   MediaDetail: { itemId: string };
   Player: { itemId: string };
+  Trailer: { url: string; name?: string };
   Search: undefined;
   Preferences: undefined;
   About: undefined;

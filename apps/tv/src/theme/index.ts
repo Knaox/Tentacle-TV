@@ -12,3 +12,8 @@ export {
 export { fetchThemeState } from "./themeApi";
 export type { BackendThemeState } from "./types";
 export { parsePx, parseMs, parseScale } from "./utils";
+export {
+  Colors, Spacing, Typography, Fonts, Radius,
+  HeroConfig, CardConfig, AmbientConfig,
+} from "./colors";
+export { Durations, Easings } from "./motion";
