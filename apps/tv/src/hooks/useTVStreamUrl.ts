@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 
@@ -17,6 +18,8 @@ export function useTVStreamUrl(args: {
   mediaSourceId?: string;
   streams: JfStream[];
   audioIndex: number;
+  /** Piste sous-titres à INCRUSTER en transcode (PGS/burn-in). -1 = aucune. */
+  subtitleIndex?: number;
   startTicks: number;
   forceTranscode: boolean;
   isTranscodingQuality: boolean;
@@ -25,37 +28,45 @@ export function useTVStreamUrl(args: {
   isDirectPlay: boolean;
 }) {
   const {
-    itemId, mediaSourceId, streams, audioIndex, startTicks,
+    itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, isDirectPlay,
   } = args;
   const client = useJellyfinClient();
 
   const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
+  // En transcode, seuls les sous-titres image (PGS…) passent par l'URL
+  // (SubtitleMethod=Encode) ; les sous-titres texte restent en VTT externe.
+  const burnInIndex = subtitleIndex != null && subtitleIndex >= 0
+    && BURN_IN_SUBTITLE_CODECS.test(
+      streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)?.Codec ?? "",
+    )
+    ? subtitleIndex
+    : undefined;
 
   const playSessionId = useMemo(() => {
     if (isDirectPlay) return undefined;
     return randomSessionId();
-  }, [audioIndex, startTicks, isDirectPlay, forceTranscode, isTranscodingQuality]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [audioIndex, burnInIndex, startTicks, isDirectPlay, forceTranscode, isTranscodingQuality]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
     if (isTranscodingQuality) {
       return client.getStreamUrl(itemId, {
-        mediaSourceId, audioIndex, directPlay: false,
+        mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false,
         maxBitrate, maxHeight,
         startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
       });
     }
     if (forceTranscode) {
       return client.getStreamUrl(itemId, {
-        mediaSourceId, audioIndex, directPlay: false, maxBitrate: 8_000_000,
+        mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
         startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
       });
     }
     return client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
     });
-  }, [client, itemId, mediaSourceId, audioIndex, startTicks, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight]);
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight]);
 
   return { streamUrl, playSessionId };
 }

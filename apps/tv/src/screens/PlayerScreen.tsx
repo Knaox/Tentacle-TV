@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo, type ElementRef } from "react";
 import { View, TouchableOpacity, Dimensions, type ViewStyle } from "react-native";
 import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting, useIntroSkipper, useEpisodeNavigation } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality, BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -87,7 +87,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const isDirectStream = false;
 
   const { streamUrl, playSessionId } = useTVStreamUrl({
-    itemId, mediaSourceId, streams, audioIndex, startTicks,
+    itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
     maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
     isDirectPlay,
@@ -225,6 +225,23 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [isDirectPlay, mpvTracks.mpvTrackMap, playerRef]);
 
+  const handleSubtitleChange = useCallback((newIndex: number) => {
+    const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === newIndex);
+    const needsBurnIn = newIndex >= 0 && BURN_IN_SUBTITLE_CODECS.test(sub?.Codec ?? "");
+    if (isDirectPlay && !needsBurnIn) {
+      // Sous-titres texte en direct play : chargés dynamiquement (loadSubtitle)
+      // sans recharger la vidéo.
+      setSubtitleIndex(newIndex);
+      return;
+    }
+    // Transcode (ou bascule burn-in PGS) : l'URL est reconstruite → mémoriser
+    // la position courante AVANT, sinon la lecture repartait à zéro.
+    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+    setSubtitleIndex(newIndex);
+    // PGS/VOBSUB : non extractibles en VTT → incrustation via transcode (comme le web).
+    if (needsBurnIn && isDirectPlay) setForceTranscode(true);
+  }, [isDirectPlay, streams]);
+
   const handleQualityChange = useCallback((key: typeof quality.qualityKey) => {
     if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     quality.setQualityKey(key);
@@ -233,7 +250,14 @@ export function PlayerScreen({ route, navigation }: Props) {
   const handleError = useCallback((error: string) => {
     const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
       || error.includes("codec") || error.includes("Could not open");
-    if (isCodecError && !forceTranscode) { setVideoError(null); setForceTranscode(true); return; }
+    if (isCodecError && !forceTranscode) {
+      // Bascule transcode en cours de lecture : reprendre à la position
+      // courante (avant : repartait à zéro).
+      if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+      setVideoError(null);
+      setForceTranscode(true);
+      return;
+    }
     setVideoError(error);
   }, [forceTranscode]);
 
@@ -288,7 +312,7 @@ export function PlayerScreen({ route, navigation }: Props) {
         setShowSettings((v) => { showSettingsRef.current = !v; return !v; });
         controls.showOverlay();
       }}
-      onSelectAudio={handleAudioChange} onSelectSubtitle={setSubtitleIndex}
+      onSelectAudio={handleAudioChange} onSelectSubtitle={handleSubtitleChange}
       onSelectQuality={handleQualityChange}
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}

@@ -304,9 +304,30 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     // Resolve subtitle based on mode
     // -1 = explicitly disable subtitles (tells Jellyfin not to auto-select)
     // null = no preference set
+    // IsForced est parfois absent des MediaStreams → heuristique sur le titre.
+    const isForcedTrack = (t: { isForced?: boolean; title?: string }) =>
+      !!t.isForced || /\bforc(ed|é)e?s?\b/i.test(t.title ?? "");
     let subtitleIndex: number | null = null;
     if (pref.subtitleMode === "none") {
       subtitleIndex = -1;
+    } else if (pref.subtitleMode === "forced") {
+      // Pistes forcées : langue de sous-titres préférée → langue de la piste
+      // audio choisie → n'importe laquelle. (Avant : uniquement la langue
+      // préférée, et rien si subtitleLang absent → quasi jamais sélectionnées.)
+      const inPrefLang = pref.subtitleLang
+        ? body.subtitleTracks.filter((t) => isForcedTrack(t) && langMatches(t.language, pref.subtitleLang!))
+        : [];
+      const audioLang = body.audioTracks.find((t) => t.index === audioIndex)?.language;
+      const inAudioLang = audioLang
+        ? body.subtitleTracks.filter((t) => isForcedTrack(t) && langMatches(t.language, audioLang))
+        : [];
+      const anyForced = body.subtitleTracks.filter(isForcedTrack);
+      const pick = inPrefLang[0] ?? inAudioLang[0] ?? anyForced[0];
+      subtitleIndex = pick ? pick.index : -1;
+      app.log.info({
+        inPrefLang: inPrefLang.length, inAudioLang: inAudioLang.length,
+        anyForced: anyForced.length, picked: subtitleIndex,
+      }, "[resolve] forced subtitles");
     } else if (pref.subtitleLang) {
       const subLangGroup = ALIAS_MAP.get(pref.subtitleLang.toLowerCase());
       const subAliases = subLangGroup ? [...subLangGroup] : [pref.subtitleLang.toLowerCase()];
@@ -316,13 +337,10 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
           t.title && subAliases.some((alias) => t.title!.toLowerCase().includes(alias))
         );
       }
-      const nonForced = subs.filter((t) => !t.isForced);
-      const forced = subs.filter((t) => !!t.isForced);
+      const nonForced = subs.filter((t) => !isForcedTrack(t));
+      const forced = subs.filter(isForcedTrack);
 
-      if (pref.subtitleMode === "forced") {
-        // ONLY forced subs — if none exist, explicitly disable (never fallback to non-forced)
-        subtitleIndex = forced.length > 0 ? forced[0].index : -1;
-      } else if (pref.subtitleMode === "signs") {
+      if (pref.subtitleMode === "signs") {
         const signs = subs.find((t) =>
           t.title?.toLowerCase().includes("sign") ||
           t.title?.toLowerCase().includes("songs")
