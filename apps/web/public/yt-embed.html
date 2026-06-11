@@ -26,15 +26,22 @@
     ></iframe>
     <script>
       (function () {
-        var v = new URLSearchParams(location.search).get("v") || "";
+        var params = new URLSearchParams(location.search);
+        var v = params.get("v") || "";
         if (!/^[\w-]{11}$/.test(v)) return;
+        // hl / cc_lang_pref : langue de l'interface et des sous-titres,
+        //   relayes pour la TV (preference de langue du profil Tentacle).
+        var lang = (params.get("hl") || "").slice(0, 2);
+        var langQS = /^[a-z]{2}$/i.test(lang)
+          ? "&hl=" + lang + "&cc_lang_pref=" + lang
+          : "";
         // origin: requis par l'IFrame API YouTube pour valider la requete
         //   (sinon erreur 153 meme avec un Referer valide).
         // playsinline=1: necessaire sur WKWebView (sinon le player tente
         //   parfois de basculer en plein ecran natif et echoue).
         var src =
           "https://www.youtube-nocookie.com/embed/" + v +
-          "?rel=0&autoplay=1&playsinline=1" +
+          "?rel=0&autoplay=1&playsinline=1" + langQS +
           "&origin=" + encodeURIComponent(location.origin);
         document.getElementById("player").src = src;
       })();

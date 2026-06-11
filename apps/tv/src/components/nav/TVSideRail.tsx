@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, memo } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { View, Text, ScrollView, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, interpolate,
@@ -59,6 +59,14 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const focusCount = useRef(0);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<View>(null);
+  // Nœud de l'item actif pour TVFocusGuideView.destinations : entrer dans le
+  // rail (LEFT depuis le contenu) focalise TOUJOURS l'item actif — sans ça,
+  // Android choisit l'item géométriquement le plus proche (ex: Déconnexion !).
+  const [activeNode, setActiveNode] = useState<View | null>(null);
+  const setActiveItemRef = useCallback((node: View | null) => {
+    (activeRef as React.MutableRefObject<View | null>).current = node;
+    setActiveNode(node);
+  }, []);
 
   const userName = (() => {
     try { return (JSON.parse(storage.getItem("tentacle_user") ?? "{}") as { Name?: string }).Name ?? ""; }
@@ -116,7 +124,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     return (
       <Focusable
         key={item.key}
-        ref={active ? activeRef : undefined}
+        ref={active ? setActiveItemRef : undefined}
         variant="row"
         focusRadius={Radius.buttonLarge}
         onPress={() => onNavigate(item.key)}
@@ -169,7 +177,11 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       />
 
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
-      <TVFocusGuideView trapFocusLeft style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 24 }}>
+      <TVFocusGuideView
+        trapFocusLeft
+        destinations={activeNode ? [activeNode] : undefined}
+        style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 24 }}
+      >
         {/* Avatar utilisateur (décoratif) */}
         <View style={{ flexDirection: "row", alignItems: "center", height: 48, marginBottom: 16 }}>
           <View style={{ width: RAIL_COLLAPSED - 24, alignItems: "center" }}>

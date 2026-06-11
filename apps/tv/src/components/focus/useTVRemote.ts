@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { BackHandler, Platform } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 
 // react-native-tvos 0.76 exports useTVEventHandler as a hook (not a class)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -34,24 +35,42 @@ interface TVRemoteOptions {
  *
  * Note: react-native-tvos sends most events as action=1 (key-up only).
  * Only longLeft/longRight arrive as action=0 (key-down).
+ *
+ * IMPORTANT : avec la native-stack, les écrans d'ARRIÈRE-PLAN restent montés —
+ * leurs handlers restent donc enregistrés. Sans garde, BackHandler (LIFO : le
+ * dernier enregistré gagne) était systématiquement volé par un écran invisible
+ * qui se ré-enregistrait à chaque render → BACK « mort » sur l'écran visible.
+ * Chaque consommateur ne réagit désormais que si SON écran est focused.
  */
 export function useTVRemote(options: TVRemoteOptions) {
   // Store latest callbacks in ref to avoid stale closures
   const optRef = useRef(options);
   optRef.current = options;
 
-  // Handle Android TV back button
+  const isFocused = useIsFocused();
+  const focusedRef = useRef(isFocused);
+  focusedRef.current = isFocused;
+
+  // Handle Android TV back button — enregistrement STABLE (une seule fois),
+  // gate sur l'écran focused. `return false` quand on ne gère pas : le système
+  // (native-stack) applique alors son pop par défaut au lieu d'un blocage.
   useEffect(() => {
-    if (!options.onBack || Platform.OS !== "android") return;
+    if (Platform.OS !== "android") return;
     const handler = BackHandler.addEventListener("hardwareBackPress", () => {
-      optRef.current.onBack?.();
+      if (!focusedRef.current) return false;
+      const onBack = optRef.current.onBack;
+      if (!onBack) return false;
+      onBack();
       return true;
     });
     return () => handler.remove();
-  }, [options.onBack]);
+  }, []);
 
   // Handle all TV remote events
   useTVEventHandler((evt: { eventType: string; eventKeyAction?: number }) => {
+    // Écran d'arrière-plan : ignorer (sinon actions fantômes sur les écrans
+    // empilés — seek du player pendant qu'on est sur le trailer, etc.)
+    if (!focusedRef.current) return;
     const o = optRef.current;
     const { eventType, eventKeyAction } = evt;
 
