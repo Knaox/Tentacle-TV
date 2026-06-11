@@ -19,9 +19,11 @@ interface TVSkipSegmentButtonProps {
   /** When true, don't steal focus (overlay or settings panel is active) */
   overlayVisible?: boolean;
   showSettings?: boolean;
+  /** Libellé alternatif (web : « Épisode suivant » pendant le générique). */
+  labelOverride?: string;
 }
 
-export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overlayVisible = false, showSettings = false }: TVSkipSegmentButtonProps) {
+export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overlayVisible = false, showSettings = false, labelOverride }: TVSkipSegmentButtonProps) {
   const { t } = useTranslation("player");
   const [dismissed, setDismissed] = useState(false);
 
@@ -76,7 +78,7 @@ export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overla
             fontSize: 16,
             fontWeight: "600",
           }}>
-            {type === "intro" ? t("skipIntro") : t("skipCredits")}
+            {labelOverride ?? (type === "intro" ? t("skipIntro") : t("skipCredits"))}
           </Text>
         </View>
       </Focusable>

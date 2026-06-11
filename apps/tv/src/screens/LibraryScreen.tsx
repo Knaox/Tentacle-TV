@@ -6,7 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVPosterCard } from "../components/cards/TVPosterCard";
+import { TVPosterCard, TVPosterFrame, TVPosterMeta } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -191,6 +191,8 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
 
   return (
     <View style={{ width: CELL_W, marginBottom: ROW_GAP }}>
+      {/* Le ring de focus n'entoure QUE l'affiche (comme le web) — les textes
+          restent dessous, hors halo, sans déborder sur la rangée suivante. */}
       <Focusable
         ref={ref}
         variant="card"
@@ -200,9 +202,11 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
         focusRadius={8}
         scaleOverride={1.03}
         nextFocusRight={isLastInRow ? nodeId : undefined}
+        style={{ alignSelf: "flex-start" }}
       >
-        <TVPosterCard item={item} width={CARD_W} />
+        <TVPosterFrame item={item} width={CARD_W} />
       </Focusable>
+      <TVPosterMeta item={item} width={CARD_W} />
     </View>
   );
 }

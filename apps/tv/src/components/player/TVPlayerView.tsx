@@ -7,6 +7,7 @@ import { TVPlayerOverlay } from "../TVPlayerOverlay";
 import { TVTrackSelector } from "../TVTrackSelector";
 import { TVSkipSegmentButton } from "../TVSkipSegmentButton";
 import { TVAutoPlayOverlay } from "../TVAutoPlayOverlay";
+import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
 import { Colors } from "../../theme/colors";
 
@@ -17,6 +18,7 @@ interface AutoPlayCtx {
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
   navigateToNextEpisode: () => void;
+  startAutoPlay: () => void;
   cancelAutoPlay: () => void;
 }
 
@@ -82,6 +84,11 @@ export interface TVPlayerViewProps {
   onNextEpisode: () => void;
   onSeekBarFocus: () => void;
   onSeekBarBlur: () => void;
+  /** Panneau Saisons & épisodes (séries) */
+  showEpisodes?: boolean;
+  onToggleEpisodes?: () => void;
+  onCloseEpisodes?: () => void;
+  onSelectEpisode?: (episode: MediaItem) => void;
 }
 
 export function TVPlayerView({
@@ -94,6 +101,7 @@ export function TVPlayerView({
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
   onPrevEpisode, onNextEpisode, onSeekBarFocus, onSeekBarBlur,
+  showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
 
@@ -149,16 +157,31 @@ export function TVPlayerView({
         onSeekBarFocus={onSeekBarFocus} onSeekBarBlur={onSeekBarBlur}
         onNextEpisode={onNextEpisode} onPrevEpisode={onPrevEpisode}
         hasNextEpisode={!!autoPlay.nextEpisode} hasPreviousEpisode={hasPreviousEpisode}
+        onEpisodes={item?.SeriesId && onToggleEpisodes ? onToggleEpisodes : undefined}
       />
       {!autoPlayActive && (
         <>
           <TVSkipSegmentButton type="intro" segment={skipSegments.intro}
             currentTime={displayTime} onSkip={() => onSeek(skipSegments.intro!.end)}
             overlayVisible={controls.overlayVisible} showSettings={showSettings} />
+          {/* Générique : avec un épisode suivant, le bouton devient
+              « Épisode suivant » et lance la carte À suivre (comme le web). */}
           <TVSkipSegmentButton type="credits" segment={skipSegments.credits}
-            currentTime={displayTime} onSkip={() => onSeek(skipSegments.credits!.end)}
+            currentTime={displayTime}
+            labelOverride={autoPlay.nextEpisode ? t("nextEpisodeLabel", { defaultValue: "Épisode suivant" }) : undefined}
+            onSkip={() => {
+              if (autoPlay.nextEpisode) autoPlay.startAutoPlay();
+              else onSeek(skipSegments.credits!.end);
+            }}
             overlayVisible={controls.overlayVisible} showSettings={showSettings} />
         </>
+      )}
+      {showEpisodes && item?.SeriesId && onSelectEpisode && onCloseEpisodes && (
+        <TVPlayerEpisodePanel
+          seriesId={item.SeriesId}
+          onSelectEpisode={onSelectEpisode}
+          onClose={onCloseEpisodes}
+        />
       )}
       {showSettings && (
         <TVTrackSelector
@@ -174,6 +197,9 @@ export function TVPlayerView({
       {autoPlayActive && (
         <TVAutoPlayOverlay
           countdown={autoPlay.countdown!} episodeTitle={autoPlay.nextEpisodeTitle}
+          episodeLabel={autoPlay.nextEpisode?.ParentIndexNumber != null && autoPlay.nextEpisode?.IndexNumber != null
+            ? `S${String(autoPlay.nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(autoPlay.nextEpisode.IndexNumber).padStart(2, "0")}`
+            : undefined}
           episodeDescription={autoPlay.nextEpisodeDescription}
           episodeImageUrl={autoPlay.nextEpisodeImageUrl}
           onPlayNow={autoPlay.navigateToNextEpisode} onDismiss={autoPlay.cancelAutoPlay}

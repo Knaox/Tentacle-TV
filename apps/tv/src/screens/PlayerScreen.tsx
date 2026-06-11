@@ -42,6 +42,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const [showSettings, setShowSettings] = useState(false);
   const showSettingsRef = useRef(false);
+  const [showEpisodes, setShowEpisodes] = useState(false);
   const [startTicks, setStartTicks] = useState(0);
   const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
@@ -318,6 +319,10 @@ export function PlayerScreen({ route, navigation }: Props) {
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
       onSeekBarFocus={() => { seekBarFocusedRef.current = true; }}
       onSeekBarBlur={() => { seekBarFocusedRef.current = false; }}
+      showEpisodes={showEpisodes}
+      onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
+      onCloseEpisodes={() => setShowEpisodes(false)}
+      onSelectEpisode={(ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); }}
     />
   );
 }
