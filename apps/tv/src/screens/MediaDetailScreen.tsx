@@ -9,7 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMediaItem, useSimilarItems, useJellyfinClient, useToggleWatchlist } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useToggleWatchlist } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration, ticksToSeconds } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -44,6 +44,9 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const { add: addToWatchlist, remove: removeFromWatchlist } = useToggleWatchlist(itemId);
   // Bandes-annonces Jellyfin + TMDB, triées par langue du profil (DB Tentacle)
   const trailers = useTvTrailers(item);
+  // Collection (BoxSet) : contenu navigable (pas de lecture sur un conteneur)
+  const isBoxSet = item?.Type === "BoxSet";
+  const { data: collectionItems } = useCollectionItems(isBoxSet ? item?.Id : undefined);
 
   const scrollRef = useRef<ScrollView>(null);
   const playBtnRef = useRef<View>(null);
@@ -220,6 +223,8 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         {/* Buttons — CTA blanc façon web/Netflix + bande-annonce + Ma liste */}
         <Animated.View style={[{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }, buttonsStyle]}>
           <TVFocusGuideView autoFocus style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
+          {/* BoxSet = conteneur sans MediaSources → pas de bouton Lecture */}
+          {!isBoxSet && (
           <Focusable ref={playBtnRef} variant="button" onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus onFocus={scrollToButtons}>
             <View style={{
               backgroundColor: Colors.ctaPrimaryBg,
@@ -231,6 +236,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
               <Text style={{ color: Colors.ctaPrimaryFg, ...Typography.buttonLarge }}>{resumeLabel}</Text>
             </View>
           </Focusable>
+          )}
           {trailers.length > 0 && (
             <Focusable
               variant="button"
@@ -252,7 +258,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
               </View>
             </Focusable>
           )}
-          <Focusable variant="button" onPress={() => item.UserData?.Likes ? removeFromWatchlist.mutate() : addToWatchlist.mutate()} onFocus={scrollToButtons}>
+          <Focusable variant="button" onPress={() => item.UserData?.Likes ? removeFromWatchlist.mutate() : addToWatchlist.mutate()} onFocus={scrollToButtons} hasTVPreferredFocus={isBoxSet}>
             <View style={{
               backgroundColor: Colors.ctaGhostBg,
               paddingHorizontal: 28, paddingVertical: 16,
@@ -272,6 +278,19 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           </TVFocusGuideView>
         </Animated.View>
       </View>
+
+      {/* Collection (BoxSet) : contenu navigable */}
+      {isBoxSet && collectionItems && collectionItems.length > 0 && (
+        <FocusableRow
+          title={t("collectionContent", { defaultValue: "Contenu de la collection" })}
+          data={collectionItems}
+          renderItem={(s: MediaItem) => <TVPosterCard item={s} />}
+          keyExtractor={(s) => s.Id}
+          itemWidth={CardConfig.portrait.width}
+          style={{ marginTop: Spacing.sectionGap }}
+          onItemPress={(s: MediaItem) => navigation.push("MediaDetail", { itemId: s.Id })}
+        />
+      )}
 
       {/* Extras (bandes-annonces + teasers) — AU-DESSUS des saisons, comme le web */}
       {trailers.length > 0 && (

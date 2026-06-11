@@ -192,6 +192,30 @@ export function useSimilarItems(itemId: string | undefined, parentId?: string) {
   });
 }
 
+/**
+ * Contenu d'une collection (BoxSet) — films/séries enfants, triés par titre.
+ * Utilisé par la fiche détail (web + TV) pour rendre les collections
+ * navigables (un BoxSet n'a ni MediaSources ni saisons).
+ */
+export function useCollectionItems(boxSetId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = useUserId();
+
+  return useQuery({
+    queryKey: ["collection-items", boxSetId],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?ParentId=${boxSetId}&SortBy=PremiereDate,SortName&SortOrder=Ascending` +
+            `&Fields=Overview,PrimaryImageAspectRatio,MediaSources` +
+            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
+        )
+        .then((r) => r.Items),
+    enabled: !!userId && !!boxSetId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useGenres(libraryId: string | undefined) {
   const client = useJellyfinClient();
   const userId = useUserId();
