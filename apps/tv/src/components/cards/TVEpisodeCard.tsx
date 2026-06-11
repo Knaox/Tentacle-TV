@@ -7,11 +7,14 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { Colors, Typography } from "../../theme/colors";
 import { TVCardImage } from "./TVCardImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
+import { TVMetaChips } from "../TVMetaChips";
 import { TV_EPISODE_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
 interface TVEpisodeCardProps {
   item: MediaItem;
   size?: TVCardSize;
+  /** Révèle les chips qualité/langues (équivalent hover web). */
+  focused?: boolean;
 }
 
 /**
@@ -25,6 +28,7 @@ interface TVEpisodeCardProps {
 export const TVEpisodeCard = memo(function TVEpisodeCard({
   item,
   size = "md",
+  focused = false,
 }: TVEpisodeCardProps) {
   const client = useJellyfinClient();
   const isEpisode = item.Type === "Episode";
@@ -58,6 +62,14 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
         }}
       >
         <TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />
+
+        {/* Chips qualité/langues AU FOCUS (haut-gauche — le temps restant
+            occupe le haut-droit), comme le hover desktop. */}
+        {focused && (
+          <View style={{ position: "absolute", left: 8, top: 8, right: 70 }}>
+            <TVMetaChips item={item} compact />
+          </View>
+        )}
 
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.85)"]}

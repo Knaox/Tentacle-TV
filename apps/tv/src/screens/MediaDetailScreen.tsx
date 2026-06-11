@@ -21,6 +21,7 @@ import { FocusableRow } from "../components/focus/FocusableRow";
 import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { TVEpisodeList } from "../components/TVEpisodeList";
 import { TVExtrasRow } from "../components/detail/TVExtrasRow";
+import { TVMetaChips } from "../components/TVMetaChips";
 import { PlayIcon, BookmarkIcon, BookmarkFilledIcon, MovieIcon } from "../components/icons/TVIcons";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
@@ -116,17 +117,6 @@ export function MediaDetailScreen({ route, navigation }: Props) {
     ? `${t("resume")} ${Math.floor(ticksToSeconds(resumePosition) / 60)}:${String(Math.floor(ticksToSeconds(resumePosition) % 60)).padStart(2, "0")}`
     : t("play");
 
-  // Detect media info tags
-  const videoStream = item.MediaSources?.[0]?.MediaStreams?.find(
-    (s: { Type: string }) => s.Type === "Video"
-  );
-  const tags: string[] = [];
-  if (videoStream) {
-    const h = (videoStream as { Height?: number }).Height;
-    if (h && h >= 2160) tags.push("4K");
-    else if (h && h >= 1080) tags.push("1080p");
-    else if (h && h >= 720) tags.push("720p");
-  }
 
   return (
     <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: Colors.bgDeep }} contentContainerStyle={{ paddingBottom: 60 }}>
@@ -188,17 +178,14 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           )}
         </Animated.View>
 
-        {/* Genre pills + tags */}
-        <Animated.View style={[{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }, metaStyle]}>
-          {tags.map((tag) => (
-            <View key={tag} style={{
-              backgroundColor: "rgba(139, 92, 246, 0.2)",
-              paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6,
-              borderWidth: 1, borderColor: "rgba(139, 92, 246, 0.3)",
-            }}>
-              <Text style={{ color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700" }}>{tag}</Text>
-            </View>
-          ))}
+        {/* Méta qualité/langues complète (4K · Dolby Vision · Atmos · VF…) —
+            identique à DetailMetadata du desktop */}
+        <Animated.View style={[{ marginTop: 12 }, metaStyle]}>
+          <TVMetaChips item={item} />
+        </Animated.View>
+
+        {/* Genre pills */}
+        <Animated.View style={[{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }, metaStyle]}>
           {item.Genres?.map((g) => (
             <View key={g} style={{
               backgroundColor: "rgba(255,255,255,0.06)",
@@ -284,7 +271,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         <FocusableRow
           title={t("collectionContent", { defaultValue: "Contenu de la collection" })}
           data={collectionItems}
-          renderItem={(s: MediaItem) => <TVPosterCard item={s} />}
+          renderItem={(s: MediaItem, _i: number, focused: boolean) => <TVPosterCard item={s} focused={focused} />}
           keyExtractor={(s) => s.Id}
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}
@@ -313,7 +300,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         <FocusableRow
           title={t("similarTitles")}
           data={similar}
-          renderItem={(s: MediaItem) => <TVPosterCard item={s} />}
+          renderItem={(s: MediaItem, _i: number, focused: boolean) => <TVPosterCard item={s} focused={focused} />}
           keyExtractor={(s) => s.Id}
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}
