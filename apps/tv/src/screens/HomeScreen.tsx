@@ -173,7 +173,8 @@ function HomeScreenInner({ navigation }: Props) {
                 onPlay={navigateToPlay}
                 onDetail={navigateToDetail}
                 onBannerFocus={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
-                onItemChange={setFocusedItem}
+                // PAS d'onItemChange : la rotation du carrousel ne doit pas
+                // changer le fond ambient (réservé au focus des cartes).
               />
             )}
 

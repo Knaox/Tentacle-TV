@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
-import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon } from "./icons/TVIcons";
+import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon } from "./icons/TVIcons";
 import { Colors } from "../theme/colors";
 interface TVPlayerOverlayProps {
   title: string;
@@ -36,6 +36,8 @@ interface TVPlayerOverlayProps {
   onPrevEpisode?: () => void;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
+  /** Ouvre le panneau Saisons & épisodes (séries uniquement). */
+  onEpisodes?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -52,6 +54,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   onPlayPause, onSkipBack, onSkipForward,
   onBack, onSettings, onSeekBarFocus, onSeekBarBlur,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
+  onEpisodes,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -205,6 +208,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             <Focusable variant="button" onPress={onNextEpisode}>
               <View style={{ padding: 10 }}>
                 <NextTrackIcon size={20} color={Colors.textSecondary} />
+              </View>
+            </Focusable>
+          )}
+
+          {onEpisodes && (
+            <Focusable variant="button" onPress={onEpisodes}>
+              <View style={{ padding: 13 }}>
+                <MenuIcon size={22} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
