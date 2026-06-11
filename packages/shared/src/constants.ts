@@ -8,6 +8,12 @@ export const TICKS_PER_SECOND = 10_000_000;
 export const TICKS_PER_MINUTE = TICKS_PER_SECOND * 60;
 
 /**
+ * Codecs de sous-titres image (non extractibles en VTT) → nécessitent une
+ * incrustation (burn-in) via transcode. Partagé web/TV.
+ */
+export const BURN_IN_SUBTITLE_CODECS = /^(pgssub|dvdsub|dvbsub|hdmv_pgs_subtitle|pgs)$/i;
+
+/**
  * Convert Jellyfin RunTimeTicks to a human-readable duration string.
  * Handles edge cases (null, 0, absurdly large values).
  */

@@ -17,7 +17,10 @@ function formatTrackLabel(s: JfStream, t: (key: string, opts?: Record<string, un
 
 const DBG = "[Tentacle:Player]";
 
-export const BURN_IN_SUBTITLE_CODECS = /^(pgssub|dvdsub|dvbsub|hdmv_pgs_subtitle|pgs)$/i;
+// Déplacé dans packages/shared (réutilisé par la TV) — import + ré-export
+// (utilisé aussi en interne dans ce fichier).
+import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
+export { BURN_IN_SUBTITLE_CODECS };
 
 export const supportsNativeAudioTracks = (() => {
   if (typeof document === "undefined") return false;

@@ -206,16 +206,31 @@ export function resolveMediaTracks(
     }
   }
 
-  // Resolve subtitle based on mode
+  // Resolve subtitle based on mode.
+  // IsForced est parfois absent des MediaStreams → heuristique sur le titre.
+  const isForcedTrack = (t: SubtitleTrackInfo) =>
+    !!t.isForced || /\bforc(ed|é)e?s?\b/i.test(t.title ?? "");
   let subtitleIndex: number | null = null;
-  if (pref.subtitleMode !== "none" && pref.subtitleLang) {
+  if (pref.subtitleMode === "forced") {
+    // Pistes forcées : langue de sous-titres préférée → langue de la piste
+    // audio choisie → n'importe laquelle. (Avant : uniquement la langue
+    // préférée, et rien si subtitleLang absent → quasi jamais sélectionnées.)
+    const inPrefLang = pref.subtitleLang
+      ? subtitleTracks.filter((t) => isForcedTrack(t) && langMatches(t.language, pref.subtitleLang!))
+      : [];
+    const audioLang = audioTracks.find((t) => t.index === audioIndex)?.language;
+    const inAudioLang = audioLang
+      ? subtitleTracks.filter((t) => isForcedTrack(t) && langMatches(t.language, audioLang))
+      : [];
+    const anyForced = subtitleTracks.filter(isForcedTrack);
+    const pick = inPrefLang[0] ?? inAudioLang[0] ?? anyForced[0];
+    subtitleIndex = pick ? pick.index : null;
+  } else if (pref.subtitleMode !== "none" && pref.subtitleLang) {
     const subs = subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
-    const nonForced = subs.filter((t) => !t.isForced);
-    const forced = subs.filter((t) => t.isForced);
+    const nonForced = subs.filter((t) => !isForcedTrack(t));
+    const forced = subs.filter(isForcedTrack);
 
-    if (pref.subtitleMode === "forced") {
-      if (forced.length > 0) subtitleIndex = forced[0].index;
-    } else if (pref.subtitleMode === "signs") {
+    if (pref.subtitleMode === "signs") {
       const signs = subs.find((t) =>
         t.title?.toLowerCase().includes("sign") ||
         t.title?.toLowerCase().includes("songs"),
