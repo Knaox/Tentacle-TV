@@ -1,6 +1,6 @@
 {
   "name": "@tentacle-tv/tv",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "start": "react-native start",
@@ -29,7 +29,8 @@
     "react-native-safe-area-context": "~5.0.0",
     "react-native-screens": "~4.4.0",
     "react-native-svg": "^15.15.3",
-    "react-native-video": "^6.9.0"
+    "react-native-video": "^6.9.0",
+    "react-native-webview": "^13.12.5"
   },
   "devDependencies": {
     "@react-native-community/cli": "^14.1.2",

@@ -10,6 +10,7 @@ import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { SkeletonCardPortrait } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { TVShell } from "../components/nav/TVShell";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
@@ -47,23 +48,8 @@ export function SearchScreen({ navigation }: Props) {
   }, []);
 
   return (
+    <TVShell currentRoute="Search">
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep, paddingTop: 32 }}>
-      {/* Back button */}
-      <View style={{ paddingHorizontal: Spacing.screenPadding, marginBottom: 16 }}>
-        <Focusable variant="button" onPress={() => navigation.goBack()} style={{ alignSelf: "flex-start" }}>
-          <View style={{
-            paddingHorizontal: 16, paddingVertical: 8,
-            borderRadius: Radius.small,
-            backgroundColor: "rgba(255,255,255,0.06)",
-            borderWidth: 1, borderColor: Colors.glassBorder,
-          }}>
-            <Text style={{ color: Colors.accentPurpleLight, fontSize: 16, fontWeight: "600" }}>
-              {t("common:back")}
-            </Text>
-          </View>
-        </Focusable>
-      </View>
-
       {/* Main content: keyboard left + results right */}
       <View style={{ flex: 1, flexDirection: "row" }}>
         {/* Left side: title + keyboard */}
@@ -144,5 +130,6 @@ export function SearchScreen({ navigation }: Props) {
         </View>
       </View>
     </View>
+    </TVShell>
   );
 }

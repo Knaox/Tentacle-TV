@@ -10,6 +10,7 @@ import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { TVShell } from "../components/nav/TVShell";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
@@ -83,10 +84,10 @@ export function LibraryScreen({ route, navigation }: Props) {
   const header = useMemo(() => (
     <LibraryHeader
       libraryName={libraryName} sortIndex={sortIndex} selectedGenre={selectedGenre}
-      genresList={genresList} onGoBack={() => navigation.goBack()}
+      genresList={genresList}
       onSortChange={handleSortChange} onGenreChange={handleGenreChange} t={t}
     />
-  ), [libraryName, sortIndex, selectedGenre, genresList, navigation, handleSortChange, handleGenreChange, t]);
+  ), [libraryName, sortIndex, selectedGenre, genresList, handleSortChange, handleGenreChange, t]);
 
   const renderItem = useCallback(({ item, index }: { item: MediaItem; index: number }) => (
     <GridItem
@@ -98,52 +99,60 @@ export function LibraryScreen({ route, navigation }: Props) {
     />
   ), [navigateToDetail, scrollToRow, items.length]);
 
+  const shellRoute = `Library_${libraryId}`;
+
   if (isLoading && items.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
-        {header}
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <Skeleton key={i} width={CARD_W} height={CARD_H} />
-          ))}
+      <TVShell currentRoute={shellRoute}>
+        <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
+          {header}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} width={CARD_W} height={CARD_H} />
+            ))}
+          </View>
         </View>
-      </View>
+      </TVShell>
     );
   }
 
   if (!isLoading && items.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
-        {header}
-        <View style={{ alignItems: "center", paddingTop: 80 }}>
-          <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
-            {t("noResults", { defaultValue: "No items found" })}
-          </Text>
+      <TVShell currentRoute={shellRoute}>
+        <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
+          {header}
+          <View style={{ alignItems: "center", paddingTop: 80 }}>
+            <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
+              {t("noResults", { defaultValue: "No items found" })}
+            </Text>
+          </View>
         </View>
-      </View>
+      </TVShell>
     );
   }
 
   return (
-    // @ts-ignore — TVFocusGuideView props from react-native-tvos
-    <TVFocusGuideView trapFocusLeft style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      <FlashList
-        ref={flashListRef}
-        data={items}
-        numColumns={COLUMNS}
-        estimatedItemSize={ESTIMATED_ITEM_SIZE}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.Id}
-        ListHeaderComponent={header}
-        contentContainerStyle={{ padding: Spacing.screenPadding, paddingBottom: 80 }}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        drawDistance={800}
-        overrideItemLayout={(layout) => { layout.size = ESTIMATED_ITEM_SIZE; }}
-        ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
-        overScrollMode="never"
-      />
-    </TVFocusGuideView>
+    <TVShell currentRoute={shellRoute}>
+      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
+      <TVFocusGuideView style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
+        <FlashList
+          ref={flashListRef}
+          data={items}
+          numColumns={COLUMNS}
+          estimatedItemSize={ESTIMATED_ITEM_SIZE}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.Id}
+          ListHeaderComponent={header}
+          contentContainerStyle={{ padding: Spacing.screenPadding, paddingBottom: 80 }}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          drawDistance={800}
+          overrideItemLayout={(layout) => { layout.size = ESTIMATED_ITEM_SIZE; }}
+          ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
+          overScrollMode="never"
+        />
+      </TVFocusGuideView>
+    </TVShell>
   );
 }
 
@@ -193,26 +202,18 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
 /* ---- Header sub-component ---- */
 
 function LibraryHeader({ libraryName, sortIndex, selectedGenre, genresList,
-  onGoBack, onSortChange, onGenreChange, t,
+  onSortChange, onGenreChange, t,
 }: {
   libraryName: string; sortIndex: number; selectedGenre: string | null;
   genresList: Array<{ Id: string; Name: string }> | undefined;
-  onGoBack: () => void; onSortChange: (index: number) => void;
+  onSortChange: (index: number) => void;
   onGenreChange: (genreId: string | null) => void;
   t: (key: string, options?: Record<string, string>) => string;
 }) {
   return (
     <View>
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-        <Focusable variant="button" onPress={onGoBack}>
-          <View style={{
-            paddingHorizontal: 20, paddingVertical: 10, borderRadius: Radius.small,
-            backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: Colors.glassBorder,
-          }}>
-            <Text style={{ color: Colors.accentPurpleLight, ...Typography.buttonMedium }}>{t("back")}</Text>
-          </View>
-        </Focusable>
-        <Text style={{ color: Colors.textPrimary, ...Typography.pageTitle, marginLeft: 20 }}>
+        <Text style={{ color: Colors.textPrimary, ...Typography.pageTitle }}>
           {libraryName}
         </Text>
       </View>
