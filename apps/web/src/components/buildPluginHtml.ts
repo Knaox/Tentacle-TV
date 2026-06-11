@@ -29,6 +29,16 @@ export function buildPluginHtml({
   const safeDepsCode = sharedDepsCode.replace(/<\/script/gi, "<\\/script");
   const safeTailwindCode = tailwindCode.replace(/<\/script/gi, "<\\/script");
 
+  // Environnement hôte exposé aux plugins (iframe sandboxée = aucun accès à
+  // window parent ni à __TAURI_INTERNALS__). Permet de répliquer les
+  // comportements plateforme du core (ex: trailers YouTube sur macOS DMG).
+  const hostEnv = {
+    tauri: typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
+    mac: typeof navigator !== "undefined" && /mac/i.test(navigator.userAgent),
+    prod: import.meta.env.PROD,
+    backendUrl,
+  };
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -261,6 +271,9 @@ export function buildPluginHtml({
       }, "*");
     };
 
+    // ── Host environment (plateforme, base backend) ──
+    window.__tentacle_env = ${JSON.stringify(hostEnv)};
+
     // ── PostMessage bridge ──
     var _pendingRequests = {};
     var _reqId = 0;
@@ -289,6 +302,11 @@ export function buildPluginHtml({
       },
       setOverlay: function(open) {
         parent.postMessage({ type: open ? "OVERLAY_OPEN" : "OVERLAY_CLOSE" }, "*");
+      },
+      // Ouvre une URL dans le navigateur système via le host (la sandbox
+      // allow-scripts bloque window.open / target=_blank dans l'iframe).
+      openExternal: function(url) {
+        parent.postMessage({ type: "OPEN_EXTERNAL", url: url }, "*");
       },
     };
 
