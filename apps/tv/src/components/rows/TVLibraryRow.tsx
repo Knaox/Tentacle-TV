@@ -9,6 +9,8 @@ import { Spacing } from "../../theme/colors";
 interface TVLibraryRowProps {
   libraryId: string;
   libraryName: string;
+  /** Type Jellyfin de la bibliothèque — "tvshows" active le groupage d'épisodes (+N), comme le web. */
+  collectionType?: string;
   renderCard: (item: MediaItem) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
   onItemFocus?: (item: MediaItem) => void;
@@ -26,21 +28,31 @@ interface TVLibraryRowProps {
 export function TVLibraryRow({
   libraryId,
   libraryName,
+  collectionType,
   renderCard,
   onItemPress,
   onItemFocus,
   onLayout,
   onRowFocus,
 }: TVLibraryRowProps) {
-  const { data } = useLatestItems(libraryId);
+  const { data } = useLatestItems(libraryId, { collectionType });
   const { t } = useTranslation("common");
 
   if (!data || data.length === 0) return null;
 
+  // Le groupage par runs peut produire DEUX groupes de la même série (runs
+  // non contigus) → Id identique = clés React dupliquées. On garde le premier.
+  const seen = new Set<string>();
+  const items = data.filter((it) => {
+    if (seen.has(it.Id)) return false;
+    seen.add(it.Id);
+    return true;
+  });
+
   return (
     <FocusableRow
       title={t("latestAdditions", { name: libraryName })}
-      data={data}
+      data={items}
       renderItem={renderCard}
       keyExtractor={(item) => item.Id}
       itemWidth={TV_POSTER_WIDTH.md}
