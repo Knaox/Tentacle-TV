@@ -118,9 +118,7 @@ export function SearchScreen({ navigation }: Props) {
                 index,
               })}
               renderItem={({ item, index }) => (
-                <Focusable variant="card" onPress={() => navigateToDetail(item)} onFocus={() => scrollToRow(index)}>
-                  <TVPosterCard item={item} width={CARD_W} />
-                </Focusable>
+                <ResultCell item={item} index={index} onPress={() => navigateToDetail(item)} onFocusScroll={() => scrollToRow(index)} />
               )}
             />
           )}
@@ -137,5 +135,23 @@ export function SearchScreen({ navigation }: Props) {
       </View>
     </View>
     </TVShell>
+  );
+}
+
+/** Cellule résultat — état de focus local pour révéler la méta qualité. */
+function ResultCell({ item, onPress, onFocusScroll }: {
+  item: MediaItem; index: number; onPress: () => void; onFocusScroll: () => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <Focusable
+      variant="card"
+      onPress={onPress}
+      onFocus={() => { setFocused(true); onFocusScroll(); }}
+      onBlur={() => setFocused(false)}
+      scaleOverride={1.03}
+    >
+      <TVPosterCard item={item} width={CARD_W} focused={focused} />
+    </Focusable>
   );
 }

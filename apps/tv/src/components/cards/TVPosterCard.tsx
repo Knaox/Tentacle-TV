@@ -9,6 +9,7 @@ import { Colors, Typography, Fonts } from "../../theme/colors";
 import { CheckIcon } from "../icons/TVIcons";
 import { TVCardImage } from "./TVCardImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
+import { TVMetaChips } from "../TVMetaChips";
 import { TV_POSTER_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -25,7 +26,7 @@ interface TVPosterCardProps {
  * dans les grilles pour que le ring de focus n'englobe pas les textes
  * (sinon il déborde sur la rangée suivante).
  */
-export const TVPosterFrame = memo(function TVPosterFrame({ item, width }: { item: MediaItem; width: number }) {
+export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused = false }: { item: MediaItem; width: number; focused?: boolean }) {
   const client = useJellyfinClient();
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
@@ -80,6 +81,14 @@ export const TVPosterFrame = memo(function TVPosterFrame({ item, width }: { item
       )}
 
       {!watched && <TVCardProgressBar percent={progress} />}
+
+      {/* Méta qualité/langues révélée AU FOCUS (équivalent du hover web
+          CardMetaOverlay) — pas sur les tuiles groupées « +N » (comme web). */}
+      {focused && addedCount <= 1 && (
+        <View style={{ position: "absolute", left: 6, right: 6, bottom: 8 }}>
+          <TVMetaChips item={item} compact />
+        </View>
+      )}
     </View>
   );
 });
@@ -123,11 +132,12 @@ export const TVPosterCard = memo(function TVPosterCard({
   item,
   size = "md",
   width: widthOverride,
-}: TVPosterCardProps) {
+  focused = false,
+}: TVPosterCardProps & { focused?: boolean }) {
   const width = widthOverride ?? TV_POSTER_WIDTH[size];
   return (
     <View style={{ width }}>
-      <TVPosterFrame item={item} width={width} />
+      <TVPosterFrame item={item} width={width} focused={focused} />
       <TVPosterMeta item={item} width={width} />
     </View>
   );

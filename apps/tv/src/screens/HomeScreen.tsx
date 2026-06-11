@@ -114,8 +114,8 @@ function HomeScreenInner({ navigation }: Props) {
     navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
   }, [storage, navigation, queryClient]);
 
-  const renderPortraitCard = useCallback((item: MediaItem) => (
-    <TVPosterCard item={item} />
+  const renderPortraitCard = useCallback((item: MediaItem, _i: number, focused: boolean) => (
+    <TVPosterCard item={item} focused={focused} />
   ), []);
 
   const handleCtxSelect = useCallback((value: string) => {
@@ -126,8 +126,8 @@ function HomeScreenInner({ navigation }: Props) {
     else if (value === "play") navigateToPlay(item);
   }, [ctxItem, navigateToDetail, navigateToPlay]);
 
-  const renderLandscapeCard = useCallback((item: MediaItem) => (
-    <TVEpisodeCard item={item} />
+  const renderLandscapeCard = useCallback((item: MediaItem, _i: number, focused: boolean) => (
+    <TVEpisodeCard item={item} focused={focused} />
   ), []);
 
   return (

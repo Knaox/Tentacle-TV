@@ -180,6 +180,7 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
 }) {
   const ref = useRef<View>(null);
   const [nodeId, setNodeId] = useState<number | undefined>(undefined);
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
     const handle = findNodeHandle(ref.current);
@@ -197,14 +198,15 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
         ref={ref}
         variant="card"
         onPress={onPress}
-        onFocus={onFocus}
+        onFocus={() => { setFocused(true); onFocus(); }}
+        onBlur={() => setFocused(false)}
         hasTVPreferredFocus={index === 0}
         focusRadius={8}
         scaleOverride={1.03}
         nextFocusRight={isLastInRow ? nodeId : undefined}
         style={{ alignSelf: "flex-start" }}
       >
-        <TVPosterFrame item={item} width={CARD_W} />
+        <TVPosterFrame item={item} width={CARD_W} focused={focused} />
       </Focusable>
       <TVPosterMeta item={item} width={CARD_W} />
     </View>

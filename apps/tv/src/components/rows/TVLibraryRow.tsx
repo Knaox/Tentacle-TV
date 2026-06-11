@@ -11,7 +11,7 @@ interface TVLibraryRowProps {
   libraryName: string;
   /** Type Jellyfin de la bibliothèque — "tvshows" active le groupage d'épisodes (+N), comme le web. */
   collectionType?: string;
-  renderCard: (item: MediaItem) => React.ReactNode;
+  renderCard: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
   onItemFocus?: (item: MediaItem) => void;
   onLayout?: (event: LayoutChangeEvent) => void;

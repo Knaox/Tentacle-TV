@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
@@ -7,7 +7,8 @@ import { Colors, Spacing, Typography } from "../../theme/colors";
 interface FocusableRowProps<T> {
   title?: string;
   data: T[];
-  renderItem: (item: T, index: number) => React.ReactNode;
+  /** `focused` permet de révéler la méta qualité au focus (hover web). */
+  renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
   keyExtractor: (item: T) => string;
   itemWidth: number;
   gap?: number;
@@ -98,29 +99,52 @@ export function FocusableRow<T>({
           index,
         })}
         renderItem={({ item, index }) => (
-          <View style={{ width: itemWidth, marginRight: gap, overflow: "visible" }}>
-            <Focusable
-              variant="card"
-              onFocus={() => {
-                focusedIndexRef.current = index;
-                rowHasFocusRef.current = true;
-                scrollToIndex(index);
-                onRowFocus?.();
-                onItemFocus?.(item, index);
-              }}
-              onBlur={() => {
-                if (focusedIndexRef.current === index) rowHasFocusRef.current = false;
-              }}
-              onPress={() => onItemPress?.(item)}
-              onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
-              focusRadius={8}
-            >
-              {renderItem(item, index)}
-            </Focusable>
-          </View>
+          <RowCell
+            item={item}
+            index={index}
+            itemWidth={itemWidth}
+            gap={gap}
+            renderItem={renderItem}
+            onCellFocus={() => {
+              focusedIndexRef.current = index;
+              rowHasFocusRef.current = true;
+              scrollToIndex(index);
+              onRowFocus?.();
+              onItemFocus?.(item, index);
+            }}
+            onCellBlur={() => {
+              if (focusedIndexRef.current === index) rowHasFocusRef.current = false;
+            }}
+            onPress={onItemPress ? () => onItemPress(item) : undefined}
+            onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
+          />
         )}
       />
       </TVFocusGuideView>
+    </View>
+  );
+}
+
+/** Cellule à état de focus local — seule la cellule re-render au focus. */
+function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress }: {
+  item: T; index: number; itemWidth: number; gap: number;
+  renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
+  onCellFocus: () => void; onCellBlur: () => void;
+  onPress?: () => void; onLongPress?: () => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={{ width: itemWidth, marginRight: gap, overflow: "visible" }}>
+      <Focusable
+        variant="card"
+        onFocus={() => { setFocused(true); onCellFocus(); }}
+        onBlur={() => { setFocused(false); onCellBlur(); }}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        focusRadius={8}
+      >
+        {renderItem(item, index, focused)}
+      </Focusable>
     </View>
   );
 }
