@@ -3,6 +3,21 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.9.3] - 2026-06-11
+
+Desktop 1.9.3 — Web 1.0.0-beta.6
+
+### Ajouté
+- **Bridge plugins** : les plugins (iframe sandboxée) peuvent ouvrir des liens dans le navigateur système et détecter la plateforme hôte (`__tentacle_env`) — utilisé par Seer pour le comportement bandes-annonces identique au core (macOS DMG inclus).
+- `/api/tmdb/resolve` renvoie les **RemoteTrailers** Jellyfin de l'item résolu (fusion trailers Jellyfin + TMDB dans le plugin Seer).
+
+### Corrigé
+- **Sessions persistantes — plus de déconnexions intempestives** (web, TV, mobile, desktop) :
+  - les appareils appairés (TV) ne sont plus déconnectés : leur jeton n'expire plus dans le temps (révocation immédiate toujours possible depuis l'admin) et `/api/auth/refresh` les reconnaît désormais ;
+  - un redémarrage/panne de Jellyfin (5xx) n'est plus confondu avec un jeton invalide : la session est conservée ;
+  - cookie web prolongé (400 jours glissants, renouvelé toutes les 12 h d'utilisation) et double tentative de refresh avant déconnexion ;
+  - TV : si la clé de streaming direct expire, bascule silencieuse en mode proxy au lieu d'un retour à l'écran de connexion.
+
 ## [1.9.2] - 2026-06-10
 
 Desktop 1.9.2 — Web 1.0.0-beta.5
