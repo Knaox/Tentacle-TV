@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
-  useLibraries, useWatchlist,
+  useLibraries, useWatchlist, useWatchedItems,
   useTentacleConfig, useHomeWebSocket,
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
@@ -74,12 +74,17 @@ function HomeScreenInner({ navigation }: Props) {
   const nextUpQuery = useNextUp();
   const librariesQuery = useLibraries();
   const watchlistQuery = useWatchlist();
+  const watchedQuery = useWatchedItems();
 
   const featured = featuredQuery.data;
   const resume = resumeQuery.data;
   const nextUp = nextUpQuery.data;
   const libraries = librariesQuery.data;
   const watchlist = watchlistQuery.data;
+  const watched = watchedQuery.data;
+
+  // Bannière : visionnages à REPRENDRE en priorité, sinon mis en avant (web).
+  const heroItems = (resume && resume.length > 0) ? resume.slice(0, 5) : (featured ?? []);
 
   const allFailed = featuredQuery.isError && librariesQuery.isError;
   const isLoading = (featuredQuery.isLoading || librariesQuery.isLoading) && !featured && !libraries;
@@ -148,9 +153,9 @@ function HomeScreenInner({ navigation }: Props) {
         {/* Content */}
         {!allFailed && !isLoading && (
           <>
-            {featured && featured.length > 0 && (
+            {heroItems.length > 0 && (
               <TVHeroBillboard
-                items={featured}
+                items={heroItems}
                 onPlay={navigateToPlay}
                 onDetail={navigateToDetail}
                 onBannerFocus={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
@@ -177,11 +182,11 @@ function HomeScreenInner({ navigation }: Props) {
               <FocusableRow
                 title={t("nextEpisodes")}
                 data={nextUp}
-                renderItem={renderPortraitCard}
+                renderItem={renderLandscapeCard}
                 keyExtractor={(item) => item.Id}
-                itemWidth={TV_POSTER_WIDTH.md}
+                itemWidth={TV_EPISODE_WIDTH.md}
                 style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToDetail}
+                onItemPress={navigateToPlay}
                 onItemFocus={(item) => setFocusedItem(item)}
                 onLayout={(e) => rowYMap.current.set("nextUp", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("nextUp")}
@@ -203,11 +208,28 @@ function HomeScreenInner({ navigation }: Props) {
               />
             )}
 
+            {/* « Déjà regardés » (16:9), comme le web */}
+            {watched && watched.length > 0 && (
+              <FocusableRow
+                title={t("alreadyWatched")}
+                data={watched}
+                renderItem={renderLandscapeCard}
+                keyExtractor={(item) => item.Id}
+                itemWidth={TV_EPISODE_WIDTH.md}
+                style={{ marginTop: Spacing.sectionGap }}
+                onItemPress={navigateToDetail}
+                onItemFocus={(item) => setFocusedItem(item)}
+                onLayout={(e) => rowYMap.current.set("watched", e.nativeEvent.layout.y)}
+                onRowFocus={() => scrollToRow("watched")}
+              />
+            )}
+
             {(libraries ?? []).map((lib) => (
               <TVLibraryRow
                 key={lib.Id}
                 libraryId={lib.Id}
                 libraryName={lib.Name}
+                collectionType={lib.CollectionType}
                 renderCard={renderPortraitCard}
                 onItemPress={navigateToDetail}
                 onItemFocus={(item) => setFocusedItem(item)}

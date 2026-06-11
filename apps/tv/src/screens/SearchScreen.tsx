@@ -15,9 +15,15 @@ import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
-const NUM_COLUMNS = 5;
-const CARD_HEIGHT = Math.round(CardConfig.portrait.width / CardConfig.portrait.aspectRatio);
-const ROW_HEIGHT = CARD_HEIGHT + Spacing.cardGap; // card height + gap
+// Grille adaptative : zone résultats = écran − rail − colonne clavier.
+const WINDOW_W = require("react-native").Dimensions.get("window").width as number;
+const RAIL_W = 76;
+const KEYBOARD_ZONE_W = 320; // clavier 6×6 + padding gauche
+const RESULTS_AVAIL = WINDOW_W - RAIL_W - KEYBOARD_ZONE_W - 64; // padding grille
+const NUM_COLUMNS = Math.max(3, Math.floor(RESULTS_AVAIL / 170));
+const CARD_W = Math.floor((RESULTS_AVAIL - Spacing.cardGap * (NUM_COLUMNS - 1)) / NUM_COLUMNS);
+const CARD_HEIGHT = Math.round(CARD_W / CardConfig.portrait.aspectRatio);
+const ROW_HEIGHT = CARD_HEIGHT + 56 + Spacing.cardGap; // image + textes + gap
 
 export function SearchScreen({ navigation }: Props) {
   const { t } = useTranslation(["common", "nav"]);
@@ -113,7 +119,7 @@ export function SearchScreen({ navigation }: Props) {
               })}
               renderItem={({ item, index }) => (
                 <Focusable variant="card" onPress={() => navigateToDetail(item)} onFocus={() => scrollToRow(index)}>
-                  <TVPosterCard item={item} />
+                  <TVPosterCard item={item} width={CARD_W} />
                 </Focusable>
               )}
             />

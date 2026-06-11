@@ -16,10 +16,18 @@ import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
 const COLUMNS = 5;
-const CARD_W = CardConfig.portrait.width;
-const CARD_H = CARD_W / CardConfig.portrait.aspectRatio;
 const ROW_GAP = 16;
-const ESTIMATED_ITEM_SIZE = 290;
+// Grille adaptative : la largeur de carte est CALCULÉE depuis l'espace réel
+// (écran − rail − padding), sinon 5 × 180 dp déborde en 960 dp (1080p) →
+// cartes collées/rognées sans aucun espacement.
+const WINDOW_W = require("react-native").Dimensions.get("window").width as number;
+const RAIL_W = 76; // RAIL_COLLAPSED (TVShell réserve cette marge)
+const GRID_AVAIL = WINDOW_W - RAIL_W - Spacing.screenPadding * 2;
+const CELL_W = Math.floor(GRID_AVAIL / COLUMNS);
+const CARD_W = CELL_W - Spacing.cardGap;
+const CARD_H = Math.round(CARD_W / CardConfig.portrait.aspectRatio);
+// Image 2:3 + titre + année + marges
+const ESTIMATED_ITEM_SIZE = CARD_H + 56 + ROW_GAP;
 
 const SORT_OPTIONS = [
   { sortBy: "DateCreated", sortOrder: "Descending", labelKey: "sortDateDesc" },
@@ -182,7 +190,7 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
   const isLastInRow = index % COLUMNS === COLUMNS - 1 || index === totalItems - 1;
 
   return (
-    <View style={{ width: CARD_W, marginBottom: ROW_GAP }}>
+    <View style={{ width: CELL_W, marginBottom: ROW_GAP }}>
       <Focusable
         ref={ref}
         variant="card"
@@ -190,10 +198,9 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
         onFocus={onFocus}
         hasTVPreferredFocus={index === 0}
         focusRadius={8}
-        nextFocusLeft={isFirstInRow ? nodeId : undefined}
         nextFocusRight={isLastInRow ? nodeId : undefined}
       >
-        <TVPosterCard item={item} />
+        <TVPosterCard item={item} width={CARD_W} />
       </Focusable>
     </View>
   );

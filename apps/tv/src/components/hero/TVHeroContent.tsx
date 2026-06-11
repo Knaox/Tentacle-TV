@@ -8,6 +8,9 @@ import { BRAND } from "@tentacle-tv/shared";
 import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon } from "../icons/TVIcons";
+import { TVMetaChips } from "../TVMetaChips";
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -48,6 +51,14 @@ export const TVHeroContent = memo(function TVHeroContent({
   const runtime = item.RunTimeTicks ? formatDuration(item.RunTimeTicks) : null;
   const rating = item.CommunityRating?.toFixed(1);
 
+  // Reprise de visionnage (hero web) : progress + libellé « Reprendre »
+  const progressPct = item.UserData?.PlayedPercentage ?? 0;
+  const hasProgress = progressPct > 0 && progressPct < 100;
+  // Label « S##E## · Titre épisode » (hero web)
+  const epLabel = isEpisode && item.ParentIndexNumber != null && item.IndexNumber != null
+    ? [`S${pad2(item.ParentIndexNumber)}E${pad2(item.IndexNumber)}`, item.Name].filter(Boolean).join(" · ")
+    : null;
+
   return (
     <View
       style={{
@@ -75,6 +86,13 @@ export const TVHeroContent = memo(function TVHeroContent({
           }}
         >
           {displayName}
+        </Text>
+      )}
+
+      {/* Épisode en reprise : « S02E05 · Titre » (hero web) */}
+      {epLabel && (
+        <Text numberOfLines={1} style={{ color: Colors.textSecondary, ...Typography.meta, marginTop: 4 }}>
+          {epLabel}
         </Text>
       )}
 
@@ -108,6 +126,26 @@ export const TVHeroContent = memo(function TVHeroContent({
           </>
         )}
       </View>
+
+      {/* Chips qualité/langues (4K · HDR · Atmos · VF…) — hero web */}
+      {!isEpisode && (
+        <View style={{ marginTop: 10 }}>
+          <TVMetaChips item={item} />
+        </View>
+      )}
+
+      {/* Barre de progression de reprise (hero web) */}
+      {hasProgress && (
+        <View style={{
+          marginTop: 12, width: 300, height: 4, borderRadius: 2,
+          backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden",
+        }}>
+          <View style={{
+            width: `${Math.min(100, Math.max(2, progressPct))}%`, height: "100%",
+            backgroundColor: Colors.accentPurple, borderRadius: 2,
+          }} />
+        </View>
+      )}
 
       {tagline && (
         <Text
@@ -169,7 +207,7 @@ export const TVHeroContent = memo(function TVHeroContent({
                 ...Typography.buttonLarge,
               }}
             >
-              {t("play")}
+              {hasProgress ? t("resume", { defaultValue: "Reprendre" }) : t("play")}
             </Text>
           </View>
         </Focusable>
