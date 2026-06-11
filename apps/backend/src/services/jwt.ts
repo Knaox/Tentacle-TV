@@ -2,8 +2,6 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { getConfigValue, setConfigValue } from "./configStore";
 
-const TOKEN_EXPIRY = "90d";
-
 export interface DeviceTokenPayload {
   userId: string;
   username: string;
@@ -35,17 +33,21 @@ export async function getOrCreateJwtSecret(): Promise<string> {
   return secret;
 }
 
+// Pas d'expiresIn : les sessions des appareils appairés n'expirent jamais dans
+// le temps. La sécurité repose sur la révocation : chaque token correspond à une
+// ligne pairedDevice (tokenHash) vérifiée à CHAQUE requête et supprimable depuis
+// l'admin — révocation immédiate, contrairement à une expiration différée.
 export async function signDeviceToken(payload: Omit<DeviceTokenPayload, "type">): Promise<string> {
   const secret = await getOrCreateJwtSecret();
-  return jwt.sign({ ...payload, type: "paired_device" } satisfies DeviceTokenPayload, secret, {
-    expiresIn: TOKEN_EXPIRY,
-  });
+  return jwt.sign({ ...payload, type: "paired_device" } satisfies DeviceTokenPayload, secret);
 }
 
 export async function verifyDeviceToken(token: string): Promise<DeviceTokenPayload | null> {
   try {
     const secret = await getOrCreateJwtSecret();
-    const decoded = jwt.verify(token, secret) as DeviceTokenPayload;
+    // ignoreExpiration : les tokens 90j déjà distribués restent valides après
+    // leur date (pas de re-pairing forcé) ; la révocation DB fait foi.
+    const decoded = jwt.verify(token, secret, { ignoreExpiration: true }) as DeviceTokenPayload;
     if (decoded.type !== "paired_device") return null;
     return decoded;
   } catch {

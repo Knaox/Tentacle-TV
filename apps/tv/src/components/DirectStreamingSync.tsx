@@ -6,7 +6,6 @@ import {
   STREAMING_CONFIG_QUERY_KEY,
 } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
-import { navigationRef } from "../navigation/navigationRef";
 
 interface Props {
   storage: StorageAdapter;
@@ -38,12 +37,14 @@ export function DirectStreamingSync({ storage }: Props) {
 
   useEffect(() => {
     if (data?.tokenExpired) {
-      // Token Jellyfin issu du pairing expiré — force re-login
+      // Token Jellyfin issu du pairing expiré/révoqué — on dégrade en mode
+      // proxy backend (les flux passent par Tentacle) SANS déconnecter : la
+      // session de l'appareil (JWT Tentacle) reste valide, seul le raccourci
+      // direct-vers-Jellyfin est perdu.
+      console.warn("[DirectStreaming] Jellyfin token expired — falling back to backend proxy");
       storage.removeItem("tentacle_jellyfin_token");
+      storage.removeItem("tentacle_jellyfin_url");
       client.setDirectStreaming(null);
-      if (navigationRef.isReady()) {
-        navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
-      }
       return;
     }
     if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {

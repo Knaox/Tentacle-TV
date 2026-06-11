@@ -3,7 +3,13 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
+import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { BACKEND_VERSION } from "../services/version";
+
+// Durée du cookie web : 400 jours = plafond imposé par Chrome. Le refresh
+// proactif (12h côté web) refait glisser cette fenêtre à chaque utilisation →
+// la session n'expire jamais en pratique.
+const COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
 
 const registerSchema = z.object({
   inviteKey: z.string().min(1),
@@ -50,7 +56,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         path: "/",
-        maxAge: 90 * 24 * 60 * 60,
+        maxAge: COOKIE_MAX_AGE,
       });
 
       return {
@@ -198,6 +204,34 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(401).send({ message: "Token manquant" });
     }
 
+    // JWT d'appareil appairé (TV) : Jellyfin ne connaît pas ces tokens — les
+    // lui soumettre renvoyait systématiquement 401 et déconnectait la TV (qui
+    // n'a pas de credentials pour se reconnecter). On valide localement :
+    // signature + appareil non révoqué en DB. Token renvoyé tel quel
+    // (idempotent, pas de rotation de hash).
+    if (token.split(".").length === 3) {
+      const payload = await verifyDeviceToken(token);
+      if (payload) {
+        try {
+          const prisma = getPrisma();
+          const device = await prisma.pairedDevice.findUnique({
+            where: { tokenHash: hashToken(token) },
+          });
+          if (!device) {
+            return reply.status(401).send({ message: "Appareil révoqué" });
+          }
+          return {
+            AccessToken: token,
+            User: { Id: payload.userId, Name: payload.username },
+          };
+        } catch {
+          return reply.status(503).send({ message: "Base de données indisponible" });
+        }
+      }
+      // JWT illisible (signature invalide) → on laisse Jellyfin trancher
+      // ci-dessous : certains tokens Jellyfin pourraient contenir des points.
+    }
+
     const jellyfinUrl = getJellyfinUrl();
     if (!jellyfinUrl) {
       return reply.status(503).send({ message: "Jellyfin non configuré" });
@@ -210,7 +244,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!res.ok) {
-        return reply.status(401).send({ message: "Token invalide" });
+        // Seul un refus explicite invalide le token. Un 5xx (Jellyfin en
+        // redémarrage/maintenance) ne doit JAMAIS déconnecter les clients.
+        if (res.status === 401 || res.status === 403) {
+          return reply.status(401).send({ message: "Token invalide" });
+        }
+        return reply.status(503).send({ message: "Jellyfin indisponible" });
       }
 
       const user = await res.json();
@@ -221,7 +260,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         path: "/",
-        maxAge: 90 * 24 * 60 * 60,
+        maxAge: COOKIE_MAX_AGE,
       });
 
       return { AccessToken: token, User: user };
