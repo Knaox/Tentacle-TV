@@ -25,6 +25,9 @@ interface FocusableProps {
   variant?: FocusVariant;
   /** Custom border radius for the glow halo (default: 12) */
   focusRadius?: number;
+  /** Scale au focus — override du variant (ex: 1.03 en grille dense pour
+   *  éviter que la carte focusée déborde sur ses voisines). */
+  scaleOverride?: number;
   /** Directional focus navigation — react-native-tvos nativeID refs */
   nextFocusUp?: number;
   nextFocusDown?: number;
@@ -70,6 +73,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   testID,
   variant = "default",
   focusRadius = 12,
+  scaleOverride,
   nextFocusUp,
   nextFocusDown,
   nextFocusLeft,
@@ -88,7 +92,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     onBlur?.();
   }, [onBlur, progress]);
 
-  const scaleTarget = FocusScale[variant];
+  const scaleTarget = scaleOverride ?? FocusScale[variant];
   const glowOpacity = GLOW_VARIANTS[variant];
   const hasShadow = HAS_SHADOW[variant];
   const hasGap = HAS_GAP[variant];

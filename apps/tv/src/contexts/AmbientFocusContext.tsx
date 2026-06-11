@@ -21,7 +21,7 @@ interface AmbientFocusProviderProps {
   debounceMs?: number;
 }
 
-const DEFAULT_DEBOUNCE = 220;
+const DEFAULT_DEBOUNCE = 150;
 
 /**
  * Provides the focused item to the TVAmbientBackdrop.

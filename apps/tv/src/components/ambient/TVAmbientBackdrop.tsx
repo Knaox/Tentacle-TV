@@ -50,31 +50,40 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
     };
   }, []);
 
-  // Crossfade when focusedItem changes.
+  // Couche en attente : le crossfade ne démarre qu'au CHARGEMENT de l'image
+  // (sinon la couche devient visible avant l'image → le fond paraît « en
+  // retard » sur la sélection).
+  const pendingLayerRef = useRef<"a" | "b" | null>(null);
+  const pendingItemIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (focusedItem == null) {
-      // Fade everything out
+      pendingLayerRef.current = null;
+      pendingItemIdRef.current = null;
       aOpacity.value = withTiming(0, { duration: AmbientConfig.crossfadeDuration });
       bOpacity.value = withTiming(0, { duration: AmbientConfig.crossfadeDuration });
       return;
     }
-
     const incomingLayer = activeLayerRef.current === "a" ? "b" : "a";
-    setLayers((prev) => ({
-      ...prev,
-      [incomingLayer]: focusedItem,
-    }));
+    pendingLayerRef.current = incomingLayer;
+    pendingItemIdRef.current = focusedItem.Id;
+    setLayers((prev) => ({ ...prev, [incomingLayer]: focusedItem }));
+  }, [focusedItem, aOpacity, bOpacity]);
 
+  const handleLayerLoaded = (layer: "a" | "b", itemId: string) => {
+    // Ignore les onLoad obsolètes (la sélection a déjà changé)
+    if (pendingLayerRef.current !== layer || pendingItemIdRef.current !== itemId) return;
     const dur = reduceMotion ? 0 : AmbientConfig.crossfadeDuration;
-    if (incomingLayer === "a") {
+    if (layer === "a") {
       aOpacity.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
       bOpacity.value = withTiming(0, { duration: dur });
     } else {
       bOpacity.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
       aOpacity.value = withTiming(0, { duration: dur });
     }
-    activeLayerRef.current = incomingLayer;
-  }, [focusedItem, reduceMotion, aOpacity, bOpacity]);
+    activeLayerRef.current = layer;
+    pendingLayerRef.current = null;
+  };
 
   const aStyle = useAnimatedStyle(() => ({ opacity: aOpacity.value }));
   const bStyle = useAnimatedStyle(() => ({ opacity: bOpacity.value }));
@@ -91,14 +100,14 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
         zIndex: 0,
       }}
     >
-      <Layer item={layers.a} client={client} style={aStyle} />
-      <Layer item={layers.b} client={client} style={bStyle} />
+      <Layer item={layers.a} client={client} style={aStyle} onLoaded={(id) => handleLayerLoaded("a", id)} />
+      <Layer item={layers.b} client={client} style={bStyle} onLoaded={(id) => handleLayerLoaded("b", id)} />
 
       {/* Vertical scrim — keeps text content readable on top */}
       <LinearGradient
         colors={[
-          `rgba(6, 6, 10, ${AmbientConfig.scrimOpacity})`,
-          `rgba(6, 6, 10, ${AmbientConfig.scrimOpacity + 0.15})`,
+          `rgba(0, 0, 0, ${AmbientConfig.scrimOpacity})`,
+          `rgba(0, 0, 0, ${AmbientConfig.scrimOpacity + 0.15})`,
           Colors.bgDeep,
         ]}
         locations={[0, 0.55, 1]}
@@ -112,12 +121,14 @@ interface LayerProps {
   item: MediaItem | null;
   client: ReturnType<typeof useJellyfinClient>;
   style: ReturnType<typeof useAnimatedStyle>;
+  /** Signale que l'image de CET item est chargée (déclenche le crossfade). */
+  onLoaded: (itemId: string) => void;
 }
 
-function Layer({ item, client, style }: LayerProps) {
+function Layer({ item, client, style, onLoaded }: LayerProps) {
   if (!item) return null;
   const backdropId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
-  const uri = client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 70 });
+  const uri = client.getImageUrl(backdropId, "Backdrop", { width: 1280, quality: 70 });
 
   return (
     <Animated.View style={[{ position: "absolute", inset: 0 }, style]}>
@@ -125,6 +136,7 @@ function Layer({ item, client, style }: LayerProps) {
         source={{ uri }}
         style={{ width: SCREEN_W, height: SCREEN_H }}
         resizeMode="cover"
+        onLoad={() => onLoaded(item.Id)}
         // Suppress error visuals — backdrop is decorative
         onError={() => {}}
       />

@@ -10,7 +10,7 @@ import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
-  LogoutIcon, TVIcon, MusicIcon, BookIcon,
+  LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon,
 } from "../icons/TVIcons";
 import { Colors, Radius, Fonts } from "../../theme/colors";
 import { Durations, Easings } from "../../theme/motion";
@@ -67,6 +67,10 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     (activeRef as React.MutableRefObject<View | null>).current = node;
     setActiveNode(node);
   }, []);
+  // Redirection vers l'item actif UNIQUEMENT quand le focus vient de
+  // l'extérieur : une fois dans le rail, la navigation interne (descendre
+  // jusqu'à Déconnexion) ne doit pas être re-routée vers l'item actif.
+  const [railFocused, setRailFocused] = useState(false);
 
   const userName = (() => {
     try { return (JSON.parse(storage.getItem("tentacle_user") ?? "{}") as { Name?: string }).Name ?? ""; }
@@ -81,6 +85,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const expand = useCallback(() => {
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current += 1;
+    setRailFocused(true);
     progress.value = withTiming(1, { duration: Durations.base, easing: Easings.out });
   }, [progress]);
 
@@ -90,6 +95,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     // Petit délai : le focus passe d'un item à l'autre sans replier le rail.
     collapseTimer.current = setTimeout(() => {
       if (focusCount.current <= 0) {
+        setRailFocused(false);
         progress.value = withTiming(0, { duration: Durations.base, easing: Easings.out });
       }
     }, 120);
@@ -114,7 +120,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const bottomItems: RailItem[] = [
     { key: "Preferences", label: t("preferences"), icon: (c) => <SettingsIcon size={ICON_SIZE} color={c} /> },
     { key: "About", label: t("about"), icon: (c) => <InfoIcon size={ICON_SIZE} color={c} /> },
-    { key: "ChangeServer", label: t("changeServer"), icon: (c) => <SettingsIcon size={ICON_SIZE} color={c} /> },
+    { key: "ChangeServer", label: t("changeServer"), icon: (c) => <ServerIcon size={ICON_SIZE} color={c} /> },
     { key: "Logout", label: t("logout"), icon: (c) => <LogoutIcon size={ICON_SIZE} color={c} />, danger: true },
   ];
 
@@ -179,7 +185,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView
         trapFocusLeft
-        destinations={activeNode ? [activeNode] : undefined}
+        destinations={!railFocused && activeNode ? [activeNode] : undefined}
         style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 24 }}
       >
         {/* Avatar utilisateur (décoratif) */}

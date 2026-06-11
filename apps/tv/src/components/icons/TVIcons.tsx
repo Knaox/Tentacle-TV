@@ -51,6 +51,18 @@ export function SettingsIcon({ size = S, color = C }: IconProps) {
   );
 }
 
+/** Icône « Changer de serveur » — racks serveur (distincte de SettingsIcon). */
+export function ServerIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect width={20} height={8} x={2} y={2} rx={2} ry={2} />
+      <Rect width={20} height={8} x={2} y={14} rx={2} ry={2} />
+      <Line x1={6} x2={6.01} y1={6} y2={6} />
+      <Line x1={6} x2={6.01} y1={18} y2={18} />
+    </Svg>
+  );
+}
+
 export function InfoIcon({ size = S, color = C }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

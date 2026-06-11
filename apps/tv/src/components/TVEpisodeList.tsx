@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { View, Text, Image, ScrollView } from "react-native";
-import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useSeasons, useEpisodes, useSeriesWatchState, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { CheckIcon } from "./icons/TVIcons";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
-import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
+import { Colors, Spacing, Typography, Fonts, Radius, CardConfig } from "../theme/colors";
 
 interface TVEpisodeListProps {
   seriesId: string;
@@ -17,9 +18,14 @@ const EPISODE_ROW_HEIGHT = 148; // paddingVertical 14*2 + thumbnail 112 + gap 8
 
 export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
   const client = useJellyfinClient();
+  const { t } = useTranslation("common");
   const { data: seasons } = useSeasons(seriesId);
+  // Épisode « courant » (à reprendre / prochain) — surligné comme sur le web,
+  // et sa saison est présélectionnée.
+  const { data: watchState } = useSeriesWatchState(seriesId);
+  const currentEp = watchState && watchState.type !== "completed" ? watchState.episode : undefined;
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
-  const activeSeasonId = selectedSeason ?? seasons?.[0]?.Id;
+  const activeSeasonId = selectedSeason ?? currentEp?.SeasonId ?? seasons?.[0]?.Id;
   const { data: episodes } = useEpisodes(seriesId, activeSeasonId);
   const episodeScrollRef = useRef<ScrollView>(null);
   const { makeOnFocus } = useTVScrollToFocused(episodeScrollRef, 60);
@@ -32,27 +38,27 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 10 }}
       >
-        {(seasons ?? []).map((season) => (
-          <Focusable key={season.Id} variant="button" onPress={() => setSelectedSeason(season.Id)}>
-            <View style={{
-              paddingHorizontal: 24, paddingVertical: 12, borderRadius: Radius.pill,
-              backgroundColor: season.Id === activeSeasonId
-                ? Colors.accentPurple
-                : "rgba(255,255,255,0.06)",
-              borderWidth: 1,
-              borderColor: season.Id === activeSeasonId
-                ? Colors.accentPurple
-                : "rgba(255,255,255,0.08)",
-            }}>
-              <Text style={{
-                color: Colors.textPrimary, fontSize: 15,
-                fontWeight: season.Id === activeSeasonId ? "700" : "500",
+        {(seasons ?? []).map((season) => {
+          const active = season.Id === activeSeasonId;
+          return (
+            <Focusable key={season.Id} variant="button" focusRadius={Radius.pill} onPress={() => setSelectedSeason(season.Id)}>
+              <View style={{
+                paddingHorizontal: 24, paddingVertical: 12, borderRadius: Radius.pill,
+                backgroundColor: active ? "rgba(139, 92, 246, 0.18)" : Colors.ctaGhostBg,
+                borderWidth: 1,
+                borderColor: active ? "rgba(139, 92, 246, 0.45)" : Colors.glassBorder,
               }}>
-                {season.Name}
-              </Text>
-            </View>
-          </Focusable>
-        ))}
+                <Text style={{
+                  color: active ? Colors.accentPurpleLight : Colors.textSecondary,
+                  fontSize: 15,
+                  fontFamily: active ? Fonts.bold : Fonts.medium,
+                }}>
+                  {season.Name}
+                </Text>
+              </View>
+            </Focusable>
+          );
+        })}
       </ScrollView>
 
       {/* Episodes */}
@@ -66,6 +72,8 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
           const progress = ep.UserData?.PlayedPercentage ?? 0;
           const isWatched = ep.UserData?.Played === true;
           const runtime = ep.RunTimeTicks ? formatDuration(ep.RunTimeTicks) : null;
+          // Épisode courant (à reprendre / prochain) — surligné comme le web
+          const isCurrent = currentEp?.Id === ep.Id;
 
           return (
             <Focusable key={ep.Id} variant="row" onPress={() => onPlay(ep)} onFocus={makeOnFocus(epIndex, EPISODE_ROW_HEIGHT)}>
@@ -73,7 +81,9 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
                 flexDirection: "row", alignItems: "center", gap: 20,
                 paddingVertical: 14, paddingHorizontal: 16,
                 borderRadius: Radius.card,
-                backgroundColor: "rgba(255,255,255,0.04)",
+                backgroundColor: isCurrent ? "rgba(139, 92, 246, 0.14)" : "rgba(255,255,255,0.04)",
+                borderWidth: isCurrent ? 1 : 0,
+                borderColor: isCurrent ? "rgba(139, 92, 246, 0.45)" : "transparent",
               }}>
                 {/* Thumbnail */}
                 <View style={{
@@ -94,7 +104,7 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
                       <View style={{
                         height: CardConfig.progressBarHeight,
                         width: `${Math.min(progress, 100)}%`,
-                        backgroundColor: Colors.progressOrange, borderRadius: 2,
+                        backgroundColor: Colors.accentPurple, borderRadius: 2,
                       }} />
                     </View>
                   )}
@@ -125,9 +135,29 @@ export function TVEpisodeList({ seriesId, onPlay }: TVEpisodeListProps) {
                         </Text>
                       </View>
                     )}
-                    <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 16, fontWeight: "600", flex: 1 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        color: isCurrent ? Colors.accentPurpleLight : Colors.textPrimary,
+                        fontSize: 16,
+                        fontFamily: isCurrent ? Fonts.bold : Fonts.semibold,
+                        flex: 1,
+                      }}
+                    >
                       {ep.Name}
                     </Text>
+                    {isCurrent && (
+                      <View style={{
+                        backgroundColor: Colors.accentPurple,
+                        paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
+                      }}>
+                        <Text style={{ color: "#fff", fontSize: 11, fontFamily: Fonts.bold }}>
+                          {(currentEp?.UserData?.PlaybackPositionTicks ?? 0) > 0
+                            ? t("resume", { defaultValue: "Reprendre" })
+                            : t("nextEpisode", { defaultValue: "À suivre" })}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
                     {runtime && (
