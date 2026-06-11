@@ -219,8 +219,9 @@ export const CardConfig = {
 // ─── Ambient Backdrop ────────────────────────────────────────────────────────
 
 export const AmbientConfig = {
-  /** Crossfade duration when focused item changes. */
-  crossfadeDuration: 800,
+  /** Crossfade duration when focused item changes — court pour que le fond
+   *  suive la sélection sans traîner. */
+  crossfadeDuration: 350,
   /** Image opacity over the page background. */
   imageOpacity: 0.32,
   /** Subtle vertical scrim to keep content legible. */

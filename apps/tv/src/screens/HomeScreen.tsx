@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVShell } from "../components/nav/TVShell";
+import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { TVEpisodeCard } from "../components/cards/TVEpisodeCard";
@@ -46,6 +47,8 @@ function HomeScreenInner({ navigation }: Props) {
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
   const { setFocusedItem } = useAmbientFocus();
   const [railFocusSignal, setRailFocusSignal] = useState(0);
+  // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
+  const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
 
   // Invalidate volatile queries when screen regains focus (e.g. after Player)
   useFocusEffect(
@@ -61,11 +64,14 @@ function HomeScreenInner({ navigation }: Props) {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const rowYMap = useRef<Map<string, number>>(new Map());
+  // Les rangées vivent dans un wrapper qui chevauche le hero (marginTop
+  // négatif) : leurs onLayout sont relatifs au wrapper → on ajoute son offset.
+  const rowsWrapperY = useRef(0);
 
   const scrollToRow = useCallback((key: string) => {
     const y = rowYMap.current.get(key);
     if (y != null) {
-      scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: true });
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, rowsWrapperY.current + y - 80), animated: true });
     }
   }, []);
 
@@ -111,6 +117,14 @@ function HomeScreenInner({ navigation }: Props) {
   const renderPortraitCard = useCallback((item: MediaItem) => (
     <TVPosterCard item={item} />
   ), []);
+
+  const handleCtxSelect = useCallback((value: string) => {
+    const item = ctxItem;
+    setCtxItem(null);
+    if (!item) return;
+    if (value === "details") navigateToDetail(item);
+    else if (value === "play") navigateToPlay(item);
+  }, [ctxItem, navigateToDetail, navigateToPlay]);
 
   const renderLandscapeCard = useCallback((item: MediaItem) => (
     <TVEpisodeCard item={item} />
@@ -163,6 +177,12 @@ function HomeScreenInner({ navigation }: Props) {
               />
             )}
 
+            {/* Les rangées CHEVAUCHENT le bas du hero (comme le web -mt-12)
+                pour supprimer la bande noire de transition. */}
+            <View
+              style={{ marginTop: heroItems.length > 0 ? -48 : 0, zIndex: 10 }}
+              onLayout={(e) => { rowsWrapperY.current = e.nativeEvent.layout.y; }}
+            >
             {resume && resume.length > 0 && (
               <FocusableRow
                 title={t("resumeWatching")}
@@ -172,6 +192,7 @@ function HomeScreenInner({ navigation }: Props) {
                 itemWidth={TV_EPISODE_WIDTH.md}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToPlay}
+                onItemLongPress={setCtxItem}
                 onItemFocus={(item) => setFocusedItem(item)}
                 onLayout={(e) => rowYMap.current.set("resume", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("resume")}
@@ -187,6 +208,7 @@ function HomeScreenInner({ navigation }: Props) {
                 itemWidth={TV_EPISODE_WIDTH.md}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToPlay}
+                onItemLongPress={setCtxItem}
                 onItemFocus={(item) => setFocusedItem(item)}
                 onLayout={(e) => rowYMap.current.set("nextUp", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("nextUp")}
@@ -218,6 +240,7 @@ function HomeScreenInner({ navigation }: Props) {
                 itemWidth={TV_EPISODE_WIDTH.md}
                 style={{ marginTop: Spacing.sectionGap }}
                 onItemPress={navigateToDetail}
+                onItemLongPress={setCtxItem}
                 onItemFocus={(item) => setFocusedItem(item)}
                 onLayout={(e) => rowYMap.current.set("watched", e.nativeEvent.layout.y)}
                 onRowFocus={() => scrollToRow("watched")}
@@ -237,10 +260,25 @@ function HomeScreenInner({ navigation }: Props) {
                 onRowFocus={() => scrollToRow(`lib_${lib.Id}`)}
               />
             ))}
+            </View>
           </>
         )}
       </ScrollView>
       </TVFocusGuideView>
+
+      {/* Menu contextuel (appui long sur une carte) */}
+      {ctxItem && (
+        <SelectionModal
+          title={ctxItem.Type === "Episode" ? (ctxItem.SeriesName ?? ctxItem.Name) : ctxItem.Name}
+          options={[
+            { value: "details", label: t("moreInfo", { defaultValue: "Plus d'infos" }) },
+            { value: "play", label: t("play") },
+          ]}
+          selectedValue={null}
+          onSelect={handleCtxSelect}
+          onClose={() => setCtxItem(null)}
+        />
+      )}
     </TVShell>
   );
 }

@@ -79,7 +79,8 @@ export function FocusableRow<T>({
           {title}
         </Text>
       )}
-      <TVFocusGuideView trapFocusLeft trapFocusRight>
+      {/* Pas de trapFocusLeft : LEFT depuis la 1re carte doit atteindre le rail. */}
+      <TVFocusGuideView trapFocusRight>
       <FlatList
         ref={listRef}
         data={data}

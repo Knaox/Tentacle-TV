@@ -16,7 +16,7 @@ import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
 const COLUMNS = 5;
-const ROW_GAP = 16;
+const ROW_GAP = 24;
 // Grille adaptative : la largeur de carte est CALCULÉE depuis l'espace réel
 // (écran − rail − padding), sinon 5 × 180 dp déborde en 960 dp (1080p) →
 // cartes collées/rognées sans aucun espacement.
@@ -198,6 +198,7 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
         onFocus={onFocus}
         hasTVPreferredFocus={index === 0}
         focusRadius={8}
+        scaleOverride={1.03}
         nextFocusRight={isLastInRow ? nodeId : undefined}
       >
         <TVPosterCard item={item} width={CARD_W} />
@@ -226,55 +227,41 @@ function LibraryHeader({ libraryName, sortIndex, selectedGenre, genresList,
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8 }}>
-        {SORT_OPTIONS.map((opt, i) => {
-          const active = i === sortIndex;
-          return (
-            <Focusable key={opt.labelKey} variant="button" onPress={() => onSortChange(i)}>
-              <View style={{
-                paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.pill,
-                backgroundColor: active ? Colors.accentPurple : "rgba(255,255,255,0.06)",
-                borderWidth: 1, borderColor: active ? Colors.accentPurple : Colors.glassBorder,
-              }}>
-                <Text style={{ color: active ? "#fff" : Colors.textSecondary, fontSize: 14, fontWeight: active ? "700" : "500" }}>
-                  {t(opt.labelKey)}
-                </Text>
-              </View>
-            </Focusable>
-          );
-        })}
+        {SORT_OPTIONS.map((opt, i) => (
+          <FilterPill key={opt.labelKey} label={t(opt.labelKey)} active={i === sortIndex} onPress={() => onSortChange(i)} />
+        ))}
       </ScrollView>
       {genresList && genresList.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
           style={{ marginBottom: 20 }} contentContainerStyle={{ gap: 8 }}>
-          <Focusable variant="button" onPress={() => onGenreChange(null)}>
-            <View style={{
-              paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.pill,
-              backgroundColor: selectedGenre === null ? Colors.accentPurple : "rgba(255,255,255,0.06)",
-              borderWidth: 1, borderColor: selectedGenre === null ? Colors.accentPurple : Colors.glassBorder,
-            }}>
-              <Text style={{ color: selectedGenre === null ? "#fff" : Colors.textSecondary, fontSize: 14, fontWeight: selectedGenre === null ? "700" : "500" }}>
-                {t("allGenres")}
-              </Text>
-            </View>
-          </Focusable>
-          {genresList.map((genre) => {
-            const active = selectedGenre === genre.Id;
-            return (
-              <Focusable key={genre.Id} variant="button" onPress={() => onGenreChange(genre.Id)}>
-                <View style={{
-                  paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.pill,
-                  backgroundColor: active ? Colors.accentPurple : "rgba(255,255,255,0.06)",
-                  borderWidth: 1, borderColor: active ? Colors.accentPurple : Colors.glassBorder,
-                }}>
-                  <Text style={{ color: active ? "#fff" : Colors.textSecondary, fontSize: 14, fontWeight: active ? "700" : "500" }}>
-                    {genre.Name}
-                  </Text>
-                </View>
-              </Focusable>
-            );
-          })}
+          <FilterPill label={t("allGenres")} active={selectedGenre === null} onPress={() => onGenreChange(null)} />
+          {genresList.map((genre) => (
+            <FilterPill key={genre.Id} label={genre.Name} active={selectedGenre === genre.Id} onPress={() => onGenreChange(genre.Id)} />
+          ))}
         </ScrollView>
       )}
     </View>
+  );
+}
+
+/** Pill de filtre alignée sur les tokens web : actif = brand-soft + texte brand-light. */
+function FilterPill({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Focusable variant="button" focusRadius={Radius.pill} onPress={onPress}>
+      <View style={{
+        paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.pill,
+        backgroundColor: active ? "rgba(139, 92, 246, 0.18)" : Colors.ctaGhostBg,
+        borderWidth: 1,
+        borderColor: active ? "rgba(139, 92, 246, 0.45)" : Colors.glassBorder,
+      }}>
+        <Text style={{
+          color: active ? Colors.accentPurpleLight : Colors.textSecondary,
+          ...(active ? Typography.buttonMedium : Typography.caption),
+          fontSize: 14,
+        }}>
+          {label}
+        </Text>
+      </View>
+    </Focusable>
   );
 }

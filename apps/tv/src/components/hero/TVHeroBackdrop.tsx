@@ -72,28 +72,17 @@ export const TVHeroBackdrop = memo(function TVHeroBackdrop({
         </Animated.View>
       )}
 
-      {/* Bottom fade-to-bg */}
+      {/* Bottom fade-to-bg — fond jusqu'au bord (la bande noire venait d'un
+          fondu terminé trop tôt + d'un cache opaque de 28dp) */}
       <LinearGradient
         colors={["transparent", "rgba(0,0,0,0.55)", Colors.bgDeep]}
-        locations={[0, 0.45, 0.92]}
+        locations={[0, 0.55, 1]}
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          height: height * 0.75,
-        }}
-      />
-
-      {/* Hard seam-killer */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 28,
-          backgroundColor: Colors.bgDeep,
+          height: height * 0.6,
         }}
       />
 
