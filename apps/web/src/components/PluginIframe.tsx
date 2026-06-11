@@ -3,6 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { backendUrl } from "../main";
 import { openExternal } from "../lib/openExternal";
+import { TrailerModal } from "./detail/TrailerModal";
+
+interface PluginTrailer {
+  Url: string;
+  Name?: string;
+}
+
+/** Valide la liste de trailers reçue du plugin (postMessage non typé). */
+function sanitizeTrailers(input: unknown): PluginTrailer[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter((t): t is { Url: string; Name?: unknown } =>
+      !!t && typeof (t as { Url?: unknown }).Url === "string"
+      && /^https?:\/\//i.test((t as { Url: string }).Url))
+    .map((t) => ({ Url: t.Url, Name: typeof t.Name === "string" ? t.Name : undefined }))
+    .slice(0, 50);
+}
 
 const LOADER_TEXTS = {
   fr: { loading: "Chargement du plugin…", error: "Erreur de chargement" },
@@ -95,6 +112,9 @@ export function PluginIframe({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
   const bundleFetched = useRef(false);
+  // Trailers demandés par le plugin — joués dans le TrailerModal du HOST
+  // (l'embed YouTube ne fonctionne pas dans l'iframe sandboxée du plugin).
+  const [trailerState, setTrailerState] = useState<{ trailers: PluginTrailer[]; index: number } | null>(null);
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
 
@@ -208,6 +228,17 @@ export function PluginIframe({
           }
           break;
 
+        // Bande-annonce demandée par le plugin → TrailerModal du host.
+        case "OPEN_TRAILER": {
+          const trailers = sanitizeTrailers(data.trailers);
+          if (trailers.length > 0) {
+            const index = typeof data.index === "number"
+              ? Math.min(Math.max(0, data.index), trailers.length - 1) : 0;
+            setTrailerState({ trailers, index });
+          }
+          break;
+        }
+
 
         case "OVERLAY_OPEN": {
           document.querySelectorAll<HTMLElement>("[data-host-chrome]").forEach((el) => {
@@ -255,13 +286,23 @@ export function PluginIframe({
   }
 
   return (
-    <iframe
-      ref={iframeRef}
-      srcDoc={htmlContent!}
-      sandbox="allow-scripts"
-      title={`plugin-${pluginId}`}
-      className="h-full w-full border-0"
-      style={{ minHeight: "calc(100vh - 64px)" }}
-    />
+    <>
+      <iframe
+        ref={iframeRef}
+        srcDoc={htmlContent!}
+        sandbox="allow-scripts"
+        title={`plugin-${pluginId}`}
+        className="h-full w-full border-0"
+        style={{ minHeight: "calc(100vh - 64px)" }}
+      />
+      {trailerState && (
+        <TrailerModal
+          open
+          onClose={() => setTrailerState(null)}
+          trailers={trailerState.trailers}
+          initialIndex={trailerState.index}
+        />
+      )}
+    </>
   );
 }
