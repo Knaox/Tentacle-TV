@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useMediaItem, useSimilarItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaRow } from "../components/rows/MediaRow";
@@ -33,6 +33,8 @@ export function MediaDetail() {
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
+  // Collection (BoxSet) : contenu navigable de la collection
+  const { data: collectionItems } = useCollectionItems(item?.Type === "BoxSet" ? item.Id : undefined);
 
   if (isLoading || !item) {
     return (
@@ -135,6 +137,24 @@ export function MediaDetail() {
             </div>
           </div>
         </motion.div>
+
+        {/* Collection (BoxSet) : contenu navigable — un BoxSet n'a ni lecture
+            ni saisons, sa fiche restait vide. */}
+        {item.Type === "BoxSet" && collectionItems && collectionItems.length > 0 && (
+          <motion.div
+            className="mt-10"
+            variants={fadeIn}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+          >
+            <MediaRow
+              title={t("common:collectionContent", { defaultValue: "Contenu de la collection" })}
+              items={collectionItems}
+            />
+          </motion.div>
+        )}
 
         {/* Extras AU-DESSUS de Saisons & Épisodes. Sur une fiche épisode, on
             passe la série parente pour afficher ses extras en repli. */}

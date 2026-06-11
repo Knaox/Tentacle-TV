@@ -56,6 +56,8 @@ export function DetailActions({ item }: DetailActionsProps) {
   };
 
   const playLabel = (() => {
+    // BoxSet (collection) : conteneur sans MediaSources — pas de lecture.
+    if (item.Type === "BoxSet") return null;
     if (isSeries) {
       if (!watchState || watchState.type === "completed") return null;
       const ep = watchState.episode;
