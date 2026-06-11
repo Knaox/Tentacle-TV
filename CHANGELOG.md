@@ -3,6 +3,13 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+## [1.9.4] - 2026-06-11
+
+Desktop 1.9.4 — Web 1.0.0-beta.6
+
+### Corrigé
+- **Bandes-annonces des plugins** (Seer) : l'embed YouTube ne peut pas fonctionner dans l'iframe sandboxée d'un plugin (restrictions navigateur) → la lecture passe désormais par la modale bande-annonce du host (web et desktop).
+
 ## [1.9.3] - 2026-06-11
 
 Desktop 1.9.3 — Web 1.0.0-beta.6
