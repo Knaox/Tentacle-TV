@@ -45,9 +45,23 @@ export function useTVPlaybackLifecycle(args: {
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
     queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-  }, [queryClient, itemId]);
+    // État de visionnage de la fiche série : bouton Reprendre (watch state),
+    // progress/badges de la liste d'épisodes — sinon la position vue pendant
+    // la lecture n'apparaît pas au retour (cache 60s).
+    if (seriesId) {
+      queryClient.invalidateQueries({ queryKey: ["series-watch-state", seriesId] });
+      queryClient.invalidateQueries({ queryKey: ["episodes", seriesId] });
+    }
+  }, [queryClient, itemId, seriesId]);
+
+  // Garde anti-double sortie : BACK pressé pendant l'await de reportStop (ou
+  // fin d'épisode + BACK simultanés) déclenchait deux goBack() → warning
+  // « GO_BACK not handled by any navigator ».
+  const exitingRef = useRef(false);
 
   const invalidateAndGoBack = useCallback(async () => {
+    if (exitingRef.current) return;
+    exitingRef.current = true;
     await reportStop();
     client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
     invalidateAll();
@@ -55,6 +69,8 @@ export function useTVPlaybackLifecycle(args: {
   }, [reportStop, invalidateAll, navigation, client, userId, itemId]);
 
   const handleFinished = useCallback(async () => {
+    if (exitingRef.current) return;
+    exitingRef.current = true;
     await reportStop();
     client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
     invalidateAll();
@@ -65,14 +81,12 @@ export function useTVPlaybackLifecycle(args: {
   // Unmount cleanup
   const reportStopRef = useRef(reportStop);
   reportStopRef.current = reportStop;
+  const invalidateAllRef = useRef(invalidateAll);
+  invalidateAllRef.current = invalidateAll;
   useEffect(() => () => {
     reportStopRef.current();
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-  }, [queryClient, itemId]);
+    invalidateAllRef.current();
+  }, []);
 
   // AppState : pause + sauvegarde progression en arrière-plan.
   // reportSeek (Progress) plutôt que reportStop pour garder startedRef vivant.

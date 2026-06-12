@@ -344,6 +344,17 @@ class ExoPlayerView(
 
     private var currentSubtitleUrl: String? = null
 
+    /** Extracts the `#tnt-start=<seconds>` fragment appended by the JS layer.
+     *  Returns the clean URL + start position in ms. Fragments are never sent
+     *  over HTTP, this is purely a side-channel for the initial position. */
+    private fun parseStartFragment(url: String): Pair<String, Long> {
+        val marker = "#tnt-start="
+        val idx = url.indexOf(marker)
+        if (idx < 0) return Pair(url, 0L)
+        val sec = url.substring(idx + marker.length).toDoubleOrNull() ?: 0.0
+        return Pair(url.substring(0, idx), (sec * 1000).toLong())
+    }
+
     fun loadFile(url: String) {
         Log.w(TAG, ">>> loadFile url=${url.take(120)}...")
         currentUrl = url
@@ -355,7 +366,12 @@ class ExoPlayerView(
         lastLoadedUrl = url
         loadEmitted = false
         currentSubtitleUrl = null
-        p.setMediaItem(MediaItem.fromUri(Uri.parse(url)))
+        // Start playback AT the requested position (resume / track-change
+        // reload) — no frame from 0:00 is ever decoded, unlike a post-prepare
+        // seek which briefly shows the beginning of the media.
+        val (cleanUrl, startMs) = parseStartFragment(url)
+        val item = MediaItem.fromUri(Uri.parse(cleanUrl))
+        if (startMs > 0) p.setMediaItem(item, startMs) else p.setMediaItem(item)
         p.prepare()
         p.playWhenReady = pendingPaused != true
     }
@@ -371,7 +387,7 @@ class ExoPlayerView(
         loadEmitted = false
         lastSubtitleText = ""
 
-        val builder = MediaItem.Builder().setUri(Uri.parse(videoUrl))
+        val builder = MediaItem.Builder().setUri(Uri.parse(parseStartFragment(videoUrl).first))
         if (subtitleUrl != null && subtitleUrl.isNotEmpty()) {
             Log.w(TAG, ">>> loadSubtitle url=${subtitleUrl.take(120)}")
             builder.setSubtitleConfigurations(listOf(
@@ -388,9 +404,11 @@ class ExoPlayerView(
         // Flag to enable text tracks AFTER prepare completes (onTracksChanged)
         pendingSubtitleEnable = subtitleUrl != null && subtitleUrl.isNotEmpty()
 
-        p.setMediaItem(builder.build())
+        // Re-prepare AT the current position (Media3 requires a new MediaItem
+        // for side-loaded subtitles) — a post-prepare seekTo briefly showed
+        // frames from 0:00.
+        p.setMediaItem(builder.build(), posMs)
         p.prepare()
-        p.seekTo(posMs)
         p.playWhenReady = wasPlaying
     }
 

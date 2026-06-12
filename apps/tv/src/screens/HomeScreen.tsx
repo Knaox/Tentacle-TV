@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { View, ScrollView, TVFocusGuideView } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -23,6 +23,7 @@ import { FocusableRow } from "../components/focus/FocusableRow";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { Colors, Spacing, HeroConfig } from "../theme/colors";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
+import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { TVLibraryRow } from "../components/rows/TVLibraryRow";
@@ -50,17 +51,33 @@ function HomeScreenInner({ navigation }: Props) {
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
 
-  // Invalidate volatile queries when screen regains focus (e.g. after Player)
+  // Invalidate volatile queries when screen regains focus (e.g. after Player).
+  // - Skip du premier mount (les queries démarrent déjà → évite le double-fetch).
+  // - `exact` sur next-up : le préfixe matchait aussi les 2 requêtes supplément
+  //   (Limit 500) → rafale réseau + jank à chaque retour sur l'accueil.
+  // - Différé après les interactions pour ne pas concurrencer la transition.
+  const firstFocusRef = useRef(true);
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-      queryClient.invalidateQueries({ queryKey: ["next-up"] });
-      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+      if (firstFocusRef.current) { firstFocusRef.current = false; return; }
+      const task = InteractionManager.runAfterInteractions(() => {
+        queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+        queryClient.invalidateQueries({ queryKey: ["next-up"], exact: true });
+        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+      });
+      return () => task.cancel();
     }, [queryClient])
   );
 
   // BACK sur l'accueil → focus sur le rail (pattern tvOS/Netflix)
   useTVRemote({ onBack: () => setRailFocusSignal((s) => s + 1) });
+
+  // Préchauffe les écrans lazy (Library/MediaDetail/Player) une fois l'accueil
+  // interactif — le premier accès n'attend plus le parse/exec du module.
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(preloadCoreScreens);
+    return () => task.cancel();
+  }, []);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const rowYMap = useRef<Map<string, number>>(new Map());
@@ -96,8 +113,8 @@ function HomeScreenInner({ navigation }: Props) {
   const isLoading = (featuredQuery.isLoading || librariesQuery.isLoading) && !featured && !libraries;
 
   const navigateToDetail = useCallback((item: MediaItem) => {
-    const detailId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
-    navigation.navigate("MediaDetail", { itemId: detailId });
+    // Épisode → fiche centrée épisode (parité web), plus de redirection série
+    navigation.navigate("MediaDetail", { itemId: item.Id });
   }, [navigation]);
 
   const navigateToPlay = useCallback((item: MediaItem) => {
@@ -240,7 +257,7 @@ function HomeScreenInner({ navigation }: Props) {
                 keyExtractor={(item) => item.Id}
                 itemWidth={TV_EPISODE_WIDTH.md}
                 style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToDetail}
+                onItemPress={navigateToPlay}
                 onItemLongPress={setCtxItem}
                 onItemFocus={(item) => setFocusedItem(item)}
                 onLayout={(e) => rowYMap.current.set("watched", e.nativeEvent.layout.y)}

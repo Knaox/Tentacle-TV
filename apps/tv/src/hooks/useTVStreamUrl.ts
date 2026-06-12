@@ -21,6 +21,11 @@ export function useTVStreamUrl(args: {
   /** Piste sous-titres à INCRUSTER en transcode (PGS/burn-in). -1 = aucune. */
   subtitleIndex?: number;
   startTicks: number;
+  /** Position de DÉMARRAGE de la lecture (reprise / reload de piste), en
+   *  secondes — transmise au natif via un fragment `#tnt-start=` : le player
+   *  démarre directement à cette position (zéro frame à 0:00, et le seek
+   *  post-chargement sur un HLS en transcodage n'est plus nécessaire). */
+  startSeconds?: number;
   forceTranscode: boolean;
   isTranscodingQuality: boolean;
   maxBitrate?: number;
@@ -29,7 +34,7 @@ export function useTVStreamUrl(args: {
 }) {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
-    forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, isDirectPlay,
+    startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, isDirectPlay,
   } = args;
   const client = useJellyfinClient();
 
@@ -50,23 +55,25 @@ export function useTVStreamUrl(args: {
 
   const streamUrl = useMemo(() => {
     if (!itemId) return null;
+    // Fragment de position de départ — jamais envoyé en HTTP, lu par le natif
+    const startFragment = startSeconds && startSeconds > 1 ? `#tnt-start=${Math.floor(startSeconds)}` : "";
     if (isTranscodingQuality) {
       return client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false,
         maxBitrate, maxHeight,
         startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
-      });
+      }) + startFragment;
     }
     if (forceTranscode) {
       return client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
         startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
-      });
+      }) + startFragment;
     }
     return client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
-    });
-  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight]);
+    }) + startFragment;
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight]);
 
   return { streamUrl, playSessionId };
 }

@@ -194,8 +194,20 @@ class MpvPlayerView(
         }
         lastLoadedUrl = url
         try {
-            val cmd = arrayOf("loadfile", url, "replace")
-            Log.w(TAG, ">>> loadFile calling MPVLib.command(loadfile)...")
+            // `#tnt-start=<seconds>` (posé côté JS) : démarrer DIRECTEMENT à la
+            // position via l'option start de loadfile — un seek post-chargement
+            // sur un HLS en cours de transcodage était parfois avalé (retour à 0).
+            val marker = "#tnt-start="
+            val idx = url.indexOf(marker)
+            val cleanUrl = if (idx >= 0) url.substring(0, idx) else url
+            val startSec = if (idx >= 0) url.substring(idx + marker.length).toDoubleOrNull() ?: 0.0 else 0.0
+            // mpv ≥ 0.38 : loadfile <url> <flags> <index> <options> — les
+            // options sont le 5ᵉ argument (le 4ᵉ est l'index de playlist).
+            val cmd = if (startSec > 0)
+                arrayOf("loadfile", cleanUrl, "replace", "-1", "start=+$startSec")
+            else
+                arrayOf("loadfile", cleanUrl, "replace")
+            Log.w(TAG, ">>> loadFile calling MPVLib.command(loadfile) start=$startSec ...")
             MPVLib.command(cmd)
             Log.w(TAG, ">>> loadFile MPVLib.command OK")
         } catch (e: Exception) {

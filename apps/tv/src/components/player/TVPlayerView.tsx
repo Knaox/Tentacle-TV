@@ -1,5 +1,5 @@
 import type { ElementRef } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, type ViewStyle } from "react-native";
+import { View, Text, TouchableOpacity, type ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { MemoizedPlayer } from "./MemoizedPlayer";
@@ -8,8 +8,11 @@ import { TVTrackSelector } from "../TVTrackSelector";
 import { TVSkipSegmentButton } from "../TVSkipSegmentButton";
 import { TVAutoPlayOverlay } from "../TVAutoPlayOverlay";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
+import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScreen";
+import { TVSkipBadge } from "./TVSkipBadge";
+import { TVSubtitleOverlay } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
-import { Colors } from "../../theme/colors";
+import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
 
 interface AutoPlayCtx {
   countdown: number | null;
@@ -26,11 +29,14 @@ interface ControlsCtx {
   overlayVisible: boolean;
   scrubbing: boolean;
   scrubPosition: number;
+  /** Badge éphémère « +30s / −10s » après un skip OSD caché */
+  skipFlash: { delta: number; id: number } | null;
   speedLabel?: string | null;
-  seekActive: boolean;
   showOverlay: () => void;
   handleSkipBack: () => void;
   handleSkipForward: () => void;
+  /** En mode scrub, OK sur un bouton valide le scrub au lieu d'agir */
+  guardScrub: <T extends unknown[]>(fn: (...args: T) => void) => (...args: T) => void;
 }
 
 export interface TVPlayerViewProps {
@@ -39,6 +45,8 @@ export interface TVPlayerViewProps {
   streamUrl: string;
   paused: boolean;
   isLoading: boolean;
+  /** Lecture déjà démarrée — distingue chargement initial / rebuffering */
+  hasStarted: boolean;
   videoError: string | null;
   displayTime: number;
   bufferedTime: number;
@@ -82,8 +90,12 @@ export interface TVPlayerViewProps {
   onCloseSettings: () => void;
   onPrevEpisode: () => void;
   onNextEpisode: () => void;
-  onSeekBarFocus: () => void;
-  onSeekBarBlur: () => void;
+  /** Vignettes de prévisualisation pendant le scrub */
+  trickplay?: UseTVTrickplayResult;
+  /** Incrémenter pour refocus le dernier bouton OSD utilisé */
+  osdFocusSignal?: number;
+  /** Cue de sous-titres texte rendue en JS (useTVSubtitles) */
+  subtitleText?: string | null;
   /** Panneau Saisons & épisodes (séries) */
   showEpisodes?: boolean;
   onToggleEpisodes?: () => void;
@@ -92,7 +104,7 @@ export interface TVPlayerViewProps {
 }
 
 export function TVPlayerView({
-  item, streamUrl, paused, isLoading, videoError, displayTime, bufferedTime,
+  item, streamUrl, paused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
   useExoPlayer, exoRef, mpvRef, backgroundRef, playerStyle,
   audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
@@ -100,10 +112,16 @@ export function TVPlayerView({
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
-  onPrevEpisode, onNextEpisode, onSeekBarFocus, onSeekBarBlur,
+  onPrevEpisode, onNextEpisode, trickplay, osdFocusSignal, subtitleText,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
+
+  // Le fond n'est focusable que quand l'OSD est CACHÉ (et aucun panneau) :
+  // OK/direction sur le fond → showOverlay, puis le focus passe aux boutons.
+  const overlayShown = controls.overlayVisible || paused;
+  const panelOpen = showSettings || autoPlayActive || !!showEpisodes;
+  const backgroundFocusable = !overlayShown && !panelOpen;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
@@ -118,21 +136,22 @@ export function TVPlayerView({
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         // @ts-ignore react-native-tvos
-        hasTVPreferredFocus={!showSettings && !autoPlayActive}
-        accessible={!showSettings && !autoPlayActive}
-        importantForAccessibility={showSettings || autoPlayActive ? "no-hide-descendants" : "auto"}
+        hasTVPreferredFocus={backgroundFocusable}
+        focusable={backgroundFocusable}
+        accessible={backgroundFocusable}
+        importantForAccessibility={panelOpen ? "no-hide-descendants" : "auto"}
       >
         <View style={{ flex: 1 }} />
       </TouchableOpacity>
-      {isLoading && (
-        <View style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          justifyContent: "center", alignItems: "center",
-          backgroundColor: "rgba(0,0,0,0.3)", zIndex: 50, elevation: 50,
-        }} pointerEvents="none">
-          <ActivityIndicator size="large" color={Colors.accentPurple} />
-        </View>
-      )}
+      {/* Sous-titres texte rendus en JS — sous l'OSD, au-dessus de la vidéo */}
+      <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />
+      {/* Badge « +30s / −10s » après un double-clic ←/→ (OSD caché) */}
+      <TVSkipBadge flash={controls.skipFlash} />
+      {/* Chargement initial OU rechargement de flux (piste/qualité) : écran
+          contextualisé couvrant jusqu'à la première position réelle (parité
+          PlayerLoadingScreen web) ; rebuffering : spinner discret */}
+      {!hasStarted && !videoError && <TVPlayerLoadingScreen item={item} />}
+      {isLoading && hasStarted && <TVBufferingSpinner />}
       {videoError && (
         <View style={{
           position: "absolute", top: 60, left: 40, right: 40,
@@ -144,20 +163,22 @@ export function TVPlayerView({
       )}
       <TVPlayerOverlay
         title={item?.Name ?? ""}
-        currentTime={controls.scrubbing ? controls.scrubPosition : displayTime}
+        currentTime={displayTime}
         bufferedTime={bufferedTime}
         duration={displayDuration} paused={paused}
         visible={controls.overlayVisible && !autoPlayActive}
-        speedLabel={controls.speedLabel} seekActive={controls.seekActive}
-        onPlayPause={() => { onPlayPause(); controls.showOverlay(); }}
-        onSkipBack={() => { controls.handleSkipBack(); controls.showOverlay(); }}
-        onSkipForward={() => { controls.handleSkipForward(); controls.showOverlay(); }}
+        speedLabel={controls.speedLabel}
+        scrubbing={controls.scrubbing} scrubPosition={controls.scrubPosition}
+        trickplay={trickplay} focusSignal={osdFocusSignal}
+        onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
+        onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
+        onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}
         onBack={onBack}
-        onSettings={onToggleSettings}
-        onSeekBarFocus={onSeekBarFocus} onSeekBarBlur={onSeekBarBlur}
-        onNextEpisode={onNextEpisode} onPrevEpisode={onPrevEpisode}
+        onSettings={controls.guardScrub(onToggleSettings)}
+        onNextEpisode={onNextEpisode ? controls.guardScrub(onNextEpisode) : undefined}
+        onPrevEpisode={onPrevEpisode ? controls.guardScrub(onPrevEpisode) : undefined}
         hasNextEpisode={!!autoPlay.nextEpisode} hasPreviousEpisode={hasPreviousEpisode}
-        onEpisodes={item?.SeriesId && onToggleEpisodes ? onToggleEpisodes : undefined}
+        onEpisodes={item?.SeriesId && onToggleEpisodes ? controls.guardScrub(onToggleEpisodes) : undefined}
       />
       {!autoPlayActive && (
         <>
@@ -179,6 +200,7 @@ export function TVPlayerView({
       {showEpisodes && item?.SeriesId && onSelectEpisode && onCloseEpisodes && (
         <TVPlayerEpisodePanel
           seriesId={item.SeriesId}
+          currentEpisode={item}
           onSelectEpisode={onSelectEpisode}
           onClose={onCloseEpisodes}
         />

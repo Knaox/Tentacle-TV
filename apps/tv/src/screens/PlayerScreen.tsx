@@ -17,6 +17,11 @@ import { useTVMpvTracks } from "../hooks/useTVMpvTracks";
 import { useTVTrackResolution } from "../hooks/useTVTrackResolution";
 import { useTVPlayerEventHandlers } from "../hooks/useTVPlayerEventHandlers";
 import { useTVStreamUrl } from "../hooks/useTVStreamUrl";
+import { useFocusRecovery } from "../hooks/useFocusRecovery";
+import { useTVTrickplay } from "../hooks/useTVTrickplay";
+import { useTVSubtitles } from "../hooks/useTVSubtitles";
+import { findCachedMediaItem } from "../utils/findCachedMediaItem";
+import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
@@ -28,6 +33,14 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { data: item } = useMediaItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
   const queryClient = useQueryClient();
+  // Pendant le fetch de l'item complet, la bannière de chargement s'appuie
+  // sur la version déjà en cache (cartes Home, fiche, épisodes) : titre +
+  // affiche immédiats au lieu d'un écran noir. JAMAIS utilisé pour la
+  // lecture elle-même (UserData de reprise potentiellement périmé).
+  const placeholderItem = useMemo(
+    () => (item ? null : findCachedMediaItem(queryClient, itemId)),
+    [item, queryClient, itemId],
+  );
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);
@@ -46,10 +59,11 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [startTicks, setStartTicks] = useState(0);
   const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
-  const resumeApplied = useRef(false);
   const [videoError, setVideoError] = useState<string | null>(null);
-  const seekBarFocusedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
+  // Premier onLoad reçu → les isLoading suivants sont du rebuffering (spinner
+  // discret) et non plus le chargement initial (écran contextualisé).
+  const [hasStarted, setHasStarted] = useState(false);
   const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const lastProgressTime = useRef(Date.now());
 
@@ -87,8 +101,21 @@ export function PlayerScreen({ route, navigation }: Props) {
   const isDirectPlay = !forceTranscode && !quality.isTranscodingQuality;
   const isDirectStream = false;
 
+  // Position de DÉMARRAGE du player (fragment #tnt-start lu par le natif) :
+  // reprise initiale (UserData, FIGÉE au premier calcul — un refetch de l'item
+  // en cours de lecture ne doit pas changer l'URL) ou position courante posée
+  // par un changement de piste/qualité (startTicks).
+  const initialResumeSecondsRef = useRef<number | null>(null);
+  if (initialResumeSecondsRef.current === null && item) {
+    initialResumeSecondsRef.current = (item.UserData?.PlaybackPositionTicks ?? 0) / TICKS_PER_SECOND;
+  }
+  const startSeconds = startTicks > 0
+    ? startTicks / TICKS_PER_SECOND
+    : (initialResumeSecondsRef.current ?? 0);
+
   const { streamUrl, playSessionId } = useTVStreamUrl({
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
+    startSeconds,
     forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
     maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
     isDirectPlay,
@@ -107,6 +134,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   pausedStateRef.current = paused;
   const reportSeekRef = useRef(reportSeek);
   reportSeekRef.current = reportSeek;
+  // Rempli après useTVPlayerEventHandlers (handleSeek est défini avant)
+  const notifySeekRef = useRef<(target: number, windowMs?: number, afterReload?: boolean) => void>(() => {});
 
   const trackRes = useTVTrackResolution({
     streams, item, ancestors,
@@ -127,15 +156,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   const autoPlay = useAutoPlay(item, jellyfinDuration ?? 0, skipSegments.credits, navigateToEpisode);
   const { previousEpisode } = useEpisodeNavigation(item);
 
-  // Resume position pour les streams transcodés / HLS
-  useEffect(() => {
-    if (resumeApplied.current || isDirectPlay) return;
-    const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-    if (resumeTicks && resumeTicks > 0 && startTicks === 0) {
-      resumeApplied.current = true;
-      setStartTicks(resumeTicks);
-    }
-  }, [item, isDirectPlay, startTicks]);
+  // NOTE reprise : la timeline du player est absolue (direct play ET HLS
+  // transcodé — StartTimeTicks est retiré des URLs HLS par buildHlsUrl).
+  // La reprise/restauration de position se fait par SEEK client au onLoad
+  // (useTVPlayerEventHandlers.handleLoad), comme sur le web/desktop.
 
   const lifecycle = useTVPlaybackLifecycle({
     itemId, seriesId: item?.SeriesId, navigation,
@@ -151,21 +175,17 @@ export function PlayerScreen({ route, navigation }: Props) {
   const handleSeek = useCallback((seconds: number) => {
     const dur = jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    skipProgressCountRef.current = 1;
+    notifySeekRef.current(clamped);
     displayTimeRef.current = clamped;
     positionRef.current = clamped;
     setDisplayTime(clamped);
     lastDisplayUpdate.current = Date.now();
     lastProgressTime.current = Date.now();
-    if (isDirectPlay) {
-      playerRef.current?.seek(clamped);
-    } else {
-      const offset = startTicks > 0 ? startTicks / TICKS_PER_SECOND : 0;
-      playerRef.current?.seek(Math.max(0, clamped - offset));
-    }
+    // Timeline absolue dans tous les modes (cf. note reprise plus haut)
+    playerRef.current?.seek(clamped);
     reportSeek(clamped, paused);
     checkTriggerRef.current(clamped);
-  }, [jellyfinDuration, paused, reportSeek, isDirectPlay, startTicks, playerRef]);
+  }, [jellyfinDuration, paused, reportSeek, playerRef]);
 
   const prevClickTimeRef = useRef(0);
   const handlePrevEpisode = useCallback(() => {
@@ -184,17 +204,48 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const handlePlayPause = useCallback(() => setPaused((p) => !p), []);
 
+  // Refocus de l'OSD : à chaque incrément, l'overlay redonne le focus au
+  // dernier bouton de transport utilisé (fermeture de panneau, réapparition).
+  const [osdFocusSignal, setOsdFocusSignal] = useState(0);
+  const bumpOsdFocus = useCallback(() => setOsdFocusSignal((s) => s + 1), []);
+
+  // Filet de sécurité : si le focus se perd hors panneau, recible le fond
+  useFocusRecovery(backgroundRef, !showSettings && !showEpisodes);
+
   const controls = useTVPlayerControls({
     paused, jellyfinDuration: jellyfinDuration ?? 0,
     onSeek: handleSeek,
     onBack: () => {
       if (autoPlay.countdown !== null) { autoPlay.cancelAutoPlay(); return; }
-      if (showSettingsRef.current) { setShowSettings(false); showSettingsRef.current = false; return; }
+      if (showSettingsRef.current) {
+        setShowSettings(false);
+        showSettingsRef.current = false;
+        bumpOsdFocus();
+        return;
+      }
       lifecycle.invalidateAndGoBack();
     },
     onPlayPause: handlePlayPause,
-    seekBarFocusedRef,
-    settingsOpen: showSettings,
+    // Le scrub met la lecture en pause et la reprend à la confirmation/annulation
+    onScrubPause: setPaused,
+    panelOpen: showSettings || showEpisodes,
+  });
+
+  // L'OSD réapparaît (OK ou direction sur le fond) → focus sur le dernier
+  // bouton de transport utilisé (sinon le focus reste sur le fond invisible).
+  const prevOverlayVisibleRef = useRef(true);
+  useEffect(() => {
+    if (controls.overlayVisible && !prevOverlayVisibleRef.current) bumpOsdFocus();
+    prevOverlayVisibleRef.current = controls.overlayVisible;
+  }, [controls.overlayVisible, bumpOsdFocus]);
+
+  // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
+  const trickplay = useTVTrickplay(item, mediaSource?.Id);
+
+  // Sous-titres texte rendus en JS — zéro rechargement du player
+  const subtitleText = useTVSubtitles({
+    itemId, mediaSourceId: mediaSource?.Id, subtitleIndex, streams,
+    displayTimeRef, lastProgressTime, pausedStateRef,
   });
 
   useEffect(() => {
@@ -206,14 +257,46 @@ export function PlayerScreen({ route, navigation }: Props) {
   }, [controls.overlayVisible]);
 
   const events = useTVPlayerEventHandlers({
-    item, playerRef, paused, isDirectPlay, startTicks,
+    playerRef, paused,
     positionRef, pausedStateRef, displayTimeRef, bufferedTimeRef,
     lastDisplayUpdate, lastProgressTime, controlsCurrentTimeRef: controls.currentTimeRef,
     setDisplayTime, setBufferedTime, setIsLoading,
     reportStart, updatePosition,
+    // L'écran de chargement reste affiché jusqu'à la première position réelle
+    onPlaybackActive: () => setHasStarted(true),
     autoPlay, handleFinished: lifecycle.handleFinished,
   });
-  const { handleLoad, handleProgress, handleEnd, skipProgressCountRef, checkTriggerRef } = events;
+  const { handleLoad, handleProgress, handleEnd, checkTriggerRef } = events;
+  notifySeekRef.current = events.notifySeek;
+  const resetLoadedRef = useRef(events.resetLoaded);
+  resetLoadedRef.current = events.resetLoaded;
+
+  // À chaque (re)chargement de source : réafficher l'écran de chargement
+  // jusqu'à la première position réelle du nouveau flux (un changement de
+  // piste/qualité en transcode recharge l'URL — sans ça, on voit l'ancien
+  // flux continuer puis sauter), et armer la fenêtre post-seek sur la
+  // position de départ — les premiers progress parasites (~0) sont ignorés,
+  // la barre n'affiche jamais 0:00.
+  useEffect(() => {
+    if (!streamUrl) return;
+    resetLoadedRef.current();
+    setHasStarted(false);
+    setIsLoading(true);
+    // Timeout = filet de sécurité uniquement : la sortie réelle est
+    // ÉVÉNEMENTIELLE (premier progress après le load du nouveau flux).
+    if (startSeconds > 1) notifySeekRef.current(startSeconds, 8000, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamUrl]);
+
+  // Position de redémarrage d'un reload de flux (piste/qualité/transcode) :
+  // reculée de 3s — un seek dans un transcode HLS atterrit à la granularité
+  // des segments (jusqu'à quelques secondes EN AVANT de la cible), et
+  // réentendre la dernière phrase redonne le contexte après un changement.
+  const captureReloadTicks = useCallback(() => {
+    if (positionRef.current > 0) {
+      setStartTicks(Math.floor(Math.max(0, positionRef.current - 3) * TICKS_PER_SECOND));
+    }
+  }, []);
 
   const handleAudioChange = useCallback((newIndex: number) => {
     if (isDirectPlay) {
@@ -221,32 +304,34 @@ export function PlayerScreen({ route, navigation }: Props) {
       if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
       setAudioIndex(newIndex);
     } else {
-      if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+      captureReloadTicks();
       setAudioIndex(newIndex);
     }
-  }, [isDirectPlay, mpvTracks.mpvTrackMap, playerRef]);
+  }, [isDirectPlay, mpvTracks.mpvTrackMap, playerRef, captureReloadTicks]);
 
   const handleSubtitleChange = useCallback((newIndex: number) => {
-    const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === newIndex);
-    const needsBurnIn = newIndex >= 0 && BURN_IN_SUBTITLE_CODECS.test(sub?.Codec ?? "");
-    if (isDirectPlay && !needsBurnIn) {
-      // Sous-titres texte en direct play : chargés dynamiquement (loadSubtitle)
-      // sans recharger la vidéo.
+    const isBurnIn = (idx: number) => idx >= 0
+      && BURN_IN_SUBTITLE_CODECS.test(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec ?? "");
+    const needsBurnIn = isBurnIn(newIndex);
+    const prevBurnIn = isBurnIn(subtitleIndex);
+    if (!needsBurnIn && !prevBurnIn) {
+      // Sous-titres TEXTE : rendus par l'overlay JS (useTVSubtitles) — AUCUN
+      // rechargement du player, en direct play comme en transcode.
       setSubtitleIndex(newIndex);
       return;
     }
-    // Transcode (ou bascule burn-in PGS) : l'URL est reconstruite → mémoriser
-    // la position courante AVANT, sinon la lecture repartait à zéro.
-    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+    // Activation/désactivation d'un burn-in PGS/VOBSUB : l'URL est reconstruite
+    // → mémoriser la position courante (le natif redémarre le flux à cette
+    // position via le fragment #tnt-start).
+    captureReloadTicks();
     setSubtitleIndex(newIndex);
-    // PGS/VOBSUB : non extractibles en VTT → incrustation via transcode (comme le web).
     if (needsBurnIn && isDirectPlay) setForceTranscode(true);
-  }, [isDirectPlay, streams]);
+  }, [isDirectPlay, streams, subtitleIndex, captureReloadTicks]);
 
   const handleQualityChange = useCallback((key: typeof quality.qualityKey) => {
-    if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+    captureReloadTicks();
     quality.setQualityKey(key);
-  }, [quality]);
+  }, [quality, captureReloadTicks]);
 
   const handleError = useCallback((error: string) => {
     const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
@@ -254,13 +339,13 @@ export function PlayerScreen({ route, navigation }: Props) {
     if (isCodecError && !forceTranscode) {
       // Bascule transcode en cours de lecture : reprendre à la position
       // courante (avant : repartait à zéro).
-      if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
+      captureReloadTicks();
       setVideoError(null);
       setForceTranscode(true);
       return;
     }
     setVideoError(error);
-  }, [forceTranscode]);
+  }, [forceTranscode, captureReloadTicks]);
 
   const audioTracksList = useMemo(() =>
     streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
@@ -282,20 +367,29 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : 0;
   const autoPlayActive = autoPlay.countdown !== null;
-  if (!streamUrl) return <View style={{ flex: 1, backgroundColor: "#000" }} />;
+  // Item/URL pas encore résolus : même écran de chargement contextualisé
+  // que la phase initiale du player (parité PlayerLoadingScreen web).
+  // `!item` aussi : monter le player avant l'item ferait rater le seek de
+  // reprise du premier onLoad (UserData indisponible).
+  if (!item || !streamUrl) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#000" }}>
+        <TVPlayerLoadingScreen item={item ?? placeholderItem} />
+      </View>
+    );
+  }
 
   const handleCloseSettings = () => {
     setShowSettings(false);
     showSettingsRef.current = false;
     controls.showOverlay();
-    setTimeout(() => {
-      (backgroundRef.current as unknown as { setNativeProps?: (p: Record<string, unknown>) => void })?.setNativeProps?.({ hasTVPreferredFocus: true });
-    }, 1);
+    bumpOsdFocus();
   };
 
   return (
     <TVPlayerView
       item={item} streamUrl={streamUrl} paused={paused} isLoading={isLoading}
+      hasStarted={hasStarted}
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}
       autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
@@ -317,11 +411,11 @@ export function PlayerScreen({ route, navigation }: Props) {
       onSelectQuality={handleQualityChange}
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
-      onSeekBarFocus={() => { seekBarFocusedRef.current = true; }}
-      onSeekBarBlur={() => { seekBarFocusedRef.current = false; }}
+      trickplay={trickplay} osdFocusSignal={osdFocusSignal}
+      subtitleText={subtitleText}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
-      onCloseEpisodes={() => setShowEpisodes(false)}
+      onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus(); }}
       onSelectEpisode={(ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); }}
     />
   );

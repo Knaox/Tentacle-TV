@@ -1,7 +1,7 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { View, Text, Image, Dimensions } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BRAND } from "@tentacle-tv/shared";
@@ -37,6 +37,19 @@ export const TVHeroContent = memo(function TVHeroContent({
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const isEpisode = item.Type === "Episode";
+  const isSeries = item.Type === "Series";
+  // Série mise en avant : résoudre l'épisode à lire (parité HeroContent web) —
+  // jamais l'ID série au Player ; série terminée → fiche média.
+  const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
+  const handlePlay = useCallback(() => {
+    if (isSeries) {
+      const ep = watchState && watchState.type !== "completed" ? watchState.episode : undefined;
+      if (ep) onPlay(ep);
+      else onDetail(item);
+      return;
+    }
+    onPlay(item);
+  }, [isSeries, watchState, item, onPlay, onDetail]);
   const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const hasLogo = item.ImageTags?.Logo != null
     || (isEpisode && item.SeriesId != null);
@@ -183,7 +196,7 @@ export const TVHeroContent = memo(function TVHeroContent({
       >
         <Focusable
           variant="button"
-          onPress={() => onPlay(item)}
+          onPress={handlePlay}
           hasTVPreferredFocus
           onFocus={onButtonFocus}
           onBlur={onButtonBlur}

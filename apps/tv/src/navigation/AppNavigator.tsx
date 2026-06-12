@@ -22,6 +22,17 @@ const TrailerScreen = React.lazy(() => import("../screens/TrailerScreen").then(m
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+/**
+ * Préchauffe les écrans lazy les plus probables après le premier rendu de
+ * l'accueil : le registre de modules étant partagé, React.lazy résout ensuite
+ * instantanément (élimine le parse/exec au premier accès sur TV bas de gamme).
+ */
+export function preloadCoreScreens() {
+  void import("../screens/LibraryScreen");
+  void import("../screens/MediaDetailScreen");
+  void import("../screens/PlayerScreen");
+}
+
 export function AppNavigator() {
   const { storage } = useTentacleConfig();
   const disclaimerAccepted = storage.getItem("disclaimer_accepted") === "true";
