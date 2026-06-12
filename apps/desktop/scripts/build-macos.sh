@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SIGNING_IDENTITY="Developer ID Application: Damien ROUGE (96K3M57W49)"
-TARGET="aarch64-apple-darwin"
+# Target en argument : aarch64-apple-darwin (défaut) ou x86_64-apple-darwin
+TARGET="${1:-aarch64-apple-darwin}"
 ENTITLEMENTS="src-tauri/Entitlements.plist"
 BUNDLE_DIR="src-tauri/target/$TARGET/release/bundle"
 APP_NAME="Tentacle TV"
@@ -12,7 +13,12 @@ cd "$(dirname "$0")/.."
 
 # Lire la version depuis tauri.conf.json
 VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([0-9.]*\)".*/\1/')
-DMG_NAME="${APP_NAME}_${VERSION}_aarch64.dmg"
+# Suffixe DMG aligné sur la convention Tauri : aarch64 (Apple Silicon) / x64 (Intel)
+case "$TARGET" in
+  x86_64-apple-darwin) ARCH_SUFFIX="x64" ;;
+  *) ARCH_SUFFIX="aarch64" ;;
+esac
+DMG_NAME="${APP_NAME}_${VERSION}_${ARCH_SUFFIX}.dmg"
 DMG_PATH="$BUNDLE_DIR/dmg/$DMG_NAME"
 
 # --- 0. Bundler les dépendances Homebrew de libmpv ---
