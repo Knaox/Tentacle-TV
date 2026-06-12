@@ -365,7 +365,7 @@ Download the latest installer from [GitHub Releases](https://github.com/Knaox/Te
 | OS | Format |
 |----|--------|
 | Windows | `.msi` or `.exe` (NSIS) |
-| macOS | `.dmg` |
+| macOS | `.dmg` (`_aarch64` Apple Silicon / `_x64` Intel) |
 | Linux | `.AppImage` / `.deb` |
 
 The app auto-updates via the built-in Tauri updater.

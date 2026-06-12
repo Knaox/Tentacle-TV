@@ -4,6 +4,9 @@ set -euo pipefail
 # Bundle toutes les dépendances Homebrew de libmpv dans src-tauri/lib/
 # et réécrit les chemins pour utiliser @loader_path/ (self-contained)
 
+# Préfixe Homebrew : /opt/homebrew (Apple Silicon) ou /usr/local (Intel)
+BREW_PREFIX="$(brew --prefix 2>/dev/null || echo /opt/homebrew)"
+
 LIB_DIR="$(cd "$(dirname "$0")/../src-tauri/lib" && pwd)"
 QUEUE_FILE="$(mktemp)"
 DONE_FILE="$(mktemp)"
@@ -34,7 +37,7 @@ while [ -s "$QUEUE_FILE" ]; do
     [ -f "$lib_path" ] || continue
 
     # Extraire les dépendances Homebrew
-    deps="$(otool -L "$lib_path" 2>/dev/null | tail -n +2 | awk '{print $1}' | grep '^/opt/homebrew/' || true)"
+    deps="$(otool -L "$lib_path" 2>/dev/null | tail -n +2 | awk '{print $1}' | grep "^$BREW_PREFIX/" || true)"
 
     for dep_path in $deps; do
       # Résoudre le chemin réel
@@ -109,7 +112,7 @@ ERRORS=0
 for dylib in "$LIB_DIR"/*.dylib; do
   [ -f "$dylib" ] || continue
   filename="$(basename "$dylib")"
-  remaining="$(otool -L "$dylib" | tail -n +2 | awk '{print $1}' | grep '/opt/homebrew/' || true)"
+  remaining="$(otool -L "$dylib" | tail -n +2 | awk '{print $1}' | grep "$BREW_PREFIX/" || true)"
   if [ -n "$remaining" ]; then
     echo "WARNING: $filename still references:"
     echo "$remaining" | sed 's/^/  /'
