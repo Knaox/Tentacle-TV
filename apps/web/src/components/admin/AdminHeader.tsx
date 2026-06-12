@@ -13,6 +13,7 @@ interface Anchor {
 export function AdminHeader() {
   const { t } = useTranslation("admin");
   const anchors: Anchor[] = [
+    { id: "users", label: t("usersTitle") },
     { id: "invites", label: t("generateInvite") },
     { id: "tickets", label: t("supportTickets") },
     { id: "services", label: t("services") },

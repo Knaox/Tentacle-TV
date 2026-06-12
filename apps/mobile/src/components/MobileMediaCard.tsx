@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
@@ -25,9 +27,14 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   item, onPress, onLongPress, width = 130,
 }: Props) {
   const client = useJellyfinClient();
+  const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
+  // Tuile série synthétique des « Derniers ajouts » (groupLatestByRuns) :
+  // Id = SeriesId, sans ImageTags — le poster série existe côté Jellyfin.
+  const addedCount = item.RecentlyAddedCount ?? 0;
+  const isGroupedSeries = addedCount > 1;
   const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const hasPrimary = isEpisode && item.SeriesId ? true : !!item.ImageTags?.Primary;
+  const hasPrimary = (isEpisode && item.SeriesId) || isGroupedSeries ? true : !!item.ImageTags?.Primary;
   const poster = hasPrimary ? client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 }) : null;
   const [imgError, setImgError] = useState(false);
   const progress = item.UserData?.PlayedPercentage ?? 0;
@@ -41,7 +48,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       onLongPress={onLongPress}
       style={{ width }}
       accessibilityRole="button"
-      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}`}
+      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}
     >
       <View style={st.poster}>
         {/* Inner clip — sépare le clipping de l'image du shadow du poster (sinon l'image déborde légèrement les coins arrondis sur certains renders). */}
@@ -78,13 +85,26 @@ export const MobileMediaCard = memo(function MobileMediaCard({
             <Feather name="check" size={12} color="#000" />
           </View>
         )}
+        {isGroupedSeries && (
+          // Badge "+N" violet→rose top-left — match desktop PosterCard.tsx:81
+          // (from-[var(--brand)] to-[var(--brand-accent)], rose #EC4899 idem TentacleLogo).
+          <LinearGradient
+            colors={[BRAND.violet, "#EC4899"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={st.countBadge}
+          >
+            <Text style={st.countBadgeText}>+{addedCount}</Text>
+          </LinearGradient>
+        )}
       </View>
       <Text numberOfLines={1} style={st.title}>
         {isEpisode && item.IndexNumber != null
           ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} · `
           : ""}{item.Name}
       </Text>
-      {!isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
+      {isGroupedSeries && <Text style={st.year}>{t("addedEpisodes", { count: addedCount })}</Text>}
+      {!isGroupedSeries && !isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
       {isEpisode && item.SeriesName != null && <Text numberOfLines={1} style={st.year}>{item.SeriesName}</Text>}
     </PressableCard>
   );
@@ -140,6 +160,25 @@ const st = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 4,
     elevation: 4,
+  },
+  countBadge: {
+    position: "absolute",
+    top: 7,
+    left: 7,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    shadowColor: BRAND.violet,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    lineHeight: 12,
+    fontFamily: FONT_FAMILY.bold,
+    color: "#FFFFFF",
   },
   title: {
     ...typography.small,

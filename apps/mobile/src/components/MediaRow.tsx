@@ -37,7 +37,9 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
       <FlatList
         horizontal
         data={data}
-        keyExtractor={(item) => item.Id}
+        // Id seul ne suffit pas : deux runs d'une même série dans « Derniers
+        // ajouts » partagent le même SeriesId (cf. groupLatestByRuns).
+        keyExtractor={(item, index) => `${item.Id}:${index}`}
         renderItem={renderFlatItem}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={st.list}
