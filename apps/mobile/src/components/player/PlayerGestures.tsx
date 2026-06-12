@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState, useCallback, useEffect } from "react";
-import { View, Text, Pressable, PanResponder, useWindowDimensions, type GestureResponderEvent } from "react-native";
-import { useTranslation } from "react-i18next";
+import { Pressable, PanResponder, useWindowDimensions, type GestureResponderEvent } from "react-native";
+import { SkipIndicator } from "./SkipIndicator";
 
 const DOUBLE_TAP_MS = 300;
 const SWIPE_DOWN_THRESHOLD = 100;
@@ -15,9 +15,7 @@ interface Props {
 }
 
 export function PlayerGestures({ currentTime, overlayVisible, onSeek, onToggleOverlay, onSwipeDown }: Props) {
-  const { t } = useTranslation("player");
-  const { width: SCREEN_W, height: screenH } = useWindowDimensions();
-  const indicatorSize = Math.min(72, Math.round(screenH * 0.09));
+  const { width: SCREEN_W } = useWindowDimensions();
   const [doubleTapSide, setDoubleTapSide] = useState<"left" | "right" | null>(null);
   const lastTapRef = useRef<{ time: number; side: "left" | "right" | "center" }>({ time: 0, side: "center" });
   const singleTapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -73,19 +71,7 @@ export function PlayerGestures({ currentTime, overlayVisible, onSeek, onToggleOv
       )}
 
       {/* Double-tap skip indicator */}
-      {doubleTapSide && (
-        <View pointerEvents="none" style={{
-          position: "absolute", top: "38%",
-          [doubleTapSide === "left" ? "left" : "right"]: SCREEN_W * 0.08,
-          backgroundColor: "rgba(0,0,0,0.5)", borderRadius: indicatorSize / 2,
-          width: indicatorSize, height: indicatorSize, justifyContent: "center", alignItems: "center",
-        }}>
-          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700" }}>
-            {doubleTapSide === "left" ? "-10" : "+30"}
-          </Text>
-          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>{t("secondsShort")}</Text>
-        </View>
-      )}
+      <SkipIndicator side={doubleTapSide} />
     </>
   );
 }
