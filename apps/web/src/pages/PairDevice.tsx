@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useGenerateTvToken, useRelayConfirm } from "@tentacle-tv/api-client";
+import { useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
 
 export function PairDevice() {
   const { t } = useTranslation("pairing");
   const tvTokenMut = useGenerateTvToken();
   const relayConfirmMut = useRelayConfirm();
+  const deviceConfirmMut = useDevicePairConfirm();
 
   const [chars, setChars] = useState(["", "", "", ""]);
   const [status, setStatus] = useState<"idle" | "pairing" | "success" | "error">("idle");
@@ -51,6 +52,16 @@ export function PairDevice() {
     setStatus("pairing");
     setErrorMsg("");
 
+    // 1) Flux local : la TV a généré le code sur CE serveur (config manuelle).
+    //    Code inconnu ici (404) → on retombe sur le flux relay public.
+    try {
+      await deviceConfirmMut.mutateAsync({ code });
+      setStatus("success");
+      return;
+    } catch {
+      // pas un code local — on tente le relay
+    }
+
     try {
       const { token } = await tvTokenMut.mutateAsync();
 
@@ -78,7 +89,7 @@ export function PairDevice() {
         setErrorMsg(t("pairing:relayError"));
       }
     }
-  }, [canSubmit, code, tvTokenMut, relayConfirmMut, t]);
+  }, [canSubmit, code, deviceConfirmMut, tvTokenMut, relayConfirmMut, t]);
 
   const handleReset = useCallback(() => {
     setChars(["", "", "", ""]);

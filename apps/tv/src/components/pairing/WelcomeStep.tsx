@@ -52,7 +52,7 @@ export function WelcomeStep({
         </Focusable>
 
         {/* Manual fallback link */}
-        <Focusable variant="button" onPress={onManualSetup} focusRadius={Radius.pill + 3}>
+        <Focusable variant="button" onPress={onManualSetup} focusRadius={Radius.buttonLarge + 3}>
           <View style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
               {t("pairing:configureManually")}
@@ -108,26 +108,29 @@ const styles = {
     marginBottom: 48,
     textAlign: "center" as const,
   },
+  // CTA core (fiche média) : primaire blanc + ghost translucide
   primaryButton: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 40,
     paddingVertical: 16,
-    backgroundColor: Colors.accentPurple,
+    backgroundColor: Colors.ctaPrimaryBg,
     borderRadius: Radius.buttonLarge,
   },
   primaryButtonText: {
-    color: Colors.textPrimary,
-    fontSize: 17,
-    fontWeight: "700" as const,
+    color: Colors.ctaPrimaryFg,
+    ...Typography.buttonLarge,
     textAlign: "center" as const,
   },
   secondaryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    backgroundColor: Colors.ctaGhostBg,
+    borderRadius: Radius.buttonLarge,
+    borderWidth: 1,
+    borderColor: Colors.ctaGhostBorder,
   },
   secondaryButtonText: {
-    color: Colors.textTertiary,
-    fontSize: 14,
-    fontWeight: "500" as const,
+    color: Colors.textPrimary,
+    ...Typography.buttonLarge,
     textAlign: "center" as const,
   },
 } as const;
