@@ -1,5 +1,3 @@
-import { BACKEND, hdrs, creds } from "../pages/adminUtils";
-
 /**
  * Mode impersonation admin — un admin navigue dans l'app comme un autre
  * utilisateur Jellyfin (JWT court signé par le backend, jamais admin).
@@ -14,6 +12,15 @@ import { BACKEND, hdrs, creds } from "../pages/adminUtils";
  * Chaque bascule fait un location.assign : repart d'un état mémoire vierge
  * (React Query, contextes) — aucun risque de fuite de données entre comptes.
  */
+
+// Import dynamique OBLIGATOIRE : adminUtils lit `backendUrl` depuis main.tsx au
+// niveau module. Ce fichier étant atteignable statiquement depuis App.tsx (via
+// ImpersonationBanner), un import statique créerait le cycle
+// main → App → ImpersonationBanner → impersonation → adminUtils → main
+// et planterait le boot (TDZ sur backendUrl) → fenêtre desktop transparente.
+async function adminApi() {
+  return import("../pages/adminUtils");
+}
 
 const FLAG_KEY = "tentacle_impersonation";
 const ADMIN_USER_BACKUP = "tentacle_admin_user";
@@ -52,6 +59,7 @@ function clearImpersonationKeys(): void {
 }
 
 export async function startImpersonation(userId: string): Promise<void> {
+  const { BACKEND, hdrs, creds } = await adminApi();
   const res = await fetch(`${BACKEND}/api/admin/impersonate`, {
     method: "POST",
     headers: hdrs(),
@@ -90,6 +98,7 @@ export async function startImpersonation(userId: string): Promise<void> {
 }
 
 export async function stopImpersonation(): Promise<void> {
+  const { BACKEND, hdrs, creds } = await adminApi();
   // Restaure le cookie httpOnly côté serveur (no-op utile pour desktop).
   try {
     await fetch(`${BACKEND}/api/auth/impersonate/stop`, {
