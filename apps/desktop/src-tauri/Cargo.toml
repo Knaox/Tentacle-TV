@@ -1,6 +1,6 @@
-[package]
+﻿[package]
 name = "tentacle-desktop"
-version = "1.9.4"
+version = "1.9.5"
 edition = "2021"
 
 [dependencies]
@@ -26,7 +26,7 @@ windows = { version = "0.61", features = [
 ] }
 windows-future = "0.2"
 windows-core = "0.61"
-# Contrôles média système (SMTC) : touches média + overlay "lecture en cours".
+# ContrÃ´les mÃ©dia systÃ¨me (SMTC) : touches mÃ©dia + overlay "lecture en cours".
 souvlaki = "0.8"
 
 [target.'cfg(target_os = "macos")'.dependencies]
