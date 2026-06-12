@@ -6,6 +6,7 @@ import { TrackSelector } from "./TrackSelector";
 import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
 import { LoadingBar } from "./player/PlayerLoadingScreen";
 import { NextEpisodeOverlay } from "./NextEpisodeOverlay";
+import { SkipBadge, type SkipFlash } from "./SkipBadge";
 import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon } from "./PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
@@ -455,6 +456,17 @@ export function DesktopPlayer({
     onPrevious: hasPreviousEpisode ? onPreviousEpisode : undefined,
   });
 
+  // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier)
+  const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
+  const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
+  const skipBy = useCallback((delta: number) => {
+    seekRelative(delta);
+    setSkipFlash({ delta, id: Date.now() });
+    clearTimeout(skipFlashTimer.current);
+    skipFlashTimer.current = setTimeout(() => setSkipFlash(null), 1000);
+  }, [seekRelative]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePause(); }
@@ -462,15 +474,15 @@ export function DesktopPlayer({
         if (fullscreenRef.current) toggleFullscreen();
         else goBack();
       }
-      if (e.code === "ArrowRight") seekRelative(30);
-      if (e.code === "ArrowLeft") seekRelative(-10);
+      if (e.code === "ArrowRight") skipBy(30);
+      if (e.code === "ArrowLeft") skipBy(-10);
       if (e.code === "KeyF") toggleFullscreen();
       if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
       if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, goBack, seekRelative, toggleFullscreen, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [togglePause, goBack, skipBy, toggleFullscreen, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   const fmt = (s: number) => {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
@@ -626,6 +638,9 @@ export function DesktopPlayer({
         </button>
       )}
 
+      {/* Badge « +30s / −10s » après un saut */}
+      <SkipBadge flash={skipFlash} />
+
       {/* Controls overlay — pointer-events only on top/bottom bars */}
       <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"}`}>
         {/* Top bar */}
@@ -699,13 +714,13 @@ export function DesktopPlayer({
                 {hasPreviousEpisode && (
                   <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="(P)"><PrevEpIcon /></button>
                 )}
-                <button onClick={() => seekRelative(-10)} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
+                <button onClick={() => skipBy(-10)} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
                   <span className="text-xs font-bold text-white/70">-10</span>
                 </button>
                 <button onClick={() => togglePause()} className="rounded-full p-2 hover:bg-white/10">
                   {state.paused ? <PlayIcon /> : <PauseIcon />}
                 </button>
-                <button onClick={() => seekRelative(30)} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
+                <button onClick={() => skipBy(30)} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
                   <span className="text-xs font-bold text-white/70">+30</span>
                 </button>
                 {hasNextEpisode && (

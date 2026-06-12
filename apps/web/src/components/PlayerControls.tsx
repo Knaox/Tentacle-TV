@@ -35,6 +35,8 @@ export interface PlayerControlsProps {
   hasPreviousEpisode?: boolean;
   onTogglePlay: () => void;
   onSeek: (seconds: number) => void;
+  /** Saut relatif ±10/30 avec badge — fallback sur onSeek si absent */
+  onSkip?: (delta: number) => void;
   onVolumeChange: (val: number) => void;
   onToggleMute: () => void;
   onToggleFullscreen: () => void;
@@ -52,7 +54,7 @@ export function PlayerControls({
   title, subtitle, audioTracks, subtitleTracks,
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   hasNextEpisode, hasPreviousEpisode,
-  onTogglePlay, onSeek, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
+  onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
   onNextEpisode, onPreviousEpisode,
 }: PlayerControlsProps) {
@@ -215,11 +217,11 @@ export function PlayerControls({
             {hasPreviousEpisode && (
               <button onClick={onPreviousEpisode} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" title={t("player:previousEpisode")} aria-label={t("player:previousEpisode")}><PrevEpIcon /></button>
             )}
-            <button onClick={() => onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipBack")} aria-label={t("player:skipBack")}>
+            <button onClick={() => onSkip ? onSkip(-10) : onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipBack")} aria-label={t("player:skipBack")}>
               <span className="text-xs font-bold text-white/70">-10</span>
             </button>
             <button onClick={onTogglePlay} className="rounded-full p-3 hover:bg-white/10 sm:p-2" aria-label={playing ? t("player:pause", "Pause") : t("player:play", "Play")}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
-            <button onClick={() => onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipForward")} aria-label={t("player:skipForward")}>
+            <button onClick={() => onSkip ? onSkip(30) : onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipForward")} aria-label={t("player:skipForward")}>
               <span className="text-xs font-bold text-white/70">+30</span>
             </button>
             {hasNextEpisode && (

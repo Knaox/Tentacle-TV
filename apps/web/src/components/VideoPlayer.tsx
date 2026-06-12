@@ -5,6 +5,7 @@ import Hls from "hls.js";
 import { AnimatePresence } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayerControls } from "./PlayerControls";
+import { SkipBadge, type SkipFlash } from "./SkipBadge";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { LoadingBar } from "./player/PlayerLoadingScreen";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
@@ -541,13 +542,24 @@ export function VideoPlayer({
     setVolume(v.muted ? 0 : 1);
   }, []);
 
+  // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
+  const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
+  const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
+  const skipBy = useCallback((delta: number) => {
+    handleSeek(Math.max(0, currentTimeRef.current + delta));
+    setSkipFlash({ delta, id: Date.now() });
+    clearTimeout(skipFlashTimer.current);
+    skipFlashTimer.current = setTimeout(() => setSkipFlash(null), 1000);
+  }, [handleSeek]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
       if (e.code === "KeyF") toggleFullscreen();
       if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else navigate(-1); }
-      if (e.code === "ArrowRight") handleSeek(currentTimeRef.current + 30);
-      if (e.code === "ArrowLeft") handleSeek(Math.max(0, currentTimeRef.current - 10));
+      if (e.code === "ArrowRight") skipBy(30);
+      if (e.code === "ArrowLeft") skipBy(-10);
       if (e.code === "ArrowUp") { e.preventDefault(); handleVolumeChange(Math.min(1, volume + 0.1)); }
       if (e.code === "ArrowDown") { e.preventDefault(); handleVolumeChange(Math.max(0, volume - 0.1)); }
       if (e.code === "KeyM") handleToggleMute();
@@ -574,7 +586,7 @@ export function VideoPlayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay, toggleFullscreen, navigate, handleSeek, handleVolumeChange, handleToggleMute, volume, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [togglePlay, toggleFullscreen, navigate, handleSeek, skipBy, handleVolumeChange, handleToggleMute, volume, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
   useEffect(() => () => { clearInterval(autoPlayTimerRef.current); }, []);
 
@@ -637,8 +649,8 @@ export function VideoPlayer({
         if (Math.abs(dx) <= Math.abs(dy)) return; // composante verticale dominante = scroll
         e.preventDefault();
         e.stopPropagation();
-        if (dx > 0) handleSeek(Math.min((jellyfinDuration ?? videoDuration) || Infinity, currentTimeRef.current + 30));
-        else handleSeek(Math.max(0, currentTimeRef.current - 10));
+        if (dx > 0) skipBy(30);
+        else skipBy(-10);
       }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
@@ -768,6 +780,8 @@ export function VideoPlayer({
         </button>
       )}
 
+      <SkipBadge flash={skipFlash} />
+
       <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
         <PlayerControls
           playing={playing} currentTime={currentTime} duration={duration}
@@ -777,7 +791,7 @@ export function VideoPlayer({
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality} sourceQuality={sourceQuality}
           hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
-          onTogglePlay={togglePlay} onSeek={handleSeek}
+          onTogglePlay={togglePlay} onSeek={handleSeek} onSkip={skipBy}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}
           onToggleFullscreen={toggleFullscreen} onBack={() => navigate(-1)}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}

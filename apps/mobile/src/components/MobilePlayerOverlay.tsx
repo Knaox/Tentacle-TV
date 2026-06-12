@@ -7,6 +7,7 @@ import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
 import { type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
+import { SkipIndicator } from "./player/SkipIndicator";
 import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { AutoPlayOverlay } from "./player/AutoPlayOverlay";
 import { SkipButton } from "./player/SkipButton";
@@ -72,6 +73,17 @@ export function MobilePlayerOverlay({
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // Indicateur « +30 / −10 » au tap des boutons de saut (même visuel que le
+  // double-tap des gestes)
+  const [skipSide, setSkipSide] = useState<"left" | "right" | null>(null);
+  const skipFadeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const flashSkip = useCallback((side: "left" | "right") => {
+    setSkipSide(side);
+    if (skipFadeTimer.current) clearTimeout(skipFadeTimer.current);
+    skipFadeTimer.current = setTimeout(() => setSkipSide(null), 700);
+  }, []);
+  useEffect(() => () => { if (skipFadeTimer.current) clearTimeout(skipFadeTimer.current); }, []);
+
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const { showAutoPlay, countdown: autoPlayCountdown, dismiss: dismissAutoPlay } = useAutoPlayNext({
@@ -129,7 +141,7 @@ export function MobilePlayerOverlay({
               </Pressable>
             )}
 
-            <Pressable onPress={() => { onSeek(currentTime - 10); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
+            <Pressable onPress={() => { onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
               <RotateCcw size={24} color="#fff" />
               <Text style={{ color: "#fff", fontSize: 10, fontWeight: "600", textAlign: "center", marginTop: 2 }}>10</Text>
             </Pressable>
@@ -144,7 +156,7 @@ export function MobilePlayerOverlay({
               </View>
             </Pressable>
 
-            <Pressable onPress={() => { onSeek(currentTime + 30); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
+            <Pressable onPress={() => { onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
               <RotateCw size={24} color="#fff" />
               <Text style={{ color: "#fff", fontSize: 10, fontWeight: "600", textAlign: "center", marginTop: 2 }}>30</Text>
             </Pressable>
@@ -155,6 +167,9 @@ export function MobilePlayerOverlay({
               </Pressable>
             )}
           </View>
+
+          {/* Indicateur de saut ±10/30 (boutons) */}
+          <SkipIndicator side={skipSide} />
 
           {/* Skip intro / credits — design aligné desktop (pill blur 24, border subtle, bottom-right safe-area) */}
           {showSkipIntro && introSegment && (
