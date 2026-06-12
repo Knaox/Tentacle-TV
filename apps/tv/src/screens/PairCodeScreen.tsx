@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   useTentacleConfig,
   useJellyfinClient,
-  useClaimPairingCode,
   setPairingBackendUrl,
   setPreferencesBackendUrl,
   setTicketsBackendUrl,
@@ -18,7 +17,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { WelcomeStep } from "../components/pairing/WelcomeStep";
 import { RelayCodeDisplay } from "../components/pairing/RelayCodeDisplay";
 import { ServerInputStep } from "../components/pairing/ServerInputStep";
-import { CodeInputStep } from "../components/pairing/CodeInputStep";
+import { ServerCodeDisplayStep } from "../components/pairing/ServerCodeDisplayStep";
 import { PairingSuccessStep } from "../components/pairing/PairingSuccessStep";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
@@ -38,7 +37,6 @@ export function PairCodeScreen({ navigation }: Props) {
   const { t } = useTranslation(["auth", "pairing"]);
   const { storage } = useTentacleConfig();
   const jellyfinClient = useJellyfinClient();
-  const claimMut = useClaimPairingCode();
 
   const [step, setStep] = useState<Step>("welcome");
   const [pairUser, setPairUser] = useState("");
@@ -47,7 +45,6 @@ export function PairCodeScreen({ navigation }: Props) {
   const [serverUrl, setServerUrl] = useState("");
   const [testing, setTesting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [chars, setChars] = useState(["", "", "", ""]);
 
   const switchLang = useCallback((lng: string) => {
     i18n.changeLanguage(lng);
@@ -104,75 +101,24 @@ export function PairCodeScreen({ navigation }: Props) {
     }
   }, [serverUrl, storage, jellyfinClient, t]);
 
-  // ── Manual flow: claim code ──
-  const code = chars.join("");
-  const canSubmit = code.length === 4 && !claimMut.isPending && step === "manualCode";
-
-  const handleClaimSubmit = useCallback(() => {
-    if (code.length !== 4 || claimMut.isPending) return;
-    claimMut.mutate(
-      { code, deviceName: "Android TV" },
-      {
-        onSuccess: (data) => {
-          setPairUser(data.username || "");
-          if (data.serverUrl) {
-            storage.setItem("tentacle_server_url", data.serverUrl);
-            setAllBackendUrls(data.serverUrl);
-            jellyfinClient.setBaseUrl(`${data.serverUrl}/api/jellyfin`);
-          }
-          jellyfinClient.setAccessToken(data.token);
-          storage.setItem("tentacle_token", data.token);
-          if (data.userId && data.username) {
-            storage.setItem(
-              "tentacle_user",
-              JSON.stringify({ Id: data.userId, Name: data.username }),
-            );
-          }
-          setStep("success");
-          setTimeout(() => navigation.replace("Home"), 2000);
-        },
-      },
+  // ── Manual flow: la TV affiche un code, confirmé depuis le téléphone/web ──
+  const handleDeviceConfirmed = useCallback((data: { token: string; user: { id: string; name: string } }) => {
+    jellyfinClient.setAccessToken(data.token);
+    setPreferencesToken(data.token);
+    storage.setItem("tentacle_token", data.token);
+    storage.setItem(
+      "tentacle_user",
+      JSON.stringify({ Id: data.user.id, Name: data.user.name }),
     );
-  }, [code, claimMut, storage, jellyfinClient, navigation]);
-
-  useEffect(() => {
-    if (code.length === 4 && !claimMut.isPending && step === "manualCode") {
-      handleClaimSubmit();
-    }
-  }, [code, claimMut.isPending, step, handleClaimSubmit]);
-
-  useEffect(() => {
-    if (claimMut.isError) setChars(["", "", "", ""]);
-  }, [claimMut.isError]);
-
-  const handleUpdateChar = useCallback((index: number, value: string) => {
-    setChars((prev) => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
-  }, []);
-
-  const handleKeyPress = useCallback((index: number, key: string) => {
-    if (key === "Backspace") {
-      setChars((prev) => {
-        const next = [...prev];
-        if (prev[index]) {
-          next[index] = "";
-        } else if (index > 0) {
-          next[index - 1] = "";
-        }
-        return next;
-      });
-    }
-  }, []);
+    setPairUser(data.user.name);
+    setStep("success");
+    setTimeout(() => navigation.replace("Home"), 2000);
+  }, [jellyfinClient, storage, navigation]);
 
   const handleChangeServer = useCallback(() => {
     storage.removeItem("tentacle_server_url");
     setStep("manualServer");
-    setChars(["", "", "", ""]);
-    claimMut.reset();
-  }, [storage, claimMut]);
+  }, [storage]);
 
   // ── Render based on step ──
   switch (step) {
@@ -203,6 +149,7 @@ export function PairCodeScreen({ navigation }: Props) {
           testing={testing}
           error={serverError}
           onSubmit={handleTestServer}
+          onBack={() => { setServerError(null); setStep("welcome"); }}
           onSwitchLang={switchLang}
           currentLang={i18n.language}
         />
@@ -210,14 +157,8 @@ export function PairCodeScreen({ navigation }: Props) {
 
     case "manualCode":
       return (
-        <CodeInputStep
-          chars={chars}
-          onUpdateChar={handleUpdateChar}
-          onKeyPress={handleKeyPress}
-          isPending={claimMut.isPending}
-          isError={claimMut.isError}
-          canSubmit={canSubmit}
-          onSubmit={handleClaimSubmit}
+        <ServerCodeDisplayStep
+          onConfirmed={handleDeviceConfirmed}
           onChangeServer={handleChangeServer}
         />
       );

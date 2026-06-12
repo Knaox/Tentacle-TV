@@ -1,7 +1,7 @@
 export { JellyfinClient, JellyfinError } from "./jellyfin";
 export type { DirectStreamingState } from "./jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinClient";
-export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useSearchItems, useGenres, useStudios, useLibraryCatalog } from "./hooks/useLibrary";
+export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useSearchItems, useGenres, useStudios, useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibrary";
 export type { CatalogFilters } from "./hooks/useLibrary";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
 export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
@@ -66,8 +66,8 @@ export { useStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUER
 export type { StreamingConfig } from "./hooks/useStreamingConfig";
 
 // Device pairing (local/backend)
-export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, useGenerateTvToken, useMyPairedDevices, useRevokeMyDevice, setPairingBackendUrl } from "./hooks/usePairing";
-export type { PairingCodeResponse, PairingStatusResponse, ClaimResponse, PairedDevice, TvTokenResponse } from "./hooks/usePairing";
+export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, useGenerateTvToken, useMyPairedDevices, useRevokeMyDevice, useDevicePairGenerate, useDevicePairStatus, useDevicePairConfirm, setPairingBackendUrl } from "./hooks/usePairing";
+export type { PairingCodeResponse, PairingStatusResponse, ClaimResponse, PairedDevice, TvTokenResponse, DevicePairGenerateResponse, DevicePairStatusResponse } from "./hooks/usePairing";
 
 // Device pairing (relay)
 export { useRelayGenerate, useRelayStatus, useRelayConfirm } from "./hooks/useRelayPairing";

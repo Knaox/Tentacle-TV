@@ -11,14 +11,15 @@ interface ServerInputStepProps {
   testing: boolean;
   error: string | null;
   onSubmit: () => void;
+  onBack: () => void;
   onSwitchLang: (lng: string) => void;
   currentLang: string;
 }
 
 export function ServerInputStep({
-  serverUrl, onChangeUrl, testing, error, onSubmit, onSwitchLang, currentLang,
+  serverUrl, onChangeUrl, testing, error, onSubmit, onBack, onSwitchLang, currentLang,
 }: ServerInputStepProps) {
-  const { t } = useTranslation(["auth", "pairing"]);
+  const { t } = useTranslation(["auth", "pairing", "common"]);
   const inputRef = useRef<TextInput>(null);
 
   return (
@@ -69,14 +70,20 @@ export function ServerInputStep({
           </View>
         )}
 
-        <View style={{ marginTop: 24, width: "100%" }}>
+        {/* CTA core (fiche média) : primaire blanc + ghost translucide */}
+        <View style={{ marginTop: 24, width: "100%", gap: 12 }}>
           <Focusable variant="button" onPress={onSubmit}>
-            <View style={[styles.button, (testing || !serverUrl.trim()) && styles.buttonDisabled]}>
+            <View style={[styles.buttonPrimary, (testing || !serverUrl.trim()) && styles.buttonDisabled]}>
               {testing ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={Colors.ctaPrimaryFg} />
               ) : (
-                <Text style={styles.buttonText}>{t("pairing:checkServer")}</Text>
+                <Text style={styles.buttonPrimaryText}>{t("pairing:checkServer")}</Text>
               )}
+            </View>
+          </Focusable>
+          <Focusable variant="button" onPress={onBack} accessibilityLabel={t("common:back")}>
+            <View style={styles.buttonGhost}>
+              <Text style={styles.buttonGhostText}>{t("common:back")}</Text>
             </View>
           </Focusable>
         </View>
@@ -149,18 +156,32 @@ const styles = {
     fontSize: 14,
     textAlign: "center" as const,
   },
-  button: {
-    backgroundColor: Colors.accentPurple,
-    borderRadius: Radius.card,
+  buttonPrimary: {
+    backgroundColor: Colors.ctaPrimaryBg,
+    borderRadius: Radius.buttonLarge,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  buttonPrimaryText: {
+    color: Colors.ctaPrimaryFg,
+    ...Typography.buttonLarge,
+  },
+  buttonGhost: {
+    backgroundColor: Colors.ctaGhostBg,
+    borderWidth: 1,
+    borderColor: Colors.ctaGhostBorder,
+    borderRadius: Radius.buttonLarge,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: "center" as const,
   },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: {
-    color: "#fff",
+  buttonGhostText: {
+    color: Colors.textPrimary,
     ...Typography.buttonLarge,
   },
+  buttonDisabled: { opacity: 0.4 },
   hint: {
     color: Colors.textTertiary,
     fontSize: 13,

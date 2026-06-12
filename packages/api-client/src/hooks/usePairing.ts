@@ -114,6 +114,56 @@ export function useRevokePairedDevice() {
   });
 }
 
+// ---------- Flux « appareil » (manuel, sans relay) ----------
+// La TV affiche un code généré par le serveur configuré ; l'utilisateur le
+// confirme depuis le téléphone/web connecté. Miroir du flux relay, en local.
+
+export interface DevicePairGenerateResponse {
+  code: string;
+  expiresIn: number;
+}
+
+export interface DevicePairStatusResponse {
+  status: "pending" | "confirmed" | "expired";
+  token?: string;
+  user?: { id: string; name: string };
+}
+
+/** TV : génère un code de jumelage sur le serveur configuré (sans auth). */
+export function useDevicePairGenerate() {
+  return useMutation({
+    mutationFn: (data?: { deviceName?: string }) =>
+      pairFetch<DevicePairGenerateResponse>("/device/generate", {
+        method: "POST",
+        body: JSON.stringify(data ?? {}),
+      }),
+  });
+}
+
+/** TV : poll toutes les 3s pour savoir si le code a été confirmé. */
+export function useDevicePairStatus(code: string | null) {
+  return useQuery({
+    queryKey: ["device-pair-status", code],
+    queryFn: () => pairFetch<DevicePairStatusResponse>(`/device/status/${code}`),
+    enabled: !!code,
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
+    retry: 2,
+    retryDelay: 5000,
+  });
+}
+
+/** Téléphone/web : confirme le code affiché par la TV (auth requise). */
+export function useDevicePairConfirm() {
+  return useMutation({
+    mutationFn: (data: { code: string }) =>
+      pairFetch<{ success: boolean; deviceName?: string }>("/device/confirm", {
+        method: "POST",
+        body: JSON.stringify({ code: data.code.toUpperCase() }),
+      }),
+  });
+}
+
 // ---------- TV Token (relay flow) ----------
 
 export interface TvTokenResponse {
