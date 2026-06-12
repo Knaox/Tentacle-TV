@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tentacle TV",
     "slug": "tentacle-mobile",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "Tentacle TV is a premium media client for self-hosted media servers. Stream your movies, series, and music from your personal library with a beautiful, native iOS experience.",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tentacle.mobile",
-      "buildNumber": "34",
+      "buildNumber": "35",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["audio"],
