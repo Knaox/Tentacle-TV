@@ -84,6 +84,7 @@ export default {
   impersonate: "View as",
   impersonating: "Connecting...",
   impersonateAs: "Browse as {{name}}",
+  impersonateConfirmTitle: "Impersonation mode",
   impersonateConfirm: "Browse as {{name}}? You will see the app exactly as this user does (session limited to 8h, no admin rights).",
   impersonateError: "Impersonation failed",
 } as const;

@@ -84,6 +84,7 @@ export default {
   impersonate: "Voir en tant que",
   impersonating: "Connexion...",
   impersonateAs: "Naviguer en tant que {{name}}",
+  impersonateConfirmTitle: "Mode impersonation",
   impersonateConfirm: "Naviguer en tant que {{name}} ? Vous verrez l'application exactement comme cet utilisateur (session limitée à 8h, sans droits admin).",
   impersonateError: "Échec de l'impersonation",
 } as const;
