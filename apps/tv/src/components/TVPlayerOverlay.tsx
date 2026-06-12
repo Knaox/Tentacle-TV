@@ -1,5 +1,5 @@
-import { memo, useEffect } from "react";
-import { View, Text } from "react-native";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, findNodeHandle } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,7 +8,12 @@ import Animated, {
 import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon } from "./icons/TVIcons";
+import { TVTrickplayPreview } from "./player/TVTrickplayPreview";
+import type { UseTVTrickplayResult } from "../hooks/useTVTrickplay";
 import { Colors } from "../theme/colors";
+
+type TransportKey = "back" | "prev" | "skipback" | "playpause" | "skipforward" | "next" | "episodes" | "settings";
+
 interface TVPlayerOverlayProps {
   title: string;
   currentTime: number;
@@ -19,6 +24,12 @@ interface TVPlayerOverlayProps {
   visible: boolean;
   /** Current fast-forward/rewind speed label (e.g. ">>2x"), or null */
   speedLabel?: string | null;
+  /** Mode scrub : curseur fantôme + vignette trickplay, seek à la validation */
+  scrubbing?: boolean;
+  scrubPosition?: number;
+  trickplay?: UseTVTrickplayResult;
+  /** Incrémenter pour redonner le focus au dernier bouton utilisé (défaut play/pause) */
+  focusSignal?: number;
   onPlayPause: () => void;
   /** Skip back uses ref-based time — no stale closure */
   onSkipBack: () => void;
@@ -26,10 +37,6 @@ interface TVPlayerOverlayProps {
   onSkipForward: () => void;
   onBack: () => void;
   onSettings: () => void;
-  /** When true, seekbar gets hasTVPreferredFocus instead of play/pause */
-  seekActive?: boolean;
-  onSeekBarFocus?: () => void;
-  onSeekBarBlur?: () => void;
   /** Next episode — hidden if not provided */
   onNextEpisode?: () => void;
   /** Restart / previous episode (double-click) */
@@ -50,9 +57,9 @@ function formatTime(seconds: number): string {
 
 export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   title, currentTime, bufferedTime = 0, duration, paused, visible,
-  speedLabel, seekActive = false,
+  speedLabel, scrubbing = false, scrubPosition = 0, trickplay, focusSignal = 0,
   onPlayPause, onSkipBack, onSkipForward,
-  onBack, onSettings, onSeekBarFocus, onSeekBarBlur,
+  onBack, onSettings,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
   onEpisodes,
 }: TVPlayerOverlayProps) {
@@ -65,7 +72,59 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const buffered = duration > 0 ? (bufferedTime / duration) * 100 : 0;
+  const scrubPct = duration > 0 ? Math.min((scrubPosition / duration) * 100, 100) : 0;
   const isShown = visible || paused;
+
+  // --- Mémoire de focus : refocus le dernier bouton utilisé sur signal ---
+  const btnRefs = useRef<Partial<Record<TransportKey, { setNativeProps?: (p: Record<string, unknown>) => void } | null>>>({});
+  const lastFocusedRef = useRef<TransportKey>("playpause");
+  // Node du bouton play/pause — verrou de focus pendant le scrub
+  const [playPauseNode, setPlayPauseNode] = useState<number | undefined>(undefined);
+  const setBtnRef = (key: TransportKey) => (node: unknown) => {
+    btnRefs.current[key] = node as { setNativeProps?: (p: Record<string, unknown>) => void } | null;
+    if (key === "playpause" && node) {
+      const handle = findNodeHandle(node as never);
+      if (handle) setPlayPauseNode(handle);
+    }
+  };
+  const rememberFocus = (key: TransportKey) => () => { lastFocusedRef.current = key; };
+
+  useEffect(() => {
+    if (!focusSignal) return;
+    const timer = setTimeout(() => {
+      const target = btnRefs.current[lastFocusedRef.current] ?? btnRefs.current.playpause;
+      target?.setNativeProps?.({ hasTVPreferredFocus: true });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [focusSignal]);
+
+  // Scrub : le focus natif est verrouillé sur play/pause (nextFocus* = soi-même),
+  // sinon ←/→ déplacent AUSSI le focus entre les boutons pendant l'avancement,
+  // et OK presserait un bouton arbitraire (ex. Retour → sortie du lecteur).
+  useEffect(() => {
+    if (!scrubbing) return;
+    const timer = setTimeout(() => {
+      btnRefs.current.playpause?.setNativeProps?.({ hasTVPreferredFocus: true });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [scrubbing]);
+  const lockFocus = scrubbing ? playPauseNode : undefined;
+
+  // --- Trickplay : tuile du curseur fantôme, en mode scrub uniquement ---
+  const [barWidth, setBarWidth] = useState(0);
+  const previewVisible = scrubbing;
+  const trickFrame = useMemo(() => {
+    if (!previewVisible || !trickplay) return null;
+    return trickplay.getFrameAt(scrubPosition * 1000);
+  }, [previewVisible, trickplay, scrubPosition]);
+
+  useEffect(() => {
+    if (trickFrame && trickplay) trickplay.preloadNeighbors(trickFrame.tileIndex);
+  }, [trickFrame, trickplay]);
+
+  const previewPct = previewVisible && duration > 0
+    ? Math.min((scrubPosition / duration) * 100, 100)
+    : 0;
 
   return (
     <Animated.View
@@ -85,7 +144,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         style={{ paddingTop: 40, paddingHorizontal: 40, paddingBottom: 60 }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Focusable variant="button" onPress={onBack}>
+          <Focusable variant="button" ref={setBtnRef("back")} onPress={onBack} onFocus={rememberFocus("back")}>
             <View style={{ padding: 10 }}>
               <BackIcon size={28} color={Colors.textPrimary} />
             </View>
@@ -99,7 +158,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         </View>
       </LinearGradient>
 
-      {/* Speed indicator (fast forward / rewind) */}
+      {/* Speed indicator (scrub accéléré) */}
       {!!speedLabel && (
         <View style={{
           position: "absolute", top: "45%", alignSelf: "center",
@@ -119,22 +178,34 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         colors={["transparent", "rgba(0,0,0,0.8)"]}
         style={{ paddingHorizontal: 40, paddingBottom: 48, paddingTop: 80 }}
       >
-        {/* Progress bar — Focusable so D-pad seek gives it focus */}
-        <Focusable
-          variant="button"
-          hasTVPreferredFocus={seekActive}
-          focusRadius={6}
-          style={{ marginBottom: 24 }}
-          onFocus={onSeekBarFocus}
-          onBlur={onSeekBarBlur}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "500", width: 76 }}>
-              {formatTime(currentTime)}
-            </Text>
+        {/* Progress bar — passive (jamais focusable) ; le scrub se pilote au
+            D-pad avec curseur fantôme + vignette trickplay */}
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
+          <Text style={{
+            color: scrubbing ? Colors.textPrimary : Colors.textSecondary,
+            fontSize: 16, fontWeight: scrubbing ? "700" : "500", width: 76,
+            fontVariant: ["tabular-nums"],
+          }}>
+            {formatTime(scrubbing ? scrubPosition : currentTime)}
+          </Text>
+          {/* Wrapper relatif : héberge la piste (overflow hidden) + la vignette */}
+          <View
+            style={{ flex: 1, marginHorizontal: 16 }}
+            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+          >
+            {previewVisible && (
+              <TVTrickplayPreview
+                visible
+                positionSeconds={scrubPosition}
+                frame={trickFrame}
+                info={trickplay?.info ?? null}
+                anchorX={(previewPct / 100) * barWidth}
+                parentWidth={barWidth}
+              />
+            )}
             <View style={{
-              flex: 1, height: 5, backgroundColor: "rgba(255,255,255,0.15)",
-              borderRadius: 3, marginHorizontal: 16, overflow: "hidden",
+              height: 5, backgroundColor: "rgba(255,255,255,0.15)",
+              borderRadius: 3, overflow: "hidden",
             }}>
               {/* Buffer bar */}
               <View style={{
@@ -148,43 +219,59 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
                 height: 5, width: `${Math.min(progress, 100)}%`,
                 backgroundColor: Colors.accentPurple, borderRadius: 3,
               }} />
-              {/* Scrubber dot */}
-              <View style={{
-                position: "absolute", top: -4,
-                left: `${Math.min(progress, 100)}%`,
-                marginLeft: -6,
-                width: 13, height: 13, borderRadius: 7,
-                backgroundColor: Colors.accentPurple,
-                borderWidth: 2, borderColor: Colors.textPrimary,
-              }} />
             </View>
-            <Text style={{
-              color: Colors.textSecondary, fontSize: 16, fontWeight: "500",
-              width: 76, textAlign: "right",
-            }}>
-              {formatTime(duration)}
-            </Text>
+            {/* Scrubber dot — position de lecture */}
+            <View style={{
+              position: "absolute", top: -4,
+              left: `${Math.min(progress, 100)}%`,
+              marginLeft: -6,
+              width: 13, height: 13, borderRadius: 7,
+              backgroundColor: Colors.accentPurple,
+              borderWidth: 2, borderColor: Colors.textPrimary,
+            }} />
+            {/* Curseur fantôme — position cible du scrub */}
+            {scrubbing && (
+              <View style={{
+                position: "absolute", top: -6,
+                left: `${scrubPct}%`,
+                marginLeft: -8,
+                width: 17, height: 17, borderRadius: 9,
+                backgroundColor: Colors.textPrimary,
+                borderWidth: 2, borderColor: Colors.accentPurple,
+              }} />
+            )}
           </View>
-        </Focusable>
+          <Text style={{
+            color: Colors.textSecondary, fontSize: 16, fontWeight: "500",
+            width: 76, textAlign: "right", fontVariant: ["tabular-nums"],
+          }}>
+            {formatTime(duration)}
+          </Text>
+        </View>
 
         {/* Transport controls */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 32 }}>
           {hasPreviousEpisode && (
-            <Focusable variant="button" onPress={onPrevEpisode}>
+            <Focusable variant="button" ref={setBtnRef("prev")} onPress={onPrevEpisode} onFocus={rememberFocus("prev")}>
               <View style={{ padding: 10 }}>
                 <PrevTrackIcon size={20} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
 
-          <Focusable variant="button" onPress={onSkipBack}>
+          <Focusable variant="button" ref={setBtnRef("skipback")} onPress={onSkipBack} onFocus={rememberFocus("skipback")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>10s</Text>
             </View>
           </Focusable>
 
-          <Focusable variant="button" onPress={onPlayPause} hasTVPreferredFocus={visible && !seekActive}>
+          <Focusable
+            variant="button" ref={setBtnRef("playpause")} onPress={onPlayPause}
+            onFocus={rememberFocus("playpause")} hasTVPreferredFocus
+            nextFocusUp={lockFocus} nextFocusDown={lockFocus}
+            nextFocusLeft={lockFocus} nextFocusRight={lockFocus}
+          >
             <View style={{
               width: 68, height: 68, borderRadius: 34,
               backgroundColor: Colors.accentPurple,
@@ -197,7 +284,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable variant="button" onPress={onSkipForward}>
+          <Focusable variant="button" ref={setBtnRef("skipforward")} onPress={onSkipForward} onFocus={rememberFocus("skipforward")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>30s</Text>
               <SkipForwardIcon size={22} color={Colors.textPrimary} />
@@ -205,7 +292,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           </Focusable>
 
           {hasNextEpisode && (
-            <Focusable variant="button" onPress={onNextEpisode}>
+            <Focusable variant="button" ref={setBtnRef("next")} onPress={onNextEpisode} onFocus={rememberFocus("next")}>
               <View style={{ padding: 10 }}>
                 <NextTrackIcon size={20} color={Colors.textSecondary} />
               </View>
@@ -213,14 +300,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           )}
 
           {onEpisodes && (
-            <Focusable variant="button" onPress={onEpisodes}>
+            <Focusable variant="button" ref={setBtnRef("episodes")} onPress={onEpisodes} onFocus={rememberFocus("episodes")}>
               <View style={{ padding: 13 }}>
                 <MenuIcon size={22} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
 
-          <Focusable variant="button" onPress={onSettings}>
+          <Focusable variant="button" ref={setBtnRef("settings")} onPress={onSettings} onFocus={rememberFocus("settings")}>
             <View style={{ padding: 13 }}>
               <SettingsIcon size={22} color={Colors.textSecondary} />
             </View>

@@ -27,6 +27,7 @@ export default {
   mpvError: "Erreur mpv : {{error}}",
   secondsShort: "sec",
   nextEpisodeLabel: "Épisode suivant",
+  nowPlaying: "En cours de visionnage",
   upNext: "À suivre",
   dismiss: "Masquer",
   playbackError: "Erreur de lecture vidéo",

@@ -27,6 +27,7 @@ export default {
   mpvError: "mpv error: {{error}}",
   secondsShort: "sec",
   nextEpisodeLabel: "Next episode",
+  nowPlaying: "Now playing",
   upNext: "Up Next",
   dismiss: "Dismiss",
   playbackError: "Video playback error",

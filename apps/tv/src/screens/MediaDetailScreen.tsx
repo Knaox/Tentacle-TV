@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, ScrollView, Dimensions, TVFocusGuideView } from "react-native";
+import { View, Text, Image, ScrollView, Dimensions, InteractionManager } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,9 +9,9 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useToggleWatchlist } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { formatDuration, ticksToSeconds } from "@tentacle-tv/shared";
+import { formatDuration } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
@@ -22,7 +22,7 @@ import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { TVEpisodeList } from "../components/TVEpisodeList";
 import { TVExtrasRow } from "../components/detail/TVExtrasRow";
 import { TVMetaChips } from "../components/TVMetaChips";
-import { PlayIcon, BookmarkIcon, BookmarkFilledIcon, MovieIcon } from "../components/icons/TVIcons";
+import { TVDetailActions } from "../components/detail/TVDetailActions";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { useTvTrailers } from "../hooks/useTvTrailers";
@@ -42,7 +42,6 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
-  const { add: addToWatchlist, remove: removeFromWatchlist } = useToggleWatchlist(itemId);
   // Bandes-annonces Jellyfin + TMDB, triées par langue du profil (DB Tentacle)
   const trailers = useTvTrailers(item);
   // Collection (BoxSet) : contenu navigable (pas de lecture sur un conteneur)
@@ -53,15 +52,19 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const playBtnRef = useRef<View>(null);
   useTVRemote({ onBack: () => navigation.goBack() });
 
-  // Re-focus play button + refresh data when screen comes back to foreground
+  // Re-focus play button + refresh data when screen comes back to foreground.
+  // Invalidation différée après les interactions : ne pas concurrencer
+  // l'animation d'entrée de l'écran (jank).
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+      const task = InteractionManager.runAfterInteractions(() => {
+        queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+      });
       const timer = setTimeout(() => {
         // @ts-ignore setNativeProps exists on react-native-tvos
         playBtnRef.current?.setNativeProps({ hasTVPreferredFocus: true });
       }, 150);
-      return () => clearTimeout(timer);
+      return () => { task.cancel(); clearTimeout(timer); };
     }, [queryClient, itemId])
   );
 
@@ -112,10 +115,6 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const year = item.ProductionYear;
   const rating = item.CommunityRating?.toFixed(1);
   const runtime = item.RunTimeTicks ? formatDuration(item.RunTimeTicks) : null;
-  const resumePosition = item.UserData?.PlaybackPositionTicks;
-  const resumeLabel = resumePosition
-    ? `${t("resume")} ${Math.floor(ticksToSeconds(resumePosition) / 60)}:${String(Math.floor(ticksToSeconds(resumePosition) % 60)).padStart(2, "0")}`
-    : t("play");
 
 
   return (
@@ -153,6 +152,32 @@ export function MediaDetailScreen({ route, navigation }: Props) {
             {item.Name}
           </Text>
         </Animated.View>
+
+        {/* Fiche épisode : lien vers la fiche série (parité web « SeriesName — S#E# › ») */}
+        {isEpisode && item.SeriesName && item.SeriesId && (
+          <Animated.View style={[{ alignSelf: "flex-start", marginTop: 8 }, metaStyle]}>
+            <Focusable
+              variant="button"
+              onPress={() => navigation.push("MediaDetail", { itemId: item.SeriesId! })}
+              accessibilityLabel={item.SeriesName}
+            >
+              <View style={{
+                flexDirection: "row", alignItems: "center", gap: 8,
+                paddingHorizontal: 14, paddingVertical: 8,
+                borderRadius: Radius.buttonLarge,
+                backgroundColor: "rgba(255,255,255,0.06)",
+              }}>
+                <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>
+                  {item.SeriesName}
+                  {item.ParentIndexNumber != null && item.IndexNumber != null
+                    ? ` — S${item.ParentIndexNumber}E${item.IndexNumber}`
+                    : ""}
+                  {"  ›"}
+                </Text>
+              </View>
+            </Focusable>
+          </Animated.View>
+        )}
 
         {/* Metadata */}
         <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: Spacing.titleToMeta }, metaStyle]}>
@@ -207,62 +232,17 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           </Animated.View>
         )}
 
-        {/* Buttons — CTA blanc façon web/Netflix + bande-annonce + Ma liste */}
+        {/* Buttons — CTA blanc façon web/Netflix + bande-annonce + Ma liste.
+            Série : épisode résolu via watch state (jamais l'ID série). */}
         <Animated.View style={[{ flexDirection: "row", gap: Spacing.buttonGap, marginTop: Spacing.synopsisToButtons }, buttonsStyle]}>
-          <TVFocusGuideView autoFocus style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
-          {/* BoxSet = conteneur sans MediaSources → pas de bouton Lecture */}
-          {!isBoxSet && (
-          <Focusable ref={playBtnRef} variant="button" onPress={() => navigation.navigate("Player", { itemId: item.Id })} hasTVPreferredFocus onFocus={scrollToButtons}>
-            <View style={{
-              backgroundColor: Colors.ctaPrimaryBg,
-              paddingHorizontal: 40, paddingVertical: 16,
-              borderRadius: Radius.buttonLarge,
-              flexDirection: "row", alignItems: "center", gap: 10,
-            }}>
-              <PlayIcon size={20} color={Colors.ctaPrimaryFg} />
-              <Text style={{ color: Colors.ctaPrimaryFg, ...Typography.buttonLarge }}>{resumeLabel}</Text>
-            </View>
-          </Focusable>
-          )}
-          {trailers.length > 0 && (
-            <Focusable
-              variant="button"
-              onPress={() => navigation.navigate("Trailer", { url: trailers[0].Url, name: trailers[0].Name })}
-              onFocus={scrollToButtons}
-              accessibilityLabel={t("trailer", { defaultValue: "Bande-annonce" })}
-            >
-              <View style={{
-                backgroundColor: Colors.ctaGhostBg,
-                paddingHorizontal: 28, paddingVertical: 16,
-                borderRadius: Radius.buttonLarge,
-                borderWidth: 1, borderColor: Colors.ctaGhostBorder,
-                flexDirection: "row", alignItems: "center", gap: 10,
-              }}>
-                <MovieIcon size={18} color={Colors.textPrimary} />
-                <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>
-                  {t("trailer", { defaultValue: "Bande-annonce" })}
-                </Text>
-              </View>
-            </Focusable>
-          )}
-          <Focusable variant="button" onPress={() => item.UserData?.Likes ? removeFromWatchlist.mutate() : addToWatchlist.mutate()} onFocus={scrollToButtons} hasTVPreferredFocus={isBoxSet}>
-            <View style={{
-              backgroundColor: Colors.ctaGhostBg,
-              paddingHorizontal: 28, paddingVertical: 16,
-              borderRadius: Radius.buttonLarge,
-              borderWidth: 1, borderColor: Colors.ctaGhostBorder,
-              flexDirection: "row", alignItems: "center", gap: 10,
-            }}>
-              {item.UserData?.Likes
-                ? <BookmarkFilledIcon size={18} color={Colors.accentPurple} />
-                : <BookmarkIcon size={18} color={Colors.textSecondary} />
-              }
-              <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>
-                {item.UserData?.Likes ? t("removeFromMyList") : t("addToMyList")}
-              </Text>
-            </View>
-          </Focusable>
-          </TVFocusGuideView>
+          <TVDetailActions
+            item={item}
+            trailers={trailers}
+            playBtnRef={playBtnRef}
+            onPlay={(id) => navigation.navigate("Player", { itemId: id })}
+            onTrailer={(tr) => navigation.navigate("Trailer", { url: tr.Url, name: tr.Name })}
+            onFocusButtons={scrollToButtons}
+          />
         </Animated.View>
       </View>
 
@@ -288,10 +268,16 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         />
       )}
 
-      {/* Episodes for series */}
-      {isSeries && (
+      {/* Episodes — série, ou série parente d'un épisode (fiche centrée épisode,
+          saison présélectionnée + épisode surligné, comme le web) */}
+      {(isSeries || (isEpisode && item.SeriesId)) && (
         <View style={{ marginTop: Spacing.sectionGap }}>
-          <TVEpisodeList seriesId={item.Id} onPlay={(ep) => navigation.navigate("Player", { itemId: ep.Id })} />
+          <TVEpisodeList
+            seriesId={isEpisode ? item.SeriesId! : item.Id}
+            currentEpisodeId={isEpisode ? item.Id : undefined}
+            initialSeasonId={isEpisode ? item.SeasonId : undefined}
+            onPlay={(ep) => navigation.navigate("Player", { itemId: ep.Id })}
+          />
         </View>
       )}
 

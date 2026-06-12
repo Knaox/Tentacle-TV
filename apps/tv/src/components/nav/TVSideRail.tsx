@@ -4,10 +4,12 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, interpolate,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useLibraries, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useLibraries, useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
+import { useTVScrollToFocused } from "../../hooks/useTVScrollToFocused";
 import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
   LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon,
@@ -59,6 +61,29 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const focusCount = useRef(0);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<View>(null);
+  // Le ScrollView des items du haut doit suivre le focus D-pad (sinon une
+  // bibliothèque basse est focusée hors viewport).
+  const itemsScrollRef = useRef<ScrollView>(null);
+  const { makeOnFocus } = useTVScrollToFocused(itemsScrollRef, 56);
+
+  // Prefetch du catalogue au focus d'une bibliothèque (debouncé : traverser le
+  // rail au D-pad ne doit pas précharger toutes les bibliothèques). Mêmes
+  // filtres que LibraryScreen → la grille s'affiche depuis le cache.
+  const queryClient = useQueryClient();
+  const jfClient = useJellyfinClient();
+  const userId = useUserId();
+  const prefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const schedulePrefetch = useCallback((libraryId: string) => {
+    if (prefetchTimer.current) clearTimeout(prefetchTimer.current);
+    prefetchTimer.current = setTimeout(() => {
+      void prefetchLibraryCatalog(queryClient, jfClient, userId, libraryId, {
+        sortBy: "DateCreated", sortOrder: "Descending", limit: 30, fields: "light",
+      });
+    }, 300);
+  }, [queryClient, jfClient, userId]);
+  const cancelPrefetch = useCallback(() => {
+    if (prefetchTimer.current) { clearTimeout(prefetchTimer.current); prefetchTimer.current = null; }
+  }, []);
   // Nœud de l'item actif pour TVFocusGuideView.destinations : entrer dans le
   // rail (LEFT depuis le contenu) focalise TOUJOURS l'item actif — sans ça,
   // Android choisit l'item géométriquement le plus proche (ex: Déconnexion !).
@@ -124,9 +149,12 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     { key: "Logout", label: t("logout"), icon: (c) => <LogoutIcon size={ICON_SIZE} color={c} />, danger: true },
   ];
 
-  const renderItem = (item: RailItem) => {
+  const renderItem = (item: RailItem, index?: number) => {
     const active = currentRoute === item.key;
     const iconColor = item.danger ? Colors.error : active ? Colors.textPrimary : Colors.textTertiary;
+    // Items du ScrollView (index défini) : le rail scrolle pour suivre le focus
+    const scrollFocus = index != null ? makeOnFocus(index, 48) : null;
+    const libraryId = item.key.startsWith("Library_") ? item.key.slice("Library_".length) : null;
     return (
       <Focusable
         key={item.key}
@@ -134,8 +162,12 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
         variant="row"
         focusRadius={Radius.buttonLarge}
         onPress={() => onNavigate(item.key)}
-        onFocus={expand}
-        onBlur={scheduleCollapse}
+        onFocus={() => {
+          expand();
+          scrollFocus?.();
+          if (libraryId) schedulePrefetch(libraryId);
+        }}
+        onBlur={() => { scheduleCollapse(); if (libraryId) cancelPrefetch(); }}
         accessibilityLabel={item.label}
       >
         <View style={{ flexDirection: "row", alignItems: "center", height: 48, borderRadius: Radius.buttonLarge }}>
@@ -198,12 +230,12 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
           </Animated.Text>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          {items.map(renderItem)}
+        <ScrollView ref={itemsScrollRef} showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          {items.map((item, i) => renderItem(item, i))}
         </ScrollView>
 
         <View style={{ height: 1, backgroundColor: Colors.divider, marginVertical: 10 }} />
-        {bottomItems.map(renderItem)}
+        {bottomItems.map((item) => renderItem(item))}
       </TVFocusGuideView>
     </Animated.View>
   );

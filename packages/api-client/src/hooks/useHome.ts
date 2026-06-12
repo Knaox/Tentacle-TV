@@ -47,10 +47,11 @@ interface LatestItemsOptions {
 // les ajouts récents d'épisodes uniques). Overview/Genres restent exclus.
 const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,MediaSources";
 
-// Fenêtre d'épisodes récupérée avant regroupement par série. Élevée car une série
-// fraîchement ajoutée en masse (saison complète) consomme beaucoup de slots ; sans
-// ça, les séries ajoutées avant disparaissent de la rangée.
-const EPISODE_LATEST_LIMIT = 200;
+// Fenêtre d'épisodes récupérée avant regroupement par série. Assez large pour
+// qu'une saison ajoutée en masse n'éjecte pas les séries précédentes, mais
+// bornée : 200 → 100 divisait le payload par 2 sans perte visible (la rangée
+// n'affiche qu'une vingtaine de groupes).
+const EPISODE_LATEST_LIMIT = 100;
 
 export function useLatestItems(parentId: string | undefined, options?: LatestItemsOptions) {
   const client = useJellyfinClient();
@@ -126,14 +127,16 @@ export function useNextUp() {
 
   // Supplement: all unwatched episodes (sorted by season+episode number,
   // which is universally supported — no SeriesSortName risk).
+  // Fields allégés (pas d'Overview/Genres : items du carrousel = image + chips)
+  // et Limit borné — c'était 500 items × ~5KB refetchés à chaque retour Home.
   const unwatched = useQuery({
     queryKey: ["next-up", "unwatched-episodes"],
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?IncludeItemTypes=Episode&Filters=IsUnplayed&Recursive=true` +
-            `&SortBy=ParentIndexNumber,IndexNumber&Limit=500` +
-            `&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`,
+            `&SortBy=ParentIndexNumber,IndexNumber&Limit=250` +
+            `&Fields=PrimaryImageAspectRatio,MediaSources&${IMAGE_OPTS}&${USER_DATA}`,
         )
         .then((r) => r.Items),
     enabled: !!userId,
@@ -149,7 +152,7 @@ export function useNextUp() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?IncludeItemTypes=Episode&Filters=IsPlayed&Recursive=true` +
-            `&SortBy=DatePlayed&SortOrder=Descending&Limit=500&${USER_DATA}`,
+            `&SortBy=DatePlayed&SortOrder=Descending&Limit=300&${USER_DATA}`,
         )
         .then((r) => r.Items),
     enabled: !!userId,

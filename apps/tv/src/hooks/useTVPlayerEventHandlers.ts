@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from "react";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 
@@ -12,8 +11,9 @@ interface AutoPlayCtx {
 
 /**
  * Regroupe les callbacks transmis aux players ExoPlayer/MPV :
- *  - handleLoad : seek au resume + reportStart
- *  - handleProgress : maj position/buffered avec offset HLS, throttling 1s display
+ *  - handleLoad : fin de préparation + reportStart (la position de départ est
+ *    gérée nativement via le fragment #tnt-start de l'URL)
+ *  - handleProgress : maj position/buffered (timeline absolue), throttling 1s
  *  - handleEnd : autoPlay ou retour navigation
  *  - rebuffering watchdog
  *
@@ -22,11 +22,8 @@ interface AutoPlayCtx {
  * conserve la 1ʳᵉ closure et appelle une version périmée.
  */
 export function useTVPlayerEventHandlers(args: {
-  item?: MediaItem | null;
   playerRef: React.RefObject<MPVPlayerHandle | null>;
   paused: boolean;
-  isDirectPlay: boolean;
-  startTicks: number;
   positionRef: React.MutableRefObject<number>;
   pausedStateRef: React.MutableRefObject<boolean>;
   displayTimeRef: React.MutableRefObject<number>;
@@ -39,25 +36,26 @@ export function useTVPlayerEventHandlers(args: {
   setIsLoading: (b: boolean) => void;
   reportStart: () => void;
   updatePosition: (pos: number, paused: boolean) => void;
+  /** Premier progress ACCEPTÉ (position réelle validée) — la lecture est
+   *  effectivement visible : masquer l'écran de chargement. */
+  onPlaybackActive?: () => void;
   autoPlay: AutoPlayCtx;
   handleFinished: () => void;
 }) {
   const {
-    item, playerRef, paused, isDirectPlay, startTicks,
+    playerRef, paused,
     positionRef, pausedStateRef, displayTimeRef, bufferedTimeRef,
     lastDisplayUpdate, lastProgressTime, controlsCurrentTimeRef,
     setDisplayTime, setBufferedTime, setIsLoading,
-    reportStart, updatePosition, autoPlay, handleFinished,
+    reportStart, updatePosition, onPlaybackActive, autoPlay, handleFinished,
   } = args;
+  const onPlaybackActiveRef = useRef(onPlaybackActive);
+  onPlaybackActiveRef.current = onPlaybackActive;
 
   const checkTriggerRef = useRef(autoPlay.checkTrigger);
   checkTriggerRef.current = autoPlay.checkTrigger;
   const reportStartRef = useRef(reportStart);
   reportStartRef.current = reportStart;
-  const isDirectPlayRef = useRef(isDirectPlay);
-  isDirectPlayRef.current = isDirectPlay;
-  const startTicksRef = useRef(startTicks);
-  startTicksRef.current = startTicks;
   const updatePositionRef = useRef(updatePosition);
   updatePositionRef.current = updatePosition;
   const handleFinishedRef = useRef(handleFinished);
@@ -65,32 +63,64 @@ export function useTVPlayerEventHandlers(args: {
   const autoPlayRef = useRef(autoPlay);
   autoPlayRef.current = autoPlay;
 
-  const skipProgressCountRef = useRef(0);
+  // Fenêtre post-seek : le natif peut rapporter PLUSIEURS positions périmées
+  // après un seek (un simple compteur n'en bloquait qu'une → la barre se
+  // figeait sur l'ancienne position, surtout en pause). On ignore tout
+  // callback éloigné de la cible jusqu'à convergence ou timeout.
+  // `afterReload` (chargement/rechargement de source) : dès que le NOUVEAU
+  // flux est prêt (load), sa première position non nulle est la position
+  // réelle — un transcode HLS peut démarrer à quelques secondes de la cible
+  // (granularité des segments), on l'accepte immédiatement au lieu de
+  // bloquer l'écran de chargement jusqu'au timeout.
+  const pendingSeekRef = useRef<{ target: number; until: number; afterReload: boolean } | null>(null);
+  const notifySeek = useCallback((target: number, windowMs = 1500, afterReload = false) => {
+    pendingSeekRef.current = { target, until: Date.now() + windowMs, afterReload };
+  }, []);
+
+  // La position de DÉMARRAGE (reprise, reload de piste) est gérée par le
+  // NATIF via le fragment #tnt-start de l'URL (setMediaItem(item, startMs) /
+  // loadfile start=+N) : aucun seek post-chargement nécessaire, aucune frame
+  // à 0:00. La timeline est absolue dans tous les modes.
+  // Le poller natif émet des progress AVANT que le flux soit prêt (position 0
+  // pendant la préparation) — la lecture n'est « active » qu'après le load
+  // (STATE_READY) ET un progress validé.
+  const loadedRef = useRef(false);
+
+  // Rechargement de source en cours de lecture (changement de piste/qualité) :
+  // les progress de l'ANCIEN flux ne doivent plus valider la lecture, sinon
+  // l'écran de chargement disparaît avant que le nouveau flux soit prêt.
+  const resetLoaded = useCallback(() => {
+    loadedRef.current = false;
+  }, []);
 
   const handleLoad = useCallback((_duration: number) => {
-    if (isDirectPlayRef.current) {
-      const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-      if (resumeTicks) playerRef.current?.seek(resumeTicks / TICKS_PER_SECOND);
-    }
+    loadedRef.current = true;
     setIsLoading(false);
     reportStartRef.current();
-  }, [item, playerRef, setIsLoading]);
+  }, [setIsLoading]);
 
   const handleProgress = useCallback((currentTime: number, buffered: number) => {
-    const raw = Math.max(0, currentTime);
-    const offset = !isDirectPlayRef.current && startTicksRef.current > 0
-      ? startTicksRef.current / TICKS_PER_SECOND : 0;
-    const t = raw + offset;
-    const bufferedAbs = Math.max(0, buffered) + offset;
+    const t = Math.max(0, currentTime);
+    const bufferedAbs = Math.max(0, buffered);
 
-    // Après un seek, ignorer 1 callback périmé (le natif rapporte l'ancienne pos).
-    if (skipProgressCountRef.current > 0) {
-      skipProgressCountRef.current--;
-      bufferedTimeRef.current = bufferedAbs;
-      lastProgressTime.current = Date.now();
-      setIsLoading(false);
-      return;
+    // Fenêtre post-seek : positions périmées ignorées jusqu'à convergence
+    // (pas de setIsLoading(false) ici : la position affichable n'est pas prête)
+    if (pendingSeekRef.current) {
+      const { target, until, afterReload } = pendingSeekRef.current;
+      const converged = Math.abs(t - target) <= 2.5
+        || (afterReload && loadedRef.current && t > 0.5);
+      if (Date.now() > until || converged) {
+        pendingSeekRef.current = null;
+      } else {
+        bufferedTimeRef.current = bufferedAbs;
+        lastProgressTime.current = Date.now();
+        return;
+      }
     }
+    // Lecture active : flux prêt (load) — ou position réelle non nulle, filet
+    // si un re-render réarme loadedRef sans rechargement natif (le load ne
+    // reviendra jamais, mais des progress > 0.5s prouvent que ça joue).
+    if (loadedRef.current || t > 0.5) onPlaybackActiveRef.current?.();
 
     positionRef.current = t;
     controlsCurrentTimeRef.current = t;
@@ -123,5 +153,5 @@ export function useTVPlayerEventHandlers(args: {
     else if (ap.countdown === null) handleFinishedRef.current();
   }, []);
 
-  return { handleLoad, handleProgress, handleEnd, skipProgressCountRef, checkTriggerRef };
+  return { handleLoad, handleProgress, handleEnd, notifySeek, resetLoaded, checkTriggerRef };
 }

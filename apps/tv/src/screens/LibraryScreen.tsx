@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect, memo } from "react";
 import { View, ScrollView, Text, TVFocusGuideView, ActivityIndicator, findNodeHandle } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useLibraryCatalog, useGenres } from "@tentacle-tv/api-client";
@@ -47,11 +47,14 @@ export function LibraryScreen({ route, navigation }: Props) {
   const currentSort = SORT_OPTIONS[sortIndex];
 
   const { data: genresList } = useGenres(libraryId);
+  // fields:"light" : payload minimum pour la grille (le prefetch du rail
+  // utilise les MÊMES filtres — toute divergence = cache-miss)
   const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } = useLibraryCatalog(libraryId, {
     sortBy: currentSort.sortBy,
     sortOrder: currentSort.sortOrder,
     genreIds: selectedGenre ? [selectedGenre] : undefined,
     limit: 30,
+    fields: "light",
   });
 
   const items = useMemo(() => data?.pages.flatMap((p) => p.Items) ?? [], [data]);
@@ -67,6 +70,12 @@ export function LibraryScreen({ route, navigation }: Props) {
   const scrollToRow = useCallback((rowIndex: number) => {
     if (lastScrolledRow.current === rowIndex) return;
     lastScrolledRow.current = rowIndex;
+    if (rowIndex === 0) {
+      // 1ʳᵉ rangée : remonter à l'offset 0 pour garder le header (titre +
+      // filtres) visible — scrollToIndex(0, viewPosition 0.3) le coupait.
+      flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      return;
+    }
     flashListRef.current?.scrollToIndex({ index: rowIndex * COLUMNS, animated: false, viewPosition: 0.3 });
   }, []);
 
@@ -74,6 +83,15 @@ export function LibraryScreen({ route, navigation }: Props) {
     lastScrolledRow.current = -1;
     flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, []);
+
+  // Changement de bibliothèque : l'écran est réutilisé par navigation.navigate
+  // → repartir en haut avec les filtres par défaut, sinon le scroll/tri de la
+  // bibliothèque précédente persiste et du contenu est manqué.
+  useEffect(() => {
+    setSortIndex(0);
+    setSelectedGenre(null);
+    resetScroll();
+  }, [libraryId, resetScroll]);
 
   const handleSortChange = useCallback((index: number) => {
     setSortIndex(index);
@@ -97,15 +115,21 @@ export function LibraryScreen({ route, navigation }: Props) {
     />
   ), [libraryName, sortIndex, selectedGenre, genresList, handleSortChange, handleGenreChange, t]);
 
+  // totalItems via ref : chaque page chargée ne doit pas invalider renderItem
+  // (sinon toute la grille re-rend à chaque pagination).
+  const totalItemsRef = useRef(0);
+  totalItemsRef.current = items.length;
+  const isLastItem = useCallback((index: number) => index === totalItemsRef.current - 1, []);
+
   const renderItem = useCallback(({ item, index }: { item: MediaItem; index: number }) => (
     <GridItem
       item={item}
       index={index}
-      totalItems={items.length}
-      onPress={() => navigateToDetail(item)}
-      onFocus={() => scrollToRow(Math.floor(index / COLUMNS))}
+      isLastItem={isLastItem(index)}
+      onPressItem={navigateToDetail}
+      onFocusRow={scrollToRow}
     />
-  ), [navigateToDetail, scrollToRow, items.length]);
+  ), [navigateToDetail, scrollToRow, isLastItem]);
 
   const shellRoute = `Library_${libraryId}`;
 
@@ -174,9 +198,11 @@ function FooterLoader() {
 
 /* ---- Grid item with edge focus clamping ---- */
 
-function GridItem({ item, index, totalItems, onPress, onFocus }: {
-  item: MediaItem; index: number; totalItems: number;
-  onPress: () => void; onFocus: () => void;
+// Mémoïsé : la grille FlashList re-rend au scroll/focus — seules les props
+// stables (callbacks par référence) évitent un re-render O(n) de la grille.
+const GridItem = memo(function GridItem({ item, index, isLastItem, onPressItem, onFocusRow }: {
+  item: MediaItem; index: number; isLastItem: boolean;
+  onPressItem: (item: MediaItem) => void; onFocusRow: (rowIndex: number) => void;
 }) {
   const ref = useRef<View>(null);
   const [nodeId, setNodeId] = useState<number | undefined>(undefined);
@@ -187,8 +213,7 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
     if (handle) setNodeId(handle);
   }, []);
 
-  const isFirstInRow = index % COLUMNS === 0;
-  const isLastInRow = index % COLUMNS === COLUMNS - 1 || index === totalItems - 1;
+  const isLastInRow = index % COLUMNS === COLUMNS - 1 || isLastItem;
 
   return (
     <View style={{ width: CELL_W, marginBottom: ROW_GAP }}>
@@ -197,8 +222,8 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
       <Focusable
         ref={ref}
         variant="card"
-        onPress={onPress}
-        onFocus={() => { setFocused(true); onFocus(); }}
+        onPress={() => onPressItem(item)}
+        onFocus={() => { setFocused(true); onFocusRow(Math.floor(index / COLUMNS)); }}
         onBlur={() => setFocused(false)}
         hasTVPreferredFocus={index === 0}
         focusRadius={8}
@@ -211,7 +236,7 @@ function GridItem({ item, index, totalItems, onPress, onFocus }: {
       <TVPosterMeta item={item} width={CARD_W} />
     </View>
   );
-}
+});
 
 /* ---- Header sub-component ---- */
 
