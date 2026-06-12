@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { BACKEND, hdrs, creds, cls } from "../../pages/adminUtils";
 import { startImpersonation } from "../../lib/impersonation";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 interface AdminUser {
   id: string;
@@ -34,9 +35,12 @@ function currentUserId(): string | undefined {
  * Les comptes admin et le compte courant ne sont pas impersonables.
  */
 export function UsersSection({ id }: { id?: string }) {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const [search, setSearch] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  // Confirmation via ConfirmDialog maison — window.confirm() ne s'affiche pas
+  // dans les WKWebView Tauri (desktop macOS).
+  const [confirmTarget, setConfirmTarget] = useState<AdminUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selfId = currentUserId();
 
@@ -57,7 +61,6 @@ export function UsersSection({ id }: { id?: string }) {
   }, [users, search]);
 
   const handleImpersonate = async (user: AdminUser) => {
-    if (!confirm(t("impersonateConfirm", { name: user.name }))) return;
     setPendingId(user.id);
     setError(null);
     try {
@@ -66,6 +69,7 @@ export function UsersSection({ id }: { id?: string }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("impersonateError"));
       setPendingId(null);
+      setConfirmTarget(null);
     }
   };
 
@@ -145,7 +149,7 @@ export function UsersSection({ id }: { id?: string }) {
 
               {!blocked && (
                 <button
-                  onClick={() => handleImpersonate(user)}
+                  onClick={() => setConfirmTarget(user)}
                   disabled={pendingId !== null}
                   className={`${cls.bbrand} self-start xs:self-auto`}
                   aria-label={t("impersonateAs", { name: user.name })}
@@ -158,6 +162,17 @@ export function UsersSection({ id }: { id?: string }) {
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title={t("impersonateConfirmTitle")}
+        message={confirmTarget ? t("impersonateConfirm", { name: confirmTarget.name }) : ""}
+        confirmLabel={t("impersonate")}
+        cancelLabel={t("common:cancel")}
+        pending={pendingId !== null}
+        onConfirm={() => { if (confirmTarget) void handleImpersonate(confirmTarget); }}
+        onCancel={() => { if (pendingId === null) setConfirmTarget(null); }}
+      />
     </div>
   );
 }
