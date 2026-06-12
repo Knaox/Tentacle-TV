@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useMyPairedDevices, useRevokeMyDevice, useAuth } from "@tentacle-tv/api-client";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 import { PageTransition } from "../components/PageTransition";
+import { ChangePasswordSection } from "../components/preferences/ChangePasswordSection";
 import { isTauriApp } from "../main";
 
 const LANGUAGE_CODES = [
@@ -136,6 +137,9 @@ export function Preferences() {
             />
           ))}
         </div>
+
+        {/* Compte : changement du mot de passe Jellyfin */}
+        <ChangePasswordSection />
 
         {/* Paired devices section */}
         <PairedDevicesSection />

@@ -5,6 +5,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
 import { BACKEND_VERSION } from "../services/version";
+import { authPasswordRoutes } from "./authPassword";
 
 // Durée du cookie web : 400 jours = plafond imposé par Chrome. Le refresh
 // proactif (12h côté web) refait glisser cette fenêtre à chaque utilisation →
@@ -23,6 +24,9 @@ const loginSchema = z.object({
 });
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
+  // Changement de mot de passe Jellyfin (fichier dédié — limite 300L).
+  await app.register(authPasswordRoutes);
+
   /** POST /api/auth/login — Authenticate via Jellyfin, return token + user. */
   app.post("/login", { config: { rateLimit: { max: 5, timeWindow: 60000 } } }, async (request, reply) => {
     const body = loginSchema.parse(request.body);
