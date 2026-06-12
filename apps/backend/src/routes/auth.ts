@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
-import { verifyDeviceToken, hashToken } from "../services/jwt";
+import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
 import { BACKEND_VERSION } from "../services/version";
 
 // Durée du cookie web : 400 jours = plafond imposé par Chrome. Le refresh
@@ -210,6 +210,17 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     // signature + appareil non révoqué en DB. Token renvoyé tel quel
     // (idempotent, pas de rotation de hash).
     if (token.split(".").length === 3) {
+      // Token d'impersonation : validation locale (signature + expiration).
+      // Jellyfin ne connaît pas ce JWT — le lui soumettre renverrait 401 et
+      // éjecterait l'admin du mode impersonation sur un simple refresh.
+      const impersonation = await verifyImpersonationToken(token);
+      if (impersonation) {
+        return {
+          AccessToken: token,
+          User: { Id: impersonation.userId, Name: impersonation.username },
+        };
+      }
+
       const payload = await verifyDeviceToken(token);
       if (payload) {
         try {
@@ -268,6 +279,39 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // Jellyfin unreachable — don't invalidate the token
       return reply.status(503).send({ message: "Impossible de contacter Jellyfin" });
     }
+  });
+
+  /** POST /api/auth/impersonate/stop — Quitte le mode impersonation (web).
+   *  Restaure le cookie admin sauvegardé au démarrage de l'impersonation.
+   *  Volontairement hors de /api/admin : la session active porte un token
+   *  d'impersonation (isAdmin=false) qui ne passerait pas requireAdmin.
+   *  Pas d'escalade possible : on ne fait que réécrire tentacle_token avec
+   *  un cookie httpOnly que ce même navigateur possédait déjà. */
+  app.post("/impersonate/stop", async (request, reply) => {
+    const cookies = (request as any).cookies as Record<string, string | undefined> | undefined;
+    const adminToken = cookies?.tentacle_admin_token;
+
+    // Clients Bearer (desktop) : le token admin est restauré côté client,
+    // l'appel ne sert qu'à confirmer la fin du mode. On exige quand même un
+    // token d'impersonation valide pour éviter les appels anonymes.
+    if (!adminToken) {
+      const bearer = request.headers.authorization?.slice(7) ?? "";
+      const impersonation = bearer ? await verifyImpersonationToken(bearer) : null;
+      if (!impersonation) {
+        return reply.status(400).send({ message: "Aucune impersonation en cours" });
+      }
+      return { success: true };
+    }
+
+    reply.setCookie("tentacle_token", adminToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: COOKIE_MAX_AGE,
+    });
+    reply.clearCookie("tentacle_admin_token", { path: "/" });
+    return { success: true };
   });
 
   /** POST /api/auth/logout — Invalidate Jellyfin session + clear cookie. */

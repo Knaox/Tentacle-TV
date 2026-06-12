@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
-import { verifyDeviceToken, hashToken } from "../services/jwt";
+import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
 import { getPrisma, hasPrisma } from "../services/db";
 
 export interface JellyfinUser {
@@ -73,6 +73,18 @@ async function validateJellyfinToken(token: string): Promise<ValidationResult> {
 }
 
 export async function validateToken(token: string): Promise<ValidationResult> {
+  // 0. Impersonation JWT (admin naviguant en tant qu'un autre utilisateur).
+  //    Vérifié AVANT Jellyfin : check local instantané, et soumettre ce JWT à
+  //    Jellyfin renverrait systématiquement 401. isAdmin reste false dans le
+  //    payload → aucune route admin accessible pendant l'impersonation.
+  const impersonation = await verifyImpersonationToken(token);
+  if (impersonation) {
+    return {
+      ok: true,
+      user: { userId: impersonation.userId, username: impersonation.username, isAdmin: false },
+    };
+  }
+
   // 1. Try Jellyfin token first (most common path)
   const jfResult = await validateJellyfinToken(token);
   if (jfResult.ok) return jfResult;

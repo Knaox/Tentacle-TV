@@ -136,6 +136,7 @@ export function HomeScreen() {
             key={lib.Id}
             libraryId={lib.Id}
             libraryName={lib.Name}
+            collectionType={lib.CollectionType}
             renderCard={renderCard}
             index={index}
           />
@@ -264,14 +265,17 @@ const mlst = StyleSheet.create({
   progWrap: { position: "absolute" as const, bottom: 0, left: 0, right: 0, paddingHorizontal: 6, paddingBottom: 6 },
 });
 
-function LibraryRow({ libraryId, libraryName, renderCard, index }: {
+function LibraryRow({ libraryId, libraryName, collectionType, renderCard, index }: {
   libraryId: string;
   libraryName: string;
+  collectionType?: string;
   renderCard: (item: MediaItem) => React.ReactNode;
   index: number;
 }) {
   const { t } = useTranslation("common");
-  const { data } = useLatestItems(libraryId);
+  // collectionType active le regroupement en collection des bibliothèques
+  // séries (runs d'épisodes → tuile série + badge "+N") — parité desktop.
+  const { data } = useLatestItems(libraryId, { collectionType });
   if (!data || data.length === 0) return null;
   return (
     <FadeIn delay={320 + index * 90}>

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateModal } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, notifyUserChange } from "@tentacle-tv/api-client";
@@ -195,6 +196,7 @@ export function App() {
   return (
     <ToastProvider>
       {authed && <DirectStreamingSync />}
+      {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
       <Suspense fallback={<PageSpinner />}>
         <Routes>

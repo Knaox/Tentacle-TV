@@ -10,6 +10,18 @@ export interface DeviceTokenPayload {
   type: "paired_device";
 }
 
+export interface ImpersonationTokenPayload {
+  /** Utilisateur Jellyfin ciblé (celui dont on voit l'app). */
+  userId: string;
+  username: string;
+  /** Toujours false : une session impersonée ne doit jamais avoir les droits admin. */
+  isAdmin: false;
+  /** Admin à l'origine de l'impersonation (traçabilité). */
+  adminUserId: string;
+  adminUsername: string;
+  type: "impersonation";
+}
+
 let cachedSecret: string | null = null;
 
 export async function getOrCreateJwtSecret(): Promise<string> {
@@ -49,6 +61,34 @@ export async function verifyDeviceToken(token: string): Promise<DeviceTokenPaylo
     // leur date (pas de re-pairing forcé) ; la révocation DB fait foi.
     const decoded = jwt.verify(token, secret, { ignoreExpiration: true }) as DeviceTokenPayload;
     if (decoded.type !== "paired_device") return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+// Contrairement aux tokens d'appareils, les tokens d'impersonation EXPIRENT
+// (8h) : pas de ligne DB de révocation, la fenêtre courte fait office de
+// garde-fou. L'admin quitte le mode bien avant dans la pratique.
+const IMPERSONATION_TTL = "8h";
+
+export async function signImpersonationToken(
+  payload: Omit<ImpersonationTokenPayload, "type" | "isAdmin">,
+): Promise<string> {
+  const secret = await getOrCreateJwtSecret();
+  return jwt.sign(
+    { ...payload, isAdmin: false, type: "impersonation" } satisfies ImpersonationTokenPayload,
+    secret,
+    { expiresIn: IMPERSONATION_TTL },
+  );
+}
+
+export async function verifyImpersonationToken(token: string): Promise<ImpersonationTokenPayload | null> {
+  try {
+    const secret = await getOrCreateJwtSecret();
+    // Expiration respectée (pas d'ignoreExpiration) : seule protection sans révocation DB.
+    const decoded = jwt.verify(token, secret) as ImpersonationTokenPayload;
+    if (decoded.type !== "impersonation") return null;
     return decoded;
   } catch {
     return null;

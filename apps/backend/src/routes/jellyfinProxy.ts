@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
-import { verifyDeviceToken, hashToken } from "../services/jwt";
+import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
 import { getPrisma, hasPrisma } from "../services/db";
 import { getCached, setCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
@@ -17,6 +17,9 @@ import { emitProxyEvents } from "./jellyfinProxy/events";
 /** Resolve the API key to forward to Jellyfin:
  *  - Anonymous / native token → no override, pass-through whatever client sent.
  *  - Verified device JWT → use admin API key so Jellyfin accepts the request.
+ *  - Impersonation JWT (admin "voir en tant que") → admin API key également ;
+ *    les requêtes user-data ciblent /Users/{userId}/* explicitement, donc la
+ *    clé admin suffit pour servir les données du compte impersoné.
  *  - Session-attribution endpoints → swap to the user's stored Jellyfin token
  *    so playback progress is recorded against the correct account. */
 async function resolveApiKeyOverride(
@@ -25,7 +28,10 @@ async function resolveApiKeyOverride(
 ): Promise<string | undefined> {
   if (!incomingToken) return undefined;
   const payload = await verifyDeviceToken(incomingToken);
-  if (!payload) return undefined;
+  if (!payload) {
+    const impersonation = await verifyImpersonationToken(incomingToken);
+    return impersonation ? (getJellyfinApiKey() ?? undefined) : undefined;
+  }
 
   let apiKey = getJellyfinApiKey();
   const isSessionRoute = /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath);

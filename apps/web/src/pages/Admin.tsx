@@ -8,6 +8,7 @@ import { InvitesSection } from "../components/admin/InvitesSection";
 import { PlaybackSection } from "../components/admin/PlaybackSection";
 import { ServicesSection } from "../components/admin/ServicesSection";
 import { PairedDevicesSection } from "../components/admin/PairedDevicesSection";
+import { UsersSection } from "../components/admin/UsersSection";
 import { cls } from "./adminUtils";
 import { getUserInfo } from "../components/userMenu/menuItems";
 
@@ -67,6 +68,7 @@ export function Admin() {
             </div>
           </div>
 
+          <UsersSection id="users" />
           <InvitesSection id="invites" />
           <div id="tickets"><AdminTickets /></div>
           <PlaybackSection />
