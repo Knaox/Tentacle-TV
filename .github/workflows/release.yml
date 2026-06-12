@@ -50,6 +50,7 @@ jobs:
             label: macOS (Intel)
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     permissions:
       contents: write
 
@@ -106,6 +107,9 @@ jobs:
           security create-keychain -p actions build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p actions build.keychain
+          # Désactive l'auto-lock (300 s par défaut) : codesign se figerait
+          # si le keychain se reverrouille pendant la compilation Rust
+          security set-keychain-settings -lut 21600 build.keychain
           security import /tmp/certificate.p12 -k build.keychain \
             -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: \
