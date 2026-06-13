@@ -17,10 +17,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tentacle.mobile",
-      "buildNumber": "35",
+      "buildNumber": "37",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "AVInitialRouteSharingPolicy": "LongFormVideo",
         "NSLocalNetworkUsageDescription": "Tentacle TV needs access to your local network to connect to your self-hosted media server.",
         "NSAppTransportSecurity": {
@@ -33,12 +35,21 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#080812"
       },
-      "package": "com.tentacle.mobile",
-      "usesCleartextTraffic": true
+      "package": "com.tentacle.mobile"
     },
     "plugins": [
       "expo-router",
-      "expo-screen-orientation"
+      "expo-screen-orientation",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {
