@@ -40,6 +40,13 @@ const singletonPkgs = new Set([
   "react",
   "react-dom",
   "react-native",
+  // Modules natifs : une seule instance JS sinon double enregistrement des vues
+  // (copies imbriquées sous @react-navigation/* et react-native-css-interop).
+  "react-native-safe-area-context",
+  "react-native-screens",
+  "react-native-reanimated",
+  "react-native-svg",
+  "react-native-gesture-handler",
 ]);
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
