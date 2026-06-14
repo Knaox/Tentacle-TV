@@ -1,5 +1,5 @@
-import { memo, useCallback } from "react";
-import { View, Text, Image, Dimensions } from "react-native";
+import { memo, useCallback, useState, type ElementRef } from "react";
+import { View, Text, Image, Dimensions, TVFocusGuideView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
@@ -36,6 +36,10 @@ export const TVHeroContent = memo(function TVHeroContent({
 }: TVHeroContentProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
+  // Node du bouton « Reprendre » : destination du focus entrant dans le hero
+  // (UP depuis le carrousel doit cibler Reprendre, pas « Plus d'infos »).
+  // Callback ref via state → re-render quand le bouton est monté.
+  const [playBtn, setPlayBtn] = useState<ElementRef<typeof Focusable> | null>(null);
   const isEpisode = item.Type === "Episode";
   const isSeries = item.Type === "Series";
   // Série mise en avant : résoudre l'épisode à lire (parité HeroContent web) —
@@ -187,7 +191,11 @@ export const TVHeroContent = memo(function TVHeroContent({
         </Text>
       )}
 
-      <View
+      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : redirige le focus
+          ENTRANT (UP depuis le carrousel) vers le bouton « Reprendre ». */}
+      <TVFocusGuideView
+        autoFocus
+        destinations={playBtn ? [playBtn] : undefined}
         style={{
           flexDirection: "row",
           gap: Spacing.buttonGap,
@@ -195,6 +203,7 @@ export const TVHeroContent = memo(function TVHeroContent({
         }}
       >
         <Focusable
+          ref={setPlayBtn}
           variant="button"
           onPress={handlePlay}
           hasTVPreferredFocus
@@ -247,7 +256,7 @@ export const TVHeroContent = memo(function TVHeroContent({
             </Text>
           </View>
         </Focusable>
-      </View>
+      </TVFocusGuideView>
     </View>
   );
 });
