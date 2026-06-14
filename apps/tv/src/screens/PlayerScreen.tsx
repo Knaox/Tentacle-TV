@@ -20,6 +20,7 @@ import { useTVStreamUrl } from "../hooks/useTVStreamUrl";
 import { useFocusRecovery } from "../hooks/useFocusRecovery";
 import { useTVTrickplay } from "../hooks/useTVTrickplay";
 import { useTVSubtitles } from "../hooks/useTVSubtitles";
+import { useTVTextTracks } from "../hooks/useTVTextTracks";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
 
@@ -242,9 +243,27 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, mediaSource?.Id);
 
-  // Sous-titres texte rendus en JS — zéro rechargement du player
+  // Pistes texte chargées nativement dans ExoPlayer (direct play) → rendu par
+  // le subtitleView natif. Mémoïsé sur streams → stable (pas de re-prepare).
+  const textTracks = useTVTextTracks({
+    itemId, mediaSourceId: mediaSource?.Id, streams, enabled: useExoPlayer,
+  });
+
+  // Applique la sélection de sous-titre nativement (ExoPlayer) sans re-prepare.
+  // Couvre : changement utilisateur, arrivée tardive des pistes (onTracksChanged
+  // remplit subtitleTrackMap), reprise avec préférence sous-titre.
+  useEffect(() => {
+    if (!useExoPlayer) return;
+    if (subtitleIndex < 0) { exoRef.current?.setSubtitleTrack(0); return; }
+    const nativeId = mpvTracks.subtitleTrackMap[subtitleIndex];
+    if (nativeId != null) exoRef.current?.setSubtitleTrack(nativeId);
+  }, [useExoPlayer, subtitleIndex, mpvTracks.subtitleTrackMap]);
+
+  // Overlay JS conservé UNIQUEMENT pour MPV/transcode (pas de subtitleView Media3).
+  // En ExoPlayer, subtitleIndex forcé à -1 → hook inactif (rendu 100% natif).
   const subtitleText = useTVSubtitles({
-    itemId, mediaSourceId: mediaSource?.Id, subtitleIndex, streams,
+    itemId, mediaSourceId: mediaSource?.Id,
+    subtitleIndex: useExoPlayer ? -1 : subtitleIndex, streams,
     displayTimeRef, lastProgressTime, pausedStateRef,
   });
 
@@ -412,7 +431,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
       trickplay={trickplay} osdFocusSignal={osdFocusSignal}
-      subtitleText={subtitleText}
+      subtitleText={subtitleText} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
       onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus(); }}

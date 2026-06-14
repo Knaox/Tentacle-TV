@@ -31,6 +31,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.ThemedReactContext
@@ -66,6 +67,14 @@ class ExoPlayerView(
     )
 
     private var trackList = mutableListOf<TrackInfo>()
+
+    // Pistes texte side-loadées (VTT Jellyfin) fournies par la prop `textTracks`.
+    // Chargées dans le MediaItem au prepare initial → rendu natif par le
+    // subtitleView, switch via setSubtitleTrack SANS re-prepare.
+    private data class TextTrackConfig(
+        val uri: String, val language: String, val label: String, val jellyfinIndex: Int,
+    )
+    private var pendingTextTracks: List<TextTrackConfig> = emptyList()
 
     init {
         Log.w(TAG, ">>> CONSTRUCTOR viewId=$id")
@@ -194,6 +203,9 @@ class ExoPlayerView(
             parameters = buildUponParameters()
                 .setPreferredAudioLanguage("und")
                 .setPreferredAudioMimeTypes(*preferredMimeTypes.toTypedArray())
+                // Démarrer SANS sous-titre (subtitleIndex=-1 côté JS) — la
+                // sélection se fait ensuite explicitement via setSubtitleTrack.
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                 .build()
         }
 
@@ -359,21 +371,62 @@ class ExoPlayerView(
         Log.w(TAG, ">>> loadFile url=${url.take(120)}...")
         currentUrl = url
         val p = player ?: run { Log.w(TAG, ">>> loadFile DEFERRED"); return }
-        if (url == lastLoadedUrl && currentSubtitleUrl == null) {
-            Log.w(TAG, ">>> loadFile SKIP (same URL)")
+        // La clé d'idempotence inclut les pistes texte : un changement de
+        // `textTracks` à URL identique doit re-charger (sinon SKIP → pas de subs).
+        val tracksKey = pendingTextTracks.joinToString("|") { it.uri }
+        val loadKey = "$url##$tracksKey"
+        if (loadKey == lastLoadedUrl && currentSubtitleUrl == null) {
+            Log.w(TAG, ">>> loadFile SKIP (same URL+tracks)")
             return
         }
-        lastLoadedUrl = url
+        lastLoadedUrl = loadKey
         loadEmitted = false
         currentSubtitleUrl = null
         // Start playback AT the requested position (resume / track-change
         // reload) — no frame from 0:00 is ever decoded, unlike a post-prepare
         // seek which briefly shows the beginning of the media.
         val (cleanUrl, startMs) = parseStartFragment(url)
-        val item = MediaItem.fromUri(Uri.parse(cleanUrl))
+        val builder = MediaItem.Builder().setUri(Uri.parse(cleanUrl))
+        if (pendingTextTracks.isNotEmpty()) {
+            // Toutes les pistes texte VTT chargées d'emblée → rendu natif par le
+            // subtitleView, sélection via setSubtitleTrack sans re-prepare.
+            // setId(jellyfinIndex) : clé de mapping fiable (cf. sendTrackList).
+            // PAS de SELECTION_FLAG_DEFAULT → état initial OFF.
+            builder.setSubtitleConfigurations(pendingTextTracks.map { t ->
+                MediaItem.SubtitleConfiguration.Builder(Uri.parse(t.uri))
+                    .setId(t.jellyfinIndex.toString())
+                    .setMimeType(MimeTypes.TEXT_VTT)
+                    .setLanguage(t.language.ifEmpty { null })
+                    .setLabel(t.label.ifEmpty { null })
+                    .build()
+            })
+            Log.w(TAG, ">>> loadFile with ${pendingTextTracks.size} text track(s)")
+        }
+        val item = builder.build()
         if (startMs > 0) p.setMediaItem(item, startMs) else p.setMediaItem(item)
         p.prepare()
         p.playWhenReady = pendingPaused != true
+    }
+
+    /** Pistes texte VTT (prop `textTracks`) — mémorisées puis appliquées au
+     *  prochain loadFile. Si la source est déjà chargée, re-applique. */
+    fun setTextTracks(tracks: ReadableArray?) {
+        val list = mutableListOf<TextTrackConfig>()
+        if (tracks != null) {
+            for (i in 0 until tracks.size()) {
+                val m = tracks.getMap(i) ?: continue
+                val uri = m.getString("uri") ?: continue
+                list.add(TextTrackConfig(
+                    uri = uri,
+                    language = m.getString("language") ?: "",
+                    label = m.getString("label") ?: "",
+                    jellyfinIndex = if (m.hasKey("jellyfinIndex")) m.getInt("jellyfinIndex") else -1,
+                ))
+            }
+        }
+        if (list.map { it.uri } == pendingTextTracks.map { it.uri }) return
+        pendingTextTracks = list
+        currentUrl?.let { loadFile(it) }
     }
 
     /** Load a subtitle track from Jellyfin VTT URL. Rebuilds MediaItem, seeks back. */
@@ -498,6 +551,9 @@ class ExoPlayerView(
                     putInt("id", info.id); putString("type", info.type)
                     putString("lang", info.lang); putString("title", info.title)
                     putString("codec", info.codec)
+                    // nativeId = Format.id : pour les pistes texte side-loadées,
+                    // c'est le jellyfinIndex injecté via SubtitleConfiguration.setId.
+                    putString("nativeId", fmt.id ?: "")
                     putBoolean("default", info.isDefault); putBoolean("selected", info.isSelected)
                 })
                 Log.w(TAG, ">>> track[$gi/$ti] type=$type lang=${info.lang} codec=${info.codec} sel=$sel")

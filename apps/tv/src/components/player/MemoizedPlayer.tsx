@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { ViewStyle } from "react-native";
 import { MPVPlayer, type MPVPlayerHandle, type MpvTrack } from "./MPVPlayer";
-import { ExoPlayer } from "./ExoPlayer";
+import { ExoPlayer, type ExoTextTrack } from "./ExoPlayer";
 
 interface MemoizedPlayerProps {
   useExoPlayer: boolean;
@@ -10,6 +10,8 @@ interface MemoizedPlayerProps {
   source: string;
   paused: boolean;
   playerStyle: ViewStyle;
+  /** Pistes texte VTT pour le rendu natif (ExoPlayer uniquement) */
+  textTracks?: ExoTextTrack[];
   onLoad: (duration: number) => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
@@ -19,7 +21,7 @@ interface MemoizedPlayerProps {
 }
 
 export const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused, playerStyle,
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused, playerStyle, textTracks,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
@@ -29,6 +31,7 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       paused={paused}
       progressInterval={1000}
       audioPassthrough
+      textTracks={textTracks}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}

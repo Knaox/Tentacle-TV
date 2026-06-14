@@ -30,11 +30,20 @@ interface ExoEvent {
   };
 }
 
+export interface ExoTextTrack {
+  uri: string;
+  language: string;
+  label: string;
+  jellyfinIndex: number;
+}
+
 interface ExoPlayerProps {
   source: string;
   paused: boolean;
   progressInterval?: number;
   audioPassthrough?: boolean;
+  /** Pistes texte VTT (Jellyfin) chargées nativement pour le subtitleView Exo */
+  textTracks?: ExoTextTrack[];
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
@@ -50,6 +59,7 @@ const NativeExoView = requireNativeComponent<{
   paused: boolean;
   progressInterval: number;
   audioPassthrough: boolean;
+  textTracks?: ExoTextTrack[];
   onExoEvent: (event: ExoEvent) => void;
   style?: ViewStyle;
 }>("ExoPlayerView");
@@ -62,7 +72,7 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   function ExoPlayer(
-    { source, paused, progressInterval = 1000, audioPassthrough = true, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
+    { source, paused, progressInterval = 1000, audioPassthrough = true, textTracks, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
     ref,
   ) {
     const nativeRef = useRef(null);
@@ -112,6 +122,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
         paused={paused}
         progressInterval={progressInterval}
         audioPassthrough={audioPassthrough}
+        textTracks={textTracks}
         onExoEvent={handleEvent}
         style={style}
       />
