@@ -395,7 +395,7 @@ class ExoPlayerView(
             builder.setSubtitleConfigurations(pendingTextTracks.map { t ->
                 MediaItem.SubtitleConfiguration.Builder(Uri.parse(t.uri))
                     .setId(t.jellyfinIndex.toString())
-                    .setMimeType(MimeTypes.TEXT_VTT)
+                    .setMimeType(mimeForSubtitleUrl(t.uri))
                     .setLanguage(t.language.ifEmpty { null })
                     .setLabel(t.label.ifEmpty { null })
                     .build()
@@ -406,6 +406,18 @@ class ExoPlayerView(
         if (startMs > 0) p.setMediaItem(item, startMs) else p.setMediaItem(item)
         p.prepare()
         p.playWhenReady = pendingPaused != true
+    }
+
+    /** MimeType d'une piste de sous-titre selon l'extension de l'URL Jellyfin.
+     *  ASS/SSA → text/x-ssa (rendu natif via SsaParser + legacy decoding),
+     *  SRT → application/x-subrip, sinon WebVTT. */
+    private fun mimeForSubtitleUrl(url: String): String {
+        val path = url.substringBefore('?').lowercase()
+        return when {
+            path.endsWith(".ass") || path.endsWith(".ssa") -> MimeTypes.TEXT_SSA
+            path.endsWith(".srt") -> MimeTypes.APPLICATION_SUBRIP
+            else -> MimeTypes.TEXT_VTT
+        }
     }
 
     /** Pistes texte VTT (prop `textTracks`) — mémorisées puis appliquées au

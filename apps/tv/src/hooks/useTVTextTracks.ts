@@ -5,6 +5,18 @@ import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { ExoTextTrack } from "../components/player/ExoPlayer";
 
 /**
+ * Format de livraison natif selon le codec (parité DesktopPlayer) : les pistes
+ * ASS/SSA sont servies en `.ass` pour être rendues nativement par ExoPlayer
+ * (legacy SsaParser, MimeType text/x-ssa côté natif) avec leur stylage ;
+ * sinon `.vtt` (texte simple, validé). Jellyfin convertit ASS→VTT sinon, ce qui
+ * casse le rendu (ExoPlayer parse alors de l'ASS comme du VTT).
+ */
+function nativeSubFormat(codec?: string): string {
+  const c = codec?.toLowerCase();
+  return c === "ass" || c === "ssa" ? "ass" : "vtt";
+}
+
+/**
  * Construit la liste des pistes de sous-titres TEXTE (non-burn-in) à charger
  * nativement dans le MediaItem ExoPlayer (rendu par le subtitleView natif,
  * cf. plan sous-titres). Même logique d'URL que useTVSubtitles : URL Jellyfin
@@ -27,13 +39,16 @@ export function useTVTextTracks(args: {
     const ds = client.getDirectStreaming?.();
     return streams
       .filter((s) => s.Type === "Subtitle" && !BURN_IN_SUBTITLE_CODECS.test(s.Codec ?? ""))
-      .map((s) => ({
-        jellyfinIndex: s.Index,
-        language: (s.Language ?? "").toLowerCase(),
-        label: s.DisplayTitle || s.Title || s.Language || `Sub ${s.Index}`,
-        uri: ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken
-          ? `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${s.Index}/Stream.vtt?api_key=${encodeURIComponent(ds.jellyfinToken)}`
-          : client.getSubtitleUrl(itemId, mediaSourceId, s.Index),
-      }));
+      .map((s) => {
+        const fmt = nativeSubFormat(s.Codec);
+        return {
+          jellyfinIndex: s.Index,
+          language: (s.Language ?? "").toLowerCase(),
+          label: s.DisplayTitle || s.Title || s.Language || `Sub ${s.Index}`,
+          uri: ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken
+            ? `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${s.Index}/Stream.${fmt}?api_key=${encodeURIComponent(ds.jellyfinToken)}`
+            : client.getSubtitleUrl(itemId, mediaSourceId, s.Index, fmt),
+        };
+      });
   }, [enabled, itemId, mediaSourceId, streams, client]);
 }

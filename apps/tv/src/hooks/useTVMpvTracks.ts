@@ -37,14 +37,14 @@ export function useTVMpvTracks(args: {
     jellyfinAudio.forEach((s, i) => { if (i < audioTracks.length) map[s.Index] = audioTracks[i].id; });
     jellyfinSubs.forEach((s, i) => { if (i < subTracks.length) map[s.Index] = subTracks[i].id; });
     setMpvTrackMap(map);
-    // Sous-titres : mapping FIABLE via nativeId (= jellyfinIndex injecté dans
-    // SubtitleConfiguration.setId côté natif) ; fallback ordinal si absent.
+    // Sous-titres : nos pistes side-loadées (VTT/ASS externes) arrivent APRÈS
+    // les pistes internes du conteneur, dans l'ordre de déclaration (= ordre
+    // jellyfinSubs). Media3 ne propage PAS SubtitleConfiguration.setId dans
+    // Format.id ("groupe:piste"), donc on mappe par position EN QUEUE :
+    // les N dernières pistes texte ↔ les N pistes Jellyfin (texte) dans l'ordre.
     const sub: Record<number, number> = {};
-    subTracks.forEach((t, i) => {
-      const jf = t.nativeId ? parseInt(t.nativeId, 10) : NaN;
-      if (!Number.isNaN(jf)) sub[jf] = t.id;
-      else if (i < jellyfinSubs.length) sub[jellyfinSubs[i].Index] = t.id;
-    });
+    const sideLoaded = subTracks.slice(Math.max(0, subTracks.length - jellyfinSubs.length));
+    jellyfinSubs.forEach((s, i) => { if (i < sideLoaded.length) sub[s.Index] = sideLoaded[i].id; });
     setSubtitleTrackMap(sub);
   }, [streams]);
 
