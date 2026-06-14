@@ -11,7 +11,6 @@ import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 
 // Lazy-loaded screens
-const LoginScreen = React.lazy(() => import("../screens/LoginScreen").then(m => ({ default: m.LoginScreen })));
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));
 const PlayerScreen = React.lazy(() => import("../screens/PlayerScreen").then(m => ({ default: m.PlayerScreen })));
 const SearchScreen = React.lazy(() => import("../screens/SearchScreen").then(m => ({ default: m.SearchScreen })));
@@ -39,11 +38,12 @@ export function AppNavigator() {
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const hasToken = !!storage.getItem("tentacle_token");
 
-  // Disclaimer only on first launch (no server URL yet and never accepted)
+  // Disclaimer only on first launch (no server URL yet and never accepted).
+  // Sur TV, pas de page de login : sans token actif → toujours le jumellage.
   const initialRouteName = !hasServerUrl && !disclaimerAccepted
     ? "Disclaimer"
-    : hasServerUrl
-      ? (hasToken ? "Home" : "Login")
+    : hasToken
+      ? "Home"
       : "PairCode";
 
   return (
@@ -59,7 +59,6 @@ export function AppNavigator() {
       >
         <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
         <Stack.Screen name="PairCode" component={PairCodeScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Library" component={LibraryScreen} />
         <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />

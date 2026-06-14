@@ -133,7 +133,8 @@ function doLogout(jfClient: JellyfinClient): void {
   jfClient.setAccessToken(null);
   queryClient.clear();
   if (navigationRef.isReady()) {
-    navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+    // Pas de page de login sur TV : on repart sur le jumellage.
+    navigationRef.reset({ index: 0, routes: [{ name: "PairCode" }] });
   }
 }
 
