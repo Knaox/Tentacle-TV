@@ -184,11 +184,11 @@ export function PreferencesScreen({ navigation }: Props) {
             <Focusable key={lang.code} variant="button" onPress={() => changeInterfaceLang(lang.code)}>
               <View style={{
                 paddingHorizontal: 22, paddingVertical: 10, borderRadius: Radius.button,
-                backgroundColor: currentLang === lang.code ? Colors.accentPurple : "rgba(255,255,255,0.04)",
-                borderWidth: 2, borderColor: currentLang === lang.code ? Colors.accentPurple : Colors.glassBorder,
+                backgroundColor: currentLang === lang.code ? Colors.ctaPrimaryBg : "rgba(255,255,255,0.04)",
+                borderWidth: 2, borderColor: currentLang === lang.code ? Colors.ctaPrimaryBg : Colors.glassBorder,
               }}>
                 <Text style={{
-                  color: Colors.textPrimary, fontSize: 16,
+                  color: currentLang === lang.code ? Colors.ctaPrimaryFg : Colors.textPrimary, fontSize: 16,
                   fontWeight: currentLang === lang.code ? "700" : "400",
                 }}>
                   {t(lang.labelKey)}
