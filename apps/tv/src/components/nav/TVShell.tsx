@@ -10,6 +10,7 @@ import {
 import type { RootStackParamList } from "../../navigation/types";
 import { TVSideRail, RAIL_COLLAPSED } from "./TVSideRail";
 import { SelectionModal } from "../SelectionModal";
+import { clearCredentials } from "../../auth/credentialManager";
 import { Colors } from "../../theme/colors";
 
 interface TVShellProps {
@@ -58,9 +59,11 @@ export function TVShell({ currentRoute, railFocusSignal, children }: TVShellProp
       storage.removeItem("tentacle_user");
       storage.removeItem("tentacle_jellyfin_token");
       storage.removeItem("tentacle_jellyfin_url");
+      clearCredentials(storage);
       setPreferencesToken(null);
       queryClient.clear();
-      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+      // Pas de page de login sur TV : on repart sur le jumellage.
+      navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
     } else if (action === "changeServer") {
       changeServer.mutate(undefined, {
         onSettled: () => {

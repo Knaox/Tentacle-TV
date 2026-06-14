@@ -38,7 +38,7 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
     storage.removeItem("tentacle_jellyfin_url");
     queryClient.clear();
     navigation.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: "Login" as never }] }),
+      CommonActions.reset({ index: 0, routes: [{ name: "PairCode" as never }] }),
     );
   }, [storage, navigation, queryClient]);
 
