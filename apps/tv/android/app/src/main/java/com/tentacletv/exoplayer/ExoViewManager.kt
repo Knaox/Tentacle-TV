@@ -43,6 +43,11 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
         view.audioPassthrough = enabled
     }
 
+    @ReactProp(name = "textTracks")
+    fun setTextTracks(view: ExoPlayerView, tracks: ReadableArray?) {
+        view.setTextTracks(tracks)
+    }
+
     override fun getExportedCustomDirectEventTypeConstants(): Map<String, Any> {
         return MapBuilder.of(
             "onExoEvent",

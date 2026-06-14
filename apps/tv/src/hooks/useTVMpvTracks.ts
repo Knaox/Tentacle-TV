@@ -24,6 +24,8 @@ export function useTVMpvTracks(args: {
 }) {
   const { playerRef, streams, audioIndex, isDirectPlay } = args;
   const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
+  // jellyfinIndex (sous-titre) → id de piste native ExoPlayer
+  const [subtitleTrackMap, setSubtitleTrackMap] = useState<Record<number, number>>({});
   const externalSubsLoaded = useRef(false);
 
   const handleTracks = useCallback((tracks: MpvTrack[]) => {
@@ -35,6 +37,15 @@ export function useTVMpvTracks(args: {
     jellyfinAudio.forEach((s, i) => { if (i < audioTracks.length) map[s.Index] = audioTracks[i].id; });
     jellyfinSubs.forEach((s, i) => { if (i < subTracks.length) map[s.Index] = subTracks[i].id; });
     setMpvTrackMap(map);
+    // Sous-titres : mapping FIABLE via nativeId (= jellyfinIndex injecté dans
+    // SubtitleConfiguration.setId côté natif) ; fallback ordinal si absent.
+    const sub: Record<number, number> = {};
+    subTracks.forEach((t, i) => {
+      const jf = t.nativeId ? parseInt(t.nativeId, 10) : NaN;
+      if (!Number.isNaN(jf)) sub[jf] = t.id;
+      else if (i < jellyfinSubs.length) sub[jellyfinSubs[i].Index] = t.id;
+    });
+    setSubtitleTrackMap(sub);
   }, [streams]);
 
   // Applique la piste audio via MPV en direct play (changement de track natif sans rebuilder l'URL)
@@ -49,5 +60,5 @@ export function useTVMpvTracks(args: {
     externalSubsLoaded.current = false;
   }, []);
 
-  return { mpvTrackMap, handleTracks, resetExternalSubsLoaded };
+  return { mpvTrackMap, subtitleTrackMap, handleTracks, resetExternalSubsLoaded };
 }

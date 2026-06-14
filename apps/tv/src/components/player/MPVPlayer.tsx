@@ -19,6 +19,8 @@ export interface MpvTrack {
   codec: string;
   default: boolean;
   selected: boolean;
+  /** ExoPlayer Format.id — pour les pistes texte side-loadées = jellyfinIndex */
+  nativeId?: string;
 }
 
 export interface MPVPlayerHandle {

@@ -12,6 +12,7 @@ import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScre
 import { TVSkipBadge } from "./TVSkipBadge";
 import { TVSubtitleOverlay } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
+import type { ExoTextTrack } from "./ExoPlayer";
 import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
 
 interface AutoPlayCtx {
@@ -94,8 +95,10 @@ export interface TVPlayerViewProps {
   trickplay?: UseTVTrickplayResult;
   /** Incrémenter pour refocus le dernier bouton OSD utilisé */
   osdFocusSignal?: number;
-  /** Cue de sous-titres texte rendue en JS (useTVSubtitles) */
+  /** Cue de sous-titres texte rendue en JS (useTVSubtitles) — MPV/transcode */
   subtitleText?: string | null;
+  /** Pistes texte VTT pour le rendu natif ExoPlayer (direct play) */
+  textTracks?: ExoTextTrack[];
   /** Panneau Saisons & épisodes (séries) */
   showEpisodes?: boolean;
   onToggleEpisodes?: () => void;
@@ -112,7 +115,7 @@ export function TVPlayerView({
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
-  onPrevEpisode, onNextEpisode, trickplay, osdFocusSignal, subtitleText,
+  onPrevEpisode, onNextEpisode, trickplay, osdFocusSignal, subtitleText, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
@@ -128,6 +131,7 @@ export function TVPlayerView({
       <MemoizedPlayer
         useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
         source={streamUrl} paused={paused} playerStyle={playerStyle}
+        textTracks={textTracks}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />
@@ -143,8 +147,9 @@ export function TVPlayerView({
       >
         <View style={{ flex: 1 }} />
       </TouchableOpacity>
-      {/* Sous-titres texte rendus en JS — sous l'OSD, au-dessus de la vidéo */}
-      <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />
+      {/* Sous-titres : rendu NATIF par le subtitleView ExoPlayer (direct play).
+          L'overlay JS n'est conservé que pour MPV/transcode. */}
+      {!useExoPlayer && <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />}
       {/* Badge « +30s / −10s » après un double-clic ←/→ (OSD caché) */}
       <TVSkipBadge flash={controls.skipFlash} />
       {/* Chargement initial OU rechargement de flux (piste/qualité) : écran
