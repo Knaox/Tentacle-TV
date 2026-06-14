@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
+import { View, Text, ScrollView, Alert, TVFocusGuideView } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
@@ -44,7 +44,9 @@ export function DisclaimerScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.card}>
+      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : fluidifie la nav
+          verticale à travers le bloc de texte non-focusable. */}
+      <TVFocusGuideView style={styles.card} autoFocus>
         {/* Logo */}
         <View style={styles.logoContainer}>
           <TentacleLogo size={44} />
@@ -73,11 +75,12 @@ export function DisclaimerScreen() {
           </ScrollView>
         </View>
 
-        {/* Checkbox */}
+        {/* Checkbox — focus initial (action principale, atteignable d'emblée) */}
         <Focusable
           variant="button"
           onPress={() => setChecked((v) => !v)}
           accessibilityLabel={t("checkboxLabel")}
+          hasTVPreferredFocus
         >
           <View style={styles.checkboxRow}>
             <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
@@ -106,7 +109,7 @@ export function DisclaimerScreen() {
             </View>
           </Focusable>
         </View>
-      </View>
+      </TVFocusGuideView>
     </View>
   );
 }
