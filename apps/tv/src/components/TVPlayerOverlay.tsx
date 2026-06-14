@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, findNodeHandle } from "react-native";
+import { View, Text, findNodeHandle, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -78,6 +78,10 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   // --- Mémoire de focus : refocus le dernier bouton utilisé sur signal ---
   const btnRefs = useRef<Partial<Record<TransportKey, { setNativeProps?: (p: Record<string, unknown>) => void } | null>>>({});
   const lastFocusedRef = useRef<TransportKey>("playpause");
+  // Pendant la restauration du focus (réapparition OSD / fermeture panneau), le
+  // moteur Android pose un focus transitoire sur le 1er bouton (back) : on gèle
+  // la mémorisation pour ne pas écraser le dernier bouton réellement utilisé.
+  const restoringFocusRef = useRef(false);
   // Node du bouton play/pause — verrou de focus pendant le scrub
   const [playPauseNode, setPlayPauseNode] = useState<number | undefined>(undefined);
   const setBtnRef = (key: TransportKey) => (node: unknown) => {
@@ -87,15 +91,20 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
       if (handle) setPlayPauseNode(handle);
     }
   };
-  const rememberFocus = (key: TransportKey) => () => { lastFocusedRef.current = key; };
+  const rememberFocus = (key: TransportKey) => () => {
+    if (!restoringFocusRef.current) lastFocusedRef.current = key;
+  };
 
   useEffect(() => {
     if (!focusSignal) return;
-    const timer = setTimeout(() => {
-      const target = btnRefs.current[lastFocusedRef.current] ?? btnRefs.current.playpause;
+    restoringFocusRef.current = true;
+    const target = btnRefs.current[lastFocusedRef.current] ?? btnRefs.current.playpause;
+    const t1 = setTimeout(() => {
       target?.setNativeProps?.({ hasTVPreferredFocus: true });
     }, 100);
-    return () => clearTimeout(timer);
+    // Relâcher après le settle du focus natif (le transitoire sur "back" est passé)
+    const t2 = setTimeout(() => { restoringFocusRef.current = false; }, 350);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [focusSignal]);
 
   // Scrub : le focus natif est verrouillé sur play/pause (nextFocus* = soi-même),
@@ -135,9 +144,11 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
       importantForAccessibility={isShown ? "auto" : "no-hide-descendants"}
       style={[{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-        justifyContent: "space-between",
       }, animStyle]}
     >
+      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : mémorise le dernier
+          bouton focalisé et y ramène le focus à la réapparition de l'OSD. */}
+      <TVFocusGuideView autoFocus style={{ flex: 1, justifyContent: "space-between" }}>
       {/* Top gradient */}
       <LinearGradient
         colors={["rgba(0,0,0,0.7)", "transparent"]}
@@ -274,12 +285,12 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           >
             <View style={{
               width: 68, height: 68, borderRadius: 34,
-              backgroundColor: Colors.accentPurple,
+              backgroundColor: Colors.ctaPrimaryBg,
               justifyContent: "center", alignItems: "center",
             }}>
               {paused
-                ? <PlayIcon size={28} color={Colors.textPrimary} />
-                : <PauseIcon size={28} color={Colors.textPrimary} />
+                ? <PlayIcon size={28} color={Colors.ctaPrimaryFg} />
+                : <PauseIcon size={28} color={Colors.ctaPrimaryFg} />
               }
             </View>
           </Focusable>
@@ -314,6 +325,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           </Focusable>
         </View>
       </LinearGradient>
+      </TVFocusGuideView>
     </Animated.View>
   );
 });
