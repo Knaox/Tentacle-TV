@@ -8,7 +8,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";
 import { TentacleLogo } from "../components/icons/TentacleLogo";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import { TVShell } from "../components/nav/TVShell";
+import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "About">;
@@ -38,7 +38,7 @@ export function AboutScreen({ navigation }: Props) {
   ];
 
   return (
-    <TVShell currentRoute="About">
+    <TVScreenFrame>
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <ScrollView contentContainerStyle={{
         paddingHorizontal: 80,
@@ -126,7 +126,7 @@ export function AboutScreen({ navigation }: Props) {
         </Text>
       </ScrollView>
     </View>
-    </TVShell>
+    </TVScreenFrame>
   );
 }
 

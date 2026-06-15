@@ -10,7 +10,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { i18n } from "@tentacle-tv/shared";
 import { getLanguageDisplayName } from "../utils/languageNames";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
-import { TVShell } from "../components/nav/TVShell";
+import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preferences">;
@@ -160,7 +160,7 @@ export function PreferencesScreen({ navigation }: Props) {
   }));
 
   return (
-    <TVShell currentRoute="Preferences">
+    <TVScreenFrame>
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <ScrollView
         ref={scrollRef}
@@ -255,7 +255,7 @@ export function PreferencesScreen({ navigation }: Props) {
         />
       )}
     </View>
-    </TVShell>
+    </TVScreenFrame>
   );
 }
 

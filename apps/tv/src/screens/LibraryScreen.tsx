@@ -10,7 +10,7 @@ import { TVPosterCard, TVPosterFrame, TVPosterMeta } from "../components/cards/T
 import { Focusable } from "../components/focus/Focusable";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import { TVShell } from "../components/nav/TVShell";
+import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { possessiveLibraryName } from "../utils/libraryLabel";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
@@ -22,7 +22,7 @@ const ROW_GAP = 24;
 // (écran − rail − padding), sinon 5 × 180 dp déborde en 960 dp (1080p) →
 // cartes collées/rognées sans aucun espacement.
 const WINDOW_W = require("react-native").Dimensions.get("window").width as number;
-const RAIL_W = 76; // RAIL_COLLAPSED (TVShell réserve cette marge)
+const RAIL_W = 76; // RAIL_COLLAPSED (TVScreenFrame réserve cette marge)
 const GRID_AVAIL = WINDOW_W - RAIL_W - Spacing.screenPadding * 2;
 const CELL_W = Math.floor(GRID_AVAIL / COLUMNS);
 const CARD_W = CELL_W - Spacing.cardGap;
@@ -133,11 +133,9 @@ export function LibraryScreen({ route, navigation }: Props) {
     />
   ), [navigateToDetail, scrollToRow, isLastItem]);
 
-  const shellRoute = `Library_${libraryId}`;
-
   if (isLoading && items.length === 0) {
     return (
-      <TVShell currentRoute={shellRoute}>
+      <TVScreenFrame>
         <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
           {header}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
@@ -146,13 +144,13 @@ export function LibraryScreen({ route, navigation }: Props) {
             ))}
           </View>
         </View>
-      </TVShell>
+      </TVScreenFrame>
     );
   }
 
   if (!isLoading && items.length === 0) {
     return (
-      <TVShell currentRoute={shellRoute}>
+      <TVScreenFrame>
         <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
           {header}
           <View style={{ alignItems: "center", paddingTop: 80 }}>
@@ -161,12 +159,12 @@ export function LibraryScreen({ route, navigation }: Props) {
             </Text>
           </View>
         </View>
-      </TVShell>
+      </TVScreenFrame>
     );
   }
 
   return (
-    <TVShell currentRoute={shellRoute}>
+    <TVScreenFrame>
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
         <FlashList
@@ -186,7 +184,7 @@ export function LibraryScreen({ route, navigation }: Props) {
           overScrollMode="never"
         />
       </TVFocusGuideView>
-    </TVShell>
+    </TVScreenFrame>
   );
 }
 

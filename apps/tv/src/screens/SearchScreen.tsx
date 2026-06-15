@@ -10,7 +10,7 @@ import { TVPosterCard } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { SkeletonCardPortrait } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import { TVShell } from "../components/nav/TVShell";
+import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
@@ -54,7 +54,7 @@ export function SearchScreen({ navigation }: Props) {
   }, []);
 
   return (
-    <TVShell currentRoute="Search">
+    <TVScreenFrame>
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep, paddingTop: 32 }}>
       {/* Main content: keyboard left + results right */}
       <View style={{ flex: 1, flexDirection: "row" }}>
@@ -134,7 +134,7 @@ export function SearchScreen({ navigation }: Props) {
         </View>
       </View>
     </View>
-    </TVShell>
+    </TVScreenFrame>
   );
 }
 

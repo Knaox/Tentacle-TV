@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { View, ActivityIndicator, AppState, type AppStateStatus } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
@@ -33,6 +33,8 @@ import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow, doLogout } from "./auth/sessionFlow";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
+import { TVNavChrome, deriveRailKey } from "./components/nav/TVNavChrome";
+import { TVNavProvider } from "./context/TVNavContext";
 import { ThemeProvider, useTheme } from "./theme";
 
 const storage = new RNStorageAdapter();
@@ -160,6 +162,12 @@ function ForegroundSessionValidator() {
 function AppContent({ serverUrl }: { serverUrl: string | null }) {
   const { isReachable, retry } = useServerReachable(serverUrl);
   const { theme } = useTheme();
+  // Route active du rail : suivie via le NavigationContainer (le rail est un
+  // sibling du Navigator, sans accès aux hooks de navigation).
+  const [railKey, setRailKey] = useState<string | null>(null);
+  const syncRailKey = useCallback(() => {
+    setRailKey(navigationRef.isReady() ? deriveRailKey(navigationRef.getRootState()) : null);
+  }, []);
   const navTheme = useMemo(
     () => ({
       dark: true as const,
@@ -181,10 +189,19 @@ function AppContent({ serverUrl }: { serverUrl: string | null }) {
       <ForegroundDataRefresher />
       <DirectStreamingSync storage={storage} />
       <SidebarProvider>
-        <NavigationContainer ref={navigationRef} theme={navTheme}>
-          <AppNavigator />
-          <OfflineBanner visible={!isReachable} onRetry={retry} />
-        </NavigationContainer>
+        <TVNavProvider>
+          <NavigationContainer
+            ref={navigationRef}
+            theme={navTheme}
+            onReady={syncRailKey}
+            onStateChange={syncRailKey}
+          >
+            <AppNavigator />
+            {/* Rail persistant monté une seule fois (overlay sibling du Navigator) */}
+            <TVNavChrome railKey={railKey} />
+            <OfflineBanner visible={!isReachable} onRetry={retry} />
+          </NavigationContainer>
+        </TVNavProvider>
       </SidebarProvider>
     </>
   );
