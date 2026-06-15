@@ -4,15 +4,50 @@ const path = require("path");
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
 
-// Singleton packages — all imports must resolve to the SAME physical copy
-// to avoid duplicate React instances (api-client has React 19, TV app has React 18).
-const singletonPkgs = {
-  react: path.resolve(projectRoot, "node_modules/react"),
-  "react-native": path.resolve(projectRoot, "node_modules/react-native"),
-  "react-i18next": path.resolve(projectRoot, "node_modules/react-i18next"),
-  i18next: path.resolve(projectRoot, "node_modules/i18next"),
-  "@tanstack/react-query": path.resolve(projectRoot, "node_modules/@tanstack/react-query"),
-};
+// Packages qui DOIVENT se résoudre vers une copie physique UNIQUE.
+//
+// 1. Instances React : api-client embarque React 19, l'app TV React 18 →
+//    deux instances React dans le bundle = crash de contexte.
+// 2. Modules natifs avec ViewManagers : si deux copies JS du module finissent
+//    dans le bundle, la vue native est enregistrée deux fois →
+//    « Invariant Violation: Tried to register two views with the same name
+//    RNCSafeAreaView » → crash AU LANCEMENT.
+//    Le doublon vient des copies imbriquées sous @react-navigation/* et
+//    react-native-css-interop (nativewind), exposées par le layout pnpm strict
+//    en CI (absent en local dédupliqué — d'où un build local qui « marche »
+//    alors que l'APK CI crashe).
+const singletonNames = [
+  "react",
+  "react-native",
+  "react-i18next",
+  "i18next",
+  "@tanstack/react-query",
+  // Modules natifs (une seule instance JS) :
+  "react-native-safe-area-context",
+  "react-native-screens",
+  "react-native-svg",
+  "react-native-reanimated",
+  "react-native-video",
+  "react-native-linear-gradient",
+  "react-native-webview",
+  "react-native-css-interop",
+  "@shopify/flash-list",
+  "@react-native-async-storage/async-storage",
+];
+const singletonSet = new Set(singletonNames);
+
+// extraNodeModules : map nom → dossier du package (copie unique), utile pour
+// les résolutions qui ne passent pas par resolveRequest.
+const extraNodeModules = {};
+for (const name of singletonNames) {
+  try {
+    extraNodeModules[name] = path.dirname(
+      require.resolve(`${name}/package.json`, { paths: [projectRoot] }),
+    );
+  } catch {
+    // package absent du graphe → on ignore
+  }
+}
 
 const defaultConfig = getDefaultConfig(projectRoot);
 
@@ -26,23 +61,25 @@ const config = {
     unstable_enableSymlinks: true,
     unstable_enablePackageExports: true,
     unstable_conditionNames: ["require", "import", "react-native"],
-    extraNodeModules: singletonPkgs,
+    extraNodeModules,
     resolveRequest: (context, moduleName, platform) => {
-      // Redirect singleton packages to the TV app's copy
-      if (singletonPkgs[moduleName]) {
-        return {
-          filePath: require.resolve(moduleName, { paths: [projectRoot] }),
-          type: "sourceFile",
-        };
+      // Nom de package « nu » (gère les sous-chemins : react/jsx-runtime,
+      // react-native/Libraries/..., react-native-safe-area-context/lib/...)
+      const parts = moduleName.split("/");
+      const pkgName = moduleName.startsWith("@")
+        ? parts.slice(0, 2).join("/")
+        : parts[0];
+
+      if (singletonSet.has(pkgName)) {
+        // Résout comme si l'import venait de la racine de l'app TV → copie
+        // unique (et redirige react-native → react-native-tvos au passage).
+        return context.resolveRequest(
+          { ...context, originModulePath: path.join(projectRoot, "index.js") },
+          moduleName,
+          platform,
+        );
       }
-      // Redirect react-native sub-path imports (e.g. react-native/Libraries/...)
-      // to react-native-tvos to avoid resolving the standard react-native from monorepo root
-      if (moduleName.startsWith("react-native/")) {
-        return {
-          filePath: require.resolve(moduleName, { paths: [projectRoot] }),
-          type: "sourceFile",
-        };
-      }
+
       // Fall back to default resolution
       return context.resolveRequest(context, moduleName, platform);
     },
