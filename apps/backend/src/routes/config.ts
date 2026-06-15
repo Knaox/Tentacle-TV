@@ -79,8 +79,12 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
                 headers: { "X-Emby-Token": jellyfinToken },
                 signal: AbortSignal.timeout(3000),
               });
-              if (!check.ok) {
-                request.log.warn("Paired device jellyfinAccessToken expired — clearing from DB");
+              // Ne nettoyer le token QUE sur un 401/403 explicite (token réellement
+              // invalide). Un 5xx / 404 / erreur transitoire ne doit PAS effacer un
+              // token valide — sinon le device perd l'attribution de lecture pour de
+              // bon (il n'y a aucun moyen d'en reprovisionner un sans re-jumeler).
+              if (check.status === 401 || check.status === 403) {
+                request.log.warn("Paired device jellyfinAccessToken invalide (401/403) — clearing from DB");
                 tokenExpired = true;
                 jellyfinToken = null;
                 prisma.pairedDevice.update({

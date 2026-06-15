@@ -13,39 +13,49 @@ import {
   buildForwardHeaders,
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
+import { buildPlaystateRewrite, type PlaystateRewrite } from "./jellyfinProxy/playstate";
 
-/** Resolve the API key to forward to Jellyfin:
+/** Resolve how to forward a request to Jellyfin :
  *  - Anonymous / native token → no override, pass-through whatever client sent.
- *  - Verified device JWT → use admin API key so Jellyfin accepts the request.
- *  - Impersonation JWT (admin "voir en tant que") → admin API key également ;
- *    les requêtes user-data ciblent /Users/{userId}/* explicitement, donc la
- *    clé admin suffit pour servir les données du compte impersoné.
- *  - Session-attribution endpoints → swap to the user's stored Jellyfin token
- *    so playback progress is recorded against the correct account. */
-async function resolveApiKeyOverride(
+ *  - Impersonation JWT (admin "voir en tant que") → admin API key ; les requêtes
+ *    user-data ciblent /Users/{userId}/* explicitement, la clé admin suffit.
+ *  - Device JWT, route de session :
+ *    · si le device a un token Jellyfin stocké → on l'utilise (compte correct) ;
+ *    · sinon → clé admin + RÉÉCRITURE du report de lecture vers l'endpoint scopé
+ *      userId (/Users/{userId}/PlayingItems/*), car /Sessions/Playing* avec la
+ *      clé admin enregistrerait la progression sur le compte admin.
+ *  - Device JWT, autre route → admin API key (user-data ciblé par /Users/{id}). */
+async function resolveSessionRouting(
   incomingToken: string | undefined,
   wildcardPath: string,
-): Promise<string | undefined> {
-  if (!incomingToken) return undefined;
+  body: unknown,
+): Promise<{ apiKey?: string; rewrite?: PlaystateRewrite }> {
+  if (!incomingToken) return {};
   const payload = await verifyDeviceToken(incomingToken);
   if (!payload) {
     const impersonation = await verifyImpersonationToken(incomingToken);
-    return impersonation ? (getJellyfinApiKey() ?? undefined) : undefined;
+    return impersonation ? { apiKey: getJellyfinApiKey() ?? undefined } : {};
   }
 
-  let apiKey = getJellyfinApiKey();
+  const adminKey = getJellyfinApiKey();
   const isSessionRoute = /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath);
-  if (apiKey && isSessionRoute && hasPrisma()) {
-    try {
-      const prisma = getPrisma();
-      const device = await prisma.pairedDevice.findUnique({
-        where: { tokenHash: hashToken(incomingToken) },
-        select: { jellyfinAccessToken: true },
-      });
-      if (device?.jellyfinAccessToken) apiKey = device.jellyfinAccessToken;
-    } catch { /* keep admin API key as fallback */ }
+  if (!adminKey || !isSessionRoute || !hasPrisma()) {
+    return { apiKey: adminKey ?? undefined };
   }
-  return apiKey;
+
+  let deviceToken: string | null = null;
+  try {
+    const device = await getPrisma().pairedDevice.findUnique({
+      where: { tokenHash: hashToken(incomingToken) },
+      select: { jellyfinAccessToken: true },
+    });
+    deviceToken = device?.jellyfinAccessToken ?? null;
+  } catch { /* keep admin API key as fallback */ }
+
+  if (deviceToken) return { apiKey: deviceToken };
+
+  const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
+  return { apiKey: adminKey ?? undefined, rewrite };
 }
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
@@ -93,7 +103,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header
     const cookieToken = (request as { cookies?: { tentacle_token?: string } }).cookies?.tentacle_token;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken;
-    const apiKeyOverride = await resolveApiKeyOverride(incomingToken, wildcardPath);
+    const { apiKey: apiKeyOverride, rewrite } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
+
+    // Report de lecture d'un device sans token Jellyfin : on cible l'endpoint
+    // scopé userId (clé admin) pour attribuer la progression au bon compte.
+    // L'URL réécrite porte déjà sa query → pas d'append de `qs`, body non envoyé.
+    const effectiveMethod = rewrite ? rewrite.method : request.method;
+    if (rewrite) targetUrl = `${jellyfinUrl}/${rewrite.path}`;
 
     // Cache lookup for heavy read routes (Latest/Resume/NextUp/Views).
     // Only applies to GET — mutations always go direct.
@@ -125,7 +141,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const timeout = isProgressiveStream ? 4 * 60 * 60 * 1000 : 120_000;
 
     const fetchInit: UndiciRequestInit = {
-      method: request.method,
+      method: effectiveMethod,
       headers,
       signal: AbortSignal.timeout(timeout),
       // Reuse the keep-alive pool to avoid a TCP+TLS handshake on every
@@ -133,8 +149,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       dispatcher: getJellyfinDispatcher(),
     };
 
-    // Forward body for POST/PUT/PATCH/DELETE
-    if (request.method !== "GET" && request.method !== "HEAD") {
+    // Forward body for POST/PUT/PATCH/DELETE — sauf report réécrit (params en query).
+    if (!rewrite && request.method !== "GET" && request.method !== "HEAD") {
       const rawBody = request.body;
       if (rawBody !== undefined && rawBody !== null) {
         if (typeof rawBody === "string" || Buffer.isBuffer(rawBody)) {
