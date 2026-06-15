@@ -13,7 +13,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVShell } from "../components/nav/TVShell";
+import { TVScreenFrame } from "../components/nav/TVScreenFrame";
+import { useTVNav } from "../context/TVNavContext";
 import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { TVPosterCard } from "../components/cards/TVPosterCard";
@@ -48,7 +49,7 @@ function HomeScreenInner({ navigation }: Props) {
   const queryClient = useQueryClient();
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
   const { setFocusedItem } = useAmbientFocus();
-  const [railFocusSignal, setRailFocusSignal] = useState(0);
+  const { requestRailFocus } = useTVNav();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
 
@@ -71,7 +72,7 @@ function HomeScreenInner({ navigation }: Props) {
   );
 
   // BACK sur l'accueil → focus sur le rail (pattern tvOS/Netflix)
-  useTVRemote({ onBack: () => setRailFocusSignal((s) => s + 1) });
+  useTVRemote({ onBack: () => requestRailFocus() });
 
   // Préchauffe les écrans lazy (Library/MediaDetail/Player) une fois l'accueil
   // interactif — le premier accès n'attend plus le parse/exec du module.
@@ -149,7 +150,7 @@ function HomeScreenInner({ navigation }: Props) {
   ), []);
 
   return (
-    <TVShell currentRoute="Home" railFocusSignal={railFocusSignal}>
+    <TVScreenFrame>
       {/* Ambient backdrop — sits behind everything, fades to focused item */}
       <TVAmbientBackdrop />
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
@@ -298,6 +299,6 @@ function HomeScreenInner({ navigation }: Props) {
           onClose={() => setCtxItem(null)}
         />
       )}
-    </TVShell>
+    </TVScreenFrame>
   );
 }

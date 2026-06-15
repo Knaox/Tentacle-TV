@@ -7,14 +7,15 @@ import LinearGradient from "react-native-linear-gradient";
 import { useLibraries, useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Focusable } from "../focus/Focusable";
+import { RailRow } from "./RailRow";
 import { TentacleLogo } from "../icons/TentacleLogo";
+import { possessiveLibraryName } from "../../utils/libraryLabel";
 import { useTVScrollToFocused } from "../../hooks/useTVScrollToFocused";
 import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
   LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon,
 } from "../icons/TVIcons";
-import { Colors, Radius, Fonts } from "../../theme/colors";
+import { Colors, Fonts } from "../../theme/colors";
 import { Durations, Easings } from "../../theme/motion";
 
 /** Largeur du rail replié (icônes seules) — le contenu réserve cette marge. */
@@ -54,7 +55,7 @@ function libraryIcon(collectionType?: string) {
  * d'icônes, s'étend avec un panneau verre dépoli quand le focus y entre.
  */
 export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, grabFocusSignal }: TVSideRailProps) {
-  const { t } = useTranslation("nav");
+  const { t, i18n } = useTranslation("nav");
   const { data: libraries } = useLibraries();
   const { storage } = useTentacleConfig();
   const progress = useSharedValue(0);
@@ -139,7 +140,9 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     { key: "Search", label: t("search"), icon: (c) => <SearchIcon size={ICON_SIZE} color={c} /> },
     { key: "Home", label: t("home"), icon: (c) => <HomeIcon size={ICON_SIZE} color={c} /> },
     ...(libraries ?? []).map((lib) => ({
-      key: `Library_${lib.Id}`, label: lib.Name, icon: libraryIcon(lib.CollectionType),
+      key: `Library_${lib.Id}`,
+      label: possessiveLibraryName(lib.Name, i18n.language),
+      icon: libraryIcon(lib.CollectionType),
     })),
   ];
   const bottomItems: RailItem[] = [
@@ -149,53 +152,22 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     { key: "Logout", label: t("logout"), icon: (c) => <LogoutIcon size={ICON_SIZE} color={c} />, danger: true },
   ];
 
-  const renderItem = (item: RailItem, index?: number) => {
-    const active = currentRoute === item.key;
-    const iconColor = item.danger ? Colors.error : active ? Colors.textPrimary : Colors.textTertiary;
-    // Items du ScrollView (index défini) : le rail scrolle pour suivre le focus
-    const scrollFocus = index != null ? makeOnFocus(index, 48) : null;
-    const libraryId = item.key.startsWith("Library_") ? item.key.slice("Library_".length) : null;
-    return (
-      <Focusable
-        key={item.key}
-        ref={active ? setActiveItemRef : undefined}
-        variant="row"
-        focusRadius={Radius.buttonLarge}
-        onPress={() => onNavigate(item.key)}
-        onFocus={() => {
-          expand();
-          scrollFocus?.();
-          if (libraryId) schedulePrefetch(libraryId);
-        }}
-        onBlur={() => { scheduleCollapse(); if (libraryId) cancelPrefetch(); }}
-        accessibilityLabel={item.label}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", height: 48, borderRadius: Radius.buttonLarge }}>
-          <View style={{ width: RAIL_COLLAPSED - 24, alignItems: "center", justifyContent: "center" }}>
-            {/* Pastille violette derrière l'icône active (repère en mode replié) */}
-            {active && (
-              <View style={{
-                position: "absolute", width: 40, height: 40, borderRadius: 20,
-                backgroundColor: "rgba(139, 92, 246, 0.22)",
-              }} />
-            )}
-            {item.icon(iconColor)}
-          </View>
-          <Animated.Text
-            numberOfLines={1}
-            style={[{
-              flex: 1,
-              color: item.danger ? Colors.error : Colors.textPrimary,
-              fontSize: 15,
-              fontFamily: active ? Fonts.bold : Fonts.regular,
-            }, labelStyle]}
-          >
-            {item.label}
-          </Animated.Text>
-        </View>
-      </Focusable>
-    );
-  };
+  const renderItem = (item: RailItem, index?: number) => (
+    <RailRow
+      key={item.key}
+      item={item}
+      index={index}
+      active={currentRoute === item.key}
+      labelStyle={labelStyle}
+      onNavigate={onNavigate}
+      onExpand={expand}
+      onCollapse={scheduleCollapse}
+      schedulePrefetch={schedulePrefetch}
+      cancelPrefetch={cancelPrefetch}
+      makeOnFocus={makeOnFocus}
+      setActiveRef={setActiveItemRef}
+    />
+  );
 
   return (
     <Animated.View
