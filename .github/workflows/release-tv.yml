@@ -1,0 +1,124 @@
+# Tentacle TV — Android TV APK Release
+#
+# Déclenché UNIQUEMENT par un tag « tv-v* » (ex : tv-v1.0.0). N'interfère pas
+# avec le build desktop (release.yml, tags « v* » — qui ne matchent pas tv-v…)
+# ni avec le push sur main. Publie l'APK Android TV en Release GitHub.
+#
+# Publier une version TV :
+#   git tag tv-v1.0.0 && git push origin tv-v1.0.0
+# (La version de l'app — versionName/versionCode — N'est PAS modifiée par le
+#  tag : elle reste celle de apps/tv/android/app/build.gradle.)
+#
+# Signature : APK signé avec le debug.keystore du repo (suffisant pour le
+# sideload / Downloader, PAS pour le Play Store).
+#
+# TODO migration keystore release (Play Store) :
+#   1. keytool -genkeypair -v -keystore tentacle-tv-release.jks -alias tentacle \
+#        -keyalg RSA -keysize 2048 -validity 10000
+#   2. Secrets GitHub : TV_KEYSTORE_BASE64 (base64 du .jks), TV_KEYSTORE_PASSWORD, TV_KEY_ALIAS
+#   3. Dans apps/tv/android/app/build.gradle : signingConfigs.release lisant ces secrets,
+#      et release { signingConfig signingConfigs.release }.
+#   4. Décoder le keystore dans ce workflow avant assembleRelease.
+
+name: Release Android TV
+
+on:
+  push:
+    tags:
+      - "tv-v*"
+
+concurrency:
+  group: release-tv-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-tv:
+    name: Build Android TV APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK (matches build.gradle ndkVersion)
+        run: sdkmanager "ndk;26.1.10909125"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/tv/android/**/*.gradle*', 'apps/tv/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build release APK
+        working-directory: apps/tv/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Stage APK assets
+        run: |
+          mkdir -p dist-apk
+          SRC=apps/tv/android/app/build/outputs/apk/release/app-release.apk
+          cp "$SRC" "dist-apk/tentacle-tv-${GITHUB_REF_NAME}.apk"
+          cp "$SRC" "dist-apk/tentacle-tv.apk"
+          ls -l dist-apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Tentacle TV (Android TV) ${{ github.ref_name }}"
+          prerelease: false
+          body: |
+            APK Android TV (sideload).
+
+            ## Installation (Android TV / Shield)
+            1. Paramètres → Sécurité & restrictions → autoriser les **sources inconnues**.
+            2. Installer **Downloader** depuis le Play Store.
+            3. Y saisir le lien direct de l'APK ci-dessous (asset `tentacle-tv.apk`).
+            4. Télécharger puis installer.
+
+            Page de téléchargement : https://tentacletv.app/
+          files: |
+            dist-apk/tentacle-tv-${{ github.ref_name }}.apk
+            dist-apk/tentacle-tv.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

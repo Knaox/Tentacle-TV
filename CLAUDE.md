@@ -42,6 +42,21 @@ pnpm docker:logs      # Tail container logs
 git push production main  # Triggers post-receive hook on server
 ```
 
+## Releases / Tags (CI)
+
+Le déclencheur de build dépend du **préfixe de tag** — les builds des plateformes sont isolés :
+
+| Déclencheur | Workflow | Cible |
+|-------------|----------|-------|
+| tag `v*` (ex `v1.9.7`) | `.github/workflows/release.yml` | Desktop Tauri (macOS, signé/notarisé) |
+| tag `tv-v*` (ex `tv-v1.0.0`) | `.github/workflows/release-tv.yml` | **Android TV** — APK release en Release GitHub |
+| push `main` | `.github/workflows/docker.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` |
+
+- Un tag `tv-v*` ne déclenche **pas** le build desktop (le glob `v*` ne matche pas `tv-v…`), et inversement.
+- **Publier l'Android TV** : `git tag tv-v1.0.0 && git push origin tv-v1.0.0`. La version de l'app (`versionName`) n'est pas modifiée par le tag — elle reste celle de `apps/tv/android/app/build.gradle`.
+- APK signé avec le `debug.keystore` du repo (sideload uniquement). Migration vers un keystore release : voir `docs/RELEASE.md`.
+- Le site `tentacletv.app` pointe automatiquement sur la dernière release `tv-*` (asset `.apk`).
+
 ## Architecture
 
 ### Monorepo Structure (pnpm workspaces)
