@@ -1,4 +1,4 @@
-import { memo, forwardRef, useCallback } from "react";
+import { memo, forwardRef, useCallback, useRef } from "react";
 import { Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
 import Animated, {
   useSharedValue,
@@ -34,6 +34,10 @@ interface FocusableProps {
   nextFocusLeft?: number;
   nextFocusRight?: number;
   accessibilityLabel?: string;
+  /** Anti « clic fantôme » TV : ne déclenche onPress QUE si un onPressIn (key-down)
+   *  a eu lieu sur ce bouton. Bloque le press parasite du relâchement d'un hold OK
+   *  qui a révélé l'OSD (le key-down était sur un autre élément → pas de onPressIn). */
+  phantomPressGuard?: boolean;
 }
 
 const SPRING_CONFIG = {
@@ -79,8 +83,12 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   nextFocusLeft,
   nextFocusRight,
   accessibilityLabel,
+  phantomPressGuard = false,
 }: FocusableProps, ref) {
   const progress = useSharedValue(0);
+  // Anti clic-fantôme : un vrai press émet onPressIn (key-down) PUIS onPress
+  // (key-up). Le press parasite d'un hold (key-down ailleurs) n'a pas d'onPressIn.
+  const pressInRef = useRef(false);
 
   const handleFocus = useCallback(() => {
     progress.value = withSpring(1, SPRING_CONFIG);
@@ -89,8 +97,16 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
 
   const handleBlur = useCallback(() => {
     progress.value = withSpring(0, SPRING_CONFIG);
+    pressInRef.current = false; // un pressIn non suivi de press ne doit pas persister
     onBlur?.();
   }, [onBlur, progress]);
+
+  const handlePressIn = useCallback(() => { pressInRef.current = true; }, []);
+  const handlePress = useCallback((e?: GestureResponderEvent) => {
+    if (phantomPressGuard && !pressInRef.current) return; // clic fantôme → ignorer
+    pressInRef.current = false;
+    onPress?.(e);
+  }, [phantomPressGuard, onPress]);
 
   const scaleTarget = scaleOverride ?? FocusScale[variant];
   const glowOpacity = GLOW_VARIANTS[variant];
@@ -147,7 +163,8 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
       ref={ref}
       // @ts-ignore react-native-tvos extends Pressable
       style={style}
-      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPress={handlePress}
       onLongPress={onLongPress}
       delayLongPress={500}
       onFocus={handleFocus}

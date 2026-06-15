@@ -38,8 +38,6 @@ interface ControlsCtx {
   handleSkipForward: () => void;
   /** En mode scrub, OK sur un bouton valide le scrub au lieu d'agir */
   guardScrub: <T extends unknown[]>(fn: (...args: T) => void) => (...args: T) => void;
-  /** Garde des boutons OSD : avale le press parasite du hold OK + garde scrub */
-  guardButton: <T extends unknown[]>(fn: (...args: T) => void) => (...args: T) => void;
 }
 
 export interface TVPlayerViewProps {
@@ -177,15 +175,15 @@ export function TVPlayerView({
         speedLabel={controls.speedLabel}
         scrubbing={controls.scrubbing} scrubPosition={controls.scrubPosition}
         trickplay={trickplay} focusSignal={osdFocusSignal}
-        onPlayPause={controls.guardButton(() => { onPlayPause(); controls.showOverlay(); })}
-        onSkipBack={controls.guardButton(() => { controls.handleSkipBack(); controls.showOverlay(); })}
-        onSkipForward={controls.guardButton(() => { controls.handleSkipForward(); controls.showOverlay(); })}
+        onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
+        onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
+        onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}
         onBack={onBack}
-        onSettings={controls.guardButton(onToggleSettings)}
-        onNextEpisode={onNextEpisode ? controls.guardButton(onNextEpisode) : undefined}
-        onPrevEpisode={onPrevEpisode ? controls.guardButton(onPrevEpisode) : undefined}
+        onSettings={controls.guardScrub(onToggleSettings)}
+        onNextEpisode={onNextEpisode ? controls.guardScrub(onNextEpisode) : undefined}
+        onPrevEpisode={onPrevEpisode ? controls.guardScrub(onPrevEpisode) : undefined}
         hasNextEpisode={!!autoPlay.nextEpisode} hasPreviousEpisode={hasPreviousEpisode}
-        onEpisodes={item?.SeriesId && onToggleEpisodes ? controls.guardButton(onToggleEpisodes) : undefined}
+        onEpisodes={item?.SeriesId && onToggleEpisodes ? controls.guardScrub(onToggleEpisodes) : undefined}
       />
       {!autoPlayActive && (
         <>

@@ -155,7 +155,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         style={{ paddingTop: 40, paddingHorizontal: 40, paddingBottom: 60 }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Focusable variant="button" ref={setBtnRef("back")} onPress={onBack} onFocus={rememberFocus("back")}>
+          <Focusable variant="button" phantomPressGuard ref={setBtnRef("back")} onPress={onBack} onFocus={rememberFocus("back")}>
             <View style={{ padding: 10 }}>
               <BackIcon size={28} color={Colors.textPrimary} />
             </View>
@@ -263,14 +263,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         {/* Transport controls */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 32 }}>
           {hasPreviousEpisode && (
-            <Focusable variant="button" ref={setBtnRef("prev")} onPress={onPrevEpisode} onFocus={rememberFocus("prev")}>
+            <Focusable variant="button" phantomPressGuard ref={setBtnRef("prev")} onPress={onPrevEpisode} onFocus={rememberFocus("prev")}>
               <View style={{ padding: 10 }}>
                 <PrevTrackIcon size={20} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
 
-          <Focusable variant="button" ref={setBtnRef("skipback")} onPress={onSkipBack} onFocus={rememberFocus("skipback")}>
+          <Focusable variant="button" phantomPressGuard ref={setBtnRef("skipback")} onPress={onSkipBack} onFocus={rememberFocus("skipback")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>10s</Text>
@@ -278,7 +278,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           </Focusable>
 
           <Focusable
-            variant="button" ref={setBtnRef("playpause")} onPress={onPlayPause}
+            variant="button" phantomPressGuard ref={setBtnRef("playpause")} onPress={onPlayPause}
             onFocus={rememberFocus("playpause")} hasTVPreferredFocus
             nextFocusUp={lockFocus} nextFocusDown={lockFocus}
             nextFocusLeft={lockFocus} nextFocusRight={lockFocus}
@@ -295,7 +295,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable variant="button" ref={setBtnRef("skipforward")} onPress={onSkipForward} onFocus={rememberFocus("skipforward")}>
+          <Focusable variant="button" phantomPressGuard ref={setBtnRef("skipforward")} onPress={onSkipForward} onFocus={rememberFocus("skipforward")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>30s</Text>
               <SkipForwardIcon size={22} color={Colors.textPrimary} />
@@ -303,7 +303,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           </Focusable>
 
           {hasNextEpisode && (
-            <Focusable variant="button" ref={setBtnRef("next")} onPress={onNextEpisode} onFocus={rememberFocus("next")}>
+            <Focusable variant="button" phantomPressGuard ref={setBtnRef("next")} onPress={onNextEpisode} onFocus={rememberFocus("next")}>
               <View style={{ padding: 10 }}>
                 <NextTrackIcon size={20} color={Colors.textSecondary} />
               </View>
@@ -311,14 +311,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           )}
 
           {onEpisodes && (
-            <Focusable variant="button" ref={setBtnRef("episodes")} onPress={onEpisodes} onFocus={rememberFocus("episodes")}>
+            <Focusable variant="button" phantomPressGuard ref={setBtnRef("episodes")} onPress={onEpisodes} onFocus={rememberFocus("episodes")}>
               <View style={{ padding: 13 }}>
                 <MenuIcon size={22} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
 
-          <Focusable variant="button" ref={setBtnRef("settings")} onPress={onSettings} onFocus={rememberFocus("settings")}>
+          <Focusable variant="button" phantomPressGuard ref={setBtnRef("settings")} onPress={onSettings} onFocus={rememberFocus("settings")}>
             <View style={{ padding: 13 }}>
               <SettingsIcon size={22} color={Colors.textSecondary} />
             </View>

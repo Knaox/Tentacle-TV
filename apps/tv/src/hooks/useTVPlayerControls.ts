@@ -22,15 +22,6 @@ const SKIP_BADGE_MS = 1000;
  *  scrub démarrait (pause) mais le curseur ne bougeait jamais.
  *  DOIT rester < HOLD_RELEASE_MS pour entretenir le palier d'accélération. */
 const HOLD_SCRUB_TICK_MS = 250;
-/** Hold OK depuis l'OSD caché : le Pressable du bouton (re)focalisé déclenche
- *  son onPress au relâchement du MÊME appui → action involontaire. On avale ce
- *  press jusqu'au key-up du select (fin réelle du hold) ; ce délai est le filet
- *  de sécurité si aucun press n'arrive (appui court). Calé au-delà du settle
- *  350ms de restoringFocusRef (TVPlayerOverlay). */
-const REVEAL_SWALLOW_MAX_MS = 400;
-/** Grâce après le key-up du select : absorbe l'incertitude d'ordre entre le
- *  onPress (Pressable) et le onKeyUp (useTVEventHandler). */
-const KEYUP_GRACE_MS = 120;
 
 interface TVPlayerControlsOptions {
   paused: boolean;
@@ -90,13 +81,8 @@ export function useTVPlayerControls({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Timestamp of last showOverlay call — used to debounce playPause events */
   const lastShowOverlayRef = useRef(0);
-  /** Armé quand showOverlay révèle l'OSD (caché→visible) : avale le 1er onPress
-   *  de bouton issu du même hold OK. Désarmé au key-up du select. */
-  const swallowButtonPressRef = useRef(false);
-  const swallowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showOverlay = useCallback(() => {
-    const wasHidden = !overlayVisibleRef.current;
     lastShowOverlayRef.current = Date.now();
     setOverlayVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -105,23 +91,11 @@ export function useTVPlayerControls({
         setOverlayVisible(false);
       }, OVERLAY_HIDE_MS);
     }
-    // Révélation depuis l'état caché : armer l'avalement du press parasite.
-    if (wasHidden) {
-      swallowButtonPressRef.current = true;
-      if (swallowTimerRef.current) clearTimeout(swallowTimerRef.current);
-      swallowTimerRef.current = setTimeout(() => {
-        swallowButtonPressRef.current = false;
-        swallowTimerRef.current = null;
-      }, REVEAL_SWALLOW_MAX_MS);
-    }
   }, [paused, panelOpen]);
 
   useEffect(() => {
     showOverlay();
-    return () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      if (swallowTimerRef.current) clearTimeout(swallowTimerRef.current);
-    };
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
   }, [paused, showOverlay]);
 
   // --- Mode scrub (curseur fantôme, AUCUN seek tant que non confirmé) ---
@@ -200,22 +174,6 @@ export function useTVPlayerControls({
       if (scrubbingRef.current) { confirmScrub(); return; }
       fn(...args);
     }, [confirmScrub]);
-
-  /** Avale le press parasite issu du hold OK qui vient de révéler l'OSD
-   *  (consomme UN seul press) — sinon le relâchement active le bouton focalisé. */
-  const guardReveal = useCallback(<T extends unknown[]>(fn: (...args: T) => void) =>
-    (...args: T) => {
-      if (swallowButtonPressRef.current) {
-        swallowButtonPressRef.current = false;
-        if (swallowTimerRef.current) { clearTimeout(swallowTimerRef.current); swallowTimerRef.current = null; }
-        return;
-      }
-      fn(...args);
-    }, []);
-
-  /** Garde combinée des boutons OSD : avalement-révélation + garde scrub. */
-  const guardButton = useCallback(<T extends unknown[]>(fn: (...args: T) => void) =>
-    guardReveal(guardScrub(fn)), [guardReveal, guardScrub]);
 
   // --- Badge « +30s / −10s » après un skip OSD caché (double-clic ←/→) :
   // ni trickplay, ni OSD — juste le delta, façon Netflix. OSD visible
@@ -359,19 +317,10 @@ export function useTVPlayerControls({
     onLongRight: () => handleLongDirection("forward"),
     onRewind: () => handleMediaSeekKey("backward"),
     onFastForward: () => handleMediaSeekKey("forward"),
-    onKeyUp: (eventType) => {
+    onKeyUp: () => {
       cancelScrubHold();
       stopHoldScrub();
       if (holdRef.current) endHold();
-      // Fin réelle du hold OK : désarmer l'avalement après une courte grâce
-      // (absorbe l'incertitude d'ordre onPress ↔ onKeyUp).
-      if (eventType === "select" || eventType === "playPause") {
-        if (swallowTimerRef.current) clearTimeout(swallowTimerRef.current);
-        swallowTimerRef.current = setTimeout(() => {
-          swallowButtonPressRef.current = false;
-          swallowTimerRef.current = null;
-        }, KEYUP_GRACE_MS);
-      }
     },
     onDown: () => { if (!scrubbingRef.current && !panelOpenRef.current) showOverlay(); },
     onUp: () => { if (!scrubbingRef.current && !panelOpenRef.current) showOverlay(); },
@@ -393,7 +342,6 @@ export function useTVPlayerControls({
     confirmScrub,
     cancelScrub,
     guardScrub,
-    guardButton,
     handleSkipForward,
     handleSkipBack,
   };
