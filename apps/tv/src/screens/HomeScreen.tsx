@@ -27,6 +27,7 @@ import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { TVLibraryRow } from "../components/rows/TVLibraryRow";
+import { possessiveLibraryName } from "../utils/libraryLabel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -42,7 +43,7 @@ export function HomeScreen(props: Props) {
 }
 
 function HomeScreenInner({ navigation }: Props) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
@@ -269,7 +270,7 @@ function HomeScreenInner({ navigation }: Props) {
               <TVLibraryRow
                 key={lib.Id}
                 libraryId={lib.Id}
-                libraryName={lib.Name}
+                libraryName={possessiveLibraryName(lib.Name, i18n.language)}
                 collectionType={lib.CollectionType}
                 renderCard={renderPortraitCard}
                 onItemPress={navigateToDetail}

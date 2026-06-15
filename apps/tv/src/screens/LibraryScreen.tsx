@@ -11,6 +11,7 @@ import { Focusable } from "../components/focus/Focusable";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { TVShell } from "../components/nav/TVShell";
+import { possessiveLibraryName } from "../utils/libraryLabel";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
@@ -39,7 +40,8 @@ const SORT_OPTIONS = [
 
 export function LibraryScreen({ route, navigation }: Props) {
   const { libraryId, libraryName } = route.params;
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
+  const displayName = possessiveLibraryName(libraryName, i18n.language);
   const flashListRef = useRef<FlashList<MediaItem>>(null);
 
   const [sortIndex, setSortIndex] = useState(0);
@@ -109,11 +111,11 @@ export function LibraryScreen({ route, navigation }: Props) {
 
   const header = useMemo(() => (
     <LibraryHeader
-      libraryName={libraryName} sortIndex={sortIndex} selectedGenre={selectedGenre}
+      libraryName={displayName} sortIndex={sortIndex} selectedGenre={selectedGenre}
       genresList={genresList}
       onSortChange={handleSortChange} onGenreChange={handleGenreChange} t={t}
     />
-  ), [libraryName, sortIndex, selectedGenre, genresList, handleSortChange, handleGenreChange, t]);
+  ), [displayName, sortIndex, selectedGenre, genresList, handleSortChange, handleGenreChange, t]);
 
   // totalItems via ref : chaque page chargée ne doit pas invalider renderItem
   // (sinon toute la grille re-rend à chaque pagination).
