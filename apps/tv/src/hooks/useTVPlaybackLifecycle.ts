@@ -24,10 +24,12 @@ export function useTVPlaybackLifecycle(args: {
   positionRef: React.MutableRefObject<number>;
   pausedStateRef: React.MutableRefObject<boolean>;
   reportSeekRef: React.MutableRefObject<(pos: number, paused: boolean) => void>;
+  /** Ré-arme une session Jellyfin au retour au premier plan (POST /Sessions/Playing). */
+  reportStartRef: React.MutableRefObject<(pos?: number) => void>;
   /** Appelé lors d'un passage en arrière-plan pour mettre en pause. */
   onBackground?: () => void;
 }) {
-  const { itemId, seriesId, navigation, reportStop, positionRef, pausedStateRef, reportSeekRef, onBackground } = args;
+  const { itemId, seriesId, navigation, reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef, onBackground } = args;
   const onBackgroundRef = useRef(onBackground);
   onBackgroundRef.current = onBackground;
   const queryClient = useQueryClient();
@@ -88,19 +90,24 @@ export function useTVPlaybackLifecycle(args: {
     invalidateAllRef.current();
   }, []);
 
-  // AppState : pause + sauvegarde progression en arrière-plan.
-  // reportSeek (Progress) plutôt que reportStop pour garder startedRef vivant.
+  // AppState : sortie via bouton Home de la télécommande (l'app passe en
+  // arrière-plan sans BACK). On COMMITTE la position avec un vrai Stopped — un
+  // simple Progress laisse une session « playing » zombie côté Jellyfin et, si
+  // Android gèle/tue le process en arrière-plan, la position de reprise n'est
+  // jamais finalisée. Au retour, on ré-arme une session pour que la reprise de
+  // lecture continue à remonter la progression (onLoad ne refire pas).
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "background" || state === "inactive") {
         onBackgroundRef.current?.();
-        reportSeekRef.current(positionRef.current, true);
+        void reportStopRef.current();
       } else if (state === "active") {
+        reportStartRef.current(positionRef.current);
         reportSeekRef.current(positionRef.current, pausedStateRef.current);
       }
     });
     return () => sub.remove();
-  }, [positionRef, pausedStateRef, reportSeekRef]);
+  }, [positionRef, pausedStateRef, reportSeekRef, reportStartRef]);
 
   return { invalidateAndGoBack, handleFinished };
 }

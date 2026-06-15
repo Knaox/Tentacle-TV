@@ -135,6 +135,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   pausedStateRef.current = paused;
   const reportSeekRef = useRef(reportSeek);
   reportSeekRef.current = reportSeek;
+  const reportStartRef = useRef(reportStart);
+  reportStartRef.current = reportStart;
   // Rempli après useTVPlayerEventHandlers (handleSeek est défini avant)
   const notifySeekRef = useRef<(target: number, windowMs?: number, afterReload?: boolean) => void>(() => {});
 
@@ -164,7 +166,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const lifecycle = useTVPlaybackLifecycle({
     itemId, seriesId: item?.SeriesId, navigation,
-    reportStop, positionRef, pausedStateRef, reportSeekRef,
+    reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef,
     onBackground: () => setPaused(true),
   });
 
