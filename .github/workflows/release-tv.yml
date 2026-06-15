@@ -101,7 +101,7 @@ jobs:
           cp "$SRC" "dist-apk/tentacle-tv.apk"
           ls -l dist-apk
 
-      - name: Create GitHub Release
+      - name: Create versioned GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -113,7 +113,7 @@ jobs:
             ## Installation (Android TV / Shield)
             1. Paramètres → Sécurité & restrictions → autoriser les **sources inconnues**.
             2. Installer **Downloader** depuis le Play Store.
-            3. Y saisir le lien direct de l'APK ci-dessous (asset `tentacle-tv.apk`).
+            3. Y saisir le **code Downloader** / le lien direct de l'APK (asset `tentacle-tv.apk`).
             4. Télécharger puis installer.
 
             Page de téléchargement : https://tentacletv.app/
@@ -122,3 +122,18 @@ jobs:
             dist-apk/tentacle-tv.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Lien de téléchargement PERMANENT pour le code Downloader (aftv.news) :
+      # la release « tv-latest » est recréée à chaque build → l'asset
+      # https://github.com/Knaox/Tentacle-TV/releases/download/tv-latest/tentacle-tv.apk
+      # pointe TOUJOURS sur la dernière APK. Le code aftv.news encode cette URL une
+      # fois pour toutes. (Tag tv-latest ≠ tv-v* → ne re-déclenche pas ce workflow.)
+      - name: Update rolling « tv-latest » release (stable download URL)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete tv-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create tv-latest dist-apk/tentacle-tv.apk \
+            --title "Tentacle TV (Android TV) — dernière version" \
+            --notes "Lien de téléchargement permanent (code Downloader). Pointe sur ${GITHUB_REF_NAME}." \
+            --latest=false
