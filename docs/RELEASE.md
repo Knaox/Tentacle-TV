@@ -147,6 +147,61 @@ Ce build :
 | Identifiant | com.tentacle.media |
 | Catégorie | Divertissement / Multimédia |
 
+## 7. Android TV (APK)
+
+L'Android TV a son **propre tag**, indépendant du desktop : `tv-v*`. Il déclenche
+`.github/workflows/release-tv.yml` (et **uniquement** lui — le tag desktop `v*` ne
+matche pas `tv-v…`, et un push sur `main` ne déclenche pas le build TV).
+
+### Publier une version Android TV
+
+```bash
+# (optionnel) bump versionCode/versionName dans apps/tv/android/app/build.gradle
+#             et version dans apps/tv/package.json
+git tag tv-v1.0.0
+git push origin tv-v1.0.0
+```
+
+Le workflow :
+1. Installe le monorepo pnpm + JDK 17 + Android SDK/NDK (26.1.10909125).
+2. `cd apps/tv/android && ./gradlew assembleRelease` (bundle JS embarqué → APK autonome, **sans Metro**).
+3. Crée une **Release GitHub** `tv-v*` avec deux assets : `tentacle-tv-<tag>.apk` et `tentacle-tv.apk` (nom stable).
+
+> La version de l'app n'est **pas** dérivée du tag : elle reste celle de `build.gradle`.
+
+Le site `tentacletv.app` récupère automatiquement la dernière release `tv-*` (asset `.apk`)
+via l'API GitHub — le lien de téléchargement est donc toujours à jour.
+
+### Signature
+
+L'APK est signé avec `apps/tv/android/app/debug.keystore` (présent dans le repo) — suffisant
+pour le **sideload** (Downloader), **pas** pour le Play Store.
+
+#### TODO — migration vers un keystore release (Play Store)
+
+```bash
+keytool -genkeypair -v -keystore tentacle-tv-release.jks -alias tentacle \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w 0 tentacle-tv-release.jks > tentacle-tv-release.b64
+```
+
+| Secret GitHub | Valeur |
+|---------------|--------|
+| `TV_KEYSTORE_BASE64` | Contenu de `tentacle-tv-release.b64` |
+| `TV_KEYSTORE_PASSWORD` | Mot de passe du keystore |
+| `TV_KEY_ALIAS` | Alias de la clé (`tentacle`) |
+
+Puis dans `apps/tv/android/app/build.gradle` ajouter `signingConfigs.release` lisant ces
+valeurs (via `System.getenv`), passer `release { signingConfig signingConfigs.release }`, et
+décoder le keystore dans `release-tv.yml` avant `assembleRelease`.
+
+### Doc d'installation utilisateur (Android TV / Shield)
+
+1. **Paramètres → Sécurité & restrictions → Sources inconnues** : autoriser.
+2. Installer **Downloader** (AFTVnews) depuis le Play Store.
+3. Saisir le lien direct de l'APK (affiché sur `tentacletv.app` ou dans la Release GitHub).
+4. Télécharger puis **installer**.
+
 ## URLs utiles
 
 - [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases)
