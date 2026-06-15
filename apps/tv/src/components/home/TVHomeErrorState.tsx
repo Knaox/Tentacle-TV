@@ -26,15 +26,16 @@ export function TVHomeErrorState({ errorMessage, onRetry, onLogout }: TVHomeErro
       </Text>
       <View style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
         <Focusable variant="button" onPress={onRetry} hasTVPreferredFocus>
+          {/* CTA primaire : blanc à texte foncé, comme le bouton Lecture/Reprendre. */}
           <View
             style={{
-              backgroundColor: Colors.accentPurple,
+              backgroundColor: Colors.textPrimary,
               paddingHorizontal: 32,
               paddingVertical: 14,
               borderRadius: 12,
             }}
           >
-            <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
+            <Text style={{ color: Colors.bgDeep, ...Typography.buttonMedium }}>
               {t("retry", { defaultValue: "Retry" })}
             </Text>
           </View>
