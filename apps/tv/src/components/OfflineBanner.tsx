@@ -110,15 +110,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 26,
   },
+  // CTA primaire : blanc à texte foncé, comme le bouton Lecture/Reprendre du hero.
   retryButton: {
-    backgroundColor: Colors.accentPurple,
+    backgroundColor: Colors.textPrimary,
     borderRadius: 12,
     paddingHorizontal: 40,
     paddingVertical: 16,
     marginTop: 32,
   },
   retryButtonText: {
-    color: Colors.textPrimary,
+    color: Colors.bgDeep,
     fontSize: 18,
     fontWeight: "600",
   },
