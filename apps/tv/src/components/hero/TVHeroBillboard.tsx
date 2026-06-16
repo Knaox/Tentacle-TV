@@ -94,12 +94,12 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
     setNextIndex(next);
     nextOpacity.value = 0;
     // La couche courante NE descend PAS à 0 : la suivante monte par-dessus.
+    // Commit INCONDITIONNEL (comme l'original) : un `if (finished)` figeait la
+    // rotation quand reanimated renvoyait finished=false.
     nextOpacity.value = withTiming(
       1,
       { duration: HeroConfig.crossfadeDuration, easing: Easing.inOut(Easing.ease) },
-      (finished) => {
-        if (finished) runOnJS(commitNext)(next);
-      },
+      () => runOnJS(commitNext)(next),
     );
   }, [items.length, index, nextOpacity, commitNext]);
 
@@ -108,8 +108,9 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
 
   useEffect(() => {
     if (items.length <= 1) return;
+    // Rotation continue (façon Netflix) : la bannière tourne même quand un bouton
+    // du hero a le focus — sinon l'auto-focus du contenu la figeait en permanence.
     timerRef.current = setInterval(() => {
-      if (userInteracting.current) return;
       doTransition();
     }, HeroConfig.rotateInterval);
     return () => {
