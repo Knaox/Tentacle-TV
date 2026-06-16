@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getConfigValue, getDirectStreamingConfig, getJellyfinUrl } from "../services/configStore";
+import { getConfigValue, getDirectStreamingConfig, getJellyfinUrl, getPublicUrl } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
@@ -23,9 +23,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
       // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
-      publicUrl:
-        (getConfigValue("public_url") || process.env.TENTACLE_PUBLIC_URL || "").replace(/\/$/, "") ||
-        null,
+      publicUrl: getPublicUrl(),
     };
   });
 

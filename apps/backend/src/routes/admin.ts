@@ -8,6 +8,7 @@ import {
   getJellyfinApiKey,
   setAppState,
   getDirectStreamingConfig,
+  getPublicUrl,
 } from "../services/configStore";
 import { getPrisma } from "../services/db";
 import { injectCorsHosts } from "../services/jellyfinCors";
@@ -147,6 +148,28 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     return { success: true };
   });
 
+  /** GET /api/admin/public-url — Read the public server URL (DB value + env fallback). */
+  app.get("/public-url", async () => {
+    return {
+      publicUrl: getConfigValue("public_url") ?? "",
+      effectiveUrl: getPublicUrl() ?? "",
+      envFallback: (process.env.TENTACLE_PUBLIC_URL ?? "").replace(/\/$/, ""),
+    };
+  });
+
+  /** PUT /api/admin/public-url — Update the public server URL (stored in DB).
+   *  Chaîne vide = effacer la valeur DB → repli sur TENTACLE_PUBLIC_URL. */
+  app.put("/public-url", async (request, reply) => {
+    const parsed = z
+      .object({ publicUrl: z.string().url().or(z.literal("")) })
+      .safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ message: "URL invalide" });
+    }
+    await setConfigValue("public_url", parsed.data.publicUrl.replace(/\/$/, ""));
+    return { success: true };
+  });
+
   /** GET /api/admin/direct-streaming — Read direct streaming settings. */
   app.get("/direct-streaming", async () => {
     const cfg = getDirectStreamingConfig();
@@ -186,7 +209,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     const jellyfinUrl = getJellyfinUrl();
     const apiKey = getJellyfinApiKey();
     if (jellyfinUrl && apiKey && body.enabled) {
-      const tentacleOrigin = (request.headers.origin as string) || process.env.TENTACLE_PUBLIC_URL;
+      const tentacleOrigin = (request.headers.origin as string) || getPublicUrl() || undefined;
       const urlsToInject = [tentacleOrigin].filter(Boolean) as string[];
       try {
         const result = await injectCorsHosts(jellyfinUrl, apiKey, urlsToInject, request.log);
@@ -207,7 +230,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     }).parse(request.body);
 
     // Origin header to send so Jellyfin returns CORS headers (server-to-server fetch has no Origin by default)
-    const testOrigin = (request.headers.origin as string) || process.env.TENTACLE_PUBLIC_URL || "";
+    const testOrigin = (request.headers.origin as string) || getPublicUrl() || "";
 
     const test = async (url: string): Promise<{ ok: boolean; version?: string; error?: string; corsOk?: boolean }> => {
       if (!url) return { ok: false, error: "URL vide" };

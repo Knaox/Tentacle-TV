@@ -95,3 +95,13 @@ export function getDirectStreamingConfig(): DirectStreamingConfig {
     privateUrl: cache.get("jellyfin_private_url") ?? null,
   };
 }
+
+/**
+ * URL publique canonique du serveur Tentacle (domaine fronté par Cloudflare),
+ * gravée dans la TV au jumelage. Source de vérité : config DB `public_url`
+ * (éditable depuis l'admin) ; repli sur la variable d'env TENTACLE_PUBLIC_URL.
+ * Slash final retiré. Renvoie null si aucune des deux n'est définie.
+ */
+export function getPublicUrl(): string | null {
+  return (cache.get("public_url") || process.env.TENTACLE_PUBLIC_URL || "").replace(/\/$/, "") || null;
+}
