@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
-import { View, Dimensions } from "react-native";
+import { View, Dimensions, Image } from "react-native";
 import {
   useSharedValue,
   withTiming,
@@ -7,6 +7,7 @@ import {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Colors, HeroConfig } from "../../theme/colors";
 import { TVHeroBackdrop } from "./TVHeroBackdrop";
@@ -40,40 +41,67 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
 }: TVHeroBillboardProps) {
   const [index, setIndex] = useState(0);
   const [nextIndex, setNextIndex] = useState<number | null>(null);
+  const client = useJellyfinClient();
 
+  // La couche courante reste TOUJOURS à 1 ; on fait entrer la suivante PAR-DESSUS
+  // (pas de crossfade symétrique). Évite la frame noire au swap d'index : quand
+  // la suivante couvre à 100 %, on bascule la base dessous de façon atomique.
   const currentOpacity = useSharedValue(1);
   const nextOpacity = useSharedValue(0);
   const kenBurns = useSharedValue(1);
 
-  // Restart Ken Burns when the active backdrop changes.
+  // Précharge les backdrops des bannières → l'image suivante est déjà en cache
+  // quand elle apparaît (sinon fondu sur une image vide = glitch).
   useEffect(() => {
-    kenBurns.value = 1;
+    items.forEach((it) => {
+      const id = it.Type === "Episode" && it.SeriesId ? it.SeriesId : it.Id;
+      const uri = client.getImageUrl(id, "Backdrop", { width: 1920, quality: 85 });
+      if (uri) Image.prefetch(uri);
+    });
+  }, [items, client]);
+
+  // Ken Burns CONTINU, démarré une seule fois (pas de reset par image) : un reset
+  // à chaque changement faisait sauter le scale (saccade au changement de bannière).
+  // Oscille 1↔scale en boucle ; les deux couches partagent ce scale → swap fluide.
+  useEffect(() => {
     kenBurns.value = withRepeat(
       withTiming(HeroConfig.kenBurnsScale, {
         duration: HeroConfig.kenBurnsDuration,
-        easing: Easing.linear,
+        easing: Easing.inOut(Easing.ease),
       }),
       -1,
       true,
     );
-  }, [index, kenBurns]);
+  }, [kenBurns]);
 
   // Notify parent when active item changes (used by ambient backdrop in Phase 4).
   useEffect(() => {
     if (items.length > 0) onItemChange?.(items[index]);
   }, [index, items, onItemChange]);
 
+  // Bascule atomique : base ← suivante, overlay retiré, opacité overlay remise à
+  // 0 — le tout dans un même render (setState batché) alors que l'overlay couvre
+  // déjà à 100 %. Les pixels affichés sont identiques avant/après → zéro flash.
+  const commitNext = useCallback((next: number) => {
+    setIndex(next);
+    setNextIndex(null);
+    nextOpacity.value = 0;
+  }, [nextOpacity]);
+
   const doTransition = useCallback(() => {
     if (items.length <= 1) return;
     const next = (index + 1) % items.length;
     setNextIndex(next);
     nextOpacity.value = 0;
-    currentOpacity.value = withTiming(0, { duration: HeroConfig.crossfadeDuration });
-    nextOpacity.value = withTiming(1, { duration: HeroConfig.crossfadeDuration }, () => {
-      runOnJS(setIndex)(next);
-      runOnJS(setNextIndex)(null);
-    });
-  }, [items.length, index, currentOpacity, nextOpacity]);
+    // La couche courante NE descend PAS à 0 : la suivante monte par-dessus.
+    nextOpacity.value = withTiming(
+      1,
+      { duration: HeroConfig.crossfadeDuration, easing: Easing.inOut(Easing.ease) },
+      (finished) => {
+        if (finished) runOnJS(commitNext)(next);
+      },
+    );
+  }, [items.length, index, nextOpacity, commitNext]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const userInteracting = useRef(false);
@@ -97,11 +125,6 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
   const handleButtonBlur = useCallback(() => {
     userInteracting.current = false;
   }, []);
-
-  // Reset opacity when index settles after a transition.
-  useEffect(() => {
-    currentOpacity.value = 1;
-  }, [index, currentOpacity]);
 
   if (items.length === 0) return null;
 
