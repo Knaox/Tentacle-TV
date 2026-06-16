@@ -1,0 +1,24 @@
+# Xcode / build artifacts — NE PAS commiter (lourds, spécifiques macOS).
+# Le projet source (.xcodeproj, .xcworkspace, sources) reste suivi : sur macOS,
+# régénérer les pods avec `pod install` après un clone. Windows ignore ce dossier
+# (build Android uniquement) — rien de tout ceci ne doit polluer le dépôt.
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.xcuserstate
+.xcode.env.local
+
+# CocoaPods (régénéré via `pod install`)
+Pods/

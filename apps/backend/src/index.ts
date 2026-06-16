@@ -30,6 +30,7 @@ import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
+import { trailerRoutes } from "./routes/trailers";
 import { themeRoutes } from "./routes/theme";
 import { wsRoutes } from "./routes/ws";
 import { startPairingCleanup } from "./services/pairingCleanup";
@@ -207,6 +208,7 @@ async function main() {
   await app.register(pairRoutes, { prefix: "/api/pair" });
   await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
+  await app.register(trailerRoutes, { prefix: "/api/trailers" });
   await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });

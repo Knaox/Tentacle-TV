@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withDelay, withTiming } from "react-native-reanimated";
-import { WebView } from "react-native-webview";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
@@ -10,6 +9,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { Focusable } from "../components/focus/Focusable";
 import { CloseIcon } from "../components/icons/TVIcons";
 import { parseYouTubeId } from "@tentacle-tv/shared";
+import { TrailerWebView, TRAILER_WEBVIEW_SUPPORTED } from "./trailer/TrailerWebView";
 import { Colors, Typography, Radius } from "../theme/colors";
 import { Durations, Easings } from "../theme/motion";
 
@@ -38,9 +38,11 @@ export function TrailerScreen({ route, navigation }: Props) {
   const ytId = parseYouTubeId(url);
   const lang = (i18n.language ?? "en").slice(0, 2);
   const serverUrl = (storage.getItem("tentacle_server_url") ?? "").replace(/\/$/, "");
-  const embedUrl = ytId && serverUrl
-    ? `${serverUrl}/yt-embed.html?v=${ytId}&hl=${lang}`
-    : null;
+  // Android : embed YouTube via la page relais. tvOS : le variant .ios résout
+  // un flux MP4 depuis ytId (la page relais est ignorée). Lecture possible dès
+  // qu'on a un ytId + un serveur.
+  const canPlay = TRAILER_WEBVIEW_SUPPORTED && !!ytId && !!serverUrl;
+  const embedUrl = canPlay ? `${serverUrl}/yt-embed.html?v=${ytId}&hl=${lang}` : "";
 
   // Bouton Fermer : visible 3 s après le chargement, puis s'estompe (reste
   // focusable — un appui SELECT ferme, BACK aussi).
@@ -54,18 +56,13 @@ export function TrailerScreen({ route, navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      {embedUrl && !failed ? (
-        <WebView
-          source={{ uri: embedUrl }}
-          style={{ flex: 1, backgroundColor: "#000" }}
-          // Non focusable : la WebView ne doit JAMAIS capter la télécommande.
-          focusable={false}
-          mediaPlaybackRequiresUserAction={false}
-          allowsFullscreenVideo
-          javaScriptEnabled
-          domStorageEnabled
+      {canPlay && !failed ? (
+        <TrailerWebView
+          ytId={ytId as string}
+          embedUri={embedUrl}
           onLoadEnd={() => setLoaded(true)}
           onError={() => setFailed(true)}
+          onEnded={() => navigation.goBack()}
         />
       ) : (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 80 }}>
