@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -41,7 +42,7 @@ export function deriveRailKey(state: NavStateLike): string | null {
  * NavigationContainer) ; la navigation passe par `navigationRef`.
  */
 export function TVNavChrome({ railKey }: { railKey: string | null }) {
-  const { railFocusSignal } = useTVNav();
+  const { railFocusSignal, contentFocusNode } = useTVNav();
   const { t } = useTranslation("nav");
   const { storage } = useTentacleConfig();
   const { changeServer } = useAuth();
@@ -54,10 +55,28 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
   const railKeyRef = useRef(railKey);
   railKeyRef.current = railKey;
 
+  // Auto-collapse du rail à la sélection (tvOS) : après navigation, on déplace
+  // explicitement le focus vers le contenu (le rail garde sinon le focus → reste
+  // déployé). Le nœud de contenu (guide TVScreenFrame, autoFocus) est publié par
+  // l'écran ; on attend ~80 ms son montage puis setNativeProps (primitive éprouvée,
+  // cf. grabFocusSignal du rail). Le rail blure → se replie.
+  const contentNodeRef = useRef(contentFocusNode);
+  contentNodeRef.current = contentFocusNode;
+  const [navTick, setNavTick] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== "ios" || navTick === 0) return;
+    const id = setTimeout(() => {
+      // @ts-ignore — setNativeProps(hasTVPreferredFocus) (react-native-tvos)
+      contentNodeRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
+    }, 80);
+    return () => clearTimeout(id);
+  }, [navTick]);
+
   const handleNavigate = useCallback((key: string) => {
     if (key === railKeyRef.current) return;
     if (key === "Logout") { setConfirm("logout"); return; }
     if (key === "ChangeServer") { setConfirm("changeServer"); return; }
+    setNavTick((n) => n + 1); // déclenche le focus contenu après navigation (tvOS)
     if (key === "Home") navigationRef.navigate("Home");
     else if (key === "Search") navigationRef.navigate("Search");
     else if (key === "Preferences") navigationRef.navigate("Preferences");
