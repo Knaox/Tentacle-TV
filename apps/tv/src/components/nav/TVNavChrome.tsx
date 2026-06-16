@@ -56,27 +56,33 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
   railKeyRef.current = railKey;
 
   // Auto-collapse du rail à la sélection (tvOS) : après navigation, on déplace
-  // explicitement le focus vers le contenu (le rail garde sinon le focus → reste
-  // déployé). Le nœud de contenu (guide TVScreenFrame, autoFocus) est publié par
-  // l'écran ; on attend ~80 ms son montage puis setNativeProps (primitive éprouvée,
-  // cf. grabFocusSignal du rail). Le rail blure → se replie.
-  const contentNodeRef = useRef(contentFocusNode);
-  contentNodeRef.current = contentFocusNode;
-  const [navTick, setNavTick] = useState(0);
+  // explicitement le focus vers le contenu (sinon le rail, overlay persistant,
+  // garde le focus → reste déployé). `contentFocusNode` est désormais un VRAI
+  // Focusable publié par l'écran focus (useTVContentEntry). Cycle false→true :
+  // le nœud a déjà hasTVPreferredFocus=true en prop, donc un simple true serait
+  // un no-op → il faut forcer false PUIS true (workaround RN-tvos #849).
+  // On grab le focus quand le NOUVEL écran a publié son `contentFocusNode` (et
+  // pas sur un timer fixe : un pop-back vers l'Accueil publie plus tard qu'un
+  // push). `pendingRef` est armé à la sélection d'un item du rail.
+  const pendingRef = useRef(false);
   useEffect(() => {
-    if (Platform.OS !== "ios" || navTick === 0) return;
-    const id = setTimeout(() => {
-      // @ts-ignore — setNativeProps(hasTVPreferredFocus) (react-native-tvos)
-      contentNodeRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
-    }, 80);
-    return () => clearTimeout(id);
-  }, [navTick]);
+    if (Platform.OS !== "ios") return;
+    if (!pendingRef.current || !contentFocusNode) return;
+    pendingRef.current = false;
+    const n = contentFocusNode as { setNativeProps?: (p: object) => void };
+    let id2: ReturnType<typeof setTimeout>;
+    const id1 = setTimeout(() => {
+      n.setNativeProps?.({ hasTVPreferredFocus: false });
+      id2 = setTimeout(() => n.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
+    }, 40);
+    return () => { clearTimeout(id1); clearTimeout(id2); };
+  }, [contentFocusNode]);
 
   const handleNavigate = useCallback((key: string) => {
     if (key === railKeyRef.current) return;
     if (key === "Logout") { setConfirm("logout"); return; }
     if (key === "ChangeServer") { setConfirm("changeServer"); return; }
-    setNavTick((n) => n + 1); // déclenche le focus contenu après navigation (tvOS)
+    pendingRef.current = true; // arme le focus contenu après navigation (tvOS)
     if (key === "Home") navigationRef.navigate("Home");
     else if (key === "Search") navigationRef.navigate("Search");
     else if (key === "Preferences") navigationRef.navigate("Preferences");

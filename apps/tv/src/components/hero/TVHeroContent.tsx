@@ -9,6 +9,7 @@ import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon } from "../icons/TVIcons";
 import { TVMetaChips } from "../TVMetaChips";
+import { useTVContentEntry } from "../../hooks/useTVContentEntry";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -40,6 +41,14 @@ export const TVHeroContent = memo(function TVHeroContent({
   // (UP depuis le carrousel doit cibler Reprendre, pas « Plus d'infos »).
   // Callback ref via state → re-render quand le bouton est monté.
   const [playBtn, setPlayBtn] = useState<ElementRef<typeof Focusable> | null>(null);
+  // Le bouton Lecture est AUSSI le focusable d'entrée du contenu (sortie rail +
+  // auto-collapse) : on combine setPlayBtn (state, pour le guide interne du hero)
+  // et la ref content-entry (publie au TVNavContext).
+  const contentEntry = useTVContentEntry();
+  const setPlayRef = useCallback((node: ElementRef<typeof Focusable> | null) => {
+    setPlayBtn(node);
+    contentEntry(node);
+  }, [contentEntry]);
   const isEpisode = item.Type === "Episode";
   const isSeries = item.Type === "Series";
   // Série mise en avant : résoudre l'épisode à lire (parité HeroContent web) —
@@ -203,7 +212,7 @@ export const TVHeroContent = memo(function TVHeroContent({
         }}
       >
         <Focusable
-          ref={setPlayBtn}
+          ref={setPlayRef}
           variant="button"
           onPress={handlePlay}
           hasTVPreferredFocus
