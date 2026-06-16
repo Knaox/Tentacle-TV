@@ -9,6 +9,7 @@ import { Focusable } from "../components/focus/Focusable";
 import { TentacleLogo } from "../components/icons/TentacleLogo";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "About">;
@@ -16,6 +17,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "About">;
 export function AboutScreen({ navigation }: Props) {
   const { t } = useTranslation(["about", "common"]);
   const { storage } = useTentacleConfig();
+  // Publie la carte description comme focusable d'entrée (sortie rail + auto-collapse).
+  const contentRef = useTVContentEntry();
 
   useTVRemote({ onBack: () => navigation.goBack() });
 
@@ -67,6 +70,7 @@ export function AboutScreen({ navigation }: Props) {
         {/* Description — focusable : cible d'entrée/sortie du rail sur tvOS
             (À propos n'a aucun bouton ; le focus doit pouvoir y entrer). */}
         <Focusable
+          ref={contentRef}
           variant="card"
           focusRadius={Radius.card}
           onPress={() => {}}

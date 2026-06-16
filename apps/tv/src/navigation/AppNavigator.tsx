@@ -59,14 +59,17 @@ export function AppNavigator() {
       >
         <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
         <Stack.Screen name="PairCode" component={PairCodeScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Library" component={LibraryScreen} />
+        {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
+            onglets) → nav snappy ET pas de course animation/focus qui empêchait
+            l'auto-collapse du rail au retour sur l'Accueil (pop). */}
+        <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
+        <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
         <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
         <Stack.Screen name="Player" component={PlayerScreen} />
         <Stack.Screen name="Trailer" component={TrailerScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} />
-        <Stack.Screen name="Preferences" component={PreferencesScreen} />
-        <Stack.Screen name="About" component={AboutScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
+        <Stack.Screen name="Preferences" component={PreferencesScreen} options={{ animation: "none" }} />
+        <Stack.Screen name="About" component={AboutScreen} options={{ animation: "none" }} />
       </Stack.Navigator>
     </Suspense>
   );

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import type { View } from "react-native";
 
 /**
@@ -35,7 +35,7 @@ interface TVNavState {
    * sont sous le rail déployé (occlusion) → RIGHT géométrique ne les atteint pas.
    */
   contentFocusNode: View | null;
-  setContentFocusNode: (node: View | null) => void;
+  setContentFocusNode: Dispatch<SetStateAction<View | null>>;
 }
 
 const TVNavContext = createContext<TVNavState>({

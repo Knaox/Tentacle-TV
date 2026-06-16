@@ -10,6 +10,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { i18n } from "@tentacle-tv/shared";
 import { getLanguageDisplayName } from "../utils/languageNames";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
@@ -56,6 +57,8 @@ export function PreferencesScreen({ navigation }: Props) {
   const { t } = useTranslation(["preferences", "common", "nav"]);
   const { storage } = useTentacleConfig();
   const { data: libraries } = useLibraries();
+  // 1er bouton langue = focusable d'entrée (sortie rail + auto-collapse).
+  const contentRef = useTVContentEntry();
 
   const [currentLang, setCurrentLang] = useState(i18n.language || "en");
   const [prefs, setPrefs] = useState<LibPref[]>([]);
@@ -183,6 +186,7 @@ export function PreferencesScreen({ navigation }: Props) {
           {INTERFACE_LANGS.map((lang, i) => (
             <Focusable
               key={lang.code}
+              ref={i === 0 ? contentRef : undefined}
               variant="button"
               onPress={() => changeInterfaceLang(lang.code)}
               // Focus auto à l'arrivée (tvOS) → rail replié à la sélection.
