@@ -19,6 +19,13 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         demo: DEMO_MODE,
       },
       autoplayCreditsMinutes: creditsMin != null ? Number(creditsMin) : 2,
+      // URL publique canonique du serveur (domaine fronté par le worker Cloudflare).
+      // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
+      // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
+      // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
+      publicUrl:
+        (getConfigValue("public_url") || process.env.TENTACLE_PUBLIC_URL || "").replace(/\/$/, "") ||
+        null,
     };
   });
 

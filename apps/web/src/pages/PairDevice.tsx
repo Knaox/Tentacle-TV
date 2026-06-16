@@ -1,6 +1,28 @@
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
+import { getBackendBase } from "../lib/backendBase";
+
+/**
+ * Résout l'URL serveur à transmettre à la TV au jumelage.
+ * Priorité : URL publique du backend (/api/config) → base backend configurée
+ * (desktop = tentacle_server_url) → window.location.origin (dernier recours).
+ * Évite de graver `tauri://localhost` (desktop) ou une URL LAN/interne dans la TV.
+ */
+async function resolvePairingServerUrl(): Promise<string> {
+  const base = getBackendBase();
+  let serverUrl = base || window.location.origin;
+  try {
+    const res = await fetch(`${base}/api/config`);
+    if (res.ok) {
+      const cfg = await res.json();
+      if (cfg?.publicUrl) serverUrl = cfg.publicUrl as string;
+    }
+  } catch {
+    /* réseau indisponible — on garde le fallback */
+  }
+  return serverUrl;
+}
 
 export function PairDevice() {
   const { t } = useTranslation("pairing");
@@ -65,7 +87,7 @@ export function PairDevice() {
     try {
       const { token } = await tvTokenMut.mutateAsync();
 
-      const serverUrl = window.location.origin;
+      const serverUrl = await resolvePairingServerUrl();
       const userRaw = localStorage.getItem("tentacle_user");
       const user = userRaw ? JSON.parse(userRaw) as { Id: string; Name: string } : null;
       if (!user?.Id || !user?.Name) throw new Error("User info not found");
