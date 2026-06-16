@@ -13,6 +13,7 @@
     "build:backend": "pnpm --filter @tentacle-tv/backend build",
     "build:desktop": "pnpm --filter @tentacle-tv/desktop build",
     "build:tv:android": "pnpm --filter @tentacle-tv/tv android",
+    "build:tv:ios": "pnpm --filter @tentacle-tv/tv ios",
     "build:mobile:android": "pnpm --filter @tentacle-tv/mobile android",
     "build:mobile:ios": "pnpm --filter @tentacle-tv/mobile ios",
     "lint": "pnpm -r lint",

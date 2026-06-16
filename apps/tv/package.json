@@ -5,6 +5,7 @@
   "scripts": {
     "start": "react-native start",
     "android": "react-native run-android",
+    "ios": "react-native run-ios --simulator \"Apple TV\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/"
   },

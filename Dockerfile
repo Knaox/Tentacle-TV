@@ -41,6 +41,10 @@ FROM node:20-alpine AS production
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# yt-dlp : résolution des bandes-annonces YouTube → flux MP4 jouable (Apple TV
+# n'a pas de WebView). Paquet du dépôt community Alpine (tire python3 en dépendance).
+RUN apk add --no-cache yt-dlp
+
 WORKDIR /app
 
 # Copy built artifacts
