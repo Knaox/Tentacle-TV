@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { View, Text, ScrollView, TVFocusGuideView } from "react-native";
+import { View, Text, ScrollView, TVFocusGuideView, Platform } from "react-native";
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, interpolate,
 } from "react-native-reanimated";
@@ -11,6 +11,7 @@ import { RailRow } from "./RailRow";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { possessiveLibraryName } from "../../utils/libraryLabel";
 import { useTVScrollToFocused } from "../../hooks/useTVScrollToFocused";
+import { useTVNav } from "../../context/TVNavContext";
 import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
   LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon,
@@ -89,14 +90,22 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   // rail (LEFT depuis le contenu) focalise TOUJOURS l'item actif — sans ça,
   // Android choisit l'item géométriquement le plus proche (ex: Déconnexion !).
   const [activeNode, setActiveNode] = useState<View | null>(null);
+  // Publie aussi le nœud actif au contexte : sur Apple TV, le pont de focus
+  // (TVFocusBridgeLeft, monté côté contenu) l'utilise comme destination pour que
+  // LEFT depuis le contenu atteigne le rail (overlay sibling, sinon injoignable
+  // au D-pad sur tvOS). Additif — le `destinations` interne ci-dessous reste
+  // utilisé tel quel (notamment Android).
+  // `railFocused` est dans le contexte : le pont de focus tvOS (TVFocusBridgeLeft)
+  // doit savoir si le focus est dans le rail pour se désactiver (sinon il piège).
+  const { setRailActiveNode, railFocused, setRailFocused } = useTVNav();
   const setActiveItemRef = useCallback((node: View | null) => {
     (activeRef as React.MutableRefObject<View | null>).current = node;
     setActiveNode(node);
-  }, []);
+    setRailActiveNode(node);
+  }, [setRailActiveNode]);
   // Redirection vers l'item actif UNIQUEMENT quand le focus vient de
   // l'extérieur : une fois dans le rail, la navigation interne (descendre
   // jusqu'à Déconnexion) ne doit pas être re-routée vers l'item actif.
-  const [railFocused, setRailFocused] = useState(false);
 
   const userName = (() => {
     try { return (JSON.parse(storage.getItem("tentacle_user") ?? "{}") as { Name?: string }).Name ?? ""; }
@@ -186,10 +195,22 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
         style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_COLLAPSED + 40 }}
       />
 
+      {/*
+        Android : `destinations` redirige l'entrée géométrique vers l'item actif.
+        tvOS : `autoFocus` fait du rail un VRAI groupe de focus navigable (sans ça,
+        on entre mais on ne peut pas se déplacer ni sortir) ; il mémorise le dernier
+        item focusé. L'atterrissage sur l'item actif est géré par TVFocusBridgeLeft,
+        donc pas de `destinations` ici sur tvOS (qui empêcherait la nav interne).
+      */}
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView
         trapFocusLeft
-        destinations={!railFocused && activeNode ? [activeNode] : undefined}
+        autoFocus={Platform.OS === "ios"}
+        destinations={
+          Platform.OS === "ios"
+            ? undefined
+            : (!railFocused && activeNode ? [activeNode] : undefined)
+        }
         style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 24 }}
       >
         {/* Avatar utilisateur (décoratif) */}

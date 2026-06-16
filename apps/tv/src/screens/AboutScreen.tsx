@@ -1,4 +1,4 @@
-import { View, ScrollView, Text } from "react-native";
+import { View, ScrollView, Text, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 
@@ -40,11 +40,18 @@ export function AboutScreen({ navigation }: Props) {
   return (
     <TVScreenFrame>
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      <ScrollView contentContainerStyle={{
-        paddingHorizontal: 80,
-        paddingVertical: 32,
-        paddingBottom: 60,
-      }}>
+      {/* À propos n'a aucun bouton : on rend le ScrollView focusable (tvOS) pour
+          qu'il soit une cible de focus (sortir du rail + défiler), et qu'il prenne
+          le focus à l'arrivée (rail replié à la sélection — comme les autres écrans). */}
+      <ScrollView
+        focusable={Platform.OS === "ios"}
+        // @ts-ignore — hasTVPreferredFocus (react-native-tvos) sur vue focusable
+        hasTVPreferredFocus={Platform.OS === "ios"}
+        contentContainerStyle={{
+          paddingHorizontal: 80,
+          paddingVertical: 32,
+          paddingBottom: 60,
+        }}>
 
         {/* Logo + title */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>

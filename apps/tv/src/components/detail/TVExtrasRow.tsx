@@ -1,9 +1,9 @@
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { View, Text, Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { parseYouTubeId, type RichTrailer } from "@tentacle-tv/shared";
 import { FocusableRow } from "../focus/FocusableRow";
-import { Colors, Typography, Radius, Spacing } from "../../theme/colors";
+import { Colors, Typography, Radius } from "../../theme/colors";
 
 const TILE_W = 280;
 const TILE_H = Math.round(TILE_W * 9 / 16);
@@ -17,16 +17,38 @@ interface TVExtrasRowProps {
 /**
  * Rangée « Extras » de la fiche média — équivalent TV de l'ExtrasRow web :
  * tuiles 16:9 avec miniature YouTube, libellé + type, lecture in-app au clic.
+ *
+ * Comme le web : on MASQUE les trailers indisponibles/privés. YouTube renvoie un
+ * placeholder gris 120×90 sur `hqdefault.jpg` pour ces vidéos → on le détecte via
+ * les dimensions au chargement de la vignette (`onLoad`) et on retire l'entrée.
  */
 export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style }: TVExtrasRowProps) {
   const { t } = useTranslation("common");
-  if (trailers.length === 0) return null;
+  const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
+
+  const markUnavailable = useCallback((url: string) => {
+    setUnavailable((prev) => {
+      if (prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+  }, []);
+
+  const visible = trailers.filter((tr) => !unavailable.has(tr.Url));
+  if (visible.length === 0) return null;
 
   return (
     <FocusableRow
       title={t("extras", { defaultValue: "Extras" })}
-      data={trailers}
-      renderItem={(tr: RichTrailer) => <ExtraTile trailer={tr} fallbackLabel={t("trailer", { defaultValue: "Bande-annonce" })} />}
+      data={visible}
+      renderItem={(tr: RichTrailer) => (
+        <ExtraTile
+          trailer={tr}
+          fallbackLabel={t("trailer", { defaultValue: "Bande-annonce" })}
+          onUnavailable={() => markUnavailable(tr.Url)}
+        />
+      )}
       keyExtractor={(tr) => tr.Url}
       itemWidth={TILE_W}
       style={style}
@@ -35,10 +57,16 @@ export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style
   );
 });
 
-function ExtraTile({ trailer, fallbackLabel }: { trailer: RichTrailer; fallbackLabel: string }) {
+function ExtraTile({
+  trailer,
+  fallbackLabel,
+  onUnavailable,
+}: {
+  trailer: RichTrailer;
+  fallbackLabel: string;
+  onUnavailable: () => void;
+}) {
   const ytId = parseYouTubeId(trailer.Url);
-  // Miniature YouTube ; les vidéos supprimées renvoient un placeholder gris
-  // 120x90 — pas détectable via naturalWidth en RN, on garde la tuile.
   const [imgFailed, setImgFailed] = useState(false);
   const thumb = ytId && !imgFailed ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : null;
 
@@ -57,6 +85,11 @@ function ExtraTile({ trailer, fallbackLabel }: { trailer: RichTrailer; fallbackL
             source={{ uri: thumb }}
             style={{ width: "100%", height: "100%" }}
             resizeMode="cover"
+            // Vidéo supprimée/privée → placeholder 120×90 : on masque l'entrée.
+            onLoad={(e) => {
+              const w = e.nativeEvent?.source?.width;
+              if (w && w <= 120) onUnavailable();
+            }}
             onError={() => setImgFailed(true)}
           />
         ) : (

@@ -64,9 +64,11 @@ export const TVHeroBackdrop = memo(function TVHeroBackdrop({
 
       {nextBackdropUri && (
         <Animated.View style={[{ position: "absolute", width: "100%", height: "100%" }, nextStyle]}>
-          <Image
+          {/* Même Ken Burns que la couche courante → au commit (la suivante devient
+              courante), le scale est identique : aucun saut/saccade. */}
+          <Animated.Image
             source={{ uri: nextBackdropUri }}
-            style={{ width: "100%", height: "100%" }}
+            style={[{ width: "100%", height: "100%" }, kenBurnsStyle]}
             resizeMode="cover"
           />
         </Animated.View>

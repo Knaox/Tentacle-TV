@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { View, ScrollView, Text, ActivityIndicator } from "react-native";
+import { View, ScrollView, Text, ActivityIndicator, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useLibraries, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -180,8 +180,14 @@ export function PreferencesScreen({ navigation }: Props) {
         {/* Interface Language */}
         <SectionTitle text={t("preferences:interfaceLanguage")} />
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 32 }}>
-          {INTERFACE_LANGS.map((lang) => (
-            <Focusable key={lang.code} variant="button" onPress={() => changeInterfaceLang(lang.code)}>
+          {INTERFACE_LANGS.map((lang, i) => (
+            <Focusable
+              key={lang.code}
+              variant="button"
+              onPress={() => changeInterfaceLang(lang.code)}
+              // Focus auto à l'arrivée (tvOS) → rail replié à la sélection.
+              hasTVPreferredFocus={Platform.OS === "ios" && i === 0}
+            >
               <View style={{
                 paddingHorizontal: 22, paddingVertical: 10, borderRadius: Radius.button,
                 backgroundColor: currentLang === lang.code ? Colors.ctaPrimaryBg : "rgba(255,255,255,0.04)",
