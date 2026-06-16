@@ -79,14 +79,15 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
     if (items.length > 0) onItemChange?.(items[index]);
   }, [index, items, onItemChange]);
 
-  // Bascule atomique : base ← suivante, overlay retiré, opacité overlay remise à
-  // 0 — le tout dans un même render (setState batché) alors que l'overlay couvre
-  // déjà à 100 %. Les pixels affichés sont identiques avant/après → zéro flash.
+  // Bascule atomique : base ← suivante, overlay retiré (même render batché) alors
+  // que l'overlay couvre déjà à 100 % → pixels identiques avant/après.
+  // NE PAS remettre nextOpacity à 0 ici : ce write UI-thread est immédiat, AVANT
+  // le re-render React → l'overlay disparaîtrait 1 frame en révélant l'ancienne
+  // image (= le glitch). nextOpacity est remis à 0 au début du prochain doTransition.
   const commitNext = useCallback((next: number) => {
     setIndex(next);
     setNextIndex(null);
-    nextOpacity.value = 0;
-  }, [nextOpacity]);
+  }, []);
 
   const doTransition = useCallback(() => {
     if (items.length <= 1) return;
