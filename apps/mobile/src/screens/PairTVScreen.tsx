@@ -50,8 +50,22 @@ export function PairTVScreen() {
     try {
       const { token } = await tvTokenMut.mutateAsync();
 
-      const serverUrl = storage.getItem("tentacle_server_url") ?? "";
-      if (!serverUrl) throw new Error(te("noServerUrl"));
+      const base = storage.getItem("tentacle_server_url") ?? "";
+      if (!base) throw new Error(te("noServerUrl"));
+
+      // Préférer l'URL publique du serveur (domaine Cloudflare) pour que la TV
+      // reçoive une adresse joignable depuis l'externe, pas l'URL LAN/interne
+      // que le mobile utilise. Fallback sur `base` si /api/config ne la fournit pas.
+      let serverUrl = base;
+      try {
+        const cfgRes = await fetch(`${base}/api/config`);
+        if (cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          if (cfg?.publicUrl) serverUrl = cfg.publicUrl as string;
+        }
+      } catch {
+        /* réseau indisponible — on garde `base` */
+      }
 
       const userRaw = storage.getItem("tentacle_user");
       const user = userRaw ? JSON.parse(userRaw) as { Id: string; Name: string } : null;
