@@ -40,18 +40,11 @@ export function AboutScreen({ navigation }: Props) {
   return (
     <TVScreenFrame>
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      {/* À propos n'a aucun bouton : on rend le ScrollView focusable (tvOS) pour
-          qu'il soit une cible de focus (sortir du rail + défiler), et qu'il prenne
-          le focus à l'arrivée (rail replié à la sélection — comme les autres écrans). */}
-      <ScrollView
-        focusable={Platform.OS === "ios"}
-        // @ts-ignore — hasTVPreferredFocus (react-native-tvos) sur vue focusable
-        hasTVPreferredFocus={Platform.OS === "ios"}
-        contentContainerStyle={{
-          paddingHorizontal: 80,
-          paddingVertical: 32,
-          paddingBottom: 60,
-        }}>
+      <ScrollView contentContainerStyle={{
+        paddingHorizontal: 80,
+        paddingVertical: 32,
+        paddingBottom: 60,
+      }}>
 
         {/* Logo + title */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>
@@ -71,58 +64,69 @@ export function AboutScreen({ navigation }: Props) {
           </Text>
         </View>
 
-        {/* Description */}
-        <View style={{
-          backgroundColor: Colors.bgSurface,
-          borderRadius: Radius.card, padding: 20,
-          marginBottom: 16,
-          borderWidth: 1, borderColor: Colors.glassBorder,
-        }}>
-          <Text style={{
-            color: Colors.textSecondary,
-            fontSize: 13, lineHeight: 20, textAlign: "center",
+        {/* Description — focusable : cible d'entrée/sortie du rail sur tvOS
+            (À propos n'a aucun bouton ; le focus doit pouvoir y entrer). */}
+        <Focusable
+          variant="card"
+          focusRadius={Radius.card}
+          onPress={() => {}}
+          hasTVPreferredFocus={Platform.OS === "ios"}
+          style={{ marginBottom: 16 }}
+          accessibilityLabel={t("about:description")}
+        >
+          <View style={{
+            backgroundColor: Colors.bgSurface,
+            borderRadius: Radius.card, padding: 20,
+            borderWidth: 1, borderColor: Colors.glassBorder,
           }}>
-            {t("about:description")}
-          </Text>
-        </View>
+            <Text style={{
+              color: Colors.textSecondary,
+              fontSize: 13, lineHeight: 20, textAlign: "center",
+            }}>
+              {t("about:description")}
+            </Text>
+          </View>
+        </Focusable>
 
         {/* Server info */}
-        <View style={{
-          backgroundColor: Colors.bgSurface,
-          borderRadius: Radius.card, padding: 20,
-          marginBottom: 16,
-          borderWidth: 1, borderColor: Colors.glassBorder,
-        }}>
-          <InfoRow label="Server" value={serverUrl} />
-          <InfoRow label="User" value={username} />
-          <InfoRow label="Platform" value="Android TV" />
-        </View>
+        <Focusable variant="card" focusRadius={Radius.card} onPress={() => {}} style={{ marginBottom: 16 }}>
+          <View style={{
+            backgroundColor: Colors.bgSurface,
+            borderRadius: Radius.card, padding: 20,
+            borderWidth: 1, borderColor: Colors.glassBorder,
+          }}>
+            <InfoRow label="Server" value={serverUrl} />
+            <InfoRow label="User" value={username} />
+            <InfoRow label="Platform" value="Android TV" />
+          </View>
+        </Focusable>
 
         {/* Features */}
-        <View style={{
-          backgroundColor: Colors.bgSurface,
-          borderRadius: Radius.card, padding: 20,
-          marginBottom: 16,
-          borderWidth: 1, borderColor: Colors.glassBorder,
-        }}>
-          <Text style={{
-            color: Colors.accentPurpleLight,
-            fontSize: 15, fontWeight: "700", marginBottom: 12,
+        <Focusable variant="card" focusRadius={Radius.card} onPress={() => {}} style={{ marginBottom: 16 }}>
+          <View style={{
+            backgroundColor: Colors.bgSurface,
+            borderRadius: Radius.card, padding: 20,
+            borderWidth: 1, borderColor: Colors.glassBorder,
           }}>
-            {t("about:features")}
-          </Text>
-          {features.map((f, i) => (
-            <View key={i} style={{
-              flexDirection: "row", alignItems: "center", marginBottom: 8,
+            <Text style={{
+              color: Colors.accentPurpleLight,
+              fontSize: 15, fontWeight: "700", marginBottom: 12,
             }}>
-              <View style={{
-                width: 5, height: 5, borderRadius: 3,
-                backgroundColor: Colors.accentPurple, marginRight: 12,
-              }} />
-              <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>{f}</Text>
-            </View>
-          ))}
-        </View>
+              {t("about:features")}
+            </Text>
+            {features.map((f, i) => (
+              <View key={i} style={{
+                flexDirection: "row", alignItems: "center", marginBottom: 8,
+              }}>
+                <View style={{
+                  width: 5, height: 5, borderRadius: 3,
+                  backgroundColor: Colors.accentPurple, marginRight: 12,
+                }} />
+                <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>{f}</Text>
+              </View>
+            ))}
+          </View>
+        </Focusable>
 
         {/* Copyright */}
         <Text style={{
