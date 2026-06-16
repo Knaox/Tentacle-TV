@@ -36,7 +36,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const deviceId = `tentacle-server-${body.username}`;
+      // DeviceId ASCII-safe : le nom d'utilisateur peut contenir des caractères
+      // non-ASCII (ex. "Mélissa"). Or les en-têtes HTTP doivent être ASCII —
+      // Kestrel (serveur de Jellyfin) rejette sinon la requête avec un 400, ce
+      // qui se traduisait par un faux "Identifiants invalides". On encode donc
+      // le username (déterministe, unique par utilisateur, toujours ASCII).
+      const deviceId = `tentacle-server-${encodeURIComponent(body.username)}`;
       const authHeader = `MediaBrowser Client="Tentacle TV", Device="Server", DeviceId="${deviceId}", Version="${BACKEND_VERSION}"`;
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
