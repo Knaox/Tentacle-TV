@@ -131,9 +131,9 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     collapseTimer.current = setTimeout(() => {
       if (focusCount.current <= 0) {
         setRailFocused(false);
-        progress.value = withTiming(0, { duration: Durations.base, easing: Easings.out });
+        progress.value = withTiming(0, { duration: Durations.fast, easing: Easings.out });
       }
-    }, 120);
+    }, 30);
   }, [progress]);
 
   const railStyle = useAnimatedStyle(() => ({
