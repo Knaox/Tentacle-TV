@@ -34,6 +34,7 @@ const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
 const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
 const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
+const AdminUsers = lazy(() => import("./pages/AdminUsers").then((m) => ({ default: m.AdminUsers })));
 const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({ default: m.AdminTheme })));
 const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").then((m) => ({ default: m.AdminThemeTokens })));
 const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
@@ -222,6 +223,7 @@ export function App() {
             <Route path="profile" element={<MobileProfile />} />
             <Route path="pair-device" element={<PairDevice />} />
             <Route path="admin" element={<Admin />} />
+            <Route path="admin/users" element={<AdminUsers />} />
             <Route path="admin/plugins" element={<AdminPlugins />} />
             <Route path="admin/theme" element={<AdminTheme />} />
             <Route path="admin/theme/tokens" element={<AdminThemeTokens />} />
