@@ -150,10 +150,13 @@ La version App Store est forcée à **1.0.0** par `apps/desktop/src-tauri/tauri.
 À chaque resoumission d'une même 1.0.0, incrémenter le **build number** (`CFBundleVersion`).
 
 ### Prérequis Apple (une fois)
-1. App ID `com.tentacle.media` activé pour le **Mac App Store** (portail Developer).
-2. Certificats **Apple Distribution** + **3rd Party Mac Developer Installer**.
-3. **Provisioning profile** Mac App Store pour cet App ID.
-4. Fiche app créée dans **App Store Connect**.
+> macOS est **unifié** avec l'app iOS existante : même bundle id **`com.tentacle.mobile`**
+> et même fiche App Store (id `6760205634`). Le build macOS override l'identifier via
+> `tauri.appstore.conf.json` (Windows reste sur `com.tentacle.media`).
+1. App ID **`com.tentacle.mobile`** : déjà existant (iOS) — rien à créer.
+2. Certificats **Apple Distribution** + **Mac Installer Distribution**.
+3. **Provisioning profile** Mac App Store pour `com.tentacle.mobile`.
+4. Sur App Store Connect : **ajouter la plateforme macOS** à la fiche existante (pas de nouvelle fiche).
 5. Secrets GitHub : `APPLE_DISTRIBUTION_CERT_BASE64`/`_PASSWORD`,
    `MAC_INSTALLER_CERT_BASE64`/`_PASSWORD`, `MAS_PROVISIONING_PROFILE_BASE64`,
    et la clé App Store Connect (`APPLE_API_KEY`/`_ISSUER`/`_KEY_CONTENT`, réutilisable).
