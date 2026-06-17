@@ -22,6 +22,7 @@ import {
   setStreamingConfigBackendUrl,
   setShareLinkBackendUrl,
   setWsBackendUrl,
+  notifyUserChange,
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
@@ -139,6 +140,7 @@ jellyfinClient.setOnAuthExpired(async () => {
   jellyfinClient.setAccessToken(null);
   storage.removeItem("tentacle_token");
   storage.removeItem("tentacle_user");
+  notifyUserChange();
 });
 
 // Proactive cookie refresh for long-running tabs (renew well before 90-day expiry)

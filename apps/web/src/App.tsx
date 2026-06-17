@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback, useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateModal } from "./components/UpdateModal";
@@ -6,7 +6,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, notifyUserChange } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, useUserId, notifyUserChange } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
@@ -51,27 +51,14 @@ function PageSpinner() {
   );
 }
 
-/* -- Reactive auth state (tracks tentacle_user, not token — token is in httpOnly cookie) -- */
-const authListeners = new Set<() => void>();
-function notifyAuthChange() { authListeners.forEach((cb) => cb()); }
-
-const origSetItem = localStorage.setItem.bind(localStorage);
-const origRemoveItem = localStorage.removeItem.bind(localStorage);
-localStorage.setItem = (key: string, value: string) => {
-  origSetItem(key, value);
-  if (key === "tentacle_user") { notifyAuthChange(); notifyUserChange(); }
-};
-localStorage.removeItem = (key: string) => {
-  origRemoveItem(key);
-  if (key === "tentacle_user") { notifyAuthChange(); notifyUserChange(); }
-};
-
+/* -- Reactive auth state — dérivée de la source unique `tentacle_user` exposée
+   par useUserId(). La notification est explicite (voir useAuth / onAuthExpired /
+   ServerSetup) et NON via un monkey-patch de localStorage.setItem : WebKit /
+   WKWebView (desktop macOS) ignore silencieusement la réassignation des méthodes
+   de Storage (le named-property setter stocke une clé "setItem" au lieu de
+   remplacer la méthode), ce qui cassait la réactivité d'auth → boucle de login. -- */
 function useIsAuthenticated(): boolean {
-  const subscribe = useCallback((cb: () => void) => {
-    authListeners.add(cb);
-    return () => { authListeners.delete(cb); };
-  }, []);
-  return useSyncExternalStore(subscribe, () => !!localStorage.getItem("tentacle_user"));
+  return useUserId() !== null;
 }
 
 /** Sync direct streaming config from backend into JellyfinClient.
@@ -188,6 +175,7 @@ export function App() {
         onComplete={(token, user) => {
           client.setAccessToken(token);
           storage.setItem("tentacle_user", JSON.stringify(user));
+          notifyUserChange();
           setSetupRequired(false);
         }}
       />
