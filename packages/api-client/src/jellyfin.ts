@@ -141,7 +141,7 @@ export class JellyfinClient {
     return parts.join(", ");
   }
 
-  fetch<T>(path: string, init?: RequestInit): Promise<T> {
+  fetch<T>(path: string, init?: RequestInit, opts?: { noAuthExpiry?: boolean }): Promise<T> {
     return fetchWithRetry<T>(
       {
         baseUrl: this.baseUrl,
@@ -152,6 +152,7 @@ export class JellyfinClient {
         authHeader: this.getAuthHeader(),
         onAuthExpired: this.authExpiredCallback,
         isLoggingIn: this._isLoggingIn,
+        noAuthExpiry: opts?.noAuthExpiry,
       },
       this.fetchState,
     );

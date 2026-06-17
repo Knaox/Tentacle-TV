@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Platform } from "react-native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
@@ -40,7 +41,9 @@ export function useTVTextTracks(args: {
     return streams
       .filter((s) => s.Type === "Subtitle" && !BURN_IN_SUBTITLE_CODECS.test(s.Codec ?? ""))
       .map((s) => {
-        const fmt = nativeSubFormat(s.Codec);
+        // tvOS/AVPlayer ne sait pas rendre l'ASS sideloadé → toujours VTT
+        // (Jellyfin convertit). Android/ExoPlayer garde l'ASS natif.
+        const fmt = Platform.OS === "ios" ? "vtt" : nativeSubFormat(s.Codec);
         return {
           jellyfinIndex: s.Index,
           language: (s.Language ?? "").toLowerCase(),

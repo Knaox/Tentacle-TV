@@ -10,8 +10,10 @@ interface MemoizedPlayerProps {
   source: string;
   paused: boolean;
   playerStyle: ViewStyle;
-  /** Pistes texte VTT pour le rendu natif (ExoPlayer uniquement) */
+  /** Pistes texte VTT pour le rendu natif (ExoPlayer Android + AVPlayer tvOS) */
   textTracks?: ExoTextTrack[];
+  /** Index Jellyfin du sous-titre sélectionné (sélection native tvOS) */
+  subtitleIndex?: number;
   onLoad: (duration: number) => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
@@ -21,7 +23,7 @@ interface MemoizedPlayerProps {
 }
 
 export const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused, playerStyle, textTracks,
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused, playerStyle, textTracks, subtitleIndex,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
@@ -32,6 +34,7 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       progressInterval={1000}
       audioPassthrough
       textTracks={textTracks}
+      subtitleIndex={subtitleIndex}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}
@@ -46,6 +49,8 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       source={source}
       paused={paused}
       progressInterval={1000}
+      textTracks={textTracks}
+      subtitleIndex={subtitleIndex}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, type ElementRef } from "react";
-import { View, TouchableOpacity, Dimensions, type ViewStyle } from "react-native";
+import { View, TouchableOpacity, Dimensions, Platform, type ViewStyle } from "react-native";
 import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting, useIntroSkipper, useEpisodeNavigation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality, BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
@@ -57,6 +57,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [showSettings, setShowSettings] = useState(false);
   const showSettingsRef = useRef(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
+  const showEpisodesRef = useRef(false);
+  showEpisodesRef.current = showEpisodes;
   const [startTicks, setStartTicks] = useState(0);
   const [forceTranscode, setForceTranscode] = useState(false);
   const positionRef = useRef(0);
@@ -98,8 +100,10 @@ export function PlayerScreen({ route, navigation }: Props) {
     }
   }, [itemId, defaultAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Direct play tant qu'aucun transcode n'est imposé (codec, audio ou qualité user)
-  const isDirectPlay = !forceTranscode && !quality.isTranscodingQuality;
+  // Direct play DEMANDÉ tant qu'aucun transcode n'est imposé (codec ou qualité user).
+  // Android : c'est aussi la décision finale. tvOS : le hook .ios interroge
+  // PlaybackInfo et peut renvoyer un `isDirectPlay` différent (le serveur décide).
+  const requestedDirectPlay = !forceTranscode && !quality.isTranscodingQuality;
   const isDirectStream = false;
 
   // Position de DÉMARRAGE du player (fragment #tnt-start lu par le natif) :
@@ -114,12 +118,12 @@ export function PlayerScreen({ route, navigation }: Props) {
     ? startTicks / TICKS_PER_SECOND
     : (initialResumeSecondsRef.current ?? 0);
 
-  const { streamUrl, playSessionId } = useTVStreamUrl({
+  const { streamUrl, playSessionId, isDirectPlay } = useTVStreamUrl({
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
     maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
-    isDirectPlay,
+    isDirectPlay: requestedDirectPlay,
   });
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
@@ -226,6 +230,11 @@ export function PlayerScreen({ route, navigation }: Props) {
         bumpOsdFocus();
         return;
       }
+      if (showEpisodesRef.current) {
+        setShowEpisodes(false);
+        bumpOsdFocus();
+        return;
+      }
       lifecycle.invalidateAndGoBack();
     },
     onPlayPause: handlePlayPause,
@@ -245,27 +254,29 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, mediaSource?.Id);
 
-  // Pistes texte chargées nativement dans ExoPlayer (direct play) → rendu par
-  // le subtitleView natif. Mémoïsé sur streams → stable (pas de re-prepare).
+  // Pistes texte VTT chargées NATIVEMENT : Android ExoPlayer (direct play) +
+  // tvOS AVPlayer (sideload, direct play ET transcode). La sélection est
+  // déclarative sur tvOS (prop subtitleIndex → AVPlayerSurface), impérative sur
+  // Android (effet ci-dessous). Burn-in PGS exclu (géré par le serveur).
   const textTracks = useTVTextTracks({
-    itemId, mediaSourceId: mediaSource?.Id, streams, enabled: useExoPlayer,
+    itemId, mediaSourceId: mediaSource?.Id, streams,
+    enabled: useExoPlayer || Platform.OS === "ios",
   });
 
-  // Applique la sélection de sous-titre nativement (ExoPlayer) sans re-prepare.
-  // Couvre : changement utilisateur, arrivée tardive des pistes (onTracksChanged
-  // remplit subtitleTrackMap), reprise avec préférence sous-titre.
+  // Sélection sous-titre native ExoPlayer (Android) sans re-prepare. Sur tvOS,
+  // la sélection est déclarative (subtitleIndex passé à la surface) → on saute.
   useEffect(() => {
-    if (!useExoPlayer) return;
+    if (!useExoPlayer || Platform.OS === "ios") return;
     if (subtitleIndex < 0) { exoRef.current?.setSubtitleTrack(0); return; }
     const nativeId = mpvTracks.subtitleTrackMap[subtitleIndex];
     if (nativeId != null) exoRef.current?.setSubtitleTrack(nativeId);
   }, [useExoPlayer, subtitleIndex, mpvTracks.subtitleTrackMap]);
 
-  // Overlay JS conservé UNIQUEMENT pour MPV/transcode (pas de subtitleView Media3).
-  // En ExoPlayer, subtitleIndex forcé à -1 → hook inactif (rendu 100% natif).
+  // Overlay JS : Android MPV/transcode UNIQUEMENT. Android ExoPlayer (VTT natif)
+  // et tvOS (VTT natif AVPlayer partout) → forcé à -1 (pas d'overlay JS).
   const subtitleText = useTVSubtitles({
     itemId, mediaSourceId: mediaSource?.Id,
-    subtitleIndex: useExoPlayer ? -1 : subtitleIndex, streams,
+    subtitleIndex: (useExoPlayer || Platform.OS === "ios") ? -1 : subtitleIndex, streams,
     displayTimeRef, lastProgressTime, pausedStateRef,
   });
 

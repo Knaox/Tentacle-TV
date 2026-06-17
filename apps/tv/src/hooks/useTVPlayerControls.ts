@@ -228,35 +228,13 @@ export function useTVPlayerControls({
       moveScrub(dir);
       return;
     }
-    if (overlayVisibleRef.current) {
-      // OSD affiché → laisser le focus engine naviguer entre les boutons
-      showOverlay();
-      return;
-    }
-
-    const now = Date.now();
-    const tap = tapRef.current;
-    if (tap && tap.dir === dir) {
-      const gap = now - tap.ts;
-      if (gap < DOUBLE_TAP_MIN_MS) {
-        // Auto-repeat système (maintien) — le scrub est armé par le long-press
-        tap.ts = now;
-        return;
-      }
-      if (gap < DOUBLE_TAP_MAX_MS) {
-        // Double-clic : skip direct +30s / −10s — badge seul, l'OSD reste caché
-        clearTapState();
-        skipBy(dir === "forward" ? 30 : -10);
-        return;
-      }
-    }
-    // 1er appui : OSD différé le temps de la fenêtre du double-clic
-    clearTapState();
-    tapRef.current = {
-      dir, ts: now,
-      timer: setTimeout(() => { tapRef.current = null; showOverlay(); }, DOUBLE_TAP_MAX_MS),
-    };
-  }, [moveScrub, showOverlay, skipBy, clearTapState]);
+    // OSD affiché → laisser le focus engine naviguer entre les boutons.
+    // OSD caché → 1er appui directionnel : afficher l'OSD IMMÉDIATEMENT (zéro
+    // délai, plus de fenêtre double-clic). L'avance/recul rapide reste dispo via
+    // le MAINTIEN ←/→ (long-press → scrub), les touches rewind/FF, et les
+    // boutons ±10s / +30s de l'OSD.
+    showOverlay();
+  }, [showOverlay]);
 
   // Long-press ←/→ (signal système ~300ms) : armer l'avance/recul rapide après
   // un délai supplémentaire — total ≈ 1s de maintien avant déclenchement.

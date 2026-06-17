@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text } from "react-native";
 import Animated, {
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
+import { useTVFocusGrab } from "../hooks/useTVFocusGrab";
 import { Colors } from "../theme/colors";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
@@ -19,18 +20,25 @@ interface TVSkipSegmentButtonProps {
   /** When true, don't steal focus (overlay or settings panel is active) */
   overlayVisible?: boolean;
   showSettings?: boolean;
+  /** Panneau épisodes ouvert → masquer le bouton (il recouvrirait le panneau). */
+  showEpisodes?: boolean;
   /** Libellé alternatif (web : « Épisode suivant » pendant le générique). */
   labelOverride?: string;
 }
 
-export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overlayVisible = false, showSettings = false, labelOverride }: TVSkipSegmentButtonProps) {
+export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overlayVisible = false, showSettings = false, showEpisodes = false, labelOverride }: TVSkipSegmentButtonProps) {
   const { t } = useTranslation("player");
   const [dismissed, setDismissed] = useState(false);
+  const skipRef = useRef<View>(null);
 
   const inRange = !!segment
     && currentTime >= segment.start
     && currentTime < segment.end - 1;
-  const visible = inRange && !dismissed;
+  const visible = inRange && !dismissed && !showEpisodes;
+
+  // tvOS : à l'apparition du bouton, le focus saute dessus (UX « Skip Intro »
+  // focalisé par défaut) → sélectionnable que l'OSD soit affiché ou caché.
+  useTVFocusGrab(skipRef, visible && !showSettings);
 
   // For credits: pressing Back dismisses the popup
   useTVRemote({
@@ -59,12 +67,13 @@ export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overla
       pointerEvents="auto"
       style={[{
         position: "absolute",
-        bottom: 140,
+        // Au-dessus de la barre de transport de l'OSD pour ne pas la chevaucher.
+        bottom: 220,
         right: 40,
         zIndex: 100,
       }, animStyle]}
     >
-      <Focusable variant="button" onPress={onSkip} focusRadius={8} hasTVPreferredFocus={!overlayVisible && !showSettings}>
+      <Focusable ref={skipRef} variant="button" onPress={onSkip} focusRadius={8} hasTVPreferredFocus={!overlayVisible && !showSettings && !showEpisodes}>
         <View style={{
           paddingHorizontal: 20,
           paddingVertical: 10,
