@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AuthResponse, LoginRequest } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
+import { notifyUserChange } from "./useUserId";
 import { useTentacleConfig } from "../context";
 
 export function useAuth() {
@@ -30,6 +31,9 @@ export function useAuth() {
           client.setAccessToken(data.AccessToken);
           storage.setItem("tentacle_token", data.AccessToken);
           storage.setItem("tentacle_user", JSON.stringify(data.User));
+          // Réactivité auth explicite : le monkey-patch de localStorage.setItem
+          // est ignoré par WebKit/WKWebView (desktop macOS) → notifier ici.
+          notifyUserChange();
           return data as AuthResponse;
         }
 
@@ -47,6 +51,7 @@ export function useAuth() {
         client.setAccessToken(response.AccessToken);
         storage.setItem("tentacle_token", response.AccessToken);
         storage.setItem("tentacle_user", JSON.stringify(response.User));
+        notifyUserChange();
         return response;
       } finally {
         // Release after a short delay to let post-login queries settle
@@ -74,6 +79,7 @@ export function useAuth() {
       client.setAccessToken(null);
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
+      notifyUserChange();
       queryClient.clear();
     },
   });
@@ -97,6 +103,7 @@ export function useAuth() {
       storage.removeItem("tentacle_jellyfin_token");
       storage.removeItem("tentacle_jellyfin_url");
       storage.removeItem("tentacle_credentials");
+      notifyUserChange();
       queryClient.clear();
     },
   });
