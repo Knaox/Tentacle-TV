@@ -3,6 +3,25 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
+> **Notes de version stores** : pour les releases App Store/TestFlight, ajouter un
+> bloc `## [x.y.z]` contenant `### FR` et `### EN`. La CI extrait ces deux sections
+> (tag `app-vx.y.z-build`) pour remplir « Nouveautés » (App Store) et « À tester »
+> (TestFlight). Sans `### EN`, la section FR sert pour les deux langues.
+
+## [1.0.0]
+
+macOS — première version sur le Mac App Store (relance en 1.0.0 ; le desktop hors store était en 1.9.x).
+
+### FR
+- Première version de Tentacle TV pour macOS sur l'App Store.
+- Lecteur vidéo haute performance (mpv/FFmpeg) avec décodage matériel.
+- Jumelage rapide, lecture directe et reprise de lecture.
+
+### EN
+- First release of Tentacle TV for macOS on the App Store.
+- High-performance video player (mpv/FFmpeg) with hardware decoding.
+- Fast pairing, direct play and resume playback.
+
 ## [1.9.4] - 2026-06-11
 
 Desktop 1.9.4 — Web 1.0.0-beta.6
