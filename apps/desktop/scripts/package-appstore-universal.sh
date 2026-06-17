@@ -13,7 +13,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-APP_ARM="$1"; APP_X86="$2"; PROFILE="$3"; SIGN_APP="$4"; SIGN_PKG="$5"
+APP_ARM="$1"; APP_X86="$2"; PROFILE="$3"; SIGN_APP="$4"; SIGN_PKG="$5"; BUILD="${6:-}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"            # apps/desktop
 ENTITLEMENTS="$ROOT/src-tauri/Entitlements.appstore.plist"
 UNI="/tmp/appstore/Tentacle TV.app"
@@ -43,6 +43,13 @@ rm -rf "$UNI/Contents/Resources/lib"
 
 echo "==> provisioning profile"
 cp "$PROFILE" "$UNI/Contents/embedded.provisionprofile"
+
+# Build number (CFBundleVersion) : doit augmenter à chaque upload TestFlight d'une
+# même version (sinon Apple refuse le doublon). Fourni par le tag (app-v1.0.0-N).
+if [ -n "$BUILD" ]; then
+  echo "==> CFBundleVersion = $BUILD"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$UNI/Contents/Info.plist"
+fi
 
 echo "==> signature inside-out (dylibs puis app)"
 for dylib in "$UNI/Contents/Frameworks/"*.dylib; do

@@ -39,6 +39,8 @@ interface MPVPlayerProps {
    *  natifs) ; ignorés côté Android (MPV/transcode → overlay JS). */
   textTracks?: ExoTextTrack[];
   subtitleIndex?: number;
+  /** Parité de signature tvOS (gate sideload HLS) ; ignoré côté Android. */
+  isDirectPlay?: boolean;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
   onEnd?: () => void;

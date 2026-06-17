@@ -39,19 +39,19 @@ async function resolveSessionRouting(
 
   const adminKey = getJellyfinApiKey();
   const isSessionRoute = /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath);
-  if (!adminKey || !isSessionRoute || !hasPrisma()) {
+  if (!isSessionRoute || !hasPrisma()) {
     return { apiKey: adminKey ?? undefined };
   }
 
-  // Playstate (start/progress/stopped) : on PRÉFÈRE la réécriture user-scopée
-  // (/Users/{userId}/PlayingItems, clé admin + userId dans l'URL) — TOUJOURS
-  // valide — au token Jellyfin stocké du device, qui peut être périmé/révoqué
-  // et provoque alors des 401 en boucle sur /Sessions/Playing*.
-  const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
-  if (rewrite) return { apiKey: adminKey ?? undefined, rewrite };
-
-  // Routes de session NON réécrivables (ex. Videos/ActiveEncodings) :
-  // token Jellyfin du device si disponible, sinon clé admin.
+  // Routes de session (playstate / logout / active encodings) : on attribue à
+  // l'utilisateur via SON token Jellyfin stocké.
+  //
+  // IMPORTANT (Jellyfin 10.11) : les endpoints legacy `/Users/{userId}/PlayingItems/*`
+  // sont `[Obsolete]` et IGNORENT l'userId de l'URL — ils attribuent la lecture
+  // au compte du TOKEN porteur. La réécriture clé-admin enregistrait donc la
+  // progression sur le compte ADMIN, jamais sur l'utilisateur (état de visionnage
+  // jamais mis à jour côté client jumelé). Seul le vrai token Jellyfin du device
+  // attribue correctement → on le PRÉFÈRE désormais.
   let deviceToken: string | null = null;
   try {
     const device = await getPrisma().pairedDevice.findUnique({
@@ -59,9 +59,18 @@ async function resolveSessionRouting(
       select: { jellyfinAccessToken: true },
     });
     deviceToken = device?.jellyfinAccessToken ?? null;
-  } catch { /* keep admin API key as fallback */ }
+  } catch { /* repli ci-dessous */ }
 
   if (deviceToken) return { apiKey: deviceToken };
+
+  // Pas de token Jellyfin stocké (device jamais provisionné) : repli best-effort
+  // sur la réécriture user-scopée. N'attribue correctement que sur d'anciens
+  // Jellyfin (où l'userId d'URL est honoré) ; sinon la télémétrie est perdue
+  // (mais aucune attribution erronée bloquante).
+  if (adminKey) {
+    const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
+    if (rewrite) return { apiKey: adminKey, rewrite };
+  }
   return { apiKey: adminKey ?? undefined };
 }
 

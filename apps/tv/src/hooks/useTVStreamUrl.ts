@@ -31,6 +31,9 @@ export function useTVStreamUrl(args: {
   maxBitrate?: number;
   maxHeight?: number;
   isDirectPlay: boolean;
+  /** Parité de signature tvOS (reload transcode explicite) ; ignoré côté Android
+   *  (le changement de piste audio est natif, pas de refetch d'URL). */
+  reloadNonce?: number;
 }) {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,

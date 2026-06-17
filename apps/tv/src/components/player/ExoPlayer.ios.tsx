@@ -19,6 +19,8 @@ interface ExoPlayerProps {
   textTracks?: ExoTextTrack[];
   /** Index Jellyfin du sous-titre sélectionné (rendu natif tvOS). */
   subtitleIndex?: number;
+  /** Direct play vs transcode HLS — gate le sideload des sous-titres (cf. AVPlayerSurface). */
+  isDirectPlay?: boolean;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
