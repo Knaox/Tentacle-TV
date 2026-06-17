@@ -51,6 +51,11 @@ if [ -n "$BUILD" ]; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$UNI/Contents/Info.plist"
 fi
 
+# Conformité export : l'app n'utilise que du chiffrement exempté (HTTPS/TLS) →
+# évite la demande « export compliance » à chaque upload TestFlight.
+/usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$UNI/Contents/Info.plist" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$UNI/Contents/Info.plist"
+
 echo "==> signature inside-out (dylibs puis app)"
 for dylib in "$UNI/Contents/Frameworks/"*.dylib; do
   codesign --force --timestamp --options runtime --sign "$SIGN_APP" "$dylib"

@@ -1,34 +1,35 @@
-# Tentacle TV — Mac App Store build (universal, LGPL, sandbox)
+# Tentacle TV — Mac App Store (universal, LGPL, sandbox)
 #
-# Workflow MANUEL : construit l'app macOS universelle (Apple Silicon + Intel) avec
-# un libmpv/FFmpeg recompilé en LGPL (sans x264/x265, sans --enable-gpl), signée
-# pour le Mac App Store (sandbox), packagée en .pkg et envoyée à App Store Connect.
+# Déclenché par un tag `app-v<version>-<build>` (ex. app-v1.0.0-3) OU manuellement.
+#   - <version> → CFBundleShortVersionString (version marketing)
+#   - <build>   → CFBundleVersion (build number TestFlight ; à incrémenter pour
+#                 ré-uploader une même version sans collision)
+# Construit l'app macOS universelle (Apple Silicon + Intel) avec libmpv/FFmpeg
+# recompilé en LGPL, signée Mac App Store (sandbox), .pkg → App Store Connect /
+# TestFlight, et remplit les notes (FR+EN) depuis CHANGELOG.md.
 #
-# macOS est distribué EXCLUSIVEMENT via le Mac App Store (le DMG est retiré).
-# La version App Store est forcée à 1.0.0 par src-tauri/tauri.appstore.conf.json
-# (les autres plateformes ne sont pas affectées).
-#
-# Secrets requis (GitHub → Settings → Secrets → Actions) :
-#   APPLE_DISTRIBUTION_CERT_BASE64   : cert « Apple Distribution » (.p12) en base64
-#   APPLE_DISTRIBUTION_CERT_PASSWORD : mot de passe du .p12
-#   MAC_INSTALLER_CERT_BASE64        : cert « 3rd Party Mac Developer Installer » (.p12) base64
-#   MAC_INSTALLER_CERT_PASSWORD      : mot de passe du .p12 installer
-#   MAS_PROVISIONING_PROFILE_BASE64  : provisioning profile Mac App Store (.provisionprofile) base64
-#   APPLE_API_KEY / APPLE_API_ISSUER / APPLE_API_KEY_CONTENT : clé App Store Connect (réutilisable depuis release.yml)
+# Secrets : APPLE_DISTRIBUTION_CERT_BASE64/_PASSWORD, MAC_INSTALLER_CERT_BASE64/_PASSWORD,
+#   MAS_PROVISIONING_PROFILE_BASE64, APPLE_API_KEY/_ISSUER/_KEY_CONTENT.
 
 name: Release Mac App Store
 
 on:
+  push:
+    tags: ["app-v*"]
   workflow_dispatch:
     inputs:
-      submit:
-        description: "Envoyer le .pkg à App Store Connect (sinon artefact seulement)"
-        type: boolean
-        default: false
-      build:
-        description: "Build number (CFBundleVersion) — incrémenter à chaque upload TestFlight d'une même version"
+      version:
+        description: "Version marketing (CFBundleShortVersionString)"
         type: string
-        default: "2"
+        default: "1.0.0"
+      build:
+        description: "Build number (CFBundleVersion) — incrémenter pour chaque upload TestFlight"
+        type: string
+        default: "1"
+      submit:
+        description: "Envoyer à App Store Connect / TestFlight (sinon artefact seulement)"
+        type: boolean
+        default: true
 
 concurrency:
   group: release-appstore-${{ github.ref }}
@@ -40,8 +41,30 @@ env:
   SIGN_PKG: "3rd Party Mac Developer Installer: Damien ROUGE (96K3M57W49)"
 
 jobs:
+  # 0) Détermine version / build / submit depuis le tag ou les inputs
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.p.outputs.version }}
+      build: ${{ steps.p.outputs.build }}
+      submit: ${{ steps.p.outputs.submit }}
+    steps:
+      - id: p
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            REST="${GITHUB_REF_NAME#app-v}"   # 1.0.0-3
+            echo "version=${REST%-*}" >> "$GITHUB_OUTPUT"
+            echo "build=${REST##*-}" >> "$GITHUB_OUTPUT"
+            echo "submit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "build=${{ inputs.build }}" >> "$GITHUB_OUTPUT"
+            echo "submit=${{ inputs.submit }}" >> "$GITHUB_OUTPUT"
+          fi
+
   # 1) Build par architecture : dylibs LGPL + app Tauri (sandbox, sans private-api)
   build-arch:
+    needs: setup
     name: Build (${{ matrix.label }})
     strategy:
       fail-fast: true
@@ -68,12 +91,10 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      # libmpv + FFmpeg recompilés LGPL pour l'arch native → src-tauri/lib
       - name: Build LGPL libmpv/FFmpeg
         run: bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
 
-      # App Tauri : config App Store (version 1.0.0, transparent off), SANS la
-      # feature macos-private-api (interdite en sandbox), bundle .app uniquement.
+      # Override version (tag) + ad-hoc sign (la signature Apple se fait au job package).
       - name: Build Tauri app (App Store config)
         env:
           VITE_DIST_CHANNEL: appstore
@@ -81,11 +102,10 @@ jobs:
           cd apps/desktop
           pnpm tauri build \
             --config src-tauri/tauri.appstore.conf.json \
-            --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}' \
+            --config '{"version":"${{ needs.setup.outputs.version }}","bundle":{"macOS":{"signingIdentity":"-"}}}' \
             --target ${{ matrix.target }} \
             --bundles app
 
-      # tar préserve permissions + symlinks du .app (upload-artifact les casserait)
       - name: Tar .app
         run: |
           cd "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos"
@@ -98,14 +118,17 @@ jobs:
           path: ${{ runner.temp }}/app-${{ matrix.target }}.tar.gz
           if-no-files-found: error
 
-  # 2) Fusion universelle + signature App Store + .pkg + upload
+  # 2) Fusion universelle + signature App Store + .pkg + upload + notes
   package:
+    needs: [setup, build-arch]
     name: Universal package + submit
-    needs: build-arch
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -136,8 +159,6 @@ jobs:
           tar -xzf artifacts/app-aarch64-apple-darwin/app-aarch64-apple-darwin.tar.gz -C arm64
           tar -xzf artifacts/app-x86_64-apple-darwin/app-x86_64-apple-darwin.tar.gz -C x86_64
 
-      # lipo des deux .app (binaire + dylibs) → .app universelle, dylibs déplacées
-      # dans Contents/Frameworks (emplacement App Store), signature inside-out, .pkg.
       - name: Build universal package
         run: |
           bash apps/desktop/scripts/package-appstore-universal.sh \
@@ -145,7 +166,7 @@ jobs:
             "x86_64/Tentacle TV.app" \
             /tmp/embedded.provisionprofile \
             "$SIGN_APP" "$SIGN_PKG" \
-            "${{ inputs.build }}"
+            "${{ needs.setup.outputs.build }}"
 
       - name: Upload .pkg artifact
         uses: actions/upload-artifact@v4
@@ -154,7 +175,7 @@ jobs:
           path: "*.pkg"
 
       - name: Submit to App Store Connect
-        if: ${{ inputs.submit }}
+        if: needs.setup.outputs.submit == 'true'
         env:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
           API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -164,3 +185,17 @@ jobs:
           echo "$API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY}.p8
           xcrun altool --upload-app -f *.pkg -t macos \
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
+
+      # Notes FR+EN depuis CHANGELOG.md (« Nouveautés » App Store ; « À tester »
+      # TestFlight si le build est déjà traité). Non bloquant.
+      - name: Set release notes (App Store / TestFlight)
+        if: needs.setup.outputs.submit == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: MAC_OS
+          VERSION: ${{ needs.setup.outputs.version }}
+          BUILD: ${{ needs.setup.outputs.build }}
+        run: node .github/scripts/asc-release-notes.mjs

@@ -90,8 +90,15 @@ jobs:
       - name: Build release APK
         working-directory: apps/tv/android
         run: |
+          # Nomenclature tv-v<version>-<build> → versionName/versionCode.
+          # Rétrocompat : tv-v<version> (sans build) garde le versionCode du build.gradle.
+          REST="${GITHUB_REF_NAME#tv-v}"
+          if [[ "$REST" == *-* ]]; then VNAME="${REST%-*}"; VCODE="${REST##*-}"; else VNAME="$REST"; VCODE=""; fi
+          ARGS="-PtvVersionName=$VNAME"
+          [ -n "$VCODE" ] && ARGS="$ARGS -PtvVersionCode=$VCODE"
+          echo "Android TV build → versionName=$VNAME versionCode=${VCODE:-(défaut build.gradle)}"
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon $ARGS
 
       - name: Stage APK assets
         run: |
