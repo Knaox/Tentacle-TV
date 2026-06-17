@@ -46,8 +46,10 @@ async function checkAppStoreUpdate(): Promise<{ version: string; notes?: string;
   const { getVersion } = await import("@tauri-apps/api/app");
   const current = await getVersion();
 
+  // App unifiée iOS+macOS sous com.tentacle.mobile → entity=macSoftware cible la
+  // version macOS (sinon le lookup renverrait la version iOS).
   const region = (navigator.language?.split("-")[1] || "us").toLowerCase();
-  const url = `https://itunes.apple.com/lookup?bundleId=com.tentacle.media&country=${region}`;
+  const url = `https://itunes.apple.com/lookup?bundleId=com.tentacle.mobile&entity=macSoftware&country=${region}`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
