@@ -48,19 +48,32 @@ jobs:
       version: ${{ steps.p.outputs.version }}
       build: ${{ steps.p.outputs.build }}
       submit: ${{ steps.p.outputs.submit }}
+      draft: ${{ steps.p.outputs.draft }}
+      make_latest: ${{ steps.p.outputs.make_latest }}
     steps:
       - id: p
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             REST="${GITHUB_REF_NAME#app-v}"   # 1.0.0-3
-            echo "version=${REST%-*}" >> "$GITHUB_OUTPUT"
-            echo "build=${REST##*-}" >> "$GITHUB_OUTPUT"
-            echo "submit=true" >> "$GITHUB_OUTPUT"
+            VERSION="${REST%-*}"
+            BUILD="${REST##*-}"
+            SUBMIT=true
           else
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "build=${{ inputs.build }}" >> "$GITHUB_OUTPUT"
-            echo "submit=${{ inputs.submit }}" >> "$GITHUB_OUTPUT"
+            VERSION="${{ inputs.version }}"
+            BUILD="${{ inputs.build }}"
+            SUBMIT="${{ inputs.submit }}"
           fi
+          # Release GitHub : 1er build d'une version (build == 1) → publiée + « Latest » ;
+          # ré-upload de build (même version, build > 1) → brouillon. L'upload
+          # TestFlight a lieu dans les deux cas (étape « Submit » inconditionnelle).
+          if [ "$BUILD" = "1" ]; then DRAFT=false; LATEST=true; else DRAFT=true; LATEST=false; fi
+          {
+            echo "version=$VERSION"
+            echo "build=$BUILD"
+            echo "submit=$SUBMIT"
+            echo "draft=$DRAFT"
+            echo "make_latest=$LATEST"
+          } >> "$GITHUB_OUTPUT"
 
   # 1) Build par architecture : dylibs LGPL + app Tauri (sandbox, sans private-api)
   build-arch:
@@ -199,3 +212,38 @@ jobs:
           VERSION: ${{ needs.setup.outputs.version }}
           BUILD: ${{ needs.setup.outputs.build }}
         run: node .github/scripts/asc-release-notes.mjs
+
+      # Notes de la Release GitHub : section « ## [version] » du CHANGELOG (sinon défaut).
+      - name: Extract CHANGELOG notes
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+        run: |
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { grab=1; next }
+            grab && /^## \[/ { exit }
+            grab { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Tentacle TV pour macOS — version $VERSION." > release-notes.md
+          fi
+          {
+            echo ""
+            echo "---"
+            echo "_Distribution : Mac App Store / TestFlight (build ${{ needs.setup.outputs.build }})._"
+          } >> release-notes.md
+
+      # Release GitHub : brouillon pour un ré-upload de build, publiée + « Latest »
+      # pour une nouvelle version (build == 1). N'affecte PAS l'upload TestFlight.
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Tentacle TV (macOS) v${{ needs.setup.outputs.version }} (build ${{ needs.setup.outputs.build }})"
+          body_path: release-notes.md
+          draft: ${{ needs.setup.outputs.draft }}
+          make_latest: ${{ needs.setup.outputs.make_latest }}
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
