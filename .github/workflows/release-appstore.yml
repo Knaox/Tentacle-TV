@@ -81,11 +81,17 @@ jobs:
             --target ${{ matrix.target }} \
             --bundles app
 
+      # tar préserve permissions + symlinks du .app (upload-artifact les casserait)
+      - name: Tar .app
+        run: |
+          cd "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos"
+          tar -czf "$RUNNER_TEMP/app-${{ matrix.target }}.tar.gz" "Tentacle TV.app"
+
       - name: Upload .app artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.target }}
-          path: apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Tentacle TV.app
+          path: ${{ runner.temp }}/app-${{ matrix.target }}.tar.gz
           if-no-files-found: error
 
   # 2) Fusion universelle + signature App Store + .pkg + upload
@@ -120,13 +126,19 @@ jobs:
           echo "$PROFILE" | base64 --decode > /tmp/embedded.provisionprofile
           rm -f /tmp/app.p12 /tmp/pkg.p12
 
+      - name: Extract per-arch .app bundles
+        run: |
+          mkdir -p arm64 x86_64
+          tar -xzf artifacts/app-aarch64-apple-darwin/app-aarch64-apple-darwin.tar.gz -C arm64
+          tar -xzf artifacts/app-x86_64-apple-darwin/app-x86_64-apple-darwin.tar.gz -C x86_64
+
       # lipo des deux .app (binaire + dylibs) → .app universelle, dylibs déplacées
       # dans Contents/Frameworks (emplacement App Store), signature inside-out, .pkg.
       - name: Build universal package
         run: |
           bash apps/desktop/scripts/package-appstore-universal.sh \
-            "artifacts/app-aarch64-apple-darwin/Tentacle TV.app" \
-            "artifacts/app-x86_64-apple-darwin/Tentacle TV.app" \
+            "arm64/Tentacle TV.app" \
+            "x86_64/Tentacle TV.app" \
             /tmp/embedded.provisionprofile \
             "$SIGN_APP" "$SIGN_PKG"
 
