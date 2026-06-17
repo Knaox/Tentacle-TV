@@ -1,0 +1,47 @@
+# Tentacle TV — Android mobile APK (test / sideload)
+#
+# Workflow MANUEL : build un APK release de l'app mobile, signé avec le
+# debug.keystore du repo → installable et partageable (sideload), SANS keystore
+# Play Store. Pour la distribution Play Store (keystore release), voir plus tard.
+#
+# L'APK est publié en artefact du run (onglet Actions → ce run → Artifacts).
+
+name: Build Android APK (test)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: Build mobile APK (debug-signed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build release APK (debug-signed)
+        run: |
+          cd apps/mobile/android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-mobile-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
