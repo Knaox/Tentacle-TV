@@ -9,6 +9,7 @@ import { TVSkipSegmentButton } from "../TVSkipSegmentButton";
 import { TVAutoPlayOverlay } from "../TVAutoPlayOverlay";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
 import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScreen";
+import { TVReloadFrame } from "./TVReloadFrame";
 import { TVSkipBadge } from "./TVSkipBadge";
 import { TVSubtitleOverlay } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
@@ -59,6 +60,8 @@ export interface TVPlayerViewProps {
 
   // Player refs
   useExoPlayer: boolean;
+  /** Direct play vs transcode HLS (décision serveur) — gate le sideload tvOS. */
+  isDirectPlay: boolean;
   exoRef: React.Ref<MPVPlayerHandle>;
   mpvRef: React.Ref<MPVPlayerHandle>;
   backgroundRef: React.Ref<ElementRef<typeof TouchableOpacity>>;
@@ -94,6 +97,9 @@ export interface TVPlayerViewProps {
   onNextEpisode: () => void;
   /** Vignettes de prévisualisation pendant le scrub */
   trickplay?: UseTVTrickplayResult;
+  /** Position figée (s) à afficher pendant un reload doux (audio/qualité) ;
+   *  null = pas de reload doux en cours. */
+  reloadFrameSec?: number | null;
   /** Incrémenter pour refocus le dernier bouton OSD utilisé */
   osdFocusSignal?: number;
   /** Cue de sous-titres texte rendue en JS (useTVSubtitles) — MPV/transcode */
@@ -110,13 +116,13 @@ export interface TVPlayerViewProps {
 export function TVPlayerView({
   item, streamUrl, paused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
-  useExoPlayer, exoRef, mpvRef, backgroundRef, playerStyle,
+  useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
   audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
   qualityKey, sourceQuality, skipSegments, autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
-  onPrevEpisode, onNextEpisode, trickplay, osdFocusSignal, subtitleText, textTracks,
+  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleText, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
@@ -146,7 +152,7 @@ export function TVPlayerView({
       <MemoizedPlayer
         useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
         source={streamUrl} paused={paused} playerStyle={playerStyle}
-        textTracks={textTracks} subtitleIndex={subtitleIndex}
+        textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />
@@ -162,9 +168,10 @@ export function TVPlayerView({
       >
         <View style={{ flex: 1 }} />
       </TouchableOpacity>
-      {/* Sous-titres : Android = rendu NATIF par le subtitleView ExoPlayer en
-          direct play, overlay JS pour MPV/transcode. tvOS (AVPlayer) = NATIF
-          partout (sideload VTT) → pas d'overlay JS. */}
+      {/* Sous-titres : Android = natif (subtitleView ExoPlayer) en direct play,
+          overlay JS en MPV/transcode. tvOS (AVPlayer) = NATIF partout : sideload
+          VTT en direct play, pistes du manifeste HLS (SubtitleMethod=Hls) en
+          transcode → pas d'overlay JS. */}
       {!useExoPlayer && Platform.OS !== "ios" && (
         <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />
       )}
@@ -174,6 +181,21 @@ export function TVPlayerView({
           contextualisé couvrant jusqu'à la première position réelle (parité
           PlayerLoadingScreen web) ; rebuffering : spinner discret */}
       {!hasStarted && !videoError && <TVPlayerLoadingScreen item={item} />}
+      {/* Reload doux (audio/qualité) : « dernière image » (vignette trickplay)
+          pour masquer le noir d'AVPlayer pendant le re-buffer, sous le spinner. */}
+      {reloadFrameSec != null && hasStarted && (
+        <View
+          pointerEvents="none"
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}
+        >
+          <TVReloadFrame
+            trickplay={trickplay}
+            positionSeconds={reloadFrameSec}
+            width={typeof playerStyle.width === "number" ? playerStyle.width : 0}
+            height={typeof playerStyle.height === "number" ? playerStyle.height : 0}
+          />
+        </View>
+      )}
       {isLoading && hasStarted && <TVBufferingSpinner />}
       {videoError && (
         <View style={{

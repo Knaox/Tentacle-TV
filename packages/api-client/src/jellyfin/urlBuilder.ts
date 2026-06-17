@@ -132,7 +132,14 @@ export function buildHlsUrl(
   delete p.StartTimeTicks;
   p.BreakOnNonKeyFrames = "true";
   p.RequireNonAnamorphic = "false";
+  // Sous-titres TEXTE dans le manifeste HLS (#EXT-X-MEDIA:TYPE=SUBTITLES) :
+  // indispensable pour qu'AVPlayer (tvOS) les rende NATIVEMENT et bascule entre
+  // eux INSTANTANÉMENT (toutes les pistes texte sont dans le manifeste). Sans
+  // `SubtitleMethod=Hls`, Jellyfin n'émet AUCUNE piste subtitle (même avec
+  // EnableSubtitlesInManifest). Les sous-titres image (PGS/burn-in) restent gérés
+  // par Encode côté serveur (la méthode par-stream du profil l'emporte).
   p.EnableSubtitlesInManifest = "true";
+  p.SubtitleMethod = "Hls";
   p.SegmentContainer = "ts";
   p.MinSegments = "2";
   return resolveMediaUrl(`${baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);

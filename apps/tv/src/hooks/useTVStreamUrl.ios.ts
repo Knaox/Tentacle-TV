@@ -34,6 +34,9 @@ export function useTVStreamUrl(args: {
   maxBitrate?: number;
   maxHeight?: number;
   isDirectPlay: boolean;
+  /** Compteur de reload explicite (transcode) : changement de piste audio non
+   *  couplé à la position. Le bumper force un refetch PlaybackInfo. */
+  reloadNonce?: number;
 }) {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
@@ -66,11 +69,22 @@ export function useTVStreamUrl(args: {
     : -1;
 
   const fetchIdRef = useRef(0);
+  // Clé de CONTENU : ne change qu'au changement d'item/source (≠ changement de
+  // piste/qualité). Permet de distinguer un reload « dur » (nouveau contenu →
+  // écran de chargement) d'un reload « doux » (audio/qualité → on GARDE l'ancienne
+  // URL pour ne pas démonter le player ; juste un re-buffer discret).
+  const contentKeyRef = useRef("");
 
   useEffect(() => {
     if (!itemId || !userId) return;
     const fetchId = ++fetchIdRef.current;
-    setResult((r) => ({ ...r, streamUrl: null })); // → écran de chargement (PlayerScreen)
+    const contentKey = `${itemId}|${mediaSourceId ?? ""}`;
+    const softReload = contentKeyRef.current === contentKey;
+    contentKeyRef.current = contentKey;
+    // Reload doux (même contenu) : conserver l'URL courante jusqu'à la nouvelle
+    // (le player reste monté, dernière image visible). Reload dur : null →
+    // écran de chargement plein écran (PlayerScreen).
+    if (!softReload) setResult((r) => ({ ...r, streamUrl: null }));
 
     (async () => {
       try {
@@ -123,7 +137,7 @@ export function useTVStreamUrl(args: {
     // startTicks = déclencheur de reload (reprise/piste/qualité) ; audioIndex et
     // startSeconds sont lus via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, mediaSourceId, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, burnInIndex]);
+  }, [itemId, mediaSourceId, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, burnInIndex, args.reloadNonce]);
 
   return result;
 }

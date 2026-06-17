@@ -25,6 +25,10 @@ on:
         description: "Envoyer le .pkg à App Store Connect (sinon artefact seulement)"
         type: boolean
         default: false
+      build:
+        description: "Build number (CFBundleVersion) — incrémenter à chaque upload TestFlight d'une même version"
+        type: string
+        default: "2"
 
 concurrency:
   group: release-appstore-${{ github.ref }}

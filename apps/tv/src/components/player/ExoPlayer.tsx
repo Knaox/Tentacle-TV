@@ -41,6 +41,9 @@ interface ExoPlayerProps {
   /** Accepté pour la parité de signature tvOS (sélection sous-titre native) ;
    *  ignoré côté Android (sélection via la commande impérative setSubtitleTrack). */
   subtitleIndex?: number;
+  /** Parité de signature tvOS (gate sideload HLS) ; ignoré côté Android (ExoPlayer
+   *  sait sideloader sur HLS). */
+  isDirectPlay?: boolean;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;

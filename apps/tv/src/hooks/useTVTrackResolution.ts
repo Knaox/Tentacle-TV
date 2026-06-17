@@ -16,8 +16,12 @@ export function useTVTrackResolution(args: {
   setAudioIndex: (i: number) => void;
   setSubtitleIndex: (i: number) => void;
   setStartTicks: (t: number) => void;
+  /** Appelé quand la piste audio préférée DIFFÈRE de la piste par défaut →
+   *  le caller force un reload du flux (nécessaire en transcode tvOS, où le
+   *  changement d'audio n'est pas natif). No-op si la préférence == défaut. */
+  onAudioReloadNeeded?: () => void;
 }) {
-  const { streams, item, ancestors, positionRef, setAudioIndex, setSubtitleIndex, setStartTicks } = args;
+  const { streams, item, ancestors, positionRef, setAudioIndex, setSubtitleIndex, setStartTicks, onAudioReloadNeeded } = args;
   const resolveTracks = useResolveMediaTracks();
   const prefsApplied = useRef(false);
 
@@ -36,8 +40,15 @@ export function useTVTrackResolution(args: {
     }, {
       onSuccess: (result) => {
         if (result.audioIndex != null) {
+          // Piste audio du flux initial = défaut conteneur (IsDefault, sinon 1ʳᵉ).
+          const curDefault = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
+            ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
           if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
           setAudioIndex(result.audioIndex);
+          // La préférence diffère du défaut → forcer un reload (transcode tvOS,
+          // où l'audio n'est pas commutable nativement). Sinon le flux resterait
+          // sur l'audio par défaut alors que l'UI affiche la préférence.
+          if (result.audioIndex !== curDefault) onAudioReloadNeeded?.();
         }
         if (result.subtitleIndex != null) setSubtitleIndex(result.subtitleIndex);
       },

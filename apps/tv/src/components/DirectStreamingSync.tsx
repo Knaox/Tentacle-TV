@@ -56,8 +56,11 @@ export function DirectStreamingSync({ storage }: Props) {
       // Cache local pour fallback si le backend devient injoignable
       storage.setItem("tentacle_jellyfin_url", data.mediaBaseUrl);
       storage.setItem("tentacle_jellyfin_token", data.jellyfinToken);
-    } else if (isError || (isFetched && (!data?.enabled || !data?.jellyfinToken))) {
-      // Fallback : tenter le direct streaming depuis les credentials Jellyfin en cache
+    } else if (isError) {
+      // Backend INJOIGNABLE uniquement : on tente le direct depuis le cache local.
+      // (Si le backend répond « disabled », on NE doit PAS réactiver le direct —
+      //  sinon un cache périmé d'un ancien jumelage envoie la lecture vers le
+      //  mauvais serveur Jellyfin → PlaybackInfo 404 → chargement infini.)
       const jfUrl = storage.getItem("tentacle_jellyfin_url");
       const jfToken = storage.getItem("tentacle_jellyfin_token");
       if (jfUrl && jfToken) {
@@ -65,6 +68,14 @@ export function DirectStreamingSync({ storage }: Props) {
       } else {
         client.setDirectStreaming(null);
       }
+    } else if (isFetched) {
+      // Le backend a répondu et le direct n'est PAS actif (désactivé, ou pas de
+      // token) → mode proxy : tout passe par Tentacle (bon serveur Jellyfin).
+      // On purge le cache direct périmé pour ne pas le ressortir si le backend
+      // devient injoignable plus tard.
+      storage.removeItem("tentacle_jellyfin_url");
+      storage.removeItem("tentacle_jellyfin_token");
+      client.setDirectStreaming(null);
     }
   }, [client, data, isError, isFetched, storage]);
 

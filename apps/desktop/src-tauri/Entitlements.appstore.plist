@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <!-- Identité de l'app : DOIT correspondre au provisioning profile, sinon
+       ITMS-90886 (inéligible TestFlight). Xcode les injecte normalement ;
+       comme on signe à la main, on les déclare explicitement.
+       application-identifier = <TeamID>.<bundleId>. -->
+  <key>com.apple.application-identifier</key>
+  <string>96K3M57W49.com.tentacle.mobile</string>
+  <key>com.apple.developer.team-identifier</key>
+  <string>96K3M57W49</string>
   <!-- App Sandbox : OBLIGATOIRE pour le Mac App Store. -->
   <key>com.apple.security.app-sandbox</key>
   <true/>

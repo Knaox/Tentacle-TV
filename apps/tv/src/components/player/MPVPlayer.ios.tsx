@@ -16,6 +16,8 @@ interface MPVPlayerProps {
   style?: ViewStyle;
   textTracks?: ExoTextTrack[];
   subtitleIndex?: number;
+  /** Direct play vs transcode HLS — gate le sideload des sous-titres (cf. AVPlayerSurface). */
+  isDirectPlay?: boolean;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
   onEnd?: () => void;

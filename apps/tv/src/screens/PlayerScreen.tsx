@@ -54,6 +54,16 @@ export function PlayerScreen({ route, navigation }: Props) {
   const lastDisplayUpdate = useRef(0);
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
+  // Reload explicite du flux en transcode (changement audio non couplé à la
+  // position) — bumpé par le changement de piste audio et l'application de la
+  // préférence de langue. Cf. useTVStreamUrl.ios (dep de refetch).
+  const [reloadNonce, setReloadNonce] = useState(0);
+  // Marque un reload « doux » (changement de piste/qualité, même contenu) : le
+  // player reste monté, on n'affiche qu'un spinner discret (cf. effet streamUrl).
+  const softReloadRef = useRef(false);
+  // Position figée (s) affichée comme « dernière image » pendant un reload doux
+  // (AVPlayer passe au noir le temps du re-buffer) — via la vignette trickplay.
+  const [reloadFrameSec, setReloadFrameSec] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const showSettingsRef = useRef(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
@@ -124,7 +134,13 @@ export function PlayerScreen({ route, navigation }: Props) {
     forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
     maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
     isDirectPlay: requestedDirectPlay,
+    reloadNonce,
   });
+
+  // Nature réelle direct/transcode (décidée par le serveur) lue dans les
+  // callbacks sans en faire une dépendance.
+  const isDirectPlayRef = useRef(isDirectPlay);
+  isDirectPlayRef.current = isDirectPlay;
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -147,6 +163,11 @@ export function PlayerScreen({ route, navigation }: Props) {
   const trackRes = useTVTrackResolution({
     streams, item, ancestors,
     positionRef, setAudioIndex, setSubtitleIndex, setStartTicks,
+    // Préférence audio ≠ défaut : en transcode (tvOS), forcer un reload du flux
+    // pour que la piste préférée soit réellement active (pas seulement en UI).
+    onAudioReloadNeeded: () => {
+      if (!isDirectPlayRef.current) { softReloadRef.current = true; setReloadFrameSec(positionRef.current); setReloadNonce((n) => n + 1); }
+    },
   });
   resetPrefsAppliedRef.current = trackRes.resetPrefsApplied;
 
@@ -272,8 +293,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     if (nativeId != null) exoRef.current?.setSubtitleTrack(nativeId);
   }, [useExoPlayer, subtitleIndex, mpvTracks.subtitleTrackMap]);
 
-  // Overlay JS : Android MPV/transcode UNIQUEMENT. Android ExoPlayer (VTT natif)
-  // et tvOS (VTT natif AVPlayer partout) → forcé à -1 (pas d'overlay JS).
+  // Overlay JS : Android MPV/transcode UNIQUEMENT. tvOS = NATIF partout :
+  //  - direct play → sideload VTT (AVPlayer) ;
+  //  - transcode HLS → pistes texte du manifeste (SubtitleMethod=Hls) rendues
+  //    nativement par AVPlayer, bascule instantanée.
+  // Android ExoPlayer (VTT natif) et iOS → -1 (pas d'overlay JS).
   const subtitleText = useTVSubtitles({
     itemId, mediaSourceId: mediaSource?.Id,
     subtitleIndex: (useExoPlayer || Platform.OS === "ios") ? -1 : subtitleIndex, streams,
@@ -312,13 +336,27 @@ export function PlayerScreen({ route, navigation }: Props) {
   useEffect(() => {
     if (!streamUrl) return;
     resetLoadedRef.current();
-    setHasStarted(false);
+    // Reload DOUX (changement de piste/qualité, même contenu) : garder la
+    // dernière image + spinner discret (hasStarted reste vrai) au lieu de
+    // l'écran de chargement plein écran. Reload DUR (nouveau contenu) : écran
+    // de chargement complet.
+    if (softReloadRef.current) {
+      softReloadRef.current = false;
+    } else {
+      setHasStarted(false);
+    }
     setIsLoading(true);
     // Timeout = filet de sécurité uniquement : la sortie réelle est
     // ÉVÉNEMENTIELLE (premier progress après le load du nouveau flux).
     if (startSeconds > 1) notifySeekRef.current(startSeconds, 8000, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
+
+  // Image figée du reload doux : la retirer dès que le nouveau flux rend
+  // (première position réelle → isLoading repasse à false).
+  useEffect(() => {
+    if (!isLoading && reloadFrameSec !== null) setReloadFrameSec(null);
+  }, [isLoading, reloadFrameSec]);
 
   // Position de redémarrage d'un reload de flux (piste/qualité/transcode) :
   // reculée de 3s — un seek dans un transcode HLS atterrit à la granularité
@@ -336,7 +374,9 @@ export function PlayerScreen({ route, navigation }: Props) {
       if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
       setAudioIndex(newIndex);
     } else {
+      softReloadRef.current = true; setReloadFrameSec(positionRef.current); // re-buffer discret, pas d'écran plein
       captureReloadTicks();
+      setReloadNonce((n) => n + 1); // refetch même à position ~0 (startTicks inchangé)
       setAudioIndex(newIndex);
     }
   }, [isDirectPlay, mpvTracks.mpvTrackMap, playerRef, captureReloadTicks]);
@@ -347,20 +387,23 @@ export function PlayerScreen({ route, navigation }: Props) {
     const needsBurnIn = isBurnIn(newIndex);
     const prevBurnIn = isBurnIn(subtitleIndex);
     if (!needsBurnIn && !prevBurnIn) {
-      // Sous-titres TEXTE : rendus par l'overlay JS (useTVSubtitles) — AUCUN
-      // rechargement du player, en direct play comme en transcode.
+      // Sous-titres TEXTE : sélection NATIVE (sideload AVPlayer en direct play,
+      // piste du manifeste HLS en transcode) ou overlay JS sur Android MPV —
+      // AUCUN rechargement du player, bascule instantanée.
       setSubtitleIndex(newIndex);
       return;
     }
     // Activation/désactivation d'un burn-in PGS/VOBSUB : l'URL est reconstruite
     // → mémoriser la position courante (le natif redémarre le flux à cette
     // position via le fragment #tnt-start).
+    softReloadRef.current = true; setReloadFrameSec(positionRef.current);
     captureReloadTicks();
     setSubtitleIndex(newIndex);
     if (needsBurnIn && isDirectPlay) setForceTranscode(true);
   }, [isDirectPlay, streams, subtitleIndex, captureReloadTicks]);
 
   const handleQualityChange = useCallback((key: typeof quality.qualityKey) => {
+    softReloadRef.current = true; setReloadFrameSec(positionRef.current);
     captureReloadTicks();
     quality.setQualityKey(key);
   }, [quality, captureReloadTicks]);
@@ -425,7 +468,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}
       autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
-      useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
+      useExoPlayer={useExoPlayer} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={audioIndex} subtitleIndex={subtitleIndex}
@@ -443,7 +486,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       onSelectQuality={handleQualityChange}
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
-      trickplay={trickplay} osdFocusSignal={osdFocusSignal}
+      trickplay={trickplay} reloadFrameSec={reloadFrameSec} osdFocusSignal={osdFocusSignal}
       subtitleText={subtitleText} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
