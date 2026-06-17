@@ -235,9 +235,6 @@ importers:
       '@babel/runtime':
         specifier: ^7.28.6
         version: 7.28.6
-      '@react-native-async-storage/async-storage':
-        specifier: ^2.1.0
-        version: 2.2.0(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))
       '@react-navigation/native':
         specifier: ^7.0.0
         version: 7.1.28(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))(react@18.3.1)
@@ -8273,11 +8270,6 @@ snapshots:
       react: 19.1.0
     optionalDependencies:
       '@types/react': 19.2.14
-
-  '@react-native-async-storage/async-storage@2.2.0(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))':
-    dependencies:
-      merge-options: 3.0.4
-      react-native: react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1)
 
   '@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.1.2(typescript@5.9.3))(@react-native/metro-config@0.76.9(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.1.0))':
     dependencies:

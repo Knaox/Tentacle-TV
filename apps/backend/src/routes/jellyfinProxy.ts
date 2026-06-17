@@ -65,6 +65,35 @@ async function resolveSessionRouting(
   return { apiKey: adminKey ?? undefined };
 }
 
+/**
+ * Réécrit un manifeste HLS (.m3u8) pour injecter le token du client (`api_key`)
+ * dans TOUTES les URLs relatives (sous-playlists `main.m3u8`, segments
+ * `hls1/main/N.ts`, et `URI="…"` des renditions audio/sous-titres in-manifest).
+ *
+ * Indispensable pour Apple TV : AVPlayer (AVURLAsset) ne propage PAS de façon
+ * fiable les headers d'auth aux sous-requêtes HLS → la variante/les segments
+ * partaient SANS auth → 401 → lecture bloquée à l'infini. Avec l'api_key dans
+ * les URLs, AVPlayer le renvoie et le proxy l'honore. Sans effet pour Android
+ * (ExoPlayer propage les headers) ni le web (cookie same-origin) : param ignoré.
+ */
+function rewriteHlsManifest(body: string, token: string): string {
+  const hasKey = (u: string) => /[?&](api_key|ApiKey)=/i.test(u);
+  const addKey = (u: string) =>
+    hasKey(u) ? u : `${u}${u.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(token)}`;
+  return body
+    .split("\n")
+    .map((line) => {
+      const t = line.trim();
+      if (!t) return line;
+      if (t.startsWith("#")) {
+        // URI="…" dans les tags (#EXT-X-MEDIA, #EXT-X-IMAGE-STREAM-INF, I-frames…)
+        return line.replace(/URI="([^"]+)"/gi, (_m, u: string) => `URI="${addKey(u)}"`);
+      }
+      return addKey(line); // ligne d'URL (playlist/segment relatif)
+    })
+    .join("\n");
+}
+
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();
@@ -217,6 +246,20 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         setCached(wildcardPath, queryString, incomingToken, buf, contentType, response.status, cacheTtl);
         reply.header("x-tentacle-cache", "MISS");
         return reply.send(buf);
+      }
+
+      // Manifeste HLS (.m3u8) : bufferiser (petit) et injecter l'api_key du
+      // client dans les sous-URLs → débloque le transcode sur Apple TV (AVPlayer
+      // n'auth pas les sous-requêtes HLS par header). cf. rewriteHlsManifest.
+      const ct = response.headers.get("content-type") ?? "";
+      const isM3u8 = wildcardPath.endsWith(".m3u8") || /mpegurl/i.test(ct);
+      if (isM3u8 && incomingToken && response.status < 400) {
+        const text = await response.text();
+        const rewritten = rewriteHlsManifest(text, incomingToken);
+        reply.removeHeader("content-encoding");
+        reply.removeHeader("content-length");
+        reply.header("content-length", Buffer.byteLength(rewritten));
+        return reply.send(rewritten);
       }
 
       const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);

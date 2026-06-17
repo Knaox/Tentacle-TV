@@ -34,9 +34,12 @@ export default {
   // Provisioning code entry (TV store reviewers)
   haveCode: "I have a pairing code",
   enterProvisioningTitle: "Enter a pairing code",
-  enterProvisioningSubtitle: "Enter the code provided to pair this device.",
+  enterProvisioningSubtitle: "Enter the 12-character code provided to pair this device.",
   validateCode: "Validate code",
   checkingCode: "Checking...",
+  codeProgress: "{{count}} / {{total}} characters",
+  clearCode: "Clear",
+  enterCodeRemoteHint: "Use the remote to enter the code, character by character. It validates automatically.",
 
   // Relay pairing (Web/Mobile enter code)
   pairYourTV: "Pair your TV",
