@@ -144,7 +144,8 @@ jobs:
             "arm64/Tentacle TV.app" \
             "x86_64/Tentacle TV.app" \
             /tmp/embedded.provisionprofile \
-            "$SIGN_APP" "$SIGN_PKG"
+            "$SIGN_APP" "$SIGN_PKG" \
+            "${{ inputs.build }}"
 
       - name: Upload .pkg artifact
         uses: actions/upload-artifact@v4
