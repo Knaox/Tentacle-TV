@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { View, ActivityIndicator, AppState, type AppStateStatus } from "react-native";
+import { View, ActivityIndicator, AppState, Settings, type AppStateStatus } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import { DEFAULT_THEME } from "@tentacle-tv/theme";
@@ -21,7 +21,6 @@ import {
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initI18n, i18n } from "@tentacle-tv/shared";
 import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -55,11 +54,15 @@ const queryClient = new QueryClient({
   },
 });
 
-// Cold start TV : hydrate le cache home depuis AsyncStorage avant render.
+// Cold start TV : cache home persisté via Settings (NSUserDefaults, persistant
+// tvOS, synchrone) — interface async attendue par le persister → Promise.resolve.
 const tvPersistStorage = {
-  getItem: (k: string) => AsyncStorage.getItem(k),
-  setItem: (k: string, v: string) => AsyncStorage.setItem(k, v),
-  removeItem: (k: string) => AsyncStorage.removeItem(k),
+  getItem: (k: string) => {
+    const v = Settings.get(k);
+    return Promise.resolve(typeof v === "string" ? v : null);
+  },
+  setItem: (k: string, v: string) => { Settings.set({ [k]: v }); return Promise.resolve(); },
+  removeItem: (k: string) => { Settings.set({ [k]: null }); return Promise.resolve(); },
 };
 void hydrateQueryClient(queryClient, tvPersistStorage, {
   whitelist: HOME_PERSIST_WHITELIST,

@@ -34,9 +34,12 @@ export default {
   // Saisie d'un code de provisionnement (testeurs des stores TV)
   haveCode: "J'ai un code de jumelage",
   enterProvisioningTitle: "Saisir un code de jumelage",
-  enterProvisioningSubtitle: "Entrez le code fourni pour jumeler cet appareil.",
+  enterProvisioningSubtitle: "Saisissez le code à 12 caractères communiqué pour jumeler cet appareil.",
   validateCode: "Valider le code",
   checkingCode: "Vérification...",
+  codeProgress: "{{count}} / {{total}} caractères",
+  clearCode: "Effacer",
+  enterCodeRemoteHint: "Utilisez la télécommande pour saisir le code, caractère par caractère. La validation est automatique.",
 
   // Jumelage relais (Web/Mobile saisie code)
   pairYourTV: "Jumeler votre TV",

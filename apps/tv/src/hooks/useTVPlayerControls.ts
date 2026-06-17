@@ -273,6 +273,12 @@ export function useTVPlayerControls({
   // --- TV Remote binding ---
   useTVRemote({
     onBack: () => {
+      // Panneau ouvert (réglages/épisodes) : le « back » appartient au panneau,
+      // qui se referme via son propre useTVRemote. Sur tvOS, useTVEventHandler
+      // est global (pas LIFO comme Android) → sans cette garde, le handler du
+      // lecteur tire AUSSI et quitte la vidéo (course avec le reset de
+      // showSettingsRef côté PlayerScreen).
+      if (panelOpenRef.current) return;
       if (scrubbingRef.current) { cancelScrub(); return; }
       onBack();
     },

@@ -1,6 +1,6 @@
-import { View, Text } from "react-native";
+import { View, Text, findNodeHandle } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Focusable } from "../focus/Focusable";
 import { Colors, Radius, Typography } from "../../theme/colors";
@@ -26,11 +26,23 @@ export function WelcomeStep({
     onSwitchLang(currentLang === "fr" ? "en" : "fr");
   }, [currentLang, onSwitchLang]);
 
+  // Le toggle de langue est en position absolue (top-right) → injoignable par la
+  // navigation spatiale tvOS. On câble un chemin directionnel explicite :
+  // CTA principal ⟵UP⟶ langue ⟵DOWN⟶ CTA principal.
+  const langRef = useRef<View>(null);
+  const primaryRef = useRef<View>(null);
+  const [langTag, setLangTag] = useState<number | undefined>(undefined);
+  const [primaryTag, setPrimaryTag] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    setLangTag(findNodeHandle(langRef.current) ?? undefined);
+    setPrimaryTag(findNodeHandle(primaryRef.current) ?? undefined);
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Language toggle */}
       <View style={styles.langRow}>
-        <Focusable variant="button" onPress={toggleLang}>
+        <Focusable ref={langRef} variant="button" onPress={toggleLang} nextFocusDown={primaryTag}>
           <View style={styles.langButton}>
             <Text style={styles.langText}>
               {currentLang === "fr" ? "EN" : "FR"}
@@ -45,7 +57,7 @@ export function WelcomeStep({
         <Text style={styles.subtitle}>{t("pairing:tvWelcomeSubtitle")}</Text>
 
         {/* Primary CTA */}
-        <Focusable variant="button" onPress={onShowCode} hasTVPreferredFocus focusRadius={Radius.buttonLarge + 3} style={{ marginBottom: 16 }}>
+        <Focusable ref={primaryRef} variant="button" onPress={onShowCode} hasTVPreferredFocus nextFocusUp={langTag} focusRadius={Radius.buttonLarge + 3} style={{ marginBottom: 16 }}>
           <View style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>
               {t("pairing:showPairingCode")}

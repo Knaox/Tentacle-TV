@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
+import { useTVRemote } from "./focus/useTVRemote";
 import { CheckIcon } from "./icons/TVIcons";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { Colors, Radius } from "../theme/colors";
@@ -43,6 +44,10 @@ export function TVTrackSelector({
   onSelectAudio, onSelectSubtitle, onSelectQuality, onClose, onInteraction,
 }: TVTrackSelectorProps) {
   const { t } = useTranslation("player");
+  // Monté en dernier → son BACK est prioritaire (LIFO, même pattern que
+  // TVPlayerEpisodePanel) : Retour/Menu referme le panneau réglages sans quitter
+  // la lecture. Sans ça, le Retour sortait directement de la vidéo sur tvOS.
+  useTVRemote({ onBack: onClose });
   const slideX = useSharedValue(380);
   const scrollRef = useRef<ScrollView>(null);
   const { makeOnFocus } = useTVScrollToFocused(scrollRef, 60);
