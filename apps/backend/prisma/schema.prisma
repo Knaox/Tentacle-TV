@@ -115,6 +115,27 @@ model PairingCode {
   @@map("pairing_codes")
 }
 
+// Code de jumelage de provisionnement (singleton) — code long, réutilisable
+// sans limite d'usages, pensé pour le passage de la TV dans les stores (un
+// testeur tape le code → jumelage immédiat sur le serveur public, compte dédié).
+// Désactivé par défaut ; activé avec une date d'expiration OBLIGATOIRE après
+// laquelle il est invalide ET l'option se désactive automatiquement (safe).
+// Transport via le relay Cloudflare (entrée pré-confirmée persistante).
+model ProvisioningCode {
+  id                    String    @id @default(cuid())
+  code                  String    @unique @db.VarChar(32)
+  enabled               Boolean   @default(false)
+  expiresAt             DateTime?
+  jellyfinUserId        String?   @db.VarChar(255)
+  username              String?   @db.VarChar(255)
+  jellyfinAccessToken   String?   @db.Text
+  token                 String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("provisioning_codes")
+}
+
 model PairedDevice {
   id                    String    @id @default(cuid())
   name                  String    @db.VarChar(100)

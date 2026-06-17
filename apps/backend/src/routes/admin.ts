@@ -13,6 +13,7 @@ import {
 import { getPrisma } from "../services/db";
 import { injectCorsHosts } from "../services/jellyfinCors";
 import { adminUsersRoutes } from "./adminUsers";
+import { adminProvisioningRoutes } from "./adminProvisioning";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
@@ -46,6 +47,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Utilisateurs Jellyfin + impersonation (hérite du hook requireAdmin).
   await app.register(adminUsersRoutes);
+
+  // Code de jumelage de provisionnement (hérite du hook requireAdmin).
+  await app.register(adminProvisioningRoutes);
 
   /** GET /api/admin/services — Status of all configured services. */
   app.get("/services", async () => {

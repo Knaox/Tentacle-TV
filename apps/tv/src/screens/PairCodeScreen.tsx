@@ -18,11 +18,12 @@ import { WelcomeStep } from "../components/pairing/WelcomeStep";
 import { RelayCodeDisplay } from "../components/pairing/RelayCodeDisplay";
 import { ServerInputStep } from "../components/pairing/ServerInputStep";
 import { ServerCodeDisplayStep } from "../components/pairing/ServerCodeDisplayStep";
+import { EnterCodeStep } from "../components/pairing/EnterCodeStep";
 import { PairingSuccessStep } from "../components/pairing/PairingSuccessStep";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
-type Step = "welcome" | "relayCode" | "manualServer" | "manualCode" | "success";
+type Step = "welcome" | "relayCode" | "manualServer" | "manualCode" | "enterCode" | "success";
 
 function setAllBackendUrls(url: string) {
   setPairingBackendUrl(url);
@@ -127,6 +128,7 @@ export function PairCodeScreen({ navigation }: Props) {
         <WelcomeStep
           onShowCode={() => setStep("relayCode")}
           onManualSetup={() => setStep("manualServer")}
+          onEnterCode={() => setStep("enterCode")}
           onSwitchLang={switchLang}
           currentLang={i18n.language}
         />
@@ -160,6 +162,14 @@ export function PairCodeScreen({ navigation }: Props) {
         <ServerCodeDisplayStep
           onConfirmed={handleDeviceConfirmed}
           onChangeServer={handleChangeServer}
+        />
+      );
+
+    case "enterCode":
+      return (
+        <EnterCodeStep
+          onConfirmed={handleRelayConfirmed}
+          onBack={() => setStep("welcome")}
         />
       );
 
