@@ -10,11 +10,16 @@ const desktopVersion = existsSync(desktopPkgPath)
   ? JSON.parse(readFileSync(desktopPkgPath, "utf-8")).version
   : webVersion;
 
+// Canal de distribution. "appstore" est injecté par le build Mac App Store
+// (VITE_DIST_CHANNEL=appstore) → bascule la détection de MAJ vers l'App Store.
+const distChannel = process.env.VITE_DIST_CHANNEL ?? "";
+
 export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION_WEB__: JSON.stringify(webVersion),
     __APP_VERSION_DESKTOP__: JSON.stringify(desktopVersion),
+    __DIST_CHANNEL__: JSON.stringify(distChannel),
   },
   // Load .env files from monorepo root (where .env and .env.production live)
   envDir: resolve(__dirname, "../.."),

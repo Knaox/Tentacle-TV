@@ -38,6 +38,12 @@ export function isWindows(): boolean {
   return /Windows NT/i.test(navigator.userAgent);
 }
 
+/** Build distribué via le Mac App Store (canal injecté à la compilation).
+ *  → MAJ détectées via l'App Store (pas d'auto-update intégré). */
+export function isAppStoreBuild(): boolean {
+  return typeof __DIST_CHANNEL__ !== "undefined" && __DIST_CHANNEL__ === "appstore";
+}
+
 export interface PlayOptions {
   url: string;
   startPosition?: number;

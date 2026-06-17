@@ -19,6 +19,8 @@ export function Credits() {
     { name: "Expo", url: "https://expo.dev", desc: t("about:techExpo") },
     { name: "React Native", url: "https://reactnative.dev", desc: t("about:techReactNative") },
     { name: "ExoPlayer / Media3", url: "https://developer.android.com/media/media3/exoplayer", desc: t("about:techExoPlayer") },
+    { name: "mpv", url: "https://mpv.io", desc: t("about:techMpv") },
+    { name: "FFmpeg", url: "https://ffmpeg.org", desc: t("about:techFFmpeg") },
     { name: "VoidTV", url: "https://github.com/hritwikjohri/VoidTV-for-jellyfin", desc: t("about:techVoidTV") },
   ], [t]);
 

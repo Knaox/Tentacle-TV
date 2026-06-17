@@ -16,8 +16,9 @@ mod audio_session;
 mod macos;
 
 fn main() {
+    // Pas de tauri-plugin-updater : macOS est distribué via le Mac App Store
+    // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init());
 

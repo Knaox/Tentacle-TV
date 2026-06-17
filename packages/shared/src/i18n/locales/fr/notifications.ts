@@ -17,6 +17,7 @@ export default {
   autoRetry: "Nouvelle tentative automatique pour « {{title}} » ({{count}}/{{max}})",
   autoRetryFailed: "Échec définitif pour « {{title}} » après {{max}} tentatives",
   updateNow: "Mettre à jour",
+  updateOpenStore: "Ouvrir l'App Store",
   updateInstalling: "Installation en cours...",
   updateRestarting: "Redémarrage de l'application...",
   updateReleaseNotes: "Notes de mise à jour",

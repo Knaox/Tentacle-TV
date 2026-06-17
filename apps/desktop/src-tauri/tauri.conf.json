@@ -30,7 +30,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": "v1Compatible",
     "publisher": "Damien ROUGE",
     "resources": ["lib/**/*"],
     "icon": [
@@ -51,14 +50,6 @@
       "minimumSystemVersion": "14.0",
       "signingIdentity": "Developer ID Application: Damien ROUGE (96K3M57W49)",
       "entitlements": "./Entitlements.plist"
-    }
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/Knaox/Tentacle-TV/releases/latest/download/latest.json"
-      ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVENjcyMEE0QTFEQjdBOTQKUldTVWV0dWhwQ0JuN1ZwN0pGK2pTbFZzVStmbE4ycjh6NnF5YUVZaXY4TGRGOGwvV2lMTC9URisK"
     }
   }
 }

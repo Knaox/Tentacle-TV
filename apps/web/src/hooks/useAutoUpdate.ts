@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { isTauri, isMacOS, isWindows } from "./useDesktopPlayer";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { isTauri, isWindows, isAppStoreBuild } from "./useDesktopPlayer";
+import { openExternal } from "../lib/openExternal";
 
 export type UpdatePhase = "idle" | "available" | "downloading" | "installing" | "restarting";
 
@@ -11,6 +12,9 @@ export interface UpdateInfo {
   downloading: boolean;
   progress: number;
   error: string | null;
+  /** Build Mac App Store : le bouton ouvre l'App Store au lieu d'installer. */
+  isStoreUpdate: boolean;
+  storeUrl?: string;
 }
 
 const defaultInfo: UpdateInfo = {
@@ -19,7 +23,39 @@ const defaultInfo: UpdateInfo = {
   downloading: false,
   progress: 0,
   error: null,
+  isStoreUpdate: false,
 };
+
+/** Compare deux versions semver simples ("1.2.3"). true si `a` > `b`. */
+function isNewerVersion(a: string, b: string): boolean {
+  const pa = a.replace(/^v/, "").split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = b.replace(/^v/, "").split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x > y) return true;
+    if (x < y) return false;
+  }
+  return false;
+}
+
+/** Vérifie la dernière version publiée sur le Mac App Store via l'API iTunes
+ *  lookup. Renvoie { version, notes, storeUrl } si une MAJ est disponible. */
+async function checkAppStoreUpdate(): Promise<{ version: string; notes?: string; storeUrl?: string } | null> {
+  // Version réelle du bundle en cours (1.0.0+), pas la constante de build web.
+  const { getVersion } = await import("@tauri-apps/api/app");
+  const current = await getVersion();
+
+  const region = (navigator.language?.split("-")[1] || "us").toLowerCase();
+  const url = `https://itunes.apple.com/lookup?bundleId=com.tentacle.media&country=${region}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const app = data?.results?.[0];
+  if (!app?.version) return null;
+  if (!isNewerVersion(app.version, current)) return null;
+  return { version: app.version, notes: app.releaseNotes, storeUrl: app.trackViewUrl };
+}
 
 interface MsixUpdateInfo {
   version: string;
@@ -37,6 +73,8 @@ let __testMode = false;
 
 export function useAutoUpdate() {
   const [info, setInfo] = useState<UpdateInfo>(defaultInfo);
+  // URL App Store mémorisée hors state pour rester dispo dans installUpdate ([]).
+  const storeUrlRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     // Dev only — exposé sur window pour valider l'UX depuis la console.
@@ -55,12 +93,30 @@ export function useAutoUpdate() {
     }
 
     if (!isTauri()) return;
-    if (!isMacOS() && !isWindows()) return;
+    if (!isAppStoreBuild() && !isWindows()) return;
 
     let cancelled = false;
 
     (async () => {
       try {
+        // macOS App Store — détection via l'API iTunes lookup (pas d'auto-update).
+        if (isAppStoreBuild()) {
+          const update = await checkAppStoreUpdate();
+          if (cancelled || !update) return;
+          storeUrlRef.current = update.storeUrl;
+          setInfo((prev) => ({
+            ...prev,
+            available: true,
+            phase: "available",
+            version: update.version,
+            notes: update.notes,
+            isStoreUpdate: true,
+            storeUrl: update.storeUrl,
+          }));
+          return;
+        }
+
+        // Windows — Microsoft Store (WinRT StoreContext)
         if (isWindows()) {
           const { invoke } = await import("@tauri-apps/api/core");
           const update = await invoke<MsixUpdateInfo | null>("check_msix_update");
@@ -73,18 +129,6 @@ export function useAutoUpdate() {
           }));
           return;
         }
-
-        // macOS — Tauri updater (latest.json sur GitHub)
-        const { check } = await import("@tauri-apps/plugin-updater");
-        const update = await check();
-        if (cancelled || !update) return;
-        setInfo((prev) => ({
-          ...prev,
-          available: true,
-          phase: "available",
-          version: update.version,
-          notes: update.body ?? undefined,
-        }));
       } catch (err) {
         if (!cancelled) {
           setInfo((prev) => ({ ...prev, error: String(err) }));
@@ -114,6 +158,14 @@ export function useAutoUpdate() {
       return;
     }
 
+    // macOS App Store — on ouvre l'App Store (pas d'installation in-app).
+    if (isAppStoreBuild()) {
+      const url = storeUrlRef.current || "macappstore://apps.apple.com";
+      await openExternal(url);
+      setInfo(defaultInfo);
+      return;
+    }
+
     if (isWindows()) {
       setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
       let unlistenProgress: (() => void) | null = null;
@@ -139,43 +191,6 @@ export function useAutoUpdate() {
         unlistenProgress?.();
       }
       return;
-    }
-
-    if (!isMacOS()) return;
-
-    setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
-
-    try {
-      const { check } = await import("@tauri-apps/plugin-updater");
-      const update = await check();
-
-      if (!update) {
-        setInfo((prev) => ({ ...prev, downloading: false, error: "No update found" }));
-        return;
-      }
-
-      let downloaded = 0;
-      let contentLength = 0;
-
-      await update.downloadAndInstall((event: any) => {
-        if (event.event === "Started" && event.data.contentLength) {
-          contentLength = event.data.contentLength;
-        }
-        if (event.event === "Progress") {
-          downloaded += event.data.chunkLength;
-          const pct = contentLength > 0 ? Math.round((downloaded / contentLength) * 100) : 0;
-          setInfo((prev) => ({ ...prev, progress: pct }));
-        }
-        if (event.event === "Finished") {
-          setInfo((prev) => ({ ...prev, progress: 100, phase: "installing" }));
-        }
-      });
-
-      setInfo((prev) => ({ ...prev, phase: "restarting" }));
-      const { relaunch } = await import("@tauri-apps/plugin-process");
-      await relaunch();
-    } catch (err) {
-      setInfo((prev) => ({ ...prev, downloading: false, error: String(err) }));
     }
   }, []);
 
