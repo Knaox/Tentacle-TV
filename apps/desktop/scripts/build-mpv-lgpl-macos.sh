@@ -50,12 +50,17 @@ if [ ! -f "$PREFIX/lib/libavcodec.dylib" ]; then
   rm -rf "$WORK/ffmpeg"
   git clone --depth 1 --branch "$FFMPEG_TAG" https://github.com/FFmpeg/FFmpeg.git "$WORK/ffmpeg"
   cd "$WORK/ffmpeg"
+  # --disable-lzma : liblzma (xz) est auto-détecté via les deps Homebrew. Apple
+  # rejette App Store si libavcodec référence _lzma_code/_lzma_end/_lzma_stream_decoder
+  # (« non-public API », cf. rejet Guideline 2.5.1 du 2026-06-17). lzma ne sert qu'au
+  # décodage TIFF compressé LZMA dans FFmpeg → aucune perte pour un lecteur vidéo.
   ./configure \
     --prefix="$PREFIX" \
     --arch="$ARCH" \
     --enable-shared --disable-static \
     --disable-programs --disable-doc --disable-debug \
     --disable-gpl --disable-nonfree \
+    --disable-lzma \
     --enable-videotoolbox --enable-audiotoolbox \
     --enable-libdav1d
   make -j"$(sysctl -n hw.ncpu)"
@@ -106,3 +111,14 @@ if ls "$OUT" | grep -iqE 'x264|x265|libpostproc|librubberband|libsmbclient'; the
   exit 1
 fi
 echo "  ✓ aucun composant GPL — bundle LGPL OK ($(ls "$OUT"/*.dylib | wc -l | tr -d ' ') dylibs)"
+
+# 6. Garde-fou API non-publique : ÉCHEC si une dylib référence des symboles _lzma_*
+#    (Apple rejette l'App Store sinon — Guideline 2.5.1). Couvre une régression où
+#    une future dépendance Homebrew réactiverait l'auto-détection lzma.
+echo "==> Vérification symboles non-publics (lzma)"
+if nm -u "$OUT"/*.dylib 2>/dev/null | grep -q '_lzma_'; then
+  echo "  ✗ symboles _lzma_* détectés (API non-publique, rejet App Store) :"
+  nm -u "$OUT"/*.dylib 2>/dev/null | grep '_lzma_' | sort -u | sed 's/^/    /'
+  exit 1
+fi
+echo "  ✓ aucun symbole _lzma_*"
