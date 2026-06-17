@@ -10,10 +10,11 @@ import {
   findNodeHandle,
   type ViewStyle,
 } from "react-native";
-import type { MpvTrack, MPVPlayerHandle } from "./MPVPlayer";
+import type { MpvTrack, MPVPlayerHandle, ExoTextTrack } from "./playerTypes";
 
 // Re-export types — ExoPlayer uses the same track/handle interface
 export type { MpvTrack as ExoTrack, MPVPlayerHandle as ExoPlayerHandle };
+export type { ExoTextTrack } from "./playerTypes";
 
 interface ExoEvent {
   nativeEvent: {
@@ -30,13 +31,6 @@ interface ExoEvent {
   };
 }
 
-export interface ExoTextTrack {
-  uri: string;
-  language: string;
-  label: string;
-  jellyfinIndex: number;
-}
-
 interface ExoPlayerProps {
   source: string;
   paused: boolean;
@@ -44,6 +38,9 @@ interface ExoPlayerProps {
   audioPassthrough?: boolean;
   /** Pistes texte VTT (Jellyfin) chargées nativement pour le subtitleView Exo */
   textTracks?: ExoTextTrack[];
+  /** Accepté pour la parité de signature tvOS (sélection sous-titre native) ;
+   *  ignoré côté Android (sélection via la commande impérative setSubtitleTrack). */
+  subtitleIndex?: number;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;

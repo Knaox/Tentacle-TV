@@ -43,6 +43,15 @@ async function resolveSessionRouting(
     return { apiKey: adminKey ?? undefined };
   }
 
+  // Playstate (start/progress/stopped) : on PRÉFÈRE la réécriture user-scopée
+  // (/Users/{userId}/PlayingItems, clé admin + userId dans l'URL) — TOUJOURS
+  // valide — au token Jellyfin stocké du device, qui peut être périmé/révoqué
+  // et provoque alors des 401 en boucle sur /Sessions/Playing*.
+  const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
+  if (rewrite) return { apiKey: adminKey ?? undefined, rewrite };
+
+  // Routes de session NON réécrivables (ex. Videos/ActiveEncodings) :
+  // token Jellyfin du device si disponible, sinon clé admin.
   let deviceToken: string | null = null;
   try {
     const device = await getPrisma().pairedDevice.findUnique({
@@ -53,9 +62,7 @@ async function resolveSessionRouting(
   } catch { /* keep admin API key as fallback */ }
 
   if (deviceToken) return { apiKey: deviceToken };
-
-  const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
-  return { apiKey: adminKey ?? undefined, rewrite };
+  return { apiKey: adminKey ?? undefined };
 }
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
@@ -100,9 +107,15 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       } catch { /* leave targetUrl unchanged */ }
     }
 
-    // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header
+    // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header.
+    // tvOS : react-native-video (VTT sideload), Image (trickplay) et sendBeacon
+    // ne peuvent pas poser de header → ils passent le token en `api_key` query.
+    // On l'accepte comme source d'auth (le strip de l'URL forwardée plus haut
+    // reste, anti-fuite).
     const cookieToken = (request as { cookies?: { tentacle_token?: string } }).cookies?.tentacle_token;
-    const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken;
+    const q = request.query as Record<string, string | undefined> | undefined;
+    const queryToken = q?.api_key || q?.ApiKey;
+    const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
     const { apiKey: apiKeyOverride, rewrite } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
     // Report de lecture d'un device sans token Jellyfin : on cible l'endpoint

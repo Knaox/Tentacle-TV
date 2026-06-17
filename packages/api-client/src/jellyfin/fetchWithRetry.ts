@@ -12,6 +12,9 @@ export interface FetchWithRetryOptions {
   onAuthExpired?: () => void | Promise<void>;
   /** Suppresses 401 → onAuthExpired handling (e.g. during an active login). */
   isLoggingIn?: boolean;
+  /** Telemetry/fire-and-forget calls (playback reporting): a 401 must NOT count
+   *  toward the auth-expired threshold nor log the user out. */
+  noAuthExpiry?: boolean;
 }
 
 export interface FetchWithRetryState {
@@ -75,7 +78,7 @@ export async function fetchWithRetry<T>(
   }
 
   if (!response.ok) {
-    if (response.status === 401 && opts.accessToken && !opts.isLoggingIn) {
+    if (response.status === 401 && opts.accessToken && !opts.isLoggingIn && !opts.noAuthExpiry) {
       state.consecutive401Count++;
       if (state.consecutive401Count >= AUTH_EXPIRE_THRESHOLD && !state.authRefreshInProgress) {
         state.consecutive401Count = 0;

@@ -237,7 +237,7 @@ importers:
         version: 7.28.6
       '@react-native-async-storage/async-storage':
         specifier: ^2.1.0
-        version: 2.1.2(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))
+        version: 2.2.0(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))
       '@react-navigation/native':
         specifier: ^7.0.0
         version: 7.1.28(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))(react@18.3.1)
@@ -2094,11 +2094,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  '@react-native-async-storage/async-storage@2.1.2':
-    resolution: {integrity: sha512-dvlNq4AlGWC+ehtH12p65+17V0Dx7IecOWl6WanF2ja38O1Dcjjvn7jVzkUHJ5oWkQBlyASurTPlTHgKXyYiow==}
-    peerDependencies:
-      react-native: ^0.0.0-0 || >=0.65 <1.0
 
   '@react-native-async-storage/async-storage@2.2.0':
     resolution: {integrity: sha512-gvRvjR5JAaUZF8tv2Kcq/Gbt3JHwbKFYfmb445rhOj6NUMx3qPLixmDx5pZAyb9at1bYvJ4/eTUipU5aki45xw==}
@@ -8279,7 +8274,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
 
-  '@react-native-async-storage/async-storage@2.1.2(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))':
+  '@react-native-async-storage/async-storage@2.2.0(react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1))':
     dependencies:
       merge-options: 3.0.4
       react-native: react-native-tvos@0.76.3-0(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@react-native-community/cli-server-api@14.1.2)(@types/react@19.2.14)(react@18.3.1)

@@ -10,26 +10,11 @@ import {
   findNodeHandle,
   type ViewStyle,
 } from "react-native";
+import type { MpvTrack, MPVPlayerHandle, ExoTextTrack } from "./playerTypes";
 
-export interface MpvTrack {
-  id: number;
-  type: "video" | "audio" | "sub";
-  lang: string;
-  title: string;
-  codec: string;
-  default: boolean;
-  selected: boolean;
-  /** ExoPlayer Format.id — pour les pistes texte side-loadées = jellyfinIndex */
-  nativeId?: string;
-}
-
-export interface MPVPlayerHandle {
-  seek: (seconds: number) => void;
-  setAudioTrack: (id: number) => void;
-  setSubtitleTrack: (id: number) => void;
-  addSubtitleTrack: (url: string) => void;
-  loadSubtitle?: (url: string | null) => void;
-}
+// Types publics centralisés dans playerTypes.ts (neutres) — réexport pour
+// préserver tous les `import … from "./MPVPlayer"` existants.
+export type { MpvTrack, MPVPlayerHandle } from "./playerTypes";
 
 interface MpvEvent {
   nativeEvent: {
@@ -50,6 +35,10 @@ interface MPVPlayerProps {
   paused: boolean;
   progressInterval?: number;
   style?: ViewStyle;
+  /** Acceptés pour la parité de signature avec la variante tvOS (sous-titres
+   *  natifs) ; ignorés côté Android (MPV/transcode → overlay JS). */
+  textTracks?: ExoTextTrack[];
+  subtitleIndex?: number;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
   onEnd?: () => void;

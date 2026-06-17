@@ -1,5 +1,5 @@
 import type { ElementRef } from "react";
-import { View, Text, TouchableOpacity, type ViewStyle } from "react-native";
+import { View, Text, TouchableOpacity, Platform, type ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { MemoizedPlayer } from "./MemoizedPlayer";
@@ -14,6 +14,7 @@ import { TVSubtitleOverlay } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
 import type { ExoTextTrack } from "./ExoPlayer";
 import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
+import { useTVFocusGrab } from "../../hooks/useTVFocusGrab";
 
 interface AutoPlayCtx {
   countdown: number | null;
@@ -126,12 +127,26 @@ export function TVPlayerView({
   const panelOpen = showSettings || autoPlayActive || !!showEpisodes;
   const backgroundFocusable = !overlayShown && !panelOpen;
 
+  // Un segment skip (intro/générique) dans sa plage garde le focus (cf. skip
+  // button), sinon c'est le fond qui doit le récupérer.
+  const inSeg = (s?: { start: number; end: number } | null) =>
+    !!s && displayTime >= s.start && displayTime < s.end - 1;
+  const skipActive = inSeg(skipSegments.intro) || inSeg(skipSegments.credits);
+
+  // tvOS : dès que l'OSD se cache (et qu'aucun panneau / skip n'est actif),
+  // ramener le focus sur le fond pour que le D-pad continue d'émettre ses events
+  // et puisse rallumer l'OSD (parité avec useFocusRecovery côté Android).
+  useTVFocusGrab(
+    backgroundRef as unknown as React.RefObject<unknown>,
+    backgroundFocusable && !skipActive,
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
       <MemoizedPlayer
         useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
         source={streamUrl} paused={paused} playerStyle={playerStyle}
-        textTracks={textTracks}
+        textTracks={textTracks} subtitleIndex={subtitleIndex}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />
@@ -147,9 +162,12 @@ export function TVPlayerView({
       >
         <View style={{ flex: 1 }} />
       </TouchableOpacity>
-      {/* Sous-titres : rendu NATIF par le subtitleView ExoPlayer (direct play).
-          L'overlay JS n'est conservé que pour MPV/transcode. */}
-      {!useExoPlayer && <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />}
+      {/* Sous-titres : Android = rendu NATIF par le subtitleView ExoPlayer en
+          direct play, overlay JS pour MPV/transcode. tvOS (AVPlayer) = NATIF
+          partout (sideload VTT) → pas d'overlay JS. */}
+      {!useExoPlayer && Platform.OS !== "ios" && (
+        <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />
+      )}
       {/* Badge « +30s / −10s » après un double-clic ←/→ (OSD caché) */}
       <TVSkipBadge flash={controls.skipFlash} />
       {/* Chargement initial OU rechargement de flux (piste/qualité) : écran
@@ -189,7 +207,8 @@ export function TVPlayerView({
         <>
           <TVSkipSegmentButton type="intro" segment={skipSegments.intro}
             currentTime={displayTime} onSkip={() => onSeek(skipSegments.intro!.end)}
-            overlayVisible={controls.overlayVisible} showSettings={showSettings} />
+            overlayVisible={controls.overlayVisible} showSettings={showSettings}
+            showEpisodes={!!showEpisodes} />
           {/* Générique : avec un épisode suivant, le bouton devient
               « Épisode suivant » et lance la carte À suivre (comme le web). */}
           <TVSkipSegmentButton type="credits" segment={skipSegments.credits}
@@ -199,7 +218,8 @@ export function TVPlayerView({
               if (autoPlay.nextEpisode) autoPlay.startAutoPlay();
               else onSeek(skipSegments.credits!.end);
             }}
-            overlayVisible={controls.overlayVisible} showSettings={showSettings} />
+            overlayVisible={controls.overlayVisible} showSettings={showSettings}
+            showEpisodes={!!showEpisodes} />
         </>
       )}
       {showEpisodes && item?.SeriesId && onSelectEpisode && onCloseEpisodes && (

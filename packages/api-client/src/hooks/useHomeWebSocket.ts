@@ -162,6 +162,12 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
       ws.onerror = () => { /* onclose fires after — handled there */ };
     }
 
+    // Pas de connexion tant qu'aucun token n'est disponible (hors web, qui auth
+    // par cookie → token `undefined`). Évite un WS ouvert sans auth + le warning
+    // « No token » au cold start tvOS ; `token` est dans les deps → reconnexion
+    // dès qu'il arrive.
+    if (token === null) { startFallback(); return () => { mounted = false; stopFallback(); }; }
+
     connect();
 
     return () => {
@@ -181,5 +187,5 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
         ws = null;
       }
     };
-  }, [enabled, fallbackInterval]);
+  }, [enabled, fallbackInterval, token]);
 }

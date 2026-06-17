@@ -12,7 +12,7 @@ function safePositionTicks(seconds: number): number {
 }
 
 type JfClient = {
-  fetch: <T>(path: string, init?: RequestInit) => Promise<T>;
+  fetch: <T>(path: string, init?: RequestInit, opts?: { noAuthExpiry?: boolean }) => Promise<T>;
   getBaseUrl: () => string;
   getToken: () => string | null;
   getDeviceId: () => string;
@@ -58,9 +58,11 @@ async function sessionPost(
     // Fall through to proxy on failure
   }
 
-  // Proxy path (original logic, unchanged)
+  // Proxy path. `noAuthExpiry` : un 401 de reporting (token Jellyfin du device
+  // périmé p.ex.) ne doit JAMAIS compter dans le seuil auth-expired ni
+  // déconnecter — c'est de la télémétrie fire-and-forget.
   try {
-    await client.fetch(path, { method: "POST", body: bodyStr });
+    await client.fetch(path, { method: "POST", body: bodyStr }, { noAuthExpiry: true });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(DBG, `${label} FAILED via client.fetch:`, msg);

@@ -6,6 +6,12 @@ const STORAGE_KEYS = ["tentacle_device_id", "tentacle_token", "tentacle_user", "
 /**
  * Synchronous storage adapter backed by AsyncStorage.
  * Must call hydrate() before first use to preload values into memory.
+ *
+ * NOTE persistance tvOS : AsyncStorage ne garantit pas la persistance sur tvOS
+ * (warning natif « Persistent storage is not supported on tvOS »). Une migration
+ * vers un stockage persistant tvOS (MMKV) a été tentée mais ne se lie pas
+ * nativement sur react-native-tvos (0 symbole dans le binaire malgré
+ * pod/autolink OK) → à reprendre avec un setup natif dédié.
  */
 export class RNStorageAdapter implements StorageAdapter {
   private cache = new Map<string, string>();
@@ -31,11 +37,6 @@ export class RNStorageAdapter implements StorageAdapter {
     AsyncStorage.removeItem(key).catch(console.error);
   }
 
-  /**
-   * Variante awaitable pour les clés critiques (token, user, credentials)
-   * — garantit que la valeur est persistée disque avant qu'on continue,
-   * évite les pertes de session si l'OS tue l'app juste après login.
-   */
   async setItemAsync(key: string, value: string): Promise<void> {
     this.cache.set(key, value);
     await AsyncStorage.setItem(key, value);

@@ -51,23 +51,29 @@ function parseExpiry(url: string): number {
  * Interface d'extraction volontairement isolée : si yt-dlp devient ingérable,
  * on peut swapper l'implémentation (ex. lib JS) sans toucher la route.
  *
- * Format demandé : on PRIVILÉGIE le HLS muxé haute résolution (formats YouTube
- * 96=1080p, 95=720p, 94=480p), idéal pour AVPlayer/tvOS et toujours muxé
- * (audio+vidéo dans un seul manifest). Repli sur le MP4 progressif muxé
- * (22=720p, 18=360p, souvent seul 18 restant). Aucun remux ffmpeg requis.
+ * Format demandé : on sélectionne le meilleur flux MUXÉ (audio+vidéo dans un
+ * seul manifest) jusqu'à 1080p, indépendamment de l'itag. C'est volontairement
+ * agnostique : YouTube sert le HLS muxé via des itags variables selon le fps
+ * (91-96 en 24/30 fps → 96=1080p ; 300=720p60 / 301=1080p60 en 60 fps). Une
+ * liste figée (ex. ancien `96/95/94`) ratait les flux 60 fps et retombait à
+ * 480p/360p. Repli sur le meilleur muxé restant (MP4 progressif 18=360p si
+ * c'est tout ce qui reste). Tous lus nativement par AVPlayer/tvOS, aucun remux
+ * ffmpeg requis (la 4K n'existe qu'en DASH séparé → hors scope).
  */
-function resolveYtStream(ytId: string): Promise<ResolvedStream | null> {
+function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
   return new Promise((resolve) => {
     execFile(
       "yt-dlp",
       [
-        "-f", "96/95/94/22/18/best[ext=mp4][acodec!=none][vcodec!=none]",
+        "-f", "best[acodec!=none][vcodec!=none][height<=1080]/best[acodec!=none][vcodec!=none]",
         "-g", // imprime l'URL directe du flux/manifest
         "--no-warnings",
         "--no-playlist",
         `https://www.youtube.com/watch?v=${ytId}`,
       ],
-      { timeout: 12_000, maxBuffer: 1024 * 1024 },
+      // 20 s : l'extraction HLS moderne (téléchargement du player JS + résolution
+      // PO token + manifest m3u8) est plus lourde que l'ancien chemin progressif.
+      { timeout: 20_000, maxBuffer: 1024 * 1024 },
       (err, stdout) => {
         if (err) return resolve(null);
         const url = (stdout || "").trim().split("\n")[0];
@@ -77,6 +83,27 @@ function resolveYtStream(ytId: string): Promise<ResolvedStream | null> {
       },
     );
   });
+}
+
+/**
+ * Résout en privilégiant le HLS muxé HD (jusqu'à 1080p). YouTube force par
+ * intermittence le « SABR streaming » : quand l'extraction dégrade, yt-dlp ne
+ * renvoie plus que le MP4 progressif 360p (itag 18). Comme l'extraction HLS
+ * réussit quasi systématiquement à l'essai suivant, on retente jusqu'à 3 fois
+ * tant qu'on n'obtient qu'un flux progressif (`video/mp4`). La tentative
+ * dégradée revient vite (pas de téléchargement m3u8) → le coût du retry est
+ * faible. On conserve le meilleur progressif obtenu comme ultime repli (mieux
+ * vaut 360p que rien si la vidéo n'a réellement aucun HLS).
+ */
+async function resolveYtStream(ytId: string): Promise<ResolvedStream | null> {
+  let fallback: ResolvedStream | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await resolveOnce(ytId);
+    if (!r) continue;
+    if (r.mimeType === "application/vnd.apple.mpegurl") return r; // HLS HD → on prend
+    fallback = r; // progressif 360p : extraction dégradée probable → on retente
+  }
+  return fallback;
 }
 
 export async function trailerRoutes(app: FastifyInstance) {
@@ -104,7 +131,15 @@ export async function trailerRoutes(app: FastifyInstance) {
       cache.delete(ytId);
       return reply.status(404).send({ error: "unavailable" });
     }
-    cache.set(ytId, resolved);
+    // On ne met en cache (longue durée) que le HLS HD. Un repli progressif 360p
+    // (extraction dégradée par le SABR YouTube) n'est PAS caché : sinon une
+    // dégradation passagère figerait la 360p pendant des heures. La requête
+    // suivante retentera et obtiendra quasi sûrement le HLS HD.
+    if (resolved.mimeType === "application/vnd.apple.mpegurl") {
+      cache.set(ytId, resolved);
+    } else {
+      cache.delete(ytId);
+    }
     return resolved;
   });
 }

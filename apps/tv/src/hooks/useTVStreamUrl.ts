@@ -75,5 +75,7 @@ export function useTVStreamUrl(args: {
     }) + startFragment;
   }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight]);
 
-  return { streamUrl, playSessionId };
+  // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
+  // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
+  return { streamUrl, playSessionId, isDirectPlay };
 }
