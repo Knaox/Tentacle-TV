@@ -59,6 +59,17 @@ Le déclencheur de build dépend du **préfixe de tag** — les builds des plate
 - APK signé avec le `debug.keystore` du repo (sideload uniquement). Migration vers un keystore release : voir `docs/RELEASE.md`.
 - Le site `tentacletv.app` pointe automatiquement sur la dernière release `tv-*` (asset `.apk`).
 
+### Releases par tags (guide : `docs/RELEASE-TAGS.md`)
+Nomenclature `<canal>-v<version>-<build>` (le `-build` = CFBundleVersion/versionCode → ré-upload TestFlight sans bump de version). Notes FR+EN auto depuis `CHANGELOG.md` (blocs `## [x.y.z]` avec `### FR`/`### EN`).
+- ✅ **macOS App Store / TestFlight** : `app-v*` → `release-appstore.yml` (universal, libmpv/FFmpeg **LGPL**, sandbox, transparence ON). Ex. `git tag app-v1.0.0-5 && git push origin app-v1.0.0-5`.
+- ✅ **Android TV** : `tv-v*` (versionName/Code depuis le tag).
+- ✅ **APK Android mobile test** : `release-android.yml` (manuel, debug-signed, sideload).
+
+**Reste à faire (besoin d'assets de signature) :**
+- **Android mobile (Play Store)** : keystore release → secrets + `signingConfigs.release`.
+- **iOS natif → TestFlight** (sans EAS) : `expo prebuild` + xcodebuild + profil App Store iOS (`com.tentacle.mobile`), brancher sur `app-v*`.
+- **Apple TV (tvOS)** : fixer le bundle id (défaut RN actuellement), App ID + profil tvOS, finaliser l'app, brancher sur `tv-v*`.
+
 ## Architecture
 
 ### Monorepo Structure (pnpm workspaces)
