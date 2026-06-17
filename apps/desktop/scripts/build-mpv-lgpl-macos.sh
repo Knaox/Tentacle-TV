@@ -36,7 +36,7 @@ echo "==> Build LGPL libmpv/FFmpeg ($ARCH) — prefix=$PREFIX"
 # 1. Outils de build + dépendances LGPL/BSD (PAS x264/x265 qui sont GPL)
 echo "==> Dépendances Homebrew (build tools + libs LGPL/BSD)"
 brew install -q meson ninja nasm pkg-config \
-  dav1d libass freetype fontconfig fribidi harfbuzz libpng little-cms2 \
+  libplacebo dav1d libass freetype fontconfig fribidi harfbuzz libpng little-cms2 \
   libvorbis opus libogg 2>/dev/null || true
 
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$(brew --prefix)/lib/pkgconfig"
