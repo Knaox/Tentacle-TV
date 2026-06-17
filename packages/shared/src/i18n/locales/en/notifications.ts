@@ -17,6 +17,7 @@ export default {
   autoRetry: "Automatic retry for \"{{title}}\" ({{count}}/{{max}})",
   autoRetryFailed: "Permanently failed for \"{{title}}\" after {{max}} attempts",
   updateNow: "Update now",
+  updateOpenStore: "Open the App Store",
   updateInstalling: "Installing...",
   updateRestarting: "Restarting the app...",
   updateReleaseNotes: "Release notes",

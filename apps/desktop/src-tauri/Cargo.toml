@@ -4,8 +4,11 @@ version = "1.9.9"
 edition = "2021"
 
 [dependencies]
+# macos-private-api est requise par la config DMG/dev (transparence de fenêtre).
+# Le build Mac App Store la NEUTRALISE via la config (`macOSPrivateApi: false`
+# dans tauri.appstore.conf.json) → le code privé reste dormant (approche
+# recommandée par Tauri pour le MAS).
 tauri = { version = "2", features = ["macos-private-api"] }
-tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }

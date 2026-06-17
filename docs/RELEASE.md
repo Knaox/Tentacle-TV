@@ -37,27 +37,18 @@ git tag v1.0.0
 git push origin main --tags
 ```
 
-## 2. Build automatique (GitHub Actions)
+## 2. Distribution desktop par store
 
-Le push du tag `v*` déclenche automatiquement le workflow **Release Desktop** (`.github/workflows/release.yml`).
+Le desktop n'est plus distribué en DMG/`.exe` hors store. Chaque plateforme passe
+par son store, via un workflow manuel dédié :
 
-Le workflow :
-1. Installe les dépendances du monorepo pnpm
-2. Build le frontend web puis l'app Tauri
-3. Génère un `.msi` (WiX) et un `-setup.exe` (NSIS)
-4. Crée un **draft release** sur GitHub avec les binaires
+| Plateforme | Workflow | Section |
+|------------|----------|---------|
+| **macOS** | `release-appstore.yml` (Mac App Store, universal LGPL) | § 6b |
+| **Windows** | `release-store.yml` (Microsoft Store) | § 6 |
 
-### Vérifier le build
-
-```bash
-# Voir le statut du workflow
-gh run list --workflow=release.yml
-
-# Voir les logs d'un run
-gh run view <run-id> --log
-```
-
-Une fois le build terminé, aller sur [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases) pour relire et publier le draft.
+> L'ancien `release.yml` (DMG macOS notarisé déclenché par tag `v*`) a été **retiré** :
+> macOS est désormais **exclusivement** sur le Mac App Store.
 
 ## 3. Configurer les secrets GitHub
 
@@ -146,6 +137,47 @@ Ce build :
 | Éditeur | Damien ROUGE |
 | Identifiant | com.tentacle.media |
 | Catégorie | Divertissement / Multimédia |
+
+## 6b. Mac App Store
+
+macOS est distribué **exclusivement** via le Mac App Store. Le lecteur embarque un
+**libmpv + FFmpeg recompilés en LGPL** (sans x264/x265, sans `--enable-gpl`) — aucune
+perte de lecture (x264/x265 sont des encodeurs ; le décodage reste LGPL + VideoToolbox).
+
+### Version
+La version App Store est forcée à **1.0.0** par `apps/desktop/src-tauri/tauri.appstore.conf.json`
+(override `version`). Les autres fichiers de version (§ 1) ne sont **pas** modifiés.
+À chaque resoumission d'une même 1.0.0, incrémenter le **build number** (`CFBundleVersion`).
+
+### Prérequis Apple (une fois)
+1. App ID `com.tentacle.media` activé pour le **Mac App Store** (portail Developer).
+2. Certificats **Apple Distribution** + **3rd Party Mac Developer Installer**.
+3. **Provisioning profile** Mac App Store pour cet App ID.
+4. Fiche app créée dans **App Store Connect**.
+5. Secrets GitHub : `APPLE_DISTRIBUTION_CERT_BASE64`/`_PASSWORD`,
+   `MAC_INSTALLER_CERT_BASE64`/`_PASSWORD`, `MAS_PROVISIONING_PROFILE_BASE64`,
+   et la clé App Store Connect (`APPLE_API_KEY`/`_ISSUER`/`_KEY_CONTENT`, réutilisable).
+
+### Build + soumission
+```bash
+# Build universal (artefact .pkg seulement)
+gh workflow run release-appstore.yml
+# Build + envoi automatique à App Store Connect
+gh workflow run release-appstore.yml -f submit=true
+```
+Le workflow : build LGPL par arch (`build-mpv-lgpl-macos.sh`) → app Tauri sandbox
+(`--config tauri.appstore.conf.json`, `macOSPrivateApi:false`) → fusion universelle +
+signature + `.pkg` (`package-appstore-universal.sh`) → upload via `xcrun altool`.
+
+### Test local (checkpoint LGPL, sans certs)
+```bash
+bash apps/desktop/scripts/build-mpv-lgpl-macos.sh   # dylibs LGPL (arch hôte)
+cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev   # vérifier la lecture H.264/HEVC
+```
+
+### Conformité licence
+La MAJ in-app ouvre l'**App Store** (pas d'auto-update). Les attributions LGPL sont
+dans `apps/desktop/THIRD-PARTY-LICENSES.md` + page **À propos → Crédits**.
 
 ## 7. Android TV (APK)
 

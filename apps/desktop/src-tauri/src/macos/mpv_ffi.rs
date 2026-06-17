@@ -158,13 +158,20 @@ impl MpvLib {
 
     fn find_lib_path() -> Result<PathBuf, String> {
         if let Ok(exe) = std::env::current_exe() {
-            // 1. Bundle: Contents/Resources/lib/libmpv.dylib (production .app)
-            let bundle_path = exe.parent().unwrap_or(&exe).join("../Resources/lib/libmpv.dylib");
+            let exe_dir = exe.parent().unwrap_or(&exe);
+            // 1. App Store: Contents/Frameworks/libmpv.dylib (emplacement Apple pour
+            //    le code embarqué — requis par la sandbox MAS).
+            let frameworks_path = exe_dir.join("../Frameworks/libmpv.dylib");
+            if frameworks_path.exists() {
+                return Ok(frameworks_path);
+            }
+            // 2. Bundle DMG: Contents/Resources/lib/libmpv.dylib
+            let bundle_path = exe_dir.join("../Resources/lib/libmpv.dylib");
             if bundle_path.exists() {
                 return Ok(bundle_path);
             }
-            // 2. Old bundle path fallback: exe_dir/lib/libmpv.dylib
-            let old_bundle_path = exe.parent().unwrap_or(&exe).join("lib/libmpv.dylib");
+            // 3. Old bundle path fallback: exe_dir/lib/libmpv.dylib
+            let old_bundle_path = exe_dir.join("lib/libmpv.dylib");
             if old_bundle_path.exists() {
                 return Ok(old_bundle_path);
             }

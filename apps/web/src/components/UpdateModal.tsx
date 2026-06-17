@@ -51,6 +51,7 @@ function ModalContent({
   notes,
   progress,
   error,
+  isStoreUpdate,
   onInstall,
   onDismiss,
   t,
@@ -59,6 +60,7 @@ function ModalContent({
   notes?: string;
   progress: number;
   error: string | null;
+  isStoreUpdate: boolean;
   onInstall: () => void;
   onDismiss: () => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -112,7 +114,7 @@ function ModalContent({
           onClick={onInstall}
           className="flex-1 rounded-xl bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--brand-rgb),0.3)] transition-all hover:shadow-[rgba(var(--brand-rgb),0.5)] hover:brightness-110"
         >
-          {t("notifications:updateNow")}
+          {isStoreUpdate ? t("notifications:updateOpenStore") : t("notifications:updateNow")}
         </button>
         <button
           onClick={onDismiss}
@@ -127,7 +129,7 @@ function ModalContent({
 
 export function UpdateModal() {
   const { t } = useTranslation("notifications");
-  const { available, phase, version, notes, progress, error, installUpdate, dismiss } = useAutoUpdate();
+  const { available, phase, version, notes, progress, error, isStoreUpdate, installUpdate, dismiss } = useAutoUpdate();
 
 
   if (!available) return null;
@@ -163,6 +165,7 @@ export function UpdateModal() {
           notes={notes}
           progress={progress}
           error={error}
+          isStoreUpdate={isStoreUpdate}
           onInstall={installUpdate}
           onDismiss={dismiss}
           t={t}

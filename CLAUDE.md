@@ -48,11 +48,13 @@ Le déclencheur de build dépend du **préfixe de tag** — les builds des plate
 
 | Déclencheur | Workflow | Cible |
 |-------------|----------|-------|
-| tag `v*` (ex `v1.9.7`) | `.github/workflows/release.yml` | Desktop Tauri (macOS, signé/notarisé) |
+| manuel (`workflow_dispatch`) | `.github/workflows/release-appstore.yml` | **macOS — Mac App Store** (universal, libmpv/FFmpeg **LGPL**, sandbox, v1.0.0) |
+| manuel (`workflow_dispatch`) | `.github/workflows/release-store.yml` | **Windows — Microsoft Store** (NSIS) |
 | tag `tv-v*` (ex `tv-v1.0.0`) | `.github/workflows/release-tv.yml` | **Android TV** — APK release en Release GitHub |
 | push `main` | `.github/workflows/docker.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` |
 
-- Un tag `tv-v*` ne déclenche **pas** le build desktop (le glob `v*` ne matche pas `tv-v…`), et inversement.
+- **Desktop = stores uniquement** : le DMG macOS notarisé (ancien `release.yml`, tag `v*`) a été **retiré** ; macOS passe exclusivement par le Mac App Store. Détails : `docs/RELEASE.md` § 6b.
+- Un tag `tv-v*` ne déclenche que l'Android TV.
 - **Publier l'Android TV** : `git tag tv-v1.0.0 && git push origin tv-v1.0.0`. La version de l'app (`versionName`) n'est pas modifiée par le tag — elle reste celle de `apps/tv/android/app/build.gradle`.
 - APK signé avec le `debug.keystore` du repo (sideload uniquement). Migration vers un keystore release : voir `docs/RELEASE.md`.
 - Le site `tentacletv.app` pointe automatiquement sur la dernière release `tv-*` (asset `.apk`).
