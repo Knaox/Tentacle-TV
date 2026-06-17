@@ -31,6 +31,13 @@ export default {
   tvWelcomeSubtitle: "Pair this device to start watching.",
   cancel: "Cancel",
 
+  // Provisioning code entry (TV store reviewers)
+  haveCode: "I have a pairing code",
+  enterProvisioningTitle: "Enter a pairing code",
+  enterProvisioningSubtitle: "Enter the code provided to pair this device.",
+  validateCode: "Validate code",
+  checkingCode: "Checking...",
+
   // Relay pairing (Web/Mobile enter code)
   pairYourTV: "Pair your TV",
   enterTVCode: "Enter the 4-character code shown on your TV screen.",

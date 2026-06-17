@@ -7,6 +7,7 @@ import { AdminHeader } from "../components/admin/AdminHeader";
 import { InvitesSection } from "../components/admin/InvitesSection";
 import { PlaybackSection } from "../components/admin/PlaybackSection";
 import { PublicUrlSection } from "../components/admin/PublicUrlSection";
+import { ProvisioningCodeSection } from "../components/admin/ProvisioningCodeSection";
 import { ServicesSection } from "../components/admin/ServicesSection";
 import { PairedDevicesSection } from "../components/admin/PairedDevicesSection";
 import { cls } from "./adminUtils";
@@ -88,6 +89,7 @@ export function Admin() {
           <div id="tickets"><AdminTickets /></div>
           <PlaybackSection />
           <PublicUrlSection />
+          <ProvisioningCodeSection />
           <DirectStreamingSection />
           <div id="services"><ServicesSection /></div>
           <div id="devices"><PairedDevicesSection /></div>

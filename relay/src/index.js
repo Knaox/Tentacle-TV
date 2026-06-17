@@ -8,8 +8,8 @@ const RATE_LIMIT_WINDOW = 3600; // 1 hour
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Relay-Admin-Secret",
     "Access-Control-Max-Age": "86400",
   };
 }
@@ -76,7 +76,11 @@ async function handleStatus(code, env, ctx) {
   const entry = JSON.parse(raw);
 
   if (entry.status === "confirmed") {
-    ctx.waitUntil(env.PAIR_KV.delete(code));
+    // Code de provisionnement (permanent) : réutilisable → NE PAS supprimer.
+    // Le KV expire de lui-même à sa date (expirationTtl).
+    if (!entry.permanent) {
+      ctx.waitUntil(env.PAIR_KV.delete(code));
+    }
     return jsonResponse({
       status: "confirmed",
       serverUrl: entry.serverUrl,
@@ -86,6 +90,54 @@ async function handleStatus(code, env, ctx) {
   }
 
   return jsonResponse({ status: "pending" });
+}
+
+// ── Provisionnement (admin) : le backend grave une entrée pré-confirmée et ──
+// ── persistante, authentifiée par un secret partagé (RELAY_ADMIN_SECRET).  ──
+function checkAdminSecret(request, env) {
+  const provided = request.headers.get("X-Relay-Admin-Secret");
+  return !!env.RELAY_ADMIN_SECRET && provided === env.RELAY_ADMIN_SECRET;
+}
+
+async function handleProvision(request, env) {
+  if (!checkAdminSecret(request, env)) return errorResponse("Unauthorized.", 401);
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return errorResponse("Invalid JSON body.", 400);
+  }
+
+  const { code, serverUrl, token, user, expiresInSec } = body;
+  if (
+    typeof code !== "string" ||
+    typeof serverUrl !== "string" ||
+    typeof token !== "string" ||
+    !user ||
+    typeof user.id !== "string" ||
+    typeof user.name !== "string"
+  ) {
+    return errorResponse("Missing required fields.", 400);
+  }
+
+  const ttl = Math.max(parseInt(expiresInSec, 10) || 0, 60);
+  const entry = {
+    status: "confirmed",
+    permanent: true,
+    serverUrl,
+    token,
+    user: { id: user.id, name: user.name },
+    createdAt: Date.now(),
+  };
+  await env.PAIR_KV.put(code.toUpperCase(), JSON.stringify(entry), { expirationTtl: ttl });
+  return jsonResponse({ success: true });
+}
+
+async function handleProvisionDelete(code, request, env) {
+  if (!checkAdminSecret(request, env)) return errorResponse("Unauthorized.", 401);
+  await env.PAIR_KV.delete(code.toUpperCase());
+  return jsonResponse({ success: true });
 }
 
 async function handleConfirm(request, env) {
@@ -153,13 +205,23 @@ function routeRequest(request, env, ctx) {
     return handleGenerate(request, env);
   }
 
-  const statusMatch = url.pathname.match(/^\/status\/([A-Z0-9]{4})$/i);
+  // Codes courts (4) du flux normal + codes longs (jusqu'à 32) de provisionnement.
+  const statusMatch = url.pathname.match(/^\/status\/([A-Z0-9]{4,32})$/i);
   if (method === "GET" && statusMatch) {
     return handleStatus(statusMatch[1].toUpperCase(), env, ctx);
   }
 
   if (method === "POST" && url.pathname === "/confirm") {
     return handleConfirm(request, env);
+  }
+
+  if (method === "POST" && url.pathname === "/provision") {
+    return handleProvision(request, env);
+  }
+
+  const provisionMatch = url.pathname.match(/^\/provision\/([A-Z0-9]{4,32})$/i);
+  if (method === "DELETE" && provisionMatch) {
+    return handleProvisionDelete(provisionMatch[1], request, env);
   }
 
   return errorResponse("Not found.", 404);

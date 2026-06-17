@@ -22,3 +22,19 @@ CREATE TABLE IF NOT EXISTS `share_links` (
   UNIQUE KEY `share_links_ownerUserId_key` (`ownerUserId`),
   KEY `share_links_token_idx` (`token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Code de jumelage de provisionnement (singleton). Voir schema.prisma > ProvisioningCode.
+CREATE TABLE IF NOT EXISTS `provisioning_codes` (
+  `id` varchar(191) NOT NULL,
+  `code` varchar(32) NOT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `expiresAt` datetime(3) NULL,
+  `jellyfinUserId` varchar(255) NULL,
+  `username` varchar(255) NULL,
+  `jellyfinAccessToken` text NULL,
+  `token` text NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `provisioning_codes_code_key` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

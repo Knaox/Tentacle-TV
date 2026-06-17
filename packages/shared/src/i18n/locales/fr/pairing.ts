@@ -31,6 +31,13 @@ export default {
   tvWelcomeSubtitle: "Jumelez cet appareil pour commencer.",
   cancel: "Annuler",
 
+  // Saisie d'un code de provisionnement (testeurs des stores TV)
+  haveCode: "J'ai un code de jumelage",
+  enterProvisioningTitle: "Saisir un code de jumelage",
+  enterProvisioningSubtitle: "Entrez le code fourni pour jumeler cet appareil.",
+  validateCode: "Valider le code",
+  checkingCode: "Vérification...",
+
   // Jumelage relais (Web/Mobile saisie code)
   pairYourTV: "Jumeler votre TV",
   enterTVCode: "Saisissez le code de 4 caractères affiché sur votre TV.",
