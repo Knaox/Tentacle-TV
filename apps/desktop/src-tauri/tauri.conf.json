@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Entertainment",
     "publisher": "Damien ROUGE",
     "resources": ["lib/**/*"],
     "icon": [
