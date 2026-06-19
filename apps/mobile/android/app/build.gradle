@@ -92,8 +92,9 @@ android {
         applicationId 'com.tentacle.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.2.1"
+        // Surchargés par le tag CI (app-v<version>-<build>) via -PmobileVersionName / -PmobileVersionCode.
+        versionCode (project.findProperty('mobileVersionCode') ?: 1) as int
+        versionName project.findProperty('mobileVersionName') ?: "1.2.2"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
