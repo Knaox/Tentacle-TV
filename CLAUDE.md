@@ -67,13 +67,13 @@ Nomenclature `<canal>-v<version>-<build>` (le `-build` = CFBundleVersion/version
 - 🛠️ **Outil** : `tools/deploy/tentacle-deploy.html` (copie sur le Bureau) — UI pour générer le tag + la commande `git tag … && git push …` sans rien retenir.
 - ✅ **macOS App Store / TestFlight** : `mac-v*` → `release-appstore.yml` (universal, libmpv/FFmpeg **LGPL**, sandbox, transparence ON). Ex. `git tag mac-v1.0.0-5 && git push origin mac-v1.0.0-5`.
 - ✅ **iOS → TestFlight** : `ios-v*` → `release-ios.yml` (natif **sans EAS**, projet `apps/mobile/ios` versionné, `pod install` + `xcodebuild` archive/export, signature **automatique** via clé API ASC + cert Apple Distribution, `com.tentacle.mobile`). Même fiche App Store que macOS, déploiement séparé.
-- ✅ **Apple TV → TestFlight** : `atv-v*` → `release-atv.yml` (natif **sans EAS**, projet `apps/tv/ios` versionné, `pod install` tvOS + `xcodebuild` archive/export, signature **automatique**, bundle `com.tentacle.mobile`). Version via build settings (Info.plist tvOS référence `$(MARKETING_VERSION)`). **Pré-requis Apple** : activer la plateforme tvOS sur la fiche ASC `com.tentacle.mobile`.
+- ✅ **Apple TV → TestFlight** : `atv-v*` → `release-atv.yml` (natif **sans EAS**, projet `apps/tv/ios` versionné, `pod install` tvOS + `xcodebuild` archive/export, bundle `com.tentacle.mobile`). Signature **MANUELLE** : profil App Store tvOS en secret `TVOS_PROVISIONING_PROFILE_BASE64` (la signature auto via clé API ne crée pas de profil de distribution pour une 1re app tvOS). Plateforme tvOS activée sur la fiche ASC. **Validé en prod** (build 1.0.0-1 sur TestFlight).
 - ✅ **Android TV** : `tv-v*` (versionName/Code depuis le tag).
 - ✅ **APK Android mobile** : `apk-v*` → `release-android.yml` (debug-signed, sideload, Release GitHub ; versionName/Code depuis le tag). Aussi en manuel.
 
 **Reste à faire (besoin d'assets de signature) :**
 - **Android mobile (Play Store)** : keystore release → secrets + `signingConfigs.release` (l'APK reste debug-signed sideload en attendant le compte Play validé).
-- **Apple TV** : activer la plateforme tvOS sur la fiche App Store Connect `com.tentacle.mobile` (1er upload) ; finaliser l'app tvOS (lecteur/UI).
+- **Apple TV** : le déploiement est OK (build sur TestFlight) ; reste à **finaliser l'app tvOS** elle-même (lecteur/UI/remote) — l'icône est un placeholder.
 
 ## Architecture
 
