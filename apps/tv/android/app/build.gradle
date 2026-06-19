@@ -23,8 +23,13 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Surchargés par le tag CI (tv-v<version>-<build>) via -PtvVersionName / -PtvVersionCode.
-        versionCode (project.findProperty('tvVersionCode') ?: 6) as int
-        versionName project.findProperty('tvVersionName') ?: "1.0.0"
+        // NB : variable locale + appel sans parenthèses pour éviter l'ambiguïté Groovy
+        // `versionCode (...) as int` (parsée comme appel void → « Value is null » dès qu'un
+        // -PtvVersionCode est passé, sur AGP récent). Même correctif que l'app mobile.
+        def resolvedTvVersionCode = (project.findProperty('tvVersionCode') ?: '6').toString().toInteger()
+        def resolvedTvVersionName = (project.findProperty('tvVersionName') ?: '1.0.0').toString()
+        versionCode resolvedTvVersionCode
+        versionName resolvedTvVersionName
     }
     signingConfigs {
         debug {
