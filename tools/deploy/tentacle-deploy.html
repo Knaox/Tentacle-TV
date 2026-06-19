@@ -88,6 +88,11 @@
   .foot{margin-top:16px; font-size:11px; color:var(--muted); line-height:1.6}
   .foot code{background:rgba(255,255,255,.06); padding:1px 5px; border-radius:5px; font-size:10.5px}
   .badge{font-size:9px; font-weight:800; padding:2px 6px; border-radius:6px; background:rgba(245,158,11,.18); color:var(--amber); margin-left:6px; vertical-align:middle}
+  .syncchip{font-size:10.5px; color:var(--muted); padding:3px 9px; border-radius:20px; background:rgba(255,255,255,.04); border:1px solid var(--stroke2)}
+  .syncchip.ok{color:var(--green); border-color:rgba(34,197,94,.3)}
+  .syncchip.warn{color:var(--amber); border-color:rgba(245,158,11,.3)}
+  .seg.locked{opacity:.55}
+  .latest{font-size:10px; color:var(--muted); margin-top:7px; font-family:ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
@@ -101,7 +106,10 @@
   </div>
 
   <div class="card">
-    <p class="label">Plateforme</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <p class="label">Plateforme</p>
+      <span id="sync" class="syncchip">⟳ synchronisation…</span>
+    </div>
     <div class="plats" id="plats"></div>
 
     <p class="label">Mode</p>
@@ -131,6 +139,7 @@
         <span class="dest" id="dest"></span>
       </div>
       <div class="cmd" id="cmd"></div>
+      <div class="latest" id="latest"></div>
     </div>
     <button class="copy" id="copy">Copier la commande</button>
 
@@ -143,25 +152,25 @@
 </div>
 
 <script>
+const REPO = "Knaox/Tentacle-TV";
 const PLATFORMS = {
-  mac: {emoji:"🍎", name:"macOS",         prefix:"mac-v", dest:"Mac App Store / TestFlight", def:[1,0,0], build:7},
-  ios: {emoji:"📱", name:"iOS",           prefix:"ios-v", dest:"TestFlight",                 def:[1,2,2], build:41},
+  mac: {emoji:"🍎", name:"macOS",         prefix:"mac-v", dest:"Mac App Store / TestFlight", def:[1,0,0], build:1},
+  ios: {emoji:"📱", name:"iOS",           prefix:"ios-v", dest:"TestFlight",                 def:[1,2,2], build:40},
   apk: {emoji:"🤖", name:"Android mobile",prefix:"apk-v", dest:"APK (Release GitHub)",       def:[1,2,2], build:1},
-  tv:  {emoji:"📺", name:"Android TV",    prefix:"tv-v",  dest:"APK + lien permanent",       def:[1,0,0], build:7},
+  tv:  {emoji:"📺", name:"Android TV",    prefix:"tv-v",  dest:"APK + lien permanent",       def:[1,0,0], build:6},
   atv: {emoji:"🛰️", name:"Apple TV",      prefix:"atv-v", dest:"TestFlight (à venir)",       def:[1,0,0], build:1, off:true},
 };
-const LS = "tentacle-deploy-v1";
-const store = JSON.parse(localStorage.getItem(LS) || "{}");
 
 let cur = "ios";
 let mode = "build";
 let v = {major:1, minor:2, patch:2};
 let build = 41;
+// remote[key] = {version:[maj,min,pat], build:N, tag:"…"} — dernier tag GitHub par plateforme
+let remote = {};
 
 const $ = s => document.querySelector(s);
 const platsEl = $("#plats");
 
-// Build platform chips
 Object.entries(PLATFORMS).forEach(([key,p])=>{
   const d = document.createElement("div");
   d.className = "plat" + (p.off?" off":"") + (key===cur?" on":"");
@@ -171,26 +180,60 @@ Object.entries(PLATFORMS).forEach(([key,p])=>{
   platsEl.appendChild(d);
 });
 
-function lastBuild(key){
-  const p = PLATFORMS[key];
-  return (store[key] && typeof store[key].build === "number") ? store[key].build : p.build;
+// ── GitHub = source de vérité : on lit les tags pour connaître le dernier build par plateforme ──
+async function syncFromGitHub(){
+  const chip = $("#sync");
+  try{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/tags?per_page=100`, {headers:{Accept:"application/vnd.github+json"}});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const tags = await res.json();
+    const found = {};
+    for(const {name} of tags){
+      for(const [key,p] of Object.entries(PLATFORMS)){
+        const m = name.match(new RegExp("^"+p.prefix.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(\\d+)\\.(\\d+)\\.(\\d+)-(\\d+)$"));
+        if(!m) continue;
+        const cand = {version:[+m[1],+m[2],+m[3]], build:+m[4], tag:name};
+        const prev = found[key];
+        if(!prev || cmpRel(cand, prev) > 0) found[key] = cand;
+      }
+    }
+    remote = found;
+    const n = Object.keys(found).length;
+    chip.className = "syncchip ok";
+    chip.textContent = n ? `✓ synchronisé (${n})` : "✓ aucun tag — défauts";
+    selectPlatform(cur); // ré-applique avec les vraies valeurs
+  }catch(e){
+    chip.className = "syncchip warn";
+    chip.textContent = "hors-ligne — valeurs par défaut";
+  }
 }
+function cmpRel(a,b){
+  for(let i=0;i<3;i++){ if(a.version[i]!==b.version[i]) return a.version[i]-b.version[i]; }
+  return a.build-b.build;
+}
+
 function selectPlatform(key){
   cur = key;
   document.querySelectorAll(".plat").forEach(e=>e.classList.toggle("on", e.dataset.key===key));
   const p = PLATFORMS[key];
-  v = {major:p.def[0], minor:p.def[1], patch:p.def[2]};
-  build = lastBuild(key);
-  if(mode==="build") build = lastBuild(key) + 1; // pré-incrémente pour un ré-upload
+  const r = remote[key];
+  if(r){ v = {major:r.version[0], minor:r.version[1], patch:r.version[2]}; }
+  else { v = {major:p.def[0], minor:p.def[1], patch:p.def[2]}; }
+  applyMode();
+}
+function lastBuild(key){
+  return remote[key] ? remote[key].build : PLATFORMS[key].build;
+}
+function applyMode(){
+  // "Nouveau build" = même version, dernier build +1 ; "Nouvelle version" = build remis à 1.
+  build = (mode==="version") ? 1 : lastBuild(cur) + 1;
   render();
 }
 document.querySelectorAll(".mode").forEach(m=>{
   m.onclick = ()=>{
     mode = m.dataset.mode;
     document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on", x===m));
-    if(mode==="version"){ build = 1; }
-    else { build = lastBuild(cur) + 1; }
-    render();
+    applyMode();
   };
 });
 document.querySelectorAll("button[data-v]").forEach(b=>{
@@ -209,9 +252,8 @@ function render(){
   $("#tag").textContent = tag;
   $("#dest").textContent = "→ " + p.dest;
   $("#cmd").textContent = `git tag ${tag} && git push origin ${tag}`;
-  // mémorise le build choisi pour cette plateforme
-  store[cur] = {build};
-  localStorage.setItem(LS, JSON.stringify(store));
+  const r = remote[cur];
+  $("#latest").textContent = r ? `Dernier sur GitHub : ${r.tag}` : "Aucun tag GitHub pour cette plateforme (valeurs par défaut).";
 }
 
 $("#copy").onclick = async ()=>{
@@ -226,6 +268,7 @@ $("#copy").onclick = async ()=>{
 };
 
 selectPlatform("ios");
+syncFromGitHub();
 </script>
 </body>
 </html>
