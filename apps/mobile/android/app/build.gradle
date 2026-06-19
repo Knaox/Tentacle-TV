@@ -92,9 +92,13 @@ android {
         applicationId 'com.tentacle.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Surchargés par le tag CI (app-v<version>-<build>) via -PmobileVersionName / -PmobileVersionCode.
-        versionCode (project.findProperty('mobileVersionCode') ?: 1) as int
-        versionName project.findProperty('mobileVersionName') ?: "1.2.2"
+        // Surchargés par le tag CI (apk-v<version>-<build>) via -PmobileVersionName / -PmobileVersionCode.
+        // NB : variable locale + appel sans parenthèses pour éviter l'ambiguïté Groovy
+        // `versionCode (...) as int` (parsée comme appel void → « Value is null » sur AGP récent).
+        def resolvedVersionCode = (project.findProperty('mobileVersionCode') ?: '1').toString().toInteger()
+        def resolvedVersionName = (project.findProperty('mobileVersionName') ?: '1.2.2').toString()
+        versionCode resolvedVersionCode
+        versionName resolvedVersionName
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
