@@ -6,6 +6,7 @@ import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../servi
 import { getPrisma, hasPrisma } from "../services/db";
 import { getCached, setCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
+import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
 import { isAllowedProxyPath } from "./jellyfinProxy/patterns";
 import {
   SKIP_RESPONSE_HEADERS,
@@ -29,7 +30,7 @@ async function resolveSessionRouting(
   incomingToken: string | undefined,
   wildcardPath: string,
   body: unknown,
-): Promise<{ apiKey?: string; rewrite?: PlaystateRewrite }> {
+): Promise<{ apiKey?: string; rewrite?: PlaystateRewrite; usedDeviceToken?: boolean }> {
   if (!incomingToken) return {};
   const payload = await verifyDeviceToken(incomingToken);
   if (!payload) {
@@ -61,7 +62,7 @@ async function resolveSessionRouting(
     deviceToken = device?.jellyfinAccessToken ?? null;
   } catch { /* repli ci-dessous */ }
 
-  if (deviceToken) return { apiKey: deviceToken };
+  if (deviceToken) return { apiKey: deviceToken, usedDeviceToken: true };
 
   // Pas de token Jellyfin stocké (device jamais provisionné) : repli best-effort
   // sur la réécriture user-scopée. N'attribue correctement que sur d'anciens
@@ -154,7 +155,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const q = request.query as Record<string, string | undefined> | undefined;
     const queryToken = q?.api_key || q?.ApiKey;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
-    const { apiKey: apiKeyOverride, rewrite } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
+    const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
     // Report de lecture d'un device sans token Jellyfin : on cible l'endpoint
     // scopé userId (clé admin) pour attribuer la progression au bon compte.
@@ -215,6 +216,14 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     try {
       const response = await undiciFetch(targetUrl, fetchInit);
       reply.status(response.status);
+
+      // Auto-réparation : un report de session avec le token Jellyfin du device
+      // qui prend un 401/403 ⇒ token probablement périmé. On le valide (/Users/Me)
+      // et on le PURGE s'il est réellement invalide (cf. clearDeviceTokenIfInvalid),
+      // sinon le proxy le réutiliserait en boucle → spam de 401. Fire-and-forget.
+      if (usedDeviceToken && incomingToken && (response.status === 401 || response.status === 403)) {
+        void clearDeviceTokenIfInvalid(incomingToken);
+      }
 
       // Media streams: forward content-length/encoding so the browser can
       // support Range requests, progress bars, and correct buffering.

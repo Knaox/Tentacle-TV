@@ -69,12 +69,12 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
         <CryingTentacle size={140} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Focusable variant="button" onPress={onRetry} hasTVPreferredFocus>
+        <Focusable variant="button" onPress={onRetry} hasTVPreferredFocus style={styles.retryFocus}>
           <View style={styles.retryButton}>
             <Text style={styles.retryButtonText}>{t("retryConnection")}</Text>
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={handleLogout}>
+        <Focusable variant="button" onPress={handleLogout} style={styles.logoutFocus}>
           <View style={styles.logoutButton}>
             <Text style={styles.logoutButtonText}>{t("offlineLogout")}</Text>
           </View>
@@ -110,13 +110,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 26,
   },
+  // L'espacement vertical doit être porté par le Focusable (Pressable externe),
+  // pas par le View enfant : sinon le margin gonfle le wrapper du halo de focus,
+  // qui déborde alors au-dessus du bouton (overlay en top:0/bottom:0).
+  retryFocus: {
+    marginTop: 32,
+  },
+  logoutFocus: {
+    marginTop: 12,
+  },
   // CTA primaire : blanc à texte foncé, comme le bouton Lecture/Reprendre du hero.
   retryButton: {
     backgroundColor: Colors.textPrimary,
     borderRadius: 12,
     paddingHorizontal: 40,
     paddingVertical: 16,
-    marginTop: 32,
   },
   retryButtonText: {
     color: Colors.bgDeep,
@@ -130,7 +138,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(239, 68, 68, 0.3)",
     paddingHorizontal: 40,
     paddingVertical: 16,
-    marginTop: 12,
   },
   logoutButtonText: {
     color: "#ef4444",

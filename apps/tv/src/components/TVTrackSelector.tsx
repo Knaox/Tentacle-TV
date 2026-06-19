@@ -21,7 +21,7 @@ interface Track {
   label: string;
 }
 
-interface TVTrackSelectorProps {
+export interface TVTrackSelectorProps {
   audioTracks: Track[];
   subtitleTracks: Track[];
   selectedAudio: number;
@@ -34,6 +34,9 @@ interface TVTrackSelectorProps {
   onClose: () => void;
   /** Called on any user interaction to reset overlay auto-hide timer */
   onInteraction?: () => void;
+  /** En mode route modale, c'est le dismiss natif de la modale qui gère le
+   *  Menu/ESC → on désactive le back interne (sinon double-pop = sortie vidéo). */
+  disableBackHandler?: boolean;
 }
 
 const TRACK_ITEM_HEIGHT = 52; // paddingVertical 14*2 + text ~24
@@ -42,12 +45,12 @@ export function TVTrackSelector({
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
   qualityKey, sourceQuality,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onClose, onInteraction,
+  disableBackHandler = false,
 }: TVTrackSelectorProps) {
   const { t } = useTranslation("player");
-  // Monté en dernier → son BACK est prioritaire (LIFO, même pattern que
-  // TVPlayerEpisodePanel) : Retour/Menu referme le panneau réglages sans quitter
-  // la lecture. Sans ça, le Retour sortait directement de la vidéo sur tvOS.
-  useTVRemote({ onBack: onClose });
+  // Overlay (Android, ou usage historique) : son BACK referme le panneau (LIFO).
+  // En mode route modale (tvOS), le dismiss natif gère ESC → on désactive ici.
+  useTVRemote({ onBack: disableBackHandler ? undefined : onClose });
   const slideX = useSharedValue(380);
   const scrollRef = useRef<ScrollView>(null);
   const { makeOnFocus } = useTVScrollToFocused(scrollRef, 60);
