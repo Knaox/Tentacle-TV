@@ -28,15 +28,30 @@
 
 ## Platforms
 
-| Platform | | Status | Technology |
-|----------|---|--------|------------|
-| **Web** | ![Yes](https://img.shields.io/badge/-Yes-22c55e?style=flat-square) | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Yes](https://img.shields.io/badge/-Yes-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Tauri v2 + native mpv player (Mac App Store) |
-| **Windows** | ![Yes](https://img.shields.io/badge/-Yes-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Tauri v2 + native mpv player |
-| **iOS** | ![Yes](https://img.shields.io/badge/-Yes-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
-| **Android** | ![Yes](https://img.shields.io/badge/-Yes-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/Beta-APK-f59e0b?style=flat-square&logo=android&logoColor=white" alt="Beta APK" /></a> | React Native + Expo |
-| **Android TV** | ![Yes](https://img.shields.io/badge/-Yes-22c55e?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/Available-Beta-f59e0b?style=flat-square&logo=android&logoColor=white" alt="Available — Beta" /> &nbsp;<img src="apps/web/public/tentacle-logo-pirate.svg" height="16" align="absmiddle" alt="Tentacle" /> tentacletv.app</a> | React Native + ExoPlayer/Media3 |
-| **Apple TV** | ![WIP](https://img.shields.io/badge/-WIP-f59e0b?style=flat-square) | ![Work in progress](https://img.shields.io/badge/Work_in_progress-f59e0b?style=flat-square) | React Native (tvOS) |
+| Platform | Status | Download | Technology |
+|----------|--------|----------|------------|
+| **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Self-hosted | React 19 + Vite 6 + Tailwind CSS |
+| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/Mac_App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="Mac App Store" /></a> | Tauri v2 + native mpv player |
+| **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Tauri v2 + native mpv player |
+| **iOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
+| **Android** | ![Beta](https://img.shields.io/badge/Beta-f59e0b?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/APK-3DDC84?style=flat-square&logo=android&logoColor=white" alt="APK" /></a> | React Native + Expo |
+| **Android TV** | ![Beta](https://img.shields.io/badge/Beta-f59e0b?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/APK-3DDC84?style=flat-square&logo=android&logoColor=white" alt="APK" /> tentacletv.app</a> | React Native + ExoPlayer/Media3 |
+| **Apple TV** | ![WIP](https://img.shields.io/badge/Work_in_progress-6b7280?style=flat-square) | — | React Native (tvOS) |
+
+<details>
+<summary>🇫🇷 Plateformes (français)</summary>
+
+| Plateforme | Statut | Téléchargement | Technologie |
+|------------|--------|----------------|-------------|
+| **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Auto-hébergé | React 19 + Vite 6 + Tailwind CSS |
+| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/Mac_App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="Mac App Store" /></a> | Tauri v2 + lecteur mpv natif |
+| **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Tauri v2 + lecteur mpv natif |
+| **iOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
+| **Android** | ![Bêta](https://img.shields.io/badge/B%C3%AAta-f59e0b?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/APK-3DDC84?style=flat-square&logo=android&logoColor=white" alt="APK" /></a> | React Native + Expo |
+| **Android TV** | ![Bêta](https://img.shields.io/badge/B%C3%AAta-f59e0b?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/APK-3DDC84?style=flat-square&logo=android&logoColor=white" alt="APK" /> tentacletv.app</a> | React Native + ExoPlayer/Media3 |
+| **Apple TV** | ![En cours](https://img.shields.io/badge/En_cours-6b7280?style=flat-square) | — | React Native (tvOS) |
+
+</details>
 
 ---
 
