@@ -5,6 +5,7 @@ import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality, BURN_IN_SUBTITL
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { usePreventRemove } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
 import { useAutoPlay } from "../hooks/useAutoPlay";
@@ -23,6 +24,7 @@ import { useTVSubtitles } from "../hooks/useTVSubtitles";
 import { useTVTextTracks } from "../hooks/useTVTextTracks";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
+import { setSettingsPanelProps, setSettingsOnClosed } from "./player/playerSettingsBridge";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
@@ -237,6 +239,22 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [osdFocusSignal, setOsdFocusSignal] = useState(0);
   const bumpOsdFocus = useCallback(() => setOsdFocusSignal((s) => s + 1), []);
 
+  // tvOS : le bouton Menu déclenche un dismiss NATIF du native-stack (qui quittait
+  // l'épisode depuis un panneau in-player). `usePreventRemove` (API officielle
+  // react-navigation v7) mappe sur `preventNativeDismiss` de react-native-screens
+  // → tant qu'un panneau est ouvert, le dismiss natif est annulé et on referme le
+  // panneau en JS. Aucun panneau ouvert → removal autorisée (sortie normale).
+  // No-op de fait sur Android (le BackHandler LIFO consomme déjà l'appui).
+  // NB : les Réglages/Qualité passent désormais par une route MODALE (ESC géré
+  // nativement par le dismiss de la modale, sans flash) → ici on ne couvre plus
+  // que le panneau Épisodes (encore en overlay).
+  usePreventRemove(showEpisodes, () => {
+    if (showEpisodesRef.current) {
+      setShowEpisodes(false);
+    }
+    bumpOsdFocus();
+  });
+
   // Filet de sécurité : si le focus se perd hors panneau, recible le fond
   useFocusRecovery(backgroundRef, !showSettings && !showEpisodes);
 
@@ -427,6 +445,38 @@ export function PlayerScreen({ route, navigation }: Props) {
   const subtitleTracksList = useMemo(() =>
     streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })), [streams]);
 
+  // Réglages/Qualité = route MODALE (cf. PlayerSettingsScreen) : on PUBLIE en
+  // continu les props du sélecteur au bridge (les pistes chargent en async, la
+  // sélection change) pour que la modale les lise en live.
+  useEffect(() => {
+    setSettingsPanelProps({
+      audioTracks: audioTracksList,
+      subtitleTracks: subtitleTracksList,
+      selectedAudio: audioIndex,
+      selectedSubtitle: subtitleIndex,
+      qualityKey: quality.qualityKey,
+      sourceQuality,
+      onSelectAudio: handleAudioChange,
+      onSelectSubtitle: handleSubtitleChange,
+      onSelectQuality: handleQualityChange,
+      onClose: () => {},        // remplacé par la route (navigation.goBack)
+      onInteraction: controls.showOverlay,
+    });
+    return () => setSettingsPanelProps(null);
+  }, [audioTracksList, subtitleTracksList, audioIndex, subtitleIndex, quality.qualityKey,
+    sourceQuality, handleAudioChange, handleSubtitleChange, handleQualityChange, controls.showOverlay]);
+
+  // Fermeture de la modale (ESC natif OU bouton Fermer → démontage de la route)
+  // → resynchronise l'état panneau du Player + redonne le focus à l'OSD.
+  useEffect(() => {
+    setSettingsOnClosed(() => {
+      setShowSettings(false);
+      showSettingsRef.current = false;
+      bumpOsdFocus();
+    });
+    return () => setSettingsOnClosed(null);
+  }, [bumpOsdFocus]);
+
   const handleVideoSize = useCallback((width: number, height: number, pixelRatio: number) => {
     if (width > 0 && height > 0) setVideoAspect((width / height) * pixelRatio);
   }, []);
@@ -479,8 +529,12 @@ export function PlayerScreen({ route, navigation }: Props) {
       onPlayPause={handlePlayPause} onSeek={handleSeek}
       onBack={lifecycle.invalidateAndGoBack}
       onToggleSettings={() => {
-        setShowSettings((v) => { showSettingsRef.current = !v; return !v; });
+        // Ouvre la MODALE Réglages/Qualité (cf. PlayerSettingsScreen). showSettings
+        // reste vrai pendant l'ouverture pour panelOpen (anti auto-hide OSD / scrub).
+        setShowSettings(true);
+        showSettingsRef.current = true;
         controls.showOverlay();
+        navigation.navigate("PlayerSettings");
       }}
       onSelectAudio={handleAudioChange} onSelectSubtitle={handleSubtitleChange}
       onSelectQuality={handleQualityChange}

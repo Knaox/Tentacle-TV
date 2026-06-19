@@ -67,6 +67,17 @@ export function useServerReachable(serverUrl: string | null) {
 
   const retry = useCallback(() => { void evaluate(); }, [evaluate]);
 
+  // Plus d'URL serveur (déconnexion / changement de serveur) : on n'a plus rien
+  // à sonder → on repasse "joignable" pour masquer immédiatement la bannière,
+  // sinon l'overlay restait collé sur l'écran de jumelage après un logout.
+  useEffect(() => {
+    if (!serverUrl) {
+      firstKoAtRef.current = null;
+      wasOfflineRef.current = false;
+      setIsReachable(true);
+    }
+  }, [serverUrl]);
+
   // Ping rapide quand on est marqué offline pour détecter le retour vite
   useEffect(() => {
     if (!isReachable && serverUrl) {

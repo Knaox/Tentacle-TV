@@ -1,5 +1,5 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, findNodeHandle, TVFocusGuideView } from "react-native";
+import { memo, useEffect, useMemo, useState } from "react";
+import { View, Text, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,10 +9,9 @@ import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon } from "./icons/TVIcons";
 import { TVTrickplayPreview } from "./player/TVTrickplayPreview";
+import { useOverlayFocus } from "./player/focus/useOverlayFocus";
 import type { UseTVTrickplayResult } from "../hooks/useTVTrickplay";
 import { Colors } from "../theme/colors";
-
-type TransportKey = "back" | "prev" | "skipback" | "playpause" | "skipforward" | "next" | "episodes" | "settings";
 
 interface TVPlayerOverlayProps {
   title: string;
@@ -75,57 +74,9 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   const scrubPct = duration > 0 ? Math.min((scrubPosition / duration) * 100, 100) : 0;
   const isShown = visible || paused;
 
-  // --- Mémoire de focus : refocus le dernier bouton utilisé sur signal ---
-  const btnRefs = useRef<Partial<Record<TransportKey, { setNativeProps?: (p: Record<string, unknown>) => void } | null>>>({});
-  const lastFocusedRef = useRef<TransportKey>("playpause");
-  // Pendant la restauration du focus (réapparition OSD / fermeture panneau), le
-  // moteur Android pose un focus transitoire sur le 1er bouton (back) : on gèle
-  // la mémorisation pour ne pas écraser le dernier bouton réellement utilisé.
-  const restoringFocusRef = useRef(false);
-  // Node du bouton play/pause — verrou de focus pendant le scrub
-  const [playPauseNode, setPlayPauseNode] = useState<number | undefined>(undefined);
-  // Node du bouton Retour (haut-gauche). Sur tvOS, la navigation spatiale ne
-  // franchit pas le grand vide vertical entre les contrôles (bas) et le bouton
-  // Retour (haut) → on câble un chemin directionnel explicite (HAUT → Retour).
-  const [backNode, setBackNode] = useState<number | undefined>(undefined);
-  const setBtnRef = (key: TransportKey) => (node: unknown) => {
-    btnRefs.current[key] = node as { setNativeProps?: (p: Record<string, unknown>) => void } | null;
-    if (key === "playpause" && node) {
-      const handle = findNodeHandle(node as never);
-      if (handle) setPlayPauseNode(handle);
-    }
-    if (key === "back" && node) {
-      const handle = findNodeHandle(node as never);
-      if (handle) setBackNode(handle);
-    }
-  };
-  const rememberFocus = (key: TransportKey) => () => {
-    if (!restoringFocusRef.current) lastFocusedRef.current = key;
-  };
-
-  useEffect(() => {
-    if (!focusSignal) return;
-    restoringFocusRef.current = true;
-    const target = btnRefs.current[lastFocusedRef.current] ?? btnRefs.current.playpause;
-    const t1 = setTimeout(() => {
-      target?.setNativeProps?.({ hasTVPreferredFocus: true });
-    }, 100);
-    // Relâcher après le settle du focus natif (le transitoire sur "back" est passé)
-    const t2 = setTimeout(() => { restoringFocusRef.current = false; }, 350);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [focusSignal]);
-
-  // Scrub : le focus natif est verrouillé sur play/pause (nextFocus* = soi-même),
-  // sinon ←/→ déplacent AUSSI le focus entre les boutons pendant l'avancement,
-  // et OK presserait un bouton arbitraire (ex. Retour → sortie du lecteur).
-  useEffect(() => {
-    if (!scrubbing) return;
-    const timer = setTimeout(() => {
-      btnRefs.current.playpause?.setNativeProps?.({ hasTVPreferredFocus: true });
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [scrubbing]);
-  const lockFocus = scrubbing ? playPauseNode : undefined;
+  // --- Mémoire de focus de l'OSD (source unique partagée ; primitive de
+  //     restauration spécifique plateforme injectée par le hook résolu Metro) ---
+  const focus = useOverlayFocus({ focusSignal, scrubbing });
 
   // --- Trickplay : tuile du curseur fantôme, en mode scrub uniquement ---
   const [barWidth, setBarWidth] = useState(0);
@@ -154,8 +105,10 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
       }, animStyle]}
     >
-      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : mémorise le dernier
-          bouton focalisé et y ramène le focus à la réapparition de l'OSD. */}
+      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : `autoFocus` mémorise
+          le dernier enfant focalisé (natif). Cohérent avec useOverlayFocus, qui
+          cible le MÊME dernier bouton pour la ré-entrée depuis le fond et lève le
+          focus préféré permanent qui causait le « saut » sur tvOS. */}
       <TVFocusGuideView autoFocus style={{ flex: 1, justifyContent: "space-between" }}>
       {/* Top gradient */}
       <LinearGradient
@@ -163,7 +116,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         style={{ paddingTop: 40, paddingHorizontal: 40, paddingBottom: 60 }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Focusable variant="button" phantomPressGuard ref={setBtnRef("back")} onPress={onBack} onFocus={rememberFocus("back")} nextFocusDown={playPauseNode}>
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("back")} onPress={onBack} {...focus.buttonProps("back")}>
             <View style={{ padding: 10 }}>
               <BackIcon size={28} color={Colors.textPrimary} />
             </View>
@@ -271,14 +224,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         {/* Transport controls */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 32 }}>
           {hasPreviousEpisode && (
-            <Focusable variant="button" phantomPressGuard ref={setBtnRef("prev")} onPress={onPrevEpisode} onFocus={rememberFocus("prev")} nextFocusUp={backNode}>
+            <Focusable variant="button" phantomPressGuard ref={focus.registerButton("prev")} onPress={onPrevEpisode} {...focus.buttonProps("prev")}>
               <View style={{ padding: 10 }}>
                 <PrevTrackIcon size={20} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
 
-          <Focusable variant="button" phantomPressGuard ref={setBtnRef("skipback")} onPress={onSkipBack} onFocus={rememberFocus("skipback")} nextFocusUp={backNode}>
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("skipback")} onPress={onSkipBack} {...focus.buttonProps("skipback")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>10s</Text>
@@ -286,10 +239,8 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           </Focusable>
 
           <Focusable
-            variant="button" phantomPressGuard ref={setBtnRef("playpause")} onPress={onPlayPause}
-            onFocus={rememberFocus("playpause")} hasTVPreferredFocus
-            nextFocusUp={scrubbing ? lockFocus : backNode} nextFocusDown={lockFocus}
-            nextFocusLeft={lockFocus} nextFocusRight={lockFocus}
+            variant="button" phantomPressGuard ref={focus.registerButton("playpause")} onPress={onPlayPause}
+            {...focus.buttonProps("playpause")}
           >
             <View style={{
               width: 68, height: 68, borderRadius: 34,
@@ -303,7 +254,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable variant="button" phantomPressGuard ref={setBtnRef("skipforward")} onPress={onSkipForward} onFocus={rememberFocus("skipforward")} nextFocusUp={backNode}>
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("skipforward")} onPress={onSkipForward} {...focus.buttonProps("skipforward")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>30s</Text>
               <SkipForwardIcon size={22} color={Colors.textPrimary} />
@@ -311,7 +262,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           </Focusable>
 
           {hasNextEpisode && (
-            <Focusable variant="button" phantomPressGuard ref={setBtnRef("next")} onPress={onNextEpisode} onFocus={rememberFocus("next")} nextFocusUp={backNode}>
+            <Focusable variant="button" phantomPressGuard ref={focus.registerButton("next")} onPress={onNextEpisode} {...focus.buttonProps("next")}>
               <View style={{ padding: 10 }}>
                 <NextTrackIcon size={20} color={Colors.textSecondary} />
               </View>
@@ -319,14 +270,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           )}
 
           {onEpisodes && (
-            <Focusable variant="button" phantomPressGuard ref={setBtnRef("episodes")} onPress={onEpisodes} onFocus={rememberFocus("episodes")} nextFocusUp={backNode}>
+            <Focusable variant="button" phantomPressGuard ref={focus.registerButton("episodes")} onPress={onEpisodes} {...focus.buttonProps("episodes")}>
               <View style={{ padding: 13 }}>
                 <MenuIcon size={22} color={Colors.textSecondary} />
               </View>
             </Focusable>
           )}
 
-          <Focusable variant="button" phantomPressGuard ref={setBtnRef("settings")} onPress={onSettings} onFocus={rememberFocus("settings")} nextFocusUp={backNode}>
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("settings")} onPress={onSettings} {...focus.buttonProps("settings")}>
             <View style={{ padding: 13 }}>
               <SettingsIcon size={22} color={Colors.textSecondary} />
             </View>

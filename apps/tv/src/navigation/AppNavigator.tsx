@@ -9,6 +9,7 @@ import { SkeletonLoader } from "./ScreenFallback";
 import { DisclaimerScreen } from "../screens/DisclaimerScreen";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
+import { PlayerSettingsScreen } from "../screens/player/PlayerSettingsScreen";
 
 // Lazy-loaded screens
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));
@@ -65,7 +66,23 @@ export function AppNavigator() {
         <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
         <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
         <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
-        <Stack.Screen name="Player" component={PlayerScreen} />
+        {/* `animation: none` : sur tvOS, le Menu déclenche un dismiss natif annulé
+            par usePreventRemove (panneau ouvert) ; sans animation, le pop-restore
+            est instantané → pas de flash de l'écran précédent. */}
+        <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: "none" }} />
+        {/* Réglages/Qualité en MODALE transparente : ESC ferme la modale
+            proprement (révèle l'épisode), pas de flash de page précédente. */}
+        <Stack.Screen
+          name="PlayerSettings"
+          component={PlayerSettingsScreen}
+          options={{
+            presentation: "transparentModal",
+            animation: "fade",
+            // Sans ça, le `contentStyle` opaque global (bgDeep) masquerait la
+            // vidéo sous la modale → fond transparent pour voir l'épisode.
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
         <Stack.Screen name="Trailer" component={TrailerScreen} />
         <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
         <Stack.Screen name="Preferences" component={PreferencesScreen} options={{ animation: "none" }} />

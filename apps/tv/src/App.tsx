@@ -56,19 +56,47 @@ const queryClient = new QueryClient({
 
 // Cold start TV : cache home persisté via Settings (NSUserDefaults, persistant
 // tvOS, synchrone) — interface async attendue par le persister → Promise.resolve.
+//
+// ⚠️ tvOS abort l'app (SIGABRT, __CFPREFERENCES_HAS_DETECTED_THIS_APP_TRYING_TO_
+// STORE_TOO_MUCH_DATA__) au-delà d'une limite stricte du domaine NSUserDefaults
+// (~0,5 Mo). Le défaut 2 Mo du persister dépassait → crash « de temps en temps »
+// quand le cache home gonflait. On plafonne BIEN en dessous + garde-fou dur.
+const TV_PERSIST_MAX = 256 * 1024; // ~256 K caractères
+
 const tvPersistStorage = {
   getItem: (k: string) => {
     const v = Settings.get(k);
     return Promise.resolve(typeof v === "string" ? v : null);
   },
-  setItem: (k: string, v: string) => { Settings.set({ [k]: v }); return Promise.resolve(); },
+  // Jamais d'écriture surdimensionnée vers NSUserDefaults : au-delà de la limite
+  // on PURGE la clé (null) au lieu d'écrire → impossible de crasher CFPreferences.
+  setItem: (k: string, v: string) => {
+    Settings.set({ [k]: v.length > TV_PERSIST_MAX ? null : v });
+    return Promise.resolve();
+  },
   removeItem: (k: string) => { Settings.set({ [k]: null }); return Promise.resolve(); },
 };
+
+// `library-items` (potentiellement énorme : tout le contenu d'une bibliothèque)
+// exclu de la persistance TV — re-fetché à la navigation, inutile au cold start
+// home et principal responsable du dépassement de la limite NSUserDefaults.
+const TV_HOME_WHITELIST = HOME_PERSIST_WHITELIST.filter((k) => k !== "library-items");
+
+// Purge unique d'un blob déjà surdimensionné (laissé par l'ancien plafond 2 Mo)
+// pour repartir d'un domaine NSUserDefaults sain.
+{
+  const existing = Settings.get("tentacle_query_cache_v1");
+  if (typeof existing === "string" && existing.length > TV_PERSIST_MAX) {
+    Settings.set({ tentacle_query_cache_v1: null });
+  }
+}
+
 void hydrateQueryClient(queryClient, tvPersistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
+  whitelist: TV_HOME_WHITELIST,
 });
 attachQueryPersister(queryClient, tvPersistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
+  whitelist: TV_HOME_WHITELIST,
+  maxBytes: TV_PERSIST_MAX,
 });
 
 /** React Navigation theme — `#0a0a0f`, `#12121a`, `#1e1e2e` n'ont pas de token
@@ -162,14 +190,22 @@ function ForegroundSessionValidator() {
 }
 
 /** Contenu principal — nécessite QueryClientProvider + ThemeProvider comme parents */
-function AppContent({ serverUrl }: { serverUrl: string | null }) {
+function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null }) {
+  // L'URL serveur peut changer en cours de session : déconnexion (supprimée du
+  // storage) ou re-jumelage (nouvelle URL). On la relit à chaque changement de
+  // navigation pour que la détection offline cible toujours le bon serveur ;
+  // sans ça, l'overlay restait bloqué sur l'ancienne URL après un logout et
+  // recouvrait l'écran de jumelage (« Se déconnecter » semblait sans effet).
+  const [serverUrl, setServerUrl] = useState<string | null>(initialServerUrl);
   const { isReachable, retry } = useServerReachable(serverUrl);
   const { theme } = useTheme();
   // Route active du rail : suivie via le NavigationContainer (le rail est un
   // sibling du Navigator, sans accès aux hooks de navigation).
   const [railKey, setRailKey] = useState<string | null>(null);
   const syncRailKey = useCallback(() => {
-    setRailKey(navigationRef.isReady() ? deriveRailKey(navigationRef.getRootState()) : null);
+    const ready = navigationRef.isReady();
+    setRailKey(ready ? deriveRailKey(navigationRef.getRootState()) : null);
+    setServerUrl(storage.getItem("tentacle_server_url"));
   }, []);
   const navTheme = useMemo(
     () => ({

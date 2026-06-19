@@ -45,19 +45,23 @@ export function useTVStreamUrl(args: {
   const client = useJellyfinClient();
   const userId = useUserId();
 
+  // On stocke l'URL de BASE (sans fragment de reprise). Le fragment `#tnt-start`
+  // est ajouté en DÉRIVÉ à partir du `startSeconds` LIVE (cf. plus bas) : au cold
+  // start, l'effet construit l'URL avant que `item.UserData` soit chargé
+  // (startSeconds=0) ; lire la position via une ref figeait alors une URL SANS
+  // reprise, jamais reconstruite → lecture à 0. En dérivant le fragment, il
+  // reflète toujours la position courante au montage du player.
   const [result, setResult] = useState<{
-    streamUrl: string | null;
+    baseUrl: string | null;
     playSessionId?: string;
     isDirectPlay: boolean;
-  }>({ streamUrl: null, isDirectPlay: true });
+  }>({ baseUrl: null, isDirectPlay: true });
 
   // Lus au moment du fetch sans être des déclencheurs (le switch audio en direct
   // play est natif ; en transcode, c'est `startTicks` (captureReloadTicks) qui
   // déclenche le refetch et embarque l'audioIndex courant).
   const audioRef = useRef(audioIndex);
   audioRef.current = audioIndex;
-  const startSecRef = useRef(startSeconds ?? 0);
-  startSecRef.current = startSeconds ?? 0;
 
   // Seul un sous-titre IMAGE (burn-in) reconstruit l'URL ; les sous-titres texte
   // passent par l'overlay JS (aucun refetch).
@@ -84,7 +88,7 @@ export function useTVStreamUrl(args: {
     // Reload doux (même contenu) : conserver l'URL courante jusqu'à la nouvelle
     // (le player reste monté, dernière image visible). Reload dur : null →
     // écran de chargement plein écran (PlayerScreen).
-    if (!softReload) setResult((r) => ({ ...r, streamUrl: null }));
+    if (!softReload) setResult((r) => ({ ...r, baseUrl: null }));
 
     (async () => {
       try {
@@ -103,7 +107,7 @@ export function useTVStreamUrl(args: {
         if (fetchIdRef.current !== fetchId) return;
 
         const ms = info.MediaSources?.[0];
-        if (!ms) { setResult({ streamUrl: null, isDirectPlay: false }); return; }
+        if (!ms) { setResult({ baseUrl: null, isDirectPlay: false }); return; }
 
         const directPlay = !!ms.SupportsDirectPlay && !ms.TranscodingUrl;
         const sub = burnInIndex >= 0 ? burnInIndex : undefined;
@@ -127,11 +131,11 @@ export function useTVStreamUrl(args: {
           });
         }
 
-        const startFragment = startSecRef.current > 1 ? `#tnt-start=${Math.floor(startSecRef.current)}` : "";
-        setResult({ streamUrl: streamUrl + startFragment, playSessionId, isDirectPlay: directPlay });
+        // Base SANS fragment : la reprise est ajoutée en dérivé (startSeconds live).
+        setResult({ baseUrl: streamUrl, playSessionId, isDirectPlay: directPlay });
       } catch {
         if (fetchIdRef.current !== fetchId) return;
-        setResult({ streamUrl: null, isDirectPlay: false });
+        setResult({ baseUrl: null, isDirectPlay: false });
       }
     })();
     // startTicks = déclencheur de reload (reprise/piste/qualité) ; audioIndex et
@@ -139,5 +143,13 @@ export function useTVStreamUrl(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemId, mediaSourceId, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, burnInIndex, args.reloadNonce]);
 
-  return result;
+  // Fragment de reprise ajouté EN DÉRIVÉ depuis la position LIVE (≠ ref figée au
+  // fetch) → toujours correct au montage du player, y compris au cold start où
+  // l'URL de base a pu être construite avant que `item.UserData` soit chargé.
+  const start = startSeconds ?? 0;
+  const streamUrl = result.baseUrl != null
+    ? result.baseUrl + (start > 1 ? `#tnt-start=${Math.floor(start)}` : "")
+    : null;
+
+  return { streamUrl, playSessionId: result.playSessionId, isDirectPlay: result.isDirectPlay };
 }

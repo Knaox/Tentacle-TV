@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { MemoizedPlayer } from "./MemoizedPlayer";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
-import { TVTrackSelector } from "../TVTrackSelector";
 import { TVSkipSegmentButton } from "../TVSkipSegmentButton";
 import { TVAutoPlayOverlay } from "../TVAutoPlayOverlay";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
@@ -252,17 +251,8 @@ export function TVPlayerView({
           onClose={onCloseEpisodes}
         />
       )}
-      {showSettings && (
-        <TVTrackSelector
-          audioTracks={audioTracksList} subtitleTracks={subtitleTracksList}
-          selectedAudio={audioIndex} selectedSubtitle={subtitleIndex}
-          qualityKey={qualityKey} sourceQuality={sourceQuality}
-          onSelectAudio={onSelectAudio} onSelectSubtitle={onSelectSubtitle}
-          onSelectQuality={onSelectQuality}
-          onClose={onCloseSettings}
-          onInteraction={controls.showOverlay}
-        />
-      )}
+      {/* Réglages/Qualité : présenté en route MODALE (PlayerSettingsScreen),
+          plus en overlay ici → ESC ferme la modale proprement sans flash. */}
       {autoPlayActive && (
         <TVAutoPlayOverlay
           countdown={autoPlay.countdown!} episodeTitle={autoPlay.nextEpisodeTitle}
