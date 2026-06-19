@@ -9,8 +9,9 @@
 # direct via build settings xcodebuild (pas de plutil nécessaire, contrairement à iOS).
 #
 # Build : pnpm install → pod install (tvOS) → xcodebuild archive/export → altool -t tvos.
-# Signature AUTOMATIQUE : -allowProvisioningUpdates + clé API App Store Connect + cert
-# Apple Distribution (secrets déjà en place pour macOS/iOS, rien de neuf à fournir).
+# Signature MANUELLE : cert Apple Distribution + profil App Store tvOS fourni en secret
+# (TVOS_PROVISIONING_PROFILE_BASE64). La signature auto (clé API) refuse de créer un profil
+# de distribution pour une 1re app tvOS → on signe en manuel. Upload via clé API ASC.
 #
 # ⚠️ Pré-requis côté Apple : la plateforme **tvOS** doit être activée sur la fiche App
 # Store Connect `com.tentacle.mobile` (App Store Connect → Tentacle TV → + tvOS), sinon
@@ -110,6 +111,17 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
           rm -f /tmp/app.p12
 
+      # Signature MANUELLE : la signature auto (clé API) refuse de minter un profil
+      # de distribution pour cette 1re app tvOS et retombe sur « développement ». On
+      # installe donc le profil App Store tvOS fourni en secret et on signe en manuel.
+      - name: Install tvOS App Store provisioning profile
+        env:
+          PROFILE_B64: ${{ secrets.TVOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE_B64" | base64 --decode \
+            > "$HOME/Library/MobileDevice/Provisioning Profiles/d5674922-c9b2-4fdf-9f1d-bebbd04c708c.mobileprovision"
+
       - name: Install App Store Connect API key
         env:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
@@ -120,10 +132,7 @@ jobs:
           cp ~/private_keys/AuthKey_${API_KEY}.p8 ~/.appstoreconnect/private_keys/
           echo "ASC_KEY_PATH=$HOME/private_keys/AuthKey_${API_KEY}.p8" >> "$GITHUB_ENV"
 
-      - name: Archive (xcodebuild tvOS, signature automatique)
-        env:
-          API_KEY: ${{ secrets.APPLE_API_KEY }}
-          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      - name: Archive (xcodebuild tvOS, signature manuelle)
         run: |
           xcodebuild archive \
             -workspace "$TV_WORKSPACE" \
@@ -131,19 +140,14 @@ jobs:
             -configuration Release \
             -destination "generic/platform=tvOS" \
             -archivePath "$RUNNER_TEMP/TentacleTV-tvos.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$API_KEY" \
-            -authenticationKeyIssuerID "$API_ISSUER" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="Tentacle TV tvOS App Store" \
             MARKETING_VERSION="${{ needs.setup.outputs.version }}" \
             CURRENT_PROJECT_VERSION="${{ needs.setup.outputs.build }}"
 
       - name: Export .ipa (App Store, tvOS)
-        env:
-          API_KEY: ${{ secrets.APPLE_API_KEY }}
-          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -152,7 +156,13 @@ jobs:
           <dict>
             <key>method</key><string>app-store</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.tentacle.mobile</key>
+              <string>Tentacle TV tvOS App Store</string>
+            </dict>
             <key>destination</key><string>export</string>
             <key>uploadSymbols</key><true/>
           </dict>
@@ -161,11 +171,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/TentacleTV-tvos.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -exportPath "$RUNNER_TEMP/ipa" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$API_KEY" \
-            -authenticationKeyIssuerID "$API_ISSUER"
+            -exportPath "$RUNNER_TEMP/ipa"
 
       - name: Upload .ipa artifact
         uses: actions/upload-artifact@v4
