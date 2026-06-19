@@ -1,6 +1,6 @@
 # Tentacle TV — Mac App Store (universal, LGPL, sandbox)
 #
-# Déclenché par un tag `app-v<version>-<build>` (ex. app-v1.0.0-3) OU manuellement.
+# Déclenché par un tag `mac-v<version>-<build>` (ex. mac-v1.0.0-3) OU manuellement.
 #   - <version> → CFBundleShortVersionString (version marketing)
 #   - <build>   → CFBundleVersion (build number TestFlight ; à incrémenter pour
 #                 ré-uploader une même version sans collision)
@@ -15,7 +15,7 @@ name: Release Mac App Store
 
 on:
   push:
-    tags: ["app-v*"]
+    tags: ["mac-v*"]
   workflow_dispatch:
     inputs:
       version:
@@ -54,7 +54,7 @@ jobs:
       - id: p
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            REST="${GITHUB_REF_NAME#app-v}"   # 1.0.0-3
+            REST="${GITHUB_REF_NAME#mac-v}"   # 1.0.0-3
             VERSION="${REST%-*}"
             BUILD="${REST##*-}"
             SUBMIT=true

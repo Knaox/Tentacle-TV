@@ -1,0 +1,203 @@
+# Tentacle TV — iOS (TestFlight, natif, SANS EAS)
+#
+# Déclenché par un tag `ios-v<version>-<build>` (ex. ios-v1.2.2-41) OU manuellement.
+# Tag dédié iOS (le macOS a `mac-v*`, l'Android mobile `apk-v*`). macOS et iOS
+# partagent la même fiche App Store Connect (bundle com.tentacle.mobile), mais se
+# déploient indépendamment.
+#   - <version> → MARKETING_VERSION (CFBundleShortVersionString)
+#   - <build>   → CURRENT_PROJECT_VERSION (CFBundleVersion ; à incrémenter pour
+#                 ré-uploader une même version sur TestFlight sans collision)
+#
+# Build : pnpm install → pod install → xcodebuild archive/export → altool upload.
+# Signature AUTOMATIQUE : -allowProvisioningUpdates + clé API App Store Connect
+# (Apple gère le provisioning profile App Store) ; le cert Apple Distribution est
+# importé depuis les secrets déjà en place pour le macOS.
+#
+# Secrets (déjà présents pour le macOS, rien de neuf à fournir) :
+#   APPLE_DISTRIBUTION_CERT_BASE64 / _PASSWORD,
+#   APPLE_API_KEY / APPLE_API_ISSUER / APPLE_API_KEY_CONTENT.
+
+name: Release iOS (TestFlight)
+
+on:
+  push:
+    tags: ["ios-v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version marketing (CFBundleShortVersionString)"
+        type: string
+        default: "1.2.2"
+      build:
+        description: "Build number (CFBundleVersion) — incrémenter pour chaque upload TestFlight"
+        type: string
+        default: "41"
+      submit:
+        description: "Envoyer à App Store Connect / TestFlight (sinon artefact .ipa seulement)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APPLE_TEAM_ID: "96K3M57W49"
+  IOS_SCHEME: "TentacleTV"
+  IOS_WORKSPACE: "apps/mobile/ios/TentacleTV.xcworkspace"
+
+jobs:
+  # 0) Détermine version / build / submit depuis le tag ou les inputs
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.p.outputs.version }}
+      build: ${{ steps.p.outputs.build }}
+      submit: ${{ steps.p.outputs.submit }}
+    steps:
+      - id: p
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            REST="${GITHUB_REF_NAME#ios-v}"   # 1.2.2-41
+            VERSION="${REST%-*}"
+            BUILD="${REST##*-}"
+            SUBMIT=true
+          else
+            VERSION="${{ inputs.version }}"
+            BUILD="${{ inputs.build }}"
+            SUBMIT="${{ inputs.submit }}"
+          fi
+          {
+            echo "version=$VERSION"
+            echo "build=$BUILD"
+            echo "submit=$SUBMIT"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: setup
+    name: Build + submit iOS
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: CocoaPods install
+        working-directory: apps/mobile/ios
+        run: |
+          pod install --repo-update
+
+      - name: Import Apple Distribution certificate
+        env:
+          APP_CERT: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
+          APP_CERT_PW: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+        run: |
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          echo "$APP_CERT" | base64 --decode > /tmp/app.p12
+          security import /tmp/app.p12 -k build.keychain -P "$APP_CERT_PW" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+          rm -f /tmp/app.p12
+
+      - name: Install App Store Connect API key
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/private_keys ~/.appstoreconnect/private_keys
+          echo "$API_KEY_CONTENT" > ~/private_keys/AuthKey_${API_KEY}.p8
+          cp ~/private_keys/AuthKey_${API_KEY}.p8 ~/.appstoreconnect/private_keys/
+          echo "ASC_KEY_PATH=$HOME/private_keys/AuthKey_${API_KEY}.p8" >> "$GITHUB_ENV"
+
+      # L'Info.plist code la version en dur (pas de $(MARKETING_VERSION)) → on la
+      # patche directement, sinon le tag n'aurait aucun effet sur le build uploadé.
+      - name: Set version / build (Info.plist)
+        run: |
+          PLIST=apps/mobile/ios/TentacleTV/Info.plist
+          plutil -replace CFBundleShortVersionString -string "${{ needs.setup.outputs.version }}" "$PLIST"
+          plutil -replace CFBundleVersion -string "${{ needs.setup.outputs.build }}" "$PLIST"
+          plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
+
+      - name: Archive (xcodebuild, signature automatique)
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          xcodebuild archive \
+            -workspace "$IOS_WORKSPACE" \
+            -scheme "$IOS_SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$API_KEY" \
+            -authenticationKeyIssuerID "$API_ISSUER" \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+
+      - name: Export .ipa (App Store)
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>export</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/ipa" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$API_KEY" \
+            -authenticationKeyIssuerID "$API_ISSUER"
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tentacle-TV-iOS-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          if-no-files-found: error
+
+      - name: Submit to TestFlight
+        if: needs.setup.outputs.submit == 'true'
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          xcrun altool --upload-app -f "$RUNNER_TEMP"/ipa/*.ipa -t ios \
+            --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
+
+      # Notes FR+EN depuis CHANGELOG.md (« Nouveautés » App Store ; « À tester »
+      # TestFlight si le build est déjà traité). Non bloquant.
+      - name: Set release notes (App Store / TestFlight iOS)
+        if: needs.setup.outputs.submit == 'true'
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: IOS
+          VERSION: ${{ needs.setup.outputs.version }}
+          BUILD: ${{ needs.setup.outputs.build }}
+        run: node .github/scripts/asc-release-notes.mjs

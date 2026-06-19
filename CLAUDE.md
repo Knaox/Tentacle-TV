@@ -48,9 +48,11 @@ Le déclencheur de build dépend du **préfixe de tag** — les builds des plate
 
 | Déclencheur | Workflow | Cible |
 |-------------|----------|-------|
-| manuel (`workflow_dispatch`) | `.github/workflows/release-appstore.yml` | **macOS — Mac App Store** (universal, libmpv/FFmpeg **LGPL**, sandbox, v1.0.0) |
+| tag `mac-v*` ou manuel | `.github/workflows/release-appstore.yml` | **macOS — Mac App Store / TestFlight** (universal, libmpv/FFmpeg **LGPL**, sandbox) |
+| tag `ios-v*` ou manuel | `.github/workflows/release-ios.yml` | **iOS — TestFlight** (natif sans EAS, signature auto via clé API ASC) |
+| tag `apk-v*` ou manuel | `.github/workflows/release-android.yml` | **Android mobile — APK** (debug-signed, Release GitHub) |
+| tag `tv-v*` (ex `tv-v1.0.0`) | `.github/workflows/release-tv.yml` | **Android TV** — APK release en Release GitHub + `tv-latest` |
 | manuel (`workflow_dispatch`) | `.github/workflows/release-store.yml` | **Windows — Microsoft Store** (NSIS) |
-| tag `tv-v*` (ex `tv-v1.0.0`) | `.github/workflows/release-tv.yml` | **Android TV** — APK release en Release GitHub |
 | push `main` | `.github/workflows/docker.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` |
 
 - **Desktop = stores uniquement** : le DMG macOS notarisé (ancien `release.yml`, tag `v*`) a été **retiré** ; macOS passe exclusivement par le Mac App Store. Détails : `docs/RELEASE.md` § 6b.
@@ -61,13 +63,14 @@ Le déclencheur de build dépend du **préfixe de tag** — les builds des plate
 
 ### Releases par tags (guide : `docs/RELEASE-TAGS.md`)
 Nomenclature `<canal>-v<version>-<build>` (le `-build` = CFBundleVersion/versionCode → ré-upload TestFlight sans bump de version). Notes FR+EN auto depuis `CHANGELOG.md` (blocs `## [x.y.z]` avec `### FR`/`### EN`).
-- ✅ **macOS App Store / TestFlight** : `app-v*` → `release-appstore.yml` (universal, libmpv/FFmpeg **LGPL**, sandbox, transparence ON). Ex. `git tag app-v1.0.0-5 && git push origin app-v1.0.0-5`.
+- 🛠️ **Outil** : `tools/deploy/tentacle-deploy.html` (copie sur le Bureau) — UI pour générer le tag + la commande `git tag … && git push …` sans rien retenir.
+- ✅ **macOS App Store / TestFlight** : `mac-v*` → `release-appstore.yml` (universal, libmpv/FFmpeg **LGPL**, sandbox, transparence ON). Ex. `git tag mac-v1.0.0-5 && git push origin mac-v1.0.0-5`.
+- ✅ **iOS → TestFlight** : `ios-v*` → `release-ios.yml` (natif **sans EAS**, projet `apps/mobile/ios` versionné, `pod install` + `xcodebuild` archive/export, signature **automatique** via clé API ASC + cert Apple Distribution, `com.tentacle.mobile`). Même fiche App Store que macOS, déploiement séparé.
 - ✅ **Android TV** : `tv-v*` (versionName/Code depuis le tag).
-- ✅ **APK Android mobile test** : `release-android.yml` (manuel, debug-signed, sideload).
+- ✅ **APK Android mobile** : `apk-v*` → `release-android.yml` (debug-signed, sideload, Release GitHub ; versionName/Code depuis le tag). Aussi en manuel.
 
 **Reste à faire (besoin d'assets de signature) :**
-- **Android mobile (Play Store)** : keystore release → secrets + `signingConfigs.release`.
-- **iOS natif → TestFlight** (sans EAS) : `expo prebuild` + xcodebuild + profil App Store iOS (`com.tentacle.mobile`), brancher sur `app-v*`.
+- **Android mobile (Play Store)** : keystore release → secrets + `signingConfigs.release` (l'APK reste debug-signed sideload en attendant le compte Play validé).
 - **Apple TV (tvOS)** : fixer le bundle id (défaut RN actuellement), App ID + profil tvOS, finaliser l'app, brancher sur `tv-v*`.
 
 ## Architecture

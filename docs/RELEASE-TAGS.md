@@ -20,26 +20,45 @@ la CI (GitHub Actions, gratuite car repo public) build + signe + envoie.
 
 ## Canaux
 
+**Un tag = une plateforme.** Chaque plateforme a son préfixe dédié → on déploie l'une
+sans toucher aux autres.
+
 | Tag | Build | Destination | Workflow |
 |-----|-------|-------------|----------|
-| `app-v…` | **macOS desktop** | App Store / TestFlight | `release-appstore.yml` ✅ |
-| `app-v…` | **iOS** | TestFlight | *(à venir — asset requis)* |
-| `app-v…` | **Android mobile** | APK | *(à venir — keystore requis)* |
-| `tv-v…`  | **Android TV** | APK (GitHub Release) | `release-tv.yml` ✅ |
-| `tv-v…`  | **Apple TV (tvOS)** | TestFlight | *(à venir — config tvOS)* |
+| `mac-v…` | **macOS desktop** | App Store / TestFlight | `release-appstore.yml` ✅ |
+| `ios-v…` | **iOS** | TestFlight | `release-ios.yml` ✅ |
+| `apk-v…` | **Android mobile** | APK (GitHub Release, debug-signed) | `release-android.yml` ✅ |
+| `tv-v…`  | **Android TV** | APK (GitHub Release + `tv-latest`) | `release-tv.yml` ✅ |
+| `atv-v…` | **Apple TV (tvOS)** | TestFlight | *(à venir — config tvOS)* |
 | *(manuel)* | **Windows** | Microsoft Store | `release-store.yml` |
+
+> macOS + iOS partagent la même fiche App Store Connect `com.tentacle.mobile` mais se
+> déploient séparément (`mac-v…` / `ios-v…`). iOS : projet natif versionné, build
+> `xcodebuild` sans EAS, signature **automatique** via la clé API App Store Connect
+> (aucun profil à fournir). Android mobile (`apk-v…`) reste **debug-signed** (sideload)
+> tant que le keystore release Play Store n'est pas posé — voir le TODO en tête de
+> `release-android.yml`.
+>
+> 🛠️ **Astuce** : l'outil `tools/deploy/tentacle-deploy.html` (copie sur le Bureau)
+> génère le bon tag et la commande `git tag … && git push …` — pas besoin de retenir les préfixes.
 
 ## Exemples
 
 ```bash
 # macOS — 1er build de la 1.0.0 sur TestFlight
-git tag app-v1.0.0-1 && git push origin app-v1.0.0-1
+git tag mac-v1.0.0-1 && git push origin mac-v1.0.0-1
 
 # macOS — nouveau build TestFlight de la MÊME version 1.0.0 (correctif)
-git tag app-v1.0.0-2 && git push origin app-v1.0.0-2
+git tag mac-v1.0.0-2 && git push origin mac-v1.0.0-2
 
 # macOS — nouvelle version 1.0.1 (crée la version + "Nouveautés")
-git tag app-v1.0.1-1 && git push origin app-v1.0.1-1
+git tag mac-v1.0.1-1 && git push origin mac-v1.0.1-1
+
+# iOS — build 41 de la 1.2.2 sur TestFlight
+git tag ios-v1.2.2-41 && git push origin ios-v1.2.2-41
+
+# Android mobile — APK 1.2.2 build 1 (Release GitHub, sideload)
+git tag apk-v1.2.2-1 && git push origin apk-v1.2.2-1
 
 # Android TV — APK 1.0.0 build 7
 git tag tv-v1.0.0-7 && git push origin tv-v1.0.0-7
@@ -64,7 +83,7 @@ Sans section `### EN`, la section FR est utilisée pour les deux langues. Script
 | Plateforme | Assets | Statut |
 |-----------|--------|--------|
 | macOS | Apple Distribution + Mac Installer Distribution + profil MAS | ✅ en place |
-| iOS | profil App Store iOS (`com.tentacle.mobile`) | à fournir |
+| iOS | Apple Distribution + clé API ASC (signature auto, profil géré par Apple) | ✅ en place |
 | Apple TV | bundle id + App ID + profil tvOS + app finalisée | à fournir/configurer |
 | Android (mobile/TV) | keystore release (sinon `debug.keystore` = sideload) | à fournir |
 | Apple (commun) | `APPLE_API_KEY` / `APPLE_API_ISSUER` / `APPLE_API_KEY_CONTENT` | ✅ en place |

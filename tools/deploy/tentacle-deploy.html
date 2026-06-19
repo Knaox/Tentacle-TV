@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tentacle TV — Déploiement</title>
+<style>
+  :root{
+    --bg:#080812; --bg2:#0d0d1f; --card:rgba(22,22,40,.66);
+    --stroke:rgba(139,92,246,.22); --stroke2:rgba(255,255,255,.07);
+    --txt:#ececf6; --muted:#9a9ab4; --p:#8b5cf6; --pink:#ec4899; --amber:#f59e0b; --green:#22c55e;
+    --grad:linear-gradient(135deg,#8b5cf6 0%,#ec4899 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    color:var(--txt); background:
+      radial-gradient(1100px 600px at 12% -10%,rgba(139,92,246,.18),transparent 60%),
+      radial-gradient(900px 500px at 110% 10%,rgba(236,72,153,.16),transparent 55%),
+      linear-gradient(160deg,var(--bg),var(--bg2));
+    min-height:100%; display:flex; align-items:flex-start; justify-content:center; padding:40px 18px;
+  }
+  .wrap{width:100%; max-width:560px}
+  .head{display:flex; align-items:center; gap:14px; margin-bottom:22px}
+  .logo{font-size:38px; filter:drop-shadow(0 4px 14px rgba(139,92,246,.5))}
+  h1{font-size:22px; margin:0; font-weight:800; letter-spacing:.2px}
+  h1 span{background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{color:var(--muted); font-size:12.5px; margin-top:3px}
+  .card{
+    background:var(--card); border:1px solid var(--stroke); border-radius:20px; padding:22px;
+    backdrop-filter:blur(22px) saturate(140%); -webkit-backdrop-filter:blur(22px) saturate(140%);
+    box-shadow:0 24px 60px -28px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .label{font-size:11px; text-transform:uppercase; letter-spacing:1.4px; color:var(--muted); margin:0 0 9px}
+  .plats{display:grid; grid-template-columns:repeat(2,1fr); gap:9px; margin-bottom:20px}
+  .plat{
+    display:flex; align-items:center; gap:10px; padding:12px 13px; border-radius:13px; cursor:pointer;
+    background:rgba(255,255,255,.03); border:1px solid var(--stroke2); transition:.16s; user-select:none;
+  }
+  .plat:hover:not(.off){border-color:var(--stroke); background:rgba(139,92,246,.07)}
+  .plat.on{border-color:transparent; background:var(--grad); box-shadow:0 8px 24px -10px rgba(236,72,153,.6)}
+  .plat.on .pdesc{color:rgba(255,255,255,.85)}
+  .plat.off{opacity:.4; cursor:not-allowed}
+  .pemoji{font-size:20px}
+  .pname{font-weight:700; font-size:13.5px; line-height:1.1}
+  .pdesc{font-size:10.5px; color:var(--muted); margin-top:2px}
+  .row{display:flex; gap:12px; margin-bottom:18px}
+  .col{flex:1}
+  .modes{display:flex; gap:8px; margin-bottom:20px}
+  .mode{
+    flex:1; text-align:center; padding:11px; border-radius:12px; cursor:pointer; font-size:12.5px; font-weight:600;
+    background:rgba(255,255,255,.03); border:1px solid var(--stroke2); color:var(--muted); transition:.16s;
+  }
+  .mode.on{color:#fff; border-color:transparent; background:var(--grad)}
+  .stepper{display:flex; align-items:center; gap:8px}
+  .seg{flex:1; text-align:center}
+  .seg small{display:block; font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:5px}
+  .num{
+    display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,.28);
+    border:1px solid var(--stroke2); border-radius:11px; padding:5px 6px;
+  }
+  .num b{font-size:18px; font-variant-numeric:tabular-nums; min-width:30px; text-align:center}
+  .num button{
+    width:28px; height:28px; border-radius:8px; border:none; cursor:pointer; font-size:17px; line-height:1;
+    color:#fff; background:rgba(139,92,246,.22); transition:.13s;
+  }
+  .num button:hover{background:var(--p)}
+  .out{
+    margin-top:4px; background:rgba(0,0,0,.4); border:1px solid var(--stroke); border-radius:14px; padding:15px 16px;
+  }
+  .tagline{display:flex; align-items:center; gap:9px; margin-bottom:11px}
+  .tagchip{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:14px; font-weight:700;
+    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .dest{font-size:11px; color:var(--muted)}
+  .cmd{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:#d7d7ea;
+    background:rgba(0,0,0,.45); border:1px solid var(--stroke2); border-radius:10px; padding:11px 12px;
+    word-break:break-all; line-height:1.55;
+  }
+  .copy{
+    margin-top:12px; width:100%; padding:13px; border:none; border-radius:12px; cursor:pointer;
+    font-size:14px; font-weight:800; color:#fff; background:var(--grad); transition:.16s;
+    box-shadow:0 10px 26px -12px rgba(236,72,153,.7);
+  }
+  .copy:hover{filter:brightness(1.08)}
+  .copy.ok{background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .foot{margin-top:16px; font-size:11px; color:var(--muted); line-height:1.6}
+  .foot code{background:rgba(255,255,255,.06); padding:1px 5px; border-radius:5px; font-size:10.5px}
+  .badge{font-size:9px; font-weight:800; padding:2px 6px; border-radius:6px; background:rgba(245,158,11,.18); color:var(--amber); margin-left:6px; vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo">🐙</div>
+    <div>
+      <h1>Tentacle TV — <span>Déploiement</span></h1>
+      <div class="sub">Choisis la plateforme et la version → copie la commande → colle dans le terminal.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">Plateforme</p>
+    <div class="plats" id="plats"></div>
+
+    <p class="label">Mode</p>
+    <div class="modes" id="modes">
+      <div class="mode on" data-mode="build">Nouveau build <small style="display:block;font-weight:400;opacity:.8;font-size:10px">même version, build +1</small></div>
+      <div class="mode" data-mode="version">Nouvelle version <small style="display:block;font-weight:400;opacity:.8;font-size:10px">build remis à 1</small></div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <p class="label">Version</p>
+        <div class="stepper">
+          <div class="seg"><small>Majeur</small><div class="num"><button data-v="major" data-d="-1">−</button><b id="vmajor">1</b><button data-v="major" data-d="1">+</button></div></div>
+          <div class="seg"><small>Mineur</small><div class="num"><button data-v="minor" data-d="-1">−</button><b id="vminor">0</b><button data-v="minor" data-d="1">+</button></div></div>
+          <div class="seg"><small>Patch</small><div class="num"><button data-v="patch" data-d="-1">−</button><b id="vpatch">0</b><button data-v="patch" data-d="1">+</button></div></div>
+        </div>
+      </div>
+      <div class="col" style="max-width:120px">
+        <p class="label">Build</p>
+        <div class="seg"><small>n°</small><div class="num"><button data-b="-1">−</button><b id="build">1</b><button data-b="1">+</button></div></div>
+      </div>
+    </div>
+
+    <div class="out">
+      <div class="tagline">
+        <span class="tagchip" id="tag">tag</span>
+        <span class="dest" id="dest"></span>
+      </div>
+      <div class="cmd" id="cmd"></div>
+    </div>
+    <button class="copy" id="copy">Copier la commande</button>
+
+    <div class="foot">
+      Un navigateur ne peut pas lancer <code>git</code> ; colle la commande dans ton terminal (à la racine du repo).
+      Le tag pilote la version <b>du build livré</b>, pas les fichiers source du repo.<br>
+      Windows : build manuel (Actions → <code>release-store.yml</code>). Apple TV : en cours.
+    </div>
+  </div>
+</div>
+
+<script>
+const PLATFORMS = {
+  mac: {emoji:"🍎", name:"macOS",         prefix:"mac-v", dest:"Mac App Store / TestFlight", def:[1,0,0], build:7},
+  ios: {emoji:"📱", name:"iOS",           prefix:"ios-v", dest:"TestFlight",                 def:[1,2,2], build:41},
+  apk: {emoji:"🤖", name:"Android mobile",prefix:"apk-v", dest:"APK (Release GitHub)",       def:[1,2,2], build:1},
+  tv:  {emoji:"📺", name:"Android TV",    prefix:"tv-v",  dest:"APK + lien permanent",       def:[1,0,0], build:7},
+  atv: {emoji:"🛰️", name:"Apple TV",      prefix:"atv-v", dest:"TestFlight (à venir)",       def:[1,0,0], build:1, off:true},
+};
+const LS = "tentacle-deploy-v1";
+const store = JSON.parse(localStorage.getItem(LS) || "{}");
+
+let cur = "ios";
+let mode = "build";
+let v = {major:1, minor:2, patch:2};
+let build = 41;
+
+const $ = s => document.querySelector(s);
+const platsEl = $("#plats");
+
+// Build platform chips
+Object.entries(PLATFORMS).forEach(([key,p])=>{
+  const d = document.createElement("div");
+  d.className = "plat" + (p.off?" off":"") + (key===cur?" on":"");
+  d.dataset.key = key;
+  d.innerHTML = `<span class="pemoji">${p.emoji}</span><div><div class="pname">${p.name}${p.off?'<span class="badge">WIP</span>':''}</div><div class="pdesc">${p.dest}</div></div>`;
+  if(!p.off) d.onclick = ()=>selectPlatform(key);
+  platsEl.appendChild(d);
+});
+
+function lastBuild(key){
+  const p = PLATFORMS[key];
+  return (store[key] && typeof store[key].build === "number") ? store[key].build : p.build;
+}
+function selectPlatform(key){
+  cur = key;
+  document.querySelectorAll(".plat").forEach(e=>e.classList.toggle("on", e.dataset.key===key));
+  const p = PLATFORMS[key];
+  v = {major:p.def[0], minor:p.def[1], patch:p.def[2]};
+  build = lastBuild(key);
+  if(mode==="build") build = lastBuild(key) + 1; // pré-incrémente pour un ré-upload
+  render();
+}
+document.querySelectorAll(".mode").forEach(m=>{
+  m.onclick = ()=>{
+    mode = m.dataset.mode;
+    document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on", x===m));
+    if(mode==="version"){ build = 1; }
+    else { build = lastBuild(cur) + 1; }
+    render();
+  };
+});
+document.querySelectorAll("button[data-v]").forEach(b=>{
+  b.onclick = ()=>{ const k=b.dataset.v, d=+b.dataset.d; v[k]=Math.max(0, v[k]+d); render(); };
+});
+document.querySelectorAll("button[data-b]").forEach(b=>{
+  b.onclick = ()=>{ build=Math.max(1, build + (+b.dataset.b)); render(); };
+});
+
+function render(){
+  $("#vmajor").textContent=v.major; $("#vminor").textContent=v.minor; $("#vpatch").textContent=v.patch;
+  $("#build").textContent=build;
+  const p = PLATFORMS[cur];
+  const ver = `${v.major}.${v.minor}.${v.patch}`;
+  const tag = `${p.prefix}${ver}-${build}`;
+  $("#tag").textContent = tag;
+  $("#dest").textContent = "→ " + p.dest;
+  $("#cmd").textContent = `git tag ${tag} && git push origin ${tag}`;
+  // mémorise le build choisi pour cette plateforme
+  store[cur] = {build};
+  localStorage.setItem(LS, JSON.stringify(store));
+}
+
+$("#copy").onclick = async ()=>{
+  const txt = $("#cmd").textContent;
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); ta.remove();
+  }
+  const btn=$("#copy"); btn.classList.add("ok"); btn.textContent="Copié ✓";
+  setTimeout(()=>{ btn.classList.remove("ok"); btn.textContent="Copier la commande"; }, 1600);
+};
+
+selectPlatform("ios");
+</script>
+</body>
+</html>
