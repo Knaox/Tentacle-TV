@@ -10,6 +10,7 @@ import { TentacleLogo } from "../components/icons/TentacleLogo";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
+import { TV_PLATFORM_LABEL } from "../lib/platformLabel";
 import { Colors, Spacing, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "About">;
@@ -101,7 +102,7 @@ export function AboutScreen({ navigation }: Props) {
           }}>
             <InfoRow label="Server" value={serverUrl} />
             <InfoRow label="User" value={username} />
-            <InfoRow label="Platform" value="Android TV" />
+            <InfoRow label="Platform" value={TV_PLATFORM_LABEL} />
           </View>
         </Focusable>
 

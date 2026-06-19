@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { View, ActivityIndicator, AppState, Settings, type AppStateStatus } from "react-native";
+import { View, ActivityIndicator, AppState, Settings, Platform, type AppStateStatus } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import { DEFAULT_THEME } from "@tentacle-tv/theme";
@@ -123,7 +123,11 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
   const TV_VERSION: string = require("../package.json").version ?? "0.9.2";
-  const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, "AndroidTV", "Tentacle TV - TV", TV_VERSION);
+  // Nom de client rapporté à Jellyfin : « Apple TV » sur tvOS (l'app s'identifiait
+  // à tort comme AndroidTV). Android conservé EXACTEMENT (pas d'espace) pour ne
+  // pas changer l'identifiant des devices Android déjà appariés.
+  const clientName = Platform.OS === "ios" ? "Apple TV" : "AndroidTV";
+  const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, clientName, "Tentacle TV - TV", TV_VERSION);
 
   const savedToken = storage.getItem("tentacle_token");
   if (savedToken) {
