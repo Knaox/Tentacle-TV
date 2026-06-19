@@ -6,6 +6,7 @@ import type { DevicePairStatusResponse } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Colors, Radius, Typography } from "../../theme/colors";
+import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
 
 interface ServerCodeDisplayStepProps {
   onConfirmed: (data: { token: string; user: { id: string; name: string } }) => void;
@@ -35,7 +36,7 @@ export function ServerCodeDisplayStep({ onConfirmed, onChangeServer }: ServerCod
     setCode(null);
     setRemaining(CODE_TTL);
     setGeneratedAt(null);
-    generateMut.mutate({ deviceName: "Android TV" }, {
+    generateMut.mutate({ deviceName: TV_PLATFORM_LABEL }, {
       onSuccess: (data) => {
         setCode(data.code);
         setGeneratedAt(Date.now());
