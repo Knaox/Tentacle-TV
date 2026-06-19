@@ -29,7 +29,7 @@ sans toucher aux autres.
 | `ios-v…` | **iOS** | TestFlight | `release-ios.yml` ✅ |
 | `apk-v…` | **Android mobile** | APK (GitHub Release, debug-signed) | `release-android.yml` ✅ |
 | `tv-v…`  | **Android TV** | APK (GitHub Release + `tv-latest`) | `release-tv.yml` ✅ |
-| `atv-v…` | **Apple TV (tvOS)** | TestFlight | *(à venir — config tvOS)* |
+| `atv-v…` | **Apple TV (tvOS)** | TestFlight | `release-atv.yml` ✅ |
 | *(manuel)* | **Windows** | Microsoft Store | `release-store.yml` |
 
 > macOS + iOS partagent la même fiche App Store Connect `com.tentacle.mobile` mais se
@@ -84,7 +84,7 @@ Sans section `### EN`, la section FR est utilisée pour les deux langues. Script
 |-----------|--------|--------|
 | macOS | Apple Distribution + Mac Installer Distribution + profil MAS | ✅ en place |
 | iOS | Apple Distribution + clé API ASC (signature auto, profil géré par Apple) | ✅ en place |
-| Apple TV | bundle id + App ID + profil tvOS + app finalisée | à fournir/configurer |
+| Apple TV | bundle id `com.tentacle.mobile` + signature auto (mêmes secrets) | ✅ en place — activer la plateforme tvOS sur la fiche ASC |
 | Android (mobile/TV) | keystore release (sinon `debug.keystore` = sideload) | à fournir |
 | Apple (commun) | `APPLE_API_KEY` / `APPLE_API_ISSUER` / `APPLE_API_KEY_CONTENT` | ✅ en place |
 
