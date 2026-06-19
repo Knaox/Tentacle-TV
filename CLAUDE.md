@@ -64,7 +64,6 @@ Le déclencheur de build dépend du **préfixe de tag** — les builds des plate
 
 ### Releases par tags (guide : `docs/RELEASE-TAGS.md`)
 Nomenclature `<canal>-v<version>-<build>` (le `-build` = CFBundleVersion/versionCode → ré-upload TestFlight sans bump de version). Notes FR+EN auto depuis `CHANGELOG.md` (blocs `## [x.y.z]` avec `### FR`/`### EN`).
-- 🛠️ **Outil** : `tools/deploy/tentacle-deploy.html` (copie sur le Bureau) — UI pour générer le tag + la commande `git tag … && git push …` sans rien retenir.
 - ✅ **macOS App Store / TestFlight** : `mac-v*` → `release-appstore.yml` (universal, libmpv/FFmpeg **LGPL**, sandbox, transparence ON). Ex. `git tag mac-v1.0.0-5 && git push origin mac-v1.0.0-5`.
 - ✅ **iOS → TestFlight** : `ios-v*` → `release-ios.yml` (natif **sans EAS**, projet `apps/mobile/ios` versionné, `pod install` + `xcodebuild` archive/export, signature **automatique** via clé API ASC + cert Apple Distribution, `com.tentacle.mobile`). Même fiche App Store que macOS, déploiement séparé.
 - ✅ **Apple TV → TestFlight** : `atv-v*` → `release-atv.yml` (natif **sans EAS**, projet `apps/tv/ios` versionné, `pod install` tvOS + `xcodebuild` archive/export, bundle `com.tentacle.mobile`). Signature **MANUELLE** : profil App Store tvOS en secret `TVOS_PROVISIONING_PROFILE_BASE64` (la signature auto via clé API ne crée pas de profil de distribution pour une 1re app tvOS). Plateforme tvOS activée sur la fiche ASC. **Validé en prod** (build 1.0.0-1 sur TestFlight).
