@@ -38,9 +38,6 @@ sans toucher aux autres.
 > (aucun profil à fournir). Android mobile (`apk-v…`) reste **debug-signed** (sideload)
 > tant que le keystore release Play Store n'est pas posé — voir le TODO en tête de
 > `release-android.yml`.
->
-> 🛠️ **Astuce** : l'outil `tools/deploy/tentacle-deploy.html` (copie sur le Bureau)
-> génère le bon tag et la commande `git tag … && git push …` — pas besoin de retenir les préfixes.
 
 ## Exemples
 

@@ -72,6 +72,9 @@ apps/mobile/ios/.xcode.env.local
 apps/mobile/ios/**/xcuserdata/
 apps/mobile/ios/*.xcworkspace/contents.xcworkspacedata.bak
 
+# Outil de déploiement perso (repo public) — reste en local / sur le Bureau
+tools/deploy/
+
 # Cloudflare Workers (deployed separately via wrangler)
 download/
 
