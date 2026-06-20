@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo, type ElementRef } from "react";
 import { View, TouchableOpacity, Dimensions, Platform, type ViewStyle } from "react-native";
 import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting, useIntroSkipper, useEpisodeNavigation } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality, BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
+import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -401,7 +402,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const handleSubtitleChange = useCallback((newIndex: number) => {
     const isBurnIn = (idx: number) => idx >= 0
-      && BURN_IN_SUBTITLE_CODECS.test(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec ?? "");
+      && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec);
     const needsBurnIn = isBurnIn(newIndex);
     const prevBurnIn = isBurnIn(subtitleIndex);
     if (!needsBurnIn && !prevBurnIn) {

@@ -46,6 +46,15 @@ export interface StreamUrlOptions {
   useProgressiveRemux?: boolean;
   /** Bitmap subtitle burn-in index (PGS/DVDSUB). */
   subtitleStreamIndex?: number;
+  /**
+   * Force le BURN-IN (SubtitleMethod=Encode) du `subtitleStreamIndex` dans la
+   * vidéo transcodée, au lieu de la livraison HLS texte par défaut. Nécessaire
+   * pour l'ASS/SSA sur AVPlayer (tvOS) : la conversion ASS→VTT côté serveur fait
+   * fuiter les balises override ({\an8}, signs). Les sous-titres IMAGE (PGS) sont
+   * déjà incrustés d'office (impossible en piste texte) → ce flag est inutile pour
+   * eux. Non utilisé sur Android (ExoPlayer rend l'ASS nativement).
+   */
+  burnInSubtitle?: boolean;
 }
 
 export interface StreamUrlContext {
@@ -72,6 +81,9 @@ export function buildStreamUrl(
   if (options?.startTimeTicks) p.StartTimeTicks = String(options.startTimeTicks);
   // Server-side burn-in for bitmap subtitles (PGS/DVDSUB)
   if (options?.subtitleStreamIndex != null) p.SubtitleStreamIndex = String(options.subtitleStreamIndex);
+  // Burn-in explicite (ASS/SSA sur tvOS) : grave le sous-titre dans la vidéo plutôt
+  // que de le livrer en piste HLS texte (cf. buildHlsUrl, qui n'écrasera pas Encode).
+  if (options?.burnInSubtitle && options?.subtitleStreamIndex != null) p.SubtitleMethod = "Encode";
 
   // Direct play — raw file, browser handles codec/track selection
   if (options?.directPlay !== false && !options?.maxBitrate) {
@@ -132,14 +144,18 @@ export function buildHlsUrl(
   delete p.StartTimeTicks;
   p.BreakOnNonKeyFrames = "true";
   p.RequireNonAnamorphic = "false";
-  // Sous-titres TEXTE dans le manifeste HLS (#EXT-X-MEDIA:TYPE=SUBTITLES) :
-  // indispensable pour qu'AVPlayer (tvOS) les rende NATIVEMENT et bascule entre
-  // eux INSTANTANÉMENT (toutes les pistes texte sont dans le manifeste). Sans
-  // `SubtitleMethod=Hls`, Jellyfin n'émet AUCUNE piste subtitle (même avec
-  // EnableSubtitlesInManifest). Les sous-titres image (PGS/burn-in) restent gérés
-  // par Encode côté serveur (la méthode par-stream du profil l'emporte).
-  p.EnableSubtitlesInManifest = "true";
-  p.SubtitleMethod = "Hls";
+  // Burn-in explicite demandé (ASS/SSA tvOS) : SubtitleMethod=Encode déjà posé →
+  // NE PAS l'écraser. Le sous-titre est gravé dans la vidéo (pas de piste manifeste).
+  if (p.SubtitleMethod !== "Encode") {
+    // Sous-titres TEXTE dans le manifeste HLS (#EXT-X-MEDIA:TYPE=SUBTITLES) :
+    // indispensable pour qu'AVPlayer (tvOS) les rende NATIVEMENT et bascule entre
+    // eux INSTANTANÉMENT (toutes les pistes texte sont dans le manifeste). Sans
+    // `SubtitleMethod=Hls`, Jellyfin n'émet AUCUNE piste subtitle (même avec
+    // EnableSubtitlesInManifest). Les sous-titres image (PGS) restent incrustés
+    // d'office côté serveur (impossible en piste texte).
+    p.EnableSubtitlesInManifest = "true";
+    p.SubtitleMethod = "Hls";
+  }
   p.SegmentContainer = "ts";
   p.MinSegments = "2";
   return resolveMediaUrl(`${baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);

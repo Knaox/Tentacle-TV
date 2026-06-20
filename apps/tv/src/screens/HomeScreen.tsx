@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
+import { View, ScrollView, TVFocusGuideView, InteractionManager, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -49,7 +49,7 @@ function HomeScreenInner({ navigation }: Props) {
   const queryClient = useQueryClient();
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
   const { setFocusedItem } = useAmbientFocus();
-  const { requestRailFocus } = useTVNav();
+  const { requestRailFocus, lastContentNodeRef } = useTVNav();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
 
@@ -69,6 +69,23 @@ function HomeScreenInner({ navigation }: Props) {
       });
       return () => task.cancel();
     }, [queryClient])
+  );
+
+  // Retour sur l'accueil (depuis le lecteur, etc.) : restaurer le focus sur le
+  // DERNIER élément de carrousel focalisé (sinon l'autoFocus repart sur la 1re
+  // carte). Sur 1er mount, lastContentNodeRef est null → autoFocus normal. tvOS.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== "ios") return;
+      const node = lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
+      if (!node?.setNativeProps) return;
+      let id2: ReturnType<typeof setTimeout>;
+      const id1 = setTimeout(() => {
+        node.setNativeProps?.({ hasTVPreferredFocus: false });
+        id2 = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
+      }, 60);
+      return () => { clearTimeout(id1); clearTimeout(id2); };
+    }, [lastContentNodeRef])
   );
 
   // BACK sur l'accueil → focus sur le rail (pattern tvOS/Netflix)

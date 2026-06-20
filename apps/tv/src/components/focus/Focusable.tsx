@@ -13,6 +13,10 @@ import { FocusSpring, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, Fo
 interface FocusableProps {
   onPress?: (e?: GestureResponderEvent) => void;
   onLongPress?: () => void;
+  /** Key-down sur ce bouton (sélection enfoncée) — pour les boutons « maintien ». */
+  onPressIn?: () => void;
+  /** Key-up sur ce bouton (sélection relâchée) — fin du maintien. */
+  onPressOut?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
   hasTVPreferredFocus?: boolean;
@@ -69,6 +73,8 @@ const HAS_GAP: Record<FocusVariant, boolean> = {
 export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusable({
   onPress,
   onLongPress,
+  onPressIn,
+  onPressOut,
   onFocus,
   onBlur,
   hasTVPreferredFocus = false,
@@ -101,7 +107,8 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     onBlur?.();
   }, [onBlur, progress]);
 
-  const handlePressIn = useCallback(() => { pressInRef.current = true; }, []);
+  const handlePressIn = useCallback(() => { pressInRef.current = true; onPressIn?.(); }, [onPressIn]);
+  const handlePressOut = useCallback(() => { onPressOut?.(); }, [onPressOut]);
   const handlePress = useCallback((e?: GestureResponderEvent) => {
     if (phantomPressGuard && !pressInRef.current) return; // clic fantôme → ignorer
     pressInRef.current = false;
@@ -164,6 +171,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
       // @ts-ignore react-native-tvos extends Pressable
       style={style}
       onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       onPress={handlePress}
       onLongPress={onLongPress}
       delayLongPress={500}

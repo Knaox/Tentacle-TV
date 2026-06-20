@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type Dispatch, type MutableRefObject, type ReactNode, type SetStateAction } from "react";
 import type { View } from "react-native";
 
 /**
@@ -36,6 +36,13 @@ interface TVNavState {
    */
   contentFocusNode: View | null;
   setContentFocusNode: Dispatch<SetStateAction<View | null>>;
+  /**
+   * DERNIER focusable de contenu réellement focalisé (carte de carrousel, etc.),
+   * mémorisé dans un REF (pas de state → pas de re-render à chaque focus de carte).
+   * Sert à RESTAURER le focus là où on était : sortie de sidebar (TVFocusBridgeRight)
+   * et retour depuis le lecteur. Réinitialisé à null au changement d'écran.
+   */
+  lastContentNodeRef: MutableRefObject<View | null>;
 }
 
 const TVNavContext = createContext<TVNavState>({
@@ -47,6 +54,7 @@ const TVNavContext = createContext<TVNavState>({
   setRailFocused: () => {},
   contentFocusNode: null,
   setContentFocusNode: () => {},
+  lastContentNodeRef: { current: null },
 });
 
 export function TVNavProvider({ children }: { children: ReactNode }) {
@@ -55,12 +63,14 @@ export function TVNavProvider({ children }: { children: ReactNode }) {
   const [railActiveNode, setRailActiveNode] = useState<View | null>(null);
   const [railFocused, setRailFocused] = useState(false);
   const [contentFocusNode, setContentFocusNode] = useState<View | null>(null);
+  const lastContentNodeRef = useRef<View | null>(null);
   const value = useMemo(
     () => ({
       railFocusSignal, requestRailFocus,
       railActiveNode, setRailActiveNode,
       railFocused, setRailFocused,
       contentFocusNode, setContentFocusNode,
+      lastContentNodeRef,
     }),
     [railFocusSignal, requestRailFocus, railActiveNode, railFocused, contentFocusNode],
   );

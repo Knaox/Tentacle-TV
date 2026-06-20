@@ -154,6 +154,24 @@ export function SkipBackIcon({ size = S, color = C }: IconProps) {
   );
 }
 
+export function FastForwardIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <Path d="M2 5l9 7-9 7V5z" />
+      <Path d="M13 5l9 7-9 7V5z" />
+    </Svg>
+  );
+}
+
+export function RewindIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <Path d="M22 5l-9 7 9 7V5z" />
+      <Path d="M11 5l-9 7 9 7V5z" />
+    </Svg>
+  );
+}
+
 export function NextTrackIcon({ size = S, color = C }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">

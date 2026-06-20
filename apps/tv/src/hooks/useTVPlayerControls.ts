@@ -4,8 +4,10 @@ import { useScrubGestures } from "./useScrubGestures";
 import { useScrubController } from "./useScrubController";
 
 const OVERLAY_HIDE_MS = 5000;
-/** Durée d'affichage du badge « +30s / −10s » après un skip OSD caché */
-const SKIP_BADGE_MS = 1000;
+/** Fenêtre de cumul des sauts consécutifs (= durée d'affichage du badge). Tant
+ *  qu'on ré-appuie dans cette fenêtre et dans le MÊME sens, le badge cumule
+ *  (+30 → +60 → +90 ; −10 → −20 → −30). */
+const SKIP_BADGE_MS = 1500;
 
 interface TVPlayerControlsOptions {
   paused: boolean;
@@ -53,15 +55,22 @@ export function useTVPlayerControls({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Timestamp of last showOverlay call — used to debounce playPause events */
   const lastShowOverlayRef = useRef(0);
+  // État pause LU à l'armement de l'auto-hide. La closure `paused` de showOverlay
+  // était périmée au retour de scrub (confirmScrub appelle showOverlay juste après
+  // avoir demandé la reprise, avant le re-render) → timer jamais armé → OSD bloqué
+  // à l'écran. Un ref synchronisé à chaque render le corrige : l'effet [paused]
+  // ré-appelle showOverlay au passage paused→false et arme alors le timer.
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   const showOverlay = useCallback(() => {
     lastShowOverlayRef.current = Date.now();
     setOverlayVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (!paused && !panelOpen) {
+    if (!pausedRef.current && !panelOpen) {
       hideTimerRef.current = setTimeout(() => setOverlayVisible(false), OVERLAY_HIDE_MS);
     }
-  }, [paused, panelOpen]);
+  }, [panelOpen]);
 
   useEffect(() => {
     showOverlay();
@@ -86,6 +95,8 @@ export function useTVPlayerControls({
   // Netflix. OSD visible (boutons ±10/30) : la seekbar montre déjà le saut. ---
   const [skipFlash, setSkipFlash] = useState<{ delta: number; id: number } | null>(null);
   const skipFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Cumul des sauts consécutifs de même sens dans la fenêtre SKIP_BADGE_MS.
+  const skipAccumRef = useRef(0);
   useEffect(() => () => { if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current); }, []);
 
   const skipBy = useCallback((delta: number) => {
@@ -94,11 +105,16 @@ export function useTVPlayerControls({
     const clamped = Math.max(0, dur > 0 ? Math.min(target, dur) : target);
     currentTimeRef.current = clamped;
     onSeekRef.current(clamped);
-    if (!overlayVisibleRef.current) {
-      setSkipFlash({ delta, id: Date.now() });
-      if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current);
-      skipFlashTimerRef.current = setTimeout(() => setSkipFlash(null), SKIP_BADGE_MS);
-    }
+
+    // Badge cumulatif : appuis répétés dans le MÊME sens → +30/+60/+90 (ou
+    // −10/−20…). Un saut en sens opposé (ou hors fenêtre) repart du delta seul.
+    // Le seek lui-même reste incrémental (currentTimeRef se cumule). Affiché
+    // que l'OSD soit visible (clic bouton) ou caché (raccourci télécommande).
+    const sameDir = skipAccumRef.current !== 0 && Math.sign(delta) === Math.sign(skipAccumRef.current);
+    skipAccumRef.current = sameDir ? skipAccumRef.current + delta : delta;
+    setSkipFlash({ delta: skipAccumRef.current, id: Date.now() });
+    if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current);
+    skipFlashTimerRef.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, SKIP_BADGE_MS);
   }, []);
 
   const handleSkipForward = useCallback(() => skipBy(30), [skipBy]);
@@ -113,7 +129,9 @@ export function useTVPlayerControls({
     onStartScrub: scrub.startScrubbing,
     onNudgeScrub: scrub.nudgeScrub,
     onSpeedLabel: scrub.setSpeedLabel,
-    onEndScrub: scrub.endHold,
+    // Lever du doigt : auto-validation après inactivité (seek + reprise) — plus
+    // besoin d'appuyer sur play après une avance rapide shuttle.
+    onEndScrub: scrub.endShuttleGesture,
     onWake: showOverlay,
   });
 
@@ -147,6 +165,13 @@ export function useTVPlayerControls({
     onKeyUp: scrub.onHoldRelease,
     onDown: () => { if (!scrubbingRef.current && !panelOpenRef.current) showOverlay(); },
     onUp: () => { if (!scrubbingRef.current && !panelOpenRef.current) showOverlay(); },
+    // OK (SELECT) pendant le scrub : valide le seek où que soit le focus — le scrub
+    // au raccourci ne déplace plus le focus sur play/pause, donc OK doit confirmer
+    // globalement (le bouton play/pause focalisé confirme aussi via son onPress).
+    onSelect: () => {
+      if (panelOpenRef.current) return;
+      if (scrubbingRef.current) scrub.confirmScrub();
+    },
     onAnyPress: () => {
       if (skipAnyPressRef.current) { skipAnyPressRef.current = false; return; }
       if (scrubbingRef.current || panelOpenRef.current) return;
@@ -167,5 +192,8 @@ export function useTVPlayerControls({
     guardScrub,
     handleSkipForward,
     handleSkipBack,
+    buttonSeekStart: scrub.startButtonSeek,
+    buttonSeekStop: scrub.stopButtonSeek,
+    scrubViaButton: scrub.scrubViaButton,
   };
 }

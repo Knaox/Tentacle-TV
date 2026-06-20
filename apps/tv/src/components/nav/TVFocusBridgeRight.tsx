@@ -15,14 +15,17 @@ import { RAIL_EXPANDED } from "./TVSideRail";
  * nœud publié → les écrans qui sortent déjà bien (grilles) ne sont pas affectés.
  */
 export function TVFocusBridgeRight() {
-  const { railFocused, contentFocusNode } = useTVNav();
+  const { railFocused, contentFocusNode, lastContentNodeRef } = useTVNav();
 
-  if (Platform.OS !== "ios" || !railFocused || !contentFocusNode) return null;
+  // Sortie du rail : revenir sur le DERNIER élément de contenu focalisé (mémoire),
+  // sinon sur le nœud d'entrée publié par l'écran.
+  const target = lastContentNodeRef.current ?? contentFocusNode;
+  if (Platform.OS !== "ios" || !railFocused || !target) return null;
 
   return (
     // @ts-ignore — props TVFocusGuideView (react-native-tvos)
     <TVFocusGuideView
-      destinations={[contentFocusNode]}
+      destinations={[target]}
       // À droite du rail déployé (ne chevauche pas les items → n'interfère pas
       // avec la nav interne haut/bas).
       style={{ position: "absolute", left: RAIL_EXPANDED, right: 0, top: 0, bottom: 0 }}

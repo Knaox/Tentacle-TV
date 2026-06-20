@@ -27,6 +27,8 @@ interface TVRemoteOptions {
   onFastForward?: () => void;
   /** Called on any D-pad direction or select — useful for re-showing overlays */
   onAnyPress?: () => void;
+  /** Called on SELECT (OK) specifically — ex. valider le scrub où qu'en soit le focus */
+  onSelect?: () => void;
 }
 
 /**
@@ -127,6 +129,7 @@ export function useTVRemote(options: TVRemoteOptions) {
         o.onAnyPress?.();
         break;
       case "select":
+        o.onSelect?.();
         o.onAnyPress?.();
         break;
     }
