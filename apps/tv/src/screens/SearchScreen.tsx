@@ -73,6 +73,7 @@ export function SearchScreen({ navigation }: Props) {
             onDelete={handleDelete}
             onClear={handleClear}
             onVoiceResult={(text) => setQuery(text)}
+            onSetQuery={setQuery}
           />
         </View>
 

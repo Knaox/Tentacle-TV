@@ -111,7 +111,8 @@ export function useTVPlayerControls({
   useScrubGestures({
     enabled: !panelOpen && (scrub.scrubbing || !overlayVisible),
     onStartScrub: scrub.startScrubbing,
-    onStepScrub: scrub.moveScrub,
+    onNudgeScrub: scrub.nudgeScrub,
+    onSpeedLabel: scrub.setSpeedLabel,
     onEndScrub: scrub.endHold,
     onWake: showOverlay,
   });
@@ -130,12 +131,10 @@ export function useTVPlayerControls({
     onPlayPause: () => {
       if (panelOpenRef.current) return;
       if (scrubbingRef.current) { scrub.confirmScrub(); return; }
-      // OSD caché → 1er appui montre l'OSD (pas de toggle). Bloque aussi 300ms
-      // après showOverlay pour éviter le double-event Shield (select + playPause).
-      if (!overlayVisibleRef.current || (Date.now() - lastShowOverlayRef.current < 300)) {
-        showOverlay();
-        return;
-      }
+      // Bouton matériel dédié ▶︎❙❙ (eventType "playPause", routé séparément de
+      // "select" par useTVRemote) : TOUJOURS toggler + montrer l'OSD, même OSD
+      // caché. Le débounce anti double-event Shield (select+playPause) reste sur
+      // le chemin select/onAnyPress (idempotent), pas ici.
       onPlayPause();
       showOverlay();
     },

@@ -1,5 +1,5 @@
-import { memo, useEffect, useMemo, useState } from "react";
-import { View, Text, TVFocusGuideView } from "react-native";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, TVFocusGuideView, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon } from "./icons/TVIcons";
 import { TVTrickplayPreview } from "./player/TVTrickplayPreview";
+import { SpeedPill } from "./player/SpeedPill";
 import { useOverlayFocus } from "./player/focus/useOverlayFocus";
 import type { UseTVTrickplayResult } from "../hooks/useTVTrickplay";
 import { Colors } from "../theme/colors";
@@ -79,7 +80,18 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   const focus = useOverlayFocus({ focusSignal, scrubbing });
 
   // --- Trickplay : tuile du curseur fantôme, en mode scrub uniquement ---
-  const [barWidth, setBarWidth] = useState(0);
+  // Géométrie de la seekbar mesurée en coords fenêtre : la vignette est rendue
+  // dans une couche plein écran NON rognée (sinon le LinearGradient du bas la
+  // tronque quand elle déborde vers le haut).
+  const { width: screenWidth } = useWindowDimensions();
+  const seekbarWrapRef = useRef<View>(null);
+  const [seekbarRect, setSeekbarRect] = useState<{ x: number; y: number; width: number } | null>(null);
+  const measureSeekbar = useCallback(() => {
+    seekbarWrapRef.current?.measureInWindow((x, y, width) => {
+      if (width > 0) setSeekbarRect({ x, y, width });
+    });
+  }, []);
+
   const previewVisible = scrubbing;
   const trickFrame = useMemo(() => {
     if (!previewVisible || !trickplay) return null;
@@ -89,6 +101,9 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   useEffect(() => {
     if (trickFrame && trickplay) trickplay.preloadNeighbors(trickFrame.tileIndex);
   }, [trickFrame, trickplay]);
+
+  // Re-mesurer à l'entrée en scrub (layout stabilisé).
+  useEffect(() => { if (previewVisible) measureSeekbar(); }, [previewVisible, measureSeekbar]);
 
   const previewPct = previewVisible && duration > 0
     ? Math.min((scrubPosition / duration) * 100, 100)
@@ -110,6 +125,21 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           cible le MÊME dernier bouton pour la ré-entrée depuis le fond et lève le
           focus préféré permanent qui causait le « saut » sur tvOS. */}
       <TVFocusGuideView autoFocus style={{ flex: 1, justifyContent: "space-between" }}>
+      {/* Vignette trickplay — couche plein écran NON rognée, au-dessus de la
+          seekbar via la géométrie mesurée (sinon rognée par le gradient bas) */}
+      {previewVisible && seekbarRect && (
+        <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
+          <TVTrickplayPreview
+            visible
+            positionSeconds={scrubPosition}
+            frame={trickFrame}
+            info={trickplay?.info ?? null}
+            anchorX={seekbarRect.x + (previewPct / 100) * seekbarRect.width}
+            parentWidth={screenWidth}
+            seekbarTop={seekbarRect.y}
+          />
+        </View>
+      )}
       {/* Top gradient */}
       <LinearGradient
         colors={["rgba(0,0,0,0.7)", "transparent"]}
@@ -130,20 +160,8 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
         </View>
       </LinearGradient>
 
-      {/* Speed indicator (scrub accéléré) */}
-      {!!speedLabel && (
-        <View style={{
-          position: "absolute", top: "45%", alignSelf: "center",
-          backgroundColor: "rgba(0,0,0,0.7)", borderRadius: 12,
-          paddingHorizontal: 24, paddingVertical: 12,
-        }}>
-          <Text style={{
-            color: Colors.textPrimary, fontSize: 28, fontWeight: "800",
-          }}>
-            {speedLabel}
-          </Text>
-        </View>
-      )}
+      {/* Indicateur de vitesse (avance rapide shuttle) — pastille animée */}
+      <SpeedPill label={speedLabel ?? null} />
 
       {/* Bottom gradient with controls */}
       <LinearGradient
@@ -160,21 +178,13 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           }}>
             {formatTime(scrubbing ? scrubPosition : currentTime)}
           </Text>
-          {/* Wrapper relatif : héberge la piste (overflow hidden) + la vignette */}
+          {/* Wrapper de la piste — mesuré (coords fenêtre) pour positionner la
+              vignette trickplay dans la couche plein écran non rognée. */}
           <View
+            ref={seekbarWrapRef}
             style={{ flex: 1, marginHorizontal: 16 }}
-            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+            onLayout={measureSeekbar}
           >
-            {previewVisible && (
-              <TVTrickplayPreview
-                visible
-                positionSeconds={scrubPosition}
-                frame={trickFrame}
-                info={trickplay?.info ?? null}
-                anchorX={(previewPct / 100) * barWidth}
-                parentWidth={barWidth}
-              />
-            )}
             <View style={{
               height: 5, backgroundColor: "rgba(255,255,255,0.15)",
               borderRadius: 3, overflow: "hidden",

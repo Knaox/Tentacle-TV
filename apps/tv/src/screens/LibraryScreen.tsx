@@ -168,6 +168,14 @@ export function LibraryScreen({ route, navigation }: Props) {
       {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
         <FlashList
+          // Remonter la liste à CHAQUE changement de bibliothèque : sans `key`,
+          // FlashList est réutilisée et conserve son contentOffset interne. Le
+          // resetScroll() du useEffect court alors trop tôt (keepPreviousData
+          // affiche encore l'ancienne biblio / relayout en cours) → offset
+          // résiduel = page « légèrement défilée ». Un conteneur neuf repart à 0
+          // (et item 0 reprend hasTVPreferredFocus). Le tri/genre ne changent
+          // PAS la key → pas de remontage → pas de vol de focus sur les pills.
+          key={libraryId}
           ref={flashListRef}
           data={items}
           numColumns={COLUMNS}

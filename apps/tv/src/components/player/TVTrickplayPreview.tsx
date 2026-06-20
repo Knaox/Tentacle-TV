@@ -11,17 +11,21 @@ interface TVTrickplayPreviewProps {
   /** null → pas de trickplay : pastille horodatage seule. */
   frame: TVTrickplayFrame | null;
   info: TrickplayInfo | null;
-  /** Position X du curseur (px) dans le conteneur de la seekbar. */
+  /** Position X du curseur (px) dans la couche de rendu (coords plein écran). */
   anchorX: number;
-  /** Largeur du conteneur de la seekbar (px), pour le clamp aux bords. */
+  /** Largeur de la couche de rendu (px), pour le clamp aux bords. */
   parentWidth: number;
+  /** Y (coords fenêtre) du haut de la seekbar : la vignette se place AU-DESSUS.
+   *  Si absent, fallback historique sur `bottom` relatif au parent. */
+  seekbarTop?: number;
 }
 
-// Plus large que le mobile (224) : la vignette se regarde à 3 m.
-const DISPLAY_WIDTH = 320;
+// Discret : plus petit que l'ancien 320 (la vignette ne doit pas masquer la
+// vidéo), tout en restant lisible à 3 m.
+const DISPLAY_WIDTH = 200;
 const TIMESTAMP_PILL_WIDTH = 84;
 const TIMESTAMP_PILL_HEIGHT = 34;
-const GAP_TO_SEEKBAR = 28;
+const GAP_TO_SEEKBAR = 22;
 
 function formatDuration(s: number): string {
   if (!isFinite(s) || s < 0) s = 0;
@@ -39,7 +43,7 @@ function formatDuration(s: number): string {
  * overflow:hidden + Image décalée en négatif.
  */
 function TVTrickplayPreviewImpl({
-  visible, positionSeconds, frame, info, anchorX, parentWidth,
+  visible, positionSeconds, frame, info, anchorX, parentWidth, seekbarTop,
 }: TVTrickplayPreviewProps) {
   const hasFrame = frame !== null && info !== null;
 
@@ -51,6 +55,13 @@ function TVTrickplayPreviewImpl({
     const max = Math.max(0, parentWidth - cardWidth);
     return Math.max(0, Math.min(anchorX - cardWidth / 2, max));
   }, [anchorX, parentWidth, cardWidth]);
+
+  // Positionnement vertical : si la couche est plein écran (seekbarTop fourni),
+  // on ancre par `top` AU-DESSUS de la seekbar (non rogné) ; sinon fallback
+  // historique `bottom` relatif au parent.
+  const vertical: { top: number } | { bottom: number } = seekbarTop != null
+    ? { top: seekbarTop - cardHeight - GAP_TO_SEEKBAR }
+    : { bottom: GAP_TO_SEEKBAR };
 
   const mosaicWidth = hasFrame ? Math.round(info.Width * info.TileWidth * scale) : 0;
   const mosaicHeight = hasFrame ? Math.round(info.Height * info.TileHeight * scale) : 0;
@@ -65,7 +76,7 @@ function TVTrickplayPreviewImpl({
       style={{
         position: "absolute",
         left,
-        bottom: GAP_TO_SEEKBAR,
+        ...vertical,
         width: cardWidth,
         alignItems: "center",
         zIndex: 10,
@@ -79,8 +90,8 @@ function TVTrickplayPreviewImpl({
             borderRadius: 8,
             overflow: "hidden",
             backgroundColor: "#000",
-            borderWidth: 2,
-            borderColor: "rgba(255,255,255,0.85)",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.4)",
             elevation: 12,
           }}
         >

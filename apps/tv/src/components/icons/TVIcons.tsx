@@ -248,4 +248,24 @@ export function CloseIcon({ size = S, color = C }: IconProps) {
   );
 }
 
+// Backspace ⌫ (Lucide "delete") — touche d'effacement arrière
+export function BackspaceIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.482l6.328 5.74A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z" />
+      <Line x1="18" y1="9" x2="12" y2="15" />
+      <Line x1="12" y1="9" x2="18" y2="15" />
+    </Svg>
+  );
+}
+
+// Barre d'espace — symbole ⎵ (deux montants + base)
+export function SpaceIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M4 9v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" />
+    </Svg>
+  );
+}
+
 export const LibraryIcon = MovieIcon;

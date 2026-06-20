@@ -60,11 +60,18 @@ export function MediaDetailScreen({ route, navigation }: Props) {
       const task = InteractionManager.runAfterInteractions(() => {
         queryClient.invalidateQueries({ queryKey: ["item", itemId] });
       });
+      // react-native-tvos #849 : repasser hasTVPreferredFocus à true alors qu'il
+      // l'est déjà en prop est un NO-OP → le focus n'est pas re-saisi. Si le
+      // focus a été perdu (ex. retour d'un player figé sans aucun focusable),
+      // l'écran revenait sans focus → blocage. Cycle false→true pour forcer la
+      // re-saisie de façon fiable.
+      let innerTimer: ReturnType<typeof setTimeout> | undefined;
       const timer = setTimeout(() => {
-        // @ts-ignore setNativeProps exists on react-native-tvos
-        playBtnRef.current?.setNativeProps({ hasTVPreferredFocus: true });
+        const node = playBtnRef.current as { setNativeProps?: (p: object) => void } | null;
+        node?.setNativeProps?.({ hasTVPreferredFocus: false });
+        innerTimer = setTimeout(() => node?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
       }, 150);
-      return () => { task.cancel(); clearTimeout(timer); };
+      return () => { task.cancel(); clearTimeout(timer); clearTimeout(innerTimer); };
     }, [queryClient, itemId])
   );
 

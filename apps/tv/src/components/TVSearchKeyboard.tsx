@@ -1,9 +1,16 @@
-import { View, Text } from "react-native";
+import { View, Text, TextInput, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
-import { MicIcon } from "./icons/TVIcons";
+import { MicIcon, SpaceIcon, BackspaceIcon, CloseIcon } from "./icons/TVIcons";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { Colors, Radius } from "../theme/colors";
+
+// tvOS : Apple ne donne AUCUN accès micro programmatique aux apps tierces
+// (erreur 'nohw' au runtime, AVAudioSession record indispo). La SEULE dictée
+// possible passe par le clavier SYSTÈME : un TextInput natif focusé l'ouvre en
+// plein écran, et l'utilisateur maintient le bouton micro de la Siri Remote pour
+// dicter. Android TV, lui, autorise le micro → bouton inline (useSpeechRecognition).
+const IS_TVOS = Platform.OS === "ios";
 
 const KEYS = [
   ["A", "B", "C", "D", "E", "F"],
@@ -20,9 +27,11 @@ interface TVSearchKeyboardProps {
   onDelete: () => void;
   onClear: () => void;
   onVoiceResult?: (text: string) => void;
+  /** Remplace toute la query (clavier système tvOS / dictée). */
+  onSetQuery?: (text: string) => void;
 }
 
-export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoiceResult }: TVSearchKeyboardProps) {
+export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoiceResult, onSetQuery }: TVSearchKeyboardProps) {
   const { t } = useTranslation("common");
 
   const { isListening, isPending, isAvailable, startListening, stopListening } = useSpeechRecognition({
@@ -37,33 +46,57 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
 
   return (
     <View style={{ width: 260 }}>
-      {/* Query row with mic icon */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <Focusable variant="button" onPress={onDelete} style={{ flex: 1 }}>
-          <View style={{
-            backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
-            padding: 10, minHeight: 40,
-            borderWidth: 1, borderColor: Colors.glassBorder,
-          }}>
-            <Text style={{ color: Colors.textPrimary, fontSize: 14 }}>
-              {query || " "}
-              <Text style={{ color: Colors.accentPurple }}>|</Text>
-            </Text>
-          </View>
-        </Focusable>
-
-        {isAvailable && (
-          <Focusable variant="button" onPress={isListening ? stopListening : startListening}>
+      {/* Query row */}
+      {IS_TVOS ? (
+        // tvOS : TextInput natif → sélectionner ouvre le clavier système plein
+        // écran ; là, hold du bouton micro Siri Remote = dictée. La grille reste
+        // dispo en dessous pour la saisie au pad. Champ contrôlé par `query`.
+        <View style={{
+          flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8,
+          backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
+          paddingHorizontal: 10, minHeight: 44,
+          borderWidth: 1, borderColor: Colors.glassBorder,
+        }}>
+          <MicIcon size={18} color={Colors.accentPurpleLight} />
+          <TextInput
+            value={query}
+            onChangeText={onSetQuery}
+            placeholder={t("voiceOrType", { defaultValue: "Parler ou saisir…" })}
+            placeholderTextColor={Colors.textTertiary}
+            returnKeyType="search"
+            autoCorrect={false}
+            style={{ flex: 1, color: Colors.textPrimary, fontSize: 15, paddingVertical: 8 }}
+          />
+        </View>
+      ) : (
+        // Android TV : accès micro réel → bouton inline (useSpeechRecognition).
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <Focusable variant="button" onPress={onDelete} style={{ flex: 1 }}>
             <View style={{
-              width: 40, height: 40, borderRadius: Radius.small,
-              backgroundColor: micBg,
-              justifyContent: "center", alignItems: "center",
+              backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
+              padding: 10, minHeight: 40,
+              borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
-              <MicIcon size={20} color={isListening || isPending ? "#fff" : Colors.textPrimary} />
+              <Text style={{ color: Colors.textPrimary, fontSize: 14 }}>
+                {query || " "}
+                <Text style={{ color: Colors.accentPurple }}>|</Text>
+              </Text>
             </View>
           </Focusable>
-        )}
-      </View>
+
+          {isAvailable && (
+            <Focusable variant="button" onPress={isListening ? stopListening : startListening}>
+              <View style={{
+                width: 40, height: 40, borderRadius: Radius.small,
+                backgroundColor: micBg,
+                justifyContent: "center", alignItems: "center",
+              }}>
+                <MicIcon size={20} color={isListening || isPending ? "#fff" : Colors.textPrimary} />
+              </View>
+            </Focusable>
+          )}
+        </View>
+      )}
 
       {/* Keyboard grid */}
       {KEYS.map((row, rowIdx) => (
@@ -82,44 +115,36 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
         </View>
       ))}
 
-      {/* Special keys */}
+      {/* Special keys — icônes seules (labels via accessibilité, pas de texte UI) */}
       <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
-        <Focusable variant="button" onPress={() => onKeyPress(" ")}>
+        <Focusable variant="button" onPress={() => onKeyPress(" ")} accessibilityLabel={t("space", { defaultValue: "Espace" })}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.10)",
             borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
             justifyContent: "center", alignItems: "center",
           }}>
-            <Text style={{ color: Colors.textPrimary, fontSize: 12, fontWeight: "500" }}>
-              {t("space", { defaultValue: "Space" })}
-            </Text>
+            <SpaceIcon size={20} color={Colors.textPrimary} />
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={onDelete}>
+        <Focusable variant="button" onPress={onDelete} accessibilityLabel={t("delete", { defaultValue: "Supprimer" })}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.10)",
             borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
             justifyContent: "center", alignItems: "center",
-            flexDirection: "row", gap: 4,
           }}>
-            <Text style={{ color: Colors.textPrimary, fontSize: 14 }}>&#x232B;</Text>
-            <Text style={{ color: Colors.textPrimary, fontSize: 12, fontWeight: "500" }}>
-              {t("delete", { defaultValue: "Delete" })}
-            </Text>
+            <BackspaceIcon size={20} color={Colors.textPrimary} />
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={onClear}>
+        <Focusable variant="button" onPress={onClear} accessibilityLabel={t("clear", { defaultValue: "Effacer" })}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(239,68,68,0.15)",
             borderWidth: 1, borderColor: "rgba(239,68,68,0.3)",
             justifyContent: "center", alignItems: "center",
           }}>
-            <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "600" }}>
-              {t("clear", { defaultValue: "Clear" })}
-            </Text>
+            <CloseIcon size={18} color="#f87171" />
           </View>
         </Focusable>
       </View>

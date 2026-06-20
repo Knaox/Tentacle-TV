@@ -15,72 +15,114 @@ interface HWEvent {
   body?: { state: "Began" | "Changed" | "Ended"; x: number; y: number; velocityX: number; velocityY: number };
 }
 
-/** Déplacement horizontal (points touchpad) avant d'ENTRER en scrub (≠ effleurement). */
-const SCRUB_START_PX = 28;
-/** Déplacement par PAS de scrub une fois entré (chaque pas = ±10s × palier). */
-const SCRUB_STEP_PX = 22;
+/** Translation horizontale (pts) sous laquelle on ne scrub pas (centre mort). */
+const DEAD_ZONE_PX = 20;
+/** Cadence du loop d'avance continue (~30 fps). */
+const LOOP_MS = 33;
+/**
+ * Courbe shuttle : translation |x| (pts depuis le début du geste) → vitesse de
+ * scrub (secondes vidéo par seconde réelle) + label de palier façon DVD. Lookup
+ * par palier (plus loin = plus vite), parité avec les labels 2x/4x/8x affichés.
+ */
+const SPEED_CURVE: { px: number; rate: number; label: string | null }[] = [
+  { px: DEAD_ZONE_PX, rate: 0, label: null },
+  { px: 50, rate: 10, label: null },
+  { px: 100, rate: 30, label: "2x" },
+  { px: 160, rate: 80, label: "4x" },
+  { px: 220, rate: 200, label: "8x" },
+];
+
+function rateFor(translationX: number): { rate: number; label: string | null } {
+  const mag = Math.abs(translationX);
+  if (mag < DEAD_ZONE_PX) return { rate: 0, label: null };
+  const dir = translationX > 0 ? 1 : -1;
+  let chosen = SPEED_CURVE[0];
+  for (const t of SPEED_CURVE) if (mag >= t.px) chosen = t;
+  const label = chosen.label ? `${dir > 0 ? "▶▶" : "◀◀"} ${chosen.label}` : null;
+  return { rate: chosen.rate * dir, label };
+}
 
 /**
- * Scrub gestuel — variante **Apple TV (tvOS)**.
+ * Scrub gestuel — variante **Apple TV (tvOS)**, modèle **SHUTTLE**.
  *
- * La Siri Remote n'émet ni `longLeft`/`longRight` ni `rewind`/`fastForward` : sans
- * ça, l'avance/recul rapide était MORTE sur Apple TV. On active le pan gesture
- * (`enableTVPanGesture`) UNIQUEMENT quand on peut scrubber (OSD caché ou scrub en
- * cours) et on traduit le glissement du pouce en pas de scrub — qui déclenchent
- * le MÊME mécanisme partagé que `longLeft`/`longRight` côté Android.
+ * La Siri Remote n'émet ni `longLeft`/`longRight` ni `rewind`/`fastForward`. On
+ * active le pan gesture et on traduit la TRANSLATION du doigt (depuis le début
+ * du geste, donc relative → repart de 0 à chaque pose) en une VITESSE de scrub
+ * continue : plus le doigt est loin du centre, plus c'est rapide (paliers
+ * 2x/4x/8x). Un loop avance la position fantôme par vitesse×dt.
  *
- * Pan actif désactive les swipes directionnels : ce n'est pas gênant ici car on
- * ne l'active que lorsqu'il n'y a pas de boutons à naviguer (OSD caché). Quand
- * l'OSD est visible (boutons), `enabled=false` → navigation focus normale.
- *
- * Note : seuils en points du touchpad — à affiner sur Apple TV réel.
+ * Avantage vs l'ancien modèle « déplacement → pas » : la surface finie du
+ * trackpad ne pose plus problème. Lever puis reposer le doigt repart proprement
+ * (translation = 0) SANS reculer — le scrub reste ouvert côté cerveau (OK valide,
+ * BACK annule), startScrubbing étant idempotent.
  */
 export function useScrubGestures({
-  enabled, onStartScrub, onStepScrub, onEndScrub, onWake,
+  enabled, onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake,
 }: ScrubGestureHandlers): void {
+  // Callbacks à jour sans recréer le handler natif.
+  const cbRef = useRef({ onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake });
+  cbRef.current = { onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake };
+
+  const startXRef = useRef(0);        // origine du geste (x au Began)
+  const gestureScrubRef = useRef(false); // ce geste a-t-il franchi la dead-zone
+  const rateRef = useRef(0);          // vitesse courante (s vidéo / s réelle)
+  const lastLabelRef = useRef<string | null>(null);
+  const loopRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastTickRef = useRef(0);
+
+  const stopLoop = () => {
+    if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
+    rateRef.current = 0;
+  };
+  const startLoop = () => {
+    if (loopRef.current) return;
+    lastTickRef.current = Date.now();
+    loopRef.current = setInterval(() => {
+      const now = Date.now();
+      const dt = (now - lastTickRef.current) / 1000;
+      lastTickRef.current = now;
+      if (rateRef.current !== 0) cbRef.current.onNudgeScrub(rateRef.current * dt);
+    }, LOOP_MS);
+  };
+
   useEffect(() => {
     if (!enabled) return;
     TVEventControl.enableTVPanGesture();
-    return () => TVEventControl.disableTVPanGesture();
+    return () => { TVEventControl.disableTVPanGesture(); stopLoop(); };
   }, [enabled]);
-
-  const startXRef = useRef(0);
-  const lastStepXRef = useRef(0);
-  const scrubbingRef = useRef(false);
 
   useTVEventHandler((evt: HWEvent) => {
     if (!enabled || evt.eventType !== "pan" || !evt.body) return;
     const { state, x } = evt.body;
 
     if (state === "Began") {
-      startXRef.current = x;
-      lastStepXRef.current = x;
-      scrubbingRef.current = false;
+      startXRef.current = x;          // repère relatif → reprise propre au reposer
+      gestureScrubRef.current = false;
       return;
     }
 
     if (state === "Changed") {
-      if (!scrubbingRef.current) {
-        const totalDx = x - startXRef.current;
-        if (Math.abs(totalDx) >= SCRUB_START_PX) {
-          scrubbingRef.current = true;
-          lastStepXRef.current = x;
-          onStartScrub(totalDx > 0 ? "forward" : "backward");
-        }
-        return;
+      const tx = x - startXRef.current;
+      if (!gestureScrubRef.current) {
+        if (Math.abs(tx) < DEAD_ZONE_PX) return; // pas encore franchi la dead-zone
+        gestureScrubRef.current = true;
+        cbRef.current.onStartScrub();  // idempotent côté cerveau (garde)
+        startLoop();
       }
-      const stepDx = x - lastStepXRef.current;
-      if (Math.abs(stepDx) >= SCRUB_STEP_PX) {
-        lastStepXRef.current = x;
-        onStepScrub(stepDx > 0 ? "forward" : "backward");
-      }
+      const { rate, label } = rateFor(tx);
+      rateRef.current = rate;
+      if (label !== lastLabelRef.current) { lastLabelRef.current = label; cbRef.current.onSpeedLabel(label); }
       return;
     }
 
-    // Ended : glissement franc → garder le scrub ouvert (OK valide / BACK annule) ;
-    // simple effleurement → réveiller l'OSD (parité appui ←/→ Android).
-    if (scrubbingRef.current) onEndScrub();
-    else onWake();
-    scrubbingRef.current = false;
+    // Ended : stop la vitesse, le scrub reste ouvert (OK valide / BACK annule).
+    stopLoop();
+    if (lastLabelRef.current !== null) { lastLabelRef.current = null; cbRef.current.onSpeedLabel(null); }
+    if (gestureScrubRef.current) {
+      gestureScrubRef.current = false;
+      cbRef.current.onEndScrub();
+    } else {
+      cbRef.current.onWake();          // simple effleurement → réveiller l'OSD
+    }
   });
 }
