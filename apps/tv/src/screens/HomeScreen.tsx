@@ -153,8 +153,11 @@ function HomeScreenInner({ navigation }: Props) {
     <TVScreenFrame>
       {/* Ambient backdrop — sits behind everything, fades to focused item */}
       <TVAmbientBackdrop />
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
-      <TVFocusGuideView style={{ flex: 1 }}>
+      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos. `autoFocus`
+          garantit que le focus revient toujours sur un enfant focusable quand
+          l'écran regagne le focus (retour d'un player figé qui avait perdu le
+          focus) — sinon l'Accueil restait sans focus → blocage. */}
+      <TVFocusGuideView autoFocus style={{ flex: 1 }}>
       <ScrollView
         ref={scrollViewRef}
         style={{ flex: 1 }}

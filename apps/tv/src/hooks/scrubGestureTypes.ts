@@ -10,12 +10,16 @@ export type ScrubDir = "forward" | "backward";
 export interface ScrubGestureHandlers {
   /** Pan actif uniquement quand on PEUT scrubber (OSD caché ou déjà en scrub). */
   enabled: boolean;
-  /** Début d'un geste horizontal franc → entrer en scrub dans cette direction. */
-  onStartScrub: (dir: ScrubDir) => void;
-  /** Progression du geste → un pas de scrub (l'accélération par paliers du
-   *  cerveau s'applique automatiquement via le temps de maintien). */
-  onStepScrub: (dir: ScrubDir) => void;
-  /** Fin du geste → stopper l'accélération (le scrub reste ouvert : OK valide,
+  /** Franchissement de la dead-zone → entrer en scrub. Idempotent côté cerveau
+   *  (garde sur startScrubbing) : ne réinitialise PAS la position si déjà ouvert
+   *  → reprise propre après un lever/reposer de doigt (modèle shuttle). */
+  onStartScrub: () => void;
+  /** Loop d'avance CONTINUE : déplace la position fantôme d'un delta signé
+   *  (secondes vidéo). La vitesse est pilotée par la translation du doigt. */
+  onNudgeScrub: (deltaSeconds: number) => void;
+  /** Badge de vitesse façon DVD (« ▶▶ 4x » / « ◀◀ 2x ») ou null pour masquer. */
+  onSpeedLabel: (label: string | null) => void;
+  /** Fin du geste → stopper la vitesse (le scrub reste ouvert : OK valide,
    *  BACK annule, comme au relâchement d'un maintien Android). */
   onEndScrub: () => void;
   /** Effleurement léger (pas de scrub) → réveiller l'OSD, parité appui ←/→. */

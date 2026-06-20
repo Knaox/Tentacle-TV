@@ -88,6 +88,10 @@ export function useScrubController({
   }, [endHold, durationRef]);
 
   const startScrubbing = useCallback((dir?: "forward" | "backward") => {
+    // Déjà en scrub (ex. shuttle tvOS : doigt levé puis reposé) → NE PAS
+    // réinitialiser la position fantôme, juste garder l'OSD. Évite le saut au
+    // point de lecture live à la reprise du geste.
+    if (scrubbingRef.current) { showOverlay(); return; }
     scrubbingRef.current = true;
     setScrubbing(true);
     scrubPositionRef.current = currentTimeRef.current;
@@ -96,6 +100,18 @@ export function useScrubController({
     showOverlay();
     if (dir) moveScrub(dir);
   }, [showOverlay, moveScrub, currentTimeRef, onScrubPauseRef]);
+
+  // Avance CONTINUE de la position fantôme (modèle shuttle tvOS) : delta signé en
+  // secondes, clamp [0, durée]. N'utilise PAS les paliers de maintien (réservés au
+  // D-pad Android) — la vitesse est calculée par l'adaptateur de gestes.
+  const nudgeScrub = useCallback((deltaSeconds: number) => {
+    const dur = durationRef.current || 0;
+    const next = Math.max(0, dur > 0
+      ? Math.min(scrubPositionRef.current + deltaSeconds, dur)
+      : scrubPositionRef.current + deltaSeconds);
+    scrubPositionRef.current = next;
+    setScrubPosition(next);
+  }, [durationRef]);
 
   const confirmScrub = useCallback(() => {
     if (!scrubbingRef.current) return;
@@ -179,7 +195,7 @@ export function useScrubController({
 
   return {
     scrubbing, scrubPosition, speedLabel, scrubbingRef,
-    moveScrub, startScrubbing, confirmScrub, cancelScrub, endHold,
+    moveScrub, nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endHold,
     handleDpadDirection, handleLongDirection, handleMediaSeekKey, onHoldRelease,
   };
 }

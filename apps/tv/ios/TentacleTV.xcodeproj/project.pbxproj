@@ -10,12 +10,12 @@
 		00E356F31AD99517003FC87E /* TentacleTVTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* TentacleTVTests.m */; };
 		0C80B921A6F3F58F76C31292 /* libPods-TentacleTV.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-TentacleTV.a */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
-		AB12CD34EF5601234567AA01 /* Empty.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567AA02 /* Empty.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		57C010109388BEA9DAC690CB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		7699B88040F8A987B510C191 /* libPods-TentacleTV-TentacleTVTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-TentacleTV-TentacleTVTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		AB12CD34EF5601234567AA01 /* Empty.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567AA02 /* Empty.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,7 +35,6 @@
 		13B07F961A680F5B00A75B9A /* TentacleTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TentacleTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = TentacleTV/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AppDelegate.mm; path = TentacleTV/AppDelegate.mm; sourceTree = "<group>"; };
-		AB12CD34EF5601234567AA02 /* Empty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Empty.swift; path = TentacleTV/Empty.swift; sourceTree = "<group>"; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = TentacleTV/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = TentacleTV/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = TentacleTV/main.m; sourceTree = "<group>"; };
@@ -47,6 +46,7 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-TentacleTV.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = TentacleTV/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-TentacleTV-TentacleTVTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV-TentacleTVTests.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests.release.xcconfig"; sourceTree = "<group>"; };
+		AB12CD34EF5601234567AA02 /* Empty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Empty.swift; path = TentacleTV/Empty.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -280,9 +280,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV/Pods-TentacleTV-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV/Pods-TentacleTV-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -341,9 +345,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -358,9 +366,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV/Pods-TentacleTV-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV/Pods-TentacleTV-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -375,9 +387,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -436,7 +452,7 @@
 					"-lc++",
 					"$(inherited)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.tentacle.mobile.tests";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TentacleTV.app/TentacleTV";
 				TVOS_DEPLOYMENT_TARGET = 15.1;
@@ -460,7 +476,7 @@
 					"-lc++",
 					"$(inherited)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.tentacle.mobile.tests";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TentacleTV.app/TentacleTV";
 				TVOS_DEPLOYMENT_TARGET = 15.1;
@@ -474,6 +490,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 96K3M57W49;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = TentacleTV/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -502,6 +519,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 96K3M57W49;
 				INFOPLIST_FILE = TentacleTV/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -589,10 +607,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = appletvos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -661,10 +676,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = appletvos;
 				TVOS_DEPLOYMENT_TARGET = 15.1;

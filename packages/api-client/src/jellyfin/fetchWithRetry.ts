@@ -23,6 +23,28 @@ export interface FetchWithRetryState {
 }
 
 const AUTH_EXPIRE_THRESHOLD = 5;
+/** Timeout par requête : sans ça, un Jellyfin qui « pend » (TCP ouvert, aucune
+ *  réponse) laisse le fetch en attente INDÉFINIE → query bloquée en loading.
+ *  IMPORTANT : on N'utilise PAS AbortController/signal (passer un signal au
+ *  `fetch` cassait/annulait la requête PlaybackInfo POST sur certains runtimes RN
+ *  → le flux ne se résolvait jamais, lecteur figé au chargement). À la place,
+ *  `Promise.race` : le fetch tourne INTACT, on arrête juste d'attendre après le
+ *  délai. 30 s = très généreux (un serveur lent répond en deçà), tout en bornant
+ *  les vrais hangs infinis. Le fetch sous-jacent continue mais son résultat est
+ *  ignoré (inoffensif). */
+const REQUEST_TIMEOUT_MS = 30000;
+
+/** Échoue si `fetch` n'a pas répondu dans `timeoutMs`, SANS toucher au fetch
+ *  lui-même (pas de signal/abort). */
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  return new Promise<Response>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("RequestTimeout")), timeoutMs);
+    fetch(url, init).then(
+      (r) => { clearTimeout(timer); resolve(r); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
 
 /** HTTP fetch with transparent retry for backend restarts (5-15 s typical):
  *  502/503/504 + network errors → retry with short exponential backoff.
@@ -49,11 +71,11 @@ export async function fetchWithRetry<T>(
 
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
-      response = await fetch(`${opts.baseUrl}${opts.path}`, {
+      response = await fetchWithTimeout(`${opts.baseUrl}${opts.path}`, {
         ...opts.init,
         headers,
         credentials: opts.useCredentials ? "include" : undefined,
-      });
+      }, REQUEST_TIMEOUT_MS);
       networkError = null;
       // "Backend restarting" codes — retry silently
       if (response.status === 502 || response.status === 503 || response.status === 504) {
@@ -65,6 +87,8 @@ export async function fetchWithRetry<T>(
       break;
     } catch (err) {
       networkError = err;
+      // Erreurs réseau + timeout : retry avec backoff (connexion refusée =
+      // backend en redémarrage, récupération rapide typique).
       if (attempt < RETRY_DELAYS_MS.length) {
         await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
         continue;

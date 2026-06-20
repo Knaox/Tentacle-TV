@@ -42,15 +42,31 @@ interface CoreArgs {
  * Les `nextFocus*` (node handles) ne servent que sur Android (moteur de focus de
  * proximité) ; ignorés sur tvOS, donc inoffensifs — on les expose toujours.
  */
+/** Rangée transport HORIZONTALE (sans `back`, qui est sur la rangée du haut). */
+const TRANSPORT_ROW: TransportKey[] = [
+  "prev", "skipback", "playpause", "skipforward", "next", "episodes", "settings",
+];
+
 export function useOverlayFocusCore({ focusSignal, scrubbing, restore }: CoreArgs): OverlayFocusControl {
   const btnRefs = useRef<Partial<Record<TransportKey, FocusNode>>>({});
+  // Node handles natifs par bouton — alimentent nextFocusLeft/Right (Android :
+  // moteur de proximité ; tvOS : ignorés mais inoffensifs). Une map + un compteur
+  // de version (state) pour re-render quand un bouton conditionnel (prev/next/
+  // episodes) apparaît/disparaît → recâblage des voisins.
+  const handlesRef = useRef<Partial<Record<TransportKey, number>>>({});
+  const [handlesVersion, setHandlesVersion] = useState(0);
+  const bumpScheduledRef = useRef(false);
+  const bumpHandles = useCallback(() => {
+    if (bumpScheduledRef.current) return;
+    bumpScheduledRef.current = true;
+    queueMicrotask(() => { bumpScheduledRef.current = false; setHandlesVersion((v) => v + 1); });
+  }, []);
+
   const lastFocusedRef = useRef<TransportKey>("playpause");
   // Pendant la restauration, le moteur pose un focus transitoire sur le 1er
   // bouton : on gèle la mémorisation pour ne pas écraser le dernier réellement
   // utilisé.
   const restoringFocusRef = useRef(false);
-  const [playPauseNode, setPlayPauseNode] = useState<number | undefined>();
-  const [backNode, setBackNode] = useState<number | undefined>();
   // `hasTVPreferredFocus` ne doit valoir true qu'au MONTAGE (focus de départ sur
   // play/pause). Le laisser true en permanence le fait se rebattre contre la
   // mémoire du dernier bouton (autoFocus + restore) → focus qui « saute » sur
@@ -61,15 +77,28 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore }: CoreArg
     return () => clearTimeout(t);
   }, []);
 
-  const registerButton = useCallback((key: TransportKey) => (node: unknown) => {
-    btnRefs.current[key] = node as FocusNode;
-    if (key === "playpause" && node) {
-      const h = findNodeHandle(node as never); if (h) setPlayPauseNode(h);
+  // Callbacks de ref STABLES par bouton : si `registerButton(key)` renvoyait une
+  // nouvelle fonction à chaque render, React détacherait/rattacherait le ref à
+  // CHAQUE rendu (appel avec null puis le node) → la branche null supprimerait le
+  // handle + bumpHandles → re-render → boucle infinie (freeze de l'OSD). Mémoïsés,
+  // ils ne sont rappelés qu'au vrai montage (node) / démontage (null).
+  const refCbCache = useRef<Partial<Record<TransportKey, (node: unknown) => void>>>({});
+  const registerButton = useCallback((key: TransportKey) => {
+    let cb = refCbCache.current[key];
+    if (!cb) {
+      cb = (node: unknown) => {
+        btnRefs.current[key] = node as FocusNode;
+        if (node) {
+          const h = findNodeHandle(node as never);
+          if (h && handlesRef.current[key] !== h) { handlesRef.current[key] = h; bumpHandles(); }
+        } else if (handlesRef.current[key] !== undefined) {
+          delete handlesRef.current[key]; bumpHandles();
+        }
+      };
+      refCbCache.current[key] = cb;
     }
-    if (key === "back" && node) {
-      const h = findNodeHandle(node as never); if (h) setBackNode(h);
-    }
-  }, []);
+    return cb;
+  }, [bumpHandles]);
 
   // Restauration du dernier bouton utilisé à chaque signal.
   useEffect(() => {
@@ -89,21 +118,44 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore }: CoreArg
     return () => clearTimeout(timer);
   }, [scrubbing, restore]);
 
-  const lockFocus = scrubbing ? playPauseNode : undefined;
+  // Voisins gauche/droite parmi les boutons RÉELLEMENT rendus (handle présent) :
+  // saute automatiquement les conditionnels absents (prev/next/episodes).
+  const neighbors = useCallback((key: TransportKey): { left?: number; right?: number } => {
+    const present = TRANSPORT_ROW.filter((k) => handlesRef.current[k] !== undefined);
+    const idx = present.indexOf(key);
+    if (idx === -1) return {};
+    return {
+      left: idx > 0 ? handlesRef.current[present[idx - 1]] : undefined,
+      right: idx < present.length - 1 ? handlesRef.current[present[idx + 1]] : undefined,
+    };
+  }, []);
 
   const buttonProps = useCallback((key: TransportKey): OverlayButtonProps => {
     const onFocus = () => { if (!restoringFocusRef.current) lastFocusedRef.current = key; };
+    const playPauseNode = handlesRef.current.playpause;
+    const backNode = handlesRef.current.back;
+    const preferred = key === "playpause" ? initialPreferred : undefined;
+
+    if (scrubbing) {
+      // Verrou complet sur play/pause : ←/→/↑/↓ ne déplacent pas le focus, OK
+      // confirme le scrub. (back reste accessible vers le bas.)
+      if (key === "back") return { onFocus, nextFocusDown: playPauseNode };
+      return {
+        onFocus, hasTVPreferredFocus: preferred,
+        nextFocusUp: playPauseNode, nextFocusDown: playPauseNode,
+        nextFocusLeft: playPauseNode, nextFocusRight: playPauseNode,
+      };
+    }
+
     if (key === "back") return { onFocus, nextFocusDown: playPauseNode };
-    if (key === "playpause") return {
-      onFocus,
-      // Focus de départ uniquement (cf. initialPreferred) → pas de concurrence
-      // permanente avec la mémoire du dernier bouton.
-      hasTVPreferredFocus: initialPreferred,
-      nextFocusUp: scrubbing ? lockFocus : backNode,
-      nextFocusDown: lockFocus, nextFocusLeft: lockFocus, nextFocusRight: lockFocus,
+    // Chaînage horizontal explicite entre boutons adjacents rendus.
+    const { left, right } = neighbors(key);
+    return {
+      onFocus, hasTVPreferredFocus: preferred,
+      nextFocusUp: backNode, nextFocusLeft: left, nextFocusRight: right,
     };
-    return { onFocus, nextFocusUp: backNode };
-  }, [playPauseNode, backNode, scrubbing, lockFocus, initialPreferred]);
+    // handlesVersion : recompute quand les handles/conditionnels changent.
+  }, [scrubbing, initialPreferred, neighbors, handlesVersion]);
 
   return { registerButton, buttonProps };
 }

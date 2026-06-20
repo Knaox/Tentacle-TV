@@ -207,8 +207,13 @@ function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null 
   // sibling du Navigator, sans accès aux hooks de navigation).
   const [railKey, setRailKey] = useState<string | null>(null);
   const syncRailKey = useCallback(() => {
-    const ready = navigationRef.isReady();
-    setRailKey(ready ? deriveRailKey(navigationRef.getRootState()) : null);
+    // Ne mettre à jour railKey QUE quand la nav est prête : sinon une synchro
+    // transitoire (isReady=false) effaçait le rail (null) → side bar qui
+    // disparaît. deriveRailKey renvoie déjà null légitimement pour les écrans
+    // plein écran (Player/MediaDetail), donc on n'affiche jamais le rail à tort.
+    if (navigationRef.isReady()) {
+      setRailKey(deriveRailKey(navigationRef.getRootState()));
+    }
     setServerUrl(storage.getItem("tentacle_server_url"));
   }, []);
   const navTheme = useMemo(
