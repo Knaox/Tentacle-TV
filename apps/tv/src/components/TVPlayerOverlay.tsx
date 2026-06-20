@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
-import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon } from "./icons/TVIcons";
+import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, FastForwardIcon, RewindIcon } from "./icons/TVIcons";
 import { TVTrickplayPreview } from "./player/TVTrickplayPreview";
 import { SpeedPill } from "./player/SpeedPill";
 import { useOverlayFocus } from "./player/focus/useOverlayFocus";
@@ -35,6 +35,16 @@ interface TVPlayerOverlayProps {
   onSkipBack: () => void;
   /** Skip forward uses ref-based time — no stale closure */
   onSkipForward: () => void;
+  /** Recul rapide : DÉBUT du maintien (accélération continue tant que tenu) */
+  onRewind: () => void;
+  /** Recul rapide : FIN du maintien (validation seek + reprise) */
+  onRewindEnd: () => void;
+  /** Avance rapide : DÉBUT du maintien */
+  onFastForward: () => void;
+  /** Avance rapide : FIN du maintien */
+  onFastForwardEnd: () => void;
+  /** Scrub initié par un bouton OSD maintenu → ne pas verrouiller le focus */
+  scrubViaButton?: boolean;
   onBack: () => void;
   onSettings: () => void;
   /** Next episode — hidden if not provided */
@@ -59,6 +69,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   title, currentTime, bufferedTime = 0, duration, paused, visible,
   speedLabel, scrubbing = false, scrubPosition = 0, trickplay, focusSignal = 0,
   onPlayPause, onSkipBack, onSkipForward,
+  onRewind, onRewindEnd, onFastForward, onFastForwardEnd, scrubViaButton,
   onBack, onSettings,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
   onEpisodes,
@@ -77,7 +88,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
 
   // --- Mémoire de focus de l'OSD (source unique partagée ; primitive de
   //     restauration spécifique plateforme injectée par le hook résolu Metro) ---
-  const focus = useOverlayFocus({ focusSignal, scrubbing });
+  const focus = useOverlayFocus({ focusSignal, scrubbing, scrubViaButton });
 
   // --- Trickplay : tuile du curseur fantôme, en mode scrub uniquement ---
   // Géométrie de la seekbar mesurée en coords fenêtre : la vignette est rendue
@@ -241,6 +252,12 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </Focusable>
           )}
 
+          <Focusable variant="button" ref={focus.registerButton("rewind")} onPressIn={onRewind} onPressOut={onRewindEnd} {...focus.buttonProps("rewind")}>
+            <View style={{ padding: 10 }}>
+              <RewindIcon size={22} color={Colors.textPrimary} />
+            </View>
+          </Focusable>
+
           <Focusable variant="button" phantomPressGuard ref={focus.registerButton("skipback")} onPress={onSkipBack} {...focus.buttonProps("skipback")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
@@ -268,6 +285,12 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>30s</Text>
               <SkipForwardIcon size={22} color={Colors.textPrimary} />
+            </View>
+          </Focusable>
+
+          <Focusable variant="button" ref={focus.registerButton("fastforward")} onPressIn={onFastForward} onPressOut={onFastForwardEnd} {...focus.buttonProps("fastforward")}>
+            <View style={{ padding: 10 }}>
+              <FastForwardIcon size={22} color={Colors.textPrimary} />
             </View>
           </Focusable>
 

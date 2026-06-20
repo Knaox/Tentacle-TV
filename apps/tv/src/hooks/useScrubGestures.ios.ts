@@ -19,6 +19,10 @@ interface HWEvent {
 const DEAD_ZONE_PX = 20;
 /** Cadence du loop d'avance continue (~30 fps). */
 const LOOP_MS = 33;
+/** Délai mini d'un geste avant d'engager le scrub : évite l'avance rapide
+ *  accidentelle en SAISISSANT la télécommande (effleurement bref du trackpad).
+ *  Le geste doit être actif depuis ce délai ET avoir franchi la dead-zone. */
+const ENGAGE_DELAY_MS = 250;
 /**
  * Courbe shuttle : translation |x| (pts depuis le début du geste) → vitesse de
  * scrub (secondes vidéo par seconde réelle) + label de palier façon DVD. Lookup
@@ -64,6 +68,7 @@ export function useScrubGestures({
   cbRef.current = { onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake };
 
   const startXRef = useRef(0);        // origine du geste (x au Began)
+  const beganAtRef = useRef(0);       // timestamp du Began (délai d'engagement)
   const gestureScrubRef = useRef(false); // ce geste a-t-il franchi la dead-zone
   const rateRef = useRef(0);          // vitesse courante (s vidéo / s réelle)
   const lastLabelRef = useRef<string | null>(null);
@@ -97,6 +102,7 @@ export function useScrubGestures({
 
     if (state === "Began") {
       startXRef.current = x;          // repère relatif → reprise propre au reposer
+      beganAtRef.current = Date.now();
       gestureScrubRef.current = false;
       return;
     }
@@ -105,6 +111,7 @@ export function useScrubGestures({
       const tx = x - startXRef.current;
       if (!gestureScrubRef.current) {
         if (Math.abs(tx) < DEAD_ZONE_PX) return; // pas encore franchi la dead-zone
+        if (Date.now() - beganAtRef.current < ENGAGE_DELAY_MS) return; // délai anti-saisie accidentelle
         gestureScrubRef.current = true;
         cbRef.current.onStartScrub();  // idempotent côté cerveau (garde)
         startLoop();

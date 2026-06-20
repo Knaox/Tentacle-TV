@@ -37,6 +37,11 @@ interface ControlsCtx {
   showOverlay: () => void;
   handleSkipBack: () => void;
   handleSkipForward: () => void;
+  /** Avance/recul rapide au MAINTIEN : début (accélération) / fin (validation) */
+  buttonSeekStart: (dir: "forward" | "backward") => void;
+  buttonSeekStop: () => void;
+  /** Scrub initié par un bouton OSD maintenu → focus non verrouillé */
+  scrubViaButton: boolean;
   /** En mode scrub, OK sur un bouton valide le scrub au lieu d'agir */
   guardScrub: <T extends unknown[]>(fn: (...args: T) => void) => (...args: T) => void;
 }
@@ -217,6 +222,11 @@ export function TVPlayerView({
         onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
         onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
         onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}
+        onRewind={() => { controls.buttonSeekStart("backward"); controls.showOverlay(); }}
+        onRewindEnd={() => controls.buttonSeekStop()}
+        onFastForward={() => { controls.buttonSeekStart("forward"); controls.showOverlay(); }}
+        onFastForwardEnd={() => controls.buttonSeekStop()}
+        scrubViaButton={controls.scrubViaButton}
         onBack={onBack}
         onSettings={controls.guardScrub(onToggleSettings)}
         onNextEpisode={onNextEpisode ? controls.guardScrub(onNextEpisode) : undefined}

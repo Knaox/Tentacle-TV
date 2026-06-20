@@ -78,6 +78,13 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // Piloté par setAudioTrack() (changement de piste audio en direct play).
     const [selectedAudioTrack, setSelectedAudioTrack] =
       useState<{ type: SelectedTrackType; value?: number } | undefined>(undefined);
+    // Dernière piste audio DEMANDÉE (index AVPlayer). Sur certains formats lents à
+    // initialiser (Dolby Atmos / E-AC3 JOC), la sélection par index posée juste
+    // après onLoad est IGNORÉE par AVPlayer → lecture de la piste par défaut (VO).
+    // On la RE-APPLIQUE une fois la lecture réellement démarrée (1ᵉʳ onProgress),
+    // exactement comme une re-sélection manuelle (qui, elle, corrige).
+    const desiredAudioRef = useRef<number | null>(null);
+    const audioReappliedRef = useRef(false);
 
     // Pistes texte VTT sideloadées (rendu natif AVPlayer).
     const rnvTextTracks = useMemo(
@@ -138,7 +145,10 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     useImperativeHandle(ref, () => ({
       seek: (seconds: number) => videoRef.current?.seek(seconds),
-      setAudioTrack: (id: number) => setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: id }),
+      setAudioTrack: (id: number) => {
+        desiredAudioRef.current = id;
+        setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: id });
+      },
       // Sous-titres = overlay JS sur tvOS → commandes natives no-op (parité ExoPlayer.tsx Android).
       setSubtitleTrack: () => {},
       addSubtitleTrack: () => {},
@@ -147,6 +157,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     const handleLoad = useCallback(
       (data: OnLoadData) => {
+        audioReappliedRef.current = false; // nouvelle source → re-appliquer l'audio voulu une fois démarré
         onLoad?.(data.duration ?? 0);
 
         const ns = data.naturalSize;
@@ -174,6 +185,13 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     const handleProgress = useCallback(
       (data: OnProgressData) => {
+        // Lecture démarrée → RE-APPLIQUER la piste audio voulue une seule fois :
+        // sur les formats lents (Atmos), la sélection posée à onLoad a été ignorée
+        // et AVPlayer joue la piste par défaut. Re-poser un nouvel objet la force.
+        if (!audioReappliedRef.current && data.currentTime > 0 && desiredAudioRef.current != null) {
+          audioReappliedRef.current = true;
+          setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: desiredAudioRef.current });
+        }
         onProgress?.(
           Math.max(0, data.currentTime),
           data.playableDuration > 0 ? data.playableDuration : 0,

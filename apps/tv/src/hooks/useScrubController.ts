@@ -13,6 +13,10 @@ const SCRUB_HOLD_EXTRA_MS = 700;
  *  scrub démarrait (pause) mais le curseur ne bougeait jamais.
  *  DOIT rester < HOLD_RELEASE_MS pour entretenir le palier d'accélération. */
 const HOLD_SCRUB_TICK_MS = 250;
+/** Shuttle tvOS : délai d'inactivité après le lever du doigt avant de VALIDER
+ *  seul le scrub (seek + reprise). Assez long pour reposer le doigt et continuer
+ *  (trackpad fini), assez court pour que « j'arrête → ça repart » soit fluide. */
+const SHUTTLE_AUTO_CONFIRM_MS = 800;
 
 interface HoldState {
   dir: "forward" | "backward";
@@ -23,6 +27,24 @@ function getSpeedTier(holdStartTime: number): number {
   const elapsed = (Date.now() - holdStartTime) / 1000;
   const tier = Math.min(SPEED_TIERS.length - 1, Math.floor(elapsed));
   return SPEED_TIERS[tier];
+}
+
+/** Saut de base d'un appui-bouton FF/rewind (avant que la rampe ne démarre). */
+const BUTTON_SEEK_BASE = 10;
+/** Rampe d'avance au MAINTIEN d'un bouton FF/rewind : vitesse (s vidéo / s réelle)
+ *  selon la durée du maintien — de plus en plus rapide. */
+function buttonSeekRate(heldSec: number): number {
+  if (heldSec < 0.35) return 0;   // avant rampe : seul le saut de base s'applique
+  if (heldSec < 1.2) return 40;
+  if (heldSec < 2.2) return 100;
+  if (heldSec < 3.5) return 250;
+  return 500;
+}
+function buttonSeekTier(heldSec: number): number {
+  if (heldSec < 1.2) return 1;
+  if (heldSec < 2.2) return 2;
+  if (heldSec < 3.5) return 4;
+  return 8;
 }
 
 type Ref<T> = MutableRefObject<T>;
@@ -54,10 +76,20 @@ export function useScrubController({
   const scrubbingRef = useRef(false);
   const [scrubPosition, setScrubPosition] = useState(0);
   const scrubPositionRef = useRef(0);
+  // Scrub initié par un BOUTON OSD maintenu (FF/rewind) : le focus doit RESTER sur
+  // le bouton tenu → on supprime le verrou focus→play/pause de l'OSD dans ce cas.
+  const [scrubViaButton, setScrubViaButton] = useState(false);
+  const scrubViaButtonRef = useRef(false);
 
   const [speedLabel, setSpeedLabel] = useState<string | null>(null);
   const holdRef = useRef<HoldState | null>(null);
   const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Timer d'auto-validation du shuttle (cf. endShuttleGesture).
+  const autoConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearAutoConfirm = useCallback(() => {
+    if (autoConfirmTimerRef.current) { clearTimeout(autoConfirmTimerRef.current); autoConfirmTimerRef.current = null; }
+  }, []);
+  useEffect(() => () => clearAutoConfirm(), [clearAutoConfirm]);
 
   const endHold = useCallback(() => {
     if (releaseTimerRef.current) { clearTimeout(releaseTimerRef.current); releaseTimerRef.current = null; }
@@ -91,7 +123,7 @@ export function useScrubController({
     // Déjà en scrub (ex. shuttle tvOS : doigt levé puis reposé) → NE PAS
     // réinitialiser la position fantôme, juste garder l'OSD. Évite le saut au
     // point de lecture live à la reprise du geste.
-    if (scrubbingRef.current) { showOverlay(); return; }
+    if (scrubbingRef.current) { clearAutoConfirm(); showOverlay(); return; }
     scrubbingRef.current = true;
     setScrubbing(true);
     scrubPositionRef.current = currentTimeRef.current;
@@ -99,21 +131,24 @@ export function useScrubController({
     onScrubPauseRef.current(true);
     showOverlay();
     if (dir) moveScrub(dir);
-  }, [showOverlay, moveScrub, currentTimeRef, onScrubPauseRef]);
+  }, [showOverlay, moveScrub, currentTimeRef, onScrubPauseRef, clearAutoConfirm]);
 
   // Avance CONTINUE de la position fantôme (modèle shuttle tvOS) : delta signé en
   // secondes, clamp [0, durée]. N'utilise PAS les paliers de maintien (réservés au
   // D-pad Android) — la vitesse est calculée par l'adaptateur de gestes.
   const nudgeScrub = useCallback((deltaSeconds: number) => {
+    clearAutoConfirm(); // nouvelle avance → annule l'auto-validation en attente
     const dur = durationRef.current || 0;
     const next = Math.max(0, dur > 0
       ? Math.min(scrubPositionRef.current + deltaSeconds, dur)
       : scrubPositionRef.current + deltaSeconds);
     scrubPositionRef.current = next;
     setScrubPosition(next);
-  }, [durationRef]);
+  }, [durationRef, clearAutoConfirm]);
 
   const confirmScrub = useCallback(() => {
+    clearAutoConfirm();
+    scrubViaButtonRef.current = false; setScrubViaButton(false);
     if (!scrubbingRef.current) return;
     scrubbingRef.current = false;
     setScrubbing(false);
@@ -121,16 +156,71 @@ export function useScrubController({
     onSeekRef.current(scrubPositionRef.current);
     onScrubPauseRef.current(false);
     showOverlay();
-  }, [endHold, showOverlay, onSeekRef, onScrubPauseRef]);
+  }, [endHold, clearAutoConfirm, showOverlay, onSeekRef, onScrubPauseRef]);
 
   const cancelScrub = useCallback(() => {
+    clearAutoConfirm();
+    scrubViaButtonRef.current = false; setScrubViaButton(false);
     if (!scrubbingRef.current) return;
     scrubbingRef.current = false;
     setScrubbing(false);
     endHold();
     onScrubPauseRef.current(false);
     showOverlay();
-  }, [endHold, showOverlay, onScrubPauseRef]);
+  }, [endHold, clearAutoConfirm, showOverlay, onScrubPauseRef]);
+
+  // Shuttle tvOS : le doigt se lève (geste pan « Ended »). On NE valide PAS
+  // immédiatement (la surface du trackpad est finie → on peut reposer le doigt
+  // et continuer) : on arme une courte fenêtre d'inactivité, puis on valide seul
+  // le seek + la reprise. Toute nouvelle avance (nudgeScrub) annule ce timer.
+  // Évite d'avoir à appuyer sur play après une avance rapide.
+  const endShuttleGesture = useCallback(() => {
+    endHold();
+    clearAutoConfirm();
+    if (!scrubbingRef.current) return;
+    autoConfirmTimerRef.current = setTimeout(() => {
+      autoConfirmTimerRef.current = null;
+      confirmScrub();
+    }, SHUTTLE_AUTO_CONFIRM_MS);
+  }, [endHold, clearAutoConfirm, confirmScrub]);
+
+  // Boutons OSD avance/recul rapide dédiés, modèle MAINTIEN : curseur fantôme qui
+  // avance de plus en plus vite tant que le bouton est tenu (rampe), seek + reprise
+  // au relâchement. Le focus reste sur le bouton (scrubViaButton → pas de verrou).
+  const buttonLoopRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopButtonLoop = useCallback(() => {
+    if (buttonLoopRef.current) { clearInterval(buttonLoopRef.current); buttonLoopRef.current = null; }
+  }, []);
+  useEffect(() => () => stopButtonLoop(), [stopButtonLoop]);
+
+  const startButtonSeek = useCallback((dir: "forward" | "backward") => {
+    if (buttonLoopRef.current) return; // déjà en maintien
+    const sign = dir === "forward" ? 1 : -1;
+    clearAutoConfirm();
+    scrubViaButtonRef.current = true; setScrubViaButton(true);
+    if (!scrubbingRef.current) startScrubbing();   // ghost-scrub (pause), sans dir → pas de moveScrub
+    nudgeScrub(sign * BUTTON_SEEK_BASE);           // saut de base immédiat (tap = petit saut)
+    setSpeedLabel(`${sign > 0 ? "▶▶" : "◀◀"} 1x`);
+    const start = Date.now();
+    let last = start;
+    buttonLoopRef.current = setInterval(() => {
+      const now = Date.now();
+      const dt = (now - last) / 1000;
+      last = now;
+      const held = (now - start) / 1000;
+      const rate = buttonSeekRate(held);
+      if (rate > 0) {
+        nudgeScrub(sign * rate * dt);
+        setSpeedLabel(`${sign > 0 ? "▶▶" : "◀◀"} ${buttonSeekTier(held)}x`);
+      }
+    }, 33);
+  }, [clearAutoConfirm, startScrubbing, nudgeScrub]);
+
+  const stopButtonSeek = useCallback(() => {
+    if (!buttonLoopRef.current && !scrubViaButtonRef.current) return;
+    stopButtonLoop();
+    confirmScrub();   // seek vers la position fantôme + reprise (+ reset scrubViaButton)
+  }, [stopButtonLoop, confirmScrub]);
 
   // --- Maintien ←/→ : tick JS d'avance continue (le système n'émet pas les
   //     répétitions pendant un hold) + délai d'armement. ---
@@ -194,8 +284,9 @@ export function useScrubController({
   }, [cancelScrubHold, stopHoldScrub, endHold]);
 
   return {
-    scrubbing, scrubPosition, speedLabel, scrubbingRef,
-    moveScrub, nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endHold,
+    scrubbing, scrubPosition, speedLabel, scrubbingRef, scrubViaButton,
+    moveScrub, nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endHold, endShuttleGesture,
+    startButtonSeek, stopButtonSeek,
     handleDpadDirection, handleLongDirection, handleMediaSeekKey, onHoldRelease,
   };
 }

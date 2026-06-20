@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
-import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
+import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
@@ -63,11 +63,11 @@ export function useTVStreamUrl(args: {
   const audioRef = useRef(audioIndex);
   audioRef.current = audioIndex;
 
-  // Seul un sous-titre IMAGE (burn-in) reconstruit l'URL ; les sous-titres texte
-  // passent par l'overlay JS (aucun refetch).
+  // Sous-titre à INCRUSTER (burn-in → transcode) : graphiques partout + ASS/SSA sur
+  // tvOS. Les autres sous-titres texte passent en natif AVPlayer (aucun refetch).
   const burnInIndex = subtitleIndex != null && subtitleIndex >= 0
-    && BURN_IN_SUBTITLE_CODECS.test(
-      streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)?.Codec ?? "",
+    && isBurnInSubtitleCodec(
+      streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)?.Codec,
     )
     ? subtitleIndex
     : -1;
@@ -94,7 +94,10 @@ export function useTVStreamUrl(args: {
       try {
         // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
         const cap = isTranscodingQuality && maxBitrate ? maxBitrate : undefined;
-        const profile = buildTvosDeviceProfile(cap, forceTranscode || isTranscodingQuality);
+        // burnInIndex >= 0 ⇒ sous-titre ASS/SSA sélectionné : profil sans livraison
+        // texte → le serveur INCRUSTE ce sous-titre (sinon il convertirait en VTT
+        // avec balises {\an8} qui fuient).
+        const profile = buildTvosDeviceProfile(cap, forceTranscode || isTranscodingQuality, burnInIndex >= 0);
 
         const info = await client.getPlaybackInfo(itemId, {
           userId, deviceProfile: profile, mediaSourceId,
@@ -121,13 +124,13 @@ export function useTVStreamUrl(args: {
         } else if (isTranscodingQuality && maxBitrate) {
           streamUrl = client.getStreamUrl(itemId, {
             directPlay: false, maxBitrate, maxHeight,
-            audioIndex: audioRef.current, subtitleStreamIndex: sub, playSessionId, mediaSourceId,
+            audioIndex: audioRef.current, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
           });
         } else {
           // Remux / fallback codec : HLS 8 Mbps (parité avec le fallback Android).
           streamUrl = client.getStreamUrl(itemId, {
             directPlay: false, maxBitrate: 8_000_000,
-            audioIndex: audioRef.current, subtitleStreamIndex: sub, playSessionId, mediaSourceId,
+            audioIndex: audioRef.current, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
           });
         }
 

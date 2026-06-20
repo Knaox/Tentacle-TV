@@ -20,7 +20,7 @@ import type {
  * Transcode (VP9/AV1/DTS/TrueHD…). `forceTranscode` vide les DirectPlayProfiles
  * (fallback après une erreur codec ou choix d'un preset de qualité).
  */
-export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = false): DeviceProfile {
+export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = false, burnInText = false): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = forceTranscode
     ? []
     : [
@@ -100,20 +100,31 @@ export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = fal
     },
   ];
 
-  const subtitleProfiles: SubtitleProfile[] = [
-    // Texte : rendu par l'overlay JS partagé (useTVSubtitles) → on déclare
-    // External (VTT) pour que Jellyfin garde le direct play, et Hls en transcode.
-    { Format: "vtt", Method: "External" },
-    { Format: "vtt", Method: "Hls" },
-    { Format: "srt", Method: "External" },
-    { Format: "subrip", Method: "External" },
-    { Format: "ass", Method: "External" },
-    { Format: "ssa", Method: "External" },
-    // Bitmap → gravés par le serveur (burn-in)
-    { Format: "pgssub", Method: "Encode" },
-    { Format: "dvdsub", Method: "Encode" },
-    { Format: "dvbsub", Method: "Encode" },
-  ];
+  // Sous-titres. NB Jellyfin (StreamBuilder.GetSubtitleProfile) : si le profil
+  // autorise un format texte en External/Hls, il CONVERTIT n'importe quel sous-titre
+  // texte vers ce format (ASS→VTT) et le livre en texte — la conversion ASS→VTT
+  // laisse fuiter les balises override ({\an8}, signs…). Le serveur n'incruste
+  // (Encode) QUE si AUCUNE livraison texte n'est possible.
+  //   → `burnInText` (activé quand le sous-titre SÉLECTIONNÉ est ASS/SSA, cf.
+  //     useTVStreamUrl.ios) retire toute livraison texte : le serveur incruste le
+  //     sous-titre demandé (rendu d'origine, signs corrects). Sinon profil normal :
+  //     texte natif AVPlayer (srt/vtt), pas de transcodage.
+  const subtitleProfiles: SubtitleProfile[] = burnInText
+    ? [
+        { Format: "pgssub", Method: "Encode" },
+        { Format: "dvdsub", Method: "Encode" },
+        { Format: "dvbsub", Method: "Encode" },
+      ]
+    : [
+        { Format: "vtt", Method: "External" },
+        { Format: "vtt", Method: "Hls" },
+        { Format: "srt", Method: "External" },
+        { Format: "subrip", Method: "External" },
+        // Bitmap → gravés par le serveur (burn-in)
+        { Format: "pgssub", Method: "Encode" },
+        { Format: "dvdsub", Method: "Encode" },
+        { Format: "dvbsub", Method: "Encode" },
+      ];
 
   return {
     MaxStreamingBitrate: maxBitrate ?? 120_000_000,

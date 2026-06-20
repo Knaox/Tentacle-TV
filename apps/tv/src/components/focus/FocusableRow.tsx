@@ -1,7 +1,8 @@
 import { useRef, useState, useCallback } from "react";
-import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
+import { FlatList, View, Text, TVFocusGuideView, Platform, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
+import { useTVNav } from "../../context/TVNavContext";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 
 interface FocusableRowProps<T> {
@@ -133,11 +134,20 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
   onPress?: () => void; onLongPress?: () => void;
 }) {
   const [focused, setFocused] = useState(false);
+  const cellRef = useRef<View>(null);
+  const { lastContentNodeRef } = useTVNav();
   return (
     <View style={{ width: itemWidth, marginRight: gap, overflow: "visible" }}>
       <Focusable
+        ref={cellRef}
         variant="card"
-        onFocus={() => { setFocused(true); onCellFocus(); }}
+        onFocus={() => {
+          setFocused(true);
+          // Mémoire de focus (tvOS) : dernier élément de contenu focalisé → sert à
+          // restaurer le focus en sortant de la sidebar ou en revenant du lecteur.
+          if (Platform.OS === "ios") lastContentNodeRef.current = cellRef.current;
+          onCellFocus();
+        }}
         onBlur={() => { setFocused(false); onCellBlur(); }}
         onPress={onPress}
         onLongPress={onLongPress}
