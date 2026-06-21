@@ -1,5 +1,11 @@
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ViewStyle } from "react-native";
+import { NativeModules } from "react-native";
+
+/** Module natif tvOS : pilote AVDisplayManager pour la bascule HDR/DV HDMI. */
+const TVDisplayCriteria = (NativeModules as {
+  TVDisplayCriteria?: { engage?: () => void; reset?: () => void };
+}).TVDisplayCriteria;
 import Video, {
   type OnLoadData,
   type OnProgressData,
@@ -155,10 +161,18 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
       loadSubtitle: () => {},
     }), []);
 
+    // Au démontage : revenir au mode d'affichage par défaut de l'UI.
+    useEffect(() => () => TVDisplayCriteria?.reset?.(), []);
+
     const handleLoad = useCallback(
       (data: OnLoadData) => {
         audioReappliedRef.current = false; // nouvelle source → re-appliquer l'audio voulu une fois démarré
         onLoad?.(data.duration ?? 0);
+
+        // tvOS : AVPlayerLayer ne déclenche PAS la bascule HDR/DV de la sortie
+        // HDMI → on l'engage via AVDisplayManager (préconisation Apple). Léger
+        // délai pour que la couche/asset soient prêts.
+        setTimeout(() => TVDisplayCriteria?.engage?.(), 250);
 
         const ns = data.naturalSize;
         if (ns && ns.width > 0 && ns.height > 0) onVideoSize?.(ns.width, ns.height, 1);
