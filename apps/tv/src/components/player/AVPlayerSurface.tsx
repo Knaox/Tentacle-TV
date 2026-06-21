@@ -237,12 +237,14 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         source={{
           uri,
           startPosition: startSec > 0 ? startSec * 1000 : undefined,
-          headers,
-          // Sideload UNIQUEMENT en direct play (fichier progressif) : AVPlayer
-          // ne sait pas sideloader sur du HLS (master.m3u8) → chargement infini.
-          // En transcode/HLS les pistes viennent du manifeste Jellyfin.
+          // Remux local (127.0.0.1) : pas de headers (le serveur local les ignore) → évite un
+          // resource-loader custom de react-native-video qui casserait l'indirection master→variant.
+          headers: uri.includes("127.0.0.1") ? undefined : headers,
+          // Sideload UNIQUEMENT en direct play PROGRESSIF (fichier) : AVPlayer ne sait pas
+          // sideloader sur du HLS (.m3u8 — transcode Jellyfin OU remux local HLS) → chargement
+          // infini. En HLS les pistes viennent du manifeste.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          textTracks: isDirectPlay && rnvTextTracks.length ? (rnvTextTracks as any) : undefined,
+          textTracks: isDirectPlay && !uri.includes(".m3u8") && rnvTextTracks.length ? (rnvTextTracks as any) : undefined,
         }}
         style={style}
         resizeMode="contain"

@@ -17,6 +17,17 @@
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
 #import <UIKit/UIKit.h>
+#import <os/log.h>
+
+// API PRIVÉE (comme Kodi/MrMC) : construire un AVDisplayCriteria depuis fps + plage dynamique
+// pour engager le mode HDMI HDR/DV (badge) SANS dépendre d'un master playlist (rejeté
+// « unsupported url » par AVPlayer/react-native-video). videoDynamicRange : SDR=1, HDR10=3, DV=4.
+@interface AVDisplayCriteria ()
+- (instancetype)initWithRefreshRate:(float)refreshRate videoDynamicRange:(int)videoDynamicRange;
+@end
+
+extern int    gTVDynRange;   // 0=SDR, 3=HDR10, 4=Dolby Vision (posé par TVLocalRemux)
+extern double gTVFps;
 
 @interface TVDisplayCriteria : NSObject <RCTBridgeModule>
 @end
@@ -51,12 +62,27 @@ static UIWindow *TVKeyWindow(void) {
 RCT_EXPORT_METHOD(engage)
 {
   dispatch_async(dispatch_get_main_queue(), ^{
+    NSMutableString *diag = [NSMutableString string];
     UIWindow *window = TVKeyWindow();
-    if (!window) return;
-    AVPlayerLayer *layer = TVFindPlayerLayer(window.layer);
-    AVAsset *asset = layer.player.currentItem.asset;
-    if (!asset) return;
-    window.avDisplayManager.preferredDisplayCriteria = asset.preferredDisplayCriteria;
+    int dyn = gTVDynRange;                                       // 0=SDR, 3=HDR10, 4=DV
+    float fps = (gTVFps > 1.0 && gTVFps < 130.0) ? (float)gTVFps : 23.976f;  // fps de repli (films)
+    BOOL canPrivate = [AVDisplayCriteria instancesRespondToSelector:@selector(initWithRefreshRate:videoDynamicRange:)];
+    AVDisplayManager *mgr = window.avDisplayManager;
+    [diag appendFormat:@"engage win=%d mgr=%d dyn=%d fps=%.3f rawfps=%.3f canPrivate=%d",
+          window != nil, mgr != nil, dyn, fps, gTVFps, canPrivate];
+    if (mgr && dyn > 0 && canPrivate) {
+      AVDisplayCriteria *crit = [[AVDisplayCriteria alloc] initWithRefreshRate:fps videoDynamicRange:dyn];
+      [diag appendFormat:@" → MANUAL crit=%d (%@)", crit != nil, dyn == 3 ? @"DolbyVision" : (dyn == 4 ? @"HDR10/HLG" : @"SDR")];
+      mgr.preferredDisplayCriteria = crit;
+    } else if (mgr) {
+      AVPlayerLayer *layer = TVFindPlayerLayer(window.layer);
+      AVDisplayCriteria *crit = layer.player.currentItem.asset.preferredDisplayCriteria;
+      [diag appendFormat:@" → ASSET crit=%d", crit != nil];
+      mgr.preferredDisplayCriteria = crit;
+    }
+    os_log_error(OS_LOG_DEFAULT, "[TVDC] %{public}s", diag.UTF8String);
+    [diag writeToFile:[NSTemporaryDirectory() stringByAppendingPathComponent:@"tvdc.log"]
+           atomically:YES encoding:NSUTF8StringEncoding error:nil];   // récupérable via devicectl
   });
 }
 

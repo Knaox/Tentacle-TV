@@ -26,7 +26,7 @@ build() {
     --enable-zlib --enable-securetransport \
     --enable-avformat --enable-avcodec --enable-swresample \
     --enable-demuxer=matroska,mov,mpegts,hls \
-    --enable-muxer=mov,mp4,mpegts \
+    --enable-muxer=mov,mp4,mpegts,hls \
     --enable-protocol=file,http,https,tcp,tls,crypto \
     --enable-bsf=hevc_mp4toannexb,h264_mp4toannexb,extract_extradata \
     --enable-parser=hevc,h264,aac,ac3,dca \

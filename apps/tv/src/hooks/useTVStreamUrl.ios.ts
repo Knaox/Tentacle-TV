@@ -57,6 +57,7 @@ export function useTVStreamUrl(args: {
     baseUrl: string | null;
     playSessionId?: string;
     isDirectPlay: boolean;
+    isLocalRemux?: boolean;
   }>({ baseUrl: null, isDirectPlay: true });
 
   // Lus au moment du fetch sans être des déclencheurs (le switch audio en direct
@@ -80,6 +81,11 @@ export function useTVStreamUrl(args: {
   // écran de chargement) d'un reload « doux » (audio/qualité → on GARDE l'ancienne
   // URL pour ne pas démonter le player ; juste un re-buffer discret).
   const contentKeyRef = useRef("");
+  // Idempotence remux : ne relancer le remux que si le CONTENU change (≠ reprise/
+  // piste/qualité qui re-déclenchent l'effet) → évite plusieurs serveurs locaux
+  // et le churn AVPlayer (cause du -16156 / fallback transcode).
+  const remuxKeyRef = useRef("");
+  const remuxUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!itemId || !userId) return;
@@ -98,18 +104,40 @@ export function useTVStreamUrl(args: {
         // lisible par AVPlayer) → Jellyfin sert le fichier BRUT, on le remuxe en
         // MP4 fragmenté localement (FFmpeg, copie de flux) → Direct Play → badge
         // HDR/DV. Zéro transcodage serveur. Repli sur le flux Jellyfin si échec.
-        const __vcodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
-        const __remux = (NativeModules as { TVLocalRemux?: { start?: (u: string) => Promise<string> } }).TVLocalRemux;
-        console.log("[REMUX] gate", { vcodec: __vcodec, hasStart: !!__remux?.start, forceTranscode, isTranscodingQuality, burnInIndex });
-        if (!forceTranscode && !isTranscodingQuality && burnInIndex < 0 && __remux?.start &&
+        const __vstream = streams.find((s) => s.Type === "Video");
+        const __vcodec = __vstream?.Codec?.toLowerCase();
+        // DV profil 7 (double couche, rips disque/UHD) = mur tvOS (pas lu nativement) → NE PAS
+        // remuxer, laisser Jellyfin replier en HDR10/transcode. P5/P8/HDR10/HLG/SDR → remux.
+        const __isDvP7 = __vstream?.DvProfile === 7;
+        const __remux = (NativeModules as { TVLocalRemux?: { start?: (u: string, dyn: number) => Promise<string> } }).TVLocalRemux;
+        console.log("[REMUX] gate", { vcodec: __vcodec, dvProfile: __vstream?.DvProfile, hasStart: !!__remux?.start, forceTranscode, isTranscodingQuality, burnInIndex });
+        if (!forceTranscode && !isTranscodingQuality && burnInIndex < 0 && !__isDvP7 && __remux?.start &&
             (__vcodec === "hevc" || __vcodec === "h265" || __vcodec === "h264")) {
           try {
+            // Idempotent : même contenu déjà remuxé → réutiliser l'URL locale
+            // sans relancer start() (sinon nouveau serveur + churn AVPlayer).
+            if (remuxKeyRef.current === contentKey && remuxUrlRef.current) {
+              console.log("[REMUX] reuse", remuxUrlRef.current);
+              setResult({ baseUrl: remuxUrlRef.current, isDirectPlay: true, isLocalRemux: true });
+              return;
+            }
             const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
-            console.log("[REMUX] start", rawUrl?.slice(0, 90));
-            const localUrl = await __remux.start(rawUrl);
+            // Plage dynamique AUTORITAIRE depuis Jellyfin (le natif ne lit pas la couleur si le MKV
+            // n'a pas d'élément Colour) → badge correct. 1=SDR (force la redescente), 3=HDR10, 4=DV.
+            const __range = (__vstream?.VideoRangeType ?? "").toUpperCase();
+            const __isDV = (__vstream?.DvProfile ?? 0) > 0 || __range.includes("DOVI") || __range.includes("DOLBY");
+            // videoDynamicRange empirique tvOS 18 (vérifié device) : Dolby Vision=3, HDR10/HLG=4, SDR=1.
+            const __dyn = __isDV ? 3 : (__range.includes("HDR") || __range.includes("PQ") || __range.includes("HLG")) ? 4 : 1;
+            console.log("[REMUX] start", rawUrl?.slice(0, 90), "range=", __range, "dyn=", __dyn);
+            const localUrl = await __remux.start(rawUrl, __dyn);
             console.log("[REMUX] localUrl =", localUrl);
             if (fetchIdRef.current !== fetchId) return;
-            if (localUrl) { setResult({ baseUrl: localUrl, isDirectPlay: true }); return; }
+            if (localUrl) {
+              remuxKeyRef.current = contentKey;
+              remuxUrlRef.current = localUrl;
+              setResult({ baseUrl: localUrl, isDirectPlay: true, isLocalRemux: true });
+              return;
+            }
           } catch (e) { console.log("[REMUX] ERROR", String(e)); }
         }
 
@@ -175,8 +203,10 @@ export function useTVStreamUrl(args: {
   // fetch) → toujours correct au montage du player, y compris au cold start où
   // l'URL de base a pu être construite avant que `item.UserData` soit chargé.
   const start = startSeconds ?? 0;
+  // Remux local = lecture LINÉAIRE (seek = Phase 2) → pas de reprise #tnt-start :
+  // un seek demanderait un offset pas encore écrit par le flux croissant → -16156.
   const streamUrl = result.baseUrl != null
-    ? result.baseUrl + (start > 1 ? `#tnt-start=${Math.floor(start)}` : "")
+    ? result.baseUrl + (!result.isLocalRemux && start > 1 ? `#tnt-start=${Math.floor(start)}` : "")
     : null;
 
   return { streamUrl, playSessionId: result.playSessionId, isDirectPlay: result.isDirectPlay };
