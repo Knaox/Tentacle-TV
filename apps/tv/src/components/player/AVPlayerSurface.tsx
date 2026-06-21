@@ -167,6 +167,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     const handleLoad = useCallback(
       (data: OnLoadData) => {
         audioReappliedRef.current = false; // nouvelle source → re-appliquer l'audio voulu une fois démarré
+        console.log("[AVP] onLoad dur=", data.duration, "size=", JSON.stringify(data.naturalSize));
         onLoad?.(data.duration ?? 0);
 
         // tvOS : AVPlayerLayer ne déclenche PAS la bascule HDR/DV de la sortie
@@ -199,6 +200,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     const handleProgress = useCallback(
       (data: OnProgressData) => {
+        console.log("[AVP] progress t=", data.currentTime.toFixed(1), "buf=", data.playableDuration.toFixed(1));
         // Lecture démarrée → RE-APPLIQUER la piste audio voulue une seule fois :
         // sur les formats lents (Atmos), la sélection posée à onLoad a été ignorée
         // et AVPlayer joue la piste par défaut. Re-poser un nouvel objet la force.
@@ -219,6 +221,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // -11828 = format/conteneur non lisible, -11800 = opération échouée.
     const handleError = useCallback(
       (e: { error?: { code?: number; localizedDescription?: string; localizedFailureReason?: string } }) => {
+        console.log("[AVP] onError", JSON.stringify(e?.error ?? e));
         const err = e?.error;
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
         const codecLike =

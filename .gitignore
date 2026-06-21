@@ -11,6 +11,7 @@ scripts/
 !apps/backend/scripts/
 !apps/desktop/scripts/
 !.github/scripts/
+!apps/tv/ios/scripts/
 .next/
 .expo/
 *.tsbuildinfo
@@ -71,6 +72,10 @@ apps/mobile/ios/DerivedData/
 apps/mobile/ios/.xcode.env.local
 apps/mobile/ios/**/xcuserdata/
 apps/mobile/ios/*.xcworkspace/contents.xcworkspacedata.bak
+
+# Apple TV — FFmpeg LGPL xcframeworks (40 Mo de binaires) : régénérés via
+# apps/tv/ios/scripts/build-ffmpeg-lgpl-tvos.sh (podspec + script versionnés).
+apps/tv/ios/Frameworks/ffmpeg/*.xcframework/
 
 # Outil de déploiement perso (repo public) — reste en local / sur le Bureau
 tools/deploy/
