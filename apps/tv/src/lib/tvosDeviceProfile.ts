@@ -5,6 +5,25 @@ import type {
   CodecProfile,
   SubtitleProfile,
 } from "@tentacle-tv/shared";
+import type { HdrCapabilities } from "./hdrCapabilities.types";
+
+/**
+ * Plages `VideoRangeType` (valeurs serveur Jellyfin) que CETTE Apple TV sait
+ * décoder. Déclarées au serveur pour qu'il REMUX (copie HEVC, HDR/DV préservé)
+ * au lieu de tone-mapper vers SDR. Gating calqué sur Swiftfin `nativeHDRProfiles`
+ * (client Jellyfin tvOS officiel). `hdr` absent → repli prudent (HDR10/HLG, pas
+ * de Dolby Vision pour ne jamais réclamer une plage non décodable).
+ */
+function videoRangeValues(hdr?: HdrCapabilities): string {
+  const h: Pick<HdrCapabilities, "hdr10" | "hlg" | "dolbyVision"> =
+    hdr ?? { hdr10: true, hlg: true, dolbyVision: false };
+  const ranges = ["SDR", "DOVIWithSDR"];
+  if (h.hlg) ranges.push("HLG", "DOVIWithHLG");
+  if (h.hdr10) ranges.push("HDR10", "HDR10Plus");
+  if (h.hdr10 || h.dolbyVision) ranges.push("DOVIWithHDR10", "DOVIWithHDR10Plus", "DOVIWithELHDR10Plus");
+  if (h.dolbyVision) ranges.push("DOVI");
+  return ranges.join("|");
+}
 
 /**
  * DeviceProfile pour Apple TV (tvOS / AVPlayer via react-native-video).
@@ -20,7 +39,7 @@ import type {
  * Transcode (VP9/AV1/DTS/TrueHD…). `forceTranscode` vide les DirectPlayProfiles
  * (fallback après une erreur codec ou choix d'un preset de qualité).
  */
-export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = false, burnInText = false): DeviceProfile {
+export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = false, burnInText = false, hdr?: HdrCapabilities): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = forceTranscode
     ? []
     : [
@@ -82,6 +101,8 @@ export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = fal
       Conditions: [
         { Condition: "LessThanEqual", Property: "VideoLevel", Value: "52", IsRequired: false },
         { Condition: "LessThanEqual", Property: "RefFrames", Value: "16", IsRequired: false },
+        // H.264 = SDR (et DV à couche de base SDR) uniquement, comme Swiftfin.
+        { Condition: "EqualsAny", Property: "VideoRangeType", Value: "SDR|DOVIWithSDR", IsRequired: false },
       ],
     },
     {
@@ -90,6 +111,10 @@ export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = fal
       Conditions: [
         { Condition: "LessThanEqual", Property: "VideoLevel", Value: "183", IsRequired: false },
         { Condition: "LessThanEqual", Property: "RefFrames", Value: "16", IsRequired: false },
+        // Plages HDR/DV décodables par CETTE Apple TV → le serveur remux (HDR
+        // préservé) au lieu de tone-mapper en SDR. `IsRequired:false` : si la
+        // plage n'est pas gérée, Jellyfin transcode (jamais d'écran noir).
+        { Condition: "EqualsAny", Property: "VideoRangeType", Value: videoRangeValues(hdr), IsRequired: false },
       ],
     },
     {

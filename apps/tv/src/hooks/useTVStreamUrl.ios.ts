@@ -4,6 +4,7 @@ import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
+import { getHdrCapabilities } from "../lib/hdrCapabilities";
 
 /**
  * Variante tvOS de `useTVStreamUrl` (résolue par Metro sur iOS ; Android garde
@@ -97,7 +98,11 @@ export function useTVStreamUrl(args: {
         // burnInIndex >= 0 ⇒ sous-titre ASS/SSA sélectionné : profil sans livraison
         // texte → le serveur INCRUSTE ce sous-titre (sinon il convertirait en VTT
         // avec balises {\an8} qui fuient).
-        const profile = buildTvosDeviceProfile(cap, forceTranscode || isTranscodingQuality, burnInIndex >= 0);
+        // Capacités de décodage HDR/DV de cette Apple TV (module natif, mis en
+        // cache) → gate le VideoRangeType du profil pour préserver un vrai signal
+        // HDR/Dolby Vision (remux) au lieu d'un tone-mapping serveur vers SDR.
+        const hdr = await getHdrCapabilities();
+        const profile = buildTvosDeviceProfile(cap, forceTranscode || isTranscodingQuality, burnInIndex >= 0, hdr);
 
         const info = await client.getPlaybackInfo(itemId, {
           userId, deviceProfile: profile, mediaSourceId,

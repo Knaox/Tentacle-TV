@@ -16,6 +16,8 @@
 		7699B88040F8A987B510C191 /* libPods-TentacleTV-TentacleTVTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-TentacleTV-TentacleTVTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		AB12CD34EF5601234567AA01 /* Empty.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567AA02 /* Empty.swift */; };
+		AB12CD34EF5601234567BB01 /* HDRCapabilities.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567BB02 /* HDRCapabilities.m */; };
+		AB12CD34EF5601234567BB03 /* TVDisplayCriteria.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567BB04 /* TVDisplayCriteria.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +49,8 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = TentacleTV/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-TentacleTV-TentacleTVTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV-TentacleTVTests.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests.release.xcconfig"; sourceTree = "<group>"; };
 		AB12CD34EF5601234567AA02 /* Empty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Empty.swift; path = TentacleTV/Empty.swift; sourceTree = "<group>"; };
+		AB12CD34EF5601234567BB02 /* HDRCapabilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HDRCapabilities.m; path = TentacleTV/HDRCapabilities.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567BB04 /* TVDisplayCriteria.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TVDisplayCriteria.m; path = TentacleTV/TVDisplayCriteria.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -93,6 +97,8 @@
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
 				AB12CD34EF5601234567AA02 /* Empty.swift */,
+				AB12CD34EF5601234567BB02 /* HDRCapabilities.m */,
+				AB12CD34EF5601234567BB04 /* TVDisplayCriteria.m */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
@@ -417,6 +423,8 @@
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				AB12CD34EF5601234567AA01 /* Empty.swift in Sources */,
+				AB12CD34EF5601234567BB01 /* HDRCapabilities.m in Sources */,
+				AB12CD34EF5601234567BB03 /* TVDisplayCriteria.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
