@@ -3,6 +3,7 @@ import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
+import { NativeModules } from "react-native";
 import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
 
@@ -93,6 +94,25 @@ export function useTVStreamUrl(args: {
 
     (async () => {
       try {
+        // Lecteur local « façon Infuse » : contenu HEVC/H264 (souvent en MKV non
+        // lisible par AVPlayer) → Jellyfin sert le fichier BRUT, on le remuxe en
+        // MP4 fragmenté localement (FFmpeg, copie de flux) → Direct Play → badge
+        // HDR/DV. Zéro transcodage serveur. Repli sur le flux Jellyfin si échec.
+        const __vcodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
+        const __remux = (NativeModules as { TVLocalRemux?: { start?: (u: string) => Promise<string> } }).TVLocalRemux;
+        console.log("[REMUX] gate", { vcodec: __vcodec, hasStart: !!__remux?.start, forceTranscode, isTranscodingQuality, burnInIndex });
+        if (!forceTranscode && !isTranscodingQuality && burnInIndex < 0 && __remux?.start &&
+            (__vcodec === "hevc" || __vcodec === "h265" || __vcodec === "h264")) {
+          try {
+            const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
+            console.log("[REMUX] start", rawUrl?.slice(0, 90));
+            const localUrl = await __remux.start(rawUrl);
+            console.log("[REMUX] localUrl =", localUrl);
+            if (fetchIdRef.current !== fetchId) return;
+            if (localUrl) { setResult({ baseUrl: localUrl, isDirectPlay: true }); return; }
+          } catch (e) { console.log("[REMUX] ERROR", String(e)); }
+        }
+
         // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
         const cap = isTranscodingQuality && maxBitrate ? maxBitrate : undefined;
         // burnInIndex >= 0 ⇒ sous-titre ASS/SSA sélectionné : profil sans livraison
