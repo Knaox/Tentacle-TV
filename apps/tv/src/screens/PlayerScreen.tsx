@@ -73,7 +73,11 @@ export function PlayerScreen({ route, navigation }: Props) {
   const showEpisodesRef = useRef(false);
   showEpisodesRef.current = showEpisodes;
   const [startTicks, setStartTicks] = useState(0);
-  const [forceTranscode, setForceTranscode] = useState(false);
+  // forceTranscode SCOPÉ à l'item courant : dérivé → se réinitialise AUTOMATIQUEMENT au
+  // changement de contenu (aucune course avec l'effet de reset ; pas de contamination N→N+1).
+  const [ftState, setFtState] = useState<{ item: string; on: boolean }>({ item: "", on: false });
+  const forceTranscode = ftState.item === itemId && ftState.on;
+  const setForceTranscode = useCallback((on: boolean) => setFtState({ item: itemId, on }), [itemId]);
   const positionRef = useRef(0);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,6 +114,10 @@ export function PlayerScreen({ route, navigation }: Props) {
       positionRef.current = 0;
       resetPrefsAppliedRef.current?.();
       quality.reset();
+      // CRITIQUE : remettre à zéro le transcode forcé + l'erreur d'un contenu PRÉCÉDENT —
+      // sinon un échec sur l'item N contamine l'item N+1 (lancé sur le mauvais lecteur, sans HDR/DV).
+      setForceTranscode(false);
+      setVideoError(null);
     }
   }, [itemId, defaultAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -131,7 +139,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     ? startTicks / TICKS_PER_SECOND
     : (initialResumeSecondsRef.current ?? 0);
 
-  const { streamUrl, playSessionId, isDirectPlay } = useTVStreamUrl({
+  const { streamUrl, playSessionId, isDirectPlay, isLocalRemux } = useTVStreamUrl({
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
@@ -319,7 +327,9 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Android ExoPlayer (VTT natif) et iOS → -1 (pas d'overlay JS).
   const subtitleText = useTVSubtitles({
     itemId, mediaSourceId: mediaSource?.Id,
-    subtitleIndex: (useExoPlayer || Platform.OS === "ios") ? -1 : subtitleIndex, streams,
+    // tvOS NATIF (direct play sideload / manifeste HLS transcode) → -1 (pas d'overlay JS). MAIS le
+    // remux local n'a PAS de piste texte dans son manifeste → overlay JS (le vrai subtitleIndex).
+    subtitleIndex: (useExoPlayer || (Platform.OS === "ios" && !isLocalRemux)) ? -1 : subtitleIndex, streams,
     displayTimeRef, lastProgressTime, pausedStateRef,
   });
 
@@ -388,21 +398,23 @@ export function PlayerScreen({ route, navigation }: Props) {
   }, []);
 
   const handleAudioChange = useCallback((newIndex: number) => {
+    // Direct play ET remux (TOUTES les pistes audio muxées) → bascule NATIVE AVPlayer, AUCUN reload.
     if (isDirectPlay) {
       const mpvId = mpvTracks.mpvTrackMap[newIndex];
       if (mpvId != null) playerRef.current?.setAudioTrack(mpvId);
       setAudioIndex(newIndex);
     } else {
-      softReloadRef.current = true; setReloadFrameSec(positionRef.current); // re-buffer discret, pas d'écran plein
+      softReloadRef.current = true; setReloadFrameSec(positionRef.current); // re-buffer discret (transcode)
       captureReloadTicks();
-      setReloadNonce((n) => n + 1); // refetch même à position ~0 (startTicks inchangé)
+      setReloadNonce((n) => n + 1);
       setAudioIndex(newIndex);
     }
   }, [isDirectPlay, mpvTracks.mpvTrackMap, playerRef, captureReloadTicks]);
 
   const handleSubtitleChange = useCallback((newIndex: number) => {
+    // Sur le remux, le TEXTE n'est PAS burn-in (overlay JS) ; seules les IMAGES (PGS/VOBSUB) le sont.
     const isBurnIn = (idx: number) => idx >= 0
-      && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec);
+      && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec, isLocalRemux);
     const needsBurnIn = isBurnIn(newIndex);
     const prevBurnIn = isBurnIn(subtitleIndex);
     if (!needsBurnIn && !prevBurnIn) {
@@ -419,7 +431,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     captureReloadTicks();
     setSubtitleIndex(newIndex);
     if (needsBurnIn && isDirectPlay) setForceTranscode(true);
-  }, [isDirectPlay, streams, subtitleIndex, captureReloadTicks]);
+  }, [isDirectPlay, isLocalRemux, streams, subtitleIndex, captureReloadTicks]);
 
   const handleQualityChange = useCallback((key: typeof quality.qualityKey) => {
     softReloadRef.current = true; setReloadFrameSec(positionRef.current);
@@ -519,7 +531,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}
       autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
-      useExoPlayer={useExoPlayer} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
+      useExoPlayer={useExoPlayer} isLocalRemux={isLocalRemux} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={audioIndex} subtitleIndex={subtitleIndex}

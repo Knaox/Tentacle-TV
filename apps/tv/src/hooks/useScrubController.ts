@@ -33,12 +33,14 @@ function getSpeedTier(holdStartTime: number): number {
 const BUTTON_SEEK_BASE = 10;
 /** Rampe d'avance au MAINTIEN d'un bouton FF/rewind : vitesse (s vidéo / s réelle)
  *  selon la durée du maintien — de plus en plus rapide. */
-function buttonSeekRate(heldSec: number): number {
+function buttonSeekRate(heldSec: number, durationSec: number): number {
   if (heldSec < 0.35) return 0;   // avant rampe : seul le saut de base s'applique
-  if (heldSec < 1.2) return 40;
-  if (heldSec < 2.2) return 100;
-  if (heldSec < 3.5) return 250;
-  return 500;
+  // Rampe ∝ durée (bornée 5–400 s/s) : traverse la vidéo en ~30 s à fond → court = lent, long = rapide.
+  const maxRate = Math.min(400, Math.max(5, (durationSec || 0) / 30));
+  if (heldSec < 1.2) return maxRate * 0.18;
+  if (heldSec < 2.2) return maxRate * 0.45;
+  if (heldSec < 3.5) return maxRate * 0.75;
+  return maxRate;
 }
 function buttonSeekTier(heldSec: number): number {
   if (heldSec < 1.2) return 1;
@@ -208,7 +210,7 @@ export function useScrubController({
       const dt = (now - last) / 1000;
       last = now;
       const held = (now - start) / 1000;
-      const rate = buttonSeekRate(held);
+      const rate = buttonSeekRate(held, durationRef.current);
       if (rate > 0) {
         nudgeScrub(sign * rate * dt);
         setSpeedLabel(`${sign > 0 ? "▶▶" : "◀◀"} ${buttonSeekTier(held)}x`);

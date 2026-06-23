@@ -133,6 +133,7 @@ export function useTVPlayerControls({
     // besoin d'appuyer sur play après une avance rapide shuttle.
     onEndScrub: scrub.endShuttleGesture,
     onWake: showOverlay,
+    durationRef,   // vitesse de scrub adaptée à la durée de la vidéo
   });
 
   // --- TV Remote binding ---
