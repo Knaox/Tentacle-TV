@@ -121,10 +121,10 @@ export function useTVStreamUrl(args: {
         if (!forceTranscode && !isTranscodingQuality && burnInIndex < 0 && !__isDvP7 && __remux?.start &&
             (vcodec === "hevc" || vcodec === "h265" || vcodec === "h264")) {
           try {
-            // Clé = CONTENU seul : toutes les pistes audio sont muxées (switch natif AVPlayer) → un
-            // changement de langue NE relance PLUS le remux (fin du double-load + du cache-buster).
-            const remuxKey = contentKey;
-            // Idempotent : même contenu déjà remuxé → réutiliser l'URL locale sans relancer start().
+            // Clé incluant la PISTE AUDIO → un changement de langue force un re-remux (≠ contentKey
+            // seul) : AVPlayer ne commute pas plusieurs audio muxés dans une playlist HLS.
+            const remuxKey = contentKey + "|a" + audioRef.current;
+            // Idempotent : même contenu + même audio déjà remuxé → réutiliser l'URL locale sans relancer start().
             if (remuxKeyRef.current === remuxKey && remuxUrlRef.current) {
               console.log("[REMUX] reuse", remuxUrlRef.current);
               setResult({ baseUrl: remuxUrlRef.current, isDirectPlay: true, isLocalRemux: true });
