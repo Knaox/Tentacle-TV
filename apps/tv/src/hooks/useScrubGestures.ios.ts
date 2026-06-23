@@ -16,7 +16,10 @@ interface HWEvent {
 }
 
 /** Translation horizontale (pts) sous laquelle on ne scrub pas (centre mort). */
-const DEAD_ZONE_PX = 20;
+const DEAD_ZONE_PX = 28;
+/** À pleine vitesse (shuttle au max), on traverse TOUTE la vidéo en ~ce temps → la vitesse de
+ *  scrub s'ADAPTE à la durée (vidéo de 2 min = lent/contrôlable, 1 h 40 = rapide). */
+const T_FULL_SECONDS = 30;
 /** Cadence du loop d'avance continue (~30 fps). */
 const LOOP_MS = 33;
 /** Délai mini d'un geste avant d'engager le scrub : évite l'avance rapide
@@ -28,22 +31,25 @@ const ENGAGE_DELAY_MS = 250;
  * scrub (secondes vidéo par seconde réelle) + label de palier façon DVD. Lookup
  * par palier (plus loin = plus vite), parité avec les labels 2x/4x/8x affichés.
  */
-const SPEED_CURVE: { px: number; rate: number; label: string | null }[] = [
-  { px: DEAD_ZONE_PX, rate: 0, label: null },
-  { px: 50, rate: 10, label: null },
-  { px: 100, rate: 30, label: "2x" },
-  { px: 160, rate: 80, label: "4x" },
-  { px: 220, rate: 200, label: "8x" },
+// Paliers = FRACTION de la vitesse MAX (= durée / T_FULL_SECONDS) → vitesse adaptée à la durée.
+const SPEED_CURVE: { px: number; frac: number; label: string | null }[] = [
+  { px: DEAD_ZONE_PX, frac: 0, label: null },
+  { px: 55, frac: 0.06, label: null },
+  { px: 105, frac: 0.18, label: "2x" },
+  { px: 165, frac: 0.45, label: "4x" },
+  { px: 225, frac: 1.0, label: "8x" },
 ];
 
-function rateFor(translationX: number): { rate: number; label: string | null } {
+function rateFor(translationX: number, durationSec: number): { rate: number; label: string | null } {
   const mag = Math.abs(translationX);
   if (mag < DEAD_ZONE_PX) return { rate: 0, label: null };
   const dir = translationX > 0 ? 1 : -1;
+  // Vitesse MAX ∝ durée (bornée 5–400 s/s) : traverse la vidéo en ~T_FULL_SECONDS à fond.
+  const maxRate = Math.min(400, Math.max(5, (durationSec || 0) / T_FULL_SECONDS));
   let chosen = SPEED_CURVE[0];
   for (const t of SPEED_CURVE) if (mag >= t.px) chosen = t;
   const label = chosen.label ? `${dir > 0 ? "▶▶" : "◀◀"} ${chosen.label}` : null;
-  return { rate: chosen.rate * dir, label };
+  return { rate: chosen.frac * maxRate * dir, label };
 }
 
 /**
@@ -61,7 +67,7 @@ function rateFor(translationX: number): { rate: number; label: string | null } {
  * BACK annule), startScrubbing étant idempotent.
  */
 export function useScrubGestures({
-  enabled, onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake,
+  enabled, onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake, durationRef,
 }: ScrubGestureHandlers): void {
   // Callbacks à jour sans recréer le handler natif.
   const cbRef = useRef({ onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake });
@@ -116,7 +122,7 @@ export function useScrubGestures({
         cbRef.current.onStartScrub();  // idempotent côté cerveau (garde)
         startLoop();
       }
-      const { rate, label } = rateFor(tx);
+      const { rate, label } = rateFor(tx, durationRef?.current ?? 0);
       rateRef.current = rate;
       if (label !== lastLabelRef.current) { lastLabelRef.current = label; cbRef.current.onSpeedLabel(label); }
       return;

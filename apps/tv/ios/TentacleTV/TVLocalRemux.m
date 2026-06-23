@@ -14,6 +14,10 @@
 #import <libavutil/avutil.h>
 #import <libavcodec/avcodec.h>
 #import <libavutil/dovi_meta.h>
+#import <libswresample/swresample.h>
+#import <libavutil/audio_fifo.h>
+#import <libavutil/channel_layout.h>
+#import <libavutil/samplefmt.h>
 #import <os/log.h>
 
 #define TVLOG(fmt, ...) os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__)
@@ -37,6 +41,7 @@ static volatile int  gDone;
 static volatile int  gError;
 static volatile int  gReady;   // 1 dès que la playlist liste un 1ᵉʳ segment
 static volatile int  gGen;     // génération de session : un nouveau start() annule le remux précédent
+static volatile double gTVPlayPos;  // position de lecture (s) reçue de JS → bride la lecture anticipée
 static dispatch_queue_t gRemuxQueue;
 static NSString     *gCurrentSource;
 static NSString     *gCurrentUrl;
@@ -44,6 +49,9 @@ static NSString     *gCurrentUrl;
 // badge HDR/DV via AVDisplayCriteria (API privée, comme Kodi). 0=SDR, 3=HDR10, 4=Dolby Vision.
 int    gTVDynRange = 0;
 double gTVFps = 0;
+static volatile int gWantAudioIdx = -1;  // index de piste audio (MediaStream.Index JS) à mapper ; -1 = 1ʳᵉ dispo
+static volatile int    gWantStartSec = 0; // position de reprise (s) demandée par JS
+static volatile double gWrittenSec = 0;   // position max ÉCRITE par le remux (s) → gate de reprise
 
 static long long TVFileSize(NSString *path) {
   NSDictionary *a = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
@@ -53,6 +61,100 @@ static long long TVFileSize(NSString *path) {
 static const char *TVErr(int ret) {
   static char buf[256]; av_strerror(ret, buf, sizeof(buf)); return buf;
 }
+
+// ===== Transcode audio ON-DEVICE (DTS-HD MA / TrueHD / FLAC → EAC3) =====
+// AVPlayer ne décode que AAC/AC3/EAC3/ALAC → on décode la source + réencode EAC3 (≤5.1).
+// La VIDÉO reste en COPIE (Direct Play, badge DV). Atmos/lossless perdus (limite Apple).
+
+// Prépare décodeur source + encodeur EAC3 + resampler + FIFO. os->codecpar ← encodeur.
+static int TVAudioSetup(AVCodecParameters *ip, AVStream *os,
+                        AVCodecContext **padec, AVCodecContext **paenc,
+                        SwrContext **paswr, AVAudioFifo **pafifo) {
+  const AVCodec *dec = avcodec_find_decoder(ip->codec_id);
+  if (!dec) { TVLOG("audio: pas de décodeur id=%d", ip->codec_id); return -1; }
+  AVCodecContext *adec = avcodec_alloc_context3(dec);
+  if (!adec || avcodec_parameters_to_context(adec, ip) < 0 || avcodec_open2(adec, dec, NULL) < 0) {
+    TVLOG("audio: décodeur open FAIL"); if (adec) avcodec_free_context(&adec); return -1; }
+  const AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_EAC3);
+  if (!enc) { TVLOG("audio: pas d'encodeur EAC3"); avcodec_free_context(&adec); return -1; }
+  AVCodecContext *aenc = avcodec_alloc_context3(enc);
+  // EAC3 ≤ 5.1 : mono/stéréo conservés ; multicanal → downmix 5.1 (swresample fait le downmix).
+  if (adec->ch_layout.nb_channels <= 2) av_channel_layout_copy(&aenc->ch_layout, &adec->ch_layout);
+  else { AVChannelLayout l = AV_CHANNEL_LAYOUT_5POINT1; av_channel_layout_copy(&aenc->ch_layout, &l); }
+  aenc->sample_rate = 48000;
+  aenc->sample_fmt  = AV_SAMPLE_FMT_FLTP;   // format de l'encodeur AC3/EAC3
+  aenc->bit_rate    = 640000;
+  aenc->time_base   = (AVRational){1, aenc->sample_rate};
+  if (avcodec_open2(aenc, enc, NULL) < 0) { TVLOG("audio: encodeur EAC3 open FAIL"); avcodec_free_context(&adec); avcodec_free_context(&aenc); return -1; }
+  avcodec_parameters_from_context(os->codecpar, aenc);
+  os->codecpar->codec_tag = 0;
+  os->time_base = aenc->time_base;
+  SwrContext *swr = NULL;
+  if (swr_alloc_set_opts2(&swr, &aenc->ch_layout, aenc->sample_fmt, aenc->sample_rate,
+                                &adec->ch_layout, adec->sample_fmt, adec->sample_rate, 0, NULL) < 0
+      || swr_init(swr) < 0) { TVLOG("audio: swr init FAIL"); avcodec_free_context(&adec); avcodec_free_context(&aenc); if (swr) swr_free(&swr); return -1; }
+  AVAudioFifo *fifo = av_audio_fifo_alloc(aenc->sample_fmt, aenc->ch_layout.nb_channels, 4096);
+  *padec = adec; *paenc = aenc; *paswr = swr; *pafifo = fifo;
+  TVLOG("audio: transcode id=%d %dch %dHz → EAC3 %dch 48k", ip->codec_id,
+        adec->ch_layout.nb_channels, adec->sample_rate, aenc->ch_layout.nb_channels);
+  return 0;
+}
+
+// Encode les frames PLEINES du FIFO en EAC3 + écrit. flush=1 → vide le reste + draine l'encodeur.
+static void TVAudioEncodeFifo(AVFormatContext *oc, AVCodecContext *aenc, AVAudioFifo *fifo,
+                              int outIdx, int64_t *nextPts, int flush) {
+  int fs = aenc->frame_size > 0 ? aenc->frame_size : 1536;
+  AVPacket *op = av_packet_alloc();
+  while (av_audio_fifo_size(fifo) >= fs || (flush && av_audio_fifo_size(fifo) > 0)) {
+    int n = FFMIN(av_audio_fifo_size(fifo), fs);
+    AVFrame *f = av_frame_alloc();
+    f->nb_samples = n; f->format = aenc->sample_fmt; f->sample_rate = aenc->sample_rate;
+    av_channel_layout_copy(&f->ch_layout, &aenc->ch_layout);
+    if (av_frame_get_buffer(f, 0) < 0) { av_frame_free(&f); break; }
+    av_audio_fifo_read(fifo, (void **)f->data, n);
+    f->pts = *nextPts; *nextPts += n;
+    if (avcodec_send_frame(aenc, f) == 0)
+      while (avcodec_receive_packet(aenc, op) == 0) {
+        op->stream_index = outIdx;
+        av_packet_rescale_ts(op, aenc->time_base, oc->streams[outIdx]->time_base);
+        av_interleaved_write_frame(oc, op); av_packet_unref(op);
+      }
+    av_frame_free(&f);
+  }
+  if (flush) {
+    avcodec_send_frame(aenc, NULL);
+    while (avcodec_receive_packet(aenc, op) == 0) {
+      op->stream_index = outIdx;
+      av_packet_rescale_ts(op, aenc->time_base, oc->streams[outIdx]->time_base);
+      av_interleaved_write_frame(oc, op); av_packet_unref(op);
+    }
+  }
+  av_packet_free(&op);
+}
+
+// Décode un paquet audio (pkt=NULL → flush) → resample → FIFO → encode EAC3.
+static void TVAudioTranscode(AVFormatContext *oc, AVCodecContext *adec, AVCodecContext *aenc,
+                             SwrContext *swr, AVAudioFifo *fifo, int outIdx, int64_t *nextPts, AVPacket *pkt) {
+  avcodec_send_packet(adec, pkt);
+  AVFrame *df = av_frame_alloc();
+  while (avcodec_receive_frame(adec, df) == 0) {
+    int out_n = swr_get_out_samples(swr, df->nb_samples);
+    if (out_n > 0) {
+      uint8_t **conv = NULL;
+      if (av_samples_alloc_array_and_samples(&conv, NULL, aenc->ch_layout.nb_channels, out_n, aenc->sample_fmt, 0) >= 0) {
+        int got = swr_convert(swr, conv, out_n, (const uint8_t **)df->extended_data, df->nb_samples);
+        if (got > 0) av_audio_fifo_write(fifo, (void **)conv, got);
+        if (conv) { av_freep(&conv[0]); av_freep(&conv); }
+      }
+    }
+    av_frame_unref(df);
+  }
+  av_frame_free(&df);
+  TVAudioEncodeFifo(oc, aenc, fifo, outIdx, nextPts, pkt == NULL);
+}
+
+// État de transcode audio PAR flux de sortie (dec==NULL → la piste est en COPIE).
+typedef struct { AVCodecContext *dec, *enc; SwrContext *swr; AVAudioFifo *fifo; int64_t nextPts; } TVAud;
 
 static void TVDoRemux(const char *src, const char *dst, int gen) {
   AVFormatContext *ic = NULL, *oc = NULL;
@@ -64,6 +166,7 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   NSString *plPath = nil;   // déclaré ici (ARC) pour ne pas bloquer les goto end
   int v_dvp = -1, v_blcompat = -1, v_dvlevel = 0, v_level = 0, v_w = 0, v_h = 0;  // pour le master playlist
   const char *a_codec = NULL;
+  TVAud *auds = NULL;   // transcode audio PAR flux de sortie (dec==NULL → COPIE)
   int ret = 0;
   TVLOG("remux: entry gen=%d (cur=%d)", gen, gGen);
   if (!src || !dst) { gError = 1; gDone = 1; return; }
@@ -101,16 +204,15 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   oc->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
 
   smap = av_malloc_array(ic->nb_streams, sizeof(int));
-  if (!smap) { ret = -1; goto end; }
-  int oi = 0, audioTaken = 0;
+  auds = av_calloc(ic->nb_streams, sizeof(TVAud));   // état transcode par flux de sortie (zéro = copie)
+  if (!smap || !auds) { ret = -1; goto end; }
+  int oi = 0;
+  // On mappe la VIDÉO + TOUTES les pistes audio → AVPlayer expose les langues (switch NATIF, zéro re-remux).
   for (unsigned i = 0; i < ic->nb_streams; i++) {
     smap[i] = -1;
     AVCodecParameters *p = ic->streams[i]->codecpar;
     if (p->codec_type == AVMEDIA_TYPE_VIDEO) {
-    } else if (p->codec_type == AVMEDIA_TYPE_AUDIO && !audioTaken) {
-      enum AVCodecID id = p->codec_id;
-      if (id != AV_CODEC_ID_AAC && id != AV_CODEC_ID_AC3 && id != AV_CODEC_ID_EAC3 && id != AV_CODEC_ID_ALAC) continue;
-      audioTaken = 1;
+    } else if (p->codec_type == AVMEDIA_TYPE_AUDIO) {
     } else continue;
     AVStream *os = avformat_new_stream(oc, NULL);
     if (!os) { ret = -1; goto end; }
@@ -153,11 +255,18 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
       }
     } else {
       os->codecpar->codec_tag = 0;     // audio → tag auto
-      if (p->codec_type == AVMEDIA_TYPE_AUDIO)
-        a_codec = (p->codec_id == AV_CODEC_ID_EAC3) ? "ec-3"
-                : (p->codec_id == AV_CODEC_ID_AC3)  ? "ac-3"
-                : (p->codec_id == AV_CODEC_ID_AAC)  ? "mp4a.40.2"
-                : (p->codec_id == AV_CODEC_ID_ALAC) ? "alac" : NULL;
+      // Conserver langue + disposition « défaut » → AVPlayer affiche FR/EN au sélecteur + choisit le défaut.
+      av_dict_copy(&os->metadata, ic->streams[i]->metadata, 0);
+      os->disposition = ic->streams[i]->disposition;
+      enum AVCodecID aid = p->codec_id;
+      if (aid == AV_CODEC_ID_AAC || aid == AV_CODEC_ID_AC3 || aid == AV_CODEC_ID_EAC3 || aid == AV_CODEC_ID_ALAC) {
+        if (!a_codec) a_codec = (aid == AV_CODEC_ID_EAC3) ? "ec-3" : (aid == AV_CODEC_ID_AC3) ? "ac-3"
+                : (aid == AV_CODEC_ID_AAC)  ? "mp4a.40.2" : "alac";   // décodable AVPlayer → COPIE
+      } else {
+        // DTS-HD MA / TrueHD / FLAC : AVPlayer ne décode pas → TRANSCODE EAC3 on-device (auds[oi]).
+        if (TVAudioSetup(p, os, &auds[oi].dec, &auds[oi].enc, &auds[oi].swr, &auds[oi].fifo) < 0) { ret = -1; goto end; }
+        if (!a_codec) a_codec = "ec-3";
+      }
     }
     smap[i] = oi++;
   }
@@ -235,6 +344,10 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
     int si = pkt->stream_index;
     int oidx = (si >= 0 && si < (int)ic->nb_streams) ? smap[si] : -1;
     if (oidx < 0) { av_packet_unref(pkt); continue; }
+    if (auds[oidx].dec) {        // piste audio transcodée (DTS/TrueHD/FLAC → EAC3)
+      TVAudioTranscode(oc, auds[oidx].dec, auds[oidx].enc, auds[oidx].swr, auds[oidx].fifo, oidx, &auds[oidx].nextPts, pkt);
+      av_packet_unref(pkt); continue;
+    }
     AVStream *is = ic->streams[si];
     AVStream *os = oc->streams[oidx];
     pkt->stream_index = oidx;
@@ -273,6 +386,7 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
         pkt->dts = last_dts[oidx] + 1;
       if (pkt->dts != AV_NOPTS_VALUE) last_dts[oidx] = pkt->dts;
     }
+    int64_t wpts = pkt->pts; AVRational wtb = os->time_base;   // capturés AVANT que write_frame consomme pkt
     int w = av_interleaved_write_frame(oc, pkt);   // prend l'ownership du paquet
     if (w < 0) { TVLOG("write_frame FAIL %d %{public}s", w, TVErr(w)); continue; }
     // Prêt dès que la playlist liste un segment complet → AVPlayer peut démarrer.
@@ -280,8 +394,19 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
       NSString *pl = [NSString stringWithContentsOfFile:plPath encoding:NSUTF8StringEncoding error:nil];
       if (pl && [pl rangeOfString:@".m4s"].location != NSNotFound) { gReady = 1; TVLOG("remux: ready (playlist has 1st segment)"); }
     }
-    if ((++npkt % 2000) == 0) TVLOG("remux: %lld packets", npkt);
+    // PHASE 2 : brider la lecture anticipée — rester ~300 s (juste milieu) devant la position de
+    // lecture (gTVPlayPos, poussée par JS). GATE gTVPlayPos>1 : ne pacer QU'APRÈS le démarrage réel
+    // — sinon une REPRISE (saut à T) se bloque (le remux séquentiel s'arrête au tampon sans jamais
+    // atteindre T → « recommence au début »). Tant que gTVPlayPos=0, le remux file jusqu'à T.
+    if (wpts != AV_NOPTS_VALUE) {
+      double writtenSec = (double)wpts * av_q2d(wtb);
+      if (writtenSec > gWrittenSec) gWrittenSec = writtenSec;   // position MAX écrite → gate de reprise (resolve)
+      while (gReady && gTVPlayPos > 1.0 && writtenSec > gTVPlayPos + 300.0 && gGen == gen && !gError) usleep(200000);
+    }
+    if ((++npkt % 2000) == 0) TVLOG("remux: %lld pkts (writtenSec=%.0f pos=%.0f)", npkt, (double)wpts * av_q2d(wtb), gTVPlayPos);
   }
+  for (int k = 0; k < oi; k++)  // flush décodeur+encodeur de CHAQUE piste audio transcodée
+    if (auds[k].dec) TVAudioTranscode(oc, auds[k].dec, auds[k].enc, auds[k].swr, auds[k].fifo, k, &auds[k].nextPts, NULL);
   av_write_trailer(oc);   // #EXT-X-ENDLIST → playlist VOD complète (seek total)
   TVLOG("remux: done, %lld packets, err=%d", npkt, gError);
 
@@ -291,6 +416,15 @@ end:
   if (last_dts) av_free(last_dts);
   if (ptsbuf) av_free(ptsbuf);
   if (primed) av_free(primed);
+  if (auds && ic) {
+    for (unsigned k = 0; k < ic->nb_streams; k++) {
+      if (auds[k].dec)  avcodec_free_context(&auds[k].dec);
+      if (auds[k].enc)  avcodec_free_context(&auds[k].enc);
+      if (auds[k].swr)  swr_free(&auds[k].swr);
+      if (auds[k].fifo) av_audio_fifo_free(auds[k].fifo);
+    }
+  }
+  if (auds) av_free(auds);
   if (oc && oc->pb) avio_closep(&oc->pb);
   if (oc)   avformat_free_context(oc);
   if (ic)   avformat_close_input(&ic);
@@ -309,10 +443,12 @@ RCT_EXPORT_MODULE();
 
 RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
                   dynamicRange:(NSInteger)dynRange
+                  audioIndex:(NSInteger)audioIndex
+                  startSec:(double)startSec
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-  TVLOG("start: entry dyn=%ld", (long)dynRange);
+  TVLOG("start: entry dyn=%ld audioIndex=%ld startSec=%.0f", (long)dynRange, (long)audioIndex, startSec);
   static dispatch_once_t once;
   dispatch_once(&once, ^{ TVLOG("init network"); av_log_set_callback(TVAvLog); avformat_network_init(); gRemuxQueue = dispatch_queue_create("tv.localremux", DISPATCH_QUEUE_SERIAL); });
 
@@ -322,20 +458,32 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
     if (!sourceUrl.length) { reject(@"args", @"empty sourceUrl", nil); return; }
     gTVDynRange = (int)dynRange;   // plage dynamique AUTORITAIRE (JS/Jellyfin) pour le badge
 
-    // Dossier FIXE + serveur UNIQUE (port stable). Le dossier est vidé/réécrit par chaque
-    // nouvelle session (dans TVDoRemux, après que la file série a fait quitter la précédente).
+    // Dossier BASE + serveur UNIQUE (port stable). Chaque session écrit dans un SOUS-dossier
+    // `tvhls/g<gGen>/` (isolation → pas de clobbering de l'ancien que le player lit).
     if (!gOutPath) gOutPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"tvhls"];
-    [[NSFileManager defaultManager] createDirectoryAtPath:gOutPath withIntermediateDirectories:YES attributes:nil error:nil];
+    {
+      NSFileManager *fm = [NSFileManager defaultManager];
+      [fm createDirectoryAtPath:gOutPath withIntermediateDirectories:YES attributes:nil error:nil];
+      // 1er start après lancement app (serveur pas encore créé) : vider les sessions résiduelles.
+      if (!gServer)
+        for (NSString *d in ([fm contentsOfDirectoryAtPath:gOutPath error:nil] ?: @[]))
+          [fm removeItemAtPath:[gOutPath stringByAppendingPathComponent:d] error:nil];
+    }
     if (!gServer) {
       NSString *dir = gOutPath;
       gServer = [[GCDWebServer alloc] init];
       // Sert les fichiers HLS (index.m3u8 + init.mp4 + seg*.m4s) : segments COMPLETS → Range natif.
       [gServer addDefaultHandlerForMethod:@"GET" requestClass:[GCDWebServerRequest class]
                              processBlock:^GCDWebServerResponse *(GCDWebServerRequest *req) {
-        NSString *name = req.path.lastPathComponent;          // basename only (anti-traversal)
-        NSString *file = [dir stringByAppendingPathComponent:name];
-        if (![[NSFileManager defaultManager] fileExistsAtPath:file]) {
-          TVLOG("handler 404: %{public}s", name.UTF8String);
+        // Path = /g<N>/<fichier> : 1ᵉʳ composant = sous-dossier de session (anti-traversal : g + chiffres).
+        NSArray<NSString *> *comps = req.path.pathComponents;   // ["/", "gN", "fichier"]
+        NSString *name = req.path.lastPathComponent;
+        NSString *sub = comps.count >= 3 ? comps[1] : @"";
+        BOOL okSub = sub.length >= 2 && [sub characterAtIndex:0] == 'g';
+        for (NSUInteger i = 1; okSub && i < sub.length; i++) { unichar c = [sub characterAtIndex:i]; if (c < '0' || c > '9') okSub = NO; }
+        NSString *file = okSub ? [[dir stringByAppendingPathComponent:sub] stringByAppendingPathComponent:name] : nil;
+        if (!file || ![[NSFileManager defaultManager] fileExistsAtPath:file]) {
+          TVLOG("handler 404: %{public}s", req.path.UTF8String);
           return [GCDWebServerResponse responseWithStatusCode:404];
         }
         NSString *ext = name.pathExtension.lowercaseString;
@@ -354,32 +502,47 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
       TVLOG("server start ok=%d port=%lu", ok, (unsigned long)gServer.port);
       if (!ok) { reject(@"server", @"GCDWebServer start failed", err); return; }
     }
-    // On joue la MEDIA playlist directement (le master playlist est rejeté « unsupported url »
-    // par AVPlayer/react-native-video). Le badge HDR/DV est engagé à la main via TVDisplayCriteria.
-    NSString *url = [NSString stringWithFormat:@"http://127.0.0.1:%lu/index.m3u8", (unsigned long)gServer.port];
-    gCurrentUrl = url;
-
-    // MÊME source + pas d'erreur + une session existe déjà → NE PAS relancer le remux, juste
-    // attendre ses fichiers. Sinon nouvelle session (annule le remux précédent via gGen).
+    // MÊME source + même audio + pas d'erreur + session existante → NE PAS relancer, juste attendre.
+    // Sinon nouvelle session : dossier PROPRE (n'écrase pas l'ancien que le player lit) + nettoyage.
     int myGen;
     if ([sourceUrl isEqualToString:gCurrentSource] && !gError && gGen > 0) {
-      myGen = gGen;
+      myGen = gGen;   // même contenu : TOUTES les pistes audio sont déjà muxées (switch natif) → réutiliser
       TVLOG("start: same source → wait files (gen=%d)", myGen);
     } else {
       gCurrentSource = sourceUrl;
+      gWantAudioIdx = (int)audioIndex;   // re-remux si la piste audio change (clé de session)
+      gWantStartSec = (int)startSec;     // reprise : le gate resolve() attendra cette position PRODUITE
       myGen = ++gGen;
-      gDone = 0; gError = 0; gReady = 0; gTotalEstimate = 0; gTVFps = 0;
+      gDone = 0; gError = 0; gReady = 0; gTotalEstimate = 0; gTVFps = 0; gWrittenSec = 0;
+      gTVPlayPos = startSec;             // centre le pacing sur la reprise (le remux fonce jusqu'à là)
+      // DOSSIER PAR SESSION : tvhls/g<myGen>/ → le nouveau remux NE clobbe PAS les segments que
+      // l'ancien lecteur lit encore (fin du -11866). Nettoyage : supprimer les sessions N < myGen-1
+      // (garder le courant + le précédent, l'ancien lecteur pouvant lire pendant une bascule).
+      NSString *sessionDir = [gOutPath stringByAppendingPathComponent:[NSString stringWithFormat:@"g%d", myGen]];
+      NSFileManager *fm = [NSFileManager defaultManager];
+      [fm createDirectoryAtPath:sessionDir withIntermediateDirectories:YES attributes:nil error:nil];
+      for (NSString *d in ([fm contentsOfDirectoryAtPath:gOutPath error:nil] ?: @[]))
+        if ([d hasPrefix:@"g"] && [[d substringFromIndex:1] intValue] < myGen - 1)
+          [fm removeItemAtPath:[gOutPath stringByAppendingPathComponent:d] error:nil];
       const char *src = strdup(sourceUrl.UTF8String);
-      const char *dst = strdup(gOutPath.UTF8String);
+      const char *dst = strdup(sessionDir.UTF8String);
       dispatch_async(gRemuxQueue, ^{ TVDoRemux(src, dst, myGen); free((void *)src); free((void *)dst); });
-      TVLOG("start: new session gen=%d", myGen);
+      TVLOG("start: new session gen=%d dir=g%d", myGen, myGen);
     }
 
-    // Résoudre SEULEMENT quand master.m3u8 ET un 1ᵉʳ segment existent (anti-404), pour CETTE session.
-    NSString *masterPath = [gOutPath stringByAppendingPathComponent:@"master.m3u8"];
+    // URL = /g<myGen>/index.m3u8 : sous-dossier de session (un par CONTENU). Toutes les pistes audio
+    // sont muxées → switch natif AVPlayer, plus de cache-buster ni de re-remux par langue. Media
+    // playlist directe (master rejeté « unsupported url ») ; badge engagé à la main (TVDisplayCriteria).
+    NSString *url = [NSString stringWithFormat:@"http://127.0.0.1:%lu/g%d/index.m3u8", (unsigned long)gServer.port, myGen];
+    gCurrentUrl = url;
+
+    // Résoudre quand master.m3u8 + 1ᵉʳ segment de CETTE session sont prêts (+ reprise produite).
+    NSString *masterPath = [[gOutPath stringByAppendingPathComponent:[NSString stringWithFormat:@"g%d", myGen]] stringByAppendingPathComponent:@"master.m3u8"];
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
       int guard = 0;
-      while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0) && guard++ < 1000) usleep(10000);
+      // Attend : playlist prête ET la position de reprise PRODUITE (gWrittenSec ≥ gWantStartSec)
+      // → le seek du player ne tombe pas sur un segment pas encore écrit (-16156). Borné ~30 s.
+      while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0 && gWrittenSec >= (double)gWantStartSec) && guard++ < 3000) usleep(10000);
       TVLOG("start: gen=%d (cur=%d) ready=%d err=%d master=%lld after %dms", myGen, gGen, gReady, gError, TVFileSize(masterPath), guard * 10);
       if (gGen != myGen) { reject(@"superseded", @"newer session started", nil); return; }
       if (TVFileSize(masterPath) <= 0) { reject(@"remux", @"no master playlist", nil); return; }
@@ -393,5 +556,8 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
 }
 
 RCT_EXPORT_METHOD(stop) { if (gServer.isRunning) [gServer stop]; }
+
+// Position de lecture (s) poussée par JS (onProgress) → le remux ne va pas trop loin devant.
+RCT_EXPORT_METHOD(setPosition:(double)seconds) { gTVPlayPos = seconds; }
 
 @end

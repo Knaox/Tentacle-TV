@@ -6,6 +6,9 @@ import { NativeModules } from "react-native";
 const TVDisplayCriteria = (NativeModules as {
   TVDisplayCriteria?: { engage?: () => void; reset?: () => void };
 }).TVDisplayCriteria;
+const TVLocalRemux = (NativeModules as {
+  TVLocalRemux?: { setPosition?: (seconds: number) => void };
+}).TVLocalRemux;
 import Video, {
   type OnLoadData,
   type OnProgressData,
@@ -90,6 +93,12 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // On la RE-APPLIQUE une fois la lecture réellement démarrée (1ᵉʳ onProgress),
     // exactement comme une re-sélection manuelle (qui, elle, corrige).
     const desiredAudioRef = useRef<number | null>(null);
+    // ANTI-RESTART : le seek anti-bord-live (cf. handleLoad) ne doit se faire qu'UNE SEULE fois
+    // par source. react-native-video refire `onLoad` à chaque mise à jour de la playlist HLS
+    // EVENT croissante (segments ajoutés, ENDLIST final) → un seek non gardé relancerait la
+    // vidéo au début. On le remet à zéro quand la source (uri) change.
+    const didSeekRef = useRef(false);
+    useEffect(() => { didSeekRef.current = false; }, [uri]);
     const audioReappliedRef = useRef(false);
 
     // Pistes texte VTT sideloadées (rendu natif AVPlayer).
@@ -192,15 +201,23 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         }));
         onTracks?.(tracks);
 
-        // Filet de reprise : `startPosition` est ignoré sur certains flux HLS.
-        if (startSec > 1) videoRef.current?.seek(startSec);
+        // Filet anti BORD-LIVE + reprise : sur une playlist HLS EVENT (remux local 127.0.0.1)
+        // AVPlayer démarre au segment le plus récent (≈ tampon) → on seek explicitement au
+        // début/reprise (MÊME à 0). `startPosition` est par ailleurs ignoré sur certains flux HLS.
+        // GARDE didSeekRef : UNE SEULE fois (onLoad refire sur playlist EVENT → sinon restart).
+        if (!didSeekRef.current && (startSec > 1 || uri.includes("127.0.0.1"))) {
+          didSeekRef.current = true;
+          videoRef.current?.seek(Math.max(0, startSec));
+        }
       },
-      [onLoad, onVideoSize, onTracks, startSec],
+      [onLoad, onVideoSize, onTracks, startSec, uri],
     );
 
     const handleProgress = useCallback(
       (data: OnProgressData) => {
         console.log("[AVP] progress t=", data.currentTime.toFixed(1), "buf=", data.playableDuration.toFixed(1));
+        // PHASE 2 : pousser la position au remux on-device → il ne tire que ~ce qui est consommé (+ tampon).
+        TVLocalRemux?.setPosition?.(Math.max(0, data.currentTime));
         // Lecture démarrée → RE-APPLIQUER la piste audio voulue une seule fois :
         // sur les formats lents (Atmos), la sélection posée à onLoad a été ignorée
         // et AVPlayer joue la piste par défaut. Re-poser un nouvel objet la force.
@@ -236,7 +253,9 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         ref={videoRef}
         source={{
           uri,
-          startPosition: startSec > 0 ? startSec * 1000 : undefined,
+          // Remux local = playlist HLS EVENT → AVPlayer démarrerait au BORD LIVE (≈ tampon en
+          // avance = « +5 min au compteur ») → on force la position de départ (0 si pas de reprise).
+          startPosition: (startSec > 0 || uri.includes("127.0.0.1")) ? startSec * 1000 : undefined,
           // Remux local (127.0.0.1) : pas de headers (le serveur local les ignore) → évite un
           // resource-loader custom de react-native-video qui casserait l'indirection master→variant.
           headers: uri.includes("127.0.0.1") ? undefined : headers,

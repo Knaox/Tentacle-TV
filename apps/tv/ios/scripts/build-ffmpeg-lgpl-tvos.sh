@@ -29,7 +29,9 @@ build() {
     --enable-muxer=mov,mp4,mpegts,hls \
     --enable-protocol=file,http,https,tcp,tls,crypto \
     --enable-bsf=hevc_mp4toannexb,h264_mp4toannexb,extract_extradata \
-    --enable-parser=hevc,h264,aac,ac3,dca \
+    --enable-parser=hevc,h264,aac,ac3,dca,mlp \
+    --enable-decoder=dca,truehd,flac \
+    --enable-encoder=eac3,ac3 \
     --disable-asm
   make -j"$NCPU"
   make install
