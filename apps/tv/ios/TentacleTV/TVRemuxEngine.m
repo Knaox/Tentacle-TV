@@ -29,6 +29,7 @@ double gTVFps = 0;
 volatile int gWantAudioIdx = -1;  // index de piste audio (MediaStream.Index JS) à mapper ; -1 = 1ʳᵉ dispo
 volatile int    gWantStartSec = 0; // position de reprise (s) demandée par JS
 volatile double gWrittenSec = 0;   // position max ÉCRITE par le remux (s) → gate de reprise
+volatile double gSessionStartSec = 0; // temps absolu du 1ᵉʳ segment de la session (av_seek_frame) ; gDiskBytes est défini dans TVWindow.m
 
 static void TVDoRemux(const char *src, const char *dst, int gen) {
   AVFormatContext *ic = NULL, *oc = NULL;
@@ -42,7 +43,10 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   const char *a_codec = NULL;
   AVCodecContext *adec = NULL, *aenc = NULL;   // transcode audio on-device (DTS/TrueHD/FLAC → EAC3)
   SwrContext *aswr = NULL; AVAudioFifo *afifo = NULL;
-  int aXcode = 0, aOutIdx = -1; int64_t aNextPts = 0;
+  int aXcode = 0, aOutIdx = -1;
+  // aNextPts = AV_NOPTS_VALUE → sera ANCRÉ sur la 1ʳᵉ frame audio décodée (timeline source) pour
+  // garder la synchro labiale ; aInTb = time_base du flux audio source (rescale du PTS d'ancrage).
+  int64_t aNextPts = AV_NOPTS_VALUE; AVRational aInTb = (AVRational){1, 48000};
   int ret = 0;
   TVLOG("remux: entry gen=%d (cur=%d)", gen, gGen);
   if (!src || !dst) { gError = 1; gDone = 1; return; }
@@ -69,7 +73,20 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   TVLOG("remux: stream_info done");
   gTotalEstimate = (ic->pb ? avio_size(ic->pb) : 0);
   if (gTotalEstimate < 0) gTotalEstimate = 0;
-  TVLOG("remux: size estimate=%lld", gTotalEstimate);
+  TVLOG("remux: size estimate=%lld seekable=%d", gTotalEstimate, ic->pb ? (ic->pb->seekable & AVIO_SEEKABLE_NORMAL) : -1);
+
+  // REPRISE/SEEK RAPIDE : positionner l'ENTRÉE sur la keyframe ≤ T (au lieu de lire linéairement
+  // depuis 0, réseau-bound). avformat_seek_file(-1, …) synchronise TOUS les flux ; AVSEEK_FLAG_BACKWARD
+  // = keyframe ≤ T (la copie vidéo EXIGE une keyframe). Unité : AV_TIME_BASE (stream_index=-1). La
+  // reconstruction DTS (ptsbuf/primed) et l'ancrage audio (aNextPts) se ré-amorcent gratuitement car
+  // CETTE session ré-alloue tout. Échec (conteneur sans index/proxy non-seekable) → repli lecture
+  // linéaire (le gate gWrittenSec≥gWantStartSec attendra la production de T comme avant). gWantStartSec
+  // gate aussi `avoid_negative_ts=disabled` (TVHLSPlaylist) → PTS ABSOLUS préservés (currentTime AVPlayer ≈ T).
+  if (gWantStartSec > 0) {
+    int64_t seek_ts = (int64_t)gWantStartSec * AV_TIME_BASE;
+    int sret = avformat_seek_file(ic, -1, INT64_MIN, seek_ts, seek_ts, AVSEEK_FLAG_BACKWARD);
+    TVLOG("remux: seek input to %ds → %d %{public}s", gWantStartSec, sret, sret < 0 ? TVErr(sret) : "ok");
+  }
 
   if ((ret = TVHLSOpenOutput(&oc, dst)) < 0) goto end;
 
@@ -143,6 +160,7 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
         // DTS-HD MA / TrueHD / FLAC : AVPlayer ne décode pas → TRANSCODE EAC3 on-device.
         if (TVAudioSetup(p, os, &adec, &aenc, &aswr, &afifo) < 0) { ret = -1; goto end; }
         aXcode = 1; aOutIdx = oi; a_codec = "ec-3";
+        aInTb = ic->streams[i]->time_base;   // time_base source → ancrage PTS audio (A/V sync)
       }
     }
     smap[i] = oi++;
@@ -168,7 +186,7 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
     int oidx = (si >= 0 && si < (int)ic->nb_streams) ? smap[si] : -1;
     if (oidx < 0) { av_packet_unref(pkt); continue; }
     if (aXcode && oidx == aOutIdx) {        // piste audio transcodée (DTS/TrueHD/FLAC → EAC3)
-      TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, pkt);
+      TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, aInTb, pkt);
       av_packet_unref(pkt); continue;
     }
     AVStream *is = ic->streams[si];
@@ -217,18 +235,33 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
       NSString *pl = [NSString stringWithContentsOfFile:plPath encoding:NSUTF8StringEncoding error:nil];
       if (pl && [pl rangeOfString:@".m4s"].location != NSNotFound) { gReady = 1; TVLOG("remux: ready (playlist has 1st segment)"); }
     }
-    // PHASE 2 : brider la lecture anticipée — rester ~300 s (juste milieu) devant la position de
-    // lecture (gTVPlayPos, poussée par JS). GATE gTVPlayPos>1 : ne pacer QU'APRÈS le démarrage réel
-    // — sinon une REPRISE (saut à T) se bloque (le remux séquentiel s'arrête au tampon sans jamais
-    // atteindre T → « recommence au début »). Tant que gTVPlayPos=0, le remux file jusqu'à T.
+    // PHASE 2 FENÊTRÉE : brider la lecture anticipée — rester ~300 s devant la position de lecture
+    // (gTVPlayPos, poussée par JS) OU dès que le disque atteint le plafond (TVLR_DISK_CAP) → le
+    // remux d'un film 4K ne remplit plus le stockage (fin du « disque plein → CRASH »). En parallèle
+    // on PURGE les segments derrière la tête (TVWindow.m). GATE gTVPlayPos>1 : ne pacer QU'APRÈS le
+    // démarrage réel — sinon une REPRISE (saut à T) se bloque (le remux séquentiel s'arrête au tampon
+    // sans jamais atteindre T → « recommence au début »). Tant que gTVPlayPos=0, le remux file jusqu'à T.
     if (wpts != AV_NOPTS_VALUE) {
-      double writtenSec = (double)wpts * av_q2d(wtb);
-      if (writtenSec > gWrittenSec) gWrittenSec = writtenSec;   // position MAX écrite → gate de reprise (resolve)
-      while (gReady && gTVPlayPos > 1.0 && writtenSec > gTVPlayPos + 300.0 && gGen == gen && !gError) usleep(200000);
+      // RELATIF au début de session : wpts est le PTS source ABSOLU (lu AVANT le shift make_zero appliqué
+      // par le muxer), gSessionStartSec = startSec absolu → writtenSec 0-based, ALIGNÉ sur gTVPlayPos
+      // (relatif = currentTime AVPlayer 0-based) et sur la timeline 0-based des segments. SANS ça,
+      // gWrittenSec restait absolu (ex. 494) → gate `≥ PREBUFFER` vrai immédiatement (pas de pré-buffer →
+      // stall de démarrage) ET pacing absolu vs relatif (famine).
+      double writtenSec = (double)wpts * av_q2d(wtb) - gSessionStartSec;
+      if (writtenSec < 0) writtenSec = 0;
+      if (writtenSec > gWrittenSec) gWrittenSec = writtenSec;   // durée MAX produite (0-based) → gate pré-buffer + pacing
+      if ((npkt % 120) == 0) TVPurgeBehind(dst, gen, gTVPlayPos);
+      // Purge AUSSI pendant l'attente : quand la tête avance, gDiskBytes baisse et relâche le gate
+      // octets (sinon deadlock — le gate ne se rouvrirait jamais sans purge).
+      while (gReady && gTVPlayPos > 1.0 && gGen == gen && !gError &&
+             (writtenSec > gTVPlayPos + 300.0 || gDiskBytes > TVLR_DISK_CAP)) {
+        TVPurgeBehind(dst, gen, gTVPlayPos);
+        usleep(200000);
+      }
     }
-    if ((++npkt % 2000) == 0) TVLOG("remux: %lld pkts (writtenSec=%.0f pos=%.0f)", npkt, (double)wpts * av_q2d(wtb), gTVPlayPos);
+    if ((++npkt % 2000) == 0) TVLOG("remux: %lld pkts (writtenSec=%.0f pos=%.0f disk=%lldMo)", npkt, gWrittenSec, gTVPlayPos, gDiskBytes / (1024 * 1024));
   }
-  if (aXcode) TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, NULL);  // flush décodeur+encodeur audio
+  if (aXcode) TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, aInTb, NULL);  // flush décodeur+encodeur audio
   av_write_trailer(oc);   // #EXT-X-ENDLIST → playlist VOD complète (seek total)
   TVLOG("remux: done, %lld packets, err=%d", npkt, gError);
 

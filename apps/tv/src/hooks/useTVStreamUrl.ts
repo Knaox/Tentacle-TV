@@ -16,6 +16,8 @@ import { randomSessionId } from "../utils/playerHelpers";
 export function useTVStreamUrl(args: {
   itemId: string;
   mediaSourceId?: string;
+  /** Parité de signature tvOS (gate remux par conteneur) ; ignoré côté Android. */
+  container?: string;
   streams: JfStream[];
   audioIndex: number;
   /** Piste sous-titres à INCRUSTER en transcode (PGS/burn-in). -1 = aucune. */

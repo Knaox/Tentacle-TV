@@ -11,6 +11,7 @@
 #import "TVCommon.h"
 #import "TVAudioTranscode.m"
 #import "TVHLSPlaylist.m"
+#import "TVWindow.m"        // fenêtrage disque (TVPurgeBehind) — DOIT précéder TVRemuxEngine.m (qui l'appelle)
 #import "TVRemuxEngine.m"
 
 @interface TVLocalRemux : NSObject <RCTBridgeModule>
@@ -84,16 +85,32 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
     // MÊME source + même audio + pas d'erreur + session existante → NE PAS relancer, juste attendre.
     // Sinon nouvelle session : dossier PROPRE (n'écrase pas l'ancien que le player lit) + nettoyage.
     int myGen;
-    if ([sourceUrl isEqualToString:gCurrentSource] && (int)audioIndex == gWantAudioIdx && !gError && gGen > 0) {
+    // Réutiliser la session courante si même source + même audio + la position demandée est DANS la
+    // fenêtre DISPONIBLE [max(début session, tête−BEHIND) … écrit]. Sinon (seek lointain devant le
+    // produit, ou arrière dans une zone purgée) → NOUVELLE session re-remuxée depuis startSec
+    // (av_seek_frame, cf. TVRemuxEngine) : c'est ça qui rend les gros sauts ET la reprise rapides.
+    // gTVPlayPos/gWrittenSec sont 0-based (relatifs au début de session, cf. make_zero) ; gSessionStartSec
+    // et startSec sont ABSOLUS → on convertit la fenêtre dispo en ABSOLU avant de comparer.
+    double playAbs = gSessionStartSec + gTVPlayPos;                 // tête de lecture absolue
+    double availFrom = playAbs - TVLR_BEHIND_SEC;
+    if (availFrom < gSessionStartSec) availFrom = gSessionStartSec; // jamais avant le début de session
+    double availTo = gSessionStartSec + gWrittenSec;                // dernier instant produit (absolu)
+    BOOL withinAvail = startSec >= availFrom - 2.0 && startSec <= availTo + 1.0;
+    if ([sourceUrl isEqualToString:gCurrentSource] && (int)audioIndex == gWantAudioIdx && !gError && gGen > 0 && withinAvail) {
       myGen = gGen;
-      TVLOG("start: same source+audio → wait files (gen=%d)", myGen);
+      TVLOG("start: same source+audio, pos %.0f dans la fenêtre [%.0f..%.0f] → wait files (gen=%d)", startSec, availFrom, availTo, myGen);
     } else {
       gCurrentSource = sourceUrl;
       gWantAudioIdx = (int)audioIndex;   // re-remux si la piste audio change (clé de session)
-      gWantStartSec = (int)startSec;     // reprise : le gate resolve() attendra cette position PRODUITE
+      gWantStartSec = (int)startSec;     // reprise/seek : av_seek_frame positionne l'entrée sur la keyframe ≤ T
+      gSessionStartSec = startSec;       // début ABSOLU de cette session → mapping purge/headIdx (TVWindow.m)
       myGen = ++gGen;
-      gDone = 0; gError = 0; gReady = 0; gTotalEstimate = 0; gTVFps = 0; gWrittenSec = 0;
-      gTVPlayPos = startSec;             // centre le pacing sur la reprise (le remux fonce jusqu'à là)
+      gDone = 0; gError = 0; gReady = 0; gTotalEstimate = 0; gTVFps = 0; gWrittenSec = 0; gDiskBytes = 0;
+      // 0-based (make_zero) : la tête démarre à RELATIF 0 (= absolu startSec via av_seek_frame). NE PAS
+      // mettre startSec (absolu) ici → le pacing ET la purge raisonnent en relatif (gTVPlayPos), sinon la
+      // purge calculerait un headIdx énorme et effacerait le DÉBUT de session avant la lecture (→ 404).
+      // gTVPlayPos ≤ 1 tant que la lecture n'a pas démarré → le remux produit librement (pré-buffer).
+      gTVPlayPos = 0;
       // DOSSIER PAR SESSION : tvhls/g<myGen>/ → le nouveau remux NE clobbe PAS les segments que
       // l'ancien lecteur lit encore (fin du -11866). Nettoyage : supprimer les sessions N < myGen-1
       // (garder le courant + le précédent, l'ancien lecteur pouvant lire pendant une bascule).
@@ -119,9 +136,12 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
     NSString *masterPath = [[gOutPath stringByAppendingPathComponent:[NSString stringWithFormat:@"g%d", myGen]] stringByAppendingPathComponent:@"master.m3u8"];
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
       int guard = 0;
-      // Attend : playlist prête ET la position de reprise PRODUITE (gWrittenSec ≥ gWantStartSec)
-      // → le seek du player ne tombe pas sur un segment pas encore écrit (-16156). Borné ~30 s.
-      while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0 && gWrittenSec >= (double)gWantStartSec) && guard++ < 3000) usleep(10000);
+      // Attend : playlist prête ET un PRÉ-BUFFER produit (gWrittenSec 0-based ≥ TVLR_PREBUFFER_SEC) →
+      // AVPlayer démarre avec un cushion (vidéo+audio bufferisés) au lieu d'un seul segment → fini le
+      // « son avant la vidéo » + stall de démarrage. Avec av_seek_frame, la production COMMENCE à T
+      // (rebasée à 0), donc ~PREBUFFER s après T sont prêtes très vite. Borné ~30 s. (Ce gate
+      // remplace l'ancien `gWrittenSec ≥ gWantStartSec`, faux en 0-based : il ne se relâchait jamais.)
+      while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0 && gWrittenSec >= (double)TVLR_PREBUFFER_SEC) && guard++ < 3000) usleep(10000);
       TVLOG("start: gen=%d (cur=%d) ready=%d err=%d master=%lld after %dms", myGen, gGen, gReady, gError, TVFileSize(masterPath), guard * 10);
       if (gGen != myGen) { reject(@"superseded", @"newer session started", nil); return; }
       if (TVFileSize(masterPath) <= 0) { reject(@"remux", @"no master playlist", nil); return; }
