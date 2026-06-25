@@ -25,6 +25,10 @@
 
 #define TVLOG(fmt, ...) os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__)
 #define TVLR_REORDER 8   // profondeur de réordonnancement B-frames couverte (HEVC grand public ≤ 4-8)
+// Fenêtrage disque (TVWindow.m) : plafond DUR (octets) + marge conservée DERRIÈRE la tête.
+#define TVLR_DISK_CAP   (1600LL * 1024 * 1024)   // 1,6 Go → tient sur Apple TV 32/64 Go quel que soit le film
+#define TVLR_BEHIND_SEC 60.0                      // ~1 min conservée derrière la tête (petits retours arrière OK)
+#define TVLR_PREBUFFER_SEC 8.0                    // s produites (0-based) avant de résoudre start() → cushion anti-stall de démarrage
 
 // Route les logs internes de FFmpeg vers Console.app (raison exacte des échecs).
 static void TVAvLog(void *avcl, int level, const char *fmt, va_list vl) {
@@ -62,5 +66,7 @@ extern double gTVFps;
 extern volatile int gWantAudioIdx;  // index de piste audio (MediaStream.Index JS) à mapper ; -1 = 1ʳᵉ dispo
 extern volatile int    gWantStartSec; // position de reprise (s) demandée par JS
 extern volatile double gWrittenSec;   // position max ÉCRITE par le remux (s) → gate de reprise
+extern volatile long long gDiskBytes; // octets cumulés des segments (fenêtrage disque, TVWindow.m)
+extern volatile double gSessionStartSec; // temps ABSOLU du 1ᵉʳ segment de la session (av_seek_frame) → mapping purge/headIdx
 
 #endif /* TVCOMMON_H */

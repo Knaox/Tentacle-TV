@@ -31,6 +31,12 @@ static int TVHLSWriteHeader(AVFormatContext *oc, const char *dst) {
   av_dict_set_int(&opts, "hls_list_size", 0, 0);                     // garder TOUS les segments (seekable)
   av_dict_set(&opts, "hls_playlist_type", "event", 0);              // playlist croissante + seekable
   av_dict_set(&opts, "hls_flags", "independent_segments+temp_file", 0);  // segment écrit puis renommé (atomique)
+  // make_zero TOUJOURS → segments 0-based (rebase le 1ᵉʳ PTS écrit à 0, absorbe le DTS amorcé négatif de
+  // la reconstruction B-frames vidéo). CRUCIAL : AVPlayer mesure currentTime relativement au DÉBUT de la
+  // playlist HLS (PAS le tfdt absolu) → segments, gWrittenSec, gTVPlayPos et currentTime sont TOUS
+  // 0-based et ALIGNÉS (sinon le pacing comparait absolu/relatif → le remux s'arrêtait trop tôt → famine
+  // AVPlayer / MEDIA_PLAYBACK_STALL). La position ABSOLUE (reprise/scrubber/sous-titres) est restaurée par
+  // un offset confiné dans AVPlayerSurface. L'av_seek_frame reste (la sortie est rebasée à 0).
   av_dict_set(&opts, "avoid_negative_ts", "make_zero", 0);
   // PAS d'avio_open : le muxer hls ouvre lui-même playlist + segments.
   if ((ret = avformat_write_header(oc, &opts)) < 0) { TVLOG("write_header FAIL %d %{public}s", ret, TVErr(ret)); av_dict_free(&opts); return ret; }

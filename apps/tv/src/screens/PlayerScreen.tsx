@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type ElementRef } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, type ElementRef } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting } from "@tentacle-tv/api-client";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
@@ -24,6 +24,7 @@ import { useTVReloadState } from "../hooks/useTVReloadState";
 import { useTVAudioTrack } from "../hooks/useTVAudioTrack";
 import { useTVSubtitleControl } from "../hooks/useTVSubtitleControl";
 import { useTVSeekControl } from "../hooks/useTVSeekControl";
+import { useTVRemuxSeek } from "../hooks/useTVRemuxSeek";
 import { useTVQualityChange } from "../hooks/useTVQualityChange";
 import { useTVEpisodeNav } from "../hooks/useTVEpisodeNav";
 import { useTVErrorHandler } from "../hooks/useTVErrorHandler";
@@ -146,10 +147,10 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   // Position de DÉMARRAGE du player (#tnt-start) : reprise initiale figée ou
   // position courante posée par un changement de piste/qualité (startTicks).
-  const { startSeconds } = useTVInitialResume({ item, startTicks });
+  const { startSeconds } = useTVInitialResume({ item, startTicks, started: hasStarted });
 
   const { streamUrl, playSessionId, isDirectPlay, isLocalRemux } = useTVStreamUrl({
-    itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
+    itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
     maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
@@ -182,8 +183,12 @@ export function PlayerScreen({ route, navigation }: Props) {
     positionRef, setAudioIndex, setSubtitleIndex, setStartTicks,
     // Préférence audio ≠ défaut : en transcode (tvOS), forcer un reload du flux
     // pour que la piste préférée soit réellement active (pas seulement en UI).
+    // Préférence audio ≠ défaut → reload : transcode (audio non commutable) ET REMUX local (audio muxé →
+    // re-remux). Sans `|| isLocalRemux`, le remux gardait l'audio par défaut (UI anglais ≠ son français).
     onAudioReloadNeeded: () => {
-      if (!isDirectPlayRef.current) { softReloadRef.current = true; setReloadFrameSec(positionRef.current); setReloadNonce((n) => n + 1); }
+      if (!isDirectPlayRef.current || isLocalRemuxRef.current) {
+        softReloadRef.current = true; setReloadFrameSec(positionRef.current); setReloadNonce((n) => n + 1);
+      }
     },
   });
   resetPrefsAppliedRef.current = trackRes.resetPrefsApplied;
@@ -211,6 +216,14 @@ export function PlayerScreen({ route, navigation }: Props) {
     reportSeek, setDisplayTime, notifySeekRef, checkTriggerRef,
   });
 
+  // SEEK tvOS REMUX : seek natif dans la fenêtre dispo, re-remux nouvelle session (av_seek_frame)
+  // hors fenêtre. Isolé du cerveau partagé useTVPlayerControls (Android inchangé). Cf. hook.
+  const seekOrRemux = useTVRemuxSeek({
+    jellyfinDuration, handleSeek, isLocalRemuxRef, positionRef, displayTimeRef,
+    lastDisplayUpdate, lastProgressTime, pausedStateRef, softReloadRef, setReloadFrameSec,
+    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, setReloadNonce,
+  });
+
   // Navigation inter-épisodes : auto-play (générique → suivant), skip
   // intro/crédits + handlers de transport liés (précédent/suivant/play-pause).
   // Enveloppe useAutoPlay + useEpisodeNavigation + useIntroSkipper ; consomme
@@ -220,12 +233,12 @@ export function PlayerScreen({ route, navigation }: Props) {
     navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause,
   } = useTVEpisodeNav({
     item, jellyfinDuration, reportStop, queryClient, itemId, navigation,
-    handleSeek, setPaused,
+    handleSeek: seekOrRemux, setPaused,
   });
 
   const controls = useTVPlayerControls({
     paused, jellyfinDuration: jellyfinDuration ?? 0,
-    onSeek: handleSeek,
+    onSeek: seekOrRemux,
     onBack: () => {
       if (autoPlay.countdown !== null) { autoPlay.cancelAutoPlay(); return; }
       if (showSettingsRef.current) {
@@ -318,10 +331,20 @@ export function PlayerScreen({ route, navigation }: Props) {
     softReloadRef, setReloadFrameSec,
   });
 
+  // Stall remux (-11866, pause longue → manifeste HLS `event` figé) : recharger à la position
+  // courante ET reprendre → gTVPlayPos avance → le remux reproduit → manifeste frais (sinon le
+  // reuse natif renverrait le même manifeste figé = re-stall immédiat). Le garde-fou est dans le hook.
+  const onRemuxStall = useCallback(() => {
+    softReloadRef.current = true;
+    setReloadFrameSec(positionRef.current);
+    setReloadNonce((n) => n + 1);
+    setPaused(false);
+  }, [softReloadRef, setReloadFrameSec, positionRef, setReloadNonce, setPaused]);
+
   // Erreur de codec en direct play → bascule transcode forcé (reprise à la
-  // position courante) ; toute autre erreur est surfacée.
+  // position courante) ; stall remux → onRemuxStall ; sinon surfacée.
   const { handleError } = useTVErrorHandler({
-    forceTranscode, captureReloadTicks, setVideoError, setForceTranscode,
+    forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall,
   });
 
   const audioTracksList = useMemo(() =>
@@ -370,7 +393,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       skipSegments={skipSegments} autoPlay={autoPlay} controls={controls}
       onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd}
       onError={handleError} onTracks={mpvTracks.handleTracks} onVideoSize={handleVideoSize}
-      onPlayPause={handlePlayPause} onSeek={handleSeek}
+      onPlayPause={handlePlayPause} onSeek={seekOrRemux}
       onBack={lifecycle.invalidateAndGoBack}
       onToggleSettings={() => {
         // Ouvre la MODALE Réglages/Qualité (cf. PlayerSettingsScreen). showSettings

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 /**
  * Gestion d'erreur du lecteur Apple TV : une erreur de CODEC en direct play
@@ -12,10 +12,22 @@ export function useTVErrorHandler(args: {
   captureReloadTicks: () => void;
   setVideoError: (e: string | null) => void;
   setForceTranscode: (on: boolean) => void;
+  /** Stall remux (-11866 sur pause longue d'une playlist HLS `event`) : récupère
+   *  au lieu de surfacer l'erreur (recharge + reprend, cf. PlayerScreen). */
+  onRemuxStall?: () => void;
 }) {
-  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode } = args;
+  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall } = args;
+  // Garde-fou stall remux : compte les récupérations rapprochées (<8 s) → au-delà
+  // de 4 (récup qui ne tient pas), on cesse et on surface l'erreur.
+  const stallRef = useRef({ count: 0, last: 0 });
 
   const handleError = useCallback((error: string) => {
+    if (error === "REMUX_STALL") {
+      const now = Date.now(); const s = stallRef.current;
+      s.count = now - s.last < 8000 ? s.count + 1 : 1; s.last = now;
+      if (s.count > 4) { setVideoError("Playback Stopped"); return; }
+      onRemuxStall?.(); return;
+    }
     const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
       || error.includes("codec") || error.includes("Could not open");
     if (isCodecError && !forceTranscode) {
@@ -27,7 +39,7 @@ export function useTVErrorHandler(args: {
       return;
     }
     setVideoError(error);
-  }, [forceTranscode, captureReloadTicks]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, onRemuxStall]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }

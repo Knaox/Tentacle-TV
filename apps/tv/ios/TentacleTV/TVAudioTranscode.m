@@ -77,11 +77,21 @@ static void TVAudioEncodeFifo(AVFormatContext *oc, AVCodecContext *aenc, AVAudio
 }
 
 // Décode un paquet audio (pkt=NULL → flush) → resample → FIFO → encode EAC3.
+// inTb = time_base du flux audio SOURCE : sert à ANCRER *nextPts (init AV_NOPTS_VALUE) sur le
+// PTS de la 1ʳᵉ frame décodée → l'audio transcodé reste sur la timeline source (synchro labiale,
+// et reprise av_seek_frame à T : l'audio démarre à T comme la vidéo, pas à 0).
 static void TVAudioTranscode(AVFormatContext *oc, AVCodecContext *adec, AVCodecContext *aenc,
-                             SwrContext *swr, AVAudioFifo *fifo, int outIdx, int64_t *nextPts, AVPacket *pkt) {
+                             SwrContext *swr, AVAudioFifo *fifo, int outIdx, int64_t *nextPts,
+                             AVRational inTb, AVPacket *pkt) {
   avcodec_send_packet(adec, pkt);
   AVFrame *df = av_frame_alloc();
   while (avcodec_receive_frame(adec, df) == 0) {
+    if (*nextPts == AV_NOPTS_VALUE) {   // ANCRAGE A/V : 1ʳᵉ frame → PTS de départ sur la timeline source
+      int64_t ts = (df->best_effort_timestamp != AV_NOPTS_VALUE) ? df->best_effort_timestamp
+                 : (df->pts != AV_NOPTS_VALUE) ? df->pts
+                 : (pkt ? pkt->pts : AV_NOPTS_VALUE);   // fallback : PTS du paquet source si la frame n'en porte pas
+      *nextPts = (ts != AV_NOPTS_VALUE) ? av_rescale_q(ts, inTb, aenc->time_base) : 0;
+    }
     int out_n = swr_get_out_samples(swr, df->nb_samples);
     if (out_n > 0) {
       uint8_t **conv = NULL;
