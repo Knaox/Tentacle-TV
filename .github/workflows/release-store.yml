@@ -1,23 +1,23 @@
-# Tentacle TV — Microsoft Store Build
+# Tentacle TV — Microsoft Store (MSIX, soumission automatique)
 #
-# Workflow manuel pour générer le setup.exe à soumettre sur le Microsoft
-# Partner Center.
+# Déclenché par un tag `win-store-v<version>-<build>`. Build l'app Tauri, assemble
+# le payload (exe + WebView2 + lib natives libmpv + assets), produit un MSIX NON
+# SIGNÉ via makeappx (le Microsoft Store le signe lui-même), puis le soumet via
+# l'API Store (msstore CLI + compte de service Entra ID).
 #
-# Ce workflow utilise la config tauri.microsoftstore.conf.json qui désactive
-# transparent (incompatible avec le sandbox Store). WebView2 est déjà
-# préinstallé sur Windows 10/11, donc on ne l'embarque PAS.
+# Identité MSIX : apps/desktop/msix/Package.appxmanifest (DamienROUGE.Tentacle).
+# La version vient du tag -> X.Y.Z.0 (4e champ = 0, exigence Store). Elle doit
+# être SUPÉRIEURE à la version déjà publiée sur le Store (1.9.8).
 #
-# Secrets requis : mêmes que release.yml (voir commentaires là-bas)
+# Secrets : PARTNER_TENANT_ID / PARTNER_SELLER_ID / PARTNER_CLIENT_ID /
+#           PARTNER_CLIENT_SECRET. Store ID : 9NKHL0T84245.
 
-name: Build Microsoft Store
+name: Release Microsoft Store (MSIX)
 
 on:
+  push:
+    tags: ["win-store-v*"]
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version tag (ex: v0.9.2)"
-        required: true
-        type: string
 
 concurrency:
   group: release-store-${{ github.ref }}
@@ -25,70 +25,89 @@ concurrency:
 
 env:
   CARGO_INCREMENTAL: 0
+  STORE_ID: "9NKHL0T84245"
 
 jobs:
-  store-build:
-    name: Build Store Package (Windows)
+  store:
+    name: MSIX + soumission Store
     runs-on: windows-latest
-    permissions:
-      contents: write
-
+    timeout-minutes: 60
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-store-${{ runner.os }}-
-
-      - name: Setup Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo registry & build
+      - name: Cache Cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             apps/desktop/src-tauri/target
-          key: cargo-${{ runner.os }}-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-
+          key: cargo-store-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-store-
 
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      - name: Build for Microsoft Store
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          TAURI_BUNDLE_WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-          TAURI_BUNDLE_WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      - name: Build app (binaire seul, config de base)
+        working-directory: apps/desktop
+        run: pnpm tauri build --bundles none
+
+      - name: Assemble MSIX payload + manifest versionné
+        shell: pwsh
+        run: |
+          $ver = "1.9.9"
+          if ($env:GITHUB_REF_NAME -match 'v(\d+\.\d+\.\d+)') { $ver = $Matches[1] }
+          $stage = Join-Path $env:RUNNER_TEMP "msixstage"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          $rel = "apps\desktop\src-tauri\target\release"
+          Copy-Item "$rel\tentacle-desktop.exe" (Join-Path $stage "Tentacle TV.exe")
+          if (Test-Path "$rel\WebView2Loader.dll") { Copy-Item "$rel\WebView2Loader.dll" $stage }
+          New-Item -ItemType Directory -Force -Path (Join-Path $stage "lib") | Out-Null
+          Copy-Item "apps\desktop\src-tauri\lib\*.dll" (Join-Path $stage "lib") -ErrorAction SilentlyContinue
+          Copy-Item "apps\desktop\msix\Assets" (Join-Path $stage "Assets") -Recurse
+          $m = Get-Content "apps\desktop\msix\Package.appxmanifest" -Raw
+          $m = $m -replace 'Version="[\d\.]+"', ('Version="' + $ver + '.0"')
+          Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
+          "STAGE=$stage" >> $env:GITHUB_ENV
+          Write-Host "Payload assemblé pour version $ver.0"
+          Get-ChildItem $stage -Recurse | Select-Object FullName, Length
+
+      - name: Pack MSIX (makeappx, non signé)
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^10\.' } | Sort-Object Name -Descending | Select-Object -First 1
+          $makeappx = Join-Path $sdk.FullName "x64\makeappx.exe"
+          Write-Host "makeappx: $makeappx"
+          $out = Join-Path $env:RUNNER_TEMP "TentacleTV.msix"
+          & $makeappx pack /d "$env:STAGE" /p $out /nv /o
+          if (-not (Test-Path $out)) { throw "MSIX non produit" }
+          "MSIX_PATH=$out" >> $env:GITHUB_ENV
+
+      - name: Upload MSIX (secours / upload manuel)
+        uses: actions/upload-artifact@v4
         with:
-          projectPath: apps/desktop
-          tauriScript: pnpm tauri
-          args: --config src-tauri/tauri.microsoftstore.conf.json --bundles nsis
-          tagName: ${{ inputs.version }}
-          releaseName: "Tentacle TV ${{ inputs.version }} (Store)"
-          releaseBody: |
-            Build Microsoft Store pour soumission au Partner Center.
-            WebView2 préinstallé sur Windows 10/11 (pas d'offline installer).
-          releaseDraft: true
-          prerelease: false
+          name: tentacle-tv-msix
+          path: ${{ env.MSIX_PATH }}
+          if-no-files-found: error
+
+      - name: Setup MSStore CLI
+        uses: microsoft/setup-msstore-cli@v1
+
+      - name: Configurer + publier sur le Store
+        shell: pwsh
+        run: |
+          msstore reconfigure `
+            --tenantId "${{ secrets.PARTNER_TENANT_ID }}" `
+            --sellerId "${{ secrets.PARTNER_SELLER_ID }}" `
+            --clientId "${{ secrets.PARTNER_CLIENT_ID }}" `
+            --clientSecret "${{ secrets.PARTNER_CLIENT_SECRET }}"
+          msstore publish "$env:MSIX_PATH" --id "$env:STORE_ID"
