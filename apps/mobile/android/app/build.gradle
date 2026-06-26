@@ -92,11 +92,14 @@ android {
         applicationId 'com.tentacle.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Surchargés par le tag CI (apk-v<version>-<build>) via -PmobileVersionName / -PmobileVersionCode.
+        // Surchargés par le CI (-PmobileVersionName / -PmobileVersionCode). Le worker
+        // passe versionName depuis le « package » apps/mobile/app.json (source unique)
+        // et versionCode depuis le tag/run. Le défaut ci-dessous (build local) doit
+        // rester aligné sur app.json (expo.version).
         // NB : variable locale + appel sans parenthèses pour éviter l'ambiguïté Groovy
         // `versionCode (...) as int` (parsée comme appel void → « Value is null » sur AGP récent).
         def resolvedVersionCode = (project.findProperty('mobileVersionCode') ?: '1').toString().toInteger()
-        def resolvedVersionName = (project.findProperty('mobileVersionName') ?: '1.2.2').toString()
+        def resolvedVersionName = (project.findProperty('mobileVersionName') ?: '1.0.0').toString()
         versionCode resolvedVersionCode
         versionName resolvedVersionName
 
