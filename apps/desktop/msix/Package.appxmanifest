@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Manifeste MSIX pour le Microsoft Store (app Win32 full-trust packagée).
+  Identité réservée par le Partner Center (NE PAS modifier Name/Publisher) :
+    Name      = DamienROUGE.Tentacle
+    Publisher = CN=85A5E4E3-C832-4F7E-9A49-71BD355586E2
+    PFN       = DamienROUGE.Tentacle_nc896ct3kqbem
+  La VERSION est réécrite par le workflow depuis le tag (X.Y.Z.0 — le 4e champ
+  doit rester 0 pour le Store). L'exécutable doit s'appeler comme la sortie Tauri.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="DamienROUGE.Tentacle"
+    Publisher="CN=85A5E4E3-C832-4F7E-9A49-71BD355586E2"
+    Version="1.0.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Tentacle TV</DisplayName>
+    <PublisherDisplayName>Damien ROUGE</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22631.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="fr-FR" />
+    <Resource Language="en-US" />
+  </Resources>
+
+  <Applications>
+    <Application Id="TentacleTV" Executable="Tentacle TV.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Tentacle TV"
+        Description="Client multimedia pour serveur multimedia auto-heberge"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\Square71x71Logo.png"
+          Square310x310Logo="Assets\Square310x310Logo.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
