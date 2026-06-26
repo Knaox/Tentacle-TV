@@ -1,8 +1,11 @@
 # Tentacle TV — Android mobile → Google Play (AAB signé, upload auto)
 #
-# Déclenché par un tag `play-v<version>-<build>` OU manuellement. Construit un
-# Android App Bundle (.aab) `bundleRelease` SIGNÉ avec la clé de release (upload
-# key), puis le pousse sur la Google Play Console via l'API (compte de service).
+# Déclenché par tag OU manuellement. Construit un Android App Bundle (.aab)
+# `bundleRelease` SIGNÉ avec la clé de release (upload key), puis le pousse sur la
+# Google Play Console via l'API (compte de service).
+#   - tag `play-v<version>-<build>`          -> piste `alpha` (test FERMÉ)
+#   - tag `play-internal-v<version>-<build>` -> piste `internal` (test interne)
+#   - manuel (workflow_dispatch)             -> piste au choix (défaut alpha)
 #
 #   - versionName  ← apps/mobile/app.json (expo.version), comme apk-v*
 #   - versionCode  ← numéro de run (monotone — exigé croissant par Play)
@@ -20,13 +23,15 @@ name: Release Play (AAB → Play Console)
 
 on:
   push:
-    tags: ["play-v*"]
+    tags:
+      - "play-v*"           # -> piste alpha (test FERMÉ)
+      - "play-internal-v*"  # -> piste internal (test interne rapide)
   workflow_dispatch:
     inputs:
       track:
         description: "Piste Play (internal | alpha | beta | production | nom de piste fermée)"
         type: string
-        default: "internal"
+        default: "alpha"
       status:
         description: "Statut de la release (completed | draft | inProgress)"
         type: string
@@ -87,11 +92,25 @@ jobs:
           path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
+      # Piste : manuel -> input ; tag play-internal-v* -> internal ; tag play-v* -> alpha (fermé).
+      - name: Resolve Play track
+        id: track
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TRACK="${{ github.event.inputs.track }}"
+          elif [[ "$GITHUB_REF_NAME" == play-internal-v* ]]; then
+            TRACK="internal"
+          else
+            TRACK="alpha"
+          fi
+          echo "track=$TRACK" >> "$GITHUB_OUTPUT"
+          echo "Piste Play -> $TRACK"
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.tentacletv.mobile
           releaseFiles: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
-          track: ${{ github.event.inputs.track || 'internal' }}
+          track: ${{ steps.track.outputs.track }}
           status: ${{ github.event.inputs.status || 'draft' }}
