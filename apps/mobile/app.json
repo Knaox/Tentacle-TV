@@ -35,7 +35,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#080812"
       },
-      "package": "com.tentacle.mobile"
+      "package": "com.tentacletv.mobile"
     },
     "plugins": [
       "expo-router",

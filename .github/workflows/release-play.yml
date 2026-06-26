@@ -1,0 +1,97 @@
+# Tentacle TV — Android mobile → Google Play (AAB signé, upload auto)
+#
+# Déclenché par un tag `play-v<version>-<build>` OU manuellement. Construit un
+# Android App Bundle (.aab) `bundleRelease` SIGNÉ avec la clé de release (upload
+# key), puis le pousse sur la Google Play Console via l'API (compte de service).
+#
+#   - versionName  ← apps/mobile/app.json (expo.version), comme apk-v*
+#   - versionCode  ← numéro de run (monotone — exigé croissant par Play)
+#
+# Secrets requis :
+#   MOBILE_KEYSTORE_BASE64 / MOBILE_KEYSTORE_PASSWORD / MOBILE_KEY_ALIAS /
+#   MOBILE_KEY_PASSWORD  → keystore de release (signe l'AAB)
+#   PLAY_SERVICE_ACCOUNT_JSON → compte de service Play (upload API)
+#
+# NB : le tout 1er upload d'une app peut devoir être fait À LA MAIN dans la
+# console (l'API refuse parfois la création initiale). L'AAB est aussi exposé
+# en artefact du run pour cet upload manuel initial.
+
+name: Release Play (AAB → Play Console)
+
+on:
+  push:
+    tags: ["play-v*"]
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Piste Play (internal | alpha | beta | production | nom de piste fermée)"
+        type: string
+        default: "internal"
+      status:
+        description: "Statut de la release (completed | draft | inProgress)"
+        type: string
+        default: "draft"
+
+concurrency:
+  group: release-play-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  play:
+    name: Build AAB signé + upload Play
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.MOBILE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed AAB (bundleRelease)
+        working-directory: apps/mobile/android
+        run: |
+          VNAME=$(node -p "require('../app.json').expo.version")
+          VCODE="${{ github.run_number }}"
+          echo "Play AAB → versionName=$VNAME (app.json) versionCode=$VCODE"
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon \
+            -PmobileVersionName="$VNAME" \
+            -PmobileVersionCode="$VCODE" \
+            -PmobileKeystoreFile="$KEYSTORE_PATH" \
+            -PmobileKeystorePassword="${{ secrets.MOBILE_KEYSTORE_PASSWORD }}" \
+            -PmobileKeyAlias="${{ secrets.MOBILE_KEY_ALIAS }}" \
+            -PmobileKeyPassword="${{ secrets.MOBILE_KEY_PASSWORD }}"
+
+      - name: Upload AAB artifact (upload manuel de secours)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-mobile-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.tentacletv.mobile
+          releaseFiles: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ github.event.inputs.track || 'internal' }}
+          status: ${{ github.event.inputs.status || 'draft' }}
