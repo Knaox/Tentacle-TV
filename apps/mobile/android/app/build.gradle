@@ -89,7 +89,7 @@ android {
 
     namespace 'com.tentacle.mobile'
     defaultConfig {
-        applicationId 'com.tentacle.mobile'
+        applicationId 'com.tentacletv.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Surchargés par le CI (-PmobileVersionName / -PmobileVersionCode). Le worker
@@ -112,15 +112,27 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Renseignée par le CI Play Store (-PmobileKeystoreFile / -PmobileKeystorePassword
+            // / -PmobileKeyAlias / -PmobileKeyPassword). Absente en local -> bloc vide,
+            // et le release buildType retombe sur la signature debug (sideload apk-v*).
+            def ksFile = project.findProperty('mobileKeystoreFile')
+            if (ksFile) {
+                storeFile file(ksFile)
+                storePassword project.findProperty('mobileKeystorePassword')
+                keyAlias project.findProperty('mobileKeyAlias')
+                keyPassword project.findProperty('mobileKeyPassword')
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Signé avec la clé release si le CI fournit la keystore (AAB Play Store),
+            // sinon debug-signed (APK sideload apk-v*).
+            signingConfig project.hasProperty('mobileKeystoreFile') ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
