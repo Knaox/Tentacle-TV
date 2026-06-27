@@ -18,6 +18,7 @@ import Video, {
 } from "react-native-video";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
+import { parseStart } from "../../utils/playerHelpers";
 import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
 
 /**
@@ -31,17 +32,12 @@ import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
  *    manifeste Jellyfin. Sélection via `selectedTextTrack`, servies en `.vtt`. Burn-in PGS → transcode.
  */
 
-const START_RE = /#tnt-start=(\d+)/;
-
-function parseStart(source: string): { uri: string; startSec: number } {
-  const m = source.match(START_RE);
-  if (!m) return { uri: source, startSec: 0 };
-  return { uri: source.replace(START_RE, ""), startSec: Number(m[1]) };
-}
-
 export interface AVPlayerSurfaceProps {
   source: string;
   paused: boolean;
+  /** Coupe l'audio pendant une transition (reload/reprise) : la session SORTANTE ne doit pas être audible
+   *  derrière l'image figée. Piloté par `reloadFrameSec != null && hasStarted` (TVPlayerView). */
+  muted?: boolean;
   progressInterval?: number;
   style?: ViewStyle;
   /** Pistes texte VTT (Jellyfin) à charger nativement (sideload AVPlayer). */
@@ -64,7 +60,7 @@ export interface AVPlayerSurfaceProps {
 
 export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>(
   function AVPlayerSurface(
-    { source, paused, progressInterval = 1000, style, textTracks, subtitleIndex, isDirectPlay = true, onLoad, onProgress, onEnd, onError, onTracks, onVideoSize },
+    { source, paused, muted = false, progressInterval = 1000, style, textTracks, subtitleIndex, isDirectPlay = true, onLoad, onProgress, onEnd, onError, onTracks, onVideoSize },
     ref,
   ) {
     const videoRef = useRef<VideoRef>(null);
@@ -176,7 +172,6 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     const handleLoad = useCallback(
       (data: OnLoadData) => {
         audioReappliedRef.current = false; // nouvelle source → re-appliquer l'audio voulu une fois démarré
-        console.log("[AVP] onLoad dur=", data.duration, "size=", JSON.stringify(data.naturalSize));
         onLoad?.(data.duration ?? 0);
 
         // tvOS : la media-playlist HLS du REMUX local (127.0.0.1, sans master) ne
@@ -217,7 +212,6 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     const handleProgress = useCallback(
       (data: OnProgressData) => {
-        console.log("[AVP] progress t=", data.currentTime.toFixed(1), "buf=", data.playableDuration.toFixed(1));
         // PHASE 2 : pousser la position au remux on-device → il ne tire que ~ce qui est consommé (+ tampon).
         // BRUT (relatif) : le pacing/purge natif raisonne en 0-based (cf. make_zero), comme currentTime.
         TVLocalRemux?.setPosition?.(Math.max(0, data.currentTime));
@@ -243,7 +237,6 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // -11828 = format/conteneur non lisible, -11800 = opération échouée.
     const handleError = useCallback(
       (e: { error?: { code?: number; localizedDescription?: string; localizedFailureReason?: string } }) => {
-        console.log("[AVP] onError", JSON.stringify(e?.error ?? e));
         const err = e?.error;
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
         // Remux : pause longue → manifeste HLS `event` figé → -11866 « ended unexpectedly » (récupérable, segments sur disque) → relance à la position.
@@ -275,6 +268,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         style={style}
         resizeMode="contain"
         paused={paused}
+        muted={muted}
         // Pré-buffer (iOS/tvOS) : attendre de quoi jouer sans caler avant de démarrer (« son avant vidéo »)
         // + garder ~10 s d'avance (moins de stalls). @ts-ignore : props iOS de react-native-video.
         // @ts-ignore

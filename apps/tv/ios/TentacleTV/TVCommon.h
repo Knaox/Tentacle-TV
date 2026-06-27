@@ -13,6 +13,7 @@
 #import <GCDWebServer/GCDWebServerStreamedResponse.h>
 #import <GCDWebServer/GCDWebServerRequest.h>
 #import <GCDWebServer/GCDWebServerFileResponse.h>
+#import <GCDWebServer/GCDWebServerDataResponse.h>
 #import <libavformat/avformat.h>
 #import <libavutil/avutil.h>
 #import <libavcodec/avcodec.h>
@@ -68,5 +69,15 @@ extern volatile int    gWantStartSec; // position de reprise (s) demandée par J
 extern volatile double gWrittenSec;   // position max ÉCRITE par le remux (s) → gate de reprise
 extern volatile long long gDiskBytes; // octets cumulés des segments (fenêtrage disque, TVWindow.m)
 extern volatile double gSessionStartSec; // temps ABSOLU du 1ᵉʳ segment de la session (av_seek_frame) → mapping purge/headIdx
+// ===== Vraie pause permanente (anti -11866) — DÉFINIS dans TVWindow.m =====
+extern volatile int gPaused;        // 1 = lecteur en pause → le handler réécrit le manifeste servi (cf. TVBuildPausedManifest)
+extern volatile int gResumePending; // one-shot : la reprise après pause longue (mode VOD) force une NOUVELLE session à P (saute withinAvail)
+extern volatile int gSnapshotMode;  // 0 = keepalive EVENT (variante A) · 1 = VOD+ENDLIST (variante B) — arbitré par le spike device
+
+// Réécrit le manifeste `index.m3u8` à servir PENDANT la pause (FFmpeg continue d'écrire l'EVENT brut sur disque).
+// eventPath = chemin du index.m3u8 EVENT ; dir = dossier de session (existence des segments). Retourne une NSString
+// autoreleased, ou nil pour servir le fichier brut. Mode A : EVENT + commentaire changeant (jamais « inchangé »).
+// Mode B : snapshot VOD (TYPE:VOD + ENDLIST, front purgé rogné). #importé par TVLocalRemux.m (même unité).
+NSString *TVBuildPausedManifest(NSString *eventPath, NSString *dir);
 
 #endif /* TVCOMMON_H */

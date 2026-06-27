@@ -33,6 +33,8 @@ interface MpvEvent {
 interface MPVPlayerProps {
   source: string;
   paused: boolean;
+  /** Parité de signature avec la variante tvOS (mute de transition) — non utilisé par le natif Android. */
+  muted?: boolean;
   progressInterval?: number;
   style?: ViewStyle;
   /** Acceptés pour la parité de signature avec la variante tvOS (sous-titres

@@ -66,6 +66,17 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
           TVLOG("handler 404: %{public}s", req.path.UTF8String);
           return [GCDWebServerResponse responseWithStatusCode:404];
         }
+        // PAUSE PERMANENTE : pendant la pause, réécrire index.m3u8 (snapshot VOD+ENDLIST ou keepalive EVENT) →
+        // AVPlayer ne déclare plus le flux corrompu (-11866) et reste figé au frame. no-store : le remount de
+        // reprise re-fetch bien l'EVENT croissant (sinon AVPlayer rejouerait le snapshot caché).
+        if (gPaused && [name isEqualToString:@"index.m3u8"]) {
+          NSString *m = TVBuildPausedManifest(file, [dir stringByAppendingPathComponent:sub]);
+          if (m) {
+            GCDWebServerDataResponse *dr = [GCDWebServerDataResponse responseWithData:[m dataUsingEncoding:NSUTF8StringEncoding] contentType:@"application/vnd.apple.mpegurl"];
+            [dr setValue:@"no-store" forAdditionalHeader:@"Cache-Control"];
+            return dr;
+          }
+        }
         NSString *ext = name.pathExtension.lowercaseString;
         NSString *ct = [ext isEqualToString:@"m3u8"] ? @"application/vnd.apple.mpegurl" : @"video/mp4";
         GCDWebServerFileResponse *resp = req.hasByteRange
@@ -95,8 +106,11 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
     double availFrom = playAbs - TVLR_BEHIND_SEC;
     if (availFrom < gSessionStartSec) availFrom = gSessionStartSec; // jamais avant le début de session
     double availTo = gSessionStartSec + gWrittenSec;                // dernier instant produit (absolu)
+    // Reprise après pause longue (mode VOD) : on FORCE une nouvelle session à P (offset=P, relatif 0 = point de
+    // pause exact) au lieu de réutiliser l'ancienne (relatif 0 = début de session → offset faux). One-shot.
+    int resumePending = gResumePending; gResumePending = 0;
     BOOL withinAvail = startSec >= availFrom - 2.0 && startSec <= availTo + 1.0;
-    if ([sourceUrl isEqualToString:gCurrentSource] && (int)audioIndex == gWantAudioIdx && !gError && gGen > 0 && withinAvail) {
+    if (!resumePending && [sourceUrl isEqualToString:gCurrentSource] && (int)audioIndex == gWantAudioIdx && !gError && gGen > 0 && withinAvail) {
       myGen = gGen;
       TVLOG("start: same source+audio, pos %.0f dans la fenêtre [%.0f..%.0f] → wait files (gen=%d)", startSec, availFrom, availTo, myGen);
     } else {
@@ -158,5 +172,12 @@ RCT_EXPORT_METHOD(stop) { if (gServer.isRunning) [gServer stop]; }
 
 // Position de lecture (s) poussée par JS (onProgress) → le remux ne va pas trop loin devant.
 RCT_EXPORT_METHOD(setPosition:(double)seconds) { gTVPlayPos = seconds; }
+
+// Pause permanente : JS pousse l'état de pause → le handler réécrit le manifeste servi (anti -11866).
+RCT_EXPORT_METHOD(setPaused:(BOOL)paused) { gPaused = paused ? 1 : 0; TVLOG("setPaused %d", (int)paused); }
+// Reprise après pause longue (mode VOD) : arme une nouvelle session à P au prochain start() (one-shot).
+RCT_EXPORT_METHOD(prepareResume) { gResumePending = 1; }
+// Spike : bascule la stratégie de manifeste de pause. 0 = keepalive EVENT (A) · 1 = VOD+ENDLIST (B).
+RCT_EXPORT_METHOD(setSnapshotMode:(NSInteger)mode) { gSnapshotMode = (int)mode; TVLOG("setSnapshotMode %ld", (long)mode); }
 
 @end
