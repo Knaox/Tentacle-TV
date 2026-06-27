@@ -74,7 +74,7 @@ jobs:
           Copy-Item "apps\desktop\src-tauri\lib\*.dll" (Join-Path $stage "lib") -ErrorAction SilentlyContinue
           Copy-Item "apps\desktop\msix\Assets" (Join-Path $stage "Assets") -Recurse
           $m = Get-Content "apps\desktop\msix\Package.appxmanifest" -Raw
-          $m = $m -replace 'Version="[\d\.]+"', ('Version="' + $ver + '.0"')
+          $m = $m -creplace 'Version="[\d\.]+"', ('Version="' + $ver + '.0"')
           Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
           "STAGE=$stage" >> $env:GITHUB_ENV
           Write-Host "Payload assemblé pour version $ver.0"
