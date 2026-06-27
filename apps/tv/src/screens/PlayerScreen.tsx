@@ -21,6 +21,7 @@ import { useTVPlayerStyle } from "../hooks/useTVPlayerStyle";
 import { useTVPlayerRouting } from "../hooks/useTVPlayerRouting";
 import { useTVInitialResume } from "../hooks/useTVInitialResume";
 import { useTVReloadState } from "../hooks/useTVReloadState";
+import { useTVRemuxPause } from "../hooks/useTVRemuxPause";
 import { useTVAudioTrack } from "../hooks/useTVAudioTrack";
 import { useTVSubtitleControl } from "../hooks/useTVSubtitleControl";
 import { useTVSeekControl } from "../hooks/useTVSeekControl";
@@ -76,6 +77,25 @@ export function PlayerScreen({ route, navigation }: Props) {
   // discret) et non plus le chargement initial (écran contextualisé).
   const [hasStarted, setHasStarted] = useState(false);
   const lastProgressTime = useRef(Date.now());
+
+  // « Hold » de reload (remux tvOS) : pendant un reload de reprise/seek, on garde le LECTEUR en pause
+  // (paused || reloadHold) SANS toucher l'état `paused` (intention utilisateur) → la session sortante ne
+  // joue ni son ni image pendant le chargement. Dé-pause automatique au onLoad de la nouvelle session
+  // (isLoading repasse false). Remplace le `muted` (non fiable sur AVPlayer). Safety: levée forcée à 10 s.
+  const [reloadHold, setReloadHold] = useState(false);
+  const reloadHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdForReload = useCallback(() => {
+    setIsLoading(true);
+    setReloadHold(true);
+    if (reloadHoldTimerRef.current) clearTimeout(reloadHoldTimerRef.current);
+    reloadHoldTimerRef.current = setTimeout(() => setReloadHold(false), 10000);
+  }, []);
+  useEffect(() => {
+    if (reloadHold && !isLoading) {
+      setReloadHold(false);
+      if (reloadHoldTimerRef.current) clearTimeout(reloadHoldTimerRef.current);
+    }
+  }, [reloadHold, isLoading]);
 
   const quality = useTVPlaybackQuality();
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
@@ -148,6 +168,9 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Position de DÉMARRAGE du player (#tnt-start) : reprise initiale figée ou
   // position courante posée par un changement de piste/qualité (startTicks).
   const { startSeconds } = useTVInitialResume({ item, startTicks, started: hasStarted });
+  // Début (absolu) de la session remux courante (= dernier startSeconds) → borne basse du seek natif arrière.
+  const sessionStartRef = useRef(0);
+  sessionStartRef.current = startSeconds ?? 0;
 
   const { streamUrl, playSessionId, isDirectPlay, isLocalRemux } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
@@ -161,6 +184,13 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Synchronisation des refs miroir lues par les handlers/callbacks (cf. plus haut).
   isDirectPlayRef.current = isDirectPlay;
   isLocalRemuxRef.current = isLocalRemux;
+
+  // Vraie pause permanente du remux on-device (anti -11866) : pousse l'état de pause au natif (manifeste de
+  // pause VOD/keepalive) et orchestre la reprise (nouvelle session à P). No-op hors remux local.
+  useTVRemuxPause({
+    paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload,
+    notifySeekRef, resetLoadedRef,
+  });
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -219,9 +249,9 @@ export function PlayerScreen({ route, navigation }: Props) {
   // SEEK tvOS REMUX : seek natif dans la fenêtre dispo, re-remux nouvelle session (av_seek_frame)
   // hors fenêtre. Isolé du cerveau partagé useTVPlayerControls (Android inchangé). Cf. hook.
   const seekOrRemux = useTVRemuxSeek({
-    jellyfinDuration, handleSeek, isLocalRemuxRef, positionRef, displayTimeRef,
+    jellyfinDuration, handleSeek, isLocalRemuxRef, sessionStartRef, positionRef, displayTimeRef,
     lastDisplayUpdate, lastProgressTime, pausedStateRef, softReloadRef, setReloadFrameSec,
-    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, setReloadNonce,
+    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, holdForReload,
   });
 
   // Navigation inter-épisodes : auto-play (générique → suivant), skip
@@ -380,7 +410,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   return (
     <TVPlayerView
-      item={item} streamUrl={streamUrl} paused={paused} isLoading={isLoading}
+      item={item} streamUrl={streamUrl} paused={paused} playerPaused={paused || reloadHold} isLoading={isLoading}
       hasStarted={hasStarted}
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}

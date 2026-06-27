@@ -91,3 +91,50 @@ static void TVHLSWriteMaster(AVFormatContext *oc, AVFormatContext *ic, const cha
     TVLOG("remux: master.m3u8 (%d o, band=%lld dur=%lld):\n%{public}s", mn, band, (long long)ic->duration, master);
   }
 }
+
+// ===== Vraie pause permanente : réécriture du manifeste servi pendant la pause (cf. prototype TVCommon.h) =====
+NSString *TVBuildPausedManifest(NSString *eventPath, NSString *dir) {
+  NSString *src = [NSString stringWithContentsOfFile:eventPath encoding:NSUTF8StringEncoding error:nil];
+  if (!src.length) return nil;   // illisible / demi-écrit → laisser servir le fichier brut
+
+  // Variante A — keepalive : EVENT inchangé + un commentaire qui CHANGE à chaque requête. AVPlayer voit un
+  // manifeste « jamais inchangé » → ne déclare pas le flux corrompu (pari sur la régression tvOS 18.x).
+  if (gSnapshotMode == 0) {
+    static volatile int ka = 0; int n = ++ka;   // race bénigne : seul le CHANGEMENT compte, pas la valeur
+    return [src stringByAppendingFormat:@"#tnt-keepalive:%d\n", n];
+  }
+
+  // Variante B — snapshot VOD : EVENT → VOD + ENDLIST, en rognant en tête les segments DÉJÀ purgés avant la
+  // pause (FFmpeg les liste encore). La purge ne retire que le front contiguë → le reste est un VOD valide.
+  NSArray<NSString *> *lines = [src componentsSeparatedByString:@"\n"];
+  NSUInteger firstSeg = NSNotFound;
+  long long baseSeq = 0;
+  for (NSUInteger i = 0; i < lines.count; i++) {
+    if ([lines[i] hasPrefix:@"#EXT-X-MEDIA-SEQUENCE:"]) baseSeq = [[lines[i] substringFromIndex:[@"#EXT-X-MEDIA-SEQUENCE:" length]] longLongValue];
+    if ([lines[i] hasPrefix:@"#EXTINF"]) { firstSeg = i; break; }
+  }
+  if (firstSeg == NSNotFound) return nil;   // pas encore de segment listé → servir le brut
+
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSMutableArray<NSString *> *segs = [NSMutableArray array];
+  long long dropped = 0; BOOL trimming = YES;
+  for (NSUInteger i = firstSeg; i + 1 < lines.count; i++) {
+    if (![lines[i] hasPrefix:@"#EXTINF"]) continue;
+    NSString *name = [lines[i + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    BOOL exists = name.length && [fm fileExistsAtPath:[dir stringByAppendingPathComponent:name]];
+    if (trimming && !exists) { dropped++; i++; continue; }   // segment purgé en tête → sauter la paire
+    trimming = NO;
+    [segs addObject:lines[i]]; [segs addObject:lines[i + 1]]; i++;
+  }
+  if (segs.count == 0) return nil;
+
+  NSMutableArray<NSString *> *out = [NSMutableArray array];
+  for (NSUInteger i = 0; i < firstSeg; i++) {   // en-tête : retyper VOD + recaler MEDIA-SEQUENCE selon le rognage
+    if ([lines[i] hasPrefix:@"#EXT-X-PLAYLIST-TYPE"]) { [out addObject:@"#EXT-X-PLAYLIST-TYPE:VOD"]; continue; }
+    if ([lines[i] hasPrefix:@"#EXT-X-MEDIA-SEQUENCE:"]) { [out addObject:[NSString stringWithFormat:@"#EXT-X-MEDIA-SEQUENCE:%lld", baseSeq + dropped]]; continue; }
+    [out addObject:lines[i]];
+  }
+  [out addObjectsFromArray:segs];
+  [out addObject:@"#EXT-X-ENDLIST"];
+  return [[out componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
+}

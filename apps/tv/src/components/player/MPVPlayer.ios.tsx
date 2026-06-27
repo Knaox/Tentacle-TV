@@ -12,6 +12,8 @@ export type { MpvTrack, MPVPlayerHandle } from "./playerTypes";
 interface MPVPlayerProps {
   source: string;
   paused: boolean;
+  /** Coupe l'audio pendant une transition (reload/reprise) — passé tel quel à AVPlayerSurface (spread). */
+  muted?: boolean;
   progressInterval?: number;
   style?: ViewStyle;
   textTracks?: ExoTextTrack[];

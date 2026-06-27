@@ -21,6 +21,12 @@
 // pour brider l'avance quand le disque approche le plafond (TVLR_DISK_CAP, TVCommon.h).
 volatile long long gDiskBytes = 0;
 
+// Vraie pause permanente : définis ICI (TVRemuxEngine.m est à la limite de 300 lignes). Le pacing du moteur
+// bloque déjà naturellement en pause (gTVPlayPos figé) ; ces globals ne pilotent QUE le manifeste servi.
+volatile int gPaused = 0;
+volatile int gResumePending = 0;
+volatile int gSnapshotMode = 1;   // défaut : VOD+ENDLIST (variante B) ; JS bascule via setSnapshotMode pour le spike
+
 // Purge les seg*.m4s trop en arrière de playPos + applique le plafond octets. Met à
 // jour gDiskBytes. Ne touche JAMAIS init.mp4 / *.m3u8 ni un segment à/juste-avant la
 // tête (marge de sécurité). Mapping index→temps via la durée MOYENNE réelle
@@ -28,6 +34,8 @@ volatile long long gDiskBytes = 0;
 // hls_time=2s, qui purgerait l'avant si les segments sont plus longs).
 static void TVPurgeBehind(const char *dstC, int gen, double playPos) {
   if (gen != gGen || playPos < 1.0) return;   // pas avant le démarrage réel de la lecture
+  if (gPaused) return;                          // GEL en pause : le snapshot servi ne doit référencer que des
+                                                // segments présents (sinon 404 sur back-seek). Sûr : disque statique.
   @autoreleasepool {
     NSString *dir = [NSString stringWithUTF8String:dstC];
     NSFileManager *fm = [NSFileManager defaultManager];

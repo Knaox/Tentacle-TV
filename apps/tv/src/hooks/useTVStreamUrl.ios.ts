@@ -153,10 +153,6 @@ export function useTVStreamUrl(args: {
         const __range = (__vstream?.VideoRangeType ?? "").toUpperCase();
         const __isHdrOrDv = (__vstream?.DvProfile ?? 0) > 0 || /HDR|PQ|HLG|DOVI|DOLBY/.test(__range);
         const __needRemux = !__nativeContainer || !__audioOk || __isHdrOrDv;
-
-        console.log("[REMUX] gate", { vcodec, container: __c, acodec: __acodec, range: __range,
-          nativeContainer: __nativeContainer, audioOk: __audioOk, isHdrOrDv: __isHdrOrDv, needRemux: __needRemux,
-          dvProfile: __vstream?.DvProfile, hasStart: !!__remux?.start, forceTranscode, isTranscodingQuality, burnInIndex });
         if (!forceTranscode && !isTranscodingQuality && burnInIndex < 0 && !__isDvP7 && __remux?.start && __needRemux &&
             (vcodec === "hevc" || vcodec === "h265" || vcodec === "h264")) {
           try {
@@ -165,11 +161,15 @@ export function useTVStreamUrl(args: {
             // un nouveau startTicks → startSeconds) force un re-remux d'une nouvelle session depuis T
             // (av_seek_frame natif → gros sauts/reprise rapides). Le natif arbitre (withinAvail) si la
             // position est en réalité déjà disponible → réutilise alors la session courante.
-            const remuxKey = contentKey + "|a" + audioRef.current + "|t" + Math.floor(startSeconds ?? 0);
-            // Idempotent : même contenu + même audio déjà remuxé → réutiliser l'URL locale sans relancer start().
+            // `|n<reloadNonce>` : une reprise après pause longue (useTVRemuxPause) bump le nonce → BUST de la
+            // clé → start() est rappelé (consomme gResumePending → nouvelle session à P), au lieu du
+            // court-circuit de réutilisation qui renverrait l'URL de l'ancienne session (offset faux).
+            const remuxKey = contentKey + "|a" + audioRef.current + "|t" + Math.floor(startSeconds ?? 0) + "|n" + (args.reloadNonce ?? 0);
+            // Idempotent : même contenu + même audio + même nonce déjà remuxé → réutiliser l'URL locale sans
+            // relancer start(). Cache-buster `&r` : force AVPlayer à re-fetch le manifeste (anti-cache EVENT→VOD).
             if (remuxKeyRef.current === remuxKey && remuxUrlRef.current) {
-              console.log("[REMUX] reuse", remuxUrlRef.current);
-              setResult({ baseUrl: remuxUrlRef.current, resumeFrag, isDirectPlay: true, isLocalRemux: true });
+              const busted = remuxUrlRef.current + (remuxUrlRef.current.includes("?") ? "&" : "?") + "r=" + (args.reloadNonce ?? 0);
+              setResult({ baseUrl: busted, resumeFrag, isDirectPlay: true, isLocalRemux: true });
               return;
             }
             const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
@@ -179,7 +179,6 @@ export function useTVStreamUrl(args: {
             const __isDV = (__vstream?.DvProfile ?? 0) > 0 || __range.includes("DOVI") || __range.includes("DOLBY");
             // videoDynamicRange empirique tvOS 18 (vérifié device) : Dolby Vision=3, HDR10/HLG=4, SDR=1.
             const __dyn = __isDV ? 3 : (__range.includes("HDR") || __range.includes("PQ") || __range.includes("HLG")) ? 4 : 1;
-            console.log("[REMUX] start", rawUrl?.slice(0, 90), "range=", __range, "dyn=", __dyn);
             // Retry : le 1ᵉʳ segment HLS peut être long (~10 s, coupé au keyframe) → start() peut
             // échouer/timeouter au 1ᵉʳ play à froid. On réessaie AVANT de retomber en transcode
             // (sinon on perd le HDR/DV). Le 2ᵉ essai trouve la session chaude (segment en cache).
@@ -188,20 +187,18 @@ export function useTVStreamUrl(args: {
                 const localUrl = await __remux.start(rawUrl, __dyn, audioRef.current, Math.floor(startSeconds ?? 0));
                 if (fetchIdRef.current !== fetchId) return;
                 if (localUrl) {
-                  console.log("[REMUX] localUrl =", localUrl, "(essai", attempt + ")");
                   remuxKeyRef.current = remuxKey;
                   remuxUrlRef.current = localUrl;
                   setResult({ baseUrl: localUrl, resumeFrag, isDirectPlay: true, isLocalRemux: true });
                   return;
                 }
-              } catch (e) {
+              } catch {
                 if (fetchIdRef.current !== fetchId) return;
-                console.log("[REMUX] start fail #" + attempt, String(e));
                 if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
               }
             }
-            console.log("[REMUX] remux abandonné après retries → repli PlaybackInfo");
-          } catch (e) { console.log("[REMUX] ERROR", String(e)); }
+            // tous les essais ont échoué → repli silencieux sur PlaybackInfo (transcode/direct serveur)
+          } catch { /* repli PlaybackInfo */ }
         }
 
         // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
