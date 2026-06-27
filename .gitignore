@@ -73,9 +73,9 @@ apps/mobile/ios/.xcode.env.local
 apps/mobile/ios/**/xcuserdata/
 apps/mobile/ios/*.xcworkspace/contents.xcworkspacedata.bak
 
-# Apple TV — FFmpeg LGPL xcframeworks (40 Mo de binaires) : régénérés via
-# apps/tv/ios/scripts/build-ffmpeg-lgpl-tvos.sh (podspec + script versionnés).
-apps/tv/ios/Frameworks/ffmpeg/*.xcframework/
+# Apple TV — FFmpeg LGPL xcframeworks : COMMITÉS (~46 Mo) pour que le CI release-atv
+# dispose des binaires (le code remux `#include`e libavformat). Régénérables via
+# apps/tv/ios/scripts/build-ffmpeg-lgpl-tvos.sh (script + podspec versionnés → LGPL OK).
 # Apple TV — artefacts de build xcodebuild (simulateur + device) : régénérés.
 apps/tv/ios/build/
 apps/tv/ios/build-device/
