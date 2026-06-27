@@ -97,7 +97,21 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   // utilisé tel quel (notamment Android).
   // `railFocused` est dans le contexte : le pont de focus tvOS (TVFocusBridgeLeft)
   // doit savoir si le focus est dans le rail pour se désactiver (sinon il piège).
-  const { setRailActiveNode, railFocused, setRailFocused } = useTVNav();
+  const { setRailActiveNode, railFocused, setRailFocused, lastContentNodeRef } = useTVNav();
+
+  // Sélection d'un item = on QUITTE le rail pour le contenu. Replier IMMÉDIATEMENT (≠ le timer 30 ms de
+  // scheduleCollapse, qui course avec la navigation instantanée `animation:"none"` → rail resté étendu +
+  // focus piégé, surtout au retour Bibliothèque→Accueil). Et remettre `lastContentNodeRef=null` : sinon
+  // l'écran cible restaurerait le focus sur une node d'un AUTRE écran (démontée) → focus mort → piégé ;
+  // à null, l'écran cible retombe sur son `autoFocus` (TVFocusGuideView) → focus valide sur le contenu.
+  const handleSelect = useCallback((key: string) => {
+    lastContentNodeRef.current = null;
+    if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
+    focusCount.current = 0;
+    setRailFocused(false);
+    progress.value = withTiming(0, { duration: Durations.fast, easing: Easings.out });
+    onNavigate(key);
+  }, [onNavigate, progress, setRailFocused, lastContentNodeRef]);
   const setActiveItemRef = useCallback((node: View | null) => {
     (activeRef as React.MutableRefObject<View | null>).current = node;
     setActiveNode(node);
@@ -168,7 +182,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       index={index}
       active={currentRoute === item.key}
       labelStyle={labelStyle}
-      onNavigate={onNavigate}
+      onNavigate={handleSelect}
       onExpand={expand}
       onCollapse={scheduleCollapse}
       schedulePrefetch={schedulePrefetch}

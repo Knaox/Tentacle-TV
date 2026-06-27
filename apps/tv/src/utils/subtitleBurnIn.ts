@@ -15,9 +15,10 @@ import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
  *   actif. Sur Android (ExoPlayer/MPV), le texte est rendu nativement (pas de
  *   burn-in pour le texte ; seuls les graphiques sont incrustés).
  */
-export function isBurnInSubtitleCodec(codec?: string): boolean {
-  if (BURN_IN_SUBTITLE_CODECS.test(codec ?? "")) return true;
-  // tvOS : incruster tout sous-titre (texte inclus) — cf. ci-dessus.
-  if (Platform.OS === "ios" && (codec ?? "").length > 0) return true;
+export function isBurnInSubtitleCodec(codec?: string, isLocalRemux?: boolean): boolean {
+  if (BURN_IN_SUBTITLE_CODECS.test(codec ?? "")) return true;  // graphiques (PGS/VOBSUB/DVBSUB) : partout
+  // tvOS : incruster tout sous-titre texte (AVPlayer rend mal) — SAUF sur le remux où l'overlay JS
+  // (useTVSubtitles + TVSubtitleOverlay) le rend proprement (strip des tags) → pas de transcode.
+  if (Platform.OS === "ios" && !isLocalRemux && (codec ?? "").length > 0) return true;
   return false;
 }

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { getSpeedTier, SCRUB_STEP_SECONDS } from "./scrubAcceleration";
+import { useButtonSeek } from "./useButtonSeek";
 
-const SCRUB_STEP_SECONDS = 10;
 /** Gap entre deux événements répétés au-delà duquel le hold est terminé */
 const HOLD_RELEASE_MS = 350;
-/** Paliers d'accélération du curseur selon la durée du hold (secondes) */
-const SPEED_TIERS = [1, 2, 4, 8] as const;
 /** Maintien ←/→ avant d'entrer en avance/recul rapide : le signal long-press
  *  système (~300ms) + ce délai ≈ 1s de maintien total. */
 const SCRUB_HOLD_EXTRA_MS = 700;
@@ -21,30 +20,6 @@ const SHUTTLE_AUTO_CONFIRM_MS = 800;
 interface HoldState {
   dir: "forward" | "backward";
   startTime: number;
-}
-
-function getSpeedTier(holdStartTime: number): number {
-  const elapsed = (Date.now() - holdStartTime) / 1000;
-  const tier = Math.min(SPEED_TIERS.length - 1, Math.floor(elapsed));
-  return SPEED_TIERS[tier];
-}
-
-/** Saut de base d'un appui-bouton FF/rewind (avant que la rampe ne démarre). */
-const BUTTON_SEEK_BASE = 10;
-/** Rampe d'avance au MAINTIEN d'un bouton FF/rewind : vitesse (s vidéo / s réelle)
- *  selon la durée du maintien — de plus en plus rapide. */
-function buttonSeekRate(heldSec: number): number {
-  if (heldSec < 0.35) return 0;   // avant rampe : seul le saut de base s'applique
-  if (heldSec < 1.2) return 40;
-  if (heldSec < 2.2) return 100;
-  if (heldSec < 3.5) return 250;
-  return 500;
-}
-function buttonSeekTier(heldSec: number): number {
-  if (heldSec < 1.2) return 1;
-  if (heldSec < 2.2) return 2;
-  if (heldSec < 3.5) return 4;
-  return 8;
 }
 
 type Ref<T> = MutableRefObject<T>;
@@ -184,43 +159,10 @@ export function useScrubController({
     }, SHUTTLE_AUTO_CONFIRM_MS);
   }, [endHold, clearAutoConfirm, confirmScrub]);
 
-  // Boutons OSD avance/recul rapide dédiés, modèle MAINTIEN : curseur fantôme qui
-  // avance de plus en plus vite tant que le bouton est tenu (rampe), seek + reprise
-  // au relâchement. Le focus reste sur le bouton (scrubViaButton → pas de verrou).
-  const buttonLoopRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const stopButtonLoop = useCallback(() => {
-    if (buttonLoopRef.current) { clearInterval(buttonLoopRef.current); buttonLoopRef.current = null; }
-  }, []);
-  useEffect(() => () => stopButtonLoop(), [stopButtonLoop]);
-
-  const startButtonSeek = useCallback((dir: "forward" | "backward") => {
-    if (buttonLoopRef.current) return; // déjà en maintien
-    const sign = dir === "forward" ? 1 : -1;
-    clearAutoConfirm();
-    scrubViaButtonRef.current = true; setScrubViaButton(true);
-    if (!scrubbingRef.current) startScrubbing();   // ghost-scrub (pause), sans dir → pas de moveScrub
-    nudgeScrub(sign * BUTTON_SEEK_BASE);           // saut de base immédiat (tap = petit saut)
-    setSpeedLabel(`${sign > 0 ? "▶▶" : "◀◀"} 1x`);
-    const start = Date.now();
-    let last = start;
-    buttonLoopRef.current = setInterval(() => {
-      const now = Date.now();
-      const dt = (now - last) / 1000;
-      last = now;
-      const held = (now - start) / 1000;
-      const rate = buttonSeekRate(held);
-      if (rate > 0) {
-        nudgeScrub(sign * rate * dt);
-        setSpeedLabel(`${sign > 0 ? "▶▶" : "◀◀"} ${buttonSeekTier(held)}x`);
-      }
-    }, 33);
-  }, [clearAutoConfirm, startScrubbing, nudgeScrub]);
-
-  const stopButtonSeek = useCallback(() => {
-    if (!buttonLoopRef.current && !scrubViaButtonRef.current) return;
-    stopButtonLoop();
-    confirmScrub();   // seek vers la position fantôme + reprise (+ reset scrubViaButton)
-  }, [stopButtonLoop, confirmScrub]);
+  const { startButtonSeek, stopButtonSeek } = useButtonSeek({
+    durationRef, startScrubbing, nudgeScrub, confirmScrub, clearAutoConfirm,
+    scrubbingRef, scrubViaButtonRef, setScrubViaButton, setSpeedLabel,
+  });
 
   // --- Maintien ←/→ : tick JS d'avance continue (le système n'émet pas les
   //     répétitions pendant un hold) + délai d'armement. ---

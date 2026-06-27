@@ -1,3 +1,5 @@
+import type { MutableRefObject } from "react";
+
 export type ScrubDir = "forward" | "backward";
 
 /**
@@ -24,4 +26,6 @@ export interface ScrubGestureHandlers {
   onEndScrub: () => void;
   /** Effleurement léger (pas de scrub) → réveiller l'OSD, parité appui ←/→. */
   onWake: () => void;
+  /** Durée de la vidéo (s) → la vitesse de scrub s'y adapte (court = lent, long = rapide). */
+  durationRef: MutableRefObject<number>;
 }

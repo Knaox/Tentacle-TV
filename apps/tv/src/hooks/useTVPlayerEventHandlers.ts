@@ -107,8 +107,16 @@ export function useTVPlayerEventHandlers(args: {
     // (pas de setIsLoading(false) ici : la position affichable n'est pas prête)
     if (pendingSeekRef.current) {
       const { target, until, afterReload } = pendingSeekRef.current;
-      const converged = Math.abs(t - target) <= 2.5
-        || (afterReload && loadedRef.current && t > 0.5);
+      // afterReload (reprise / reload de piste-qualité) : la timeline est ABSOLUE et le
+      // player SEEK vers `target` — sa 1ʳᵉ position n'est PAS la cible mais la position
+      // PRÉ-SEEK (≈0 sur le remux/HLS absolu) ou le BORD LIVE (playlist EVENT). Exiger la
+      // convergence PRÈS de la cible (et le flux chargé) — et NON « toute position >0.5 »,
+      // qui acceptait ce point parasite → l'écran de chargement se levait à 0:01 puis la vidéo
+      // resautait à T (double saut). On garde l'écran/l'image figée jusqu'à l'atterrissage réel
+      // → un seul saut. Tolérance large (granularité segment + offset −3s) ; filet = timeout.
+      const converged = afterReload
+        ? (loadedRef.current && Math.abs(t - target) <= 6)
+        : (Math.abs(t - target) <= 2.5);
       if (Date.now() > until || converged) {
         pendingSeekRef.current = null;
       } else {

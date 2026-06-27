@@ -51,6 +51,9 @@ export interface TVPlayerViewProps {
   item?: MediaItem | null;
   streamUrl: string;
   paused: boolean;
+  /** Pause EFFECTIVE de la surface (paused || reloadHold) : garde le lecteur en pause pendant un reload
+   *  remux (anti son sortant) sans changer l'intention `paused` (OSD/reporting). Défaut = paused. */
+  playerPaused?: boolean;
   isLoading: boolean;
   /** Lecture déjà démarrée — distingue chargement initial / rebuffering */
   hasStarted: boolean;
@@ -64,6 +67,7 @@ export interface TVPlayerViewProps {
 
   // Player refs
   useExoPlayer: boolean;
+  isLocalRemux?: boolean;   // remux on-device tvOS → overlay sous-titres JS (pas de piste manifeste)
   /** Direct play vs transcode HLS (décision serveur) — gate le sideload tvOS. */
   isDirectPlay: boolean;
   exoRef: React.Ref<MPVPlayerHandle>;
@@ -118,9 +122,9 @@ export interface TVPlayerViewProps {
 }
 
 export function TVPlayerView({
-  item, streamUrl, paused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
+  item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
-  useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
+  useExoPlayer, isLocalRemux, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
   audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
   qualityKey, sourceQuality, skipSegments, autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
@@ -155,7 +159,10 @@ export function TVPlayerView({
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
       <MemoizedPlayer
         useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
-        source={streamUrl} paused={paused} playerStyle={playerStyle}
+        source={streamUrl} paused={playerPaused ?? paused} playerStyle={playerStyle}
+        // Mute de transition (filet secondaire) : tant que l'image figée masque la vidéo, couper l'audio de
+        // la session sortante. Le vrai blocage du son vient du « hold » (playerPaused) côté PlayerScreen.
+        muted={reloadFrameSec != null && hasStarted}
         textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
@@ -176,7 +183,7 @@ export function TVPlayerView({
           overlay JS en MPV/transcode. tvOS (AVPlayer) = NATIF partout : sideload
           VTT en direct play, pistes du manifeste HLS (SubtitleMethod=Hls) en
           transcode → pas d'overlay JS. */}
-      {!useExoPlayer && Platform.OS !== "ios" && (
+      {((!useExoPlayer && Platform.OS !== "ios") || isLocalRemux) && (
         <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />
       )}
       {/* Badge « +30s / −10s » après un double-clic ←/→ (OSD caché) */}
