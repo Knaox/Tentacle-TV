@@ -110,4 +110,4 @@ jobs:
             --sellerId "${{ secrets.PARTNER_SELLER_ID }}" `
             --clientId "${{ secrets.PARTNER_CLIENT_ID }}" `
             --clientSecret "${{ secrets.PARTNER_CLIENT_SECRET }}"
-          msstore publish "$env:MSIX_PATH"
+          msstore publish "$env:MSIX_PATH" -id "$env:STORE_ID"
