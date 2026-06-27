@@ -31,6 +31,10 @@ target 'TentacleTV' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Lecteur local « façon Infuse » : FFmpeg LGPL (remux-only) + serveur HTTP local.
+  pod 'FFmpegTVOS', :path => 'Frameworks/ffmpeg'
+  pod 'GCDWebServer', '~> 3.5'
+
   target 'TentacleTVTests' do
     inherit! :complete
     # Pods for testing

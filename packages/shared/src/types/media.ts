@@ -121,6 +121,9 @@ export interface MediaStream {
   Channels?: number;
   SampleRate?: number;
   VideoRangeType?: string;
+  /** Profil Dolby Vision (5, 7, 8…) — sert à router : P7 double couche = mur tvOS. */
+  DvProfile?: number;
+  DvBlSignalCompatibilityId?: number;
 }
 
 export interface UserItemData {

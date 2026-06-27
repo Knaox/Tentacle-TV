@@ -64,10 +64,23 @@ async function resolveSessionRouting(
 
   if (deviceToken) return { apiKey: deviceToken, usedDeviceToken: true };
 
-  // Pas de token Jellyfin stocké (device jamais provisionné) : repli best-effort
-  // sur la réécriture user-scopée. N'attribue correctement que sur d'anciens
-  // Jellyfin (où l'userId d'URL est honoré) ; sinon la télémétrie est perdue
-  // (mais aucune attribution erronée bloquante).
+  // Ce device n'a pas (ou plus) de token Jellyfin propre — typiquement re-jumelé depuis une session
+  // web JWT (isJellyfinToken=false au pairing, cf. pair.ts) ou token purgé sur 401. On RÉUTILISE le
+  // dernier token Jellyfin VALIDE du MÊME utilisateur (un autre jumelage du même compte) → la
+  // progression est attribuée au BON compte au lieu de tomber sur la clé admin. Plusieurs appareils
+  // d'un même user partagent alors ce token (OK pour l'état de visionnage ; sessions Jellyfin fusionnées).
+  try {
+    const sibling = await getPrisma().pairedDevice.findFirst({
+      where: { jellyfinUserId: payload.userId, jellyfinAccessToken: { not: null } },
+      orderBy: { lastSeen: "desc" },
+      select: { jellyfinAccessToken: true },
+    });
+    if (sibling?.jellyfinAccessToken) return { apiKey: sibling.jellyfinAccessToken, usedDeviceToken: true };
+  } catch { /* repli ci-dessous */ }
+
+  // Aucun token Jellyfin pour cet utilisateur : repli best-effort sur la réécriture user-scopée.
+  // N'attribue correctement que sur d'anciens Jellyfin (où l'userId d'URL est honoré) ; sinon la
+  // télémétrie est perdue (mais aucune attribution erronée bloquante).
   if (adminKey) {
     const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
     if (rewrite) return { apiKey: adminKey, rewrite };
