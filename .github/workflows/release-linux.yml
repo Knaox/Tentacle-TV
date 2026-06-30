@@ -120,9 +120,9 @@ jobs:
             | `.AppImage` | Universel — **Arch / Manjaro** et toute distro |
 
             ## Installation
-            - **Debian/Ubuntu** : `sudo apt install ./Tentacle-TV_*.deb`
-            - **Fedora** : `sudo dnf install ./Tentacle-TV-*.rpm`
-            - **Arch / autres (AppImage)** : `chmod +x Tentacle-TV_*.AppImage && ./Tentacle-TV_*.AppImage`
+            - **Debian/Ubuntu** : `sudo apt install ./Tentacle.TV_*.deb`
+            - **Fedora** : `sudo dnf install ./Tentacle.TV-*.rpm`
+            - **Arch / autres (AppImage)** : `sudo pacman -S mpv fuse2 && chmod +x Tentacle.TV_*.AppImage && ./Tentacle.TV_*.AppImage`
 
             ## Pré-requis lecteur vidéo
             Le `.deb`/`.rpm` installe automatiquement **libmpv**. Pour l'AppImage,
