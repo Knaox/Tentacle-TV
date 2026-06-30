@@ -51,6 +51,14 @@
       "minimumSystemVersion": "14.0",
       "signingIdentity": "Developer ID Application: Damien ROUGE (96K3M57W49)",
       "entitlements": "./Entitlements.plist"
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libmpv2 | libmpv1", "libwebkit2gtk-4.1-0", "libgtk-3-0"]
+      },
+      "rpm": {
+        "depends": ["mpv-libs", "webkit2gtk4.1", "gtk3"]
+      }
     }
   }
 }
