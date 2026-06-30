@@ -391,15 +391,15 @@ The Linux build ships three packages. **mpv/libmpv** is required for video playb
 
 ```bash
 # Debian / Ubuntu / Mint / Pop!_OS
-sudo apt install ./Tentacle-TV_*_amd64.deb
+sudo apt install ./Tentacle.TV_*_amd64.deb
 
 # Fedora / openSUSE / RHEL
-sudo dnf install ./Tentacle-TV-*.x86_64.rpm
+sudo dnf install ./Tentacle.TV-*.x86_64.rpm
 
 # Arch / Manjaro / EndeavourOS — the AppImage runs as-is
 sudo pacman -S mpv fuse2          # libmpv + FUSE (AppImage runtime), once
-chmod +x Tentacle-TV_*.AppImage
-./Tentacle-TV_*.AppImage
+chmod +x Tentacle.TV_*.AppImage
+./Tentacle.TV_*.AppImage
 ```
 
 > Windows and macOS update through their respective stores. The Linux packages have no auto-updater — grab the newest one from GitHub Releases.
