@@ -1,0 +1,135 @@
+# Tentacle TV — Desktop Linux (.deb / .rpm / AppImage)
+#
+# Déclenché par un tag « linux-v<version>-<build> » (ex : linux-v1.9.9-1) ou en
+# manuel. Build l'app Tauri v2 sur Ubuntu et publie 3 paquets en Release GitHub :
+#   • .deb       → Debian / Ubuntu / Mint / Pop!_OS…
+#   • .rpm       → Fedora / openSUSE / RHEL…
+#   • .AppImage  → universel (fonctionne tel quel sur Arch, Manjaro, etc.)
+#
+# Publier une version Linux :
+#   git tag linux-v1.9.9-1 && git push origin linux-v1.9.9-1
+# Nomenclature « linux-v<version>-<build> » : <version> est injectée dans
+# tauri.conf.json (→ nom de fichier des paquets), <build> n'apparaît que dans le
+# nom de la Release. Sans suffixe « -<build> » (linux-v1.9.9), la version du tag
+# est tout de même appliquée.
+#
+# Lecteur vidéo : libmpv est chargé au runtime par tauri-plugin-libmpv.
+#   • .deb / .rpm déclarent la dépendance (libmpv2 / mpv-libs) → installée par le
+#     gestionnaire de paquets (voir bundle.linux.* dans tauri.conf.json).
+#   • AppImage : l'utilisateur doit avoir « mpv »/« libmpv » installé (paquet
+#     présent par défaut sur la plupart des distros multimédia).
+#
+# Runner : ubuntu-22.04 (glibc/webkit plus anciens = paquets compatibles avec un
+# parc de distros plus large qu'ubuntu-latest/24.04).
+
+name: Release Desktop Linux
+
+on:
+  push:
+    tags: ["linux-v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  linux:
+    name: Build .deb / .rpm / AppImage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dépendances système (WebKitGTK + libmpv + outils bundle)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            libmpv-dev \
+            patchelf \
+            file \
+            rpm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: cargo-linux-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-linux-
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Injecter la version du tag dans tauri.conf.json
+        run: |
+          VER="1.9.9"
+          if [[ "${GITHUB_REF_NAME}" =~ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VER="${BASH_REMATCH[1]}"
+          fi
+          echo "Version Linux → $VER (tag ${GITHUB_REF_NAME:-manuel})"
+          node -e "const f='apps/desktop/src-tauri/tauri.conf.json';const c=require('fs');const j=JSON.parse(c.readFileSync(f));j.version='$VER';c.writeFileSync(f,JSON.stringify(j,null,2)+'\n');"
+
+      - name: Build Tauri (deb + rpm + appimage)
+        working-directory: apps/desktop
+        run: pnpm tauri build --bundles deb,rpm,appimage
+
+      - name: Rassembler les paquets
+        run: |
+          mkdir -p dist-linux
+          BUNDLE=apps/desktop/src-tauri/target/release/bundle
+          cp "$BUNDLE"/deb/*.deb            dist-linux/ 2>/dev/null || true
+          cp "$BUNDLE"/rpm/*.rpm            dist-linux/ 2>/dev/null || true
+          cp "$BUNDLE"/appimage/*.AppImage  dist-linux/ 2>/dev/null || true
+          echo "Paquets produits :"
+          ls -l dist-linux
+
+      - name: Create versioned GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Tentacle TV (Linux) ${{ github.ref_name }}"
+          prerelease: false
+          body: |
+            Application desktop **Tentacle TV** pour Linux.
+
+            | Paquet | Distributions |
+            |--------|---------------|
+            | `.deb` | Debian, Ubuntu, Mint, Pop!_OS… |
+            | `.rpm` | Fedora, openSUSE, RHEL… |
+            | `.AppImage` | Universel — **Arch / Manjaro** et toute distro |
+
+            ## Installation
+            - **Debian/Ubuntu** : `sudo apt install ./Tentacle-TV_*.deb`
+            - **Fedora** : `sudo dnf install ./Tentacle-TV-*.rpm`
+            - **Arch / autres (AppImage)** : `chmod +x Tentacle-TV_*.AppImage && ./Tentacle-TV_*.AppImage`
+
+            ## Pré-requis lecteur vidéo
+            Le `.deb`/`.rpm` installe automatiquement **libmpv**. Pour l'AppImage,
+            installez-le au besoin : `sudo pacman -S mpv` (Arch) ou l'équivalent.
+          files: |
+            dist-linux/*.deb
+            dist-linux/*.rpm
+            dist-linux/*.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
