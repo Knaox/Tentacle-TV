@@ -3,6 +3,7 @@ import { TopNav } from "./nav/TopNav";
 import { TopNavMobile } from "./nav/TopNavMobile";
 import { MobileTabBar } from "./MobileTabBar";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { VersionBanner } from "./VersionBanner";
 
 const HIDE_SEARCH_ROUTES = ["/support", "/settings", "/about", "/admin", "/pair-device"];
 
@@ -30,6 +31,7 @@ export function AppLayout() {
           paddingRight: "env(safe-area-inset-right, 0px)",
         } : undefined}
       >
+        <VersionBanner />
         <Outlet />
       </div>
 

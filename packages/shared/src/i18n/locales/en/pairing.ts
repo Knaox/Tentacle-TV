@@ -53,4 +53,9 @@ export default {
   noPairedDevices: "No paired devices.",
   lastActive: "Last active: {{date}}",
   revoke: "Revoke",
+
+  // Pairing unavailable (public server URL not configured on the backend)
+  pairingUnavailable: "TV pairing is unavailable — this option must be enabled by the administrator.",
+  pairingUnavailableAdmin: "Please first set the “Public Tentacle TV server URL” to enable TV pairing.",
+  pairingConfigureNow: "Configure now",
 } as const;

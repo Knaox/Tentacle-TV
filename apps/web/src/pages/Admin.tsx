@@ -1,24 +1,16 @@
 import { useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { DirectStreamingSection } from "./AdminDirectStreaming";
-import { AdminTickets } from "./AdminTickets";
 import { PageTransition } from "../components/PageTransition";
-import { AdminHeader } from "../components/admin/AdminHeader";
 import { InvitesSection } from "../components/admin/InvitesSection";
-import { PlaybackSection } from "../components/admin/PlaybackSection";
-import { PublicUrlSection } from "../components/admin/PublicUrlSection";
-import { ProvisioningCodeSection } from "../components/admin/ProvisioningCodeSection";
-import { ServicesSection } from "../components/admin/ServicesSection";
-import { PairedDevicesSection } from "../components/admin/PairedDevicesSection";
 import { cls } from "./adminUtils";
 import { getUserInfo } from "../components/userMenu/menuItems";
 
 /**
- * Orchestrateur Admin — recompose les sections extraites pour respecter la
- * limite 300L/fichier. Refus d'accès si pas admin (redirige vers home).
- *
- * Structure mobile-friendly : barre d'ancres `AdminHeader` au sommet, sections
- * empilées avec id pour navigation rapide.
+ * Orchestrateur Admin — cartes-raccourcis vers les pages dédiées (Plugins,
+ * Thème, Utilisateurs, Tickets, Services) + section Invitations. Les réglages
+ * serveur (URL publique, Jellyfin/DB, lecture directe, lecture) vivent dans
+ * /admin/services ; les appareils jumelés et le code de provisionnement sont
+ * désormais dans « Jumeler TV » (admin only). Refus d'accès si pas admin.
  */
 export function Admin() {
   const { t } = useTranslation("admin");
@@ -28,71 +20,32 @@ export function Admin() {
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
+  const shortcut = (title: string, description: string, button: string, to: string, id?: string) => (
+    <div id={id} className={cls.card}>
+      <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          <p className="mt-1 text-sm text-white/40">{description}</p>
+        </div>
+        <button onClick={() => navigate(to)} className={`${cls.bp} self-start xs:self-auto`} style={cls.bpStyle}>
+          {button}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-white">{t("title")}</h1>
-          <AdminHeader />
+          <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-white">{t("title")}</h1>
 
-          {/* Plugins shortcut */}
-          <div className={cls.card}>
-            <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-white">{t("pluginsTitle")}</h2>
-                <p className="mt-1 text-sm text-white/40">{t("pluginsDescription")}</p>
-              </div>
-              <button
-                onClick={() => navigate("/admin/plugins")}
-                className={`${cls.bp} self-start xs:self-auto`}
-                style={cls.bpStyle}
-              >
-                {t("managePlugins")}
-              </button>
-            </div>
-          </div>
-
-          {/* Theme shortcut */}
-          <div className={cls.card}>
-            <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-white">{tTheme("adminCardTitle")}</h2>
-                <p className="mt-1 text-sm text-white/40">{tTheme("adminCardDescription")}</p>
-              </div>
-              <button
-                onClick={() => navigate("/admin/theme")}
-                className={`${cls.bp} self-start xs:self-auto`}
-                style={cls.bpStyle}
-              >
-                {tTheme("adminCardButton")}
-              </button>
-            </div>
-          </div>
-
-          {/* Users management shortcut */}
-          <div id="users" className={cls.card}>
-            <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-white">{t("usersTitle")}</h2>
-                <p className="mt-1 text-sm text-white/40">{t("usersDescription")}</p>
-              </div>
-              <button
-                onClick={() => navigate("/admin/users")}
-                className={`${cls.bp} self-start xs:self-auto`}
-                style={cls.bpStyle}
-              >
-                {t("manageUsers")}
-              </button>
-            </div>
-          </div>
+          {shortcut(t("pluginsTitle"), t("pluginsDescription"), t("managePlugins"), "/admin/plugins")}
+          {shortcut(tTheme("adminCardTitle"), tTheme("adminCardDescription"), tTheme("adminCardButton"), "/admin/theme")}
+          {shortcut(t("usersTitle"), t("usersDescription"), t("manageUsers"), "/admin/users", "users")}
+          {shortcut(t("supportTickets"), t("supportTicketsDescription"), t("manageTickets"), "/admin/tickets", "tickets")}
+          {shortcut(t("services"), t("servicesDescription"), t("manageServices"), "/admin/services", "services")}
           <InvitesSection id="invites" />
-          <div id="tickets"><AdminTickets /></div>
-          <PlaybackSection />
-          <PublicUrlSection />
-          <ProvisioningCodeSection />
-          <DirectStreamingSection />
-          <div id="services"><ServicesSection /></div>
-          <div id="devices"><PairedDevicesSection /></div>
         </div>
       </div>
     </PageTransition>

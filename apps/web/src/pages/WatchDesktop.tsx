@@ -115,10 +115,23 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
       ? (hasOwnBackdrop ? nextEpisode.Id : (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id))
       : nextEpisode.Id;
     const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
-    return client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 });
+    return client.getImageUrl(backdropId, imageType, { width: 1920, quality: 85 });
   })();
+  // Fond immersif de l'affiche de fin = bannière de la SÉRIE (fallback : backdrop épisode).
+  const nextSeriesBackdropUrl = (() => {
+    if (!nextEpisode?.Id) return undefined;
+    const seriesId = nextEpisode.SeriesId ?? nextEpisode.ParentBackdropItemId;
+    if (seriesId) return client.getImageUrl(seriesId, "Backdrop", { width: 1920, quality: 85 });
+    return (nextEpisode.BackdropImageTags?.length ?? 0) > 0
+      ? client.getImageUrl(nextEpisode.Id, "Backdrop", { width: 1920, quality: 85 })
+      : nextEpisodeImageUrl;
+  })();
+  // Vignette de l'épisode suivant = image Primary (miniature).
+  const nextEpisodeThumbUrl = nextEpisode?.Id
+    ? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 90 })
+    : nextEpisodeImageUrl;
   const nextEpisodeDescription = nextEpisode?.Overview
-    ? (nextEpisode.Overview.length > 120 ? nextEpisode.Overview.slice(0, 120) + "…" : nextEpisode.Overview) : undefined;
+    ? (nextEpisode.Overview.length > 300 ? nextEpisode.Overview.slice(0, 300) + "…" : nextEpisode.Overview) : undefined;
 
   return (
     <div className="relative h-screen w-screen">
@@ -131,6 +144,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
+        nextSeriesBackdropUrl={nextSeriesBackdropUrl} nextEpisodeThumbUrl={nextEpisodeThumbUrl}
         nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
         onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}

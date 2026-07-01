@@ -29,6 +29,7 @@ export default {
   nextEpisodeLabel: "Épisode suivant",
   nowPlaying: "En cours de visionnage",
   upNext: "À suivre",
+  autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   dismiss: "Masquer",
   playbackError: "Erreur de lecture vidéo",
   retry: "Réessayer",

@@ -21,7 +21,9 @@ function isoToLocalInput(iso: string | null): string {
 /**
  * Section admin — Code de jumelage de provisionnement (code long réutilisable,
  * désactivé par défaut, activé avec date d'expiration obligatoire). Pensé pour
- * jumeler une TV sans config lors du passage dans les stores.
+ * jumeler une TV sans config lors du passage dans les stores. En LECTURE SEULE
+ * tant que l'URL publique du serveur n'est pas définie (le provisioning grave
+ * une entrée dans le relay, inutile sans URL publique joignable).
  */
 export function ProvisioningCodeSection() {
   const { t } = useTranslation("admin");
@@ -117,6 +119,9 @@ export function ProvisioningCodeSection() {
 
   if (!state) return null;
 
+  // Lecture seule tant que l'URL publique du serveur n'est pas configurée.
+  const readOnly = !state.publicUrl;
+
   return (
     <div className={cls.card}>
       <div className="mb-1 flex items-center gap-2">
@@ -129,15 +134,24 @@ export function ProvisioningCodeSection() {
       </div>
       <p className="mb-4 text-sm text-white/40">{t("provisioningDescription")}</p>
 
-      <div className={cls.sub}>
+      {readOnly && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.4 14.55A1.5 1.5 0 003.19 21h17.62a1.5 1.5 0 001.3-2.59l-8.4-14.55a1.5 1.5 0 00-2.62 0z" />
+          </svg>
+          <span>{t("provisioningNeedsPublicUrl")}</span>
+        </div>
+      )}
+
+      <div className={`${cls.sub} ${readOnly ? "pointer-events-none opacity-50" : ""}`}>
         {/* Code */}
         <label className={cls.lbl}>{t("provisioningCodeLabel")}</label>
         <div className="flex flex-wrap items-center gap-3">
           <code className="rounded-lg bg-white/[0.06] px-3 py-2 text-lg font-bold tracking-[0.3em] text-white">
             {state.code}
           </code>
-          <button onClick={copyCode} className={cls.bs}>{t("provisioningCopy")}</button>
-          <button onClick={regenerate} disabled={busy} className={cls.bs}>{t("provisioningRegenerate")}</button>
+          <button onClick={copyCode} className={`${cls.bs} pointer-events-auto`}>{t("provisioningCopy")}</button>
+          <button onClick={regenerate} disabled={busy || readOnly} className={cls.bs}>{t("provisioningRegenerate")}</button>
         </div>
 
         {/* Compte dédié */}
@@ -151,6 +165,7 @@ export function ProvisioningCodeSection() {
             autoComplete="off"
             placeholder={t("provisioningAccountUser")}
             value={username}
+            disabled={readOnly}
             onChange={(e) => setUsername(e.target.value)}
             className={`${cls.inp} min-w-[180px] flex-1`}
           />
@@ -159,6 +174,7 @@ export function ProvisioningCodeSection() {
             autoComplete="new-password"
             placeholder={t("provisioningAccountPassword")}
             value={password}
+            disabled={readOnly}
             onChange={(e) => setPassword(e.target.value)}
             className={`${cls.inp} min-w-[180px] flex-1`}
           />
@@ -171,13 +187,14 @@ export function ProvisioningCodeSection() {
           <input
             type="datetime-local"
             value={expiry}
+            disabled={readOnly}
             onChange={(e) => setExpiry(e.target.value)}
             className={`${cls.inp} min-w-[220px]`}
           />
           {state.enabled ? (
-            <button onClick={() => apply(false)} disabled={busy} className={cls.bd}>{t("provisioningDisable")}</button>
+            <button onClick={() => apply(false)} disabled={busy || readOnly} className={cls.bd}>{t("provisioningDisable")}</button>
           ) : (
-            <button onClick={() => apply(true)} disabled={busy} className={cls.bp} style={cls.bpStyle}>{t("provisioningEnable")}</button>
+            <button onClick={() => apply(true)} disabled={busy || readOnly} className={cls.bp} style={cls.bpStyle}>{t("provisioningEnable")}</button>
           )}
           {msg && (
             <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>
