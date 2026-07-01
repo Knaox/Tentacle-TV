@@ -477,6 +477,23 @@ export function useDesktopPlayer() {
     }
   }, []);
 
+  // Au montage, resynchronise l'état React du plein écran avec l'état RÉEL de la
+  // fenêtre native Tauri. Nécessaire car un changement d'épisode remonte le
+  // lecteur (key={itemId}) : la fenêtre reste en plein écran alors que le state
+  // React repart à false → sans cette resync, l'icône du bouton plein écran
+  // serait incohérente jusqu'au prochain toggle.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const fs = await invoke<boolean>("is_fullscreen");
+        if (!cancelled) setState((prev) => ({ ...prev, fullscreen: fs }));
+      } catch { /* ignore — hors Tauri ou commande indisponible */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   /** Load an external subtitle file (URL or path) into mpv. */
   const addSubtitle = useCallback(async (url: string, select = true) => {
     if (!api) return;

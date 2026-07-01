@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
 } from "../theme";
 import { SubtleBackground, GlassCard, FadeIn, IconButton } from "../components/ui";
 import { PairCodeInputs, type PairCodeInputsHandle } from "../components/pair/PairCodeInputs";
+import { PairUnavailableCard } from "../components/pair/PairUnavailableCard";
 
 export function PairTVScreen() {
   const { t } = useTranslation("pairing");
@@ -38,6 +39,24 @@ export function PairTVScreen() {
   const [status, setStatus] = useState<"idle" | "pairing" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const codeInputsRef = useRef<PairCodeInputsHandle>(null);
+
+  // État réel du backend : le jumelage n'est possible que si l'URL publique du
+  // serveur Tentacle TV est définie. null = en cours de vérification.
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const base = storage.getItem("tentacle_server_url") ?? "";
+        const res = base ? await fetch(`${base}/api/config`) : null;
+        const cfg = res && res.ok ? await res.json() : null;
+        if (!cancelled) setAvailable(!!cfg?.publicUrl);
+      } catch {
+        if (!cancelled) setAvailable(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [storage]);
 
   const code = chars.join("");
   const canSubmit = code.length === 4 && status === "idle";
@@ -171,7 +190,9 @@ export function PairTVScreen() {
 
         <FadeIn delay={140} translateY={12} style={{ paddingHorizontal: 16 }}>
           <GlassCard style={{ padding: 24 }}>
-            {status === "success" ? (
+            {available !== true ? (
+              <PairUnavailableCard loading={available === null} />
+            ) : status === "success" ? (
               <View style={{ alignItems: "center", paddingVertical: 12 }}>
                 <View style={{
                   width: 72,

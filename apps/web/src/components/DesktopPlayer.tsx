@@ -6,6 +6,7 @@ import { TrackSelector } from "./TrackSelector";
 import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
 import { LoadingBar } from "./player/PlayerLoadingScreen";
 import { NextEpisodeOverlay } from "./NextEpisodeOverlay";
+import { NextEpisodeFullscreen } from "./player/NextEpisodeFullscreen";
 import { SkipBadge, type SkipFlash } from "./SkipBadge";
 import { BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon } from "./PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
@@ -35,6 +36,7 @@ interface DesktopPlayerProps {
   introSegment?: SegmentTimestamps | null; creditsSegment?: SegmentTimestamps | null;
   hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
+  nextSeriesBackdropUrl?: string; nextEpisodeThumbUrl?: string;
   autoplayCreditsSeconds?: number;
   itemId?: string;
   item?: MediaItem;
@@ -123,6 +125,7 @@ export function DesktopPlayer({
   introSegment, creditsSegment,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
+  nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   autoplayCreditsSeconds,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
@@ -138,6 +141,9 @@ export function DesktopPlayer({
   const [showEpisodes, setShowEpisodes] = useState(false);
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
+  // Source du compte à rebours : crédits → petite carte, fin d'épisode → affiche pleine.
+  const [autoPlaySource, setAutoPlaySource] = useState<"credits" | "eof" | null>(null);
+  const eofAutoPlayTriggered = useRef(false);
   const [sourceChanging, setSourceChanging] = useState(false);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const isDragging = useRef(false);
@@ -363,8 +369,9 @@ export function DesktopPlayer({
     navigate(-1);
   }, [navigate]);
 
-  const startAutoPlayCountdown = useCallback(() => {
+  const startAutoPlayCountdown = useCallback((source: "credits" | "eof") => {
     if (!hasNextEpisode || !onNextEpisode) return;
+    setAutoPlaySource(source);
     setAutoPlayCountdown(10);
     clearInterval(autoPlayTimerRef.current);
     autoPlayTimerRef.current = setInterval(() => {
@@ -381,6 +388,9 @@ export function DesktopPlayer({
 
   const cancelAutoPlay = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
+    // Annuler l'affiche de FIN empêche sa réapparition (l'effet EOF se ré-évalue
+    // quand autoPlayCountdown repasse à null). Les crédits ont leur propre garde.
+    setAutoPlaySource((src) => { if (src === "eof") eofAutoPlayTriggered.current = true; return null; });
     setAutoPlayCountdown(null);
   }, []);
 
@@ -409,15 +419,17 @@ export function DesktopPlayer({
     if (triggerAt != null && pos >= triggerAt) {
       console.debug(DBG, "auto-play trigger", { pos, triggerAt, hasCreditsSegment: !!creditsSegment });
       creditsAutoPlayTriggered.current = true;
-      startAutoPlayCountdown();
+      startAutoPlayCountdown("credits");
     }
   }, [state.position, creditsSegment, hasNextEpisode, autoPlayCountdown, startAutoPlayCountdown, jellyfinDuration, state.duration]);
 
   // EOF fallback: no credits segment detected, or movie → detail page
   useEffect(() => {
     if (state.eof && hasStartedRef.current) {
-      if (hasNextEpisode && autoPlayCountdown === null) startAutoPlayCountdown();
-      else if (!hasNextEpisode && itemId) goToDetail();
+      if (hasNextEpisode && autoPlayCountdown === null && !eofAutoPlayTriggered.current) {
+        eofAutoPlayTriggered.current = true;
+        startAutoPlayCountdown("eof");
+      } else if (!hasNextEpisode && itemId) goToDetail();
       else if (!hasNextEpisode) goBack();
     }
   }, [state.eof, goBack, goToDetail, hasNextEpisode, startAutoPlayCountdown, itemId, autoPlayCountdown]);
@@ -425,8 +437,15 @@ export function DesktopPlayer({
   useEffect(() => {
     return () => {
       clearInterval(autoPlayTimerRef.current);
-      // Fallback: fire-and-forget exit fullscreen via cached invoke
-      cachedInvoke?.("exit_fullscreen")?.catch(() => {});
+      // On ne sort du plein écran QUE si l'on quitte réellement le lecteur. Au
+      // changement d'épisode, on navigue vers une autre route /watch/:itemId : le
+      // composant est démonté+remonté (key={itemId}) mais on RESTE dans le
+      // lecteur → il faut conserver le plein écran natif de la fenêtre. Au moment
+      // du cleanup, window.location.pathname reflète déjà la destination.
+      // (goBack/goToDetail gèrent déjà l'exit explicite pour les vraies sorties.)
+      if (!window.location.pathname.startsWith("/watch/")) {
+        cachedInvoke?.("exit_fullscreen")?.catch(() => {});
+      }
       // NOTE: do NOT call stop() here — useDesktopPlayer's own cleanup effect
       // handles mpv destruction and feeds the pendingDestroy gate so the next
       // init (episode switch) waits for it. Calling stop() here would race
@@ -460,11 +479,17 @@ export function DesktopPlayer({
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
   const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
+  const skipAccumRef = useRef(0);
   const skipBy = useCallback((delta: number) => {
     seekRelative(delta);
-    setSkipFlash({ delta, id: Date.now() });
+    // Appuis rapides dans le MÊME sens → cumul de l'affichage (+30 → +60 → +90),
+    // façon TV/Netflix. mpv coalesce déjà les seeks relatifs, on ne cumule donc
+    // que le badge. Reset au changement de sens ou après 1,5 s d'inactivité.
+    const sameDir = skipAccumRef.current !== 0 && Math.sign(delta) === Math.sign(skipAccumRef.current);
+    skipAccumRef.current = sameDir ? skipAccumRef.current + delta : delta;
+    setSkipFlash({ delta: skipAccumRef.current, id: Date.now() });
     clearTimeout(skipFlashTimer.current);
-    skipFlashTimer.current = setTimeout(() => setSkipFlash(null), 1000);
+    skipFlashTimer.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, 1500);
   }, [seekRelative]);
 
   useEffect(() => {
@@ -760,9 +785,15 @@ export function DesktopPlayer({
       </div>
 
       <AnimatePresence>
-        {autoPlayCountdown !== null && (
+        {autoPlayCountdown !== null && autoPlaySource === "credits" && (
           <NextEpisodeOverlay countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
+            onPlayNow={() => onNextEpisode?.()} onDismiss={cancelAutoPlay} />
+        )}
+        {autoPlayCountdown !== null && autoPlaySource === "eof" && (
+          <NextEpisodeFullscreen countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
+            episodeDescription={nextEpisodeDescription} seriesBackdropUrl={nextSeriesBackdropUrl}
+            episodeThumbUrl={nextEpisodeThumbUrl}
             onPlayNow={() => onNextEpisode?.()} onDismiss={cancelAutoPlay} />
         )}
       </AnimatePresence>

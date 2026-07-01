@@ -1,7 +1,11 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../lib/backendBase";
+import { getUserInfo } from "../components/userMenu/menuItems";
+import { PairingLockedNotice } from "../components/pair/PairingLockedNotice";
+import { PairedDevicesSection } from "../components/admin/PairedDevicesSection";
+import { ProvisioningCodeSection } from "../components/admin/ProvisioningCodeSection";
 
 /**
  * Résout l'URL serveur à transmettre à la TV au jumelage.
@@ -26,6 +30,7 @@ async function resolvePairingServerUrl(): Promise<string> {
 
 export function PairDevice() {
   const { t } = useTranslation("pairing");
+  const { isAdmin } = getUserInfo();
   const tvTokenMut = useGenerateTvToken();
   const relayConfirmMut = useRelayConfirm();
   const deviceConfirmMut = useDevicePairConfirm();
@@ -34,6 +39,23 @@ export function PairDevice() {
   const [status, setStatus] = useState<"idle" | "pairing" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // État réel du backend : le jumelage n'est possible que si l'URL publique du
+  // serveur Tentacle TV est définie. null = en cours de vérification.
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${getBackendBase()}/api/config`);
+        const cfg = res.ok ? await res.json() : null;
+        if (!cancelled) setAvailable(!!cfg?.publicUrl);
+      } catch {
+        if (!cancelled) setAvailable(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const code = chars.join("");
   const canSubmit = code.length === 4 && status === "idle";
@@ -122,7 +144,7 @@ export function PairDevice() {
 
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
-      <main className="mx-auto max-w-lg">
+      <main className="mx-auto max-w-4xl">
         <h1 className="mb-2 text-xl font-bold text-white sm:text-2xl">
           {t("pairing:pairYourTV")}
         </h1>
@@ -130,84 +152,102 @@ export function PairDevice() {
           {t("pairing:enterTVCode")}
         </p>
 
-        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 xs:p-6 sm:p-8">
-          {status === "success" ? (
-            <div className="flex flex-col items-center gap-3 py-4">
-              <div className="text-5xl text-green-400">&#x2713;</div>
-              <p className="text-lg font-semibold text-green-400">
-                {t("pairing:tvPairedSuccess")}
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Code input — taille fluide pour ne jamais déborder sur petits écrans */}
-              <div className="flex justify-center gap-2 xs:gap-3">
-                {chars.map((char, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => { inputRefs.current[i] = el; }}
-                    type="text"
-                    inputMode="text"
-                    maxLength={1}
-                    value={char}
-                    onChange={(e) => handleChange(i, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(i, e)}
-                    onPaste={i === 0 ? handlePaste : undefined}
-                    autoFocus={i === 0}
-                    disabled={status === "pairing"}
-                    className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition-all xs:h-16 xs:w-14 xs:text-2xl ${
-                      status === "error"
-                        ? "bg-red-500/10 ring-2 ring-red-500 text-white"
-                        : char
-                        ? "bg-[rgba(var(--brand-rgb),0.1)] ring-2 ring-[var(--brand)] text-white"
-                        : "bg-white/[0.03] ring-1 ring-white/10 text-white"
-                    } focus:ring-2 focus:ring-[var(--brand)] disabled:opacity-50`}
-                  />
-                ))}
-              </div>
+        {available === false ? (
+          <PairingLockedNotice isAdmin={isAdmin} />
+        ) : available === null ? (
+          <div className="flex justify-center rounded-xl border border-white/5 bg-white/[0.03] p-10">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+          </div>
+        ) : (
+          <>
+            <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 xs:p-6 sm:p-8">
+              {status === "success" ? (
+                <div className="flex flex-col items-center gap-3 py-4">
+                  <div className="text-5xl text-green-400">&#x2713;</div>
+                  <p className="text-lg font-semibold text-green-400">
+                    {t("pairing:tvPairedSuccess")}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Code input — taille fluide pour ne jamais déborder sur petits écrans */}
+                  <div className="flex justify-center gap-2 xs:gap-3">
+                    {chars.map((char, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => { inputRefs.current[i] = el; }}
+                        type="text"
+                        inputMode="text"
+                        maxLength={1}
+                        value={char}
+                        onChange={(e) => handleChange(i, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(i, e)}
+                        onPaste={i === 0 ? handlePaste : undefined}
+                        autoFocus={i === 0}
+                        disabled={status === "pairing"}
+                        className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition-all xs:h-16 xs:w-14 xs:text-2xl ${
+                          status === "error"
+                            ? "bg-red-500/10 ring-2 ring-red-500 text-white"
+                            : char
+                            ? "bg-[rgba(var(--brand-rgb),0.1)] ring-2 ring-[var(--brand)] text-white"
+                            : "bg-white/[0.03] ring-1 ring-white/10 text-white"
+                        } focus:ring-2 focus:ring-[var(--brand)] disabled:opacity-50`}
+                      />
+                    ))}
+                  </div>
 
-              {/* Error message */}
-              {status === "error" && errorMsg && (
-                <p className="mt-4 text-center text-sm text-red-400">
-                  {errorMsg}
-                </p>
-              )}
+                  {/* Error message */}
+                  {status === "error" && errorMsg && (
+                    <p className="mt-4 text-center text-sm text-red-400">
+                      {errorMsg}
+                    </p>
+                  )}
 
-              {/* Submit / retry button */}
-              <div className="mt-6 flex justify-center">
-                {status === "error" ? (
-                  <button
-                    onClick={handleReset}
-                    className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90"
-                    style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
-                  >
-                    {t("common:retry")}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!canSubmit}
-                    className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
-                    style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
-                  >
-                    {status === "pairing" ? (
-                      <span className="flex items-center gap-2">
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                        {t("pairing:pairing")}
-                      </span>
+                  {/* Submit / retry button */}
+                  <div className="mt-6 flex justify-center">
+                    {status === "error" ? (
+                      <button
+                        onClick={handleReset}
+                        className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90"
+                        style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+                      >
+                        {t("common:retry")}
+                      </button>
                     ) : (
-                      t("pairing:pairTV")
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                        style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+                      >
+                        {status === "pairing" ? (
+                          <span className="flex items-center gap-2">
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                            {t("pairing:pairing")}
+                          </span>
+                        ) : (
+                          t("pairing:pairTV")
+                        )}
+                      </button>
                     )}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+                  </div>
+                </>
+              )}
+            </div>
 
-        <p className="mt-6 text-center text-xs text-white/30">
-          {t("pairing:codeExpireNote")}
-        </p>
+            <p className="mt-6 text-center text-xs text-white/30">
+              {t("pairing:codeExpireNote")}
+            </p>
+          </>
+        )}
+
+        {/* Gestion admin : appareils jumelés + code de provisionnement */}
+        {isAdmin && (
+          <div className="mt-10">
+            <PairedDevicesSection />
+            <ProvisioningCodeSection />
+          </div>
+        )}
       </main>
     </div>
   );

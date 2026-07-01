@@ -53,4 +53,9 @@ export default {
   noPairedDevices: "Aucun appareil jumelé.",
   lastActive: "Dernière activité : {{date}}",
   revoke: "Révoquer",
+
+  // Jumelage indisponible (URL publique du serveur non configurée côté backend)
+  pairingUnavailable: "Jumeler TV est indisponible, cette option doit être activée par l'administrateur.",
+  pairingUnavailableAdmin: "Veuillez d'abord renseigner « URL publique du serveur Tentacle TV » pour activer le jumelage TV.",
+  pairingConfigureNow: "Configurer maintenant",
 } as const;

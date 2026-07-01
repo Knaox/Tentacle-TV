@@ -8,6 +8,22 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > (tag `app-vx.y.z-build`) pour remplir « Nouveautés » (App Store) et « À tester »
 > (TestFlight). Sans `### EN`, la section FR sert pour les deux langues.
 
+## [1.2.2]
+
+iOS 1.2.2 — macOS 1.1.0 — Desktop 1.10.0 — Backend 1.2.0
+
+### FR
+- **Administration réorganisée** : les Tickets de support et les Services ont désormais leur page dédiée ; les invitations sont repliables et peuvent être supprimées.
+- **Jumeler TV** : les appareils jumelés et le code de provisionnement sont regroupés là (visibles par l'administrateur). Le jumelage est verrouillé tant que l'URL publique du serveur n'est pas renseignée, avec un message clair.
+- **Compatibilité serveur** : un bandeau avertit l'administrateur lorsque le serveur est plus ancien que l'application.
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Reorganized administration**: Support tickets and Services now have their own dedicated pages; invites are collapsible and can be deleted.
+- **Pair TV**: paired devices and the provisioning code are grouped here (visible to administrators). Pairing is locked until the public server URL is set, with a clear message.
+- **Server compatibility**: a banner warns the administrator when the server is older than the app.
+- Various fixes and stability improvements.
+
 ## [1.0.0]
 
 macOS — première version sur le Mac App Store (relance en 1.0.0 ; le desktop hors store était en 1.9.x).

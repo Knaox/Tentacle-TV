@@ -29,6 +29,7 @@ export default {
   nextEpisodeLabel: "Next episode",
   nowPlaying: "Now playing",
   upNext: "Up Next",
+  autoplayCountdown: "Next episode in {{seconds}}s",
   dismiss: "Dismiss",
   playbackError: "Video playback error",
   retry: "Retry",

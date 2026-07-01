@@ -57,4 +57,18 @@ export const inviteRoutes: FastifyPluginAsync = async (app) => {
       })),
     }));
   });
+
+  // Suppression d'une invitation (admin). InviteUsage n'a pas de onDelete: Cascade
+  // → on supprime d'abord ses usages dans une transaction pour éviter la violation FK.
+  app.delete("/:id", async (request, reply) => {
+    const prisma = getPrisma();
+    const { id } = request.params as { id: string };
+    const invite = await prisma.inviteKey.findUnique({ where: { id } });
+    if (!invite) return reply.status(404).send({ message: "Invitation introuvable" });
+    await prisma.$transaction([
+      prisma.inviteUsage.deleteMany({ where: { inviteKeyId: id } }),
+      prisma.inviteKey.delete({ where: { id } }),
+    ]);
+    return { success: true };
+  });
 };
