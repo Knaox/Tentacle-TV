@@ -8,9 +8,9 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > (tag `app-vx.y.z-build`) pour remplir « Nouveautés » (App Store) et « À tester »
 > (TestFlight). Sans `### EN`, la section FR sert pour les deux langues.
 
-## [1.2.2]
+## [1.2.3]
 
-iOS 1.2.2 — macOS 1.1.0 — Desktop 1.10.0 — Backend 1.2.0
+iOS 1.2.3 — macOS 1.1.0 — Desktop 1.10.0 — Backend 1.2.0
 
 ### FR
 - **Administration réorganisée** : les Tickets de support et les Services ont désormais leur page dédiée ; les invitations sont repliables et peuvent être supprimées.

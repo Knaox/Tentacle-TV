@@ -33,3 +33,4 @@ Dockerfile  text eol=lf
 *.pdf       binary
 *.zip       binary
 *.tar.gz    binary
+*.jar       binary
