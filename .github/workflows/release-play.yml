@@ -51,6 +51,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Debug — compte de service utilisé (client_email / projet)
+        run: |
+          printf '%s' '${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}' > "$RUNNER_TEMP/sa.json"
+          echo "client_email : $(jq -r .client_email "$RUNNER_TEMP/sa.json")"
+          echo "project_id   : $(jq -r .project_id "$RUNNER_TEMP/sa.json")"
+          rm -f "$RUNNER_TEMP/sa.json"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
