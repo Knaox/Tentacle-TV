@@ -5,7 +5,7 @@ import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@t
 import { MemoizedPlayer } from "./MemoizedPlayer";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
 import { TVSkipSegmentButton } from "../TVSkipSegmentButton";
-import { TVAutoPlayOverlay } from "../TVAutoPlayOverlay";
+import { TVAutoPlaySwitch, type AutoPlayCtx } from "./TVAutoPlaySwitch";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
 import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScreen";
 import { TVReloadFrame } from "./TVReloadFrame";
@@ -16,17 +16,6 @@ import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
 import type { ExoTextTrack } from "./ExoPlayer";
 import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
 import { useTVFocusGrab } from "../../hooks/useTVFocusGrab";
-
-interface AutoPlayCtx {
-  countdown: number | null;
-  nextEpisode: MediaItem | null;
-  nextEpisodeTitle?: string;
-  nextEpisodeDescription?: string;
-  nextEpisodeImageUrl?: string;
-  navigateToNextEpisode: () => void;
-  startAutoPlay: () => void;
-  cancelAutoPlay: () => void;
-}
 
 interface ControlsCtx {
   overlayVisible: boolean;
@@ -283,17 +272,8 @@ export function TVPlayerView({
       )}
       {/* Réglages/Qualité : présenté en route MODALE (PlayerSettingsScreen),
           plus en overlay ici → ESC ferme la modale proprement sans flash. */}
-      {autoPlayActive && (
-        <TVAutoPlayOverlay
-          countdown={autoPlay.countdown!} episodeTitle={autoPlay.nextEpisodeTitle}
-          episodeLabel={autoPlay.nextEpisode?.ParentIndexNumber != null && autoPlay.nextEpisode?.IndexNumber != null
-            ? `S${String(autoPlay.nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(autoPlay.nextEpisode.IndexNumber).padStart(2, "0")}`
-            : undefined}
-          episodeDescription={autoPlay.nextEpisodeDescription}
-          episodeImageUrl={autoPlay.nextEpisodeImageUrl}
-          onPlayNow={autoPlay.navigateToNextEpisode} onDismiss={autoPlay.cancelAutoPlay}
-        />
-      )}
+      {/* Crédits → bannière « À suivre » ; vraie fin (eof) → écran plein. */}
+      <TVAutoPlaySwitch autoPlay={autoPlay} active={autoPlayActive} />
     </View>
   );
 }

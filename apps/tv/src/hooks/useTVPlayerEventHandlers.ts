@@ -7,6 +7,8 @@ interface AutoPlayCtx {
   nextEpisode: MediaItem | null;
   countdown: number | null;
   startAutoPlay: () => void;
+  /** Vraie fin du média : écran plein « épisode suivant » (idempotent). */
+  notifyEnd: () => void;
 }
 
 /**
@@ -157,7 +159,10 @@ export function useTVPlayerEventHandlers(args: {
 
   const handleEnd = useCallback(() => {
     const ap = autoPlayRef.current;
-    if (ap.nextEpisode && ap.countdown === null) ap.startAutoPlay();
+    // Vraie fin + épisode suivant → écran plein « eof » (escalade la bannière
+    // crédits si elle est déjà ouverte, countdown conservé). Idempotent : les
+    // onEnd répétés d'une playlist EVENT sont absorbés par notifyEnd.
+    if (ap.nextEpisode) ap.notifyEnd();
     else if (ap.countdown === null) handleFinishedRef.current();
   }, []);
 
