@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, Alert, Linking, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,7 +13,8 @@ import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../
 import { clearCredentials } from "../auth/credentialManager";
 import { useServerUrl } from "../providers/ServerUrlContext";
 
-const appVersion: string = require("../../app.json").expo?.version ?? "1.0.0";
+// Version du binaire natif (patchée par les CI par plateforme) ; app.json = repli.
+const appVersion: string = Application.nativeApplicationVersion ?? require("../../app.json").expo?.version ?? "1.0.0";
 const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVACY.md";
 
 /**

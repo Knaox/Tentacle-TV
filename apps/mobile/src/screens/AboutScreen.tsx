@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable, Linking } from "react-native";
 import { useRouter } from "expo-router";
+import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -24,13 +25,13 @@ const FEATURE_KEYS = [
   { key: "featureNotifications", icon: "bell" as const },
 ];
 
-// Lecture directe depuis app.json — Constants.expoConfig peut être null en
-// build production (bundle natif), alors qu'app.json est embarqué via metro
-// resolver. Aligné sur ProfileScreen pour cohérence.
+// Version/build lus dans le binaire natif (Info.plist iOS, PackageInfo Android) :
+// les CI patchent le natif (release-ios → Info.plist, release-play → props Gradle),
+// jamais app.json — qui ne sert donc que de repli si le natif renvoie null.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const appJsonExpo = require("../../app.json").expo ?? {};
-const appVersion: string = appJsonExpo.version ?? "1.0.0";
-const buildNumber: string = appJsonExpo.ios?.buildNumber ?? "1";
+const appVersion: string = Application.nativeApplicationVersion ?? appJsonExpo.version ?? "1.0.0";
+const buildNumber: string = Application.nativeBuildVersion ?? appJsonExpo.ios?.buildNumber ?? "1";
 
 export function AboutScreen() {
   const { t } = useTranslation("about");
