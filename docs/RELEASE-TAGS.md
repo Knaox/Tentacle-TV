@@ -11,6 +11,10 @@ la CI (GitHub Actions, gratuite car repo public) build + signe + envoie.
 - **version** = version marketing (`CFBundleShortVersionString` / `versionName`). Ex. `1.0.0`.
 - **build**   = numéro de build (`CFBundleVersion` / `versionCode`). À **incrémenter** pour
   ré-uploader **la même version** sur TestFlight sans collision (Apple refuse 2× le même build).
+  ⚠️ **macOS : le build est GLOBAL** — il ne repart jamais à 1 avec une nouvelle version
+  (Apple exige un `CFBundleVersion` strictement croissant sur toute l'app, erreur 90061 sinon).
+  Ex. après `mac-v1.1.0-7`, la 1.1.1 commence à `mac-v1.1.1-8`. iOS/tvOS : le build repart
+  à 1 à chaque nouvelle version marketing.
 
 ### Le flux Apple (important)
 - **Bump de version** (`app-v1.0.1-1`) → crée la **version** sur App Store Connect + 1er build,
