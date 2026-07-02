@@ -148,14 +148,18 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
 
     // Résoudre quand master.m3u8 + 1ᵉʳ segment de CETTE session sont prêts (+ reprise produite).
     NSString *masterPath = [[gOutPath stringByAppendingPathComponent:[NSString stringWithFormat:@"g%d", myGen]] stringByAppendingPathComponent:@"master.m3u8"];
+    // Session de REPRISE/seek (gResumePending) : cushion réduit → la reprise après pause et les gros
+    // sauts résolvent en ~2-3 s au lieu de 8+. La production continue librement derrière (gTVPlayPos ≤ 1)
+    // et automaticallyWaitsToMinimizeStalling amortit côté AVPlayer.
+    double prebufNeed = resumePending ? (double)TVLR_RESUME_PREBUFFER_SEC : (double)TVLR_PREBUFFER_SEC;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
       int guard = 0;
-      // Attend : playlist prête ET un PRÉ-BUFFER produit (gWrittenSec 0-based ≥ TVLR_PREBUFFER_SEC) →
+      // Attend : playlist prête ET un PRÉ-BUFFER produit (gWrittenSec 0-based ≥ prebufNeed) →
       // AVPlayer démarre avec un cushion (vidéo+audio bufferisés) au lieu d'un seul segment → fini le
       // « son avant la vidéo » + stall de démarrage. Avec av_seek_frame, la production COMMENCE à T
       // (rebasée à 0), donc ~PREBUFFER s après T sont prêtes très vite. Borné ~30 s. (Ce gate
       // remplace l'ancien `gWrittenSec ≥ gWantStartSec`, faux en 0-based : il ne se relâchait jamais.)
-      while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0 && gWrittenSec >= (double)TVLR_PREBUFFER_SEC) && guard++ < 3000) usleep(10000);
+      while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0 && gWrittenSec >= prebufNeed) && guard++ < 3000) usleep(10000);
       TVLOG("start: gen=%d (cur=%d) ready=%d err=%d master=%lld after %dms", myGen, gGen, gReady, gError, TVFileSize(masterPath), guard * 10);
       if (gGen != myGen) { reject(@"superseded", @"newer session started", nil); return; }
       if (TVFileSize(masterPath) <= 0) { reject(@"remux", @"no master playlist", nil); return; }
