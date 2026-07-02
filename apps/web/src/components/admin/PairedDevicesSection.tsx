@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { usePairedDevices, useRevokePairedDevice } from "@tentacle-tv/api-client";
 import { cls } from "../../pages/adminUtils";
+import { CollapsibleSection } from "../ui/CollapsibleSection";
 
 /**
- * Section "Appareils appairés" admin — extraite depuis Admin.tsx. Layout
- * responsive : stack vertical sur mobile, row sur ≥480px.
+ * Section "Appareils appairés" admin — extraite depuis Admin.tsx. Liste
+ * déroulante FERMÉE par défaut (page Jumeler TV). Layout responsive :
+ * stack vertical sur mobile, row sur ≥480px.
  */
 export function PairedDevicesSection() {
   const { t } = useTranslation("admin");
@@ -13,7 +15,7 @@ export function PairedDevicesSection() {
 
   return (
     <div className={cls.card}>
-      <h2 className="mb-4 text-lg font-semibold text-white">{t("pairedDevices")}</h2>
+      <CollapsibleSection title={t("pairedDevices")} count={devices?.length ?? 0}>
       {!devices || devices.length === 0 ? (
         <p className="text-sm text-white/40">{t("noPairedDevices")}</p>
       ) : (
@@ -42,6 +44,7 @@ export function PairedDevicesSection() {
           ))}
         </div>
       )}
+      </CollapsibleSection>
     </div>
   );
 }
