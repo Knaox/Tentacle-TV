@@ -113,6 +113,21 @@ jobs:
           echo "track=$TRACK" >> "$GITHUB_OUTPUT"
           echo "Piste Play -> $TRACK"
 
+      # « Nouveautés » Play (FR/EN, ≤500 car.) depuis CHANGELOG.md — bloc
+      # « ## [play-<version>] » (version = expo.version, comme le build AAB).
+      # Aucun fichier créé si pas de notes (un fichier vide/trop long ferait
+      # rejeter l'edit Play entier) → upload sans notes dans ce cas.
+      - name: Generate Play what's new (FR/EN)
+        continue-on-error: true
+        run: |
+          VNAME=$(node -p "require('./apps/mobile/app.json').expo.version")
+          mkdir -p distribution/whatsnew
+          node .github/scripts/release-notes.mjs --channel play --version "$VNAME" \
+            --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR
+          node .github/scripts/release-notes.mjs --channel play --version "$VNAME" \
+            --lang en --format play --out distribution/whatsnew/whatsnew-en-US
+          ls -la distribution/whatsnew
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
@@ -121,3 +136,4 @@ jobs:
           releaseFiles: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           track: ${{ steps.track.outputs.track }}
           status: ${{ github.event.inputs.status || 'draft' }}
+          whatsNewDirectory: distribution/whatsnew
