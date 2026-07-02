@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback, type ElementRef } from "react";
+import { useState, useRef, useEffect, useMemo, type ElementRef } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting } from "@tentacle-tv/api-client";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
@@ -21,6 +21,7 @@ import { useTVPlayerStyle } from "../hooks/useTVPlayerStyle";
 import { useTVPlayerRouting } from "../hooks/useTVPlayerRouting";
 import { useTVInitialResume } from "../hooks/useTVInitialResume";
 import { useTVReloadState } from "../hooks/useTVReloadState";
+import { useTVReloadHold } from "../hooks/useTVReloadHold";
 import { useTVRemuxPause } from "../hooks/useTVRemuxPause";
 import { useTVRemuxStallRecovery } from "../hooks/useTVRemuxStallRecovery";
 import { useTVAudioTrack } from "../hooks/useTVAudioTrack";
@@ -88,26 +89,9 @@ export function PlayerScreen({ route, navigation }: Props) {
   const [hasStarted, setHasStarted] = useState(false);
   const lastProgressTime = useRef(Date.now());
 
-  // « Hold » de reload (remux tvOS) : pendant un reload de reprise/seek, on garde le LECTEUR en pause
-  // (paused || reloadHold) SANS toucher l'état `paused` (intention utilisateur) → la session sortante ne
-  // joue ni son ni image pendant le chargement. Dé-pause automatique au onLoad de la nouvelle session
-  // (isLoading repasse false). Remplace le `muted` (non fiable sur AVPlayer). Safety: levée forcée à 10 s.
-  const [reloadHold, setReloadHold] = useState(false);
-  const reloadHoldRef = useRef(false);
-  reloadHoldRef.current = reloadHold;
-  const reloadHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const holdForReload = useCallback(() => {
-    setIsLoading(true);
-    setReloadHold(true);
-    if (reloadHoldTimerRef.current) clearTimeout(reloadHoldTimerRef.current);
-    reloadHoldTimerRef.current = setTimeout(() => setReloadHold(false), 10000);
-  }, []);
-  useEffect(() => {
-    if (reloadHold && !isLoading) {
-      setReloadHold(false);
-      if (reloadHoldTimerRef.current) clearTimeout(reloadHoldTimerRef.current);
-    }
-  }, [reloadHold, isLoading]);
+  // « Hold » de reload (remux tvOS) : lecteur gardé en pause pendant un reload
+  // de reprise/seek, sans toucher l'intention `paused`. Cf. useTVReloadHold.
+  const { reloadHold, reloadHoldRef, holdForReload } = useTVReloadHold({ isLoading, setIsLoading });
 
   const quality = useTVPlaybackQuality();
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
@@ -306,7 +290,10 @@ export function PlayerScreen({ route, navigation }: Props) {
     onPlayPause: handlePlayPause,
     // Le scrub met la lecture en pause et la reprend à la confirmation/annulation
     onScrubPause: setPaused,
-    panelOpen: showSettings || showEpisodes,
+    // Écran de fin plein écran (eof) = panneau : neutralise pan/scrub/play-pause
+    // du lecteur ET son Back (useTVEventHandler global tvOS, non-LIFO) — seul le
+    // useTVRemote de l'écran de fin traite Retour (= Ignorer).
+    panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
   });
 
   // L'OSD réapparaît (OK ou direction sur le fond) → focus sur le dernier

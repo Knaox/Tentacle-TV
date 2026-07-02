@@ -11,15 +11,29 @@ interface SkipSegment {
   end: number;
 }
 
+export type AutoPlaySource = "credits" | "eof";
+
 interface AutoPlayState {
   countdown: number | null;
+  /** "credits" = bannière pendant le générique ; "eof" = écran plein à la vraie
+   *  fin (parité desktop DesktopPlayer credits/eof). */
+  source: AutoPlaySource | null;
   nextEpisode: MediaItem | null;
   nextEpisodeTitle: string | undefined;
   nextEpisodeImageUrl: string | undefined;
   nextEpisodeDescription: string | undefined;
-  startAutoPlay: () => void;
+  /** Overview complet (l'écran plein clampe à 3 lignes au rendu). */
+  nextEpisodeOverview: string | undefined;
+  /** Backdrop de la SÉRIE (fond plein écran de l'écran de fin). */
+  seriesBackdropUrl: string | undefined;
+  /** Primary de l'épisode suivant (vignette de l'écran de fin). */
+  nextEpisodeThumbUrl: string | undefined;
+  startAutoPlay: (src?: AutoPlaySource) => void;
   cancelAutoPlay: () => void;
   navigateToNextEpisode: () => void;
+  /** À la VRAIE fin du média : escalade la bannière en écran plein (countdown
+   *  conservé) ou lance un countdown "eof". Idempotent (onEnd répétés OK). */
+  notifyEnd: () => void;
   /** Call from handleProgress on every tick — checks if trigger point reached */
   checkTrigger: (currentTime: number) => void;
 }
@@ -33,8 +47,11 @@ export function useAutoPlay(
   const client = useJellyfinClient();
   const { nextEpisode } = useEpisodeNavigation(item);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [source, setSource] = useState<AutoPlaySource | null>(null);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const creditsTriggered = useRef(false);
+  // Affiche de FIN écartée (dismiss) : ne plus la représenter (parité desktop).
+  const eofTriggeredRef = useRef(false);
   const countdownRef = useRef<number | null>(null);
 
   // Keep countdown ref in sync for checkTrigger
@@ -43,7 +60,9 @@ export function useAutoPlay(
   // Reset state when item changes
   useEffect(() => {
     creditsTriggered.current = false;
+    eofTriggeredRef.current = false;
     setCountdown(null);
+    setSource(null);
     clearInterval(autoPlayTimerRef.current);
   }, [item?.Id]);
 
@@ -60,17 +79,18 @@ export function useAutoPlay(
   const navigateToNextEpisode = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
     setCountdown(null);
+    setSource(null);
     const ep = nextEpisodeRef.current;
     if (ep) {
-
       onNavigateRef.current(ep.Id);
     }
   }, []);
 
-  const startAutoPlay = useCallback(() => {
+  const startAutoPlay = useCallback((src: AutoPlaySource = "credits") => {
     const ep = nextEpisodeRef.current;
     if (!ep) return;
 
+    setSource(src);
     setCountdown(COUNTDOWN_TOTAL);
     clearInterval(autoPlayTimerRef.current);
     autoPlayTimerRef.current = setInterval(() => {
@@ -86,14 +106,31 @@ export function useAutoPlay(
   }, [navigateToNextEpisode]);
 
   const cancelAutoPlay = useCallback(() => {
-
     clearInterval(autoPlayTimerRef.current);
     setCountdown(null);
-    // Keep creditsTriggered=true so the overlay doesn't re-appear
+    // Écarter l'affiche de FIN empêche sa réapparition (notifyEnd re-déclenché
+    // par des onEnd répétés). La bannière crédits a sa propre garde
+    // (creditsTriggered reste vrai).
+    setSource((s) => {
+      if (s === "eof") eofTriggeredRef.current = true;
+      return null;
+    });
   }, []);
 
   const startAutoPlayRef = useRef(startAutoPlay);
   startAutoPlayRef.current = startAutoPlay;
+
+  /** Vraie fin du média (onEnd) : écran plein « épisode suivant ». */
+  const notifyEnd = useCallback(() => {
+    if (!nextEpisodeRef.current) return;
+    if (eofTriggeredRef.current) return;      // écarté → pas de réapparition
+    if (countdownRef.current !== null) {
+      // Bannière crédits déjà ouverte → ESCALADE en plein écran, countdown conservé.
+      setSource("eof");
+      return;
+    }
+    startAutoPlayRef.current("eof");
+  }, []);
 
   /**
    * Called directly from handleProgress on every progress tick.
@@ -114,7 +151,7 @@ export function useAutoPlay(
 
     if (triggerAt != null && currentTime >= triggerAt) {
       creditsTriggered.current = true;
-      startAutoPlayRef.current();
+      startAutoPlayRef.current("credits");
     }
   }, []);
 
@@ -135,15 +172,33 @@ export function useAutoPlay(
       : nextEpisode.Overview)
     : undefined;
 
+  // Images de l'écran de fin plein écran (parité WatchDesktop) : backdrop de la
+  // SÉRIE en fond + Primary de l'épisode suivant en vignette.
+  const seriesBackdropUrl = nextEpisode
+    ? client.getImageUrl(
+      nextEpisode.SeriesId ?? nextEpisode.ParentBackdropItemId ?? nextEpisode.Id,
+      "Backdrop",
+      { width: 1920, quality: 85 },
+    )
+    : undefined;
+  const nextEpisodeThumbUrl = nextEpisode?.Id
+    ? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 90 })
+    : undefined;
+
   return {
     countdown,
+    source,
     nextEpisode,
     nextEpisodeTitle,
     nextEpisodeImageUrl,
     nextEpisodeDescription,
+    nextEpisodeOverview: nextEpisode?.Overview ?? undefined,
+    seriesBackdropUrl,
+    nextEpisodeThumbUrl,
     startAutoPlay,
     cancelAutoPlay,
     navigateToNextEpisode,
+    notifyEnd,
     checkTrigger,
   };
 }
