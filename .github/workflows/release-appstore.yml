@@ -199,31 +199,33 @@ jobs:
           xcrun altool --upload-app -f *.pkg -t macos \
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
 
-      # Notes FR+EN depuis CHANGELOG.md (« Nouveautés » App Store ; « À tester »
-      # TestFlight si le build est déjà traité). Non bloquant.
+      # Notes FR+EN depuis CHANGELOG.md (bloc « ## [mac-<version>] », repli
+      # « ## [<version>] ») : « Nouveautés » App Store ; « À tester » TestFlight
+      # si le build est déjà traité. Non bloquant.
       - name: Set release notes (App Store / TestFlight)
         if: needs.setup.outputs.submit == 'true'
+        continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: MAC_OS
+          CHANNEL: mac
           VERSION: ${{ needs.setup.outputs.version }}
           BUILD: ${{ needs.setup.outputs.build }}
         run: node .github/scripts/asc-release-notes.mjs
 
-      # Notes de la Release GitHub : section « ## [version] » du CHANGELOG (sinon défaut).
+      # Notes de la Release GitHub : bloc « ## [mac-<version>] » (repli
+      # « ## [<version>] ») en markdown brut, sinon texte par défaut.
       - name: Extract CHANGELOG notes
         if: github.event_name == 'push'
         env:
           VERSION: ${{ needs.setup.outputs.version }}
         run: |
-          awk -v ver="$VERSION" '
-            $0 ~ "^## \\[" ver "\\]" { grab=1; next }
-            grab && /^## \[/ { exit }
-            grab { print }
-          ' CHANGELOG.md > release-notes.md
+          node .github/scripts/release-notes.mjs \
+            --channel mac --version "$VERSION" --format github --lang both \
+            --out release-notes.md || true
           if [ ! -s release-notes.md ]; then
             echo "Tentacle TV pour macOS — version $VERSION." > release-notes.md
           fi
@@ -247,3 +249,31 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 3) Attend le traitement ASC (~10-35 min) puis rattache le build à la version
+  #    App Store (+ « À tester » TestFlight) → il ne reste qu'à « Soumettre pour
+  #    examen ». Job séparé (ubuntu) pour ne pas retenir un runner macOS ;
+  #    continue-on-error : échec visible mais run global vert.
+  attach-build:
+    needs: [setup, package]
+    if: needs.setup.outputs.submit == 'true'
+    name: Attach build to App Store version
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for ASC processing + attach build
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: MAC_OS
+          CHANNEL: mac
+          VERSION: ${{ needs.setup.outputs.version }}
+          BUILD: ${{ needs.setup.outputs.build }}
+        run: node .github/scripts/asc-attach-build.mjs

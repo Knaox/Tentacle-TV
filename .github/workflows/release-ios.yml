@@ -206,6 +206,35 @@ jobs:
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: IOS
+          CHANNEL: ios
           VERSION: ${{ needs.setup.outputs.version }}
           BUILD: ${{ needs.setup.outputs.build }}
         run: node .github/scripts/asc-release-notes.mjs
+
+  # Attend le traitement ASC (~10-35 min) puis rattache le build à la version
+  # App Store (+ « À tester » TestFlight) → il ne reste qu'à « Soumettre pour
+  # examen ». Job séparé (ubuntu) ; continue-on-error : échec visible mais run
+  # global vert.
+  attach-build:
+    needs: [setup, build]
+    if: needs.setup.outputs.submit == 'true'
+    name: Attach build to App Store version
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for ASC processing + attach build
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: IOS
+          CHANNEL: ios
+          VERSION: ${{ needs.setup.outputs.version }}
+          BUILD: ${{ needs.setup.outputs.build }}
+        run: node .github/scripts/asc-attach-build.mjs
