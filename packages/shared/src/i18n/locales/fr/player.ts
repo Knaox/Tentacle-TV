@@ -27,6 +27,8 @@ export default {
   mpvError: "Erreur mpv : {{error}}",
   secondsShort: "sec",
   nextEpisodeLabel: "Épisode suivant",
+  scrubConfirmHint: "OK · Lire ici",
+  scrubCancelHint: "Retour · Annuler",
   nowPlaying: "En cours de visionnage",
   upNext: "À suivre",
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",

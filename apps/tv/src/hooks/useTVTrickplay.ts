@@ -7,6 +7,8 @@ import {
   pickBestTrickplayWidth,
   type MediaItem,
   type TrickplayInfo,
+  type TrickplayManifest,
+  type TrickplaySelection,
 } from "@tentacle-tv/shared";
 
 export interface TVTrickplayFrame {
@@ -16,44 +18,71 @@ export interface TVTrickplayFrame {
   yInTile: number;
 }
 
-export interface UseTVTrickplayResult {
-  available: boolean;
+/** API d'une sélection trickplay (une largeur donnée). */
+export interface TVTrickplayApi {
   info: TrickplayInfo | null;
   getFrameAt: (positionMs: number) => TVTrickplayFrame | null;
-  preloadNeighbors: (tileIndex: number) => void;
+  preloadNeighbors: (tileIndex: number, radius?: number) => void;
 }
 
-/**
- * Port TV du useTrickplay mobile : mêmes maths partagées + même proxy backend
- * (/api/jellyfin/items/:id/trickplay/:w/:i.jpg, cache HTTP 1 an). Le cache
- * image est délégué à RN Image (Image.prefetch).
- */
-export function useTVTrickplay(
-  item: MediaItem | undefined | null,
-  mediaSourceId?: string,
-): UseTVTrickplayResult {
-  const client = useJellyfinClient();
-  const selection = useMemo(
-    () => pickBestTrickplayWidth(item?.Trickplay, mediaSourceId),
-    [item?.Trickplay, mediaSourceId],
-  );
+export interface UseTVTrickplayResult extends TVTrickplayApi {
+  available: boolean;
+  /** Variante HAUTE RÉSOLUTION pour la prévisualisation plein écran : plus
+   *  grande largeur du manifeste dont la mosaïque tient sous la limite de
+   *  texture GPU (Apple TV HD = 4096 px). null si identique à la sélection
+   *  standard (un seul jeu de tuiles serveur, cas fréquent en 320 px). */
+  hiRes: TVTrickplayApi | null;
+}
 
+/** Limite de texture GPU (px) : une mosaïque JPEG au-delà ne rend pas sur
+ *  Apple TV HD (A8). Les tuiles Jellyfin 320×180 en 10×10 = 3200×1800 → OK. */
+const MAX_MOSAIC_PX = 4096;
+
+/** Plus grande largeur dont la mosaïque tient sous MAX_MOSAIC_PX. */
+function pickLargestSafe(
+  manifest: TrickplayManifest | undefined | null,
+  mediaSourceId?: string,
+): TrickplaySelection | null {
+  if (!manifest) return null;
+  const sourceIds = Object.keys(manifest);
+  if (sourceIds.length === 0) return null;
+  const sourceId = mediaSourceId && manifest[mediaSourceId] ? mediaSourceId : sourceIds[0];
+  const widthMap = manifest[sourceId];
+  if (!widthMap) return null;
+  const widths = Object.keys(widthMap)
+    .map((w) => Number(w))
+    .filter((w) => Number.isFinite(w) && w > 0)
+    .sort((a, b) => b - a);
+  for (const w of widths) {
+    const info = widthMap[String(w)];
+    if (!info) continue;
+    if (info.Width * info.TileWidth <= MAX_MOSAIC_PX && info.Height * info.TileHeight <= MAX_MOSAIC_PX) {
+      return { mediaSourceId: sourceId, width: w, info };
+    }
+  }
+  return null;
+}
+
+/** Construit l'API (URL de tuile + prefetch RN Image + coordonnées) d'UNE
+ *  sélection. Les callbacks tolèrent selection=null (retour null/no-op). */
+function useTrickplayApi(selection: TrickplaySelection | null, itemId: string | undefined): TVTrickplayApi {
+  const client = useJellyfinClient();
   const prefetchedRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     prefetchedRef.current = new Set();
-  }, [selection?.mediaSourceId, selection?.width, item?.Id]);
+  }, [selection?.mediaSourceId, selection?.width, itemId]);
 
   const buildTileUrl = useCallback(
     (tileIndex: number): string | null => {
-      if (!selection || !item?.Id) return null;
+      if (!selection || !itemId) return null;
       const base = client.getBaseUrl();
       const token = client.getAccessToken();
       const params: string[] = [`mediaSourceId=${encodeURIComponent(selection.mediaSourceId)}`];
       if (token) params.push(`api_key=${encodeURIComponent(token)}`);
-      return `${base}/items/${item.Id}/trickplay/${selection.width}/${tileIndex}.jpg?${params.join("&")}`;
+      return `${base}/items/${itemId}/trickplay/${selection.width}/${tileIndex}.jpg?${params.join("&")}`;
     },
-    [selection, item?.Id, client],
+    [selection, itemId, client],
   );
 
   const ensureCached = useCallback(
@@ -84,19 +113,47 @@ export function useTVTrickplay(
   );
 
   const preloadNeighbors = useCallback(
-    (tileIndex: number): void => {
+    (tileIndex: number, radius = 1): void => {
       if (!selection) return;
       const total = getTrickplayTileCount(selection.info);
-      if (tileIndex - 1 >= 0) ensureCached(tileIndex - 1);
-      if (tileIndex + 1 < total) ensureCached(tileIndex + 1);
+      for (let d = 1; d <= radius; d++) {
+        if (tileIndex - d >= 0) ensureCached(tileIndex - d);
+        if (tileIndex + d < total) ensureCached(tileIndex + d);
+      }
     },
     [selection, ensureCached],
   );
 
-  return {
-    available: selection !== null,
-    info: selection?.info ?? null,
-    getFrameAt,
-    preloadNeighbors,
-  };
+  return useMemo(
+    () => ({ info: selection?.info ?? null, getFrameAt, preloadNeighbors }),
+    [selection, getFrameAt, preloadNeighbors],
+  );
+}
+
+/**
+ * Port TV du useTrickplay mobile : mêmes maths partagées + même proxy backend
+ * (/api/jellyfin/items/:id/trickplay/:w/:i.jpg, cache HTTP 1 an). Le cache
+ * image est délégué à RN Image (Image.prefetch). Sélection standard (~320 px,
+ * vignette de reload) + variante hiRes pour le scrub plein écran.
+ */
+export function useTVTrickplay(
+  item: MediaItem | undefined | null,
+  mediaSourceId?: string,
+): UseTVTrickplayResult {
+  const stdSel = useMemo(
+    () => pickBestTrickplayWidth(item?.Trickplay, mediaSourceId),
+    [item?.Trickplay, mediaSourceId],
+  );
+  const hiSel = useMemo(() => {
+    const hi = pickLargestSafe(item?.Trickplay, mediaSourceId);
+    return hi && stdSel && hi.width !== stdSel.width ? hi : null;
+  }, [item?.Trickplay, mediaSourceId, stdSel]);
+
+  const std = useTrickplayApi(stdSel, item?.Id);
+  const hi = useTrickplayApi(hiSel, item?.Id);
+
+  return useMemo(
+    () => ({ ...std, available: stdSel !== null, hiRes: hiSel ? hi : null }),
+    [std, stdSel, hi, hiSel],
+  );
 }

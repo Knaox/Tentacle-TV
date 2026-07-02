@@ -25,7 +25,7 @@ function TVReloadFrameImpl({ trickplay, positionSeconds, width, height }: TVRelo
   const frame = trickplay.getFrameAt(positionSeconds * 1000);
   if (!info || !frame) return null;
 
-  // Crop de la mosaïque (même principe que TVTrickplayPreview) mais mis à
+  // Crop de la mosaïque (même principe que TVScrubFullscreen) mais mis à
   // l'échelle de la zone vidéo pour remplir l'écran.
   const scale = width / info.Width;
   const mosaicWidth = Math.round(info.Width * info.TileWidth * scale);
