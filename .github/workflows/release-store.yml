@@ -3,14 +3,17 @@
 # Déclenché par un tag `win-store-v<version>-<build>`. Build l'app Tauri, assemble
 # le payload (exe + WebView2 + lib natives libmpv + assets), produit un MSIX NON
 # SIGNÉ via makeappx (le Microsoft Store le signe lui-même), puis le soumet via
-# l'API Store (msstore CLI + compte de service Entra ID).
+# l'API Store Submission (.github/scripts/msstore-submit.mjs, compte de service
+# Entra ID) avec les « Nouveautés » FR/EN depuis CHANGELOG.md (« ## [win-x.y.z] »)
+# et publication automatique.
 #
 # Identité MSIX : apps/desktop/msix/Package.appxmanifest (DamienROUGE.Tentacle).
 # La version vient du tag -> X.Y.Z.0 (4e champ = 0, exigence Store). Elle doit
-# être SUPÉRIEURE à la version déjà publiée sur le Store (1.9.8).
+# être SUPÉRIEURE à la version déjà publiée sur le Store.
 #
-# Secrets : PARTNER_TENANT_ID / PARTNER_SELLER_ID / PARTNER_CLIENT_ID /
-#           PARTNER_CLIENT_SECRET. Store ID : 9NKHL0T84245.
+# Secrets : PARTNER_TENANT_ID / PARTNER_CLIENT_ID / PARTNER_CLIENT_SECRET
+#           (PARTNER_SELLER_ID n'est plus utilisé — c'était pour le CLI).
+#           Store ID : 9NKHL0T84245.
 
 name: Release Microsoft Store (MSIX)
 
@@ -77,6 +80,7 @@ jobs:
           $m = $m -creplace '\bVersion="[\d\.]+"', ('Version="' + $ver + '.0"')
           Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
           "STAGE=$stage" >> $env:GITHUB_ENV
+          "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
           Write-Host "Payload assemblé pour version $ver.0"
           Get-ChildItem $stage -Recurse | Select-Object FullName, Length
 
@@ -99,15 +103,27 @@ jobs:
           path: ${{ env.MSIX_PATH }}
           if-no-files-found: error
 
-      - name: Setup MSStore CLI
-        uses: microsoft/setup-msstore-cli@v1
-
-      - name: Configurer + publier sur le Store
+      # Zip du MSIX = payload attendu par l'API Submission (fileUploadUrl SAS).
+      # Le nom du .msix DANS le zip doit matcher PACKAGE_FILE_NAME.
+      - name: Zip MSIX (payload d'upload API)
         shell: pwsh
         run: |
-          msstore reconfigure `
-            --tenantId "${{ secrets.PARTNER_TENANT_ID }}" `
-            --sellerId "${{ secrets.PARTNER_SELLER_ID }}" `
-            --clientId "${{ secrets.PARTNER_CLIENT_ID }}" `
-            --clientSecret "${{ secrets.PARTNER_CLIENT_SECRET }}"
-          msstore publish "$env:MSIX_PATH" -id "$env:STORE_ID"
+          $zip = Join-Path $env:RUNNER_TEMP "TentacleTV-msix.zip"
+          Compress-Archive -Path $env:MSIX_PATH -DestinationPath $zip -Force
+          "PACKAGE_ZIP=$zip" >> $env:GITHUB_ENV
+
+      # Remplace `msstore publish` (qui crée+commit sans permettre de poser les
+      # notes) : clone de la dernière soumission publiée, « Nouveautés » FR/EN
+      # depuis CHANGELOG.md (bloc « ## [win-<version>] »), remplacement du
+      # package, publication automatique conservée (targetPublishMode Immediate).
+      - name: Soumettre au Microsoft Store (API, notes FR/EN, publication auto)
+        env:
+          PARTNER_TENANT_ID: ${{ secrets.PARTNER_TENANT_ID }}
+          PARTNER_CLIENT_ID: ${{ secrets.PARTNER_CLIENT_ID }}
+          PARTNER_CLIENT_SECRET: ${{ secrets.PARTNER_CLIENT_SECRET }}
+          STORE_ID: ${{ env.STORE_ID }}
+          PACKAGE_ZIP: ${{ env.PACKAGE_ZIP }}
+          PACKAGE_FILE_NAME: TentacleTV.msix
+          CHANNEL: win
+          VERSION: ${{ env.MSIX_VERSION }}
+        run: node .github/scripts/msstore-submit.mjs
