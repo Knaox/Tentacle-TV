@@ -8,6 +8,7 @@ import { ThemeAccentColorSection } from "../components/admin/theme/ThemeAccentCo
 import { ThemeCustomCssSection } from "../components/admin/theme/ThemeCustomCssSection";
 import { ThemePresetSection } from "../components/admin/theme/ThemePresetSection";
 import { ThemeResetSection } from "../components/admin/theme/ThemeResetSection";
+import { AlphaBadge } from "../components/ui/AlphaBadge";
 import { cls } from "./adminUtils";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { fetchThemeState } from "../theme";
@@ -34,8 +35,9 @@ export function AdminTheme() {
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="mb-3 flex items-center gap-3 text-3xl font-extrabold tracking-tight text-white">
             {t("title")}
+            <AlphaBadge />
           </h1>
           <p className="mb-8 text-sm text-white/55">{t("description")}</p>
 
