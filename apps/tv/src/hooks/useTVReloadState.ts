@@ -37,10 +37,14 @@ export function useTVReloadState(args: {
   setVideoError: (e: string | null) => void;
   resetPrefsAppliedRef: React.MutableRefObject<(() => void) | null>;
   qualityReset: () => void;
+  /** Pause morte (stall remux, cf. useTVRemuxStallRecovery) : l'image figée doit
+   *  PERSISTER (aucun reload en vol, isLoading reste faux) jusqu'à la reprise. */
+  deadSessionRef?: React.MutableRefObject<boolean>;
 }) {
   const {
     itemId, defaultAudio, isLoading,
     positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError, resetPrefsAppliedRef, qualityReset,
+    deadSessionRef,
   } = args;
 
   // Reload explicite du flux en transcode (changement audio non couplé à la
@@ -72,6 +76,7 @@ export function useTVReloadState(args: {
       // sinon un échec sur l'item N contamine l'item N+1 (lancé sur le mauvais lecteur, sans HDR/DV).
       setForceTranscode(false);
       setVideoError(null);
+      if (deadSessionRef) deadSessionRef.current = false;
     }
   }, [itemId, defaultAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -86,10 +91,12 @@ export function useTVReloadState(args: {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Image figée du reload doux : la retirer dès que le nouveau flux rend
-  // (première position réelle → isLoading repasse à false).
+  // (première position réelle → isLoading repasse à false). Exception : pause
+  // morte (aucun reload en vol, isLoading faux) — l'image doit rester affichée
+  // jusqu'à la reprise.
   useEffect(() => {
-    if (!isLoading && reloadFrameSec !== null) setReloadFrameSec(null);
-  }, [isLoading, reloadFrameSec]);
+    if (!isLoading && reloadFrameSec !== null && !deadSessionRef?.current) setReloadFrameSec(null);
+  }, [isLoading, reloadFrameSec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     reloadNonce, setReloadNonce,

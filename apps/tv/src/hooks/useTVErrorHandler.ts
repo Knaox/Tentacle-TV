@@ -13,16 +13,22 @@ export function useTVErrorHandler(args: {
   setVideoError: (e: string | null) => void;
   setForceTranscode: (on: boolean) => void;
   /** Stall remux (-11866 sur pause longue d'une playlist HLS `event`) : récupère
-   *  au lieu de surfacer l'erreur (recharge + reprend, cf. PlayerScreen). */
+   *  au lieu de surfacer l'erreur (cf. useTVRemuxStallRecovery). */
   onRemuxStall?: () => void;
+  /** État de pause utilisateur : un stall PENDANT une pause est absorbé en lazy
+   *  et ne compte pas dans la garde anti-boucle (AVPlayer peut réémettre
+   *  l'erreur en continu sur une pause morte). */
+  pausedStateRef?: React.MutableRefObject<boolean>;
 }) {
-  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall } = args;
+  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall, pausedStateRef } = args;
   // Garde-fou stall remux : compte les récupérations rapprochées (<8 s) → au-delà
   // de 4 (récup qui ne tient pas), on cesse et on surface l'erreur.
   const stallRef = useRef({ count: 0, last: 0 });
 
   const handleError = useCallback((error: string) => {
     if (error === "REMUX_STALL") {
+      // En pause : récupération différée (lazy) — hors garde anti-boucle.
+      if (pausedStateRef?.current) { onRemuxStall?.(); return; }
       const now = Date.now(); const s = stallRef.current;
       s.count = now - s.last < 8000 ? s.count + 1 : 1; s.last = now;
       if (s.count > 4) { setVideoError("Playback Stopped"); return; }

@@ -39,11 +39,14 @@ export function useTVRemuxSeek(args: {
   setStartTicks: (v: number) => void;
   /** Garde le lecteur en pause pendant le re-remux hors-fenêtre (anti son sortant) ; dé-pause auto au onLoad. */
   holdForReload: () => void;
+  /** Session locale morte pendant une pause (stall) : un seek doit alors forcer
+   *  le chemin re-remux (seek natif impossible sur un AVPlayer en erreur). */
+  deadSessionRef?: React.MutableRefObject<boolean>;
 }): (seconds: number) => void {
   const {
     jellyfinDuration, handleSeek, isLocalRemuxRef, sessionStartRef, positionRef, displayTimeRef,
     lastDisplayUpdate, lastProgressTime, pausedStateRef, softReloadRef, setReloadFrameSec,
-    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, holdForReload,
+    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, holdForReload, deadSessionRef,
   } = args;
 
   const pendingTargetRef = useRef<number | null>(null);
@@ -56,12 +59,17 @@ export function useTVRemuxSeek(args: {
 
     // Fenêtre disponible : ~60s derrière (purge TVLR_BEHIND_SEC) mais jamais avant le début de session
     // (relatif 0), ~300s devant (pacing). Dans la fenêtre → seek NATIF (réutilise la session).
+    // Session morte (stall en pause) : seek natif impossible → forcer le re-remux.
+    const dead = deadSessionRef?.current === true;
     const pos = positionRef.current;
     const lower = Math.max(sessionStartRef.current, pos - 55);
-    if (clamped >= lower && clamped <= pos + 295) {
+    if (!dead && clamped >= lower && clamped <= pos + 295) {
       handleSeek(clamped);
       return;
     }
+    // Clear SYNCHRONE : la nouvelle session ranime le flux — l'effet d'unpause
+    // (useTVRemuxPause) ne doit pas lancer un 2e re-remux à l'ancienne position.
+    if (dead) deadSessionRef!.current = false;
 
     // HORS fenêtre → re-remux (affichage optimiste immédiat + re-remux différé/cumulé à la cible finale).
     displayTimeRef.current = clamped; positionRef.current = clamped;
