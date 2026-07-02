@@ -9,6 +9,7 @@ import { TVAutoPlayOverlay } from "../TVAutoPlayOverlay";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
 import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScreen";
 import { TVReloadFrame } from "./TVReloadFrame";
+import { TVScrubFullscreen } from "./TVScrubFullscreen";
 import { TVSkipBadge } from "./TVSkipBadge";
 import { TVSubtitleOverlay } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
@@ -225,7 +226,7 @@ export function TVPlayerView({
         visible={controls.overlayVisible && !autoPlayActive}
         speedLabel={controls.speedLabel}
         scrubbing={controls.scrubbing} scrubPosition={controls.scrubPosition}
-        trickplay={trickplay} focusSignal={osdFocusSignal}
+        focusSignal={osdFocusSignal}
         onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
         onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
         onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}
@@ -241,6 +242,18 @@ export function TVPlayerView({
         hasNextEpisode={!!autoPlay.nextEpisode} hasPreviousEpisode={hasPreviousEpisode}
         onEpisodes={item?.SeriesId && onToggleEpisodes ? controls.guardScrub(onToggleEpisodes) : undefined}
       />
+      {/* Prévisualisation trickplay PLEIN ÉCRAN pendant le scrub (façon
+          Netflix) — couvre l'OSD, qui reste monté dessous (boutons FF/RW
+          tenus + verrou focus). Aucun focusable, pointerEvents none. */}
+      {controls.scrubbing && (
+        <TVScrubFullscreen
+          scrubPosition={controls.scrubPosition}
+          currentTime={displayTime}
+          duration={displayDuration}
+          speedLabel={controls.speedLabel}
+          trickplay={trickplay}
+        />
+      )}
       {!autoPlayActive && (
         <>
           <TVSkipSegmentButton type="intro" segment={skipSegments.intro}
