@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isTauri, isWindows, isAppStoreBuild } from "./useDesktopPlayer";
 import { openExternal } from "../lib/openExternal";
+import { fetchStoreVersions, pickManifestNotes } from "../lib/storeVersions";
+
+/** Fiche App Store (achat universel iOS+macOS) — repli si absent du manifest. */
+const APP_STORE_ID = "6760205634";
 
 export type UpdatePhase = "idle" | "available" | "downloading" | "installing" | "restarting";
 
@@ -39,24 +43,25 @@ function isNewerVersion(a: string, b: string): boolean {
   return false;
 }
 
-/** Vérifie la dernière version publiée sur le Mac App Store via l'API iTunes
- *  lookup. Renvoie { version, notes, storeUrl } si une MAJ est disponible. */
-async function checkAppStoreUpdate(): Promise<{ version: string; notes?: string; storeUrl?: string } | null> {
+/** Vérifie la dernière version macOS publiée via le manifest du repo
+ *  (updates/store-versions.json). L'API iTunes Lookup ne référence PAS la
+ *  fiche macOS d'une app en achat universel iOS+macOS (elle renvoie la fiche
+ *  iOS ou rien) → l'ancienne détection était muette. Le manifest est maintenu
+ *  à chaque bump de version desktop. */
+async function checkAppStoreUpdate(): Promise<{ version: string; notes?: string; storeUrl: string } | null> {
   // Version réelle du bundle en cours (1.0.0+), pas la constante de build web.
   const { getVersion } = await import("@tauri-apps/api/app");
   const current = await getVersion();
 
-  // App unifiée iOS+macOS sous com.tentacle.mobile → entity=macSoftware cible la
-  // version macOS (sinon le lookup renverrait la version iOS).
-  const region = (navigator.language?.split("-")[1] || "us").toLowerCase();
-  const url = `https://itunes.apple.com/lookup?bundleId=com.tentacle.mobile&entity=macSoftware&country=${region}`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json();
-  const app = data?.results?.[0];
-  if (!app?.version) return null;
-  if (!isNewerVersion(app.version, current)) return null;
-  return { version: app.version, notes: app.releaseNotes, storeUrl: app.trackViewUrl };
+  const manifest = await fetchStoreVersions();
+  const mac = manifest?.macAppStore;
+  if (!mac?.version) return null;
+  if (!isNewerVersion(mac.version, current)) return null;
+  return {
+    version: mac.version,
+    notes: pickManifestNotes(mac.notes),
+    storeUrl: `macappstore://apps.apple.com/app/id${mac.appId ?? APP_STORE_ID}`,
+  };
 }
 
 interface MsixUpdateInfo {
@@ -118,20 +123,38 @@ export function useAutoUpdate() {
           return;
         }
 
-        // Windows — Microsoft Store (WinRT StoreContext)
+        // Windows — Microsoft Store (WinRT StoreContext). ⚠️ Le natif ne
+        // connaît PAS la version de la MAJ : StorePackageUpdate.Package est le
+        // package INSTALLÉ (c'était la « version actuelle » affichée à tort).
+        // → détection par WinRT, version AFFICHÉE par le manifest du repo
+        // (sinon pas de pastille de version, jamais la version installée).
         if (isWindows()) {
           const { invoke } = await import("@tauri-apps/api/core");
           const update = await invoke<MsixUpdateInfo | null>("check_msix_update");
           if (cancelled || !update) return;
+          let displayVersion: string | undefined;
+          let notes: string | undefined;
+          try {
+            const { getVersion } = await import("@tauri-apps/api/app");
+            const current = await getVersion();
+            const ms = (await fetchStoreVersions())?.microsoftStore;
+            if (ms?.version && isNewerVersion(ms.version, current)) {
+              displayVersion = ms.version;
+              notes = pickManifestNotes(ms.notes);
+            }
+          } catch { /* pastille de version simplement absente */ }
+          if (cancelled) return;
           setInfo((prev) => ({
             ...prev,
             available: true,
             phase: "available",
-            version: update.version,
+            version: displayVersion,
+            notes,
           }));
           return;
         }
       } catch (err) {
+        console.error("[updater] check échoué:", err);
         if (!cancelled) {
           setInfo((prev) => ({ ...prev, error: String(err) }));
         }
@@ -160,11 +183,22 @@ export function useAutoUpdate() {
       return;
     }
 
-    // macOS App Store — on ouvre l'App Store (pas d'installation in-app).
+    // macOS App Store — ouvre la fiche de l'app puis QUITTE : le Store ne peut
+    // pas remplacer une app en cours d'exécution. Pas de téléchargement ni de
+    // barre de progression Tentacle : la mise à jour se fait dans l'App Store,
+    // l'utilisateur relance l'app à jour ensuite.
     if (isAppStoreBuild()) {
-      const url = storeUrlRef.current || "macappstore://apps.apple.com";
-      await openExternal(url);
-      setInfo(defaultInfo);
+      const url = storeUrlRef.current || `macappstore://apps.apple.com/app/id${APP_STORE_ID}`;
+      setInfo((prev) => ({ ...prev, phase: "restarting" }));
+      try {
+        await openExternal(url);
+        await new Promise((r) => setTimeout(r, 800));
+        const { exit } = await import("@tauri-apps/plugin-process");
+        await exit(0);
+      } catch (err) {
+        console.error("[updater] ouverture App Store échouée:", err);
+        setInfo((prev) => ({ ...prev, phase: "available", error: String(err) }));
+      }
       return;
     }
 
