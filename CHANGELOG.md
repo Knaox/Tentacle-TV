@@ -3,10 +3,14 @@
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 
-> **Notes de version stores** : pour les releases App Store/TestFlight, ajouter un
-> bloc `## [x.y.z]` contenant `### FR` et `### EN`. La CI extrait ces deux sections
-> (tag `app-vx.y.z-build`) pour remplir « Nouveautés » (App Store) et « À tester »
-> (TestFlight). Sans `### EN`, la section FR sert pour les deux langues.
+> **Notes de version stores** : un bloc par **canal** `## [<canal>-<version>]` avec
+> `### FR` et `### EN` — canaux : `mac`, `ios`, `atv`, `win`, `play`
+> (ex. `## [ios-1.2.4]`, `## [win-1.10.1]`). La CI extrait ces sections
+> (`.github/scripts/release-notes.mjs`) pour : « Nouveautés »/« À tester »
+> App Store & TestFlight (4000 car.), les notes Microsoft Store (1500 car.),
+> les « Nouveautés » Google Play (500 car.) et le corps des releases GitHub.
+> Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
+> FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
 ## [1.2.3]
 

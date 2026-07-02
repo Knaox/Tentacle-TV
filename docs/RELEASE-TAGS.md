@@ -30,7 +30,8 @@ sans toucher aux autres.
 | `apk-v…` | **Android mobile** | APK (GitHub Release, debug-signed) | `release-android.yml` ✅ |
 | `tv-v…`  | **Android TV** | APK (GitHub Release + `tv-latest`) | `release-tv.yml` ✅ |
 | `atv-v…` | **Apple TV (tvOS)** | TestFlight | `release-atv.yml` ✅ |
-| *(manuel)* | **Windows** | Microsoft Store | `release-store.yml` |
+| `win-store-v…` | **Windows** | Microsoft Store (soumission + publication auto) | `release-store.yml` ✅ |
+| `play-v…` / `play-internal-v…` | **Android mobile** | Google Play (alpha / interne, AAB signé) | `release-play.yml` ✅ |
 
 > macOS + iOS partagent la même fiche App Store Connect `com.tentacle.mobile` mais se
 > déploient séparément (`mac-v…` / `ios-v…`). iOS : projet natif versionné, build
@@ -66,14 +67,36 @@ Build macOS **sans tag** (test, depuis l'onglet Actions) :
 
 ## Notes de version (FR + EN)
 
-Édite **`CHANGELOG.md`** : un bloc `## [x.y.z]` avec `### FR` et `### EN`. La CI extrait ces
-sections et remplit, via l'API App Store Connect :
-- **« Nouveautés de cette version »** (App Store) — `appStoreVersionLocalizations.whatsNew`.
-- **« À tester »** (TestFlight) — `betaBuildLocalizations.whatsToTest` (dès que le build est
-  traité par Apple ; sinon à définir au prochain passage).
+Édite **`CHANGELOG.md`** : un bloc **par canal** `## [<canal>-<version>]` avec `### FR` et
+`### EN` — canaux : `mac`, `ios`, `atv`, `win`, `play` (ex. `## [ios-1.2.4]`,
+`## [win-1.10.1]`). Chaque plateforme ayant sa propre numérotation, le préfixe évite les
+collisions ; le bloc nu `## [x.y.z]` reste un repli (historique). Sans `### EN`, la section
+FR sert aux deux langues. Le markdown (gras, liens, `code`, puces) est converti en texte
+brut pour les stores.
 
-Sans section `### EN`, la section FR est utilisée pour les deux langues. Script :
-`.github/scripts/asc-release-notes.mjs` (non bloquant).
+| Canal | Store | Champ rempli | Limite |
+|-------|-------|--------------|--------|
+| `mac` / `ios` / `atv` | App Store + TestFlight | « Nouveautés » + « À tester » | 4000 car. |
+| `win` | Microsoft Store | « Nouveautés de cette version » (fr-fr + en-us) | 1500 car. |
+| `play` | Google Play | « Nouveautés » (fr-FR + en-US) | 500 car. |
+| `mac` | Release GitHub | corps de la release (markdown brut) | — |
+
+**Flux Apple « je clique juste Publier »** : après l'upload, la CI pose les notes
+(`asc-release-notes.mjs`, non bloquant), puis un job séparé attend la fin du traitement du
+build (~10-35 min) et le **rattache à la version App Store** avec « À tester »
+(`asc-attach-build.mjs`, non bloquant). Il ne reste qu'à cliquer **« Soumettre pour
+examen »** dans App Store Connect.
+
+**Microsoft Store** : `msstore publish` a été remplacé par `msstore-submit.mjs` (API Store
+Submission — clone de la dernière soumission publiée, notes FR/EN, remplacement du package,
+publication automatique). `PARTNER_SELLER_ID` n'est plus utilisé.
+
+**Google Play** : `release-play.yml` génère `whatsnew-fr-FR`/`whatsnew-en-US` depuis le bloc
+`## [play-<expo.version>]` (rien n'est envoyé si le bloc n'existe pas).
+
+Scripts : `.github/scripts/release-notes.mjs` (CLI d'extraction/formatage),
+`asc-release-notes.mjs`, `asc-attach-build.mjs`, `msstore-submit.mjs`
+(+ libs partagées `lib/changelog.mjs`, `lib/asc-api.mjs`).
 
 ## Pré-requis / assets de signature (secrets GitHub)
 
