@@ -81,12 +81,12 @@ const main = async () => {
       for (const [locale, text] of [['fr-FR', notes.fr], ['en-US', notes.en]]) {
         if (!text) continue;
         const existing = bl.data.find((l) => l.attributes.locale === locale);
-        if (existing) await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`, { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatsToTest: text } } });
-        else await api('POST', '/v1/betaBuildLocalizations', { data: { type: 'betaBuildLocalizations', attributes: { locale, whatsToTest: text }, relationships: { build: { data: { type: 'builds', id: build.id } } } } });
+        if (existing) await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`, { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatsNew: text } } });
+        else await api('POST', '/v1/betaBuildLocalizations', { data: { type: 'betaBuildLocalizations', attributes: { locale, whatsNew: text }, relationships: { build: { data: { type: 'builds', id: build.id } } } } });
         console.log(`[attach] « À tester » ${locale} ✓`);
       }
     }
-  } catch (e) { console.log(`[attach] whatsToTest échec (non bloquant): ${e.message}`); }
+  } catch (e) { console.log(`[attach] « À tester » échec (non bloquant): ${e.message}`); }
 };
 
 main().catch((e) => { console.error('[attach] erreur:', e.message); process.exit(1); });
