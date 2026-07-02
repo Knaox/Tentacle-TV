@@ -12,10 +12,12 @@ const SCRUB_HOLD_EXTRA_MS = 700;
  *  scrub démarrait (pause) mais le curseur ne bougeait jamais.
  *  DOIT rester < HOLD_RELEASE_MS pour entretenir le palier d'accélération. */
 const HOLD_SCRUB_TICK_MS = 250;
-/** Shuttle tvOS : délai d'inactivité après le lever du doigt avant de VALIDER
- *  seul le scrub (seek + reprise). Assez long pour reposer le doigt et continuer
- *  (trackpad fini), assez court pour que « j'arrête → ça repart » soit fluide. */
-const SHUTTLE_AUTO_CONFIRM_MS = 800;
+/** Délai d'INACTIVITÉ en scrub avant d'ANNULER seul (reprise à la position
+ *  d'origine, AUCUN seek). Le seek ne part QUE sur confirmation explicite :
+ *  OK (select), bouton ▶︎❙❙, ou relâchement d'un bouton OSD FF/RW tenu.
+ *  Filet anti-seek accidentel : saisir la télécommande n'engage au pire qu'un
+ *  scrub visuel qui se résorbe seul sans déplacer la lecture. */
+const SCRUB_IDLE_CANCEL_MS = 7000;
 
 interface HoldState {
   dir: "forward" | "backward";
@@ -59,12 +61,12 @@ export function useScrubController({
   const [speedLabel, setSpeedLabel] = useState<string | null>(null);
   const holdRef = useRef<HoldState | null>(null);
   const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Timer d'auto-validation du shuttle (cf. endShuttleGesture).
-  const autoConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clearAutoConfirm = useCallback(() => {
-    if (autoConfirmTimerRef.current) { clearTimeout(autoConfirmTimerRef.current); autoConfirmTimerRef.current = null; }
+  // Timer d'annulation sur inactivité (cf. armIdleCancel / endShuttleGesture).
+  const idleCancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearIdleCancel = useCallback(() => {
+    if (idleCancelTimerRef.current) { clearTimeout(idleCancelTimerRef.current); idleCancelTimerRef.current = null; }
   }, []);
-  useEffect(() => () => clearAutoConfirm(), [clearAutoConfirm]);
+  useEffect(() => () => clearIdleCancel(), [clearIdleCancel]);
 
   const endHold = useCallback(() => {
     if (releaseTimerRef.current) { clearTimeout(releaseTimerRef.current); releaseTimerRef.current = null; }
@@ -72,6 +74,42 @@ export function useScrubController({
     setSpeedLabel(null);
   }, []);
   useEffect(() => () => endHold(), [endHold]);
+
+  // confirm/cancel déclarés AVANT les mouvements : armIdleCancel (annulation sur
+  // inactivité) en dépend, et chaque avance du fantôme réarme ce timer.
+  const confirmScrub = useCallback(() => {
+    clearIdleCancel();
+    scrubViaButtonRef.current = false; setScrubViaButton(false);
+    if (!scrubbingRef.current) return;
+    scrubbingRef.current = false;
+    setScrubbing(false);
+    endHold();
+    onSeekRef.current(scrubPositionRef.current);
+    onScrubPauseRef.current(false);
+    showOverlay();
+  }, [endHold, clearIdleCancel, showOverlay, onSeekRef, onScrubPauseRef]);
+
+  const cancelScrub = useCallback(() => {
+    clearIdleCancel();
+    scrubViaButtonRef.current = false; setScrubViaButton(false);
+    if (!scrubbingRef.current) return;
+    scrubbingRef.current = false;
+    setScrubbing(false);
+    endHold();
+    onScrubPauseRef.current(false);
+    showOverlay();
+  }, [endHold, clearIdleCancel, showOverlay, onScrubPauseRef]);
+
+  /** (Ré)arme l'annulation sur inactivité : SCRUB_IDLE_CANCEL_MS sans nouvelle
+   *  avance ni confirmation → cancelScrub (reprise SANS seek). Appelé à chaque
+   *  mouvement du fantôme et au lever du doigt/bouton. */
+  const armIdleCancel = useCallback(() => {
+    clearIdleCancel();
+    idleCancelTimerRef.current = setTimeout(() => {
+      idleCancelTimerRef.current = null;
+      cancelScrub();
+    }, SCRUB_IDLE_CANCEL_MS);
+  }, [clearIdleCancel, cancelScrub]);
 
   const moveScrub = useCallback((dir: "forward" | "backward") => {
     // Hold = mêmes events répétés → accélération par paliers.
@@ -92,75 +130,50 @@ export function useScrubController({
     const next = Math.max(0, dur > 0 ? Math.min(scrubPositionRef.current + delta, dur) : scrubPositionRef.current + delta);
     scrubPositionRef.current = next;
     setScrubPosition(next);
-  }, [endHold, durationRef]);
+    armIdleCancel();
+  }, [endHold, durationRef, armIdleCancel]);
 
   const startScrubbing = useCallback((dir?: "forward" | "backward") => {
     // Déjà en scrub (ex. shuttle tvOS : doigt levé puis reposé) → NE PAS
     // réinitialiser la position fantôme, juste garder l'OSD. Évite le saut au
     // point de lecture live à la reprise du geste.
-    if (scrubbingRef.current) { clearAutoConfirm(); showOverlay(); return; }
+    if (scrubbingRef.current) { armIdleCancel(); showOverlay(); return; }
     scrubbingRef.current = true;
     setScrubbing(true);
     scrubPositionRef.current = currentTimeRef.current;
     setScrubPosition(currentTimeRef.current);
     onScrubPauseRef.current(true);
     showOverlay();
+    armIdleCancel();
     if (dir) moveScrub(dir);
-  }, [showOverlay, moveScrub, currentTimeRef, onScrubPauseRef, clearAutoConfirm]);
+  }, [showOverlay, moveScrub, currentTimeRef, onScrubPauseRef, armIdleCancel]);
 
   // Avance CONTINUE de la position fantôme (modèle shuttle tvOS) : delta signé en
   // secondes, clamp [0, durée]. N'utilise PAS les paliers de maintien (réservés au
   // D-pad Android) — la vitesse est calculée par l'adaptateur de gestes.
   const nudgeScrub = useCallback((deltaSeconds: number) => {
-    clearAutoConfirm(); // nouvelle avance → annule l'auto-validation en attente
+    armIdleCancel(); // nouvelle avance → repousse l'annulation sur inactivité
     const dur = durationRef.current || 0;
     const next = Math.max(0, dur > 0
       ? Math.min(scrubPositionRef.current + deltaSeconds, dur)
       : scrubPositionRef.current + deltaSeconds);
     scrubPositionRef.current = next;
     setScrubPosition(next);
-  }, [durationRef, clearAutoConfirm]);
+  }, [durationRef, armIdleCancel]);
 
-  const confirmScrub = useCallback(() => {
-    clearAutoConfirm();
-    scrubViaButtonRef.current = false; setScrubViaButton(false);
-    if (!scrubbingRef.current) return;
-    scrubbingRef.current = false;
-    setScrubbing(false);
-    endHold();
-    onSeekRef.current(scrubPositionRef.current);
-    onScrubPauseRef.current(false);
-    showOverlay();
-  }, [endHold, clearAutoConfirm, showOverlay, onSeekRef, onScrubPauseRef]);
-
-  const cancelScrub = useCallback(() => {
-    clearAutoConfirm();
-    scrubViaButtonRef.current = false; setScrubViaButton(false);
-    if (!scrubbingRef.current) return;
-    scrubbingRef.current = false;
-    setScrubbing(false);
-    endHold();
-    onScrubPauseRef.current(false);
-    showOverlay();
-  }, [endHold, clearAutoConfirm, showOverlay, onScrubPauseRef]);
-
-  // Shuttle tvOS : le doigt se lève (geste pan « Ended »). On NE valide PAS
-  // immédiatement (la surface du trackpad est finie → on peut reposer le doigt
-  // et continuer) : on arme une courte fenêtre d'inactivité, puis on valide seul
-  // le seek + la reprise. Toute nouvelle avance (nudgeScrub) annule ce timer.
-  // Évite d'avoir à appuyer sur play après une avance rapide.
+  // Shuttle tvOS : le doigt se lève (geste pan « Ended »). Le scrub RESTE
+  // ouvert : OK / ▶︎❙❙ VALIDENT le seek, BACK annule, et l'inactivité
+  // (armIdleCancel) annule seule SANS seek — saisir la télécommande ne déplace
+  // plus jamais la lecture. (Avant : auto-validation du seek 800 ms après le
+  // lever du doigt → seeks accidentels de quelques secondes.)
   const endShuttleGesture = useCallback(() => {
     endHold();
-    clearAutoConfirm();
     if (!scrubbingRef.current) return;
-    autoConfirmTimerRef.current = setTimeout(() => {
-      autoConfirmTimerRef.current = null;
-      confirmScrub();
-    }, SHUTTLE_AUTO_CONFIRM_MS);
-  }, [endHold, clearAutoConfirm, confirmScrub]);
+    armIdleCancel();
+  }, [endHold, armIdleCancel]);
 
   const { startButtonSeek, stopButtonSeek } = useButtonSeek({
-    durationRef, startScrubbing, nudgeScrub, confirmScrub, clearAutoConfirm,
+    durationRef, startScrubbing, nudgeScrub, confirmScrub, clearIdleCancel,
     scrubbingRef, scrubViaButtonRef, setScrubViaButton, setSpeedLabel,
   });
 
@@ -218,12 +231,14 @@ export function useScrubController({
     startScrubbing(dir);
   }, [moveScrub, startScrubbing, panelOpenRef, skipAnyPressRef]);
 
-  /** Nettoyage au key-up (fin de maintien) : stoppe tick + accélération. */
+  /** Nettoyage au key-up (fin de maintien) : stoppe tick + accélération. Un
+   *  scrub laissé ouvert s'annulera seul sur inactivité (aucun seek). */
   const onHoldRelease = useCallback(() => {
     cancelScrubHold();
     stopHoldScrub();
     if (holdRef.current) endHold();
-  }, [cancelScrubHold, stopHoldScrub, endHold]);
+    if (scrubbingRef.current) armIdleCancel();
+  }, [cancelScrubHold, stopHoldScrub, endHold, armIdleCancel]);
 
   return {
     scrubbing, scrubPosition, speedLabel, scrubbingRef, scrubViaButton,

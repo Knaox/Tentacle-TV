@@ -8,7 +8,7 @@ interface ButtonSeekArgs {
   startScrubbing: (dir?: "forward" | "backward") => void;
   nudgeScrub: (deltaSeconds: number) => void;
   confirmScrub: () => void;
-  clearAutoConfirm: () => void;
+  clearIdleCancel: () => void;
   scrubbingRef: Ref<boolean>;
   scrubViaButtonRef: Ref<boolean>;
   setScrubViaButton: Dispatch<SetStateAction<boolean>>;
@@ -22,7 +22,7 @@ interface ButtonSeekArgs {
  * Extrait VERBATIM de useScrubController (budget 300 lignes).
  */
 export function useButtonSeek({
-  durationRef, startScrubbing, nudgeScrub, confirmScrub, clearAutoConfirm,
+  durationRef, startScrubbing, nudgeScrub, confirmScrub, clearIdleCancel,
   scrubbingRef, scrubViaButtonRef, setScrubViaButton, setSpeedLabel,
 }: ButtonSeekArgs) {
   const buttonLoopRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -34,7 +34,7 @@ export function useButtonSeek({
   const startButtonSeek = useCallback((dir: "forward" | "backward") => {
     if (buttonLoopRef.current) return; // déjà en maintien
     const sign = dir === "forward" ? 1 : -1;
-    clearAutoConfirm();
+    clearIdleCancel();
     scrubViaButtonRef.current = true; setScrubViaButton(true);
     if (!scrubbingRef.current) startScrubbing();   // ghost-scrub (pause), sans dir → pas de moveScrub
     nudgeScrub(sign * BUTTON_SEEK_BASE);           // saut de base immédiat (tap = petit saut)
@@ -52,7 +52,7 @@ export function useButtonSeek({
         setSpeedLabel(`${sign > 0 ? "▶▶" : "◀◀"} ${buttonSeekTier(held)}x`);
       }
     }, 33);
-  }, [clearAutoConfirm, startScrubbing, nudgeScrub]);
+  }, [clearIdleCancel, startScrubbing, nudgeScrub]);
 
   const stopButtonSeek = useCallback(() => {
     if (!buttonLoopRef.current && !scrubViaButtonRef.current) return;
