@@ -1,7 +1,8 @@
 // Remplit les notes de version sur App Store Connect depuis CHANGELOG.md (FR + EN).
 // - « Nouveautés de cette version » (appStoreVersionLocalizations.whatsNew) : crée la
 //   version App Store si besoin puis écrit les notes fr-FR + en-US.
-// - « À tester » (betaBuildLocalizations.whatsToTest) : best-effort sur le build s'il
+// - « À tester » (betaBuildLocalizations.whatsNew — oui, même nom d'attribut que
+//   les Nouveautés App Store ; « whatsToTest » n'existe pas → 409) : best-effort sur le build s'il
 //   est déjà traité par Apple (sinon ignoré — asc-attach-build.mjs les re-pose après
 //   traitement).
 // NON BLOQUANT : toute erreur est loggée mais n'échoue pas le job (exit 0).
@@ -51,11 +52,11 @@ const main = async () => {
     const bl = await api('GET', `/v1/builds/${build.id}/betaBuildLocalizations?limit=50`);
     for (const [locale, text] of locales) {
       const existing = bl.data.find((l) => l.attributes.locale === locale);
-      if (existing) await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`, { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatsToTest: text } } });
-      else await api('POST', '/v1/betaBuildLocalizations', { data: { type: 'betaBuildLocalizations', attributes: { locale, whatsToTest: text }, relationships: { build: { data: { type: 'builds', id: build.id } } } } });
+      if (existing) await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`, { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatsNew: text } } });
+      else await api('POST', '/v1/betaBuildLocalizations', { data: { type: 'betaBuildLocalizations', attributes: { locale, whatsNew: text }, relationships: { build: { data: { type: 'builds', id: build.id } } } } });
       console.log(`[notes] « À tester » ${locale} ✓`);
     }
-  } catch (e) { console.log(`[notes] whatsToTest échec (non bloquant): ${e.message}`); }
+  } catch (e) { console.log(`[notes] « À tester » échec (non bloquant): ${e.message}`); }
 };
 
 main().catch((e) => { console.log('[notes] erreur globale (non bloquant):', e.message); process.exit(0); });
