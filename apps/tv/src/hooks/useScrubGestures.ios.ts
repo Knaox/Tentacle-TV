@@ -15,8 +15,9 @@ interface HWEvent {
   body?: { state: "Began" | "Changed" | "Ended"; x: number; y: number; velocityX: number; velocityY: number };
 }
 
-/** Translation horizontale (pts) sous laquelle on ne scrub pas (centre mort). */
-const DEAD_ZONE_PX = 28;
+/** Translation horizontale (pts) sous laquelle on ne scrub pas (centre mort).
+ *  Large : saisir la télécommande fait souvent glisser le pouce de 30-40 pts. */
+const DEAD_ZONE_PX = 45;
 /** À pleine vitesse (shuttle au max), on traverse TOUTE la vidéo en ~ce temps → la vitesse de
  *  scrub s'ADAPTE à la durée (vidéo de 2 min = lent/contrôlable, 1 h 40 = rapide). */
 const T_FULL_SECONDS = 30;
@@ -24,8 +25,10 @@ const T_FULL_SECONDS = 30;
 const LOOP_MS = 33;
 /** Délai mini d'un geste avant d'engager le scrub : évite l'avance rapide
  *  accidentelle en SAISISSANT la télécommande (effleurement bref du trackpad).
- *  Le geste doit être actif depuis ce délai ET avoir franchi la dead-zone. */
-const ENGAGE_DELAY_MS = 250;
+ *  Le geste doit être actif depuis ce délai ET avoir franchi la dead-zone.
+ *  Et même engagé par accident : le seek n'est validé QUE par OK/▶︎❙❙ (cf.
+ *  useScrubController — l'inactivité annule sans seek). */
+const ENGAGE_DELAY_MS = 450;
 /**
  * Courbe shuttle : translation |x| (pts depuis le début du geste) → vitesse de
  * scrub (secondes vidéo par seconde réelle) + label de palier façon DVD. Lookup
@@ -34,7 +37,7 @@ const ENGAGE_DELAY_MS = 250;
 // Paliers = FRACTION de la vitesse MAX (= durée / T_FULL_SECONDS) → vitesse adaptée à la durée.
 const SPEED_CURVE: { px: number; frac: number; label: string | null }[] = [
   { px: DEAD_ZONE_PX, frac: 0, label: null },
-  { px: 55, frac: 0.06, label: null },
+  { px: 75, frac: 0.06, label: null },
   { px: 105, frac: 0.18, label: "2x" },
   { px: 165, frac: 0.45, label: "4x" },
   { px: 225, frac: 1.0, label: "8x" },

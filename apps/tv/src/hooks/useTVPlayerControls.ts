@@ -129,8 +129,8 @@ export function useTVPlayerControls({
     onStartScrub: scrub.startScrubbing,
     onNudgeScrub: scrub.nudgeScrub,
     onSpeedLabel: scrub.setSpeedLabel,
-    // Lever du doigt : auto-validation après inactivité (seek + reprise) — plus
-    // besoin d'appuyer sur play après une avance rapide shuttle.
+    // Lever du doigt : le scrub reste ouvert — OK/▶︎❙❙ valide le seek, Back
+    // annule, l'inactivité annule seule SANS seek (anti-seek accidentel).
     onEndScrub: scrub.endShuttleGesture,
     onWake: showOverlay,
     durationRef,   // vitesse de scrub adaptée à la durée de la vidéo
