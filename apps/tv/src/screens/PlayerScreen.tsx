@@ -22,6 +22,7 @@ import { useTVPlayerRouting } from "../hooks/useTVPlayerRouting";
 import { useTVInitialResume } from "../hooks/useTVInitialResume";
 import { useTVReloadState } from "../hooks/useTVReloadState";
 import { useTVRemuxPause } from "../hooks/useTVRemuxPause";
+import { useTVRemuxStallRecovery } from "../hooks/useTVRemuxStallRecovery";
 import { useTVAudioTrack } from "../hooks/useTVAudioTrack";
 import { useTVSubtitleControl } from "../hooks/useTVSubtitleControl";
 import { useTVSeekControl } from "../hooks/useTVSeekControl";
@@ -71,6 +72,15 @@ export function PlayerScreen({ route, navigation }: Props) {
     osdFocusSignal, bumpOsdFocus,
   } = useTVPanelControls({ backgroundRef });
   const positionRef = useRef(0);
+  // Miroir de `paused` lu par les listeners/callbacks à deps [] (remonté ici :
+  // consommé dès useTVRemuxStallRecovery, avant les hooks de reporting).
+  const pausedStateRef = useRef(paused);
+  pausedStateRef.current = paused;
+  // Session remux locale morte pendant une pause (stall -11866 malgré le
+  // keepalive) : possédé ici, partagé entre useTVRemuxStallRecovery (pose),
+  // useTVRemuxPause (reprise), useTVRemuxSeek (seek) et useTVReloadState
+  // (persistance de l'image figée + reset au changement d'item).
+  const deadSessionRef = useRef(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // Premier onLoad reçu → les isLoading suivants sont du rebuffering (spinner
@@ -83,6 +93,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   // joue ni son ni image pendant le chargement. Dé-pause automatique au onLoad de la nouvelle session
   // (isLoading repasse false). Remplace le `muted` (non fiable sur AVPlayer). Safety: levée forcée à 10 s.
   const [reloadHold, setReloadHold] = useState(false);
+  const reloadHoldRef = useRef(false);
+  reloadHoldRef.current = reloadHold;
   const reloadHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdForReload = useCallback(() => {
     setIsLoading(true);
@@ -138,7 +150,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const reload = useTVReloadState({
     itemId, defaultAudio, isLoading,
     positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError,
-    resetPrefsAppliedRef, qualityReset: quality.reset,
+    resetPrefsAppliedRef, qualityReset: quality.reset, deadSessionRef,
   });
   const {
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
@@ -185,11 +197,19 @@ export function PlayerScreen({ route, navigation }: Props) {
   isDirectPlayRef.current = isDirectPlay;
   isLocalRemuxRef.current = isLocalRemux;
 
+  // Récupération de stall remux (-11866) : lazy pendant une pause (session
+  // marquée morte, image figée conservée, reprise pilotée par useTVRemuxPause),
+  // reload immédiat À LA POSITION COURANTE en lecture.
+  const { onRemuxStall } = useTVRemuxStallRecovery({
+    pausedStateRef, positionRef, softReloadRef, reloadHoldRef, deadSessionRef,
+    setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef,
+  });
+
   // Vraie pause permanente du remux on-device (anti -11866) : pousse l'état de pause au natif (manifeste de
   // pause VOD/keepalive) et orchestre la reprise (nouvelle session à P). No-op hors remux local.
   useTVRemuxPause({
     paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload,
-    notifySeekRef, resetLoadedRef,
+    notifySeekRef, resetLoadedRef, deadSessionRef,
   });
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
@@ -200,9 +220,8 @@ export function PlayerScreen({ route, navigation }: Props) {
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
 
-  // Refs stables pour les listeners avec [] deps
-  const pausedStateRef = useRef(paused);
-  pausedStateRef.current = paused;
+  // Refs stables pour les listeners avec [] deps (pausedStateRef : remonté en
+  // tête de composant, consommé dès useTVRemuxStallRecovery)
   const reportSeekRef = useRef(reportSeek);
   reportSeekRef.current = reportSeek;
   const reportStartRef = useRef(reportStart);
@@ -251,7 +270,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const seekOrRemux = useTVRemuxSeek({
     jellyfinDuration, handleSeek, isLocalRemuxRef, sessionStartRef, positionRef, displayTimeRef,
     lastDisplayUpdate, lastProgressTime, pausedStateRef, softReloadRef, setReloadFrameSec,
-    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, holdForReload,
+    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, holdForReload, deadSessionRef,
   });
 
   // Navigation inter-épisodes : auto-play (générique → suivant), skip
@@ -361,20 +380,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     softReloadRef, setReloadFrameSec,
   });
 
-  // Stall remux (-11866, pause longue → manifeste HLS `event` figé) : recharger à la position
-  // courante ET reprendre → gTVPlayPos avance → le remux reproduit → manifeste frais (sinon le
-  // reuse natif renverrait le même manifeste figé = re-stall immédiat). Le garde-fou est dans le hook.
-  const onRemuxStall = useCallback(() => {
-    softReloadRef.current = true;
-    setReloadFrameSec(positionRef.current);
-    setReloadNonce((n) => n + 1);
-    setPaused(false);
-  }, [softReloadRef, setReloadFrameSec, positionRef, setReloadNonce, setPaused]);
-
   // Erreur de codec en direct play → bascule transcode forcé (reprise à la
-  // position courante) ; stall remux → onRemuxStall ; sinon surfacée.
+  // position courante) ; stall remux → useTVRemuxStallRecovery (lazy en pause,
+  // reload à la position courante en lecture) ; sinon surfacée.
   const { handleError } = useTVErrorHandler({
-    forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall,
+    forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall, pausedStateRef,
   });
 
   const audioTracksList = useMemo(() =>

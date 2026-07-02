@@ -45,8 +45,12 @@ export function useTVRemuxPause(args: {
   holdForReload: () => void;
   notifySeekRef: MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
   resetLoadedRef: MutableRefObject<() => void>;
+  /** Session locale morte pendant la pause (stall -11866 malgré le keepalive,
+   *  cf. useTVRemuxStallRecovery) : la reprise doit alors remonter une session
+   *  fraîche à P (chemin mode B) même en mode keepalive. */
+  deadSessionRef: MutableRefObject<boolean>;
 }) {
-  const { paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef } = args;
+  const { paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef, deadSessionRef } = args;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const engagedRef = useRef(false);
 
@@ -61,10 +65,15 @@ export function useTVRemuxPause(args: {
       return;
     }
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-    if (!engagedRef.current) return;   // pause courte jamais engagée → reprise transparente
+    // Session morte pendant la pause (stall malgré le keepalive) : la reprise
+    // DOIT remonter une session fraîche à P, même en mode keepalive et même si
+    // la pause n'avait pas été engagée.
+    const dead = deadSessionRef.current;
+    if (!engagedRef.current && !dead) return;   // pause courte jamais engagée → reprise transparente
     engagedRef.current = false;
     Remux?.setPaused?.(false);
-    if (SNAPSHOT_MODE !== 1) return;   // mode keepalive : l'EVENT a continué de tourner, rien à recharger
+    if (SNAPSHOT_MODE !== 1 && !dead) return;   // mode keepalive, session vivante : rien à recharger
+    deadSessionRef.current = false;
     // Mode VOD : remount sur une nouvelle session re-remuxée à P (point de pause exact préservé). On arme
     // SYNCHRONIQUEMENT, AVANT le reload async :
     //  - holdForReload() : isLoading=true (spinner + garde l'image figée) ET reloadHold=true → le LECTEUR
