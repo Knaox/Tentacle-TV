@@ -30,6 +30,7 @@
 #define TVLR_DISK_CAP   (1600LL * 1024 * 1024)   // 1,6 Go → tient sur Apple TV 32/64 Go quel que soit le film
 #define TVLR_BEHIND_SEC 60.0                      // ~1 min conservée derrière la tête (petits retours arrière OK)
 #define TVLR_PREBUFFER_SEC 8.0                    // s produites (0-based) avant de résoudre start() → cushion anti-stall de démarrage
+#define TVLR_RESUME_PREBUFFER_SEC 3.0             // cushion réduit pour une session de REPRISE/seek (gResumePending) → start() résout en ~2-3 s
 
 // Route les logs internes de FFmpeg vers Console.app (raison exacte des échecs).
 static void TVAvLog(void *avcl, int level, const char *fmt, va_list vl) {
