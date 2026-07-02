@@ -52,6 +52,8 @@ jobs:
       make_latest: ${{ steps.p.outputs.make_latest }}
     steps:
       - id: p
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             REST="${GITHUB_REF_NAME#mac-v}"   # 1.0.0-3
@@ -63,10 +65,17 @@ jobs:
             BUILD="${{ inputs.build }}"
             SUBMIT="${{ inputs.submit }}"
           fi
-          # Release GitHub : 1er build d'une version (build == 1) → publiée + « Latest » ;
-          # ré-upload de build (même version, build > 1) → brouillon. L'upload
-          # TestFlight a lieu dans les deux cas (étape « Submit » inconditionnelle).
-          if [ "$BUILD" = "1" ]; then DRAFT=false; LATEST=true; else DRAFT=true; LATEST=false; fi
+          # Release GitHub : PREMIÈRE release de cette VERSION → publiée + « Latest » ;
+          # ré-upload (une release mac-v<version>-* existe déjà, brouillons inclus) →
+          # brouillon. ⚠️ Sur macOS, CFBundleVersion est GLOBAL (ne repart jamais à 1
+          # entre les versions — Apple exige build strictement croissant), donc
+          # « build == 1 » ne peut pas servir d'heuristique. L'upload TestFlight a
+          # lieu dans les deux cas (étape « Submit » inconditionnelle).
+          if gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate -q '.[].tag_name' 2>/dev/null | grep -q "^mac-v${VERSION}-"; then
+            DRAFT=true; LATEST=false
+          else
+            DRAFT=false; LATEST=true
+          fi
           {
             echo "version=$VERSION"
             echo "build=$BUILD"
