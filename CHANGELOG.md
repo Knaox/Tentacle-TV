@@ -12,6 +12,72 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
+## [mac-1.1.1]
+
+macOS 1.1.1 — Desktop 1.10.1 — Web 1.0.0 — Backend 1.2.1
+
+### FR
+- **Épisode suivant repensé** : la proposition « À suivre » se déclenche désormais au pourcentage de reprise configuré dans Jellyfin, et peut être activée ou désactivée par l'administrateur.
+- **Appareils jumelés** : la liste de la page « Jumeler TV » devient une liste déroulante, repliée par défaut.
+- **Gestion du thème** : désormais marquée ALPHA (fonctionnalité expérimentale).
+- **Mises à jour** : l'app détecte à nouveau les nouvelles versions du Mac App Store ; « Mettre à jour » ouvre l'App Store et ferme l'app pour appliquer la mise à jour.
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Up Next, rethought**: the "Up Next" prompt now triggers at the resume percentage configured in Jellyfin, and can be enabled or disabled by the administrator.
+- **Paired devices**: the list on the "Pair TV" page becomes a dropdown, collapsed by default.
+- **Theme management**: now marked ALPHA (experimental feature).
+- **Updates**: the app detects new Mac App Store versions again; "Update" opens the App Store and quits the app so the update can install.
+- Various fixes and stability improvements.
+
+## [win-1.10.1]
+
+Windows 1.10.1 — Web 1.0.0 — Backend 1.2.1
+
+### FR
+- **Épisode suivant repensé** : la proposition « À suivre » se déclenche désormais au pourcentage de reprise configuré dans Jellyfin, et peut être activée ou désactivée par l'administrateur.
+- **Appareils jumelés** : la liste de la page « Jumeler TV » devient une liste déroulante, repliée par défaut.
+- **Gestion du thème** : désormais marquée ALPHA (fonctionnalité expérimentale).
+- **Mises à jour** : la fenêtre de mise à jour affiche désormais la version de la nouvelle mise à jour (et non plus la version installée).
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Up Next, rethought**: the "Up Next" prompt now triggers at the resume percentage configured in Jellyfin, and can be enabled or disabled by the administrator.
+- **Paired devices**: the list on the "Pair TV" page becomes a dropdown, collapsed by default.
+- **Theme management**: now marked ALPHA (experimental feature).
+- **Updates**: the update window now shows the version of the new update (instead of the installed version).
+- Various fixes and stability improvements.
+
+## [ios-1.2.4]
+
+iOS 1.2.4 — Backend 1.2.1
+
+### FR
+- **Version affichée corrigée** : la page « À propos » affiche désormais la véritable version et le vrai numéro de build iOS.
+- **Épisode suivant** : la proposition « À suivre » se déclenche désormais au pourcentage de reprise configuré dans Jellyfin, activable par l'administrateur.
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Correct version display**: the "About" page now shows the real iOS version and build number.
+- **Up Next**: the "Up Next" prompt now triggers at the resume percentage configured in Jellyfin, and can be toggled by the administrator.
+- Various fixes and stability improvements.
+
+## [play-1.0.0]
+
+Android mobile 1.0.0 — première version Google Play (tests)
+
+### FR
+- Première version de Tentacle TV pour Android : votre médiathèque Jellyfin, en mieux.
+- Lecture fluide avec reprise, choix de l'audio et des sous-titres.
+- Passage automatique à l'épisode suivant.
+- Interface sombre élégante, disponible en français et en anglais.
+
+### EN
+- First release of Tentacle TV for Android: your Jellyfin library, at its best.
+- Smooth playback with resume, audio and subtitle selection.
+- Automatic Up Next to the following episode.
+- Elegant dark interface, available in French and English.
+
 ## [1.2.3]
 
 iOS 1.2.3 — macOS 1.1.0 — Desktop 1.10.0 — Backend 1.2.0

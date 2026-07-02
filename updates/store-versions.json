@@ -1,10 +1,18 @@
 {
   "$comment": "Source de vérité des versions publiées sur les stores desktop, lue par l'app (apps/web/src/lib/storeVersions.ts) via raw.githubusercontent.com. À mettre à jour à CHAQUE bump de version desktop (les APIs stores ne sont pas fiables : iTunes Lookup ignore la fiche macOS d'une app en achat universel, WinRT n'expose pas la version d'une MAJ MSIX). Les notes fr/en s'affichent dans la popup de mise à jour.",
   "macAppStore": {
-    "version": "1.1.0",
-    "appId": "6760205634"
+    "version": "1.1.1",
+    "appId": "6760205634",
+    "notes": {
+      "fr": "• Épisode suivant : déclenchement au pourcentage de reprise Jellyfin, activable par l'administrateur\n• Appareils jumelés en liste déroulante\n• Gestion du thème marquée ALPHA\n• Corrections des mises à jour",
+      "en": "• Up Next: triggers at the Jellyfin resume percentage, admin toggle\n• Paired devices as a dropdown list\n• Theme management marked ALPHA\n• Update fixes"
+    }
   },
   "microsoftStore": {
-    "version": "1.10.0"
+    "version": "1.10.1",
+    "notes": {
+      "fr": "• Épisode suivant : déclenchement au pourcentage de reprise Jellyfin, activable par l'administrateur\n• Appareils jumelés en liste déroulante\n• Gestion du thème marquée ALPHA\n• La fenêtre de mise à jour affiche la bonne version",
+      "en": "• Up Next: triggers at the Jellyfin resume percentage, admin toggle\n• Paired devices as a dropdown list\n• Theme management marked ALPHA\n• Update window now shows the correct version"
+    }
   }
 }
