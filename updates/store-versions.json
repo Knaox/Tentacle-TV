@@ -1,0 +1,10 @@
+{
+  "$comment": "Source de vérité des versions publiées sur les stores desktop, lue par l'app (apps/web/src/lib/storeVersions.ts) via raw.githubusercontent.com. À mettre à jour à CHAQUE bump de version desktop (les APIs stores ne sont pas fiables : iTunes Lookup ignore la fiche macOS d'une app en achat universel, WinRT n'expose pas la version d'une MAJ MSIX). Les notes fr/en s'affichent dans la popup de mise à jour.",
+  "macAppStore": {
+    "version": "1.1.0",
+    "appId": "6760205634"
+  },
+  "microsoftStore": {
+    "version": "1.10.0"
+  }
+}
