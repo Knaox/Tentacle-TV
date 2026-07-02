@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getConfigValue, getDirectStreamingConfig, getJellyfinUrl, getPublicUrl } from "../services/configStore";
+import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
@@ -10,7 +11,6 @@ const DEMO_MODE = process.env.DEMO_MODE === "true";
 
 export const configRoutes: FastifyPluginAsync = async (app) => {
   app.get("/config", async () => {
-    const creditsMin = getConfigValue("autoplay_credits_minutes");
     return {
       version: BACKEND_VERSION,
       brandName: "Tentacle TV",
@@ -18,12 +18,25 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         downloads: false,
         demo: DEMO_MODE,
       },
-      autoplayCreditsMinutes: creditsMin != null ? Number(creditsMin) : 2,
+      autoplayNextEnabled: getConfigValue("autoplay_next_enabled") !== "false",
       // URL publique canonique du serveur (domaine fronté par le worker Cloudflare).
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
       // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
       publicUrl: getPublicUrl(),
+    };
+  });
+
+  /**
+   * GET /api/config/autoplay — Config du déclenchement auto-play, POLLÉE par
+   * les lecteurs (toutes plateformes) pendant une lecture active. Le seuil est
+   * le MaxResumePct de Jellyfin (cache serveur 30 s → une mise à jour dans
+   * Jellyfin est prise en compte en ≤ ~60 s sans spammer son API).
+   */
+  app.get("/config/autoplay", async () => {
+    return {
+      enabled: getConfigValue("autoplay_next_enabled") !== "false",
+      maxResumePct: await getMaxResumePct(),
     };
   });
 

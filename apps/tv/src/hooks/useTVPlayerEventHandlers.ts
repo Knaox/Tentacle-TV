@@ -6,6 +6,8 @@ interface AutoPlayCtx {
   checkTrigger: (t: number) => void;
   nextEpisode: MediaItem | null;
   countdown: number | null;
+  /** Interrupteur admin « Déclenchement auto-play ». */
+  autoplayEnabled: boolean;
   startAutoPlay: () => void;
   /** Vraie fin du média : écran plein « épisode suivant » (idempotent). */
   notifyEnd: () => void;
@@ -162,7 +164,8 @@ export function useTVPlayerEventHandlers(args: {
     // Vraie fin + épisode suivant → écran plein « eof » (escalade la bannière
     // crédits si elle est déjà ouverte, countdown conservé). Idempotent : les
     // onEnd répétés d'une playlist EVENT sont absorbés par notifyEnd.
-    if (ap.nextEpisode) ap.notifyEnd();
+    // Auto-play désactivé (admin) → comportement « pas d'épisode suivant ».
+    if (ap.autoplayEnabled && ap.nextEpisode) ap.notifyEnd();
     else if (ap.countdown === null) handleFinishedRef.current();
   }, []);
 

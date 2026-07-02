@@ -22,7 +22,7 @@ export function WatchWeb() {
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    skipSegments, autoplayCreditsSeconds, getPositionTicks,
+    skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
 
   const useNativeHls = isTauri() && isMacOS();
@@ -166,7 +166,7 @@ export function WatchWeb() {
           onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-          nextEpisodeDescription={nextEpisodeDescription} autoplayCreditsSeconds={autoplayCreditsSeconds}
+          nextEpisodeDescription={nextEpisodeDescription} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
           onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}

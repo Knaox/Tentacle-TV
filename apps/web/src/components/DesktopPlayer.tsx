@@ -37,7 +37,10 @@ interface DesktopPlayerProps {
   hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
   nextSeriesBackdropUrl?: string; nextEpisodeThumbUrl?: string;
-  autoplayCreditsSeconds?: number;
+  /** Interrupteur admin « Déclenchement auto-play » (bannière + écran de fin). */
+  autoplayNextEnabled?: boolean;
+  /** Seuil (%) = MaxResumePct Jellyfin : la bannière apparaît à ce % de lecture. */
+  maxResumePct?: number;
   itemId?: string;
   item?: MediaItem;
   mediaSourceId?: string;
@@ -126,7 +129,7 @@ export function DesktopPlayer({
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-  autoplayCreditsSeconds,
+  autoplayNextEnabled = true, maxResumePct = 90,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
 }: DesktopPlayerProps) {
@@ -405,34 +408,34 @@ export function DesktopPlayer({
     navigate(`/media/${itemId}`, { replace: true });
   }, [navigate, itemId]);
 
-  // Show overlay when entering credits (or last 2 min fallback for episodes)
+  // Bannière « épisode suivant » au MaxResumePct de Jellyfin (ex. 92 % → à
+  // 92 % de lecture). Relu à chaque tick → une mise à jour du % dans Jellyfin
+  // s'applique en cours de lecture. Le segment générique ne déclenche plus la
+  // bannière (le bouton « Passer le générique » reste inchangé).
   const creditsAutoPlayTriggered = useRef(false);
   useEffect(() => {
     if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
-    if (!hasNextEpisode || !hasStartedRef.current) return;
+    if (!autoplayNextEnabled || !hasNextEpisode || !hasStartedRef.current) return;
     const pos = state.position + effectiveMpvOffset.current;
     const d = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
-    // Use detected credits segment, or fallback to configured time before end for episodes > 5 min
-    const fallbackSeconds = autoplayCreditsSeconds ?? 120;
-    const triggerAt = creditsSegment ? creditsSegment.start
-      : (fallbackSeconds > 0 && d > 300 ? d - fallbackSeconds : null);
+    const triggerAt = d > 0 ? d * (maxResumePct / 100) : null;
     if (triggerAt != null && pos >= triggerAt) {
-      console.debug(DBG, "auto-play trigger", { pos, triggerAt, hasCreditsSegment: !!creditsSegment });
+      console.debug(DBG, "auto-play trigger", { pos, triggerAt, maxResumePct });
       creditsAutoPlayTriggered.current = true;
       startAutoPlayCountdown("credits");
     }
-  }, [state.position, creditsSegment, hasNextEpisode, autoPlayCountdown, startAutoPlayCountdown, jellyfinDuration, state.duration]);
+  }, [state.position, autoplayNextEnabled, maxResumePct, hasNextEpisode, autoPlayCountdown, startAutoPlayCountdown, jellyfinDuration, state.duration]);
 
-  // EOF fallback: no credits segment detected, or movie → detail page
+  // EOF : écran plein « épisode suivant » (si activé), sinon retour détail
   useEffect(() => {
     if (state.eof && hasStartedRef.current) {
-      if (hasNextEpisode && autoPlayCountdown === null && !eofAutoPlayTriggered.current) {
+      if (autoplayNextEnabled && hasNextEpisode && autoPlayCountdown === null && !eofAutoPlayTriggered.current) {
         eofAutoPlayTriggered.current = true;
         startAutoPlayCountdown("eof");
-      } else if (!hasNextEpisode && itemId) goToDetail();
-      else if (!hasNextEpisode) goBack();
+      } else if ((!hasNextEpisode || !autoplayNextEnabled) && itemId) goToDetail();
+      else if (!hasNextEpisode || !autoplayNextEnabled) goBack();
     }
-  }, [state.eof, goBack, goToDetail, hasNextEpisode, startAutoPlayCountdown, itemId, autoPlayCountdown]);
+  }, [state.eof, goBack, goToDetail, hasNextEpisode, autoplayNextEnabled, startAutoPlayCountdown, itemId, autoPlayCountdown]);
 
   useEffect(() => {
     return () => {

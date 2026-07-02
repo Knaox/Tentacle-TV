@@ -1,20 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useEpisodeNavigation, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useEpisodeNavigation, useJellyfinClient, useAutoplayConfig } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 const COUNTDOWN_TOTAL = 10;
-const FALLBACK_SECONDS = 30;
-const MIN_DURATION_FOR_FALLBACK = 120;
-
-interface SkipSegment {
-  start: number;
-  end: number;
-}
 
 export type AutoPlaySource = "credits" | "eof";
 
 interface AutoPlayState {
   countdown: number | null;
+  /** Interrupteur admin « Déclenchement auto-play » (consommé par handleEnd). */
+  autoplayEnabled: boolean;
   /** "credits" = bannière pendant le générique ; "eof" = écran plein à la vraie
    *  fin (parité desktop DesktopPlayer credits/eof). */
   source: AutoPlaySource | null;
@@ -41,11 +36,18 @@ interface AutoPlayState {
 export function useAutoPlay(
   item: MediaItem | undefined,
   duration: number,
-  creditsSegment: SkipSegment | null | undefined,
   onNavigateToEpisode: (episodeId: string) => void,
 ): AutoPlayState {
   const client = useJellyfinClient();
   const { nextEpisode } = useEpisodeNavigation(item);
+  // Config pollée pendant la lecture : seuil = MaxResumePct Jellyfin (une mise
+  // à jour côté serveur s'applique en ≤ ~60 s, même en cours de lecture).
+  const { data: autoplayConfig } = useAutoplayConfig(true);
+  const autoplayEnabled = autoplayConfig?.enabled ?? true;
+  const enabledRef = useRef(true);
+  enabledRef.current = autoplayEnabled;
+  const maxResumePctRef = useRef(90);
+  maxResumePctRef.current = autoplayConfig?.maxResumePct ?? 90;
   const [countdown, setCountdown] = useState<number | null>(null);
   const [source, setSource] = useState<AutoPlaySource | null>(null);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -73,8 +75,6 @@ export function useAutoPlay(
   nextEpisodeRef.current = nextEpisode;
   const durationRef = useRef(duration);
   durationRef.current = duration;
-  const creditsSegmentRef = useRef(creditsSegment);
-  creditsSegmentRef.current = creditsSegment;
 
   const navigateToNextEpisode = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
@@ -135,21 +135,18 @@ export function useAutoPlay(
   /**
    * Called directly from handleProgress on every progress tick.
    * NOT dependent on React re-renders — fires on every native callback.
+   * Déclenchement au MaxResumePct de Jellyfin (ex. 92 % → bannière à 92 % de
+   * lecture) ; le % est lu via ref → toujours la valeur fraîche du poll.
    */
   const checkTrigger = useCallback((currentTime: number) => {
     if (creditsTriggered.current || countdownRef.current !== null) return;
+    if (!enabledRef.current) return;
     const ep = nextEpisodeRef.current;
     const dur = durationRef.current;
     if (!ep || dur <= 0) return;
 
-    const cs = creditsSegmentRef.current;
-    const triggerAt = cs
-      ? cs.start
-      : (FALLBACK_SECONDS > 0 && dur > MIN_DURATION_FOR_FALLBACK
-        ? dur - FALLBACK_SECONDS
-        : null);
-
-    if (triggerAt != null && currentTime >= triggerAt) {
+    const triggerAt = dur * (maxResumePctRef.current / 100);
+    if (currentTime >= triggerAt) {
       creditsTriggered.current = true;
       startAutoPlayRef.current("credits");
     }
@@ -187,6 +184,7 @@ export function useAutoPlay(
 
   return {
     countdown,
+    autoplayEnabled,
     source,
     nextEpisode,
     nextEpisodeTitle,

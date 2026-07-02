@@ -44,7 +44,10 @@ interface VideoPlayerProps {
   nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string;
   nextEpisodeDescription?: string;
-  autoplayCreditsSeconds?: number;
+  /** Interrupteur admin « Déclenchement auto-play » (bannière + auto-next). */
+  autoplayNextEnabled?: boolean;
+  /** Seuil (%) = MaxResumePct Jellyfin : la bannière apparaît à ce % de lecture. */
+  maxResumePct?: number;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
   introSegment?: SegmentTimestamps | null;
@@ -95,7 +98,7 @@ export function VideoPlayer({
   onProgress, onStarted, onSeekRequest, onSeekComplete,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
-  autoplayCreditsSeconds,
+  autoplayNextEnabled = true, maxResumePct = 90,
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment, posterUrl,
 }: VideoPlayerProps) {
@@ -602,20 +605,20 @@ export function VideoPlayer({
     }, 1000);
   }, [hasNextEpisode, onNextEpisode]);
 
-  // Show overlay when entering credits (or last 2 min fallback for episodes)
+  // Bannière « épisode suivant » au MaxResumePct de Jellyfin (ex. 92 % → à
+  // 92 % de lecture). Relu à chaque tick → une mise à jour du % dans Jellyfin
+  // s'applique en cours de lecture. Le segment générique ne déclenche plus la
+  // bannière (le bouton « Passer le générique » reste inchangé).
   const creditsAutoPlayTriggered = useRef(false);
   useEffect(() => {
     if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
-    if (!hasNextEpisode || !hasStartedRef.current) return;
-    // Use detected credits segment, or fallback to configured time before end for episodes > 5 min
-    const fallbackSeconds = autoplayCreditsSeconds ?? 120;
-    const triggerAt = creditsSegment ? creditsSegment.start
-      : (fallbackSeconds > 0 && duration > 300 ? duration - fallbackSeconds : null);
+    if (!autoplayNextEnabled || !hasNextEpisode || !hasStartedRef.current) return;
+    const triggerAt = duration > 0 ? duration * (maxResumePct / 100) : null;
     if (triggerAt != null && currentTime >= triggerAt) {
       creditsAutoPlayTriggered.current = true;
       startAutoPlay();
     }
-  }, [currentTime, creditsSegment, hasNextEpisode, autoPlayCountdown, startAutoPlay, duration]);
+  }, [currentTime, autoplayNextEnabled, maxResumePct, hasNextEpisode, autoPlayCountdown, startAutoPlay, duration]);
 
   const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
@@ -717,7 +720,7 @@ export function VideoPlayer({
           const err = e.currentTarget.error;
           console.error(DBG, "video error", { code: err?.code, message: err?.message, src: src.slice(0, 120), networkState: e.currentTarget.networkState });
         }}
-        onEnded={() => { if (hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode) navigate(`/media/${itemId}`, { replace: true }); }}
+        onEnded={() => { if (autoplayNextEnabled && hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode || !autoplayNextEnabled) navigate(`/media/${itemId}`, { replace: true }); }}
         crossOrigin={useNativeHls ? undefined : "anonymous"}
       >
         {subtitleTracks.map((t) => (
