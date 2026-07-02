@@ -87,7 +87,7 @@ export function MobilePlayerOverlay({
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const { showAutoPlay, countdown: autoPlayCountdown, dismiss: dismissAutoPlay } = useAutoPlayNext({
-    currentTime, duration, creditsSegment, nextEpisode, onNextEpisode,
+    currentTime, duration, nextEpisode, onNextEpisode,
   });
 
   const resetHideTimer = useCallback(() => {

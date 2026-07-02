@@ -1,28 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
+import { useAutoplayConfig } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 
 const AUTOPLAY_COUNTDOWN_SEC = 10;
-/** Fenêtre (s) avant la fin pour afficher l'autoplay si pas de segment crédits. */
-const AUTOPLAY_END_FALLBACK_SEC = 120;
-/** Pas d'autoplay fallback sur les clips courts (< 5 min). */
-const MIN_DURATION_FOR_FALLBACK_SEC = 300;
 
 export const AUTOPLAY_TOTAL_SEC = AUTOPLAY_COUNTDOWN_SEC;
 
 interface Params {
   currentTime: number;
   duration: number;
-  creditsSegment?: SegmentTimestamps | null;
   nextEpisode?: MediaItem | null;
   onNextEpisode?: () => void;
 }
 
 /**
- * Compte à rebours « Épisode suivant » — déclenché au segment crédits (ou
- * `duration - 120s` à défaut). Navigation déclenchée hors render. Extrait de
- * MobilePlayerOverlay pour garder ce dernier sous 300 lignes.
+ * Compte à rebours « Épisode suivant » — déclenché au MaxResumePct de Jellyfin
+ * (ex. 92 % → à 92 % de lecture ; config pollée pendant la lecture, gating par
+ * l'interrupteur admin « Déclenchement auto-play »). Navigation déclenchée
+ * hors render. Extrait de MobilePlayerOverlay pour garder ce dernier sous
+ * 300 lignes.
  */
-export function useAutoPlayNext({ currentTime, duration, creditsSegment, nextEpisode, onNextEpisode }: Params) {
+export function useAutoPlayNext({ currentTime, duration, nextEpisode, onNextEpisode }: Params) {
+  const { data: autoplayConfig } = useAutoplayConfig(true);
   const [showAutoPlay, setShowAutoPlay] = useState(false);
   const [countdown, setCountdown] = useState(AUTOPLAY_COUNTDOWN_SEC);
   const dismissed = useRef(false);
@@ -49,14 +48,15 @@ export function useAutoPlayNext({ currentTime, duration, creditsSegment, nextEpi
     onNextEpisode?.();
   }, [countdown, onNextEpisode]);
 
-  // Déclenchement (même condition que desktop).
+  // Déclenchement (même condition que desktop) : au % MaxResumePct, relu à
+  // chaque tick → une mise à jour dans Jellyfin s'applique en cours de lecture.
+  const enabled = autoplayConfig?.enabled ?? true;
+  const maxResumePct = autoplayConfig?.maxResumePct ?? 90;
   useEffect(() => {
-    if (triggered.current || dismissed.current || !nextEpisode || !onNextEpisode) return;
-    const triggerAt = creditsSegment
-      ? creditsSegment.start
-      : (duration > MIN_DURATION_FOR_FALLBACK_SEC ? duration - AUTOPLAY_END_FALLBACK_SEC : null);
+    if (triggered.current || dismissed.current || !enabled || !nextEpisode || !onNextEpisode) return;
+    const triggerAt = duration > 0 ? duration * (maxResumePct / 100) : null;
     if (triggerAt != null && currentTime >= triggerAt) start();
-  }, [currentTime, creditsSegment, nextEpisode, onNextEpisode, duration, start]);
+  }, [currentTime, enabled, maxResumePct, nextEpisode, onNextEpisode, duration, start]);
 
   const dismiss = useCallback(() => {
     dismissed.current = true;

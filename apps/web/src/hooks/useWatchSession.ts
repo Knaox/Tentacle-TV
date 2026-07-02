@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useItemAncestors, useJellyfinClient, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper, useAppConfig } from "@tentacle-tv/api-client";
+import { useMediaItem, useItemAncestors, useJellyfinClient, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper, useAutoplayConfig } from "@tentacle-tv/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
@@ -42,7 +42,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const { data: item, isLoading } = useMediaItem(itemId);
-  const { data: appConfig } = useAppConfig();
+  // Config auto-play pollée pendant la lecture (seuil = MaxResumePct Jellyfin,
+  // à jour en ≤ ~60 s sans spammer l'API — cache backend 30 s + poll 30 s).
+  const { data: autoplayConfig } = useAutoplayConfig(true);
   const { data: ancestors } = useItemAncestors(itemId);
   const { nextEpisode, previousEpisode } = useEpisodeNavigation(item);
 
@@ -289,7 +291,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (previousEpisode) navigate(`/watch/${previousEpisode.Id}`, { replace: true });
   }, [previousEpisode, navigate]);
 
-  const autoplayCreditsSeconds = (appConfig?.autoplayCreditsMinutes ?? 2) * 60;
+  const autoplayNextEnabled = autoplayConfig?.enabled ?? true;
+  const maxResumePct = autoplayConfig?.maxResumePct ?? 90;
 
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
@@ -303,6 +306,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    skipSegments, autoplayCreditsSeconds, getPositionTicks,
+    skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
   };
 }

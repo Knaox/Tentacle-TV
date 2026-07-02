@@ -58,8 +58,8 @@ export type { CacheTarget } from "./hooks/cacheUtils";
 export { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY, FAVORITE_SERIES_IDS_KEY } from "./hooks/watchlistEffects";
 
 // App config & feature flags
-export { useAppConfig, setConfigBackendUrl } from "./hooks/useConfig";
-export type { AppConfig, AppFeatures } from "./hooks/useConfig";
+export { useAppConfig, useAutoplayConfig, setConfigBackendUrl } from "./hooks/useConfig";
+export type { AppConfig, AppFeatures, AutoplayConfig } from "./hooks/useConfig";
 
 // Direct streaming config
 export { useStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUERY_KEY } from "./hooks/useStreamingConfig";

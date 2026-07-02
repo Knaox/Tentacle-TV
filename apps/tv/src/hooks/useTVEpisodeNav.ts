@@ -38,7 +38,7 @@ export function useTVEpisodeNav(args: {
     navigation.replace("Player", { itemId: episodeId });
   }, [reportStop, queryClient, itemId, navigation]);
 
-  const autoPlay = useAutoPlay(item, jellyfinDuration ?? 0, skipSegments.credits, navigateToEpisode);
+  const autoPlay = useAutoPlay(item, jellyfinDuration ?? 0, navigateToEpisode);
   const { previousEpisode } = useEpisodeNavigation(item);
 
   const prevClickTimeRef = useRef(0);
