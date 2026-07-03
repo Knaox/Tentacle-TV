@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useMemo, type ElementRef } from "react";
-import { View, TouchableOpacity } from "react-native";
+import { useState, useRef, useEffect, useMemo, useCallback, type ElementRef } from "react";
+import { View, TouchableOpacity, NativeModules } from "react-native";
 import { useJellyfinClient, useMediaItem, useItemAncestors, usePlaybackReporting } from "@tentacle-tv/api-client";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
@@ -82,6 +82,16 @@ export function PlayerScreen({ route, navigation }: Props) {
   // useTVRemuxPause (reprise), useTVRemuxSeek (seek) et useTVReloadState
   // (persistance de l'image figée + reset au changement d'item).
   const deadSessionRef = useRef(false);
+  // Capture réelle de la dernière frame (pause longue remux) : prise à l'engage
+  // de la pause (vidéo intacte à l'écran), affichée par TVReloadFrame si la
+  // session meurt — à la place de la vignette trickplay basse résolution.
+  const [pauseFrameUri, setPauseFrameUri] = useState<string | null>(null);
+  const capturePauseFrame = useCallback(() => {
+    (NativeModules as { TVDisplayCriteria?: { captureFrame?: () => Promise<{ uri?: string } | null> } })
+      .TVDisplayCriteria?.captureFrame?.()
+      .then((r) => { if (r?.uri) setPauseFrameUri(r.uri); })
+      .catch(() => {});
+  }, []);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // Premier onLoad reçu → les isLoading suivants sont du rebuffering (spinner
@@ -193,8 +203,14 @@ export function PlayerScreen({ route, navigation }: Props) {
   // pause VOD/keepalive) et orchestre la reprise (nouvelle session à P). No-op hors remux local.
   useTVRemuxPause({
     paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload,
-    notifySeekRef, resetLoadedRef, deadSessionRef,
+    notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame,
   });
+
+  // Capture de pause consommée : invalidée dès que la lecture reprend réellement
+  // (hors reload en cours, où l'image figée sert encore de masque).
+  useEffect(() => {
+    if (!paused && reloadFrameSec == null) setPauseFrameUri(null);
+  }, [paused, reloadFrameSec]);
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -434,7 +450,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       onSelectQuality={handleQualityChange}
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
-      trickplay={trickplay} reloadFrameSec={reloadFrameSec} osdFocusSignal={osdFocusSignal}
+      trickplay={trickplay} reloadFrameSec={reloadFrameSec} pauseFrameUri={pauseFrameUri} osdFocusSignal={osdFocusSignal}
       subtitleText={subtitleText} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}

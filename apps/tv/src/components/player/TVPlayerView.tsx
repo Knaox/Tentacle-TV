@@ -98,6 +98,9 @@ export interface TVPlayerViewProps {
   /** Position figée (s) à afficher pendant un reload doux (audio/qualité) ;
    *  null = pas de reload doux en cours. */
   reloadFrameSec?: number | null;
+  /** Capture réelle de la dernière frame (pause longue remux) — prioritaire
+   *  sur la vignette trickplay dans TVReloadFrame. */
+  pauseFrameUri?: string | null;
   /** Incrémenter pour refocus le dernier bouton OSD utilisé */
   osdFocusSignal?: number;
   /** Cue de sous-titres texte rendue en JS (useTVSubtitles) — MPV/transcode */
@@ -120,7 +123,7 @@ export function TVPlayerView({
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
-  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleText, textTracks,
+  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleText, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
@@ -192,6 +195,7 @@ export function TVPlayerView({
           <TVReloadFrame
             trickplay={trickplay}
             positionSeconds={reloadFrameSec}
+            captureUri={pauseFrameUri}
             width={typeof playerStyle.width === "number" ? playerStyle.width : 0}
             height={typeof playerStyle.height === "number" ? playerStyle.height : 0}
           />

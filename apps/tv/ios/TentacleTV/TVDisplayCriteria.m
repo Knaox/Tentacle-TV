@@ -30,6 +30,12 @@
 extern int    gTVDynRange;   // 0=SDR, 3=HDR10, 4=Dolby Vision (posé par TVLocalRemux)
 extern double gTVFps;
 
+// Sortie vidéo attachée à l'item courant (engage) → capture fiable de la frame
+// affichée (copyPixelBufferForItemTime) même quand le snapshot UIKit rend noir
+// (AVPlayerLayer est composé hors-process). Utilisée par captureFrame (pause).
+static AVPlayerItemVideoOutput *gVidOut = nil;
+static __weak AVPlayerItem     *gVidOutItem = nil;
+
 @interface TVDisplayCriteria : NSObject <RCTBridgeModule>
 @end
 
@@ -102,9 +108,88 @@ RCT_EXPORT_METHOD(engage)
       [diag appendFormat:@" → ASSET crit=%d", crit != nil];
     }
     if (mgr) mgr.preferredDisplayCriteria = crit;
+    // Sortie vidéo pour la capture de frame (pause) : attachée UNE fois par item.
+    if (item && gVidOutItem != item) {
+      gVidOut = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:
+                 @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)}];
+      [item addOutput:gVidOut];
+      gVidOutItem = item;
+    }
     os_log_error(OS_LOG_DEFAULT, "[TVDC] %{public}s", diag.UTF8String);
     [diag writeToFile:[NSTemporaryDirectory() stringByAppendingPathComponent:@"tvdc.log"]
            atomically:YES encoding:NSUTF8StringEncoding error:nil];   // récupérable via devicectl
+  });
+}
+
+// Frame 8x8 → tout noir ? (échec de snapshot AVPlayerLayer : rendu hors-process)
+static BOOL TVImageLooksBlack(UIImage *img) {
+  if (!img) return YES;
+  uint8_t px[8 * 8 * 4] = {0};
+  CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+  CGContextRef ctx = CGBitmapContextCreate(px, 8, 8, 8, 8 * 4, cs,
+                                           kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+  CGColorSpaceRelease(cs);
+  if (!ctx) return YES;
+  CGContextDrawImage(ctx, CGRectMake(0, 0, 8, 8), img.CGImage);
+  CGContextRelease(ctx);
+  for (int i = 0; i < 8 * 8 * 4; i += 4)
+    if (px[i] > 10 || px[i + 1] > 10 || px[i + 2] > 10) return NO;
+  return YES;
+}
+
+static UIView *TVFindVideoHostView(UIView *v) {
+  for (CALayer *sub in v.layer.sublayers)
+    if ([sub isKindOfClass:AVPlayerLayer.class]) return v;
+  for (UIView *s in v.subviews) {
+    UIView *found = TVFindVideoHostView(s);
+    if (found) return found;
+  }
+  return nil;
+}
+
+// Capture la frame vidéo AFFICHÉE (pause longue remux : « garder la dernière image » au lieu
+// de la vignette trickplay). 1) snapshot UIKit de la vue hôte (couleurs = rendu écran, sans
+// l'OSD qui est un sibling) ; 2) si noir → AVPlayerItemVideoOutput (pixel buffer réel).
+// Résout { uri } (JPEG dans tmp, nom versionné anti-cache RN) ou nil (le JS garde le trickplay).
+RCT_EXPORT_METHOD(captureFrame:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+{
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIWindow *window = TVKeyWindow();
+    AVPlayerLayer *layer = TVFindPlayerLayer(window.layer);
+    AVPlayerItem *item = layer.player.currentItem;
+    if (!layer || !item) { resolve(nil); return; }
+
+    UIImage *img = nil;
+    UIView *host = TVFindVideoHostView(window);
+    if (host && host.bounds.size.width > 1) {
+      UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat preferredFormat];
+      fmt.scale = 1.0;   // 1x suffit (image de continuité plein écran)
+      UIGraphicsImageRenderer *r = [[UIGraphicsImageRenderer alloc] initWithBounds:host.bounds format:fmt];
+      img = [r imageWithActions:^(UIGraphicsImageRendererContext *c) {
+        [host drawViewHierarchyInRect:host.bounds afterScreenUpdates:NO];
+      }];
+    }
+    if (TVImageLooksBlack(img) && gVidOut && gVidOutItem == item) {
+      CVPixelBufferRef pb = [gVidOut copyPixelBufferForItemTime:item.currentTime itemTimeForDisplay:nil];
+      if (pb) {
+        static CIContext *cictx = nil;
+        if (!cictx) cictx = [CIContext contextWithOptions:nil];
+        CIImage *ci = [CIImage imageWithCVPixelBuffer:pb];
+        CGImageRef cg = [cictx createCGImage:ci fromRect:ci.extent];
+        if (cg) { img = [UIImage imageWithCGImage:cg]; CGImageRelease(cg); }
+        CVPixelBufferRelease(pb);
+      }
+    }
+    if (TVImageLooksBlack(img)) { resolve(nil); return; }
+
+    static int counter = 0;
+    NSString *prev = [NSTemporaryDirectory() stringByAppendingFormat:@"tvpauseframe-%d.jpg", counter];
+    [[NSFileManager defaultManager] removeItemAtPath:prev error:nil];
+    counter++;
+    NSString *path = [NSTemporaryDirectory() stringByAppendingFormat:@"tvpauseframe-%d.jpg", counter];
+    NSData *jpg = UIImageJPEGRepresentation(img, 0.85);
+    if (!jpg || ![jpg writeToFile:path atomically:YES]) { resolve(nil); return; }
+    resolve(@{ @"uri": [NSString stringWithFormat:@"file://%@", path] });
   });
 }
 
