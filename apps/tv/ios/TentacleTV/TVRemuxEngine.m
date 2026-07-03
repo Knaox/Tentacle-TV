@@ -31,6 +31,26 @@ volatile int    gWantStartSec = 0; // position de reprise (s) demandée par JS
 volatile double gWrittenSec = 0;   // position max ÉCRITE par le remux (s) → gate de reprise
 volatile double gSessionStartSec = 0; // temps absolu du 1ᵉʳ segment de la session (av_seek_frame) ; gDiskBytes est défini dans TVWindow.m
 
+// Paramètres vidéo INUTILISABLES pour le muxer MP4 : extradata absente OU « dégénérée »
+// (hvcC/avcC-stub sans AUCUN VPS/SPS/PPS — vu sur des MKV muxés depuis du broadcast : le
+// CodecPrivate fait ~23 o, numOfArrays=0, les params ne vivent QUE in-band). movenc écrirait
+// une box de config VIDE → flux invalide (AVPlayer -19601) alors que le fichier « joue »
+// partout ailleurs (les décodeurs parsent l'in-band ; nous n'avons PAS de décodeur vidéo).
+static int TVVideoParamsMissing(const AVCodecParameters *p) {
+  if (!p->extradata || p->extradata_size <= 0) return 1;
+  if (p->codec_id == AV_CODEC_ID_HEVC) {
+    if (p->extradata[0] == 1)                    // hvcC : header fixe 22 o + numOfArrays
+      return p->extradata_size < 23 || p->extradata[22] == 0;
+    return p->extradata_size < 32;               // annexb : VPS+SPS+PPS jamais < 32 o
+  }
+  if (p->codec_id == AV_CODEC_ID_H264) {
+    if (p->extradata[0] == 1)                    // avcC : numOfSPS = extradata[5] & 0x1F
+      return p->extradata_size < 7 || (p->extradata[5] & 0x1f) == 0;
+    return p->extradata_size < 16;
+  }
+  return 0;
+}
+
 static void TVDoRemux(const char *src, const char *dst, int gen) {
   AVFormatContext *ic = NULL, *oc = NULL;
   int *smap = NULL;
@@ -47,6 +67,12 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   // aNextPts = AV_NOPTS_VALUE → sera ANCRÉ sur la 1ʳᵉ frame audio décodée (timeline source) pour
   // garder la synchro labiale ; aInTb = time_base du flux audio source (rescale du PTS d'ancrage).
   int64_t aNextPts = AV_NOPTS_VALUE; AVRational aInTb = (AVRational){1, 48000};
+  // Extradata vidéo ABSENTE (HEVC/H.264 in-band : TS, MKV sans CodecPrivate…) : sans elle le
+  // muxer écrit un hvcC/avcC VIDE → flux invalide (AVPlayer -19601, « façon CLI » ffmpeg qui
+  // insère extract_extradata automatiquement). On DIFFÈRE le header et on extrait les
+  // VPS/SPS/PPS du 1ᵉʳ paquet vidéo via le BSF extract_extradata (inclus dans le build).
+  AVBSFContext *xbsf = NULL;
+  int vInIdx = -1, vOutIdx = -1, hdrWritten = 0, xTried = 0;
   int ret = 0;
   TVLOG("remux: entry gen=%d (cur=%d)", gen, gGen);
   if (!src || !dst) { gError = 1; gDone = 1; return; }
@@ -115,6 +141,7 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
     if (!os) { ret = -1; goto end; }
     if ((ret = avcodec_parameters_copy(os->codecpar, p)) < 0) goto end;
     if (p->codec_type == AVMEDIA_TYPE_VIDEO) {
+      vInIdx = (int)i; vOutIdx = oi;   // pour l'extraction d'extradata in-band (header différé)
       v_w = p->width; v_h = p->height; v_level = p->level;
       gTVFps = av_q2d(ic->streams[i]->avg_frame_rate);
       if (gTVFps <= 0) gTVFps = av_q2d(ic->streams[i]->r_frame_rate);
@@ -173,9 +200,30 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   if (!last_dts || !ptsbuf || !primed) { ret = -1; goto end; }
   for (int k = 0; k < oi; k++) last_dts[k] = INT64_MIN;
 
-  if ((ret = TVHLSWriteHeader(oc, dst)) < 0) goto end;
-
-  TVHLSWriteMaster(oc, ic, dst, v_dvp, v_blcompat, v_dvlevel, v_w, v_h, a_codec);
+  // Extradata vidéo absente/dégénérée (HEVC/H.264) → header DIFFÉRÉ : l'écrire maintenant
+  // graverait un hvcC/avcC vide (flux invalide). On extrait les VPS/SPS/PPS in-band du 1ᵉʳ
+  // paquet vidéo via `<codec>_mp4toannexb,extract_extradata` : mp4toannexb convertit les
+  // paquets length-prefixed (MKV/MP4) en annexb — extract_extradata NE lit QUE l'annexb
+  // (« No start code is found » sinon) et passe-through les flux déjà annexb (TS).
+  if (vOutIdx >= 0 &&
+      (oc->streams[vOutIdx]->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+       oc->streams[vOutIdx]->codecpar->codec_id == AV_CODEC_ID_H264) &&
+      TVVideoParamsMissing(oc->streams[vOutIdx]->codecpar)) {
+    const char *chain = (oc->streams[vOutIdx]->codecpar->codec_id == AV_CODEC_ID_HEVC)
+      ? "hevc_mp4toannexb,extract_extradata" : "h264_mp4toannexb,extract_extradata";
+    if (av_bsf_list_parse_str(chain, &xbsf) >= 0 && xbsf) {
+      avcodec_parameters_copy(xbsf->par_in, ic->streams[vInIdx]->codecpar);
+      xbsf->time_base_in = ic->streams[vInIdx]->time_base;
+      if (av_bsf_init(xbsf) < 0) { av_bsf_free(&xbsf); xbsf = NULL; }
+    }
+    TVLOG("remux: video extradata absente/dégénérée (%d o) → header différé, extraction in-band (bsf=%d)",
+          oc->streams[vOutIdx]->codecpar->extradata_size, xbsf ? 1 : 0);
+    if (!xbsf) { ret = -1; goto end; }   // BSF indispo → échec PROPRE (repli JS transcode)
+  } else {
+    if ((ret = TVHLSWriteHeader(oc, dst)) < 0) goto end;
+    TVHLSWriteMaster(oc, ic, dst, v_dvp, v_blcompat, v_dvlevel, v_w, v_h, a_codec);
+    hdrWritten = 1;
+  }
 
   pkt = av_packet_alloc();
   if (!pkt) { ret = -1; goto end; }
@@ -185,6 +233,43 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
     int si = pkt->stream_index;
     int oidx = (si >= 0 && si < (int)ic->nb_streams) ? smap[si] : -1;
     if (oidx < 0) { av_packet_unref(pkt); continue; }
+    // Params in-band (chaîne BSF active) : convertir CHAQUE paquet vidéo en annexb, toute la
+    // session — même chemin que le CLI `-bsf:v <codec>_mp4toannexb,extract_extradata` (validé
+    // sur la source réelle). L'extradata émise par extract_extradata est ANNEXB : movenc,
+    // voyant une extradata annexb, traite AUSSI les samples en annexb (ff_hevc_annexb2mp4).
+    // Écrire les samples MKV length-prefixed TELS QUELS produirait des trun size≈0 (le parseur
+    // annexb n'y trouve pas de start codes) → flux invalide (AVPlayer -16041).
+    if (xbsf && oidx == vOutIdx) {
+      if (av_bsf_send_packet(xbsf, pkt) < 0) { av_packet_unref(pkt); continue; }
+      if (av_bsf_receive_packet(xbsf, pkt) < 0) continue;   // EAGAIN improbable (BSF 1-in/1-out)
+      if (!hdrWritten) {
+        size_t xsz = 0;
+        uint8_t *xd = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &xsz);
+        if (xd && xsz > 0) {
+          AVCodecParameters *vp = oc->streams[vOutIdx]->codecpar;
+          av_freep(&vp->extradata);
+          vp->extradata = av_mallocz(xsz + AV_INPUT_BUFFER_PADDING_SIZE);
+          if (vp->extradata) { memcpy(vp->extradata, xd, xsz); vp->extradata_size = (int)xsz; }
+        }
+        if (oc->streams[vOutIdx]->codecpar->extradata_size > 0) {
+          TVLOG("remux: extradata in-band extraite (%d o) → header", oc->streams[vOutIdx]->codecpar->extradata_size);
+          if ((ret = TVHLSWriteHeader(oc, dst)) < 0) goto end;
+          TVHLSWriteMaster(oc, ic, dst, v_dvp, v_blcompat, v_dvlevel, v_w, v_h, a_codec);
+          hdrWritten = 1;
+          // fallthrough : CE paquet (keyframe annexb porteuse des params) est écrit normalement.
+        } else {
+          av_packet_unref(pkt);
+          // ~5 s de vidéo sans params in-band → ils n'existent pas (ni CodecPrivate ni bitstream) :
+          // échec PROPRE ET RAPIDE → le JS replie vite sur PlaybackInfo (transcode serveur).
+          if (++xTried > 120) { TVLOG("remux: extradata INTROUVABLE (%d pkts) → abort", xTried); ret = -1; goto end; }
+          continue;
+        }
+      }
+    } else if (!hdrWritten) {
+      // Header différé (extraction en cours) : rien ne peut s'écrire avant le header → DROP
+      // des paquets non-vidéo (<1 s en tête, l'A/V se recale au PTS).
+      av_packet_unref(pkt); continue;
+    }
     if (aXcode && oidx == aOutIdx) {        // piste audio transcodée (DTS/TrueHD/FLAC → EAC3)
       TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, aInTb, pkt);
       av_packet_unref(pkt); continue;
@@ -261,11 +346,13 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
     }
     if ((++npkt % 2000) == 0) TVLOG("remux: %lld pkts (writtenSec=%.0f pos=%.0f disk=%lldMo)", npkt, gWrittenSec, gTVPlayPos, gDiskBytes / (1024 * 1024));
   }
-  if (aXcode) TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, aInTb, NULL);  // flush décodeur+encodeur audio
-  av_write_trailer(oc);   // #EXT-X-ENDLIST → playlist VOD complète (seek total)
+  if (aXcode && hdrWritten) TVAudioTranscode(oc, adec, aenc, aswr, afifo, aOutIdx, &aNextPts, aInTb, NULL);  // flush décodeur+encodeur audio
+  if (hdrWritten) av_write_trailer(oc);   // #EXT-X-ENDLIST → playlist VOD complète (seek total)
+  else if (ret >= 0) ret = -1;            // fini sans jamais pouvoir écrire le header → échec propre
   TVLOG("remux: done, %lld packets, err=%d", npkt, gError);
 
 end:
+  if (xbsf) av_bsf_free(&xbsf);
   if (pkt)  av_packet_free(&pkt);
   if (smap) av_free(smap);
   if (last_dts) av_free(last_dts);

@@ -241,8 +241,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
         // Remux : pause longue → manifeste HLS `event` figé → -11866 « ended unexpectedly » (récupérable, segments sur disque) → relance à la position.
         if (isRemux && (err?.code === -11866 || /ended unexpectedly/i.test(detail))) { onError?.("REMUX_STALL"); return; }
+        // -19601 (CoreMedia) : flux remux invalide (ex. hvcC vide — extradata source introuvable).
+        // Classé « codec » → PlayerScreen bascule en transcode serveur au lieu d'afficher l'erreur.
         const codecLike =
-          err?.code === -11828 || err?.code === -11800 || /format|codec|cannot open|decode/i.test(detail);
+          err?.code === -11828 || err?.code === -11800 || (isRemux && err?.code === -19601)
+          || /format|codec|cannot open|decode/i.test(detail);
         onError?.(codecLike ? `Could not open: ${detail}` : detail);
       },
       [onError, isRemux],

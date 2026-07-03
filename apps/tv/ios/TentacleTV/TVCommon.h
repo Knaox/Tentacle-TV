@@ -17,6 +17,7 @@
 #import <libavformat/avformat.h>
 #import <libavutil/avutil.h>
 #import <libavcodec/avcodec.h>
+#import <libavcodec/bsf.h>   // extract_extradata (extradata in-band absente : TS, MKV sans CodecPrivate)
 #import <libavutil/dovi_meta.h>
 #import <libswresample/swresample.h>
 #import <libavutil/audio_fifo.h>
