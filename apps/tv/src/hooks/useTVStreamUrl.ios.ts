@@ -95,6 +95,11 @@ export function useTVStreamUrl(args: {
   const resumeSec = Math.max(0, Math.floor(startSeconds ?? 0));
 
   const fetchIdRef = useRef(0);
+  // Bascule ERREUR → transcode (fallback codec/-19601) : reload « dur » forcé, même contenu.
+  // Sans ça le reload serait « doux » (même contentKey) → le player resterait gelé sur le flux
+  // remux MORT pendant le fetch PlaybackInfo ; avec, baseUrl=null → TVPlayerLoadingScreen
+  // (le bel écran de chargement) s'affiche jusqu'au démarrage du transcode.
+  const prevFTRef = useRef(forceTranscode);
   // Clé de CONTENU : ne change qu'au changement d'item/source (≠ changement de
   // piste/qualité). Permet de distinguer un reload « dur » (nouveau contenu →
   // écran de chargement) d'un reload « doux » (audio/qualité → on GARDE l'ancienne
@@ -110,7 +115,9 @@ export function useTVStreamUrl(args: {
     if (!itemId || !userId) return;
     const fetchId = ++fetchIdRef.current;
     const contentKey = `${itemId}|${mediaSourceId ?? ""}`;
-    const softReload = contentKeyRef.current === contentKey;
+    const ftJustEnabled = forceTranscode && !prevFTRef.current;
+    prevFTRef.current = forceTranscode;
+    const softReload = contentKeyRef.current === contentKey && !ftJustEnabled;
     contentKeyRef.current = contentKey;
     // Fragment de reprise figé pour CETTE émission (cf. result.resumeFrag). Lu sur
     // le `startSeconds` du rendu qui a déclenché l'effet (startTicks/vcodec) → la
