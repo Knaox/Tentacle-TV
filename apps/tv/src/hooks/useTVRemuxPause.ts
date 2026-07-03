@@ -49,8 +49,12 @@ export function useTVRemuxPause(args: {
    *  cf. useTVRemuxStallRecovery) : la reprise doit alors remonter une session
    *  fraîche à P (chemin mode B) même en mode keepalive. */
   deadSessionRef: MutableRefObject<boolean>;
+  /** Capture la frame AFFICHÉE au moment où la pause s'engage (la vidéo est
+   *  encore intacte à l'écran) → si la session meurt plus tard, l'image figée
+   *  est la VRAIE dernière image au lieu de la vignette trickplay. */
+  capturePauseFrame?: () => void;
 }) {
-  const { paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef, deadSessionRef } = args;
+  const { paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame } = args;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const engagedRef = useRef(false);
 
@@ -61,7 +65,11 @@ export function useTVRemuxPause(args: {
     if (paused) {
       // Engager APRÈS un délai → les pauses courtes (scrub) restent en EVENT pur, zéro remount à la reprise.
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => { Remux?.setPaused?.(true); engagedRef.current = true; }, ENGAGE_MS);
+      timerRef.current = setTimeout(() => {
+        capturePauseFrame?.();   // frame encore affichée (aucun stall possible avant l'engage)
+        Remux?.setPaused?.(true);
+        engagedRef.current = true;
+      }, ENGAGE_MS);
       return;
     }
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
