@@ -12,8 +12,10 @@ import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./
  * (grâce de déconnexion, délivrance différée des invitations).
  */
 
-/** Log de diagnostic sync (grep `[WT]`) — silencieux par défaut, activer
- *  avec la variable d'environnement WT_DEBUG=1. */
+/** Log de diagnostic sync (grep `[WT]`) — actif automatiquement en dev
+ *  (le script `pnpm dev` injecte WT_DEBUG=1), silencieux en production
+ *  (l'image Docker ne définit jamais WT_DEBUG ; réactivable ponctuellement
+ *  par un opérateur via cette variable d'environnement). */
 const WT_DEBUG = process.env.WT_DEBUG === "1";
 function wtSrvLog(message: string, data?: Record<string, unknown>): void {
   if (!WT_DEBUG) return;
