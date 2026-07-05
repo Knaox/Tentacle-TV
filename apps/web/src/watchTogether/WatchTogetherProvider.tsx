@@ -95,6 +95,13 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Quitter Tentacle (fermeture onglet/app) = quitter le groupe rapidement.
+    // Un refresh émet aussi pagehide mais la reconnexion annule la grâce courte.
+    const onPageHide = () => {
+      if (roomRef.current) sendSocketMessage({ type: "wt:goodbye" });
+    };
+    window.addEventListener("pagehide", onPageHide);
+
     // Boot REST : groupe courant + invitations pendantes.
     let cancelled = false;
     fetchMyGroup()
@@ -106,6 +113,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("pagehide", onPageHide);
       unsubMessages();
       unsubStatus();
       release();

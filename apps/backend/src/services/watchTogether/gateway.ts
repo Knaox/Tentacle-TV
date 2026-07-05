@@ -1,8 +1,8 @@
 import type { WebSocket } from "@fastify/websocket";
 import type { JellyfinUser } from "../../middleware/auth";
 import { isUserOnline, onPresenceChange, sendToUser } from "../wsManager";
-import { armGrace, cancelGrace, getRoomOf, invitesFor } from "./roomStore";
-import { applyCommand, bumpEpoch, removeMemberAndSync } from "./sync";
+import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor } from "./roomStore";
+import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./protocol";
 
@@ -42,6 +42,14 @@ export function handleWtMessage(
     return;
   }
 
+  if (msg.type === "wt:goodbye") {
+    // L'app se ferme (pagehide) : leave rapide. Grâce courte plutôt que départ
+    // immédiat — un refresh émet aussi pagehide mais se reconnecte en 2-4 s
+    // (la reconnexion annule la grâce).
+    armGrace(user.userId, onGraceExpired, 10_000);
+    return;
+  }
+
   if (msg.type === "wt:autonextDismiss") {
     // Événement transient (hors state/epoch) : relayer aux AUTRES membres —
     // la bannière « épisode suivant » se masque partout.
@@ -75,6 +83,20 @@ let registered = false;
 export function registerWatchTogetherGateway(): void {
   if (registered) return;
   registered = true;
+
+  // Anti-gel infini : un membre attendu par le group-wait depuis trop
+  // longtemps (player coincé, réseau mort sans déconnexion WS) est déclaré
+  // en échec de lecture et le groupe reprend sans lui.
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of allRooms()) {
+      if (!room.paused || room.pauseReason !== "buffering" || room.waitingFor.size === 0) continue;
+      const { expired, resumed } = expireStaleWaits(room, now);
+      if (expired.length > 0) {
+        broadcastRoom(room, resumed ? "resume" : "presence", null);
+      }
+    }
+  }, 15_000);
 
   onPresenceChange((userId, online) => {
     if (online) {

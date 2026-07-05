@@ -36,6 +36,8 @@ export interface Room {
   pauseReason: WtPauseReason;
   /** Membres dont on attend la fin de mise en mémoire tampon (group-wait). */
   waitingFor: Set<string>;
+  /** Horodatage d'entrée dans waitingFor (miroir) — timeout anti-gel infini. */
+  waitingSince: Map<string, number>;
   members: Map<string, RoomMember>;
   /** Anti-spam seek : dernier seek accepté par membre. */
   lastSeekAt: Map<string, number>;
@@ -84,6 +86,11 @@ export function getRoom(groupId: string): Room | null {
   return rooms.get(groupId) ?? null;
 }
 
+/** Itérateur des rooms actives (sweeps périodiques du gateway). */
+export function allRooms(): IterableIterator<Room> {
+  return rooms.values();
+}
+
 export function getRoomOf(userId: string): Room | null {
   const groupId = memberIndex.get(userId);
   return groupId ? (rooms.get(groupId) ?? null) : null;
@@ -104,6 +111,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     stateAtServerTime: now,
     pauseReason: "user",
     waitingFor: new Set(),
+    waitingSince: new Map(),
     members: new Map([[user.userId, newMember(user, now)]]),
     lastSeekAt: new Map(),
     createdAt: now,
@@ -142,6 +150,7 @@ export function removeMember(userId: string): RemovalResult | null {
   cancelGrace(userId);
   room.members.delete(userId);
   room.waitingFor.delete(userId);
+  room.waitingSince.delete(userId);
   room.lastSeekAt.delete(userId);
   memberIndex.delete(userId);
 
@@ -165,15 +174,25 @@ export function removeMember(userId: string): RemovalResult | null {
 
 // ── Grâce de déconnexion ──
 
-/** Arme la grâce d'un membre hors ligne ; `onExpired` déclenche le leave implicite. */
-export function armGrace(userId: string, onExpired: (userId: string) => void): void {
+/** Arme la grâce d'un membre hors ligne ; `onExpired` déclenche le leave
+ *  implicite. `graceMs` : grâce courte pour un départ annoncé (wt:goodbye) —
+ *  remplace un éventuel timer plus long déjà armé. */
+export function armGrace(
+  userId: string,
+  onExpired: (userId: string) => void,
+  graceMs: number = WT_GRACE_PERIOD_MS,
+): void {
   const room = getRoomOf(userId);
   const member = room?.members.get(userId);
-  if (!member || member.graceTimer) return;
+  if (!member) return;
+  if (member.graceTimer) {
+    if (graceMs >= WT_GRACE_PERIOD_MS) return; // un timer court prime
+    clearTimeout(member.graceTimer);
+  }
   member.graceTimer = setTimeout(() => {
     member.graceTimer = null;
     onExpired(userId);
-  }, WT_GRACE_PERIOD_MS);
+  }, graceMs);
 }
 
 export function cancelGrace(userId: string): void {

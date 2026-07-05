@@ -124,7 +124,13 @@ export function useGroupSyncEngine({
       paused: room.paused,
     };
 
-    if (room.paused !== t.isPaused()) {
+    // Group-wait dont JE suis la cause (mon player charge/bufferise) : ne pas
+    // m'appliquer la pause — mpv pausé pendant un loadfile ne décode pas la
+    // première frame (écran noir) et ne signalerait jamais « prêt ».
+    const waitedForMe = room.paused && room.pauseReason === "buffering"
+      && !!selfId && room.waitingForUserIds.includes(selfId);
+
+    if (room.paused !== t.isPaused() && !waitedForMe) {
       armEcho();
       if (room.paused) t.pause();
       else t.play();

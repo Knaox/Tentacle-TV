@@ -15,6 +15,9 @@ export const TICKS_PER_MS = 10_000;
 export const WT_GRACE_PERIOD_MS = 120_000;
 /** Anti-spam : intervalle minimal entre deux seeks d'un même membre. */
 export const WT_MIN_SEEK_INTERVAL_MS = 200;
+/** Group-wait : au-delà, un membre encore attendu est déclaré en échec de
+ *  lecture et le groupe reprend sans lui (anti-gel infini). */
+export const WT_GROUP_WAIT_TIMEOUT_MS = 60_000;
 /** Nombre max d'utilisateurs invitables en une requête. */
 export const WT_MAX_INVITES_PER_REQUEST = 20;
 /** Garde-fou : position max acceptée (~28 h) contre les payloads absurdes. */
@@ -78,6 +81,7 @@ export type WtClientMessage =
   | { type: "wt:presence"; inPlayback: boolean; itemId?: string }
   | { type: "wt:playbackError"; itemId: string }
   | { type: "wt:autonextDismiss" }
+  | { type: "wt:goodbye" }
   | { type: "wt:syncRequest" };
 
 // ── Messages serveur → clients ──
@@ -161,6 +165,8 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
       return { type: "wt:playbackError", itemId: msg.itemId };
     case "wt:autonextDismiss":
       return { type: "wt:autonextDismiss" };
+    case "wt:goodbye":
+      return { type: "wt:goodbye" };
     case "wt:syncRequest":
       return { type: "wt:syncRequest" };
     default:
