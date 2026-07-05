@@ -9,6 +9,7 @@ import {
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
 } from "../PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./videoPlayer.types";
+import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 import type { MediaItem, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
@@ -49,7 +50,7 @@ interface DesktopPlayerControlsProps {
   handleAudioChange: (index: number) => void;
   handleSubtitleChange: (index: number | null) => void;
   onQualityChange: (key: QualityKey) => void;
-  onApplyToSeries?: () => void;
+  applyToSeries?: ApplyToSeriesControl;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
 }
@@ -66,7 +67,7 @@ export function DesktopPlayerControls({
   dur, actualPos, displayProgress, bufProg, seekbar,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
   goBack, togglePause, skipBy, toggleMute, setVolume, toggleFullscreen,
-  handleAudioChange, handleSubtitleChange, onQualityChange, onApplyToSeries,
+  handleAudioChange, handleSubtitleChange, onQualityChange, applyToSeries,
   onNextEpisode, onPreviousEpisode,
 }: DesktopPlayerControlsProps) {
   const { t } = useTranslation("player");
@@ -104,7 +105,7 @@ export function DesktopPlayerControls({
                 currentQuality={currentQuality} sourceQuality={sourceQuality}
                 onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
                 onQualityChange={onQualityChange}
-                onApplyToSeries={onApplyToSeries}
+                applyToSeries={applyToSeries}
                 onClose={closePanels.settings}
               />
             )}
