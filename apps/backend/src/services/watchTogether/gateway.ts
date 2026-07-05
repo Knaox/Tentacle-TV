@@ -1,7 +1,7 @@
 import type { WebSocket } from "@fastify/websocket";
 import type { JellyfinUser } from "../../middleware/auth";
 import { isUserOnline, onPresenceChange, sendToUser } from "../wsManager";
-import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor } from "./roomStore";
+import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor, type Room } from "./roomStore";
 import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./protocol";
@@ -11,6 +11,22 @@ import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./
  * (routés par routes/ws.ts après authentification) et gestion de la présence
  * (grâce de déconnexion, délivrance différée des invitations).
  */
+
+/** Log de diagnostic sync (grep `[WT]` dans les logs serveur). */
+function wtSrvLog(message: string, data?: Record<string, unknown>): void {
+  console.log(`[WT] ${message}`, data ? JSON.stringify(data) : "");
+}
+
+/** Résumé de l'état de lecture d'une room pour les logs. */
+function roomSnapshot(room: Room): Record<string, unknown> {
+  return {
+    epoch: room.epoch,
+    paused: room.paused,
+    reason: room.pauseReason,
+    posS: (room.positionTicks / 10_000_000).toFixed(1),
+    waiting: [...room.waitingFor],
+  };
+}
 
 /** Réponse d'erreur au SEUL socket émetteur (pas aux autres onglets du user). */
 function sendError(socket: WebSocket, code: WtErrorCode, message?: string): void {
@@ -27,17 +43,20 @@ export function handleWtMessage(
 ): void {
   const msg = parseWtClientMessage(raw);
   if (!msg) {
+    wtSrvLog(`message invalide de ${user.username}`, { raw: raw.type });
     sendError(socket, "invalid");
     return;
   }
 
   const room = getRoomOf(user.userId);
   if (!room) {
+    wtSrvLog(`${user.username} → ${msg.type} REJETÉ (pas dans un groupe)`);
     sendError(socket, "not_in_group");
     return;
   }
 
   if (msg.type === "wt:syncRequest") {
+    wtSrvLog(`${user.username} → syncRequest`, roomSnapshot(room));
     sendRoomState(user.userId, room, "sync");
     return;
   }
@@ -46,6 +65,7 @@ export function handleWtMessage(
     // L'app se ferme (pagehide) : leave rapide. Grâce courte plutôt que départ
     // immédiat — un refresh émet aussi pagehide mais se reconnecte en 2-4 s
     // (la reconnexion annule la grâce).
+    wtSrvLog(`${user.username} → goodbye (pagehide) — grâce courte 10s`);
     armGrace(user.userId, onGraceExpired, 10_000);
     return;
   }
@@ -63,6 +83,10 @@ export function handleWtMessage(
 
   const member = room.members.get(user.userId)!;
   const outcome = applyCommand(room, member, msg, isUserOnline);
+  wtSrvLog(
+    `${user.username} → ${JSON.stringify(msg)} ⇒ ${outcome.kind === "broadcast" ? `broadcast(${outcome.cause})` : "ignore"}`,
+    roomSnapshot(room),
+  );
   if (outcome.kind === "broadcast") {
     broadcastRoom(room, outcome.cause, user.userId);
   }
@@ -72,6 +96,9 @@ export function handleWtMessage(
 function onGraceExpired(userId: string): void {
   const result = removeMemberAndSync(userId);
   if (!result) return;
+  wtSrvLog(`grâce expirée → leave implicite de ${userId}`, {
+    dissolved: result.dissolved, resumed: result.resumed,
+  });
   if (!result.dissolved) {
     broadcastRoom(result.room, "leave", userId);
   }
@@ -93,6 +120,9 @@ export function registerWatchTogetherGateway(): void {
       if (!room.paused || room.pauseReason !== "buffering" || room.waitingFor.size === 0) continue;
       const { expired, resumed } = expireStaleWaits(room, now);
       if (expired.length > 0) {
+        wtSrvLog("SWEEP anti-gel : membres attendus > 60s marqués playbackError, le groupe reprend sans eux", {
+          expired, resumed, ...roomSnapshot(room),
+        });
         broadcastRoom(room, resumed ? "resume" : "presence", null);
       }
     }
@@ -109,6 +139,7 @@ export function registerWatchTogetherGateway(): void {
     }
     const room = getRoomOf(userId);
     if (!room) return;
+    wtSrvLog(`présence WS : ${userId} ${online ? "ONLINE (grâce annulée)" : "OFFLINE (grâce 120s armée)"}`, roomSnapshot(room));
     if (!online) {
       armGrace(userId, onGraceExpired);
     }
