@@ -63,6 +63,15 @@ export default {
   groupPlaybackActive: "Lecture de groupe en cours",
   rejoin: "Rejoindre",
 
+  // Chat de groupe
+  chatTitle: "Chat du groupe",
+  chatPlaceholder: "Écrire un message…",
+  chatSend: "Envoyer",
+  chatEmpty: "Aucun message pour l'instant. Dites bonjour !",
+  chatOpenAria: "Ouvrir le chat du groupe",
+  chatUnreadAria: "Ouvrir le chat du groupe ({{count}} message non lu)",
+  chatUnreadAria_other: "Ouvrir le chat du groupe ({{count}} messages non lus)",
+
   // Erreurs
   alreadyInGroup: "Vous êtes déjà dans un groupe.",
   groupGone: "Ce groupe n'existe plus.",

@@ -63,6 +63,15 @@ export default {
   groupPlaybackActive: "Group playback in progress",
   rejoin: "Rejoin",
 
+  // Group chat
+  chatTitle: "Group chat",
+  chatPlaceholder: "Type a message…",
+  chatSend: "Send",
+  chatEmpty: "No messages yet. Say hi!",
+  chatOpenAria: "Open group chat",
+  chatUnreadAria: "Open group chat ({{count}} unread message)",
+  chatUnreadAria_other: "Open group chat ({{count}} unread messages)",
+
   // Errors
   alreadyInGroup: "You are already in a group.",
   groupGone: "This group no longer exists.",

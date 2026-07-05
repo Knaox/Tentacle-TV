@@ -13,6 +13,7 @@ import type { WsClientMessage, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/
 import { useToast } from "../contexts/ToastContext";
 import { handleWtServerMessage, wtReducer, type WtEventHelpers } from "./wtEvents";
 import { GroupPlaybackPill } from "./GroupPlaybackPill";
+import { ChatRoot } from "./chat/ChatRoot";
 
 /** Watch Together — état global du groupe (app-level, sous le Router). */
 
@@ -168,6 +169,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={value}>
       {children}
       <GroupPlaybackPill />
+      {state.room && <ChatRoot />}
     </Ctx.Provider>
   );
 }
