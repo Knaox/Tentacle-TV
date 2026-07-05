@@ -23,7 +23,13 @@ export interface WtChatState {
   unread: number;
   open: boolean;
   reactions: WtFloatingReaction[];
+  /** Aperçus éphémères des messages d'autrui reçus panneau fermé (affichés
+   *  discrètement à l'écran comme les réactions, purgés par TTL). */
+  toasts: WtChatMessageDto[];
 }
+
+/** Nombre max d'aperçus empilés simultanément. */
+export const WT_CHAT_TOAST_MAX = 4;
 
 export const initialChatState: WtChatState = {
   groupId: null,
@@ -31,6 +37,7 @@ export const initialChatState: WtChatState = {
   unread: 0,
   open: false,
   reactions: [],
+  toasts: [],
 };
 
 export type WtChatAction =
@@ -38,6 +45,7 @@ export type WtChatAction =
   | { type: "message"; message: WtChatMessageDto; fromSelf: boolean }
   | { type: "reaction_add"; reaction: WtFloatingReaction }
   | { type: "reaction_expire"; key: string }
+  | { type: "toast_expire"; id: string }
   | { type: "set_open"; open: boolean }
   | { type: "clear" };
 
@@ -56,18 +64,30 @@ export function chatReducer(state: WtChatState, action: WtChatAction): WtChatSta
       // Dédupe par id : l'historique reçu à la reconnexion peut recouvrir un
       // message déjà poussé en temps réel (et inversement).
       if (state.messages.some((m) => m.id === action.message.id)) return state;
+      const showToast = !state.open && !action.fromSelf;
       return {
         ...state,
         messages: [...state.messages, action.message],
-        unread: !state.open && !action.fromSelf ? state.unread + 1 : state.unread,
+        unread: showToast ? state.unread + 1 : state.unread,
+        toasts: showToast
+          ? [...state.toasts, action.message].slice(-WT_CHAT_TOAST_MAX)
+          : state.toasts,
       };
     }
     case "reaction_add":
       return { ...state, reactions: [...state.reactions, action.reaction] };
     case "reaction_expire":
       return { ...state, reactions: state.reactions.filter((r) => r.key !== action.key) };
+    case "toast_expire":
+      return { ...state, toasts: state.toasts.filter((m) => m.id !== action.id) };
     case "set_open":
-      return { ...state, open: action.open, unread: action.open ? 0 : state.unread };
+      // Ouverture : les aperçus deviennent redondants avec le fil visible.
+      return {
+        ...state,
+        open: action.open,
+        unread: action.open ? 0 : state.unread,
+        toasts: action.open ? [] : state.toasts,
+      };
     case "clear":
       return initialChatState;
     default:
