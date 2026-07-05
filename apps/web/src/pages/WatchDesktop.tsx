@@ -11,6 +11,7 @@ import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { wtLog } from "../watchTogether/wtLog";
+import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -60,6 +61,8 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   // Avatars du groupe affichés uniquement quand l'overlay lecteur est actif.
   const [controlsVisible, setControlsVisible] = useState(true);
+  // La bulle de chat de groupe suit le même fondu que les contrôles.
+  useReportPlayerOverlay(controlsVisible);
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);

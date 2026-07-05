@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMotionValue } from "framer-motion";
 import { useWtChat } from "./useWtChat";
@@ -33,14 +33,10 @@ export function ChatRoot() {
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
 
-  // Zone de drag autorisée (l'overlay ne peut pas sortir de l'écran).
-  const boundsRef = useRef<HTMLDivElement | null>(null);
-
   return createPortal(
     <>
-      <div ref={boundsRef} className="pointer-events-none fixed inset-2 z-40" aria-hidden />
       <ReactionLayer reactions={chat.state.reactions} />
-      <ChatOverlay chat={chat} dragX={dragX} dragY={dragY} boundsRef={boundsRef} />
+      <ChatOverlay chat={chat} dragX={dragX} dragY={dragY} />
     </>,
     target,
   );
