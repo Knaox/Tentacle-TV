@@ -1,26 +1,25 @@
 import { useCallback, useEffect, useRef } from "react";
 import { sampleClock, subscribeSocket } from "@tentacle-tv/api-client";
 import {
-  TICKS_PER_SECOND, WT_CLOCK_BURST_COUNT, WT_CLOCK_BURST_SPACING_MS, WT_DRIFT_HARD_S,
-  WT_DRIFT_LOOP_MS, WT_DRIFT_PAUSED_S, WT_DRIFT_SETTLED_S, WT_DRIFT_SOFT_S,
-  WT_RATE_CATCHUP, WT_RATE_SLOWDOWN, WT_SEEK_LOOKAHEAD_S, WT_SOFT_CORRECTION_TIMEOUT_MS,
-  wtPositionSecondsAt,
+  TICKS_PER_SECOND, WT_CLOCK_BURST_COUNT, WT_CLOCK_BURST_SPACING_MS,
+  WT_SEEK_LOOKAHEAD_S, wtPositionSecondsAt,
 } from "@tentacle-tv/shared";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import type { PlayerTransportRef } from "./playerTransport";
-
-/** Fenêtre pendant laquelle les événements player locaux sont considérés comme
- *  l'écho d'une commande distante que le moteur vient d'appliquer. */
-const APPLY_ECHO_WINDOW_MS = 400;
-/** Saut de position entre deux états serveur interprété comme un seek distant. */
-const REMOTE_JUMP_THRESHOLD_S = 1;
+import {
+  armEcho, isApplying, isWaitedForMe, setTransportRate,
+  REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs,
+} from "./groupSyncShared";
+import { useGroupDriftLoop } from "./useGroupDriftLoop";
+import { wtLog } from "./wtLog";
 
 /**
  * Watch Together — moteur de synchronisation d'un player monté.
  * Applique l'état canonique du serveur au player local (pause/lecture, seeks
- * distants, correction de drift douce/dure) et transforme les transitions
- * locales observées en intents `wt:*` (modèle optimiste : le player agit,
- * le moteur rapporte). Anti-écho par fenêtre temporelle + comparaison d'état.
+ * distants — la correction de drift vit dans useGroupDriftLoop) et transforme
+ * les transitions locales observées en intents `wt:*` (modèle optimiste : le
+ * player agit, le moteur rapporte). Anti-écho par fenêtre temporelle +
+ * comparaison d'état.
  */
 export function useGroupSyncEngine({
   itemId,
@@ -44,6 +43,8 @@ export function useGroupSyncEngine({
   serverNowRef.current = serverNow;
   const sendRef = useRef(send);
   sendRef.current = send;
+  const selfIdRef = useRef(selfId);
+  selfIdRef.current = selfId;
 
   const applyingUntilRef = useRef(0);
   const lastBufferingSentRef = useRef<boolean | null>(null);
@@ -52,18 +53,16 @@ export function useGroupSyncEngine({
   /** Dernier état de lecture appliqué — détection des seeks distants (sauts). */
   const appliedSnapshotRef = useRef<{ positionTicks: number; stateAtServerTime: number; paused: boolean } | null>(null);
 
-  const applying = () => Date.now() < applyingUntilRef.current;
-  const armEcho = () => { applyingUntilRef.current = Date.now() + APPLY_ECHO_WINDOW_MS; };
-
-  const setRate = useCallback((rate: number) => {
-    if (currentRateRef.current === rate) return;
-    currentRateRef.current = rate;
-    transportRef.current?.setRate(rate);
-  }, [transportRef]);
+  // Bundle stable des refs partagées avec la boucle de drift.
+  const shared = useRef<GroupSyncSharedRefs>({
+    roomRef, serverNowRef, selfIdRef,
+    applyingUntilRef, lastBufferingSentRef, softCorrectionSinceRef, currentRateRef,
+  }).current;
 
   // ── Session : rafale d'horloge + nettoyage au démontage ──
   useEffect(() => {
     if (!active || !itemId) return;
+    wtLog("engine", "session ON", { itemId });
 
     // Rafale d'échantillonnage d'horloge (médiane implicite : meilleur RTT retenu).
     let burst = 0;
@@ -74,12 +73,19 @@ export function useGroupSyncEngine({
 
     return () => {
       clearInterval(burstTimer);
+      wtLog("engine", "session OFF — presence false + vitesse 1×", { itemId });
+      // Ne JAMAIS laisser un rattrapage doux (0.95/1.05) actif après un
+      // leave/démontage : hors groupe, personne ne remettrait la vitesse à 1.
+      if (currentRateRef.current !== 1) {
+        currentRateRef.current = 1;
+        transportRef.current?.setRate(1);
+      }
       sendRef.current({ type: "wt:presence", inPlayback: false });
       lastBufferingSentRef.current = null;
       softCorrectionSinceRef.current = null;
       appliedSnapshotRef.current = null;
-      currentRateRef.current = 1;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId]);
 
   // ── Déclaration : setItem filet + presence + buffering (une fois par montage) ──
@@ -96,6 +102,9 @@ export function useGroupSyncEngine({
     if (needsClaim) {
       // Filet générique : arriver sur un player avec un autre média = le lancer
       // pour le groupe (premier arrivé gagne, dédup serveur par fromItemId).
+      wtLog("engine", "déclaration : wt:setItem (lancer ce média pour le groupe)", {
+        itemId, fromItemId: r!.itemId, startS: claimStartSeconds,
+      });
       sendRef.current({
         type: "wt:setItem",
         itemId,
@@ -105,9 +114,19 @@ export function useGroupSyncEngine({
       });
     }
     sendRef.current({ type: "wt:presence", inPlayback: true, itemId });
-    // Départ gelé : le groupe m'attend le temps que mon player charge.
-    sendRef.current({ type: "wt:buffering", buffering: true });
-    lastBufferingSentRef.current = true;
+    // Départ gelé : le groupe m'attend le temps que mon player charge. MAIS si
+    // le player est DÉJÀ prêt (groupe créé/rejoint pendant une lecture en
+    // cours), déclarer un buffering serait un gel que RIEN ne résoudrait :
+    // mediaReady ne re-flippe pas → buffering:false jamais émis → groupe gelé
+    // jusqu'au timeout serveur et boucle de drift locale morte (état « cassé
+    // jusqu'au hard refresh »).
+    const alreadyReady = transportRef.current?.isMediaReady?.() === true;
+    wtLog("engine", `déclaration : presence inPlayback + wt:buffering ${!alreadyReady}`, {
+      itemId, alreadyReady, claimed: needsClaim,
+    });
+    sendRef.current({ type: "wt:buffering", buffering: !alreadyReady });
+    lastBufferingSentRef.current = !alreadyReady;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, claimStartSeconds]);
 
   // ── Application des états distants (pause/lecture + seeks détectés) ──
@@ -124,16 +143,22 @@ export function useGroupSyncEngine({
       paused: room.paused,
     };
 
-    // Group-wait dont JE suis la cause (mon player charge/bufferise) : ne pas
-    // m'appliquer la pause — mpv pausé pendant un loadfile ne décode pas la
-    // première frame (écran noir) et ne signalerait jamais « prêt ».
-    const waitedForMe = room.paused && room.pauseReason === "buffering"
-      && !!selfId && room.waitingForUserIds.includes(selfId);
+    // Group-wait dont JE suis la cause (mon player charge/bufferise) : ne
+    // m'appliquer NI pause NI seek — mpv pausé/seeké pendant un loadfile ne
+    // décode pas la première frame (écran noir) et ne signalerait jamais « prêt ».
+    const waitedForMe = isWaitedForMe(room, selfId);
+
+    wtLog("engine", `état reçu epoch=${room.epoch}`, {
+      paused: room.paused, reason: room.pauseReason,
+      roomPosS: (room.positionTicks / TICKS_PER_SECOND).toFixed(1),
+      waiting: room.waitingForUserIds.length, waitedForMe,
+      playerPaused: t.isPaused(), playerPosS: t.getPositionSeconds().toFixed(1),
+    });
 
     if (room.paused !== t.isPaused() && !waitedForMe) {
-      armEcho();
-      if (room.paused) t.pause();
-      else t.play();
+      armEcho(shared);
+      if (room.paused) { wtLog("engine", "apply: pause distante"); t.pause(); }
+      else { wtLog("engine", "apply: lecture distante"); t.play(); }
     }
 
     // Saut de position entre l'ancien et le nouvel état = seek distant → recalage
@@ -142,10 +167,15 @@ export function useGroupSyncEngine({
       const expectedFromPrev = wtPositionSecondsAt(prev, nowSrv);
       const expectedNew = wtPositionSecondsAt(room, nowSrv);
       if (Math.abs(expectedNew - expectedFromPrev) > REMOTE_JUMP_THRESHOLD_S) {
-        armEcho();
-        t.seekTo(expectedNew + (room.paused ? 0 : WT_SEEK_LOOKAHEAD_S));
-        setRate(1);
-        softCorrectionSinceRef.current = null;
+        if (waitedForMe) {
+          wtLog("engine", "apply: seek distant IGNORÉ (group-wait sur moi — le (re)chargement vise déjà la bonne position)", { toS: expectedNew.toFixed(1) });
+        } else {
+          wtLog("engine", "apply: seek distant", { fromS: expectedFromPrev.toFixed(1), toS: expectedNew.toFixed(1) });
+          armEcho(shared);
+          t.seekTo(expectedNew + (room.paused ? 0 : WT_SEEK_LOOKAHEAD_S));
+          setTransportRate(shared, t, 1);
+          softCorrectionSinceRef.current = null;
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,6 +186,7 @@ export function useGroupSyncEngine({
     if (!onGroupItem) return;
     return subscribeSocket((msg) => {
       if (msg.type === "wt:autonextDismiss" && msg.originUserId !== selfId) {
+        wtLog("engine", "auto-next dismiss distant", { from: msg.originUserId });
         transportRef.current?.cancelAutoNext?.();
       }
     });
@@ -163,67 +194,7 @@ export function useGroupSyncEngine({
   }, [onGroupItem, selfId]);
 
   // ── Boucle de drift (1 Hz) ──
-  useEffect(() => {
-    if (!onGroupItem) return;
-    const loop = setInterval(() => {
-      const t = transportRef.current;
-      const r = roomRef.current;
-      // Pas de correction tant que le player n'a pas été prêt une première fois
-      // (chargement initial : le group-wait nous couvre).
-      if (!t || !r || r.itemId !== itemId || lastBufferingSentRef.current !== false) return;
-
-      const expected = wtPositionSecondsAt(r, serverNowRef.current());
-      const pos = t.getPositionSeconds();
-
-      // Réconciliation pause/lecture (rattrape un play() refusé par la policy…).
-      if (t.isPaused() !== r.paused) {
-        armEcho();
-        if (r.paused) t.pause();
-        else t.play();
-      }
-
-      if (r.paused) {
-        setRate(1);
-        softCorrectionSinceRef.current = null;
-        if (Math.abs(pos - expected) > WT_DRIFT_PAUSED_S) {
-          armEcho();
-          t.seekTo(expected);
-        }
-        return;
-      }
-
-      const drift = pos - expected; // > 0 : en avance sur le groupe
-      const abs = Math.abs(drift);
-
-      if (abs >= WT_DRIFT_HARD_S) {
-        armEcho();
-        t.seekTo(expected + WT_SEEK_LOOKAHEAD_S);
-        setRate(1);
-        softCorrectionSinceRef.current = null;
-        return;
-      }
-      if (abs >= WT_DRIFT_SOFT_S) {
-        if (softCorrectionSinceRef.current === null) {
-          softCorrectionSinceRef.current = Date.now();
-        } else if (Date.now() - softCorrectionSinceRef.current > WT_SOFT_CORRECTION_TIMEOUT_MS) {
-          // Rattrapage doux inefficace → recalage dur.
-          armEcho();
-          t.seekTo(expected + WT_SEEK_LOOKAHEAD_S);
-          setRate(1);
-          softCorrectionSinceRef.current = null;
-          return;
-        }
-        setRate(drift > 0 ? WT_RATE_SLOWDOWN : WT_RATE_CATCHUP);
-        return;
-      }
-      if (abs <= WT_DRIFT_SETTLED_S && currentRateRef.current !== 1) {
-        setRate(1);
-        softCorrectionSinceRef.current = null;
-      }
-    }, WT_DRIFT_LOOP_MS);
-    return () => clearInterval(loop);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onGroupItem, itemId]);
+  useGroupDriftLoop({ enabled: !!onGroupItem, itemId, transportRef, shared });
 
   // ── Intents locaux (observe & report) ──
 
@@ -234,30 +205,53 @@ export function useGroupSyncEngine({
 
   const notifyPlayState = useCallback((paused: boolean) => {
     const r = roomRef.current;
-    if (!active || !r || r.itemId !== itemId || applying()) return;
+    if (!active || !r || r.itemId !== itemId) return;
+    if (isApplying(shared)) {
+      wtLog("engine", `intent play/pause ignoré (écho d'une commande distante), paused=${paused}`);
+      return;
+    }
     if (r.paused === paused) return; // no-op / écho tardif
+    wtLog("engine", `intent → wt:${paused ? "pause" : "play"}`, { posS: (posTicks() / TICKS_PER_SECOND).toFixed(1) });
     sendRef.current({ type: paused ? "wt:pause" : "wt:play", positionTicks: posTicks() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks]);
 
   const notifySeek = useCallback((seconds: number) => {
     const r = roomRef.current;
-    if (!active || !r || r.itemId !== itemId || applying()) return;
+    if (!active || !r || r.itemId !== itemId) return;
+    if (isApplying(shared)) {
+      wtLog("engine", "intent seek ignoré (écho d'un seek distant)", { toS: seconds.toFixed(1) });
+      return;
+    }
     // Dédup : un seek vers la position (extrapolée) du groupe est un recalage
     // local (ex. fallback niveau 3 différé d'un seek distant), pas un intent.
     if (Math.abs(seconds - wtPositionSecondsAt(r, serverNowRef.current())) < REMOTE_JUMP_THRESHOLD_S) return;
+    wtLog("engine", "intent → wt:seek", { toS: seconds.toFixed(1) });
     sendRef.current({ type: "wt:seek", positionTicks: Math.max(0, Math.round(seconds * TICKS_PER_SECOND)) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId]);
 
   const notifyBuffering = useCallback((buffering: boolean) => {
     const r = roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
+    // Re-présence : si le serveur m'a éjecté de la lecture (timeout anti-gel
+    // 60 s → playbackError, ou présence perdue), mes wt:buffering seraient
+    // traités comme de simples mises à jour de statut — plus JAMAIS de
+    // group-wait pour moi, le groupe ne m'attendrait plus. Se re-déclarer.
+    const self = selfIdRef.current ? r.members.find((m) => m.userId === selfIdRef.current) : undefined;
+    if (self && !self.inPlayback && declaredRef.current) {
+      wtLog("engine", "re-présence (le serveur me croyait hors lecture)", { playbackError: self.playbackError });
+      sendRef.current({ type: "wt:presence", inPlayback: true, itemId });
+    }
     if (lastBufferingSentRef.current === buffering) return;
     lastBufferingSentRef.current = buffering;
+    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (posTicks() / TICKS_PER_SECOND).toFixed(1) });
     sendRef.current({ type: "wt:buffering", buffering, positionTicks: posTicks() });
   }, [active, itemId, posTicks]);
 
   const notifyFatalError = useCallback(() => {
     if (!active || !itemId) return;
+    wtLog("engine", "intent → wt:playbackError (média illisible ici)", { itemId });
     lastBufferingSentRef.current = null; // fige la boucle de drift
     sendRef.current({ type: "wt:playbackError", itemId });
   }, [active, itemId]);

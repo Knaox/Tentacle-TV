@@ -9,6 +9,7 @@ import { useVideoEvents } from "../hooks/useVideoEvents";
 import { useAutoNextCountdown } from "../hooks/useAutoNextCountdown";
 import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
+import { useWebTransport } from "../hooks/useWebTransport";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
@@ -114,23 +115,10 @@ export function VideoPlayer({
   });
 
   // Watch Together : surface de commande impérative pour le moteur de sync.
-  // Positions en « position film » — seekTo hérite du seek intelligent 3 niveaux.
-  useEffect(() => {
-    if (!transportRef) return;
-    transportRef.current = {
-      play: () => { const v = videoRef.current; if (v?.paused) v.play().catch(() => {}); },
-      pause: () => videoRef.current?.pause(),
-      seekTo: (seconds: number) => handleSeek(seconds),
-      getPositionSeconds: () => lastKnownPositionRef.current,
-      isPaused: () => videoRef.current?.paused ?? true,
-      setRate: (rate: number) => {
-        const v = videoRef.current;
-        if (v && v.playbackRate !== rate) v.playbackRate = rate;
-      },
-      cancelAutoNext: cancelAutoNextLocal,
-    };
-    return () => { transportRef.current = null; };
-  }, [transportRef, handleSeek, cancelAutoNextLocal]);
+  useWebTransport({
+    transportRef, videoRef, lastKnownPositionRef, sourceChangingRef,
+    handleSeek, cancelAutoNextLocal,
+  });
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) { document.exitFullscreen(); return; }

@@ -1,7 +1,6 @@
 import { useEffect, useState, type MutableRefObject } from "react";
 import type { MpvState, PlayOptions } from "./useDesktopPlayer";
-
-const DBG = "[DesktopPlayer]";
+import { wtLog } from "../watchTogether/wtLog";
 
 interface UseMpvSourceOptions {
   state: MpvState;
@@ -53,8 +52,10 @@ export function useMpvSource({
       ? lastAbsolutePosRef.current
       : startPositionSeconds;
 
-    console.debug(DBG, "play", { src: src.substring(0, 80), startPos, absolutePos: lastAbsolutePosRef.current,
-      isDirectPlay, isSourceChange });
+    wtLog("mpv-src", isSourceChange ? "REBUILD de source (qualité/audio/burn-in)" : "chargement initial", {
+      src: src.substring(0, 110), startPosS: startPos?.toFixed(1) ?? "none",
+      lastAbsolutePosS: lastAbsolutePosRef.current.toFixed(1), isDirectPlay,
+    });
     // Don't pass audioTrack/subtitleTrack here — the preference effects handle
     // track selection AFTER file-loaded, avoiding races with pendingTracks.
     play({ url: src, startPosition: startPos });
@@ -79,11 +80,11 @@ export function useMpvSource({
       if (state.position > streamOffset * 0.5) {
         // mpv reports absolute PTS — no additional offset needed
         effectiveMpvOffset.current = 0;
-        console.debug(DBG, "PTS detection: absolute", { pos: state.position, streamOffset });
+        wtLog("mpv-src", "détection PTS : absolus (offset 0)", { pos: state.position.toFixed(1), streamOffset });
       } else {
         // mpv reports relative PTS — must add offset
         effectiveMpvOffset.current = streamOffset;
-        console.debug(DBG, "PTS detection: relative", { pos: state.position, streamOffset });
+        wtLog("mpv-src", "détection PTS : relatifs (offset appliqué)", { pos: state.position.toFixed(1), streamOffset });
       }
     }
   }, [state.position, src, isDirectPlay, streamOffset]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,13 +105,19 @@ export function useMpvSource({
     // Watch Together : mpv n'a pas de callback central de seek — un saut de
     // position discontinu (hors changement de source) est un seek local.
     if (prevPos > 0 && !sourceChanging && Math.abs(absolutePos - prevPos) > 3) {
+      wtLog("mpv-src", "saut de position détecté (seek local)", {
+        fromS: prevPos.toFixed(1), toS: absolutePos.toFixed(1), paused: state.paused,
+      });
       onSeekComplete?.(absolutePos, state.paused);
     }
   }, [state.position, state.paused, state.playing, fileLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear sourceChanging when playback resumes after a source change
   useEffect(() => {
-    if (state.playing && sourceChanging) setSourceChanging(false);
+    if (state.playing && sourceChanging) {
+      wtLog("mpv-src", "rebuild terminé — lecture effective");
+      setSourceChanging(false);
+    }
   }, [state.playing, sourceChanging]);
 
   return { sourceChanging };

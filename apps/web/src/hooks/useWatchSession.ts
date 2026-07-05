@@ -6,14 +6,8 @@ import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } fr
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
-
-function formatTrackLabel(s: JfStream, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const title = s.DisplayTitle || s.Title || s.Language || t("player:trackFallback", { index: s.Index });
-  const codec = s.Codec?.toUpperCase();
-  const parts = [title];
-  if (codec && !title.toUpperCase().includes(codec)) parts.push(codec);
-  return parts.join(" - ");
-}
+import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId } from "./watchSessionMedia";
+import { wtLog } from "../watchTogether/wtLog";
 
 const DBG = "[Tentacle:Player]";
 
@@ -146,13 +140,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // l'ancien id, puis la nouvelle URL repart sur une session propre.
   const desktopPlaySessionId = useMemo(() => {
     if (!isDesktop) return "";
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    return generatePlaySessionId();
   }, [itemId, isDesktop, qualityKey, audioIndex, burnInSubtitleIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const desktopIsDirectStream = isDesktop && !desktopIsDirectPlay && needsAudioTranscode && quality == null;
@@ -257,34 +245,28 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // mpv handles seeking client-side via startPositionSeconds.
   const streamOffset = isDesktop ? 0 : pbInfo.streamOffset;
 
-  const audioTracks: AudioTrack[] = useMemo(() =>
-    streams.filter((s) => s.Type === "Audio")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s, t), lang: s.Language?.toLowerCase() })),
-    [streams, t]);
+  // Diagnostic : chaque (re)construction d'URL de stream, avec la session
+  // Jellyfin associée (le transcode ffmpeg est lié à DeviceId+PlaySessionId).
+  useEffect(() => {
+    if (!streamUrl) return;
+    wtLog("session", "URL de stream (re)construite", {
+      itemId, qualityKey, audioIndex, burnInSubtitleIndex,
+      startTicksS: (startTicks / TICKS_PER_SECOND).toFixed(1),
+      isDirectPlay, isDirectStream, playSessionId,
+      url: streamUrl.substring(0, 130),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamUrl]);
 
-  const subtitleTracks: SubtitleTrack[] = useMemo(() =>
-    streams.filter((s) => s.Type === "Subtitle")
-      .map((s) => ({ index: s.Index, label: formatTrackLabel(s, t), url: client.getSubtitleUrl(itemId!, mediaSourceId!, s.Index), lang: s.Language?.toLowerCase(), codec: s.Codec?.toLowerCase() })),
+  const audioTracks: AudioTrack[] = useMemo(() => buildAudioTracks(streams, t), [streams, t]);
+
+  const subtitleTracks: SubtitleTrack[] = useMemo(
+    () => buildSubtitleTracks(streams, client, itemId!, mediaSourceId!, t),
     [streams, client, itemId, mediaSourceId, t]);
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
-  const posterUrl = useMemo(() => {
-    if (!item) return undefined;
-    // Chaîne de repli pour toujours avoir une bannière quand l'item est chargé :
-    // backdrop propre (films) → backdrop du parent (épisodes) → backdrop de la
-    // série via SeriesId (épisodes dont les champs ParentBackdrop* manquent).
-    if ((item.BackdropImageTags?.length ?? 0) > 0) {
-      return client.getImageUrl(item.Id, "Backdrop", { width: 1920, quality: 80 });
-    }
-    if ((item.ParentBackdropImageTags?.length ?? 0) > 0 && item.ParentBackdropItemId) {
-      return client.getImageUrl(item.ParentBackdropItemId, "Backdrop", { width: 1920, quality: 80 });
-    }
-    if (item.SeriesId) {
-      return client.getImageUrl(item.SeriesId, "Backdrop", { width: 1920, quality: 80 });
-    }
-    return undefined;
-  }, [client, item]);
+  const posterUrl = useMemo(() => buildPosterUrl(client, item), [client, item]);
   const startPositionSeconds = useMemo(() => {
     const ticks = item?.UserData?.PlaybackPositionTicks;
     return ticks ? ticks / TICKS_PER_SECOND : undefined;

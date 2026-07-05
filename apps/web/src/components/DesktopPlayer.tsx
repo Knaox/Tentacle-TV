@@ -132,7 +132,7 @@ export function DesktopPlayer({
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause
   useDesktopTransport({
-    transportRef, state, fileLoaded, mediaReady, isDirectPlay,
+    transportRef, state, mediaReady, isDirectPlay,
     lastAbsolutePosRef, effectiveMpvOffset,
     setPause, seek, setSpeed, cancelAutoPlay,
     onPlayStateChange, onBufferingChange,

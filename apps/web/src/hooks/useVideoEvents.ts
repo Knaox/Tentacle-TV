@@ -1,5 +1,6 @@
 import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { wtLog } from "../watchTogether/wtLog";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -86,18 +87,32 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       a.setVideoDuration(e.currentTarget.duration);
     },
     onPlay: () => {
+      wtLog("web-video", "event play", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       a.sourceChangingRef.current = false;
       a.setPlaying(true); a.setLoading(false); a.setShowPlayButton(false);
       if (!a.hasStartedRef.current) { a.hasStartedRef.current = true; a.onStarted?.(); }
       a.onPlayStateChange?.(false);
     },
-    onPause: () => { a.setPlaying(false); a.onPlayStateChange?.(true); },
+    onPause: () => {
+      wtLog("web-video", "event pause", { pos: a.lastKnownPositionRef.current.toFixed(1) });
+      a.setPlaying(false); a.onPlayStateChange?.(true);
+    },
     onWaiting: () => {
       clearTimeout(a.waitingTimer.current);
-      a.waitingTimer.current = setTimeout(() => { a.setLoading(true); a.onBufferingChange?.(true); }, 800);
+      a.waitingTimer.current = setTimeout(() => {
+        wtLog("web-video", "waiting > 800ms → signal buffering=true", {
+          pos: a.lastKnownPositionRef.current.toFixed(1),
+          readyState: a.videoRef.current?.readyState,
+        });
+        a.setLoading(true); a.onBufferingChange?.(true);
+      }, 800);
     },
-    onSeeked: () => { clearTimeout(a.seekStallTimer.current); },
+    onSeeked: () => {
+      wtLog("web-video", "event seeked", { pos: a.videoRef.current?.currentTime.toFixed(1) });
+      clearTimeout(a.seekStallTimer.current);
+    },
     onPlaying: () => {
+      wtLog("web-video", "event playing → signal buffering=false", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       clearTimeout(a.waitingTimer.current); clearTimeout(a.seekStallTimer.current);
       if (!a.sourceChangingRef.current) a.setLoading(false);
       a.onBufferingChange?.(false);
@@ -111,6 +126,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       // gate du player attend canplaythrough avant de lancer la lecture —
       // signaler plus tôt ferait repartir le groupe pendant qu'un rebuild
       // transcode charge encore (désync). Émis aussi en pause (group-wait).
+      wtLog("web-video", "event canplaythrough → signal buffering=false", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       a.onBufferingChange?.(false);
     },
     onStalled: () => {
@@ -123,6 +139,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     onError: (e: SyntheticEvent<HTMLVideoElement>) => {
       const err = e.currentTarget.error;
       console.error(DBG, "video error", { code: err?.code, message: err?.message, src: a.src.slice(0, 120), networkState: e.currentTarget.networkState });
+      wtLog("web-video", "event ERROR", { code: err?.code, message: err?.message });
       // MEDIA_ERR_DECODE / MEDIA_ERR_SRC_NOT_SUPPORTED : ce client ne peut
       // pas lire ce média (Watch Together : ne pas geler le groupe).
       if (err && (err.code === 3 || err.code === 4)) a.onFatalError?.();
