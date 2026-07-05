@@ -19,6 +19,7 @@ import {
   roomToDto,
 } from "../services/watchTogether/broadcast";
 import { getJellyfinUsers, getUserBasic } from "../services/watchTogether/usersCache";
+import { sendChatHistory } from "../services/watchTogether/chat";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
 
 /** Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation). */
@@ -126,6 +127,7 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
     }
     bumpEpoch(room);
     broadcastRoom(room, "join", user.userId);
+    sendChatHistory(user.userId, room);
     notifyInviteResult(invite, user.username, true);
     request.log.info({ groupId: room.groupId, user: user.username }, "[wt] invitation acceptée");
     return roomToDto(room);

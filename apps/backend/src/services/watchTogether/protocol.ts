@@ -22,6 +22,15 @@ export const WT_GROUP_WAIT_TIMEOUT_MS = 60_000;
 export const WT_MAX_INVITES_PER_REQUEST = 20;
 /** Garde-fou : position max acceptée (~28 h) contre les payloads absurdes. */
 export const WT_MAX_POSITION_TICKS = 1_000_000_000_000;
+/** Chat : longueur max d'un message (caractères, tronqué au-delà). */
+export const WT_CHAT_MAX_LENGTH = 500;
+/** Chat : fil conservé en mémoire par room (renvoyé au join/resync). */
+export const WT_CHAT_HISTORY_SIZE = 50;
+/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre. */
+export const WT_MIN_CHAT_INTERVAL_MS = 400;
+export const WT_MIN_REACTION_INTERVAL_MS = 250;
+/** Réaction : longueur max (un emoji composé ZWJ tient en ≤ 16 unités UTF-16). */
+export const WT_REACTION_MAX_LENGTH = 16;
 
 // ── DTOs ──
 
@@ -68,6 +77,17 @@ export interface WtInvitableUserDto {
   isOnline: boolean;
 }
 
+/** Message du chat de groupe (fil éphémère, en mémoire room uniquement). */
+export interface WtChatMessageDto {
+  /** Unique par room (`groupId:seq`). */
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  /** Date.now() serveur à la réception. */
+  at: number;
+}
+
 // ── Messages client → serveur ──
 
 export type WtSetItemReason = "manual" | "nextEp" | "prevEp" | "autonext";
@@ -82,7 +102,9 @@ export type WtClientMessage =
   | { type: "wt:playbackError"; itemId: string }
   | { type: "wt:autonextDismiss" }
   | { type: "wt:goodbye" }
-  | { type: "wt:syncRequest" };
+  | { type: "wt:syncRequest" }
+  | { type: "wt:chat"; text: string }
+  | { type: "wt:reaction"; emoji: string };
 
 // ── Messages serveur → clients ──
 
@@ -101,7 +123,10 @@ export type WtServerMessage =
   | { type: "wt:invite"; invite: WtInviteDto }
   | { type: "wt:inviteResult"; inviteId: string; toUserId: string; toUsername: string; accepted: boolean }
   | { type: "wt:dissolved"; groupId: string; reason: WtDissolvedReason }
-  | { type: "wt:error"; code: WtErrorCode; message?: string };
+  | { type: "wt:error"; code: WtErrorCode; message?: string }
+  | { type: "wt:chat"; message: WtChatMessageDto }
+  | { type: "wt:reaction"; userId: string; username: string; emoji: string; at: number }
+  | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] };
 
 // ── Helpers ──
 
@@ -169,6 +194,18 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
       return { type: "wt:goodbye" };
     case "wt:syncRequest":
       return { type: "wt:syncRequest" };
+    case "wt:chat": {
+      if (typeof msg.text !== "string") return null;
+      const text = msg.text.trim().slice(0, WT_CHAT_MAX_LENGTH);
+      if (!text) return null;
+      return { type: "wt:chat", text };
+    }
+    case "wt:reaction": {
+      if (typeof msg.emoji !== "string") return null;
+      const emoji = msg.emoji.trim();
+      if (!emoji || emoji.length > WT_REACTION_MAX_LENGTH) return null;
+      return { type: "wt:reaction", emoji };
+    }
     default:
       return null;
   }

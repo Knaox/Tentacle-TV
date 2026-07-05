@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { WT_GRACE_PERIOD_MS, type WtPauseReason } from "./protocol";
+import { WT_GRACE_PERIOD_MS, type WtChatMessageDto, type WtPauseReason } from "./protocol";
 
 /**
  * Watch Together — état en mémoire des groupes (éphémères, aucune persistance).
@@ -41,6 +41,14 @@ export interface Room {
   members: Map<string, RoomMember>;
   /** Anti-spam seek : dernier seek accepté par membre. */
   lastSeekAt: Map<string, number>;
+  /** Fil de chat (ring buffer WT_CHAT_HISTORY_SIZE) — survit aux départs,
+   *  détruit avec la room. Voir chat.ts. */
+  chat: WtChatMessageDto[];
+  /** Compteur monotone d'ids de messages (`groupId:seq`). */
+  chatSeq: number;
+  /** Anti-spam chat/réactions : dernier envoi accepté par membre. */
+  lastChatAt: Map<string, number>;
+  lastReactionAt: Map<string, number>;
   createdAt: number;
 }
 
@@ -114,6 +122,10 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     waitingSince: new Map(),
     members: new Map([[user.userId, newMember(user, now)]]),
     lastSeekAt: new Map(),
+    chat: [],
+    chatSeq: 0,
+    lastChatAt: new Map(),
+    lastReactionAt: new Map(),
     createdAt: now,
   };
   rooms.set(room.groupId, room);
@@ -152,6 +164,8 @@ export function removeMember(userId: string): RemovalResult | null {
   room.waitingFor.delete(userId);
   room.waitingSince.delete(userId);
   room.lastSeekAt.delete(userId);
+  room.lastChatAt.delete(userId);
+  room.lastReactionAt.delete(userId);
   memberIndex.delete(userId);
 
   if (room.members.size === 0) {
