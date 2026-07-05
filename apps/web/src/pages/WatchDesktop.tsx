@@ -10,6 +10,7 @@ import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandl
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
+import { wtLog } from "../watchTogether/wtLog";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -47,6 +48,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   useEffect(() => {
     if (!streamUrl) return;
     if (firstSrcRef.current) { firstSrcRef.current = false; return; }
+    wtLog("page", "rebuild de source → déclarer buffering au groupe", { playSessionId });
     groupSync.notifyBuffering(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);

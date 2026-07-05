@@ -1,4 +1,6 @@
 import type { WsServerMessage, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import { wtLog } from "./wtLog";
 
 /**
  * Watch Together — réduction des messages serveur en actions d'état + effets
@@ -120,6 +122,12 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
     case "wt:state": {
       const prev = h.getRoom();
       const { state, cause, originUserId } = msg;
+      wtLog("provider", `wt:state reçu cause=${cause} epoch=${state.epoch}`, {
+        origin: originUserId, paused: state.paused, reason: state.pauseReason,
+        posS: (state.positionTicks / TICKS_PER_SECOND).toFixed(1),
+        waitingFor: state.waitingForUserIds,
+        stale: !!(prev && prev.groupId === state.groupId && state.epoch <= prev.epoch),
+      });
       // Stale (réordonnancement réseau) : même garde que le reducer.
       if (prev && prev.groupId === state.groupId && state.epoch <= prev.epoch) return;
       h.dispatch({ type: "room_state", state });
