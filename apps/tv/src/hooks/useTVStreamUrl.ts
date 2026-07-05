@@ -82,6 +82,7 @@ export function useTVStreamUrl(args: {
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
-  // `isLocalRemux` toujours false ici (remux on-device = tvOS uniquement) : parité de type avec `.ios.ts`.
-  return { streamUrl, playSessionId, isDirectPlay, isLocalRemux: false };
+  // `isLocalRemux` toujours false ici (remux on-device = tvOS uniquement) ; `failed` toujours
+  // false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité de type `.ios.ts`.
+  return { streamUrl, playSessionId, isDirectPlay, isLocalRemux: false, failed: false };
 }

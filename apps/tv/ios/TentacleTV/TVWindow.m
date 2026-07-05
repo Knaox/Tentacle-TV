@@ -25,7 +25,9 @@ volatile long long gDiskBytes = 0;
 // bloque déjà naturellement en pause (gTVPlayPos figé) ; ces globals ne pilotent QUE le manifeste servi.
 volatile int gPaused = 0;
 volatile int gResumePending = 0;
-volatile int gSnapshotMode = 1;   // défaut : VOD+ENDLIST (variante B) ; JS bascule via setSnapshotMode pour le spike
+volatile int gSnapshotMode = 0;   // défaut ALIGNÉ sur le runtime réel : keepalive EVENT (variante A, poussée par
+                                  // useTVRemuxPause au montage). L'ancien défaut 1 (VOD) ne servait que si le JS
+                                  // n'avait pas encore poussé le mode → comportement divergent piégeux.
 
 // Purge les seg*.m4s trop en arrière de playPos + applique le plafond octets. Met à
 // jour gDiskBytes. Ne touche JAMAIS init.mp4 / *.m3u8 ni un segment à/juste-avant la
@@ -77,5 +79,34 @@ static void TVPurgeBehind(const char *dstC, int gen, double playPos) {
       if ([fm removeItemAtPath:p error:nil]) total -= sizes[n].longLongValue;
     }
     gDiskBytes = total;
+  }
+}
+
+// PHASE 2 FENÊTRÉE — pacing + purge par paquet écrit (extrait VERBATIM de la boucle moteur, budget
+// 300 lignes). Bride la lecture anticipée : rester ~300 s devant la position de lecture (gTVPlayPos,
+// poussée par JS) OU dès que le disque atteint le plafond (TVLR_DISK_CAP) → le remux d'un film 4K ne
+// remplit plus le stockage. En parallèle on PURGE les segments derrière la tête (TVPurgeBehind).
+// GATE gTVPlayPos>1 : ne pacer QU'APRÈS le démarrage réel — sinon une REPRISE (saut à T) se bloque
+// (le remux séquentiel s'arrête au tampon sans jamais atteindre T → « recommence au début »).
+// Tant que gTVPlayPos=0, le remux file librement. NB : gWrittenSec n'avance que via les paquets qui
+// passent ICI (vidéo + audio copié) — l'audio TRANSCODÉ contourne la boucle, c'est voulu : la vidéo
+// borne toujours la production.
+static void TVPaceAndPurge(const char *dst, int gen, int64_t wpts, AVRational wtb, long long npkt) {
+  if (wpts == AV_NOPTS_VALUE) return;
+  // RELATIF au début de session : wpts est le PTS source ABSOLU (lu AVANT le shift make_zero appliqué
+  // par le muxer), gSessionStartSec = origine réelle de la playlist (1ᵉʳ DTS muxé, cf. TVNoteFirstDts)
+  // → writtenSec 0-based, ALIGNÉ sur gTVPlayPos (currentTime AVPlayer 0-based) et sur la timeline des
+  // segments. SANS ça, gWrittenSec restait absolu (ex. 494) → gate `≥ PREBUFFER` vrai immédiatement
+  // (pas de pré-buffer → stall de démarrage) ET pacing absolu vs relatif (famine).
+  double writtenSec = (double)wpts * av_q2d(wtb) - gSessionStartSec;
+  if (writtenSec < 0) writtenSec = 0;
+  if (writtenSec > gWrittenSec) gWrittenSec = writtenSec;   // durée MAX produite (0-based) → gate pré-buffer + pacing
+  if ((npkt % 120) == 0) TVPurgeBehind(dst, gen, gTVPlayPos);
+  // Purge AUSSI pendant l'attente : quand la tête avance, gDiskBytes baisse et relâche le gate
+  // octets (sinon deadlock — le gate ne se rouvrirait jamais sans purge).
+  while (gReady && gTVPlayPos > 1.0 && gGen == gen && !gError &&
+         (writtenSec > gTVPlayPos + 300.0 || gDiskBytes > TVLR_DISK_CAP)) {
+    TVPurgeBehind(dst, gen, gTVPlayPos);
+    usleep(200000);
   }
 }

@@ -112,6 +112,8 @@ export interface TVPlayerViewProps {
   onToggleEpisodes?: () => void;
   onCloseEpisodes?: () => void;
   onSelectEpisode?: (episode: MediaItem) => void;
+  /** Dismiss de l'écran de FIN (« Ignorer ») : à la vraie fin → retour fiche média. */
+  onEofDismiss?: () => void;
 }
 
 export function TVPlayerView({
@@ -124,7 +126,7 @@ export function TVPlayerView({
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
   onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleText, textTracks,
-  showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode,
+  showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
 
@@ -228,7 +230,10 @@ export function TVPlayerView({
         onFastForward={() => { controls.buttonSeekStart("forward"); controls.showOverlay(); }}
         onFastForwardEnd={() => controls.buttonSeekStop()}
         scrubViaButton={controls.scrubViaButton}
-        onBack={onBack}
+        // SEUL handler OSD historiquement non gardé : en scrub, le focus peut être
+        // resté sur Retour → OK déclenchait son onPress natif et QUITTAIT la vidéo.
+        // guardScrub : pendant un scrub, OK = valider le seek, jamais l'action du bouton.
+        onBack={controls.guardScrub(onBack)}
         onSettings={controls.guardScrub(onToggleSettings)}
         onNextEpisode={onNextEpisode ? controls.guardScrub(onNextEpisode) : undefined}
         onPrevEpisode={onPrevEpisode ? controls.guardScrub(onPrevEpisode) : undefined}
@@ -277,7 +282,7 @@ export function TVPlayerView({
       {/* Réglages/Qualité : présenté en route MODALE (PlayerSettingsScreen),
           plus en overlay ici → ESC ferme la modale proprement sans flash. */}
       {/* Crédits → bannière « À suivre » ; vraie fin (eof) → écran plein. */}
-      <TVAutoPlaySwitch autoPlay={autoPlay} active={autoPlayActive} />
+      <TVAutoPlaySwitch autoPlay={autoPlay} active={autoPlayActive} onEofDismiss={onEofDismiss} />
     </View>
   );
 }

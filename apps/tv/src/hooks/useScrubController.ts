@@ -84,10 +84,14 @@ export function useScrubController({
     scrubbingRef.current = false;
     setScrubbing(false);
     endHold();
+    // Base des skips ±10/30 synchronisée AVANT le seek : sans ça, un +30 immédiat
+    // après la confirmation repartait de la position PRÉ-scrub (currentTimeRef n'est
+    // sinon rafraîchi qu'au prochain progress accepté).
+    currentTimeRef.current = scrubPositionRef.current;
     onSeekRef.current(scrubPositionRef.current);
     onScrubPauseRef.current(false);
     showOverlay();
-  }, [endHold, clearIdleCancel, showOverlay, onSeekRef, onScrubPauseRef]);
+  }, [endHold, clearIdleCancel, showOverlay, onSeekRef, onScrubPauseRef, currentTimeRef]);
 
   const cancelScrub = useCallback(() => {
     clearIdleCancel();

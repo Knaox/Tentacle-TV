@@ -7,7 +7,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * → la session sortante ne joue ni son ni image pendant le chargement.
  * Dé-pause automatique au onLoad de la nouvelle session (isLoading repasse
  * false). Remplace le `muted` (non fiable sur AVPlayer). Safety : levée
- * forcée à 10 s.
+ * forcée à 15 s — un re-remux à froid peut dépasser 10 s (3 tentatives de
+ * start × backoff) et la levée prématurée faisait « bliper » l'audio de la
+ * session sortante.
  */
 export function useTVReloadHold(args: {
   isLoading: boolean;
@@ -24,7 +26,7 @@ export function useTVReloadHold(args: {
     setIsLoading(true);
     setReloadHold(true);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setReloadHold(false), 10000);
+    timerRef.current = setTimeout(() => setReloadHold(false), 15000);
   }, [setIsLoading]);
 
   useEffect(() => {

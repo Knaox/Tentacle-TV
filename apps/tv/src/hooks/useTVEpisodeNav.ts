@@ -35,7 +35,11 @@ export function useTVEpisodeNav(args: {
     queryClient.invalidateQueries({ queryKey: ["item", itemId] });
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    navigation.replace("Player", { itemId: episodeId });
+    // Différé d'un tick : usePreventRemove (panneau épisodes/écran de fin encore rendus
+    // ouverts) bloque un dispatch du MÊME tick — la valeur de prévention vient du dernier
+    // rendu. Sans ça, sélectionner un épisode dans le panneau exigeait DEUX appuis (le
+    // replace était silencieusement annulé, seul le panneau se fermait).
+    setTimeout(() => navigation.replace("Player", { itemId: episodeId }), 0);
   }, [reportStop, queryClient, itemId, navigation]);
 
   const autoPlay = useAutoPlay(item, jellyfinDuration ?? 0, navigateToEpisode);

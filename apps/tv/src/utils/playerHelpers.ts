@@ -1,12 +1,15 @@
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 
 /** Reprise tvOS : le fragment `#tnt-start=<sec>` (AVPlayer ne lit pas les fragments) porte la position
- *  absolue de reprise. On le parse puis on le retire de l'URI. Cf. AVPlayerSurface (offset confiné). */
-const START_RE = /#tnt-start=(\d+)/;
+ *  absolue de reprise. On le parse puis on le retire de l'URI. Cf. AVPlayerSurface (offset confiné).
+ *  Décimal accepté : le remux renvoie le départ RÉEL de session (keyframe ≤ T, précision ~1 frame) —
+ *  un entier tronqué re-décalerait la timeline que ce départ exact vient justement corriger. */
+const START_RE = /#tnt-start=(-?[\d.]+)/;
 export function parseStart(source: string): { uri: string; startSec: number } {
   const m = source.match(START_RE);
   if (!m) return { uri: source, startSec: 0 };
-  return { uri: source.replace(START_RE, ""), startSec: Number(m[1]) };
+  const parsed = Number.parseFloat(m[1]);
+  return { uri: source.replace(START_RE, ""), startSec: Number.isFinite(parsed) ? Math.max(0, parsed) : 0 };
 }
 
 /** Hermes has no crypto.randomUUID — simple v4 fallback */
