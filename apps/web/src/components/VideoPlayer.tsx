@@ -28,7 +28,7 @@ export function VideoPlayer({
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
-  onApplyToSeries,
+  onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,6 +50,8 @@ export function VideoPlayer({
 
   const [videoDuration, setVideoDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
+  // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
+  useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [volume, setVolume] = useState(() => {
     const s = localStorage.getItem("tentacle_player_volume");
     if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
@@ -277,7 +279,7 @@ export function VideoPlayer({
           onToggleFullscreen={toggleFullscreen} onBack={() => navigate(-1)}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
-          onApplyToSeries={onApplyToSeries}
+          applyToSeries={applyToSeries}
         />
       </div>
 

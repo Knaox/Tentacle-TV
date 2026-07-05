@@ -58,8 +58,13 @@ export function WatchWeb() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 
-  // Épisode : « Appliquer à cette série » (préférence de langues par série).
-  const applyToSeries = useApplyToSeries({ item, streams, audioIndex, subtitleIndex });
+  // Épisode : case « Appliquer à cette série » (préférence de langues par série).
+  const applyToSeries = useApplyToSeries({
+    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef,
+  });
+
+  // Avatars du groupe affichés uniquement quand l'overlay lecteur est actif.
+  const [controlsVisible, setControlsVisible] = useState(true);
 
   const runStopInvalidation = useWatchStopInvalidation();
   // Snapshot de l'item lu pour le cleanup, sans le mettre en dépendance de
@@ -205,12 +210,13 @@ export function WatchWeb() {
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
-          onApplyToSeries={applyToSeries}
+          onControlsVisibilityChange={setControlsVisible}
+          applyToSeries={applyToSeries}
         />
       ) : (
         <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />
       )}
-      <GroupPlaybackOverlay itemId={itemId} />
+      <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
     </div>
   );
 }

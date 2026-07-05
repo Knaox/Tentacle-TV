@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
@@ -51,8 +51,13 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 
-  // Épisode : « Appliquer à cette série » (préférence de langues par série).
-  const applyToSeries = useApplyToSeries({ item, streams, audioIndex, subtitleIndex });
+  // Épisode : case « Appliquer à cette série » (préférence de langues par série).
+  const applyToSeries = useApplyToSeries({
+    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef,
+  });
+
+  // Avatars du groupe affichés uniquement quand l'overlay lecteur est actif.
+  const [controlsVisible, setControlsVisible] = useState(true);
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);
@@ -183,9 +188,10 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onBufferingChange={groupSync.notifyBuffering}
         onSeekComplete={(seconds) => groupSync.notifySeek(seconds)}
         onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
-        onApplyToSeries={applyToSeries}
+        onControlsVisibilityChange={setControlsVisible}
+        applyToSeries={applyToSeries}
       />
-      <GroupPlaybackOverlay itemId={itemId} />
+      <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
     </div>
   );
 }
