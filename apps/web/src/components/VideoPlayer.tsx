@@ -1,107 +1,19 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import Hls from "hls.js";
 import { AnimatePresence } from "framer-motion";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayerControls } from "./PlayerControls";
-import { SkipBadge, type SkipFlash } from "./SkipBadge";
+import { SkipBadge } from "./SkipBadge";
+import { useSmartSeek } from "../hooks/useSmartSeek";
+import { useVideoSource } from "../hooks/useVideoSource";
+import { useVideoEvents } from "../hooks/useVideoEvents";
+import { useAutoNextCountdown } from "../hooks/useAutoNextCountdown";
+import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
+import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
-import { LoadingBar } from "./player/PlayerLoadingScreen";
-import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
-import type { PlayerTransportRef } from "../watchTogether/playerTransport";
+import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
+import type { VideoPlayerProps } from "./player/videoPlayer.types";
 
-export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
-export interface AudioTrack { index: number; label: string; lang?: string }
-
-interface VideoPlayerProps {
-  src: string;
-  itemId: string;
-  item?: MediaItem;
-  mediaSourceId?: string;
-  title: string;
-  subtitle?: string;
-  startPositionSeconds?: number;
-  jellyfinDuration?: number;
-  subtitleTracks?: SubtitleTrack[];
-  audioTracks?: AudioTrack[];
-  currentAudio: number;
-  currentSubtitle: number | null;
-  currentQuality: QualityKey;
-  sourceQuality?: SourceQuality;
-  isDirectPlay?: boolean;
-  streamOffset?: number;
-  /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */
-  useNativeHls?: boolean;
-  onAudioChange: (index: number) => void;
-  onSubtitleChange: (index: number | null) => void;
-  onQualityChange?: (key: QualityKey) => void;
-  onProgress?: (seconds: number, paused: boolean) => void;
-  onStarted?: () => void;
-  onSeekRequest?: (seconds: number) => void;
-  onSeekComplete?: (seconds: number, paused: boolean) => void;
-  hasNextEpisode?: boolean;
-  hasPreviousEpisode?: boolean;
-  nextEpisodeTitle?: string;
-  nextEpisodeImageUrl?: string;
-  nextEpisodeDescription?: string;
-  /** Interrupteur admin « Déclenchement auto-play » (bannière + auto-next). */
-  autoplayNextEnabled?: boolean;
-  /** Seuil (%) = MaxResumePct Jellyfin : la bannière apparaît à ce % de lecture. */
-  maxResumePct?: number;
-  onNextEpisode?: () => void;
-  onPreviousEpisode?: () => void;
-  introSegment?: SegmentTimestamps | null;
-  creditsSegment?: SegmentTimestamps | null;
-  /** Backdrop affiché pendant le chargement initial du média. */
-  posterUrl?: string;
-  /** Watch Together — surface de commande impérative (play/pause/seek/rate). */
-  transportRef?: PlayerTransportRef;
-  /** Watch Together — transition lecture/pause immédiate (événements play/pause). */
-  onPlayStateChange?: (paused: boolean) => void;
-  /** Watch Together — entrée/sortie de mise en mémoire tampon (debounce 800 ms). */
-  onBufferingChange?: (buffering: boolean) => void;
-  /** Watch Together — erreur média fatale (decode/src) : le membre ne peut pas lire. */
-  onFatalError?: () => void;
-  /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
-  onAutoNextDismiss?: () => void;
-}
-
-const DBG = "[Tentacle:VideoPlayer]";
-
-/** Safari-only: native HLS support detected via canPlayType.
- *  Returns "" on Chrome/Brave/Firefox/Edge → all Safari-specific code paths are inert. */
-const HAS_NATIVE_HLS = typeof document !== "undefined"
-  && document.createElement("video").canPlayType("application/vnd.apple.mpegurl") !== "";
-
-/** Max time (ms) to wait for canplaythrough before falling back to play anyway.
- *  Progressive transcode: video=copy is instant but audio transcode takes 1-3s.
- *  canplaythrough fires when the browser has decoded enough audio+video. */
-const BUFFER_GATE_TIMEOUT = 8_000;
-
-function attemptPlay(v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void) {
-  // Respecte le mute choisi par l'utilisateur (persisté) — sinon un changement
-  // d'épisode/média rétablirait le son (gênant à 2 players sur une machine).
-  const wantMuted = localStorage.getItem("tentacle_player_muted") === "1";
-  v.muted = wantMuted;
-  v.play().catch(() => {
-    v.muted = true;
-    v.play().then(() => { if (!wantMuted) onPolicyMuted(); }).catch((err) => {
-      console.error(DBG, "muted play also failed:", err);
-      onPlayFailed();
-    });
-  });
-}
-
-/** Check if a time (in PTS space) falls within any buffered range of the video element. */
-function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
-  for (let i = 0; i < video.buffered.length; i++) {
-    if (time >= video.buffered.start(i) && time <= video.buffered.end(i)) {
-      return true;
-    }
-  }
-  return false;
-}
+export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 
 export function VideoPlayer({
   src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
@@ -116,14 +28,12 @@ export function VideoPlayer({
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
+  onApplyToSeries,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
-  const jfClient = useJellyfinClient();
-  const { t } = useTranslation("player");
 
   const [playing, setPlaying] = useState(false);
   const rawTimeRef = useRef(0);
@@ -137,19 +47,6 @@ export function VideoPlayer({
   const effectiveOffsetRef = useRef(0);
   const containerPtsOffsetRef = useRef(0);
   const offsetDetectedRef = useRef(false);
-
-  // Synchronously reset state when src changes
-  const [prevSrc, setPrevSrc] = useState(src);
-  if (prevSrc !== src) {
-    setPrevSrc(src);
-    // jellyfin-web pattern: don't reset displayed time during stream changes
-    // (quality/audio switch). Keep showing the last known position until the
-    // new source provides timeupdate events with the correct absolute time.
-    // Full reset only happens on episode switch (key={itemId} triggers remount).
-    // Container PTS offset persists across source changes (same media).
-    offsetDetectedRef.current = true;
-    effectiveOffsetRef.current = -containerPtsOffsetRef.current;
-  }
 
   const [videoDuration, setVideoDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
@@ -173,8 +70,6 @@ export function VideoPlayer({
   }, []);
   const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const creditsAutoPlayTriggered = useRef(false);
   const hasStartedRef = useRef(false);
@@ -182,8 +77,6 @@ export function VideoPlayer({
   const currentTimeRef = useRef(0);
   const userInteractedRef = useRef(false);
   const waitingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [showPlayButton, setShowPlayButton] = useState(false);
-  const [policyMuted, setPolicyMuted] = useState(false);
   const seekTargetRef = useRef<number | null>(null);
   const seekStallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Touch gestures : swipe horizontal pour seek (-10s / +30s), tap simple pour play/pause.
@@ -191,6 +84,14 @@ export function VideoPlayer({
   const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const SWIPE_THRESHOLD_PX = 50;
   const SWIPE_MAX_DURATION_MS = 600;
+
+  const { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted } = useVideoSource({
+    videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
+    effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
+    seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
+    lastKnownPositionRef, currentTimeRef, onSeekRequest,
+  });
+
   const currentTime = effectiveOffsetRef.current + displayTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
 
@@ -200,87 +101,15 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
-  // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
-  //
-  // All targets from PlayerControls are in "movie position" (0 to duration).
-  // CopyTimestamps streams have a container PTS offset — v.currentTime and v.buffered
-  // are in PTS space (offset + movie_position). containerPtsOffsetRef bridges this gap.
-  //
-  // Level 1: target in HTML5 buffer → v.currentTime (instant)
-  // Level 2: HLS/Direct Play → v.currentTime, hls.js fetches segment (fast, ~1-2s)
-  //          with stall watcher: if segment unavailable after 3s → fallback to level 3
-  // Level 3: full restart → kill transcode + rebuild URL with StartTimeTicks (slow, 3-5s)
-  const handleSeek = useCallback((targetSeconds: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    const isHlsStream = src.includes(".m3u8");
-    const ptsOffset = containerPtsOffsetRef.current;
+  const { handleSeek, skipBy, skipFlash } = useSmartSeek({
+    videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
+    src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
+  });
 
-    // Cancel any pending stall watcher from a previous seek
-    clearTimeout(seekStallTimer.current);
-
-    // Clamp to valid movie-position range.
-    // For progressive transcode, v.duration is stream-relative (movieDuration - streamOffset).
-    const isProgressiveTranscode = !isHlsStream && !isDirectPlay && streamOffset > 0;
-    const movieMax = isProgressiveTranscode
-      ? (v.duration || Infinity) + streamOffset
-      : (v.duration || Infinity);
-    const clamped = Math.max(0, Math.min(targetSeconds, movieMax));
-
-    // Convert movie position to video-element PTS time
-    const ptsTarget = clamped + ptsOffset;
-
-    // --- LEVEL 1: Target in HTML5 buffer → instant seek ---
-    if (isTimeInBuffered(v, ptsTarget)) {
-      v.currentTime = ptsTarget;
-      onSeekComplete?.(clamped, v.paused);
-      return;
-    }
-
-    // Direct play: HTTP Range requests support random seek — always works
-    if (isDirectPlay) {
-      v.currentTime = ptsTarget;
-      onSeekComplete?.(clamped, v.paused);
-      return;
-    }
-
-    // --- LEVEL 2: HLS → try v.currentTime, hls.js fetches the segment ---
-    // jellyfin-web pattern (playbackmanager.js:canPlayerSeek): HLS streams are
-    // client-seekable — hls.js requests segments on demand. The existing ffmpeg
-    // keeps running and serves segments as long as they've been transcoded.
-    // If ffmpeg has advanced past this position (readrate=10x), the segment
-    // already exists on disk and hls.js fetches it quickly.
-    if (isHlsStream) {
-      v.currentTime = ptsTarget;
-      onSeekComplete?.(clamped, v.paused);
-
-      // --- LEVEL 3 fallback: stall watcher ---
-      // If after 3s the position hasn't reached the target, the segment doesn't
-      // exist yet (ffmpeg hasn't transcoded that far). Kill the current transcode
-      // and restart with StartTimeTicks at the target position.
-      seekStallTimer.current = setTimeout(() => {
-        const el = videoRef.current;
-        if (!el) return;
-        if (Math.abs(el.currentTime - ptsTarget) > 2) {
-          seekTargetRef.current = clamped;
-          onSeekRequest?.(clamped);
-        }
-      }, 8000);
-      return;
-    }
-
-    // --- Progressive transcode: always full restart (level 3) ---
-    // No in-stream seek support — must rebuild URL with new StartTimeTicks.
-    seekTargetRef.current = clamped;
-    onSeekRequest?.(clamped);
-  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
-
-  // Masque la bannière auto-next (dismiss local OU venu d'un autre membre).
-  const cancelAutoNextLocal = useCallback(() => {
-    clearInterval(autoPlayTimerRef.current);
-    creditsAutoPlayTriggered.current = true; // pas de re-déclenchement au tick suivant
-    setAutoPlayCountdown(null);
-  }, []);
+  const { autoPlayCountdown, startAutoPlay, cancelAutoNextLocal } = useAutoNextCountdown({
+    hasNextEpisode, onNextEpisode, autoplayNextEnabled, maxResumePct,
+    duration, currentTime, hasStartedRef, autoPlayTimerRef, creditsAutoPlayTriggered,
+  });
 
   // Watch Together : surface de commande impérative pour le moteur de sync.
   // Positions en « position film » — seekTo hérite du seek intelligent 3 niveaux.
@@ -318,248 +147,7 @@ export function VideoPlayer({
     hideTimer.current = setTimeout(() => { if (playing) setShowControls(false); }, 3000);
   }, [playing]);
 
-  // Source loading — handles both HLS (transcoded) and direct play
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    const isSourceChange = hasStartedRef.current;
-    const isHlsUrl = src.includes(".m3u8");
-    let bufferGateTimer: ReturnType<typeof setTimeout> | undefined;
-    sourceChangingRef.current = true;
-    setLoading(true);
-    // Don't reset hasStartedRef on source changes (seek, audio, quality).
-    // reportStart should fire only ONCE per episode mount — subsequent changes
-    // are reported via periodic progress updates. Resetting it here caused
-    // a new Sessions/Playing on every seek, creating phantom Jellyfin sessions.
-    // Direct play: seek explicitly to saved position (source change) or resume point (initial).
-    // HLS: use startPosition to seek within the absolute-PTS manifest.
-    // key={itemId} on VideoPlayer ensures episode switches remount cleanly.
-    // seekTargetRef: when a seek triggered URL rebuild, use the seek target, not the old position.
-    const seekTo = seekTargetRef.current != null
-      ? seekTargetRef.current
-      : isSourceChange
-        ? lastKnownPositionRef.current
-        : (startPositionSeconds ?? 0);
-    seekTargetRef.current = null;
-
-    const wasHls = !!hlsRef.current;
-    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-
-    // Full reset only when HLS is involved (old or new source).
-    // For progressive → progressive (e.g. audio track change), skip destruction
-    // to reduce the audio gap — just changing v.src is faster.
-    if (isSourceChange && (wasHls || isHlsUrl)) {
-      v.pause();
-      v.removeAttribute("src");
-      v.load();
-    }
-
-    const failsafe = setTimeout(() => {
-      if (sourceChangingRef.current) {
-        console.error(DBG, "loadedmetadata timeout — recovery");
-        sourceChangingRef.current = false;
-        setLoading(false);
-        setShowPlayButton(true);
-      }
-    }, 15_000);
-
-    const onReady = () => {
-      clearTimeout(failsafe);
-      const ptsOffset = containerPtsOffsetRef.current;
-      // jellyfin-web pattern: explicit seek for frame-accurate positioning.
-      // For HLS initial load: startPosition is segment-boundary accurate — good enough,
-      // skip explicit seek so play() fires faster (reduces audio delay).
-      // For HLS source changes (audio/quality switch): explicit seek corrects the
-      // segment-boundary offset (startPosition can be a few seconds off).
-      // For direct play: always seek (HTTP Range supports it).
-      // For progressive transcode: stream already starts at seekTo (via StartTimeTicks)
-      // with CopyTimestamps, so v.currentTime naturally lands at the right PTS.
-      if (seekTo > 0) {
-        const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
-        if (isProgressiveTranscode && streamOffset > 0) {
-          // Progressive with CopyTimestamps: stream naturally starts at correct PTS
-        } else if (!isHlsUrl || isSourceChange || useNativeHls) {
-          // Add container PTS offset to convert movie position → PTS.
-          // Native HLS (WKWebView): manifest starts at seekTo via StartTimeTicks
-          // but explicit seek ensures frame-accurate positioning (segment boundaries
-          // may not align exactly with the resume point).
-          v.currentTime = seekTo + ptsOffset;
-        }
-      }
-      // Keep sourceChangingRef=true and loading=true so the spinner stays visible
-      // until actual playback starts (onPlay). This prevents the black-screen gap
-      // between metadata/canplay and real audio+video output.
-      attemptPlay(v, () => setPolicyMuted(true), () => {
-        // Play completely blocked — show manual play button, clear loading state.
-        sourceChangingRef.current = false;
-        setLoading(false);
-        setShowPlayButton(true);
-      });
-    };
-
-    if (isHlsUrl && !useNativeHls && Hls.isSupported()) {
-      // hls.js: works on Chrome/Brave/Firefox/Edge (MSE) AND Safari 17.1+ (ManagedMediaSource).
-      // Since hls.js v1.5, Hls.isSupported() returns true on Safari 17.1+ via ManagedMediaSource
-      // → full buffer control, seeking, quality selection — same as Chrome.
-      const hls = new Hls({
-        enableWorker: true,
-        startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
-        lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
-        backBufferLength: Infinity,    // VOD: keep all played segments — instant backward seek
-        maxBufferLength: 30,          // buffer 30s ahead for smooth playback
-        maxMaxBufferLength: 120,      // allow up to 120s buffer for sustained streaming
-        startFragPrefetch: true,      // prefetch next fragment during current load
-        // A/V sync: fix audio desync with transcoded streams (fMP4/TS segments).
-        // stretchShortVideoTrack extends the last audio frame to fill micro-gaps between segments.
-        // maxAudioFramesDrift forces audio resync when drift exceeds 1 frame.
-        // forceKeyFrameOnDiscontinuity forces keyframe at discontinuity points (seek, segment switch).
-        stretchShortVideoTrack: true,
-        maxAudioFramesDrift: 1,
-        forceKeyFrameOnDiscontinuity: true,
-        fragLoadPolicy: {
-          default: {
-            maxTimeToFirstByteMs: 20_000,
-            maxLoadTimeMs: 60_000,
-            timeoutRetry: { maxNumRetry: 5, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
-            errorRetry: { maxNumRetry: 8, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
-          },
-        },
-      });
-      hlsRef.current = hls;
-      // HLS play timing:
-      // - Source change (audio/quality switch): play immediately on MANIFEST_PARSED
-      //   for fast switching. Explicit seek handles frame-accurate positioning.
-      // - Initial load: wait for canplay (audio+video data buffered) so the user
-      //   hears audio immediately when the video appears, instead of seeing video
-      //   with delayed audio while the first TS segment's audio track decodes.
-      if (isSourceChange) {
-        hls.on(Hls.Events.MANIFEST_PARSED, onReady);
-      } else {
-        v.addEventListener("canplay", onReady, { once: true });
-      }
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          console.error(DBG, "HLS fatal error:", data.type, data.details);
-          // CORS / cross-origin direct streaming blocked the manifest fetch.
-          // Disable DS for this session (admin config stays ON) and ask the
-          // parent to re-fetch PlaybackInfo, which will now go through the
-          // same-origin proxy at /api/jellyfin/* (no CORS).
-          if (
-            data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
-            jfClient.getDirectStreaming()
-          ) {
-            console.warn(
-              DBG,
-              "manifestLoadError on direct streaming — disabling DS for this session and falling back to proxy",
-            );
-            jfClient.setDirectStreaming(null);
-            clearTimeout(failsafe);
-            sourceChangingRef.current = false;
-            hls.destroy();
-            hlsRef.current = null;
-            onSeekRequest?.(currentTimeRef.current);
-            return;
-          }
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-          else { clearTimeout(failsafe); sourceChangingRef.current = false; setLoading(false); setShowPlayButton(true); }
-        }
-      });
-      hls.loadSource(src);
-      hls.attachMedia(v);
-    } else if (isHlsUrl && HAS_NATIVE_HLS) {
-      // Native HLS: WKWebView/AVFoundation (macOS Tauri) or older Safari (< 17.1).
-      v.src = src;
-      if (isSourceChange) v.load();
-      v.addEventListener("canplay", onReady, { once: true });
-    } else {
-      v.src = src;
-      // Explicit load only after full reset (HLS transition); for progressive → progressive
-      // setting v.src already triggers loading — double-load would add latency.
-      if (isSourceChange && (wasHls || isHlsUrl)) v.load();
-
-      const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
-      const isQuickSwitch = isSourceChange && seekTo > 0;
-
-      if (isProgressiveTranscode && !isQuickSwitch) {
-        // Progressive transcode: video=copy arrives instantly but audio transcode
-        // (EAC3→AAC) takes 1-3s. canplaythrough fires when the browser has decoded
-        // enough audio+video data to play without interruption — the strongest
-        // guarantee that audio is actually available before we call play().
-        v.addEventListener("canplaythrough", onReady, { once: true });
-        bufferGateTimer = setTimeout(() => {
-          v.removeEventListener("canplaythrough", onReady);
-          onReady();
-        }, BUFFER_GATE_TIMEOUT);
-        // readyState 4 = HAVE_ENOUGH_DATA = canplaythrough already fired
-        if (!isSourceChange && v.readyState >= 4) {
-          clearTimeout(bufferGateTimer);
-          v.removeEventListener("canplaythrough", onReady);
-          onReady();
-        }
-      } else {
-        // Direct play / source changes: loadedmetadata is sufficient (no audio delay).
-        v.addEventListener("loadedmetadata", onReady, { once: true });
-        if (!isSourceChange && v.readyState >= 1) {
-          v.removeEventListener("loadedmetadata", onReady);
-          onReady();
-        }
-      }
-    }
-
-    return () => {
-      clearTimeout(failsafe);
-      clearTimeout(bufferGateTimer);
-      clearTimeout(seekStallTimer.current);
-      v.removeEventListener("loadedmetadata", onReady);
-      v.removeEventListener("canplay", onReady);
-      v.removeEventListener("canplaythrough", onReady);
-    };
-  }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => () => { hlsRef.current?.destroy(); clearTimeout(seekStallTimer.current); }, []);
-
-  // Subtitle track visibility — re-apply after source change and when tracks load.
-  // Uses "disabled" (fully off) for non-selected tracks to prevent hls.js interference
-  // (hls.js can reset "hidden" tracks to "showing" — issue #4032).
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    const apply = () => {
-      const targetIdx = currentSubtitle != null
-        ? subtitleTracks.findIndex((s) => s.index === currentSubtitle) : -1;
-      for (let i = 0; i < v.textTracks.length; i++) {
-        v.textTracks[i].mode = (i === targetIdx) ? "showing" : "disabled";
-      }
-    };
-    apply();
-    // Re-apply when browser finishes loading <track> elements after source change
-    v.textTracks.addEventListener("addtrack", apply);
-    return () => v.textTracks.removeEventListener("addtrack", apply);
-  }, [currentSubtitle, subtitleTracks, src]);
-
-  // jellyfin-web pattern (plugin.js:setAudioStreamIndex): In Direct Play, switch
-  // audio tracks natively via HTML5 audioTracks API. This avoids URL rebuild and
-  // stream interruption. Supported in Firefox/Safari; Chrome requires transcoding
-  // fallback (handled by Watch.tsx rebuilding the URL when native switch unavailable).
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !isDirectPlay) return;
-    // HTMLMediaElement.audioTracks is not in standard TS lib — access via type cast.
-    const elemTracks = (v as HTMLVideoElement & {
-      audioTracks?: { readonly length: number; [i: number]: { enabled: boolean } };
-    }).audioTracks;
-    if (!elemTracks || elemTracks.length < 2) return;
-    // Map Jellyfin stream index to position in the <video> element's audioTracks list.
-    // audioTracks prop contains only Audio-type streams, in file order — same order
-    // as the browser's audioTracks on the <video> element.
-    const targetPos = audioTracks.findIndex((t) => t.index === currentAudio);
-    if (targetPos === -1 || targetPos >= elemTracks.length) return;
-    for (let i = 0; i < elemTracks.length; i++) {
-      elemTracks[i].enabled = (i === targetPos);
-    }
-  }, [currentAudio, isDirectPlay, audioTracks]);
+  useNativeMediaTracks({ videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -602,79 +190,20 @@ export function VideoPlayer({
     setVolume(v.muted ? 0 : 1);
   }, []);
 
-  // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
-  const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
-  const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
-  const skipBy = useCallback((delta: number) => {
-    handleSeek(Math.max(0, currentTimeRef.current + delta));
-    setSkipFlash({ delta, id: Date.now() });
-    clearTimeout(skipFlashTimer.current);
-    skipFlashTimer.current = setTimeout(() => setSkipFlash(null), 1000);
-  }, [handleSeek]);
+  usePlayerHotkeys({
+    videoRef, volume, subtitleTracks, currentSubtitle, hasNextEpisode, hasPreviousEpisode,
+    navigate, togglePlay, toggleFullscreen, handleSeek, skipBy, handleVolumeChange,
+    handleToggleMute, onSubtitleChange, onNextEpisode, onPreviousEpisode,
+  });
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space") { e.preventDefault(); togglePlay(); }
-      if (e.code === "KeyF") toggleFullscreen();
-      if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else navigate(-1); }
-      if (e.code === "ArrowRight") skipBy(30);
-      if (e.code === "ArrowLeft") skipBy(-10);
-      if (e.code === "ArrowUp") { e.preventDefault(); handleVolumeChange(Math.min(1, volume + 0.1)); }
-      if (e.code === "ArrowDown") { e.preventDefault(); handleVolumeChange(Math.max(0, volume - 0.1)); }
-      if (e.code === "KeyM") handleToggleMute();
-      if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
-      if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
-      if (e.code === "KeyS") {
-        // Toggle subtitles
-        const v = videoRef.current;
-        if (v && v.textTracks.length > 0) {
-          const active = Array.from(v.textTracks).findIndex((t) => t.mode === "showing");
-          if (active >= 0) { onSubtitleChange(null); }
-          else if (subtitleTracks.length > 0) { onSubtitleChange(subtitleTracks[0].index); }
-        }
-      }
-      if (e.code === "KeyR") handleSeek(0);
-      if (e.code === "KeyC") {
-        // Cycle subtitle tracks
-        if (subtitleTracks.length > 0) {
-          const currentIdx = subtitleTracks.findIndex((t) => t.index === currentSubtitle);
-          const nextIdx = (currentIdx + 1) % (subtitleTracks.length + 1);
-          onSubtitleChange(nextIdx < subtitleTracks.length ? subtitleTracks[nextIdx].index : null);
-        }
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay, toggleFullscreen, navigate, handleSeek, skipBy, handleVolumeChange, handleToggleMute, volume, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
-
-  useEffect(() => () => { clearInterval(autoPlayTimerRef.current); }, []);
-
-  const startAutoPlay = useCallback(() => {
-    if (!hasNextEpisode || !onNextEpisode) return;
-    setAutoPlayCountdown(10);
-    clearInterval(autoPlayTimerRef.current);
-    autoPlayTimerRef.current = setInterval(() => {
-      setAutoPlayCountdown((prev) => {
-        if (prev === null || prev <= 1) { clearInterval(autoPlayTimerRef.current); onNextEpisode(); return null; }
-        return prev - 1;
-      });
-    }, 1000);
-  }, [hasNextEpisode, onNextEpisode]);
-
-  // Bannière « épisode suivant » au MaxResumePct de Jellyfin (ex. 92 % → à
-  // 92 % de lecture). Relu à chaque tick → une mise à jour du % dans Jellyfin
-  // s'applique en cours de lecture. Le segment générique ne déclenche plus la
-  // bannière (le bouton « Passer le générique » reste inchangé).
-  useEffect(() => {
-    if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
-    if (!autoplayNextEnabled || !hasNextEpisode || !hasStartedRef.current) return;
-    const triggerAt = duration > 0 ? duration * (maxResumePct / 100) : null;
-    if (triggerAt != null && currentTime >= triggerAt) {
-      creditsAutoPlayTriggered.current = true;
-      startAutoPlay();
-    }
-  }, [currentTime, autoplayNextEnabled, maxResumePct, hasNextEpisode, autoPlayCountdown, startAutoPlay, duration]);
+  const videoEvents = useVideoEvents({
+    videoRef, rawTimeRef, lastKnownPositionRef, effectiveOffsetRef, containerPtsOffsetRef,
+    offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer, seekStallTimer,
+    src, itemId, startPositionSeconds, jellyfinDuration, autoplayNextEnabled,
+    hasNextEpisode, autoPlayCountdown,
+    setPlaying, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
+    startAutoPlay, onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
+  });
 
   const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
@@ -713,74 +242,7 @@ export function VideoPlayer({
       }}
       className="relative flex h-screen w-screen items-center justify-center bg-black">
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
-        onTimeUpdate={(e) => {
-          const t = e.currentTarget.currentTime;
-          rawTimeRef.current = t;
-          // Detect container PTS offset on first timeupdate.
-          // CopyTimestamps=true preserves the original container's PTS base, which
-          // may be non-zero (e.g., 677s for broadcast recordings). Subtract it
-          // so displayed time shows movie position (0 to duration), not raw PTS.
-          if (!offsetDetectedRef.current && t > 0) {
-            offsetDetectedRef.current = true;
-            const expectedStart = startPositionSeconds || 0;
-            const detectedOffset = t - expectedStart;
-            // Significant offset (> 5s) = real container PTS base, not timing jitter
-            if (detectedOffset > 5) {
-              containerPtsOffsetRef.current = Math.round(detectedOffset);
-              effectiveOffsetRef.current = -containerPtsOffsetRef.current;
-            }
-          }
-          const absoluteTime = effectiveOffsetRef.current + t;
-          lastKnownPositionRef.current = absoluteTime;
-          if (!sourceChangingRef.current) onProgress?.(absoluteTime, e.currentTarget.paused);
-        }}
-        onProgress={() => {
-          const v = videoRef.current;
-          if (!v) return;
-          const buf = v.buffered;
-          // Use jellyfinDuration for HLS event playlists where v.duration is Infinity
-          const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : v.duration;
-          if (!dur || !isFinite(dur) || buf.length === 0) return;
-          // Show buffered range ahead of current position (not stale high-water mark)
-          let bufEnd = 0;
-          for (let i = 0; i < buf.length; i++) {
-            if (v.currentTime >= buf.start(i) - 0.5 && v.currentTime <= buf.end(i) + 0.5) {
-              bufEnd = buf.end(i); break;
-            }
-          }
-          if (bufEnd === 0) bufEnd = buf.end(buf.length - 1);
-          setBuffered(bufEnd / dur);
-        }}
-        onLoadedMetadata={(e) => { setVideoDuration(e.currentTarget.duration); }}
-        onPlay={() => {
-          sourceChangingRef.current = false;
-          setPlaying(true); setLoading(false); setShowPlayButton(false);
-          if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); }
-          onPlayStateChange?.(false);
-        }}
-        onPause={() => { setPlaying(false); onPlayStateChange?.(true); }}
-        onWaiting={() => {
-          clearTimeout(waitingTimer.current);
-          waitingTimer.current = setTimeout(() => { setLoading(true); onBufferingChange?.(true); }, 800);
-        }}
-        onSeeked={() => { clearTimeout(seekStallTimer.current); }}
-        onPlaying={() => { clearTimeout(waitingTimer.current); clearTimeout(seekStallTimer.current); if (!sourceChangingRef.current) setLoading(false); onBufferingChange?.(false); }}
-        onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); onBufferingChange?.(false); }}
-        onStalled={() => {
-          // HTML5 `stalled` fires frequently during HLS playback (segment switch,
-          // network jitter, paused tab) even when playback recovers immediately.
-          // Demoted to console.debug so it stays out of the default console output
-          // — set DevTools log level to "Verbose" to see it during deep debugging.
-          console.debug(DBG, "video stalled", { src: src.slice(0, 120), readyState: videoRef.current?.readyState, networkState: videoRef.current?.networkState });
-        }}
-        onError={(e) => {
-          const err = e.currentTarget.error;
-          console.error(DBG, "video error", { code: err?.code, message: err?.message, src: src.slice(0, 120), networkState: e.currentTarget.networkState });
-          // MEDIA_ERR_DECODE / MEDIA_ERR_SRC_NOT_SUPPORTED : ce client ne peut
-          // pas lire ce média (Watch Together : ne pas geler le groupe).
-          if (err && (err.code === 3 || err.code === 4)) onFatalError?.();
-        }}
-        onEnded={() => { if (autoplayNextEnabled && hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode || !autoplayNextEnabled) navigate(`/media/${itemId}`, { replace: true }); }}
+        {...videoEvents}
         crossOrigin={useNativeHls ? undefined : "anonymous"}
       >
         {subtitleTracks.map((t) => (
@@ -788,60 +250,16 @@ export function VideoPlayer({
         ))}
       </video>
 
-      {loading && (playing || sourceChangingRef.current) && (
-        sourceChangingRef.current && !hasStartedRef.current ? (
-          // Chargement INITIAL du média : bannière (backdrop) + barre de chargement.
-          <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-[#0a0a12]" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(var(--brand-rgb),0.20),transparent_60%)]" />
-            {posterUrl && <img src={posterUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
-            <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20"><LoadingBar /></div>
-          </div>
-        ) : (
-          // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-          </div>
-        )
-      )}
-
-      {showPlayButton && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60"
-          onClick={(e) => {
-            e.stopPropagation(); userInteractedRef.current = true;
-            const v = videoRef.current;
-            if (v) { v.muted = false; v.play().then(() => { setShowPlayButton(false); setPolicyMuted(false); }).catch(() => {}); }
-          }}>
-          <div className="flex flex-col items-center gap-3">
-            <svg className="h-20 w-20 text-white/90" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <span className="text-sm text-white/70">{t("player:pressToPlay")}</span>
-          </div>
-        </div>
-      )}
-
-      {policyMuted && playing && !showPlayButton && (
-        <button onClick={(e) => { e.stopPropagation(); userInteractedRef.current = true; const v = videoRef.current; if (v) { v.muted = false; setPolicyMuted(false); } }}
-          className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm text-white/80 ring-1 ring-white/20 backdrop-blur-sm transition-all hover:bg-black/80">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-          </svg>
-          {t("player:pressForSound")}
-        </button>
-      )}
-
-      {showSkipIntro && introSegment && (
-        <button onClick={(e) => { e.stopPropagation(); handleSeek(introSegment.end); }}
-          className="absolute bottom-28 right-6 z-50 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {t("player:skipIntro")}
-        </button>
-      )}
-      {showSkipCredits && creditsSegment && !autoPlayCountdown && (
-        <button onClick={(e) => { e.stopPropagation(); if (hasNextEpisode) { creditsAutoPlayTriggered.current = true; startAutoPlay(); } else handleSeek(creditsSegment.end); }}
-          className="absolute bottom-28 right-6 z-50 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {hasNextEpisode ? t("player:nextEpisodeLabel") : t("player:skipCredits")}
-        </button>
-      )}
+      <VideoPlayerOverlays
+        loading={loading} playing={playing} showPlayButton={showPlayButton} policyMuted={policyMuted}
+        posterUrl={posterUrl} showSkipIntro={showSkipIntro} showSkipCredits={showSkipCredits}
+        introSegment={introSegment} creditsSegment={creditsSegment}
+        autoPlayCountdown={autoPlayCountdown} hasNextEpisode={hasNextEpisode}
+        videoRef={videoRef} sourceChangingRef={sourceChangingRef} hasStartedRef={hasStartedRef}
+        userInteractedRef={userInteractedRef} creditsAutoPlayTriggered={creditsAutoPlayTriggered}
+        setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
+        handleSeek={handleSeek} startAutoPlay={startAutoPlay}
+      />
 
       <SkipBadge flash={skipFlash} />
 
@@ -859,6 +277,7 @@ export function VideoPlayer({
           onToggleFullscreen={toggleFullscreen} onBack={() => navigate(-1)}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
+          onApplyToSeries={onApplyToSeries}
         />
       </div>
 

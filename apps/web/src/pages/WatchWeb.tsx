@@ -12,6 +12,7 @@ import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
+import { useApplyToSeries } from "../hooks/useApplyToSeries";
 
 export function WatchWeb() {
   const { t } = useTranslation("common");
@@ -45,6 +46,20 @@ export function WatchWeb() {
   const groupSync = useGroupSyncEngine({
     itemId, transportRef, claimStartSeconds: group.groupStartPositionSeconds,
   });
+
+  // Rebuild de source local (changement qualité/audio/burn-in → nouvelle URL de
+  // stream) : signaler le buffering pour que le groupe ATTENDE ce membre
+  // pendant le rechargement (le canplay renverra buffering:false).
+  const firstSrcRef = useRef(true);
+  useEffect(() => {
+    if (!streamUrl) return;
+    if (firstSrcRef.current) { firstSrcRef.current = false; return; }
+    groupSync.notifyBuffering(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamUrl]);
+
+  // Épisode : « Appliquer à cette série » (préférence de langues par série).
+  const applyToSeries = useApplyToSeries({ item, streams, audioIndex, subtitleIndex });
 
   const runStopInvalidation = useWatchStopInvalidation();
   // Snapshot de l'item lu pour le cleanup, sans le mettre en dépendance de
@@ -190,6 +205,7 @@ export function WatchWeb() {
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
+          onApplyToSeries={applyToSeries}
         />
       ) : (
         <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />
