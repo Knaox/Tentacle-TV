@@ -2,7 +2,10 @@ const TICKS_PER_SEC = 10_000_000;
 const DBG = "[Playback]";
 
 /** Logs de debug `[WT kill]` éliminés des builds de production — NODE_ENV est
- *  inliné statiquement par Vite (web/desktop) comme par Metro (mobile/TV). */
+ *  inliné statiquement par Vite (web/desktop) comme par Metro (mobile/TV).
+ *  Déclaration type-only : api-client (cible navigateur/RN) n'embarque pas
+ *  @types/node, et le build Docker compile sans lui (TS2580 sinon). */
+declare const process: { env: { NODE_ENV?: string } };
 const WT_KILL_DEBUG = process.env.NODE_ENV !== "production";
 function killLog(message: string, data?: unknown): void {
   if (!WT_KILL_DEBUG) return;
