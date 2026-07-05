@@ -12,24 +12,6 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
-## [win-1.11.1]
-
-Windows 1.11.1 — Web 1.1.0 — Backend 1.4.0
-
-### FR
-- **Chat de groupe (Watch Together)** : discutez en temps réel avec les membres de votre groupe pendant le visionnage — bulle flottante déplaçable où vous voulez, disponible sur toutes les pages tant que le groupe est actif.
-- **Réactions emoji** : réagissez d'un tap (😂 ❤️ 🔥 …) — les réactions s'affichent chez tous les membres en emojis flottants.
-- **Discret pendant la lecture** : le chat suit l'affichage des contrôles du lecteur (jamais pendant votre saisie), et les nouveaux messages apparaissent en aperçus éphémères à l'écran, sans avoir à ouvrir le chat — y compris en plein écran.
-- **Correctif** : la case « Appliquer à cette série » du lecteur peut à nouveau être décochée.
-- Corrections diverses et améliorations de stabilité.
-
-### EN
-- **Group chat (Watch Together)**: chat in real time with your group members while watching — a floating bubble you can drag anywhere, available on every page while the group is active.
-- **Emoji reactions**: react with one tap (😂 ❤️ 🔥 …) — reactions show up for every member as floating emojis.
-- **Unobtrusive during playback**: the chat follows the player controls visibility (never while you are typing), and new messages appear as ephemeral on-screen previews without opening the chat — including in fullscreen.
-- **Fix**: the player's "Apply to this series" checkbox can be unchecked again.
-- Various fixes and stability improvements.
-
 ## [mac-1.2.0]
 
 macOS 1.2.0 — Desktop 1.11.0 — Web 1.1.0 — Backend 1.4.0
@@ -39,6 +21,7 @@ macOS 1.2.0 — Desktop 1.11.0 — Web 1.1.0 — Backend 1.4.0
 - **Réactions emoji** : réagissez d'un tap (😂 ❤️ 🔥 …) — les réactions s'affichent chez tous les membres en emojis flottants.
 - **Discret pendant la lecture** : le chat suit l'affichage des contrôles du lecteur (jamais pendant votre saisie), et les nouveaux messages apparaissent en aperçus éphémères à l'écran, sans avoir à ouvrir le chat — y compris en plein écran.
 - **Fil conservé** : l'historique du chat est renvoyé quand on rejoint le groupe ou après un rafraîchissement.
+- **Correctif** : la case « Appliquer à cette série » du lecteur peut à nouveau être décochée.
 - Corrections diverses et améliorations de stabilité.
 
 ### EN
@@ -46,6 +29,7 @@ macOS 1.2.0 — Desktop 1.11.0 — Web 1.1.0 — Backend 1.4.0
 - **Emoji reactions**: react with one tap (😂 ❤️ 🔥 …) — reactions show up for every member as floating emojis.
 - **Unobtrusive during playback**: the chat follows the player controls visibility (never while you are typing), and new messages appear as ephemeral on-screen previews without opening the chat — including in fullscreen.
 - **Thread kept**: the chat history is delivered when joining the group or after a refresh.
+- **Fix**: the player's "Apply to this series" checkbox can be unchecked again.
 - Various fixes and stability improvements.
 
 ## [win-1.11.0]
@@ -57,6 +41,7 @@ Windows 1.11.0 — Web 1.1.0 — Backend 1.4.0
 - **Réactions emoji** : réagissez d'un tap (😂 ❤️ 🔥 …) — les réactions s'affichent chez tous les membres en emojis flottants.
 - **Discret pendant la lecture** : le chat suit l'affichage des contrôles du lecteur (jamais pendant votre saisie), et les nouveaux messages apparaissent en aperçus éphémères à l'écran, sans avoir à ouvrir le chat — y compris en plein écran.
 - **Fil conservé** : l'historique du chat est renvoyé quand on rejoint le groupe ou après un rafraîchissement.
+- **Correctif** : la case « Appliquer à cette série » du lecteur peut à nouveau être décochée.
 - Corrections diverses et améliorations de stabilité.
 
 ### EN
@@ -64,6 +49,7 @@ Windows 1.11.0 — Web 1.1.0 — Backend 1.4.0
 - **Emoji reactions**: react with one tap (😂 ❤️ 🔥 …) — reactions show up for every member as floating emojis.
 - **Unobtrusive during playback**: the chat follows the player controls visibility (never while you are typing), and new messages appear as ephemeral on-screen previews without opening the chat — including in fullscreen.
 - **Thread kept**: the chat history is delivered when joining the group or after a refresh.
+- **Fix**: the player's "Apply to this series" checkbox can be unchecked again.
 - Various fixes and stability improvements.
 
 ## [mac-1.1.1]
