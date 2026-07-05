@@ -59,6 +59,11 @@ export function ChatOverlay({
   const { open, unread } = chat.state;
   const watchOverlay = useWatchOverlayState();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // Un clic sur la bulle ne doit pas ouvrir le panneau après un VRAI drag :
+  // le drag framer démarre dès le pointerdown (dragControls.start), donc le
+  // tap framer est avalé par le geste — on passe par le click natif + ce flag
+  // (onDragStart ne se déclenche qu'au-delà du seuil de mouvement ~3 px).
+  const wasDraggedRef = useRef(false);
 
   // Page player : la bulle apparaît/disparaît avec l'overlay des contrôles.
   const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible && !open;
@@ -113,7 +118,12 @@ export function ChatOverlay({
       dragControls={dragControls}
       dragMomentum={false}
       dragElastic={0}
-      onDragEnd={settleIntoViewport}
+      onDragStart={() => { wasDraggedRef.current = true; }}
+      onDragEnd={() => {
+        settleIntoViewport();
+        // Reset APRÈS le click natif qui suit le pointerup du drag.
+        requestAnimationFrame(() => { wasDraggedRef.current = false; });
+      }}
       initial={false}
       animate={{ opacity: hidden ? 0 : 1 }}
       transition={{ duration: 0.3 }}
@@ -147,7 +157,7 @@ export function ChatOverlay({
             transition={{ duration: 0.15, ease: "easeOut" }}
             whileHover={{ scale: 1.08 }}
             onPointerDown={(e) => dragControls.start(e)}
-            onTap={() => chat.setOpen(true)}
+            onClick={() => { if (!wasDraggedRef.current) chat.setOpen(true); }}
             aria-label={unread > 0 ? t("chatUnreadAria", { count: unread }) : t("chatOpenAria")}
             className="relative flex h-12 w-12 cursor-pointer touch-none items-center justify-center rounded-full text-white/85"
             style={GLASS}
