@@ -143,19 +143,25 @@ export function useGroupSyncEngine({
       paused: room.paused,
     };
 
-    // Group-wait dont JE suis la cause (mon player charge/bufferise) : ne
-    // m'appliquer NI pause NI seek — mpv pausé/seeké pendant un loadfile ne
-    // décode pas la première frame (écran noir) et ne signalerait jamais « prêt ».
+    // Group-wait dont JE suis la cause (mon player charge/bufferise) OU
+    // (re)chargement local déclaré encore en cours (rebuild qualité pendant
+    // une pause utilisateur p.ex. — la room n'est alors PAS en pauseReason
+    // buffering) : ne m'appliquer NI pause NI seek — mpv pausé/seeké pendant
+    // un loadfile ne décode pas la première frame (écran noir) et ne
+    // signalerait jamais « prêt ». La boucle de drift réconciliera pause et
+    // position dès que le player aura signalé « prêt ».
     const waitedForMe = isWaitedForMe(room, selfId);
+    const loadingSelf = lastBufferingSentRef.current === true;
+    const skipApply = waitedForMe || loadingSelf;
 
     wtLog("engine", `état reçu epoch=${room.epoch}`, {
       paused: room.paused, reason: room.pauseReason,
       roomPosS: (room.positionTicks / TICKS_PER_SECOND).toFixed(1),
-      waiting: room.waitingForUserIds.length, waitedForMe,
+      waiting: room.waitingForUserIds.length, waitedForMe, loadingSelf,
       playerPaused: t.isPaused(), playerPosS: t.getPositionSeconds().toFixed(1),
     });
 
-    if (room.paused !== t.isPaused() && !waitedForMe) {
+    if (room.paused !== t.isPaused() && !skipApply) {
       armEcho(shared);
       if (room.paused) { wtLog("engine", "apply: pause distante"); t.pause(); }
       else { wtLog("engine", "apply: lecture distante"); t.play(); }
@@ -167,8 +173,8 @@ export function useGroupSyncEngine({
       const expectedFromPrev = wtPositionSecondsAt(prev, nowSrv);
       const expectedNew = wtPositionSecondsAt(room, nowSrv);
       if (Math.abs(expectedNew - expectedFromPrev) > REMOTE_JUMP_THRESHOLD_S) {
-        if (waitedForMe) {
-          wtLog("engine", "apply: seek distant IGNORÉ (group-wait sur moi — le (re)chargement vise déjà la bonne position)", { toS: expectedNew.toFixed(1) });
+        if (skipApply) {
+          wtLog("engine", "apply: seek distant IGNORÉ (player en (re)chargement — il vise déjà la bonne position)", { toS: expectedNew.toFixed(1) });
         } else {
           wtLog("engine", "apply: seek distant", { fromS: expectedFromPrev.toFixed(1), toS: expectedNew.toFixed(1) });
           armEcho(shared);
@@ -206,6 +212,14 @@ export function useGroupSyncEngine({
   const notifyPlayState = useCallback((paused: boolean) => {
     const r = roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
+    // (Re)chargement local en cours : les flips pause de mpv sont des artefacts
+    // du loadfile (pause=false forcé avant chargement…), pas des intents — un
+    // wt:play parti d'ici forcerait la reprise du group-wait et éjecterait les
+    // membres encore attendus (waitingFor.clear() côté serveur).
+    if (lastBufferingSentRef.current !== false) {
+      wtLog("engine", `intent play/pause ignoré (player en chargement déclaré), paused=${paused}`);
+      return;
+    }
     if (isApplying(shared)) {
       wtLog("engine", `intent play/pause ignoré (écho d'une commande distante), paused=${paused}`);
       return;
@@ -219,6 +233,11 @@ export function useGroupSyncEngine({
   const notifySeek = useCallback((seconds: number) => {
     const r = roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
+    // Sauts de position pendant un (re)chargement = start-position/artefacts.
+    if (lastBufferingSentRef.current !== false) {
+      wtLog("engine", "intent seek ignoré (player en chargement déclaré)", { toS: seconds.toFixed(1) });
+      return;
+    }
     if (isApplying(shared)) {
       wtLog("engine", "intent seek ignoré (écho d'un seek distant)", { toS: seconds.toFixed(1) });
       return;

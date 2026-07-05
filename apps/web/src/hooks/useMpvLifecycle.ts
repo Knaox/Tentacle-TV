@@ -123,16 +123,21 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 console.debug("[mpv] sid changed:", { raw: sid, parsed: sidNum });
                 return { ...prev, subtitleTrack: (sidNum != null && !Number.isNaN(sidNum)) ? sidNum : prev.subtitleTrack };
               }
-              case "paused-for-cache":
-                if (prev.buffering !== (event.data as boolean)) {
-                  wtLog("mpv", `paused-for-cache → ${event.data}`, { pos: positionRef.current.toFixed(1), cacheS: bufferedRef.current.toFixed(1) });
+              case "paused-for-cache": {
+                // data=null quand aucun média chargé (entre deux loadfile) → false.
+                const buffering = (event.data as boolean | null) ?? false;
+                if (prev.buffering !== buffering) {
+                  wtLog("mpv", `paused-for-cache → ${buffering}`, { pos: positionRef.current.toFixed(1), cacheS: bufferedRef.current.toFixed(1) });
                 }
-                return { ...prev, buffering: event.data as boolean };
-              case "seeking":
-                if (prev.seeking !== (event.data as boolean)) {
-                  wtLog("mpv", `seeking → ${event.data}`, { pos: positionRef.current.toFixed(1) });
+                return { ...prev, buffering };
+              }
+              case "seeking": {
+                const seeking = (event.data as boolean | null) ?? false;
+                if (prev.seeking !== seeking) {
+                  wtLog("mpv", `seeking → ${seeking}`, { pos: positionRef.current.toFixed(1) });
                 }
-                return { ...prev, seeking: event.data as boolean };
+                return { ...prev, seeking };
+              }
               case "eof-reached":
                 // With keep-open=yes, mpv doesn't fire end-file on EOF — it pauses
                 // at the last frame and sets eof-reached=true instead.

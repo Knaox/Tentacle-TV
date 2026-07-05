@@ -24,10 +24,22 @@ export type JfClient = {
   reportDirectStreamingError?: () => void;
 };
 
+/** La route DIRECTE de télémétrie a échoué (CORS WebView typiquement) : on
+ *  route les POST suivants directement via le proxy — inutile de re-payer un
+ *  préflight voué à l'échec à chaque report (10 s). Reset au rechargement. */
+let directTelemetryBroken = false;
+
 /**
  * Fire-and-forget POST to Jellyfin session endpoint.
  * Logs errors instead of silently swallowing them.
  * Uses raw fetch as fallback if client.fetch fails (to rule out client issues).
+ *
+ * IMPORTANT : un échec ici ne touche JAMAIS reportDirectStreamingError — la
+ * télémétrie est un fetch WebView soumis au CORS, qui échoue même quand le
+ * streaming média direct (mpv natif / <video>) marche parfaitement. La
+ * comptabiliser désactivait le Direct Streaming au bout de 3 reports → toutes
+ * les URLs médias basculaient sur le proxy (lent, et transcode HLS cassé).
+ * Seul useDirectStreamingGuard (vraies erreurs <img>/<video>) fait autorité.
  */
 export async function sessionPost(
   client: JfClient,
@@ -40,7 +52,7 @@ export async function sessionPost(
   // Direct Jellyfin route: bypass proxy to use the actual user's token
   // (proxy replaces user JWT with admin API key → wrong user context)
   const ds = client.getDirectStreaming?.();
-  if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+  if (!directTelemetryBroken && ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
     try {
       const res = await fetch(`${ds.mediaBaseUrl}${path}`, {
         method: "POST", body: bodyStr,
@@ -51,11 +63,11 @@ export async function sessionPost(
         },
       });
       if (res.ok || res.status === 204) return;
-      console.error(DBG, `${label} direct: ${res.status}`);
-      client.reportDirectStreamingError?.();
+      console.error(DBG, `${label} direct: ${res.status} — télémétrie via proxy désormais`);
+      directTelemetryBroken = true;
     } catch (err: unknown) {
-      console.error(DBG, `${label} direct FAILED:`, err instanceof Error ? err.message : String(err));
-      client.reportDirectStreamingError?.();
+      console.error(DBG, `${label} direct FAILED (CORS/réseau) — télémétrie via proxy désormais:`, err instanceof Error ? err.message : String(err));
+      directTelemetryBroken = true;
     }
     // Fall through to proxy on failure
   }
@@ -132,9 +144,10 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
   // DELETE cross-origin est bloqué par le CORS des WebViews : sans fallback
   // proxy, l'ancien ffmpeg survit et Jellyfin refuse/gèle la session suivante
   // (même DeviceId) → écran noir au changement de qualité. Toujours retomber
-  // sur le proxy si l'appel direct échoue.
+  // sur le proxy si l'appel direct échoue. Comme pour sessionPost : n'affecte
+  // JAMAIS reportDirectStreamingError, et skip le direct dès qu'il est cassé.
   const ds = client.getDirectStreaming?.();
-  if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
+  if (!directTelemetryBroken && ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
     console.info("[WT kill] DELETE ActiveEncodings via DIRECT", { playSessionId, deviceId });
     return fetch(`${ds.mediaBaseUrl}${path}`, {
       method: "DELETE", keepalive,
@@ -142,8 +155,11 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
     }).then((res) => {
       if (!res.ok) return viaProxy(`direct HTTP ${res.status}`);
       console.info("[WT kill] direct → OK (ffmpeg tué)");
-    }).catch((e) => viaProxy(`direct erreur réseau/CORS: ${e instanceof Error ? e.message : String(e)}`));
+    }).catch((e) => {
+      directTelemetryBroken = true;
+      return viaProxy(`direct erreur réseau/CORS: ${e instanceof Error ? e.message : String(e)}`);
+    });
   }
 
-  return viaProxy("pas de Direct Streaming");
+  return viaProxy(directTelemetryBroken ? "direct désactivé (échec CORS antérieur)" : "pas de Direct Streaming");
 }
