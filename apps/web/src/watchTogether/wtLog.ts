@@ -1,8 +1,9 @@
 /**
  * Logger de diagnostic Watch Together / lecture synchronisée.
- * SILENCIEUX par défaut — activer via `localStorage.tentacle_wt_log = "1"`
- * puis recharger (l'instrumentation complète reste en place pour les
- * prochaines sessions de debug).
+ * DEV UNIQUEMENT — `import.meta.env.DEV` est inliné par Vite : en build de
+ * production le corps est du code mort, éliminé par le minifier (aucun log
+ * ne part jamais en prod, web comme desktop). En dev (`pnpm dev`), actif par
+ * défaut ; opt-out via `localStorage.tentacle_wt_log = "0"` puis recharger.
  *
  * Format : `[WT +123.4s scope] message { data }` — le timestamp relatif au
  * chargement de l'app permet de corréler les traces des deux players d'un
@@ -18,11 +19,12 @@ const t0 = Date.now();
 let enabled: boolean | null = null;
 
 function isEnabled(): boolean {
+  if (!import.meta.env.DEV) return false;
   if (enabled === null) {
     try {
-      enabled = typeof localStorage !== "undefined" && localStorage.getItem("tentacle_wt_log") === "1";
+      enabled = typeof localStorage === "undefined" || localStorage.getItem("tentacle_wt_log") !== "0";
     } catch {
-      enabled = false;
+      enabled = true;
     }
   }
   return enabled;
