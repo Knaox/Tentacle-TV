@@ -87,11 +87,14 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
           onScroll={onScroll}
           className="row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-12 pt-2 scrollbar-hide"
         >
+          {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
+              un carrousel (ex. doublon de bibliothèque) — un Id seul provoque
+              des clés dupliquées React (enfants omis/dupliqués). */}
           {visible && items.map((item, i) =>
             variant === "episode" ? (
-              <EpisodeCard key={item.Id} item={item} index={i} />
+              <EpisodeCard key={`${item.Id}-${i}`} item={item} index={i} />
             ) : (
-              <PosterCard key={item.Id} item={item} index={i} posterImageMode={posterImageMode} />
+              <PosterCard key={`${item.Id}-${i}`} item={item} index={i} posterImageMode={posterImageMode} />
             ),
           )}
         </div>
