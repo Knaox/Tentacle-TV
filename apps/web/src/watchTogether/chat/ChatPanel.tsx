@@ -136,8 +136,7 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
           onClick={submit}
           disabled={!draft.trim()}
           aria-label={t("chatSend")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white transition-opacity disabled:opacity-30"
-          style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-black transition-colors duration-150 hover:bg-white/85 disabled:opacity-30"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.3 3.9a.5.5 0 0 1 .7-.6l16.6 8.25a.5.5 0 0 1 0 .9L4 20.7a.5.5 0 0 1-.7-.6L6 12Zm0 0h7" />
