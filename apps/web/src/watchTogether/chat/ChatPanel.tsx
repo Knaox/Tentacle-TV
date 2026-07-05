@@ -52,7 +52,13 @@ const MessageRow = memo(function MessageRow({
   );
 });
 
-export function ChatPanel({ chat }: { chat: WtChatApi }) {
+export function ChatPanel({
+  chat, onInputFocusChange,
+}: {
+  chat: WtChatApi;
+  /** Saisie en cours : le parent ne doit pas estomper le panneau. */
+  onInputFocusChange?: (focused: boolean) => void;
+}) {
   const { t } = useTranslation("watchTogether");
   const { selfId } = useWatchTogether();
   const [draft, setDraft] = useState("");
@@ -128,6 +134,8 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
             if (e.key === "Enter") submit();
           }}
           onKeyUp={(e) => e.stopPropagation()}
+          onFocus={() => onInputFocusChange?.(true)}
+          onBlur={() => onInputFocusChange?.(false)}
           maxLength={WT_CHAT_MAX_LENGTH}
           placeholder={t("chatPlaceholder")}
           className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"
