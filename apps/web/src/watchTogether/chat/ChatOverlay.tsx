@@ -13,8 +13,8 @@ import { useWatchOverlayState } from "./chatUiStore";
  *
  * Drag SANS contraintes (libre sur tout l'écran, pages player comprises) ;
  * au relâcher, l'overlay est ramené en douceur dans le viewport s'il dépasse.
- * Sur une page player, la bulle suit le fondu des contrôles (chatUiStore) —
- * un panneau OUVERT reste visible (on ne coupe pas une conversation en cours).
+ * Sur une page player, bulle et panneau suivent le fondu des contrôles
+ * (chatUiStore) — les messages restent lisibles via MessageToastLayer.
  */
 
 const GLASS: React.CSSProperties = {
@@ -65,8 +65,9 @@ export function ChatOverlay({
   // (onDragStart ne se déclenche qu'au-delà du seuil de mouvement ~3 px).
   const wasDraggedRef = useRef(false);
 
-  // Page player : la bulle apparaît/disparaît avec l'overlay des contrôles.
-  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible && !open;
+  // Page player : bulle ET panneau suivent le fondu de l'overlay des
+  // contrôles (les aperçus MessageToastLayer restent visibles, eux).
+  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible;
 
   // Rappel dans le viewport (marge 8 px) après un drag ou une ouverture qui
   // ferait dépasser le panneau (bulle garée près d'un bord).
@@ -98,11 +99,11 @@ export function ChatOverlay({
     return (
       <motion.div
         initial={{ opacity: 0, y: 32 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: hidden ? 0 : 1, y: 0 }}
         exit={{ opacity: 0, y: 32 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="fixed inset-x-2 bottom-2 z-50 flex max-h-[60vh] flex-col overflow-hidden rounded-2xl"
-        style={GLASS}
+        style={{ ...GLASS, pointerEvents: hidden ? "none" : "auto" }}
       >
         <ChatHeader title={t("chatTitle")} onClose={() => chat.setOpen(false)} />
         <ChatPanel chat={chat} />

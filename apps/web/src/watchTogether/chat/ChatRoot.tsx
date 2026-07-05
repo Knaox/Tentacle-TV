@@ -4,6 +4,7 @@ import { useMotionValue } from "framer-motion";
 import { useWtChat } from "./useWtChat";
 import { ChatOverlay } from "./ChatOverlay";
 import { ReactionLayer } from "./ReactionLayer";
+import { MessageToastLayer } from "./MessageToastLayer";
 
 /**
  * Watch Together — racine du chat de groupe, montée dans le Provider tant
@@ -36,6 +37,7 @@ export function ChatRoot() {
   return createPortal(
     <>
       <ReactionLayer reactions={chat.state.reactions} />
+      <MessageToastLayer toasts={chat.state.toasts} />
       <ChatOverlay chat={chat} dragX={dragX} dragY={dragY} />
     </>,
     target,

@@ -16,6 +16,8 @@ import {
 
 /** Durée d'affichage d'une réaction flottante (animation ReactionLayer). */
 export const WT_REACTION_TTL_MS = 2_600;
+/** Durée d'affichage d'un aperçu de message reçu panneau fermé. */
+export const WT_CHAT_TOAST_TTL_MS = 5_000;
 
 export interface WtChatApi {
   state: WtChatState;
@@ -55,13 +57,17 @@ export function useWtChat(): WtChatApi {
         case "wt:chatHistory":
           dispatch({ type: "history", groupId: msg.groupId, messages: msg.messages });
           break;
-        case "wt:chat":
+        case "wt:chat": {
           dispatch({
             type: "message",
             message: msg.message,
             fromSelf: msg.message.userId === selfIdRef.current,
           });
+          // Expiration inconditionnelle : sans effet si le reducer n'a pas
+          // créé d'aperçu (panneau ouvert, message de soi, dédupe).
+          scheduleExpiry({ type: "toast_expire", id: msg.message.id }, WT_CHAT_TOAST_TTL_MS);
           break;
+        }
         case "wt:reaction": {
           const key = `${msg.userId}:${msg.at}:${seqRef.current++}`;
           dispatch({
