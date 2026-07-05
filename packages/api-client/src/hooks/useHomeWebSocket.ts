@@ -1,20 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { WsServerMessage, CarouselId } from "@tentacle-tv/shared";
+import type { CarouselId } from "@tentacle-tv/shared";
+import { acquireSocket, onSocketStatus, subscribeSocket } from "../socket/tentacleSocket";
 
-// ── Backend URL configuration ──
-
-let _wsUrl = "";
-
-/** Set the WebSocket backend URL. Converts http(s):// to ws(s)://. */
-export function setWsBackendUrl(url: string) {
-  if (!url && typeof window !== "undefined") {
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    _wsUrl = `${proto}//${window.location.host}/api/ws`;
-  } else {
-    _wsUrl = url.replace(/^http/, "ws").replace(/\/$/, "") + "/api/ws";
-  }
-}
+// Ré-export de compatibilité : la configuration de l'URL vit désormais dans le
+// socket partagé (utilisée aussi par Watch Together), l'API publique ne change pas.
+export { setWsBackendUrl } from "../socket/tentacleSocket";
 
 // ── Carousel → TanStack Query key mapping ──
 
@@ -42,32 +33,27 @@ interface UseHomeWebSocketOptions {
   onAuthError?: () => void;
 }
 
-const INITIAL_BACKOFF = 1_000;
-const MAX_BACKOFF = 30_000;
-const PING_INTERVAL = 30_000;
-
+/**
+ * Rafraîchissement temps réel de la Home (carrousels + notifications).
+ * Consomme le socket Tentacle PARTAGÉ (socket/tentacleSocket.ts) — la
+ * connexion, l'auth, le keepalive et la reconnexion y sont mutualisés avec les
+ * autres consommateurs (Watch Together). Ce hook ne garde que le mapping
+ * carrousel → invalidations TanStack Query et le polling de repli.
+ */
 export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
   const { token, enabled = true, fallbackInterval = 60_000, onAuthError } = options;
   const qc = useQueryClient();
 
   // Store volatile values in refs so the effect doesn't re-run on every render
-  const tokenRef = useRef(token);
-  tokenRef.current = token;
   const qcRef = useRef(qc);
   qcRef.current = qc;
   const onAuthErrorRef = useRef(onAuthError);
   onAuthErrorRef.current = onAuthError;
 
   useEffect(() => {
-    if (!enabled || !_wsUrl) return;
+    if (!enabled) return;
 
-    let mounted = true;
-    let ws: WebSocket | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let fallbackTimer: ReturnType<typeof setInterval> | null = null;
-    let pingTimer: ReturnType<typeof setInterval> | null = null;
-    let backoff = INITIAL_BACKOFF;
-    const authClosedRef = { current: false };
 
     function invalidateCarousel(carousel: CarouselId) {
       const keys = CAROUSEL_KEYS[carousel];
@@ -91,101 +77,38 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
       if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; }
     }
 
-    function connect() {
-      if (!mounted) return;
-
-      try {
-        ws = new WebSocket(_wsUrl);
-      } catch {
-        startFallback();
-        return;
-      }
-
-      ws.onopen = () => {
-        // If unmounted while connecting, close now that handshake is done (no browser error)
-        if (!mounted) { ws?.close(); return; }
-
-        backoff = INITIAL_BACKOFF;
-        stopFallback();
-
-        if (tokenRef.current && ws?.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "auth", token: tokenRef.current }));
-        } else if (!tokenRef.current) {
-          console.warn("[WS] No token available for WebSocket auth");
-        }
-
-        pingTimer = setInterval(() => {
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
-          }
-        }, PING_INTERVAL);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg: WsServerMessage = JSON.parse(String(event.data));
-          if (msg.type === "auth_ok") {
-            console.debug("[WS] Authenticated successfully");
-          } else if (msg.type === "auth_error") {
-            const reason = (msg as { reason?: string }).reason;
-            console.warn("[WS] Auth failed:", reason);
-            // Close WS and notify caller — don't silently degrade
-            if (reason !== "server_unreachable") {
-              authClosedRef.current = true;
-              ws?.close();
-              onAuthErrorRef.current?.();
-            }
-          } else if (msg.type === "home:update") {
-            invalidateCarousel(msg.carousel);
-          } else if (msg.type === "notifications:update") {
-            qcRef.current.invalidateQueries({ queryKey: ["notifications"] });
-          }
-        } catch { /* ignore */ }
-      };
-
-      ws.onclose = () => {
-        if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
-        ws = null;
-        if (!mounted) return;
-        // Don't reconnect on auth failure (invalid token) — only on network issues
-        if (authClosedRef.current) {
-          authClosedRef.current = false;
-          startFallback();
-          return;
-        }
-        startFallback();
-        const delay = backoff;
-        backoff = Math.min(delay * 2, MAX_BACKOFF);
-        reconnectTimer = setTimeout(connect, delay);
-      };
-
-      ws.onerror = () => { /* onclose fires after — handled there */ };
+    // Pas de connexion tant qu'aucun token n'est disponible (hors web, qui auth
+    // par cookie → token `undefined`) ; `token` est dans les deps → connexion
+    // dès qu'il arrive.
+    if (token === null) {
+      startFallback();
+      return () => stopFallback();
     }
 
-    // Pas de connexion tant qu'aucun token n'est disponible (hors web, qui auth
-    // par cookie → token `undefined`). Évite un WS ouvert sans auth + le warning
-    // « No token » au cold start tvOS ; `token` est dans les deps → reconnexion
-    // dès qu'il arrive.
-    if (token === null) { startFallback(); return () => { mounted = false; stopFallback(); }; }
+    const releaseSocket = acquireSocket(token);
 
-    connect();
+    const unsubscribeMessages = subscribeSocket((msg) => {
+      if (msg.type === "home:update") {
+        invalidateCarousel(msg.carousel);
+      } else if (msg.type === "notifications:update") {
+        qcRef.current.invalidateQueries({ queryKey: ["notifications"] });
+      }
+    });
+
+    const unsubscribeStatus = onSocketStatus((status) => {
+      if (status === "open") {
+        stopFallback();
+      } else if (status === "closed" || status === "authError") {
+        startFallback();
+        if (status === "authError") onAuthErrorRef.current?.();
+      }
+    });
 
     return () => {
-      mounted = false;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (pingTimer) clearInterval(pingTimer);
+      unsubscribeMessages();
+      unsubscribeStatus();
+      releaseSocket();
       stopFallback();
-      if (ws) {
-        // Detach handlers to prevent reconnection attempts
-        ws.onclose = null;
-        ws.onerror = null;
-        ws.onmessage = null;
-        // Only close OPEN sockets — CONNECTING ones will be closed in onopen
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
-        ws = null;
-      }
     };
   }, [enabled, fallbackInterval, token]);
 }

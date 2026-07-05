@@ -9,6 +9,7 @@ import { SkipBadge, type SkipFlash } from "./SkipBadge";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { LoadingBar } from "./player/PlayerLoadingScreen";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 
 export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
 export interface AudioTrack { index: number; label: string; lang?: string }
@@ -54,6 +55,16 @@ interface VideoPlayerProps {
   creditsSegment?: SegmentTimestamps | null;
   /** Backdrop affiché pendant le chargement initial du média. */
   posterUrl?: string;
+  /** Watch Together — surface de commande impérative (play/pause/seek/rate). */
+  transportRef?: PlayerTransportRef;
+  /** Watch Together — transition lecture/pause immédiate (événements play/pause). */
+  onPlayStateChange?: (paused: boolean) => void;
+  /** Watch Together — entrée/sortie de mise en mémoire tampon (debounce 800 ms). */
+  onBufferingChange?: (buffering: boolean) => void;
+  /** Watch Together — erreur média fatale (decode/src) : le membre ne peut pas lire. */
+  onFatalError?: () => void;
+  /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
+  onAutoNextDismiss?: () => void;
 }
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -69,10 +80,13 @@ const HAS_NATIVE_HLS = typeof document !== "undefined"
 const BUFFER_GATE_TIMEOUT = 8_000;
 
 function attemptPlay(v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void) {
-  v.muted = false;
+  // Respecte le mute choisi par l'utilisateur (persisté) — sinon un changement
+  // d'épisode/média rétablirait le son (gênant à 2 players sur une machine).
+  const wantMuted = localStorage.getItem("tentacle_player_muted") === "1";
+  v.muted = wantMuted;
   v.play().catch(() => {
     v.muted = true;
-    v.play().then(onPolicyMuted).catch((err) => {
+    v.play().then(() => { if (!wantMuted) onPolicyMuted(); }).catch((err) => {
       console.error(DBG, "muted play also failed:", err);
       onPlayFailed();
     });
@@ -101,6 +115,7 @@ export function VideoPlayer({
   autoplayNextEnabled = true, maxResumePct = 90,
   onNextEpisode, onPreviousEpisode,
   introSegment, creditsSegment, posterUrl,
+  transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,7 +158,13 @@ export function VideoPlayer({
     if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
     return 1;
   });
-  useEffect(() => { if (videoRef.current) videoRef.current.volume = volume; }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.volume = volume;
+    // Mute persisté : survit aux changements d'épisode/média (remount).
+    if (localStorage.getItem("tentacle_player_muted") === "1") v.muted = true;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 1Hz display timer — reduces re-renders from ~4Hz (onTimeUpdate) to 1Hz.
   // rawTimeRef is updated every onTimeUpdate; displayTime only triggers renders at 1Hz.
   useEffect(() => {
@@ -155,6 +176,7 @@ export function VideoPlayer({
   const [loading, setLoading] = useState(true);
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const creditsAutoPlayTriggered = useRef(false);
   const hasStartedRef = useRef(false);
   const sourceChangingRef = useRef(false);
   const currentTimeRef = useRef(0);
@@ -252,6 +274,32 @@ export function VideoPlayer({
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
   }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
+
+  // Masque la bannière auto-next (dismiss local OU venu d'un autre membre).
+  const cancelAutoNextLocal = useCallback(() => {
+    clearInterval(autoPlayTimerRef.current);
+    creditsAutoPlayTriggered.current = true; // pas de re-déclenchement au tick suivant
+    setAutoPlayCountdown(null);
+  }, []);
+
+  // Watch Together : surface de commande impérative pour le moteur de sync.
+  // Positions en « position film » — seekTo hérite du seek intelligent 3 niveaux.
+  useEffect(() => {
+    if (!transportRef) return;
+    transportRef.current = {
+      play: () => { const v = videoRef.current; if (v?.paused) v.play().catch(() => {}); },
+      pause: () => videoRef.current?.pause(),
+      seekTo: (seconds: number) => handleSeek(seconds),
+      getPositionSeconds: () => lastKnownPositionRef.current,
+      isPaused: () => videoRef.current?.paused ?? true,
+      setRate: (rate: number) => {
+        const v = videoRef.current;
+        if (v && v.playbackRate !== rate) v.playbackRate = rate;
+      },
+      cancelAutoNext: cancelAutoNextLocal,
+    };
+    return () => { transportRef.current = null; };
+  }, [transportRef, handleSeek, cancelAutoNextLocal]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) { document.exitFullscreen(); return; }
@@ -533,7 +581,15 @@ export function VideoPlayer({
 
   const handleVolumeChange = useCallback((val: number) => {
     setVolume(val);
-    if (videoRef.current) videoRef.current.volume = val;
+    const v = videoRef.current;
+    if (v) {
+      v.volume = val;
+      // Monter le volume démute (et efface le mute persisté).
+      if (val > 0 && v.muted) {
+        v.muted = false;
+        try { localStorage.setItem("tentacle_player_muted", "0"); } catch {}
+      }
+    }
     try { localStorage.setItem("tentacle_player_volume", String(Math.round(val * 100))); } catch {}
   }, []);
 
@@ -542,6 +598,7 @@ export function VideoPlayer({
     if (!v) return;
     v.muted = !v.muted;
     if (!v.muted) setPolicyMuted(false);
+    try { localStorage.setItem("tentacle_player_muted", v.muted ? "1" : "0"); } catch {}
     setVolume(v.muted ? 0 : 1);
   }, []);
 
@@ -609,7 +666,6 @@ export function VideoPlayer({
   // 92 % de lecture). Relu à chaque tick → une mise à jour du % dans Jellyfin
   // s'applique en cours de lecture. Le segment générique ne déclenche plus la
   // bannière (le bouton « Passer le générique » reste inchangé).
-  const creditsAutoPlayTriggered = useRef(false);
   useEffect(() => {
     if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
     if (!autoplayNextEnabled || !hasNextEpisode || !hasStartedRef.current) return;
@@ -700,15 +756,16 @@ export function VideoPlayer({
           sourceChangingRef.current = false;
           setPlaying(true); setLoading(false); setShowPlayButton(false);
           if (!hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); }
+          onPlayStateChange?.(false);
         }}
-        onPause={() => setPlaying(false)}
+        onPause={() => { setPlaying(false); onPlayStateChange?.(true); }}
         onWaiting={() => {
           clearTimeout(waitingTimer.current);
-          waitingTimer.current = setTimeout(() => setLoading(true), 800);
+          waitingTimer.current = setTimeout(() => { setLoading(true); onBufferingChange?.(true); }, 800);
         }}
         onSeeked={() => { clearTimeout(seekStallTimer.current); }}
-        onPlaying={() => { clearTimeout(waitingTimer.current); clearTimeout(seekStallTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
-        onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); }}
+        onPlaying={() => { clearTimeout(waitingTimer.current); clearTimeout(seekStallTimer.current); if (!sourceChangingRef.current) setLoading(false); onBufferingChange?.(false); }}
+        onCanPlay={() => { clearTimeout(waitingTimer.current); if (!sourceChangingRef.current) setLoading(false); onBufferingChange?.(false); }}
         onStalled={() => {
           // HTML5 `stalled` fires frequently during HLS playback (segment switch,
           // network jitter, paused tab) even when playback recovers immediately.
@@ -719,6 +776,9 @@ export function VideoPlayer({
         onError={(e) => {
           const err = e.currentTarget.error;
           console.error(DBG, "video error", { code: err?.code, message: err?.message, src: src.slice(0, 120), networkState: e.currentTarget.networkState });
+          // MEDIA_ERR_DECODE / MEDIA_ERR_SRC_NOT_SUPPORTED : ce client ne peut
+          // pas lire ce média (Watch Together : ne pas geler le groupe).
+          if (err && (err.code === 3 || err.code === 4)) onFatalError?.();
         }}
         onEnded={() => { if (autoplayNextEnabled && hasNextEpisode && autoPlayCountdown === null) startAutoPlay(); else if (!hasNextEpisode || !autoplayNextEnabled) navigate(`/media/${itemId}`, { replace: true }); }}
         crossOrigin={useNativeHls ? undefined : "anonymous"}
@@ -807,7 +867,7 @@ export function VideoPlayer({
           <AutoPlayOverlay
             countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
-            onPlay={() => onNextEpisode?.()} onCancel={() => { clearInterval(autoPlayTimerRef.current); setAutoPlayCountdown(null); }}
+            onPlay={() => onNextEpisode?.()} onCancel={() => { cancelAutoNextLocal(); onAutoNextDismiss?.(); }}
           />
         )}
       </AnimatePresence>

@@ -39,6 +39,19 @@ export type { NotifPluginMeta } from "./utils/notificationRoute";
 // WebSocket real-time home updates
 export { useHomeWebSocket, setWsBackendUrl } from "./hooks/useHomeWebSocket";
 
+// Socket Tentacle partagé (multiplexé : home, notifications, Watch Together)
+export {
+  acquireSocket, sendSocketMessage, subscribeSocket, onSocketStatus,
+  getSocketStatus, getClockOffsetMs, sampleClock,
+} from "./socket/tentacleSocket";
+export type { SocketStatus } from "./socket/tentacleSocket";
+
+// Watch Together (REST : composition du groupe + utilisateurs invitables)
+export {
+  fetchMyGroup, fetchMyInvites, createGroup, sendGroupInvites, respondToInvite,
+  leaveGroup, kickGroupMember, useInvitableUsers, setWatchTogetherBackendUrl, WtApiError,
+} from "./hooks/useWatchTogetherApi";
+
 // Share link ("Partager ma liste")
 export {
   useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedItem,

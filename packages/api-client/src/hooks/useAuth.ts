@@ -69,11 +69,14 @@ export function useAuth() {
   const logout = useMutation({
     mutationFn: async () => {
       if (client.useCredentials) {
-        // Web: call backend logout to clear httpOnly cookie
+        // Web: call backend logout to clear httpOnly cookie.
+        // Timeout court : backend off, ce fetch ne doit jamais bloquer la
+        // purge locale (sans lui, la déconnexion semble « ne rien faire »).
         const baseUrl = client.getBaseUrl().replace(/\/api\/jellyfin$/, "");
         await fetch(`${baseUrl}/api/auth/logout`, {
           method: "POST",
           credentials: "include",
+          signal: AbortSignal.timeout(3000),
         }).catch(() => {});
       }
       client.setAccessToken(null);
@@ -94,6 +97,7 @@ export function useAuth() {
         await fetch(`${baseUrl}/api/auth/logout`, {
           method: "POST",
           credentials: "include",
+          signal: AbortSignal.timeout(3000),
         }).catch(() => {});
       }
       client.setAccessToken(null);

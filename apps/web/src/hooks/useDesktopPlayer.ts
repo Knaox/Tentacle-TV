@@ -112,9 +112,19 @@ export function useDesktopPlayer() {
     return { ...defaultState, volume: (!Number.isNaN(vol) && vol >= 0 && vol <= 100) ? vol : 100 };
   });
   const [ready, setReady] = useState(false);
-  const [fileLoaded, setFileLoaded] = useState(false);
+  const [fileLoaded, setFileLoadedState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const unlistenRefs = useRef<(() => void)[]>([]);
+  // État mute courant (observé) — lu par toggleMute/setVolume pour persister.
+  const mutedRef = useRef(false);
+  // Miroir synchrone de fileLoaded — lu par l'observer (mpv émet la valeur
+  // INITIALE des propriétés observées à l'abonnement : un eof-reached=true de
+  // l'ANCIEN fichier arrive au remount, avant tout chargement par ce hook).
+  const fileLoadedRef = useRef(false);
+  const setFileLoaded = useCallback((v: boolean) => {
+    fileLoadedRef.current = v;
+    setFileLoadedState(v);
+  }, []);
   const pendingTracks = useRef<{ aid?: number; sid?: number } | null>(null);
   // Watchdog: si playback-restart n'est pas émis dans les 8s après un loadfile,
   // on force fileLoaded=true (les preferences de pistes utiliseront le fallback
@@ -178,11 +188,15 @@ export function useDesktopPlayer() {
         }), 8000, "mpv-init");
         if (cancelled) return;
         setReady(true);
-        // Restore persisted volume
+        // Restore persisted volume + mute (le mute doit survivre aux
+        // changements d'épisode/média — remount du player).
         const sv = localStorage.getItem("tentacle_player_volume");
         if (sv != null) {
           const v = Number(sv);
           if (!Number.isNaN(v) && v >= 0 && v <= 100) api.setProperty("volume", v).catch(() => {});
+        }
+        if (localStorage.getItem("tentacle_player_muted") === "1") {
+          api.setProperty("mute", true).catch(() => {});
         }
       } catch (e) {
         setError(String(e));
@@ -216,6 +230,7 @@ export function useDesktopPlayer() {
                 return { ...prev, volume: vol };
               }
               case "mute":
+                mutedRef.current = event.data as boolean;
                 return { ...prev, muted: event.data as boolean };
               case "aid": {
                 // mpv may report aid as number, string, false, or null
@@ -239,9 +254,13 @@ export function useDesktopPlayer() {
                 // at the last frame and sets eof-reached=true instead.
                 console.debug("[mpv] eof-reached raw:", event.data, typeof event.data);
                 if (event.data) {
+                  // Fantôme du fichier précédent (émission initiale au remount,
+                  // avant tout loadfile de ce hook) : l'ignorer, sinon l'écran
+                  // « épisode suivant » s'affiche au début du nouvel épisode.
+                  if (!fileLoadedRef.current) return prev;
                   return { ...prev, eof: true };
                 }
-                return prev;
+                return { ...prev, eof: false };
               default:
                 return prev;
             }
@@ -393,6 +412,9 @@ export function useDesktopPlayer() {
   const play = useCallback(async (options: PlayOptions) => {
     if (!api) return;
     setFileLoaded(false); // Reset — will be set again on file-loaded event
+    // Purge des restes du fichier précédent (un eof=true collé afficherait
+    // l'écran de fin dès le chargement du nouveau média).
+    setState((prev) => ({ ...prev, eof: false, playing: false }));
     // Armement du watchdog : si playback-restart ne survient pas en 8s,
     // on débloque l'UI en forçant fileLoaded=true (sécurité anti-spinner).
     if (playbackWatchdogRef.current) clearTimeout(playbackWatchdogRef.current);
@@ -458,8 +480,23 @@ export function useDesktopPlayer() {
       }
     } catch (e) { console.error("[mpv] setSubtitleTrack failed:", e); }
   }, []);
-  const setVolume = useCallback(async (v: number) => { api?.setProperty("volume", v).catch(() => {}); }, []);
-  const toggleMute = useCallback(async () => { api?.command("cycle", ["mute"]).catch(() => {}); }, []);
+  const setVolume = useCallback(async (v: number) => {
+    api?.setProperty("volume", v).catch(() => {});
+    // Monter le volume démute (et efface le mute persisté).
+    if (v > 0 && mutedRef.current) {
+      api?.setProperty("mute", false).catch(() => {});
+      try { localStorage.setItem("tentacle_player_muted", "0"); } catch { /* storage indisponible */ }
+    }
+  }, []);
+  // Watch Together : rattrapage doux (0.95/1.05) — pitch préservé par mpv
+  // (audio-pitch-correction=yes par défaut).
+  const setSpeed = useCallback(async (v: number) => { api?.setProperty("speed", v).catch(() => {}); }, []);
+  const toggleMute = useCallback(async () => {
+    const next = !mutedRef.current;
+    api?.setProperty("mute", next).catch(() => {});
+    // Persisté : le mute survit aux changements d'épisode/média (remount).
+    try { localStorage.setItem("tentacle_player_muted", next ? "1" : "0"); } catch { /* storage indisponible */ }
+  }, []);
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -515,5 +552,5 @@ export function useDesktopPlayer() {
   }, []);
 
   return { state, ready, fileLoaded, error, play, togglePause, setPause, seek, seekRelative,
-    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen, stop };
+    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen, stop };
 }

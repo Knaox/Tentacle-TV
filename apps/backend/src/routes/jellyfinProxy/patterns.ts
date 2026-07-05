@@ -15,6 +15,7 @@ const ALLOWED_PROXY_PATTERNS: RegExp[] = [
   /^Items\/[^/]+\/Images\//,
 
   // User data
+  /^Users\/[^/]+\/Images\/Primary$/,
   /^Users\/[^/]+\/Items/,
   /^Users\/[^/]+\/FavoriteItems\/[^/]+$/,
   /^Users\/[^/]+\/PlayedItems\/[^/]+$/,

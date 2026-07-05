@@ -1,0 +1,149 @@
+import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import { useInvitableUsers } from "@tentacle-tv/api-client";
+import { useToast } from "../contexts/ToastContext";
+import { useWatchTogether } from "./WatchTogetherProvider";
+import { WtAvatar } from "./WatchTogetherRows";
+
+interface InviteUsersModalProps {
+  onClose: () => void;
+}
+
+/** Modale d'invitation : utilisateurs du serveur (présence en ligne), filtre
+ *  texte, multi-sélection, envoi groupé. Gabarit overlay ShareLinkModal. */
+export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
+  const { t } = useTranslation("watchTogether");
+  const { show } = useToast();
+  const { room, actions } = useWatchTogether();
+  const { data: users, isLoading } = useInvitableUsers(true);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+
+  const memberIds = useMemo(
+    () => new Set((room?.members ?? []).map((m) => m.userId)),
+    [room],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (users ?? [])
+      .filter((u) => !memberIds.has(u.id))
+      .filter((u) => !q || u.name.toLowerCase().includes(q));
+  }, [users, memberIds, query]);
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const send = async () => {
+    if (selected.size === 0) return;
+    setSending(true);
+    try {
+      const count = await actions.invite([...selected]);
+      show("success", t("invitesSent", { count }));
+      onClose();
+    } catch {
+      show("error", t("errorGeneric"));
+      setSending(false);
+    }
+  };
+
+  // Portal vers <body> : rendue depuis le header (TopNav), la modale serait
+  // sinon piégée par son backdrop-filter (containing block des position:fixed)
+  // et s'afficherait coupée dans la barre.
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl border border-white/12 bg-[#12121a]/95 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="p-6 pb-4">
+          <h2 className="text-lg font-bold text-white">{t("selectUsers")}</h2>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("searchUsers")}
+            autoFocus
+            className="mt-4 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"
+          />
+        </div>
+
+        <div className="min-h-24 flex-1 overflow-y-auto px-3 pb-2">
+          {isLoading ? (
+            <div className="space-y-2 px-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-11 animate-pulse rounded-lg bg-white/5" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="py-8 text-center text-sm text-white/40">{t("noUsersFound")}</p>
+          ) : (
+            filtered.map((u) => {
+              const isSelected = selected.has(u.id);
+              return (
+                <button
+                  key={u.id}
+                  onClick={() => toggle(u.id)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                    isSelected ? "bg-purple-500/15" : "hover:bg-white/5"
+                  }`}
+                >
+                  <WtAvatar userId={u.id} name={u.name} hasAvatar={u.hasAvatar} size={32} />
+                  <span className="min-w-0 flex-1 truncate text-sm text-white">{u.name}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-white/40">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: u.isOnline ? "#34d399" : "rgba(255,255,255,0.2)" }}
+                    />
+                    {u.isOnline ? t("online") : t("offline")}
+                  </span>
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all ${
+                      isSelected
+                        ? "border-purple-400 bg-purple-500 text-white"
+                        : "border-white/25 text-transparent"
+                    }`}
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        <div className="flex gap-2 border-t border-white/10 p-4">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg bg-white/10 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:bg-white/20"
+          >
+            {t("cancel")}
+          </button>
+          <button
+            onClick={send}
+            disabled={selected.size === 0 || sending}
+            className="flex-1 rounded-lg bg-white py-2.5 text-sm font-bold text-black transition-colors duration-150 hover:bg-white/85 disabled:opacity-40"
+          >
+            {selected.size > 0 ? t("sendInvitesCount", { count: selected.size }) : t("sendInvites")}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}

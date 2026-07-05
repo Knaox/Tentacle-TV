@@ -7,7 +7,7 @@ import { getBackendBase } from "../lib/backendBase";
  * renvoie une version plus ancienne, une bannière d'avertissement s'affiche à
  * l'admin (le client pourrait dysfonctionner).
  */
-export const MIN_SERVER_VERSION = "1.2.1";
+export const MIN_SERVER_VERSION = "1.3.0";
 
 /** Compare deux versions semver simplifiées "x.y.z" → -1 | 0 | 1. */
 function cmpVersion(a: string, b: string): number {

@@ -7,6 +7,7 @@ import { NotificationBell } from "../NotificationBell";
 import { TentacleLogo } from "../ui/TentacleLogo";
 import { MobileUserSheet } from "../MobileUserSheet";
 import { AVATAR_RING_STYLE, getUserInfo } from "../userMenu/menuItems";
+import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 
 interface TopNavMobileProps {
   showSearch?: boolean;
@@ -50,6 +51,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
 
           <div className="flex flex-shrink-0 items-center gap-2">
             {showSearch && <GlobalSearch />}
+            <WatchTogetherButton />
             <NotificationBell />
             <button
               type="button"

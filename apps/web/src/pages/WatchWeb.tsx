@@ -8,6 +8,10 @@ import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 import { isTauri, isMacOS } from "../hooks/useDesktopPlayer";
+import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
+import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
+import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
+import type { PlayerTransport } from "../watchTogether/playerTransport";
 
 export function WatchWeb() {
   const { t } = useTranslation("common");
@@ -30,6 +34,16 @@ export function WatchWeb() {
   const { reportStart, updatePosition, reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
+  });
+
+  // ── Watch Together : transport + handlers de groupe + moteur de sync ──
+  const transportRef = useRef<PlayerTransport | null>(null);
+  const group = useGroupPlaybackHandlers({
+    itemId, itemReady: !!item, resumePositionSeconds: startPositionSeconds,
+    nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode, setStartTicks,
+  });
+  const groupSync = useGroupSyncEngine({
+    itemId, transportRef, claimStartSeconds: group.groupStartPositionSeconds,
   });
 
   const runStopInvalidation = useWatchStopInvalidation();
@@ -105,7 +119,8 @@ export function WatchWeb() {
   const handleSeekComplete = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
     reportSeek(seconds, paused);
-  }, [reportSeek, positionRef]);
+    groupSync.notifySeek(seconds);
+  }, [reportSeek, positionRef, groupSync.notifySeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -113,12 +128,12 @@ export function WatchWeb() {
   const showPlayer = !isLoading && !!streamUrl;
 
   useEffect(() => {
-    if (showPlayer && startPositionSeconds && startPositionSeconds > 0) {
+    if (showPlayer && startPositionSeconds && startPositionSeconds > 0 && !group.groupActive) {
       setShowResumeIndicator(true);
       resumeTimerRef.current = setTimeout(() => setShowResumeIndicator(false), 3000);
     }
     return () => clearTimeout(resumeTimerRef.current);
-  }, [showPlayer, startPositionSeconds]);
+  }, [showPlayer, startPositionSeconds, group.groupActive]);
 
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
@@ -159,23 +174,27 @@ export function WatchWeb() {
       {showPlayer ? (
         <VideoPlayer
           key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
-          startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
+          startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
           onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-          onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
+          onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
           nextEpisodeDescription={nextEpisodeDescription} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
-          onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
+          onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
+          transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
+          onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
+          onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
         />
       ) : (
         <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />
       )}
+      <GroupPlaybackOverlay itemId={itemId} />
     </div>
   );
 }

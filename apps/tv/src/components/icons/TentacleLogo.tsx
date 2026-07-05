@@ -2,24 +2,18 @@ import Svg, {
   Defs, LinearGradient, Stop,
   Ellipse, Circle, Path, Line,
 } from "react-native-svg";
-import { scale } from "../../theme/responsive";
 
 interface TentacleLogoProps {
-  /** Taille pensée pour 1080p ; mise à l'échelle selon la résolution réelle du
-   *  téléviseur (Android TV densités variées / tvOS) → proportion constante. */
   size?: number;
-  /** Désactive la mise à l'échelle responsive (taille en px brute). */
-  raw?: boolean;
 }
 
 /**
  * Pirate octopus logo — faithful conversion of tentacle-logo-pirate.svg
- * ViewBox 0 0 512 560. La taille s'ADAPTE au format du téléviseur (cf. scale()).
+ * ViewBox 0 0 512 560
  */
-export function TentacleLogo({ size = 48, raw = false }: TentacleLogoProps) {
-  const s = raw ? size : scale(size);
+export function TentacleLogo({ size = 48 }: TentacleLogoProps) {
   return (
-    <Svg width={s} height={s * (560 / 512)} viewBox="0 0 512 560" fill="none">
+    <Svg width={size} height={size * (560 / 512)} viewBox="0 0 512 560" fill="none">
       <Defs>
         <LinearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%" stopColor="#8B5CF6" />
