@@ -12,8 +12,11 @@ import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./
  * (grâce de déconnexion, délivrance différée des invitations).
  */
 
-/** Log de diagnostic sync (grep `[WT]` dans les logs serveur). */
+/** Log de diagnostic sync (grep `[WT]`) — silencieux par défaut, activer
+ *  avec la variable d'environnement WT_DEBUG=1. */
+const WT_DEBUG = process.env.WT_DEBUG === "1";
 function wtSrvLog(message: string, data?: Record<string, unknown>): void {
+  if (!WT_DEBUG) return;
   console.log(`[WT] ${message}`, data ? JSON.stringify(data) : "");
 }
 
