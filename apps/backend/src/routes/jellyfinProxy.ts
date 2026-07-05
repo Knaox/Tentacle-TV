@@ -207,11 +207,17 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
     const headers = buildForwardHeaders(request.headers as Record<string, string | string[] | undefined>, apiKeyOverride);
 
-    // Cookie-based auth: inject token as X-Emby-Token if not already present from headers.
-    // Use apiKeyOverride (admin API key) when the cookie was a verified device JWT,
-    // otherwise forward the raw cookie (Jellyfin native token).
-    if (cookieToken && !headers["x-emby-token"] && !headers["X-Emby-Token"]) {
-      headers["X-Emby-Token"] = apiKeyOverride ?? cookieToken;
+    // Cookie/query auth: inject token as X-Emby-Token if not already present
+    // from headers. Use apiKeyOverride (admin API key) when the token was a
+    // verified device JWT, otherwise forward the raw token (Jellyfin native).
+    // Le queryToken est INDISPENSABLE ici : mpv (desktop), AVPlayer (tvOS) et
+    // sendBeacon n'envoient ni header ni cookie — leur auth arrive en
+    // `api_key` query, qu'on STRIPPE de l'URL forwardée (anti-fuite). Sans
+    // réinjection en header, la requête partait SANS AUCUNE auth → 401
+    // Jellyfin sur les routes DynamicHls (master.m3u8) → mpv end-file error
+    // immédiat (transcode impossible via le proxy).
+    if ((cookieToken || queryToken) && !headers["x-emby-token"] && !headers["X-Emby-Token"]) {
+      headers["X-Emby-Token"] = apiKeyOverride ?? incomingToken!;
     }
 
     // Progressive video streams (remux) can last hours — use a long timeout.
