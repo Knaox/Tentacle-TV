@@ -95,6 +95,22 @@ export function ChatOverlay({
     }
   }, [open, settleIntoViewport]);
 
+  // Sortie du plein écran / redimensionnement : le viewport rétrécit et une
+  // bulle garée loin peut se retrouver HORS écran (offset de drag conservé),
+  // donc insaisissable. Double rAF : on mesure après le re-ciblage du portail
+  // et le layout qui suivent le fullscreenchange.
+  useEffect(() => {
+    const resettle = () => {
+      requestAnimationFrame(() => requestAnimationFrame(settleIntoViewport));
+    };
+    window.addEventListener("resize", resettle);
+    document.addEventListener("fullscreenchange", resettle);
+    return () => {
+      window.removeEventListener("resize", resettle);
+      document.removeEventListener("fullscreenchange", resettle);
+    };
+  }, [settleIntoViewport]);
+
   // Mobile ouvert : bottom sheet fixe (hors drag) — la frappe au clavier
   // virtuel et le scroll ne doivent pas déclencher de déplacement.
   if (isMobile && open) {
