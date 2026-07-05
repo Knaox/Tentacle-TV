@@ -1,14 +1,20 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
+import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
 import type { WtChatApi } from "./useWtChat";
 import { ChatPanel } from "./ChatPanel";
+import { useWatchOverlayState } from "./chatUiStore";
 
 /**
  * Watch Together — overlay flottant du chat : bulle réduite (badge non-lus)
  * ↔ panneau de conversation. Déplaçable (framer drag) depuis la bulle ou la
  * barre de titre du panneau ; sur mobile le panneau s'ancre en bas de l'écran
  * (bottom sheet) et seule la bulle se déplace.
+ *
+ * Drag SANS contraintes (libre sur tout l'écran, pages player comprises) ;
+ * au relâcher, l'overlay est ramené en douceur dans le viewport s'il dépasse.
+ * Sur une page player, la bulle suit le fondu des contrôles (chatUiStore) —
+ * un panneau OUVERT reste visible (on ne coupe pas une conversation en cours).
  */
 
 const GLASS: React.CSSProperties = {
@@ -41,17 +47,45 @@ function ChatIcon() {
 }
 
 export function ChatOverlay({
-  chat, dragX, dragY, boundsRef,
+  chat, dragX, dragY,
 }: {
   chat: WtChatApi;
   dragX: MotionValue<number>;
   dragY: MotionValue<number>;
-  boundsRef: RefObject<HTMLDivElement | null>;
 }) {
   const { t } = useTranslation("watchTogether");
   const isMobile = useIsMobile();
   const dragControls = useDragControls();
   const { open, unread } = chat.state;
+  const watchOverlay = useWatchOverlayState();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Page player : la bulle apparaît/disparaît avec l'overlay des contrôles.
+  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible && !open;
+
+  // Rappel dans le viewport (marge 8 px) après un drag ou une ouverture qui
+  // ferait dépasser le panneau (bulle garée près d'un bord).
+  const settleIntoViewport = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const margin = 8;
+    let dx = 0;
+    let dy = 0;
+    if (r.right > window.innerWidth - margin) dx = window.innerWidth - margin - r.right;
+    if (r.left + dx < margin) dx = margin - r.left;
+    if (r.bottom > window.innerHeight - margin) dy = window.innerHeight - margin - r.bottom;
+    if (r.top + dy < margin) dy = margin - r.top;
+    if (dx) animate(dragX, dragX.get() + dx, { type: "spring", bounce: 0, duration: 0.3 });
+    if (dy) animate(dragY, dragY.get() + dy, { type: "spring", bounce: 0, duration: 0.3 });
+  }, [dragX, dragY]);
+
+  useEffect(() => {
+    if (open) {
+      const raf = requestAnimationFrame(settleIntoViewport);
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [open, settleIntoViewport]);
 
   // Mobile ouvert : bottom sheet fixe (hors drag) — la frappe au clavier
   // virtuel et le scroll ne doivent pas déclencher de déplacement.
@@ -73,13 +107,17 @@ export function ChatOverlay({
 
   return (
     <motion.div
+      ref={rootRef}
       drag
       dragListener={false}
       dragControls={dragControls}
-      dragConstraints={boundsRef}
       dragMomentum={false}
       dragElastic={0}
-      style={{ x: dragX, y: dragY }}
+      onDragEnd={settleIntoViewport}
+      initial={false}
+      animate={{ opacity: hidden ? 0 : 1 }}
+      transition={{ duration: 0.3 }}
+      style={{ x: dragX, y: dragY, pointerEvents: hidden ? "none" : "auto" }}
       className="fixed bottom-24 right-5 z-50 flex flex-col items-end"
     >
       <AnimatePresence mode="wait" initial={false}>
