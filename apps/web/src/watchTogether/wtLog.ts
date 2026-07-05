@@ -1,7 +1,8 @@
 /**
  * Logger de diagnostic Watch Together / lecture synchronisée.
- * Actif par défaut (phase de debug intensif), désactivable via
- * `localStorage.tentacle_wt_log = "0"` (ré-évalué au prochain chargement).
+ * SILENCIEUX par défaut — activer via `localStorage.tentacle_wt_log = "1"`
+ * puis recharger (l'instrumentation complète reste en place pour les
+ * prochaines sessions de debug).
  *
  * Format : `[WT +123.4s scope] message { data }` — le timestamp relatif au
  * chargement de l'app permet de corréler les traces des deux players d'un
@@ -19,9 +20,9 @@ let enabled: boolean | null = null;
 function isEnabled(): boolean {
   if (enabled === null) {
     try {
-      enabled = typeof localStorage === "undefined" || localStorage.getItem("tentacle_wt_log") !== "0";
+      enabled = typeof localStorage !== "undefined" && localStorage.getItem("tentacle_wt_log") === "1";
     } catch {
-      enabled = true;
+      enabled = false;
     }
   }
   return enabled;

@@ -116,14 +116,14 @@ export function beaconUrl(client: JfClient, path: string): string {
  */
 export function killActiveEncoding(client: JfClient, playSessionId: string | undefined, keepalive = false): Promise<void> {
   if (!playSessionId) {
-    console.info("[WT kill] killActiveEncoding SKIP — pas de playSessionId");
+    console.debug("[WT kill] killActiveEncoding SKIP — pas de playSessionId");
     return Promise.resolve();
   }
   const deviceId = client.getDeviceId();
   const path = `/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}&playSessionId=${encodeURIComponent(playSessionId)}`;
 
   const viaProxy = (why: string): Promise<void> => {
-    console.info(`[WT kill] DELETE ActiveEncodings via PROXY (${why})`, { playSessionId, deviceId });
+    console.debug(`[WT kill] DELETE ActiveEncodings via PROXY (${why})`, { playSessionId, deviceId });
     const base = client.getBaseUrl();
     const token = client.getToken();
     const headers: Record<string, string> = {};
@@ -133,7 +133,7 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
     }
     return fetch(`${base}${path}`, { method: "DELETE", headers, keepalive, credentials: client.useCredentials ? "include" : undefined })
       .then((res) => {
-        console.info(`[WT kill] proxy → HTTP ${res.status}${res.ok ? " (ffmpeg tué)" : " — ÉCHEC, le ffmpeg peut survivre"}`);
+        console.debug(`[WT kill] proxy → HTTP ${res.status}${res.ok ? " (ffmpeg tué)" : " — ÉCHEC, le ffmpeg peut survivre"}`);
       })
       .catch((e) => {
         console.error("[WT kill] proxy FAILED — l'ancien ffmpeg SURVIT (risque d'écran noir au prochain stream)", e instanceof Error ? e.message : String(e));
@@ -148,13 +148,13 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
   // JAMAIS reportDirectStreamingError, et skip le direct dès qu'il est cassé.
   const ds = client.getDirectStreaming?.();
   if (!directTelemetryBroken && ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
-    console.info("[WT kill] DELETE ActiveEncodings via DIRECT", { playSessionId, deviceId });
+    console.debug("[WT kill] DELETE ActiveEncodings via DIRECT", { playSessionId, deviceId });
     return fetch(`${ds.mediaBaseUrl}${path}`, {
       method: "DELETE", keepalive,
       headers: { "X-Emby-Token": ds.jellyfinToken, "X-Emby-Authorization": client.getAuthHeader(ds.jellyfinToken) },
     }).then((res) => {
       if (!res.ok) return viaProxy(`direct HTTP ${res.status}`);
-      console.info("[WT kill] direct → OK (ffmpeg tué)");
+      console.debug("[WT kill] direct → OK (ffmpeg tué)");
     }).catch((e) => {
       directTelemetryBroken = true;
       return viaProxy(`direct erreur réseau/CORS: ${e instanceof Error ? e.message : String(e)}`);
