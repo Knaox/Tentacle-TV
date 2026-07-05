@@ -21,6 +21,10 @@ interface TVPlayerControlsOptions {
    *  ET neutralise les events D-pad du lecteur (sinon ←/→ scrubbent la lecture
    *  pendant qu'on navigue dans le panneau). */
   panelOpen?: boolean;
+  /** Base position/skips PARTAGÉE avec les hooks de seek (possédée par PlayerScreen) :
+   *  les commits de seek la synchronisent directement — un +30 enchaîné part toujours
+   *  de la dernière cible, jamais d'un progress périmé. Défaut : ref interne. */
+  currentTimeRef?: React.MutableRefObject<number>;
 }
 
 /**
@@ -32,9 +36,10 @@ interface TVPlayerControlsOptions {
  */
 export function useTVPlayerControls({
   paused, jellyfinDuration, onSeek, onBack, onPlayPause, onScrubPause,
-  panelOpen = false,
+  panelOpen = false, currentTimeRef: externalTimeRef,
 }: TVPlayerControlsOptions) {
-  const currentTimeRef = useRef(0);
+  const internalTimeRef = useRef(0);
+  const currentTimeRef = externalTimeRef ?? internalTimeRef;
   const panelOpenRef = useRef(panelOpen);
   panelOpenRef.current = panelOpen;
 

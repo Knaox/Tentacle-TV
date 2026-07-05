@@ -24,8 +24,15 @@ export interface AutoPlayCtx {
  * 300 lignes) : pendant les crédits → bannière discrète (TVAutoPlayOverlay) ;
  * à la VRAIE fin (source "eof") → écran plein « épisode suivant » (parité
  * NextEpisodeFullscreen desktop).
+ *
+ * `onEofDismiss` : dismiss de l'écran de FIN — à la vraie fin, il n'y a plus rien
+ * à regarder : le caller route vers la fiche média (avant : cancelAutoPlay seul →
+ * player gelé sur la dernière frame, spinner infini). La bannière crédits garde
+ * cancelAutoPlay (le contenu joue encore).
  */
-export function TVAutoPlaySwitch({ autoPlay, active }: { autoPlay: AutoPlayCtx; active: boolean }) {
+export function TVAutoPlaySwitch({ autoPlay, active, onEofDismiss }: {
+  autoPlay: AutoPlayCtx; active: boolean; onEofDismiss?: () => void;
+}) {
   const episodeLabel = autoPlay.nextEpisode?.ParentIndexNumber != null && autoPlay.nextEpisode?.IndexNumber != null
     ? `S${String(autoPlay.nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(autoPlay.nextEpisode.IndexNumber).padStart(2, "0")}`
     : undefined;
@@ -39,7 +46,7 @@ export function TVAutoPlaySwitch({ autoPlay, active }: { autoPlay: AutoPlayCtx; 
         episodeDescription={autoPlay.nextEpisodeOverview ?? autoPlay.nextEpisodeDescription}
         seriesBackdropUrl={autoPlay.seriesBackdropUrl}
         episodeThumbUrl={autoPlay.nextEpisodeThumbUrl}
-        onPlayNow={autoPlay.navigateToNextEpisode} onDismiss={autoPlay.cancelAutoPlay}
+        onPlayNow={autoPlay.navigateToNextEpisode} onDismiss={onEofDismiss ?? autoPlay.cancelAutoPlay}
       />
     );
   }

@@ -18,11 +18,14 @@ export function useTVSeekControl(args: {
   setDisplayTime: (v: number) => void;
   notifySeekRef: React.MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
   checkTriggerRef: React.MutableRefObject<(seconds: number) => void>;
+  /** Base des skips ±10/30 (useTVPlayerControls) : synchronisée à chaque commit de seek —
+   *  sinon un +30 juste après un seek repartait de l'ancienne position (progress pas encore accepté). */
+  controlsCurrentTimeRef?: React.MutableRefObject<number>;
 }) {
   const {
     jellyfinDuration, playerRef, paused,
     displayTimeRef, positionRef, lastDisplayUpdate, lastProgressTime,
-    reportSeek, setDisplayTime, notifySeekRef, checkTriggerRef,
+    reportSeek, setDisplayTime, notifySeekRef, checkTriggerRef, controlsCurrentTimeRef,
   } = args;
 
   const handleSeek = useCallback((seconds: number) => {
@@ -31,6 +34,7 @@ export function useTVSeekControl(args: {
     notifySeekRef.current(clamped);
     displayTimeRef.current = clamped;
     positionRef.current = clamped;
+    if (controlsCurrentTimeRef) controlsCurrentTimeRef.current = clamped;
     setDisplayTime(clamped);
     lastDisplayUpdate.current = Date.now();
     lastProgressTime.current = Date.now();

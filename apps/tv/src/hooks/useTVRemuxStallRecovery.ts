@@ -1,6 +1,7 @@
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { NativeModules } from "react-native";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import type { RemuxInfo } from "./useTVRemuxInfo";
 
 const Remux = (NativeModules as { TVLocalRemux?: { prepareResume?: () => void } }).TVLocalRemux;
 
@@ -36,10 +37,17 @@ export function useTVRemuxStallRecovery(args: {
   holdForReload: () => void;
   notifySeekRef: MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
   resetLoadedRef: MutableRefObject<() => void>;
+  /** État de production du remux (poll 1 Hz) + fin déjà actée + handleEnd — un stall
+   *  à ≤5 s de la fin d'un remux TERMINÉ n'est pas une panne : c'est la FIN (sinon la
+   *  récupération re-remuxait en boucle les dernières secondes → spinner infini). */
+  infoRef?: MutableRefObject<RemuxInfo | null>;
+  endedRef?: MutableRefObject<boolean>;
+  onEndRef?: MutableRefObject<() => void>;
 }) {
   const {
     pausedStateRef, positionRef, softReloadRef, reloadHoldRef, deadSessionRef,
     setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef,
+    infoRef, endedRef, onEndRef,
   } = args;
 
   const onRemuxStall = useCallback(() => {
@@ -47,6 +55,17 @@ export function useTVRemuxStallRecovery(args: {
     // session sortante : ignorer.
     if (softReloadRef.current || reloadHoldRef.current) return;
     const p = positionRef.current;
+    // FIN DE FICHIER : stall au bord live d'un remux TERMINÉ (ENDLIST écrit) à ≤5 s de la
+    // fin d'écrit → traiter comme la fin, pas comme une panne à récupérer.
+    const info = infoRef?.current;
+    if (!pausedStateRef.current && info && info.done && !info.error
+        && p >= info.sessionStartSec + info.writtenSec - 5) {
+      if (endedRef && !endedRef.current) {
+        endedRef.current = true;
+        onEndRef?.current();
+      }
+      return;
+    }
     if (pausedStateRef.current) {
       // PAUSE → lazy : marquer la session morte, figer l'image à P, rester en
       // pause. Les stalls suivants sont absorbés (flag déjà posé).

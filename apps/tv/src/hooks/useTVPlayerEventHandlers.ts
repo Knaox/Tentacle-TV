@@ -45,13 +45,17 @@ export function useTVPlayerEventHandlers(args: {
   onPlaybackActive?: () => void;
   autoPlay: AutoPlayCtx;
   handleFinished: () => void;
+  /** FIN atteinte (onEnd natif OU détecteur de stagnation) — possédé par PlayerScreen,
+   *  reset au changement de source. Gate le watchdog de rebuffering : à la fin, les progress
+   *  s'arrêtent → sans ce gate, le spinner « rebuffering » se latchait pour toujours. */
+  endedRef?: React.MutableRefObject<boolean>;
 }) {
   const {
     playerRef, paused,
     positionRef, pausedStateRef, displayTimeRef, bufferedTimeRef,
     lastDisplayUpdate, lastProgressTime, controlsCurrentTimeRef,
     setDisplayTime, setBufferedTime, setIsLoading,
-    reportStart, updatePosition, onPlaybackActive, autoPlay, handleFinished,
+    reportStart, updatePosition, onPlaybackActive, autoPlay, handleFinished, endedRef,
   } = args;
   const onPlaybackActiveRef = useRef(onPlaybackActive);
   onPlaybackActiveRef.current = onPlaybackActive;
@@ -150,16 +154,22 @@ export function useTVPlayerEventHandlers(args: {
     checkTriggerRef.current(t);
   }, [bufferedTimeRef, controlsCurrentTimeRef, displayTimeRef, lastDisplayUpdate, lastProgressTime, pausedStateRef, positionRef, setBufferedTime, setDisplayTime, setIsLoading]);
 
-  // Rebuffering watchdog : aucun progress callback pendant >2s
+  // Rebuffering watchdog : aucun progress callback pendant >2s. Gated `!ended` :
+  // à la fin, les progress cessent — le spinner se latchait pour toujours.
   useEffect(() => {
     if (paused) return;
     const interval = setInterval(() => {
-      if (!paused && Date.now() - lastProgressTime.current > 2000) setIsLoading(true);
+      if (!paused && !endedRef?.current && Date.now() - lastProgressTime.current > 2000) setIsLoading(true);
     }, 1000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paused, lastProgressTime, setIsLoading]);
 
   const handleEnd = useCallback(() => {
+    // Fin atteinte (onEnd natif OU détecteur de stagnation) : coupe le watchdog
+    // spinner et mémorise l'état pour le dismiss de l'écran de fin (retour fiche).
+    if (endedRef) endedRef.current = true;
+    setIsLoading(false);
     const ap = autoPlayRef.current;
     // Vraie fin + épisode suivant → écran plein « eof » (escalade la bannière
     // crédits si elle est déjà ouverte, countdown conservé). Idempotent : les
@@ -167,6 +177,7 @@ export function useTVPlayerEventHandlers(args: {
     // Auto-play désactivé (admin) → comportement « pas d'épisode suivant ».
     if (ap.autoplayEnabled && ap.nextEpisode) ap.notifyEnd();
     else if (ap.countdown === null) handleFinishedRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { handleLoad, handleProgress, handleEnd, notifySeek, resetLoaded, checkTriggerRef };

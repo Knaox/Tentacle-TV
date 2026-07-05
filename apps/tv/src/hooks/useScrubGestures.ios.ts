@@ -17,10 +17,12 @@ interface HWEvent {
 
 /** Translation horizontale (pts) sous laquelle on ne scrub pas (centre mort).
  *  Large : saisir la télécommande fait souvent glisser le pouce de 30-40 pts. */
-const DEAD_ZONE_PX = 45;
+const DEAD_ZONE_PX = 55;
 /** À pleine vitesse (shuttle au max), on traverse TOUTE la vidéo en ~ce temps → la vitesse de
- *  scrub s'ADAPTE à la durée (vidéo de 2 min = lent/contrôlable, 1 h 40 = rapide). */
-const T_FULL_SECONDS = 30;
+ *  scrub s'ADAPTE à la durée (vidéo de 2 min = lent/contrôlable, 1 h 40 = rapide).
+ *  Recalibré (retour device « Chambre ») : 30 s donnait 240 s/s sur un film de 2 h et ~14 s/s
+ *  au moindre effleurement — incontrôlable. 110 s ⇒ ~65 s/s max sur 2 h. */
+const T_FULL_SECONDS = 110;
 /** Cadence du loop d'avance continue (~30 fps). */
 const LOOP_MS = 33;
 /** Délai mini d'un geste avant d'engager le scrub : évite l'avance rapide
@@ -35,20 +37,22 @@ const ENGAGE_DELAY_MS = 450;
  * par palier (plus loin = plus vite), parité avec les labels 2x/4x/8x affichés.
  */
 // Paliers = FRACTION de la vitesse MAX (= durée / T_FULL_SECONDS) → vitesse adaptée à la durée.
+// Paliers ÉLARGIS et ADOUCIS (retour device) : un glissement franc est requis pour accélérer,
+// l'effleurement reste au palier fin (~3 s/s sur 2 h au lieu de 14).
 const SPEED_CURVE: { px: number; frac: number; label: string | null }[] = [
   { px: DEAD_ZONE_PX, frac: 0, label: null },
-  { px: 75, frac: 0.06, label: null },
-  { px: 105, frac: 0.18, label: "2x" },
-  { px: 165, frac: 0.45, label: "4x" },
-  { px: 225, frac: 1.0, label: "8x" },
+  { px: 90, frac: 0.05, label: null },
+  { px: 130, frac: 0.15, label: "2x" },
+  { px: 190, frac: 0.4, label: "4x" },
+  { px: 260, frac: 1.0, label: "8x" },
 ];
 
 function rateFor(translationX: number, durationSec: number): { rate: number; label: string | null } {
   const mag = Math.abs(translationX);
   if (mag < DEAD_ZONE_PX) return { rate: 0, label: null };
   const dir = translationX > 0 ? 1 : -1;
-  // Vitesse MAX ∝ durée (bornée 5–400 s/s) : traverse la vidéo en ~T_FULL_SECONDS à fond.
-  const maxRate = Math.min(400, Math.max(5, (durationSec || 0) / T_FULL_SECONDS));
+  // Vitesse MAX ∝ durée (bornée 5–150 s/s) : traverse la vidéo en ~T_FULL_SECONDS à fond.
+  const maxRate = Math.min(150, Math.max(5, (durationSec || 0) / T_FULL_SECONDS));
   let chosen = SPEED_CURVE[0];
   for (const t of SPEED_CURVE) if (mag >= t.px) chosen = t;
   const label = chosen.label ? `${dir > 0 ? "▶▶" : "◀◀"} ${chosen.label}` : null;

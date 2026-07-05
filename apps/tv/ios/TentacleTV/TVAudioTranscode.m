@@ -61,6 +61,7 @@ static void TVAudioEncodeFifo(AVFormatContext *oc, AVCodecContext *aenc, AVAudio
       while (avcodec_receive_packet(aenc, op) == 0) {
         op->stream_index = outIdx;
         av_packet_rescale_ts(op, aenc->time_base, oc->streams[outIdx]->time_base);
+        TVNoteFirstDts(outIdx, op->dts, oc->streams[outIdx]->time_base);  // l'audio transcodé contourne la boucle moteur
         av_interleaved_write_frame(oc, op); av_packet_unref(op);
       }
     av_frame_free(&f);
@@ -70,19 +71,35 @@ static void TVAudioEncodeFifo(AVFormatContext *oc, AVCodecContext *aenc, AVAudio
     while (avcodec_receive_packet(aenc, op) == 0) {
       op->stream_index = outIdx;
       av_packet_rescale_ts(op, aenc->time_base, oc->streams[outIdx]->time_base);
+      TVNoteFirstDts(outIdx, op->dts, oc->streams[outIdx]->time_base);
       av_interleaved_write_frame(oc, op); av_packet_unref(op);
     }
   }
   av_packet_free(&op);
 }
 
+// Comble un TROU de la timeline audio source avec du silence (par blocs bornés : jamais
+// d'allocation géante même pour un trou de plusieurs secondes).
+static void TVAudioPadSilence(AVAudioFifo *fifo, AVCodecContext *aenc, int64_t samples) {
+  while (samples > 0) {
+    int n = (int)FFMIN(samples, 4800);
+    uint8_t **buf = NULL;
+    if (av_samples_alloc_array_and_samples(&buf, NULL, aenc->ch_layout.nb_channels, n, aenc->sample_fmt, 0) < 0) return;
+    av_samples_set_silence(buf, 0, n, aenc->ch_layout.nb_channels, aenc->sample_fmt);
+    av_audio_fifo_write(fifo, (void **)buf, n);
+    av_freep(&buf[0]); av_freep(&buf);
+    samples -= n;
+  }
+}
+
 // Décode un paquet audio (pkt=NULL → flush) → resample → FIFO → encode EAC3.
 // inTb = time_base du flux audio SOURCE : sert à ANCRER *nextPts (init AV_NOPTS_VALUE) sur le
 // PTS de la 1ʳᵉ frame décodée → l'audio transcodé reste sur la timeline source (synchro labiale,
 // et reprise av_seek_frame à T : l'audio démarre à T comme la vidéo, pas à 0).
+// aTrim = compteur d'échantillons à ROGNER (compensation de chevauchement) porté par TVDoRemux.
 static void TVAudioTranscode(AVFormatContext *oc, AVCodecContext *adec, AVCodecContext *aenc,
                              SwrContext *swr, AVAudioFifo *fifo, int outIdx, int64_t *nextPts,
-                             AVRational inTb, AVPacket *pkt) {
+                             AVRational inTb, int64_t *aTrim, AVPacket *pkt) {
   avcodec_send_packet(adec, pkt);
   AVFrame *df = av_frame_alloc();
   while (avcodec_receive_frame(adec, df) == 0) {
@@ -91,13 +108,50 @@ static void TVAudioTranscode(AVFormatContext *oc, AVCodecContext *adec, AVCodecC
                  : (df->pts != AV_NOPTS_VALUE) ? df->pts
                  : (pkt ? pkt->pts : AV_NOPTS_VALUE);   // fallback : PTS du paquet source si la frame n'en porte pas
       *nextPts = (ts != AV_NOPTS_VALUE) ? av_rescale_q(ts, inTb, aenc->time_base) : 0;
+    } else {
+      // COMPENSATION DE DÉRIVE A/V (équivalent manuel `aresample=async=1:min_hard_comp=0.1`).
+      // Le compteur (*nextPts) suppose un flux audio CONTINU ; les sources réelles (MKV broadcast,
+      // edits, coupures) ont des trous/chevauchements de PTS. Sans correction, CHAQUE trou décale
+      // l'audio définitivement (desync progressive en cours de film). On compare le PTS source de
+      // la frame au PTS PROJETÉ (compteur + remplissage FIFO + retard interne swr) :
+      int64_t fts = (df->best_effort_timestamp != AV_NOPTS_VALUE) ? df->best_effort_timestamp : df->pts;
+      if (fts != AV_NOPTS_VALUE) {
+        int64_t src = av_rescale_q(fts, inTb, aenc->time_base);
+        // Un trim EN ATTENTE (*aTrim) sera retranché du pipeline → les échantillons suivants
+        // recevront un PTS plus tôt d'autant : il se SOUSTRAIT de la projection (sinon le même
+        // chevauchement serait re-détecté à chaque frame → sur-correction en boucle).
+        int64_t projected = *nextPts + av_audio_fifo_size(fifo) + swr_get_delay(swr, aenc->sample_rate) - *aTrim;
+        int64_t drift = src - projected;
+        if (drift > TVLR_ADRIFT_MAX_SAMPLES || drift < -TVLR_ADRIFT_MAX_SAMPLES) {
+          TVLOG("audio: drift PATHOLOGIQUE %lld éch. (~%.1f s) → ignoré", (long long)drift, (double)drift / aenc->sample_rate);
+        } else if (drift > TVLR_ADRIFT_MIN_SAMPLES) {          // TROU source → combler au silence
+          TVLOG("audio: trou source %.0f ms → +%lld éch. de silence", (double)drift * 1000.0 / aenc->sample_rate, (long long)drift);
+          TVAudioPadSilence(fifo, aenc, drift);
+        } else if (drift < -TVLR_ADRIFT_MIN_SAMPLES) {         // CHEVAUCHEMENT → rogner l'excédent
+          TVLOG("audio: chevauchement source %.0f ms → trim %lld éch.", (double)-drift * 1000.0 / aenc->sample_rate, (long long)-drift);
+          *aTrim += -drift;
+        }
+      }
     }
     int out_n = swr_get_out_samples(swr, df->nb_samples);
     if (out_n > 0) {
       uint8_t **conv = NULL;
       if (av_samples_alloc_array_and_samples(&conv, NULL, aenc->ch_layout.nb_channels, out_n, aenc->sample_fmt, 0) >= 0) {
         int got = swr_convert(swr, conv, out_n, (const uint8_t **)df->extended_data, df->nb_samples);
-        if (got > 0) av_audio_fifo_write(fifo, (void **)conv, got);
+        if (got > 0 && *aTrim > 0) {
+          // Trim actif : jeter le DÉBUT de cette sortie (planaire FLTP → avancer chaque plan).
+          int drop = (int)FFMIN((int64_t)got, *aTrim);
+          *aTrim -= drop; got -= drop;
+          if (got > 0) {
+            int bps = av_get_bytes_per_sample(aenc->sample_fmt);
+            uint8_t *shifted[16];
+            int nch = FFMIN(aenc->ch_layout.nb_channels, 16);
+            for (int c = 0; c < nch; c++) shifted[c] = conv[c] + (size_t)drop * bps;
+            av_audio_fifo_write(fifo, (void **)shifted, got);
+          }
+        } else if (got > 0) {
+          av_audio_fifo_write(fifo, (void **)conv, got);
+        }
         if (conv) { av_freep(&conv[0]); av_freep(&conv); }
       }
     }

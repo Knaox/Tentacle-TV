@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
+import { Focusable } from "../focus/Focusable";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -64,8 +66,13 @@ function TVLoadingBar() {
  * Écran de chargement du média — réplique de PlayerLoadingScreen (web) :
  * fond #0a0a12 + halo brand, backdrop en fade-in 500ms, scrim noir dégradé,
  * titre + sous-titre (S##E## — épisode) bas-gauche, barre de chargement animée.
+ * `failed` : la résolution du flux a échoué → message + bouton « Réessayer »
+ * (avant : la barre tournait pour toujours, sans erreur ni issue).
  */
-export function TVPlayerLoadingScreen({ item }: { item?: MediaItem | null }) {
+export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
+  item?: MediaItem | null; failed?: boolean; onRetry?: () => void;
+}) {
+  const { t } = useTranslation("player");
   const client = useJellyfinClient();
   const backdropOpacity = useSharedValue(0);
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
@@ -91,7 +98,7 @@ export function TVPlayerLoadingScreen({ item }: { item?: MediaItem | null }) {
     : null;
 
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: "#0a0a12", zIndex: 50, elevation: 50, overflow: "hidden" }]}>
+    <View pointerEvents={failed ? "auto" : "none"} style={[StyleSheet.absoluteFillObject, { backgroundColor: "#0a0a12", zIndex: 50, elevation: 50, overflow: "hidden" }]}>
       {/* Halo brand (équivalent du gradient radial web, visible avant le backdrop) */}
       <LinearGradient
         colors={["rgba(139,92,246,0.20)", "transparent"]}
@@ -140,7 +147,23 @@ export function TVPlayerLoadingScreen({ item }: { item?: MediaItem | null }) {
           </Text>
         )}
         <View style={{ marginTop: 24 }}>
-          <TVLoadingBar />
+          {failed ? (
+            <View>
+              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, marginBottom: 16 }}>
+                {t("loadFailed", { defaultValue: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie." })}
+              </Text>
+              <Focusable
+                variant="button" hasTVPreferredFocus onPress={onRetry}
+                style={{ alignSelf: "flex-start", paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.14)" }}
+              >
+                <Text style={{ color: "#fff", fontSize: 17, fontFamily: Fonts.bold }}>
+                  {t("retry", { defaultValue: "Réessayer" })}
+                </Text>
+              </Focusable>
+            </View>
+          ) : (
+            <TVLoadingBar />
+          )}
         </View>
       </View>
     </View>

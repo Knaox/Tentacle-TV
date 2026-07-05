@@ -11,7 +11,8 @@
 #import "TVCommon.h"
 #import "TVAudioTranscode.m"
 #import "TVHLSPlaylist.m"
-#import "TVWindow.m"        // fenêtrage disque (TVPurgeBehind) — DOIT précéder TVRemuxEngine.m (qui l'appelle)
+#import "TVWindow.m"        // fenêtrage disque (TVPurgeBehind/TVPaceAndPurge) — DOIT précéder TVRemuxEngine.m
+#import "TVStreamMap.m"     // mapping des flux (TVMapStreams) — utilise TVAudioSetup, précède le moteur
 #import "TVRemuxEngine.m"
 
 @interface TVLocalRemux : NSObject <RCTBridgeModule>
@@ -117,7 +118,9 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
       gCurrentSource = sourceUrl;
       gWantAudioIdx = (int)audioIndex;   // re-remux si la piste audio change (clé de session)
       gWantStartSec = (int)startSec;     // reprise/seek : av_seek_frame positionne l'entrée sur la keyframe ≤ T
-      gSessionStartSec = startSec;       // début ABSOLU de cette session → mapping purge/headIdx (TVWindow.m)
+      gSessionStartSec = startSec;       // origine PROVISOIRE (T demandé) — affinée au 1ᵉʳ paquet muxé
+                                         // (TVNoteFirstDts : keyframe ≤ T − amorce B-frames) → offset JS exact
+      gTVMinFirstDts = DBL_MAX; gTVFirstSeenMask = 0;   // reset de la capture d'origine (par session)
       myGen = ++gGen;
       gDone = 0; gError = 0; gReady = 0; gTotalEstimate = 0; gTVFps = 0; gWrittenSec = 0; gDiskBytes = 0;
       // 0-based (make_zero) : la tête démarre à RELATIF 0 (= absolu startSec via av_seek_frame). NE PAS
@@ -160,10 +163,13 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
       // (rebasée à 0), donc ~PREBUFFER s après T sont prêtes très vite. Borné ~30 s. (Ce gate
       // remplace l'ancien `gWrittenSec ≥ gWantStartSec`, faux en 0-based : il ne se relâchait jamais.)
       while (gGen == myGen && !gError && !(gReady && TVFileSize(masterPath) > 0 && gWrittenSec >= prebufNeed) && guard++ < 3000) usleep(10000);
-      TVLOG("start: gen=%d (cur=%d) ready=%d err=%d master=%lld after %dms", myGen, gGen, gReady, gError, TVFileSize(masterPath), guard * 10);
+      TVLOG("start: gen=%d (cur=%d) ready=%d err=%d master=%lld start=%.3f after %dms", myGen, gGen, gReady, gError, TVFileSize(masterPath), gSessionStartSec, guard * 10);
       if (gGen != myGen) { reject(@"superseded", @"newer session started", nil); return; }
       if (TVFileSize(masterPath) <= 0) { reject(@"remux", @"no master playlist", nil); return; }
-      resolve(url);
+      // startSec = origine RÉELLE de la timeline playlist (1ᵉʳ DTS muxé, exact à ~1 frame) : le JS
+      // s'en sert comme offset absolu⇄relatif (AVPlayerSurface) — fini le skew d'un GOP après un
+      // seek/reprise. gen = jeton pour cancel() (le démontage n'annule que SA session).
+      resolve(@{ @"url": url, @"startSec": @(gSessionStartSec), @"gen": @(myGen) });
     });
    } @catch (NSException *ex) {
     TVLOG("start EXCEPTION %s", ex.reason.UTF8String);
@@ -173,6 +179,36 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
 }
 
 RCT_EXPORT_METHOD(stop) { if (gServer.isRunning) [gServer stop]; }
+
+// ANNULATION de session (démontage du player) : sans elle, le producteur restait GARÉ dans la
+// boucle de pacing (thread bloqué) et jusqu'à 1,6 Go de segments traînaient sur disque jusqu'au
+// prochain start(). Gen-gardée : un `navigation.replace` (épisode suivant) peut lancer le start()
+// du NOUVEL écran AVANT le cleanup de démontage de l'ancien — on n'annule que SA session.
+RCT_EXPORT_METHOD(cancel:(NSInteger)gen) {
+  if ((int)gen != gGen) { TVLOG("cancel: gen=%ld périmé (cur=%d) → no-op", (long)gen, gGen); return; }
+  TVLOG("cancel: gen=%ld", (long)gen);
+  gGen++;                    // la boucle moteur/pacing teste gGen → le producteur sort en ≤ 200 ms
+  gCurrentSource = nil;      // jamais de réutilisation withinAvail d'une session annulée (dossier purgé)
+  gPaused = 0; gResumePending = 0;
+  NSString *base = gOutPath;
+  if (base && gRemuxQueue) dispatch_async(gRemuxQueue, ^{   // file SÉRIE → s'exécute APRÈS la sortie du producteur
+    NSFileManager *fm = [NSFileManager defaultManager];
+    for (NSString *d in ([fm contentsOfDirectoryAtPath:base error:nil] ?: @[]))
+      [fm removeItemAtPath:[base stringByAppendingPathComponent:d] error:nil];
+    gDiskBytes = 0;
+    TVLOG("cancel: sessions purgées");
+  });
+}
+
+// État de production de la session courante, pollé ~1 Hz par le JS : borne la fenêtre de seek
+// natif à ce qui est ÉCRIT (writtenSec), donne l'origine exacte (sessionStartSec) et l'état de
+// complétion (done+ENDLIST) pour le détecteur de fin. Méthode séparée : le chemin chaud
+// setPosition (chaque progress) reste intact.
+RCT_EXPORT_METHOD(sessionInfo:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+  resolve(@{ @"writtenSec": @(gWrittenSec), @"sessionStartSec": @(gSessionStartSec),
+             @"done": @(gDone ? YES : NO), @"error": @(gError ? YES : NO), @"gen": @(gGen) });
+}
 
 // Position de lecture (s) poussée par JS (onProgress) → le remux ne va pas trop loin devant.
 RCT_EXPORT_METHOD(setPosition:(double)seconds) { gTVPlayPos = seconds; }

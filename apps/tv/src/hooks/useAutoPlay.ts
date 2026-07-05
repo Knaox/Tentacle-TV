@@ -31,6 +31,10 @@ interface AutoPlayState {
   notifyEnd: () => void;
   /** Call from handleProgress on every tick — checks if trigger point reached */
   checkTrigger: (currentTime: number) => void;
+  /** Miroir SYNCHRONE de countdown : lu par le routage Retour (useTVPlayerBack) au sein
+   *  du même dispatch d'événement — la valeur d'état du dernier rendu serait périmée
+   *  quand deux handlers consomment le même appui. */
+  countdownRef: React.MutableRefObject<number | null>;
 }
 
 export function useAutoPlay(
@@ -63,6 +67,7 @@ export function useAutoPlay(
   useEffect(() => {
     creditsTriggered.current = false;
     eofTriggeredRef.current = false;
+    countdownRef.current = null;
     setCountdown(null);
     setSource(null);
     clearInterval(autoPlayTimerRef.current);
@@ -78,6 +83,7 @@ export function useAutoPlay(
 
   const navigateToNextEpisode = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
+    countdownRef.current = null;
     setCountdown(null);
     setSource(null);
     const ep = nextEpisodeRef.current;
@@ -91,6 +97,7 @@ export function useAutoPlay(
     if (!ep) return;
 
     setSource(src);
+    countdownRef.current = COUNTDOWN_TOTAL;   // miroir synchrone (routage Retour)
     setCountdown(COUNTDOWN_TOTAL);
     clearInterval(autoPlayTimerRef.current);
     autoPlayTimerRef.current = setInterval(() => {
@@ -100,6 +107,7 @@ export function useAutoPlay(
           navigateToNextEpisode();
           return null;
         }
+        countdownRef.current = prev - 1;
         return prev - 1;
       });
     }, 1000);
@@ -107,6 +115,7 @@ export function useAutoPlay(
 
   const cancelAutoPlay = useCallback(() => {
     clearInterval(autoPlayTimerRef.current);
+    countdownRef.current = null;   // synchrone : le routage Retour du même appui lit déjà null
     setCountdown(null);
     // Écarter l'affiche de FIN empêche sa réapparition (notifyEnd re-déclenché
     // par des onEnd répétés). La bannière crédits a sa propre garde
@@ -198,5 +207,6 @@ export function useAutoPlay(
     navigateToNextEpisode,
     notifyEnd,
     checkTrigger,
+    countdownRef,
   };
 }
