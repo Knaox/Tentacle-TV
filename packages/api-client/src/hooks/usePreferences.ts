@@ -96,8 +96,13 @@ export function useDeleteLibraryPreference() {
   return useMutation({
     mutationFn: async (libraryId: string) =>
       prefFetch(`/${libraryId}`, { method: "DELETE" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["library-preferences"] });
+    onSuccess: (_data, libraryId) => {
+      // Écraser le cache de la query unitaire : son refetch post-suppression
+      // renvoie 404 et TanStack v5 CONSERVE l'ancien data sur une erreur —
+      // sans ça, `checked = !!data` (case « Appliquer à cette série ») reste
+      // vrai à jamais et la case ne peut plus être décochée.
+      qc.setQueryData(["library-preferences", libraryId], null);
+      qc.invalidateQueries({ queryKey: ["library-preferences"], exact: true });
     },
   });
 }
