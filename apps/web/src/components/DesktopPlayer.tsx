@@ -13,6 +13,7 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
+import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
 
 interface DesktopPlayerProps {
   src: string; title: string; subtitle?: string;
@@ -46,8 +47,10 @@ interface DesktopPlayerProps {
   onSeekComplete?: (seconds: number, paused: boolean) => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
-  /** Épisode : enregistre les pistes courantes comme préférence de la série. */
-  onApplyToSeries?: () => void;
+  /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
+  onControlsVisibilityChange?: (visible: boolean) => void;
+  /** Épisode : case « Appliquer à cette série » (préférence de langues). */
+  applyToSeries?: ApplyToSeriesControl;
 }
 
 export function DesktopPlayer({
@@ -65,13 +68,15 @@ export function DesktopPlayer({
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
-  onApplyToSeries,
+  onControlsVisibilityChange, applyToSeries,
 }: DesktopPlayerProps) {
   const { t } = useTranslation("player");
   const { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showControls, setShowControls] = useState(true);
+  // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
+  useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [showSettings, setShowSettings] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
@@ -272,7 +277,7 @@ export function DesktopPlayer({
         goBack={goBack} togglePause={togglePause} skipBy={skipBy}
         toggleMute={toggleMute} setVolume={setVolume} toggleFullscreen={toggleFullscreen}
         handleAudioChange={handleAudioChange} handleSubtitleChange={handleSubtitleChange}
-        onQualityChange={onQualityChange} onApplyToSeries={onApplyToSeries}
+        onQualityChange={onQualityChange} applyToSeries={applyToSeries}
         onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
       />
     </div>

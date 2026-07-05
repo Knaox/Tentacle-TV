@@ -1,5 +1,6 @@
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
+import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
 export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
 export interface AudioTrack { index: number; label: string; lang?: string }
@@ -55,6 +56,8 @@ export interface VideoPlayerProps {
   onFatalError?: () => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
-  /** Épisode : enregistre les pistes courantes comme préférence de la série. */
-  onApplyToSeries?: () => void;
+  /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
+  onControlsVisibilityChange?: (visible: boolean) => void;
+  /** Épisode : case « Appliquer à cette série » (préférence de langues). */
+  applyToSeries?: ApplyToSeriesControl;
 }

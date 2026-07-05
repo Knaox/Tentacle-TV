@@ -7,8 +7,17 @@ import { memberStatus, WtAvatar } from "./WatchTogetherRows";
  * Overlay discret du player en mode groupe : rangée d'avatars des membres
  * (ring de statut : lecture/buffering/erreur/hors ligne) en haut à droite, et
  * chip centrale « X met en mémoire tampon… » pendant un group-wait.
+ * Les avatars suivent la visibilité des contrôles du player (`controlsVisible`) ;
+ * la chip group-wait reste toujours affichée (information de blocage).
  */
-export function GroupPlaybackOverlay({ itemId }: { itemId: string | undefined }) {
+export function GroupPlaybackOverlay({
+  itemId,
+  controlsVisible = true,
+}: {
+  itemId: string | undefined;
+  /** Overlay lecteur (contrôles) actuellement affiché. */
+  controlsVisible?: boolean;
+}) {
   const { room, selfId } = useWatchTogether();
   const { t } = useTranslation("watchTogether");
 
@@ -24,8 +33,9 @@ export function GroupPlaybackOverlay({ itemId }: { itemId: string | undefined })
 
   return (
     <>
-      {/* Avatars membres — sous le header du player, à droite */}
-      <div className="pointer-events-none absolute right-4 top-16 z-20 flex items-center gap-1.5 md:right-6">
+      {/* Avatars membres — sous le header du player, à droite. Même fondu que
+          les contrôles : visibles uniquement quand l'overlay lecteur est actif. */}
+      <div className={`pointer-events-none absolute right-4 top-16 z-20 flex items-center gap-1.5 transition-opacity duration-300 md:right-6 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
         {room.members.map((m) => (
           <WtAvatar
             key={m.userId}
