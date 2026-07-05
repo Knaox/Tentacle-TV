@@ -16,6 +16,7 @@ import type { MpvTrack } from "../hooks/useDesktopPlayer";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { TrickplayPreview } from "./TrickplayPreview";
 import { useTrickplay } from "../hooks/useTrickplay";
+import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 
 const DBG = "[DesktopPlayer]";
 
@@ -45,6 +46,16 @@ interface DesktopPlayerProps {
   item?: MediaItem;
   mediaSourceId?: string;
   onNextEpisode?: () => void; onPreviousEpisode?: () => void; onFallbackToWeb?: () => void;
+  /** Watch Together — surface de commande impérative (play/pause/seek/speed). */
+  transportRef?: PlayerTransportRef;
+  /** Watch Together — transition lecture/pause observée (état mpv). */
+  onPlayStateChange?: (paused: boolean) => void;
+  /** Watch Together — buffering mpv (paused-for-cache) + premier « prêt ». */
+  onBufferingChange?: (buffering: boolean) => void;
+  /** Watch Together — seek local détecté (saut de position discontinu). */
+  onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
+  onAutoNextDismiss?: () => void;
 }
 
 // ── Comprehensive language code normalization ──
@@ -132,11 +143,12 @@ export function DesktopPlayer({
   autoplayNextEnabled = true, maxResumePct = 90,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb,
+  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
 }: DesktopPlayerProps) {
   const { t } = useTranslation("player");
   const navigate = useNavigate();
   const { state, ready, fileLoaded, error, play, togglePause, setPause, seek, seekRelative,
-    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, toggleMute, toggleFullscreen } = useDesktopPlayer();
+    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const [showControls, setShowControls] = useState(true);
@@ -348,12 +360,71 @@ export function DesktopPlayer({
 
   // Report progress + track absolute position
   useEffect(() => {
+    // Ignorer les événements du fichier PRÉCÉDENT : après un remount (changement
+    // d'épisode), mpv rapporte encore position/paused de l'ancien média jusqu'au
+    // chargement du nouveau — sans cette garde, la position de fin de l'ancien
+    // épisode déclenche l'écran « épisode suivant » au début du nouveau.
+    if (!fileLoaded) return;
     if (!state.playing && !hasStartedRef.current) return;
     if (state.playing && !hasStartedRef.current) { hasStartedRef.current = true; onStarted?.(); }
     const absolutePos = state.position + effectiveMpvOffset.current;
+    const prevPos = lastAbsolutePosRef.current;
     lastAbsolutePosRef.current = absolutePos;
     onProgress?.(absolutePos, state.paused);
-  }, [state.position, state.paused, state.playing]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Watch Together : mpv n'a pas de callback central de seek — un saut de
+    // position discontinu (hors changement de source) est un seek local.
+    if (prevPos > 0 && !sourceChanging && Math.abs(absolutePos - prevPos) > 3) {
+      onSeekComplete?.(absolutePos, state.paused);
+    }
+  }, [state.position, state.paused, state.playing, fileLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const cancelAutoPlay = useCallback(() => {
+    clearInterval(autoPlayTimerRef.current);
+    // Annuler l'affiche de FIN empêche sa réapparition (l'effet EOF se ré-évalue
+    // quand autoPlayCountdown repasse à null). Les crédits ont leur propre garde.
+    setAutoPlaySource((src) => { if (src === "eof") eofAutoPlayTriggered.current = true; return null; });
+    setAutoPlayCountdown(null);
+  }, []);
+
+  // ── Watch Together : transport impératif + signaux prêt/buffering/pause ──
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  useEffect(() => {
+    if (!transportRef) return;
+    transportRef.current = {
+      play: () => { void setPause(false); },
+      pause: () => { void setPause(true); },
+      // seek mpv en position stream (relative si PTS relatif en transcode)
+      seekTo: (seconds: number) => {
+        void seek(isDirectPlay ? seconds : Math.max(0, seconds - effectiveMpvOffset.current));
+      },
+      getPositionSeconds: () => lastAbsolutePosRef.current,
+      isPaused: () => stateRef.current.paused,
+      setRate: (rate: number) => { void setSpeed(rate); },
+      cancelAutoNext: () => cancelAutoPlay(),
+    };
+    return () => { transportRef.current = null; };
+  }, [transportRef, setPause, seek, setSpeed, isDirectPlay, cancelAutoPlay]);
+
+  // Premier « prêt » : équivalent mpv du canplay web — débloque le group-wait.
+  // fileLoaded : sans lui, les événements du fichier précédent (remount)
+  // déclareraient « prêt » avant que le nouveau média ait chargé.
+  const readySentRef = useRef(false);
+  useEffect(() => {
+    if (!readySentRef.current && fileLoaded && state.playing && state.position > 0) {
+      readySentRef.current = true;
+      onBufferingChange?.(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.playing, state.position, fileLoaded]);
+  useEffect(() => {
+    if (readySentRef.current) onBufferingChange?.(state.buffering);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.buffering]);
+  useEffect(() => {
+    if (readySentRef.current) onPlayStateChange?.(state.paused);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.paused]);
 
   // Clear sourceChanging when playback resumes after a source change
   useEffect(() => {
@@ -389,14 +460,6 @@ export function DesktopPlayer({
     }, 1000);
   }, [hasNextEpisode, onNextEpisode]);
 
-  const cancelAutoPlay = useCallback(() => {
-    clearInterval(autoPlayTimerRef.current);
-    // Annuler l'affiche de FIN empêche sa réapparition (l'effet EOF se ré-évalue
-    // quand autoPlayCountdown repasse à null). Les crédits ont leur propre garde.
-    setAutoPlaySource((src) => { if (src === "eof") eofAutoPlayTriggered.current = true; return null; });
-    setAutoPlayCountdown(null);
-  }, []);
-
   // Navigate to detail page for movies — awaits exit_fullscreen before navigating
   const goToDetail = useCallback(async () => {
     if (fullscreenRef.current && cachedInvoke) {
@@ -414,6 +477,7 @@ export function DesktopPlayer({
   // bannière (le bouton « Passer le générique » reste inchangé).
   const creditsAutoPlayTriggered = useRef(false);
   useEffect(() => {
+    if (!fileLoaded) return; // position du fichier précédent (remount) — ignorer
     if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
     if (!autoplayNextEnabled || !hasNextEpisode || !hasStartedRef.current) return;
     const pos = state.position + effectiveMpvOffset.current;
@@ -424,10 +488,11 @@ export function DesktopPlayer({
       creditsAutoPlayTriggered.current = true;
       startAutoPlayCountdown("credits");
     }
-  }, [state.position, autoplayNextEnabled, maxResumePct, hasNextEpisode, autoPlayCountdown, startAutoPlayCountdown, jellyfinDuration, state.duration]);
+  }, [state.position, autoplayNextEnabled, maxResumePct, hasNextEpisode, autoPlayCountdown, startAutoPlayCountdown, jellyfinDuration, state.duration, fileLoaded]);
 
   // EOF : écran plein « épisode suivant » (si activé), sinon retour détail
   useEffect(() => {
+    if (!fileLoaded) return; // EOF du fichier précédent (remount) — ignorer
     if (state.eof && hasStartedRef.current) {
       if (autoplayNextEnabled && hasNextEpisode && autoPlayCountdown === null && !eofAutoPlayTriggered.current) {
         eofAutoPlayTriggered.current = true;
@@ -435,7 +500,7 @@ export function DesktopPlayer({
       } else if ((!hasNextEpisode || !autoplayNextEnabled) && itemId) goToDetail();
       else if (!hasNextEpisode || !autoplayNextEnabled) goBack();
     }
-  }, [state.eof, goBack, goToDetail, hasNextEpisode, autoplayNextEnabled, startAutoPlayCountdown, itemId, autoPlayCountdown]);
+  }, [state.eof, goBack, goToDetail, hasNextEpisode, autoplayNextEnabled, startAutoPlayCountdown, itemId, autoPlayCountdown, fileLoaded]);
 
   useEffect(() => {
     return () => {
@@ -791,13 +856,15 @@ export function DesktopPlayer({
         {autoPlayCountdown !== null && autoPlaySource === "credits" && (
           <NextEpisodeOverlay countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
-            onPlayNow={() => onNextEpisode?.()} onDismiss={cancelAutoPlay} />
+            onPlayNow={() => onNextEpisode?.()}
+            onDismiss={() => { cancelAutoPlay(); onAutoNextDismiss?.(); }} />
         )}
         {autoPlayCountdown !== null && autoPlaySource === "eof" && (
           <NextEpisodeFullscreen countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} seriesBackdropUrl={nextSeriesBackdropUrl}
             episodeThumbUrl={nextEpisodeThumbUrl}
-            onPlayNow={() => onNextEpisode?.()} onDismiss={cancelAutoPlay} />
+            onPlayNow={() => onNextEpisode?.()}
+            onDismiss={() => { cancelAutoPlay(); onAutoNextDismiss?.(); }} />
         )}
       </AnimatePresence>
     </div>

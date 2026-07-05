@@ -5,6 +5,10 @@ import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
+import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
+import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
+import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
+import type { PlayerTransport } from "../watchTogether/playerTransport";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -24,6 +28,16 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
+  });
+
+  // ── Watch Together : transport + handlers de groupe + moteur de sync ──
+  const transportRef = useRef<PlayerTransport | null>(null);
+  const group = useGroupPlaybackHandlers({
+    itemId, itemReady: !!item, resumePositionSeconds: startPositionSeconds,
+    nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode, setStartTicks,
+  });
+  const groupSync = useGroupSyncEngine({
+    itemId, transportRef, claimStartSeconds: group.groupStartPositionSeconds,
   });
 
   const runStopInvalidation = useWatchStopInvalidation();
@@ -137,21 +151,26 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     <div className="relative h-screen w-screen">
       <DesktopPlayer
         key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
-        startPositionSeconds={startPositionSeconds} jellyfinDuration={jellyfinDuration}
+        startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
         currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
         onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-        onProgress={handleProgress} onStarted={() => reportStart(startPositionSeconds)}
+        onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
         nextSeriesBackdropUrl={nextSeriesBackdropUrl} nextEpisodeThumbUrl={nextEpisodeThumbUrl}
         nextEpisodeDescription={nextEpisodeDescription} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
-        onNextEpisode={handleNextEpisode} onPreviousEpisode={handlePreviousEpisode}
+        onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
         onFallbackToWeb={onFallbackToWeb}
+        transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
+        onBufferingChange={groupSync.notifyBuffering}
+        onSeekComplete={(seconds) => groupSync.notifySeek(seconds)}
+        onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
       />
+      <GroupPlaybackOverlay itemId={itemId} />
     </div>
   );
 }

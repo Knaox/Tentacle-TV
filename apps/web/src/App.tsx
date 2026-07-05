@@ -14,6 +14,7 @@ import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
 import { ToastProvider } from "./contexts/ToastContext";
+import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { isTauriApp } from "./main";
 import { Disclaimer } from "./pages/Disclaimer";
 
@@ -186,6 +187,7 @@ export function App() {
 
   return (
     <ToastProvider>
+      <WatchTogetherProvider>
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
@@ -269,6 +271,7 @@ export function App() {
       </Suspense>
       <UpdateModal />
       <OfflineBanner />
+      </WatchTogetherProvider>
     </ToastProvider>
   );
 }

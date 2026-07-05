@@ -6,6 +6,7 @@ import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
 import { TentacleLogo } from "../ui/TentacleLogo";
 import { BrowseButton } from "./BrowseButton";
+import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 
 interface TopNavProps {
   showSearch?: boolean;
@@ -60,9 +61,10 @@ export function TopNav({ showSearch = true }: TopNavProps) {
           <TopNavLinks />
         </div>
 
-        {/* Right cluster: search + notif + avatar */}
+        {/* Right cluster: search + watch-together + notif + avatar */}
         <div className="flex flex-shrink-0 items-center gap-2">
           {showSearch && <GlobalSearch />}
+          <WatchTogetherButton />
           <NotificationBell />
           <UserAvatarMenu />
         </div>

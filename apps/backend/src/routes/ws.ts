@@ -2,14 +2,12 @@ import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import { validateToken, type JellyfinUser } from "../middleware/auth";
 import { addConnection, removeConnection } from "../services/wsManager";
+import { handleWtMessage } from "../services/watchTogether/gateway";
 
 const AUTH_TIMEOUT_MS = 15_000;
 const PING_INTERVAL_MS = 30_000;
 
-interface WsClientMessage {
-  type: string;
-  token?: string;
-}
+type WsClientMessage = { type: string; token?: string } & Record<string, unknown>;
 
 function tryParseMessage(raw: string): WsClientMessage | null {
   try {
@@ -18,6 +16,26 @@ function tryParseMessage(raw: string): WsClientMessage | null {
     return null;
   } catch {
     return null;
+  }
+}
+
+/** Messages communs aux deux modes d'auth (cookie et message) : ping keepalive
+ *  (pong horodaté — echo `t` + `serverTime` pour l'offset d'horloge Watch
+ *  Together) et dispatch des messages métier `wt:*` (authentifiés uniquement). */
+function handleParsedMessage(
+  socket: WebSocket,
+  msg: WsClientMessage,
+  getUser: () => JellyfinUser | null,
+): void {
+  if (msg.type === "ping") {
+    const echo = typeof msg.t === "number" ? { t: msg.t } : {};
+    socket.send(JSON.stringify({ type: "pong", ...echo, serverTime: Date.now() }));
+    return;
+  }
+  if (msg.type.startsWith("wt:")) {
+    const user = getUser();
+    if (user) handleWtMessage(user, msg, socket);
+    return;
   }
 }
 
@@ -78,12 +96,10 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
         }
       });
 
-      // Still listen for ping messages from cookie-authed clients
+      // Ping keepalive + messages métier des clients cookie-authentifiés
       socket.on("message", (raw: Buffer) => {
         const msg = tryParseMessage(String(raw));
-        if (msg?.type === "ping") {
-          socket.send(JSON.stringify({ type: "pong" }));
-        }
+        if (msg) handleParsedMessage(socket, msg, () => user);
       });
       return;
     }
@@ -100,7 +116,7 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
       const msg = tryParseMessage(String(raw));
       if (!msg) return;
 
-      if (msg.type === "auth" && !user && msg.token) {
+      if (msg.type === "auth" && !user && typeof msg.token === "string") {
         clearTimeout(authTimeout);
         authenticateAndBind(socket, msg.token).then((u) => {
           if (u) {
@@ -111,9 +127,7 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
         return;
       }
 
-      if (msg.type === "ping") {
-        socket.send(JSON.stringify({ type: "pong" }));
-      }
+      handleParsedMessage(socket, msg, () => user);
     });
   });
 };

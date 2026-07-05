@@ -22,6 +22,7 @@ import {
   setStreamingConfigBackendUrl,
   setShareLinkBackendUrl,
   setWsBackendUrl,
+  setWatchTogetherBackendUrl,
   notifyUserChange,
   hydrateQueryClient,
   attachQueryPersister,
@@ -83,6 +84,7 @@ export function configureBackendUrls(url: string) {
   setStreamingConfigBackendUrl(url);
   setShareLinkBackendUrl(url);
   setWsBackendUrl(url);
+  setWatchTogetherBackendUrl(url);
 }
 
 configureBackendUrls(backendUrl);

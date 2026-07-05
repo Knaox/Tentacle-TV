@@ -1,16 +1,20 @@
 import type { WebSocket } from "@fastify/websocket";
 import { invalidateByCarousel } from "./jellyfinCache";
+import type { WtServerMessage } from "./watchTogether/protocol";
 
 /** Carousel identifiers for home:update events. */
 export type CarouselId = string;
 
-/** Messages sent from the server to clients. */
+/** Messages sent from the server to clients.
+ *  `pong` porte optionnellement l'echo `t` du ping client et `serverTime`
+ *  (Date.now() serveur) — utilisés par Watch Together pour l'offset d'horloge. */
 export type WsServerMessage =
   | { type: "auth_ok" }
   | { type: "auth_error"; reason: string }
-  | { type: "pong" }
+  | { type: "pong"; t?: number; serverTime?: number }
   | { type: "home:update"; carousel: CarouselId; action: "refresh" }
-  | { type: "notifications:update"; action: "refresh" };
+  | { type: "notifications:update"; action: "refresh" }
+  | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */
 const connections = new Map<string, Set<WebSocket>>();
@@ -42,6 +46,30 @@ function send(ws: WebSocket, msg: WsServerMessage): void {
   }
 }
 
+// ── Presence (Watch Together) ──
+
+export type PresenceListener = (userId: string, online: boolean) => void;
+const presenceListeners: PresenceListener[] = [];
+
+/** Notifié quand un utilisateur passe 0→1 connexion (online) ou 1→0 (offline). */
+export function onPresenceChange(listener: PresenceListener): void {
+  presenceListeners.push(listener);
+}
+
+function emitPresence(userId: string, online: boolean): void {
+  for (const l of presenceListeners) {
+    try {
+      l(userId, online);
+    } catch (err) {
+      console.error("[wsManager] presence listener error:", err);
+    }
+  }
+}
+
+export function isUserOnline(userId: string): boolean {
+  return (connections.get(userId)?.size ?? 0) > 0;
+}
+
 // ── Connection lifecycle ──
 
 export function addConnection(userId: string, ws: WebSocket): void {
@@ -50,14 +78,19 @@ export function addConnection(userId: string, ws: WebSocket): void {
     set = new Set();
     connections.set(userId, set);
   }
+  const wasOffline = set.size === 0;
   set.add(ws);
+  if (wasOffline) emitPresence(userId, true);
 }
 
 export function removeConnection(userId: string, ws: WebSocket): void {
   const set = connections.get(userId);
   if (!set) return;
   set.delete(ws);
-  if (set.size === 0) connections.delete(userId);
+  if (set.size === 0) {
+    connections.delete(userId);
+    emitPresence(userId, false);
+  }
 }
 
 // ── Broadcasting ──
@@ -84,6 +117,15 @@ export function broadcastAll(carousel: CarouselId): void {
     const msg: WsServerMessage = { type: "home:update", carousel, action: "refresh" };
     for (const ws of set) send(ws, msg);
   }
+}
+
+/** Envoi direct d'un message arbitraire à toutes les connexions d'un user.
+ *  Contrairement à broadcastToUser : pas de debounce, pas d'invalidation de
+ *  cache — utilisé par Watch Together (états de room, invitations). */
+export function sendToUser(userId: string, msg: WsServerMessage): void {
+  const set = connections.get(userId);
+  if (!set) return;
+  for (const ws of set) send(ws, msg);
 }
 
 /** Number of connected users (for health/debug). */

@@ -168,6 +168,20 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const q = request.query as Record<string, string | undefined> | undefined;
     const queryToken = q?.api_key || q?.ApiKey;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
+
+    // Mutation d'image utilisateur (upload d'avatar) avec un JWT d'appareil :
+    // la clé admin serait substituée en aval — verrouiller la cible sur le
+    // compte du token (un token Jellyfin natif est autorisé par Jellyfin même).
+    if (request.method !== "GET" && request.method !== "HEAD" && incomingToken) {
+      const imgTarget = wildcardPath.match(/^Users\/([^/]+)\/Images\//i);
+      if (imgTarget) {
+        const devicePayload = await verifyDeviceToken(incomingToken);
+        if (devicePayload && devicePayload.userId !== imgTarget[1]) {
+          return reply.status(403).send({ error: "Forbidden" });
+        }
+      }
+    }
+
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
     // Report de lecture d'un device sans token Jellyfin : on cible l'endpoint

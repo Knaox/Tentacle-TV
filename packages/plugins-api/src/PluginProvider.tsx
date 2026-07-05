@@ -31,18 +31,23 @@ export function PluginProvider({ children, backendUrl = "" }: PluginProviderProp
 
       const token = typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null;
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-      try {
-        const res = await fetch(`${base}/api/plugins/active`, {
-          headers,
-          credentials: token ? undefined : "include",
-        });
-        if (!res.ok) return [];
-        return await res.json();
-      } catch {
-        return [];
-      }
+      const res = await fetch(`${base}/api/plugins/active`, {
+        headers,
+        credentials: token ? undefined : "include",
+      });
+      // Session absente/expirée : liste vide légitime (re-remplie après login).
+      if (res.status === 401 || res.status === 403) return [];
+      // Backend indisponible (redémarrage, 5xx) ou erreur réseau : on laisse
+      // l'erreur remonter au lieu de cacher une liste vide « fraîche » pendant
+      // staleTime — sinon les routes/menus des plugins disparaissent (404)
+      // jusqu'au prochain rechargement complet. React Query retente, puis le
+      // refetch au focus répare tout seul.
+      if (!res.ok) throw new Error(`plugins/active HTTP ${res.status}`);
+      return await res.json();
     },
     staleTime: 5 * 60_000,
+    retry: 3,
+    refetchOnWindowFocus: true,
   });
 
   // Manual refresh trigger (e.g. after plugin config change)

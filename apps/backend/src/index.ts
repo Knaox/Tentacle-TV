@@ -33,10 +33,14 @@ import { tmdbRoutes } from "./routes/tmdb";
 import { trailerRoutes } from "./routes/trailers";
 import { themeRoutes } from "./routes/theme";
 import { wsRoutes } from "./routes/ws";
+import { watchTogetherRoutes } from "./routes/watchTogether";
+import { watchTogetherInviteRoutes } from "./routes/watchTogetherInvites";
+import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
+import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -153,6 +157,15 @@ async function main() {
     (_req, body, done) => done(null, body)
   );
 
+  // Images proxied to Jellyfin (avatar upload: POST Users/{id}/Images/Primary
+  // envoie le fichier en BASE64 texte avec Content-Type image/*) — sans parser,
+  // Fastify répondrait 415 avant même d'atteindre le proxy.
+  app.addContentTypeParser(
+    /^image\/.*/,
+    { parseAs: "string", bodyLimit: 20 * 1024 * 1024 },
+    (_req, body, done) => done(null, body)
+  );
+
   // ── Setup routes (always available) ──
   await app.register(setupRoutes, { prefix: "/api/setup" });
   await app.register(healthRoutes, { prefix: "/api" });
@@ -210,6 +223,9 @@ async function main() {
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
   await app.register(trailerRoutes, { prefix: "/api/trailers" });
   await app.register(wsRoutes, { prefix: "/api/ws" });
+  await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
+  await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
+  await app.register(watchTogetherUsersRoutes, { prefix: "/api/watch-together" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
 
@@ -265,6 +281,10 @@ async function main() {
 
   const state = getAppState();
   console.log(`[App] State: ${state}`);
+
+  // Watch Together : présence (grâce de déconnexion, délivrance des invites).
+  // Inconditionnel — le WS /api/ws est exempté du guard de setup.
+  registerWatchTogetherGateway();
 
   // Start background workers only when fully configured
   if (state === "running") {

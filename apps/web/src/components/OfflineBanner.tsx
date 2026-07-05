@@ -36,9 +36,11 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
   // Reload the page afterwards — the OfflineBanner renders at App root when
   // backendDown is true, short-circuiting the router. Without a reload, calling
   // navigate("/login") leaves the banner visible and the user feels stuck.
+  // onSettled (pas onSuccess) : la purge locale doit aboutir même si l'appel
+  // réseau de déconnexion échoue — le backend est off par définition ici.
   const handleLogout = () => {
     logout.mutate(undefined, {
-      onSuccess: () => {
+      onSettled: () => {
         if (reloadOnReconnect) window.location.reload();
         else navigate("/login");
       },
@@ -67,16 +69,11 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
         <p className="mt-2 max-w-md text-xs leading-relaxed text-white/35">
           {t("offlineHint")}
         </p>
-        {/* Boutons alignés sur le design system (Hero Play/More Info) :
-            rayon rounded-md, scale-[1.03] au hover, var(--brand) au lieu
-            de raw hex, mêmes paddings horizontaux pour une largeur cohérente. */}
+        {/* Boutons alignés sur le design system : CTA primaire = bouton blanc
+            (même style que le Play de la fiche média), secondaires en ghost. */}
         <button
           onClick={retry}
-          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
-          style={{
-            background: "var(--brand)",
-            boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35), inset 0 0 0 1px rgba(255,255,255,0.10)",
-          }}
+          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md bg-white px-7 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-[1.03] hover:bg-white/85 active:scale-[0.98]"
         >
           {t("retryConnection")}
         </button>

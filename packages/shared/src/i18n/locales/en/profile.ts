@@ -1,6 +1,9 @@
 export default {
   title: "Profile",
   defaultUsername: "User",
+  changePhoto: "Change profile picture",
+  avatarUpdated: "Profile picture updated",
+  avatarUpdateFailed: "Could not update the profile picture",
   adminBadge: "Administrator",
   logout: "Sign out",
   shareInviteMessage: "Join Tentacle TV: {{url}}",

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -12,6 +13,9 @@ import {
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
 import { TrailerButton } from "./TrailerButton";
+import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
+import { InviteUsersModal } from "../../watchTogether/InviteUsersModal";
+import { useToast } from "../../contexts/ToastContext";
 
 interface DetailActionsProps {
   item: MediaItem;
@@ -25,7 +29,11 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
  */
 export function DetailActions({ item }: DetailActionsProps) {
   const { t } = useTranslation("common");
+  const { t: tWt } = useTranslation("watchTogether");
   const navigate = useNavigate();
+  const { show } = useToast();
+  const { isInGroup, isHost, actions: wtActions } = useWatchTogether();
+  const [wtInviteOpen, setWtInviteOpen] = useState(false);
   const isSeries = item.Type === "Series";
   const isEpisode = item.Type === "Episode";
   const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
@@ -104,12 +112,46 @@ export function DetailActions({ item }: DetailActionsProps) {
         icon={<CheckCircleIcon filled={isWatched} />}
       />
 
+      {/* Watch Together : crée le groupe (média en contexte) puis invite ;
+          en groupe, l'hôte peut inviter d'ici. Lancer la lecture = bouton
+          Lire normal (le moteur de sync propage le média au groupe). */}
+      {item.Type !== "BoxSet" && (!isInGroup || isHost) && (
+        <CircleAction
+          active={isInGroup}
+          onClick={async () => {
+            if (isInGroup) { setWtInviteOpen(true); return; }
+            try {
+              await wtActions.create(item.Id);
+              setWtInviteOpen(true);
+            } catch {
+              show("error", tWt("alreadyInGroup"));
+            }
+          }}
+          label={isInGroup ? tWt("invite") : tWt("watchTogetherAction")}
+          icon={<UsersIcon />}
+        />
+      )}
+
       {hasResume && !isSeries && (
         <span className="text-sm text-white/50">
           {t("common:percentWatched", { percent: Math.round(progress!) })}
         </span>
       )}
+
+      {wtInviteOpen && <InviteUsersModal onClose={() => setWtInviteOpen(false)} />}
     </motion.div>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+      />
+    </svg>
   );
 }
 
