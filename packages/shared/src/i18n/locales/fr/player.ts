@@ -10,6 +10,7 @@ export default {
   applyToSeries: "Appliquer à cette série",
   appliedToSeries: "Langues enregistrées pour cette série",
   applyToSeriesFailed: "Impossible d'enregistrer les langues pour cette série",
+  seriesPreferenceCleared: "Préférence de langues retirée pour cette série",
   disabled: "Désactivé",
   quality: "Qualité",
   original: "Original",

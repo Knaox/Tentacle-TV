@@ -4,6 +4,7 @@ import {
   QUALITY_PRESETS, formatBitrateMbps,
   type QualityKey, type SourceQuality,
 } from "@tentacle-tv/shared";
+import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
 
 interface Track {
   index: number;
@@ -22,14 +23,14 @@ interface TrackSelectorProps {
   onSubtitleChange: (index: number | null) => void;
   onQualityChange?: (key: QualityKey) => void;
   onClose: () => void;
-  /** Épisode : enregistre les pistes courantes comme préférence de la série. */
-  onApplyToSeries?: () => void;
+  /** Épisode : case « Appliquer à cette série » (préférence de langues). */
+  applyToSeries?: ApplyToSeriesControl;
 }
 
 export function TrackSelector({
   audioTracks, subtitleTracks,
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
-  onAudioChange, onSubtitleChange, onQualityChange, onClose, onApplyToSeries,
+  onAudioChange, onSubtitleChange, onQualityChange, onClose, applyToSeries,
 }: TrackSelectorProps) {
   const { t } = useTranslation("player");
   return (
@@ -90,13 +91,37 @@ export function TrackSelector({
         )}
       </div>
 
-      {onApplyToSeries && (
-        <button
-          onClick={onApplyToSeries}
-          className="mt-3 w-full rounded-lg border border-white/15 bg-white/5 py-2 text-xs font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+      {applyToSeries && (
+        <label
+          className={`mt-3 flex select-none items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+            applyToSeries.pending
+              ? "pointer-events-none opacity-50"
+              : "cursor-pointer text-white/70 hover:bg-white/5 hover:text-white"
+          }`}
         >
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={applyToSeries.checked}
+            disabled={applyToSeries.pending}
+            onChange={(e) => applyToSeries.toggle(e.target.checked)}
+          />
+          <span
+            aria-hidden
+            className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors ${
+              applyToSeries.checked
+                ? "border-tentacle-accent bg-tentacle-accent"
+                : "border-white/30 bg-white/5"
+            }`}
+          >
+            {applyToSeries.checked && (
+              <svg viewBox="0 0 12 12" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2.5 6.5 5 9l4.5-6" />
+              </svg>
+            )}
+          </span>
           {t("player:applyToSeries")}
-        </button>
+        </label>
       )}
     </motion.div>
   );
