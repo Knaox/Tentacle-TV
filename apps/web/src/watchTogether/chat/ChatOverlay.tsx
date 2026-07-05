@@ -66,8 +66,10 @@ export function ChatOverlay({
   const wasDraggedRef = useRef(false);
 
   // Page player : bulle ET panneau suivent le fondu de l'overlay des
-  // contrôles (les aperçus MessageToastLayer restent visibles, eux).
-  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible;
+  // contrôles (les aperçus MessageToastLayer restent visibles, eux) — SAUF
+  // pendant la saisie : on ne masque jamais un message en cours d'écriture.
+  const [inputFocused, setInputFocused] = useState(false);
+  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible && !inputFocused;
 
   // Rappel dans le viewport (marge 8 px) après un drag ou une ouverture qui
   // ferait dépasser le panneau (bulle garée près d'un bord).
@@ -106,7 +108,7 @@ export function ChatOverlay({
         style={{ ...GLASS, pointerEvents: hidden ? "none" : "auto" }}
       >
         <ChatHeader title={t("chatTitle")} onClose={() => chat.setOpen(false)} />
-        <ChatPanel chat={chat} />
+        <ChatPanel chat={chat} onInputFocusChange={setInputFocused} />
       </motion.div>
     );
   }
@@ -147,7 +149,7 @@ export function ChatOverlay({
               onClose={() => chat.setOpen(false)}
               onDragStart={(e) => dragControls.start(e)}
             />
-            <ChatPanel chat={chat} />
+            <ChatPanel chat={chat} onInputFocusChange={setInputFocused} />
           </motion.div>
         ) : (
           <motion.button
@@ -165,11 +167,11 @@ export function ChatOverlay({
           >
             <ChatIcon />
             {unread > 0 && (
-              <span
-                className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}
-              >
-                {unread > 9 ? "9+" : unread}
+              // Indicateur discret (pas de compteur) : simple point rose,
+              // même langage visuel que le point de présence du header.
+              <span className="absolute right-0 top-0 flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-60" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-pink-400" />
               </span>
             )}
           </motion.button>
