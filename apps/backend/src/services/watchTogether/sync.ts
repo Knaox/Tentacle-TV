@@ -1,6 +1,7 @@
 import {
   clampTicks,
   wtPositionTicksAt,
+  WT_GROUP_WAIT_TIMEOUT_MS,
   WT_MIN_SEEK_INTERVAL_MS,
   type WtClientMessage,
   type WtStateCause,
@@ -35,9 +36,16 @@ export function bumpEpoch(room: Room): void {
   touch(room, Date.now());
 }
 
+/** Ajoute un membre au group-wait (avec horodatage pour le timeout anti-gel). */
+function addWaiting(room: Room, userId: string, now: number): void {
+  room.waitingFor.add(userId);
+  room.waitingSince.set(userId, now);
+}
+
 /** Retire un membre du group-wait ; reprend la lecture si plus personne n'est attendu. */
 function pruneWaiting(room: Room, userId: string, now: number): boolean {
   room.waitingFor.delete(userId);
+  room.waitingSince.delete(userId);
   if (room.waitingFor.size === 0 && room.paused && room.pauseReason === "buffering") {
     const frozen = room.positionTicks; // gelée pendant le group-wait
     room.paused = false;
@@ -48,12 +56,35 @@ function pruneWaiting(room: Room, userId: string, now: number): boolean {
   return false;
 }
 
+/** Anti-gel infini : les membres attendus depuis plus de WT_GROUP_WAIT_TIMEOUT_MS
+ *  sont déclarés en échec de lecture et le groupe reprend sans eux. Appelé par
+ *  le sweep périodique du gateway. */
+export function expireStaleWaits(room: Room, now: number): { expired: string[]; resumed: boolean } {
+  const expired: string[] = [];
+  for (const [userId, since] of room.waitingSince) {
+    if (now - since >= WT_GROUP_WAIT_TIMEOUT_MS) expired.push(userId);
+  }
+  if (expired.length === 0) return { expired, resumed: false };
+  let resumed = false;
+  for (const userId of expired) {
+    const member = room.members.get(userId);
+    if (member) {
+      member.playbackError = true; // toast « X ne peut pas lire » côté clients
+      member.buffering = false;
+      member.inPlayback = false;
+    }
+    resumed = pruneWaiting(room, userId, now) || resumed;
+  }
+  if (!resumed) touch(room, now);
+  return { expired, resumed };
+}
+
 /** Applique une commande de lecture d'un membre. Validation de forme déjà faite
  *  (protocol.parseWtClientMessage) ; ici on applique les règles métier. */
 export function applyCommand(
   room: Room,
   member: RoomMember,
-  msg: Exclude<WtClientMessage, { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" }>,
+  msg: Exclude<WtClientMessage, { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:goodbye" }>,
   isUserOnline: (userId: string) => boolean,
 ): SyncOutcome {
   const now = Date.now();
@@ -66,6 +97,7 @@ export function applyCommand(
       room.paused = false;
       room.pauseReason = null;
       room.waitingFor.clear();
+      room.waitingSince.clear();
       touch(room, now, clampTicks(msg.positionTicks));
       return { kind: "broadcast", cause: "play" };
     }
@@ -101,8 +133,9 @@ export function applyCommand(
       room.paused = true;
       room.pauseReason = "buffering";
       room.waitingFor.clear();
+      room.waitingSince.clear();
       for (const m of room.members.values()) {
-        if (m.inPlayback && isUserOnline(m.userId)) room.waitingFor.add(m.userId);
+        if (m.inPlayback && isUserOnline(m.userId)) addWaiting(room, m.userId, now);
         m.inPlayback = false;
         m.buffering = false;
         m.playbackError = false;
@@ -120,7 +153,7 @@ export function applyCommand(
           touch(room, now);
           return { kind: "broadcast", cause: "presence" };
         }
-        room.waitingFor.add(member.userId);
+        addWaiting(room, member.userId, now);
         if (!room.paused) {
           // Group-wait : on gèle à la position du membre qui bufferise (les
           // autres se recaleront dessus), sinon à la position extrapolée.

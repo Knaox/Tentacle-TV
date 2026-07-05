@@ -114,6 +114,9 @@ export type WtClientMessage =
   | { type: "wt:playbackError"; itemId: string }
   /** L'utilisateur a masqué la bannière « épisode suivant » — masquée partout. */
   | { type: "wt:autonextDismiss" }
+  /** L'app se ferme (pagehide) : quitter le groupe rapidement (grâce courte —
+   *  un simple refresh se reconnecte avant son expiration). */
+  | { type: "wt:goodbye" }
   | { type: "wt:syncRequest" };
 
 // ── Messages serveur → clients ──
