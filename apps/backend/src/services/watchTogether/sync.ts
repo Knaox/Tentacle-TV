@@ -84,7 +84,7 @@ export function expireStaleWaits(room: Room, now: number): { expired: string[]; 
 export function applyCommand(
   room: Room,
   member: RoomMember,
-  msg: Exclude<WtClientMessage, { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:goodbye" }>,
+  msg: Exclude<WtClientMessage, { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" }>,
   isUserOnline: (userId: string) => boolean,
 ): SyncOutcome {
   const now = Date.now();

@@ -39,6 +39,15 @@ export const WT_DRIFT_LOOP_MS = 1_000;
 /** Rafale de pings à l'entrée en groupe pour estimer l'offset d'horloge. */
 export const WT_CLOCK_BURST_COUNT = 5;
 export const WT_CLOCK_BURST_SPACING_MS = 200;
+/** Chat : longueur max d'un message (caractères, tronqué au-delà). */
+export const WT_CHAT_MAX_LENGTH = 500;
+/** Chat : fil conservé en mémoire par room (renvoyé au join/resync). */
+export const WT_CHAT_HISTORY_SIZE = 50;
+/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre. */
+export const WT_MIN_CHAT_INTERVAL_MS = 400;
+export const WT_MIN_REACTION_INTERVAL_MS = 250;
+/** Réaction : longueur max (un emoji composé ZWJ tient en ≤ 16 unités UTF-16). */
+export const WT_REACTION_MAX_LENGTH = 16;
 
 // ── DTOs ──
 
@@ -96,6 +105,17 @@ export interface WtInvitableUserDto {
   isOnline: boolean;
 }
 
+/** Message du chat de groupe (fil éphémère, en mémoire room uniquement). */
+export interface WtChatMessageDto {
+  /** Unique par room (`groupId:seq`). */
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  /** Date.now() serveur à la réception. */
+  at: number;
+}
+
 // ── Messages client → serveur ──
 
 export type WtSetItemReason = "manual" | "nextEp" | "prevEp" | "autonext";
@@ -117,7 +137,11 @@ export type WtClientMessage =
   /** L'app se ferme (pagehide) : quitter le groupe rapidement (grâce courte —
    *  un simple refresh se reconnecte avant son expiration). */
   | { type: "wt:goodbye" }
-  | { type: "wt:syncRequest" };
+  | { type: "wt:syncRequest" }
+  /** Message texte du chat de groupe (trim + tronqué à WT_CHAT_MAX_LENGTH). */
+  | { type: "wt:chat"; text: string }
+  /** Réaction emoji éphémère (non stockée côté serveur). */
+  | { type: "wt:reaction"; emoji: string };
 
 // ── Messages serveur → clients ──
 
@@ -139,7 +163,13 @@ export type WtServerMessage =
   | { type: "wt:inviteResult"; inviteId: string; toUserId: string; toUsername: string; accepted: boolean }
   /** Reçu quand on ne fait plus partie du groupe (kick, grâce expirée). */
   | { type: "wt:dissolved"; groupId: string; reason: WtDissolvedReason }
-  | { type: "wt:error"; code: WtErrorCode; message?: string };
+  | { type: "wt:error"; code: WtErrorCode; message?: string }
+  /** Nouveau message de chat (écho compris : l'émetteur le reçoit aussi). */
+  | { type: "wt:chat"; message: WtChatMessageDto }
+  /** Réaction emoji transient (hors state/epoch, comme autonextDismiss). */
+  | { type: "wt:reaction"; userId: string; username: string; emoji: string; at: number }
+  /** Fil complet (ring buffer) — envoyé au join et à chaque syncRequest. */
+  | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] };
 
 // ── Helpers d'extrapolation (utilisés par le serveur ET les clients) ──
 
