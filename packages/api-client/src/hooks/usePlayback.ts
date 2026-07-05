@@ -105,23 +105,32 @@ function killActiveEncoding(client: JfClient, playSessionId: string | undefined,
   const deviceId = client.getDeviceId();
   const path = `/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}&playSessionId=${encodeURIComponent(playSessionId)}`;
 
-  // Direct route when available (bypass proxy admin token issue)
+  const viaProxy = (): Promise<void> => {
+    const base = client.getBaseUrl();
+    const token = client.getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["X-Emby-Token"] = token;
+      headers["X-Emby-Authorization"] = client.getAuthHeader();
+    }
+    return fetch(`${base}${path}`, { method: "DELETE", headers, keepalive, credentials: client.useCredentials ? "include" : undefined })
+      .then(() => {}).catch(() => {});
+  };
+
+  // Direct route when available (bypass proxy admin token issue) — MAIS un
+  // DELETE cross-origin est bloqué par le CORS des WebViews : sans fallback
+  // proxy, l'ancien ffmpeg survit et Jellyfin refuse/gèle la session suivante
+  // (même DeviceId) → écran noir au changement de qualité. Toujours retomber
+  // sur le proxy si l'appel direct échoue.
   const ds = client.getDirectStreaming?.();
   if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
     return fetch(`${ds.mediaBaseUrl}${path}`, {
       method: "DELETE", keepalive,
       headers: { "X-Emby-Token": ds.jellyfinToken, "X-Emby-Authorization": client.getAuthHeader(ds.jellyfinToken) },
-    }).then(() => {}).catch(() => {});
+    }).then((res) => { if (!res.ok) return viaProxy(); }).catch(() => viaProxy());
   }
 
-  const base = client.getBaseUrl();
-  const token = client.getToken();
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers["X-Emby-Token"] = token;
-    headers["X-Emby-Authorization"] = client.getAuthHeader();
-  }
-  return fetch(`${base}${path}`, { method: "DELETE", headers, keepalive }).then(() => {}).catch(() => {});
+  return viaProxy();
 }
 
 export interface PlaybackReportingOptions {

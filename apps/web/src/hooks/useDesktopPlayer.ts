@@ -113,6 +113,10 @@ export function useDesktopPlayer() {
   });
   const [ready, setReady] = useState(false);
   const [fileLoaded, setFileLoadedState] = useState(false);
+  // Vrai playback-restart du média courant (première frame rendue) — jamais
+  // forcé par le watchdog, contrairement à fileLoaded. Signal « prêt » fiable
+  // pour Watch Together (un watchdog-forcé ferait repartir le groupe sans nous).
+  const [mediaReady, setMediaReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const unlistenRefs = useRef<(() => void)[]>([]);
   // État mute courant (observé) — lu par toggleMute/setVolume pour persister.
@@ -183,6 +187,13 @@ export function useDesktopPlayer() {
             "force-media-title": "Tentacle TV",
             "audio-client-name": "Tentacle TV",
             title: "Tentacle TV",
+            // Diagnostic : `localStorage.tentacle_mpv_log = "1"` écrit un log
+            // mpv verbeux (le plugin forwarde ces options verbatim à mpv) —
+            // indispensable pour débugger un flux HLS qui ne démarre pas.
+            ...(typeof localStorage !== "undefined" && localStorage.getItem("tentacle_mpv_log") === "1" ? {
+              "log-file": isWindows() ? "C:\\tmp\\tentacle-mpv.log" : "/tmp/tentacle-mpv.log",
+              "msg-level": "all=v",
+            } : {}),
           },
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
@@ -336,7 +347,10 @@ export function useDesktopPlayer() {
 
             // Signal that mpv is ready to accept property changes
             // (preference effects in DesktopPlayer depend on this)
-            if (!cancelled) setFileLoaded(true);
+            if (!cancelled) {
+              setFileLoaded(true);
+              setMediaReady(true);
+            }
             break;
           }
           case "end-file": {
@@ -409,30 +423,56 @@ export function useDesktopPlayer() {
     };
   }, []);
 
-  const play = useCallback(async (options: PlayOptions) => {
+  const play = useCallback(async (options: PlayOptions, attempt = 1) => {
     if (!api) return;
     setFileLoaded(false); // Reset — will be set again on file-loaded event
+    setMediaReady(false);
     // Purge des restes du fichier précédent (un eof=true collé afficherait
     // l'écran de fin dès le chargement du nouveau média).
     setState((prev) => ({ ...prev, eof: false, playing: false }));
-    // Armement du watchdog : si playback-restart ne survient pas en 8s,
-    // on débloque l'UI en forçant fileLoaded=true (sécurité anti-spinner).
+
+    const isHls = options.url.includes(".m3u8");
+
+    // Watchdog : un HLS transcodé démarre lentement mais LÉGITIMEMENT
+    // (spawn ffmpeg + far-seek : 2-5 s, parfois plus) → 20 s ; direct play
+    // → 8 s. À expiration : UN retry loadfile complet (seul moyen de
+    // récupérer un demuxer resté muet — flipper fileLoaded ne répare rien),
+    // puis erreur visible (l'UI propose déjà le fallback web ; en groupe,
+    // wt:playbackError fait que les autres ne nous attendent plus).
+    const watchdogMs = isHls ? 20_000 : 8_000;
     if (playbackWatchdogRef.current) clearTimeout(playbackWatchdogRef.current);
     playbackWatchdogRef.current = setTimeout(() => {
-      console.warn("[mpv] playback-restart watchdog: forcing fileLoaded=true after 8s");
-      setFileLoaded(true);
       playbackWatchdogRef.current = null;
-    }, 8000);
-    // Wake-up : si playback-restart pas reçu en 600ms, on force un mini-seek
-    // (+50 ms) pour débloquer mpv (bug cold start Windows). Un seek 0-relatif
-    // est traité comme no-op par mpv → on prend +0.05 s, imperceptible.
-    if (wakeupRef.current) clearTimeout(wakeupRef.current);
-    wakeupRef.current = setTimeout(() => {
-      console.warn("[mpv] wake-up: nudging pipeline (+50ms seek)");
-      api?.command("seek", [0.05, "relative"]).catch(() => {});
-      wakeupRef.current = null;
-    }, 600);
+      if (attempt === 1) {
+        console.warn(`[mpv] playback-restart absent après ${watchdogMs / 1000}s — retry loadfile`);
+        void play(options, 2);
+      } else {
+        console.warn("[mpv] playback-restart absent après retry — flux en échec");
+        setFileLoaded(true); // débloque l'UI (spinner/preferences)
+        setError("Le flux vidéo n'a pas démarré. Réessayez ou changez de qualité.");
+      }
+    }, watchdogMs);
+
+    // Wake-up cold start (Windows) : réservé au DIRECT PLAY. Sur un HLS
+    // transcodé encore en cours d'ouverture, ce seek forcé tombait PENDANT
+    // le seek initial `start=+pos` et coinçait le demuxer → jamais de
+    // playback-restart (écran noir, pas de son). Jamais de nudge sur .m3u8.
+    if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
+    if (!isHls) {
+      wakeupRef.current = setTimeout(() => {
+        console.warn("[mpv] wake-up: nudging pipeline (+50ms seek)");
+        api?.command("seek", [0.05, "relative"]).catch(() => {});
+        wakeupRef.current = null;
+      }, 600);
+    }
     try {
+      // La propriété `pause` de mpv PERSISTE entre les loadfile : un rebuild
+      // lancé pendant une pause (de groupe notamment) chargerait le nouveau
+      // stream en pause → aucune frame décodée, pas de playback-restart →
+      // écran noir/silence jusqu'au watchdog. Toujours charger en lecture ;
+      // une pause légitime (group-wait d'un autre membre) sera réappliquée
+      // par le moteur de sync juste après.
+      await api.setProperty("pause", false).catch(() => {});
       if (options.startPosition != null && options.startPosition > 0) {
         console.debug("[mpv] play: setting start position", options.startPosition);
         await api.command("set", ["start", `+${options.startPosition.toFixed(1)}`]);
@@ -551,6 +591,6 @@ export function useDesktopPlayer() {
     }
   }, []);
 
-  return { state, ready, fileLoaded, error, play, togglePause, setPause, seek, seekRelative,
+  return { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen, stop };
 }

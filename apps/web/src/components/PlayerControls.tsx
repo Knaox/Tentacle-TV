@@ -46,6 +46,8 @@ export interface PlayerControlsProps {
   onQualityChange?: (key: QualityKey) => void;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
+  /** Épisode : enregistre les pistes courantes comme préférence de la série. */
+  onApplyToSeries?: () => void;
 }
 
 export function PlayerControls({
@@ -56,7 +58,7 @@ export function PlayerControls({
   hasNextEpisode, hasPreviousEpisode,
   onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, onApplyToSeries,
 }: PlayerControlsProps) {
   const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
@@ -176,6 +178,7 @@ export function PlayerControls({
               currentAudio={currentAudio} currentSubtitle={currentSubtitle}
               currentQuality={currentQuality} sourceQuality={sourceQuality}
               onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={onQualityChange}
+              onApplyToSeries={onApplyToSeries}
               onClose={() => setShowSettings(false)}
             />
           )}

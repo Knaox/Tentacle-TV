@@ -137,7 +137,13 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     return resumeTicks && resumeTicks > 0 ? resumeTicks : 0;
   }, [item]);
 
-  // Desktop: client-generated playSessionId (stable per episode)
+  // Desktop: client-generated playSessionId. Régénéré à CHAQUE rebuild de
+  // stream (qualité/audio/burn-in) comme le fait jellyfin-web : Jellyfin
+  // associe le transcode ffmpeg au PlaySessionId — réutiliser l'id avec une
+  // nouvelle URL laisse la session accrochée à l'ancien encodage (jamais de
+  // premier segment → mpv attend indéfiniment, écran noir). L'ancien encodage
+  // est tué AVANT le changement (killTranscode dans les handlers) avec
+  // l'ancien id, puis la nouvelle URL repart sur une session propre.
   const desktopPlaySessionId = useMemo(() => {
     if (!isDesktop) return "";
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -147,7 +153,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-  }, [itemId, isDesktop]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [itemId, isDesktop, qualityKey, audioIndex, burnInSubtitleIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const desktopIsDirectStream = isDesktop && !desktopIsDirectPlay && needsAudioTranscode && quality == null;
 

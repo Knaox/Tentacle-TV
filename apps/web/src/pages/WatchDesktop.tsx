@@ -9,6 +9,7 @@ import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
+import { useApplyToSeries } from "../hooks/useApplyToSeries";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -39,6 +40,19 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const groupSync = useGroupSyncEngine({
     itemId, transportRef, claimStartSeconds: group.groupStartPositionSeconds,
   });
+
+  // Rebuild de source local (changement qualité/audio/burn-in) : le groupe
+  // attend ce membre pendant le rechargement (fileLoaded+playing → false).
+  const firstSrcRef = useRef(true);
+  useEffect(() => {
+    if (!streamUrl) return;
+    if (firstSrcRef.current) { firstSrcRef.current = false; return; }
+    groupSync.notifyBuffering(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamUrl]);
+
+  // Épisode : « Appliquer à cette série » (préférence de langues par série).
+  const applyToSeries = useApplyToSeries({ item, streams, audioIndex, subtitleIndex });
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);
@@ -169,6 +183,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onBufferingChange={groupSync.notifyBuffering}
         onSeekComplete={(seconds) => groupSync.notifySeek(seconds)}
         onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
+        onApplyToSeries={applyToSeries}
       />
       <GroupPlaybackOverlay itemId={itemId} />
     </div>

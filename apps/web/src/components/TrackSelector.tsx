@@ -22,12 +22,14 @@ interface TrackSelectorProps {
   onSubtitleChange: (index: number | null) => void;
   onQualityChange?: (key: QualityKey) => void;
   onClose: () => void;
+  /** Épisode : enregistre les pistes courantes comme préférence de la série. */
+  onApplyToSeries?: () => void;
 }
 
 export function TrackSelector({
   audioTracks, subtitleTracks,
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
-  onAudioChange, onSubtitleChange, onQualityChange, onClose,
+  onAudioChange, onSubtitleChange, onQualityChange, onClose, onApplyToSeries,
 }: TrackSelectorProps) {
   const { t } = useTranslation("player");
   return (
@@ -87,6 +89,15 @@ export function TrackSelector({
           </Section>
         )}
       </div>
+
+      {onApplyToSeries && (
+        <button
+          onClick={onApplyToSeries}
+          className="mt-3 w-full rounded-lg border border-white/15 bg-white/5 py-2 text-xs font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          {t("player:applyToSeries")}
+        </button>
+      )}
     </motion.div>
   );
 }
