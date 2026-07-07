@@ -30,12 +30,14 @@ export function langMatch(a?: string, b?: string): boolean {
   return (LANG_NORM[a] ?? a) === (LANG_NORM[b] ?? b);
 }
 
-/** Get the best subtitle delivery format for mpv based on codec. */
+/** Get the best subtitle delivery format for mpv based on codec.
+ *  Défaut = "ass" : demander un sous-titre à Jellyfin en .srt convertit une source
+ *  ASS en laissant les balises de positionnement {\an8} en clair (bug d'affichage
+ *  sous Linux/libmpv). L'ASS préserve le positionnement — libass interprète {\an8}. */
 export function nativeSubFormat(codec?: string): string {
   switch (codec?.toLowerCase()) {
-    case "ass": case "ssa": return "ass";
     case "srt": case "subrip": return "srt";
-    default: return "srt";
+    default: return "ass"; // ass, ssa, ou codec non reconnu
   }
 }
 

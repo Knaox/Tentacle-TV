@@ -19,11 +19,13 @@
 # nom de la Release. Sans suffixe « -<build> » (linux-v1.9.9), la version du tag
 # est tout de même appliquée.
 #
-# Lecteur vidéo : libmpv est chargé au runtime par tauri-plugin-libmpv.
-#   • .deb / .rpm déclarent la dépendance (libmpv2 / mpv-libs) → installée par le
-#     gestionnaire de paquets (voir bundle.linux.* dans tauri.conf.json).
-#   • AppImage : l'utilisateur doit avoir « mpv »/« libmpv » installé (paquet
-#     présent par défaut sur la plupart des distros multimédia).
+# Lecteur vidéo : libmpv est chargé au runtime par tauri-plugin-libmpv. WebKitGTK
+# a AUSSI besoin des plugins GStreamer (autoaudiosink) — sans eux, l'app crashe au
+# lancement d'une lecture (WebKitWebProcess abort sur GStreamer / libEGL).
+#   • .deb / .rpm déclarent les dépendances (libmpv + gstreamer1.0-plugins-good…)
+#     → installées par le gestionnaire de paquets (voir bundle.linux.* dans
+#     tauri.conf.json). Le PKGBUILD pacman déclare mpv + gst-plugins-good.
+#   • AppImage : l'utilisateur doit avoir « mpv » + « gst-plugins-good » installés.
 #
 # Runner : ubuntu-22.04 (glibc/webkit plus anciens = paquets compatibles avec un
 # parc de distros plus large qu'ubuntu-latest/24.04).
@@ -141,11 +143,13 @@ jobs:
             - **Debian/Ubuntu** : `sudo apt install ./Tentacle.TV_*.deb`
             - **Fedora** : `sudo dnf install ./Tentacle.TV-*.rpm`
             - **Arch (pacman)** : `sudo pacman -U ./tentacle-tv-*.pkg.tar.zst`
-            - **AppImage (universel)** : `sudo pacman -S mpv fuse2 && chmod +x Tentacle.TV_*.AppImage && ./Tentacle.TV_*.AppImage`
+            - **AppImage (universel)** : `sudo pacman -S mpv fuse2 gst-plugins-good gst-libav && chmod +x Tentacle.TV_*.AppImage && ./Tentacle.TV_*.AppImage`
 
             ## Pré-requis lecteur vidéo
-            Le `.deb`/`.rpm` installe automatiquement **libmpv**. Pour l'AppImage,
-            installez-le au besoin : `sudo pacman -S mpv` (Arch) ou l'équivalent.
+            Le `.deb`/`.rpm` installe automatiquement **libmpv** + les plugins
+            **GStreamer** requis par WebKitGTK (sinon crash au lancement d'une
+            lecture). Pour l'AppImage : installez `mpv fuse2 gst-plugins-good
+            gst-libav` (Arch) ou l'équivalent Debian/Fedora.
           files: |
             dist-linux/*.deb
             dist-linux/*.rpm
@@ -202,7 +206,7 @@ jobs:
           arch=('x86_64')
           url="https://github.com/Knaox/Tentacle-TV"
           license=('MIT')
-          depends=('webkit2gtk-4.1' 'gtk3' 'mpv')
+          depends=('webkit2gtk-4.1' 'gtk3' 'mpv' 'gst-plugins-good' 'gst-plugins-base' 'gst-libav')
           options=('!strip' '!debug')
           package() {
             cp -a "\${startdir}/pkgroot/usr" "\${pkgdir}/usr"

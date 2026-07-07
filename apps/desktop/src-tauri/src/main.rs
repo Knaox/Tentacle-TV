@@ -16,6 +16,12 @@ mod audio_session;
 mod macos;
 
 fn main() {
+    // Linux (WebKitGTK) : le renderer DMABUF/EGL de WebKit entre en conflit avec
+    // le contexte GPU de mpv (vo=gpu-next) → crash aléatoire du WebKitWebProcess
+    // sur libEGL au lancement d'une lecture. On force le chemin de rendu compatible.
+    #[cfg(target_os = "linux")]
+    std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+
     // Pas de tauri-plugin-updater : macOS est distribué via le Mac App Store
     // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
