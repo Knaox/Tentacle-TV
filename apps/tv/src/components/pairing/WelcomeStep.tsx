@@ -8,7 +8,6 @@ import { Colors, Radius, Typography } from "../../theme/colors";
 interface WelcomeStepProps {
   onShowCode: () => void;
   onManualSetup: () => void;
-  onEnterCode: () => void;
   onSwitchLang: (lng: string) => void;
   currentLang: string;
 }
@@ -16,7 +15,6 @@ interface WelcomeStepProps {
 export function WelcomeStep({
   onShowCode,
   onManualSetup,
-  onEnterCode,
   onSwitchLang,
   currentLang,
 }: WelcomeStepProps) {
@@ -66,19 +64,10 @@ export function WelcomeStep({
         </Focusable>
 
         {/* Manual fallback link */}
-        <Focusable variant="button" onPress={onManualSetup} focusRadius={Radius.buttonLarge + 3} style={{ marginBottom: 12 }}>
+        <Focusable variant="button" onPress={onManualSetup} focusRadius={Radius.buttonLarge + 3}>
           <View style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
               {t("pairing:configureManually")}
-            </Text>
-          </View>
-        </Focusable>
-
-        {/* Provisioning code entry (store reviewers) */}
-        <Focusable variant="button" onPress={onEnterCode} focusRadius={Radius.buttonLarge + 3}>
-          <View style={styles.tertiaryButton}>
-            <Text style={styles.tertiaryButtonText}>
-              {t("pairing:haveCode")}
             </Text>
           </View>
         </Focusable>
@@ -154,15 +143,6 @@ const styles = {
   secondaryButtonText: {
     color: Colors.textPrimary,
     ...Typography.buttonLarge,
-    textAlign: "center" as const,
-  },
-  tertiaryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  tertiaryButtonText: {
-    color: Colors.textMuted,
-    ...Typography.buttonMedium,
     textAlign: "center" as const,
   },
 } as const;
