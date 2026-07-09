@@ -22,7 +22,15 @@
 //!   `ui=ok mpv=ok` sans marqueur pendant un gel
 //!                      → l'input et l'UI sont hors de cause : chercher côté rendu.
 //!
-//! Activation : `TENTACLE_FREEZE_PROBE=1` (coût nul sinon).
+//! **Active par défaut** : le gel est rare et survient en usage normal, donc la sonde doit
+//! être armée en permanence, y compris en production. Elle poll toutes les 500 ms et
+//! n'écrit qu'aux transitions d'état. Désactivable par `TENTACLE_FREEZE_PROBE=0`.
+//!
+//! **Déclencheur manuel** : quand l'app est figée, plus rien ne répond — ni raccourci, ni
+//! devtools. Créer le fichier `%LOCALAPPDATA%\Tentacle TV\dump-now` depuis n'importe
+//! quelle autre fenêtre (Explorateur, PowerShell) fait vidanger, sous 500 ms, la pile de
+//! **tous** les threads dans le log. La sonde supprime ensuite le fichier.
+//!
 //! Sortie : `%LOCALAPPDATA%\Tentacle TV\freeze-probe.log`, une ligne par transition.
 
 use std::ffi::c_void;
@@ -46,11 +54,11 @@ const HEARTBEAT_TIMEOUT_MS: u32 = 300;
 /// Latence de réponse à partir de laquelle on parle de saturation plutôt que de blocage.
 const SLOW_THRESHOLD: Duration = Duration::from_millis(50);
 
-fn log_path() -> Option<PathBuf> {
+fn data_dir() -> Option<PathBuf> {
     let base = std::env::var_os("LOCALAPPDATA")?;
     let dir = PathBuf::from(base).join("Tentacle TV");
     std::fs::create_dir_all(&dir).ok()?;
-    Some(dir.join("freeze-probe.log"))
+    Some(dir)
 }
 
 fn append(path: &PathBuf, line: &str) {
@@ -151,39 +159,58 @@ fn snapshot(top: HWND, ui_thread_id: u32) -> String {
 /// Démarre la sonde si `TENTACLE_FREEZE_PROBE=1`. À appeler depuis le `setup()` de
 /// Tauri, c'est-à-dire sur le thread qui exécutera la boucle d'évènements.
 pub fn spawn_if_enabled(top: isize, ui_thread_id: u32) {
-    if std::env::var("TENTACLE_FREEZE_PROBE").as_deref() != Ok("1") {
+    if std::env::var("TENTACLE_FREEZE_PROBE").as_deref() == Ok("0") {
         return;
     }
-    let Some(path) = log_path() else { return };
+    let Some(dir) = data_dir() else { return };
+    let path = dir.join("freeze-probe.log");
+    let trigger = dir.join("dump-now");
+    // Un déclencheur laissé d'une session précédente ne doit pas dumper au démarrage.
+    let _ = std::fs::remove_file(&trigger);
+    eprintln!("[freeze-probe] journal : {}", path.display());
+    eprintln!("[freeze-probe] pour dumper les piles à la demande : créer {}", trigger.display());
 
     std::thread::spawn(move || {
         let top = HWND(top as *mut c_void);
         // Avant tout gel : `SymInitialize` prend le loader lock, qu'un thread suspendu
         // pourrait justement détenir.
         crate::win_stack::init_symbols();
-        append(&path, &format!("probe started, ui_thread_id={ui_thread_id}"));
+        append(&path, &format!("--- sonde démarrée, thread principal tid={ui_thread_id} ---"));
 
         let mut last = String::new();
-        let mut stack_dumped = false;
+        let mut dumped = false;
         loop {
+            // Déclencheur manuel : marche même quand l'app ne reçoit plus aucune entrée.
+            if trigger.exists() {
+                let _ = std::fs::remove_file(&trigger);
+                append(&path, "=== dump manuel demandé ===");
+                append(&path, &snapshot(top, ui_thread_id));
+                dump_all(&path, ui_thread_id);
+            }
+
             let now = snapshot(top, ui_thread_id);
             if now != last {
                 append(&path, &now);
 
-                // Le thread UI vient de cesser de répondre : on lit sa pile d'appel.
-                // Une seule fois par épisode de gel, pour ne pas noyer le log.
-                if now.contains("ui=HUNG") && !stack_dumped {
-                    append(&path, "  pile du thread principal :");
-                    for line in crate::win_stack::capture(ui_thread_id) {
-                        append(&path, &line);
-                    }
-                    stack_dumped = true;
+                // Le thread UI vient de cesser de répondre. Une seule vidange par épisode,
+                // pour ne pas noyer le journal.
+                if now.contains("ui=HUNG") && !dumped {
+                    append(&path, "=== thread principal non réactif ===");
+                    dump_all(&path, ui_thread_id);
+                    dumped = true;
                 } else if !now.contains("ui=HUNG") {
-                    stack_dumped = false;
+                    dumped = false;
                 }
                 last = now;
             }
             sleep(POLL_INTERVAL);
         }
     });
+}
+
+fn dump_all(path: &PathBuf, ui_thread_id: u32) {
+    for line in crate::win_stack::capture_all_threads(ui_thread_id) {
+        append(path, &line);
+    }
+    append(path, "=== fin du dump ===");
 }
