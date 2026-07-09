@@ -44,13 +44,17 @@ unsafe extern "system" fn get_module_base(process: HANDLE, addr: u64) -> u64 {
     unsafe { SymGetModuleBase64(process, addr) }
 }
 
-/// À appeler une fois, **avant** tout gel : `SymInitialize` charge les modules et
-/// prendrait le loader lock, qu'un thread suspendu pourrait justement détenir.
+/// Charge `dbghelp` et énumère les modules. Idempotent.
+///
+/// Appelé **paresseusement**, juste avant la première capture : en fonctionnement normal
+/// l'app ne paie donc rien. On l'appelle toujours *avant* de suspendre quoi que ce soit —
+/// `SymInitialize` prend le loader lock, qu'un thread suspendu pourrait détenir.
 pub fn init_symbols() {
-    unsafe {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| unsafe {
         SymSetOptions(SYM_OPTIONS);
         let _ = SymInitialize(GetCurrentProcess(), None, true);
-    }
+    });
 }
 
 /// Nom court du module contenant `addr` (`ntdll.dll`) et son adresse de base.
@@ -190,6 +194,7 @@ fn collect_addresses(tid: u32, pcs: &mut [u64; MAX_FRAMES]) -> Result<usize, Str
 /// Indispensable quand le thread principal attend un verrou : sa propre pile dit qu'il
 /// attend, celles des autres threads disent qui le fait attendre.
 pub fn capture_all_threads(main_tid: u32) -> Vec<String> {
+    init_symbols(); // paresseux : rien n'est chargé tant qu'aucun gel n'est survenu
     let me = unsafe { GetCurrentThreadId() };
     let mut out = Vec::new();
     for tid in list_threads() {

@@ -10,6 +10,7 @@ import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CON
 import { useQueryClient } from "@tanstack/react-query";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
+import { SoakHarness } from "./dev/soakPlayer";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
@@ -191,6 +192,8 @@ export function App() {
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
+      {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
+      {import.meta.env.DEV && <SoakHarness />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}
