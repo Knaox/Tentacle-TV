@@ -158,12 +158,29 @@ pub fn spawn_if_enabled(top: isize, ui_thread_id: u32) {
 
     std::thread::spawn(move || {
         let top = HWND(top as *mut c_void);
+        // Avant tout gel : `SymInitialize` prend le loader lock, qu'un thread suspendu
+        // pourrait justement détenir.
+        crate::win_stack::init_symbols();
         append(&path, &format!("probe started, ui_thread_id={ui_thread_id}"));
+
         let mut last = String::new();
+        let mut stack_dumped = false;
         loop {
             let now = snapshot(top, ui_thread_id);
             if now != last {
                 append(&path, &now);
+
+                // Le thread UI vient de cesser de répondre : on lit sa pile d'appel.
+                // Une seule fois par épisode de gel, pour ne pas noyer le log.
+                if now.contains("ui=HUNG") && !stack_dumped {
+                    append(&path, "  pile du thread principal :");
+                    for line in crate::win_stack::capture(ui_thread_id) {
+                        append(&path, &line);
+                    }
+                    stack_dumped = true;
+                } else if !now.contains("ui=HUNG") {
+                    stack_dumped = false;
+                }
                 last = now;
             }
             sleep(POLL_INTERVAL);
