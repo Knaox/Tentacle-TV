@@ -120,6 +120,7 @@ fn main() {
                 debug_com::debug_com_check,
                 debug_com::debug_com_fixed,
                 debug_com::debug_com_break,
+                debug_com::debug_audio_on_main,
             ]);
         }
     }

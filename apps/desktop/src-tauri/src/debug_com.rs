@@ -16,14 +16,16 @@
 
 use std::sync::mpsc;
 use std::sync::OnceLock;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tauri::{command, AppHandle};
-use windows::Win32::System::Threading::GetCurrentThreadId;
+use windows::Win32::Foundation::CO_E_NOTINITIALIZED;
 use windows::Win32::Media::Audio::{IMMDeviceEnumerator, MMDeviceEnumerator};
 use windows::Win32::System::Com::{
-    CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_MULTITHREADED,
+    CoCreateInstance, CoGetApartmentType, CoInitializeEx, CoUninitialize, APTTYPE,
+    APTTYPEQUALIFIER, CLSCTX_ALL, COINIT_MULTITHREADED,
 };
+use windows::Win32::System::Threading::GetCurrentThreadId;
 
 /// Id du thread de la boucle d'évènements, mémorisé au `setup()`.
 static MAIN_TID: OnceLock<u32> = OnceLock::new();
@@ -42,15 +44,35 @@ fn which_thread() -> String {
     }
 }
 
-/// Teste si la bibliothèque COM est encore ouverte sur le thread courant.
-/// Non destructif. Attendu : « VIVANT », ou l'erreur CO_E_NOTINITIALIZED (0x800401F0).
+/// État COM **du thread courant**.
+///
+/// ⚠ Ne jamais se fier à `CoCreateInstance` pour ça : dès qu'un MTA existe quelque part
+/// dans le processus (mpv, WASAPI…), un thread sans apartment y est rattaché
+/// implicitement et `CoCreateInstance` réussit — même après la destruction de sa STA.
+/// `CoGetApartmentType` est le seul indicateur fiable.
 fn com_status() -> String {
-    let r: windows::core::Result<IMMDeviceEnumerator> =
+    let mut ty = APTTYPE::default();
+    let mut qual = APTTYPEQUALIFIER::default();
+    let apt = match unsafe { CoGetApartmentType(&mut ty, &mut qual) } {
+        Ok(()) => {
+            let name = match ty {
+                APTTYPE(0) => "STA",
+                APTTYPE(1) => "MTA",
+                APTTYPE(2) => "NA (neutre)",
+                APTTYPE(3) => "MAIN_STA",
+                APTTYPE(n) => return format!("apartment inconnu ({n})"),
+            };
+            // Qualifier 5 = APTTYPEQUALIFIER_IMPLICIT_MTA : le thread n'a rien initialisé,
+            // il est juste rattaché au MTA du processus. Sa propre STA est donc morte.
+            let implicit = if qual == APTTYPEQUALIFIER(5) { " [IMPLICITE]" } else { "" };
+            format!("{name}{implicit}")
+        }
+        Err(e) if e.code() == CO_E_NOTINITIALIZED => "AUCUN apartment".to_string(),
+        Err(e) => format!("CoGetApartmentType → {:?}", e.code()),
+    };
+    let usable: windows::core::Result<IMMDeviceEnumerator> =
         unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL) };
-    match r {
-        Ok(_) => "COM VIVANT sur le thread principal".to_string(),
-        Err(e) => format!("COM MORT sur le thread principal — {:?} : {}", e.code(), e.message()),
-    }
+    format!("apartment={apt}, CoCreateInstance={}", if usable.is_ok() { "ok" } else { "échec" })
 }
 
 /// Sonde non destructive. Commande **non-async** : s'exécute donc sur le thread principal,
@@ -96,6 +118,26 @@ fn com_status_on_main(app: &AppHandle) -> String {
         .unwrap_or_else(|_| "le thread principal ne répond pas (gelé)".to_string())
 }
 
+/// Rejoue l'**ancien** `set_audio_session_name` : commande non-`async`, donc l'énumération
+/// WASAPI (≈11 sessions, un aller-retour COM inter-apartment chacune) s'exécute sur le
+/// thread principal. Chaque milliseconde mesurée ici était une milliseconde d'UI gelée.
+///
+/// À lancer **pendant qu'un film démarre** : c'est le moment où mpv ouvre son flux WASAPI
+/// et où le service audio est le plus susceptible de faire attendre l'appelant.
+#[command]
+pub fn debug_audio_on_main() -> String {
+    let started = Instant::now();
+    let r = unsafe { crate::audio_session::rename_sessions("Tentacle TV (debug)") };
+    let ms = started.elapsed().as_millis();
+    let s = format!(
+        "{} : énumération WASAPI en {ms} ms (résultat: {})",
+        which_thread(),
+        if r.is_ok() { "ok" } else { "échec" }
+    );
+    eprintln!("[debug_com] audio_on_main → {s}");
+    s
+}
+
 /// Chemin **BUGUÉ** (l'ancien code), reproduit à la demande. Commande non-`async`, donc
 /// exécutée sur le thread principal — `debug_com_check` le vérifie plutôt que de le supposer.
 ///
@@ -116,26 +158,33 @@ pub fn debug_com_break(times: Option<u32>) -> String {
     let mut log = String::new();
     for i in 1..=max {
         let hr = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
-        unsafe { CoUninitialize() };
-        let status = com_status();
+
+        // Le seul signal fiable : `S_OK` signifie que le thread n'avait plus d'apartment,
+        // donc que le CoUninitialize() précédent a détruit la STA. (`CoCreateInstance`, lui,
+        // continue de réussir via le MTA implicite du processus : indicateur inutilisable.)
+        if hr.is_ok() {
+            unsafe { CoUninitialize() }; // on équilibre le nôtre
+            let fatal = format!(
+                ">>> STA du thread principal détruite au {}e CoUninitialize() non apparié.\n\
+                 >>> Elle détenait donc {} références (OleInitialize + CoInitializeEx de tao, + wry).\n\
+                 >>> L'ancien set_audio_session_name en brûlait 2 par démarrage de lecture.\n",
+                i - 1,
+                i - 1
+            );
+            eprintln!("[debug_com] {fatal}");
+            log.push_str(&fatal);
+            return log;
+        }
+
+        unsafe { CoUninitialize() }; // le décrément non apparié : le bug
         let line = format!(
-            "[{i}/{max}] CoInitializeEx(MTA)={hr:?} is_ok={} → CoUninitialize() → {status}",
-            hr.is_ok()
+            "[{i}/{max}] CoInitializeEx(MTA)={hr:?} (STA encore là) → CoUninitialize() → {}",
+            com_status()
         );
         eprintln!("[debug_com] {line}");
         log.push_str(&line);
         log.push('\n');
-
-        if status.starts_with("COM MORT") {
-            let fatal = format!(
-                "\n>>> COM fermé au {i}e CoUninitialize() : le thread principal détenait {i} référence(s).\n\
-                 >>> L'ancien code en brûlait 2 par démarrage de lecture (useSmtc.ts:102 et :104).\n"
-            );
-            eprintln!("[debug_com]{fatal}");
-            log.push_str(&fatal);
-            return log;
-        }
     }
-    log.push_str(&format!("\n>>> COM toujours vivant après {max} décréments — relancer avec times plus grand.\n"));
+    log.push_str(&format!("\n>>> STA toujours vivante après {max} décréments.\n"));
     log
 }
