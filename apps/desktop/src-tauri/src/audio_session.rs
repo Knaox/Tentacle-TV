@@ -14,7 +14,7 @@
 //! et force la fermeture de toutes ses connexions RPC » — c'est-à-dire celles de la
 //! WebView2. D'où : le film continue (mpv a ses propres threads) mais l'UI est morte.
 
-use tauri::command;
+use tauri::{command, AppHandle};
 use windows::core::{Interface, PCWSTR};
 use windows::Win32::Media::Audio::{
     eMultimedia, eRender, IAudioSessionControl, IAudioSessionControl2, IAudioSessionEnumerator,
@@ -29,8 +29,37 @@ use windows::Win32::System::Com::{
 ///
 /// `spawn_blocking` : l'énumération des sessions audio interroge le service audio et
 /// peut bloquer plusieurs centaines de millisecondes — jamais sur le thread principal.
+/// Rejoue l'ancien comportement bugué à chaque appel : exécution sur le **thread
+/// principal** + `CoUninitialize()` non apparié. Sert à reproduire le gel sans avoir à
+/// viser le bon instant à la main. Activé par `TENTACLE_LEGACY_AUDIO=1`.
+fn legacy_mode() -> bool {
+    std::env::var("TENTACLE_LEGACY_AUDIO").as_deref() == Ok("1")
+}
+
 #[command]
-pub async fn set_audio_session_name(name: String) -> Result<(), String> {
+pub async fn set_audio_session_name(app: AppHandle, name: String) -> Result<(), String> {
+    if legacy_mode() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        app.run_on_main_thread(move || {
+            let started = std::time::Instant::now();
+            unsafe {
+                // L'ancien code, verbatim : CoInitializeEx échoue (thread en STA), et on
+                // libère quand même une référence qui ne nous appartient pas.
+                let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+                let _ = rename_sessions(&name);
+                CoUninitialize();
+            }
+            eprintln!(
+                "[audio_session] LEGACY sur thread principal : {} ms",
+                started.elapsed().as_millis()
+            );
+            let _ = tx.send(());
+        })
+        .map_err(|e| e.to_string())?;
+        let _ = rx.recv_timeout(std::time::Duration::from_secs(30));
+        return Ok(());
+    }
+
     tauri::async_runtime::spawn_blocking(move || {
         let started = std::time::Instant::now();
         let r = unsafe { rename_sessions(&name) };

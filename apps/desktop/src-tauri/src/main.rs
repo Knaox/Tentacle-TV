@@ -18,6 +18,9 @@ mod mpv_window;
 #[cfg(target_os = "windows")]
 mod win_freeze_probe;
 
+#[cfg(target_os = "windows")]
+mod win_stack;
+
 /// Démonstration A/B du gel COM (`debug_com_break` / `debug_com_fixed`).
 /// Jamais compilée en release : absente des builds Microsoft Store.
 #[cfg(all(target_os = "windows", debug_assertions))]
