@@ -15,10 +15,21 @@ mod audio_session;
 #[cfg(target_os = "windows")]
 mod mpv_window;
 
+#[cfg(target_os = "windows")]
+mod win_freeze_probe;
+
 #[cfg(target_os = "macos")]
 mod macos;
 
 fn main() {
+    // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : surveille depuis un thread dédié
+    // si le thread UI se retrouve dans une boucle modale ou avec une capture souris
+    // orpheline — les deux façons dont la fenêtre enfant de mpv peut geler l'app.
+    #[cfg(target_os = "windows")]
+    win_freeze_probe::spawn_if_enabled(unsafe {
+        windows::Win32::System::Threading::GetCurrentThreadId()
+    });
+
     // Pas de tauri-plugin-updater : macOS est distribué via le Mac App Store
     // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
