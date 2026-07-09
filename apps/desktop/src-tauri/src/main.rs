@@ -12,6 +12,9 @@ mod smtc;
 #[cfg(target_os = "windows")]
 mod audio_session;
 
+#[cfg(target_os = "windows")]
+mod mpv_window;
+
 #[cfg(target_os = "macos")]
 mod macos;
 
@@ -67,6 +70,7 @@ fn main() {
                 smtc::smtc_set_metadata,
                 smtc::smtc_clear,
                 audio_session::set_audio_session_name,
+                mpv_window::mpv_harden_child_window,
             ]);
     }
 
