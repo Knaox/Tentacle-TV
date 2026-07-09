@@ -18,23 +18,34 @@ mod mpv_window;
 #[cfg(target_os = "windows")]
 mod win_freeze_probe;
 
+/// Démonstration A/B du gel COM (`debug_com_break` / `debug_com_fixed`).
+/// Jamais compilée en release : absente des builds Microsoft Store.
+#[cfg(all(target_os = "windows", debug_assertions))]
+mod debug_com;
+
 #[cfg(target_os = "macos")]
 mod macos;
 
 fn main() {
-    // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : surveille depuis un thread dédié
-    // si le thread UI se retrouve dans une boucle modale ou avec une capture souris
-    // orpheline — les deux façons dont la fenêtre enfant de mpv peut geler l'app.
-    #[cfg(target_os = "windows")]
-    win_freeze_probe::spawn_if_enabled(unsafe {
-        windows::Win32::System::Threading::GetCurrentThreadId()
-    });
-
     // Pas de tauri-plugin-updater : macOS est distribué via le Mac App Store
     // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init());
+
+    // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : depuis un thread dédié, mesure
+    // séparément la réactivité du thread UI et du thread fenêtre de mpv pendant un gel.
+    #[cfg(target_os = "windows")]
+    {
+        builder = builder.setup(|app| {
+            use tauri::Manager;
+            if let Some(hwnd) = app.get_webview_window("main").and_then(|w| w.hwnd().ok()) {
+                let tid = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
+                win_freeze_probe::spawn_if_enabled(hwnd.0 as isize, tid);
+            }
+            Ok(())
+        });
+    }
 
     // Windows/Linux: use tauri-plugin-libmpv
     #[cfg(not(target_os = "macos"))]
@@ -68,9 +79,13 @@ fn main() {
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder
-            .manage(smtc::SmtcState::default())
-            .invoke_handler(tauri::generate_handler![
+        builder = builder.manage(smtc::SmtcState::default());
+
+        // `invoke_handler` ne peut être posé qu'une fois : la liste est dupliquée pour
+        // n'exposer les commandes de démonstration qu'en debug.
+        #[cfg(not(debug_assertions))]
+        {
+            builder = builder.invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
@@ -83,6 +98,27 @@ fn main() {
                 audio_session::set_audio_session_name,
                 mpv_window::mpv_harden_child_window,
             ]);
+        }
+
+        #[cfg(debug_assertions)]
+        {
+            builder = builder.invoke_handler(tauri::generate_handler![
+                video_surface::toggle_fullscreen,
+                video_surface::is_fullscreen,
+                video_surface::exit_fullscreen,
+                msix_update::check_msix_update,
+                msix_update::download_and_install_msix_update,
+                smtc::smtc_init,
+                smtc::smtc_set_playback,
+                smtc::smtc_set_metadata,
+                smtc::smtc_clear,
+                audio_session::set_audio_session_name,
+                mpv_window::mpv_harden_child_window,
+                debug_com::debug_com_check,
+                debug_com::debug_com_fixed,
+                debug_com::debug_com_break,
+            ]);
+        }
     }
 
     #[cfg(target_os = "linux")]

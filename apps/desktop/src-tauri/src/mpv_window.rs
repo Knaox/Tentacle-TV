@@ -22,7 +22,8 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows::Win32::UI::WindowsAndMessaging::{
     FindWindowExW, GetWindowLongPtrW, SetWindowLongPtrW, SetWindowPos, GWL_EXSTYLE, HWND_BOTTOM,
-    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, WS_EX_NOACTIVATE, WS_EX_TRANSPARENT,
+    SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSENDCHANGING, SWP_NOSIZE,
+    WS_EX_NOACTIVATE, WS_EX_TRANSPARENT,
 };
 
 /// La fenêtre enfant est créée de façon asynchrone par le `gui_thread` de mpv, juste
@@ -59,6 +60,9 @@ fn harden(child: HWND) {
 
         // La WebView2 (fenêtre sœur) doit rester au-dessus : les contrôles HTML du
         // lecteur sont dessinés par-dessus la vidéo, à travers la fenêtre transparente.
+        // SWP_ASYNCWINDOWPOS : la fenêtre appartient au thread de mpv ; sans ce flag,
+        // SetWindowPos lui enverrait un message *synchrone* et bloquerait ici si ce
+        // thread est occupé — exactement le couplage qu'on cherche à supprimer.
         let _ = SetWindowPos(
             child,
             Some(HWND_BOTTOM),
@@ -66,7 +70,7 @@ fn harden(child: HWND) {
             0,
             0,
             0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_NOSENDCHANGING,
         );
     }
 }
