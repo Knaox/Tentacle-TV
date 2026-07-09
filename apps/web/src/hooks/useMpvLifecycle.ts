@@ -1,8 +1,9 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
 import { queryTrackList } from "./mpvTrackList";
 import {
-  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isMacOS, isTauri,
+  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isMacOS, isTauri, isWindows,
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
@@ -60,6 +61,10 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
         if (cancelled) return;
+        // Windows : mpv vient de créer sa fenêtre vidéo enfant sur son propre
+        // thread. On la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle
+        // ne puisse jamais geler la file d'entrée partagée avec le thread UI.
+        if (isWindows()) invoke("mpv_harden_child_window").catch(() => {});
         setReady(true);
         // Restore persisted volume + mute (le mute doit survivre aux
         // changements d'épisode/média — remount du player).
