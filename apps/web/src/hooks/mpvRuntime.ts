@@ -129,7 +129,20 @@ export function buildMpvInitOptions(macOS: boolean): Record<string, string | num
     "keep-open": "yes",
     // Sur macOS, force-window entre en conflit avec le wid (NSView)
     // injecté par le plugin — MPV crée alors une fenêtre séparée.
-    ...(!macOS && { "force-window": "yes" }),
+    ...(!macOS && {
+      "force-window": "yes",
+      // Windows/Linux (mode --wid) : la fenêtre vidéo mpv est une fenêtre enfant
+      // vivant sur son propre thread, dont la file d'entrée est attachée à celle
+      // du thread UI. Toute boucle modale côté mpv gèle l'app entière (son et
+      // image continuent, plus rien n'est cliquable). On lui retire donc tout
+      // traitement d'entrée — l'UI est intégralement en HTML (DesktopPlayer).
+      "window-dragging": "no",   // supprime SendMessage(WM_NCLBUTTONDOWN, HTCAPTION)
+      "input-cursor": "no",      // supprime SetCapture() sur WM_LBUTTONDOWN
+      "input-builtin-bindings": "no",
+      "input-media-keys": "no",  // les touches média passent par SMTC (smtc.rs)
+      "native-touch": "no",
+      "cursor-autohide": "no",
+    }),
     // Use keyframe seeking by default (hr-seek breaks HLS segment boundaries)
     "hr-seek": "default",
     cache: "yes",
