@@ -30,6 +30,11 @@ mod debug_com;
 mod macos;
 
 fn main() {
+    // En release, stderr est supprimé (windows_subsystem = "windows") : sans ça, une
+    // panique Rust disparaîtrait sans laisser de trace.
+    #[cfg(target_os = "windows")]
+    win_freeze_probe::install_panic_logger();
+
     // Pas de tauri-plugin-updater : macOS est distribué via le Mac App Store
     // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
@@ -124,6 +129,7 @@ fn main() {
                 debug_com::debug_com_fixed,
                 debug_com::debug_com_break,
                 debug_com::debug_audio_on_main,
+                debug_com::debug_mark,
             ]);
         }
     }

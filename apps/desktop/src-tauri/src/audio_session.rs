@@ -14,7 +14,7 @@
 //! et force la fermeture de toutes ses connexions RPC » — c'est-à-dire celles de la
 //! WebView2. D'où : le film continue (mpv a ses propres threads) mais l'UI est morte.
 
-use tauri::{command, AppHandle};
+use tauri::command;
 use windows::core::{Interface, PCWSTR};
 use windows::Win32::Media::Audio::{
     eMultimedia, eRender, IAudioSessionControl, IAudioSessionControl2, IAudioSessionEnumerator,
@@ -27,56 +27,14 @@ use windows::Win32::System::Com::{
 /// Assigne `name` comme nom d'affichage de la/les session(s) audio de ce process
 /// sur le périphérique de rendu par défaut.
 ///
-/// `spawn_blocking` : l'énumération des sessions audio interroge le service audio et
-/// peut bloquer plusieurs centaines de millisecondes — jamais sur le thread principal.
-/// Rejoue l'ancien comportement bugué à chaque appel : exécution sur le **thread
-/// principal** + `CoUninitialize()` non apparié. Sert à reproduire le gel sans avoir à
-/// viser le bon instant à la main. Activé par `TENTACLE_LEGACY_AUDIO=1`.
-fn legacy_mode() -> bool {
-    std::env::var("TENTACLE_LEGACY_AUDIO").as_deref() == Ok("1")
-}
-
+/// `spawn_blocking` : l'énumération interroge le service audio et n'a rien à faire sur le
+/// thread principal, où chaque milliseconde passée est une milliseconde d'UI gelée.
 #[command]
-pub async fn set_audio_session_name(app: AppHandle, name: String) -> Result<(), String> {
-    if legacy_mode() {
-        let (tx, rx) = std::sync::mpsc::channel();
-        app.run_on_main_thread(move || {
-            let started = std::time::Instant::now();
-            unsafe {
-                // L'ancien code, verbatim : CoInitializeEx échoue (thread en STA), et on
-                // libère quand même une référence qui ne nous appartient pas.
-                let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-                let _ = rename_sessions(&name);
-                CoUninitialize();
-            }
-            eprintln!(
-                "[audio_session] LEGACY sur thread principal : {} ms",
-                started.elapsed().as_millis()
-            );
-            let _ = tx.send(());
-        })
-        .map_err(|e| e.to_string())?;
-        let _ = rx.recv_timeout(std::time::Duration::from_secs(30));
-        return Ok(());
-    }
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let started = std::time::Instant::now();
-        let r = unsafe { rename_sessions(&name) };
-        let ms = started.elapsed().as_millis();
-        // Cette énumération interroge le service audio pendant que mpv ouvre son flux
-        // WASAPI. Tant qu'elle tournait sur le thread principal (commande non-async),
-        // chacune de ces millisecondes était une milliseconde d'UI gelée.
-        if ms >= 100 {
-            eprintln!("[audio_session] ⚠ énumération lente : {ms} ms");
-        } else {
-            eprintln!("[audio_session] énumération : {ms} ms");
-        }
-        r
-    })
-    .await
-    .map_err(|e| e.to_string())?
-    .map_err(|e| e.to_string())
+pub async fn set_audio_session_name(name: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || unsafe { rename_sessions(&name) })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 pub(crate) unsafe fn rename_sessions(name: &str) -> windows::core::Result<()> {

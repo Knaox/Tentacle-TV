@@ -118,6 +118,15 @@ fn com_status_on_main(app: &AppHandle) -> String {
         .unwrap_or_else(|_| "le thread principal ne répond pas (gelé)".to_string())
 }
 
+/// Estampille le journal de la sonde. `async` : le banc de torture doit pouvoir continuer
+/// à compter même si le thread principal se fige (l'appel expire alors côté JS).
+#[command]
+pub async fn debug_mark(msg: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || crate::win_freeze_probe::log_line(&msg))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Rejoue l'**ancien** `set_audio_session_name` : commande non-`async`, donc l'énumération
 /// WASAPI (≈11 sessions, un aller-retour COM inter-apartment chacune) s'exécute sur le
 /// thread principal. Chaque milliseconde mesurée ici était une milliseconde d'UI gelée.

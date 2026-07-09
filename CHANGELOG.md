@@ -32,6 +32,22 @@ macOS 1.2.0 — Desktop 1.11.0 — Web 1.1.0 — Backend 1.4.0
 - **Fix**: the player's "Apply to this series" checkbox can be unchecked again.
 - Various fixes and stability improvements.
 
+## [win-1.11.1]
+
+Windows 1.11.1 — Web 1.1.0 — Backend 1.4.0
+
+### FR
+- **Stabilité du lecteur** : correction d'un défaut d'initialisation COM qui pouvait, au fil des lectures, dégrader silencieusement le fonctionnement de la fenêtre de l'application.
+- **Lecteur plus robuste** : la surface vidéo ne peut plus capter le clavier ni la souris, ce qui supprime une famille de blocages où le son et l'image continuaient alors que l'interface ne répondait plus.
+- Le nommage de la session audio Windows (mixeur de volume, Stream Deck) ne s'exécute plus sur le fil principal de l'application.
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Player stability**: fixed a COM initialization defect that could silently degrade the application window's behavior over successive playbacks.
+- **More robust player**: the video surface can no longer capture keyboard or mouse input, removing a class of hangs where audio and video kept playing while the interface stopped responding.
+- Naming the Windows audio session (volume mixer, Stream Deck) no longer runs on the application's main thread.
+- Various fixes and stability improvements.
+
 ## [win-1.11.0]
 
 Windows 1.11.0 — Web 1.1.0 — Backend 1.4.0

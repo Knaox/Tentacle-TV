@@ -22,9 +22,14 @@
 //!   `ui=ok mpv=ok` sans marqueur pendant un gel
 //!                      → l'input et l'UI sont hors de cause : chercher côté rendu.
 //!
-//! **Active par défaut** : le gel est rare et survient en usage normal, donc la sonde doit
-//! être armée en permanence, y compris en production. Elle poll toutes les 500 ms et
-//! n'écrit qu'aux transitions d'état. Désactivable par `TENTACLE_FREEZE_PROBE=0`.
+//! **Active par défaut**, y compris en production, parce que ce gel n'est pas un crash :
+//! le processus survit, aucune exception n'est levée, Windows n'écrit aucun rapport
+//! d'erreur. Sans détecteur, il ne laisse strictement aucune trace.
+//!
+//! Le coût est un thread qui envoie deux `WM_NULL` toutes les 500 ms. En fonctionnement
+//! normal, **une seule ligne est écrite au démarrage** puis plus rien : le journal ne
+//! grossit qu'en cas d'anomalie. `dbghelp` n'est chargé que si un gel survient réellement.
+//! Coupure : `TENTACLE_FREEZE_PROBE=0`.
 //!
 //! **Déclencheur manuel** : quand l'app est figée, plus rien ne répond — ni raccourci, ni
 //! devtools. Créer le fichier `%LOCALAPPDATA%\Tentacle TV\dump-now` depuis n'importe
@@ -53,6 +58,8 @@ const POLL_INTERVAL: Duration = Duration::from_millis(500);
 const HEARTBEAT_TIMEOUT_MS: u32 = 300;
 /// Latence de réponse à partir de laquelle on parle de saturation plutôt que de blocage.
 const SLOW_THRESHOLD: Duration = Duration::from_millis(50);
+/// Un journal de diagnostic chez un utilisateur ne doit jamais croître sans borne.
+const MAX_LOG_BYTES: u64 = 2 * 1024 * 1024;
 
 fn data_dir() -> Option<PathBuf> {
     let base = std::env::var_os("LOCALAPPDATA")?;
@@ -61,7 +68,27 @@ fn data_dir() -> Option<PathBuf> {
     Some(dir)
 }
 
+/// Écrit une ligne dans le journal de la sonde depuis n'importe où. Utilisé par
+/// `debug_mark` pour corréler les cycles du banc de torture avec les piles capturées ;
+/// n'existe donc pas dans les builds livrés.
+#[cfg(debug_assertions)]
+pub fn log_line(msg: &str) {
+    if let Some(dir) = data_dir() {
+        append(&dir.join("freeze-probe.log"), msg);
+    }
+}
+
+/// Repart d'un fichier neuf au-delà de `MAX_LOG_BYTES`, en conservant le précédent :
+/// un gel survient rarement deux fois de suite, l'avant-dernier journal a de la valeur.
+fn rotate_if_needed(path: &PathBuf) {
+    let too_big = std::fs::metadata(path).map(|m| m.len() > MAX_LOG_BYTES).unwrap_or(false);
+    if too_big {
+        let _ = std::fs::rename(path, path.with_extension("log.1"));
+    }
+}
+
 fn append(path: &PathBuf, line: &str) {
+    rotate_if_needed(path);
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
@@ -172,9 +199,8 @@ pub fn spawn_if_enabled(top: isize, ui_thread_id: u32) {
 
     std::thread::spawn(move || {
         let top = HWND(top as *mut c_void);
-        // Avant tout gel : `SymInitialize` prend le loader lock, qu'un thread suspendu
-        // pourrait justement détenir.
-        crate::win_stack::init_symbols();
+        // `dbghelp` n'est pas chargé ici : `capture_all_threads` s'en charge paresseusement,
+        // au premier gel. En marche normale, l'app ne paie donc rien.
         append(&path, &format!("--- sonde démarrée, thread principal tid={ui_thread_id} ---"));
 
         let mut last = String::new();
@@ -206,6 +232,31 @@ pub fn spawn_if_enabled(top: isize, ui_thread_id: u32) {
             sleep(POLL_INTERVAL);
         }
     });
+}
+
+/// En release, `windows_subsystem = "windows"` supprime stderr : une panique Rust ne laisse
+/// aucune trace. On la consigne dans le même journal, avec le fichier et la ligne.
+pub fn install_panic_logger() {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if let Some(dir) = data_dir() {
+            let where_ = info
+                .location()
+                .map(|l| format!("{}:{}", l.file(), l.line()))
+                .unwrap_or_else(|| "?".to_string());
+            let msg = info
+                .payload()
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| info.payload().downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "(charge utile non textuelle)".to_string());
+            append(
+                &dir.join("freeze-probe.log"),
+                &format!("!!! PANIQUE à {where_} : {msg}"),
+            );
+        }
+        previous(info);
+    }));
 }
 
 fn dump_all(path: &PathBuf, ui_thread_id: u32) {
