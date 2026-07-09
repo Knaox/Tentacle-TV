@@ -39,8 +39,11 @@ fn main() {
     {
         builder = builder.setup(|app| {
             use tauri::Manager;
+            // `setup` s'exécute sur le thread de la boucle d'évènements.
+            let tid = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
+            #[cfg(debug_assertions)]
+            debug_com::remember_main_thread(tid);
             if let Some(hwnd) = app.get_webview_window("main").and_then(|w| w.hwnd().ok()) {
-                let tid = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
                 win_freeze_probe::spawn_if_enabled(hwnd.0 as isize, tid);
             }
             Ok(())
