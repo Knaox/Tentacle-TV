@@ -31,13 +31,26 @@ use windows::Win32::System::Com::{
 /// peut bloquer plusieurs centaines de millisecondes — jamais sur le thread principal.
 #[command]
 pub async fn set_audio_session_name(name: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || unsafe { rename_sessions(&name) })
-        .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        let started = std::time::Instant::now();
+        let r = unsafe { rename_sessions(&name) };
+        let ms = started.elapsed().as_millis();
+        // Cette énumération interroge le service audio pendant que mpv ouvre son flux
+        // WASAPI. Tant qu'elle tournait sur le thread principal (commande non-async),
+        // chacune de ces millisecondes était une milliseconde d'UI gelée.
+        if ms >= 100 {
+            eprintln!("[audio_session] ⚠ énumération lente : {ms} ms");
+        } else {
+            eprintln!("[audio_session] énumération : {ms} ms");
+        }
+        r
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())
 }
 
-unsafe fn rename_sessions(name: &str) -> windows::core::Result<()> {
+pub(crate) unsafe fn rename_sessions(name: &str) -> windows::core::Result<()> {
     // On ne libère COM que si c'est bien nous qui l'avons initialisé sur ce thread :
     // `CoUninitialize` ne doit être appelé qu'une fois par appel *réussi* (S_OK ou
     // S_FALSE). Sur un thread déjà en STA, `CoInitializeEx(MULTITHREADED)` renvoie
