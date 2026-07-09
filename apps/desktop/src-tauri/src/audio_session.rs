@@ -5,6 +5,14 @@
 //! mixeur de volume et les outils tiers (Stream Deck) ne ciblent pas l'app.
 //! Microsoft impose d'assigner le nom sur la session une fois le 1er flux créé,
 //! donc on appelle cette commande quand la lecture démarre.
+//!
+//! ⚠ Cette commande DOIT rester `async` : une commande Tauri non-`async` s'exécute
+//! sur le **thread principal**, celui de la boucle d'évènements et de la WebView2.
+//! Or `tao` y appelle `OleInitialize`, qui initialise COM en **STA**. Faire tourner
+//! l'énumération WASAPI (appels COM inter-apartment, bloquants) sur ce thread le fige,
+//! et surtout un `CoUninitialize()` non apparié y « ferme la bibliothèque COM du thread
+//! et force la fermeture de toutes ses connexions RPC » — c'est-à-dire celles de la
+//! WebView2. D'où : le film continue (mpv a ses propres threads) mais l'UI est morte.
 
 use tauri::command;
 use windows::core::{Interface, PCWSTR};
@@ -18,13 +26,24 @@ use windows::Win32::System::Com::{
 
 /// Assigne `name` comme nom d'affichage de la/les session(s) audio de ce process
 /// sur le périphérique de rendu par défaut.
+///
+/// `spawn_blocking` : l'énumération des sessions audio interroge le service audio et
+/// peut bloquer plusieurs centaines de millisecondes — jamais sur le thread principal.
 #[command]
-pub fn set_audio_session_name(name: String) -> Result<(), String> {
-    unsafe { rename_sessions(&name) }.map_err(|e| e.to_string())
+pub async fn set_audio_session_name(name: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || unsafe { rename_sessions(&name) })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 unsafe fn rename_sessions(name: &str) -> windows::core::Result<()> {
-    let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+    // On ne libère COM que si c'est bien nous qui l'avons initialisé sur ce thread :
+    // `CoUninitialize` ne doit être appelé qu'une fois par appel *réussi* (S_OK ou
+    // S_FALSE). Sur un thread déjà en STA, `CoInitializeEx(MULTITHREADED)` renvoie
+    // RPC_E_CHANGED_MODE sans incrémenter le compteur ; libérer quand même fermerait
+    // la bibliothèque COM d'un thread qui ne nous appartient pas.
+    let owned = CoInitializeEx(None, COINIT_MULTITHREADED).is_ok();
     let result = (|| -> windows::core::Result<()> {
         let enumerator: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
         let device = enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia)?;
@@ -56,6 +75,8 @@ unsafe fn rename_sessions(name: &str) -> windows::core::Result<()> {
     if let Err(ref e) = result {
         eprintln!("[audio_session] erreur: {e}");
     }
-    CoUninitialize();
+    if owned {
+        CoUninitialize();
+    }
     result
 }
