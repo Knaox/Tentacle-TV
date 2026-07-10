@@ -4186,7 +4186,7 @@ dependencies = [
 
 [[package]]
 name = "tentacle-desktop"
-version = "1.11.2"
+version = "1.11.4"
 dependencies = [
  "gtk",
  "hex",
