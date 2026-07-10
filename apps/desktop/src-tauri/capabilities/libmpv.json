@@ -1,9 +1,9 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "libmpv-plugin",
-  "description": "libmpv plugin permissions for Windows/Linux",
+  "description": "libmpv plugin permissions for Windows (Linux uses the custom mpv Render API — cf. src/linux)",
   "windows": ["main"],
-  "platforms": ["windows", "linux"],
+  "platforms": ["windows"],
   "permissions": [
     "libmpv:default"
   ]

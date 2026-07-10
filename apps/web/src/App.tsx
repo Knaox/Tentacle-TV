@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
 import { SoakHarness } from "./dev/soakPlayer";
+import { AutoWatchHarness } from "./dev/autoWatch";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
@@ -194,6 +195,8 @@ export function App() {
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}
+      {/* Reprise auto de la dernière lecture (dev only, URL ?autowatch=1) */}
+      {import.meta.env.DEV && <AutoWatchHarness />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}

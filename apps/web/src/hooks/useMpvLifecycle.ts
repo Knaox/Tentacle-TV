@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
 import { queryTrackList } from "./mpvTrackList";
 import {
-  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isMacOS, isTauri, isWindows,
+  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri, isWindows,
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
@@ -55,9 +55,11 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       if (!loaded || cancelled || !api) return;
 
       try {
-        const macOS = isMacOS();
+        // Render API custom sur macOS ET Linux (mpv dessine dans notre surface
+        // GL, pas de fenêtre native → pas d'options d'embarquement `--wid`).
+        const renderApi = isMacOS() || isLinux();
         await withTimeout(api.init({
-          initialOptions: buildMpvInitOptions(macOS),
+          initialOptions: buildMpvInitOptions(renderApi),
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
         if (cancelled) return;

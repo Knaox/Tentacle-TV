@@ -70,8 +70,9 @@ export function isAppStoreBuild(): boolean {
 }
 
 // Lazy-loaded plugin API — only available in Tauri context
-// On macOS: uses our custom mpv render API adapter
-// On Windows/Linux: uses tauri-plugin-libmpv-api
+// On macOS & Linux: uses our custom mpv Render API adapter (mêmes commandes Rust
+//   `mpv_*` + évènements `mpv://*`, deux adaptateurs identiques).
+// On Windows: uses tauri-plugin-libmpv-api (embarquement `--wid`).
 export type PluginApi = typeof import("tauri-plugin-libmpv-api");
 let api: PluginApi | null = null;
 
@@ -83,6 +84,10 @@ export const loadMpvApi = async (): Promise<boolean> => {
   try {
     if (isMacOS()) {
       api = await import("../lib/mpvMacosApi") as unknown as PluginApi;
+    } else if (isLinux()) {
+      // Linux : Render API custom (GtkGLArea + GtkOverlay) — l'overlay HTML des
+      // contrôles s'affiche au-dessus de la vidéo dans une seule fenêtre.
+      api = await import("../lib/mpvLinuxApi") as unknown as PluginApi;
     } else {
       api = await import("tauri-plugin-libmpv-api");
     }
@@ -134,21 +139,23 @@ export const OBSERVED_PROPERTIES = [
   ["eof-reached", "flag"],
 ] as const satisfies readonly MpvObservableProperty[];
 
-/** Options d'init mpv (identiques Windows/Linux/macOS hors force-window). */
-export function buildMpvInitOptions(macOS: boolean): Record<string, string | number | boolean> {
+/** Options d'init mpv. `renderApi` = macOS/Linux (Render API custom : mpv dessine
+ *  dans notre surface GL, aucune fenêtre native) ; sinon Windows (embarquement
+ *  `--wid`, fenêtre enfant qui exige le durcissement des entrées ci-dessous). */
+export function buildMpvInitOptions(renderApi: boolean): Record<string, string | number | boolean> {
   return {
     vo: "gpu-next",
     hwdec: "auto-safe",
     "keep-open": "yes",
-    // Sur macOS, force-window entre en conflit avec le wid (NSView)
-    // injecté par le plugin — MPV crée alors une fenêtre séparée.
-    ...(!macOS && {
+    // Render API (macOS/Linux) : mpv dessine dans notre FBO (vo=libmpv, forcé
+    // côté Rust) — pas de fenêtre native, donc ni force-window ni durcissement
+    // des entrées. Windows (--wid) : la fenêtre vidéo mpv est une fenêtre enfant
+    // vivant sur son propre thread, dont la file d'entrée est attachée à celle
+    // du thread UI. Toute boucle modale côté mpv gèle l'app entière (son et
+    // image continuent, plus rien n'est cliquable). On lui retire donc tout
+    // traitement d'entrée — l'UI est intégralement en HTML (DesktopPlayer).
+    ...(!renderApi && {
       "force-window": "yes",
-      // Windows/Linux (mode --wid) : la fenêtre vidéo mpv est une fenêtre enfant
-      // vivant sur son propre thread, dont la file d'entrée est attachée à celle
-      // du thread UI. Toute boucle modale côté mpv gèle l'app entière (son et
-      // image continuent, plus rien n'est cliquable). On lui retire donc tout
-      // traitement d'entrée — l'UI est intégralement en HTML (DesktopPlayer).
       "window-dragging": "no",   // supprime SendMessage(WM_NCLBUTTONDOWN, HTCAPTION)
       "input-cursor": "no",      // supprime SetCapture() sur WM_LBUTTONDOWN
       "input-builtin-bindings": "no",
@@ -156,11 +163,6 @@ export function buildMpvInitOptions(macOS: boolean): Record<string, string | num
       "native-touch": "no",
       "cursor-autohide": "no",
     }),
-    // Linux : forcer le contexte GPU X11 (via XWayland). mpv s'embarque dans la
-    // fenêtre Tauri par `--wid`, qui n'existe qu'en X11 (le plugin refuse Wayland).
-    // Sans ça mpv choisit Wayland (`waylandvk`) et ouvre une FENÊTRE SÉPARÉE. Va de
-    // pair avec GDK_BACKEND=x11 forcé côté Rust (main.rs). x11egl = OpenGL/EGL sur X11.
-    ...(isLinux() && { "gpu-context": "x11egl" }),
     // Use keyframe seeking by default (hr-seek breaks HLS segment boundaries)
     "hr-seek": "default",
     cache: "yes",
