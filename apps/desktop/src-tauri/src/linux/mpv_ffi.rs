@@ -38,7 +38,7 @@ pub const MPV_RENDER_PARAM_API_TYPE: c_int = 1;
 pub const MPV_RENDER_PARAM_OPENGL_INIT_PARAMS: c_int = 2;
 pub const MPV_RENDER_PARAM_OPENGL_FBO: c_int = 3;
 pub const MPV_RENDER_PARAM_FLIP_Y: c_int = 4;
-pub const MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME: c_int = 8;
+pub const MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME: c_int = 12;
 
 // --- FFI structs ---
 #[repr(C)]
