@@ -13,18 +13,28 @@ tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-[target.'cfg(not(target_os = "macos"))'.dependencies]
-tauri-plugin-libmpv = "0.3.2"
 
 # Auto-updater Linux (aucun store) : téléchargement HTTPS + vérif SHA256.
-# gtk : set_keep_below() de la fenêtre vidéo de fond (embarquement mpv).
+# Lecteur Linux : mpv Render API OpenGL dessiné dans un GtkGLArea, webview
+# WebKitGTK transparente au-dessus dans un GtkOverlay (une seule fenêtre —
+# remplace l'embarquement `--wid` de tauri-plugin-libmpv, qui laissait la vidéo
+# native opaque cacher l'overlay HTML des contrôles). Cf. src/linux/.
+# - gtk : GtkGLArea/GtkOverlay + reparentage de la webview.
+# - webkit2gtk : set_background_color(alpha 0) sur la WebView Tauri.
+# - libloading : dlopen libmpv.so.2 + symboles du Render API (comme macOS).
 [target.'cfg(target_os = "linux")'.dependencies]
 ureq = "2"
 sha2 = "0.10"
 hex = "0.4"
 gtk = "0.18"
+webkit2gtk = "2"
+libloading = "0.8"
 
 [target.'cfg(target_os = "windows")'.dependencies]
+# mpv embarqué via `--wid` (fenêtre enfant WS_CHILD) : conservé sur Windows où
+# WebView2 sait composer l'overlay HTML transparent au-dessus. Linux utilise
+# désormais le Render API custom (cf. src/linux/), macOS le sien (src/macos/).
+tauri-plugin-libmpv = "0.3.2"
 windows = { version = "0.61", features = [
   "Services_Store",
   "Foundation",

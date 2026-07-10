@@ -230,7 +230,7 @@ export function VideoPlayer({
         if (dx > 0) skipBy(30);
         else skipBy(-10);
       }}
-      className="relative flex h-screen w-screen items-center justify-center bg-black">
+      className={`relative flex h-screen w-screen items-center justify-center bg-black ${showControls ? "" : "cursor-none"}`}>
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}
         crossOrigin={useNativeHls ? undefined : "anonymous"}

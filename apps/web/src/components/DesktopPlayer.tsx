@@ -241,7 +241,8 @@ export function DesktopPlayer({
   );
 
   return (
-    <div onMouseMove={scheduleHide} className="relative flex h-screen w-screen items-center justify-center" style={{ background: "transparent" }}>
+    // cursor-none : souris immobile → l'OSD se cache ET le curseur disparaît (revient au moindre mouvement).
+    <div onMouseMove={scheduleHide} className={`relative flex h-screen w-screen items-center justify-center ${showControls ? "" : "cursor-none"}`} style={{ background: "transparent" }}>
       {/* Click catcher — toggle pause / fullscreen on video area */}
       <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 
