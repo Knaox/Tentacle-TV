@@ -14,5 +14,20 @@
       "fr": "• Épisode suivant : déclenchement au pourcentage de reprise Jellyfin, activable par l'administrateur\n• Appareils jumelés en liste déroulante\n• Gestion du thème marquée ALPHA\n• La fenêtre de mise à jour affiche la bonne version",
       "en": "• Up Next: triggers at the Jellyfin resume percentage, admin toggle\n• Paired devices as a dropdown list\n• Theme management marked ALPHA\n• Update window now shows the correct version"
     }
+  },
+  "linux": {
+    "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
+    "version": "1.11.1",
+    "tag": "linux-v1.11.1-1",
+    "notes": {
+      "fr": "• Auto-updater Linux universel (AppImage/deb/rpm/pacman)\n• Correctifs du lecteur mpv (première lecture, sous-titres ASS, préchargement)",
+      "en": "• Universal Linux auto-updater (AppImage/deb/rpm/pacman)\n• mpv player fixes (first playback, ASS subtitles, buffered bar)"
+    },
+    "assets": {
+      "appimage": { "name": "", "sha256": "" },
+      "deb": { "name": "", "sha256": "" },
+      "rpm": { "name": "", "sha256": "" },
+      "pacman": { "name": "", "sha256": "" }
+    }
   }
 }

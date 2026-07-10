@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { isTauri, isWindows, isAppStoreBuild } from "./useDesktopPlayer";
+import { isTauri, isWindows, isLinux, isAppStoreBuild } from "./useDesktopPlayer";
 import { openExternal } from "../lib/openExternal";
 import { fetchStoreVersions, pickManifestNotes } from "../lib/storeVersions";
+import { checkLinuxUpdate, downloadLinuxUpdate, applyLinuxUpdate, type LinuxUpdateFound } from "../lib/linuxUpdate";
 
 /** Fiche App Store (achat universel iOS+macOS) — repli si absent du manifest. */
 const APP_STORE_ID = "6760205634";
@@ -82,6 +83,8 @@ export function useAutoUpdate() {
   const [info, setInfo] = useState<UpdateInfo>(defaultInfo);
   // URL App Store mémorisée hors state pour rester dispo dans installUpdate ([]).
   const storeUrlRef = useRef<string | undefined>(undefined);
+  // MAJ Linux détectée (asset + format), mémorisée hors state pour installUpdate.
+  const linuxFoundRef = useRef<LinuxUpdateFound | null>(null);
 
   useEffect(() => {
     // Dev only — exposé sur window pour valider l'UX depuis la console.
@@ -100,7 +103,7 @@ export function useAutoUpdate() {
     }
 
     if (!isTauri()) return;
-    if (!isAppStoreBuild() && !isWindows()) return;
+    if (!isAppStoreBuild() && !isWindows() && !isLinux()) return;
 
     let cancelled = false;
 
@@ -150,6 +153,23 @@ export function useAutoUpdate() {
             phase: "available",
             version: displayVersion,
             notes,
+          }));
+          return;
+        }
+
+        // Linux — auto-updater intégré universel (aucun store). Détecte le format
+        // installé (AppImage/deb/rpm/pacman) et l'asset correspondant sur la
+        // dernière release publiée dans le manifeste.
+        if (isLinux()) {
+          const found = await checkLinuxUpdate();
+          if (cancelled || !found) return;
+          linuxFoundRef.current = found;
+          setInfo((prev) => ({
+            ...prev,
+            available: true,
+            phase: "available",
+            version: found.version,
+            notes: found.notes,
           }));
           return;
         }
@@ -225,6 +245,24 @@ export function useAutoUpdate() {
         setInfo((prev) => ({ ...prev, downloading: false, phase: "available", error: String(err) }));
       } finally {
         unlistenProgress?.();
+      }
+      return;
+    }
+
+    // Linux — téléchargement (progression) + vérif SHA256 + installation
+    // (pkexec pour deb/rpm/pacman → invite polkit ; self-swap pour AppImage) +
+    // relance. applyLinuxUpdate ne rend pas la main en cas de succès (relaunch).
+    if (isLinux() && linuxFoundRef.current) {
+      const found = linuxFoundRef.current;
+      setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
+      try {
+        const path = await downloadLinuxUpdate(found, (pct) =>
+          setInfo((prev) => ({ ...prev, progress: pct })),
+        );
+        setInfo((prev) => ({ ...prev, progress: 100, phase: "installing" }));
+        await applyLinuxUpdate(path, found.format);
+      } catch (err) {
+        setInfo((prev) => ({ ...prev, downloading: false, phase: "available", error: String(err) }));
       }
       return;
     }

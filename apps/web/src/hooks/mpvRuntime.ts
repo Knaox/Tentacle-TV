@@ -28,9 +28,16 @@ export interface PlayOptions {
   subtitleTrack?: number;
 }
 
-/** Detect if running inside Tauri (desktop app). */
+/** Detect if running inside Tauri (desktop app).
+ *  Aligné sur `isTauriApp` (main.tsx) : sur certaines webviews Linux/webkit2gtk,
+ *  `__TAURI_INTERNALS__` peut n'être pas encore visible au moment du routage
+ *  (Watch.tsx) → sans les 2 autres signaux, l'app basculait à tort sur le lecteur
+ *  web (hls.js) au lieu de mpv. « Linux doit utiliser mpv. » */
 export function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+  if (typeof window === "undefined") return false;
+  return "__TAURI_INTERNALS__" in window
+    || "__TAURI__" in window
+    || (typeof navigator !== "undefined" && navigator.userAgent.includes("Tauri"));
 }
 
 /** Detect macOS — used to route to native HLS player (AVFoundation) instead of MPV.
@@ -48,6 +55,12 @@ export function isWindows(): boolean {
   if (typeof navigator === "undefined") return false;
   if (navigator.platform?.startsWith("Win")) return true;
   return /Windows NT/i.test(navigator.userAgent);
+}
+
+/** Detect Linux (desktop Tauri hors macOS/Windows) — cible de l'auto-updater
+ *  intégré universel (aucun store : AppImage/deb/rpm/pacman via GitHub Releases). */
+export function isLinux(): boolean {
+  return isTauri() && !isMacOS() && !isWindows();
 }
 
 /** Build distribué via le Mac App Store (canal injecté à la compilation).
@@ -143,6 +156,11 @@ export function buildMpvInitOptions(macOS: boolean): Record<string, string | num
       "native-touch": "no",
       "cursor-autohide": "no",
     }),
+    // Linux : forcer le contexte GPU X11 (via XWayland). mpv s'embarque dans la
+    // fenêtre Tauri par `--wid`, qui n'existe qu'en X11 (le plugin refuse Wayland).
+    // Sans ça mpv choisit Wayland (`waylandvk`) et ouvre une FENÊTRE SÉPARÉE. Va de
+    // pair avec GDK_BACKEND=x11 forcé côté Rust (main.rs). x11egl = OpenGL/EGL sur X11.
+    ...(isLinux() && { "gpu-context": "x11egl" }),
     // Use keyframe seeking by default (hr-seek breaks HLS segment boundaries)
     "hr-seek": "default",
     cache: "yes",
