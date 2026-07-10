@@ -9,7 +9,7 @@ import { wtLog } from "../watchTogether/wtLog";
 
 // Ré-exports de compatibilité — de nombreux modules importent la détection de
 // plateforme et les types depuis ce hook (découpage mpvRuntime/lifecycle/commands).
-export { isTauri, isMacOS, isWindows, isAppStoreBuild } from "./mpvRuntime";
+export { isTauri, isMacOS, isWindows, isLinux, isAppStoreBuild } from "./mpvRuntime";
 export type { MpvState, PlayOptions } from "./mpvRuntime";
 export type { MpvTrack } from "./mpvTrackList";
 

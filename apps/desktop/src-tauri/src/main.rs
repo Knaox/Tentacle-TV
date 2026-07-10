@@ -29,7 +29,27 @@ mod debug_com;
 #[cfg(target_os = "macos")]
 mod macos;
 
+/// Auto-updater Linux universel (aucun store) : détection format + download
+/// vérifié + install pkexec/self-swap. Absent des builds macOS/Windows.
+#[cfg(target_os = "linux")]
+mod linux_update;
+
 fn main() {
+    // Linux : mpv s'embarque dans la fenêtre via `--wid`, qui n'existe QU'EN X11
+    // (tauri-plugin-libmpv refuse Wayland — cf. utils::get_wid). On force donc
+    // XWayland pour que la fenêtre Tauri soit une fenêtre X11 → mpv s'y embarque au
+    // lieu d'ouvrir une 2ᵉ fenêtre. + contournement du rendu webkit (fenêtre
+    // blanche) sur certains GPU/Wayland. Positionné AVANT toute init GTK/WebKit.
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var_os("GDK_BACKEND").is_none() {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
+        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+    }
+
     // En release, stderr est supprimé (windows_subsystem = "windows") : sans ça, une
     // panique Rust disparaîtrait sans laisser de trace.
     #[cfg(target_os = "windows")]
@@ -140,6 +160,9 @@ fn main() {
             video_surface::toggle_fullscreen,
             video_surface::is_fullscreen,
             video_surface::exit_fullscreen,
+            linux_update::detect::detect_linux_install_format,
+            linux_update::install::download_update,
+            linux_update::install::install_linux_update,
         ]);
     }
 

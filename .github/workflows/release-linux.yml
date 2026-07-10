@@ -20,10 +20,16 @@
 # est tout de même appliquée.
 #
 # Lecteur vidéo : libmpv est chargé au runtime par tauri-plugin-libmpv.
-#   • .deb / .rpm déclarent la dépendance (libmpv2 / mpv-libs) → installée par le
-#     gestionnaire de paquets (voir bundle.linux.* dans tauri.conf.json).
+#   • .deb / .rpm / pacman déclarent la dépendance (libmpv2 / mpv-libs / mpv) ET les
+#     plugins GStreamer → installés par le gestionnaire de paquets (voir
+#     bundle.linux.* dans tauri.conf.json + depends() du PKGBUILD ci-dessous).
 #   • AppImage : l'utilisateur doit avoir « mpv »/« libmpv » installé (paquet
 #     présent par défaut sur la plupart des distros multimédia).
+#
+# GStreamer : le lecteur HTML5 de secours de WebKitGTK (fallback quand mpv n'est pas
+# emprunté) décode via GStreamer. Sans gst-plugins-good (→ autoaudiosink), le
+# WebKitWebProcess plante en SIGABRT au démarrage d'une vidéo. On déclare donc
+# gst-plugins-good/bad + gst-libav (codecs H.264/HEVC/AAC/AC3, demux HLS) partout.
 #
 # Runner : ubuntu-22.04 (glibc/webkit plus anciens = paquets compatibles avec un
 # parc de distros plus large qu'ubuntu-latest/24.04).
@@ -112,6 +118,10 @@ jobs:
           cp "$BUNDLE"/appimage/*.AppImage  dist-linux/ 2>/dev/null || true
           echo "Paquets produits :"
           ls -l dist-linux
+          # SHA256SUMS (deb/rpm/appimage) — vérifié par install-linux.sh et
+          # l'auto-updater intégré. La ligne pacman est ajoutée par le job « arch ».
+          ( cd dist-linux && sha256sum $(ls | grep -vx SHA256SUMS || true) > SHA256SUMS )
+          cat dist-linux/SHA256SUMS
 
       # Le .deb sert de base au job « arch » (repackagé en pacman).
       - name: Upload .deb (artefact pour le job pacman)
@@ -119,6 +129,13 @@ jobs:
         with:
           name: tentacle-deb
           path: dist-linux/*.deb
+          if-no-files-found: error
+
+      - name: Upload SHA256SUMS (deb/rpm/appimage) pour le job manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-sums-main
+          path: dist-linux/SHA256SUMS
           if-no-files-found: error
 
       - name: Create versioned GitHub Release
@@ -138,14 +155,26 @@ jobs:
             | `.AppImage` | Universel — toute distro |
 
             ## Installation
-            - **Debian/Ubuntu** : `sudo apt install ./Tentacle.TV_*.deb`
-            - **Fedora** : `sudo dnf install ./Tentacle.TV-*.rpm`
-            - **Arch (pacman)** : `sudo pacman -U ./tentacle-tv-*.pkg.tar.zst`
-            - **AppImage (universel)** : `sudo pacman -S mpv fuse2 && chmod +x Tentacle.TV_*.AppImage && ./Tentacle.TV_*.AppImage`
+
+            **Le plus simple (toute distro)** — détecte le format et installe le bon paquet :
+            ```
+            curl -fsSL https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/scripts/install-linux.sh | sh
+            ```
+
+            **Manuel — télécharge PUIS installe** (le fichier local évite le refus de signature de `pacman -U <url>`) :
+            - **Arch / Manjaro (pacman)** :
+            ```
+            url=$(curl -fsSL 'https://api.github.com/repos/Knaox/Tentacle-TV/releases?per_page=100' | grep -oE 'https://[^"]+\.pkg\.tar\.zst' | head -1); curl -fL "$url" -o /tmp/tentacle.pkg.tar.zst && sudo pacman -U /tmp/tentacle.pkg.tar.zst
+            ```
+            - **Debian / Ubuntu** : télécharge le `.deb` ci-dessous puis `sudo apt install ./Tentacle.TV_*.deb`
+            - **Fedora** : télécharge le `.rpm` ci-dessous puis `sudo dnf install ./Tentacle.TV-*.rpm`
+            - **AppImage (universel)** : `sudo pacman -S mpv gst-plugins-good gst-plugins-bad gst-libav fuse2 && chmod +x Tentacle.TV_*.AppImage && ./Tentacle.TV_*.AppImage`
 
             ## Pré-requis lecteur vidéo
-            Le `.deb`/`.rpm` installe automatiquement **libmpv**. Pour l'AppImage,
-            installez-le au besoin : `sudo pacman -S mpv` (Arch) ou l'équivalent.
+            Les paquets `.deb`/`.rpm`/`.pkg.tar.zst` installent automatiquement **libmpv**
+            et les **plugins GStreamer** (lecteur HTML5 de secours WebKit → `autoaudiosink`,
+            codecs H.264/HEVC/AAC/AC3, demux HLS). Pour l'AppImage (qui ne les embarque pas) :
+            `sudo pacman -S mpv gst-plugins-good gst-plugins-bad gst-libav` (Arch) ou l'équivalent.
           files: |
             dist-linux/*.deb
             dist-linux/*.rpm
@@ -202,7 +231,7 @@ jobs:
           arch=('x86_64')
           url="https://github.com/Knaox/Tentacle-TV"
           license=('MIT')
-          depends=('webkit2gtk-4.1' 'gtk3' 'mpv')
+          depends=('webkit2gtk-4.1' 'gtk3' 'mpv' 'gst-plugins-good' 'gst-plugins-bad' 'gst-libav')
           options=('!strip' '!debug')
           package() {
             cp -a "\${startdir}/pkgroot/usr" "\${pkgdir}/usr"
@@ -218,6 +247,8 @@ jobs:
           cp build/*.pkg.tar.zst dist-arch/
           echo "Paquet pacman :"
           ls -l dist-arch
+          ( cd dist-arch && sha256sum *.pkg.tar.zst > SHA256SUMS.pacman )
+          cat dist-arch/SHA256SUMS.pacman
 
       - name: Ajouter le paquet pacman à la Release
         uses: softprops/action-gh-release@v2
@@ -226,3 +257,59 @@ jobs:
           files: dist-arch/*.pkg.tar.zst
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload SHA256 pacman pour le job manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-sums-pacman
+          path: dist-arch/SHA256SUMS.pacman
+          if-no-files-found: error
+
+  # ── Manifeste d'auto-update (updates/store-versions.json, bloc « linux ») ──
+  # Assemble le SHA256SUMS complet (deb/rpm/appimage + pacman), l'ajoute à la
+  # Release (vérif par install-linux.sh + auto-updater), puis patche + push le
+  # manifeste sur main (lu par l'app via raw.githubusercontent.com/main).
+  manifest:
+    name: Publier le manifeste d'auto-update
+    needs: [linux, arch]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: tentacle-sums-main
+          path: sums-main
+      - uses: actions/download-artifact@v4
+        with:
+          name: tentacle-sums-pacman
+          path: sums-pacman
+      - name: Assembler le SHA256SUMS complet
+        run: |
+          cat sums-main/SHA256SUMS sums-pacman/SHA256SUMS.pacman > SHA256SUMS
+          echo "SHA256SUMS complet :"; cat SHA256SUMS
+      - name: Ajouter SHA256SUMS à la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: SHA256SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch du bloc linux (version/tag/assets/sha256)
+        run: |
+          VER="1.9.9"
+          if [[ "${GITHUB_REF_NAME}" =~ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then VER="${BASH_REMATCH[1]}"; fi
+          node .github/scripts/patch-linux-manifest.mjs "$VER" "${GITHUB_REF_NAME}" SHA256SUMS
+      - name: Commit + push sur main
+        run: |
+          git config user.name "tentacle-bot"
+          git config user.email "bot@tentacletv.app"
+          git add updates/store-versions.json
+          git commit -m "chore(update): manifeste Linux ${GITHUB_REF_NAME}" || { echo "rien à committer"; exit 0; }
+          git push origin main
