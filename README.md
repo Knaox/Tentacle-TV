@@ -382,7 +382,7 @@ Download the latest installer from [GitHub Releases](https://github.com/Knaox/Te
 | OS | Format | Source |
 |----|--------|--------|
 | Windows | `.msi` / `.exe` (NSIS) | [Microsoft Store](https://apps.microsoft.com/detail/9NKHL0T84245) |
-| macOS | App Store | [Mac App Store](https://apps.apple.com/app/id6760205634) |
+| macOS | App Store | [App Store](https://apps.apple.com/app/id6760205634) |
 | Linux | `.deb` · `.rpm` · `.AppImage` | [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases) (tag `linux-v*`) |
 
 ### Linux
