@@ -19,7 +19,9 @@
 # nom de la Release. Sans suffixe « -<build> » (linux-v1.9.9), la version du tag
 # est tout de même appliquée.
 #
-# Lecteur vidéo : libmpv est chargé au runtime par tauri-plugin-libmpv.
+# Lecteur vidéo : libmpv est chargé au runtime par le module natif Linux
+# (apps/desktop/src-tauri/src/linux — dlopen de libmpv.so.2 + Render API OpenGL
+# dans un GtkGLArea ; tauri-plugin-libmpv ne concerne plus que Windows).
 #   • .deb / .rpm / pacman déclarent la dépendance (libmpv2 / mpv-libs / mpv) ET les
 #     plugins GStreamer → installés par le gestionnaire de paquets (voir
 #     bundle.linux.* dans tauri.conf.json + depends() du PKGBUILD ci-dessous).

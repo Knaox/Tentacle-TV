@@ -12,6 +12,50 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
+## [linux-1.11.2]
+
+Linux 1.11.2 — Web 1.1.0 — Backend 1.4.0
+
+### FR
+- **Nouveau lecteur vidéo natif (mpv)** : la vidéo et l'interface partagent désormais une seule et même fenêtre — les contrôles s'affichent directement au-dessus de la vidéo.
+- **Fluidité** : l'interface reste parfaitement réactive pendant la lecture (le rendu vidéo ne bloque plus l'interface).
+- **Affichage** : plus de traînées ni d'images « fantômes » au-dessus de la vidéo (menus, vignettes de la barre de progression).
+- **Wayland natif** : l'application fonctionne désormais nativement sous Wayland, sans passer par XWayland (X11 reste pris en charge).
+- **Lecteur** : le curseur de la souris se masque automatiquement avec les contrôles après quelques secondes d'inactivité.
+- Corrections diverses : démarrage du lecteur avec une locale française, stabilité des clics, meilleure prise en charge NVIDIA.
+
+### EN
+- **New native video player (mpv)**: the video and the interface now share a single window — controls are drawn right on top of the video.
+- **Smoothness**: the interface stays fully responsive during playback (video rendering no longer blocks the UI).
+- **Display**: no more trails or “ghost” images over the video (menus, seek-bar thumbnails).
+- **Native Wayland**: the app now runs natively on Wayland, without XWayland (X11 remains supported).
+- **Player**: the mouse cursor automatically hides with the controls after a few seconds of inactivity.
+- Various fixes: player startup with a French locale, click stability, better NVIDIA support.
+
+## [mac-1.2.1]
+
+macOS 1.2.1 — Desktop 1.11.2 — Web 1.1.0 — Backend 1.4.0
+
+### FR
+- **Lecteur** : le curseur de la souris se masque automatiquement avec les contrôles après quelques secondes d'inactivité (et réapparaît au moindre mouvement).
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Player**: the mouse cursor now hides automatically with the controls after a few seconds of inactivity (and comes back as soon as you move the mouse).
+- Various fixes and stability improvements.
+
+## [win-1.11.2]
+
+Windows 1.11.2 — Web 1.1.0 — Backend 1.4.0
+
+### FR
+- **Lecteur** : le curseur de la souris se masque automatiquement avec les contrôles après quelques secondes d'inactivité (et réapparaît au moindre mouvement).
+- Corrections diverses et améliorations de stabilité.
+
+### EN
+- **Player**: the mouse cursor now hides automatically with the controls after a few seconds of inactivity (and comes back as soon as you move the mouse).
+- Various fixes and stability improvements.
+
 ## [mac-1.2.0]
 
 macOS 1.2.0 — Desktop 1.11.0 — Web 1.1.0 — Backend 1.4.0
