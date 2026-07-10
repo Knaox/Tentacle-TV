@@ -12,6 +12,18 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
+## [linux-1.11.4]
+
+Linux 1.11.4 — Web 1.1.0 — Backend 1.4.0
+
+### FR
+- **Anti-veille** : l'écran ne s'éteint plus et l'ordinateur ne se met plus en veille pendant la lecture d'une vidéo (inhibiteurs D-Bus : ScreenSaver/GNOME/KDE-XFCE + logind — couvre aussi les environnements sans daemon d'inactivité, ex. Hyprland).
+- **Volume mémorisé** : le volume et le mode muet du lecteur sont maintenant enregistrés de façon fiable et restaurés au lancement et à chaque média (comme sur Windows/macOS) — la valeur sauvée n'est plus écrasée au démarrage.
+
+### EN
+- **Keep awake**: the screen no longer turns off and the computer no longer suspends while a video is playing (D-Bus inhibitors: ScreenSaver/GNOME/KDE-XFCE + logind — also covers setups without an idle daemon, e.g. Hyprland).
+- **Volume memory**: the player volume and mute state are now reliably saved and restored on launch and for every media (like on Windows/macOS) — the saved value is no longer overwritten at startup.
+
 ## [linux-1.11.2]
 
 Linux 1.11.2 — Web 1.1.0 — Backend 1.4.0

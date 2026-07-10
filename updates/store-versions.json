@@ -20,8 +20,8 @@
     "version": "1.11.3",
     "tag": "linux-v1.11.3-1",
     "notes": {
-      "fr": "• Nouveau lecteur vidéo natif (mpv) : vidéo et contrôles dans une seule fenêtre\n• Interface fluide pendant la lecture\n• Plus de traînées/« fantômes » au-dessus de la vidéo\n• Wayland natif\n• Le curseur se masque automatiquement pendant la lecture",
-      "en": "• New native video player (mpv): video and controls in a single window\n• Smooth UI during playback\n• No more trails/“ghost” images over the video\n• Native Wayland\n• The cursor hides automatically during playback"
+      "fr": "• Anti-veille : l'écran ne s'éteint plus et l'ordinateur ne se met plus en veille pendant la lecture\n• Volume mémorisé : le volume et le muet du lecteur sont enregistrés et restaurés de façon fiable",
+      "en": "• Keep awake: the screen no longer turns off and the computer no longer suspends during playback\n• Volume memory: the player volume and mute state are reliably saved and restored"
     },
     "assets": {
       "appimage": {
