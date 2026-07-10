@@ -48,12 +48,8 @@ jobs:
       version: ${{ steps.p.outputs.version }}
       build: ${{ steps.p.outputs.build }}
       submit: ${{ steps.p.outputs.submit }}
-      draft: ${{ steps.p.outputs.draft }}
-      make_latest: ${{ steps.p.outputs.make_latest }}
     steps:
       - id: p
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             REST="${GITHUB_REF_NAME#mac-v}"   # 1.0.0-3
@@ -65,23 +61,13 @@ jobs:
             BUILD="${{ inputs.build }}"
             SUBMIT="${{ inputs.submit }}"
           fi
-          # Release GitHub : PREMIÈRE release de cette VERSION → publiée + « Latest » ;
-          # ré-upload (une release mac-v<version>-* existe déjà, brouillons inclus) →
-          # brouillon. ⚠️ Sur macOS, CFBundleVersion est GLOBAL (ne repart jamais à 1
-          # entre les versions — Apple exige build strictement croissant), donc
-          # « build == 1 » ne peut pas servir d'heuristique. L'upload TestFlight a
-          # lieu dans les deux cas (étape « Submit » inconditionnelle).
-          if gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate -q '.[].tag_name' 2>/dev/null | grep -q "^mac-v${VERSION}-"; then
-            DRAFT=true; LATEST=false
-          else
-            DRAFT=false; LATEST=true
-          fi
+          # macOS = App Store uniquement : pas de Release GitHub (donc pas de
+          # calcul draft/latest). L'upload TestFlight/App Store a lieu dans tous
+          # les cas (étape « Submit » inconditionnelle).
           {
             echo "version=$VERSION"
             echo "build=$BUILD"
             echo "submit=$SUBMIT"
-            echo "draft=$DRAFT"
-            echo "make_latest=$LATEST"
           } >> "$GITHUB_OUTPUT"
 
   # 1) Build par architecture : dylibs LGPL + app Tauri (sandbox, sans private-api)
@@ -225,39 +211,12 @@ jobs:
           BUILD: ${{ needs.setup.outputs.build }}
         run: node .github/scripts/asc-release-notes.mjs
 
-      # Notes de la Release GitHub : bloc « ## [mac-<version>] » (repli
-      # « ## [<version>] ») en markdown brut, sinon texte par défaut.
-      - name: Extract CHANGELOG notes
-        if: github.event_name == 'push'
-        env:
-          VERSION: ${{ needs.setup.outputs.version }}
-        run: |
-          node .github/scripts/release-notes.mjs \
-            --channel mac --version "$VERSION" --format github --lang both \
-            --out release-notes.md || true
-          if [ ! -s release-notes.md ]; then
-            echo "Tentacle TV pour macOS — version $VERSION." > release-notes.md
-          fi
-          {
-            echo ""
-            echo "---"
-            echo "_Distribution : Mac App Store / TestFlight (build ${{ needs.setup.outputs.build }})._"
-          } >> release-notes.md
-
-      # Release GitHub : brouillon pour un ré-upload de build, publiée + « Latest »
-      # pour une nouvelle version (build == 1). N'affecte PAS l'upload TestFlight.
-      - name: Create GitHub Release
-        if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "Tentacle TV (macOS) v${{ needs.setup.outputs.version }} (build ${{ needs.setup.outputs.build }})"
-          body_path: release-notes.md
-          draft: ${{ needs.setup.outputs.draft }}
-          make_latest: ${{ needs.setup.outputs.make_latest }}
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ⚠️ macOS n'est PAS distribué via GitHub Releases (App Store UNIQUEMENT) :
+      # aucune Release GitHub n'est créée ici. Le tag `mac-v*` ne sert qu'à
+      # déclencher le build + l'upload App Store / TestFlight (job « attach-build »).
+      # Les notes de la fiche App Store sont générées par asc-release-notes.mjs
+      # ci-dessus ; les notes « github » du CHANGELOG (bloc « ## [mac-…] »)
+      # restent la source pour la fiche store, pas pour une release GitHub.
 
   # 3) Attend le traitement ASC (~10-35 min) puis rattache le build à la version
   #    App Store (+ « À tester » TestFlight) → il ne reste qu'à « Soumettre pour
