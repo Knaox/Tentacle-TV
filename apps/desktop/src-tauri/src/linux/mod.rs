@@ -18,6 +18,7 @@ mod glproc;
 mod mpv_ffi;
 mod overlay;
 mod render;
+pub mod sleep_inhibit;
 mod util;
 
 use std::ffi::c_void;

@@ -107,11 +107,14 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                   wtLog("mpv", `pause → ${event.data}`, { pos: positionRef.current.toFixed(1) });
                 }
                 return { ...prev, paused: event.data as boolean };
-              case "volume": {
-                const vol = event.data as number;
-                try { localStorage.setItem("tentacle_player_volume", String(Math.round(vol))); } catch {}
-                return { ...prev, volume: vol };
-              }
+              case "volume":
+                // État UI uniquement — la persistance se fait À L'ACTION
+                // (setVolume/toggleMute, useMpvCommands). Persister ici écrasait
+                // la valeur sauvée : l'émission initiale de mpv (volume=100 par
+                // défaut) pouvait arriver APRÈS l'abonnement mais AVANT que le
+                // restore (setProperty post-init) ne produise son évènement —
+                // course visible sur Linux (thread d'évènements démarré tard).
+                return { ...prev, volume: event.data as number };
               case "mute":
                 mutedRef.current = event.data as boolean;
                 return { ...prev, muted: event.data as boolean };
@@ -171,6 +174,18 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         switch (event.event) {
           case "file-loaded": {
             wtLog("mpv", "file-loaded", { sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1 });
+            // Réapplique le volume/mute persistés à CHAQUE média — filet de
+            // sécurité si le restore post-init a été perdu (course à l'init,
+            // vue sur Linux). Avant la 1re frame audio → transparent.
+            try {
+              const sv = localStorage.getItem("tentacle_player_volume");
+              if (sv != null) {
+                const v = Number(sv);
+                if (!Number.isNaN(v) && v >= 0 && v <= 100) api.setProperty("volume", v).catch(() => {});
+              }
+              const sm = localStorage.getItem("tentacle_player_muted");
+              if (sm != null) api.setProperty("mute", sm === "1").catch(() => {});
+            } catch { /* storage indisponible */ }
             // DON'T set tracks or apply preferences here — mpv properties
             // may not be accessible until playback-restart.
             // Just start the track list query (delayed).

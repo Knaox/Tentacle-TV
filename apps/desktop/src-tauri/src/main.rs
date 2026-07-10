@@ -173,6 +173,7 @@ fn main() {
 
         builder = builder
             .manage(render_state)
+            .manage(linux::sleep_inhibit::SleepInhibit::new())
             .setup(|app| {
                 use tauri::Manager;
                 // libmpv EXIGE LC_NUMERIC=C (sinon parsing des nombres cassé →
@@ -212,6 +213,8 @@ fn main() {
                 linux::commands::mpv_set_property,
                 linux::commands::mpv_get_property,
                 linux::commands::mpv_destroy,
+                linux::sleep_inhibit::prevent_display_sleep_start,
+                linux::sleep_inhibit::prevent_display_sleep_stop,
             ]);
     }
 

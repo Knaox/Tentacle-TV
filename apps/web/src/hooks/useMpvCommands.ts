@@ -1,11 +1,22 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { getMpvApi, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
+import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
 
 /**
  * Commandes de contrôle mpv (pause/seek/pistes/volume/vitesse/plein écran) +
- * effets annexes (anti-veille macOS, resync plein écran au montage).
+ * effets annexes (anti-veille macOS/Linux, resync plein écran au montage).
  * Extraction mécanique de useDesktopPlayer — logique inchangée.
  */
+
+// macOS et Linux : Render API (vo=libmpv) → mpv n'a AUCUNE fenêtre native, son
+// `stop-screensaver` est inopérant. On gère l'anti-veille nous-mêmes côté Rust :
+// IOPMAssertion sur macOS (macos/sleep_assertion.rs), inhibiteurs D-Bus
+// ScreenSaver/SessionManager/PowerManagement + logind sur Linux
+// (linux/sleep_inhibit.rs). Windows n'en a pas besoin : mpv y possède sa propre
+// fenêtre (--wid) et applique stop-screensaver (SetThreadExecutionState).
+function needsKeepAwake(): boolean {
+  return isTauri() && (isMacOS() || isLinux());
+}
+
 export function useMpvCommands({
   state,
   setState,
@@ -15,12 +26,9 @@ export function useMpvCommands({
   setState: Dispatch<SetStateAction<MpvState>>;
   mutedRef: MutableRefObject<boolean>;
 }) {
-  // macOS uniquement : empêche la mise en veille de l'écran pendant la lecture.
-  // Sur Windows/Linux, libmpv gère stop-screensaver via sa propre fenêtre.
-  // Sur macOS (vo=libmpv, render API), aucune fenêtre native → on doit créer
-  // nous-mêmes une IOPMAssertion côté Rust. Voir apps/desktop/src-tauri/src/macos/sleep_assertion.rs
+  // Empêche la mise en veille (écran + système) pendant la lecture.
   useEffect(() => {
-    if (!isTauri() || !isMacOS()) return;
+    if (!needsKeepAwake()) return;
     const shouldKeepAwake = state.playing && !state.paused;
     let cancelled = false;
     import("@tauri-apps/api/core").then(({ invoke }) => {
@@ -35,7 +43,7 @@ export function useMpvCommands({
   // même si l'effet ci-dessus n'a pas eu le temps de se déclencher.
   useEffect(() => {
     return () => {
-      if (!isTauri() || !isMacOS()) return;
+      if (!needsKeepAwake()) return;
       import("@tauri-apps/api/core").then(({ invoke }) => {
         invoke("prevent_display_sleep_stop").catch(() => {});
       }).catch(() => {});
@@ -70,6 +78,11 @@ export function useMpvCommands({
   }, []);
   const setVolume = useCallback(async (v: number) => {
     getMpvApi()?.setProperty("volume", v).catch(() => {});
+    // Persisté À L'ACTION (comme le mute) — ne plus compter sur l'aller-retour
+    // property-change : son émission initiale (volume=100 par défaut mpv)
+    // pouvait écraser la valeur sauvée au démarrage (course observe/restore,
+    // vue sur Linux).
+    try { localStorage.setItem("tentacle_player_volume", String(Math.round(v))); } catch { /* storage indisponible */ }
     // Monter le volume démute (et efface le mute persisté).
     if (v > 0 && mutedRef.current) {
       getMpvApi()?.setProperty("mute", false).catch(() => {});
