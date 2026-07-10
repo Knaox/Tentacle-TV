@@ -79,12 +79,20 @@ interface MsixProgress {
 // dans certaines configs dev.
 let __testMode = false;
 
+// Re-check périodique : l'app reste souvent ouverte des jours (usage salon) —
+// un check unique au démarrage ratait toute MAJ publiée ensuite. 6 h : assez
+// fréquent pour être vu dans la journée, négligeable en réseau (un JSON).
+const UPDATE_RECHECK_MS = 6 * 60 * 60 * 1000;
+
 export function useAutoUpdate() {
   const [info, setInfo] = useState<UpdateInfo>(defaultInfo);
   // URL App Store mémorisée hors state pour rester dispo dans installUpdate ([]).
   const storeUrlRef = useRef<string | undefined>(undefined);
   // MAJ Linux détectée (asset + format), mémorisée hors state pour installUpdate.
   const linuxFoundRef = useRef<LinuxUpdateFound | null>(null);
+  // Phase courante lisible depuis l'interval de re-check (effet monté avec []).
+  const phaseRef = useRef<UpdatePhase>("idle");
+  useEffect(() => { phaseRef.current = info.phase; }, [info.phase]);
 
   useEffect(() => {
     // Dev only — exposé sur window pour valider l'UX depuis la console.
@@ -107,7 +115,7 @@ export function useAutoUpdate() {
 
     let cancelled = false;
 
-    (async () => {
+    const runCheck = async () => {
       try {
         // macOS App Store — détection via l'API iTunes lookup (pas d'auto-update).
         if (isAppStoreBuild()) {
@@ -179,9 +187,16 @@ export function useAutoUpdate() {
           setInfo((prev) => ({ ...prev, error: String(err) }));
         }
       }
-    })();
+    };
 
-    return () => { cancelled = true; };
+    void runCheck();
+    // Jamais de re-check pendant un flow en cours (modale visible, téléchargement,
+    // installation) — uniquement depuis l'état de repos.
+    const recheckId = setInterval(() => {
+      if (phaseRef.current === "idle") void runCheck();
+    }, UPDATE_RECHECK_MS);
+
+    return () => { cancelled = true; clearInterval(recheckId); };
   }, []);
 
   const installUpdate = useCallback(async () => {
