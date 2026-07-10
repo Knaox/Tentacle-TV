@@ -17,28 +17,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.11.3",
-    "tag": "linux-v1.11.3-1",
+    "version": "1.11.4",
+    "tag": "linux-v1.11.4-1",
     "notes": {
       "fr": "• Anti-veille : l'écran ne s'éteint plus et l'ordinateur ne se met plus en veille pendant la lecture\n• Volume mémorisé : le volume et le muet du lecteur sont enregistrés et restaurés de façon fiable",
       "en": "• Keep awake: the screen no longer turns off and the computer no longer suspends during playback\n• Volume memory: the player volume and mute state are reliably saved and restored"
     },
     "assets": {
       "appimage": {
-        "name": "Tentacle.TV_1.11.3_amd64.AppImage",
-        "sha256": "91cf13c0b57013c6ca5dfeceda24d7839b7a234dbbf6587befcf0723bdd34c0f"
+        "name": "Tentacle.TV_1.11.4_amd64.AppImage",
+        "sha256": "b5d8926c1059035546d5b0e008f980c0fe1b47b47a8ffc371471d905a556cb6b"
       },
       "deb": {
-        "name": "Tentacle.TV_1.11.3_amd64.deb",
-        "sha256": "40f4bfc2992d8e6a1159431078dfff0be654cf576d83a1e6e8a0ba22cadeadf9"
+        "name": "Tentacle.TV_1.11.4_amd64.deb",
+        "sha256": "c33eb9f79cd6a1c860eff34e9052da5c31c45a0d255ce7f25db6e89af3bfe244"
       },
       "rpm": {
-        "name": "Tentacle.TV-1.11.3-1.x86_64.rpm",
-        "sha256": "b06432b7ea249414ac78a687381fa497080d84151dae468d6ccc271911d8e2a4"
+        "name": "Tentacle.TV-1.11.4-1.x86_64.rpm",
+        "sha256": "c2008c51f95e24ab96112e2f6b6cbfdcb636b1076d5a11d03602bc5b6c7943ed"
       },
       "pacman": {
-        "name": "tentacle-tv-1.11.3-1-x86_64.pkg.tar.zst",
-        "sha256": "a2bcf962b05bbc4587dc11212e1fe37b54e106089bd08508c4d8ef31f09e8675"
+        "name": "tentacle-tv-1.11.4-1-x86_64.pkg.tar.zst",
+        "sha256": "b65399c84d36bfd7c1054511c78bd98281d590eace79690e08fa06358070ec8b"
       }
     }
   }
