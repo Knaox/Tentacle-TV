@@ -55,15 +55,38 @@ async function main() {
   if (!tokRes.ok || !tok.access_token) fail(`token Entra ID refusé (${tokRes.status}): ${JSON.stringify(tok)}`);
 
   const BASE = `https://manage.devcenter.microsoft.com/v1.0/my/applications/${STORE_ID}`;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // Retry sur 5xx / 429 / erreur réseau : l'API de soumission Store est
+  // régulièrement dégradée (504 Gateway Timeout par vagues) — sans ça, un
+  // hoquet côté Microsoft faisait échouer toute la release.
   const api = async (method, path = '', body) => {
-    const r = await fetch(BASE + path, {
-      method,
-      headers: { Authorization: `Bearer ${tok.access_token}`, 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const j = r.status === 204 ? {} : await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(`${method} ${path || '/'} → ${r.status} ${JSON.stringify(j)}`);
-    return j;
+    const MAX = 6;
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX; attempt++) {
+      let r;
+      try {
+        r = await fetch(BASE + path, {
+          method,
+          headers: { Authorization: `Bearer ${tok.access_token}`, 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+      } catch (e) {
+        lastErr = new Error(`${method} ${path || '/'} → réseau: ${e.message}`);
+        if (attempt < MAX) { const w = Math.min(30000, 2000 * 2 ** (attempt - 1)); console.log(`[msstore] ${lastErr.message} — retry ${attempt}/${MAX - 1} dans ${w / 1000}s`); await sleep(w); continue; }
+        throw lastErr;
+      }
+      const j = r.status === 204 ? {} : await r.json().catch(() => ({}));
+      if (r.ok) return j;
+      // Transitoire (429 / 5xx) → on retente ; sinon échec immédiat.
+      if ((r.status === 429 || r.status >= 500) && attempt < MAX) {
+        const w = Math.min(30000, 2000 * 2 ** (attempt - 1));
+        console.log(`[msstore] ${method} ${path || '/'} → ${r.status} — retry ${attempt}/${MAX - 1} dans ${w / 1000}s`);
+        await sleep(w);
+        continue;
+      }
+      throw new Error(`${method} ${path || '/'} → ${r.status} ${JSON.stringify(j)}`);
+    }
+    throw lastErr;
   };
 
   // 2) Soumission pendante ? On la supprime (même comportement que le CLI).
