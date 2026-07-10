@@ -118,6 +118,16 @@ jobs:
           cp "$BUNDLE"/deb/*.deb            dist-linux/ 2>/dev/null || true
           cp "$BUNDLE"/rpm/*.rpm            dist-linux/ 2>/dev/null || true
           cp "$BUNDLE"/appimage/*.AppImage  dist-linux/ 2>/dev/null || true
+          # ⚠️ Les paquets s'appellent « Tentacle TV_… » (espace). GitHub
+          # remplace l'espace par un POINT à l'upload → l'asset publié devient
+          # « Tentacle.TV_… ». Sans normalisation ici, le SHA256SUMS et le
+          # manifeste garderaient le nom à espace → l'auto-updater construirait
+          # une URL (Tentacle%20TV_…) qui n'existe pas (404). On renomme donc
+          # espace → point AVANT de calculer les sommes et d'uploader.
+          for f in dist-linux/*; do
+            b=$(basename "$f"); c=${b// /.}
+            [ "$b" != "$c" ] && mv "$f" "dist-linux/$c"
+          done
           echo "Paquets produits :"
           ls -l dist-linux
           # SHA256SUMS (deb/rpm/appimage) — vérifié par install-linux.sh et
