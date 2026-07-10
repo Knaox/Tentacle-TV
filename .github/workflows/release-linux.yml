@@ -122,7 +122,12 @@ jobs:
           ls -l dist-linux
           # SHA256SUMS (deb/rpm/appimage) — vérifié par install-linux.sh et
           # l'auto-updater intégré. La ligne pacman est ajoutée par le job « arch ».
-          ( cd dist-linux && sha256sum $(ls | grep -vx SHA256SUMS || true) > SHA256SUMS )
+          # Boucle sur des globs (pas `sha256sum $(ls)`) : les noms de paquets
+          # contiennent une espace (« Tentacle TV_… ») qui casserait le découpage.
+          ( cd dist-linux && : > SHA256SUMS
+            for f in *.deb *.rpm *.AppImage; do
+              [ -e "$f" ] && sha256sum "$f" >> SHA256SUMS
+            done )
           cat dist-linux/SHA256SUMS
 
       # Le .deb sert de base au job « arch » (repackagé en pacman).
