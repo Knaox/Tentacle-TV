@@ -20,14 +20,26 @@
     "version": "1.11.1",
     "tag": "linux-v1.11.1-1",
     "notes": {
-      "fr": "• Auto-updater Linux universel (AppImage/deb/rpm/pacman)\n• Correctifs du lecteur mpv (première lecture, sous-titres ASS, préchargement)",
-      "en": "• Universal Linux auto-updater (AppImage/deb/rpm/pacman)\n• mpv player fixes (first playback, ASS subtitles, buffered bar)"
+      "fr": "• Nouveau lecteur vidéo natif (mpv) : vidéo et contrôles dans une seule fenêtre\n• Interface fluide pendant la lecture\n• Plus de traînées/« fantômes » au-dessus de la vidéo\n• Wayland natif\n• Le curseur se masque automatiquement pendant la lecture",
+      "en": "• New native video player (mpv): video and controls in a single window\n• Smooth UI during playback\n• No more trails/“ghost” images over the video\n• Native Wayland\n• The cursor hides automatically during playback"
     },
     "assets": {
-      "appimage": { "name": "", "sha256": "" },
-      "deb": { "name": "", "sha256": "" },
-      "rpm": { "name": "", "sha256": "" },
-      "pacman": { "name": "", "sha256": "" }
+      "appimage": {
+        "name": "",
+        "sha256": ""
+      },
+      "deb": {
+        "name": "",
+        "sha256": ""
+      },
+      "rpm": {
+        "name": "",
+        "sha256": ""
+      },
+      "pacman": {
+        "name": "",
+        "sha256": ""
+      }
     }
   }
 }
