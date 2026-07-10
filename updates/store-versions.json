@@ -17,28 +17,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.11.1",
-    "tag": "linux-v1.11.1-1",
+    "version": "1.11.2",
+    "tag": "linux-v1.11.2-2",
     "notes": {
       "fr": "• Nouveau lecteur vidéo natif (mpv) : vidéo et contrôles dans une seule fenêtre\n• Interface fluide pendant la lecture\n• Plus de traînées/« fantômes » au-dessus de la vidéo\n• Wayland natif\n• Le curseur se masque automatiquement pendant la lecture",
       "en": "• New native video player (mpv): video and controls in a single window\n• Smooth UI during playback\n• No more trails/“ghost” images over the video\n• Native Wayland\n• The cursor hides automatically during playback"
     },
     "assets": {
       "appimage": {
-        "name": "",
-        "sha256": ""
+        "name": "Tentacle TV_1.11.2_amd64.AppImage",
+        "sha256": "984a59f8e4171e6aee0ca192e1160a5b555c052152f0013d747bf8b65eef5a04"
       },
       "deb": {
-        "name": "",
-        "sha256": ""
+        "name": "Tentacle TV_1.11.2_amd64.deb",
+        "sha256": "bb5abee348ccfcdfc1efe0f8a75b9bfddc57f0aff955c082f5c44b8d982b1bdd"
       },
       "rpm": {
-        "name": "",
-        "sha256": ""
+        "name": "Tentacle TV-1.11.2-1.x86_64.rpm",
+        "sha256": "fbf231518c8e282bed3e55188c04867e5056d8feae4d19df9aeb85123b8d7ffa"
       },
       "pacman": {
-        "name": "",
-        "sha256": ""
+        "name": "tentacle-tv-1.11.2-2-x86_64.pkg.tar.zst",
+        "sha256": "9a4cbe30d09bad35d5da9c811bc369bf8828938975a47e11f093a3c7157ba923"
       }
     }
   }
