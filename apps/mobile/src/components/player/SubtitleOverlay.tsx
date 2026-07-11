@@ -1,4 +1,5 @@
 import { View, Text, useWindowDimensions } from "react-native";
+import { TABLET_MIN_WIDTH } from "@/theme";
 import { useSubtitleOverlay } from "../../hooks/useSubtitleOverlay";
 
 interface Props {
@@ -13,6 +14,11 @@ export function SubtitleOverlay({ vttUrl, currentTime, headers }: Props) {
   if (!text) return null;
 
   const lines = text.split("\n");
+  // Sous-titres agrandis sur grand écran (player iPad), proportionnels au petit
+  // côté du player. Taille téléphone inchangée (16).
+  const isTablet = Math.min(screenW, screenH) >= TABLET_MIN_WIDTH;
+  const fontSize = isTablet ? Math.round(Math.min(screenW, screenH) * 0.028) : 16;
+  const lineHeight = Math.round(fontSize * 1.375);
 
   return (
     <View
@@ -39,9 +45,9 @@ export function SubtitleOverlay({ vttUrl, currentTime, headers }: Props) {
             key={i}
             style={{
               color: "#fff",
-              fontSize: 16,
+              fontSize,
               textAlign: "center",
-              lineHeight: 22,
+              lineHeight,
             }}
           >
             {line}

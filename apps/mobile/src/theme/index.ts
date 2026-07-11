@@ -28,3 +28,19 @@ export {
 export { fetchThemeState } from "./themeApi";
 export type { BackendThemeState } from "./types";
 export { parsePx, parseMs, parseScale } from "./utils";
+
+// Responsive / iPad — helpers d'adaptation tablette (l'iPhone reste inchangé).
+export {
+  useResponsive,
+  useGrid,
+  useContentPadding,
+  TABLET_MIN_WIDTH,
+  IS_PAD_DEVICE,
+  IS_TABLET_DEVICE,
+  CONTENT_MAX_WIDTH,
+  DETAIL_MAX_WIDTH,
+  SHEET_MAX_WIDTH,
+  type Responsive,
+  type GridLayout,
+  type GridOptions,
+} from "./responsive";

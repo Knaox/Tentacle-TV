@@ -12,6 +12,24 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
+## [ios-1.3.0]
+
+iOS 1.3.0 — iPhone + iPad (application universelle)
+
+### FR
+- **Compatibilité iPad** : Tentacle TV devient une application universelle, entièrement compatible et optimisée pour iPad. L'interface s'adapte à toutes les tailles d'écran et fonctionne dans toutes les orientations (portrait et paysage).
+- **Grilles adaptatives** : bibliothèques, recherche, watchlist et favoris affichent davantage d'affiches par ligne sur grand écran, à la bonne taille — fini les affiches géantes.
+- **Mise en page repensée** : fiches détaillées, réglages, accueil et fenêtres (tri, filtres, actions) sont centrés et confortables à lire au lieu d'être étirés sur toute la largeur.
+- **Lecteur agrandi** : les commandes de lecture et les sous-titres sont plus grands et plus lisibles sur iPad.
+- L'expérience sur iPhone reste strictement identique.
+
+### EN
+- **iPad support**: Tentacle TV is now a universal app, fully compatible and optimized for iPad. The interface adapts to every screen size and works in all orientations (portrait and landscape).
+- **Adaptive grids**: libraries, search, watchlist and favorites show more posters per row on large screens, at the right size — no more giant posters.
+- **Redesigned layout**: detail pages, settings, home and sheets (sort, filters, actions) are centered and comfortable to read instead of stretched edge to edge.
+- **Bigger player**: playback controls and subtitles are larger and easier to read on iPad.
+- The iPhone experience stays exactly the same.
+
 ## [linux-1.11.5]
 
 Linux 1.11.5 — Web 1.1.0 — Backend 1.4.0

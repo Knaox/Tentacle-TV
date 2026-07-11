@@ -21,6 +21,7 @@ import {
   FONT_FAMILY,
   RADIUS,
   STATUS,
+  useContentPadding,
 } from "../theme";
 import { SubtleBackground, GlassCard, FadeIn, IconButton } from "../components/ui";
 import { PairCodeInputs, type PairCodeInputsHandle } from "../components/pair/PairCodeInputs";
@@ -118,6 +119,8 @@ export function PairTVScreen() {
     codeInputsRef.current?.focusFirst();
   }, []);
 
+  const contentPad = useContentPadding();
+
   return (
     <SubtleBackground ambient>
       <ScrollView
@@ -188,7 +191,7 @@ export function PairTVScreen() {
           </Text>
         </FadeIn>
 
-        <FadeIn delay={140} translateY={12} style={{ paddingHorizontal: 16 }}>
+        <FadeIn delay={140} translateY={12} style={{ paddingHorizontal: contentPad }}>
           <GlassCard style={{ padding: 24 }}>
             {available !== true ? (
               <PairUnavailableCard loading={available === null} />

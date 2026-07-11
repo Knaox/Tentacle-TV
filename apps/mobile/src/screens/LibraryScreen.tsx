@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
-  View, Text, TextInput, FlatList, Dimensions,
+  View, Text, TextInput, FlatList,
   ActivityIndicator, Pressable, StyleSheet,
 } from "react-native";
 import { Image } from "expo-image";
@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useLibraryCatalog, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors, spacing, typography, BRAND, FONT_FAMILY } from "../theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY, useGrid } from "../theme";
 import { PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
 
 interface Props {
@@ -29,11 +29,6 @@ const SORT_OPTIONS: SortOption[] = [
 const POSTER_ASPECT = 2 / 3;
 const ITEM_GAP = spacing.sm;
 
-function getNumColumns(): number {
-  const { width } = Dimensions.get("window");
-  return width >= 768 ? 3 : 2;
-}
-
 export function LibraryScreen({ libraryId, libraryName }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -43,15 +38,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [activeSort, setActiveSort] = useState(0);
-  const [numColumns, setNumColumns] = useState(getNumColumns);
-
-  // Recalcul des colonnes au changement d'orientation
-  useEffect(() => {
-    const sub = Dimensions.addEventListener("change", () => {
-      setNumColumns(getNumColumns());
-    });
-    return () => sub.remove();
-  }, []);
+  const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 2 });
 
   // Debounce de la recherche (300ms)
   useEffect(() => {
@@ -93,27 +80,25 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
     ({ item }: { item: MediaItem }) => (
       <LibraryItemCard
         item={item}
-        numColumns={numColumns}
+        width={itemWidth}
         client={client}
         onPress={() => handlePress(item)}
       />
     ),
-    [numColumns, client, handlePress],
+    [itemWidth, client, handlePress],
   );
 
   const keyExtractor = useCallback((item: MediaItem) => item.Id, []);
 
   // Grille de squelettes pendant le chargement
   const skeletons = useMemo(() => {
-    const screenW = Dimensions.get("window").width - spacing.screenPadding * 2;
-    const cardW = (screenW - ITEM_GAP * (numColumns - 1)) / numColumns;
-    const cardH = cardW / POSTER_ASPECT;
+    const cardH = itemWidth / POSTER_ASPECT;
     return Array.from({ length: numColumns * 3 }).map((_, i) => (
-      <View key={i} style={{ width: cardW, marginBottom: ITEM_GAP }}>
-        <SkeletonCard width={cardW} height={cardH} />
+      <View key={i} style={{ width: itemWidth, marginBottom: ITEM_GAP }}>
+        <SkeletonCard width={itemWidth} height={cardH} />
       </View>
     ));
-  }, [numColumns]);
+  }, [numColumns, itemWidth]);
 
   const itemCount = totalCount;
 
@@ -172,8 +157,8 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
             numColumns={numColumns}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
-            contentContainerStyle={styles.gridContent}
-            columnWrapperStyle={{ gap: ITEM_GAP }}
+            contentContainerStyle={[styles.gridContent, { paddingHorizontal: padding }]}
+            columnWrapperStyle={numColumns > 1 ? { gap: gutter } : undefined}
             onRefresh={refetch}
             refreshing={isRefetching && !isFetchingNextPage}
             onEndReached={handleEndReached}
@@ -203,14 +188,13 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
 
 interface CardProps {
   item: MediaItem;
-  numColumns: number;
+  width: number;
   client: ReturnType<typeof useJellyfinClient>;
   onPress: () => void;
 }
 
-const LibraryItemCard = memo(function LibraryItemCard({ item, numColumns, client, onPress }: CardProps) {
-  const screenW = Dimensions.get("window").width - spacing.screenPadding * 2;
-  const cardW = (screenW - ITEM_GAP * (numColumns - 1)) / numColumns;
+const LibraryItemCard = memo(function LibraryItemCard({ item, width, client, onPress }: CardProps) {
+  const cardW = width;
   const poster = client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 });
   const year = item.ProductionYear;
   const progress = item.UserData?.PlayedPercentage;

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { View, Text, ScrollView, RefreshControl, Dimensions, StyleSheet } from "react-native";
+import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
@@ -7,7 +7,7 @@ import type { LibraryView } from "@tentacle-tv/shared";
 import { Feather } from "@expo/vector-icons";
 import { SkeletonCard, FadeIn, SubtleBackground } from "@/components/ui";
 import { LibraryCard } from "@/components/LibraryCard";
-import { colors, spacing, typography, BRAND, FONT_FAMILY } from "@/theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY, useGrid } from "@/theme";
 
 const CARD_GAP = 18;
 
@@ -24,7 +24,13 @@ export function LibrariesScreen() {
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useLibraries();
 
-  const cardWidth = Dimensions.get("window").width - spacing.screenPadding * 2;
+  // 1 colonne pleine largeur sur iPhone (inchangé), grille 2–3 colonnes 16:9 sur iPad.
+  const { numColumns, itemWidth: cardWidth } = useGrid({
+    phoneColumns: 1,
+    targetTablet: 340,
+    maxColumns: 3,
+    gutter: CARD_GAP,
+  });
 
   const handlePress = useCallback(
     (lib: LibraryView) => {
@@ -40,12 +46,12 @@ export function LibrariesScreen() {
 
   const skeletons = useMemo(() => {
     const rowH = cardWidth * (9 / 16);
-    return Array.from({ length: 4 }).map((_, i) => (
-      <View key={i} style={{ marginBottom: CARD_GAP }}>
+    return Array.from({ length: numColumns > 1 ? numColumns * 2 : 4 }).map((_, i) => (
+      <View key={i} style={{ width: cardWidth }}>
         <SkeletonCard width={cardWidth} height={rowH} />
       </View>
     ));
-  }, [cardWidth]);
+  }, [cardWidth, numColumns]);
 
   if (isLoading) {
     return (
@@ -94,10 +100,8 @@ export function LibrariesScreen() {
         {/* Grille cohérente — toutes les libs sont équivalentes, pas de hiérarchie arbitraire */}
         <View style={styles.listContainer}>
           {data.map((lib, index) => (
-            <FadeIn key={lib.Id} delay={index * 80} translateY={16}>
-              <View style={{ marginBottom: CARD_GAP }}>
-                <LibraryCard library={lib} width={cardWidth} onPress={() => handlePress(lib)} />
-              </View>
+            <FadeIn key={lib.Id} delay={index * 80} translateY={16} style={{ width: cardWidth }}>
+              <LibraryCard library={lib} width={cardWidth} onPress={() => handlePress(lib)} />
             </FadeIn>
           ))}
         </View>
@@ -136,7 +140,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     letterSpacing: 0.3,
   },
-  listContainer: { paddingHorizontal: spacing.screenPadding },
+  listContainer: { paddingHorizontal: spacing.screenPadding, flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 80 },
   emptyText: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, textAlign: "center" },
 });

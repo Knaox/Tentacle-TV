@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
-import { colors, typography, BRAND, RADIUS, SHADOW_RN, SURFACE, FONT_FAMILY } from "@/theme";
+import { colors, typography, BRAND, RADIUS, SHADOW_RN, SURFACE, FONT_FAMILY, useResponsive } from "@/theme";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -24,9 +24,13 @@ interface Props {
  * sur press (via PressableCard). Title Inter semibold, sous-titre tertiary.
  */
 export const MobileMediaCard = memo(function MobileMediaCard({
-  item, onPress, onLongPress, width = 130,
+  item, onPress, onLongPress, width,
 }: Props) {
   const client = useJellyfinClient();
+  const { isTablet } = useResponsive();
+  // Rails : carte 130 sur iPhone (inchangé), agrandie sur iPad. Une `width`
+  // explicite (grilles) l'emporte toujours.
+  const cardWidth = width ?? (isTablet ? 168 : 130);
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
   // Tuile série synthétique des « Derniers ajouts » (groupLatestByRuns) :
@@ -46,7 +50,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
     <PressableCard
       onPress={onPress}
       onLongPress={onLongPress}
-      style={{ width }}
+      style={{ width: cardWidth }}
       accessibilityRole="button"
       accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}
     >

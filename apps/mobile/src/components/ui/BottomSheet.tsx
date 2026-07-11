@@ -1,13 +1,12 @@
 import { useRef, useEffect, useCallback, useState, type ReactNode } from "react";
 import {
-  Animated, Dimensions, Modal, PanResponder, Pressable, StyleSheet, View,
+  Animated, Modal, PanResponder, Pressable, StyleSheet, View, useWindowDimensions,
   type GestureResponderEvent, type PanResponderGestureState,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
-import { SURFACE, BORDER, RADIUS, SHADOW_RN } from "@/theme";
+import { SURFACE, BORDER, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH } from "@/theme";
 
-const SCREEN_H = Dimensions.get("window").height;
 const DISMISS_THRESHOLD = 80;
 const HANDLE_H = 24; // paddingTop(12) + paddingBottom(8) + bar(4)
 
@@ -25,17 +24,21 @@ interface BottomSheetProps {
  */
 export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], children }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
+  // Hauteur réactive (rotation iPad) — nommée SCREEN_H pour préserver toute la
+  // logique de snap existante.
+  const { height: SCREEN_H } = useWindowDimensions();
   const snapHeights = snapPoints.map((p) => Math.round(SCREEN_H * p));
   const [minH, maxH] = snapHeights;
   const translateY = useRef(new Animated.Value(SCREEN_H)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Ref bag — PanResponder lit toujours des valeurs fraîches
-  const ref = useRef({ currentSnap: 0, minH, maxH, onClose });
+  // Ref bag — PanResponder lit toujours des valeurs fraîches (dont la hauteur H).
+  const ref = useRef({ currentSnap: 0, minH, maxH, onClose, H: SCREEN_H });
   ref.current.minH = minH;
   ref.current.maxH = maxH;
   ref.current.onClose = onClose;
+  ref.current.H = SCREEN_H;
 
   const animateTo = useCallback((toValue: number, onDone?: () => void) => {
     Animated.spring(translateY, {
@@ -48,7 +51,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
     ref.current.currentSnap = 0;
     Animated.parallel([
       Animated.spring(translateY, {
-        toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+        toValue: ref.current.H, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
       } as Animated.SpringAnimationConfig),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start(() => ref.current.onClose());
@@ -89,25 +92,25 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_: GestureResponderEvent, g: PanResponderGestureState) => Math.abs(g.dy) > 5,
       onPanResponderMove: (_: GestureResponderEvent, g: PanResponderGestureState) => {
-        const { currentSnap, minH: mH, maxH: xH } = ref.current;
-        const base = currentSnap === 0 ? SCREEN_H - mH : SCREEN_H - xH;
-        const next = Math.max(SCREEN_H - xH, base + g.dy);
+        const { currentSnap, minH: mH, maxH: xH, H } = ref.current;
+        const base = currentSnap === 0 ? H - mH : H - xH;
+        const next = Math.max(H - xH, base + g.dy);
         translateY.setValue(next);
       },
       onPanResponderRelease: (_: GestureResponderEvent, g: PanResponderGestureState) => {
-        const { currentSnap, minH: mH, maxH: xH } = ref.current;
+        const { currentSnap, minH: mH, maxH: xH, H } = ref.current;
 
         if (g.dy > DISMISS_THRESHOLD && currentSnap === 0) { setIsExpanded(false); dismiss(); return; }
         if (g.dy > DISMISS_THRESHOLD && currentSnap === 1) {
           ref.current.currentSnap = 0; setIsExpanded(false);
-          animateTo(SCREEN_H - mH); return;
+          animateTo(H - mH); return;
         }
         if (g.dy < -DISMISS_THRESHOLD && currentSnap === 0) {
           ref.current.currentSnap = 1; setIsExpanded(true);
-          animateTo(SCREEN_H - xH); return;
+          animateTo(H - xH); return;
         }
 
-        const snapTo = currentSnap === 0 ? SCREEN_H - mH : SCREEN_H - xH;
+        const snapTo = currentSnap === 0 ? H - mH : H - xH;
         animateTo(snapTo);
       },
     })
@@ -125,35 +128,37 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
           <Pressable style={{ flex: 1 }} onPress={dismiss} accessibilityLabel="Fermer" />
         </Animated.View>
 
-        {/* Sheet panel */}
-        <Animated.View
-          style={[
-            styles.sheet,
-            SHADOW_RN.sheet,
-            {
-              height: maxH,
-              backgroundColor: SURFACE.s1,
-              transform: [{ translateY }],
-              paddingBottom: insets.bottom,
-            },
-          ]}
-        >
-          {isExpanded && <View style={{ height: insets.top }} />}
-
-          {/* Drag handle area (gesture target) */}
-          <View {...panResponder.panHandlers} style={styles.handleArea}>
-            <View style={styles.handle} />
-          </View>
-
-          <View
-            style={{
-              flex: 1,
-              maxHeight: (isExpanded ? maxH : minH) - HANDLE_H - (isExpanded ? insets.top : 0) - insets.bottom,
-            }}
+        {/* Sheet panel — centré + largeur bornée sur grand écran (form-sheet iPad) */}
+        <View style={styles.sheetWrap} pointerEvents="box-none">
+          <Animated.View
+            style={[
+              styles.sheet,
+              SHADOW_RN.sheet,
+              {
+                height: maxH,
+                backgroundColor: SURFACE.s1,
+                transform: [{ translateY }],
+                paddingBottom: insets.bottom,
+              },
+            ]}
           >
-            {children}
-          </View>
-        </Animated.View>
+            {isExpanded && <View style={{ height: insets.top }} />}
+
+            {/* Drag handle area (gesture target) */}
+            <View {...panResponder.panHandlers} style={styles.handleArea}>
+              <View style={styles.handle} />
+            </View>
+
+            <View
+              style={{
+                flex: 1,
+                maxHeight: (isExpanded ? maxH : minH) - HANDLE_H - (isExpanded ? insets.top : 0) - insets.bottom,
+              }}
+            >
+              {children}
+            </View>
+          </Animated.View>
+        </View>
       </View>
     </Modal>
   );
@@ -164,9 +169,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0, left: 0, right: 0, bottom: 0,
   },
-  sheet: {
+  sheetWrap: {
     position: "absolute",
     left: 0, right: 0, bottom: 0,
+    alignItems: "center",
+  },
+  sheet: {
+    width: "100%",
+    maxWidth: SHEET_MAX_WIDTH,
     borderTopLeftRadius: RADIUS["2xl"],
     borderTopRightRadius: RADIUS["2xl"],
     borderTopWidth: StyleSheet.hairlineWidth,

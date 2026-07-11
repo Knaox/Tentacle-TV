@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
+import { TABLET_MIN_WIDTH } from "@/theme";
 import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -64,8 +65,11 @@ export function MobilePlayerOverlay({
   const { t } = useTranslation("player");
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const playSize = Math.min(60, Math.round(screenH * 0.08));
-  const centerGap = Math.min(36, Math.round(screenW * 0.05));
+  // Contrôles agrandis sur grand écran (player iPad) — téléphone inchangé (ui = 1).
+  const isTablet = Math.min(screenW, screenH) >= TABLET_MIN_WIDTH;
+  const ui = isTablet ? 1.4 : 1;
+  const playSize = Math.min(isTablet ? 92 : 60, Math.round(screenH * 0.08));
+  const centerGap = Math.min(isTablet ? 76 : 36, Math.round(screenW * 0.05));
   const hasNextEpisode = !!(nextEpisode && onNextEpisode);
   const [showSettings, setShowSettings] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false);
@@ -127,9 +131,9 @@ export function MobilePlayerOverlay({
           {/* Top bar — safe-area pour ne pas chevaucher la status bar (portrait). */}
           <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "center", paddingTop: Math.max(12, insets.top), paddingLeft: Math.max(16, insets.left), paddingRight: Math.max(16, insets.right), gap: 12 }}>
             <Pressable onPress={onBack} hitSlop={16} style={{ padding: 4 }}>
-              <ArrowLeft size={26} color="#fff" />
+              <ArrowLeft size={Math.round(26 * ui)} color="#fff" />
             </Pressable>
-            <Text numberOfLines={1} style={{ color: "#fff", fontSize: 16, fontWeight: "600", flex: 1 }}>{title}</Text>
+            <Text numberOfLines={1} style={{ color: "#fff", fontSize: Math.round(16 * ui), fontWeight: "600", flex: 1 }}>{title}</Text>
           </View>
 
           {/* Center controls — box-none : les zones vides laissent passer le tap
@@ -137,13 +141,13 @@ export function MobilePlayerOverlay({
           <View pointerEvents="box-none" style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap }}>
             {previousEpisode && onPreviousEpisode && (
               <Pressable onPress={onPreviousEpisode} hitSlop={16} style={{ padding: 8 }}>
-                <SkipBack size={22} color="rgba(255,255,255,0.8)" />
+                <SkipBack size={Math.round(22 * ui)} color="rgba(255,255,255,0.8)" />
               </Pressable>
             )}
 
             <Pressable onPress={() => { onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
-              <RotateCcw size={24} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 10, fontWeight: "600", textAlign: "center", marginTop: 2 }}>10</Text>
+              <RotateCcw size={Math.round(24 * ui)} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: Math.round(10 * ui), fontWeight: "600", textAlign: "center", marginTop: 2 }}>10</Text>
             </Pressable>
 
             <Pressable onPress={() => { onPlayPause(); resetHideTimer(); }} hitSlop={16}>
@@ -152,18 +156,18 @@ export function MobilePlayerOverlay({
                 backgroundColor: "rgba(255,255,255,0.15)",
                 justifyContent: "center", alignItems: "center",
               }}>
-                {paused ? <Play size={30} color="#fff" /> : <Pause size={30} color="#fff" />}
+                {paused ? <Play size={Math.round(30 * ui)} color="#fff" /> : <Pause size={Math.round(30 * ui)} color="#fff" />}
               </View>
             </Pressable>
 
             <Pressable onPress={() => { onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
-              <RotateCw size={24} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 10, fontWeight: "600", textAlign: "center", marginTop: 2 }}>30</Text>
+              <RotateCw size={Math.round(24 * ui)} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: Math.round(10 * ui), fontWeight: "600", textAlign: "center", marginTop: 2 }}>30</Text>
             </Pressable>
 
             {nextEpisode && onNextEpisode && (
               <Pressable onPress={onNextEpisode} hitSlop={16} style={{ padding: 8 }}>
-                <SkipForward size={22} color="rgba(255,255,255,0.8)" />
+                <SkipForward size={Math.round(22 * ui)} color="rgba(255,255,255,0.8)" />
               </Pressable>
             )}
           </View>
@@ -212,24 +216,24 @@ export function MobilePlayerOverlay({
                 mediaSourceId={mediaSourceId}
               />
             </View>
-            <View style={{ flexDirection: "row", gap: 6, marginBottom: 34 }}>
+            <View style={{ flexDirection: "row", gap: isTablet ? 10 : 6, marginBottom: Math.max(34, insets.bottom + 12) }}>
               <AirPlaySection />
               {item?.SeriesId && (
                 <Pressable
                   onPress={() => { setShowEpisodes(true); if (hideTimer.current) clearTimeout(hideTimer.current); }}
                   hitSlop={12}
-                  style={{ padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
+                  style={{ padding: isTablet ? 12 : 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
                 >
-                  <List size={18} color="rgba(255,255,255,0.8)" />
+                  <List size={Math.round(18 * ui)} color="rgba(255,255,255,0.8)" />
                 </Pressable>
               )}
               {subtitleTracks.length > 0 && (
                 <Pressable
                   onPress={() => { setShowSubtitles(true); setShowSettings(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}
                   hitSlop={12}
-                  style={{ padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
+                  style={{ padding: isTablet ? 12 : 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
                 >
-                  <Captions size={18} color="rgba(255,255,255,0.8)" />
+                  <Captions size={Math.round(18 * ui)} color="rgba(255,255,255,0.8)" />
                 </Pressable>
               )}
               <Pressable
@@ -237,7 +241,7 @@ export function MobilePlayerOverlay({
                 hitSlop={12}
                 style={{ padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
               >
-                <Settings size={18} color="rgba(255,255,255,0.8)" />
+                <Settings size={Math.round(18 * ui)} color="rgba(255,255,255,0.8)" />
               </Pressable>
             </View>
           </View>
