@@ -20,8 +20,8 @@
     "version": "1.11.4",
     "tag": "linux-v1.11.4-1",
     "notes": {
-      "fr": "• Anti-veille : l'écran ne s'éteint plus et l'ordinateur ne se met plus en veille pendant la lecture\n• Volume mémorisé : le volume et le muet du lecteur sont enregistrés et restaurés de façon fiable",
-      "en": "• Keep awake: the screen no longer turns off and the computer no longer suspends during playback\n• Volume memory: the player volume and mute state are reliably saved and restored"
+      "fr": "• Anti-veille universel : plus de verrouillage ni d'écran éteint pendant la lecture (inhibiteur Wayland natif, fonctionne aussi sans hypridle — Hyprland/caelestia, sway…)\n• Volume système mémorisé : le volume réglé via le mélangeur du système est réappliqué à chaque média (plus de retour à 100 %)",
+      "en": "• Universal keep-awake: no more locking or screen blanking during playback (native Wayland inhibitor, also works without any idle daemon — Hyprland/caelestia, sway…)\n• System volume memory: the volume set through the system mixer is re-applied for every media (no more jumping back to 100%)"
     },
     "assets": {
       "appimage": {

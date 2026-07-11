@@ -12,6 +12,18 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
+## [linux-1.11.5]
+
+Linux 1.11.5 — Web 1.1.0 — Backend 1.4.0
+
+### FR
+- **Anti-veille universel (Wayland)** : le lecteur pose désormais un inhibiteur d'inactivité natif du compositeur (`idle-inhibit`) pendant la lecture — l'écran ne se verrouille plus et ne s'éteint plus, y compris sur les environnements sans service D-Bus (Hyprland + caelestia/Quickshell, sway…). Même mécanisme que la règle « idleinhibit » appliquée aux jeux.
+- **Volume système mémorisé** : le volume de l'application réglé via le mélangeur/OSD du système (PipeWire) est maintenant réappliqué à chaque média — il repartait à 100 % à chaque épisode quand la disposition des canaux changeait (stéréo ↔ 5.1).
+
+### EN
+- **Universal keep-awake (Wayland)**: the player now holds a native compositor idle inhibitor (`idle-inhibit`) during playback — the screen no longer locks or turns off, including on environments with no D-Bus service (Hyprland + caelestia/Quickshell, sway…). Same mechanism as the "idleinhibit" rule used for games.
+- **System volume memory**: the app volume set through the system mixer/OSD (PipeWire) is now re-applied for every media — it used to jump back to 100% on each episode when the channel layout changed (stereo ↔ 5.1).
+
 ## [linux-1.11.4]
 
 Linux 1.11.4 — Web 1.1.0 — Backend 1.4.0
