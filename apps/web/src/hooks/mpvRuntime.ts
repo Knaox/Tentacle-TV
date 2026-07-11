@@ -128,6 +128,12 @@ export const OBSERVED_PROPERTIES = [
   ["time-pos", "double", "none"],
   ["duration", "double", "none"],
   ["volume", "double"],
+  // Volume du flux AUDIO NATIF (PipeWire/Pulse sur Linux) — distinct du softvol
+  // mpv ci-dessus. C'est LUI que l'utilisateur règle via l'OSD système ; comme
+  // mpv recrée un flux à chaque média (remount), WirePlumber peut le remettre à
+  // 100 % (clé de restauration liée au layout de canaux 5.1/stéréo). Persisté
+  // et réappliqué par useMpvLifecycle sur Linux.
+  ["ao-volume", "double", "none"],
   ["mute", "flag"],
   ["aid", "int64"],
   ["sid", "int64"],

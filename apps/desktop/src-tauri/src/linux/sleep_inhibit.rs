@@ -8,9 +8,13 @@
 //! frontend (start au play, stop au pause/stop/démontage — `useMpvCommands`).
 //!
 //! Tous les backends qui répondent sont retenus (cumulables) :
+//! - **Wayland `zwp_idle_inhibitor_v1`** (`idle_wayland.rs`) — universel : le
+//!   compositeur suspend sa détection d'idle (`ext-idle-notify`), ce qui
+//!   inhibe TOUT consommateur (hypridle, swayidle, caelestia/Quickshell…),
+//!   même sans la moindre interface D-Bus.
 //! - bus session : `org.freedesktop.ScreenSaver` (KDE, GNOME, hypridle…),
 //!   `org.gnome.SessionManager` (GNOME), `org.freedesktop.PowerManagement`
-//!   (KDE/XFCE) — inhibition idle/extinction d'écran.
+//!   (KDE/XFCE) — inhibition idle/extinction d'écran (couvre aussi X11).
 //! - bus système : `org.freedesktop.login1` — `Inhibit("idle:sleep", …,
 //!   "block")` renvoie un fd à garder ouvert ; bloque `systemctl suspend` et
 //!   l'IdleAction logind même sans daemon d'idle de bureau (ex. Hyprland nu).
@@ -68,6 +72,8 @@ enum Held {
     Session { target: usize, cookie: u32 },
     /// Fd logind — le fermer (drop) libère l'inhibition côté systemd.
     LogindFd(#[allow(dead_code)] OwnedFd),
+    /// `zwp_idle_inhibitor_v1` posé sur la surface de la fenêtre principale.
+    Wayland(super::idle_wayland::WaylandInhibitor),
 }
 
 pub struct SleepInhibit {
@@ -159,13 +165,23 @@ mod tests {
 }
 
 #[command]
-pub async fn prevent_display_sleep_start(state: State<'_, SleepInhibit>) -> Result<(), String> {
+pub async fn prevent_display_sleep_start(
+    app: tauri::AppHandle,
+    state: State<'_, SleepInhibit>,
+) -> Result<(), String> {
     let mut guard = state.held.lock().map_err(|e| e.to_string())?;
     if !guard.is_empty() {
         return Ok(());
     }
 
     let mut held: Vec<Held> = Vec::new();
+    // 1) Wayland (compositeur) — le seul entendu par les shells sans D-Bus
+    //    (caelestia/Quickshell, swayidle…). No-op sur X11.
+    if let Some(w) = super::idle_wayland::create(&app) {
+        held.push(Held::Wayland(w));
+    }
+    // 2) Services session + logind — écran/veille des DE classiques, blocage
+    //    de `systemctl suspend`, et couverture X11.
     if let Ok(conn) = gio::bus_get_sync(gio::BusType::Session, gio::Cancellable::NONE) {
         for target in 0..SESSION_TARGETS.len() {
             if let Some(h) = inhibit_session(&conn, target) {
@@ -181,7 +197,7 @@ pub async fn prevent_display_sleep_start(state: State<'_, SleepInhibit>) -> Resu
 
     if held.is_empty() {
         return Err(
-            "Anti-veille indisponible : aucun service D-Bus n'a répondu \
+            "Anti-veille indisponible : ni inhibiteur Wayland ni service D-Bus \
              (ScreenSaver/SessionManager/PowerManagement/logind)"
                 .to_string(),
         );
@@ -221,6 +237,7 @@ pub async fn prevent_display_sleep_stop(state: State<'_, SleepInhibit>) -> Resul
             }
             // Drop du fd → logind libère l'inhibition.
             Held::LogindFd(_) => {}
+            Held::Wayland(w) => super::idle_wayland::release(w),
         }
     }
     Ok(())
