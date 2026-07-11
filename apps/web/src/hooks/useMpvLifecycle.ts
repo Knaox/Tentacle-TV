@@ -115,6 +115,19 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 // restore (setProperty post-init) ne produise son évènement —
                 // course visible sur Linux (thread d'évènements démarré tard).
                 return { ...prev, volume: event.data as number };
+              case "ao-volume": {
+                // Volume du flux natif (PipeWire) — réglé par l'utilisateur via
+                // l'OSD SYSTÈME (caelestia, plasma…). On le persiste pour le
+                // réappliquer à chaque média : mpv recrée un flux par média et
+                // WirePlumber peut le remettre à 100 % (clé de restauration liée
+                // au layout 5.1/stéréo). Uniquement pendant la lecture réelle
+                // (fileLoaded) : les émissions d'init/destroy sont du bruit.
+                if (isLinux() && fileLoadedRef.current && typeof event.data === "number"
+                    && event.data > 0 && event.data <= 200) {
+                  try { localStorage.setItem("tentacle_player_ao_volume", String(Math.round(event.data))); } catch { /* storage indisponible */ }
+                }
+                return prev; // pas d'état UI — l'OSD système est l'affichage
+              }
               case "mute":
                 mutedRef.current = event.data as boolean;
                 return { ...prev, muted: event.data as boolean };
@@ -226,6 +239,19 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               wakeupRef.current = null;
             }
             setState((prev) => ({ ...prev, playing: true, eof: false }));
+            // Linux : réapplique le volume du flux système (ao-volume) persisté.
+            // Ici seulement — l'AO n'existe qu'une fois la lecture démarrée
+            // (ao-volume est inaccessible avant). Sans ça, chaque média repart
+            // au volume WirePlumber par défaut (souvent 100 %).
+            if (isLinux()) {
+              try {
+                const sav = localStorage.getItem("tentacle_player_ao_volume");
+                if (sav != null) {
+                  const v = Number(sav);
+                  if (!Number.isNaN(v) && v > 0 && v <= 200) api.setProperty("ao-volume", v).catch(() => {});
+                }
+              } catch { /* storage indisponible */ }
+            }
             // Sync pause state to close startup race condition
             api.getProperty("pause", "flag").then((p) => {
               if (!cancelled && p !== null) setState((prev) => ({ ...prev, paused: p }));

@@ -15,6 +15,7 @@
 pub mod commands;
 mod events;
 mod glproc;
+mod idle_wayland;
 mod mpv_ffi;
 mod overlay;
 mod render;
