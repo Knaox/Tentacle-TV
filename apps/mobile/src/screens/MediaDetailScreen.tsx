@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { spacing, BRAND, CTA, RADIUS, SURFACE, STATUS } from "../theme";
+import { spacing, BRAND, CTA, RADIUS, SURFACE, STATUS, DETAIL_MAX_WIDTH } from "../theme";
 import { Badge, GradientOverlay, ProgressBar, IconButton } from "../components/ui";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 import { MediaRow } from "../components/MediaRow";
@@ -31,8 +31,10 @@ interface Props { itemId: string }
 export function MediaDetailScreen({ itemId }: Props) {
   const { t } = useTranslation("common");
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
-  const BACKDROP_H = Math.round(SCREEN_HEIGHT * 0.52);
-  const POSTER_W = Math.round(SCREEN_WIDTH * 0.32);
+  // Bornés sur grand écran : sans cap, 52% de haut / 32% de large deviennent
+  // démesurés sur iPad. Sur iPhone les min() sont sans effet (valeurs < cap).
+  const BACKDROP_H = Math.min(520, Math.round(SCREEN_HEIGHT * 0.52));
+  const POSTER_W = Math.min(200, Math.round(SCREEN_WIDTH * 0.32));
   const POSTER_H = Math.round(POSTER_W * 1.5);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -128,8 +130,10 @@ export function MediaDetailScreen({ itemId }: Props) {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={BRAND.violet} />}
         showsVerticalScrollIndicator={false}
       >
+        {/* Colonne centrée bornée sur grand écran (iPad) — full width sur iPhone. */}
+        <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>
         {/* Backdrop avec parallax */}
-        <View style={{ width: SCREEN_WIDTH, height: BACKDROP_H, overflow: "hidden" }}>
+        <View style={{ width: "100%", height: BACKDROP_H, overflow: "hidden" }}>
           <Animated.View style={[StyleSheet.absoluteFillObject, backdropStyle]}>
             <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={400} />
           </Animated.View>
@@ -214,16 +218,19 @@ export function MediaDetailScreen({ itemId }: Props) {
           const label = seriesEp ? buildSeriesPlayLabel(seriesEp, t) : playLabel;
           return (
             <Animated.View style={[{ paddingHorizontal: spacing.screenPadding, marginTop: spacing.xl }, actionsStyle]}>
-              <Pressable
-                style={({ pressed }) => [st.playBtn, pressed && { opacity: 0.85 }]}
-                onPress={() => router.push(`/watch/${playTargetId}`)}
-                accessibilityRole="button"
-                accessibilityLabel={`${label} ${item.Name}`}
-              >
-                <Feather name="play" size={20} color={CTA.primaryFg} fill={CTA.primaryFg} />
-                <Text style={st.playBtnTxt} numberOfLines={1}>{label}</Text>
-              </Pressable>
-              {!isSeries && hasResume && <ProgressBar progress={progress} style={{ marginTop: 10 }} tint={BRAND.violet} />}
+              {/* Bouton borné : sur iPad il ne s'étire pas sur toute la colonne. */}
+              <View style={{ width: "100%", maxWidth: 420 }}>
+                <Pressable
+                  style={({ pressed }) => [st.playBtn, pressed && { opacity: 0.85 }]}
+                  onPress={() => router.push(`/watch/${playTargetId}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label} ${item.Name}`}
+                >
+                  <Feather name="play" size={20} color={CTA.primaryFg} fill={CTA.primaryFg} />
+                  <Text style={st.playBtnTxt} numberOfLines={1}>{label}</Text>
+                </Pressable>
+                {!isSeries && hasResume && <ProgressBar progress={progress} style={{ marginTop: 10 }} tint={BRAND.violet} />}
+              </View>
             </Animated.View>
           );
         })()}
@@ -292,6 +299,7 @@ export function MediaDetailScreen({ itemId }: Props) {
               renderItem={(s: MediaItem) => <MobileMediaCard item={s} onPress={() => router.push(`/media/${s.Id}`)} />} />
           )}
         </Animated.View>
+        </View>
       </AnimatedScrollView>
     </View>
   );

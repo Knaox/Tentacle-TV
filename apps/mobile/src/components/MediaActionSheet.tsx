@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useRef } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, Animated, Dimensions, PanResponder } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal, Animated, PanResponder, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, SURFACE } from "@/theme";
+import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, SURFACE, SHEET_MAX_WIDTH } from "@/theme";
 
 // expo-haptics optional
 let Haptics: { impactAsync: (s: any) => void; ImpactFeedbackStyle: any } | null = null;
 try { Haptics = require("expo-haptics"); } catch { /* ignore */ }
 
-const SCREEN_H = Dimensions.get("window").height;
 const DISMISS = 80;
 
 interface Props {
@@ -31,6 +30,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
+  const { height: SCREEN_H } = useWindowDimensions();
   const { data: item } = useMediaItem(visible ? itemId : undefined);
 
   const isEpisode = item?.Type === "Episode";
@@ -61,7 +61,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
       Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(() => { onClose(); });
-  }, [translateY, overlayOpacity, onClose]);
+  }, [translateY, overlayOpacity, onClose, SCREEN_H]);
 
   useEffect(() => {
     if (visible) {
@@ -101,6 +101,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
         <Pressable style={StyleSheet.absoluteFillObject} onPress={dismiss} accessibilityLabel={t("close")} />
       </Animated.View>
 
+      <View style={st.sheetWrap} pointerEvents="box-none">
       <Animated.View
         style={[
           st.sheet, SHADOW_RN.sheet,
@@ -166,6 +167,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
             </View>
         </>
       </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -204,8 +206,12 @@ function ActionCell({ icon, iconActive, label, active, activeColor, fillOnActive
 }
 
 const st = StyleSheet.create({
-  sheet: {
+  sheetWrap: {
     position: "absolute" as const, left: 0, right: 0, bottom: 0,
+    alignItems: "center" as const,
+  },
+  sheet: {
+    width: "100%" as const, maxWidth: SHEET_MAX_WIDTH,
     backgroundColor: SURFACE.s1,
     borderTopLeftRadius: RADIUS["2xl"], borderTopRightRadius: RADIUS["2xl"],
     borderTopWidth: StyleSheet.hairlineWidth, borderColor: BORDER.subtle,

@@ -1,5 +1,5 @@
-import { memo, useCallback, useState, useEffect, useMemo } from "react";
-import { View, Text, FlatList, Dimensions, ActivityIndicator, StyleSheet } from "react-native";
+import { memo, useCallback, useMemo } from "react";
+import { View, Text, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -7,14 +7,9 @@ import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar, FadeIn } from "@/components/ui";
-import { colors, spacing, typography } from "@/theme";
+import { colors, spacing, typography, useGrid } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
-const ITEM_GAP = spacing.sm;
-
-function getNumColumns(): number {
-  return Dimensions.get("window").width >= 768 ? 4 : 3;
-}
 
 interface Props {
   catalog: UseInfiniteQueryResult<{ pages: Array<{ Items: MediaItem[]; TotalRecordCount: number }> }>;
@@ -25,28 +20,18 @@ interface Props {
 export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, overrideItems }: Props) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const [numColumns, setNumColumns] = useState(getNumColumns);
-
-  useEffect(() => {
-    const sub = Dimensions.addEventListener("change", () => setNumColumns(getNumColumns()));
-    return () => sub.remove();
-  }, []);
+  const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
 
   const items = useMemo(
     () => overrideItems ?? catalog.data?.pages.flatMap((p) => p.Items) ?? [],
     [overrideItems, catalog.data],
   );
 
-  const cardWidth = useMemo(() => {
-    const screenW = Dimensions.get("window").width - spacing.screenPadding * 2;
-    return (screenW - ITEM_GAP * (numColumns - 1)) / numColumns;
-  }, [numColumns]);
-
   const renderItem = useCallback(
     ({ item }: { item: MediaItem }) => (
-      <CatalogItemCard item={item} width={cardWidth} client={client} onPress={() => onItemPress(item)} />
+      <CatalogItemCard item={item} width={itemWidth} client={client} onPress={() => onItemPress(item)} />
     ),
-    [cardWidth, client, onItemPress],
+    [itemWidth, client, onItemPress],
   );
 
   const keyExtractor = useCallback((item: MediaItem) => item.Id, []);
@@ -83,8 +68,8 @@ export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, ove
         numColumns={numColumns}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        contentContainerStyle={styles.gridContent}
-        columnWrapperStyle={{ gap: ITEM_GAP }}
+        contentContainerStyle={[styles.gridContent, { paddingHorizontal: padding }]}
+        columnWrapperStyle={numColumns > 1 ? { gap: gutter } : undefined}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={footer}
@@ -139,7 +124,7 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
 });
 
 const styles = StyleSheet.create({
-  gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxl },
+  gridContent: { paddingBottom: spacing.xxl },
   loader: { paddingVertical: spacing.xl },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxxl * 2 },
   emptyTitle: { ...typography.subtitle, color: colors.textMuted, marginTop: spacing.md },

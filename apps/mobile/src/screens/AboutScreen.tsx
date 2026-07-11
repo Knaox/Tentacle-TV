@@ -10,6 +10,7 @@ import {
   FONT_FAMILY,
   RADIUS,
   SURFACE,
+  useContentPadding,
 } from "../theme";
 import { GlassCard, FadeIn, SubtleBackground, IconButton } from "../components/ui";
 import { TentacleLogo } from "../components/TentacleLogo";
@@ -37,6 +38,7 @@ export function AboutScreen() {
   const { t } = useTranslation("about");
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const contentPad = useContentPadding();
 
   return (
     <SubtleBackground ambient>
@@ -45,7 +47,7 @@ export function AboutScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 12,
           paddingBottom: insets.bottom + 32,
-          paddingHorizontal: 16,
+          paddingHorizontal: contentPad,
         }}
         showsVerticalScrollIndicator={false}
       >

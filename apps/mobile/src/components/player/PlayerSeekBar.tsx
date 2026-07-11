@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { View, Text, PanResponder, Dimensions } from "react-native";
+import { View, Text, PanResponder, useWindowDimensions } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { TABLET_MIN_WIDTH } from "@/theme";
 import { useTrickplay } from "../../hooks/useTrickplay";
 import { TrickplayPreview } from "./TrickplayPreview";
 
-const { width: SCREEN_W } = Dimensions.get("window");
 const BAR_H = 16;
 const TRACK_H = 4;
 const TRACK_H_ACTIVE = 6;
@@ -37,10 +37,13 @@ export function PlayerSeekBar({
   currentTime, duration, bufferedTime, onSeek, onSeeking, onScrubStateChange,
   item, mediaSourceId,
 }: Props) {
+  const { width: winW, height: winH } = useWindowDimensions();
+  const isTablet = Math.min(winW, winH) >= TABLET_MIN_WIDTH;
+  const thumbSize = isTablet ? 20 : THUMB_SIZE;
   const [isDragging, setIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState(0);
   const [touchX, setTouchX] = useState(0);
-  const barWidth = useRef(SCREEN_W - 32);
+  const barWidth = useRef(winW - 32);
   const dragProgressRef = useRef(0);
 
   const trickplay = useTrickplay(item, mediaSourceId);
@@ -84,7 +87,7 @@ export function PlayerSeekBar({
   const progress = isDragging ? dragProgress : (duration > 0 ? currentTime / duration : 0);
   const buffered = duration > 0 && bufferedTime ? Math.min(1, bufferedTime / duration) : 0;
   const displayTime = isDragging ? pctToTime(dragProgress) : currentTime;
-  const trackHeight = isDragging ? TRACK_H_ACTIVE : TRACK_H;
+  const trackHeight = (isDragging ? TRACK_H_ACTIVE : TRACK_H) * (isTablet ? 1.6 : 1);
 
   // Preview frame for the position currently under the finger.
   const previewSeconds = isDragging ? pctToTime(dragProgress) : 0;
@@ -141,9 +144,9 @@ export function PlayerSeekBar({
           {isDragging && (
             <View style={{
               position: "absolute",
-              left: progress * barWidth.current - THUMB_SIZE / 2,
-              top: (BAR_H + 8) / 2 - THUMB_SIZE / 2,
-              width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: THUMB_SIZE / 2,
+              left: progress * barWidth.current - thumbSize / 2,
+              top: (BAR_H + 8) / 2 - thumbSize / 2,
+              width: thumbSize, height: thumbSize, borderRadius: thumbSize / 2,
               backgroundColor: "#fff",
               shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.3, shadowRadius: 2,

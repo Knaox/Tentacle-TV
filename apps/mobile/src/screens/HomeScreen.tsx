@@ -16,7 +16,7 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { MediaRow } from "@/components/MediaRow";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
-import { colors, spacing, typography, BRAND, FONT_FAMILY, RADIUS, SHADOW_RN, SURFACE } from "@/theme";
+import { colors, spacing, typography, BRAND, FONT_FAMILY, RADIUS, SHADOW_RN, SURFACE, useResponsive } from "@/theme";
 
 /** Home — ambient orbe + HeroBanner cinematic + rangées cascade + skeleton stylé. */
 export function HomeScreen() {
@@ -173,6 +173,8 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
 }) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
+  const { isTablet } = useResponsive();
+  const cardW = isTablet ? 168 : 130;
 
   const merged = useMemo<CarouselItem[]>(() => {
     const seen = new Set<string>();
@@ -199,12 +201,12 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
       <Pressable
         onPress={() => onItemPress(item.jellyfinId)}
         onLongPress={() => onItemLongPress(item.jellyfinId)}
-        style={mlst.card}
+        style={[mlst.card, { width: cardW }]}
         accessibilityRole="button"
         accessibilityLabel={item.name}
       >
         <View style={mlst.posterWrap}>
-          <Image source={{ uri: poster }} style={mlst.poster} contentFit="cover" transition={250} />
+          <Image source={{ uri: poster }} style={[mlst.poster, { width: cardW }]} contentFit="cover" transition={250} />
           {item.played && (
             <View style={mlst.watchedBadge}>
               <Feather name="check" size={11} color="#000" />

@@ -14,6 +14,7 @@ import {
   CTA,
   FONT_FAMILY,
   RADIUS,
+  CONTENT_MAX_WIDTH,
 } from "@/theme";
 
 const LANGS = [
@@ -149,6 +150,10 @@ export default function DisclaimerScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    // Colonne centrée bornée sur grand écran (iPad / tablette) — full width sur téléphone.
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
     paddingHorizontal: 20,
   },
   logoContainer: {

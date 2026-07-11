@@ -12,7 +12,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { GradientOverlay } from "@/components/ui";
-import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, STATUS } from "@/theme";
+import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, STATUS, useResponsive, TABLET_MIN_WIDTH } from "@/theme";
 
 // Synced with web/HeroBackdrop : the new slide arrives exactly when the
 // scale 1 → 1.06 zoom cycle ends, so the carousel feels like an uninterrupted
@@ -38,9 +38,11 @@ function formatRuntime(ticks: number): string {
 /** Hero Billboard cinematic — swipe pageEnabled + Ken Burns backdrop synced with auto-rotate (see ROTATE_MS). */
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
   const { width: SCREEN_W, height: screenH } = useWindowDimensions();
+  const isTablet = Math.min(SCREEN_W, screenH) >= TABLET_MIN_WIDTH;
   // 0.74 instead of 0.82 — leaves room below the hero for "Reprendre la lecture"
   // section header to be fully visible above the floating tab bar on iPhone 17.
-  const BANNER_H = Math.min(660, Math.round(screenH * 0.74));
+  // Cap relevé sur tablette pour un hero plus immersif.
+  const BANNER_H = Math.min(isTablet ? 820 : 660, Math.round(screenH * 0.74));
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<MediaItem>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -169,6 +171,7 @@ interface HeroContentProps {
 function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
+  const { isTablet } = useResponsive();
   const isEpisode = item.Type === "Episode";
   const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const hasLogo = item.ImageTags?.Logo != null;
@@ -204,9 +207,9 @@ function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
       )}
 
       {logoUrl ? (
-        <Image source={{ uri: logoUrl }} style={st.logo} contentFit="contain" />
+        <Image source={{ uri: logoUrl }} style={[st.logo, isTablet && { width: 380, height: 124, marginBottom: 18 }]} contentFit="contain" />
       ) : (
-        <Text style={st.title} numberOfLines={3} maxFontSizeMultiplier={1.15}>{displayName}</Text>
+        <Text style={[st.title, isTablet && { fontSize: 46, lineHeight: 52, marginBottom: 18 }]} numberOfLines={3} maxFontSizeMultiplier={1.15}>{displayName}</Text>
       )}
 
       <View style={st.meta}>
@@ -224,7 +227,7 @@ function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
         {genres.map((g) => <Text key={g} style={st.metaTxtMuted}>· {g}</Text>)}
       </View>
 
-      {item.Overview != null && <Text style={st.overview} numberOfLines={2}>{item.Overview}</Text>}
+      {item.Overview != null && <Text style={[st.overview, isTablet && { fontSize: 17, lineHeight: 25 }]} numberOfLines={isTablet ? 3 : 2}>{item.Overview}</Text>}
 
       {hasProgress && (
         <View style={st.progRow}>
@@ -237,7 +240,7 @@ function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
 
       <View style={st.btns}>
         <Pressable
-          style={({ pressed }) => [st.playBtn, pressed && { opacity: 0.88 }]}
+          style={({ pressed }) => [st.playBtn, isTablet && { paddingVertical: 16, paddingHorizontal: 34 }, pressed && { opacity: 0.88 }]}
           onPress={() => onPlay(item)}
           accessibilityRole="button"
           accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}
@@ -246,7 +249,7 @@ function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
           <Text style={st.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
         </Pressable>
         <Pressable
-          style={({ pressed }) => [st.infoBtn, pressed && { opacity: 0.88 }]}
+          style={({ pressed }) => [st.infoBtn, isTablet && { paddingVertical: 16, paddingHorizontal: 24 }, pressed && { opacity: 0.88 }]}
           onPress={() => onInfo(item)}
           accessibilityRole="button"
           accessibilityLabel={`${t("moreInfo")} ${item.Name}`}
@@ -261,7 +264,7 @@ function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
 
 const st = StyleSheet.create({
   slide: { justifyContent: "flex-end" as const, paddingHorizontal: spacing.screenPadding, paddingBottom: 56 },
-  contentInner: { width: "100%" as const },
+  contentInner: { width: "100%" as const, maxWidth: 640 },
   tagRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 12, flexWrap: "wrap" as const },
   continueTag: { flexDirection: "row" as const, alignItems: "center" as const, gap: 5, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 3, paddingHorizontal: 7, paddingVertical: 3 },
   continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: "#000", letterSpacing: 1.6, textTransform: "uppercase" as const },

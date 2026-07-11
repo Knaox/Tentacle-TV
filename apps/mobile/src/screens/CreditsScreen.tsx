@@ -7,6 +7,7 @@ import {
   BORDER,
   BRAND,
   FONT_FAMILY,
+  useContentPadding,
 } from "../theme";
 import { GlassCard, Divider, SubtleBackground, FadeIn, IconButton } from "../components/ui";
 
@@ -35,6 +36,7 @@ export function CreditsScreen() {
   const { t } = useTranslation("about");
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const contentPad = useContentPadding();
 
   return (
     <SubtleBackground ambient>
@@ -43,7 +45,7 @@ export function CreditsScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 12,
           paddingBottom: insets.bottom + 32,
-          paddingHorizontal: 16,
+          paddingHorizontal: contentPad,
         }}
         showsVerticalScrollIndicator={false}
       >

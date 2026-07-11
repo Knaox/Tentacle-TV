@@ -15,7 +15,7 @@ import { clearCredentials } from "@/auth/credentialManager";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-import { colors } from "@/theme";
+import { colors, IS_TABLET_DEVICE } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
 
 // Prevent splash screen from auto-hiding
@@ -167,10 +167,11 @@ export default function RootLayout() {
                 headerShown: false,
                 gestureEnabled: true,
                 contentStyle: { backgroundColor: colors.background },
-                // App-wide default: portrait only. Declarative per-screen via
-                // react-native-screens — `watch/[itemId]` overrides with "all"
-                // so phones rotate freely only inside the video player.
-                orientation: "portrait_up",
+                // Défaut app : portrait sur téléphone, libre sur tablette (iPad
+                // ET tablette Android). Déclaratif par écran via
+                // react-native-screens — `watch/[itemId]` force "all" pour que
+                // le téléphone tourne aussi dans le lecteur vidéo.
+                orientation: IS_TABLET_DEVICE ? "all" : "portrait_up",
               }}
             >
               <Stack.Screen name="(auth)" />

@@ -1,9 +1,8 @@
-import { useCallback, useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import {
   View,
   Text,
   FlatList,
-  Dimensions,
   StyleSheet,
   ScrollView,
   RefreshControl,
@@ -31,14 +30,11 @@ import {
   typography,
   BRAND,
   FONT_FAMILY,
+  useGrid,
 } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
 const ITEM_GAP = spacing.sm;
-
-function getNumColumns(): number {
-  return Dimensions.get("window").width >= 768 ? 4 : 3;
-}
 
 /**
  * Écran "Ma liste" (watchlist) — pattern Tentacle cinematic :
@@ -54,21 +50,11 @@ export function WatchlistScreen() {
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
   const { data, isLoading, refetch, isRefetching } = useWatchlistAll();
-  const [numColumns, setNumColumns] = useState(getNumColumns);
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const selection = useMultiSelect<string>();
   const batchRemove = useBatchRemoveWatchlist();
-
-  useEffect(() => {
-    const sub = Dimensions.addEventListener("change", () => setNumColumns(getNumColumns()));
-    return () => sub.remove();
-  }, []);
-
-  const cardWidth = useMemo(() => {
-    const screenW = Dimensions.get("window").width - spacing.screenPadding * 2;
-    return (screenW - ITEM_GAP * (numColumns - 1)) / numColumns;
-  }, [numColumns]);
+  const { numColumns, itemWidth: cardWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
 
   const handlePress = useCallback(
     (item: MediaItem) => {
@@ -178,9 +164,10 @@ export function WatchlistScreen() {
               renderItem={renderItem}
               contentContainerStyle={[
                 styles.gridContent,
+                { paddingHorizontal: padding },
                 selection.active && { paddingBottom: spacing.xxxl + 100 },
               ]}
-              columnWrapperStyle={{ gap: ITEM_GAP }}
+              columnWrapperStyle={numColumns > 1 ? { gap: gutter } : undefined}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

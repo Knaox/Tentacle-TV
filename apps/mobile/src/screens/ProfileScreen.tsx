@@ -7,7 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS } from "../theme";
+import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, useContentPadding } from "../theme";
 import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
 import { clearCredentials } from "../auth/credentialManager";
@@ -86,10 +86,12 @@ export function ProfileScreen() {
     ]);
   }, [t, isAdmin, storage, queryClient, router]);
 
+  const contentPad = useContentPadding();
+
   return (
     <SubtleBackground ambient>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <View style={{ paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl }}>
+        <View style={{ paddingHorizontal: contentPad, paddingTop: spacing.xl }}>
           {/* Hero — avatar gradient XL + nom + badge admin */}
           <FadeIn delay={0}>
             <View style={st.hero}>

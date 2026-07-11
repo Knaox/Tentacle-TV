@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, StyleSheet, useWindowDimensions } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,7 +8,7 @@ import { BlurView } from "expo-blur";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import { MobileMediaCard } from "../components/MobileMediaCard";
 import { FadeIn, SubtleBackground } from "../components/ui";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SURFACE } from "../theme";
+import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SURFACE, useGrid } from "../theme";
 
 /**
  * Search — modal full-screen avec input top auto-focus, suggestions de
@@ -19,17 +19,16 @@ const GRID_GAP = 14;
 export function SearchScreen() {
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
-  const { width: SCREEN_W } = useWindowDimensions();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
 
-  // Largeur de card calculée pour 2 colonnes — espacement strictement uniforme
-  const cardWidth = useMemo(
-    () => Math.floor((SCREEN_W - 2 * spacing.screenPadding - GRID_GAP) / 2),
-    [SCREEN_W],
-  );
+  // 2 colonnes sur iPhone (inchangé), adaptatif sur iPad — gouttière 14.
+  const { numColumns, itemWidth: cardWidth, gutter, padding } = useGrid({
+    phoneColumns: 2,
+    gutter: GRID_GAP,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query.trim()), 300);
@@ -116,15 +115,16 @@ export function SearchScreen() {
       {results && results.length > 0 && (
         <FadeIn delay={50} style={{ flex: 1 }}>
           <FlatList
+            key={`search-${numColumns}`}
             data={results}
-            numColumns={2}
+            numColumns={numColumns}
             keyExtractor={(item) => item.Id}
             contentContainerStyle={{
-              paddingHorizontal: spacing.screenPadding,
+              paddingHorizontal: padding,
               paddingTop: spacing.lg,
               paddingBottom: insets.bottom + 100,
             }}
-            columnWrapperStyle={{ gap: GRID_GAP, marginBottom: GRID_GAP }}
+            columnWrapperStyle={numColumns > 1 ? { gap: gutter, marginBottom: gutter } : undefined}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <MobileMediaCard
