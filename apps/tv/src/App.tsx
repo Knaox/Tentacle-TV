@@ -22,7 +22,8 @@ import {
   HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
 import { initI18n, i18n } from "@tentacle-tv/shared";
-import { RNStorageAdapter, RNUuidGenerator } from "./storage/RNStorageAdapter";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { RNStorageAdapter, RNUuidGenerator, IS_TVOS } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { SidebarProvider } from "./context/SidebarContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -54,27 +55,38 @@ const queryClient = new QueryClient({
   },
 });
 
-// Cold start TV : cache home persisté via Settings (NSUserDefaults, persistant
-// tvOS, synchrone) — interface async attendue par le persister → Promise.resolve.
+// Cold start TV : cache home persisté via Settings (NSUserDefaults) sur tvOS,
+// AsyncStorage sur Android TV (Settings y est un no-op sans persistance) —
+// interface async attendue par le persister.
 //
 // ⚠️ tvOS abort l'app (SIGABRT, __CFPREFERENCES_HAS_DETECTED_THIS_APP_TRYING_TO_
 // STORE_TOO_MUCH_DATA__) au-delà d'une limite stricte du domaine NSUserDefaults
 // (~0,5 Mo). Le défaut 2 Mo du persister dépassait → crash « de temps en temps »
-// quand le cache home gonflait. On plafonne BIEN en dessous + garde-fou dur.
+// quand le cache home gonflait. On plafonne BIEN en dessous + garde-fou dur
+// (plafond conservé à l'identique sur Android : un cache home > 256 K n'apporte
+// rien au cold start et resterait à re-fetcher de toute façon).
 const TV_PERSIST_MAX = 256 * 1024; // ~256 K caractères
 
 const tvPersistStorage = {
   getItem: (k: string) => {
+    if (!IS_TVOS) return AsyncStorage.getItem(k);
     const v = Settings.get(k);
     return Promise.resolve(typeof v === "string" ? v : null);
   },
   // Jamais d'écriture surdimensionnée vers NSUserDefaults : au-delà de la limite
   // on PURGE la clé (null) au lieu d'écrire → impossible de crasher CFPreferences.
   setItem: (k: string, v: string) => {
+    if (!IS_TVOS) {
+      return v.length > TV_PERSIST_MAX ? AsyncStorage.removeItem(k) : AsyncStorage.setItem(k, v);
+    }
     Settings.set({ [k]: v.length > TV_PERSIST_MAX ? null : v });
     return Promise.resolve();
   },
-  removeItem: (k: string) => { Settings.set({ [k]: null }); return Promise.resolve(); },
+  removeItem: (k: string) => {
+    if (!IS_TVOS) return AsyncStorage.removeItem(k);
+    Settings.set({ [k]: null });
+    return Promise.resolve();
+  },
 };
 
 // `library-items` (potentiellement énorme : tout le contenu d'une bibliothèque)
@@ -83,8 +95,9 @@ const tvPersistStorage = {
 const TV_HOME_WHITELIST = HOME_PERSIST_WHITELIST.filter((k) => k !== "library-items");
 
 // Purge unique d'un blob déjà surdimensionné (laissé par l'ancien plafond 2 Mo)
-// pour repartir d'un domaine NSUserDefaults sain.
-{
+// pour repartir d'un domaine NSUserDefaults sain. tvOS only : Settings n'existe
+// pas sur Android (et le plafond y est appliqué à l'écriture).
+if (IS_TVOS) {
   const existing = Settings.get("tentacle_query_cache_v1");
   if (typeof existing === "string" && existing.length > TV_PERSIST_MAX) {
     Settings.set({ tentacle_query_cache_v1: null });
