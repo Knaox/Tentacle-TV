@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { findNodeHandle } from "react-native";
+import { osdFocusedKeyRef } from "./osdFocusBus";
 
 /** Boutons de transport de l'OSD du lecteur, dans l'ordre de la rangée. */
 export type TransportKey =
@@ -10,6 +11,7 @@ export type FocusNode = { setNativeProps?: (p: Record<string, unknown>) => void 
 
 export interface OverlayButtonProps {
   onFocus: () => void;
+  onBlur: () => void;
   hasTVPreferredFocus?: boolean;
   nextFocusUp?: number;
   nextFocusDown?: number;
@@ -149,7 +151,11 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton = f
   }, []);
 
   const buttonProps = useCallback((key: TransportKey): OverlayButtonProps => {
-    const onFocus = () => { if (!restoringFocusRef.current) lastFocusedRef.current = key; };
+    const onFocus = () => {
+      osdFocusedKeyRef.current = key;
+      if (!restoringFocusRef.current) lastFocusedRef.current = key;
+    };
+    const onBlur = () => { if (osdFocusedKeyRef.current === key) osdFocusedKeyRef.current = null; };
     const playPauseNode = handlesRef.current.playpause;
     const backNode = handlesRef.current.back;
     const preferred = key === "playpause" ? initialPreferred : undefined;
@@ -157,19 +163,19 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton = f
     if (lockScrub) {
       // Verrou complet sur play/pause : ←/→/↑/↓ ne déplacent pas le focus, OK
       // confirme le scrub. (back reste accessible vers le bas.)
-      if (key === "back") return { onFocus, nextFocusDown: playPauseNode };
+      if (key === "back") return { onFocus, onBlur, nextFocusDown: playPauseNode };
       return {
-        onFocus, hasTVPreferredFocus: preferred,
+        onFocus, onBlur, hasTVPreferredFocus: preferred,
         nextFocusUp: playPauseNode, nextFocusDown: playPauseNode,
         nextFocusLeft: playPauseNode, nextFocusRight: playPauseNode,
       };
     }
 
-    if (key === "back") return { onFocus, nextFocusDown: playPauseNode };
+    if (key === "back") return { onFocus, onBlur, nextFocusDown: playPauseNode };
     // Chaînage horizontal explicite entre boutons adjacents rendus.
     const { left, right } = neighbors(key);
     return {
-      onFocus, hasTVPreferredFocus: preferred,
+      onFocus, onBlur, hasTVPreferredFocus: preferred,
       nextFocusUp: backNode, nextFocusLeft: left, nextFocusRight: right,
     };
     // handlesVersion : recompute quand les handles/conditionnels changent.

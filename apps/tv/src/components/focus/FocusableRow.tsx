@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from "react";
-import { FlatList, View, Text, TVFocusGuideView, Platform, type ViewStyle, type LayoutChangeEvent } from "react-native";
+import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
 import { useTVNav } from "../../context/TVNavContext";
@@ -143,9 +143,11 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
         variant="card"
         onFocus={() => {
           setFocused(true);
-          // Mémoire de focus (tvOS) : dernier élément de contenu focalisé → sert à
-          // restaurer le focus en sortant de la sidebar ou en revenant du lecteur.
-          if (Platform.OS === "ios") lastContentNodeRef.current = cellRef.current;
+          // Mémoire de focus : dernier élément de contenu focalisé → restaure le
+          // focus en sortant de la sidebar (tvOS) et au retour d'un écran empilé
+          // (détail/lecteur) — sur Android, sans elle le moteur natif rendait le
+          // focus à la sidebar à chaque retour sur l'accueil.
+          lastContentNodeRef.current = cellRef.current;
           onCellFocus();
         }}
         onBlur={() => { setFocused(false); onCellBlur(); }}

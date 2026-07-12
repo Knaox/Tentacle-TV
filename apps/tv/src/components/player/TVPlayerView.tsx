@@ -255,7 +255,7 @@ export function TVPlayerView({
       {!autoPlayActive && (
         <>
           <TVSkipSegmentButton type="intro" segment={skipSegments.intro}
-            currentTime={displayTime} onSkip={() => onSeek(skipSegments.intro!.end)}
+            currentTime={displayTime} onSkip={controls.guardScrub(() => onSeek(skipSegments.intro!.end))}
             overlayVisible={controls.overlayVisible} showSettings={showSettings}
             showEpisodes={!!showEpisodes} />
           {/* Générique : avec un épisode suivant, le bouton devient
@@ -263,10 +263,10 @@ export function TVPlayerView({
           <TVSkipSegmentButton type="credits" segment={skipSegments.credits}
             currentTime={displayTime}
             labelOverride={autoPlay.nextEpisode ? t("nextEpisodeLabel", { defaultValue: "Épisode suivant" }) : undefined}
-            onSkip={() => {
+            onSkip={controls.guardScrub(() => {
               if (autoPlay.nextEpisode) autoPlay.startAutoPlay();
               else onSeek(skipSegments.credits!.end);
-            }}
+            })}
             overlayVisible={controls.overlayVisible} showSettings={showSettings}
             showEpisodes={!!showEpisodes} />
         </>

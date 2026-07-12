@@ -71,20 +71,26 @@ function HomeScreenInner({ navigation }: Props) {
     }, [queryClient])
   );
 
-  // Retour sur l'accueil (depuis le lecteur, etc.) : restaurer le focus sur le
-  // DERNIER élément de carrousel focalisé (sinon l'autoFocus repart sur la 1re
-  // carte). Sur 1er mount, lastContentNodeRef est null → autoFocus normal. tvOS.
+  // Retour sur l'accueil (depuis le lecteur, le détail, etc.) : restaurer le
+  // focus sur le DERNIER élément de carrousel focalisé — sinon l'autoFocus
+  // repart sur la 1re carte (tvOS) ou le moteur natif donne le focus à la
+  // sidebar (Android). Sur 1er mount, lastContentNodeRef est null → autoFocus.
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS !== "ios") return;
       const node = lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
       if (!node?.setNativeProps) return;
-      let id2: ReturnType<typeof setTimeout>;
-      const id1 = setTimeout(() => {
-        node.setNativeProps?.({ hasTVPreferredFocus: false });
-        id2 = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
-      }, 60);
-      return () => { clearTimeout(id1); clearTimeout(id2); };
+      if (Platform.OS === "ios") {
+        // tvOS : hasTVPreferredFocus n'est honoré que sur un cycle false→true.
+        let id2: ReturnType<typeof setTimeout>;
+        const id1 = setTimeout(() => {
+          node.setNativeProps?.({ hasTVPreferredFocus: false });
+          id2 = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
+        }, 60);
+        return () => { clearTimeout(id1); clearTimeout(id2); };
+      }
+      // Android : le set vaut requestFocus() immédiat (one-shot).
+      const id = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
+      return () => clearTimeout(id);
     }, [lastContentNodeRef])
   );
 

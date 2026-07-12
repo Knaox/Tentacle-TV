@@ -5,6 +5,10 @@ import type { View } from "react-native";
 export function useFocusRecovery(
   fallbackRef: React.RefObject<View | null>,
   enabled = true,
+  /** Suppression DYNAMIQUE (lue au moment du blur, sans ré-abonnement) : quand
+   *  une surface au-dessus du fond possède le focus (ex. écran « épisode
+   *  suivant »), recibler le fond lui VOLERAIT le focus. */
+  suppressRef?: React.RefObject<boolean>,
 ) {
   const hasFocusRef = useRef(true);
 
@@ -21,6 +25,7 @@ export function useFocusRecovery(
       handler.enable(undefined, (_cmp: unknown, evt: { eventType: string }) => {
         if (evt.eventType === "blur") {
           recoveryTimer = setTimeout(() => {
+            if (suppressRef?.current) return;
             const node = findNodeHandle(fallbackRef.current);
             if (node != null) {
               try { (UIManager as { sendAccessibilityEvent?: (tag: number, type: number) => void }).sendAccessibilityEvent?.(node, 8); } catch {}

@@ -29,6 +29,8 @@ interface TVRemoteOptions {
   onAnyPress?: () => void;
   /** Called on SELECT (OK) specifically — ex. valider le scrub où qu'en soit le focus */
   onSelect?: () => void;
+  /** TODO(diag): log des événements select/longSelect/media (transitions) — À RETIRER */
+  debugTag?: string;
 }
 
 /**
@@ -52,6 +54,13 @@ export function useTVRemote(options: TVRemoteOptions) {
   const isFocused = useIsFocused();
   const focusedRef = useRef(isFocused);
   focusedRef.current = isFocused;
+
+  // Android + ReactFeatureFlags.enableKeyDownEvents (MainApplication.kt) :
+  // chaque pression émet key-DOWN (a=0, avec répétitions de maintien) PUIS
+  // key-UP (a=1). On agit au DOWN (réactivité, et les répétitions alimentent le
+  // scrub) et on n'exécute PAS l'action du up jumeau. Les types qui n'émettent
+  // pas de down (tvOS, certaines touches) gardent le comportement historique.
+  const sawDownRef = useRef<Set<string>>(new Set());
 
   // Handle Android TV back button — enregistrement STABLE (une seule fois),
   // gate sur l'écran focused. `return false` quand on ne gère pas : le système
@@ -79,11 +88,34 @@ export function useTVRemote(options: TVRemoteOptions) {
     // Ignore focus system noise
     if (eventType === "blur" || eventType === "focus") return;
 
+    if (o.debugTag && (eventType === "select" || eventType === "longSelect" || eventType === "rewind" || eventType === "fastForward")) {
+      // TODO(diag): transitions uniquement (pas les répétitions déjà vues) — À RETIRER
+      if (!(eventKeyAction === 0 && sawDownRef.current.has(eventType))) {
+        console.log(`[TVEVT:${o.debugTag}] ${eventType} a=${eventKeyAction}`);
+      }
+    }
+
+    // Android : le « back » TVEvent doublerait BackHandler (déjà branché plus
+    // haut) — on l'ignore ici quel que soit son action.
+    if (Platform.OS === "android" && (eventType === "menu" || eventType === "back")) return;
+
+    // Key-down (a=0, y compris répétitions de maintien) : agir, et mémoriser
+    // que ce type a été traité au down — son key-up jumeau ne ré-agira pas.
+    if (eventKeyAction === 0) {
+      sawDownRef.current.add(eventType);
+      // longLeft/longRight : cases dédiées plus bas (déclenchées au down).
+    }
+
     // Key-up: notify for hold release detection
     if (eventKeyAction === 1) {
       o.onKeyUp?.(eventType);
       // longLeft/longRight already fired on key-down (action=0) — don't re-trigger
       if (eventType === "longLeft" || eventType === "longRight") return;
+      // Action déjà exécutée au key-down correspondant → ne pas doubler.
+      if (sawDownRef.current.has(eventType)) {
+        sawDownRef.current.delete(eventType);
+        return;
+      }
       // Block up/down/menu/back on key-up — these should NOT fire on action=1
       // (otherwise key-up "down" triggers onDown → scrubbing mode, breaking DPAD seek)
       if (eventType === "up" || eventType === "down" || eventType === "menu" || eventType === "back") return;

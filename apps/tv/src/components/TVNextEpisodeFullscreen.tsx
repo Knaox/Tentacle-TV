@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { View, Text, Image, TVFocusGuideView, useWindowDimensions } from "react-native";
+import { useEffect, useRef } from "react";
+import { View, Text, Image, TVFocusGuideView, Platform, useWindowDimensions } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import LinearGradient from "react-native-linear-gradient";
@@ -51,6 +51,19 @@ export function TVNextEpisodeFullscreen({
     opacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
   }, [opacity]);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  // Android : à l'apparition, le focus natif peut être resté sur une vue du
+  // player devenue non-focusable (fond/OSD) → la fiche était innavigable au
+  // D-pad. Grab explicite du bouton principal (set = requestFocus immédiat).
+  const playBtnRef = useRef<View>(null);
+  useEffect(() => {
+    if (Platform.OS === "ios") return;
+    const id = setTimeout(() => {
+      (playBtnRef.current as { setNativeProps?: (p: object) => void } | null)
+        ?.setNativeProps?.({ hasTVPreferredFocus: true });
+    }, 120);
+    return () => clearTimeout(id);
+  }, []);
 
   const thumbWidth = Math.min(460, Math.round(sw * 0.32));
 
@@ -138,7 +151,7 @@ export function TVNextEpisodeFullscreen({
             {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
             <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight
               style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: 28 }}>
-              <Focusable variant="button" focusRadius={Radius.button} onPress={onPlayNow} hasTVPreferredFocus>
+              <Focusable ref={playBtnRef} variant="button" focusRadius={Radius.button} onPress={onPlayNow} hasTVPreferredFocus>
                 <View style={{
                   flexDirection: "row", alignItems: "center", gap: 12,
                   backgroundColor: "#fff", borderRadius: Radius.button,
