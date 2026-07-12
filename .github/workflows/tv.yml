@@ -168,6 +168,15 @@ jobs:
           chmod +x ./gradlew
           ./gradlew bundleRelease assembleRelease --no-daemon $ARGS
 
+      # AAB signé toujours archivé : nécessaire pour la PREMIÈRE soumission
+      # Play (upload manuel dans la console) et comme secours si l'API échoue.
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-tv-aab
+          path: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
       - name: Stage APK assets
         run: |
           mkdir -p dist-apk
