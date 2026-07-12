@@ -45,7 +45,7 @@ auto-incrémenté, Release GitHub complète. Alternative sans Release GitHub :
 | Tag | Workflow | Cibles |
 |-----|----------|--------|
 | `desktop-vX.Y.Z` | `desktop.yml` | macOS → App Store/TestFlight (universal LGPL, sandbox) · Windows → Microsoft Store (MSIX auto) · Linux → Release GitHub `desktop-v*` (.deb/.rpm/AppImage/.pkg.tar.zst) + manifeste auto-update |
-| `tv-vX.Y.Z` | `tv.yml` | Android TV → Play Console (AAB, MÊME app que mobile `com.tentacletv.mobile`, piste tests fermés « Alpha », draft) + Release GitHub `tv-v*` + `tv-latest` (APK) · Apple TV → TestFlight (`continue-on-error`) |
+| `tv-vX.Y.Z` | `tv.yml` | Android TV → Play Console UNIQUEMENT (AAB, MÊME app que mobile `com.tentacletv.mobile`, **piste de tests fermés TV dédiée** — homonyme de la piste mobile mais identifiant API distinct, env `PLAY_TV_TRACK` ; AAB archivé en artefact ; plus d'APK GitHub) · Apple TV → TestFlight (`continue-on-error`) |
 | push `main` (sans tag) | `server.yml` | Image `ghcr.io/knaox/tentacle-tv` `:latest` + `:v<server>` ; Release GitHub `server-vX.Y.Z` **si** `versions.json → server` change dans le push |
 | `ios-v…` / `play-v…` | `release-ios.yml` / `release-play.yml` | **Mobile — TEMPORAIRE** (pas encore migré) : ancien fonctionnement conservé (version portée par le tag iOS / `app.json` Play, notes dans `CHANGELOG.md` racine). Migration vers `mobile.yml` quand l'app Android sera publiée sur le store. |
 
