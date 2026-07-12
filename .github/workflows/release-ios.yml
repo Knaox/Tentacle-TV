@@ -139,6 +139,11 @@ jobs:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
           API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
+          # CODE_SIGN_IDENTITY="Apple Distribution" : force l'archive à signer
+          # avec le certificat Distribution importé dans le keychain. Sans ça,
+          # la signature automatique réclame un cert « Apple Development » sur
+          # chaque runner éphémère et en CRÉE un via l'API à chaque run →
+          # « account has reached the maximum number of certificates ».
           xcodebuild archive \
             -workspace "$IOS_WORKSPACE" \
             -scheme "$IOS_SCHEME" \
@@ -150,6 +155,7 @@ jobs:
             -authenticationKeyID "$API_KEY" \
             -authenticationKeyIssuerID "$API_ISSUER" \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
 
       - name: Export .ipa (App Store)
