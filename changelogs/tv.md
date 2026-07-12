@@ -13,14 +13,20 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.0.0]
 ### FR
-- Avance/recul rapide au maintien : arrêt net au relâchement, position figée — OK lit à la position visée, Retour annule
-- Clic court sur ⏩/⏪ : saut immédiat de ±10 s
-- Correction des confirmations « fantômes » au relâchement de la télécommande
-- Lecture directe : plus d'erreur « session expirée » après un nouveau jumelage (cache purgé, jeton renouvelé automatiquement)
+Tentacle TV arrive sur Android TV !
+- Parcourez et lisez votre médiathèque Jellyfin depuis votre canapé
+- Lecture fluide avec reprise, pistes audio et sous-titres
+- Avance/recul rapide au maintien, avec aperçus des scènes
+- Passer l'intro ou le générique, enchaîner l'épisode suivant
+- Jumelage en quelques secondes avec un code depuis votre téléphone
+- Interface entièrement pensée pour la télécommande
 ### EN
-- Hold-to-seek: stops instantly on release, position freezes — OK plays at the target position, Back cancels
-- Short press on ⏩/⏪: instant ±10s skip
-- Fixed "ghost" confirmations when releasing the remote button
-- Direct streaming: no more "session expired" error after re-pairing (cache cleared, token refreshed automatically)
+Tentacle TV comes to Android TV!
+- Browse and play your Jellyfin library from your couch
+- Smooth playback with resume, audio tracks and subtitles
+- Hold-to-seek with scene previews
+- Skip intros and credits, autoplay the next episode
+- Pair in seconds with a code from your phone
+- Designed from the ground up for the remote
 
 ---
