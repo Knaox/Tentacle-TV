@@ -135,7 +135,7 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   setWsBackendUrl(baseUrl);
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
-  const TV_VERSION: string = require("../package.json").version ?? "0.9.2";
+  const TV_VERSION: string = require("../../../versions.json").tv ?? "0.9.2";
   // Nom de client rapporté à Jellyfin : « Apple TV » sur tvOS (l'app s'identifiait
   // à tort comme AndroidTV). Android conservé EXACTEMENT (pas d'espace) pour ne
   // pas changer l'identifiant des devices Android déjà appariés.

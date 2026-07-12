@@ -1,0 +1,407 @@
+# Tentacle TV — TV (Android TV + Apple TV), UN SEUL TAG
+#
+# Déclenché par le tag `tv-vX.Y.Z` (ou manuellement). La version vient de
+# versions.json → champ `tv` (SOURCE UNIQUE — garde-fou au job `version`).
+# Builds AUTO-INCRÉMENTÉS (minutes depuis 2024-01-01 UTC) :
+#   • tvOS CFBundleVersion = BUILD
+#   • Android versionCode  = 2000000000 + BUILD (préfixe form-factor TV : jamais
+#     de collision avec les versionCode mobile de la MÊME fiche Play, et l'AAB
+#     TV — leanback requis — n'est jamais servi aux téléphones)
+#
+# Android TV :
+#   • AAB signé release (keystore d'upload MOBILE_* réutilisé) → Play Console,
+#     MÊME app que le mobile (com.tentacletv.mobile), piste de tests fermés
+#     « Tests fermés - Alpha » (env PLAY_TV_TRACK, id API `alpha`), status draft.
+#   • APK → Release GitHub `tv-vX.Y.Z` + release roulante `tv-latest`
+#     (URL permanente du code Downloader / site tentacletv.app).
+#     ⚠️ APK désormais signé RELEASE et package com.tentacletv.mobile : les
+#     installs sideload historiques (com.tentacletv, debug) doivent être
+#     réinstallées une fois.
+#   • Sans secrets keystore : APK debug-signed, upload Play sauté (les releases
+#     GitHub restent publiées).
+#
+# Apple TV (continue-on-error : n'empêche jamais l'Android TV de sortir) :
+#   • xcodebuild tvOS, signature MANUELLE (profil TVOS_PROVISIONING_PROFILE_BASE64),
+#     upload TestFlight via clé API ASC. Fiche partagée com.tentacle.mobile.
+#
+# Notes de version : changelogs/tv.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
+# Limites : Play 500 car., App Store 4000, GitHub illimité.
+
+name: Release TV
+
+on:
+  push:
+    tags: ["tv-v*"]
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Soumettre aux stores (Play Console / TestFlight) — sinon artefacts seulement"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-tv-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APPLE_TEAM_ID: "96K3M57W49"
+  TV_SCHEME: "TentacleTV"
+  TV_WORKSPACE: "apps/tv/ios/TentacleTV.xcworkspace"
+  # Piste Play des tests fermés Android TV (« Tests fermés - Alpha »).
+  PLAY_TV_TRACK: "alpha"
+
+jobs:
+  # 0) Version depuis versions.json + builds auto-incrémentés + garde-fou tag.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
+      vcode: ${{ steps.v.outputs.vcode }}
+      submit: ${{ steps.v.outputs.submit }}
+      is_tag: ${{ steps.v.outputs.is_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VERSION=$(jq -r .tv versions.json)
+          BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
+          VCODE=$(( 2000000000 + BUILD ))
+          if [ "${{ github.event_name }}" = "push" ]; then
+            IS_TAG=true; SUBMIT=true
+            if [ "${GITHUB_REF_NAME}" != "tv-v${VERSION}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} ≠ tv-v${VERSION} (versions.json → tv). Mets à jour versions.json (source unique) ou corrige le tag."
+              exit 1
+            fi
+          else
+            IS_TAG=false; SUBMIT="${{ inputs.submit }}"
+          fi
+          echo "TV ${VERSION} (build ${BUILD}, versionCode ${VCODE}, submit=${SUBMIT})"
+          { echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
+
+  # ── Android TV : AAB → Play Console + APK → Release GitHub ───────────────
+  android-tv:
+    needs: version
+    name: Android TV (AAB Play + APK GitHub)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK (matches build.gradle ndkVersion)
+        run: sdkmanager "ndk;26.1.10909125"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/tv/android/**/*.gradle*', 'apps/tv/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      # Keystore d'upload : le MÊME que le mobile (une clé peut signer plusieurs
+      # apps ; ici c'est de toute façon la même app Play). Absent → debug-signed.
+      - name: Decode upload keystore
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.MOBILE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::MOBILE_KEYSTORE_BASE64 absent — APK debug-signed, upload Play sauté."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release (AAB + APK)
+        working-directory: apps/tv/android
+        env:
+          KS_PASSWORD: ${{ secrets.MOBILE_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.MOBILE_KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.MOBILE_KEY_PASSWORD }}
+        run: |
+          ARGS="-PtvVersionName=${{ needs.version.outputs.version }} -PtvVersionCode=${{ needs.version.outputs.vcode }}"
+          if [ "${{ steps.keystore.outputs.present }}" = "true" ]; then
+            ARGS="$ARGS -PtvKeystoreFile=$RUNNER_TEMP/upload.jks -PtvKeystorePassword=$KS_PASSWORD -PtvKeyAlias=$KS_ALIAS -PtvKeyPassword=$KS_KEY_PASSWORD"
+          fi
+          echo "Android TV build → versionName=${{ needs.version.outputs.version }} versionCode=${{ needs.version.outputs.vcode }}"
+          chmod +x ./gradlew
+          ./gradlew bundleRelease assembleRelease --no-daemon $ARGS
+
+      # « Nouveautés » Play (max 500 car.) depuis changelogs/tv.md.
+      - name: Notes Play (whatsnew FR/EN)
+        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
+        run: |
+          mkdir -p distribution/whatsnew
+          V="${{ needs.version.outputs.version }}"
+          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
+            --version "$V" --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR || true
+          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
+            --version "$V" --lang en --format play --out distribution/whatsnew/whatsnew-en-US || true
+          ls -l distribution/whatsnew || true
+
+      - name: Upload AAB → Play Console (piste « Tests fermés - Alpha »)
+        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.tentacletv.mobile
+          releaseFiles: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ env.PLAY_TV_TRACK }}
+          status: draft
+          whatsNewDirectory: distribution/whatsnew
+
+      - name: Stage APK assets
+        run: |
+          mkdir -p dist-apk
+          SRC=apps/tv/android/app/build/outputs/apk/release/app-release.apk
+          cp "$SRC" "dist-apk/tentacle-tv-${{ needs.version.outputs.version }}.apk"
+          cp "$SRC" "dist-apk/tentacle-tv.apk"
+          ls -l dist-apk
+
+      - name: Corps de release (notes changelog + installation)
+        if: needs.version.outputs.is_tag == 'true'
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          node .github/scripts/release-notes.mjs \
+            --changelog changelogs/tv.md --version "$V" \
+            --format github --out notes.md || true
+          {
+            echo "APK Android TV (sideload). Également publié sur le Play Console (tests fermés)."
+            echo ""
+            if [ -s notes.md ]; then echo "## Nouveautés"; echo ""; cat notes.md; echo ""; fi
+            echo "## Installation (Android TV / Shield)"
+            echo "1. Paramètres → Sécurité & restrictions → autoriser les **sources inconnues**."
+            echo "2. Installer **Downloader** depuis le Play Store."
+            echo "3. Y saisir le **code Downloader** / le lien direct de l'APK (asset \`tentacle-tv.apk\`)."
+            echo "4. Télécharger puis installer."
+            echo ""
+            echo "> ⚠️ **Mise à niveau depuis une version antérieure au passage Play Store** :"
+            echo "> le package et la signature ont changé (\`com.tentacletv.mobile\`, clé release)."
+            echo "> Désinstaller l'ancienne app puis installer celle-ci (une seule fois)."
+            echo ""
+            echo "Page de téléchargement : https://tentacletv.app/"
+          } > release-body.md
+          cat release-body.md
+
+      - name: Create versioned GitHub Release
+        if: needs.version.outputs.is_tag == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Tentacle TV (Android TV) ${{ needs.version.outputs.version }}"
+          prerelease: false
+          body_path: release-body.md
+          files: |
+            dist-apk/tentacle-tv-${{ needs.version.outputs.version }}.apk
+            dist-apk/tentacle-tv.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Lien de téléchargement PERMANENT pour le code Downloader (aftv.news).
+      # (Tag tv-latest ≠ tv-v* → ne re-déclenche pas ce workflow.)
+      - name: Update rolling « tv-latest » release (stable download URL)
+        if: needs.version.outputs.is_tag == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete tv-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create tv-latest dist-apk/tentacle-tv.apk \
+            --title "Tentacle TV (Android TV) — dernière version" \
+            --notes "Lien de téléchargement permanent (code Downloader). Pointe sur ${GITHUB_REF_NAME}." \
+            --latest=false
+
+  # ── Apple TV (tvOS → TestFlight) — n'empêche jamais l'Android TV de sortir ──
+  apple-tv:
+    needs: version
+    name: Apple TV (tvOS TestFlight)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: pnpm/action-setup@v4
+
+      # Même Xcode/SDK qu'en local (builds acceptés par App Store, SDK tvOS 26+).
+      - name: Select Xcode 26.3 (identique au local)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.3"
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: CocoaPods install (tvOS)
+        working-directory: apps/tv/ios
+        run: pod install --repo-update
+
+      - name: Import Apple Distribution certificate
+        env:
+          APP_CERT: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
+          APP_CERT_PW: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+        run: |
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          echo "$APP_CERT" | base64 --decode > /tmp/app.p12
+          security import /tmp/app.p12 -k build.keychain -P "$APP_CERT_PW" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+          rm -f /tmp/app.p12
+
+      # Signature MANUELLE : la signature auto (clé API) refuse de minter un profil
+      # de distribution pour une 1re app tvOS → profil App Store tvOS en secret.
+      - name: Install tvOS App Store provisioning profile
+        env:
+          PROFILE_B64: ${{ secrets.TVOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE_B64" | base64 --decode \
+            > "$HOME/Library/MobileDevice/Provisioning Profiles/d5674922-c9b2-4fdf-9f1d-bebbd04c708c.mobileprovision"
+
+      - name: Install App Store Connect API key
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/private_keys ~/.appstoreconnect/private_keys
+          echo "$API_KEY_CONTENT" > ~/private_keys/AuthKey_${API_KEY}.p8
+          cp ~/private_keys/AuthKey_${API_KEY}.p8 ~/.appstoreconnect/private_keys/
+          echo "ASC_KEY_PATH=$HOME/private_keys/AuthKey_${API_KEY}.p8" >> "$GITHUB_ENV"
+
+      - name: Archive (xcodebuild tvOS, signature manuelle)
+        run: |
+          xcodebuild archive \
+            -workspace "$TV_WORKSPACE" \
+            -scheme "$TV_SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=tvOS" \
+            -archivePath "$RUNNER_TEMP/TentacleTV-tvos.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="Tentacle TV tvOS App Store" \
+            MARKETING_VERSION="${{ needs.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ needs.version.outputs.build }}"
+
+      - name: Export .ipa (App Store, tvOS)
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.tentacle.mobile</key>
+              <string>Tentacle TV tvOS App Store</string>
+            </dict>
+            <key>destination</key><string>export</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/TentacleTV-tvos.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/ipa"
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tentacle-TV-tvOS-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          if-no-files-found: error
+
+      - name: Submit to TestFlight (tvOS)
+        if: needs.version.outputs.submit == 'true'
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          xcrun altool --upload-app -f "$RUNNER_TEMP"/ipa/*.ipa -t tvos \
+            --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
+
+      - name: Set release notes (App Store / TestFlight tvOS)
+        if: needs.version.outputs.submit == 'true'
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: TV_OS
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD: ${{ needs.version.outputs.build }}
+          CHANGELOG: changelogs/tv.md
+        run: node .github/scripts/asc-release-notes.mjs
+
+  # Attend le traitement ASC puis rattache le build tvOS à la version App Store.
+  apple-tv-attach:
+    needs: [version, apple-tv]
+    if: needs.version.outputs.submit == 'true'
+    name: Apple TV attach build
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for ASC processing + attach build
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: TV_OS
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD: ${{ needs.version.outputs.build }}
+          CHANGELOG: changelogs/tv.md
+        run: node .github/scripts/asc-attach-build.mjs

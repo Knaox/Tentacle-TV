@@ -19,7 +19,10 @@ android {
 
     namespace "com.tentacletv"
     defaultConfig {
-        applicationId "com.tentacletv"
+        // MÊME app Play Console que le mobile (fiche unique, form factor TV —
+        // piste de tests fermés dédiée « Tests fermés - Alpha »). Le namespace
+        // reste com.tentacletv : le code Kotlin ne bouge pas.
+        applicationId "com.tentacletv.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Surchargés par le tag CI (tv-v<version>-<build>) via -PtvVersionName / -PtvVersionCode.
@@ -38,13 +41,28 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Renseignée par le CI (-PtvKeystoreFile / -PtvKeystorePassword /
+            // -PtvKeyAlias / -PtvKeyPassword) — même keystore d'upload que le
+            // mobile (secrets MOBILE_*). Absente en local → bloc vide, et le
+            // release buildType retombe sur la signature debug (dev/sideload local).
+            def ksFile = project.findProperty('tvKeystoreFile')
+            if (ksFile) {
+                storeFile file(ksFile)
+                storePassword project.findProperty('tvKeystorePassword')
+                keyAlias project.findProperty('tvKeyAlias')
+                keyPassword project.findProperty('tvKeyPassword')
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
+            // Signé release si le CI fournit la keystore (AAB Play + APK GitHub),
+            // sinon debug-signed (build local).
+            signingConfig project.hasProperty('tvKeystoreFile') ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

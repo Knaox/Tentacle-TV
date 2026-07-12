@@ -1,4 +1,12 @@
-# Changelog
+# Changelog (ARCHIVE)
+
+> ⚠️ **Ce fichier est archivé.** Les changelogs vivent désormais dans
+> **`changelogs/`** — un fichier par domaine : `desktop.md`, `tv.md`,
+> `server.md`, `mobile.md` (blocs `## [X.Y.Z]` + `### FR`/`### EN`,
+> version pilotée par `versions.json`).
+> **Exception mobile** : tant que la migration mobile n'est pas faite,
+> `release-ios.yml` et `release-play.yml` lisent ENCORE ce fichier
+> (blocs `## [ios-…]` / `## [play-…]`) — continuer à les ajouter ici.
 
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).

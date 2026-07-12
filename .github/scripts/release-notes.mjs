@@ -1,11 +1,13 @@
-// CLI d'extraction des notes de version depuis CHANGELOG.md, formatées par store.
+// CLI d'extraction des notes de version, formatées par store.
 //
 //   node .github/scripts/release-notes.mjs \
-//     --channel mac|ios|atv|win|play  (requis)
 //     --version X.Y.Z                 (requis)
+//     --changelog <fichier>           (défaut CHANGELOG.md ; ex. changelogs/tv.md)
+//     --channel mac|ios|atv|win|play  (mode legacy CHANGELOG.md racine : blocs
+//                                      « ## [<canal>-<version>] » ; omis avec les
+//                                      changelogs par domaine « ## [X.Y.Z] » nus)
 //     --lang fr|en|both               (défaut : both pour --format github, sinon requis)
 //     --format asc|play|msstore|github (défaut : github)
-//     --changelog CHANGELOG.md        (défaut)
 //     --out <fichier>                 (sinon stdout)
 //
 // Section introuvable → message sur stderr, AUCUN fichier créé, exit 0 (jamais
@@ -25,8 +27,10 @@ const { channel, version, changelog = 'CHANGELOG.md', out } = args;
 const format = args.format ?? 'github';
 const lang = args.lang ?? (format === 'github' ? 'both' : null);
 
-if (!channel || !version) {
-  console.error('[release-notes] usage : --channel <c> --version <x.y.z> [--lang fr|en|both] [--format asc|play|msstore|github] [--out f]');
+// --channel est optionnel : les changelogs par domaine (changelogs/*.md)
+// utilisent des blocs « ## [X.Y.Z] » nus, sans préfixe de canal.
+if (!version) {
+  console.error('[release-notes] usage : --version <x.y.z> [--changelog f] [--channel <c>] [--lang fr|en|both] [--format asc|play|msstore|github] [--out f]');
   process.exit(1);
 }
 if (!['asc', 'play', 'msstore', 'github'].includes(format)) {
@@ -50,7 +54,8 @@ try {
   process.exit(1);
 }
 if (!notes) {
-  console.error(`[release-notes] aucune section « ## [${channel}-${version}] » ni « ## [${version}] » dans ${changelog} — rien produit.`);
+  const wanted = channel ? `« ## [${channel}-${version}] » ni « ## [${version}] »` : `« ## [${version}] »`;
+  console.error(`[release-notes] aucune section ${wanted} dans ${changelog} — rien produit.`);
   process.exit(0);
 }
 

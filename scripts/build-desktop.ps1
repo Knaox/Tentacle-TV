@@ -1,6 +1,13 @@
 # ═══════════════════════════════════════════════════════
 # Tentacle TV — Interactive Desktop Build & Release
 # Build localement puis publie sur GitHub Releases
+#
+# ⚠️ OBSOLÈTE : le tag `v*` poussé par ce script ne déclenche AUCUN workflow.
+# Le flux de release desktop est désormais : bump versions.json (champ desktop)
+# + changelogs/desktop.md, puis tag `desktop-vX.Y.Z` → .github/workflows/desktop.yml
+# (macOS App Store + Microsoft Store + Linux d'un coup). Voir docs/RELEASE-TAGS.md
+# ou « Tentacle Deploy.html » qui génère la commande complète.
+# Ce script reste utilisable pour un build desktop LOCAL uniquement.
 # ═══════════════════════════════════════════════════════
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
