@@ -2,6 +2,7 @@
 
 declare const __APP_VERSION_WEB__: string;
 declare const __APP_VERSION_DESKTOP__: string;
+declare const __MIN_SERVER_VERSION__: string;
 declare const __DIST_CHANNEL__: string;
 
 interface ImportMetaEnv {
