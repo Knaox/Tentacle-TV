@@ -49,7 +49,7 @@ git push production main  # Triggers post-receive hook on server
 | Déclencheur | Workflow | Cible |
 |-------------|----------|-------|
 | tag `desktop-vX.Y.Z` | `.github/workflows/desktop.yml` | **macOS** (App Store/TestFlight, universal LGPL) + **Windows** (Microsoft Store MSIX) + **Linux** (deb/rpm/AppImage/pacman → Release GitHub `desktop-v*` + manifeste auto-update) |
-| tag `tv-vX.Y.Z` | `.github/workflows/tv.yml` | **Android TV** (AAB → Play Console, MÊME app que mobile `com.tentacletv.mobile`, piste tests fermés « Alpha » + APK → Release GitHub + `tv-latest`) + **Apple TV** (tvOS → TestFlight, `continue-on-error`) |
+| tag `tv-vX.Y.Z` | `.github/workflows/tv.yml` | **Android TV** (AAB → Play Console UNIQUEMENT — MÊME app que mobile `com.tentacletv.mobile`, piste tests fermés « Alpha », plus d'APK GitHub ; AAB archivé en artefact) + **Apple TV** (tvOS → TestFlight, `continue-on-error`) |
 | push `main` | `.github/workflows/server.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`) ; si `versions.json → server` change dans le push → Release GitHub `server-vX.Y.Z` |
 | tag `ios-v*` / `play-v*` (TEMPORAIRE) | `release-ios.yml` / `release-play.yml` | **Mobile — pas encore migré** : anciens workflows conservés tels quels (notes via `CHANGELOG.md` racine, blocs `ios-`/`play-`). Migration vers `mobile.yml` quand l'app Android sera sur le store. |
 
@@ -57,7 +57,7 @@ git push production main  # Triggers post-receive hook on server
 
 - **Changelogs par domaine** : `changelogs/{desktop,tv,server,mobile}.md`. Limites stores gérées (`.github/scripts/lib/changelog.mjs`) : ASC 4000, MS Store 1500, Play 500 caractères. `CHANGELOG.md` racine = archive (+ blocs mobile temporaires).
 - **Desktop = stores uniquement** (macOS App Store, Windows Microsoft Store) ; Linux = Release GitHub. Un échec d'un OS ne bloque pas les autres (jobs indépendants).
-- **Android TV sur le Play Console** : même fiche que le mobile (`com.tentacletv.mobile`), keystore d'upload mobile réutilisé (secrets `MOBILE_*`), `versionCode = 2000000000 + build` (préfixe form-factor, jamais en collision avec le mobile). L'APK GitHub reste publié (site `tentacletv.app` + code Downloader via `tv-latest`) mais est désormais **release-signed** : les vieilles installs sideload (`com.tentacletv` debug) doivent être réinstallées une fois.
+- **Android TV = Play Console uniquement** : même fiche que le mobile (`com.tentacletv.mobile`), keystore d'upload mobile réutilisé (secrets `MOBILE_*`), `versionCode = 2000000000 + build` (préfixe form-factor, jamais en collision avec le mobile). **Plus d'APK GitHub ni de `tv-latest`** : la distribution passe par la piste de tests fermés (opt-in Play) — le site `tentacletv.app` doit pointer vers le lien d'opt-in du test, plus vers un APK.
 - **Apple TV** : signature MANUELLE (profil `TVOS_PROVISIONING_PROFILE_BASE64`) ; l'app tvOS reste à finaliser (icône placeholder).
 - Versions affichées (À propos) : web = `versions.json → server`, desktop = version du bundle (injectée depuis `versions.json`), TV = `versions.json → tv` (`AboutScreen.tsx`).
 

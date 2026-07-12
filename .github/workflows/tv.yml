@@ -8,17 +8,14 @@
 #     de collision avec les versionCode mobile de la MÊME fiche Play, et l'AAB
 #     TV — leanback requis — n'est jamais servi aux téléphones)
 #
-# Android TV :
+# Android TV — distribution PLAY UNIQUEMENT (plus d'APK GitHub / tv-latest) :
 #   • AAB signé release (keystore d'upload MOBILE_* réutilisé) → Play Console,
 #     MÊME app que le mobile (com.tentacletv.mobile), piste de tests fermés
-#     « Tests fermés - Alpha » (env PLAY_TV_TRACK, id API `alpha`), status draft.
-#   • APK → Release GitHub `tv-vX.Y.Z` + release roulante `tv-latest`
-#     (URL permanente du code Downloader / site tentacletv.app).
-#     ⚠️ APK désormais signé RELEASE et package com.tentacletv.mobile : les
-#     installs sideload historiques (com.tentacletv, debug) doivent être
-#     réinstallées une fois.
-#   • Sans secrets keystore : APK debug-signed, upload Play sauté (les releases
-#     GitHub restent publiées).
+#     « Tests fermés - Alpha » (env PLAY_TV_TRACK, id API `alpha`), status draft
+#     → déploiement/promotion manuel dans la console.
+#   • L'AAB signé est aussi archivé en ARTEFACT du run (1re soumission manuelle
+#     dans la console, secours si l'API échoue).
+#   • Sans secrets keystore : build debug-signed, upload Play sauté.
 #
 # Apple TV (continue-on-error : n'empêche jamais l'Android TV de sortir) :
 #   • xcodebuild tvOS, signature MANUELLE (profil TVOS_PROVISIONING_PROFILE_BASE64),
@@ -47,8 +44,11 @@ env:
   APPLE_TEAM_ID: "96K3M57W49"
   TV_SCHEME: "TentacleTV"
   TV_WORKSPACE: "apps/tv/ios/TentacleTV.xcworkspace"
-  # Piste Play des tests fermés Android TV (« Tests fermés - Alpha »).
-  PLAY_TV_TRACK: "alpha"
+  # ⚠️ Piste Play des tests fermés ANDROID TV — PISTE DÉDIÉE, distincte de la
+  # piste mobile malgré un nom affiché identique. `alpha` = l'ID de la piste
+  # MOBILE : ne pas l'utiliser ici. Renseigner l'identifiant API exact de la
+  # piste TV (nom de création de la piste fermée personnalisée).
+  PLAY_TV_TRACK: "TV-ALPHA-A-DEFINIR"
 
 jobs:
   # 0) Version depuis versions.json + builds auto-incrémentés + garde-fou tag.
@@ -81,14 +81,14 @@ jobs:
           echo "TV ${VERSION} (build ${BUILD}, versionCode ${VCODE}, submit=${SUBMIT})"
           { echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
 
-  # ── Android TV : AAB → Play Console + APK → Release GitHub ───────────────
+  # ── Android TV : AAB → Play Console (piste de tests fermés TV) ───────────
   android-tv:
     needs: version
-    name: Android TV (AAB Play + APK GitHub)
+    name: Android TV (AAB → Play Console)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: write
+      contents: read
 
     steps:
       - name: Checkout
@@ -153,7 +153,7 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build release (AAB + APK)
+      - name: Build release (AAB)
         working-directory: apps/tv/android
         env:
           KS_PASSWORD: ${{ secrets.MOBILE_KEYSTORE_PASSWORD }}
@@ -166,10 +166,10 @@ jobs:
           fi
           echo "Android TV build → versionName=${{ needs.version.outputs.version }} versionCode=${{ needs.version.outputs.vcode }}"
           chmod +x ./gradlew
-          ./gradlew bundleRelease assembleRelease --no-daemon $ARGS
+          ./gradlew bundleRelease --no-daemon $ARGS
 
-      # AAB signé toujours archivé : nécessaire pour la PREMIÈRE soumission
-      # Play (upload manuel dans la console) et comme secours si l'API échoue.
+      # AAB signé toujours archivé : PREMIÈRE soumission Play (upload manuel
+      # dans la console) et secours si l'API échoue.
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
@@ -177,68 +177,6 @@ jobs:
           path: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      - name: Stage APK assets
-        run: |
-          mkdir -p dist-apk
-          SRC=apps/tv/android/app/build/outputs/apk/release/app-release.apk
-          cp "$SRC" "dist-apk/tentacle-tv-${{ needs.version.outputs.version }}.apk"
-          cp "$SRC" "dist-apk/tentacle-tv.apk"
-          ls -l dist-apk
-
-      - name: Corps de release (notes changelog + installation)
-        if: needs.version.outputs.is_tag == 'true'
-        run: |
-          V="${{ needs.version.outputs.version }}"
-          node .github/scripts/release-notes.mjs \
-            --changelog changelogs/tv.md --version "$V" \
-            --format github --out notes.md || true
-          {
-            echo "APK Android TV (sideload). Également publié sur le Play Console (tests fermés)."
-            echo ""
-            if [ -s notes.md ]; then echo "## Nouveautés"; echo ""; cat notes.md; echo ""; fi
-            echo "## Installation (Android TV / Shield)"
-            echo "1. Paramètres → Sécurité & restrictions → autoriser les **sources inconnues**."
-            echo "2. Installer **Downloader** depuis le Play Store."
-            echo "3. Y saisir le **code Downloader** / le lien direct de l'APK (asset \`tentacle-tv.apk\`)."
-            echo "4. Télécharger puis installer."
-            echo ""
-            echo "> ⚠️ **Mise à niveau depuis une version antérieure au passage Play Store** :"
-            echo "> le package et la signature ont changé (\`com.tentacletv.mobile\`, clé release)."
-            echo "> Désinstaller l'ancienne app puis installer celle-ci (une seule fois)."
-            echo ""
-            echo "Page de téléchargement : https://tentacletv.app/"
-          } > release-body.md
-          cat release-body.md
-
-      - name: Create versioned GitHub Release
-        if: needs.version.outputs.is_tag == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "Tentacle TV (Android TV) ${{ needs.version.outputs.version }}"
-          prerelease: false
-          body_path: release-body.md
-          files: |
-            dist-apk/tentacle-tv-${{ needs.version.outputs.version }}.apk
-            dist-apk/tentacle-tv.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Lien de téléchargement PERMANENT pour le code Downloader (aftv.news).
-      # (Tag tv-latest ≠ tv-v* → ne re-déclenche pas ce workflow.)
-      - name: Update rolling « tv-latest » release (stable download URL)
-        if: needs.version.outputs.is_tag == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete tv-latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create tv-latest dist-apk/tentacle-tv.apk \
-            --title "Tentacle TV (Android TV) — dernière version" \
-            --notes "Lien de téléchargement permanent (code Downloader). Pointe sur ${GITHUB_REF_NAME}." \
-            --latest=false
-
-      # ── Play Console EN DERNIER : un échec ici (fiche/piste pas prête) laisse
-      #    l'APK GitHub + tv-latest déjà publiés (canal historique intact). ──
       - name: Notes Play (whatsnew FR/EN)
         if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
         run: |
