@@ -6,8 +6,12 @@ La CI (GitHub Actions, gratuite car repo public) build + signe + envoie.
 ## Source unique : `versions.json` (racine)
 
 ```json
-{ "desktop": "1.12.0", "tv": "1.0.0", "mobile": "1.2.2", "server": "1.3.0" }
+{ "desktop": "1.12.0", "tv": "1.0.0", "mobile": "1.2.2", "server": "1.3.0", "minServer": "1.3.0" }
 ```
+
+- `minServer` = version serveur **minimale** exigée par les clients (bannière de
+  compatibilité admin, `apps/web/src/hooks/useServerCompat.ts`) — à bumper quand
+  un client dépend d'une nouveauté serveur.
 
 - On change la version **à un seul endroit** ; elle s'applique à tous les OS de la
   plateforme (desktop : macOS + Windows + Linux ensemble).

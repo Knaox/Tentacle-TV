@@ -23,6 +23,8 @@ export default defineConfig({
   define: {
     __APP_VERSION_WEB__: JSON.stringify(webVersion),
     __APP_VERSION_DESKTOP__: JSON.stringify(desktopVersion),
+    // Version serveur MINIMALE requise par ce client (bannière de compat admin).
+    __MIN_SERVER_VERSION__: JSON.stringify(versions.minServer ?? "1.3.0"),
     __DIST_CHANNEL__: JSON.stringify(distChannel),
   },
   // Load .env files from monorepo root (where .env and .env.production live)

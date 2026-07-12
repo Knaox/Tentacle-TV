@@ -44,7 +44,7 @@ git push production main  # Triggers post-receive hook on server
 
 ## Releases / Tags (CI)
 
-**Source unique des versions : `versions.json` (racine)** — champs `desktop`, `tv`, `mobile`, `server`. On change la version À UN SEUL ENDROIT ; le tag doit correspondre (garde-fou CI). Les **numéros de build** (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play). Un workflow par plateforme :
+**Source unique des versions : `versions.json` (racine)** — champs `desktop`, `tv`, `mobile`, `server`, `minServer` (version serveur minimale exigée par les clients — bannière de compat `useServerCompat.ts`). On change la version À UN SEUL ENDROIT ; le tag doit correspondre (garde-fou CI). Les **numéros de build** (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play). Un workflow par plateforme :
 
 | Déclencheur | Workflow | Cible |
 |-------------|----------|-------|

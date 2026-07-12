@@ -6,8 +6,10 @@ import { getBackendBase } from "../lib/backendBase";
  * quand le client se met à dépendre d'une nouveauté serveur. Si le serveur
  * renvoie une version plus ancienne, une bannière d'avertissement s'affiche à
  * l'admin (le client pourrait dysfonctionner).
+ * SOURCE UNIQUE : versions.json (racine) → champ `minServer`, injecté au build
+ * par vite.config.ts (__MIN_SERVER_VERSION__).
  */
-export const MIN_SERVER_VERSION = "1.3.0";
+export const MIN_SERVER_VERSION = __MIN_SERVER_VERSION__;
 
 /** Compare deux versions semver simplifiées "x.y.z" → -1 | 0 | 1. */
 function cmpVersion(a: string, b: string): number {
