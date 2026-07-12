@@ -10,6 +10,7 @@ import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
 import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, useContentPadding, useResponsive } from "../theme";
 import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
+import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { clearCredentials } from "../auth/credentialManager";
 import { useServerUrl } from "../providers/ServerUrlContext";
 
@@ -211,39 +212,6 @@ function QuickActionCard({ iconName, label, onPress }: { iconName: string; label
   );
 }
 
-function LanguageToggle() {
-  const { t, i18n } = useTranslation("profile");
-  const { storage } = useTentacleConfig();
-  const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
-  const switchLanguage = (lng: string) => { i18n.changeLanguage(lng); storage.setItem("tentacle_language", lng); };
-  return (
-    <View>
-      <Text style={st.langLabel}>{t("language")}</Text>
-      <View style={{ flexDirection: "row", gap: spacing.sm }} accessibilityRole="radiogroup">
-        <LangBtn active={currentLang === "fr"} label={t("french")} onPress={() => switchLanguage("fr")} />
-        <LangBtn active={currentLang === "en"} label={t("english")} onPress={() => switchLanguage("en")} />
-      </View>
-    </View>
-  );
-}
-
-function LangBtn({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={label}
-      style={[st.langBtn, {
-        backgroundColor: active ? BRAND.soft : "rgba(255,255,255,0.05)",
-        borderColor: active ? "rgba(139,92,246,0.45)" : BORDER.subtle,
-      }]}
-    >
-      <Text style={[st.langBtnTxt, { color: active ? BRAND.light : colors.textSecondary }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function DangerRow({ icon, label, onPress, variant, disabled }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
@@ -286,9 +254,6 @@ const st = StyleSheet.create({
   quickLabel: { ...typography.bodyBold, fontSize: 12, fontFamily: FONT_FAMILY.semibold, color: colors.textPrimary, textAlign: "center" as const },
   sectionTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 16, color: colors.textPrimary, marginBottom: spacing.md, letterSpacing: -0.2, textTransform: "uppercase" as const, opacity: 0.85 },
   divider: { height: 1, backgroundColor: BORDER.subtle, marginVertical: spacing.md },
-  langLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, marginBottom: spacing.sm },
-  langBtn: { flex: 1, paddingVertical: 11, borderRadius: RADIUS.md, alignItems: "center" as const, borderWidth: 1 },
-  langBtnTxt: { ...typography.bodyBold, fontSize: 14, fontFamily: FONT_FAMILY.semibold },
   privacy: { marginTop: spacing.xxl, alignItems: "center" as const, flexDirection: "row" as const, justifyContent: "center" as const, gap: spacing.sm, paddingVertical: 12 },
   privacyTxt: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, textDecorationLine: "underline" as const },
   dangerList: { gap: 2 },
