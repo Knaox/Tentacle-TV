@@ -24,6 +24,9 @@ iOS 1.3.0 — iPhone + iPad (application universelle)
 - **Navigation iPad repensée** : barre d'onglets en bas en portrait ; en paysage, rail latéral discret avec menu déroulant élégant.
 - **Fiches média plein écran** : visuel bord à bord, bouton retour toujours visible ; en paysage, mise en page en deux colonnes.
 - **Fiabilité** : fermeture des écrans ouverts par lien direct, geste de fermeture des panneaux plus naturel sur iPad, partage ancré (popover).
+- **Photo de profil** : votre photo Jellyfin s'affiche dans le profil et se change directement depuis l'iPhone ou l'iPad (photothèque, recadrage carré).
+- **Préférences de langues corrigées** : les pistes audio/sous-titres par bibliothèque enregistrées s'affichent désormais correctement, et la langue de l'interface se synchronise entre vos appareils.
+- **Lecteur peaufiné** : bouton lecture/pause toujours parfaitement centré (même au premier épisode) ; sous-titres redessinés — texte blanc à contour fin, sans bandeau noir, comme sur ordinateur.
 - L'expérience sur iPhone reste strictement identique.
 
 ### EN
@@ -34,6 +37,9 @@ iOS 1.3.0 — iPhone + iPad (application universelle)
 - **Rethought iPad navigation**: bottom tab bar in portrait; in landscape, a discreet side rail with an elegant slide-out menu.
 - **Full-screen media pages**: edge-to-edge artwork, always-visible back button; two-column layout in landscape.
 - **Reliability**: closing screens opened via direct links, more natural sheet dismiss gesture on iPad, anchored share popover.
+- **Profile picture**: your Jellyfin picture now shows on the profile and can be changed right from your iPhone or iPad (photo library, square crop).
+- **Language preferences fixed**: saved per-library audio/subtitle preferences now display correctly, and the interface language syncs across your devices.
+- **Polished player**: play/pause button always perfectly centered (even on the first episode); redesigned subtitles — white text with a thin outline, no black box, just like on desktop.
 - The iPhone experience stays exactly the same.
 
 ## [linux-1.11.5]
@@ -219,6 +225,8 @@ Android mobile 1.0.0 — première version Google Play (tests)
 - Lecture fluide avec reprise, choix de l'audio et des sous-titres.
 - Passage automatique à l'épisode suivant.
 - Compatible tablettes : interface adaptée aux grands écrans, en portrait comme en paysage.
+- Photo de profil Jellyfin : affichée et modifiable depuis l'app.
+- Sous-titres élégants (texte blanc à contour fin, sans bandeau) et commandes de lecture toujours centrées.
 - Interface sombre élégante, disponible en français et en anglais.
 
 ### EN
@@ -226,6 +234,8 @@ Android mobile 1.0.0 — première version Google Play (tests)
 - Smooth playback with resume, audio and subtitle selection.
 - Automatic Up Next to the following episode.
 - Tablet ready: the interface adapts to large screens, in portrait and landscape.
+- Jellyfin profile picture: displayed and changeable from the app.
+- Elegant subtitles (white text with a thin outline, no black box) and always-centered playback controls.
 - Elegant dark interface, available in French and English.
 
 ## [1.2.3]
