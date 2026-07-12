@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Share } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "../../theme";
@@ -48,9 +48,13 @@ export function AdminSection() {
     setCreating(false);
   };
 
-  const shareInvite = (key: string) => {
+  const shareInvite = (key: string, anchor?: number) => {
     const url = `${serverUrl}/register?invite=${key}`;
-    Share.share({ message: t("shareInviteMessage", { url }) });
+    // Sur iPad la feuille de partage est un popover → l'ancrer sur le bouton pressé.
+    Share.share(
+      { message: t("shareInviteMessage", { url }) },
+      Platform.OS === "ios" && anchor != null && Number.isFinite(anchor) ? { anchor } : undefined,
+    );
   };
 
   return (
@@ -123,7 +127,7 @@ export function AdminSection() {
               </View>
             )}
             {active && (
-              <Pressable onPress={() => shareInvite(inv.key)} style={{
+              <Pressable onPress={(e) => shareInvite(inv.key, Number(e.nativeEvent.target))} style={{
                 marginTop: spacing.sm, backgroundColor: "rgba(255,255,255,0.05)",
                 borderRadius: spacing.badgeRadius, paddingVertical: 6, alignItems: "center",
               }}>

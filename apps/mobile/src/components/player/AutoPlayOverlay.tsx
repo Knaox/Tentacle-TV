@@ -1,222 +1,196 @@
 import { useEffect, useRef } from "react";
-import { View, Text, Pressable, Animated, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, Animated, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { X, Play } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { BRAND, SURFACE } from "../../theme";
+import { BRAND, SURFACE, useResponsive } from "../../theme";
 
 interface Props {
   nextEpisode: MediaItem;
   countdown: number;
-  /** Initial countdown — used for progress bar width. */
+  /** Compte à rebours initial — pour la progression de l'anneau. */
   totalSeconds?: number;
   onPlay: () => void;
   onDismiss: () => void;
 }
 
 const DEFAULT_TOTAL = 10;
+const RING = 46;
+const RING_R = 19;
+const RING_C = 2 * Math.PI * RING_R;
 
 /**
- * Cinema-style "Up Next" card — mirror of the web `UpNextCard`.
- * Backdrop image at top with bottom scrim → fades into card surface for legibility.
- * Triggered by MobilePlayerOverlay following the same conditions as desktop:
- * `creditsSegment.start` when available, otherwise N seconds before the end.
+ * Carte PLEIN ÉCRAN « Épisode suivant » (façon Netflix), affichée à la fin d'un
+ * épisode. Portage du desktop `NextEpisodeFullscreen` : fond = bannière de la
+ * SÉRIE assombrie, vignette 16:9 de l'épisode suivant, saison/épisode + titre +
+ * résumé, compte à rebours avec anneau de progression autour du bouton Lire.
+ * Responsive téléphone / iPad (mêmes props que l'ancienne carte).
  */
 export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT_TOTAL, onPlay, onDismiss }: Props) {
   const { t } = useTranslation("player");
   const client = useJellyfinClient();
-  const { width: screenW } = useWindowDimensions();
-  const slide = useRef(new Animated.Value(60)).current;
+  const insets = useSafeAreaInsets();
+  const { width, isTablet } = useResponsive();
   const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.98)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(slide, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }),
-      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 90, friction: 13 }),
     ]).start();
-  }, [slide, opacity]);
+  }, [opacity, scale]);
 
-  const progress = ((totalSeconds - countdown) / totalSeconds) * 100;
+  const progress = Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds));
 
-  const cardW = Math.min(320, screenW - 24);
-
-  // Backdrop with fallback chain — episode own → series parent → primary
-  const hasOwnBackdrop = (nextEpisode.BackdropImageTags?.length ?? 0) > 0;
-  const hasParentBackdrop = (nextEpisode.ParentBackdropImageTags?.length ?? 0) > 0;
   const isEpisode = nextEpisode.Type === "Episode";
-  const backdropId = isEpisode
-    ? (hasOwnBackdrop ? nextEpisode.Id : (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id))
+  const seriesId = isEpisode
+    ? (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id)
     : nextEpisode.Id;
-  const imageType: "Backdrop" | "Primary" = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
-  const imageUrl = client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 });
+  const backdropUrl = client.getImageUrl(seriesId, "Backdrop", { width: 1280, quality: 80 });
+  const thumbUrl = client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
 
   const episodeLabel = isEpisode && nextEpisode.ParentIndexNumber != null && nextEpisode.IndexNumber != null
     ? `S${String(nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(nextEpisode.IndexNumber).padStart(2, "0")}`
     : undefined;
-  const description = nextEpisode.Overview
-    ? (nextEpisode.Overview.length > 120 ? `${nextEpisode.Overview.slice(0, 120)}…` : nextEpisode.Overview)
-    : undefined;
+  const description = nextEpisode.Overview;
 
-  const imageH = Math.round((cardW * 7) / 16);
+  // Player en paysage → largeur généralement grande : rangée vignette + infos.
+  const row = width >= 640;
+  const sidePad = Math.max(insets.left, insets.right, 24);
+  const panelMax = isTablet ? 880 : 700;
+  const thumbW = row ? (isTablet ? 320 : 236) : Math.min(width - sidePad * 2, 420);
+  const thumbH = Math.round((thumbW * 9) / 16);
+  const titleSize = isTablet ? 34 : 24;
 
   return (
-    <Animated.View
-      style={{
-        position: "absolute",
-        bottom: 16,
-        right: 12,
-        width: cardW,
-        opacity,
-        transform: [{ translateY: slide }],
-        backgroundColor: SURFACE.s2 ?? "#15151c",
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.08)",
-        borderRadius: 14,
-        overflow: "hidden",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.55,
-        shadowRadius: 24,
-        elevation: 20,
-      }}
-    >
-      {/* Top progress bar — violet gradient */}
-      <View style={{ height: 3, width: "100%", backgroundColor: "rgba(255,255,255,0.1)" }}>
-        <LinearGradient
-          colors={[BRAND.light ?? "#a78bfa", BRAND.violet ?? "#8b5cf6"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ height: "100%", width: `${progress}%` }}
-        />
-      </View>
+    <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 60, opacity }]}>
+      {/* Fond = bannière série assombrie */}
+      <Image source={{ uri: backdropUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.72)" }]} />
+      <LinearGradient
+        colors={["rgba(0,0,0,0.45)", "rgba(0,0,0,0)", "rgba(0,0,0,0.7)"]}
+        locations={[0, 0.35, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Absorbe les taps de fond (n'atteignent pas les contrôles vidéo). */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} accessibilityElementsHidden />
 
-      {/* Backdrop strip */}
-      <View style={{ width: "100%", height: imageH, position: "relative" }}>
-        <Image
-          source={{ uri: imageUrl }}
-          style={{ width: "100%", height: "100%" }}
-          contentFit="cover"
-          transition={250}
-        />
-        {/* Bottom scrim fading into card surface */}
-        <LinearGradient
-          colors={["rgba(0,0,0,0)", "rgba(15,15,21,0.55)", SURFACE.s2 ?? "#15151c"]}
-          locations={[0, 0.55, 1]}
-          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
-        />
+      {/* Fermer */}
+      <Pressable
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel={t("dismiss") as string}
+        hitSlop={12}
+        style={{
+          position: "absolute",
+          top: Math.max(insets.top, 16) + 6,
+          right: Math.max(insets.right, 16) + 6,
+          width: 44, height: 44, borderRadius: 22,
+          backgroundColor: "rgba(0,0,0,0.45)",
+          alignItems: "center", justifyContent: "center",
+          zIndex: 2,
+        }}
+      >
+        <X size={22} color="rgba(255,255,255,0.9)" />
+      </Pressable>
 
-        {/* Top-left badge — UP NEXT + countdown */}
-        <View style={{ position: "absolute", top: 8, left: 10, flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-              backgroundColor: "rgba(0,0,0,0.6)",
-              borderColor: "rgba(139,92,246,0.55)",
-              borderWidth: 1,
-              borderRadius: 5,
-              paddingHorizontal: 7,
-              paddingVertical: 3,
-            }}
-          >
-            <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: BRAND.light ?? "#a78bfa" }} />
-            <Text style={{ color: "#fff", fontSize: 9, fontWeight: "700", letterSpacing: 1.4 }}>
-              {(t("upNext") as string).toUpperCase()}
+      {/* Panneau centré */}
+      <Animated.View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: sidePad, transform: [{ scale }] }}>
+        <View style={{ width: "100%", maxWidth: panelMax }}>
+          {/* Compte à rebours */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 16 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND.light ?? "#a78bfa" }} />
+            <Text style={{ color: "rgba(255,255,255,0.92)", fontSize: isTablet ? 14 : 12, fontWeight: "700", letterSpacing: 1.5, textTransform: "uppercase", textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 4 }}>
+              {t("autoplayCountdown", { seconds: countdown })}
             </Text>
           </View>
-          <View
-            style={{
-              backgroundColor: "rgba(0,0,0,0.55)",
-              borderRadius: 5,
-              paddingHorizontal: 6,
-              paddingVertical: 3,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 9, fontWeight: "600", fontVariant: ["tabular-nums"] }}>
-              {countdown}{t("secondsShort")}
-            </Text>
+
+          <View style={{ flexDirection: row ? "row" : "column", gap: isTablet ? 26 : 18, alignItems: row ? "flex-start" : "stretch" }}>
+            {/* Vignette 16:9 de l'épisode suivant */}
+            <View style={{ width: row ? thumbW : "100%", maxWidth: thumbW, alignSelf: "center" }}>
+              <View style={{ width: "100%", height: thumbH, borderRadius: 14, overflow: "hidden", backgroundColor: SURFACE.s1 ?? "#111", borderWidth: 1, borderColor: "rgba(139,92,246,0.28)" }}>
+                <Image source={{ uri: thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+                <View style={[StyleSheet.absoluteFillObject, { alignItems: "center", justifyContent: "center" }]}>
+                  <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }}>
+                    <Play size={24} color="#fff" fill="#fff" />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Infos épisode */}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" }}>
+                {t("upNext")}
+              </Text>
+              {episodeLabel && (
+                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: "700", letterSpacing: 1.6, marginTop: 6 }}>
+                  {episodeLabel}
+                </Text>
+              )}
+              <Text numberOfLines={2} style={{ color: "#fff", fontSize: titleSize, fontWeight: "800", letterSpacing: -0.4, lineHeight: titleSize + 4, marginTop: 3, textShadowColor: "rgba(0,0,0,0.7)", textShadowRadius: 12 }}>
+                {nextEpisode.Name}
+              </Text>
+              {description && (
+                <Text numberOfLines={3} style={{ color: "rgba(255,255,255,0.72)", fontSize: isTablet ? 15 : 13, lineHeight: isTablet ? 22 : 19, marginTop: 10 }}>
+                  {description}
+                </Text>
+              )}
+
+              {/* Boutons */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: isTablet ? 22 : 16, flexWrap: "wrap" }}>
+                <Pressable
+                  onPress={onPlay}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("playNow") as string}
+                  style={({ pressed }) => [{
+                    flexDirection: "row", alignItems: "center", gap: 12,
+                    backgroundColor: "#fff", borderRadius: 14, paddingLeft: 8, paddingRight: 22, paddingVertical: 8,
+                    shadowColor: BRAND.violet ?? "#8b5cf6", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 8,
+                  }, pressed && { opacity: 0.9 }]}
+                >
+                  <View style={{ width: RING, height: RING }}>
+                    <Svg width={RING} height={RING} style={{ transform: [{ rotate: "-90deg" }] }}>
+                      <Circle cx={RING / 2} cy={RING / 2} r={RING_R} stroke="rgba(0,0,0,0.14)" strokeWidth={4} fill="none" />
+                      <Circle
+                        cx={RING / 2} cy={RING / 2} r={RING_R}
+                        stroke={BRAND.violet ?? "#8b5cf6"} strokeWidth={4} fill="none" strokeLinecap="round"
+                        strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - progress)}
+                      />
+                    </Svg>
+                    <View style={[StyleSheet.absoluteFillObject, { alignItems: "center", justifyContent: "center" }]}>
+                      <Play size={18} color="#000" fill="#000" />
+                    </View>
+                  </View>
+                  <Text style={{ color: "#000", fontSize: isTablet ? 17 : 15, fontWeight: "800" }}>
+                    {t("playNow")}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={onDismiss}
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  style={({ pressed }) => [{
+                    borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", backgroundColor: "rgba(255,255,255,0.06)",
+                    paddingHorizontal: 22, paddingVertical: isTablet ? 15 : 13,
+                  }, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: isTablet ? 16 : 14, fontWeight: "600" }}>
+                    {t("dismiss")}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
         </View>
-
-        {/* Top-right close */}
-        <Pressable
-          onPress={onDismiss}
-          accessibilityLabel={t("dismiss") as string}
-          hitSlop={10}
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            width: 24,
-            height: 24,
-            borderRadius: 12,
-            backgroundColor: "rgba(0,0,0,0.35)",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <X size={12} color="rgba(255,255,255,0.85)" />
-        </Pressable>
-      </View>
-
-      {/* Episode meta + actions */}
-      <View style={{ paddingHorizontal: 12, paddingTop: 2, paddingBottom: 10 }}>
-        {episodeLabel && (
-          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: "700", letterSpacing: 1.6 }}>
-            {episodeLabel}
-          </Text>
-        )}
-        <Text numberOfLines={1} style={{ color: "#fff", fontSize: 13, fontWeight: "600", marginTop: 1 }}>
-          {nextEpisode.Name}
-        </Text>
-        {description && (
-          <Text numberOfLines={2} style={{ color: "rgba(255,255,255,0.55)", fontSize: 10.5, lineHeight: 14, marginTop: 4 }}>
-            {description}
-          </Text>
-        )}
-
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 }}>
-          <Pressable
-            onPress={onPlay}
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 5,
-              backgroundColor: "#fff",
-              borderRadius: 7,
-              paddingVertical: 8,
-              shadowColor: BRAND.violet ?? "#8b5cf6",
-              shadowOffset: { width: 0, height: 5 },
-              shadowOpacity: 0.45,
-              shadowRadius: 12,
-              elevation: 5,
-            }}
-          >
-            <Play size={12} color="#000" fill="#000" />
-            <Text style={{ color: "#000", fontSize: 12, fontWeight: "700" }}>
-              {t("playNow")}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={onDismiss}
-            style={{
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              borderRadius: 7,
-            }}
-          >
-            <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: "500" }}>
-              {t("dismiss")}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }

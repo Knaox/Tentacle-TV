@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Pressable, Text, StyleSheet, Share, Platform } from "react-native";
+import { useState, useRef } from "react";
+import { Pressable, Text, StyleSheet, Share, Platform, View, findNodeHandle } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCreateShareLink } from "@tentacle-tv/api-client";
@@ -15,6 +15,7 @@ export function ShareMyListButton() {
   const { serverUrl } = useServerUrl();
   const create = useCreateShareLink();
   const [busy, setBusy] = useState(false);
+  const btnRef = useRef<View>(null);
 
   const onPress = async () => {
     if (busy) return;
@@ -30,8 +31,13 @@ export function ShareMyListButton() {
         throw new Error(`URL de partage invalide: ${url}`);
       }
       // Sur iOS, ne passer QUE `url` (le message dupliqué casse l'aperçu / la
-      // présentation de la feuille). Android préfère `message`.
-      await Share.share(Platform.OS === "ios" ? { url } : { message: url });
+      // présentation de la feuille). Android préfère `message`. Sur iPad la
+      // feuille est un popover → l'ancrer sur le bouton source.
+      const anchor = Platform.OS === "ios" ? (findNodeHandle(btnRef.current) ?? undefined) : undefined;
+      await Share.share(
+        Platform.OS === "ios" ? { url } : { message: url },
+        anchor != null ? { anchor } : undefined,
+      );
     } catch (e) {
       // L'utilisateur a peut-être juste annulé ; on logue pour diagnostiquer les
       // échecs réels (URL invalide, hors-ligne) au lieu de les masquer.
@@ -43,6 +49,7 @@ export function ShareMyListButton() {
 
   return (
     <Pressable
+      ref={btnRef}
       onPress={onPress}
       disabled={busy}
       accessibilityRole="button"

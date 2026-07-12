@@ -8,9 +8,22 @@
  * fréquente sur iPad, contrairement au téléphone verrouillé portrait.
  */
 
-import { useMemo } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { Dimensions, Platform, useWindowDimensions } from "react-native";
 import { spacing } from "./spacing";
+
+/**
+ * Largeur occupée par le rail de navigation latéral (iPad paysage). Fournie
+ * par le layout des tabs ; 0 partout ailleurs (iPhone, portrait, écrans hors
+ * tabs). Les helpers ci-dessous la soustraient de la largeur fenêtre pour
+ * raisonner sur la largeur RÉELLEMENT disponible pour le contenu.
+ */
+export const RailWidthContext = createContext(0);
+
+/** Largeur du rail latéral courant (0 hors tabs / téléphone / portrait). */
+export function useRailWidth(): number {
+  return useContext(RailWidthContext);
+}
 
 /**
  * Seuil « tablette » basé sur le petit côté (largeur en portrait).
@@ -76,9 +89,10 @@ export function useResponsive(): Responsive {
  */
 export function useContentPadding(maxWidth: number = CONTENT_MAX_WIDTH): number {
   const { width } = useWindowDimensions();
+  const avail = width - useRailWidth();
   const min = spacing.screenPadding;
-  if (width <= maxWidth + min * 2) return min;
-  return Math.round((width - maxWidth) / 2);
+  if (avail <= maxWidth + min * 2) return min;
+  return Math.round((avail - maxWidth) / 2);
 }
 
 export interface GridOptions {
@@ -115,6 +129,7 @@ export interface GridLayout {
  */
 export function useGrid(opts: GridOptions): GridLayout {
   const { width } = useWindowDimensions();
+  const railWidth = useRailWidth();
   const {
     phoneColumns,
     targetTablet = 150,
@@ -125,7 +140,7 @@ export function useGrid(opts: GridOptions): GridLayout {
 
   return useMemo(() => {
     const isTablet = width >= TABLET_MIN_WIDTH;
-    const usable = width - padding * 2;
+    const usable = width - railWidth - padding * 2;
     let numColumns = phoneColumns;
     if (isTablet) {
       const derived = Math.floor((usable + gutter) / (targetTablet + gutter));
@@ -133,5 +148,5 @@ export function useGrid(opts: GridOptions): GridLayout {
     }
     const itemWidth = (usable - gutter * (numColumns - 1)) / numColumns;
     return { numColumns, itemWidth, gutter, padding, isTablet };
-  }, [width, phoneColumns, targetTablet, maxColumns, gutter, padding]);
+  }, [width, railWidth, phoneColumns, targetTablet, maxColumns, gutter, padding]);
 }

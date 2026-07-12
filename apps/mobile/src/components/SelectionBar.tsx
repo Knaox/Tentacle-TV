@@ -103,8 +103,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: spacing.screenPadding,
+    alignItems: "center",
   },
   bar: {
+    width: "100%",
+    maxWidth: 520,
     backgroundColor: SURFACE.s1,
     borderRadius: 20,
     paddingHorizontal: spacing.md,

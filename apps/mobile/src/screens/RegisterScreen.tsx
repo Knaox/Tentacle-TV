@@ -89,7 +89,7 @@ export function RegisterScreen() {
             justifyContent: "center",
             alignItems: "center",
             paddingHorizontal: 24,
-            paddingTop: insets.top + 24,
+            paddingTop: Math.max(insets.top, 24) + 24,
             paddingBottom: insets.bottom + 24,
           }}
           keyboardShouldPersistTaps="handled"

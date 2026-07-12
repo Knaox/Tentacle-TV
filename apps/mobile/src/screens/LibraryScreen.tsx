@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -103,10 +104,10 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
   const itemCount = totalCount;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 24) }]}>
       {/* En-tête avec bouton retour */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+        <Pressable onPress={() => backOrHome(router)} hitSlop={12} style={styles.backButton}>
           <Text style={styles.backArrow}>{"‹"}</Text>
         </Pressable>
         <Text style={[typography.title, styles.headerTitle]} numberOfLines={1}>

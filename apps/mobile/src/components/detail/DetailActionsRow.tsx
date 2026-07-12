@@ -65,5 +65,8 @@ const st = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: spacing.xl,
     paddingHorizontal: spacing.screenPadding,
+    // Grand écran (iPad) : garder les 3 boutons groupés, alignés sur le bouton
+    // Play (borné 420) au lieu de s'écarter sur toute la largeur. iPhone < 420 → inchangé.
+    maxWidth: 420 + spacing.screenPadding * 2,
   },
 });

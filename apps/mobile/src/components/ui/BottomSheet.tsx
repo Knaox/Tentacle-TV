@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
   },
   handleArea: {
     alignItems: "center",
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 14,
+    paddingBottom: 16,
   },
   handle: {
     width: 36,

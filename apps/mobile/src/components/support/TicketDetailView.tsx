@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground, Badge, IconButton } from "../ui";
-import { BORDER, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE } from "../../theme";
+import { BORDER, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, useContentPadding } from "../../theme";
 import { STATUS_BADGE, useTicketApi, type TicketDetail, type TicketMessage } from "./ticketTypes";
 
 interface Props {
@@ -27,6 +27,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
   const { t } = useTranslation("tickets");
   const { t: tc } = useTranslation("common");
   const insets = useSafeAreaInsets();
+  const contentPad = useContentPadding(720);
   const { serverUrl, headers } = useTicketApi();
   const queryClient = useQueryClient();
   const [reply, setReply] = useState("");
@@ -72,8 +73,8 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
     <SubtleBackground ambient>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={{
-          paddingTop: insets.top + 12,
-          paddingHorizontal: 16,
+          paddingTop: Math.max(insets.top, 24) + 12,
+          paddingHorizontal: contentPad,
           paddingBottom: 12,
           borderBottomWidth: 1,
           borderBottomColor: BORDER.subtle,
@@ -110,7 +111,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
           data={ticket.messages}
           keyExtractor={(i) => i.id}
           contentContainerStyle={{
-            paddingHorizontal: 16,
+            paddingHorizontal: contentPad,
             paddingTop: 16,
             paddingBottom: 16,
           }}

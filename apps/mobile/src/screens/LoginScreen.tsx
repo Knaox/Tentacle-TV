@@ -154,7 +154,7 @@ export function LoginScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24, paddingTop: insets.top + 16 }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24, paddingTop: Math.max(insets.top, 24) + 16 }}>
           <FadeIn delay={0} translateY={12} style={{ alignItems: "center", marginBottom: 20 }}>
             <TentacleLogo size={64} />
           </FadeIn>

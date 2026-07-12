@@ -4,9 +4,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground } from "../ui";
-import { BRAND, FONT_FAMILY } from "../../theme";
+import { BRAND, FONT_FAMILY, useContentPadding } from "../../theme";
 import { Chip } from "./Chip";
 import { TicketCard } from "./TicketCard";
 import { FILTERS, useTicketApi, type Ticket } from "./ticketTypes";
@@ -20,6 +21,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
   const { t } = useTranslation("tickets");
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const contentPad = useContentPadding(720);
   const [filter, setFilter] = useState("");
   const { serverUrl, headers } = useTicketApi();
 
@@ -39,14 +41,14 @@ export function TicketListView({ onNew, onOpen }: Props) {
   return (
     <SubtleBackground ambient style={{ justifyContent: "flex-start" }}>
       <View style={{
-        paddingTop: insets.top + 12,
-        paddingHorizontal: 16,
+        paddingTop: Math.max(insets.top, 24) + 12,
+        paddingHorizontal: contentPad,
         paddingBottom: 8,
         flexDirection: "row",
         alignItems: "center",
       }}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => backOrHome(router)}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Back"
@@ -100,7 +102,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
           data={tickets}
           keyExtractor={(i) => i.id}
           style={{ flex: 1, marginTop: 12 }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }}
+          contentContainerStyle={{ paddingHorizontal: contentPad, paddingBottom: insets.bottom + 120 }}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => <TicketCard ticket={item} onOpen={onOpen} />}
         />

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, Text, StatusBar, Platform, StyleSheet } from "react-native";
 import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useQueryClient } from "@tanstack/react-query";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -194,7 +195,7 @@ export function PlayerScreen({ itemId }: Props) {
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
     queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    router.back();
+    backOrHome(router);
   }, [router, pb.reporting, queryClient, itemId, jfClient, userId]);
 
   const handleNextEpisode = useCallback(() => {

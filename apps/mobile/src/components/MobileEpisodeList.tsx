@@ -263,7 +263,7 @@ function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId }: {
   if (!episodes || episodes.length === 0) return null;
 
   return (
-    <View>
+    <View style={{ maxWidth: 640, width: "100%" }}>
       <SeasonActionBar seriesId={seriesId} seasonId={seasonId} episodes={episodes} />
       <View style={{ paddingHorizontal: 16, gap: 8 }}>
         {episodes.map((ep) => (

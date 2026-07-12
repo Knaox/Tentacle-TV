@@ -1,6 +1,7 @@
 import { View, Text, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import {
@@ -43,7 +44,7 @@ export function CreditsScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + 12,
+          paddingTop: Math.max(insets.top, 24) + 12,
           paddingBottom: insets.bottom + 32,
           paddingHorizontal: contentPad,
         }}
@@ -52,7 +53,7 @@ export function CreditsScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 4 }}>
           <IconButton
             icon="chevron-left"
-            onPress={() => router.back()}
+            onPress={() => backOrHome(router)}
             size={40}
             bgColor="transparent"
             color={BRAND.light}

@@ -1,6 +1,7 @@
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 import { ChevronRight } from "lucide-react-native";
+import { useResponsive } from "../../theme";
 
 interface Props {
   label: string;
@@ -17,19 +18,20 @@ interface Props {
  * Adapté mobile : safe-area aware, touch ≥44pt via minHeight.
  */
 export function SkipButton({ label, onPress, bottom, right, showChevron }: Props) {
+  const { isTablet } = useResponsive();
   return (
     <View style={{ position: "absolute", bottom, right, zIndex: 50 }}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={label}
-        style={({ pressed }) => [st.btn, pressed && { opacity: 0.82 }]}
+        style={({ pressed }) => [st.btn, isTablet && st.btnTablet, pressed && { opacity: 0.82 }]}
         hitSlop={8}
       >
         <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFillObject} />
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.6)" }]} />
-        <Text style={st.label} numberOfLines={1}>{label}</Text>
-        {showChevron && <ChevronRight size={16} color="#fff" />}
+        <Text style={[st.label, isTablet && { fontSize: 17 }]} numberOfLines={1}>{label}</Text>
+        {showChevron && <ChevronRight size={isTablet ? 20 : 16} color="#fff" />}
       </Pressable>
     </View>
   );
@@ -47,6 +49,13 @@ const st = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     overflow: "hidden",
+  },
+  btnTablet: {
+    minHeight: 54,
+    borderRadius: 10,
+    gap: 9,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
   },
   label: { color: "#fff", fontSize: 14, fontWeight: "600", letterSpacing: 0.1 },
 });

@@ -70,7 +70,7 @@ export function ForgotPasswordScreen() {
           justifyContent: "center",
           alignItems: "center",
           paddingHorizontal: 24,
-          paddingTop: insets.top + 16,
+          paddingTop: Math.max(insets.top, 24) + 16,
         }}>
           <FadeIn delay={0} translateY={12} style={{ width: "100%", maxWidth: 400 }}>
             <GlassCard style={{ padding: 28 }}>
