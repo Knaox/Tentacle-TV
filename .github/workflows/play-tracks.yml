@@ -1,0 +1,45 @@
+# Utilitaire : liste les PISTES Play (identifiants API exacts) de l'app
+# com.tentacletv.mobile + leurs releases. Sert à identifier une piste fermée
+# personnalisée (ex. la piste Android TV, homonyme de la piste mobile dans
+# l'UI mais avec un identifiant API distinct). Dispatch manuel uniquement.
+
+name: Play — lister les pistes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tracks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Lister les pistes (androidpublisher v3)
+        env:
+          SA_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          npm install googleapis@140 --no-save --silent
+          node - <<'EOF'
+          const { google } = require('googleapis');
+          (async () => {
+            const auth = new google.auth.GoogleAuth({
+              credentials: JSON.parse(process.env.SA_JSON),
+              scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+            });
+            const ap = google.androidpublisher({ version: 'v3', auth });
+            const packageName = 'com.tentacletv.mobile';
+            const edit = await ap.edits.insert({ packageName });
+            const { data } = await ap.edits.tracks.list({ packageName, editId: edit.data.id });
+            console.log(`Pistes de ${packageName} :`);
+            for (const t of data.tracks ?? []) {
+              const rel = (t.releases ?? [])
+                .map((r) => `${r.status}${r.name ? ` « ${r.name} »` : ''} [vc ${(r.versionCodes ?? []).join(', ') || '—'}]`)
+                .join(' ; ') || '(aucune release)';
+              console.log(`  • track API = "${t.track}" → ${rel}`);
+            }
+            await ap.edits.delete({ packageName, editId: edit.data.id }).catch(() => {});
+          })().catch((e) => { console.error(e.message); process.exit(1); });
+          EOF
