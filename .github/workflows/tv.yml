@@ -166,29 +166,6 @@ jobs:
           chmod +x ./gradlew
           ./gradlew bundleRelease assembleRelease --no-daemon $ARGS
 
-      # « Nouveautés » Play (max 500 car.) depuis changelogs/tv.md.
-      - name: Notes Play (whatsnew FR/EN)
-        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
-        run: |
-          mkdir -p distribution/whatsnew
-          V="${{ needs.version.outputs.version }}"
-          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
-            --version "$V" --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR || true
-          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
-            --version "$V" --lang en --format play --out distribution/whatsnew/whatsnew-en-US || true
-          ls -l distribution/whatsnew || true
-
-      - name: Upload AAB → Play Console (piste « Tests fermés - Alpha »)
-        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.tentacletv.mobile
-          releaseFiles: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
-          track: ${{ env.PLAY_TV_TRACK }}
-          status: draft
-          whatsNewDirectory: distribution/whatsnew
-
       - name: Stage APK assets
         run: |
           mkdir -p dist-apk
@@ -248,6 +225,30 @@ jobs:
             --title "Tentacle TV (Android TV) — dernière version" \
             --notes "Lien de téléchargement permanent (code Downloader). Pointe sur ${GITHUB_REF_NAME}." \
             --latest=false
+
+      # ── Play Console EN DERNIER : un échec ici (fiche/piste pas prête) laisse
+      #    l'APK GitHub + tv-latest déjà publiés (canal historique intact). ──
+      - name: Notes Play (whatsnew FR/EN)
+        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
+        run: |
+          mkdir -p distribution/whatsnew
+          V="${{ needs.version.outputs.version }}"
+          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
+            --version "$V" --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR || true
+          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
+            --version "$V" --lang en --format play --out distribution/whatsnew/whatsnew-en-US || true
+          ls -l distribution/whatsnew || true
+
+      - name: Upload AAB → Play Console (piste « Tests fermés - Alpha »)
+        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.tentacletv.mobile
+          releaseFiles: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ env.PLAY_TV_TRACK }}
+          status: draft
+          whatsNewDirectory: distribution/whatsnew
 
   # ── Apple TV (tvOS → TestFlight) — n'empêche jamais l'Android TV de sortir ──
   apple-tv:

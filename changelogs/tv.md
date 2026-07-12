@@ -7,6 +7,12 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [Unreleased]
 ### FR
+- …
+### EN
+- …
+
+## [1.0.0]
+### FR
 - Avance/recul rapide au maintien : arrêt net au relâchement, position figée — OK lit à la position visée, Retour annule
 - Clic court sur ⏩/⏪ : saut immédiat de ±10 s
 - Correction des confirmations « fantômes » au relâchement de la télécommande
@@ -16,11 +22,5 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - Short press on ⏩/⏪: instant ±10s skip
 - Fixed "ghost" confirmations when releasing the remote button
 - Direct streaming: no more "session expired" error after re-pairing (cache cleared, token refreshed automatically)
-
-## [1.0.0]
-### FR
-- Version initiale Android TV / Apple TV
-### EN
-- Initial Android TV / Apple TV release
 
 ---
