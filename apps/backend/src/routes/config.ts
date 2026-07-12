@@ -3,6 +3,7 @@ import { getConfigValue, getDirectStreamingConfig, getJellyfinUrl, getPublicUrl 
 import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
+import { findValidSiblingToken } from "../services/deviceTokenHealth";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 import { getPrisma } from "../services/db";
 import { BACKEND_VERSION } from "../services/version";
@@ -113,6 +114,22 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
             } catch {
               // Jellyfin unreachable — keep the token, don't mark as expired
             }
+          }
+        }
+
+        if (!jellyfinToken) {
+          // Self-healing : pas de token propre (confirmé depuis une session
+          // JWT, ou purgé sur 401) → re-graver le dernier token Jellyfin
+          // VALIDE d'un autre appareil du même compte. La TV qui « redemande
+          // un token » après un 401 de stream repart ainsi sans re-jumelage.
+          const sibling = await findValidSiblingToken(payload.userId, {
+            excludeTokenHash: hashToken(bearerToken),
+            regraftTokenHash: hashToken(bearerToken),
+          });
+          if (sibling) {
+            jellyfinToken = sibling;
+            tokenExpired = false;
+            request.log.info("Paired device jellyfinAccessToken regreffé depuis un appareil frère");
           }
         }
       }

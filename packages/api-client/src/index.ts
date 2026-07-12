@@ -75,7 +75,7 @@ export { useAppConfig, useAutoplayConfig, setConfigBackendUrl } from "./hooks/us
 export type { AppConfig, AppFeatures, AutoplayConfig } from "./hooks/useConfig";
 
 // Direct streaming config
-export { useStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUERY_KEY } from "./hooks/useStreamingConfig";
+export { useStreamingConfig, fetchStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUERY_KEY } from "./hooks/useStreamingConfig";
 export type { StreamingConfig } from "./hooks/useStreamingConfig";
 
 // Device pairing (local/backend)

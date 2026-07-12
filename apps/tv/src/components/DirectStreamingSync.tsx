@@ -37,11 +37,11 @@ export function DirectStreamingSync({ storage }: Props) {
 
   useEffect(() => {
     if (data?.tokenExpired) {
-      // Token Jellyfin issu du pairing expiré/révoqué — on dégrade en mode
-      // proxy backend (les flux passent par Tentacle) SANS déconnecter : la
-      // session de l'appareil (JWT Tentacle) reste valide, seul le raccourci
-      // direct-vers-Jellyfin est perdu.
-      console.warn("[DirectStreaming] Jellyfin token expired — falling back to backend proxy");
+      // Token Jellyfin de l'appareil expiré/révoqué : purge du cache hérité et
+      // repli proxy temporaire SANS déconnecter — le backend re-fournit un
+      // token frais (self-healing depuis un appareil frère du même compte) au
+      // prochain poll, et le direct se réactive seul.
+      console.warn("[DirectStreaming] Jellyfin token expired — waiting for a fresh token");
       storage.removeItem("tentacle_jellyfin_token");
       storage.removeItem("tentacle_jellyfin_url");
       client.setDirectStreaming(null);
@@ -53,30 +53,19 @@ export function DirectStreamingSync({ storage }: Props) {
         mediaBaseUrl: data.mediaBaseUrl,
         jellyfinToken: data.jellyfinToken,
       });
-      // Cache local pour fallback si le backend devient injoignable
-      storage.setItem("tentacle_jellyfin_url", data.mediaBaseUrl);
-      storage.setItem("tentacle_jellyfin_token", data.jellyfinToken);
-    } else if (isError) {
-      // Backend INJOIGNABLE uniquement : on tente le direct depuis le cache local.
-      // (Si le backend répond « disabled », on NE doit PAS réactiver le direct —
-      //  sinon un cache périmé d'un ancien jumelage envoie la lecture vers le
-      //  mauvais serveur Jellyfin → PlaybackInfo 404 → chargement infini.)
-      const jfUrl = storage.getItem("tentacle_jellyfin_url");
-      const jfToken = storage.getItem("tentacle_jellyfin_token");
-      if (jfUrl && jfToken) {
-        client.setDirectStreaming({ enabled: true, mediaBaseUrl: jfUrl, jellyfinToken: jfToken });
-      } else {
-        client.setDirectStreaming(null);
-      }
-    } else if (isFetched) {
+    } else if (isFetched && !isError) {
       // Le backend a répondu et le direct n'est PAS actif (désactivé, ou pas de
       // token) → mode proxy : tout passe par Tentacle (bon serveur Jellyfin).
-      // On purge le cache direct périmé pour ne pas le ressortir si le backend
-      // devient injoignable plus tard.
+      // Purge du cache hérité des anciennes versions (plus jamais réécrit).
       storage.removeItem("tentacle_jellyfin_url");
       storage.removeItem("tentacle_jellyfin_token");
       client.setDirectStreaming(null);
     }
+    // isError (backend injoignable) : NE RIEN changer — l'état mémoire courant
+    // reste tel quel et le poll suivant retentera. Plus JAMAIS de réactivation
+    // depuis un cache local : un token/URL d'un ANCIEN jumelage envoyait la
+    // lecture vers le mauvais serveur ou avec un token mort (401 « token
+    // expiré » juste après un jumelage neuf).
   }, [client, data, isError, isFetched, storage]);
 
   useEffect(() => {

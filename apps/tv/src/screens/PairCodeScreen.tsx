@@ -51,6 +51,17 @@ export function PairCodeScreen({ navigation }: Props) {
     storage.setItem("tentacle_language", lng);
   }, [i18n, storage]);
 
+  /** Un jumelage NEUF repart d'un état direct-streaming PROPRE : sans cette
+   *  purge, le token Jellyfin d'un ANCIEN jumelage (persistant depuis le
+   *  passage à AsyncStorage) pouvait ressortir → 401 sur le stream alors que
+   *  le jumelage venait d'être fait. DirectStreamingSync re-fournira le token
+   *  frais du backend au prochain poll (~2 s). */
+  const resetDirectStreaming = useCallback(() => {
+    storage.removeItem("tentacle_jellyfin_token");
+    storage.removeItem("tentacle_jellyfin_url");
+    jellyfinClient.setDirectStreaming(null);
+  }, [storage, jellyfinClient]);
+
   // ── Relay flow: confirmed ──
   const handleRelayConfirmed = useCallback(async (data: RelayStatusResponse) => {
     if (!data.serverUrl || !data.token || !data.user) return;
@@ -63,6 +74,7 @@ export function PairCodeScreen({ navigation }: Props) {
       // Server not reachable — still store the data, user may fix network later
     }
 
+    resetDirectStreaming();
     storage.setItem("tentacle_server_url", data.serverUrl);
     setAllBackendUrls(data.serverUrl);
     jellyfinClient.setBaseUrl(`${data.serverUrl}/api/jellyfin`);
@@ -76,7 +88,7 @@ export function PairCodeScreen({ navigation }: Props) {
     setPairUser(data.user.name);
     setStep("success");
     setTimeout(() => navigation.replace("Home"), 2000);
-  }, [storage, jellyfinClient, navigation]);
+  }, [storage, jellyfinClient, navigation, resetDirectStreaming]);
 
   // ── Manual flow: test server ──
   const handleTestServer = useCallback(async () => {
@@ -103,6 +115,7 @@ export function PairCodeScreen({ navigation }: Props) {
 
   // ── Manual flow: la TV affiche un code, confirmé depuis le téléphone/web ──
   const handleDeviceConfirmed = useCallback((data: { token: string; user: { id: string; name: string } }) => {
+    resetDirectStreaming();
     jellyfinClient.setAccessToken(data.token);
     setPreferencesToken(data.token);
     storage.setItem("tentacle_token", data.token);
@@ -113,7 +126,7 @@ export function PairCodeScreen({ navigation }: Props) {
     setPairUser(data.user.name);
     setStep("success");
     setTimeout(() => navigation.replace("Home"), 2000);
-  }, [jellyfinClient, storage, navigation]);
+  }, [jellyfinClient, storage, navigation, resetDirectStreaming]);
 
   const handleChangeServer = useCallback(() => {
     storage.removeItem("tentacle_server_url");

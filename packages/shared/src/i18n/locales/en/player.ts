@@ -38,6 +38,7 @@ export default {
   autoplayCountdown: "Next episode in {{seconds}}s",
   dismiss: "Dismiss",
   playbackError: "Video playback error",
+  directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   retry: "Retry",
   back: "Back",
   airplayActive: "Playing on external display",

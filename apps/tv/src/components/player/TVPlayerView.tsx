@@ -27,7 +27,10 @@ interface ControlsCtx {
   showOverlay: () => void;
   handleSkipBack: () => void;
   handleSkipForward: () => void;
-  /** Avance/recul rapide au MAINTIEN : début (accélération) / fin (validation) */
+  /** Tap court ⏪/⏩ (Android) : petit saut immédiat sans fantôme */
+  handleNudgeBack: () => void;
+  handleNudgeForward: () => void;
+  /** Avance/recul rapide au MAINTIEN : début (accélération) / fin (figé, OK confirme) */
   buttonSeekStart: (dir: "forward" | "backward") => void;
   buttonSeekStop: () => void;
   /** Scrub initié par un bouton OSD maintenu → focus non verrouillé */
@@ -229,6 +232,18 @@ export function TVPlayerView({
         onRewindEnd={() => controls.buttonSeekStop()}
         onFastForward={() => { controls.buttonSeekStart("forward"); controls.showOverlay(); }}
         onFastForwardEnd={() => controls.buttonSeekStop()}
+        // Android : le MAINTIEN passe par le canal natif tntCenterHold (les
+        // pressIn/Out JS y sont ignorés) — le press JS ne reste déclenché que
+        // par un TAP court : petit saut immédiat ; en scrub préparé, guardScrub
+        // CONFIRME le seek (OK sur ⏩/⏪ = « Lire ici », comme les autres boutons).
+        // tvOS garde pressIn/Out (maintien JS) : pas de onPress, sinon le
+        // relâchement d'un hold confirmerait le scrub (auto-confirm de facto).
+        onRewindTap={Platform.OS === "android"
+          ? controls.guardScrub(() => { controls.handleNudgeBack(); controls.showOverlay(); })
+          : undefined}
+        onFastForwardTap={Platform.OS === "android"
+          ? controls.guardScrub(() => { controls.handleNudgeForward(); controls.showOverlay(); })
+          : undefined}
         scrubViaButton={controls.scrubViaButton}
         // SEUL handler OSD historiquement non gardé : en scrub, le focus peut être
         // resté sur Retour → OK déclenchait son onPress natif et QUITTAIT la vidéo.

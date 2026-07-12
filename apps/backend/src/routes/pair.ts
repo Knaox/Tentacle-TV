@@ -5,6 +5,7 @@ import { getPrisma } from "../services/db";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { signDeviceToken, hashToken } from "../services/jwt";
+import { findValidSiblingToken } from "../services/deviceTokenHealth";
 
 const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 4;
@@ -81,7 +82,10 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         : (request as any).cookies?.tentacle_token || null;
       // Jellyfin tokens are opaque hex strings; JWTs have 3 dot-separated parts
       const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
-      const jellyfinAccessToken = isJellyfinToken ? bearerToken : null;
+      // Confirmateur en JWT (cookie web/desktop) : rien à copier → on grave le
+      // dernier token Jellyfin VALIDE d'un autre appareil du même compte, sinon
+      // le direct streaming du nouvel appareil serait mort-né (token null).
+      const jellyfinAccessToken = isJellyfinToken ? bearerToken : await findValidSiblingToken(user.userId);
 
       const expiresAt = new Date(Date.now() + CODE_TTL_MS);
       await prisma.pairingCode.create({
@@ -295,11 +299,13 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId: record.deviceId ?? crypto.randomUUID(),
       });
 
-      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate)
+      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate) ;
+      // confirmateur en JWT → dernier token valide d'un appareil frère du compte.
       const authHeader = request.headers.authorization as string | undefined;
       const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
         : (request as any).cookies?.tentacle_token || null;
       const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
+      const jellyfinAccessToken = isJellyfinToken ? bearerToken : await findValidSiblingToken(user.userId);
 
       await prisma.pairedDevice.create({
         data: {
@@ -307,7 +313,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
           jellyfinUserId: user.userId,
           username: user.username,
           tokenHash: hashToken(token),
-          jellyfinAccessToken: isJellyfinToken ? bearerToken : null,
+          jellyfinAccessToken,
         },
       });
 
@@ -343,11 +349,13 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
-      // Capture Jellyfin token for direct streaming
+      // Capture Jellyfin token for direct streaming ; confirmateur en JWT →
+      // dernier token valide d'un appareil frère du compte.
       const authHeader = request.headers.authorization as string | undefined;
       const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
         : (request as any).cookies?.tentacle_token || null;
       const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
+      const jellyfinAccessToken = isJellyfinToken ? bearerToken : await findValidSiblingToken(user.userId);
 
       const prisma = getPrisma();
       await prisma.pairedDevice.create({
@@ -356,7 +364,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
           jellyfinUserId: user.userId,
           username: user.username,
           tokenHash: hashToken(token),
-          jellyfinAccessToken: isJellyfinToken ? bearerToken : null,
+          jellyfinAccessToken,
         },
       });
 

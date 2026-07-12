@@ -16,6 +16,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -244,8 +245,21 @@ class ExoPlayerView(
 
                     override fun onPlayerError(error: PlaybackException) {
                         Log.e(TAG, ">>> onPlayerError: ${error.errorCodeName}", error)
+                        // Code HTTP (401/403 = token direct-streaming mort, 404…) enfoui
+                        // dans la chaîne des causes — remonté en clair (` http=NNN`) pour
+                        // que le JS relance la lecture avec un token frais.
+                        var httpCode = 0
+                        var cause: Throwable? = error.cause
+                        while (cause != null && httpCode == 0) {
+                            if (cause is HttpDataSource.InvalidResponseCodeException) httpCode = cause.responseCode
+                            cause = cause.cause
+                        }
                         emitEvent("error", Arguments.createMap().apply {
-                            putString("error", "${error.errorCodeName}: ${error.message}")
+                            putString("error", buildString {
+                                append(error.errorCodeName)
+                                if (httpCode > 0) append(" http=").append(httpCode)
+                                append(": ").append(error.message)
+                            })
                         })
                     }
 

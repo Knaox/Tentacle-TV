@@ -216,10 +216,12 @@ export function PlayerScreen({ route, navigation }: Props) {
     softReloadRef: p.softReloadRef, setReloadFrameSec: p.setReloadFrameSec,
   });
 
-  // Erreur de codec en direct play → bascule transcode forcé ; stall remux → recovery.
+  // Erreur de codec en direct play → bascule transcode ; stall remux → recovery ;
+  // 401 direct streaming → token frais + reload (useTVDirectStreamRecovery).
   const { handleError } = useTVErrorHandler({
     forceTranscode: p.forceTranscode, captureReloadTicks: p.captureReloadTicks,
     setVideoError, setForceTranscode: p.setForceTranscode, onRemuxStall: p.onRemuxStall, pausedStateRef,
+    bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading,
   });
 
   const audioTracksList = useMemo(() =>

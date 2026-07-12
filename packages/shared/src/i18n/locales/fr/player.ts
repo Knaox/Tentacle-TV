@@ -38,6 +38,7 @@ export default {
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   dismiss: "Masquer",
   playbackError: "Erreur de lecture vidéo",
+  directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
   retry: "Réessayer",
   back: "Retour",
   airplayActive: "Lecture sur un écran externe",

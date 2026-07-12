@@ -116,6 +116,11 @@ export function useTVRemote(options: TVRemoteOptions) {
         sawDownRef.current.delete(eventType);
         return;
       }
+      // Android : "select" agit TOUJOURS au down (enableKeyDownEvents garantit
+      // le key-down). Un up ORPHELIN (rafale déséquilibrée, down consommé côté
+      // natif pendant un maintien) ne doit jamais exécuter l'action — c'est lui
+      // qui « confirmait tout seul » le scrub au relâchement.
+      if (Platform.OS === "android" && eventType === "select") return;
       // Block up/down/menu/back on key-up — these should NOT fire on action=1
       // (otherwise key-up "down" triggers onDown → scrubbing mode, breaking DPAD seek)
       if (eventType === "up" || eventType === "down" || eventType === "menu" || eventType === "back") return;

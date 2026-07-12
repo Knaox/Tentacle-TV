@@ -1,11 +1,12 @@
 import { useCallback, useRef } from "react";
+import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
 
 /**
- * Gestion d'erreur du lecteur Apple TV : une erreur de CODEC en direct play
- * bascule en transcode forcé (en reprenant à la position courante, via
- * captureReloadTicks) plutôt que de surfacer l'erreur ; toute autre erreur (ou
- * un codec déjà en transcode) est surfacée. Extrait VERBATIM de PlayerScreen
- * (handleError) — détection, deps et commentaires préservés.
+ * Gestion d'erreur du lecteur : une erreur de CODEC en direct play bascule en
+ * transcode forcé (en reprenant à la position courante, via captureReloadTicks)
+ * plutôt que de surfacer l'erreur ; un 401/403 de stream en DIRECT STREAMING
+ * redemande un token frais et recharge (useTVDirectStreamRecovery) ; toute
+ * autre erreur (ou un codec déjà en transcode) est surfacée.
  */
 export function useTVErrorHandler(args: {
   forceTranscode: boolean;
@@ -19,8 +20,15 @@ export function useTVErrorHandler(args: {
    *  et ne compte pas dans la garde anti-boucle (AVPlayer peut réémettre
    *  l'erreur en continu sur une pause morte). */
   pausedStateRef?: React.MutableRefObject<boolean>;
+  /** Récupération 401 direct-streaming : reconstruit l'URL avec un token frais.
+   *  Absent (tvOS/local) → aucune récupération, comportement historique. */
+  bumpReloadNonce?: () => void;
+  setIsLoading?: (v: boolean) => void;
 }) {
-  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall, pausedStateRef } = args;
+  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall, pausedStateRef, bumpReloadNonce, setIsLoading } = args;
+  const { tryDirectAuthRecovery } = useTVDirectStreamRecovery({
+    captureReloadTicks, bumpReloadNonce, setVideoError, setIsLoading,
+  });
   // Garde-fou stall remux : compte les récupérations rapprochées (<8 s) → au-delà
   // de 4 (récup qui ne tient pas), on cesse et on surface l'erreur.
   const stallRef = useRef({ count: 0, last: 0 });
@@ -34,6 +42,9 @@ export function useTVErrorHandler(args: {
       if (s.count > 4) { setVideoError("Playback Stopped"); return; }
       onRemuxStall?.(); return;
     }
+    // 401/403 sur le stream en DIRECT streaming : token Jellyfin mort →
+    // redemande d'un token frais + reload en direct (jamais de bascule proxy).
+    if (tryDirectAuthRecovery(error)) return;
     const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
       || error.includes("codec") || error.includes("Could not open");
     if (isCodecError && !forceTranscode) {
@@ -45,7 +56,7 @@ export function useTVErrorHandler(args: {
       return;
     }
     setVideoError(error);
-  }, [forceTranscode, captureReloadTicks, onRemuxStall]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, onRemuxStall, tryDirectAuthRecovery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }
