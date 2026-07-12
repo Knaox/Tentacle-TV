@@ -35,9 +35,10 @@ git push origin main desktop-v1.12.0
 ```
 
 Le fichier **`Tentacle Deploy.html`** (hors repo) génère cette commande complète.
-**Re-livrer une même version** (nouveau build, ex. rejet store) : PAS de re-tag —
-relancer en manuel (`gh workflow run tv.yml` ou onglet Actions) : le build est
-auto-incrémenté à chaque exécution.
+**Re-livrer une même version** (nouveau build, ex. rejet store ou tag déjà pris) :
+tag avec suffixe `-rN` — ex. `tv-v1.0.0-r1` — version marketing inchangée, build
+auto-incrémenté, Release GitHub complète. Alternative sans Release GitHub :
+`gh workflow run tv.yml` (stores uniquement).
 
 ## Plateformes
 

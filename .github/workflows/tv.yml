@@ -69,8 +69,10 @@ jobs:
           VCODE=$(( 2000000000 + BUILD ))
           if [ "${{ github.event_name }}" = "push" ]; then
             IS_TAG=true; SUBMIT=true
-            if [ "${GITHUB_REF_NAME}" != "tv-v${VERSION}" ]; then
-              echo "::error::Tag ${GITHUB_REF_NAME} ≠ tv-v${VERSION} (versions.json → tv). Mets à jour versions.json (source unique) ou corrige le tag."
+            # Suffixe -rN optionnel = RE-LIVRAISON de la même version (tag git
+            # unique, version marketing inchangée, build auto-incrémenté).
+            if [[ ! "${GITHUB_REF_NAME}" =~ ^tv-v${VERSION}(-r[0-9]+)?$ ]]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} ≠ tv-v${VERSION}[-rN] (versions.json → tv). Mets à jour versions.json (source unique) ou corrige le tag."
               exit 1
             fi
           else
