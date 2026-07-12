@@ -35,6 +35,11 @@ on:
         description: "Soumettre aux stores (Play Console / TestFlight) — sinon artefacts seulement"
         type: boolean
         default: true
+      target:
+        description: "Quelle plateforme construire"
+        type: choice
+        options: [all, android, apple]
+        default: all
 
 concurrency:
   group: release-tv-${{ github.ref }}
@@ -44,11 +49,11 @@ env:
   APPLE_TEAM_ID: "96K3M57W49"
   TV_SCHEME: "TentacleTV"
   TV_WORKSPACE: "apps/tv/ios/TentacleTV.xcworkspace"
-  # ⚠️ Piste Play des tests fermés ANDROID TV — PISTE DÉDIÉE, distincte de la
-  # piste mobile malgré un nom affiché identique. `alpha` = l'ID de la piste
-  # MOBILE : ne pas l'utiliser ici. Renseigner l'identifiant API exact de la
-  # piste TV (nom de création de la piste fermée personnalisée).
-  PLAY_TV_TRACK: "TV-ALPHA-A-DEFINIR"
+  # Piste Play des tests fermés ANDROID TV. Les pistes par form factor sont
+  # PRÉFIXÉES dans l'API : « tv:Alpha » = piste fermée Alpha du form factor TV
+  # (≠ « alpha » qui est la piste MOBILE, homonyme dans l'UI de la console).
+  # Lister les identifiants exacts : workflow « Play — lister les pistes ».
+  PLAY_TV_TRACK: "tv:Alpha"
 
 jobs:
   # 0) Version depuis versions.json + builds auto-incrémentés + garde-fou tag.
@@ -84,6 +89,7 @@ jobs:
   # ── Android TV : AAB → Play Console (piste de tests fermés TV) ───────────
   android-tv:
     needs: version
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'android'
     name: Android TV (AAB → Play Console)
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -202,6 +208,7 @@ jobs:
   # ── Apple TV (tvOS → TestFlight) — n'empêche jamais l'Android TV de sortir ──
   apple-tv:
     needs: version
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'apple'
     name: Apple TV (tvOS TestFlight)
     runs-on: macos-latest
     timeout-minutes: 90
