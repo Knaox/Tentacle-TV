@@ -139,23 +139,20 @@ jobs:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
           API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
-          # CODE_SIGN_IDENTITY="Apple Distribution" : force l'archive à signer
-          # avec le certificat Distribution importé dans le keychain. Sans ça,
-          # la signature automatique réclame un cert « Apple Development » sur
-          # chaque runner éphémère et en CRÉE un via l'API à chaque run →
-          # « account has reached the maximum number of certificates ».
+          # Archive NON SIGNÉE : c'est l'export (méthode app-store, signature
+          # automatique + clé API) qui signe tout avec le cert Apple
+          # Distribution du keychain. La signature auto à l'archive réclamait
+          # un cert « Apple Development » et en CRÉAIT un sur chaque runner
+          # éphémère → « account has reached the maximum number of
+          # certificates » (quota du compte atteint). Aucun cert créé ainsi.
           xcodebuild archive \
             -workspace "$IOS_WORKSPACE" \
             -scheme "$IOS_SCHEME" \
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$API_KEY" \
-            -authenticationKeyIssuerID "$API_ISSUER" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
 
       - name: Export .ipa (App Store)
