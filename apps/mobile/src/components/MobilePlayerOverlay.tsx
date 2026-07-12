@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
 import { TABLET_MIN_WIDTH } from "@/theme";
-import { ArrowLeft, SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward, Captions, Settings, List } from "lucide-react-native";
+import { ArrowLeft, Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
 import { type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
+import { CenterControls } from "./player/CenterControls";
 import { SkipIndicator } from "./player/SkipIndicator";
 import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { AutoPlayOverlay } from "./player/AutoPlayOverlay";
@@ -138,39 +139,19 @@ export function MobilePlayerOverlay({
 
           {/* Center controls — box-none : les zones vides laissent passer le tap
               vers le Pressable de fond (toggle overlay), seuls les boutons captent. */}
-          <View pointerEvents="box-none" style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap }}>
-            {previousEpisode && onPreviousEpisode && (
-              <Pressable onPress={onPreviousEpisode} hitSlop={16} style={{ padding: 8 }}>
-                <SkipBack size={Math.round(22 * ui)} color="rgba(255,255,255,0.8)" />
-              </Pressable>
-            )}
-
-            <Pressable onPress={() => { onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
-              <RotateCcw size={Math.round(24 * ui)} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: Math.round(10 * ui), fontWeight: "600", textAlign: "center", marginTop: 2 }}>10</Text>
-            </Pressable>
-
-            <Pressable onPress={() => { onPlayPause(); resetHideTimer(); }} hitSlop={16}>
-              <View style={{
-                width: playSize, height: playSize, borderRadius: playSize / 2,
-                backgroundColor: "rgba(255,255,255,0.15)",
-                justifyContent: "center", alignItems: "center",
-              }}>
-                {paused ? <Play size={Math.round(30 * ui)} color="#fff" /> : <Pause size={Math.round(30 * ui)} color="#fff" />}
-              </View>
-            </Pressable>
-
-            <Pressable onPress={() => { onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }} hitSlop={16} style={{ padding: 8 }}>
-              <RotateCw size={Math.round(24 * ui)} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: Math.round(10 * ui), fontWeight: "600", textAlign: "center", marginTop: 2 }}>30</Text>
-            </Pressable>
-
-            {nextEpisode && onNextEpisode && (
-              <Pressable onPress={onNextEpisode} hitSlop={16} style={{ padding: 8 }}>
-                <SkipForward size={Math.round(22 * ui)} color="rgba(255,255,255,0.8)" />
-              </Pressable>
-            )}
-          </View>
+          <CenterControls
+            paused={paused}
+            ui={ui}
+            centerGap={centerGap}
+            playSize={playSize}
+            hasPrevious={!!previousEpisode}
+            hasNext={!!nextEpisode}
+            onPrevious={onPreviousEpisode}
+            onNext={onNextEpisode}
+            onPlayPause={() => { onPlayPause(); resetHideTimer(); }}
+            onRewind={() => { onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }}
+            onForward={() => { onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }}
+          />
 
           {/* Indicateur de saut ±10/30 (boutons) */}
           <SkipIndicator side={skipSide} />
