@@ -5,7 +5,7 @@ import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, i18n } from "@tentacle-tv/shared";
-import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useAuth, useTentacleConfig, setPreferencesBackendUrl, fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
@@ -100,6 +100,20 @@ export default function RootLayout() {
       const url = storage.getItem("tentacle_server_url");
       const lang = storage.getItem("tentacle_language");
       if (lang && lang !== i18n.language) i18n.changeLanguage(lang);
+
+      // Langue d'interface stockée en BASE (synchronisée entre appareils) :
+      // rattrape un changement fait depuis le web/TV. Fire-and-forget — le
+      // repli local ci-dessus couvre le hors-ligne, on ne bloque pas le splash.
+      const token = storage.getItem("tentacle_token");
+      if (url && token) {
+        setPreferencesBackendUrl(url);
+        void fetchInterfaceLanguage(token).then((dbLang) => {
+          if (dbLang && dbLang !== i18n.language) {
+            i18n.changeLanguage(dbLang);
+            storage.setItem("tentacle_language", dbLang);
+          }
+        });
+      }
 
       setServerUrl(url);
       setReady(true);

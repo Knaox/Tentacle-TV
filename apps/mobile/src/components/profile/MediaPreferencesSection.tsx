@@ -70,23 +70,39 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
   const { t } = useTranslation(["preferences", "common"]);
   const setMut = useSetLibraryPreference();
   const [editing, setEditing] = useState(false);
-  const [audio, setAudio] = useState(pref?.audioLang ?? "");
-  const [sub, setSub] = useState(pref?.subtitleLang ?? "");
-  const [mode, setMode] = useState(pref?.subtitleMode ?? "none");
+  const [audio, setAudio] = useState("");
+  const [sub, setSub] = useState("");
+  const [mode, setMode] = useState<"none" | "always" | "forced" | "signs">("none");
+
+  // Les états locaux ne servent QU'À l'édition, seedés à l'ouverture depuis la
+  // valeur DB. (Avant : seedés au premier render — les cartes montaient avant
+  // l'arrivée de la query prefs → les préférences en base ne s'affichaient
+  // jamais, l'état local restant figé à vide.)
+  const toggleEditing = useCallback(() => {
+    setEditing((was) => {
+      if (!was) {
+        setAudio(pref?.audioLang ?? "");
+        setSub(pref?.subtitleLang ?? "");
+        setMode(pref?.subtitleMode ?? "none");
+      }
+      return !was;
+    });
+  }, [pref]);
 
   const handleSave = useCallback(() => {
     setMut.mutate({
       libraryId,
       audioLang: audio || null,
       subtitleLang: sub || null,
-      subtitleMode: mode as "none" | "always" | "forced" | "signs",
+      subtitleMode: mode,
     });
     setEditing(false);
   }, [setMut, libraryId, audio, sub, mode]);
 
-  const audioLabel = LANGUAGES.find((l) => l.code === audio);
-  const subLabel = LANGUAGES.find((l) => l.code === sub);
-  const modeLabel = SUBTITLE_MODES.find((m) => m.code === mode);
+  // Affichage (mode lecture) : dérivé de la préférence EN BASE, pas de l'état local.
+  const audioLabel = LANGUAGES.find((l) => l.code === pref?.audioLang);
+  const subLabel = LANGUAGES.find((l) => l.code === pref?.subtitleLang);
+  const modeLabel = SUBTITLE_MODES.find((m) => m.code === (pref?.subtitleMode ?? "none"));
 
   return (
     <View style={{
@@ -97,7 +113,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
     }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: editing ? spacing.md : 0 }}>
         <Text style={{ ...typography.bodyBold, color: colors.textPrimary }}>{libraryName}</Text>
-        <Pressable onPress={() => setEditing(!editing)} hitSlop={8}>
+        <Pressable onPress={toggleEditing} hitSlop={8}>
           <Text style={{ ...typography.small, color: colors.accent }}>
             {editing ? t("common:close") : t("preferences:audio") + " / " + t("preferences:subtitles")}
           </Text>
