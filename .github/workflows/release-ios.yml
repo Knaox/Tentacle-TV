@@ -45,6 +45,8 @@ env:
   APPLE_TEAM_ID: "96K3M57W49"
   IOS_SCHEME: "TentacleTV"
   IOS_WORKSPACE: "apps/mobile/ios/TentacleTV.xcworkspace"
+  IOS_BUNDLE_ID: "com.tentacle.mobile"
+  IOS_PROFILE_NAME: "Tentacle TV iOS App Store CI"
 
 jobs:
   # 0) Détermine version / build / submit depuis le tag ou les inputs
@@ -125,6 +127,64 @@ jobs:
           cp ~/private_keys/AuthKey_${API_KEY}.p8 ~/.appstoreconnect/private_keys/
           echo "ASC_KEY_PATH=$HOME/private_keys/AuthKey_${API_KEY}.p8" >> "$GITHUB_ENV"
 
+      # Profil App Store généré via l'API App Store Connect (aucun secret
+      # supplémentaire) : la signature AUTOMATIQUE créait un certificat
+      # « Apple Development » sur chaque runner éphémère jusqu'à saturer le
+      # quota du compte. Ici : signature MANUELLE avec le cert Distribution du
+      # keychain + profil recréé de façon idempotente (delete + create → il
+      # référence toujours NOTRE certificat).
+      - name: Provision App Store profile (API ASC)
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          JWT=$(ruby -e '
+            require "openssl"; require "base64"; require "json"
+            key = OpenSSL::PKey.read(File.read(ENV.fetch("ASC_KEY_PATH")))
+            b64 = ->(s) { Base64.urlsafe_encode64(s, padding: false) }
+            header  = b64.(JSON.dump({ alg: "ES256", kid: ENV.fetch("API_KEY"), typ: "JWT" }))
+            now     = Time.now.to_i
+            payload = b64.(JSON.dump({ iss: ENV.fetch("API_ISSUER"), iat: now, exp: now + 1200, aud: "appstoreconnect-v1" }))
+            data    = "#{header}.#{payload}"
+            der     = key.sign(OpenSSL::Digest.new("SHA256"), data)
+            r, s    = OpenSSL::ASN1.decode(der).value.map { |i| i.value.to_s(2).rjust(32, "\x00".b) }
+            puts "#{data}.#{b64.(r + s)}"
+          ')
+          api() { curl -sf -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" "$@"; }
+          BASE="https://api.appstoreconnect.apple.com/v1"
+
+          # Certificat Distribution du keychain → id API (match par n° de série)
+          SERIAL=$(security find-certificate -c "Apple Distribution" -p build.keychain \
+            | openssl x509 -noout -serial | cut -d= -f2 | tr '[:lower:]' '[:upper:]')
+          CERTS=$(api "$BASE/certificates?filter%5BcertificateType%5D=DISTRIBUTION&limit=200")
+          CERT_ID=$(echo "$CERTS" | jq -r --arg s "$SERIAL" \
+            '[.data[] | select((.attributes.serialNumber | ascii_upcase) == $s)][0].id // empty')
+          if [ -z "$CERT_ID" ]; then
+            COUNT=$(echo "$CERTS" | jq '.data | length')
+            if [ "$COUNT" = "1" ]; then CERT_ID=$(echo "$CERTS" | jq -r '.data[0].id');
+            else echo "::error::Certificat Distribution du keychain (serial $SERIAL) introuvable côté API ($COUNT candidats)"; exit 1; fi
+          fi
+
+          BUNDLE_DB_ID=$(api "$BASE/bundleIds?filter%5Bidentifier%5D=$IOS_BUNDLE_ID&limit=200" \
+            | jq -r --arg b "$IOS_BUNDLE_ID" '[.data[] | select(.attributes.identifier == $b)][0].id')
+          [ -n "$BUNDLE_DB_ID" ] && [ "$BUNDLE_DB_ID" != "null" ] || { echo "::error::bundleId $IOS_BUNDLE_ID introuvable"; exit 1; }
+
+          # Idempotent : purge l'ancien profil du même nom puis (re)crée
+          NAME_ENC=$(python3 -c 'import urllib.parse,os;print(urllib.parse.quote(os.environ["IOS_PROFILE_NAME"]))')
+          OLD_ID=$(api "$BASE/profiles?filter%5Bname%5D=$NAME_ENC" | jq -r '.data[0].id // empty')
+          [ -n "$OLD_ID" ] && api -X DELETE "$BASE/profiles/$OLD_ID" >/dev/null || true
+          PROFILE=$(api -X POST "$BASE/profiles" -d "$(jq -n \
+            --arg name "$IOS_PROFILE_NAME" --arg bid "$BUNDLE_DB_ID" --arg cid "$CERT_ID" \
+            '{data:{type:"profiles",attributes:{name:$name,profileType:"IOS_APP_STORE"},
+              relationships:{bundleId:{data:{type:"bundleIds",id:$bid}},
+                             certificates:{data:[{type:"certificates",id:$cid}]}}}}')")
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE" | jq -r '.data.attributes.profileContent' | base64 --decode \
+            > "$HOME/Library/MobileDevice/Provisioning Profiles/tentacle-ios-ci.mobileprovision"
+          echo "Profil « $IOS_PROFILE_NAME » installé (cert $CERT_ID)"
+
       # L'Info.plist code la version en dur (pas de $(MARKETING_VERSION)) → on la
       # patche directement, sinon le tag n'aurait aucun effet sur le build uploadé.
       - name: Set version / build (Info.plist)
@@ -134,31 +194,20 @@ jobs:
           plutil -replace CFBundleVersion -string "${{ needs.setup.outputs.build }}" "$PLIST"
           plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
 
-      - name: Archive (xcodebuild, signature automatique)
-        env:
-          API_KEY: ${{ secrets.APPLE_API_KEY }}
-          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      - name: Archive (xcodebuild, signature manuelle Distribution)
         run: |
-          # Archive NON SIGNÉE : c'est l'export (méthode app-store, signature
-          # automatique + clé API) qui signe tout avec le cert Apple
-          # Distribution du keychain. La signature auto à l'archive réclamait
-          # un cert « Apple Development » et en CRÉAIT un sur chaque runner
-          # éphémère → « account has reached the maximum number of
-          # certificates » (quota du compte atteint). Aucun cert créé ainsi.
           xcodebuild archive \
             -workspace "$IOS_WORKSPACE" \
             -scheme "$IOS_SCHEME" \
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
 
       - name: Export .ipa (App Store)
-        env:
-          API_KEY: ${{ secrets.APPLE_API_KEY }}
-          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -167,7 +216,12 @@ jobs:
           <dict>
             <key>method</key><string>app-store</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${IOS_BUNDLE_ID}</key><string>${IOS_PROFILE_NAME}</string>
+            </dict>
             <key>destination</key><string>export</string>
             <key>uploadSymbols</key><true/>
           </dict>
@@ -176,11 +230,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -exportPath "$RUNNER_TEMP/ipa" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$API_KEY" \
-            -authenticationKeyIssuerID "$API_ISSUER"
+            -exportPath "$RUNNER_TEMP/ipa"
 
       - name: Upload .ipa artifact
         uses: actions/upload-artifact@v4
