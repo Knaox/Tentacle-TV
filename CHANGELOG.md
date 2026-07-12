@@ -233,10 +233,10 @@ Android mobile 1.0.0 — première version Google Play (tests)
 - First release of Tentacle TV for Android: your Jellyfin library, at its best.
 - Smooth playback with resume, audio and subtitle selection.
 - Automatic Up Next to the following episode.
-- Tablet ready: the interface adapts to large screens, in portrait and landscape.
-- Jellyfin profile picture: displayed and changeable from the app.
-- Elegant subtitles (white text with a thin outline, no black box) and always-centered playback controls.
-- Elegant dark interface, available in French and English.
+- Tablet ready: adapts to large screens, portrait and landscape.
+- Jellyfin profile picture: shown and changeable in the app.
+- Clean subtitles (white text, thin outline, no black box), centered playback controls.
+- Elegant dark interface, in French and English.
 
 ## [1.2.3]
 

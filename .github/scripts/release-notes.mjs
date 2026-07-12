@@ -54,15 +54,33 @@ if (!notes) {
   process.exit(0);
 }
 
-const text = lang === 'both' ? notes.raw : (lang === 'fr' ? notes.fr : notes.en);
+// Limites stores (caractères) — promises par l'en-tête mais jamais implémentées
+// jusqu'ici : Play a rejeté une note de 501 car. (max 500). `github` = brut.
+const LIMITS = { asc: 4000, play: 500, msstore: 1500 };
+
+/** Coupe à la dernière puce complète sous la limite (repli : coupe dure + …). */
+function truncate(t, limit) {
+  if (t.length <= limit) return t;
+  const cut = t.slice(0, limit);
+  const nl = cut.lastIndexOf('\n');
+  if (nl > limit * 0.5) return cut.slice(0, nl).trimEnd();
+  return cut.slice(0, limit - 1).trimEnd() + '…';
+}
+
+let text = lang === 'both' ? notes.raw : (lang === 'fr' ? notes.fr : notes.en);
 if (!text || !text.trim()) {
   console.error(`[release-notes] section trouvée mais vide pour lang=${lang} — rien produit.`);
   process.exit(0);
 }
+text = text.trimEnd();
+if (format !== 'github') text = truncate(text, LIMITS[format]);
 
+// Formats stores : PAS de saut de ligne final — Google Play compte les octets
+// du fichier (500 + '\n' = 501 → rejet).
+const payload = format === 'github' ? text + '\n' : text;
 if (out) {
-  fs.writeFileSync(out, text.trimEnd() + '\n');
+  fs.writeFileSync(out, payload);
   console.error(`[release-notes] ${out} écrit (${channel}-${version}, ${format}/${lang}, ${text.length} car.)`);
 } else {
-  process.stdout.write(text.trimEnd() + '\n');
+  process.stdout.write(payload);
 }
