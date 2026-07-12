@@ -49,6 +49,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);
   const backgroundRef = useRef<ElementRef<typeof TouchableOpacity>>(null);
+  // Mis à jour plus bas (autoPlay est défini après) — lu dynamiquement par la
+  // focus recovery : pendant l'écran « épisode suivant » (eof), recibler le
+  // fond volerait le focus aux boutons de la fiche (innavigable sur Android).
+  const eofActiveRef = useRef(false);
 
   // État des panneaux in-player (Réglages/Épisodes) + refocus OSD (usePreventRemove
   // du panneau épisodes vit dedans).
@@ -56,7 +60,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     showSettings, setShowSettings, showSettingsRef,
     showEpisodes, setShowEpisodes, showEpisodesRef,
     osdFocusSignal, bumpOsdFocus,
-  } = useTVPanelControls({ backgroundRef });
+  } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef });
 
   // Bus d'état partagé (positions, gates, refs miroir) + pipeline de flux.
   const s = usePlayerMediaState();
@@ -235,6 +239,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : 0;
   const autoPlayActive = autoPlay.countdown !== null;
+  eofActiveRef.current = autoPlay.source === "eof" && autoPlay.countdown !== null;
   // Item/URL pas encore résolus : écran de chargement contextualisé — avec issue de
   // secours si la résolution du flux a échoué (erreur + « Réessayer »).
   if (!item || !streamUrl) {

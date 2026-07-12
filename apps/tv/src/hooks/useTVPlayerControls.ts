@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { osdFocusedKeyRef } from "../components/player/focus/osdFocusBus";
 import { useScrubGestures } from "./useScrubGestures";
 import { useScrubController } from "./useScrubController";
 
@@ -8,6 +9,18 @@ const OVERLAY_HIDE_MS = 5000;
  *  qu'on ré-appuie dans cette fenêtre et dans le MÊME sens, le badge cumule
  *  (+30 → +60 → +90 ; −10 → −20 → −30). */
 const SKIP_BADGE_MS = 1500;
+/** Un OK émet l'event TV global « select » ET le press du Pressable focusé
+ *  (même key-up, ordre indéterminé). Quand le premier des deux confirme le
+ *  scrub, le jumeau arrivé ensuite voyait `scrubbing=false` et EXÉCUTAIT
+ *  l'action du bouton focusé (Retour = sortie de la vidéo). On absorbe tout
+ *  press OSD dans cette fenêtre après la fin d'un scrub. */
+const SCRUB_TWIN_PRESS_MS = 400;
+/** Pendant le MAINTIEN d'une touche media FF/RW, certaines télécommandes
+ *  intercalent des échos select/playPause entre les répétitions (cf. double
+ *  event Shield select+playPause) → ils confirmaient le scrub en plein
+ *  maintien (« ça clique tout seul sur OK »). Un vrai OK de confirmation
+ *  n'arrive qu'après relâchement, donc au-delà de cette fenêtre. */
+const MEDIA_KEY_ECHO_MS = 300;
 
 interface TVPlayerControlsOptions {
   paused: boolean;
@@ -89,10 +102,13 @@ export function useTVPlayerControls({
   });
   const { scrubbingRef } = scrub;
 
-  /** Garde pour les boutons OSD : en scrub, OK valide le scrub au lieu d'agir. */
+  /** Garde pour les boutons OSD : en scrub, OK valide le scrub au lieu d'agir.
+   *  Absorbe aussi le press JUMEAU du OK qui vient de terminer le scrub (le
+   *  « select » global et le press du bouton focusé partent du même key-up). */
   const guardScrub = useCallback(<T extends unknown[]>(fn: (...args: T) => void) =>
     (...args: T) => {
       if (scrubbingRef.current) { scrub.confirmScrub(); return; }
+      if (Date.now() - scrub.scrubEndedAtRef.current < SCRUB_TWIN_PRESS_MS) return;
       fn(...args);
     }, [scrub, scrubbingRef]);
 
@@ -143,6 +159,8 @@ export function useTVPlayerControls({
 
   // --- TV Remote binding ---
   useTVRemote({
+    debugTag: "PLAYER", // TODO(diag): À RETIRER
+
     onBack: () => {
       // Panneau ouvert (réglages/épisodes) : le « back » appartient au panneau,
       // qui se referme via son propre useTVRemote. Sur tvOS, useTVEventHandler
@@ -154,7 +172,16 @@ export function useTVPlayerControls({
     },
     onPlayPause: () => {
       if (panelOpenRef.current) return;
-      if (scrubbingRef.current) { scrub.confirmScrub(); return; }
+      // Maintien d'un bouton OSD FF/RW : seul le relâchement du bouton
+      // (onPressOut → stopButtonSeek) termine le scrub — un playPause écho ne
+      // doit pas le confirmer en plein maintien.
+      if (scrub.scrubViaButtonRef.current) return;
+      if (scrubbingRef.current) {
+        // Écho pendant le maintien d'une touche media FF/RW → ignorer.
+        if (Date.now() - scrub.lastMediaKeyAtRef.current < MEDIA_KEY_ECHO_MS) return;
+        scrub.confirmScrub();
+        return;
+      }
       // Bouton matériel dédié ▶︎❙❙ (eventType "playPause", routé séparément de
       // "select" par useTVRemote) : TOUJOURS toggler + montrer l'OSD, même OSD
       // caché. Le débounce anti double-event Shield (select+playPause) reste sur
@@ -176,7 +203,18 @@ export function useTVPlayerControls({
     // globalement (le bouton play/pause focalisé confirme aussi via son onPress).
     onSelect: () => {
       if (panelOpenRef.current) return;
-      if (scrubbingRef.current) scrub.confirmScrub();
+      // Focus sur un bouton FF/RW : OK relève du moteur de seek (tap/maintien,
+      // routé par le canal natif tntCenterHold) — jamais d'une confirmation.
+      const k = osdFocusedKeyRef.current;
+      if (k === "fastforward" || k === "rewind") return;
+      // Maintien d'un bouton OSD FF/RW : les échos « select » du maintien ne
+      // confirment pas — c'est le relâchement du bouton qui termine le scrub.
+      if (scrub.scrubViaButtonRef.current) return;
+      if (scrubbingRef.current) {
+        // Écho pendant le maintien d'une touche media FF/RW → ignorer.
+        if (Date.now() - scrub.lastMediaKeyAtRef.current < MEDIA_KEY_ECHO_MS) return;
+        scrub.confirmScrub();
+      }
     },
     onAnyPress: () => {
       if (skipAnyPressRef.current) { skipAnyPressRef.current = false; return; }

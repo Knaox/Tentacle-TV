@@ -15,8 +15,11 @@ import { useFocusRecovery } from "./useFocusRecovery";
  */
 export function useTVPanelControls(args: {
   backgroundRef: React.RefObject<ElementRef<typeof TouchableOpacity> | null>;
+  /** Suppression dynamique du refocus-fond (ex. écran « épisode suivant » eof
+   *  actif : lui voler le focus le rendait innavigable sur Android). */
+  recoverySuppressedRef?: React.RefObject<boolean>;
 }) {
-  const { backgroundRef } = args;
+  const { backgroundRef, recoverySuppressedRef } = args;
 
   const [showSettings, setShowSettings] = useState(false);
   const showSettingsRef = useRef(false);
@@ -46,7 +49,7 @@ export function useTVPanelControls(args: {
   });
 
   // Filet de sécurité : si le focus se perd hors panneau, recible le fond
-  useFocusRecovery(backgroundRef, !showSettings && !showEpisodes);
+  useFocusRecovery(backgroundRef, !showSettings && !showEpisodes, recoverySuppressedRef);
 
   return {
     showSettings, setShowSettings, showSettingsRef,

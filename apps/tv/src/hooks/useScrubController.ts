@@ -59,6 +59,14 @@ export function useScrubController({
   const scrubViaButtonRef = useRef(false);
 
   const [speedLabel, setSpeedLabel] = useState<string | null>(null);
+  // Fin du dernier scrub (confirm OU cancel) : un OK génère À LA FOIS l'event TV
+  // global « select » et le press du Pressable focusé (même key-up, ordre
+  // indéterminé) — ce timestamp permet d'absorber le jumeau arrivé en second.
+  const scrubEndedAtRef = useRef(0);
+  // Dernier event touche media FF/RW : pendant un MAINTIEN, certaines
+  // télécommandes intercalent des échos select/playPause entre les répétitions —
+  // un vrai OK de confirmation n'arrive qu'après le relâchement.
+  const lastMediaKeyAtRef = useRef(0);
   const holdRef = useRef<HoldState | null>(null);
   const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Timer d'annulation sur inactivité (cf. armIdleCancel / endShuttleGesture).
@@ -78,9 +86,11 @@ export function useScrubController({
   // confirm/cancel déclarés AVANT les mouvements : armIdleCancel (annulation sur
   // inactivité) en dépend, et chaque avance du fantôme réarme ce timer.
   const confirmScrub = useCallback(() => {
+    if (__DEV__) console.log(`[SCRUB] confirmScrub (scrubbing=${scrubbingRef.current})`);
     clearIdleCancel();
     scrubViaButtonRef.current = false; setScrubViaButton(false);
     if (!scrubbingRef.current) return;
+    scrubEndedAtRef.current = Date.now();
     scrubbingRef.current = false;
     setScrubbing(false);
     endHold();
@@ -97,6 +107,7 @@ export function useScrubController({
     clearIdleCancel();
     scrubViaButtonRef.current = false; setScrubViaButton(false);
     if (!scrubbingRef.current) return;
+    scrubEndedAtRef.current = Date.now();
     scrubbingRef.current = false;
     setScrubbing(false);
     endHold();
@@ -231,6 +242,7 @@ export function useScrubController({
   const handleMediaSeekKey = useCallback((dir: "forward" | "backward") => {
     if (panelOpenRef.current) return;
     skipAnyPressRef.current = true;
+    lastMediaKeyAtRef.current = Date.now();
     if (scrubbingRef.current) { moveScrub(dir); return; }
     startScrubbing(dir);
   }, [moveScrub, startScrubbing, panelOpenRef, skipAnyPressRef]);
@@ -246,6 +258,7 @@ export function useScrubController({
 
   return {
     scrubbing, scrubPosition, speedLabel, scrubbingRef, scrubViaButton,
+    scrubViaButtonRef, scrubEndedAtRef, lastMediaKeyAtRef,
     moveScrub, nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endHold, endShuttleGesture,
     startButtonSeek, stopButtonSeek,
     handleDpadDirection, handleLongDirection, handleMediaSeekKey, onHoldRelease,
