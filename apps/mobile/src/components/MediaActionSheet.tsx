@@ -56,12 +56,15 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
   // Drag-to-dismiss
   const translateY = useRef(new Animated.Value(SCREEN_H)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  // Ref-bag — le PanResponder (créé une fois) et `dismiss` lisent la hauteur fraîche.
+  const stateRef = useRef({ H: SCREEN_H });
+  stateRef.current.H = SCREEN_H;
   const dismiss = useCallback(() => {
     Animated.parallel([
-      Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
+      Animated.spring(translateY, { toValue: stateRef.current.H, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(() => { onClose(); });
-  }, [translateY, overlayOpacity, onClose, SCREEN_H]);
+  }, [translateY, overlayOpacity, onClose]);
 
   useEffect(() => {
     if (visible) {
@@ -76,8 +79,10 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+      // Ne pas capturer au tap (boutons cliquables) ; capturer sur glissement
+      // vers le bas → on peut tirer le sheet par tout son corps (iPad).
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_, g) => { if (g.dy > 0) translateY.setValue(g.dy); },
       onPanResponderRelease: (_, g) => {
         if (g.dy > DISMISS) dismiss();
@@ -103,13 +108,14 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
 
       <View style={st.sheetWrap} pointerEvents="box-none">
       <Animated.View
+        {...panResponder.panHandlers}
         style={[
           st.sheet, SHADOW_RN.sheet,
           { paddingBottom: insets.bottom + spacing.lg, transform: [{ translateY }] },
         ]}
       >
-        {/* Drag handle */}
-        <View {...panResponder.panHandlers} style={st.handleArea}>
+        {/* Drag handle — le glissement fonctionne sur tout le haut du sheet */}
+        <View style={st.handleArea}>
           <View style={st.handle} />
         </View>
 
@@ -224,7 +230,7 @@ const st = StyleSheet.create({
   title: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: colors.textPrimary, letterSpacing: -0.2, marginBottom: 3 },
   meta: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: BRAND.light, letterSpacing: 0.2 },
   grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 10, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-  cell: { width: "47.5%" as unknown as number, flexGrow: 1, alignItems: "center" as const, paddingVertical: 16, paddingHorizontal: 10, borderRadius: RADIUS.lg, backgroundColor: "rgba(255,255,255,0.025)" },
+  cell: { flex: 1, alignItems: "center" as const, paddingVertical: 16, paddingHorizontal: 10, borderRadius: RADIUS.lg, backgroundColor: "rgba(255,255,255,0.025)" },
   ring: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 10 },
   cellLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, fontSize: 12.5, textAlign: "center" as const, letterSpacing: 0.1, lineHeight: 15 },
   backLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: spacing.md, paddingVertical: 4 },

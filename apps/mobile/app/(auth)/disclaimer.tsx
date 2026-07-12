@@ -51,7 +51,7 @@ export default function DisclaimerScreen() {
 
   return (
     <SubtleBackground ambient>
-      <View style={[styles.root, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.root, { paddingTop: Math.max(insets.top, 24) + 20, paddingBottom: insets.bottom + 16 }]}>
         <FadeIn delay={0} translateY={10}>
           <View style={styles.langRow} accessibilityRole="radiogroup">
             {LANGS.map((l) => (

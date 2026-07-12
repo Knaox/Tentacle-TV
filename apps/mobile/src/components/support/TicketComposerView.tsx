@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground, IconButton } from "../ui";
-import { BORDER, BRAND, CTA, FONT_FAMILY, RADIUS } from "../../theme";
+import { BORDER, BRAND, CTA, FONT_FAMILY, RADIUS, useContentPadding } from "../../theme";
 import { Chip } from "./Chip";
 import { CATEGORIES, useTicketApi, type Category } from "./ticketTypes";
 
@@ -27,6 +27,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
   const { t } = useTranslation("tickets");
   const { t: tc } = useTranslation("common");
   const insets = useSafeAreaInsets();
+  const contentPad = useContentPadding(720);
   const { serverUrl, headers } = useTicketApi();
   const queryClient = useQueryClient();
 
@@ -57,8 +58,8 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: insets.top + 12,
+            paddingHorizontal: contentPad,
+            paddingTop: Math.max(insets.top, 24) + 12,
             paddingBottom: insets.bottom + 80,
           }}
           keyboardShouldPersistTaps="handled"

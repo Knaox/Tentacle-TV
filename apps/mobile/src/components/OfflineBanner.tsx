@@ -59,6 +59,8 @@ const styles = StyleSheet.create({
   content: {
     alignItems: "center",
     paddingHorizontal: 32,
+    width: "100%",
+    maxWidth: 420,
   },
   title: {
     color: "#ffffff",

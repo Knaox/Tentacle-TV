@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "expo-router";
 import { Platform, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -5,7 +6,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useMobilePluginNavItems, usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
 import { PersistentHeader } from "@/components/PersistentHeader";
-import { colors } from "@/theme";
+import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
+import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
+import { colors, useResponsive, RailWidthContext } from "@/theme";
 
 // Mapping des icônes unicode du plugin.json → noms Feather
 const ICON_MAP: Record<string, string> = {
@@ -29,12 +32,32 @@ export default function TabsLayout() {
   const first = navItems[0];
   const second = navItems[1];
 
+  // Nav : portrait (et iPhone) = barre basse ; iPad PAYSAGE = rail gauche fin
+  // + menu déroulant (RailMenu). La largeur du rail est publiée via contexte
+  // pour que hero/grilles se calent sur la largeur de contenu réelle.
+  const { isTablet, isLandscape } = useResponsive();
+  const sideNav = isTablet && isLandscape;
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { if (!sideNav) setMenuOpen(false); }, [sideNav]);
+
+  const menuItems = useMemo<RailMenuItem[]>(() => [
+    { href: "/", icon: "home", label: t("home") },
+    { href: "/libraries", icon: "film", label: t("library") },
+    ...(first ? [{ href: "/plugins" as const, icon: resolveIcon(first.icon, "compass"), label: first.label }] : []),
+    ...(second ? [{ href: "/plugin-extra" as const, icon: resolveIcon(second.icon, "list"), label: second.label }] : []),
+    { href: "/profile", icon: "user", label: t("profile") },
+  ], [t, first, second]);
+
   return (
+    <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     <PersistentHeader />
     <Tabs
+      tabBar={sideNav ? (props) => <TabRail {...props} onOpenMenu={() => setMenuOpen(true)} /> : undefined}
       screenOptions={{
         headerShown: false,
+        // iPad paysage : rail gauche custom ; sinon barre basse inchangée.
+        tabBarPosition: sideNav ? "left" : "bottom",
         tabBarStyle: {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.border,
@@ -106,6 +129,8 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    {sideNav && <RailMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} />}
     </View>
+    </RailWidthContext.Provider>
   );
 }

@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -124,12 +125,12 @@ export function WatchlistScreen() {
 
   return (
     <SubtleBackground ambient>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: Math.max(insets.top, 24) }]}>
         <ListHeader
           title={t("myList")}
           subtitle={subtitle}
           titleIcon="bookmark"
-          onBack={() => router.back()}
+          onBack={() => backOrHome(router)}
           onEnterSelection={selection.enter}
           canSelect={count > 0 && !selection.active}
         />

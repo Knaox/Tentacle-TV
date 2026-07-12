@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import {
@@ -133,12 +134,12 @@ export function PairTVScreen() {
           flexDirection: "row",
           alignItems: "center",
           paddingHorizontal: 16,
-          paddingTop: insets.top + 8,
+          paddingTop: Math.max(insets.top, 24) + 8,
           marginBottom: 8,
         }}>
           <IconButton
             icon="chevron-left"
-            onPress={() => router.back()}
+            onPress={() => backOrHome(router)}
             size={40}
             bgColor="transparent"
             color={BRAND.light}

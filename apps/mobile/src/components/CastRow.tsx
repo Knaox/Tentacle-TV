@@ -33,7 +33,7 @@ export function CastRow({ people }: CastRowProps) {
     <View style={{ marginTop: spacing.xl }}>
       {/* Crew */}
       {crewGroups.length > 0 && (
-        <View style={{ paddingHorizontal: spacing.screenPadding, marginBottom: spacing.lg }}>
+        <View style={{ paddingHorizontal: spacing.screenPadding, marginBottom: spacing.lg, maxWidth: 640 }}>
           {crewGroups.map((g) => (
             <View key={g.type} style={{ marginBottom: spacing.sm }}>
               <Text style={{ ...typography.small, color: colors.textMuted }}>{t(g.type.toLowerCase())}</Text>

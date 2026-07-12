@@ -21,6 +21,9 @@ iOS 1.3.0 — iPhone + iPad (application universelle)
 - **Grilles adaptatives** : bibliothèques, recherche, watchlist et favoris affichent davantage d'affiches par ligne sur grand écran, à la bonne taille — fini les affiches géantes.
 - **Mise en page repensée** : fiches détaillées, réglages, accueil et fenêtres (tri, filtres, actions) sont centrés et confortables à lire au lieu d'être étirés sur toute la largeur.
 - **Lecteur agrandi** : les commandes de lecture et les sous-titres sont plus grands et plus lisibles sur iPad.
+- **Navigation iPad repensée** : barre d'onglets en bas en portrait ; en paysage, rail latéral discret avec menu déroulant élégant.
+- **Fiches média plein écran** : visuel bord à bord, bouton retour toujours visible ; en paysage, mise en page en deux colonnes.
+- **Fiabilité** : fermeture des écrans ouverts par lien direct, geste de fermeture des panneaux plus naturel sur iPad, partage ancré (popover).
 - L'expérience sur iPhone reste strictement identique.
 
 ### EN
@@ -28,6 +31,9 @@ iOS 1.3.0 — iPhone + iPad (application universelle)
 - **Adaptive grids**: libraries, search, watchlist and favorites show more posters per row on large screens, at the right size — no more giant posters.
 - **Redesigned layout**: detail pages, settings, home and sheets (sort, filters, actions) are centered and comfortable to read instead of stretched edge to edge.
 - **Bigger player**: playback controls and subtitles are larger and easier to read on iPad.
+- **Rethought iPad navigation**: bottom tab bar in portrait; in landscape, a discreet side rail with an elegant slide-out menu.
+- **Full-screen media pages**: edge-to-edge artwork, always-visible back button; two-column layout in landscape.
+- **Reliability**: closing screens opened via direct links, more natural sheet dismiss gesture on iPad, anchored share popover.
 - The iPhone experience stays exactly the same.
 
 ## [linux-1.11.5]
@@ -212,12 +218,14 @@ Android mobile 1.0.0 — première version Google Play (tests)
 - Première version de Tentacle TV pour Android : votre médiathèque Jellyfin, en mieux.
 - Lecture fluide avec reprise, choix de l'audio et des sous-titres.
 - Passage automatique à l'épisode suivant.
+- Compatible tablettes : interface adaptée aux grands écrans, en portrait comme en paysage.
 - Interface sombre élégante, disponible en français et en anglais.
 
 ### EN
 - First release of Tentacle TV for Android: your Jellyfin library, at its best.
 - Smooth playback with resume, audio and subtitle selection.
 - Automatic Up Next to the following episode.
+- Tablet ready: the interface adapts to large screens, in portrait and landscape.
 - Elegant dark interface, available in French and English.
 
 ## [1.2.3]

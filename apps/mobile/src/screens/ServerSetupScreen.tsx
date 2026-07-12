@@ -84,7 +84,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
           <View
             style={{
               position: "absolute",
-              top: insets.top + 12,
+              top: Math.max(insets.top, 24) + 12,
               right: 16,
               flexDirection: "row",
               borderRadius: RADIUS.md,

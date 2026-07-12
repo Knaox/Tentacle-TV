@@ -34,6 +34,8 @@ export {
   useResponsive,
   useGrid,
   useContentPadding,
+  useRailWidth,
+  RailWidthContext,
   TABLET_MIN_WIDTH,
   IS_PAD_DEVICE,
   IS_TABLET_DEVICE,

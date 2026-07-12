@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -98,10 +99,10 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
 
   return (
     <SubtleBackground ambient>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: Math.max(insets.top, 24) }]}>
         {/* Header sticky */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn} accessibilityRole="button" accessibilityLabel={t("back")}>
+          <Pressable onPress={() => backOrHome(router)} hitSlop={12} style={styles.backBtn} accessibilityRole="button" accessibilityLabel={t("back")}>
             <Feather name="chevron-left" size={26} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>{libraryName ?? ""}</Text>

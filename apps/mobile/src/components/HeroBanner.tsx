@@ -1,18 +1,17 @@
-import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
-  FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions,
+  FlatList, StyleSheet, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { Feather } from "@expo/vector-icons";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { GradientOverlay } from "@/components/ui";
-import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, STATUS, useResponsive, TABLET_MIN_WIDTH } from "@/theme";
+import { spacing, BRAND, SURFACE, TABLET_MIN_WIDTH, useRailWidth } from "@/theme";
+import { HeroContent } from "./HeroBannerContent";
 
 // Synced with web/HeroBackdrop : the new slide arrives exactly when the
 // scale 1 → 1.06 zoom cycle ends, so the carousel feels like an uninterrupted
@@ -27,18 +26,13 @@ interface HeroBannerProps {
   onInfo: (item: MediaItem) => void;
 }
 
-function formatRuntime(ticks: number): string {
-  const mins = Math.round(ticks / 600_000_000);
-  if (mins < 60) return `${mins}min`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `${h}h${m}` : `${h}h`;
-}
-
 /** Hero Billboard cinematic — swipe pageEnabled + Ken Burns backdrop synced with auto-rotate (see ROTATE_MS). */
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
   const { width: SCREEN_W, height: screenH } = useWindowDimensions();
   const isTablet = Math.min(SCREEN_W, screenH) >= TABLET_MIN_WIDTH;
+  // Largeur RÉELLE du viewport hero : fenêtre − rail latéral (iPad paysage).
+  // Sans ça, les slides paginent sur la largeur fenêtre et dérivent du viewport.
+  const SLIDE_W = SCREEN_W - useRailWidth();
   // 0.74 instead of 0.82 — leaves room below the hero for "Reprendre la lecture"
   // section header to be fully visible above the floating tab bar on iPhone 17.
   // Cap relevé sur tablette pour un hero plus immersif.
@@ -58,22 +52,22 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
       if (userScrollingRef.current) return;
       setIndex((p) => {
         const next = (p + 1) % items.length;
-        listRef.current?.scrollToOffset({ offset: next * SCREEN_W, animated: true });
+        listRef.current?.scrollToOffset({ offset: next * SLIDE_W, animated: true });
         return next;
       });
     }, ROTATE_MS);
-  }, [items.length, SCREEN_W]);
+  }, [items.length, SLIDE_W]);
 
   // Resync scroll on focus via indexRef — reading `index` directly would re-run
   // this effect on every auto-advance, killing the FlatList's animated scroll.
   useFocusEffect(useCallback(() => {
-    const raf = requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: indexRef.current * SCREEN_W, animated: false }));
+    const raf = requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: indexRef.current * SLIDE_W, animated: false }));
     startTimer();
     return () => { cancelAnimationFrame(raf); if (timerRef.current) clearInterval(timerRef.current); };
-  }, [startTimer, SCREEN_W]));
+  }, [startTimer, SLIDE_W]));
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const newIndex = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    const newIndex = Math.round(e.nativeEvent.contentOffset.x / SLIDE_W);
     setIndex(newIndex);
     userScrollingRef.current = false;
     startTimer();
@@ -82,7 +76,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   if (!items.length) return <View style={{ height: BANNER_H }} />;
 
   return (
-    <View style={{ width: SCREEN_W, height: BANNER_H, overflow: "hidden", backgroundColor: SURFACE.s0 }}>
+    <View style={{ width: SLIDE_W, height: BANNER_H, overflow: "hidden", backgroundColor: SURFACE.s0 }}>
       <BackdropStack items={items} activeIndex={index} />
       <GradientOverlay direction="top" height={120 + insets.top} color="#000000" intensity="soft" />
       <GradientOverlay direction="bottom" height={BANNER_H * 0.62} color="#000000" intensity="strong" />
@@ -96,10 +90,10 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         decelerationRate="fast"
         onScrollBeginDrag={() => { userScrollingRef.current = true; if (timerRef.current) clearInterval(timerRef.current); }}
         onMomentumScrollEnd={onScrollEnd}
-        getItemLayout={(_, i) => ({ length: SCREEN_W, offset: SCREEN_W * i, index: i })}
+        getItemLayout={(_, i) => ({ length: SLIDE_W, offset: SLIDE_W * i, index: i })}
         style={StyleSheet.absoluteFillObject}
         renderItem={({ item }) => (
-          <View style={[st.slide, { width: SCREEN_W, height: BANNER_H, paddingTop: insets.top + 28 }]}>
+          <View style={[st.slide, { width: SLIDE_W, height: BANNER_H, paddingTop: Math.max(insets.top, 24) + 28 }]}>
             <View style={st.contentInner}>
               <HeroContent item={item} onPlay={onPlay} onInfo={onInfo} />
             </View>
@@ -160,142 +154,9 @@ function CrossfadeImage({ url, active }: { url: string; active: boolean }) {
   );
 }
 
-/* ── Hero content (logo / titre + CTAs avec halo brand) ─────────────────── */
-
-interface HeroContentProps {
-  item: MediaItem;
-  onPlay: (item: MediaItem) => void;
-  onInfo: (item: MediaItem) => void;
-}
-
-function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
-  const { t } = useTranslation("common");
-  const client = useJellyfinClient();
-  const { isTablet } = useResponsive();
-  const isEpisode = item.Type === "Episode";
-  const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const hasLogo = item.ImageTags?.Logo != null;
-  const logoUrl = hasLogo ? client.getImageUrl(logoId, "Logo", { width: 500, quality: 90 }) : null;
-  const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
-  const episodeLabel = isEpisode
-    ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber ?? 1).padStart(2, "0")} · ${item.Name}`
-    : null;
-  const progress = item.UserData?.PlayedPercentage ?? 0;
-  const hasProgress = progress > 0 && progress < 100;
-  const isWatched = item.UserData?.Played === true;
-  const genres = item.Genres?.slice(0, 2) ?? [];
-  const runtime = item.RunTimeTicks ? formatRuntime(item.RunTimeTicks) : null;
-
-  return (
-    <View>
-      {(hasProgress || isWatched || episodeLabel) && (
-        <View style={st.tagRow}>
-          {hasProgress && (
-            <View style={st.continueTag}>
-              <Feather name="play" size={9} color="#fff" fill="#fff" />
-              <Text style={st.continueTagTxt}>{t("continueLabel")}</Text>
-            </View>
-          )}
-          {isWatched && !hasProgress && (
-            <View style={st.continueTag}>
-              <Feather name="check" size={10} color="#000" />
-              <Text style={st.continueTagTxt}>{t("watched")}</Text>
-            </View>
-          )}
-          {episodeLabel && <Text style={st.epLabel} numberOfLines={1}>{episodeLabel}</Text>}
-        </View>
-      )}
-
-      {logoUrl ? (
-        <Image source={{ uri: logoUrl }} style={[st.logo, isTablet && { width: 380, height: 124, marginBottom: 18 }]} contentFit="contain" />
-      ) : (
-        <Text style={[st.title, isTablet && { fontSize: 46, lineHeight: 52, marginBottom: 18 }]} numberOfLines={3} maxFontSizeMultiplier={1.15}>{displayName}</Text>
-      )}
-
-      <View style={st.meta}>
-        {item.ProductionYear != null && <Text style={st.metaTxt}>{item.ProductionYear}</Text>}
-        {item.OfficialRating != null && (
-          <View style={st.rBadge}><Text style={st.rBadgeTxt}>{item.OfficialRating}</Text></View>
-        )}
-        {item.CommunityRating != null && (
-          <View style={st.ratingBox}>
-            <Feather name="star" size={11} color={STATUS.rating} />
-            <Text style={st.rating}>{item.CommunityRating.toFixed(1)}</Text>
-          </View>
-        )}
-        {runtime && <Text style={st.metaTxt}>{runtime}</Text>}
-        {genres.map((g) => <Text key={g} style={st.metaTxtMuted}>· {g}</Text>)}
-      </View>
-
-      {item.Overview != null && <Text style={[st.overview, isTablet && { fontSize: 17, lineHeight: 25 }]} numberOfLines={isTablet ? 3 : 2}>{item.Overview}</Text>}
-
-      {hasProgress && (
-        <View style={st.progRow}>
-          <View style={st.progTrack}>
-            <View style={[st.progFill, { width: `${progress}%` as unknown as number }]} />
-          </View>
-          <Text style={st.progLbl}>{Math.round(progress)}%</Text>
-        </View>
-      )}
-
-      <View style={st.btns}>
-        <Pressable
-          style={({ pressed }) => [st.playBtn, isTablet && { paddingVertical: 16, paddingHorizontal: 34 }, pressed && { opacity: 0.88 }]}
-          onPress={() => onPlay(item)}
-          accessibilityRole="button"
-          accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}
-        >
-          <Feather name="play" size={20} color={CTA.primaryFg} fill={CTA.primaryFg} />
-          <Text style={st.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [st.infoBtn, isTablet && { paddingVertical: 16, paddingHorizontal: 24 }, pressed && { opacity: 0.88 }]}
-          onPress={() => onInfo(item)}
-          accessibilityRole="button"
-          accessibilityLabel={`${t("moreInfo")} ${item.Name}`}
-        >
-          <Feather name="info" size={16} color="#fff" />
-          <Text style={st.infoTxt}>{t("moreInfo")}</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 const st = StyleSheet.create({
   slide: { justifyContent: "flex-end" as const, paddingHorizontal: spacing.screenPadding, paddingBottom: 56 },
   contentInner: { width: "100%" as const, maxWidth: 640 },
-  tagRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 12, flexWrap: "wrap" as const },
-  continueTag: { flexDirection: "row" as const, alignItems: "center" as const, gap: 5, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 3, paddingHorizontal: 7, paddingVertical: 3 },
-  continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: "#000", letterSpacing: 1.6, textTransform: "uppercase" as const },
-  epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)", letterSpacing: 0.2 },
-  logo: { width: 280, maxWidth: "85%", height: 92, marginBottom: 14 },
-  title: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, marginBottom: 14, letterSpacing: -0.6, lineHeight: 36, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
-  meta: { flexDirection: "row" as const, alignItems: "center" as const, gap: 9, marginBottom: 10, flexWrap: "wrap" as const },
-  metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: "rgba(255,255,255,0.88)" },
-  metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)" },
-  rBadge: { borderWidth: 1, borderColor: "rgba(255,255,255,0.45)", borderRadius: 3, paddingHorizontal: 5, paddingVertical: 0.5 },
-  rBadgeTxt: { fontSize: 9, fontFamily: FONT_FAMILY.bold, color: "rgba(255,255,255,0.85)", letterSpacing: 0.6 },
-  ratingBox: { flexDirection: "row" as const, alignItems: "center" as const, gap: 3 },
-  rating: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: STATUS.rating },
-  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: "rgba(255,255,255,0.85)", lineHeight: 21, marginBottom: 18, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-  progRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 18, maxWidth: 280 },
-  progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.22)", overflow: "hidden" as const },
-  progFill: { height: "100%" as const, borderRadius: 2, backgroundColor: BRAND.violet },
-  progLbl: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: "rgba(255,255,255,0.65)" },
-  btns: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10 },
-  playBtn: {
-    flexDirection: "row" as const, alignItems: "center" as const, gap: 9,
-    backgroundColor: CTA.primaryBg, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 26,
-    shadowColor: BRAND.violet, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.55, shadowRadius: 22, elevation: 12,
-  },
-  playTxt: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 },
-  infoBtn: {
-    flexDirection: "row" as const, alignItems: "center" as const, gap: 6,
-    backgroundColor: BRAND.ghost, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 18,
-    borderWidth: 1, borderColor: "rgba(139,92,246,0.4)",
-  },
-  infoTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold, color: "#fff" },
   dots: { position: "absolute" as const, left: 0, right: 0, flexDirection: "row" as const, justifyContent: "center" as const, alignItems: "center" as const, gap: 5 },
   dot: { height: 3, borderRadius: 2 },
   dotOn: { width: 22, backgroundColor: BRAND.violet, shadowColor: BRAND.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },

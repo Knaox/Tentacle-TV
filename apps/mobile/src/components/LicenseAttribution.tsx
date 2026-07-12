@@ -101,6 +101,8 @@ const styles = StyleSheet.create({
   container: {
     marginHorizontal: spacing.screenPadding,
     marginTop: spacing.lg,
+    // Bornée pour ne pas s'étirer sur toute la largeur (iPad).
+    maxWidth: 640,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,

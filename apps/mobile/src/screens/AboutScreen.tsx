@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable, Linking } from "react-native";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -45,7 +46,7 @@ export function AboutScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + 12,
+          paddingTop: Math.max(insets.top, 24) + 12,
           paddingBottom: insets.bottom + 32,
           paddingHorizontal: contentPad,
         }}
@@ -54,7 +55,7 @@ export function AboutScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24, gap: 4 }}>
           <IconButton
             icon="chevron-left"
-            onPress={() => router.back()}
+            onPress={() => backOrHome(router)}
             size={40}
             bgColor="transparent"
             color={BRAND.light}

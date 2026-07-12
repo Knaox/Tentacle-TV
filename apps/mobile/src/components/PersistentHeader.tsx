@@ -13,7 +13,10 @@ export function PersistentHeader() {
   return (
     <View style={{
       backgroundColor: colors.background,
-      paddingTop: insets.top + 4,
+      // Plancher 24pt = hauteur barre d'état iOS : sur iPad `insets.top` peut
+      // remonter ~0 et coller le header à l'heure/WiFi/batterie. Sur iPhone à
+      // encoche, insets.top (≥44) l'emporte → aucun changement.
+      paddingTop: Math.max(insets.top, 24) + 4,
       paddingBottom: 10,
       paddingHorizontal: spacing.screenPadding,
       flexDirection: "row",

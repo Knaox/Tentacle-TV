@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -53,7 +54,7 @@ export function SearchScreen() {
   return (
     <SubtleBackground ambient>
       {/* Header glass — input search + close button */}
-      <View style={[st.headerWrap, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[st.headerWrap, { paddingTop: Math.max(insets.top, 24) + spacing.md }]}>
         <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.45)" }]} />
         <View style={st.headerRow}>
@@ -84,7 +85,7 @@ export function SearchScreen() {
             )}
           </View>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => backOrHome(router)}
             hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel={t("cancel")}
@@ -154,7 +155,7 @@ export function SearchScreen() {
 
 const st = StyleSheet.create({
   headerWrap: { paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER.subtle },
-  headerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm, paddingHorizontal: spacing.screenPadding },
+  headerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm, paddingHorizontal: spacing.screenPadding, width: "100%" as const, maxWidth: 860, alignSelf: "center" as const },
   searchWrap: {
     flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm,
     backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: BORDER.subtle,

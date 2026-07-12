@@ -2,6 +2,7 @@ import { useMemo, useCallback } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { backOrHome } from "@/utils/backOrHome";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "../hooks/useActivePlugins";
@@ -91,7 +92,7 @@ export function PluginWebViewScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{
-        paddingTop: insets.top + 8,
+        paddingTop: Math.max(insets.top, 24) + 8,
         paddingHorizontal: spacing.screenPadding,
         paddingBottom: 12,
         flexDirection: "row",
@@ -99,7 +100,7 @@ export function PluginWebViewScreen() {
         gap: 12,
         backgroundColor: colors.background,
       }}>
-        <IconButton icon="←" onPress={() => router.back()} />
+        <IconButton icon="←" onPress={() => backOrHome(router)} />
         <Text style={{ ...typography.subtitle, color: colors.textPrimary, flex: 1 }}>
           {plugin.name}
         </Text>

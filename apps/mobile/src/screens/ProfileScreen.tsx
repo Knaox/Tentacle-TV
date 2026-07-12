@@ -7,7 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, useContentPadding } from "../theme";
+import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, useContentPadding, useResponsive } from "../theme";
 import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
 import { clearCredentials } from "../auth/credentialManager";
@@ -87,82 +87,102 @@ export function ProfileScreen() {
   }, [t, isAdmin, storage, queryClient, router]);
 
   const contentPad = useContentPadding();
+  const { isTablet, isLandscape } = useResponsive();
+  const twoCol = isTablet && isLandscape;
+
+  const leftCol = (
+    <>
+      {/* Hero — avatar gradient XL + nom + badge admin */}
+      <FadeIn delay={0}>
+        <View style={st.hero}>
+          <LinearGradient
+            colors={[BRAND.dark, BRAND.violet, BRAND.light]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={st.avatar}
+          >
+            <Text style={st.avatarTxt}>{initial}</Text>
+          </LinearGradient>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={st.heroName} numberOfLines={1}>{userName}</Text>
+            {isAdmin ? <Badge label={t("adminBadge")} variant="brand" /> : <Text style={st.heroSub}>{t("title")}</Text>}
+          </View>
+        </View>
+      </FadeIn>
+
+      {/* Quick actions row — 3 cards icon glass */}
+      <FadeIn delay={80}>
+        <View style={st.quickRow}>
+          <QuickActionCard iconName="monitor" label={t("pairTV")} onPress={() => router.push("/pair-tv")} />
+          <QuickActionCard iconName="help-circle" label={t("support")} onPress={() => router.push("/support")} />
+          <QuickActionCard iconName="info" label={t("about")} onPress={() => router.push("/about")} />
+        </View>
+      </FadeIn>
+
+      {/* Préférences */}
+      <FadeIn delay={160}>
+        <SectionHeader title={t("preferences")} />
+        <GlassCard style={{ marginBottom: spacing.xl }}>
+          <LanguageToggle />
+          <View style={st.divider} />
+          <MediaPreferencesSection />
+        </GlassCard>
+      </FadeIn>
+
+      {/* Appareils appairés */}
+      <FadeIn delay={240}><PairedDevicesSection /></FadeIn>
+    </>
+  );
+
+  const rightCol = (
+    <>
+      {/* Admin */}
+      {isAdmin && <FadeIn delay={320}><AdminSection /></FadeIn>}
+
+      {/* Privacy */}
+      <FadeIn delay={360}>
+        <Pressable
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          accessibilityRole="link"
+          accessibilityLabel={t("privacyPolicy")}
+          style={st.privacy}
+          hitSlop={8}
+        >
+          <Feather name="external-link" size={13} color={colors.textMuted} />
+          <Text style={st.privacyTxt}>{t("privacyPolicy")}</Text>
+        </Pressable>
+      </FadeIn>
+
+      {/* Danger zone — consolidée en liste compacte */}
+      <FadeIn delay={400}>
+        <SectionHeader title={t("dangerZone")} danger />
+        <View style={st.dangerList}>
+          <DangerRow icon="server" label={t("changeServer")} onPress={handleChangeServer} />
+          <DangerRow icon="trash-2" label={t("clearCache")} onPress={handleClearCache} />
+          <DangerRow icon="user-x" label={t("deleteAccount")} onPress={handleDeleteAccount} disabled={deleting} />
+          <DangerRow icon="log-out" label={t("logout")} onPress={handleLogout} variant="logout" />
+        </View>
+      </FadeIn>
+
+      <View style={{ marginTop: spacing.xl, alignItems: "center" }}>
+        <Text style={st.versionTxt}>Tentacle TV v{appVersion}</Text>
+      </View>
+    </>
+  );
 
   return (
     <SubtleBackground ambient>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <View style={{ paddingHorizontal: contentPad, paddingTop: spacing.xl }}>
-          {/* Hero — avatar gradient XL + nom + badge admin */}
-          <FadeIn delay={0}>
-            <View style={st.hero}>
-              <LinearGradient
-                colors={[BRAND.dark, BRAND.violet, BRAND.light]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={st.avatar}
-              >
-                <Text style={st.avatarTxt}>{initial}</Text>
-              </LinearGradient>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={st.heroName} numberOfLines={1}>{userName}</Text>
-                {isAdmin ? <Badge label={t("adminBadge")} variant="brand" /> : <Text style={st.heroSub}>{t("title")}</Text>}
-              </View>
-            </View>
-          </FadeIn>
-
-          {/* Quick actions row — 3 cards icon glass */}
-          <FadeIn delay={80}>
-            <View style={st.quickRow}>
-              <QuickActionCard iconName="monitor" label={t("pairTV")} onPress={() => router.push("/pair-tv")} />
-              <QuickActionCard iconName="help-circle" label={t("support")} onPress={() => router.push("/support")} />
-              <QuickActionCard iconName="info" label={t("about")} onPress={() => router.push("/about")} />
-            </View>
-          </FadeIn>
-
-          {/* Préférences */}
-          <FadeIn delay={160}>
-            <SectionHeader title={t("preferences")} />
-            <GlassCard style={{ marginBottom: spacing.xl }}>
-              <LanguageToggle />
-              <View style={st.divider} />
-              <MediaPreferencesSection />
-            </GlassCard>
-          </FadeIn>
-
-          {/* Appareils appairés */}
-          <FadeIn delay={240}><PairedDevicesSection /></FadeIn>
-
-          {/* Admin */}
-          {isAdmin && <FadeIn delay={320}><AdminSection /></FadeIn>}
-
-          {/* Privacy */}
-          <FadeIn delay={360}>
-            <Pressable
-              onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
-              accessibilityRole="link"
-              accessibilityLabel={t("privacyPolicy")}
-              style={st.privacy}
-              hitSlop={8}
-            >
-              <Feather name="external-link" size={13} color={colors.textMuted} />
-              <Text style={st.privacyTxt}>{t("privacyPolicy")}</Text>
-            </Pressable>
-          </FadeIn>
-
-          {/* Danger zone — consolidée en liste compacte */}
-          <FadeIn delay={400}>
-            <SectionHeader title={t("dangerZone")} danger />
-            <View style={st.dangerList}>
-              <DangerRow icon="server" label={t("changeServer")} onPress={handleChangeServer} />
-              <DangerRow icon="trash-2" label={t("clearCache")} onPress={handleClearCache} />
-              <DangerRow icon="user-x" label={t("deleteAccount")} onPress={handleDeleteAccount} disabled={deleting} />
-              <DangerRow icon="log-out" label={t("logout")} onPress={handleLogout} variant="logout" />
-            </View>
-          </FadeIn>
-
-          <View style={{ marginTop: spacing.xl, alignItems: "center" }}>
-            <Text style={st.versionTxt}>Tentacle TV v{appVersion}</Text>
+        {twoCol ? (
+          <View style={{ flexDirection: "row", gap: spacing.xl, width: "100%", maxWidth: 940, alignSelf: "center", paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl }}>
+            <View style={{ flex: 1 }}>{leftCol}</View>
+            <View style={{ flex: 1 }}>{rightCol}</View>
           </View>
-        </View>
+        ) : (
+          <View style={{ paddingHorizontal: contentPad, paddingTop: spacing.xl }}>
+            {leftCol}
+            {rightCol}
+          </View>
+        )}
       </ScrollView>
     </SubtleBackground>
   );
