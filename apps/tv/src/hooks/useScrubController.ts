@@ -188,7 +188,7 @@ export function useScrubController({
   }, [endHold, armIdleCancel]);
 
   const { startButtonSeek, stopButtonSeek } = useButtonSeek({
-    durationRef, startScrubbing, nudgeScrub, confirmScrub, clearIdleCancel,
+    durationRef, startScrubbing, nudgeScrub, clearIdleCancel,
     scrubbingRef, scrubViaButtonRef, setScrubViaButton, setSpeedLabel,
   });
 

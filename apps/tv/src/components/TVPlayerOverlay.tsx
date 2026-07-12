@@ -36,12 +36,16 @@ interface TVPlayerOverlayProps {
   onSkipForward: () => void;
   /** Recul rapide : DÉBUT du maintien (accélération continue tant que tenu) */
   onRewind: () => void;
-  /** Recul rapide : FIN du maintien (validation seek + reprise) */
+  /** Recul rapide : FIN du maintien (fantôme figé — OK confirme, Back annule) */
   onRewindEnd: () => void;
   /** Avance rapide : DÉBUT du maintien */
   onFastForward: () => void;
   /** Avance rapide : FIN du maintien */
   onFastForwardEnd: () => void;
+  /** TAP court ⏪ (Android) : petit saut immédiat ; en scrub préparé, confirme. */
+  onRewindTap?: () => void;
+  /** TAP court ⏩ (Android) : petit saut immédiat ; en scrub préparé, confirme. */
+  onFastForwardTap?: () => void;
   /** Scrub initié par un bouton OSD maintenu → ne pas verrouiller le focus */
   scrubViaButton?: boolean;
   onBack: () => void;
@@ -68,7 +72,8 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   title, currentTime, bufferedTime = 0, duration, paused, visible,
   speedLabel, scrubbing = false, scrubPosition = 0, focusSignal = 0,
   onPlayPause, onSkipBack, onSkipForward,
-  onRewind, onRewindEnd, onFastForward, onFastForwardEnd, scrubViaButton,
+  onRewind, onRewindEnd, onFastForward, onFastForwardEnd,
+  onRewindTap, onFastForwardTap, scrubViaButton,
   onBack, onSettings,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
   onEpisodes,
@@ -200,7 +205,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </Focusable>
           )}
 
-          <Focusable variant="button" ref={focus.registerButton("rewind")} onPressIn={onRewind} onPressOut={onRewindEnd} {...focus.buttonProps("rewind")}>
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("rewind")} onPress={onRewindTap} onPressIn={onRewind} onPressOut={onRewindEnd} {...focus.buttonProps("rewind")}>
             <View style={{ padding: 10 }}>
               <RewindIcon size={22} color={Colors.textPrimary} />
             </View>
@@ -236,7 +241,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable variant="button" ref={focus.registerButton("fastforward")} onPressIn={onFastForward} onPressOut={onFastForwardEnd} {...focus.buttonProps("fastforward")}>
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("fastforward")} onPress={onFastForwardTap} onPressIn={onFastForward} onPressOut={onFastForwardEnd} {...focus.buttonProps("fastforward")}>
             <View style={{ padding: 10 }}>
               <FastForwardIcon size={22} color={Colors.textPrimary} />
             </View>

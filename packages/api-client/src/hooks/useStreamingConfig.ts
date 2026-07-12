@@ -21,7 +21,9 @@ const DISABLED_CONFIG: StreamingConfig = {
   jellyfinToken: null,
 };
 
-async function fetchStreamingConfig(token: string | null): Promise<StreamingConfig> {
+/** Fetch one-shot de la config direct-streaming (aussi utilisé hors React Query :
+ *  récupération d'un 401 de stream côté TV → redemande d'un token frais). */
+export async function fetchStreamingConfig(token: string | null): Promise<StreamingConfig> {
   if (!token) return DISABLED_CONFIG;
 
   try {

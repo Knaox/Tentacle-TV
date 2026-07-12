@@ -3,6 +3,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { osdFocusedKeyRef } from "../components/player/focus/osdFocusBus";
 import { useScrubGestures } from "./useScrubGestures";
 import { useScrubController } from "./useScrubController";
+import { BUTTON_SEEK_BASE } from "./scrubAcceleration";
 
 const OVERLAY_HIDE_MS = 5000;
 /** Fenêtre de cumul des sauts consécutifs (= durée d'affichage du badge). Tant
@@ -140,6 +141,10 @@ export function useTVPlayerControls({
 
   const handleSkipForward = useCallback(() => skipBy(30), [skipBy]);
   const handleSkipBack = useCallback(() => skipBy(-10), [skipBy]);
+  /** Tap court sur ⏪/⏩ de l'OSD (Android) : petit saut immédiat, sans fantôme
+   *  ni confirmation. Pendant un scrub préparé, guardScrub confirme à la place. */
+  const handleNudgeForward = useCallback(() => skipBy(BUTTON_SEEK_BASE), [skipBy]);
+  const handleNudgeBack = useCallback(() => skipBy(-BUTTON_SEEK_BASE), [skipBy]);
 
   // --- Scrub gestuel (tvOS) : la Siri Remote n'a ni longLeft/longRight ni
   //     rewind/fastForward → on alimente le MÊME mécanisme de scrub depuis les
@@ -236,6 +241,8 @@ export function useTVPlayerControls({
     guardScrub,
     handleSkipForward,
     handleSkipBack,
+    handleNudgeForward,
+    handleNudgeBack,
     buttonSeekStart: scrub.startButtonSeek,
     buttonSeekStop: scrub.stopButtonSeek,
     scrubViaButton: scrub.scrubViaButton,

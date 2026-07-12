@@ -33,13 +33,15 @@ export function useTVStreamUrl(args: {
   maxBitrate?: number;
   maxHeight?: number;
   isDirectPlay: boolean;
-  /** Parité de signature tvOS (reload transcode explicite) ; ignoré côté Android
-   *  (le changement de piste audio est natif, pas de refetch d'URL). */
+  /** Force la reconstruction de l'URL : « Réessayer » après un échec, ou reload
+   *  après rafraîchissement du token direct-streaming (l'URL est recalculée via
+   *  resolveMediaUrl → repart avec le token frais). */
   reloadNonce?: number;
 }) {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, isDirectPlay,
+    reloadNonce,
   } = args;
   const client = useJellyfinClient();
 
@@ -78,7 +80,7 @@ export function useTVStreamUrl(args: {
     return client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
     }) + startFragment;
-  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight]);
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
