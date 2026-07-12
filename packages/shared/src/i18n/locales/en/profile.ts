@@ -46,5 +46,9 @@ export default {
   deleteAccountAdminError: "Administrators cannot delete their own account. Please contact another administrator on your server.",
   deleteAccountSuccess: "Your account has been successfully deleted.",
   deleteAccountError: "An error occurred while deleting the account. Please try again.",
+  photoUpdated: "Profile picture updated.",
+  photoErrorTitle: "Profile picture",
+  photoErrorMessage: "Could not update the picture. Please try again.",
+  photoPermissionMessage: "Allow photo access in Settings to change your profile picture.",
   dangerZone: "Danger zone",
 } as const;

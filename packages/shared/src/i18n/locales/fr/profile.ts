@@ -46,5 +46,9 @@ export default {
   deleteAccountAdminError: "Les administrateurs ne peuvent pas supprimer leur propre compte. Veuillez contacter un autre administrateur de votre serveur.",
   deleteAccountSuccess: "Votre compte a été supprimé avec succès.",
   deleteAccountError: "Une erreur est survenue lors de la suppression du compte. Veuillez réessayer.",
+  photoUpdated: "Photo de profil mise à jour.",
+  photoErrorTitle: "Photo de profil",
+  photoErrorMessage: "Impossible de mettre à jour la photo. Veuillez réessayer.",
+  photoPermissionMessage: "Autorisez l'accès à vos photos dans Réglages pour changer votre photo de profil.",
   dangerZone: "Zone de danger",
 } as const;
