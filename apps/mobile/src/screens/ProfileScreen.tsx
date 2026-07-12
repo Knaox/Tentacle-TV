@@ -4,13 +4,13 @@ import { useRouter } from "expo-router";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, useContentPadding, useResponsive } from "../theme";
+import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, STATUS, useContentPadding, useResponsive } from "../theme";
 import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
+import { ProfileAvatar } from "../components/profile/ProfileAvatar";
 import { clearCredentials } from "../auth/credentialManager";
 import { useServerUrl } from "../providers/ServerUrlContext";
 
@@ -93,16 +93,10 @@ export function ProfileScreen() {
 
   const leftCol = (
     <>
-      {/* Hero — avatar gradient XL + nom + badge admin */}
+      {/* Hero — photo de profil Jellyfin (tap pour changer) + nom + badge admin */}
       <FadeIn delay={0}>
         <View style={st.hero}>
-          <LinearGradient
-            colors={[BRAND.dark, BRAND.violet, BRAND.light]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={st.avatar}
-          >
-            <Text style={st.avatarTxt}>{initial}</Text>
-          </LinearGradient>
+          <ProfileAvatar user={user} initial={initial} />
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={st.heroName} numberOfLines={1}>{userName}</Text>
             {isAdmin ? <Badge label={t("adminBadge")} variant="brand" /> : <Text style={st.heroSub}>{t("title")}</Text>}
@@ -245,8 +239,6 @@ function DangerRow({ icon, label, onPress, variant, disabled }: {
 
 const st = StyleSheet.create({
   hero: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.lg, marginBottom: spacing.xl },
-  avatar: { width: 76, height: 76, borderRadius: 38, alignItems: "center" as const, justifyContent: "center" as const, ...SHADOW_RN.elev3 },
-  avatarTxt: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: "#fff", letterSpacing: -0.5 },
   heroName: { ...typography.title, fontSize: 22, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, letterSpacing: -0.4 },
   heroSub: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: colors.textMuted },
   quickRow: { flexDirection: "row" as const, gap: spacing.md, marginBottom: spacing.xxl },

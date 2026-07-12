@@ -51,6 +51,8 @@
 	<string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Tentacle TV needs access to your local network to connect to your self-hosted media server.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choisissez une photo de votre photothèque pour votre photo de profil. / Pick a photo from your library for your profile picture.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
