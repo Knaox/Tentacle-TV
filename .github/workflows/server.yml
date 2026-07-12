@@ -1,0 +1,174 @@
+# Tentacle TV — SERVEUR (backend + web, image Docker multi-arch)
+#
+# Déclenché par CHAQUE push sur main (pas de tag) : publie l'image
+# ghcr.io/knaox/tentacle-tv en `:latest` + `:v<server>` (version lue dans
+# versions.json → champ `server`, la source unique des versions).
+#
+# Si le push CHANGE la version `server` de versions.json, une Release GitHub
+# `server-vX.Y.Z` est créée avec les notes de changelogs/server.md
+# (bloc « ## [X.Y.Z] », sections ### FR / ### EN).
+
+name: Server (Docker)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: knaox/tentacle-tv
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository (versions.json)
+        uses: actions/checkout@v4
+
+      - name: Read server version
+        id: v
+        run: echo "version=$(jq -r .server versions.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and push (latest + version)
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.v.outputs.version }} \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect manifest
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  # ── Release GitHub server-vX.Y.Z — UNIQUEMENT quand le push change la
+  #    version `server` de versions.json (notes : changelogs/server.md). ──
+  release:
+    runs-on: ubuntu-latest
+    needs: merge
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Detect server version change
+        id: chg
+        run: |
+          NEW=$(jq -r .server versions.json)
+          OLD=$(git show '${{ github.event.before }}:versions.json' 2>/dev/null | jq -r .server 2>/dev/null || echo "")
+          echo "Version serveur : ${OLD:-«absente»} → $NEW"
+          if [ -n "$OLD" ] && [ "$OLD" != "null" ] && [ "$OLD" != "$NEW" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes
+        if: steps.chg.outputs.changed == 'true'
+        run: |
+          V="${{ steps.chg.outputs.version }}"
+          {
+            echo "Image Docker : \`ghcr.io/knaox/tentacle-tv:v${V}\` (et \`:latest\`)."
+            echo ""
+          } > release-body.md
+          node .github/scripts/release-notes.mjs \
+            --changelog changelogs/server.md --version "$V" \
+            --format github --out notes.md || true
+          [ -s notes.md ] && cat notes.md >> release-body.md
+          cat release-body.md
+
+      - name: Create GitHub Release server-vX.Y.Z
+        if: steps.chg.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="${{ steps.chg.outputs.version }}"
+          gh release create "server-v${V}" \
+            --title "Tentacle TV Server v${V}" \
+            --notes-file release-body.md \
+            --target "${{ github.sha }}" || echo "Release server-v${V} existe déjà — ignoré."

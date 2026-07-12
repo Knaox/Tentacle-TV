@@ -24,6 +24,8 @@ COPY packages/ packages/
 COPY apps/web/ apps/web/
 COPY apps/backend/ apps/backend/
 COPY tsconfig.base.json tsconfig.base.json
+# Source unique des versions (BACKEND_VERSION + versions affichées par le web)
+COPY versions.json versions.json
 
 # Build frontend
 WORKDIR /app/apps/web
@@ -58,6 +60,8 @@ COPY --from=base /app/apps/backend/data/shared-deps ./apps/backend/data/shared-d
 # so that image updates bring new shared-deps even when volume already exists
 COPY --from=base /app/apps/backend/data/shared-deps /app/shared-deps-seed
 COPY --from=base /app/apps/web/dist ./apps/web/dist
+# versions.json à /app : lu par BACKEND_VERSION (dist/services → ../../../../)
+COPY --from=base /app/versions.json ./versions.json
 
 # Copy entrypoint script
 COPY apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh

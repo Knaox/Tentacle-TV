@@ -3,12 +3,16 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 import { readFileSync, existsSync } from "fs";
 
-// Injecter les deux versions (sélection à runtime via isTauriApp)
-const webVersion = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
-const desktopPkgPath = resolve(__dirname, "../desktop/package.json");
-const desktopVersion = existsSync(desktopPkgPath)
-  ? JSON.parse(readFileSync(desktopPkgPath, "utf-8")).version
-  : webVersion;
+// Injecter les deux versions (sélection à runtime via isTauriApp).
+// Source unique : versions.json à la racine du monorepo — le web est livré
+// par l'image serveur (version `server`), le fallback desktop suit `desktop`.
+const versionsPath = resolve(__dirname, "../../versions.json");
+const versions = existsSync(versionsPath)
+  ? JSON.parse(readFileSync(versionsPath, "utf-8"))
+  : {};
+const webVersion = versions.server
+  ?? JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
+const desktopVersion = versions.desktop ?? webVersion;
 
 // Canal de distribution. "appstore" est injecté par le build Mac App Store
 // (VITE_DIST_CHANNEL=appstore) → bascule la détection de MAJ vers l'App Store.

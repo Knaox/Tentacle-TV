@@ -1,0 +1,588 @@
+# Tentacle TV — DESKTOP (macOS App Store + Microsoft Store + Linux), UN SEUL TAG
+#
+# Déclenché par le tag `desktop-vX.Y.Z` (ou manuellement). La version vient de
+# versions.json → champ `desktop` (SOURCE UNIQUE — le tag doit correspondre,
+# garde-fou au job `version`). Le numéro de build (CFBundleVersion) est
+# AUTO-INCRÉMENTÉ : minutes écoulées depuis 2024-01-01 UTC — strictement
+# croissant, jamais réutilisé (exigence App Store Connect).
+#
+# Jobs indépendants (un échec Apple ne bloque pas Linux, etc.) :
+#   • mac-*        → app universelle (arm64+x86_64) LGPL sandbox → App Store / TestFlight
+#   • windows-store → MSIX non signé (makeappx) → soumission API Microsoft Store
+#   • linux/arch/manifest → .deb/.rpm/AppImage/.pkg.tar.zst → Release GitHub
+#     `desktop-vX.Y.Z` + manifeste d'auto-update (updates/store-versions.json)
+#
+# Notes de version : changelogs/desktop.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
+# Limites gérées : App Store 4000 car., Microsoft Store 1500, GitHub illimité.
+#
+# Secrets : APPLE_DISTRIBUTION_CERT_BASE64/_PASSWORD, MAC_INSTALLER_CERT_BASE64/_PASSWORD,
+#   MAS_PROVISIONING_PROFILE_BASE64, APPLE_API_KEY/_ISSUER/_KEY_CONTENT,
+#   PARTNER_TENANT_ID / PARTNER_CLIENT_ID / PARTNER_CLIENT_SECRET.
+
+name: Release Desktop
+
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Soumettre aux stores (App Store / Microsoft Store) — sinon artefacts seulement"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  SIGN_APP: "Apple Distribution: Damien ROUGE (96K3M57W49)"
+  SIGN_PKG: "3rd Party Mac Developer Installer: Damien ROUGE (96K3M57W49)"
+  STORE_ID: "9NKHL0T84245"
+  DESKTOP_CHANGELOG: "changelogs/desktop.md"
+
+jobs:
+  # 0) Version depuis versions.json + build auto-incrémenté + garde-fou tag.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
+      submit: ${{ steps.v.outputs.submit }}
+      is_tag: ${{ steps.v.outputs.is_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VERSION=$(jq -r .desktop versions.json)
+          BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
+          if [ "${{ github.event_name }}" = "push" ]; then
+            IS_TAG=true; SUBMIT=true
+            if [ "${GITHUB_REF_NAME}" != "desktop-v${VERSION}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} ≠ desktop-v${VERSION} (versions.json → desktop). Mets à jour versions.json (source unique) ou corrige le tag."
+              exit 1
+            fi
+          else
+            IS_TAG=false; SUBMIT="${{ inputs.submit }}"
+          fi
+          echo "Desktop ${VERSION} (build ${BUILD}, submit=${SUBMIT})"
+          { echo "version=$VERSION"; echo "build=$BUILD"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
+
+  # ── macOS App Store ──────────────────────────────────────────────────────
+  # 1) Build par architecture : dylibs LGPL + app Tauri (sandbox, sans private-api)
+  mac-build:
+    needs: version
+    name: macOS build (${{ matrix.label }})
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            label: Apple Silicon
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            label: Intel
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: pnpm/action-setup@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build LGPL libmpv/FFmpeg
+        run: bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
+
+      # Override version (versions.json) + ad-hoc sign (signature Apple au job package).
+      - name: Build Tauri app (App Store config)
+        env:
+          VITE_DIST_CHANNEL: appstore
+        run: |
+          cd apps/desktop
+          pnpm tauri build \
+            --config src-tauri/tauri.appstore.conf.json \
+            --config '{"version":"${{ needs.version.outputs.version }}","bundle":{"macOS":{"signingIdentity":"-"}}}' \
+            --target ${{ matrix.target }} \
+            --bundles app
+
+      - name: Tar .app
+        run: |
+          cd "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos"
+          tar -czf "$RUNNER_TEMP/app-${{ matrix.target }}.tar.gz" "Tentacle TV.app"
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.target }}
+          path: ${{ runner.temp }}/app-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+
+  # 2) Fusion universelle + signature App Store + .pkg + upload + notes
+  mac-package:
+    needs: [version, mac-build]
+    name: macOS universal package + submit
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Import signing certificates + provisioning profile
+        env:
+          APP_CERT: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
+          APP_CERT_PW: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+          PKG_CERT: ${{ secrets.MAC_INSTALLER_CERT_BASE64 }}
+          PKG_CERT_PW: ${{ secrets.MAC_INSTALLER_CERT_PASSWORD }}
+          PROFILE: ${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          echo "$APP_CERT" | base64 --decode > /tmp/app.p12
+          security import /tmp/app.p12 -k build.keychain -P "$APP_CERT_PW" -T /usr/bin/codesign
+          echo "$PKG_CERT" | base64 --decode > /tmp/pkg.p12
+          security import /tmp/pkg.p12 -k build.keychain -P "$PKG_CERT_PW" -T /usr/bin/codesign -T /usr/bin/productbuild
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+          echo "$PROFILE" | base64 --decode > /tmp/embedded.provisionprofile
+          rm -f /tmp/app.p12 /tmp/pkg.p12
+
+      - name: Extract per-arch .app bundles
+        run: |
+          mkdir -p arm64 x86_64
+          tar -xzf artifacts/app-aarch64-apple-darwin/app-aarch64-apple-darwin.tar.gz -C arm64
+          tar -xzf artifacts/app-x86_64-apple-darwin/app-x86_64-apple-darwin.tar.gz -C x86_64
+
+      - name: Build universal package
+        run: |
+          bash apps/desktop/scripts/package-appstore-universal.sh \
+            "arm64/Tentacle TV.app" \
+            "x86_64/Tentacle TV.app" \
+            /tmp/embedded.provisionprofile \
+            "$SIGN_APP" "$SIGN_PKG" \
+            "${{ needs.version.outputs.build }}"
+
+      - name: Upload .pkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tentacle-TV-AppStore-pkg
+          path: "*.pkg"
+
+      - name: Submit to App Store Connect
+        if: needs.version.outputs.submit == 'true'
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY}.p8
+          xcrun altool --upload-app -f *.pkg -t macos \
+            --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
+
+      # Notes FR+EN depuis changelogs/desktop.md (bloc « ## [X.Y.Z] »). Non bloquant.
+      - name: Set release notes (App Store / TestFlight)
+        if: needs.version.outputs.submit == 'true'
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: MAC_OS
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD: ${{ needs.version.outputs.build }}
+          CHANGELOG: changelogs/desktop.md
+        run: node .github/scripts/asc-release-notes.mjs
+
+  # 3) Attend le traitement ASC puis rattache le build à la version App Store.
+  mac-attach:
+    needs: [version, mac-package]
+    if: needs.version.outputs.submit == 'true'
+    name: macOS attach build to App Store version
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for ASC processing + attach build
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: MAC_OS
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD: ${{ needs.version.outputs.build }}
+          CHANGELOG: changelogs/desktop.md
+        run: node .github/scripts/asc-attach-build.mjs
+
+  # ── Microsoft Store (MSIX) ───────────────────────────────────────────────
+  windows-store:
+    needs: version
+    name: Windows MSIX + soumission Store
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: cargo-store-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-store-
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app (config de base ; on récupère l'exe de target/release)
+        working-directory: apps/desktop
+        run: pnpm tauri build --bundles nsis
+
+      - name: Assemble MSIX payload + manifest versionné
+        shell: pwsh
+        run: |
+          $ver = "${{ needs.version.outputs.version }}"
+          $stage = Join-Path $env:RUNNER_TEMP "msixstage"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          $rel = "apps\desktop\src-tauri\target\release"
+          Copy-Item "$rel\tentacle-desktop.exe" (Join-Path $stage "Tentacle TV.exe")
+          if (Test-Path "$rel\WebView2Loader.dll") { Copy-Item "$rel\WebView2Loader.dll" $stage }
+          New-Item -ItemType Directory -Force -Path (Join-Path $stage "lib") | Out-Null
+          Copy-Item "apps\desktop\src-tauri\lib\*.dll" (Join-Path $stage "lib") -ErrorAction SilentlyContinue
+          Copy-Item "apps\desktop\msix\Assets" (Join-Path $stage "Assets") -Recurse
+          $m = Get-Content "apps\desktop\msix\Package.appxmanifest" -Raw
+          $m = $m -creplace '\bVersion="[\d\.]+"', ('Version="' + $ver + '.0"')
+          Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
+          "STAGE=$stage" >> $env:GITHUB_ENV
+          "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
+          Write-Host "Payload assemblé pour version $ver.0"
+          Get-ChildItem $stage -Recurse | Select-Object FullName, Length
+
+      - name: Pack MSIX (makeappx, non signé)
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^10\.' } | Sort-Object Name -Descending | Select-Object -First 1
+          $makeappx = Join-Path $sdk.FullName "x64\makeappx.exe"
+          Write-Host "makeappx: $makeappx"
+          $out = Join-Path $env:RUNNER_TEMP "TentacleTV.msix"
+          & $makeappx pack /d "$env:STAGE" /p $out /nv /o
+          if (-not (Test-Path $out)) { throw "MSIX non produit" }
+          "MSIX_PATH=$out" >> $env:GITHUB_ENV
+
+      - name: Upload MSIX (secours / upload manuel)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-tv-msix
+          path: ${{ env.MSIX_PATH }}
+          if-no-files-found: error
+
+      - name: Zip MSIX (payload d'upload API)
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP "TentacleTV-msix.zip"
+          Compress-Archive -Path $env:MSIX_PATH -DestinationPath $zip -Force
+          "PACKAGE_ZIP=$zip" >> $env:GITHUB_ENV
+
+      # Notes FR/EN depuis changelogs/desktop.md (repli « ## [X.Y.Z] » nu).
+      - name: Soumettre au Microsoft Store (API, notes FR/EN, publication auto)
+        if: needs.version.outputs.submit == 'true'
+        env:
+          PARTNER_TENANT_ID: ${{ secrets.PARTNER_TENANT_ID }}
+          PARTNER_CLIENT_ID: ${{ secrets.PARTNER_CLIENT_ID }}
+          PARTNER_CLIENT_SECRET: ${{ secrets.PARTNER_CLIENT_SECRET }}
+          STORE_ID: ${{ env.STORE_ID }}
+          PACKAGE_ZIP: ${{ env.PACKAGE_ZIP }}
+          PACKAGE_FILE_NAME: TentacleTV.msix
+          VERSION: ${{ needs.version.outputs.version }}
+          CHANGELOG: changelogs/desktop.md
+        run: node .github/scripts/msstore-submit.mjs
+
+  # ── Linux (.deb / .rpm / AppImage) → Release GitHub desktop-vX.Y.Z ───────
+  linux:
+    needs: version
+    name: Linux .deb / .rpm / AppImage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dépendances système (WebKitGTK + libmpv + outils bundle)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libwayland-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            libmpv-dev \
+            patchelf \
+            file \
+            rpm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: cargo-linux-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-linux-
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Patcher tauri.conf.json (version + fenêtre opaque Linux)
+        run: |
+          VER="${{ needs.version.outputs.version }}"
+          echo "Version Linux → $VER"
+          # transparent:true est destiné à macOS/Windows ; sous Linux il produit une
+          # fenêtre transparente au démarrage. On force transparent:false pour ce build.
+          node -e "const f='apps/desktop/src-tauri/tauri.conf.json';const c=require('fs');const j=JSON.parse(c.readFileSync(f));j.version='$VER';(j.app?.windows||[]).forEach(w=>{w.transparent=false});c.writeFileSync(f,JSON.stringify(j,null,2)+'\n');"
+
+      - name: Build Tauri (deb + rpm + appimage)
+        working-directory: apps/desktop
+        run: pnpm tauri build --bundles deb,rpm,appimage
+
+      - name: Rassembler les paquets
+        run: |
+          mkdir -p dist-linux
+          BUNDLE=apps/desktop/src-tauri/target/release/bundle
+          cp "$BUNDLE"/deb/*.deb            dist-linux/ 2>/dev/null || true
+          cp "$BUNDLE"/rpm/*.rpm            dist-linux/ 2>/dev/null || true
+          cp "$BUNDLE"/appimage/*.AppImage  dist-linux/ 2>/dev/null || true
+          # GitHub remplace l'espace des noms d'assets par un point → on normalise
+          # AVANT le calcul des sommes (sinon URL d'auto-update 404).
+          for f in dist-linux/*; do
+            b=$(basename "$f"); c=${b// /.}
+            [ "$b" != "$c" ] && mv "$f" "dist-linux/$c"
+          done
+          echo "Paquets produits :"
+          ls -l dist-linux
+          ( cd dist-linux && : > SHA256SUMS
+            for f in *.deb *.rpm *.AppImage; do
+              [ -e "$f" ] && sha256sum "$f" >> SHA256SUMS
+            done )
+          cat dist-linux/SHA256SUMS
+
+      - name: Upload .deb (artefact pour le job pacman)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-deb
+          path: dist-linux/*.deb
+          if-no-files-found: error
+
+      - name: Upload SHA256SUMS (deb/rpm/appimage) pour le job manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-sums-main
+          path: dist-linux/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Corps de release (notes changelog + guide d'installation)
+        if: needs.version.outputs.is_tag == 'true'
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          node .github/scripts/release-notes.mjs \
+            --changelog changelogs/desktop.md --version "$V" \
+            --format github --out notes.md || true
+          {
+            echo "Application desktop **Tentacle TV** ${V} pour Linux."
+            echo "(macOS : App Store — Windows : Microsoft Store, publiés par ce même tag.)"
+            echo ""
+            if [ -s notes.md ]; then echo "## Nouveautés"; echo ""; cat notes.md; echo ""; fi
+            echo "| Paquet | Distributions |"
+            echo "|--------|---------------|"
+            echo "| \`.deb\` | Debian, Ubuntu, Mint, Pop!_OS… |"
+            echo "| \`.rpm\` | Fedora, openSUSE, RHEL… |"
+            echo "| \`.pkg.tar.zst\` | **Arch / Manjaro / EndeavourOS** (pacman natif) |"
+            echo "| \`.AppImage\` | Universel — toute distro |"
+            echo ""
+            echo "## Installation"
+            echo ""
+            echo "**Le plus simple (toute distro)** — détecte le format et installe le bon paquet :"
+            echo '```'
+            echo "curl -fsSL https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/scripts/install-linux.sh | sh"
+            echo '```'
+            echo ""
+            echo "## Pré-requis lecteur vidéo"
+            echo "Les paquets \`.deb\`/\`.rpm\`/\`.pkg.tar.zst\` installent automatiquement **libmpv**"
+            echo "et les **plugins GStreamer**. Pour l'AppImage :"
+            echo "\`sudo pacman -S mpv gst-plugins-good gst-plugins-bad gst-libav fuse2\` (Arch) ou l'équivalent."
+          } > release-body.md
+          cat release-body.md
+
+      - name: Create versioned GitHub Release
+        if: needs.version.outputs.is_tag == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Tentacle TV Desktop ${{ needs.version.outputs.version }}"
+          prerelease: false
+          body_path: release-body.md
+          files: |
+            dist-linux/*.deb
+            dist-linux/*.rpm
+            dist-linux/*.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Paquet pacman natif (repackage du .deb, pas de recompilation) ──
+  arch:
+    name: Linux pacman (.pkg.tar.zst)
+    needs: [version, linux]
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Outils Arch (makepkg, ar, sudo)
+        run: pacman -Syu --noconfirm base-devel binutils sudo zstd
+
+      - name: Récupérer le .deb du job « linux »
+        uses: actions/download-artifact@v4
+        with:
+          name: tentacle-deb
+          path: debpkg
+
+      - name: Repackager le .deb en paquet pacman (makepkg)
+        run: |
+          set -e
+          VER="${{ needs.version.outputs.version }}"
+          REL="1"
+          echo "pacman → pkgver=$VER pkgrel=$REL"
+
+          mkdir -p build/pkgroot
+          cp debpkg/*.deb build/app.deb
+          ( cd build && ar x app.deb && tar -xf data.tar.* -C pkgroot )
+
+          cat > build/PKGBUILD <<PKGB
+          pkgname=tentacle-tv
+          pkgver=${VER}
+          pkgrel=${REL}
+          pkgdesc="Premium media client for Jellyfin (Tauri desktop)"
+          arch=('x86_64')
+          url="https://github.com/Knaox/Tentacle-TV"
+          license=('MIT')
+          depends=('webkit2gtk-4.1' 'gtk3' 'mpv' 'gst-plugins-good' 'gst-plugins-bad' 'gst-libav')
+          options=('!strip' '!debug')
+          package() {
+            cp -a "\${startdir}/pkgroot/usr" "\${pkgdir}/usr"
+          }
+          PKGB
+
+          useradd -m builder
+          chown -R builder:builder build
+          sudo -u builder bash -c 'cd build && makepkg -f --nodeps --noconfirm'
+
+          mkdir -p dist-arch
+          cp build/*.pkg.tar.zst dist-arch/
+          ls -l dist-arch
+          ( cd dist-arch && sha256sum *.pkg.tar.zst > SHA256SUMS.pacman )
+          cat dist-arch/SHA256SUMS.pacman
+
+      - name: Ajouter le paquet pacman à la Release
+        if: needs.version.outputs.is_tag == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: dist-arch/*.pkg.tar.zst
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload SHA256 pacman pour le job manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-sums-pacman
+          path: dist-arch/SHA256SUMS.pacman
+          if-no-files-found: error
+
+  # ── Manifeste d'auto-update (updates/store-versions.json, bloc « linux ») ──
+  manifest:
+    name: Publier le manifeste d'auto-update
+    needs: [version, linux, arch]
+    if: needs.version.outputs.is_tag == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: tentacle-sums-main
+          path: sums-main
+      - uses: actions/download-artifact@v4
+        with:
+          name: tentacle-sums-pacman
+          path: sums-pacman
+      - name: Assembler le SHA256SUMS complet
+        run: |
+          cat sums-main/SHA256SUMS sums-pacman/SHA256SUMS.pacman > SHA256SUMS
+          echo "SHA256SUMS complet :"; cat SHA256SUMS
+      - name: Ajouter SHA256SUMS à la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: SHA256SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch du bloc linux (version/tag/assets/sha256)
+        run: |
+          node .github/scripts/patch-linux-manifest.mjs "${{ needs.version.outputs.version }}" "${GITHUB_REF_NAME}" SHA256SUMS
+      - name: Commit + push sur main
+        run: |
+          git config user.name "tentacle-bot"
+          git config user.email "bot@tentacletv.app"
+          git add updates/store-versions.json
+          git commit -m "chore(update): manifeste Linux ${GITHUB_REF_NAME}" || { echo "rien à committer"; exit 0; }
+          git push origin main

@@ -2,7 +2,8 @@ import { View, ScrollView, Text, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 
-const APP_VERSION: string = require("../../package.json").version ?? "0.9.2";
+// Source unique des versions : versions.json à la racine du monorepo (champ tv).
+const APP_VERSION: string = require("../../../../versions.json").tv ?? "0.9.2";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Focusable } from "../components/focus/Focusable";

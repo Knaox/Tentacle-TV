@@ -44,35 +44,22 @@ git push production main  # Triggers post-receive hook on server
 
 ## Releases / Tags (CI)
 
-Le déclencheur de build dépend du **préfixe de tag** — les builds des plateformes sont isolés :
+**Source unique des versions : `versions.json` (racine)** — champs `desktop`, `tv`, `mobile`, `server`. On change la version À UN SEUL ENDROIT ; le tag doit correspondre (garde-fou CI). Les **numéros de build** (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play). Un workflow par plateforme :
 
 | Déclencheur | Workflow | Cible |
 |-------------|----------|-------|
-| tag `mac-v*` ou manuel | `.github/workflows/release-appstore.yml` | **macOS — Mac App Store / TestFlight** (universal, libmpv/FFmpeg **LGPL**, sandbox) |
-| tag `ios-v*` ou manuel | `.github/workflows/release-ios.yml` | **iOS — TestFlight** (natif sans EAS, signature auto via clé API ASC) |
-| tag `apk-v*` ou manuel | `.github/workflows/release-android.yml` | **Android mobile — APK** (debug-signed, Release GitHub) |
-| tag `tv-v*` (ex `tv-v1.0.0`) | `.github/workflows/release-tv.yml` | **Android TV** — APK release en Release GitHub + `tv-latest` |
-| tag `atv-v*` ou manuel | `.github/workflows/release-atv.yml` | **Apple TV (tvOS) — TestFlight** (natif sans EAS, signature auto) |
-| manuel (`workflow_dispatch`) | `.github/workflows/release-store.yml` | **Windows — Microsoft Store** (NSIS) |
-| push `main` | `.github/workflows/docker.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` |
+| tag `desktop-vX.Y.Z` | `.github/workflows/desktop.yml` | **macOS** (App Store/TestFlight, universal LGPL) + **Windows** (Microsoft Store MSIX) + **Linux** (deb/rpm/AppImage/pacman → Release GitHub `desktop-v*` + manifeste auto-update) |
+| tag `tv-vX.Y.Z` | `.github/workflows/tv.yml` | **Android TV** (AAB → Play Console, MÊME app que mobile `com.tentacletv.mobile`, piste tests fermés « Alpha » + APK → Release GitHub + `tv-latest`) + **Apple TV** (tvOS → TestFlight, `continue-on-error`) |
+| push `main` | `.github/workflows/server.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`) ; si `versions.json → server` change dans le push → Release GitHub `server-vX.Y.Z` |
+| tag `ios-v*` / `play-v*` (TEMPORAIRE) | `release-ios.yml` / `release-play.yml` | **Mobile — pas encore migré** : anciens workflows conservés tels quels (notes via `CHANGELOG.md` racine, blocs `ios-`/`play-`). Migration vers `mobile.yml` quand l'app Android sera sur le store. |
 
-- **Desktop = stores uniquement** : le DMG macOS notarisé (ancien `release.yml`, tag `v*`) a été **retiré** ; macOS passe exclusivement par le Mac App Store. Détails : `docs/RELEASE.md` § 6b.
-- Un tag `tv-v*` ne déclenche que l'Android TV.
-- **Publier l'Android TV** : `git tag tv-v1.0.0 && git push origin tv-v1.0.0`. La version de l'app (`versionName`) n'est pas modifiée par le tag — elle reste celle de `apps/tv/android/app/build.gradle`.
-- APK signé avec le `debug.keystore` du repo (sideload uniquement). Migration vers un keystore release : voir `docs/RELEASE.md`.
-- Le site `tentacletv.app` pointe automatiquement sur la dernière release `tv-*` (asset `.apk`).
+**Publier** : bump `versions.json` + remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`), commit, puis `git tag desktop-v1.12.0 && git push origin main desktop-v1.12.0`. Le fichier `Tentacle Deploy.html` (hors repo, Desktop) génère la commande complète. Re-livrer une même version (nouveau build) : relancer via `workflow_dispatch` (`gh workflow run tv.yml`) — le build est auto-incrémenté.
 
-### Releases par tags (guide : `docs/RELEASE-TAGS.md`)
-Nomenclature `<canal>-v<version>-<build>` (le `-build` = CFBundleVersion/versionCode → ré-upload TestFlight sans bump de version). Notes FR+EN auto depuis `CHANGELOG.md` (blocs `## [x.y.z]` avec `### FR`/`### EN`).
-- ✅ **macOS App Store / TestFlight** : `mac-v*` → `release-appstore.yml` (universal, libmpv/FFmpeg **LGPL**, sandbox, transparence ON). Ex. `git tag mac-v1.0.0-5 && git push origin mac-v1.0.0-5`.
-- ✅ **iOS → TestFlight** : `ios-v*` → `release-ios.yml` (natif **sans EAS**, projet `apps/mobile/ios` versionné, `pod install` + `xcodebuild` archive/export, signature **automatique** via clé API ASC + cert Apple Distribution, `com.tentacle.mobile`). Même fiche App Store que macOS, déploiement séparé.
-- ✅ **Apple TV → TestFlight** : `atv-v*` → `release-atv.yml` (natif **sans EAS**, projet `apps/tv/ios` versionné, `pod install` tvOS + `xcodebuild` archive/export, bundle `com.tentacle.mobile`). Signature **MANUELLE** : profil App Store tvOS en secret `TVOS_PROVISIONING_PROFILE_BASE64` (la signature auto via clé API ne crée pas de profil de distribution pour une 1re app tvOS). Plateforme tvOS activée sur la fiche ASC. **Validé en prod** (build 1.0.0-1 sur TestFlight).
-- ✅ **Android TV** : `tv-v*` (versionName/Code depuis le tag).
-- ✅ **APK Android mobile** : `apk-v*` → `release-android.yml` (debug-signed, sideload, Release GitHub ; versionName/Code depuis le tag). Aussi en manuel.
-
-**Reste à faire (besoin d'assets de signature) :**
-- **Android mobile (Play Store)** : keystore release → secrets + `signingConfigs.release` (l'APK reste debug-signed sideload en attendant le compte Play validé).
-- **Apple TV** : le déploiement est OK (build sur TestFlight) ; reste à **finaliser l'app tvOS** elle-même (lecteur/UI/remote) — l'icône est un placeholder.
+- **Changelogs par domaine** : `changelogs/{desktop,tv,server,mobile}.md`. Limites stores gérées (`.github/scripts/lib/changelog.mjs`) : ASC 4000, MS Store 1500, Play 500 caractères. `CHANGELOG.md` racine = archive (+ blocs mobile temporaires).
+- **Desktop = stores uniquement** (macOS App Store, Windows Microsoft Store) ; Linux = Release GitHub. Un échec d'un OS ne bloque pas les autres (jobs indépendants).
+- **Android TV sur le Play Console** : même fiche que le mobile (`com.tentacletv.mobile`), keystore d'upload mobile réutilisé (secrets `MOBILE_*`), `versionCode = 2000000000 + build` (préfixe form-factor, jamais en collision avec le mobile). L'APK GitHub reste publié (site `tentacletv.app` + code Downloader via `tv-latest`) mais est désormais **release-signed** : les vieilles installs sideload (`com.tentacletv` debug) doivent être réinstallées une fois.
+- **Apple TV** : signature MANUELLE (profil `TVOS_PROVISIONING_PROFILE_BASE64`) ; l'app tvOS reste à finaliser (icône placeholder).
+- Versions affichées (À propos) : web = `versions.json → server`, desktop = version du bundle (injectée depuis `versions.json`), TV = `versions.json → tv` (`AboutScreen.tsx`).
 
 ## Architecture
 
