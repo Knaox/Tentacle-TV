@@ -1,42 +1,82 @@
-import { Settings } from "react-native";
+import { Platform, Settings } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 
 /**
- * Stockage adossé à `Settings` (NSUserDefaults) — fourni par le cœur de
- * react-native, **persistant sur tvOS** et **synchrone**, sans dépendance ni
- * module natif, et SANS le warning « Persistent storage is not supported on
- * tvOS » d'AsyncStorage. NSUserDefaults est le store local sanctionné par Apple
- * sur tvOS (largement suffisant pour token/prefs/cache home).
+ * `true` sur le fork react-native-tvos ciblant l'Apple TV — l'app tv ne build
+ * `ios` que pour tvOS. Sert à choisir le backend de persistance.
+ */
+export const IS_TVOS = Platform.OS === "ios";
+
+/**
+ * Stockage TV — lectures synchrones après `hydrate()`, backend par plateforme :
  *
- * Synchrone → `hydrate()` est un no-op (plus de course au démarrage : le token
- * est dispo dès le 1er render, fiabilise aussi l'auth WebSocket).
+ * - **tvOS** : `Settings` (NSUserDefaults) — persistant, synchrone, sans module
+ *   natif supplémentaire, store local sanctionné par Apple sur tvOS (largement
+ *   suffisant pour token/prefs/cache home). `hydrate()` est un no-op.
+ * - **Android TV** : `Settings` N'EXISTE PAS (no-op + warning « Settings is not
+ *   yet supported on this platform » → aucune persistance : jumelage et session
+ *   perdus à chaque relance). On s'adosse à AsyncStorage derrière un cache
+ *   mémoire : `hydrate()` précharge toutes les clés (appelé au boot dans
+ *   `App.tsx` avant le premier render), les écritures sont write-through.
  */
 export class RNStorageAdapter implements StorageAdapter {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async hydrate(): Promise<void> { /* no-op : Settings est synchrone + persistant */ }
+  private cache = new Map<string, string>();
+
+  async hydrate(): Promise<void> {
+    if (IS_TVOS) return; // Settings est synchrone + persistant
+    const keys = await AsyncStorage.getAllKeys();
+    if (keys.length === 0) return;
+    for (const [key, value] of await AsyncStorage.multiGet(keys)) {
+      if (value != null) this.cache.set(key, value);
+    }
+  }
 
   getItem(key: string): string | null {
-    const v = Settings.get(key);
-    return typeof v === "string" ? v : null;
+    if (IS_TVOS) {
+      const v = Settings.get(key);
+      return typeof v === "string" ? v : null;
+    }
+    return this.cache.get(key) ?? null;
   }
 
   setItem(key: string, value: string): void {
-    Settings.set({ [key]: value });
+    if (IS_TVOS) {
+      Settings.set({ [key]: value });
+      return;
+    }
+    this.cache.set(key, value);
+    AsyncStorage.setItem(key, value).catch(console.error);
   }
 
   removeItem(key: string): void {
-    // NSUserDefaults : pas d'API delete via RN Settings → null, lu comme absent.
-    Settings.set({ [key]: null });
+    if (IS_TVOS) {
+      // NSUserDefaults : pas d'API delete via RN Settings → null, lu comme absent.
+      Settings.set({ [key]: null });
+      return;
+    }
+    this.cache.delete(key);
+    AsyncStorage.removeItem(key).catch(console.error);
   }
 
-  /** Écriture critique (token, user, credentials) — Settings persiste de façon
-   *  synchrone, on écrit puis on résout immédiatement. */
+  /** Écriture critique (token, user, credentials) — ne résout qu'une fois la
+   *  persistance réellement effectuée (tvOS : Settings est synchrone). */
   async setItemAsync(key: string, value: string): Promise<void> {
-    Settings.set({ [key]: value });
+    if (IS_TVOS) {
+      Settings.set({ [key]: value });
+      return;
+    }
+    this.cache.set(key, value);
+    await AsyncStorage.setItem(key, value);
   }
 
   async removeItemAsync(key: string): Promise<void> {
-    Settings.set({ [key]: null });
+    if (IS_TVOS) {
+      Settings.set({ [key]: null });
+      return;
+    }
+    this.cache.delete(key);
+    await AsyncStorage.removeItem(key);
   }
 }
 
