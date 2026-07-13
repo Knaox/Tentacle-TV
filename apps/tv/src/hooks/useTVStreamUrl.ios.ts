@@ -76,14 +76,11 @@ export function useTVStreamUrl(args: {
   const audioRef = useRef(audioIndex);
   audioRef.current = audioIndex;
 
-  // Sous-titre à INCRUSTER (burn-in → transcode) : graphiques partout + ASS/SSA sur
-  // tvOS. Les autres sous-titres texte passent en natif AVPlayer (aucun refetch).
-  // Sur le remux tvOS, seules les IMAGES (PGS/VOBSUB) bloquent (→ burn-in serveur) ; le TEXTE passe
-  // en overlay JS → ne bloque PAS la Lecture directe (isLocalRemux=true : ce hook .ios EST le remux).
+  // Sous-titre à INCRUSTER (burn-in → transcode) : IMAGES uniquement (PGS/VOBSUB/DVB).
+  // Tout sous-titre TEXTE est rendu par l'overlay JS (remux, direct play, transcode)
+  // → ne bloque jamais la lecture directe et ne déclenche aucun refetch.
   const burnInIndex = subtitleIndex != null && subtitleIndex >= 0
-    && isBurnInSubtitleCodec(
-      streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)?.Codec, true,
-    )
+    && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)?.Codec)
     ? subtitleIndex
     : -1;
 
@@ -198,9 +195,9 @@ export function useTVStreamUrl(args: {
 
         // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
         const cap = isTranscodingQuality && maxBitrate ? maxBitrate : undefined;
-        // burnInIndex >= 0 ⇒ sous-titre ASS/SSA sélectionné : profil sans livraison
-        // texte → le serveur INCRUSTE ce sous-titre (sinon il convertirait en VTT
-        // avec balises {\an8} qui fuient).
+        // burnInIndex >= 0 ⇒ sous-titre IMAGE (PGS/VOBSUB) sélectionné : profil sans
+        // livraison texte → le serveur INCRUSTE ce sous-titre. Le texte (ASS inclus)
+        // n'incruste plus jamais : l'overlay JS interprète le VTT (parser partagé).
         // Capacités de décodage HDR/DV de cette Apple TV (module natif, mis en
         // cache) → gate le VideoRangeType du profil pour préserver un vrai signal
         // HDR/Dolby Vision (remux) au lieu d'un tone-mapping serveur vers SDR.
