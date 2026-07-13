@@ -6,7 +6,7 @@ La CI (GitHub Actions, gratuite car repo public) build + signe + envoie.
 ## Source unique : `versions.json` (racine)
 
 ```json
-{ "desktop": "1.12.0", "tv": "1.0.0", "mobile": "1.2.2", "server": "1.3.0", "minServer": "1.3.0" }
+{ "desktop": "1.12.0", "tv": "1.1.0", "mobile": "1.3.1", "server": "1.4.0", "minServer": "1.4.0" }
 ```
 
 - `minServer` = version serveur **minimale** exigée par les clients (bannière de
@@ -47,7 +47,7 @@ auto-incrémenté, Release GitHub complète. Alternative sans Release GitHub :
 | `desktop-vX.Y.Z` | `desktop.yml` | macOS → App Store/TestFlight (universal LGPL, sandbox) · Windows → Microsoft Store (MSIX auto) · Linux → Release GitHub `desktop-v*` (.deb/.rpm/AppImage/.pkg.tar.zst) + manifeste auto-update |
 | `tv-vX.Y.Z` | `tv.yml` | Android TV → Play Console UNIQUEMENT (AAB, MÊME app que mobile `com.tentacletv.mobile`, **piste de tests fermés TV dédiée** — homonyme de la piste mobile mais identifiant API distinct, env `PLAY_TV_TRACK` ; AAB archivé en artefact ; plus d'APK GitHub) · Apple TV → TestFlight (`continue-on-error`) |
 | push `main` (sans tag) | `server.yml` | Image `ghcr.io/knaox/tentacle-tv` `:latest` + `:v<server>` ; Release GitHub `server-vX.Y.Z` **si** `versions.json → server` change dans le push |
-| `ios-v…` / `play-v…` | `release-ios.yml` / `release-play.yml` | **Mobile — TEMPORAIRE** (pas encore migré) : ancien fonctionnement conservé (version portée par le tag iOS / `app.json` Play, notes dans `CHANGELOG.md` racine). Migration vers `mobile.yml` quand l'app Android sera publiée sur le store. |
+| `mobile-vX.Y.Z` | `mobile.yml` | iOS → TestFlight (`com.tentacle.mobile`, Info.plist patché) · Android → Play Console (AAB, MÊME fiche `com.tentacletv.mobile` que la TV, **piste de tests fermés mobile `alpha`** — id API distinct de la piste TV `tv:Alpha`, `versionCode = build` nu sous le préfixe TV `2e9+`). UN tag → iOS ET Android, notes `changelogs/mobile.md`. Dispatch `target` : `all`/`android`/`ios`. |
 
 > macOS + iOS + tvOS partagent la fiche App Store Connect `com.tentacle.mobile` mais se
 > déploient par leurs workflows respectifs. Android TV et Android mobile partagent la
@@ -80,7 +80,8 @@ texte brut pour les stores.
 | tv (android) | Release GitHub | corps de la release (markdown) | — |
 | tv (apple) | App Store + TestFlight | « Nouveautés » + « À tester » | 4000 car. |
 | server | Release GitHub | corps de la release (markdown) | — |
-| mobile (temporaire) | — | blocs `## [ios-…]`/`## [play-…]` de `CHANGELOG.md` racine | 4000 / 500 |
+| mobile (ios) | App Store + TestFlight | « Nouveautés » + « À tester » | 4000 car. |
+| mobile (android) | Google Play | « Nouveautés » (fr-FR + en-US) | 500 car. |
 
 **Flux Apple « je clique juste Publier »** : après l'upload, la CI pose les notes
 (`asc-release-notes.mjs`, non bloquant), puis un job séparé attend la fin du traitement du
@@ -111,7 +112,8 @@ Scripts : `.github/scripts/release-notes.mjs` (CLI — `--changelog changelogs/t
 | Apple TV | cert Apple Distribution + profil tvOS (`TVOS_PROVISIONING_PROFILE_BASE64`) | ✅ en place |
 | Android TV (Play) | keystore d'upload mobile réutilisé (`MOBILE_KEYSTORE_BASE64/_PASSWORD`, `MOBILE_KEY_ALIAS/_PASSWORD`) + `PLAY_SERVICE_ACCOUNT_JSON` | ✅ secrets en place — côté console : form factor TV + piste « Tests fermés - Alpha » sur la fiche `com.tentacletv.mobile` |
 | Apple (commun) | `APPLE_API_KEY` / `APPLE_API_ISSUER` / `APPLE_API_KEY_CONTENT` | ✅ en place |
-| Mobile iOS/Play | inchangé (workflows temporaires) | ✅ en place |
+| Mobile iOS | cert Apple Distribution + profil App Store recréé via l'API ASC (`com.tentacle.mobile`) | ✅ en place |
+| Mobile Android (Play) | keystore d'upload mobile (`MOBILE_KEYSTORE_BASE64/_PASSWORD`, `MOBILE_KEY_ALIAS/_PASSWORD`) + `PLAY_SERVICE_ACCOUNT_JSON` — piste « alpha » sur `com.tentacletv.mobile` | ✅ en place |
 
 > macOS embarque libmpv/FFmpeg recompilés **LGPL** (sandbox App Store). Détails build :
 > `apps/desktop/scripts/build-mpv-lgpl-macos.sh`. Voir aussi `docs/RELEASE.md`.

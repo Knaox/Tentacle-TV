@@ -1,0 +1,410 @@
+# Tentacle TV — MOBILE (iOS TestFlight + Android Play), UN SEUL TAG
+#
+# Déclenché par le tag `mobile-vX.Y.Z` (ou manuellement). La version vient de
+# versions.json → champ `mobile` (SOURCE UNIQUE — garde-fou au job `version`).
+# Build AUTO-INCRÉMENTÉ (minutes depuis 2024-01-01 UTC) :
+#   • iOS CFBundleVersion = BUILD   (Info.plist patché via plutil — la version y
+#     est codée en dur, pas de $(MARKETING_VERSION))
+#   • Android versionCode = BUILD   (mobile = form factor de BASE, PAS de préfixe ;
+#     la TV utilise 2000000000 + BUILD → jamais de collision sur la fiche Play
+#     partagée com.tentacletv.mobile, et l'AAB TV n'est jamais servi aux téléphones)
+#
+# iOS  : xcodebuild archive, signature MANUELLE (cert Distribution + profil App
+#        Store recréé de façon idempotente via l'API ASC), altool upload TestFlight.
+#        Fiche App Store Connect com.tentacle.mobile (partagée mac/iOS/tvOS).
+# Android : AAB signé release (keystore d'upload MOBILE_*) → Play Console, app
+#        com.tentacletv.mobile, piste de tests FERMÉS « alpha » (env PLAY_MOBILE_TRACK),
+#        status draft → promotion manuelle dans la console. Sans keystore : build
+#        debug-signed, upload Play sauté. AAB toujours archivé en artefact.
+#
+# Notes de version : changelogs/mobile.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
+# Limites : Play 500 car., App Store 4000. UN seul bloc sert iOS ET Android.
+
+name: Release Mobile
+
+on:
+  push:
+    tags: ["mobile-v*"]
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Soumettre aux stores (Play Console / TestFlight) — sinon artefacts seulement"
+        type: boolean
+        default: true
+      target:
+        description: "Quelle plateforme construire"
+        type: choice
+        options: [all, android, ios]
+        default: all
+
+concurrency:
+  group: release-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APPLE_TEAM_ID: "96K3M57W49"
+  IOS_SCHEME: "TentacleTV"
+  IOS_WORKSPACE: "apps/mobile/ios/TentacleTV.xcworkspace"
+  IOS_BUNDLE_ID: "com.tentacle.mobile"
+  IOS_PROFILE_NAME: "Tentacle TV iOS App Store CI"
+  # Piste Play des tests FERMÉS mobile. « alpha » = piste MOBILE (id API standard),
+  # à ne pas confondre avec « tv:Alpha » (piste TV préfixée par form factor, même
+  # fiche com.tentacletv.mobile). Lister les identifiants exacts : workflow
+  # « Play — lister les pistes » (play-tracks.yml).
+  PLAY_MOBILE_TRACK: "alpha"
+
+jobs:
+  # 0) Version depuis versions.json + build auto-incrémenté + garde-fou tag.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
+      vcode: ${{ steps.v.outputs.vcode }}
+      submit: ${{ steps.v.outputs.submit }}
+      is_tag: ${{ steps.v.outputs.is_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VERSION=$(jq -r .mobile versions.json)
+          BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
+          VCODE=$BUILD   # mobile = form factor de base : versionCode = BUILD (TV = 2e9+BUILD)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            IS_TAG=true; SUBMIT=true
+            # Suffixe -rN optionnel = RE-LIVRAISON de la même version (tag git
+            # unique, version marketing inchangée, build auto-incrémenté).
+            if [[ ! "${GITHUB_REF_NAME}" =~ ^mobile-v${VERSION}(-r[0-9]+)?$ ]]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} ≠ mobile-v${VERSION}[-rN] (versions.json → mobile). Mets à jour versions.json (source unique) ou corrige le tag."
+              exit 1
+            fi
+          else
+            IS_TAG=false; SUBMIT="${{ inputs.submit }}"
+          fi
+          echo "Mobile ${VERSION} (build ${BUILD}, versionCode ${VCODE}, submit=${SUBMIT})"
+          { echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
+
+  # ── Android mobile : AAB → Play Console (piste de tests fermés « alpha ») ──
+  android:
+    needs: version
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'android'
+    name: Android mobile (AAB → Play Console)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-mobile-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-mobile-
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      # NB : PAS de `sdkmanager "ndk;26.1.10909125"` — c'est la NDK figée de la TV.
+      # Le mobile (Expo SDK 54 / RN 0.81) résout sa NDK via expo-root-project et
+      # s'appuie sur la NDK préinstallée du runner, comme le faisait release-play.yml.
+      # Si un jour « NDK not configured » apparaît : ajouter android-actions/setup-android@v3
+      # puis `sdkmanager "ndk;27.1.12297006"` (NDK d'Expo, PAS celle de la TV).
+      - name: Decode upload keystore
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.MOBILE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::MOBILE_KEYSTORE_BASE64 absent — AAB debug-signed, upload Play sauté."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release (AAB)
+        working-directory: apps/mobile/android
+        env:
+          KS_PASSWORD: ${{ secrets.MOBILE_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.MOBILE_KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.MOBILE_KEY_PASSWORD }}
+        run: |
+          ARGS="-PmobileVersionName=${{ needs.version.outputs.version }} -PmobileVersionCode=${{ needs.version.outputs.vcode }}"
+          if [ "${{ steps.keystore.outputs.present }}" = "true" ]; then
+            ARGS="$ARGS -PmobileKeystoreFile=$RUNNER_TEMP/upload.jks -PmobileKeystorePassword=$KS_PASSWORD -PmobileKeyAlias=$KS_ALIAS -PmobileKeyPassword=$KS_KEY_PASSWORD"
+          fi
+          echo "Android mobile build → versionName=${{ needs.version.outputs.version }} versionCode=${{ needs.version.outputs.vcode }}"
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon $ARGS
+
+      # AAB signé toujours archivé : PREMIÈRE soumission Play (upload manuel dans la
+      # console) et secours si l'API échoue.
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-mobile-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Notes Play (whatsnew FR/EN)
+        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
+        run: |
+          mkdir -p distribution/whatsnew
+          V="${{ needs.version.outputs.version }}"
+          node .github/scripts/release-notes.mjs --changelog changelogs/mobile.md \
+            --version "$V" --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR || true
+          node .github/scripts/release-notes.mjs --changelog changelogs/mobile.md \
+            --version "$V" --lang en --format play --out distribution/whatsnew/whatsnew-en-US || true
+          ls -l distribution/whatsnew || true
+
+      - name: Upload AAB → Play Console (piste « alpha », test fermé mobile)
+        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.tentacletv.mobile
+          releaseFiles: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ env.PLAY_MOBILE_TRACK }}
+          status: draft
+          whatsNewDirectory: distribution/whatsnew
+
+  # ── iOS (TestFlight) — bloc de signature repris de release-ios.yml ──────────
+  ios:
+    needs: version
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'ios'
+    name: Build + submit iOS
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: pnpm/action-setup@v4
+
+      # Même Xcode/SDK qu'en local (Xcode 26.3 / SDK iOS 26.2) → builds acceptés par
+      # App Store (qui exige le SDK iOS 26+).
+      - name: Select Xcode 26.3 (identique au local)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.3"
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: CocoaPods install
+        working-directory: apps/mobile/ios
+        run: pod install --repo-update
+
+      - name: Import Apple Distribution certificate
+        env:
+          APP_CERT: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
+          APP_CERT_PW: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+        run: |
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          echo "$APP_CERT" | base64 --decode > /tmp/app.p12
+          security import /tmp/app.p12 -k build.keychain -P "$APP_CERT_PW" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+          rm -f /tmp/app.p12
+
+      - name: Install App Store Connect API key
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/private_keys ~/.appstoreconnect/private_keys
+          echo "$API_KEY_CONTENT" > ~/private_keys/AuthKey_${API_KEY}.p8
+          cp ~/private_keys/AuthKey_${API_KEY}.p8 ~/.appstoreconnect/private_keys/
+          echo "ASC_KEY_PATH=$HOME/private_keys/AuthKey_${API_KEY}.p8" >> "$GITHUB_ENV"
+
+      # Profil App Store recréé via l'API ASC (signature MANUELLE avec le cert
+      # Distribution du keychain + profil idempotent : delete + create → il
+      # référence toujours NOTRE certificat).
+      - name: Provision App Store profile (API ASC)
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          JWT=$(ruby -e '
+            require "openssl"; require "base64"; require "json"
+            key = OpenSSL::PKey.read(File.read(ENV.fetch("ASC_KEY_PATH")))
+            b64 = ->(s) { Base64.urlsafe_encode64(s, padding: false) }
+            header  = b64.(JSON.dump({ alg: "ES256", kid: ENV.fetch("API_KEY"), typ: "JWT" }))
+            now     = Time.now.to_i
+            payload = b64.(JSON.dump({ iss: ENV.fetch("API_ISSUER"), iat: now, exp: now + 1200, aud: "appstoreconnect-v1" }))
+            data    = "#{header}.#{payload}"
+            der     = key.sign(OpenSSL::Digest.new("SHA256"), data)
+            r, s    = OpenSSL::ASN1.decode(der).value.map { |i| i.value.to_s(2).rjust(32, "\x00".b) }
+            puts "#{data}.#{b64.(r + s)}"
+          ')
+          api() { curl -sf -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" "$@"; }
+          BASE="https://api.appstoreconnect.apple.com/v1"
+
+          # Certificat Distribution du keychain → id API (match par n° de série)
+          SERIAL=$(security find-certificate -c "Apple Distribution" -p build.keychain \
+            | openssl x509 -noout -serial | cut -d= -f2 | tr '[:lower:]' '[:upper:]')
+          CERTS=$(api "$BASE/certificates?filter%5BcertificateType%5D=DISTRIBUTION&limit=200")
+          CERT_ID=$(echo "$CERTS" | jq -r --arg s "$SERIAL" \
+            '[.data[] | select((.attributes.serialNumber | ascii_upcase) == $s)][0].id // empty')
+          if [ -z "$CERT_ID" ]; then
+            COUNT=$(echo "$CERTS" | jq '.data | length')
+            if [ "$COUNT" = "1" ]; then CERT_ID=$(echo "$CERTS" | jq -r '.data[0].id');
+            else echo "::error::Certificat Distribution du keychain (serial $SERIAL) introuvable côté API ($COUNT candidats)"; exit 1; fi
+          fi
+
+          BUNDLE_DB_ID=$(api "$BASE/bundleIds?filter%5Bidentifier%5D=$IOS_BUNDLE_ID&limit=200" \
+            | jq -r --arg b "$IOS_BUNDLE_ID" '[.data[] | select(.attributes.identifier == $b)][0].id')
+          [ -n "$BUNDLE_DB_ID" ] && [ "$BUNDLE_DB_ID" != "null" ] || { echo "::error::bundleId $IOS_BUNDLE_ID introuvable"; exit 1; }
+
+          # Idempotent : purge l'ancien profil du même nom puis (re)crée
+          NAME_ENC=$(python3 -c 'import urllib.parse,os;print(urllib.parse.quote(os.environ["IOS_PROFILE_NAME"]))')
+          OLD_ID=$(api "$BASE/profiles?filter%5Bname%5D=$NAME_ENC" | jq -r '.data[0].id // empty')
+          [ -n "$OLD_ID" ] && api -X DELETE "$BASE/profiles/$OLD_ID" >/dev/null || true
+          PROFILE=$(api -X POST "$BASE/profiles" -d "$(jq -n \
+            --arg name "$IOS_PROFILE_NAME" --arg bid "$BUNDLE_DB_ID" --arg cid "$CERT_ID" \
+            '{data:{type:"profiles",attributes:{name:$name,profileType:"IOS_APP_STORE"},
+              relationships:{bundleId:{data:{type:"bundleIds",id:$bid}},
+                             certificates:{data:[{type:"certificates",id:$cid}]}}}}')")
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE" | jq -r '.data.attributes.profileContent' | base64 --decode \
+            > "$HOME/Library/MobileDevice/Provisioning Profiles/tentacle-ios-ci.mobileprovision"
+          echo "Profil « $IOS_PROFILE_NAME » installé (cert $CERT_ID)"
+
+      # L'Info.plist code la version EN DUR (pas de $(MARKETING_VERSION)) → on la
+      # patche directement depuis le job `version` (versions.json + build auto).
+      - name: Set version / build (Info.plist)
+        run: |
+          PLIST=apps/mobile/ios/TentacleTV/Info.plist
+          plutil -replace CFBundleShortVersionString -string "${{ needs.version.outputs.version }}" "$PLIST"
+          plutil -replace CFBundleVersion -string "${{ needs.version.outputs.build }}" "$PLIST"
+          plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
+
+      - name: Archive (xcodebuild, signature manuelle Distribution)
+        run: |
+          xcodebuild archive \
+            -workspace "$IOS_WORKSPACE" \
+            -scheme "$IOS_SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+
+      - name: Export .ipa (App Store)
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${IOS_BUNDLE_ID}</key><string>${IOS_PROFILE_NAME}</string>
+            </dict>
+            <key>destination</key><string>export</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/ipa"
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tentacle-TV-iOS-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          if-no-files-found: error
+
+      - name: Submit to TestFlight
+        if: needs.version.outputs.submit == 'true'
+        env:
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          xcrun altool --upload-app -f "$RUNNER_TEMP"/ipa/*.ipa -t ios \
+            --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
+
+      # Notes FR+EN depuis changelogs/mobile.md (bloc « ## [X.Y.Z] » nu, SANS canal).
+      # Non bloquant.
+      - name: Set release notes (App Store / TestFlight iOS)
+        if: needs.version.outputs.submit == 'true'
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: IOS
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD: ${{ needs.version.outputs.build }}
+          CHANGELOG: changelogs/mobile.md
+        run: node .github/scripts/asc-release-notes.mjs
+
+  # Attend le traitement ASC (~10-35 min) puis rattache le build iOS à la version
+  # App Store (+ « À tester » TestFlight). Job séparé ; continue-on-error.
+  ios-attach:
+    needs: [version, ios]
+    if: needs.version.outputs.submit == 'true'
+    name: iOS attach build to App Store version
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for ASC processing + attach build
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: IOS
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD: ${{ needs.version.outputs.build }}
+          CHANGELOG: changelogs/mobile.md
+        run: node .github/scripts/asc-attach-build.mjs

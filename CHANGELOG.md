@@ -4,9 +4,9 @@
 > **`changelogs/`** — un fichier par domaine : `desktop.md`, `tv.md`,
 > `server.md`, `mobile.md` (blocs `## [X.Y.Z]` + `### FR`/`### EN`,
 > version pilotée par `versions.json`).
-> **Exception mobile** : tant que la migration mobile n'est pas faite,
-> `release-ios.yml` et `release-play.yml` lisent ENCORE ce fichier
-> (blocs `## [ios-…]` / `## [play-…]`) — continuer à les ajouter ici.
+> Le **mobile** est désormais migré lui aussi : `mobile.yml` lit
+> `changelogs/mobile.md` (blocs `## [X.Y.Z]`, version depuis `versions.json → mobile`).
+> Les anciens blocs `## [ios-…]` / `## [play-…]` ci-dessous restent en archive.
 
 Toutes les évolutions notables de Tentacle TV.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).

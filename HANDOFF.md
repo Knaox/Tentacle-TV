@@ -11,7 +11,7 @@ Note de passation pour continuer sur le Mac. Branche `main`, dernier commit `c05
 2. **Fiche média** : bandes-annonces (locales dans le player + YouTube en modale), liste complète via **Jellyseerr/TMDB** triée par langue, section **Extras par saison**, accès rapide à la série depuis un épisode.
 3. **Lecteur** : sélecteur saison/épisode intégré (web + desktop).
 4. **Desktop Windows** : contrôles média système (**SMTC**, `souvlaki`) + nommage session audio WASAPI.
-5. **Releases** : `v1.8.0` (release majeure), puis hotfixes `v1.8.1` / `v1.8.2` / `v1.8.4` (voir CHANGELOG.md). Releases GitHub = **dmg macOS uniquement** (Windows = Microsoft Store via `release-store.yml`).
+5. **Releases** : `v1.8.0` (release majeure), puis hotfixes `v1.8.1` / `v1.8.2` / `v1.8.4` (voir CHANGELOG.md). Releases GitHub = **dmg macOS uniquement** (Windows = Microsoft Store via `desktop.yml`).
 
 ## Sujet en cours : bandes-annonces YouTube sur macOS (erreur 153)
 Cause : sur macOS, Tauri utilise WKWebView avec l'origine `tauri://` → aucun referrer HTTP valide → YouTube bloque (erreur 153). Windows (WebView2, `http://tauri.localhost`) n'était pas affecté.

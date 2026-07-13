@@ -1,10 +1,9 @@
 # Changelog — Mobile (iOS + Android)
 
-Blocs `## [X.Y.Z]` avec `### FR` / `### EN`. ⚠️ Mobile n'est PAS ENCORE migré
-sur ce fichier : les workflows actuels (`release-ios.yml`, `release-play.yml`)
-lisent toujours `CHANGELOG.md` racine (blocs `## [ios-…]` / `## [play-…]`).
-Ce fichier prendra le relais à la migration mobile (quand l'app Android sera
-publiée sur le store) — version depuis `versions.json` → `mobile`.
+Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
+`.github/workflows/mobile.yml` : App Store Connect iOS (max 4000 caractères),
+Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
+en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
 ## [Unreleased]
 ### FR
