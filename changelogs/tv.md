@@ -11,6 +11,20 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 ### EN
 - …
 
+## [1.1.0]
+### FR
+- Lecteur Apple TV : correction du décalage son/image qui pouvait s'installer en cours de lecture
+- Lecteur Apple TV : reprise fiable après une pause, même longue (plus de chargement infini)
+- Lecteur Apple TV : la lecture reprend correctement après un passage par l'écran d'accueil
+- Lecteur Apple TV : récupération automatique en cas d'interruption du flux, retours arrière plus fiables
+- Logo adapté à la résolution du téléviseur
+### EN
+- Apple TV player: fixed audio/video drift that could set in during playback
+- Apple TV player: reliable resume after a pause, even a long one (no more endless loading)
+- Apple TV player: playback resumes correctly after going to the Home screen and back
+- Apple TV player: automatic recovery when the stream stalls, more reliable short rewinds
+- Logo now scales with the TV resolution
+
 ## [1.0.0]
 ### FR
 - Avance/recul rapide au maintien : arrêt net au relâchement, position figée — OK lit à la position visée, Retour annule
