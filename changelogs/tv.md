@@ -15,25 +15,25 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 ### FR
 - Sous-titres : le formatage est enfin respecté — gras, italique et position à l'écran (panneaux en haut) au lieu de tags affichés en code brut
 - Sous-titres : nouveau rendu net — texte blanc à contour noir, sans bandeau, taille agrandie pour le salon
+- Logo adapté à la résolution du téléviseur
 - Lecteur Apple TV : les sous-titres texte s'affichent désormais dans tous les modes de lecture (lecture directe et transcodage inclus)
 - Lecteur Apple TV : activer ou changer de sous-titres est instantané, sans rechargement ni transcodage inutile
-- Bouton « Passer l'intro » : le focus ne reste plus bloqué dessus, la navigation dans les contrôles reste libre
+- Lecteur Apple TV : le focus ne reste plus bloqué sur le bouton « Passer l'intro », la navigation dans les contrôles reste libre
 - Lecteur Apple TV : correction du décalage son/image qui pouvait s'installer en cours de lecture
 - Lecteur Apple TV : reprise fiable après une pause, même longue (plus de chargement infini)
 - Lecteur Apple TV : la lecture reprend correctement après un passage par l'écran d'accueil
 - Lecteur Apple TV : récupération automatique en cas d'interruption du flux, retours arrière plus fiables
-- Logo adapté à la résolution du téléviseur
 ### EN
 - Subtitles: formatting is finally honored — bold, italics and on-screen position (top signs) instead of raw tags showing as text
 - Subtitles: crisp new rendering — white text with a black outline, no background box, larger size for the living room
+- Logo now scales with the TV resolution
 - Apple TV player: text subtitles now display in every playback mode (including direct play and transcoding)
 - Apple TV player: enabling or switching subtitles is instant, with no reload or needless transcoding
-- "Skip intro" button: focus no longer gets stuck on it, you can still navigate the player controls freely
+- Apple TV player: focus no longer gets stuck on the "Skip intro" button, you can still navigate the player controls freely
 - Apple TV player: fixed audio/video drift that could set in during playback
 - Apple TV player: reliable resume after a pause, even a long one (no more endless loading)
 - Apple TV player: playback resumes correctly after going to the Home screen and back
 - Apple TV player: automatic recovery when the stream stalls, more reliable short rewinds
-- Logo now scales with the TV resolution
 
 ## [1.0.0]
 ### FR
