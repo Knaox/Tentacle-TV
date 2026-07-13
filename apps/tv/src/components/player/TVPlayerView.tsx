@@ -11,7 +11,7 @@ import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScre
 import { TVReloadFrame } from "./TVReloadFrame";
 import { TVScrubFullscreen } from "./TVScrubFullscreen";
 import { TVSkipBadge } from "./TVSkipBadge";
-import { TVSubtitleOverlay } from "./TVSubtitleOverlay";
+import { TVSubtitleOverlay, type SubtitleCue } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
 import type { ExoTextTrack } from "./ExoPlayer";
 import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
@@ -107,7 +107,7 @@ export interface TVPlayerViewProps {
   /** Incrémenter pour refocus le dernier bouton OSD utilisé */
   osdFocusSignal?: number;
   /** Cue de sous-titres texte rendue en JS (useTVSubtitles) — MPV/transcode */
-  subtitleText?: string | null;
+  subtitleCue?: SubtitleCue | null;
   /** Pistes texte VTT pour le rendu natif ExoPlayer (direct play) */
   textTracks?: ExoTextTrack[];
   /** Panneau Saisons & épisodes (séries) */
@@ -128,7 +128,7 @@ export function TVPlayerView({
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onSeek, onBack, onToggleSettings,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
-  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleText, textTracks,
+  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
@@ -182,7 +182,7 @@ export function TVPlayerView({
           VTT en direct play, pistes du manifeste HLS (SubtitleMethod=Hls) en
           transcode → pas d'overlay JS. */}
       {((!useExoPlayer && Platform.OS !== "ios") || isLocalRemux) && (
-        <TVSubtitleOverlay text={subtitleText ?? null} osdVisible={overlayShown} />
+        <TVSubtitleOverlay cue={subtitleCue ?? null} osdVisible={overlayShown} />
       )}
       {/* Badge « +30s / −10s » après un double-clic ←/→ (OSD caché) */}
       <TVSkipBadge flash={controls.skipFlash} />

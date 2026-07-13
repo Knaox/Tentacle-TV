@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Platform } from "react-native";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream, SubtitleCue } from "@tentacle-tv/shared";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import type { ExoTextTrack } from "../components/player/ExoPlayer";
 import { useTVTextTracks } from "./useTVTextTracks";
@@ -35,7 +35,7 @@ export function useTVSubtitleSync(args: {
   overlayVisible: boolean;
   setDisplayTime: (v: number) => void;
   setBufferedTime: (v: number) => void;
-}): { subtitleText: string | null; textTracks: ExoTextTrack[] } {
+}): { subtitleCue: SubtitleCue | null; textTracks: ExoTextTrack[] } {
   const {
     itemId, mediaSourceId, streams, useExoPlayer, subtitleIndex, isLocalRemux,
     exoRef, subtitleTrackMap, displayTimeRef, bufferedTimeRef, lastProgressTime, lastDisplayUpdate,
@@ -67,7 +67,7 @@ export function useTVSubtitleSync(args: {
   // ⚠️ `useExoPlayer` ne doit gater QUE sur Android : sur tvOS il vaut true hors transcode
   // (ExoPlayer.ios ET MPVPlayer.ios pointent tous deux AVPlayerSurface) → l'inclure tel quel
   // masquait l'overlay du remux (passait -1 alors qu'isLocalRemux voulait l'overlay JS).
-  const subtitleText = useTVSubtitles({
+  const subtitleCue = useTVSubtitles({
     itemId, mediaSourceId,
     subtitleIndex: ((Platform.OS !== "ios" && useExoPlayer) || (Platform.OS === "ios" && !isLocalRemux))
       ? -1 : subtitleIndex,
@@ -83,5 +83,5 @@ export function useTVSubtitleSync(args: {
     }
   }, [overlayVisible]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { subtitleText, textTracks };
+  return { subtitleCue, textTracks };
 }
