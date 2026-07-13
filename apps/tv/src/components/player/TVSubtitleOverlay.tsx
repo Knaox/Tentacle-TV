@@ -12,11 +12,12 @@ interface TVSubtitleOverlayProps {
 }
 
 // Style de base — police SYSTÈME (aucun fontFamily) : même rendu que
-// l'overlay mobile / le video::cue du web. Poids medium homogène.
-const FONT_SIZE = 30;
+// l'overlay mobile / le video::cue du web. Poids medium homogène. Taille
+// calibrée 10-foot (~3,7 % d'un canvas 1080p — Netflix/Disney ≈ 44-48).
+const FONT_SIZE = 40;
 const BASE: TextStyle = {
   fontSize: FONT_SIZE,
-  lineHeight: 42,
+  lineHeight: Math.round(FONT_SIZE * 1.4),
   textAlign: "center",
   fontWeight: "500",
 };
