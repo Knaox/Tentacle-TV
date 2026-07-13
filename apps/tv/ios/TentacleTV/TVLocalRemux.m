@@ -64,6 +64,23 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
         BOOL okSub = sub.length >= 2 && [sub characterAtIndex:0] == 'g';
         for (NSUInteger i = 1; okSub && i < sub.length; i++) { unichar c = [sub characterAtIndex:i]; if (c < '0' || c > '9') okSub = NO; }
         NSString *file = okSub ? [[dir stringByAppendingPathComponent:sub] stringByAppendingPathComponent:name] : nil;
+        // Segment « PAS ENCORE PRODUIT » (reprise/seek au bord de production) : un 404 sec
+        // faisait décrocher AVPlayer alors que le fichier arrive en <2 s. Long-poll borné,
+        // UNIQUEMENT si l'index demandé est DEVANT le dernier présent (≠ purgé), session
+        // courante vivante et non pausée (producteur garé → attente inutile). N'immobilise
+        // que le worker GCD de CETTE connexion (AVPlayer en ouvre 1-3).
+        if (file && ![[NSFileManager defaultManager] fileExistsAtPath:file]
+            && [name hasPrefix:@"seg"] && [name.pathExtension.lowercaseString isEqualToString:@"m4s"]) {
+          int reqIdx = [[[name stringByDeletingPathExtension] substringFromIndex:3] intValue];
+          int reqGen = [[sub substringFromIndex:1] intValue];
+          int minI = -1, maxI = -1;
+          TVSegBounds([dir stringByAppendingPathComponent:sub], &minI, &maxI);
+          if (reqGen == gGen && reqIdx > maxI && !gDone && !gError && !gPaused)
+            for (int i = 0; i < TVLR_SEG_WAIT_MS / 100 && reqGen == gGen && !gDone && !gError; i++) {
+              usleep(100000);   // temp_file : le rename du segment est atomique, le re-test suffit
+              if ([[NSFileManager defaultManager] fileExistsAtPath:file]) break;
+            }
+        }
         if (!file || ![[NSFileManager defaultManager] fileExistsAtPath:file]) {
           // Diagnostic : distinguer « purgé » (idx < min présent) de « pas encore produit »
           // (idx > max présent) — les deux répondaient un 404 muet indiscernable.

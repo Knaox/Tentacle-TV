@@ -43,6 +43,8 @@
 #define TVLR_TSLOG_GAP_MS     200.0               // trou de timestamps loggé au-delà (ms)
 #define TVLR_COPY_BACK_MAX_MS 120.0               // recul toléré par clamp sur l'audio copié (jitter
                                                   // d'interleave : frame AC3=32 ms, AAC=21 ms) ; au-delà → drop
+#define TVLR_SEG_WAIT_MS      2500                // handler HLS : attente max (long-poll) d'un segment
+                                                  // demandé DEVANT le dernier produit, avant 404
 
 // Route les logs internes de FFmpeg vers Console.app (raison exacte des échecs).
 static void TVAvLog(void *avcl, int level, const char *fmt, va_list vl) {
