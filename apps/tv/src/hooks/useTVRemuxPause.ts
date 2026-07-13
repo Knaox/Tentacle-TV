@@ -1,21 +1,29 @@
 import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { NativeModules } from "react-native";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import type { RemuxInfo } from "./useTVRemuxInfo";
 
 /**
  * Vraie pause permanente du lecteur remux on-device tvOS (anti `AVFoundationErrorDomain -11866`).
  *
- * En pause, le manifeste HLS `event` cesse de grandir → tvOS 18.x déclare le flux corrompu (~3-4 s de
- * manifeste inchangé). On pousse l'état de pause au natif : le serveur local réécrit alors `index.m3u8`
- * (snapshot VOD+ENDLIST en mode B, ou keepalive EVENT en mode A) → AVPlayer reste figé au frame, sans
- * erreur ni reprise automatique. Le point de pause est préservé.
+ * En pause, le manifeste HLS `event` cesse de grandir dès que le producteur s'est garé
+ * (~300 s d'avance produites) → tvOS 18.x déclare le flux corrompu (~3-4 s de manifeste
+ * inchangé). Stratégie HYBRIDE à deux étages, poussée au natif (le serveur local réécrit
+ * `index.m3u8` pendant la pause, cf. TVBuildPausedManifest) :
  *
- * Reprise (mode B) : AVPlayer a mis le snapshot ENDLIST en cache → on force un remount qui re-fetch l'EVENT
- * croissant, sur une NOUVELLE session re-remuxée À LA POSITION COURANTE P (`prepareResume` + `setStartTicks`,
- * même mécanisme que `useTVRemuxSeek`) → offset=P, relatif 0 = point de pause exact.
+ *  - Étage 1 (ENGAGE_MS → VOD_AFTER_MS) : keepalive EVENT (mode 0). Le manifeste brut
+ *    continue de grandir (remplissage de l'avance) + commentaire changeant : risque nul,
+ *    et la reprise est une simple DÉ-PAUSE (instantanée, aucun reload).
+ *  - Étage 2 (> VOD_AFTER_MS) : snapshot VOD+ENDLIST (mode 1). AVPlayer cesse de poller
+ *    le manifeste → le -11866 devient IMPOSSIBLE pendant la pause, quelle que soit sa durée
+ *    (le keepalive seul était un pari non garanti par tvOS sur les pauses longues).
  *
- * SPIKE : `SNAPSHOT_MODE` arbitre la stratégie de manifeste de pause (0 = keepalive, 1 = VOD) — à trancher
- * sur device « Chambre » (Q4 : VOD+ENDLIST tue-t-il vraiment le -11866 ?). Pousser le mode au natif au montage.
+ * RÈGLE INVARIANTE : un item AVPlayer qui a VU un ENDLIST ne se dé-pause JAMAIS nûment —
+ * il croit le flux terminé (lecture du reliquat puis FAUX onEnd). La reprise après
+ * l'étage 2 force donc un remount sur une session fraîche re-remuxée à la position P
+ * (`prepareResume` + `setStartTicks`, même mécanisme que `useTVRemuxSeek`).
+ * Exception `trulyDone` : remux RÉELLEMENT terminé sans erreur → l'ENDLIST est authentique,
+ * la dé-pause nue suffit (un remount serait un spinner gratuit en fin de film).
  */
 const Remux = (NativeModules as {
   TVLocalRemux?: {
@@ -25,13 +33,11 @@ const Remux = (NativeModules as {
   };
 }).TVLocalRemux;
 
-// 0 = keepalive EVENT (variante A) · 1 = VOD+ENDLIST (variante B).
-// MODE A retenu (itération 3) : le keepalive garde la session EVENT vivante en pause → au resume il suffit de
-// DÉ-PAUSER (pas de reload, pas de re-remux) → « session encore valable → pas de rechargement ». À confirmer
-// sur device que le keepalive tue bien le -11866 (sinon repli mode B + remount à la position relative courante).
-const SNAPSHOT_MODE: number = 0;
-// Délai avant d'engager le manifeste de pause : > pause de scrub mais < seuil de corruption AVPlayer (~3-4 s).
+/** Délai avant d'engager la pause native : > pause de scrub mais < seuil de corruption AVPlayer (~3-4 s). */
 const ENGAGE_MS = 1200;
+/** Bascule keepalive → snapshot VOD : au-delà, le producteur garé ne fait plus grandir le
+ *  manifeste et le keepalive seul ne suffit plus — l'ENDLIST, lui, est déterministe. */
+const VOD_AFTER_MS = 20000;
 
 export function useTVRemuxPause(args: {
   paused: boolean;
@@ -47,42 +53,63 @@ export function useTVRemuxPause(args: {
   resetLoadedRef: MutableRefObject<() => void>;
   /** Session locale morte pendant la pause (stall -11866 malgré le keepalive,
    *  cf. useTVRemuxStallRecovery) : la reprise doit alors remonter une session
-   *  fraîche à P (chemin mode B) même en mode keepalive. */
+   *  fraîche à P même si l'étage VOD n'était pas engagé. */
   deadSessionRef: MutableRefObject<boolean>;
   /** Capture la frame AFFICHÉE au moment où la pause s'engage (la vidéo est
    *  encore intacte à l'écran) → si la session meurt plus tard, l'image figée
    *  est la VRAIE dernière image au lieu de la vignette trickplay. */
   capturePauseFrame?: () => void;
+  /** État de production du remux (poll 1 Hz) : détecte l'ENDLIST authentique
+   *  (remux terminé) → la reprise après snapshot VOD reste une dé-pause nue. */
+  infoRef?: MutableRefObject<RemuxInfo | null>;
 }) {
-  const { paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame } = args;
+  const { paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame, infoRef } = args;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const vodTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const engagedRef = useRef(false);
+  /** L'étage 2 a servi un snapshot VOD+ENDLIST pendant CETTE pause → la reprise doit remonter.
+   *  Volontairement LOCAL au hook : un re-remux monté pendant la pause (seek/changement de
+   *  piste) est lui aussi servi en snapshot → son item reste « empoisonné » et le remount de
+   *  reprise reste dû (double remount rare et accepté — ne PAS effacer ce flag ailleurs). */
+  const vodEngagedRef = useRef(false);
 
-  useEffect(() => { Remux?.setSnapshotMode?.(SNAPSHOT_MODE); }, []);
+  useEffect(() => { Remux?.setSnapshotMode?.(0); }, []);
 
   useEffect(() => {
     if (!isLocalRemux) return;
     if (paused) {
       // Engager APRÈS un délai → les pauses courtes (scrub) restent en EVENT pur, zéro remount à la reprise.
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (vodTimerRef.current) clearTimeout(vodTimerRef.current);
       timerRef.current = setTimeout(() => {
         capturePauseFrame?.();   // frame encore affichée (aucun stall possible avant l'engage)
         Remux?.setPaused?.(true);
         engagedRef.current = true;
+        vodTimerRef.current = setTimeout(() => {
+          Remux?.setSnapshotMode?.(1);   // étage 2 : snapshot VOD+ENDLIST servi → AVPlayer arrête de poller
+          vodEngagedRef.current = true;
+        }, VOD_AFTER_MS);
       }, ENGAGE_MS);
       return;
     }
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (vodTimerRef.current) { clearTimeout(vodTimerRef.current); vodTimerRef.current = null; }
     // Session morte pendant la pause (stall malgré le keepalive) : la reprise
-    // DOIT remonter une session fraîche à P, même en mode keepalive et même si
-    // la pause n'avait pas été engagée.
+    // DOIT remonter une session fraîche à P, même si la pause n'avait pas été engagée.
     const dead = deadSessionRef.current;
+    const sawEndlist = vodEngagedRef.current;
+    vodEngagedRef.current = false;
     if (!engagedRef.current && !dead) return;   // pause courte jamais engagée → reprise transparente
     engagedRef.current = false;
     Remux?.setPaused?.(false);
-    if (SNAPSHOT_MODE !== 1 && !dead) return;   // mode keepalive, session vivante : rien à recharger
+    if (sawEndlist) Remux?.setSnapshotMode?.(0);   // mode keepalive rétabli pour la PROCHAINE pause
+    // ENDLIST AUTHENTIQUE (remux terminé sans erreur) : le snapshot ≡ le VOD réel — l'item
+    // n'est pas « empoisonné », la dé-pause nue suffit.
+    const info = infoRef?.current;
+    const trulyDone = !!(info && info.done && !info.error);
+    if (!dead && (!sawEndlist || trulyDone)) return;   // étage 1 seul (ou ENDLIST réel) : rien à recharger
     deadSessionRef.current = false;
-    // Mode VOD : remount sur une nouvelle session re-remuxée à P (point de pause exact préservé). On arme
+    // Remount sur une nouvelle session re-remuxée à P (point de pause exact préservé). On arme
     // SYNCHRONIQUEMENT, AVANT le reload async :
     //  - holdForReload() : isLoading=true (spinner + garde l'image figée) ET reloadHold=true → le LECTEUR
     //    reste en pause pendant tout le reload (AUCUN son/image de la session sortante, ni « recommence
@@ -102,6 +129,8 @@ export function useTVRemuxPause(args: {
 
   useEffect(() => () => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    if (vodTimerRef.current) clearTimeout(vodTimerRef.current);
     Remux?.setPaused?.(false);
+    Remux?.setSnapshotMode?.(0);
   }, []);
 }
