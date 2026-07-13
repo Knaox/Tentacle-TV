@@ -12,6 +12,7 @@ import { useTVInitialResume } from "./useTVInitialResume";
 import { useTVStreamUrl } from "./useTVStreamUrl";
 import { useTVRemuxInfo } from "./useTVRemuxInfo";
 import { useTVRemuxStallRecovery } from "./useTVRemuxStallRecovery";
+import { useTVRemuxFamineWatchdog } from "./useTVRemuxFamineWatchdog";
 import { useTVRemuxPause } from "./useTVRemuxPause";
 import { useTVTrackResolution } from "./useTVTrackResolution";
 import { useTVMpvTracks } from "./useTVMpvTracks";
@@ -129,6 +130,15 @@ export function usePlayerStreamPipeline(args: {
   useTVRemuxPause({
     paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload,
     notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame,
+  });
+
+  // Filet ANTI-FAMINE : un stall SANS -11866 (famine post-reprise, race de production)
+  // n'avait aucune récupération (spinner infini) — même chemin de remount que le -11866.
+  useTVRemuxFamineWatchdog({
+    isLocalRemux, hasStarted,
+    pausedStateRef, endedRef, deadSessionRef, softReloadRef, reloadHoldRef,
+    lastProgressTime, positionRef, infoRef: remuxInfoRef,
+    onRemuxStall, setVideoError,
   });
 
   // Capture de pause consommée : invalidée dès que la lecture reprend réellement.
