@@ -126,7 +126,11 @@ static void TVPaceAndPurge(const char *dst, int gen, int64_t wpts, AVRational wt
   if ((npkt % 120) == 0) TVPurgeBehind(dst, gen, gTVPlayPos);
   // Purge AUSSI pendant l'attente : quand la tête avance, gDiskBytes baisse et relâche le gate
   // octets (sinon deadlock — le gate ne se rouvrirait jamais sans purge).
-  while (gReady && gTVPlayPos > 1.0 && gGen == gen && !gError &&
+  // `|| gPaused` : une session montée PENDANT une pause engagée (seek/changement de piste) a
+  // gTVPlayPos=0 → sans ce terme elle remuxait le FICHIER ENTIER sans plafond (purge et cap
+  // gated sur playPos ≥ 1) → disque plein possible sur un 4K. Parquée à +300 s produits ; la
+  // reprise (gPaused=0, playPos encore ≤ 1) la relâche en libre → pré-buffer normal.
+  while (gReady && (gTVPlayPos > 1.0 || gPaused) && gGen == gen && !gError &&
          (writtenSec > gTVPlayPos + 300.0 || gDiskBytes > TVLR_DISK_CAP)) {
     TVPurgeBehind(dst, gen, gTVPlayPos);
     usleep(200000);
