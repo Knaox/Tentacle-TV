@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import { Platform } from "react-native";
 import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
   usePlaybackReporting, useIntroSkipper, useEpisodeNavigation,
@@ -197,21 +196,16 @@ export function usePlayerPlayback(itemId: string) {
     fetchPlaybackInfo({ isRetry: true, startTimeTicks: startTicks > 0 ? startTicks : undefined });
   }, [fetchPlaybackInfo]);
 
-  /** Index into textTracks for the active subtitle (-1 = none, direct play only). */
-  const textTrackSelectedIndex = useMemo(() => {
-    if (!state.isDirectPlay || subtitleIndex < 0 || state.burnInSubIndex >= 0) return -1;
-    const textSubStreams = streams.filter((s) => s.Type === "Subtitle" && !isBitmapSub(s));
-    return textSubStreams.findIndex((s) => s.Index === subtitleIndex);
-  }, [subtitleIndex, state.isDirectPlay, state.burnInSubIndex, streams]);
-
-  /** VTT URL for custom overlay (transcode + Android direct play). iOS direct uses native VTT. */
+  /** VTT URL for custom overlay — every mode, every platform (text subs only).
+   *  iOS never sideloads native textTracks (sidecar tracks force-disable
+   *  AirPlay) and selectedTextTrack is DISABLED, so the overlay is the ONLY
+   *  text renderer; direct play has streamOffset = 0 → cues stay in sync. */
   const subtitleVttUrl = useMemo(() => {
     if (subtitleIndex < 0) return null;
-    if (state.isDirectPlay && Platform.OS !== "android") return null;
     const sub = streams.find((s) => s.Index === subtitleIndex && s.Type === "Subtitle");
     if (!sub || isBitmapSub(sub)) return null;
     return client.getSubtitleUrl(itemId, mediaSourceId, subtitleIndex, "vtt");
-  }, [subtitleIndex, state.isDirectPlay, streams, client, itemId, mediaSourceId]);
+  }, [subtitleIndex, streams, client, itemId, mediaSourceId]);
 
   /** Index into native audio tracks for selectedAudioTrack prop (0-based, audio streams only). */
   const audioTrackSelectedIndex = useMemo(() => {
@@ -223,7 +217,7 @@ export function usePlayerPlayback(itemId: string) {
     item, ancestors, streams, mediaSourceId, jellyfinDuration,
     ...state,
     audioIndex, subtitleIndex, qualityKey, positionRef,
-    textTrackSelectedIndex, audioTrackSelectedIndex, subtitleVttUrl,
+    audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, skipSegments, reporting,
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,
   };
