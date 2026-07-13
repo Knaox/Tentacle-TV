@@ -97,6 +97,13 @@ NSString *TVBuildPausedManifest(NSString *eventPath, NSString *dir) {
   NSString *src = [NSString stringWithContentsOfFile:eventPath encoding:NSUTF8StringEncoding error:nil];
   if (!src.length) return nil;   // illisible / demi-écrit → laisser servir le fichier brut
 
+  // Diagnostic throttlé : UNE ligne par changement de (session, mode) — pas par poll AVPlayer.
+  { static int lastGen = -1, lastMode = -1;
+    if (gGen != lastGen || gSnapshotMode != lastMode) {
+      lastGen = gGen; lastMode = gSnapshotMode;
+      TVLOG("pause-manifest: gen=%d mode=%d (%lu o)", gGen, gSnapshotMode, (unsigned long)src.length);
+    } }
+
   // Variante A — keepalive : EVENT inchangé + un commentaire qui CHANGE à chaque requête. AVPlayer voit un
   // manifeste « jamais inchangé » → ne déclare pas le flux corrompu (pari sur la régression tvOS 18.x).
   if (gSnapshotMode == 0) {
@@ -136,5 +143,11 @@ NSString *TVBuildPausedManifest(NSString *eventPath, NSString *dir) {
   }
   [out addObjectsFromArray:segs];
   [out addObject:@"#EXT-X-ENDLIST"];
+  { static long long lastDropLog = -1;   // log du snapshot VOD au 1ᵉʳ build / changement de rognage
+    if (dropped != lastDropLog) {
+      lastDropLog = dropped;
+      TVLOG("pause-manifest: snapshot VOD segs=%lu dropped=%lld seq=%lld",
+            (unsigned long)(segs.count / 2), dropped, baseSeq + dropped);
+    } }
   return [[out componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
 }

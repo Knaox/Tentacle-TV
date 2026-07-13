@@ -29,6 +29,20 @@ volatile int gSnapshotMode = 0;   // défaut ALIGNÉ sur le runtime réel : keep
                                   // useTVRemuxPause au montage). L'ancien défaut 1 (VOD) ne servait que si le JS
                                   // n'avait pas encore poussé le mode → comportement divergent piégeux.
 
+// Bornes [min..max] des index de segments seg*.m4s présents sur disque (-1 si aucun).
+// Partagé : diagnostic du handler 404 (segment purgé vs pas encore produit) + long-poll.
+static void TVSegBounds(NSString *dir, int *minIdx, int *maxIdx) {
+  int mn = -1, mx = -1;
+  NSArray<NSString *> *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:nil];
+  for (NSString *f in files ?: @[]) {
+    if (![f hasPrefix:@"seg"] || ![f.pathExtension.lowercaseString isEqualToString:@"m4s"]) continue;
+    int idx = [[[f stringByDeletingPathExtension] substringFromIndex:3] intValue];
+    if (mn < 0 || idx < mn) mn = idx;
+    if (idx > mx) mx = idx;
+  }
+  *minIdx = mn; *maxIdx = mx;
+}
+
 // Purge les seg*.m4s trop en arrière de playPos + applique le plafond octets. Met à
 // jour gDiskBytes. Ne touche JAMAIS init.mp4 / *.m3u8 ni un segment à/juste-avant la
 // tête (marge de sécurité). Mapping index→temps via la durée MOYENNE réelle
@@ -69,6 +83,7 @@ static void TVPurgeBehind(const char *dstC, int gen, double playPos) {
 
     // Du plus ancien au plus récent : purger si HORS fenêtre BEHIND, OU si plafond
     // octets dépassé (jusqu'à la marge de sécurité). S'arrêter avant la tête.
+    int delN = 0, delA = -1, delB = -1;
     for (NSNumber *n in idxs) {
       int idx = n.intValue;
       if (idx >= safeFloor) break;              // proche/devant la tête → ne plus rien purger
@@ -76,8 +91,15 @@ static void TVPurgeBehind(const char *dstC, int gen, double playPos) {
       BOOL overCap = total > TVLR_DISK_CAP;
       if (!behindWindow && !overCap) break;     // dans la fenêtre ET sous le plafond → garder le reste
       NSString *p = [dir stringByAppendingPathComponent:[NSString stringWithFormat:@"seg%05d.m4s", idx]];
-      if ([fm removeItemAtPath:p error:nil]) total -= sizes[n].longLongValue;
+      if ([fm removeItemAtPath:p error:nil]) {
+        total -= sizes[n].longLongValue;
+        if (delA < 0) delA = idx;
+        delB = idx; delN++;
+      }
     }
+    if (delN > 0)
+      TVLOG("purge: del %d segs [%d..%d] head=%d floors(time=%d,safe=%d) avg=%.2fs disk=%lldMo",
+            delN, delA, delB, headIdx, timeFloor, safeFloor, avgSeg, total / (1024 * 1024));
     gDiskBytes = total;
   }
 }
