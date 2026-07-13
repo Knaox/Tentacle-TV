@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type Component } from "react";
 import { findNodeHandle } from "react-native";
-import { osdFocusedKeyRef } from "./osdFocusBus";
+import { osdFocusedKeyRef, osdPlayPauseNodeRef } from "./osdFocusBus";
 
 /** Boutons de transport de l'OSD du lecteur, dans l'ordre de la rangée. */
 export type TransportKey =
@@ -110,6 +110,8 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton = f
     if (!cb) {
       cb = (node: unknown) => {
         btnRefs.current[key] = node as FocusNode;
+        // Publie le node play/pause sur le bus (cible du guide de sortie du skip).
+        if (key === "playpause") osdPlayPauseNodeRef.current = (node ?? null) as Component | null;
         if (node) {
           const h = findNodeHandle(node as never);
           if (h && handlesRef.current[key] !== h) { handlesRef.current[key] = h; bumpHandles(); }
