@@ -18,25 +18,45 @@ typedef struct {
   int64_t lastDur;               // durée du paquet correspondant
   long long nClamp, nDrop, nGap; // compteurs de session (log de synthèse en fin de remux)
   int clampRun;                  // clamps consécutifs en cours (log par run, anti-spam)
+  int dropRun;                   // paquets droppés consécutifs (run de recul majeur en cours)
 } TVTsTrack;
 
-#define TV_TS_INIT { INT64_MIN, 0, 0, 0, 0, 0 }
+#define TV_TS_INIT { INT64_MIN, 0, 0, 0, 0, 0, 0 }
 
 // AUDIO COPIÉ — remplace le site du clamp historique de la boucle moteur.
-// Log des reculs (dts ≤ last) et des trous (> TVLR_TSLOG_GAP_MS), puis clamp
-// monotone IDENTIQUE à l'existant (dts ≤ last → last+1 ; PTS jamais touchés).
-// Retour : 0 = écrire le paquet, 1 = le dropper (correctif recul, phase 5).
+// - Recul ≤ TVLR_COPY_BACK_MAX_MS (jitter d'interleave) : clamp monotone historique
+//   (dts ≤ last → last+1 ; PTS jamais touchés).
+// - Recul MAJEUR (> seuil) : le clamp « +1 » fabriquait des samples à durée ~nulle et
+//   des cts incohérents (burst → désync A/V permanente au point du hitch). On DROPPE :
+//   la source re-livre une période DÉJÀ écrite — la timeline de présentation est
+//   préservée (frames audio auto-suffisantes), la lecture rattrape au premier
+//   dts > last écrit. Le run est borné par construction (fin au rattrapage).
+// - Trou (> TVLR_TSLOG_GAP_MS) : loggé (correctif éventuel = split de session, P6).
+// Retour : 0 = écrire le paquet, 1 = le dropper.
 static int TVCopyTsRepair(TVTsTrack *t, AVPacket *pkt, AVRational tb, int oidx) {
   if (pkt->dts == AV_NOPTS_VALUE) return 0;   // comportement historique : ni clamp ni mise à jour
   double ms = av_q2d(tb) * 1000.0;
   if (t->lastDts != INT64_MIN) {
-    if (pkt->dts <= t->lastDts) {             // recul / duplicate source
-      double backMs = (double)(t->lastDts - pkt->dts) * ms;
+    int isBack = pkt->dts <= t->lastDts;      // recul / duplicate source
+    double backMs = isBack ? (double)(t->lastDts - pkt->dts) * ms : 0;
+    if (isBack && backMs > TVLR_COPY_BACK_MAX_MS) {
+      t->nDrop++;
+      if (++t->dropRun == 1)
+        TVLOG("ts-copy[out=%d]: recul %.0f ms (dts=%lld <= last=%lld) -> DROP jusqu'au rattrapage",
+              oidx, backMs, (long long)pkt->dts, (long long)t->lastDts);
+      return 1;                               // lastDts/lastDur inchangés : la référence reste l'écrit
+    }
+    if (t->dropRun > 0) {                     // paquet conservé → le run de drop est terminé
+      TVLOG("ts-copy[out=%d]: rattrapage apres %d paquets droppes (total=%lld) -> resync",
+            oidx, t->dropRun, t->nDrop);
+      t->dropRun = 0;
+    }
+    if (isBack) {
       t->nClamp++;
       if (++t->clampRun == 1)
         TVLOG("ts-copy[out=%d]: recul %.0f ms (dts=%lld <= last=%lld) -> clamp",
               oidx, backMs, (long long)pkt->dts, (long long)t->lastDts);
-      pkt->dts = t->lastDts + 1;              // clamp historique (P5 : drop borné au-delà du seuil)
+      pkt->dts = t->lastDts + 1;
     } else {
       if (t->clampRun > 1)
         TVLOG("ts-copy[out=%d]: fin de run — %d clamps consecutifs (total=%lld)",
