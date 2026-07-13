@@ -6,7 +6,7 @@
     "description": "Tentacle TV is a premium media client for self-hosted media servers. Stream your movies, series, and music from your personal library with a beautiful, native iOS experience.",
     "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "scheme": "tentacle",
     "newArchEnabled": true,
     "splash": {

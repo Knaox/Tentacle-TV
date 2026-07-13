@@ -18,13 +18,41 @@ export * from "./tokens";
 export * as motion from "./motion";
 export * as effects from "./effects";
 
-// Runtime theming (Phase 4 — consumes `@tentacle-tv/theme` + `/api/theme`).
+// Theming runtime : MARQUE (admin, `/api/theme`) × APPARENCE (light/dark/auto).
 export {
   ThemeProvider,
-  ThemeContext,
-  useTheme,
-  type ThemeContextValue,
+  BrandThemeContext,
+  useBrandTheme,
+  type BrandThemeContextValue,
 } from "./ThemeProvider";
+export {
+  AppThemeContext,
+  ThemePrefsContext,
+  DEFAULT_APP_THEME,
+  buildAppTheme,
+  useTheme,
+  useThemeMode,
+  type LiquidGlassPrefs,
+  type ThemePrefsValue,
+} from "./appThemeContext";
+export { useThemedStyles, type ThemedStyleFactory } from "./useThemedStyles";
+export type {
+  AppTheme,
+  ResolvedScheme,
+  ThemeMode,
+  ThemePalette,
+} from "./palette.types";
+export { buildDarkPalette } from "./palette.dark";
+export { buildLightPalette } from "./palette.light";
+export {
+  THEME_MODE_STORAGE_KEY,
+  applyAppearance,
+  getBootThemeMode,
+  sanitizeThemeMode,
+  setBootThemeMode,
+} from "./themeMode";
+export { PLAYER } from "./playerColors";
+export { darken, hexToRgb, withAlpha, type Rgb } from "./colorUtils";
 export { fetchThemeState } from "./themeApi";
 export type { BackendThemeState } from "./types";
 export { parsePx, parseMs, parseScale } from "./utils";
