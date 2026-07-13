@@ -241,6 +241,7 @@ iOS 1.2.4 — Backend 1.2.1
 Android mobile 1.0.0 — première version Google Play (tests)
 
 ### FR
+- Sous-titres : formatage respecté (gras, italique, position à l'écran) au lieu de tags affichés en code brut.
 - Première version de Tentacle TV pour Android : votre médiathèque Jellyfin, en mieux.
 - Lecture fluide avec reprise, choix de l'audio et des sous-titres.
 - Passage automatique à l'épisode suivant.
@@ -250,6 +251,7 @@ Android mobile 1.0.0 — première version Google Play (tests)
 - Interface sombre élégante, disponible en français et en anglais.
 
 ### EN
+- Subtitles: formatting honored (bold, italics, on-screen position) instead of raw tags showing as text.
 - First release of Tentacle TV for Android: your Jellyfin library, at its best.
 - Smooth playback with resume, audio and subtitle selection.
 - Automatic Up Next to the following episode.
