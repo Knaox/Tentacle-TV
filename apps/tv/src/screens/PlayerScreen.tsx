@@ -85,6 +85,8 @@ export function PlayerScreen({ route, navigation }: Props) {
     itemId, seriesId: item?.SeriesId, navigation,
     reportStop: p.reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef,
     onBackground: () => setPaused(true),
+    // Retour au premier plan : refocus OSD (le focus natif tvOS meurt au background) — sauf panneau ouvert.
+    onForeground: () => { if (!showSettingsRef.current && !showEpisodesRef.current) bumpOsdFocus(); },
   });
 
   // Navigation inter-épisodes : auto-play (générique → suivant), skip intro/crédits.

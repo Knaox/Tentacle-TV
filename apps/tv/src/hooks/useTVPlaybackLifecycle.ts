@@ -28,10 +28,19 @@ export function useTVPlaybackLifecycle(args: {
   reportStartRef: React.MutableRefObject<(pos?: number) => void>;
   /** Appelé lors d'un passage en arrière-plan pour mettre en pause. */
   onBackground?: () => void;
+  /** Appelé au RETOUR au premier plan (re-signalé à 0,4/1,5/3 s — après une VRAIE
+   *  suspension la scène UIKit se réattache lentement, un seul tir part trop tôt) :
+   *  tvOS PERD le focus natif au passage en arrière-plan — sans re-signal, plus
+   *  aucun bouton n'est focalisé au retour (l'OSD de pause étant déjà visible,
+   *  aucune transition ne re-déclenche le refocus) → les appuis OK tombent dans
+   *  le vide et la lecture est impossible à relancer. Doit être idempotent. */
+  onForeground?: () => void;
 }) {
-  const { itemId, seriesId, navigation, reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef, onBackground } = args;
+  const { itemId, seriesId, navigation, reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef, onBackground, onForeground } = args;
   const onBackgroundRef = useRef(onBackground);
   onBackgroundRef.current = onBackground;
+  const onForegroundRef = useRef(onForeground);
+  onForegroundRef.current = onForeground;
   const queryClient = useQueryClient();
   const client = useJellyfinClient();
   const userId = useUserId();
@@ -104,6 +113,7 @@ export function useTVPlaybackLifecycle(args: {
       } else if (state === "active") {
         reportStartRef.current(positionRef.current);
         reportSeekRef.current(positionRef.current, pausedStateRef.current);
+        [400, 1500, 3000].forEach((d) => setTimeout(() => onForegroundRef.current?.(), d));
       }
     });
     return () => sub.remove();
