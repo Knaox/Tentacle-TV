@@ -126,10 +126,11 @@ export function usePlayerStreamPipeline(args: {
     infoRef: remuxInfoRef, endedRef, onEndRef: handleEndRef,
   });
 
-  // Vraie pause permanente du remux on-device (anti -11866).
+  // Vraie pause permanente du remux on-device (anti -11866) : keepalive puis snapshot
+  // VOD+ENDLIST après 20 s — la reprise post-VOD remonte une session fraîche à P.
   useTVRemuxPause({
     paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload,
-    notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame,
+    notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame, infoRef: remuxInfoRef,
   });
 
   // Filet ANTI-FAMINE : un stall SANS -11866 (famine post-reprise, race de production)

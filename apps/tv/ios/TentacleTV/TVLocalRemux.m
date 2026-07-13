@@ -218,6 +218,7 @@ RCT_EXPORT_METHOD(cancel:(NSInteger)gen) {
   gGen++;                    // la boucle moteur/pacing teste gGen → le producteur sort en ≤ 200 ms
   gCurrentSource = nil;      // jamais de réutilisation withinAvail d'une session annulée (dossier purgé)
   gPaused = 0; gResumePending = 0;
+  gSnapshotMode = 0;         // mode keepalive rétabli (ceinture-bretelles avec le push JS au montage)
   NSString *base = gOutPath;
   if (base && gRemuxQueue) dispatch_async(gRemuxQueue, ^{   // file SÉRIE → s'exécute APRÈS la sortie du producteur
     NSFileManager *fm = [NSFileManager defaultManager];
