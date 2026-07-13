@@ -24,7 +24,6 @@ export function useTVSubtitleSync(args: {
   streams: JfStream[];
   useExoPlayer: boolean;
   subtitleIndex: number;
-  isLocalRemux: boolean;
   exoRef: React.RefObject<MPVPlayerHandle | null>;
   subtitleTrackMap: Record<number, number>;
   displayTimeRef: React.MutableRefObject<number>;
@@ -37,18 +36,18 @@ export function useTVSubtitleSync(args: {
   setBufferedTime: (v: number) => void;
 }): { subtitleCue: SubtitleCue | null; textTracks: ExoTextTrack[] } {
   const {
-    itemId, mediaSourceId, streams, useExoPlayer, subtitleIndex, isLocalRemux,
+    itemId, mediaSourceId, streams, useExoPlayer, subtitleIndex,
     exoRef, subtitleTrackMap, displayTimeRef, bufferedTimeRef, lastProgressTime, lastDisplayUpdate,
     pausedStateRef, overlayVisible, setDisplayTime, setBufferedTime,
   } = args;
 
-  // Pistes texte VTT chargées NATIVEMENT : Android ExoPlayer (direct play) +
-  // tvOS AVPlayer (sideload, direct play ET transcode). La sélection est
-  // déclarative sur tvOS (prop subtitleIndex → AVPlayerSurface), impérative sur
-  // Android (effet ci-dessous). Burn-in PGS exclu (géré par le serveur).
+  // Pistes texte VTT chargées NATIVEMENT : Android ExoPlayer (direct play)
+  // UNIQUEMENT — sélection impérative (effet ci-dessous), burn-in PGS exclu
+  // (géré par le serveur). Sur tvOS, tout le texte passe par l'overlay JS :
+  // le sideload AVPlayer ne marche pas sur HLS et rendait mal le reste.
   const textTracks = useTVTextTracks({
     itemId, mediaSourceId, streams,
-    enabled: useExoPlayer || Platform.OS === "ios",
+    enabled: useExoPlayer && Platform.OS !== "ios",
   });
 
   // Sélection sous-titre native ExoPlayer (Android) sans re-prepare. Sur tvOS,
@@ -60,17 +59,14 @@ export function useTVSubtitleSync(args: {
     if (nativeId != null) exoRef.current?.setSubtitleTrack(nativeId);
   }, [useExoPlayer, subtitleIndex, subtitleTrackMap]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Overlay JS = Android MPV/transcode + remux local tvOS (manifeste HLS SANS piste texte).
-  // -1 (rendu NATIF, pas d'overlay) dans les autres cas :
-  //  - Android ExoPlayer (direct play) → VTT natif (subtitleView) ;
-  //  - tvOS hors remux → sideload VTT (direct play) / pistes du manifeste HLS (transcode).
-  // ⚠️ `useExoPlayer` ne doit gater QUE sur Android : sur tvOS il vaut true hors transcode
-  // (ExoPlayer.ios ET MPVPlayer.ios pointent tous deux AVPlayerSurface) → l'inclure tel quel
-  // masquait l'overlay du remux (passait -1 alors qu'isLocalRemux voulait l'overlay JS).
+  // Overlay JS = TOUT le texte tvOS (direct play, transcode ET remux local) +
+  // Android MPV/transcode. -1 (pas d'overlay) uniquement sur Android ExoPlayer
+  // (direct play) où le VTT est rendu nativement (subtitleView).
+  // ⚠️ `useExoPlayer` ne doit gater QUE sur Android : sur tvOS il vaut true hors
+  // transcode (ExoPlayer.ios ET MPVPlayer.ios pointent tous deux AVPlayerSurface).
   const subtitleCue = useTVSubtitles({
     itemId, mediaSourceId,
-    subtitleIndex: ((Platform.OS !== "ios" && useExoPlayer) || (Platform.OS === "ios" && !isLocalRemux))
-      ? -1 : subtitleIndex,
+    subtitleIndex: (Platform.OS !== "ios" && useExoPlayer) ? -1 : subtitleIndex,
     streams,
     displayTimeRef, lastProgressTime, pausedStateRef,
   });

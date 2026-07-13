@@ -60,7 +60,6 @@ export interface TVPlayerViewProps {
 
   // Player refs
   useExoPlayer: boolean;
-  isLocalRemux?: boolean;   // remux on-device tvOS → overlay sous-titres JS (pas de piste manifeste)
   /** Direct play vs transcode HLS (décision serveur) — gate le sideload tvOS. */
   isDirectPlay: boolean;
   exoRef: React.Ref<MPVPlayerHandle>;
@@ -122,7 +121,7 @@ export interface TVPlayerViewProps {
 export function TVPlayerView({
   item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
-  useExoPlayer, isLocalRemux, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
+  useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
   audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
   qualityKey, sourceQuality, skipSegments, autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
@@ -177,11 +176,9 @@ export function TVPlayerView({
       >
         <View style={{ flex: 1 }} />
       </TouchableOpacity>
-      {/* Sous-titres : Android = natif (subtitleView ExoPlayer) en direct play,
-          overlay JS en MPV/transcode. tvOS (AVPlayer) = NATIF partout : sideload
-          VTT en direct play, pistes du manifeste HLS (SubtitleMethod=Hls) en
-          transcode → pas d'overlay JS. */}
-      {((!useExoPlayer && Platform.OS !== "ios") || isLocalRemux) && (
+      {/* Sous-titres texte : Android = natif ExoPlayer en direct play, overlay JS
+          en MPV/transcode. tvOS = overlay JS PARTOUT — cf. useTVSubtitleSync. */}
+      {(Platform.OS === "ios" || !useExoPlayer) && (
         <TVSubtitleOverlay cue={subtitleCue ?? null} osdVisible={overlayShown} />
       )}
       {/* Badge « +30s / −10s » après un double-clic ←/→ (OSD caché) */}

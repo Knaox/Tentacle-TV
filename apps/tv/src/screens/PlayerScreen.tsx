@@ -159,10 +159,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
 
-  // Sous-titres : pistes texte natives + overlay JS (remux local tvOS) + synchro d'affichage.
+  // Sous-titres : pistes texte natives (Android) + overlay JS + synchro d'affichage.
   const { subtitleCue, textTracks } = useTVSubtitleSync({
     itemId, mediaSourceId: p.mediaSource?.Id, streams: p.streams,
-    useExoPlayer: p.useExoPlayer, subtitleIndex: p.subtitleIndex, isLocalRemux,
+    useExoPlayer: p.useExoPlayer, subtitleIndex: p.subtitleIndex,
     exoRef, subtitleTrackMap: p.mpvTracks.subtitleTrackMap,
     displayTimeRef, bufferedTimeRef, lastProgressTime, lastDisplayUpdate, pausedStateRef,
     overlayVisible: controls.overlayVisible, setDisplayTime, setBufferedTime,
@@ -265,7 +265,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}
       autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
-      useExoPlayer={p.useExoPlayer} isLocalRemux={isLocalRemux} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
+      useExoPlayer={p.useExoPlayer} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}
