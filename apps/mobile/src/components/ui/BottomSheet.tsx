@@ -4,8 +4,9 @@ import {
   type GestureResponderEvent, type PanResponderGestureState,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { SURFACE, BORDER, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH } from "@/theme";
+import { useTranslation } from "react-i18next";
+import { RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { GlassBackdrop } from "./GlassSurface";
 
 const DISMISS_THRESHOLD = 80;
 const HANDLE_H = 24; // paddingTop(12) + paddingBottom(8) + bar(4)
@@ -24,6 +25,9 @@ interface BottomSheetProps {
  */
 export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], children }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const themed = useThemedStyles(makeThemedStyles);
   // Hauteur réactive (rotation iPad) — nommée SCREEN_H pour préserver toute la
   // logique de snap existante.
   const { height: SCREEN_H } = useWindowDimensions();
@@ -121,11 +125,10 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   return (
     <Modal visible transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
       <View style={{ flex: 1 }}>
-        {/* Backdrop: blur + scrim */}
+        {/* Backdrop: blur + scrim (intensity 28 = valeur pixel-perfect historique) */}
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.55)" }]} />
-          <Pressable style={{ flex: 1 }} onPress={dismiss} accessibilityLabel="Fermer" />
+          <GlassBackdrop intensity={28} />
+          <Pressable style={{ flex: 1 }} onPress={dismiss} accessibilityLabel={t("close")} />
         </Animated.View>
 
         {/* Sheet panel — centré + largeur bornée sur grand écran (form-sheet iPad) */}
@@ -133,10 +136,11 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
           <Animated.View
             style={[
               styles.sheet,
+              themed.sheet,
               SHADOW_RN.sheet,
               {
                 height: maxH,
-                backgroundColor: SURFACE.s1,
+                backgroundColor: theme.colors.glass.panel,
                 transform: [{ translateY }],
                 paddingBottom: insets.bottom,
               },
@@ -146,7 +150,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
 
             {/* Drag handle area (gesture target) */}
             <View {...panResponder.panHandlers} style={styles.handleArea}>
-              <View style={styles.handle} />
+              <View style={[styles.handle, themed.handle]} />
             </View>
 
             <View
@@ -164,6 +168,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   );
 }
 
+// Feuille géométrique statique — les couleurs vivent dans makeThemedStyles.
 const styles = StyleSheet.create({
   overlay: {
     position: "absolute",
@@ -180,7 +185,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: RADIUS["2xl"],
     borderTopRightRadius: RADIUS["2xl"],
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER.subtle,
   },
   handleArea: {
     alignItems: "center",
@@ -190,7 +194,12 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.28)",
     borderRadius: 2,
   },
 });
+
+const makeThemedStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    sheet: { borderColor: t.colors.border.subtle },
+    handle: { backgroundColor: t.colors.fill.strong },
+  });

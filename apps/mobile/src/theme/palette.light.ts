@@ -39,6 +39,7 @@ export function buildLightPalette(): ThemePalette {
       s2: "#ECECF1",
       s3: "#E2E2E8",
       overlay: "rgba(0, 0, 0, 0.4)",
+      s0Tint: "#EFEFF4",
     },
     text: {
       primary: "#0B0B10",
@@ -89,6 +90,9 @@ export function buildLightPalette(): ThemePalette {
       subtle: "rgba(0, 0, 0, 0.04)",
       soft: "rgba(0, 0, 0, 0.06)",
       medium: "rgba(0, 0, 0, 0.1)",
+      strong: "rgba(0, 0, 0, 0.22)",
+      // Le reflet du shimmer reste un éclat clair, plus marqué sur fond clair.
+      shimmer: "rgba(255, 255, 255, 0.45)",
     },
     danger: {
       surface: "rgba(220, 38, 38, 0.08)",
@@ -98,6 +102,8 @@ export function buildLightPalette(): ThemePalette {
       tint: "rgba(248, 248, 252, 0.6)",
       tintStrong: "rgba(242, 242, 248, 0.72)",
       panel: "#FFFFFF",
+      // Les fonds de modale restent un voile sombre, plus léger qu'en dark.
+      backdrop: "rgba(0, 0, 0, 0.3)",
     },
     tabBar: "rgba(255, 255, 255, 0.92)",
   };

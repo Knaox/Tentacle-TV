@@ -91,8 +91,17 @@ export function GlassSurface({
 export interface GlassBackdropProps {
   /** Défaut : palier "sheet" (backdrops BottomSheet / MediaActionSheet). */
   intensity?: number;
-  scrim?: "scrim" | "scrimSoft" | "scrimHeavy";
+  /** "backdrop" (canonique, glass.backdrop) ou un palier overlay.scrim*. */
+  scrim?: "backdrop" | "scrim" | "scrimSoft" | "scrimHeavy";
   style?: StyleProp<ViewStyle>;
+}
+
+function resolveScrim(
+  theme: AppTheme,
+  scrim: NonNullable<GlassBackdropProps["scrim"]>,
+): string {
+  if (scrim === "backdrop") return theme.colors.glass.backdrop;
+  return theme.colors.overlay[scrim];
 }
 
 /**
@@ -101,7 +110,7 @@ export interface GlassBackdropProps {
  */
 export function GlassBackdrop({
   intensity,
-  scrim = "scrim",
+  scrim = "backdrop",
   style,
 }: GlassBackdropProps) {
   const theme = useTheme();
@@ -116,7 +125,7 @@ export function GlassBackdrop({
       <View
         style={[
           StyleSheet.absoluteFillObject,
-          { backgroundColor: theme.colors.overlay[scrim] },
+          { backgroundColor: resolveScrim(theme, scrim) },
         ]}
       />
     </View>

@@ -1,5 +1,7 @@
 import { View, Text, type ViewStyle } from "react-native";
-import { colors, typography, BRAND, STATUS, STATUS_PAIRS, FONT_FAMILY, LETTER_SPACING, RADIUS } from "../../theme";
+
+import { typography, FONT_FAMILY, LETTER_SPACING, RADIUS, useTheme, withAlpha } from "../../theme";
+import type { AppTheme } from "../../theme";
 
 type Variant = "accent" | "success" | "gold" | "muted" | "danger" | "warning" | "info" | "brand";
 
@@ -15,20 +17,33 @@ interface BadgeStyle {
   text: string;
 }
 
-const variantStyles: Record<Variant, BadgeStyle> = {
-  brand: { bg: BRAND.soft, text: BRAND.light },
-  // alias legacy
-  accent: { bg: BRAND.soft, text: BRAND.light },
-  success: { bg: STATUS_PAIRS.success.bg, text: STATUS_PAIRS.success.fg },
-  warning: { bg: STATUS_PAIRS.warning.bg, text: STATUS_PAIRS.warning.fg },
-  info: { bg: STATUS_PAIRS.info.bg, text: STATUS_PAIRS.info.fg },
-  danger: { bg: STATUS_PAIRS.error.bg, text: STATUS_PAIRS.error.fg },
-  gold: { bg: "rgba(251, 191, 36, 0.18)", text: STATUS.rating },
-  muted: { bg: "rgba(255, 255, 255, 0.08)", text: "rgba(255, 255, 255, 0.62)" },
-};
+function variantStyle(t: AppTheme, variant: Variant): BadgeStyle {
+  const { colors } = t;
+  switch (variant) {
+    case "brand":
+    case "accent": // alias legacy
+      return { bg: colors.brand.soft, text: colors.brand.light };
+    case "success":
+      return { bg: colors.statusPairs.success.bg, text: colors.statusPairs.success.fg };
+    case "warning":
+      return { bg: colors.statusPairs.warning.bg, text: colors.statusPairs.warning.fg };
+    case "info":
+      return { bg: colors.statusPairs.info.bg, text: colors.statusPairs.info.fg };
+    case "danger":
+      return { bg: colors.statusPairs.error.bg, text: colors.statusPairs.error.fg };
+    case "gold":
+      return {
+        bg: withAlpha(colors.status.rating, 0.18, colors.statusPairs.warning.bg),
+        text: colors.status.rating,
+      };
+    case "muted":
+      return { bg: colors.fill.soft, text: colors.text.tertiary };
+  }
+}
 
 export function Badge({ label, variant = "muted", style, uppercase = true }: Props) {
-  const v = variantStyles[variant];
+  const theme = useTheme();
+  const v = variantStyle(theme, variant);
   return (
     <View
       style={[
@@ -57,6 +72,3 @@ export function Badge({ label, variant = "muted", style, uppercase = true }: Pro
     </View>
   );
 }
-
-/** Export helper pour stats colors (utilisé par certains composants ailleurs). */
-export const BADGE_COLORS = { gold: colors.gold } as const;
