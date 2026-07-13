@@ -3,18 +3,18 @@ import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 
 /**
- * État + bascule de la piste sous-titres côté Android TV.
- *  - Sous-titres TEXTE : sélection NATIVE/overlay JS, AUCUN rechargement.
+ * État + bascule de la piste sous-titres.
+ *  - Sous-titres TEXTE : sélection native (ExoPlayer Android) ou overlay JS
+ *    (tvOS partout, MPV) — AUCUN rechargement.
  *  - Burn-in PGS/VOBSUB : reconstruit l'URL (reload doux + éventuel transcode).
  *
  * `subtitleIndex` (state) est consommé par useTVStreamUrl (dep de l'URL) → ce
- * hook tourne AVANT le stream. `isDirectPlay`/`isLocalRemux` (sorties du stream)
- * ne sont lus qu'au CLIC → passés via refs (lecture fraîche à l'appel).
+ * hook tourne AVANT le stream. `isDirectPlay` (sortie du stream) n'est lu
+ * qu'au CLIC → passé via ref (lecture fraîche à l'appel).
  */
 export function useTVSubtitleControl(args: {
   streams: JfStream[];
   isDirectPlayRef: React.MutableRefObject<boolean>;
-  isLocalRemuxRef: React.MutableRefObject<boolean>;
   positionRef: React.MutableRefObject<number>;
   softReloadRef: React.MutableRefObject<boolean>;
   setReloadFrameSec: (v: number | null) => void;
@@ -22,22 +22,21 @@ export function useTVSubtitleControl(args: {
   captureReloadTicks: () => void;
 }) {
   const {
-    streams, isDirectPlayRef, isLocalRemuxRef,
+    streams, isDirectPlayRef,
     positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks,
   } = args;
 
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
 
   const handleSubtitleChange = useCallback((newIndex: number) => {
-    // Sur le remux, le TEXTE n'est PAS burn-in (overlay JS) ; seules les IMAGES (PGS/VOBSUB) le sont.
+    // Le TEXTE n'est jamais burn-in (rendu natif Android / overlay JS) ; seules
+    // les IMAGES (PGS/VOBSUB/DVB) sont incrustées par le serveur.
     const isBurnIn = (idx: number) => idx >= 0
-      && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec, isLocalRemuxRef.current);
+      && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === idx)?.Codec);
     const needsBurnIn = isBurnIn(newIndex);
     const prevBurnIn = isBurnIn(subtitleIndex);
     if (!needsBurnIn && !prevBurnIn) {
-      // Sous-titres TEXTE : sélection NATIVE (sideload AVPlayer en direct play,
-      // piste du manifeste HLS en transcode) ou overlay JS sur Android MPV —
-      // AUCUN rechargement du player, bascule instantanée.
+      // Sous-titres TEXTE : bascule instantanée, AUCUN rechargement du player.
       setSubtitleIndex(newIndex);
       return;
     }

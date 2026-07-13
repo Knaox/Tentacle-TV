@@ -39,7 +39,7 @@ export function useTVTextTracks(args: {
     if (!enabled || !itemId || !mediaSourceId) return [];
     const ds = client.getDirectStreaming?.();
     return streams
-      // ASS/SSA exclu du sideload sur tvOS (burn-in) → pas de VTT illisible.
+      // Pistes IMAGE (PGS/VOBSUB/DVB) exclues : incrustées par le serveur.
       .filter((s) => s.Type === "Subtitle" && !isBurnInSubtitleCodec(s.Codec))
       .map((s) => {
         // tvOS/AVPlayer ne sait pas rendre l'ASS sideloadé → toujours VTT

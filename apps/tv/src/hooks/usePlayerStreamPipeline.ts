@@ -89,7 +89,7 @@ export function usePlayerStreamPipeline(args: {
   setAudioIndexRef.current = setAudioIndex;
 
   const subtitle = useTVSubtitleControl({
-    streams, isDirectPlayRef, isLocalRemuxRef,
+    streams, isDirectPlayRef,
     positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks,
   });
   const { subtitleIndex, setSubtitleIndex, handleSubtitleChange } = subtitle;

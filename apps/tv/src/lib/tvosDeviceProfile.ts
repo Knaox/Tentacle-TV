@@ -39,7 +39,7 @@ function videoRangeValues(hdr?: HdrCapabilities): string {
  * Transcode (VP9/AV1/DTS/TrueHD…). `forceTranscode` vide les DirectPlayProfiles
  * (fallback après une erreur codec ou choix d'un preset de qualité).
  */
-export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = false, burnInText = false, hdr?: HdrCapabilities): DeviceProfile {
+export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = false, burnInImage = false, hdr?: HdrCapabilities): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = forceTranscode
     ? []
     : [
@@ -128,13 +128,13 @@ export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = fal
   // Sous-titres. NB Jellyfin (StreamBuilder.GetSubtitleProfile) : si le profil
   // autorise un format texte en External/Hls, il CONVERTIT n'importe quel sous-titre
   // texte vers ce format (ASS→VTT) et le livre en texte — la conversion ASS→VTT
-  // laisse fuiter les balises override ({\an8}, signs…). Le serveur n'incruste
-  // (Encode) QUE si AUCUNE livraison texte n'est possible.
-  //   → `burnInText` (activé quand le sous-titre SÉLECTIONNÉ est ASS/SSA, cf.
-  //     useTVStreamUrl.ios) retire toute livraison texte : le serveur incruste le
-  //     sous-titre demandé (rendu d'origine, signs corrects). Sinon profil normal :
-  //     texte natif AVPlayer (srt/vtt), pas de transcodage.
-  const subtitleProfiles: SubtitleProfile[] = burnInText
+  // laisse fuiter les balises override ({\an8}, signs…) ; l'overlay JS les
+  // INTERPRÈTE désormais (parser partagé) → le texte ne force plus d'Encode.
+  //   → `burnInImage` (activé quand le sous-titre SÉLECTIONNÉ est une piste
+  //     IMAGE — PGS/VOBSUB/DVB, cf. useTVStreamUrl.ios) retire toute livraison
+  //     texte : le serveur INCRUSTE la piste demandée. Sinon profil normal :
+  //     texte livré en External/Hls (rendu overlay JS), pas de transcodage.
+  const subtitleProfiles: SubtitleProfile[] = burnInImage
     ? [
         { Format: "pgssub", Method: "Encode" },
         { Format: "dvdsub", Method: "Encode" },
