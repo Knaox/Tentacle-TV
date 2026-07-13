@@ -1,4 +1,10 @@
 export { GlassCard } from "./GlassCard";
+export {
+  GlassSurface,
+  GlassBackdrop,
+  type GlassSurfaceProps,
+  type GlassBackdropProps,
+} from "./GlassSurface";
 export { Skeleton, SkeletonCard, SkeletonRow, SkeletonHero } from "./Skeleton";
 export { PressableCard } from "./PressableCard";
 export { Badge } from "./Badge";

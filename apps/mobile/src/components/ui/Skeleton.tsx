@@ -4,7 +4,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { SURFACE } from "../../theme";
+import { useTheme } from "../../theme";
 
 interface Props {
   width: number | string;
@@ -18,6 +18,7 @@ interface Props {
  * Plus Netflix que le pulse opacity classique. ~1.4s par cycle.
  */
 export function Skeleton({ width, height, radius = 10, style }: Props) {
+  const theme = useTheme();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export function Skeleton({ width, height, radius = 10, style }: Props) {
           width: width as number,
           height,
           borderRadius: radius,
-          backgroundColor: SURFACE.s2,
+          backgroundColor: theme.colors.surface.s2,
           overflow: "hidden",
         },
         style,
@@ -49,11 +50,7 @@ export function Skeleton({ width, height, radius = 10, style }: Props) {
         <LinearGradient
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          colors={[
-            "rgba(255,255,255,0.0)",
-            "rgba(255,255,255,0.05)",
-            "rgba(255,255,255,0.0)",
-          ]}
+          colors={["transparent", theme.colors.fill.shimmer, "transparent"]}
           style={{ flex: 1 }}
         />
       </Animated.View>

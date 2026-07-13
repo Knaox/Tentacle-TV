@@ -1,9 +1,11 @@
 import { Pressable, Text, ActivityIndicator, type ViewStyle, type TextStyle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
-import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "../../theme";
+
+import { spacing, typography, FONT_FAMILY, RADIUS, useTheme } from "../../theme";
+import type { AppTheme } from "../../theme";
 
 // expo-haptics may not be available in all Expo Go builds
-let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
+let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
 try {
   Haptics = require("expo-haptics");
 } catch {
@@ -30,36 +32,32 @@ interface VariantStyle {
   shadow?: ViewStyle;
 }
 
-const variants: Record<Variant, VariantStyle> = {
-  // Netflix CTA principal — white pill, black text, soft shadow
-  primary: {
-    bg: CTA.primaryBg,
-    text: CTA.primaryFg,
-    shadow: {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 10,
-      elevation: 4,
-    },
-  },
-  // Netflix CTA secondaire — gris translucide cinematic
-  secondary: {
-    bg: CTA.secondaryBg,
-    text: CTA.secondaryFg,
-  },
-  // Danger — rouge sur surface tinted
-  danger: {
-    bg: colors.dangerSurface,
-    text: colors.danger,
-    border: colors.dangerBorder,
-  },
-  // Ghost — transparent, hover/press tint
-  ghost: {
-    bg: "transparent",
-    text: colors.textSecondary,
-  },
+// Les ombres restent noires dans les deux schemes (standard iOS).
+const PRIMARY_SHADOW: ViewStyle = {
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.25,
+  shadowRadius: 10,
+  elevation: 4,
 };
+
+function variantStyle(t: AppTheme, variant: Variant): VariantStyle {
+  const { colors } = t;
+  switch (variant) {
+    // Netflix CTA principal — pill contrastée, soft shadow
+    case "primary":
+      return { bg: colors.cta.primaryBg, text: colors.cta.primaryFg, shadow: PRIMARY_SHADOW };
+    // Netflix CTA secondaire — gris translucide cinematic
+    case "secondary":
+      return { bg: colors.cta.secondaryBg, text: colors.cta.secondaryFg };
+    // Danger — rouge sur surface tinted
+    case "danger":
+      return { bg: colors.danger.surface, text: colors.status.error, border: colors.danger.border };
+    // Ghost — transparent, texte secondaire
+    case "ghost":
+      return { bg: "transparent", text: colors.text.secondary };
+  }
+}
 
 const labelStyle: TextStyle = {
   ...typography.bodyBold,
@@ -68,7 +66,8 @@ const labelStyle: TextStyle = {
 };
 
 export function Button({ title, onPress, variant = "primary", loading, disabled, style, fullWidth, accessibilityLabel }: Props) {
-  const v = variants[variant];
+  const theme = useTheme();
+  const v = variantStyle(theme, variant);
   const isDisabled = disabled || loading;
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -120,6 +119,3 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
     </Animated.View>
   );
 }
-
-/** Exporté pour permettre des CTAs cohérents en grand format (Hero billboard). */
-export const BUTTON_BRAND_TINT = BRAND.violet;

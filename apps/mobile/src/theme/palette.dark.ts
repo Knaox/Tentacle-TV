@@ -25,7 +25,7 @@ import type { ThemePalette } from "./palette.types";
 export function buildDarkPalette(): ThemePalette {
   return {
     brand: { ...BRAND },
-    surface: { ...SURFACE },
+    surface: { ...SURFACE, s0Tint: "#070710" },
     text: { ...TEXT },
     status: { ...STATUS },
     statusPairs: {
@@ -42,6 +42,8 @@ export function buildDarkPalette(): ThemePalette {
       subtle: "rgba(255, 255, 255, 0.05)",
       soft: "rgba(255, 255, 255, 0.08)",
       medium: "rgba(255, 255, 255, 0.12)",
+      strong: "rgba(255, 255, 255, 0.28)",
+      shimmer: "rgba(255, 255, 255, 0.05)",
     },
     danger: {
       surface: "rgba(239, 68, 68, 0.1)",
@@ -51,6 +53,7 @@ export function buildDarkPalette(): ThemePalette {
       tint: "rgba(20, 20, 26, 0.6)",
       tintStrong: "rgba(10, 10, 18, 0.72)",
       panel: SURFACE.s1,
+      backdrop: "rgba(0, 0, 0, 0.55)",
     },
     tabBar: "rgba(0, 0, 0, 0.92)",
   };

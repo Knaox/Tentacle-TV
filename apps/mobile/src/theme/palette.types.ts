@@ -34,6 +34,8 @@ export interface ThemePalette {
     s2: string;
     s3: string;
     overlay: string;
+    /** Fin du dégradé cinématique du fond racine (SubtleBackground). */
+    s0Tint: string;
   };
   text: {
     primary: string;
@@ -86,6 +88,10 @@ export interface ThemePalette {
     subtle: string;
     soft: string;
     medium: string;
+    /** Grips, poignées, pistes actives (ex-handle 0.28). */
+    strong: string;
+    /** Reflet du shimmer des skeletons (reste un éclat CLAIR en light). */
+    shimmer: string;
   };
   /** Surfaces d'action destructive (ex-colors.dangerSurface/dangerBorder). */
   danger: {
@@ -95,11 +101,13 @@ export interface ThemePalette {
   /**
    * Formule verre unifiée (GlassSurface) : voile posé sous le BlurView.
    * `panel` = fond opaque des sheets (BottomSheet, MediaActionSheet).
+   * `backdrop` = scrim canonique des fonds de modale (reste sombre en light).
    */
   glass: {
     tint: string;
     tintStrong: string;
     panel: string;
+    backdrop: string;
   };
   /** Fond de la tab bar (opaque hors Liquid Glass). */
   tabBar: string;

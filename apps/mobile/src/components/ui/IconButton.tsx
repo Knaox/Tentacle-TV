@@ -1,10 +1,10 @@
 import { Pressable, type ViewStyle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
-import { colors, OVERLAY } from "../../theme";
+import { useTheme } from "../../theme";
 
 // expo-haptics may not be available in all Expo Go builds
-let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
+let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
 try {
   Haptics = require("expo-haptics");
 } catch { /* ignore */ }
@@ -35,6 +35,7 @@ interface Props {
 export function IconButton({
   icon, onPress, size = 36, style, color, bgColor, accessibilityLabel, haptic = true,
 }: Props) {
+  const theme = useTheme();
   const featherName = ICON_MAP[icon] ?? (icon as keyof typeof Feather.glyphMap);
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -57,12 +58,12 @@ export function IconButton({
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: bgColor ?? OVERLAY.scrim,
+          backgroundColor: bgColor ?? theme.colors.overlay.scrim,
           justifyContent: "center" as const,
           alignItems: "center" as const,
         }, style]}
       >
-        <Feather name={featherName} size={Math.round(size * 0.5)} color={color ?? colors.textPrimary} />
+        <Feather name={featherName} size={Math.round(size * 0.5)} color={color ?? theme.colors.text.primary} />
       </Pressable>
     </Animated.View>
   );
