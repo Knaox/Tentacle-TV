@@ -6,7 +6,8 @@ import en from "./locales/en";
 const NAMESPACES = [
   "common", "auth", "setup", "player", "admin",
   "tickets", "pairing", "preferences", "about", "notifications", "nav",
-  "adminPlugins", "media", "errors", "profile", "watchTogether",
+  "adminPlugins", "adminTheme", "media", "errors", "profile", "disclaimer",
+  "watchTogether",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {

@@ -242,7 +242,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider backendUrl={serverUrl}>
+      <ThemeProvider backendUrl={serverUrl} storage={storage}>
         <TentacleConfigContext.Provider value={configValue}>
           <JellyfinClientContext.Provider value={client}>
             <DirectStreamingSync storage={storage} />
