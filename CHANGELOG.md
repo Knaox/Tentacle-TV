@@ -20,6 +20,18 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/).
 > Repli : bloc `## [x.y.z]` sans préfixe (historique). Sans `### EN`, la section
 > FR sert aux deux langues. Le markdown est converti en texte brut pour les stores.
 
+## [ios-1.3.1]
+
+iOS 1.3.1 — Sous-titres
+
+### FR
+- **Sous-titres : formatage respecté** : gras, italique et position à l'écran (panneaux en haut) sont désormais rendus, au lieu de tags affichés en code brut
+- **Sous-titres en lecture directe** : ils s'affichent désormais aussi en lecture directe (ils pouvaient manquer selon le mode de lecture)
+
+### EN
+- **Subtitles: formatting honored**: bold, italics and on-screen position (top signs) are now rendered, instead of raw tags showing as text
+- **Subtitles in direct play**: now also displayed during direct play (they could be missing depending on the playback mode)
+
 ## [ios-1.3.0]
 
 iOS 1.3.0 — iPhone + iPad (application universelle)
