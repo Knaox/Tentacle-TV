@@ -5,6 +5,7 @@ export * from "./utils/mediaQuality";
 export * from "./types/websocket";
 export * from "./types/watchTogether";
 export * from "./constants";
+export * from "./subtitles/vtt";
 export * from "./watchState";
 export * from "./serverConnection";
 export { initI18n, detectLanguage, i18n } from "./i18n";
