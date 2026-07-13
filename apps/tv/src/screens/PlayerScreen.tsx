@@ -160,7 +160,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
 
   // Sous-titres : pistes texte natives + overlay JS (remux local tvOS) + synchro d'affichage.
-  const { subtitleText, textTracks } = useTVSubtitleSync({
+  const { subtitleCue, textTracks } = useTVSubtitleSync({
     itemId, mediaSourceId: p.mediaSource?.Id, streams: p.streams,
     useExoPlayer: p.useExoPlayer, subtitleIndex: p.subtitleIndex, isLocalRemux,
     exoRef, subtitleTrackMap: p.mpvTracks.subtitleTrackMap,
@@ -289,7 +289,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
       trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} pauseFrameUri={pauseFrameUri} osdFocusSignal={osdFocusSignal}
-      subtitleText={subtitleText} textTracks={textTracks}
+      subtitleCue={subtitleCue} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
       onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus(); }}
