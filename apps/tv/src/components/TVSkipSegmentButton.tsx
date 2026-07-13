@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { useTVFocusGrab } from "../hooks/useTVFocusGrab";
+import { osdPlayPauseNodeRef } from "./player/focus/osdFocusBus";
 import { Colors } from "../theme/colors";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
@@ -36,9 +37,12 @@ export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overla
     && currentTime < segment.end - 1;
   const visible = inRange && !dismissed && !showEpisodes;
 
-  // tvOS : à l'apparition du bouton, le focus saute dessus (UX « Skip Intro »
-  // focalisé par défaut) → sélectionnable que l'OSD soit affiché ou caché.
-  useTVFocusGrab(skipRef, visible && !showSettings);
+  // tvOS : à l'apparition du bouton OSD CACHÉ, le focus saute dessus (UX
+  // « Skip Intro » focalisé par défaut). OSD ouvert, on ne VOLE pas le focus
+  // de la navigation en cours (le bouton n'a aucune sortie géométrique → focus
+  // piégé sinon) ; à la fermeture de l'OSD pendant le segment, le front
+  // montant re-déclenche le grab → le focus revient sur le bouton.
+  useTVFocusGrab(skipRef, visible && !showSettings && !overlayVisible);
 
   // For credits: pressing Back dismisses the popup
   useTVRemote({
@@ -91,6 +95,16 @@ export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overla
           </Text>
         </View>
       </Focusable>
+      {/* Sortie D-pad garantie vers l'OSD : tvOS IGNORE les nextFocus* et le
+          bouton est géométriquement isolé de la rangée transport (centrée) —
+          un appui « bas » entre dans ce guide invisible et est redirigé vers
+          play/pause. Monté seulement OSD visible (sinon cible invisible). */}
+      {overlayVisible && osdPlayPauseNodeRef.current && (
+        <TVFocusGuideView
+          destinations={[osdPlayPauseNodeRef.current]}
+          style={{ position: "absolute", top: "100%", left: -80, right: 0, height: 140 }}
+        />
+      )}
     </Animated.View>
   );
 }
