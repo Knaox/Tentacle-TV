@@ -38,6 +38,11 @@
 // ou on rogne (trim) — équivalent manuel de `aresample=async=1:min_hard_comp=0.1` du CLI ffmpeg.
 #define TVLR_ADRIFT_MIN_SAMPLES 4800              // 100 ms @48 kHz : seuil de correction dure
 #define TVLR_ADRIFT_MAX_SAMPLES (30LL * 48000)    // > 30 s = saut de PTS pathologique → log + ignore (pas 30 s de silence)
+// Hygiène des timestamps du chemin COPIE (TVTimestamps.m) : le transcode a sa compensation
+// ci-dessus, la copie n'en avait AUCUNE — un défaut source y désynchronisait l'A/V à vie.
+#define TVLR_TSLOG_GAP_MS     200.0               // trou de timestamps loggé au-delà (ms)
+#define TVLR_COPY_BACK_MAX_MS 120.0               // recul toléré par clamp sur l'audio copié (jitter
+                                                  // d'interleave : frame AC3=32 ms, AAC=21 ms) ; au-delà → drop
 
 // Route les logs internes de FFmpeg vers Console.app (raison exacte des échecs).
 static void TVAvLog(void *avcl, int level, const char *fmt, va_list vl) {

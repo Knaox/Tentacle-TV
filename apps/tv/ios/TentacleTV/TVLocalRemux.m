@@ -13,6 +13,7 @@
 #import "TVHLSPlaylist.m"
 #import "TVWindow.m"        // fenêtrage disque (TVPurgeBehind/TVPaceAndPurge) — DOIT précéder TVRemuxEngine.m
 #import "TVStreamMap.m"     // mapping des flux (TVMapStreams) — utilise TVAudioSetup, précède le moteur
+#import "TVTimestamps.m"    // hygiène timestamps du chemin copie (TVCopyTsRepair) — précède le moteur
 #import "TVRemuxEngine.m"
 
 @interface TVLocalRemux : NSObject <RCTBridgeModule>
@@ -64,7 +65,17 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
         for (NSUInteger i = 1; okSub && i < sub.length; i++) { unichar c = [sub characterAtIndex:i]; if (c < '0' || c > '9') okSub = NO; }
         NSString *file = okSub ? [[dir stringByAppendingPathComponent:sub] stringByAppendingPathComponent:name] : nil;
         if (!file || ![[NSFileManager defaultManager] fileExistsAtPath:file]) {
-          TVLOG("handler 404: %{public}s", req.path.UTF8String);
+          // Diagnostic : distinguer « purgé » (idx < min présent) de « pas encore produit »
+          // (idx > max présent) — les deux répondaient un 404 muet indiscernable.
+          if (file && [name hasPrefix:@"seg"] && [name.pathExtension.lowercaseString isEqualToString:@"m4s"]) {
+            int reqIdx = [[[name stringByDeletingPathExtension] substringFromIndex:3] intValue];
+            int minI = -1, maxI = -1;
+            TVSegBounds([dir stringByAppendingPathComponent:sub], &minI, &maxI);
+            TVLOG("handler 404 seg idx=%d presents=[%d..%d] %{public}s gen=%d done=%d paused=%d",
+                  reqIdx, minI, maxI, sub.UTF8String, gGen, gDone, gPaused);
+          } else {
+            TVLOG("handler 404: %{public}s", req.path.UTF8String);
+          }
           return [GCDWebServerResponse responseWithStatusCode:404];
         }
         // PAUSE PERMANENTE : pendant la pause, réécrire index.m3u8 (snapshot VOD+ENDLIST ou keepalive EVENT) →

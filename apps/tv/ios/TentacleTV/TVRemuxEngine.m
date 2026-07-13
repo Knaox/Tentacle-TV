@@ -50,6 +50,9 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
   // aNextPts = AV_NOPTS_VALUE → ANCRÉ sur la 1ʳᵉ frame audio décodée (timeline source, synchro
   // labiale) ; aTrim = échantillons à rogner (compensation de chevauchement, TVAudioTranscode).
   int64_t aNextPts = AV_NOPTS_VALUE, aTrim = 0;
+  // Hygiène des timestamps du chemin COPIE (TVTimestamps.m) : vTs observe la vidéo,
+  // aTs porte le clamp/drop de l'audio copié (l'audio transcodé a sa propre compensation).
+  TVTsTrack vTs = TV_TS_INIT, aTs = TV_TS_INIT;
   // Extradata vidéo ABSENTE (HEVC/H.264 in-band : TS, MKV sans CodecPrivate…) : sans elle le
   // muxer écrit un hvcC/avcC VIDE → flux invalide (AVPlayer -19601, « façon CLI » ffmpeg qui
   // insère extract_extradata automatiquement). On DIFFÈRE le header et on extrait les
@@ -217,10 +220,11 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
       pkt->pts = p;
       pkt->dts = pb[0];          // plus petit PTS de la fenêtre = DTS monotone ≤ PTS
       last_dts[oidx] = pb[0];
+      TVVideoTsLog(&vTs, p, dur, os->time_base, oidx);   // observation seule (anomalies source)
     } else {
-      if (pkt->dts != AV_NOPTS_VALUE && last_dts[oidx] != INT64_MIN && pkt->dts <= last_dts[oidx])
-        pkt->dts = last_dts[oidx] + 1;
-      if (pkt->dts != AV_NOPTS_VALUE) last_dts[oidx] = pkt->dts;
+      // Hygiène du chemin copie (TVTimestamps.m) : trous/reculs source loggés, clamp
+      // monotone historique appliqué ; retour non nul = paquet à dropper (recul majeur).
+      if (TVCopyTsRepair(&aTs, pkt, os->time_base, oidx)) { av_packet_unref(pkt); continue; }
     }
     int64_t wpts = pkt->pts; AVRational wtb = os->time_base;   // capturés AVANT que write_frame consomme pkt
     TVNoteFirstDts(oidx, pkt->dts, os->time_base);   // origine réelle de la timeline (make_zero rebase sur ce DTS)
@@ -240,7 +244,8 @@ static void TVDoRemux(const char *src, const char *dst, int gen) {
     TVAudioTranscode(oc, m.adec, m.aenc, m.aswr, m.afifo, m.aOutIdx, &aNextPts, m.aInTb, &aTrim, NULL);
   if (hdrWritten) av_write_trailer(oc);   // #EXT-X-ENDLIST → playlist VOD complète (seek total)
   else if (ret >= 0) ret = -1;            // fini sans jamais pouvoir écrire le header → échec propre
-  TVLOG("remux: done, %lld packets, err=%d", npkt, gError);
+  TVLOG("remux: done, %lld packets, err=%d (ts: aClamp=%lld aGap=%lld aDrop=%lld vGap=%lld)",
+        npkt, gError, aTs.nClamp, aTs.nGap, aTs.nDrop, vTs.nGap);
 
 end:
   if (xbsf) av_bsf_free(&xbsf);
