@@ -28,7 +28,7 @@ const FEATURE_KEYS = [
 ];
 
 // Version/build lus dans le binaire natif (Info.plist iOS, PackageInfo Android) :
-// les CI patchent le natif (release-ios → Info.plist, release-play → props Gradle),
+// la CI patche le natif (mobile.yml → Info.plist iOS + props Gradle Android),
 // jamais app.json — qui ne sert donc que de repli si le natif renvoie null.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const appJsonExpo = require("../../app.json").expo ?? {};

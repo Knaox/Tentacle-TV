@@ -43,9 +43,9 @@ Le fichier `Tentacle Deploy.html` (hors repo) génère cette commande.
 | Déclencheur | Workflow | Cibles |
 |-------------|----------|--------|
 | tag `desktop-vX.Y.Z` | `desktop.yml` | macOS App Store + Microsoft Store + Linux (Release GitHub) |
-| tag `tv-vX.Y.Z` | `tv.yml` | Android TV (Play Console + APK GitHub + `tv-latest`) + Apple TV (TestFlight) |
+| tag `tv-vX.Y.Z` | `tv.yml` | Android TV (Play Console UNIQUEMENT, test fermé « Alpha ») + Apple TV (TestFlight) |
 | push `main` | `server.yml` | Image Docker (`:latest` + `:v<server>`) + Release GitHub si la version server change |
-| tag `ios-v*` / `play-v*` | `release-ios.yml` / `release-play.yml` | Mobile (TEMPORAIRE — migration à venir) |
+| tag `mobile-vX.Y.Z` | `mobile.yml` | iOS (TestFlight) + Android (Play Console, test fermé « alpha ») |
 
 > L'ancien découpage (mac-v*/atv-v*/win-store-v*/linux-v* + docker.yml) a été
 > fusionné dans ces workflows. Le DMG macOS notarisé (tag `v*`) reste retiré :
