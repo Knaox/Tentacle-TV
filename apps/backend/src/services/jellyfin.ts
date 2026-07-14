@@ -245,3 +245,25 @@ export async function getRecentlyAddedItems(
     Id: i.Id, Name: i.Name, Type: i.Type, SeriesName: i.SeriesName, DateCreated: i.DateCreated,
   }));
 }
+
+/**
+ * Total d'items (films + séries + épisodes) via /Items/Counts. Détecteur d'ajout
+ * FIABLE : le count augmente quel que soit le DateCreated (contrairement au tri
+ * par date, faussé si Jellyfin utilise la date du fichier). Renvoie null si échec.
+ */
+export async function getItemCount(): Promise<number | null> {
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+  if (!jellyfinUrl || !apiKey) return null;
+  try {
+    const res = await fetch(`${jellyfinUrl}/Items/Counts`, {
+      headers: { "X-Emby-Token": apiKey },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const c = (await res.json()) as { MovieCount?: number; SeriesCount?: number; EpisodeCount?: number };
+    return (c.MovieCount ?? 0) + (c.SeriesCount ?? 0) + (c.EpisodeCount ?? 0);
+  } catch {
+    return null;
+  }
+}
