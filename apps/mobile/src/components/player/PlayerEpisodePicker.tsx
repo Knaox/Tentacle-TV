@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MobileEpisodeList } from "../MobileEpisodeList";
-import { SURFACE, spacing, FONT_FAMILY, BORDER, colors, SHEET_MAX_WIDTH } from "@/theme";
+import { PLAYER, spacing, FONT_FAMILY, SHEET_MAX_WIDTH } from "@/theme";
 
 interface Props {
   visible: boolean;
@@ -31,16 +31,16 @@ export function PlayerEpisodePicker({ visible, seriesId, currentEpisodeId, initi
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} supportedOrientations={["portrait", "landscape"]}>
       <SafeAreaProvider>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }}>
+        <View style={{ flex: 1, backgroundColor: PLAYER.controlBg }}>
           <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t("close")} />
           <SafeAreaView
             edges={["left", "right", "bottom"]}
-            style={{ maxHeight: "78%", width: "100%", maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", backgroundColor: SURFACE.s1, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderColor: BORDER.subtle }}
+            style={{ maxHeight: "78%", width: "100%", maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", backgroundColor: PLAYER.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderColor: PLAYER.borderSubtle }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.screenPadding, paddingTop: 16, paddingBottom: 8 }}>
-              <Text style={{ fontSize: 18, fontFamily: FONT_FAMILY.bold, color: colors.textPrimary }}>{t("seasonsEpisodes")}</Text>
+              <Text style={{ fontSize: 18, fontFamily: FONT_FAMILY.bold, color: PLAYER.text }}>{t("seasonsEpisodes")}</Text>
               <Pressable onPress={onClose} hitSlop={12} style={{ padding: 4 }}>
-                <X size={22} color="#fff" />
+                <X size={22} color={PLAYER.text} />
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>

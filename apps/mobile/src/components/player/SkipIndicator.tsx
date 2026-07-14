@@ -1,5 +1,6 @@
 import { View, Text, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { PLAYER } from "@/theme";
 
 /**
  * Indicateur éphémère « +30 / −10 » après un saut (double-tap gestes ou
@@ -15,13 +16,13 @@ export function SkipIndicator({ side }: { side: "left" | "right" | null }) {
     <View pointerEvents="none" style={{
       position: "absolute", top: "38%",
       [side === "left" ? "left" : "right"]: screenW * 0.08,
-      backgroundColor: "rgba(0,0,0,0.5)", borderRadius: size / 2,
+      backgroundColor: PLAYER.scrim, borderRadius: size / 2,
       width: size, height: size, justifyContent: "center", alignItems: "center",
     }}>
-      <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700" }}>
+      <Text style={{ color: PLAYER.text, fontSize: 22, fontWeight: "700" }}>
         {side === "left" ? "-10" : "+30"}
       </Text>
-      <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>{t("secondsShort")}</Text>
+      <Text style={{ color: PLAYER.textTertiary, fontSize: 11 }}>{t("secondsShort")}</Text>
     </View>
   );
 }

@@ -3,6 +3,7 @@ import { View, Text, StatusBar, Platform, StyleSheet } from "react-native";
 import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
+import { PLAYER } from "@/theme";
 import { useQueryClient } from "@tanstack/react-query";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
@@ -245,14 +246,14 @@ export function PlayerScreen({ itemId }: Props) {
   // Loading: no stream URL yet
   if (!pb.streamUrl) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
         <PlayerLoadingView />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
       <Video
         ref={videoRef}
         source={{
@@ -321,7 +322,7 @@ export function PlayerScreen({ itemId }: Props) {
       {/* AirPlay active indicator */}
       {isAirPlaying && (
         <View style={airplayStyles.overlay}>
-          <Feather name="airplay" size={48} color="rgba(255,255,255,0.6)" />
+          <Feather name="airplay" size={48} color={PLAYER.textTertiary} />
           <Text style={airplayStyles.text}>{t("airplayActive")}</Text>
         </View>
       )}
@@ -373,11 +374,11 @@ const airplayStyles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: PLAYER.scrimStrong,
     gap: 16,
   },
   text: {
-    color: "rgba(255, 255, 255, 0.6)",
+    color: PLAYER.textTertiary,
     fontSize: 16,
     fontWeight: "600",
   },

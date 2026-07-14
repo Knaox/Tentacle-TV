@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { View, Text, PanResponder, useWindowDimensions } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { TABLET_MIN_WIDTH } from "@/theme";
+import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { useTrickplay } from "../../hooks/useTrickplay";
 import { TrickplayPreview } from "./TrickplayPreview";
 
@@ -122,7 +122,7 @@ export function PlayerSeekBar({
         >
           {/* Track background */}
           <View style={{
-            height: trackHeight, backgroundColor: "rgba(255,255,255,0.1)",
+            height: trackHeight, backgroundColor: PLAYER.borderSubtle,
             borderRadius: trackHeight / 2, overflow: "hidden",
           }}>
             {/* Buffered portion */}
@@ -130,13 +130,13 @@ export function PlayerSeekBar({
               <View style={{
                 position: "absolute", top: 0, left: 0, bottom: 0,
                 width: `${buffered * 100}%`,
-                backgroundColor: "rgba(255,255,255,0.15)", borderRadius: trackHeight / 2,
+                backgroundColor: PLAYER.border, borderRadius: trackHeight / 2,
               }} />
             )}
             {/* Played portion */}
             <View style={{
               height: "100%", width: `${progress * 100}%`,
-              backgroundColor: "#8b5cf6", borderRadius: trackHeight / 2,
+              backgroundColor: PLAYER.accent, borderRadius: trackHeight / 2,
             }} />
           </View>
 
@@ -147,7 +147,7 @@ export function PlayerSeekBar({
               left: progress * barWidth.current - thumbSize / 2,
               top: (BAR_H + 8) / 2 - thumbSize / 2,
               width: thumbSize, height: thumbSize, borderRadius: thumbSize / 2,
-              backgroundColor: "#fff",
+              backgroundColor: PLAYER.text,
               shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.3, shadowRadius: 2,
             }} />
@@ -157,10 +157,10 @@ export function PlayerSeekBar({
 
       {/* Time labels */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 2 }}>
-        <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontVariant: ["tabular-nums"] }}>
+        <Text style={{ color: PLAYER.textTertiary, fontSize: 12, fontVariant: ["tabular-nums"] }}>
           {formatTime(displayTime)}
         </Text>
-        <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontVariant: ["tabular-nums"] }}>
+        <Text style={{ color: PLAYER.textTertiary, fontSize: 12, fontVariant: ["tabular-nums"] }}>
           {formatTime(duration)}
         </Text>
       </View>

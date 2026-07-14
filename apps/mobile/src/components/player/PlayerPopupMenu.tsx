@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { View, Text, Pressable, ScrollView, Animated, useWindowDimensions } from "react-native";
 import { X } from "lucide-react-native";
+import { PLAYER } from "@/theme";
 import { parseTrackLabel } from "../../lib/playerUtils";
 
 export interface PopupBadge {
@@ -62,16 +63,16 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
       <Animated.View style={{
         position: "absolute", bottom: 80, right: Math.min(12, screenW * 0.03),
         width: Math.min(280, screenW - 32), borderRadius: 12, padding: 14,
-        backgroundColor: "rgba(0,0,0,0.9)",
-        borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
+        backgroundColor: PLAYER.controlBgHeavy,
+        borderWidth: 1, borderColor: PLAYER.borderSubtle,
         overflow: "hidden",
         opacity, transform: [{ translateY }],
       }}>
         {/* Header */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>{title}</Text>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: PLAYER.text }}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={12} style={{ padding: 2 }}>
-            <X size={16} color="rgba(255,255,255,0.4)" />
+            <X size={16} color={PLAYER.textDim} />
           </Pressable>
         </View>
 
@@ -80,7 +81,7 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
             <View key={section.title} style={{ paddingTop: 12, marginBottom: 10 }}>
               <Text style={{
                 fontSize: 10, fontWeight: "600", textTransform: "uppercase",
-                letterSpacing: 1, color: "rgba(255,255,255,0.4)", marginBottom: 6,
+                letterSpacing: 1, color: PLAYER.textDim, marginBottom: 6,
               }}>
                 {section.title}
               </Text>
@@ -130,22 +131,22 @@ function OptionRow({
       style={{
         flexDirection: "row", alignItems: "center", gap: 8,
         paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8,
-        backgroundColor: active ? "rgba(139,92,246,0.2)" : "transparent",
+        backgroundColor: active ? PLAYER.accentSoft : "transparent",
       }}
     >
       <View style={{
         width: 6, height: 6, borderRadius: 3,
-        backgroundColor: active ? "#8b5cf6" : "transparent",
+        backgroundColor: active ? PLAYER.accent : "transparent",
       }} />
       <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }}>
         <Text
           numberOfLines={1}
-          style={{ fontSize: 13, color: active ? "#a78bfa" : "rgba(255,255,255,0.7)" }}
+          style={{ fontSize: 13, color: active ? PLAYER.accentLight : PLAYER.textSecondary }}
         >
           {title}
         </Text>
         {suffix && (
-          <Text numberOfLines={1} style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
+          <Text numberOfLines={1} style={{ fontSize: 13, color: PLAYER.textDim }}>
             {suffix}
           </Text>
         )}
@@ -160,10 +161,10 @@ function OptionRow({
 
 function Chip({ label, tone }: { label: string; tone: "purple" | "amber" | "zinc" }) {
   const palette = tone === "purple"
-    ? { bg: "rgba(139,92,246,0.2)", fg: "#c4b5fd" }
+    ? { bg: PLAYER.accentSoft, fg: PLAYER.accentChip }
     : tone === "amber"
-      ? { bg: "rgba(245,158,11,0.2)", fg: "#fcd34d" }
-      : { bg: "rgba(255,255,255,0.1)", fg: "rgba(255,255,255,0.55)" };
+      ? { bg: PLAYER.warningSoft, fg: PLAYER.warning }
+      : { bg: PLAYER.borderSubtle, fg: PLAYER.textTertiary };
   return (
     <Text style={{
       backgroundColor: palette.bg, color: palette.fg,
