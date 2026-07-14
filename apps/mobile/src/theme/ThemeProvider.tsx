@@ -27,6 +27,11 @@ import {
   applyAppearance,
   getBootThemeMode,
 } from "./themeMode";
+import {
+  LIQUID_GLASS_STORAGE_KEY,
+  getBootLiquidGlassEnabled,
+  isLiquidGlassAvailable,
+} from "./liquidGlass";
 
 /**
  * Key under which the latest token override is mirrored in AsyncStorage.
@@ -102,6 +107,18 @@ export function ThemeProvider({ backendUrl, storage, children }: ThemeProviderPr
   const systemScheme = useColorScheme();
   const scheme: ResolvedScheme = systemScheme === "light" ? "light" : "dark";
 
+  // ── Liquid Glass : support natif (constant au runtime) + préférence ────────
+  const liquidSupported = isLiquidGlassAvailable();
+  const [liquidEnabled, setLiquidEnabledState] = useState<boolean>(getBootLiquidGlassEnabled);
+
+  const setLiquidEnabled = useCallback(
+    (enabled: boolean) => {
+      setLiquidEnabledState(enabled);
+      storage.setItem(LIQUID_GLASS_STORAGE_KEY, String(enabled));
+    },
+    [storage],
+  );
+
   // ── Marque : query backend ────────────────────────────────────────────────
   const { data, isLoading } = useQuery({
     queryKey: ["theme", backendUrl ?? ""],
@@ -154,10 +171,14 @@ export function ThemeProvider({ backendUrl, storage, children }: ThemeProviderPr
     () => ({
       mode,
       setMode,
-      // Branché sur le module natif + persistance dans la phase Liquid Glass.
-      liquidGlass: { supported: false, enabled: false, setEnabled: () => {} },
+      liquidGlass: {
+        supported: liquidSupported,
+        // `enabled` n'a d'effet que si le module natif est supporté.
+        enabled: liquidSupported && liquidEnabled,
+        setEnabled: setLiquidEnabled,
+      },
     }),
-    [mode, setMode],
+    [mode, setMode, liquidSupported, liquidEnabled, setLiquidEnabled],
   );
 
   const brandValue = useMemo<BrandThemeContextValue>(

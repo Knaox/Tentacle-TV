@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { applyThemeOverride } from "@tentacle-tv/shared";
 import { sanitizeThemeMode, setBootThemeMode } from "./src/theme/themeMode";
+import { setBootLiquidGlassEnabled } from "./src/theme/liquidGlass";
 
 const THEME_KEY = "tentacle_theme_tokens";
 const THEME_MODE_KEY = "tentacle_theme_mode";
+const LIQUID_GLASS_KEY = "tentacle_liquid_glass";
 
 // Fallback in case everything else fails
 function FallbackApp() {
@@ -43,19 +45,22 @@ try {
     const [themed, setThemed] = useState(false);
     useEffect(() => {
       let done = false;
-      AsyncStorage.multiGet([THEME_KEY, THEME_MODE_KEY])
+      AsyncStorage.multiGet([THEME_KEY, THEME_MODE_KEY, LIQUID_GLASS_KEY])
         .then((pairs) => {
           let tokensJson = null;
           let modeRaw = null;
+          let liquidRaw = null;
           for (const [key, value] of pairs) {
             if (key === THEME_KEY) tokensJson = value;
             else if (key === THEME_MODE_KEY) modeRaw = value;
+            else if (key === LIQUID_GLASS_KEY) liquidRaw = value;
           }
           if (tokensJson) {
             try { applyThemeOverride(JSON.parse(tokensJson)); }
             catch (e) { console.warn("[index.js] bad theme tokens cache:", e?.message); }
           }
           setBootThemeMode(sanitizeThemeMode(modeRaw));
+          setBootLiquidGlassEnabled(liquidRaw);
         })
         .catch((e) => {
           console.warn("[index.js] theme cache read failed:", e?.message);
