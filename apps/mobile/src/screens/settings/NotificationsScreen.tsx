@@ -6,6 +6,7 @@ import {
   useSetPushPreferences,
   useSendTestPush,
   useRegisterPushDevice,
+  useTentacleConfig,
   type PushPreferences,
 } from "@tentacle-tv/api-client";
 
@@ -31,6 +32,17 @@ export function NotificationsScreen() {
   const register = useRegisterPushDevice();
   const { data: plugins } = useActivePlugins();
   const seerActive = !!plugins?.some((p) => p.pluginId === "seer");
+
+  // Bouton de test réservé aux admins (diagnostic), pas montré aux utilisateurs.
+  const { storage } = useTentacleConfig();
+  const isAdmin = (() => {
+    try {
+      const raw = storage.getItem("tentacle_user");
+      return raw ? JSON.parse(raw)?.Policy?.IsAdministrator === true : false;
+    } catch {
+      return false;
+    }
+  })();
 
   const toggle = useCallback(
     (key: keyof PushPreferences, next: boolean) => {
@@ -92,21 +104,25 @@ export function NotificationsScreen() {
         ) : null}
       </SettingsSection>
 
-      <Pressable
-        onPress={onTest}
-        disabled={testPush.isPending}
-        style={({ pressed }) => [st.testBtn, pressed && st.testBtnPressed]}
-        accessibilityRole="button"
-        accessibilityLabel={t("testButton")}
-      >
-        {testPush.isPending ? (
-          <ActivityIndicator color={theme.colors.cta.brandFg} />
-        ) : (
-          <Text style={st.testBtnLabel}>{t("testButton")}</Text>
-        )}
-      </Pressable>
+      {isAdmin ? (
+        <>
+          <Pressable
+            onPress={onTest}
+            disabled={testPush.isPending}
+            style={({ pressed }) => [st.testBtn, pressed && st.testBtnPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("testButton")}
+          >
+            {testPush.isPending ? (
+              <ActivityIndicator color={theme.colors.cta.brandFg} />
+            ) : (
+              <Text style={st.testBtnLabel}>{t("testButton")}</Text>
+            )}
+          </Pressable>
 
-      <Text style={st.hint}>{t("testHint")}</Text>
+          <Text style={st.hint}>{t("testHint")}</Text>
+        </>
+      ) : null}
     </SettingsScaffold>
   );
 }
