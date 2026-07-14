@@ -7,9 +7,9 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "../hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "../plugins/usePluginBundle";
-import { buildPluginHtml } from "../plugins/pluginHtmlTemplate";
+import { buildPluginHtml, buildPluginThemeVars } from "../plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "../plugins/pluginBridge";
-import { colors, spacing, typography } from "../theme";
+import { spacing, typography, useTheme } from "../theme";
 import { IconButton } from "../components/ui";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
@@ -23,6 +23,8 @@ function getWebView(): typeof import("react-native-webview").WebView | null {
 export function PluginWebViewScreen() {
   const { pluginId } = useLocalSearchParams<{ pluginId: string }>();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const { colors } = theme;
   const router = useRouter();
   const { storage } = useTentacleConfig();
   const { i18n, t } = useTranslation("errors");
@@ -42,6 +44,7 @@ export function PluginWebViewScreen() {
     return plugin?.navItems?.find((n) => n.platforms.includes("mobile"))?.path ?? "/";
   }, [plugin]);
 
+  // `theme` en dépendance : au switch clair/sombre la WebView remonte re-thémée.
   const htmlContent = useMemo(() => {
     if (!bundleCode || !sharedDepsCode) return null;
     return buildPluginHtml({
@@ -52,8 +55,9 @@ export function PluginWebViewScreen() {
       bundleCode,
       sharedDepsCode,
       pluginPath,
+      theme: buildPluginThemeVars(theme),
     });
-  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath]);
+  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, theme]);
 
   const handleMessage = useCallback(
     createBridgeHandler(router),
@@ -62,16 +66,16 @@ export function PluginWebViewScreen() {
 
   if (!plugin || bundleLoading || depsLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator color={colors.accent} />
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={colors.brand.violet} />
       </View>
     );
   }
 
   if (bundleError || depsError || !htmlContent) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: "center" }}>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center" }}>
           {t("pluginLoadFailed") ?? "Failed to load plugin"}
         </Text>
       </View>
@@ -81,8 +85,8 @@ export function PluginWebViewScreen() {
   const WebViewComponent = getWebView();
   if (!WebViewComponent) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: "center" }}>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center" }}>
           {t("webViewNotAvailable")}
         </Text>
       </View>
@@ -90,7 +94,7 @@ export function PluginWebViewScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.s0 }}>
       <View style={{
         paddingTop: Math.max(insets.top, 24) + 8,
         paddingHorizontal: spacing.screenPadding,
@@ -98,25 +102,25 @@ export function PluginWebViewScreen() {
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        backgroundColor: colors.background,
+        backgroundColor: colors.surface.s0,
       }}>
         <IconButton icon="←" onPress={() => backOrHome(router)} />
-        <Text style={{ ...typography.subtitle, color: colors.textPrimary, flex: 1 }}>
+        <Text style={{ ...typography.subtitle, color: colors.text.primary, flex: 1 }}>
           {plugin.name}
         </Text>
       </View>
       <WebViewComponent
         source={{ html: htmlContent, baseUrl: serverUrl }}
         onMessage={handleMessage}
-        style={{ flex: 1, backgroundColor: colors.background }}
+        style={{ flex: 1, backgroundColor: colors.surface.s0 }}
         javaScriptEnabled
         domStorageEnabled
         allowsInlineMediaPlayback
         originWhitelist={["*"]}
         startInLoadingState
         renderLoading={() => (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
-            <ActivityIndicator color={colors.accent} />
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.surface.s0 }}>
+            <ActivityIndicator color={colors.brand.violet} />
           </View>
         )}
       />
