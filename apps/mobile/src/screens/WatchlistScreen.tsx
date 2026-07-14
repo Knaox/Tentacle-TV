@@ -26,12 +26,13 @@ import { SelectableGridCard } from "@/components/watchlist/SelectableGridCard";
 import { ShareMyListButton } from "@/components/watchlist/ShareMyListButton";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import {
-  colors,
   spacing,
   typography,
-  BRAND,
   FONT_FAMILY,
   useGrid,
+  useTheme,
+  useThemedStyles,
+  type AppTheme,
 } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
@@ -47,6 +48,8 @@ const ITEM_GAP = spacing.sm;
  */
 export function WatchlistScreen() {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
@@ -146,11 +149,11 @@ export function WatchlistScreen() {
         ) : count === 0 ? (
           <ScrollView
             contentContainerStyle={{ paddingBottom: spacing.xxxl + 60 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND.violet} />}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand.violet} />}
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.emptyContainer}>
-              <Feather name="bookmark" size={48} color={BRAND.light} style={{ opacity: 0.6 }} />
+              <Feather name="bookmark" size={48} color={colors.brand.light} style={{ opacity: 0.6 }} />
               <Text style={styles.emptyTitle}>{t("emptyWatchlist")}</Text>
               <Text style={styles.emptyHint}>{t("emptyWatchlistHint")}</Text>
             </View>
@@ -173,7 +176,7 @@ export function WatchlistScreen() {
                 <RefreshControl
                   refreshing={isRefetching}
                   onRefresh={selection.active ? undefined : refetch}
-                  tintColor={BRAND.violet}
+                  tintColor={colors.brand.violet}
                 />
               }
               showsVerticalScrollIndicator={false}
@@ -203,41 +206,42 @@ export function WatchlistScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  shareRow: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.screenPadding,
-    paddingBottom: spacing.sm,
-  },
-  skeletonGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: spacing.screenPadding,
-    gap: ITEM_GAP,
-  },
-  gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxxl + 60 },
-  emptyContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 80,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.screenPadding,
-    gap: spacing.sm,
-  },
-  emptyTitle: {
-    ...typography.subtitle,
-    fontFamily: FONT_FAMILY.bold,
-    fontSize: 18,
-    color: colors.textPrimary,
-    marginTop: spacing.md,
-    letterSpacing: -0.3,
-  },
-  emptyHint: {
-    ...typography.caption,
-    fontFamily: FONT_FAMILY.regular,
-    color: colors.textMuted,
-    textAlign: "center",
-    maxWidth: 280,
-  },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    shareRow: {
+      flexDirection: "row",
+      paddingHorizontal: spacing.screenPadding,
+      paddingBottom: spacing.sm,
+    },
+    skeletonGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: spacing.screenPadding,
+      gap: ITEM_GAP,
+    },
+    gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxxl + 60 },
+    emptyContainer: {
+      justifyContent: "center",
+      alignItems: "center",
+      paddingTop: 80,
+      paddingBottom: spacing.xl,
+      paddingHorizontal: spacing.screenPadding,
+      gap: spacing.sm,
+    },
+    emptyTitle: {
+      ...typography.subtitle,
+      fontFamily: FONT_FAMILY.bold,
+      fontSize: 18,
+      color: t.colors.text.primary,
+      marginTop: spacing.md,
+      letterSpacing: -0.3,
+    },
+    emptyHint: {
+      ...typography.caption,
+      fontFamily: FONT_FAMILY.regular,
+      color: t.colors.text.tertiary,
+      textAlign: "center",
+      maxWidth: 280,
+    },
+  });

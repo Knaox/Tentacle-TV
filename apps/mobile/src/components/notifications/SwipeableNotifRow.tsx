@@ -2,7 +2,7 @@ import { useRef, useCallback } from "react";
 import { View, Text, Pressable, Animated, PanResponder, Dimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { AppNotification } from "@tentacle-tv/api-client";
-import { colors, typography, BRAND } from "@/theme";
+import { typography, useTheme, withAlpha } from "@/theme";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
 try { Haptics = require("expo-haptics"); } catch {}
@@ -26,6 +26,7 @@ export function SwipeableNotifRow({
   notif, formattedTitle, formattedAgo, onPress, onDelete,
   selectionMode, isSelected, onToggleSelect, onLongPress,
 }: SwipeableNotifRowProps) {
+  const { colors } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
 
   const panResponder = useRef(
@@ -64,11 +65,11 @@ export function SwipeableNotifRow({
       <View
         style={{
           position: "absolute", right: 0, top: 0, bottom: 0, width: "100%",
-          backgroundColor: colors.danger, borderRadius: 12,
+          backgroundColor: colors.status.error, borderRadius: 12,
           justifyContent: "center", alignItems: "flex-end", paddingRight: 24,
         }}
       >
-        <Feather name="trash-2" size={20} color="#fff" />
+        <Feather name="trash-2" size={20} color={colors.cta.brandFg} />
       </View>
 
       {/* Swipeable row */}
@@ -78,7 +79,7 @@ export function SwipeableNotifRow({
           onLongPress={onLongPress}
           delayLongPress={500}
           style={({ pressed }) => ({
-            backgroundColor: "#1a1a2e",
+            backgroundColor: colors.surface.s2,
             borderRadius: 12, padding: 16,
             flexDirection: "row", gap: 10,
             opacity: pressed ? 0.7 : 1,
@@ -91,19 +92,19 @@ export function SwipeableNotifRow({
               style={{
                 width: 22, height: 22, borderRadius: 4, marginTop: 2,
                 borderWidth: 2,
-                borderColor: isSelected ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.3)",
-                backgroundColor: isSelected ? BRAND.soft : "transparent",
+                borderColor: isSelected ? withAlpha(colors.brand.violet, 0.5, colors.brand.glow) : colors.fill.strong,
+                backgroundColor: isSelected ? colors.brand.soft : "transparent",
                 alignItems: "center", justifyContent: "center",
               }}
             >
-              {isSelected && <Feather name="check" size={14} color={BRAND.light} />}
+              {isSelected && <Feather name="check" size={14} color={colors.brand.light} />}
             </Pressable>
           ) : (
             !notif.read && (
               <View style={{
                 width: 8, height: 8, borderRadius: 4,
-                backgroundColor: BRAND.ghost,
-                borderWidth: 1, borderColor: "rgba(139,92,246,0.5)",
+                backgroundColor: colors.brand.ghost,
+                borderWidth: 1, borderColor: withAlpha(colors.brand.violet, 0.5, colors.brand.glow),
                 marginTop: 6,
               }} />
             )
@@ -114,18 +115,18 @@ export function SwipeableNotifRow({
               style={{
                 ...typography.small,
                 fontWeight: notif.read ? "400" : "700",
-                color: notif.read ? colors.textMuted : colors.textPrimary,
+                color: notif.read ? colors.text.tertiary : colors.text.primary,
               }}
               numberOfLines={1}
             >
               {formattedTitle}
             </Text>
             {notif.body && notif.type !== "ticket_status" && (
-              <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }} numberOfLines={2}>
+              <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 4 }} numberOfLines={2}>
                 {notif.body}
               </Text>
             )}
-            <Text style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
+            <Text style={{ fontSize: 11, color: colors.text.quaternary, marginTop: 6 }}>
               {formattedAgo}
             </Text>
           </View>

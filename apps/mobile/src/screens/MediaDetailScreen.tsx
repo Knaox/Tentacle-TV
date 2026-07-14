@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
-import { spacing, BRAND, SURFACE, DETAIL_MAX_WIDTH, useResponsive } from "../theme";
+import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from "../theme";
 import { GradientOverlay, IconButton } from "../components/ui";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
 import { DetailHeader } from "../components/detail/DetailHeader";
@@ -20,6 +20,7 @@ interface Props { itemId: string }
 
 export function MediaDetailScreen({ itemId }: Props) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const { isTablet, isLandscape } = useResponsive();
   const twoCol = isTablet && isLandscape;
@@ -84,22 +85,22 @@ export function MediaDetailScreen({ itemId }: Props) {
       style={{ position: "absolute", top: Math.max(insets.top, 24) + 8, left: spacing.screenPadding, zIndex: 10 }}
     >
       <IconButton icon="←" size={isTablet ? 42 : 36} onPress={() => backOrHome(router)} accessibilityLabel={t("back")}
-        bgColor={isTablet ? "rgba(12,12,20,0.72)" : "rgba(0,0,0,0.55)"}
-        style={isTablet ? { borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" } : undefined} />
+        bgColor={isTablet ? theme.colors.glass.tintStrong : theme.colors.glass.backdrop}
+        style={isTablet ? { borderWidth: 1, borderColor: theme.colors.border.strong } : undefined} />
     </View>
   );
 
   // ── Paysage iPad : 2 colonnes (rail gauche figé + corps défilant), backdrop statique.
   if (twoCol) {
     return (
-      <View style={{ flex: 1, backgroundColor: SURFACE.s0 }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
         <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,8,14,0.86)" }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(theme.colors.surface.s0Tint, 0.86, theme.colors.overlay.scrimHeavy) }]} />
         {backBtn}
         <View style={{ flex: 1, flexDirection: "row", width: "100%", maxWidth: 1180, alignSelf: "center", paddingTop: Math.max(insets.top, 24) + 8 }}>
           <View style={{ width: 380 }}>{header}</View>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing.xxxl + 40, paddingTop: spacing.sm }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={BRAND.violet} />}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.colors.brand.violet} />}
             showsVerticalScrollIndicator={false}>
             {body}
           </ScrollView>
@@ -113,17 +114,17 @@ export function MediaDetailScreen({ itemId }: Props) {
   // page », plus de bandes noires) ; seul le contenu est centré sous 920.
   // Sur iPhone (fenêtre < 920), strictement identique à avant.
   return (
-    <View style={{ flex: 1, backgroundColor: SURFACE.s0 }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
       <AnimatedScrollView onScroll={anims.scrollHandler} scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: spacing.xxxl + 40 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={BRAND.violet} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.colors.brand.violet} />}
         showsVerticalScrollIndicator={false}>
         <View style={{ width: "100%", height: BACKDROP_H, overflow: "hidden" }}>
           <Animated.View style={[StyleSheet.absoluteFillObject, anims.backdropStyle]}>
             <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={400} />
           </Animated.View>
-          <GradientOverlay direction="top" height={120 + insets.top} color="#000000" intensity="soft" />
-          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} color="#000000" intensity="strong" />
+          <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
+          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="strong" />
         </View>
         {!isTablet && backBtn}
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>
