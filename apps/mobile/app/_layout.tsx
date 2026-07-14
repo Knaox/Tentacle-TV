@@ -219,6 +219,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="support" options={{ presentation: "card" }} />
         <Stack.Screen name="about" options={{ presentation: "card" }} />
         <Stack.Screen name="credits" options={{ presentation: "card" }} />
+        <Stack.Screen name="settings/appearance" options={{ presentation: "card" }} />
+        <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
       </Stack>
       <OfflineOverlay />
       {showLoading && (

@@ -9,17 +9,21 @@ import { BlurView } from "expo-blur";
 
 import { RADIUS } from "../../theme";
 import { BLUR_INTENSITY, blurIntensity } from "../../theme/effects";
-import { useTheme } from "../../theme/appThemeContext";
+import { useTheme, useThemeMode } from "../../theme/appThemeContext";
 import type { AppTheme } from "../../theme/palette.types";
+import { getLiquidGlassModule } from "../../theme/liquidGlass";
 
 /**
  * Surface verre unifiée — POINT DE BASCULE unique du rendu glass.
  *
- * Aujourd'hui : fallback maison éprouvé = voile teinté + BlurView + border
+ * Liquid Glass (iOS 26+, module natif présent, préférence activée,
+ * `liquid !== false`) : rendu verre natif Apple via LiquidGlassView — le
+ * voile maison et la border hairline sont retirés (le verre natif gère sa
+ * matière et son bord lumineux), seul le radius est conservé.
+ * Sinon : fallback maison éprouvé = voile teinté + BlurView + border
  * hairline (formule historique de GlassCard, thémée light/dark).
- * Phase Liquid Glass : ce composant branchera LiquidGlassView (iOS 26+)
- * quand le module est présent, supporté et activé — aucun consommateur
- * (GlassCard, RailMenu, MediaActionSheet, header recherche...) à retoucher.
+ * Aucun consommateur (GlassCard, RailMenu, MediaActionSheet, header
+ * recherche...) n'a besoin d'être retouché : la bascule vit ici.
  */
 
 type BlurTier = keyof typeof BLUR_INTENSITY;
@@ -56,12 +60,29 @@ export function GlassSurface({
   tint = "regular",
   radius = RADIUS.lg,
   bordered = true,
-  // Consommés par la branche Liquid Glass (phase dédiée) — inertes en fallback.
-  interactive: _interactive,
-  liquid: _liquid = true,
+  interactive,
+  liquid = true,
 }: GlassSurfaceProps) {
   const theme = useTheme();
+  const { liquidGlass } = useThemeMode();
   const resolvedIntensity = intensity ?? blurIntensity(tier);
+
+  if (liquid && liquidGlass.enabled) {
+    const mod = getLiquidGlassModule();
+    if (mod && mod.isLiquidGlassSupported) {
+      const { LiquidGlassView } = mod;
+      return (
+        <LiquidGlassView
+          effect="regular"
+          colorScheme={theme.scheme}
+          interactive={interactive}
+          style={[{ borderRadius: radius, overflow: "hidden" }, style]}
+        >
+          {children}
+        </LiquidGlassView>
+      );
+    }
+  }
 
   return (
     <View

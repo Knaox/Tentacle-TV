@@ -53,6 +53,15 @@ export {
 } from "./themeMode";
 export { PLAYER } from "./playerColors";
 export { darken, hexToRgb, withAlpha, type Rgb } from "./colorUtils";
+export {
+  LIQUID_GLASS_STORAGE_KEY,
+  getLiquidGlassModule,
+  isLiquidGlassAvailable,
+  getBootLiquidGlassEnabled,
+  setBootLiquidGlassEnabled,
+  type LiquidGlassModule,
+  type LiquidGlassViewProps,
+} from "./liquidGlass";
 export { fetchThemeState } from "./themeApi";
 export type { BackendThemeState } from "./types";
 export { parsePx, parseMs, parseScale } from "./utils";
