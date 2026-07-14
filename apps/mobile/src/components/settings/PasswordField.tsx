@@ -73,8 +73,8 @@ const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     label: {
       ...typography.caption,
-      fontFamily: FONT_FAMILY.medium,
-      color: t.colors.text.tertiary,
+      fontFamily: FONT_FAMILY.semibold,
+      color: t.colors.text.secondary,
       marginBottom: spacing.xs,
     },
     inputWrap: { position: "relative", justifyContent: "center" },
@@ -82,8 +82,8 @@ const makeStyles = (t: AppTheme) =>
       height: 46,
       borderRadius: RADIUS.md,
       borderWidth: 1,
-      borderColor: t.colors.border.subtle,
-      backgroundColor: t.colors.fill.subtle,
+      borderColor: t.colors.border.strong,
+      backgroundColor: t.colors.fill.soft,
       paddingHorizontal: spacing.md,
       paddingRight: 46,
       color: t.colors.text.primary,

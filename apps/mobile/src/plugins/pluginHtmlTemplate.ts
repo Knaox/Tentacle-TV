@@ -1,51 +1,19 @@
-import type { AppTheme, ResolvedScheme } from "../theme/palette.types";
-import { withAlpha } from "../theme/colorUtils";
+import type { AppTheme } from "../theme/palette.types";
+import {
+  buildPluginThemeVars,
+  buildPluginTokenCss,
+  PLUGIN_TENTACLE_COLORS,
+  PLUGIN_TW_EXTEND,
+  type PluginThemeVars,
+} from "./pluginThemeTokens";
 
 /**
- * Palette injectée dans la WebView plugin (CSS vars + config Tailwind).
- * NOTE : ce fichier est le SEUL autorisé à contenir des littéraux couleur
- * hors src/theme (sous-palette WebView historique, exclue du re-scan).
+ * Construction du HTML de la WebView plugin. Les tokens de thème (palette legacy
+ * + vocabulaire sémantique complet + config Tailwind) vivent dans
+ * ./pluginThemeTokens. Ré-export back-compat : PluginWebView importe encore
+ * buildPluginThemeVars / PluginThemeVars depuis ce module.
  */
-export interface PluginThemeVars {
-  scheme: ResolvedScheme;
-  bg: string;
-  surface: string;
-  border: string;
-  accent: string;
-  accentDark: string;
-  accentLight: string;
-  accentMuted: string;
-  text: string;
-  textSecondary: string;
-  error: string;
-  accentGlowSoft: string;
-  accentGlowStrong: string;
-}
-
-/**
- * Dérive la palette WebView du thème actif. En sombre, les valeurs
- * HISTORIQUES de la WebView (teintes bleutées #080812/#12121a) sont
- * conservées à l'identique ; en clair, on dérive des tokens app. Les accents
- * suivent la marque (et le scheme) dans les deux cas.
- */
-export function buildPluginThemeVars(t: AppTheme): PluginThemeVars {
-  const { colors } = t;
-  return {
-    scheme: t.scheme,
-    bg: t.isDark ? "#080812" : colors.surface.s0,
-    surface: t.isDark ? "#12121a" : colors.surface.s1,
-    border: t.isDark ? "#1e1e2e" : colors.border.subtle,
-    accent: colors.brand.violet,
-    accentDark: colors.brand.dark,
-    accentLight: colors.brand.light,
-    accentMuted: t.isDark ? "#C4B5FD" : colors.brand.light,
-    text: colors.text.primary,
-    textSecondary: t.isDark ? "#9ca3af" : colors.text.tertiary,
-    error: colors.status.error,
-    accentGlowSoft: withAlpha(colors.brand.violet, 0.3, colors.brand.glow),
-    accentGlowStrong: withAlpha(colors.brand.violet, 0.5, colors.brand.glow),
-  };
-}
+export { buildPluginThemeVars, type PluginThemeVars };
 
 interface BuildPluginHtmlParams {
   backendUrl: string;
@@ -55,7 +23,8 @@ interface BuildPluginHtmlParams {
   bundleCode: string;
   sharedDepsCode: string;
   pluginPath: string;
-  theme: PluginThemeVars;
+  /** Thème mobile actif : la palette WebView COMPLÈTE en est dérivée. */
+  appTheme: AppTheme;
 }
 
 /**
@@ -71,8 +40,12 @@ export function buildPluginHtml({
   bundleCode,
   sharedDepsCode,
   pluginPath,
-  theme,
+  appTheme,
 }: BuildPluginHtmlParams): string {
+  const theme = buildPluginThemeVars(appTheme);
+  // Vocabulaire de tokens sémantique complet, dérivé du thème actif (clair/sombre).
+  const tokenCss = buildPluginTokenCss(appTheme);
+
   // Échapper le code du bundle pour insertion dans un template literal JS
   const escapedBundle = bundleCode
     .replace(/\\/g, "\\\\")
@@ -93,7 +66,7 @@ export function buildPluginHtml({
       theme: {
         extend: {
           colors: {
-            tentacle: {
+            tentacle: Object.assign({
               bg: ${JSON.stringify(theme.bg)},
               surface: ${JSON.stringify(theme.surface)},
               border: ${JSON.stringify(theme.border)},
@@ -101,17 +74,14 @@ export function buildPluginHtml({
               "accent-dark": ${JSON.stringify(theme.accentDark)},
               "accent-light": ${JSON.stringify(theme.accentLight)},
               "accent-muted": ${JSON.stringify(theme.accentMuted)},
-            },
+            }, ${JSON.stringify(PLUGIN_TENTACLE_COLORS)}),
           },
-          animation: {
-            shimmer: "shimmer 1.5s ease infinite",
-            "fade-slide-up": "fadeSlideUp 0.5s ease both",
-            "fade-slide-down": "fadeSlideDown 0.3s ease both",
-            "scale-in": "scaleIn 0.2s ease both",
-            "slide-in-right": "slideInRight 0.25s ease both",
-            "pulse-glow": "pulseGlow 2s ease infinite",
-            breathe: "breathe 2s ease infinite",
-          },
+          borderRadius: ${JSON.stringify(PLUGIN_TW_EXTEND.borderRadius)},
+          boxShadow: ${JSON.stringify(PLUGIN_TW_EXTEND.boxShadow)},
+          backdropBlur: ${JSON.stringify(PLUGIN_TW_EXTEND.backdropBlur)},
+          transitionTimingFunction: ${JSON.stringify(PLUGIN_TW_EXTEND.transitionTimingFunction)},
+          transitionDuration: ${JSON.stringify(PLUGIN_TW_EXTEND.transitionDuration)},
+          animation: ${JSON.stringify(PLUGIN_TW_EXTEND.animation)},
           keyframes: {
             shimmer: {
               "0%": { backgroundPosition: "-200% 0" },
@@ -147,13 +117,12 @@ export function buildPluginHtml({
     };
   <\/script>
   <style>
+    ${tokenCss}
     :root {
       --bg: ${theme.bg};
       --surface: ${theme.surface};
       --accent: ${theme.accent};
       --text: ${theme.text};
-      --text-secondary: ${theme.textSecondary};
-      color-scheme: ${theme.scheme};
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {

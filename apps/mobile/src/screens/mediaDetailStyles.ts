@@ -6,12 +6,16 @@ import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, type AppTheme } fr
  * l'écran sous 300 lignes). Consommée via `useThemedStyles(makeMediaDetailStyles)`
  * par DetailHeader / DetailBody.
  */
-export const makeMediaDetailStyles = (t: AppTheme) =>
-  StyleSheet.create({
+export const makeMediaDetailStyles = (t: AppTheme) => {
+  // CTA Lecture : ombre douce neutre en clair (bouton blanc), elev2 en sombre.
+  const playShadow = t.isDark ? SHADOW_RN.elev2 : t.colors.shadow.card;
+  return StyleSheet.create({
     watchedRing: { position: "absolute" as const, top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: t.colors.cta.primaryBg, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
     seriesLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light, marginBottom: 4, letterSpacing: 0.2 },
     seriesLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: 4 },
-    title: { fontSize: 26, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, lineHeight: 30, letterSpacing: -0.6, textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
+    // Titre posé sur le bas du backdrop → onMedia (blanc + voile sombre) pour
+    // rester lisible sur l'affiche dans les deux thèmes (fix contraste clair).
+    title: { fontSize: 26, fontFamily: FONT_FAMILY.extrabold, color: t.colors.onMedia.primary, lineHeight: 30, letterSpacing: -0.6, textShadowColor: t.colors.onMedia.shadow, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
     metaRow: { flexDirection: "row" as const, gap: 6, marginTop: 8, flexWrap: "wrap" as const, alignItems: "center" as const },
     metaItem: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary },
     metaDot: { ...typography.caption, color: t.colors.text.quaternary },
@@ -21,10 +25,12 @@ export const makeMediaDetailStyles = (t: AppTheme) =>
     sectionTitle: { fontSize: 18, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, paddingHorizontal: spacing.screenPadding, marginTop: spacing.xl, marginBottom: 4 },
     playBtn: {
       flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const,
-      gap: 10, backgroundColor: t.colors.cta.primaryBg, borderRadius: RADIUS.md, height: 52, paddingHorizontal: 28, ...SHADOW_RN.elev2,
+      gap: 10, backgroundColor: t.colors.cta.primaryBg, borderRadius: RADIUS.md, height: 52, paddingHorizontal: 28,
+      borderWidth: t.colors.cta.primaryBorder ? 1 : 0, borderColor: t.colors.cta.primaryBorder, ...playShadow,
     },
     playBtnTxt: { ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.primaryFg, letterSpacing: 0.2, fontSize: 16 },
     genreRow: { flexDirection: "row" as const, gap: 6, marginTop: spacing.xl, paddingHorizontal: spacing.screenPadding, flexWrap: "wrap" as const },
     overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary, lineHeight: 22 },
     expandLink: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light, marginTop: 8 },
   });
+};

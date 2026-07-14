@@ -67,9 +67,15 @@ export function buildLightPalette(): ThemePalette {
       focus: accent,
     },
     cta: {
-      primaryBg: "#111114",
-      primaryBgHover: "rgba(17, 17, 20, 0.85)",
-      primaryFg: "#FFFFFF",
+      // CTA principal en clair : bouton BLANC + fin contour sombre + ombre douce
+      // (via shadow.card côté composant) + texte/icône NOIR. Sobre, minimal et
+      // classe — ni aplat violet, ni slab noir. Les petits badges (tag CONTINUER,
+      // pastille « vu ») réutilisent primaryBg/Fg : pastille blanche + coche/texte
+      // noir (sans contour).
+      primaryBg: "#FFFFFF",
+      primaryBgHover: "#F1F1F5",
+      primaryFg: "#111114",
+      primaryBorder: "rgba(0, 0, 0, 0.14)",
       secondaryBg: "rgba(120, 120, 128, 0.16)",
       secondaryBgHover: "rgba(120, 120, 128, 0.28)",
       secondaryFg: "#0B0B10",
@@ -99,12 +105,23 @@ export function buildLightPalette(): ThemePalette {
       border: "rgba(220, 38, 38, 0.18)",
     },
     glass: {
-      tint: "rgba(248, 248, 252, 0.6)",
-      tintStrong: "rgba(242, 242, 248, 0.72)",
+      // Verre nacré plus opaque qu'avant : sur fond #F4F4F7, un voile trop
+      // translucide rendait les cartes plates. Couplé à shadow.card (élévation).
+      tint: "rgba(255, 255, 255, 0.72)",
+      tintStrong: "rgba(255, 255, 255, 0.82)",
       panel: "#FFFFFF",
       // Les fonds de modale restent un voile sombre, plus léger qu'en dark.
       backdrop: "rgba(0, 0, 0, 0.3)",
     },
     tabBar: "rgba(255, 255, 255, 0.92)",
+    onMedia: {
+      primary: "#FFFFFF",
+      secondary: "rgba(255, 255, 255, 0.80)",
+      shadow: "rgba(0, 0, 0, 0.7)",
+    },
+    shadow: {
+      card: { shadowColor: "#0B0B10", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 24, elevation: 3 },
+      sheet: { shadowColor: "#0B0B10", shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.12, shadowRadius: 28, elevation: 8 },
+    },
   };
 }

@@ -5,7 +5,7 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins, useMobilePluginNavItems, markPluginFailed, clearPluginFailed } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
-import { buildPluginHtml, buildPluginThemeVars } from "@/plugins/pluginHtmlTemplate";
+import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
 import { typography, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
@@ -66,7 +66,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       bundleCode,
       sharedDepsCode,
       pluginPath: navItem.path,
-      theme: buildPluginThemeVars(theme),
+      appTheme: theme,
     });
   }, [navItem, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
 

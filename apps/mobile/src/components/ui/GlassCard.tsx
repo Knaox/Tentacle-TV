@@ -18,7 +18,9 @@ interface Props {
  */
 export function GlassCard({ children, style, noPadding }: Props) {
   return (
-    <GlassSurface intensity={40} style={[SHADOW_RN.elev2 as ViewStyle, style]}>
+    // elevated (clair) : ombre douce pour détacher la carte du fond nacré.
+    // Réservé au cas padding (taille de contenu) ; noPadding = fill/flex → off.
+    <GlassSurface intensity={40} elevated={!noPadding} style={[SHADOW_RN.elev2 as ViewStyle, style]}>
       {/* noPadding consumers (e.g. Disclaimer) embed a `flex: 1` ScrollView that
        *  needs a sized parent — without `flex: 1` here, the ScrollView collapses
        *  to 0px height and the legal text becomes invisible. */}

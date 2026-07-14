@@ -11,6 +11,8 @@
  * les défauts sombres — voir plan de refonte thème.
  */
 
+import type { ViewStyle } from "react-native";
+
 /** Choix utilisateur persisté ("auto" suit le réglage système). */
 export type ThemeMode = "light" | "dark" | "auto";
 
@@ -73,6 +75,13 @@ export interface ThemePalette {
     brandBg: string;
     brandBgHover: string;
     brandFg: string;
+    /**
+     * Contour du CTA PRINCIPAL. En CLAIR, un léger liseré sombre définit le
+     * bouton blanc sur fond clair (style « blanc + fin contour noir » +
+     * ombre douce + texte violet profond). `undefined` en sombre (pilule
+     * blanche pleine sans bord).
+     */
+    primaryBorder?: string;
   };
   overlay: {
     scrim: string;
@@ -111,6 +120,28 @@ export interface ThemePalette {
   };
   /** Fond de la tab bar (opaque hors Liquid Glass). */
   tabBar: string;
+  /**
+   * Texte posé DIRECTEMENT sur une image (backdrop/poster) — Hero, cartes
+   * bibliothèque, titre de fiche. CONSTANT entre les deux thèmes : la
+   * luminosité d'une affiche est indépendante du thème choisi, donc on reste
+   * blanc-sur-voile-sombre dans les deux modes (standard iOS/Netflix). Évite
+   * le texte quasi-noir + ombre noire illisible en clair.
+   */
+  onMedia: {
+    primary: string;
+    secondary: string;
+    /** Couleur du textShadow (voile sombre porté par le texte). */
+    shadow: string;
+  };
+  /**
+   * Ombres portées des surfaces verre / cartes (RN ViewStyle partiel). Douces
+   * en clair pour que les cartes se détachent du fond nacré ; en sombre les
+   * cartes ne portent pas d'ombre (rendu inchangé, GlassSurface l'ignore).
+   */
+  shadow: {
+    card: ViewStyle;
+    sheet: ViewStyle;
+  };
 }
 
 export interface AppTheme {

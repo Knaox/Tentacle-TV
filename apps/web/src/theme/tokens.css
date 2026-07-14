@@ -50,6 +50,13 @@
   --border-strong: rgba(255, 255, 255, 0.16);
   --border-focus: rgba(var(--brand-rgb), 0.85);
 
+  /* ── Fills (remplissages neutres translucides — bg-tentacle-fill-*) ─── */
+  --fill-faint: rgba(255, 255, 255, 0.03);
+  --fill-subtle: rgba(255, 255, 255, 0.05);
+  --fill-soft: rgba(255, 255, 255, 0.08);
+  --fill-medium: rgba(255, 255, 255, 0.12);
+  --fill-strong: rgba(255, 255, 255, 0.28);
+
   /* ── Status (foreground) ────────────────────────────────────── */
   --status-success: #10b981;
   --status-warning: #f59e0b;

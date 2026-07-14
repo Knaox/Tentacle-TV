@@ -44,9 +44,16 @@ const PRIMARY_SHADOW: ViewStyle = {
 function variantStyle(t: AppTheme, variant: Variant): VariantStyle {
   const { colors } = t;
   switch (variant) {
-    // Netflix CTA principal — pill contrastée, soft shadow
+    // CTA principal. En CLAIR : bouton blanc + fin contour sombre (primaryBorder)
+    // + ombre douce neutre (shadow.card) + texte violet. En SOMBRE : pilule
+    // blanche + ombre noire historique, sans contour.
     case "primary":
-      return { bg: colors.cta.primaryBg, text: colors.cta.primaryFg, shadow: PRIMARY_SHADOW };
+      return {
+        bg: colors.cta.primaryBg,
+        text: colors.cta.primaryFg,
+        border: colors.cta.primaryBorder,
+        shadow: t.isDark ? PRIMARY_SHADOW : colors.shadow.card,
+      };
     // Netflix CTA secondaire — gris translucide cinematic
     case "secondary":
       return { bg: colors.cta.secondaryBg, text: colors.cta.secondaryFg };

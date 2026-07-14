@@ -124,7 +124,9 @@ export function MediaDetailScreen({ itemId }: Props) {
             <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={400} />
           </Animated.View>
           <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
-          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="strong" />
+          {/* Fade bas : voile SOMBRE en clair (sinon l'affiche est délavée en
+              blanc et le titre onMedia devient illisible) — cf. HeroBanner. */}
+          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="strong" color={theme.isDark ? undefined : theme.colors.onMedia.shadow} />
         </View>
         {!isTablet && backBtn}
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>

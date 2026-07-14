@@ -51,7 +51,8 @@ function getImageUrl(
  */
 export const LibraryCard = memo(function LibraryCard({ library, onPress, width }: Props) {
   const { t } = useTranslation("common");
-  const { colors } = useTheme();
+  const theme = useTheme();
+  const { colors } = theme;
   const styles = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const randomItems: RandomItem[] = (library as any)._randomItems ?? [];
@@ -85,9 +86,16 @@ export const LibraryCard = memo(function LibraryCard({ library, onPress, width }
             <Feather name={iconName} size={48} color={colors.text.disabled} />
           </View>
         )}
-        {/* Fade cinématique bas — suit le thème (défaut surface.s0 : noir pur en
-            sombre, clair en light) pour fondre la carte dans la page. */}
-        <GradientOverlay direction="bottom" height="55%" intensity="strong" />
+        {/* Fade cinématique bas. En SOMBRE : vers surface.s0 (noir pur, défaut).
+            En CLAIR : voile SOMBRE (onMedia.shadow) au lieu de gris clair, pour
+            que le titre blanc (onMedia) reste lisible sur l'affiche — look
+            cinématique Netflix/Apple TV constant quel que soit le thème. */}
+        <GradientOverlay
+          direction="bottom"
+          height="55%"
+          intensity="strong"
+          color={theme.isDark ? undefined : colors.onMedia.shadow}
+        />
 
         {/* Badge icône type — glass sombre sur image (reste sombre dans les deux
             thèmes), icône claire. */}
@@ -151,19 +159,19 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   name: {
     fontSize: 26,
     fontFamily: FONT_FAMILY.extrabold,
-    color: t.colors.text.primary,
+    color: t.colors.onMedia.primary,
     letterSpacing: -0.5,
-    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowColor: t.colors.onMedia.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 5,
   },
   count: {
     fontSize: 13,
     fontFamily: FONT_FAMILY.medium,
-    color: t.colors.text.secondary,
+    color: t.colors.onMedia.secondary,
     marginTop: 4,
     letterSpacing: 0.1,
-    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowColor: t.colors.onMedia.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },

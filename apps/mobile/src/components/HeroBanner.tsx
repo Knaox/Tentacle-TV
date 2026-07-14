@@ -80,11 +80,19 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   return (
     <View style={{ width: SLIDE_W, height: BANNER_H, overflow: "hidden", backgroundColor: theme.colors.surface.s0 }}>
       <BackdropStack items={items} activeIndex={index} />
-      {/* Fades suivant le thème (défaut surface.s0) : noir pur en sombre —
-          identiques à l'ancien "#000000" —, clairs en light pour fondre le
-          hero dans la page et garder le statut/haut lisibles. */}
+      {/* En SOMBRE : fades vers surface.s0 (noir pur, identiques à l'ancien
+          "#000000"). En CLAIR : le fade BAS passe en voile SOMBRE (onMedia.shadow)
+          au lieu de gris clair — sinon l'affiche est délavée ("voile blanc"
+          immonde). Résultat : image vive + scrim sombre cinématique sous le
+          texte (blanc onMedia), lisible dans les deux thèmes. Le fade HAUT reste
+          léger (fond vers la page/entête). */}
       <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
-      <GradientOverlay direction="bottom" height={BANNER_H * 0.62} intensity="strong" />
+      <GradientOverlay
+        direction="bottom"
+        height={BANNER_H * 0.62}
+        intensity="strong"
+        color={theme.isDark ? undefined : theme.colors.onMedia.shadow}
+      />
       <FlatList
         ref={listRef}
         data={items}
