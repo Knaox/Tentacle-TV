@@ -11,6 +11,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.5.1]
+### FR
+- Notifications d'ajouts en bibliothèque : détection fiabilisée par interrogation périodique de Jellyfin (ne dépend plus uniquement de l'événement temps réel, qui pouvait être manqué) — les nouveaux contenus déclenchent désormais la notification de façon robuste.
+### EN
+- Library-addition notifications: detection made reliable via periodic polling of Jellyfin (no longer relying solely on the real-time event, which could be missed) — new content now triggers the notification reliably.
+
 ## [1.5.0]
 ### FR
 - **Notifications push mobile** : l'app peut désormais recevoir des notifications même fermée. Deux réglages (Profil › Préférences › Notifications, opt-in) : nouveaux **ajouts en bibliothèque**, et — si le plugin Seer est actif — **contenu demandé disponible** (uniquement ses propres demandes). Nouveaux endpoints serveur `/api/push` (enregistrement du jeton Expo, préférences, notification de test réservée aux admins). Livraison via Expo Push → APNs (iOS) / FCM (Android).
