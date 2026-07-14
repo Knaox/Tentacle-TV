@@ -39,6 +39,7 @@ import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
+import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 
@@ -291,6 +292,7 @@ async function main() {
     startPairingCleanup();
     startJellyfinPoller();
     startJellyfinWs();
+    startNotificationPushWorker();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
