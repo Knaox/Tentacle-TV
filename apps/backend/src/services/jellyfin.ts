@@ -213,3 +213,26 @@ export async function getItemDetail(userId: string, itemId: string): Promise<Rec
 
   return res.json();
 }
+
+/**
+ * Récupère un lot d'items par IDs via la clé admin (endpoint /Items sans userId).
+ * Sert à composer les notifications « nouveaux ajouts » depuis les IDs fournis
+ * par l'événement WebSocket LibraryChanged. Renvoie [] en cas d'échec (best-effort).
+ */
+export async function getItemsByIdsAdmin(
+  itemIds: string[],
+): Promise<{ Id: string; Name: string; Type: string; SeriesName?: string }[]> {
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+  if (!jellyfinUrl || !apiKey || itemIds.length === 0) return [];
+
+  const res = await fetch(
+    `${jellyfinUrl}/Items?Ids=${itemIds.join(",")}&Fields=SeriesName`,
+    { headers: { "X-Emby-Token": apiKey } },
+  );
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const items = (data?.Items ?? []) as { Id: string; Name: string; Type: string; SeriesName?: string }[];
+  return items.map((i) => ({ Id: i.Id, Name: i.Name, Type: i.Type, SeriesName: i.SeriesName }));
+}
