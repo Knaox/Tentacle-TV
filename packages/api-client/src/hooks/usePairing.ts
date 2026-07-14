@@ -1,16 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 let _backendBase = "/api/pair";
+let _tokenOverride: string | null = null;
 
 export function setPairingBackendUrl(url: string) {
   _backendBase = `${url.replace(/\/$/, "")}/api/pair`;
 }
 
+/**
+ * Set auth token for non-web platforms (React Native) where localStorage is
+ * unavailable. Without this, mobile requests to /my-devices etc. went out with
+ * NO Authorization header — the paired-devices list came back empty and
+ * revocation silently 401'd.
+ */
+export function setPairingToken(token: string | null) {
+  _tokenOverride = token;
+}
+
 function getAuthHeader(): Record<string, string> {
   const token =
-    typeof localStorage !== "undefined"
+    _tokenOverride
+    ?? (typeof localStorage !== "undefined"
       ? localStorage.getItem("tentacle_token")
-      : null;
+      : null);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -20,7 +32,7 @@ async function pairFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const hasToken = !!(typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token"));
+  const hasToken = !!(_tokenOverride || (typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token")));
   const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);

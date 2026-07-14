@@ -19,6 +19,7 @@ import {
   STREAMING_CONFIG_QUERY_KEY,
   setPreferencesBackendUrl,
   setPreferencesToken,
+  setPairingToken,
   setConfigBackendUrl,
   setStreamingConfigBackendUrl,
   setNotificationsBackendUrl,
@@ -102,7 +103,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
         if (!token || !serverUrl) {
           setSessionExpired(true);
           setPreferencesToken(null);
-          setShareLinkToken(null);
+          setShareLinkToken(null); setPairingToken(null);
           client.setAccessToken(null);
           queryClient.clear();
           router.replace("/(auth)/login");
@@ -121,7 +122,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             const data = await res.json();
             client.setAccessToken(data.AccessToken);
             setPreferencesToken(data.AccessToken);
-            setShareLinkToken(data.AccessToken);
+            setShareLinkToken(data.AccessToken); setPairingToken(data.AccessToken);
             client.resetAuthState();
             queryClient.invalidateQueries();
             return;
@@ -134,7 +135,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
               storage.setItem("tentacle_token", reAuth.AccessToken);
               storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
               setPreferencesToken(reAuth.AccessToken);
-              setShareLinkToken(reAuth.AccessToken);
+              setShareLinkToken(reAuth.AccessToken); setPairingToken(reAuth.AccessToken);
               client.resetAuthState();
               queryClient.invalidateQueries();
               return;
@@ -143,7 +144,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.removeItem("tentacle_user");
             setSessionExpired(true);
             setPreferencesToken(null);
-            setShareLinkToken(null);
+            setShareLinkToken(null); setPairingToken(null);
             client.setAccessToken(null);
             queryClient.clear();
             router.replace("/(auth)/login");
@@ -181,7 +182,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           const data = await res.json();
           client.setAccessToken(data.AccessToken);
           setPreferencesToken(data.AccessToken);
-          setShareLinkToken(data.AccessToken);
+          setShareLinkToken(data.AccessToken); setPairingToken(data.AccessToken);
           client.resetAuthState();
           queryClient.invalidateQueries();
         } else if (res.status === 401) {
@@ -191,7 +192,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setPreferencesToken(reAuth.AccessToken);
-            setShareLinkToken(reAuth.AccessToken);
+            setShareLinkToken(reAuth.AccessToken); setPairingToken(reAuth.AccessToken);
             client.resetAuthState();
             queryClient.invalidateQueries();
           } else {
@@ -199,7 +200,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
             storage.removeItem("tentacle_user");
             setSessionExpired(true);
             setPreferencesToken(null);
-            setShareLinkToken(null);
+            setShareLinkToken(null); setPairingToken(null);
             client.setAccessToken(null);
             queryClient.clear();
             router.replace("/(auth)/login");
@@ -231,7 +232,7 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
     if (token) {
       client.setAccessToken(token);
       setPreferencesToken(token);
-      setShareLinkToken(token);
+      setShareLinkToken(token); setPairingToken(token);
     }
   }, [serverUrl, client, storage]);
 

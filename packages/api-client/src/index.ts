@@ -79,7 +79,7 @@ export { useStreamingConfig, fetchStreamingConfig, setStreamingConfigBackendUrl,
 export type { StreamingConfig } from "./hooks/useStreamingConfig";
 
 // Device pairing (local/backend)
-export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, useGenerateTvToken, useMyPairedDevices, useRevokeMyDevice, useDevicePairGenerate, useDevicePairStatus, useDevicePairConfirm, setPairingBackendUrl } from "./hooks/usePairing";
+export { useGeneratePairingCode, usePairingStatus, useClaimPairingCode, usePairedDevices, useRevokePairedDevice, useGenerateTvToken, useMyPairedDevices, useRevokeMyDevice, useDevicePairGenerate, useDevicePairStatus, useDevicePairConfirm, setPairingBackendUrl, setPairingToken } from "./hooks/usePairing";
 export type { PairingCodeResponse, PairingStatusResponse, ClaimResponse, PairedDevice, TvTokenResponse, DevicePairGenerateResponse, DevicePairStatusResponse } from "./hooks/usePairing";
 
 // Device pairing (relay)
