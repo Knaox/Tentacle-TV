@@ -22,6 +22,9 @@ export type WsServerMessage =
   | { type: "pong"; t?: number; serverTime?: number }
   | { type: "home:update"; carousel: CarouselId; action: "refresh" }
   | { type: "notifications:update"; action: "refresh" }
+  /** Le jumelage de cet appareil a été révoqué : se déconfigurer et revenir
+   *  à l'écran de jumelage (poussé par le serveur à la suppression). */
+  | { type: "session:revoked" }
   | WtServerMessage;
 
 /** Messages sent from clients to the server. */

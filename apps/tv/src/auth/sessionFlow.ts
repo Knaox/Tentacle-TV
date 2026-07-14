@@ -3,7 +3,7 @@ import {
   JellyfinClient,
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
-import type { RNStorageAdapter } from "../storage/RNStorageAdapter";
+import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { navigationRef } from "../navigation/navigationRef";
 import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./tokenRefresh";
 import { readCredentials, clearCredentials } from "./credentialManager";
@@ -16,7 +16,7 @@ import { isPlayingMedia } from "./playbackGuard";
  *  redemander une auth. */
 export function doLogout(
   jfClient: JellyfinClient,
-  storage: RNStorageAdapter,
+  storage: StorageAdapter,
   queryClient: QueryClient,
 ): void {
   if (isPlayingMedia()) {
@@ -53,7 +53,7 @@ export function doLogout(
  */
 export async function runAuthRefreshFlow(
   jfClient: JellyfinClient,
-  storage: RNStorageAdapter,
+  storage: StorageAdapter,
   queryClient: QueryClient,
   opts: { softFail: boolean },
 ): Promise<void> {

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import { validateToken, type JellyfinUser } from "../middleware/auth";
 import { addConnection, removeConnection } from "../services/wsManager";
+import { hashToken } from "../services/jwt";
 import { handleWtMessage } from "../services/watchTogether/gateway";
 
 const AUTH_TIMEOUT_MS = 15_000;
@@ -45,10 +46,16 @@ function setupPing(ws: WebSocket): ReturnType<typeof setInterval> {
   }, PING_INTERVAL_MS);
 }
 
+interface BoundSession {
+  user: JellyfinUser;
+  /** sha256 du token — clé de ciblage pour la révocation d'appareil. */
+  tokenHash: string;
+}
+
 async function authenticateAndBind(
   ws: WebSocket,
   token: string,
-): Promise<JellyfinUser | null> {
+): Promise<BoundSession | null> {
   const result = await validateToken(token);
   if (!result.ok) {
     if (result.reason === "unreachable") {
@@ -61,19 +68,21 @@ async function authenticateAndBind(
     return null;
   }
 
+  const tokenHash = hashToken(token);
   ws.send(JSON.stringify({ type: "auth_ok" }));
-  addConnection(result.user.userId, ws);
-  return result.user;
+  addConnection(result.user.userId, ws, tokenHash);
+  return { user: result.user, tokenHash };
 }
 
 export const wsRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", { websocket: true }, (socket: WebSocket, request: FastifyRequest) => {
     let user: JellyfinUser | null = null;
+    let tokenHash: string | null = null;
     let pingInterval: ReturnType<typeof setInterval> | null = null;
 
     const cleanup = () => {
       if (pingInterval) clearInterval(pingInterval);
-      if (user) removeConnection(user.userId, socket);
+      if (user) removeConnection(user.userId, socket, tokenHash ?? undefined);
     };
 
     socket.on("close", cleanup);
@@ -91,7 +100,8 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
     if (cookieToken) {
       authenticateAndBind(socket, cookieToken).then((u) => {
         if (u) {
-          user = u;
+          user = u.user;
+          tokenHash = u.tokenHash;
           pingInterval = setupPing(socket);
         }
       });
@@ -120,7 +130,8 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
         clearTimeout(authTimeout);
         authenticateAndBind(socket, msg.token).then((u) => {
           if (u) {
-            user = u;
+            user = u.user;
+            tokenHash = u.tokenHash;
             pingInterval = setupPing(socket);
           }
         });

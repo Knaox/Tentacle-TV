@@ -6,6 +6,7 @@ import { requireAuth, requireAdmin } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { signDeviceToken, hashToken } from "../services/jwt";
 import { findValidSiblingToken } from "../services/deviceTokenHealth";
+import { revokeDeviceByTokenHash } from "../services/wsManager";
 
 const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 4;
@@ -409,6 +410,9 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
       }
 
       await prisma.pairedDevice.delete({ where: { id } });
+      // Déconfigure immédiatement l'appareil s'il a une socket ouverte
+      // (sinon la révocation n'est détectée que passivement, au prochain 401).
+      revokeDeviceByTokenHash(device.tokenHash);
       return { success: true };
     },
   );
@@ -436,6 +440,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     const device = await prisma.pairedDevice.findUnique({ where: { id } });
     if (!device) return reply.status(404).send({ message: "Appareil introuvable" });
     await prisma.pairedDevice.delete({ where: { id } });
+    // Déconfiguration immédiate de la TV/appareil révoqué par l'admin.
+    revokeDeviceByTokenHash(device.tokenHash);
     return { success: true };
   });
 };
