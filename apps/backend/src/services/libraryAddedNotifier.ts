@@ -50,11 +50,18 @@ async function poll(reason: string): Promise<void> {
   try {
     const prisma = getPrisma();
     const items = await getRecentlyAddedItems(FETCH_LIMIT);
-    if (items.length === 0) return;
-    const newest = items[0].DateCreated;
-    if (!newest) return;
-
     const row = await prisma.serverConfig.findUnique({ where: { key: WATERMARK_KEY } });
+    const newest = items[0]?.DateCreated;
+
+    // DIAG : trace chaque poll (item du haut + sa date vs watermark) pour
+    // comprendre les non-détections (ex. DateCreated = date fichier, pas d'ajout).
+    console.log(
+      `[LibNotif] poll(${reason}): ${items.length} item(s) | top="${items[0]?.Name ?? "∅"}" ` +
+        `created=${newest ?? "∅"} | watermark=${row?.value ?? "∅"}`,
+    );
+
+    if (items.length === 0 || !newest) return;
+
     // 1er run (pas de watermark) : on établit le baseline sans notifier l'existant.
     if (!row?.value) {
       await saveWatermark(newest);
@@ -64,6 +71,7 @@ async function poll(reason: string): Promise<void> {
 
     const watermark = new Date(row.value).getTime();
     const fresh = items.filter((i) => i.DateCreated && new Date(i.DateCreated).getTime() > watermark);
+    console.log(`[LibNotif] → ${fresh.length} nouveau(x) (created > watermark)`);
     if (fresh.length === 0) return;
 
     await saveWatermark(newest); // avance AVANT l'envoi (anti-doublon si crash)
