@@ -9,6 +9,7 @@ import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
 import { typography, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
+import { useHeaderHeight } from "@/components/PersistentHeader";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
   try {
@@ -26,6 +27,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
+  const headerH = useHeaderHeight();
   const { storage } = useTentacleConfig();
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
@@ -162,7 +164,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface.s0 }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.s0, paddingTop: headerH }}>
       {htmlContent ? (
         <WebViewComponent
           key={navKey}

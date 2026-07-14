@@ -11,6 +11,7 @@ import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
 import { SettingsSection, SettingsRow } from "../components/settings";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { ProfileAvatar } from "../components/profile/ProfileAvatar";
+import { useHeaderHeight } from "../components/PersistentHeader";
 import { clearCredentials } from "../auth/credentialManager";
 import { useServerUrl } from "../providers/ServerUrlContext";
 
@@ -34,6 +35,7 @@ export function ProfileScreen() {
   const { t } = useTranslation("profile");
   const { t: tp } = useTranslation("preferences");
   const router = useRouter();
+  const headerH = useHeaderHeight();
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { mode } = useThemeMode();
@@ -189,7 +191,7 @@ export function ProfileScreen() {
 
   return (
     <SubtleBackground ambient>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: headerH, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {twoCol ? (
           <View style={st.twoCol}>
             <View style={{ flex: 1 }}>{leftCol}</View>
