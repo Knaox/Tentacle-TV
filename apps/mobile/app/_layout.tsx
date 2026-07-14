@@ -10,7 +10,9 @@ import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { ServerOutdatedBanner } from "@/components/ServerOutdatedBanner";
 import { useServerReachable } from "@/hooks/useServerReachable";
+import { useServerCompat } from "@/hooks/useServerCompat";
 import { clearCredentials } from "@/auth/credentialManager";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
@@ -69,6 +71,15 @@ function OfflineOverlay() {
       onChangeServer={handleChangeServer}
     />
   );
+}
+
+/** Bandeau « serveur à mettre à jour » — admins uniquement, masquable en
+ *  mémoire. Nécessite AppProviders (React Query, ServerUrlContext). */
+function ServerCompatOverlay() {
+  const { incompatible, serverVersion, isAdmin } = useServerCompat();
+  const [dismissed, setDismissed] = useState(false);
+  if (!isAdmin || dismissed || !incompatible) return null;
+  return <ServerOutdatedBanner serverVersion={serverVersion} onDismiss={() => setDismissed(true)} />;
 }
 
 export default function RootLayout() {
@@ -226,6 +237,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
       </Stack>
       <OfflineOverlay />
+      <ServerCompatOverlay />
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
           <ActivityIndicator size="large" color={theme.colors.brand.violet} />
