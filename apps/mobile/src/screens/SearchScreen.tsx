@@ -5,11 +5,10 @@ import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import { MobileMediaCard } from "../components/MobileMediaCard";
-import { FadeIn, SubtleBackground } from "../components/ui";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SURFACE, useGrid } from "../theme";
+import { FadeIn, SubtleBackground, GlassSurface } from "../components/ui";
+import { spacing, typography, FONT_FAMILY, RADIUS, useGrid, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
 
 /**
  * Search — modal full-screen avec input top auto-focus, suggestions de
@@ -19,6 +18,8 @@ const GRID_GAP = 14;
 
 export function SearchScreen() {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const st = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -55,17 +56,16 @@ export function SearchScreen() {
     <SubtleBackground ambient>
       {/* Header glass — input search + close button */}
       <View style={[st.headerWrap, { paddingTop: Math.max(insets.top, 24) + spacing.md }]}>
-        <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.45)" }]} />
+        <GlassSurface intensity={28} radius={0} bordered={false} style={StyleSheet.absoluteFillObject} />
         <View style={st.headerRow}>
           <View style={st.searchWrap}>
-            <Feather name="search" size={16} color="rgba(255,255,255,0.55)" />
+            <Feather name="search" size={16} color={colors.text.tertiary} />
             <TextInput
               ref={inputRef}
               value={query}
               onChangeText={setQuery}
               placeholder={t("searchMediaLong")}
-              placeholderTextColor="rgba(255,255,255,0.35)"
+              placeholderTextColor={colors.text.quaternary}
               autoCapitalize="none"
               autoCorrect={false}
               accessibilityLabel={t("searchMediaLong")}
@@ -80,7 +80,7 @@ export function SearchScreen() {
                 accessibilityLabel={t("clearSearch")}
                 style={st.clearBtn}
               >
-                <Feather name="x" size={14} color="rgba(255,255,255,0.65)" />
+                <Feather name="x" size={14} color={colors.text.tertiary} />
               </Pressable>
             )}
           </View>
@@ -99,14 +99,14 @@ export function SearchScreen() {
       {/* Body */}
       {isLoading && debounced.length >= 2 && (
         <View style={st.center}>
-          <ActivityIndicator size="large" color={BRAND.violet} />
+          <ActivityIndicator size="large" color={colors.brand.violet} />
         </View>
       )}
 
       {!isLoading && debounced.length >= 2 && (!results || results.length === 0) && (
         <FadeIn style={{ flex: 1 }}>
           <View style={st.center}>
-            <Feather name="search" size={48} color={BRAND.light} style={{ opacity: 0.5, marginBottom: 16 }} />
+            <Feather name="search" size={48} color={colors.brand.light} style={{ opacity: 0.5, marginBottom: 16 }} />
             <Text style={st.emptyTitle}>{t("noResults")}</Text>
             <Text style={st.emptyHint}>{t("noResultsHint", { defaultValue: "Essayez d'autres mots-clés" })}</Text>
           </View>
@@ -142,7 +142,7 @@ export function SearchScreen() {
         <FadeIn style={{ flex: 1 }}>
           <View style={st.center}>
             <View style={st.iconRing}>
-              <Feather name="search" size={32} color={BRAND.violet} />
+              <Feather name="search" size={32} color={colors.brand.violet} />
             </View>
             <Text style={st.startTitle}>{t("searchTitle", { defaultValue: "Rechercher" })}</Text>
             <Text style={st.startHint}>{t("typeMinChars")}</Text>
@@ -153,33 +153,33 @@ export function SearchScreen() {
   );
 }
 
-const st = StyleSheet.create({
-  headerWrap: { paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER.subtle },
+const makeStyles = (t: AppTheme) => StyleSheet.create({
+  headerWrap: { paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.colors.border.subtle },
   headerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm, paddingHorizontal: spacing.screenPadding, width: "100%" as const, maxWidth: 860, alignSelf: "center" as const },
   searchWrap: {
     flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm,
-    backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: BORDER.subtle,
+    backgroundColor: t.colors.fill.soft, borderWidth: 1, borderColor: t.colors.border.subtle,
     borderRadius: RADIUS.lg, paddingHorizontal: spacing.md, height: 44,
   },
   input: {
     flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular,
-    color: colors.textPrimary, paddingVertical: 0, letterSpacing: -0.1,
+    color: t.colors.text.primary, paddingVertical: 0, letterSpacing: -0.1,
   },
   clearBtn: {
     width: 22, height: 22, borderRadius: 11,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: t.colors.fill.medium,
     alignItems: "center" as const, justifyContent: "center" as const,
   },
   cancelBtn: { paddingHorizontal: 4, paddingVertical: 8 },
-  cancelTxt: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: BRAND.light, letterSpacing: 0.1 },
+  cancelTxt: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light, letterSpacing: 0.1 },
   center: { flex: 1, justifyContent: "center" as const, alignItems: "center" as const, padding: spacing.xl },
-  emptyTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 17, color: colors.textPrimary, marginBottom: 6 },
-  emptyHint: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: colors.textMuted, textAlign: "center" as const, maxWidth: 280 },
+  emptyTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 17, color: t.colors.text.primary, marginBottom: 6 },
+  emptyHint: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary, textAlign: "center" as const, maxWidth: 280 },
   iconRing: {
     width: 84, height: 84, borderRadius: 42,
-    backgroundColor: SURFACE.s2, borderWidth: 1, borderColor: "rgba(139,92,246,0.25)",
+    backgroundColor: t.colors.surface.s2, borderWidth: 1, borderColor: withAlpha(t.colors.brand.violet, 0.25, t.colors.brand.glow),
     alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 18,
   },
-  startTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.4, marginBottom: 6 },
-  startHint: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, textAlign: "center" as const, maxWidth: 280, lineHeight: 21 },
+  startTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, color: t.colors.text.primary, letterSpacing: -0.4, marginBottom: 6 },
+  startHint: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textAlign: "center" as const, maxWidth: 280, lineHeight: 21 },
 });

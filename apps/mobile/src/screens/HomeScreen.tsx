@@ -16,12 +16,14 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { MediaRow } from "@/components/MediaRow";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
-import { colors, spacing, typography, BRAND, FONT_FAMILY, RADIUS, SHADOW_RN, SURFACE, useResponsive } from "@/theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** Home — ambient orbe + HeroBanner cinematic + rangées cascade + skeleton stylé. */
 export function HomeScreen() {
   const { t } = useTranslation("common");
   const { t: te } = useTranslation("errors");
+  const theme = useTheme();
+  const st = useThemedStyles(makeErrStyles);
   const router = useRouter();
   const userId = useUserId();
   const { storage } = useTentacleConfig();
@@ -79,7 +81,7 @@ export function HomeScreen() {
   if (!userId) {
     return (
       <SubtleBackground ambient style={{ justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Feather name="alert-circle" size={36} color={BRAND.light} style={{ marginBottom: spacing.md }} />
+        <Feather name="alert-circle" size={36} color={theme.colors.brand.light} style={{ marginBottom: spacing.md }} />
         <Text style={st.errTitle}>{te("sessionNotInitialized")}</Text>
         <Text style={st.errMsg}>{te("sessionNotInitializedMessage")}</Text>
       </SubtleBackground>
@@ -96,8 +98,8 @@ export function HomeScreen() {
           <RefreshControl
             refreshing={featured.isFetching && !featured.isLoading}
             onRefresh={handleRefresh}
-            tintColor={BRAND.violet}
-            progressBackgroundColor={SURFACE.s1}
+            tintColor={theme.colors.brand.violet}
+            progressBackgroundColor={theme.colors.surface.s1}
           />
         }
       >
@@ -172,6 +174,8 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
   onItemLongPress: (jellyfinId: string) => void;
 }) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
+  const mlst = useThemedStyles(makeMyListStyles);
   const client = useJellyfinClient();
   const { isTablet } = useResponsive();
   const cardW = isTablet ? 168 : 130;
@@ -209,12 +213,12 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
           <Image source={{ uri: poster }} style={[mlst.poster, { width: cardW }]} contentFit="cover" transition={250} />
           {item.played && (
             <View style={mlst.watchedBadge}>
-              <Feather name="check" size={11} color="#000" />
+              <Feather name="check" size={11} color={theme.colors.cta.primaryFg} />
             </View>
           )}
           {hasProgress && (
             <View style={mlst.progWrap}>
-              <ProgressBar progress={(item.progress ?? 0) / 100} height={3} tint={BRAND.violet} />
+              <ProgressBar progress={(item.progress ?? 0) / 100} height={3} tint={theme.colors.brand.violet} />
             </View>
           )}
         </View>
@@ -230,7 +234,7 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
         <Text style={mlst.title}>{t("toWatch")}</Text>
         <Pressable onPress={onSeeAll} hitSlop={10} style={mlst.seeAllBtn} accessibilityRole="button" accessibilityLabel={t("seeAll")}>
           <Text style={mlst.seeAll}>{t("seeAll")}</Text>
-          <Feather name="chevron-right" size={14} color={BRAND.light} />
+          <Feather name="chevron-right" size={14} color={theme.colors.brand.light} />
         </Pressable>
       </View>
       <FlatList
@@ -246,24 +250,24 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
   );
 }
 
-const st = StyleSheet.create({
-  errTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: colors.textPrimary, marginBottom: 8, textAlign: "center" as const },
-  errMsg: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: colors.textMuted, textAlign: "center" as const, maxWidth: 320 },
+const makeErrStyles = (t: AppTheme) => StyleSheet.create({
+  errTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, marginBottom: 8, textAlign: "center" as const },
+  errMsg: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary, textAlign: "center" as const, maxWidth: 320 },
 });
 
-const mlst = StyleSheet.create({
+const makeMyListStyles = (t: AppTheme) => StyleSheet.create({
   root: { marginTop: spacing.xxl },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, marginBottom: 14 },
-  title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 18, color: colors.textPrimary, letterSpacing: -0.3 },
+  title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 18, color: t.colors.text.primary, letterSpacing: -0.3 },
   seeAllBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
-  seeAll: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: BRAND.light },
+  seeAll: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
   list: { paddingHorizontal: spacing.screenPadding, gap: 14 },
   card: { width: 130 },
   posterWrap: { borderRadius: RADIUS.lg, overflow: "hidden", ...SHADOW_RN.elev2 },
-  poster: { width: 130, aspectRatio: 2 / 3, backgroundColor: SURFACE.s2 },
-  cardName: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: colors.textPrimary, marginTop: 8, letterSpacing: -0.1 },
-  cardYear: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, marginTop: 2 },
-  watchedBadge: { position: "absolute" as const, top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF", alignItems: "center" as const, justifyContent: "center" as const, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 }, // R11 watched unifié (cf PosterCard.tsx:90)
+  poster: { width: 130, aspectRatio: 2 / 3, backgroundColor: t.colors.surface.s2 },
+  cardName: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, marginTop: 8, letterSpacing: -0.1 },
+  cardYear: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 2 },
+  watchedBadge: { position: "absolute" as const, top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: t.colors.cta.primaryBg, alignItems: "center" as const, justifyContent: "center" as const, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 }, // R11 watched unifié (cf PosterCard.tsx:90)
   progWrap: { position: "absolute" as const, bottom: 0, left: 0, right: 0, paddingHorizontal: 6, paddingBottom: 6 },
 });
 

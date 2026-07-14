@@ -3,7 +3,7 @@ import { ScrollView, Pressable, Text, View, StyleSheet, ActivityIndicator } from
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useStudios } from "@tentacle-tv/api-client";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props {
   libraryId: string;
@@ -13,6 +13,8 @@ interface Props {
 
 export const StudioFilter = memo(function StudioFilter({ libraryId, selectedStudios, onStudiosChange }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { data: studios, isLoading } = useStudios(libraryId);
 
   const toggleStudio = useCallback(
@@ -29,7 +31,7 @@ export const StudioFilter = memo(function StudioFilter({ libraryId, selectedStud
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={colors.accent} />
+        <ActivityIndicator size="small" color={colors.brand.violet} />
       </View>
     );
   }
@@ -66,7 +68,7 @@ export const StudioFilter = memo(function StudioFilter({ libraryId, selectedStud
               style={[styles.chip, isActive && styles.chipActive]}
             >
               {isActive && (
-                <Feather name="check" size={12} color={colors.textPrimary} style={{ marginRight: 4 }} />
+                <Feather name="check" size={12} color={colors.text.primary} style={{ marginRight: 4 }} />
               )}
               <Text style={[styles.chipText, isActive && styles.chipTextActive]} numberOfLines={1}>
                 {studio.Name}
@@ -79,12 +81,12 @@ export const StudioFilter = memo(function StudioFilter({ libraryId, selectedStud
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: { paddingHorizontal: spacing.screenPadding, gap: spacing.xs, paddingVertical: spacing.xs },
   loadingContainer: { paddingVertical: spacing.md, alignItems: "center" },
   label: {
     ...typography.badge,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     textTransform: "uppercase",
     letterSpacing: 1,
     paddingHorizontal: spacing.screenPadding,
@@ -95,17 +97,17 @@ const styles = StyleSheet.create({
     height: 30,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: t.colors.surface.s2,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: t.colors.border.subtle,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     flexDirection: "row" as const,
   },
   chipActive: {
-    backgroundColor: "rgba(139,92,246,0.1)",
-    borderColor: "rgba(139,92,246,0.5)",
+    backgroundColor: t.colors.brand.soft,
+    borderColor: withAlpha(t.colors.brand.violet, 0.5, t.colors.brand.glow),
   },
-  chipText: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
-  chipTextActive: { color: colors.accent, fontWeight: "600" },
+  chipText: { ...typography.caption, color: t.colors.text.secondary, lineHeight: 16 },
+  chipTextActive: { color: t.colors.brand.violet, fontWeight: "600" },
 });

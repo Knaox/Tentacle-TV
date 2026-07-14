@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { colors, spacing, typography, BRAND, FONT_FAMILY } from "@/theme";
+import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
   title: string;
@@ -18,6 +18,8 @@ interface Props {
  */
 export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeAll }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const st = useThemedStyles(makeStyles);
   const renderFlatItem = useCallback(
     ({ item }: { item: MediaItem }) => <View>{renderItem(item)}</View>,
     [renderItem],
@@ -30,7 +32,7 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
         {onSeeAll != null && (
           <Pressable onPress={onSeeAll} hitSlop={10} style={st.seeAllBtn}>
             <Text style={st.seeAll}>{t("seeAll")}</Text>
-            <Feather name="chevron-right" size={14} color={BRAND.light} />
+            <Feather name="chevron-right" size={14} color={colors.brand.light} />
           </Pressable>
         )}
       </View>
@@ -50,7 +52,7 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
   );
 });
 
-const st = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   root: { marginTop: spacing.xxl },
   header: {
     flexDirection: "row",
@@ -63,7 +65,7 @@ const st = StyleSheet.create({
     ...typography.subtitle,
     fontFamily: FONT_FAMILY.bold,
     fontSize: 18,
-    color: colors.textPrimary,
+    color: t.colors.text.primary,
     letterSpacing: -0.3,
     flex: 1,
   },
@@ -76,7 +78,7 @@ const st = StyleSheet.create({
   seeAll: {
     ...typography.caption,
     fontFamily: FONT_FAMILY.semibold,
-    color: BRAND.light,
+    color: t.colors.brand.light,
     letterSpacing: 0.1,
   },
   list: {

@@ -10,7 +10,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { GradientOverlay } from "@/components/ui";
-import { spacing, BRAND, SURFACE, TABLET_MIN_WIDTH, useRailWidth } from "@/theme";
+import { spacing, TABLET_MIN_WIDTH, useRailWidth, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { HeroContent } from "./HeroBannerContent";
 
 // Synced with web/HeroBackdrop : the new slide arrives exactly when the
@@ -28,6 +28,8 @@ interface HeroBannerProps {
 
 /** Hero Billboard cinematic — swipe pageEnabled + Ken Burns backdrop synced with auto-rotate (see ROTATE_MS). */
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const { width: SCREEN_W, height: screenH } = useWindowDimensions();
   const isTablet = Math.min(SCREEN_W, screenH) >= TABLET_MIN_WIDTH;
   // Largeur RÉELLE du viewport hero : fenêtre − rail latéral (iPad paysage).
@@ -76,10 +78,13 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   if (!items.length) return <View style={{ height: BANNER_H }} />;
 
   return (
-    <View style={{ width: SLIDE_W, height: BANNER_H, overflow: "hidden", backgroundColor: SURFACE.s0 }}>
+    <View style={{ width: SLIDE_W, height: BANNER_H, overflow: "hidden", backgroundColor: theme.colors.surface.s0 }}>
       <BackdropStack items={items} activeIndex={index} />
-      <GradientOverlay direction="top" height={120 + insets.top} color="#000000" intensity="soft" />
-      <GradientOverlay direction="bottom" height={BANNER_H * 0.62} color="#000000" intensity="strong" />
+      {/* Fades suivant le thème (défaut surface.s0) : noir pur en sombre —
+          identiques à l'ancien "#000000" —, clairs en light pour fondre le
+          hero dans la page et garder le statut/haut lisibles. */}
+      <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
+      <GradientOverlay direction="bottom" height={BANNER_H * 0.62} intensity="strong" />
       <FlatList
         ref={listRef}
         data={items}
@@ -154,11 +159,11 @@ function CrossfadeImage({ url, active }: { url: string; active: boolean }) {
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   slide: { justifyContent: "flex-end" as const, paddingHorizontal: spacing.screenPadding, paddingBottom: 56 },
   contentInner: { width: "100%" as const, maxWidth: 640 },
   dots: { position: "absolute" as const, left: 0, right: 0, flexDirection: "row" as const, justifyContent: "center" as const, alignItems: "center" as const, gap: 5 },
   dot: { height: 3, borderRadius: 2 },
-  dotOn: { width: 22, backgroundColor: BRAND.violet, shadowColor: BRAND.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
-  dotOff: { width: 6, backgroundColor: "rgba(255,255,255,0.32)" },
+  dotOn: { width: 22, backgroundColor: t.colors.brand.violet, shadowColor: t.colors.brand.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
+  dotOff: { width: 6, backgroundColor: t.colors.text.quaternary },
 });

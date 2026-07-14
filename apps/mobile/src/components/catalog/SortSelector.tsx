@@ -3,7 +3,7 @@ import { View, Pressable, Text, FlatList, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { BottomSheet } from "@/components/ui";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 export const SORT_OPTIONS = [
   { labelKey: "sortDateDesc", sortBy: "DateCreated", sortOrder: "Descending" },
@@ -25,6 +25,8 @@ interface Props {
 
 export const SortSelector = memo(function SortSelector({ sortIndex, onSortChange, visible, onClose }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const handleSelect = useCallback(
     (index: number) => {
@@ -37,7 +39,7 @@ export const SortSelector = memo(function SortSelector({ sortIndex, onSortChange
   return (
     <BottomSheet visible={visible} onClose={onClose} snapPoints={[0.45, 0.7]}>
       <View style={styles.header}>
-        <Feather name="sliders" size={18} color={colors.accent} />
+        <Feather name="sliders" size={18} color={colors.brand.violet} />
         <Text style={styles.headerText}>{t("sortRecent")}</Text>
       </View>
       <FlatList
@@ -50,7 +52,7 @@ export const SortSelector = memo(function SortSelector({ sortIndex, onSortChange
               <Text style={[styles.optionText, isActive && styles.optionTextActive]}>
                 {t(item.labelKey)}
               </Text>
-              {isActive && <Feather name="check" size={18} color={colors.accent} />}
+              {isActive && <Feather name="check" size={18} color={colors.brand.violet} />}
             </Pressable>
           );
         }}
@@ -59,7 +61,7 @@ export const SortSelector = memo(function SortSelector({ sortIndex, onSortChange
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.md,
   },
-  headerText: { ...typography.subtitle, color: colors.textPrimary },
+  headerText: { ...typography.subtitle, color: t.colors.text.primary },
   option: {
     flexDirection: "row",
     alignItems: "center",
@@ -75,6 +77,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenPadding,
     paddingVertical: spacing.md,
   },
-  optionText: { ...typography.body, color: colors.textSecondary },
-  optionTextActive: { color: colors.accent, fontWeight: "600" },
+  optionText: { ...typography.body, color: t.colors.text.secondary },
+  optionTextActive: { color: t.colors.brand.violet, fontWeight: "600" },
 });

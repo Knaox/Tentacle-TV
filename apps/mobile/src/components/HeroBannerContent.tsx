@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors, typography, BRAND, CTA, FONT_FAMILY, RADIUS, STATUS, useResponsive } from "@/theme";
+import { typography, FONT_FAMILY, RADIUS, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 function formatRuntime(ticks: number): string {
   const mins = Math.round(ticks / 600_000_000);
@@ -27,6 +27,8 @@ interface HeroContentProps {
  */
 export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNode {
   const { t } = useTranslation("common");
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const { isTablet } = useResponsive();
   const isEpisode = item.Type === "Episode";
@@ -49,13 +51,13 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
         <View style={st.tagRow}>
           {hasProgress && (
             <View style={st.continueTag}>
-              <Feather name="play" size={9} color="#fff" fill="#fff" />
+              <Feather name="play" size={9} color={theme.colors.cta.primaryBg} fill={theme.colors.cta.primaryBg} />
               <Text style={st.continueTagTxt}>{t("continueLabel")}</Text>
             </View>
           )}
           {isWatched && !hasProgress && (
             <View style={st.continueTag}>
-              <Feather name="check" size={10} color="#000" />
+              <Feather name="check" size={10} color={theme.colors.cta.primaryFg} />
               <Text style={st.continueTagTxt}>{t("watched")}</Text>
             </View>
           )}
@@ -76,7 +78,7 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
         )}
         {item.CommunityRating != null && (
           <View style={st.ratingBox}>
-            <Feather name="star" size={11} color={STATUS.rating} />
+            <Feather name="star" size={11} color={theme.colors.status.rating} />
             <Text style={st.rating}>{item.CommunityRating.toFixed(1)}</Text>
           </View>
         )}
@@ -102,7 +104,7 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
           accessibilityRole="button"
           accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}
         >
-          <Feather name="play" size={20} color={CTA.primaryFg} fill={CTA.primaryFg} />
+          <Feather name="play" size={20} color={theme.colors.cta.primaryFg} fill={theme.colors.cta.primaryFg} />
           <Text style={st.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
         </Pressable>
         <Pressable
@@ -111,7 +113,7 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
           accessibilityRole="button"
           accessibilityLabel={`${t("moreInfo")} ${item.Name}`}
         >
-          <Feather name="info" size={16} color="#fff" />
+          <Feather name="info" size={16} color={theme.colors.text.primary} />
           <Text style={st.infoTxt}>{t("moreInfo")}</Text>
         </Pressable>
       </View>
@@ -119,36 +121,37 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   tagRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 12, flexWrap: "wrap" as const },
-  continueTag: { flexDirection: "row" as const, alignItems: "center" as const, gap: 5, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 3, paddingHorizontal: 7, paddingVertical: 3 },
-  continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: "#000", letterSpacing: 1.6, textTransform: "uppercase" as const },
-  epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)", letterSpacing: 0.2 },
+  // Pastille contrastée sur image (blanc/noir en sombre, inversion cohérente en clair).
+  continueTag: { flexDirection: "row" as const, alignItems: "center" as const, gap: 5, backgroundColor: t.colors.cta.primaryBg, borderRadius: 3, paddingHorizontal: 7, paddingVertical: 3 },
+  continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: t.colors.cta.primaryFg, letterSpacing: 1.6, textTransform: "uppercase" as const },
+  epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, letterSpacing: 0.2 },
   logo: { width: 280, maxWidth: "85%", height: 92, marginBottom: 14 },
-  title: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, marginBottom: 14, letterSpacing: -0.6, lineHeight: 36, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
+  title: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, marginBottom: 14, letterSpacing: -0.6, lineHeight: 36, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
   meta: { flexDirection: "row" as const, alignItems: "center" as const, gap: 9, marginBottom: 10, flexWrap: "wrap" as const },
-  metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: "rgba(255,255,255,0.88)" },
-  metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: "rgba(255,255,255,0.6)" },
-  rBadge: { borderWidth: 1, borderColor: "rgba(255,255,255,0.45)", borderRadius: 3, paddingHorizontal: 5, paddingVertical: 0.5 },
-  rBadgeTxt: { fontSize: 9, fontFamily: FONT_FAMILY.bold, color: "rgba(255,255,255,0.85)", letterSpacing: 0.6 },
+  metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.secondary },
+  metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
+  rBadge: { borderWidth: 1, borderColor: withAlpha(t.colors.text.primary, 0.45, t.colors.border.strong), borderRadius: 3, paddingHorizontal: 5, paddingVertical: 0.5 },
+  rBadgeTxt: { fontSize: 9, fontFamily: FONT_FAMILY.bold, color: t.colors.text.secondary, letterSpacing: 0.6 },
   ratingBox: { flexDirection: "row" as const, alignItems: "center" as const, gap: 3 },
-  rating: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: STATUS.rating },
-  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: "rgba(255,255,255,0.85)", lineHeight: 21, marginBottom: 18, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  rating: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.status.rating },
+  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary, lineHeight: 21, marginBottom: 18, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   progRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 18, maxWidth: 280 },
-  progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.22)", overflow: "hidden" as const },
-  progFill: { height: "100%" as const, borderRadius: 2, backgroundColor: BRAND.violet },
-  progLbl: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: "rgba(255,255,255,0.65)" },
+  progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: t.colors.fill.strong, overflow: "hidden" as const },
+  progFill: { height: "100%" as const, borderRadius: 2, backgroundColor: t.colors.brand.violet },
+  progLbl: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: t.colors.text.tertiary },
   btns: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10 },
   playBtn: {
     flexDirection: "row" as const, alignItems: "center" as const, gap: 9,
-    backgroundColor: CTA.primaryBg, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 26,
-    shadowColor: BRAND.violet, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.55, shadowRadius: 22, elevation: 12,
+    backgroundColor: t.colors.cta.primaryBg, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 26,
+    shadowColor: t.colors.brand.violet, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.55, shadowRadius: 22, elevation: 12,
   },
-  playTxt: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 },
+  playTxt: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.primaryFg, letterSpacing: 0.1 },
   infoBtn: {
     flexDirection: "row" as const, alignItems: "center" as const, gap: 6,
-    backgroundColor: BRAND.ghost, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 18,
-    borderWidth: 1, borderColor: "rgba(139,92,246,0.4)",
+    backgroundColor: t.colors.brand.ghost, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 18,
+    borderWidth: 1, borderColor: withAlpha(t.colors.brand.violet, 0.4, t.colors.brand.glow),
   },
-  infoTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold, color: "#fff" },
+  infoTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
 });

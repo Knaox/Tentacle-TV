@@ -7,7 +7,7 @@ import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar, FadeIn } from "@/components/ui";
-import { colors, spacing, typography, useGrid } from "@/theme";
+import { spacing, typography, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
 
@@ -19,6 +19,8 @@ interface Props {
 
 export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, overrideItems }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
 
@@ -44,21 +46,21 @@ export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, ove
 
   const footer = useMemo(() => {
     if (catalog.isFetchingNextPage) {
-      return <ActivityIndicator size="small" color={colors.accent} style={styles.loader} />;
+      return <ActivityIndicator size="small" color={colors.brand.violet} style={styles.loader} />;
     }
     return null;
-  }, [catalog.isFetchingNextPage]);
+  }, [catalog.isFetchingNextPage, colors, styles]);
 
   const emptyComponent = useMemo(() => {
     if (catalog.isLoading) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Feather name="inbox" size={48} color={colors.textMuted} />
+        <Feather name="inbox" size={48} color={colors.text.tertiary} />
         <Text style={styles.emptyTitle}>{t("noResults")}</Text>
         <Text style={styles.emptyHint}>{t("noResultsHint")}</Text>
       </View>
     );
-  }, [catalog.isLoading, t]);
+  }, [catalog.isLoading, t, colors, styles]);
 
   return (
     <FadeIn delay={100} style={{ flex: 1 }}>
@@ -92,6 +94,8 @@ interface CardProps {
 }
 
 const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onPress }: CardProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isEpisode = item.Type === "Episode";
   const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const poster = client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 });
@@ -100,7 +104,7 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
 
   return (
     <PressableCard onPress={onPress} style={{ width, marginBottom: spacing.md }}>
-      <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surfaceElevated }}>
+      <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surface.s2 }}>
         <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" />
         {progress != null && progress > 0 && !isWatched && (
           <View style={styles.progressContainer}>
@@ -109,7 +113,7 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
         )}
         {isWatched && (
           <View style={styles.watchedBadge}>
-            <Feather name="check" size={12} color="#000" />
+            <Feather name="check" size={12} color={colors.cta.primaryFg} />
           </View>
         )}
       </View>
@@ -123,19 +127,19 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   gridContent: { paddingBottom: spacing.xxl },
   loader: { paddingVertical: spacing.xl },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxxl * 2 },
-  emptyTitle: { ...typography.subtitle, color: colors.textMuted, marginTop: spacing.md },
-  emptyHint: { ...typography.caption, color: colors.textDim, marginTop: spacing.xs },
+  emptyTitle: { ...typography.subtitle, color: t.colors.text.tertiary, marginTop: spacing.md },
+  emptyHint: { ...typography.caption, color: t.colors.text.quaternary, marginTop: spacing.xs },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  // R11 — Watched check unifié (web/mobile) : pill blanc + check noir + shadow.
+  // R11 — Watched check unifié (web/mobile) : pastille contrastée + check + shadow.
   // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
   watchedBadge: {
     position: "absolute", top: 7, right: 7,
     width: 22, height: 22, borderRadius: 11,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.colors.cta.primaryBg,
     alignItems: "center", justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -143,6 +147,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  itemTitle: { ...typography.small, color: colors.textPrimary, fontWeight: "600", marginTop: spacing.xs + 2 },
-  itemYear: { ...typography.badge, color: colors.textMuted, marginTop: 2 },
+  itemTitle: { ...typography.small, color: t.colors.text.primary, fontWeight: "600", marginTop: spacing.xs + 2 },
+  itemYear: { ...typography.badge, color: t.colors.text.tertiary, marginTop: 2 },
 });

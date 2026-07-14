@@ -2,7 +2,7 @@ import { memo } from "react";
 import { ScrollView, Pressable, Text, View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 /** TMDB Watch Provider IDs — identique au plugin Seer */
 export const PLATFORMS = [
@@ -26,6 +26,8 @@ interface Props {
 
 export const PlatformFilter = memo(function PlatformFilter({ selectedPlatformIds, onTogglePlatform }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <View>
@@ -54,7 +56,7 @@ export const PlatformFilter = memo(function PlatformFilter({ selectedPlatformIds
               style={[styles.chip, isActive && styles.chipActive]}
             >
               {isActive && (
-                <Feather name="check" size={12} color={colors.accent} style={{ marginRight: 4 }} />
+                <Feather name="check" size={12} color={colors.brand.violet} style={{ marginRight: 4 }} />
               )}
               <Text style={[styles.chipText, isActive && styles.chipTextActive]} numberOfLines={1}>
                 {p.name}
@@ -67,11 +69,11 @@ export const PlatformFilter = memo(function PlatformFilter({ selectedPlatformIds
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: { paddingHorizontal: spacing.screenPadding, gap: spacing.xs, paddingVertical: spacing.xs },
   label: {
     ...typography.badge,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     textTransform: "uppercase",
     letterSpacing: 1,
     paddingHorizontal: spacing.screenPadding,
@@ -82,17 +84,17 @@ const styles = StyleSheet.create({
     height: 30,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: t.colors.surface.s2,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: t.colors.border.subtle,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     flexDirection: "row" as const,
   },
   chipActive: {
-    backgroundColor: "rgba(139,92,246,0.1)",
-    borderColor: "rgba(139,92,246,0.5)",
+    backgroundColor: t.colors.brand.soft,
+    borderColor: withAlpha(t.colors.brand.violet, 0.5, t.colors.brand.glow),
   },
-  chipText: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
-  chipTextActive: { color: colors.accent, fontWeight: "600" },
+  chipText: { ...typography.caption, color: t.colors.text.secondary, lineHeight: 16 },
+  chipTextActive: { color: t.colors.brand.violet, fontWeight: "600" },
 });
