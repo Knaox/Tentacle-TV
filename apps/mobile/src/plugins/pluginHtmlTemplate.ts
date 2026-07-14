@@ -1,3 +1,52 @@
+import type { AppTheme, ResolvedScheme } from "../theme/palette.types";
+import { withAlpha } from "../theme/colorUtils";
+
+/**
+ * Palette injectée dans la WebView plugin (CSS vars + config Tailwind).
+ * NOTE : ce fichier est le SEUL autorisé à contenir des littéraux couleur
+ * hors src/theme (sous-palette WebView historique, exclue du re-scan).
+ */
+export interface PluginThemeVars {
+  scheme: ResolvedScheme;
+  bg: string;
+  surface: string;
+  border: string;
+  accent: string;
+  accentDark: string;
+  accentLight: string;
+  accentMuted: string;
+  text: string;
+  textSecondary: string;
+  error: string;
+  accentGlowSoft: string;
+  accentGlowStrong: string;
+}
+
+/**
+ * Dérive la palette WebView du thème actif. En sombre, les valeurs
+ * HISTORIQUES de la WebView (teintes bleutées #080812/#12121a) sont
+ * conservées à l'identique ; en clair, on dérive des tokens app. Les accents
+ * suivent la marque (et le scheme) dans les deux cas.
+ */
+export function buildPluginThemeVars(t: AppTheme): PluginThemeVars {
+  const { colors } = t;
+  return {
+    scheme: t.scheme,
+    bg: t.isDark ? "#080812" : colors.surface.s0,
+    surface: t.isDark ? "#12121a" : colors.surface.s1,
+    border: t.isDark ? "#1e1e2e" : colors.border.subtle,
+    accent: colors.brand.violet,
+    accentDark: colors.brand.dark,
+    accentLight: colors.brand.light,
+    accentMuted: t.isDark ? "#C4B5FD" : colors.brand.light,
+    text: colors.text.primary,
+    textSecondary: t.isDark ? "#9ca3af" : colors.text.tertiary,
+    error: colors.status.error,
+    accentGlowSoft: withAlpha(colors.brand.violet, 0.3, colors.brand.glow),
+    accentGlowStrong: withAlpha(colors.brand.violet, 0.5, colors.brand.glow),
+  };
+}
+
 interface BuildPluginHtmlParams {
   backendUrl: string;
   token: string;
@@ -6,6 +55,7 @@ interface BuildPluginHtmlParams {
   bundleCode: string;
   sharedDepsCode: string;
   pluginPath: string;
+  theme: PluginThemeVars;
 }
 
 /**
@@ -21,6 +71,7 @@ export function buildPluginHtml({
   bundleCode,
   sharedDepsCode,
   pluginPath,
+  theme,
 }: BuildPluginHtmlParams): string {
   // Échapper le code du bundle pour insertion dans un template literal JS
   const escapedBundle = bundleCode
@@ -43,13 +94,13 @@ export function buildPluginHtml({
         extend: {
           colors: {
             tentacle: {
-              bg: "#080812",
-              surface: "#12121a",
-              border: "#1e1e2e",
-              accent: "#8b5cf6",
-              "accent-dark": "#7C3AED",
-              "accent-light": "#a78bfa",
-              "accent-muted": "#C4B5FD",
+              bg: ${JSON.stringify(theme.bg)},
+              surface: ${JSON.stringify(theme.surface)},
+              border: ${JSON.stringify(theme.border)},
+              accent: ${JSON.stringify(theme.accent)},
+              "accent-dark": ${JSON.stringify(theme.accentDark)},
+              "accent-light": ${JSON.stringify(theme.accentLight)},
+              "accent-muted": ${JSON.stringify(theme.accentMuted)},
             },
           },
           animation: {
@@ -87,8 +138,8 @@ export function buildPluginHtml({
               "50%": { opacity: "0.8" },
             },
             breathe: {
-              "0%, 100%": { boxShadow: "0 0 15px rgba(139,92,246,0.3)" },
-              "50%": { boxShadow: "0 0 25px rgba(139,92,246,0.5)" },
+              "0%, 100%": { boxShadow: "0 0 15px ${theme.accentGlowSoft}" },
+              "50%": { boxShadow: "0 0 25px ${theme.accentGlowStrong}" },
             },
           },
         },
@@ -97,11 +148,12 @@ export function buildPluginHtml({
   <\/script>
   <style>
     :root {
-      --bg: #080812;
-      --surface: #12121a;
-      --accent: #8b5cf6;
-      --text: #fff;
-      --text-secondary: #9ca3af;
+      --bg: ${theme.bg};
+      --surface: ${theme.surface};
+      --accent: ${theme.accent};
+      --text: ${theme.text};
+      --text-secondary: ${theme.textSecondary};
+      color-scheme: ${theme.scheme};
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -124,7 +176,7 @@ export function buildPluginHtml({
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      color: #ef4444;
+      color: ${theme.error};
       font-size: 14px;
       padding: 24px;
       text-align: center;

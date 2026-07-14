@@ -5,10 +5,10 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins, useMobilePluginNavItems, markPluginFailed, clearPluginFailed } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
-import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
+import { buildPluginHtml, buildPluginThemeVars } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
-import { colors, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "@/theme";
+import { typography, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
   try {
@@ -24,6 +24,8 @@ interface PluginWebViewProps {
 
 export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const { colors } = theme;
   const { storage } = useTentacleConfig();
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
@@ -52,6 +54,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
     if (navItem?.pluginId) clearPluginFailed(navItem.pluginId);
   }, [navKey]);
 
+  // `theme` en dépendance : au switch clair/sombre la source HTML change et la
+  // WebView remonte re-thémée (événement rare, remontage assumé).
   const htmlContent = useMemo(() => {
     if (!navItem || !bundleCode || !sharedDepsCode) return null;
     return buildPluginHtml({
@@ -62,8 +66,9 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       bundleCode,
       sharedDepsCode,
       pluginPath: navItem.path,
+      theme: buildPluginThemeVars(theme),
     });
-  }, [navItem, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang]);
+  }, [navItem, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
 
   // Timeout 15s : si la WebView ne répond jamais, on retire l'overlay
   useEffect(() => {
@@ -99,8 +104,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
 
   if (webViewError) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: "center", marginBottom: 16 }}>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center", marginBottom: 16 }}>
           {te("pluginLoadFailed") ?? "Plugin crashed"}
         </Text>
         <TouchableOpacity
@@ -108,16 +113,16 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
           activeOpacity={0.88}
           style={{
             paddingHorizontal: 24, paddingVertical: 12, minHeight: 44,
-            backgroundColor: CTA.primaryBg, borderRadius: RADIUS.md,
+            backgroundColor: colors.cta.primaryBg, borderRadius: RADIUS.md,
             alignItems: "center", justifyContent: "center",
-            shadowColor: BRAND.violet,
+            shadowColor: colors.brand.violet,
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.45,
             shadowRadius: 18,
             elevation: 8,
           }}
         >
-          <Text style={{ ...typography.body, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 }}>
+          <Text style={{ ...typography.body, fontFamily: FONT_FAMILY.bold, color: colors.cta.primaryFg, letterSpacing: 0.1 }}>
             {tc("retry") ?? "Réessayer"}
           </Text>
         </TouchableOpacity>
@@ -127,8 +132,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
 
   if (!navItem && !pluginsLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.textMuted, textAlign: "center" }}>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center" }}>
           {tc("noPlugins")}
         </Text>
       </View>
@@ -137,8 +142,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
 
   if (bundleError || depsError) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: "center" }}>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center" }}>
           {te("pluginLoadFailed") ?? "Failed to load plugin"}
         </Text>
       </View>
@@ -148,8 +153,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const WebViewComponent = getWebView();
   if (!WebViewComponent) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: "center" }}>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
+        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center" }}>
           {te("webViewNotAvailable")}
         </Text>
       </View>
@@ -157,13 +162,13 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.s0 }}>
       {htmlContent ? (
         <WebViewComponent
           key={navKey}
           source={{ html: htmlContent, baseUrl: serverUrl }}
           onMessage={handleMessage}
-          style={{ flex: 1, backgroundColor: colors.background }}
+          style={{ flex: 1, backgroundColor: colors.surface.s0 }}
           javaScriptEnabled
           domStorageEnabled
           allowsInlineMediaPlayback
