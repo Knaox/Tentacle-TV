@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Share, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, Share, Platform, type TextStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY, RADIUS } from "../../theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, type AppTheme } from "../../theme";
 import { GlassCard } from "../ui";
 
 interface InviteKey {
@@ -17,6 +17,7 @@ interface InviteKey {
 
 export function AdminSection() {
   const { t } = useTranslation("profile");
+  const theme = useTheme();
   const { storage } = useTentacleConfig();
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const [invites, setInvites] = useState<InviteKey[]>([]);
@@ -57,28 +58,30 @@ export function AdminSection() {
     );
   };
 
+  const inputSt = inputStyle(theme);
+
   return (
     <View>
-      <Text style={{ ...typography.subtitle, color: colors.textPrimary, marginBottom: spacing.md }}>
+      <Text style={{ ...typography.subtitle, color: theme.colors.text.primary, marginBottom: spacing.md }}>
         {t("administration")}
       </Text>
 
       <GlassCard style={{ marginBottom: spacing.lg }}>
-        <Text style={{ ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.md }}>
+        <Text style={{ ...typography.bodyBold, color: theme.colors.text.primary, marginBottom: spacing.md }}>
           {t("generateInvite")}
         </Text>
         <View style={{ flexDirection: "row", gap: spacing.md }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...typography.small, color: colors.textMuted, marginBottom: spacing.xs }}>
+            <Text style={{ ...typography.small, color: theme.colors.text.tertiary, marginBottom: spacing.xs }}>
               {t("maxUses")}
             </Text>
-            <TextInput value={maxUses} onChangeText={setMaxUses} keyboardType="number-pad" style={inputStyle} />
+            <TextInput value={maxUses} onChangeText={setMaxUses} keyboardType="number-pad" style={inputSt} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...typography.small, color: colors.textMuted, marginBottom: spacing.xs }}>
+            <Text style={{ ...typography.small, color: theme.colors.text.tertiary, marginBottom: spacing.xs }}>
               {t("expiresHours")}
             </Text>
-            <TextInput value={expiresHours} onChangeText={setExpiresHours} keyboardType="number-pad" style={inputStyle} />
+            <TextInput value={expiresHours} onChangeText={setExpiresHours} keyboardType="number-pad" style={inputSt} />
           </View>
         </View>
         <Pressable
@@ -86,12 +89,12 @@ export function AdminSection() {
           disabled={creating}
           style={({ pressed }) => [{
             marginTop: spacing.md,
-            backgroundColor: CTA.primaryBg,
+            backgroundColor: theme.colors.cta.primaryBg,
             borderRadius: RADIUS.md,
             paddingVertical: 12,
             alignItems: "center",
             opacity: creating ? 0.6 : (pressed ? 0.88 : 1),
-            shadowColor: BRAND.violet,
+            shadowColor: theme.colors.brand.violet,
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.45,
             shadowRadius: 18,
@@ -100,8 +103,8 @@ export function AdminSection() {
           accessibilityRole="button"
           accessibilityLabel={t("generate")}
         >
-          {creating ? <ActivityIndicator color={CTA.primaryFg} size="small" /> : (
-            <Text style={{ ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 }}>{t("generate")}</Text>
+          {creating ? <ActivityIndicator color={theme.colors.cta.primaryFg} size="small" /> : (
+            <Text style={{ ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: theme.colors.cta.primaryFg, letterSpacing: 0.1 }}>{t("generate")}</Text>
           )}
         </Pressable>
       </GlassCard>
@@ -112,26 +115,26 @@ export function AdminSection() {
         const active = !expired && !full;
         return (
           <GlassCard key={inv.id} style={{ marginBottom: spacing.sm, opacity: active ? 1 : 0.5 }}>
-            <Text style={{ color: colors.accent, ...typography.caption, fontFamily: "monospace" }}>{inv.key}</Text>
-            <Text style={{ color: colors.textMuted, ...typography.small, marginTop: spacing.xs }}>
+            <Text style={{ color: theme.colors.brand.violet, ...typography.caption, fontFamily: "monospace" }}>{inv.key}</Text>
+            <Text style={{ color: theme.colors.text.tertiary, ...typography.small, marginTop: spacing.xs }}>
               {t("usedCount", { current: inv.currentUses, max: inv.maxUses })} — {t("createdOn", { date: new Date(inv.createdAt).toLocaleDateString() })}
               {expired ? ` — ${t("expired")}` : ""}
             </Text>
             {inv.usages.length > 0 && (
               <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                 {inv.usages.map((u) => (
-                  <View key={u.username} style={{ backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                    <Text style={{ color: colors.textSecondary, ...typography.small }}>{u.username}</Text>
+                  <View key={u.username} style={{ backgroundColor: theme.colors.fill.subtle, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ color: theme.colors.text.secondary, ...typography.small }}>{u.username}</Text>
                   </View>
                 ))}
               </View>
             )}
             {active && (
               <Pressable onPress={(e) => shareInvite(inv.key, Number(e.nativeEvent.target))} style={{
-                marginTop: spacing.sm, backgroundColor: "rgba(255,255,255,0.05)",
+                marginTop: spacing.sm, backgroundColor: theme.colors.fill.subtle,
                 borderRadius: spacing.badgeRadius, paddingVertical: 6, alignItems: "center",
               }}>
-                <Text style={{ color: colors.textSecondary, ...typography.caption }}>{t("shareLink")}</Text>
+                <Text style={{ color: theme.colors.text.secondary, ...typography.caption }}>{t("shareLink")}</Text>
               </Pressable>
             )}
           </GlassCard>
@@ -141,13 +144,13 @@ export function AdminSection() {
   );
 }
 
-const inputStyle = {
-  backgroundColor: "rgba(255,255,255,0.05)",
+const inputStyle = (t: AppTheme): TextStyle => ({
+  backgroundColor: t.colors.fill.subtle,
   borderWidth: 1,
-  borderColor: colors.border,
+  borderColor: t.colors.border.subtle,
   borderRadius: spacing.buttonRadius,
   paddingHorizontal: spacing.md,
   paddingVertical: 10,
-  color: colors.textPrimary,
+  color: t.colors.text.primary,
   fontSize: 14,
-};
+});

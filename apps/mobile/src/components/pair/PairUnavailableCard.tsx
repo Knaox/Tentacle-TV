@@ -1,7 +1,7 @@
 import { View, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { BRAND, FONT_FAMILY } from "../../theme";
+import { FONT_FAMILY, useTheme } from "../../theme";
 
 /**
  * Contenu de la carte de jumelage quand le jumelage TV est indisponible côté
@@ -9,11 +9,12 @@ import { BRAND, FONT_FAMILY } from "../../theme";
  */
 export function PairUnavailableCard({ loading }: { loading: boolean }) {
   const { t } = useTranslation("pairing");
+  const { colors } = useTheme();
 
   if (loading) {
     return (
       <View style={{ alignItems: "center", paddingVertical: 24 }}>
-        <ActivityIndicator color={BRAND.light} size="small" />
+        <ActivityIndicator color={colors.brand.light} size="small" />
       </View>
     );
   }
@@ -24,15 +25,15 @@ export function PairUnavailableCard({ loading }: { loading: boolean }) {
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: "rgba(255,255,255,0.05)",
+        backgroundColor: colors.fill.subtle,
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 14,
       }}>
-        <Feather name="lock" size={30} color="rgba(255,255,255,0.5)" />
+        <Feather name="lock" size={30} color={colors.text.tertiary} />
       </View>
       <Text style={{
-        color: "rgba(255,255,255,0.7)",
+        color: colors.text.secondary,
         fontSize: 14,
         fontFamily: FONT_FAMILY.medium,
         textAlign: "center",

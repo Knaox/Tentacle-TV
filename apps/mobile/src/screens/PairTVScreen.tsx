@@ -17,12 +17,11 @@ import {
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import {
-  BRAND,
-  CTA,
   FONT_FAMILY,
   RADIUS,
-  STATUS,
   useContentPadding,
+  useTheme,
+  withAlpha,
 } from "../theme";
 import { SubtleBackground, GlassCard, FadeIn, IconButton } from "../components/ui";
 import { PairCodeInputs, type PairCodeInputsHandle } from "../components/pair/PairCodeInputs";
@@ -33,6 +32,7 @@ export function PairTVScreen() {
   const { t: te } = useTranslation("errors");
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const theme = useTheme();
   const { storage } = useTentacleConfig();
   const tvTokenMut = useGenerateTvToken();
   const relayConfirmMut = useRelayConfirm();
@@ -142,7 +142,7 @@ export function PairTVScreen() {
             onPress={() => backOrHome(router)}
             size={40}
             bgColor="transparent"
-            color={BRAND.light}
+            color={theme.colors.brand.light}
             accessibilityLabel="Back"
           />
         </View>
@@ -152,18 +152,18 @@ export function PairTVScreen() {
             width: 96,
             height: 96,
             borderRadius: 48,
-            backgroundColor: BRAND.soft,
+            backgroundColor: theme.colors.brand.soft,
             borderWidth: 1,
-            borderColor: "rgba(139,92,246,0.4)",
+            borderColor: withAlpha(theme.colors.brand.violet, 0.4, theme.colors.brand.glow),
             justifyContent: "center",
             alignItems: "center",
-            shadowColor: BRAND.violet,
+            shadowColor: theme.colors.brand.violet,
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.5,
             shadowRadius: 20,
             elevation: 10,
           }}>
-            <Feather name="tv" size={48} color={BRAND.light} />
+            <Feather name="tv" size={48} color={theme.colors.brand.light} />
           </View>
         </FadeIn>
 
@@ -172,7 +172,7 @@ export function PairTVScreen() {
             fontSize: 28,
             fontFamily: FONT_FAMILY.extrabold,
             fontWeight: "800",
-            color: "#FFFFFF",
+            color: theme.colors.text.primary,
             letterSpacing: -0.6,
             textAlign: "center",
             marginBottom: 6,
@@ -182,7 +182,7 @@ export function PairTVScreen() {
           <Text style={{
             fontSize: 14,
             fontFamily: FONT_FAMILY.medium,
-            color: BRAND.light,
+            color: theme.colors.brand.light,
             letterSpacing: 0.3,
             textAlign: "center",
             marginBottom: 24,
@@ -202,15 +202,15 @@ export function PairTVScreen() {
                   width: 72,
                   height: 72,
                   borderRadius: 36,
-                  backgroundColor: "rgba(16,185,129,0.15)",
+                  backgroundColor: theme.colors.statusPairs.success.bg,
                   justifyContent: "center",
                   alignItems: "center",
                   marginBottom: 14,
                 }}>
-                  <Feather name="check-circle" size={40} color={STATUS.success} />
+                  <Feather name="check-circle" size={40} color={theme.colors.status.success} />
                 </View>
                 <Text style={{
-                  color: STATUS.success,
+                  color: theme.colors.status.success,
                   fontSize: 16,
                   fontFamily: FONT_FAMILY.semibold,
                   textAlign: "center",
@@ -229,9 +229,9 @@ export function PairTVScreen() {
 
                 {status === "error" && errorMsg ? (
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
-                    <Feather name="alert-circle" size={16} color={STATUS.error} />
+                    <Feather name="alert-circle" size={16} color={theme.colors.status.error} />
                     <Text style={{
-                      color: STATUS.error,
+                      color: theme.colors.status.error,
                       fontSize: 13,
                       fontFamily: FONT_FAMILY.medium,
                       textAlign: "center",
@@ -246,9 +246,9 @@ export function PairTVScreen() {
                     accessibilityLabel={t("retry")}
                     style={({ pressed }) => [
                       {
-                        backgroundColor: BRAND.ghost,
+                        backgroundColor: theme.colors.brand.ghost,
                         borderWidth: 1,
-                        borderColor: "rgba(139,92,246,0.4)",
+                        borderColor: withAlpha(theme.colors.brand.violet, 0.4, theme.colors.brand.glow),
                         borderRadius: RADIUS.md,
                         paddingVertical: 13,
                         minHeight: 46,
@@ -259,7 +259,7 @@ export function PairTVScreen() {
                     ]}
                   >
                     <Text style={{
-                      color: "#FFFFFF",
+                      color: theme.colors.text.primary,
                       fontSize: 15,
                       fontFamily: FONT_FAMILY.semibold,
                     }}>{t("retry")}</Text>
@@ -272,13 +272,13 @@ export function PairTVScreen() {
                     accessibilityLabel={t("pairTV")}
                     style={({ pressed }) => [
                       {
-                        backgroundColor: CTA.primaryBg,
+                        backgroundColor: theme.colors.cta.primaryBg,
                         borderRadius: RADIUS.md,
                         paddingVertical: 13,
                         minHeight: 46,
                         alignItems: "center",
                         justifyContent: "center",
-                        shadowColor: BRAND.violet,
+                        shadowColor: theme.colors.brand.violet,
                         shadowOffset: { width: 0, height: 8 },
                         shadowOpacity: 0.55,
                         shadowRadius: 22,
@@ -289,10 +289,10 @@ export function PairTVScreen() {
                     ]}
                   >
                     {status === "pairing" ? (
-                      <ActivityIndicator color={CTA.primaryFg} size="small" />
+                      <ActivityIndicator color={theme.colors.cta.primaryFg} size="small" />
                     ) : (
                       <Text style={{
-                        color: CTA.primaryFg,
+                        color: theme.colors.cta.primaryFg,
                         fontSize: 15,
                         fontFamily: FONT_FAMILY.bold,
                         letterSpacing: 0.2,
@@ -314,9 +314,9 @@ export function PairTVScreen() {
             marginTop: 16,
             paddingHorizontal: 16,
           }}>
-            <Feather name="clock" size={12} color="rgba(255,255,255,0.4)" />
+            <Feather name="clock" size={12} color={theme.colors.text.quaternary} />
             <Text style={{
-              color: "rgba(255,255,255,0.4)",
+              color: theme.colors.text.quaternary,
               fontSize: 12,
               fontFamily: FONT_FAMILY.regular,
               textAlign: "center",

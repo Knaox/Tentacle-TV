@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig, useInterfaceLanguage, useSetInterfaceLanguage } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BORDER, BRAND, FONT_FAMILY, RADIUS } from "../../theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "../../theme";
 
 /**
  * Sélecteur de langue d'interface — synchronisé avec le backend (DB), comme
@@ -15,6 +15,7 @@ export function LanguageToggle() {
   const { storage } = useTentacleConfig();
   const { data: dbLang } = useInterfaceLanguage();
   const setLangMut = useSetInterfaceLanguage();
+  const st = useThemedStyles(makeStyles);
 
   // Reflète la langue en base (source de vérité inter-appareils).
   useEffect(() => {
@@ -44,24 +45,27 @@ export function LanguageToggle() {
 }
 
 function LangBtn({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+  const st = useThemedStyles(makeStyles);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
       accessibilityLabel={label}
-      style={[st.langBtn, {
-        backgroundColor: active ? BRAND.soft : "rgba(255,255,255,0.05)",
-        borderColor: active ? "rgba(139,92,246,0.45)" : BORDER.subtle,
-      }]}
+      style={[st.langBtn, active ? st.langBtnActive : st.langBtnInactive]}
     >
-      <Text style={[st.langBtnTxt, { color: active ? BRAND.light : colors.textSecondary }]}>{label}</Text>
+      <Text style={[st.langBtnTxt, active ? st.langBtnTxtActive : st.langBtnTxtInactive]}>{label}</Text>
     </Pressable>
   );
 }
 
-const st = StyleSheet.create({
-  langLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, marginBottom: spacing.sm },
-  langBtn: { flex: 1, paddingVertical: 11, borderRadius: RADIUS.md, alignItems: "center" as const, borderWidth: 1 },
-  langBtnTxt: { ...typography.bodyBold, fontSize: 14, fontFamily: FONT_FAMILY.semibold },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    langLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginBottom: spacing.sm },
+    langBtn: { flex: 1, paddingVertical: 11, borderRadius: RADIUS.md, alignItems: "center" as const, borderWidth: 1 },
+    langBtnActive: { backgroundColor: t.colors.brand.soft, borderColor: t.colors.brand.glow },
+    langBtnInactive: { backgroundColor: t.colors.fill.subtle, borderColor: t.colors.border.subtle },
+    langBtnTxt: { ...typography.bodyBold, fontSize: 14, fontFamily: FONT_FAMILY.semibold },
+    langBtnTxtActive: { color: t.colors.brand.light },
+    langBtnTxtInactive: { color: t.colors.text.secondary },
+  });

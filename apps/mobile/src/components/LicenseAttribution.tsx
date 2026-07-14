@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMediaLicense } from "../hooks/useMediaLicense";
-import { colors, spacing, typography } from "../theme";
+import { spacing, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
 
 const ROLE_I18N_KEYS: Record<string, string> = {
   Director: "media:licenseDirector",
@@ -20,6 +20,8 @@ interface LicenseAttributionProps {
 
 export function LicenseAttribution({ item }: LicenseAttributionProps) {
   const { t } = useTranslation("media");
+  const theme = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const license = useMediaLicense(item);
 
   if (!license) return null;
@@ -28,7 +30,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Feather name="shield" size={18} color={colors.textSecondary} />
+        <Feather name="shield" size={18} color={theme.colors.text.secondary} />
         <Text style={styles.title}>{t("media:licenseTitle")}</Text>
       </View>
 
@@ -78,7 +80,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
             <Text style={styles.sourceName}>
               {license.attribution.sourceName || license.attribution.sourceUrl}
             </Text>
-            <Feather name="external-link" size={12} color={colors.accentLight} />
+            <Feather name="external-link" size={12} color={theme.colors.brand.light} />
           </View>
         </Pressable>
       ) : null}
@@ -97,7 +99,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: {
     marginHorizontal: spacing.screenPadding,
     marginTop: spacing.lg,
@@ -105,8 +107,8 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255, 255, 255, 0.02)",
+    borderColor: t.colors.border.subtle,
+    backgroundColor: t.colors.fill.faint,
     padding: spacing.md,
   },
   header: {
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.subtitle,
-    color: "rgba(255, 255, 255, 0.9)",
+    color: withAlpha(t.colors.text.primary, 0.9, t.colors.text.secondary),
     fontSize: 16,
   },
   badgeContainer: {
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
   },
   licenseName: {
     ...typography.caption,
-    color: colors.accentLight,
+    color: t.colors.brand.light,
     fontWeight: "500",
   },
   creatorsRow: {
@@ -144,19 +146,19 @@ const styles = StyleSheet.create({
   },
   creatorRole: {
     ...typography.badge,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   creatorName: {
     ...typography.caption,
-    color: "rgba(255, 255, 255, 0.8)",
+    color: t.colors.text.secondary,
     marginTop: 2,
   },
   creatorNameLink: {
     ...typography.caption,
-    color: colors.accentLight,
+    color: t.colors.brand.light,
     marginTop: 2,
   },
   sourceContainer: {
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
   },
   sourceLabel: {
     ...typography.badge,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -177,26 +179,26 @@ const styles = StyleSheet.create({
   },
   sourceName: {
     ...typography.caption,
-    color: colors.accentLight,
+    color: t.colors.brand.light,
   },
   modContainer: {
     marginBottom: spacing.sm,
   },
   modLabel: {
     ...typography.badge,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   modText: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: t.colors.text.secondary,
     marginTop: 2,
   },
   copyright: {
     ...typography.badge,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     fontSize: 11,
     marginTop: spacing.xs,
   },

@@ -1,5 +1,5 @@
 import { Pressable, Text } from "react-native";
-import { BORDER, BRAND, FONT_FAMILY, RADIUS } from "../../theme";
+import { FONT_FAMILY, RADIUS, useTheme } from "../../theme";
 
 interface Props {
   label: string;
@@ -9,6 +9,7 @@ interface Props {
 
 /** Chip filter pour SupportScreen list/new. */
 export function Chip({ label, active, onPress }: Props) {
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -17,9 +18,9 @@ export function Chip({ label, active, onPress }: Props) {
       accessibilityState={{ selected: active }}
       style={({ pressed }) => [
         {
-          backgroundColor: active ? BRAND.soft : "rgba(255,255,255,0.06)",
+          backgroundColor: active ? colors.brand.soft : colors.fill.subtle,
           borderWidth: 1,
-          borderColor: active ? "rgba(139,92,246,0.45)" : BORDER.subtle,
+          borderColor: active ? colors.brand.glow : colors.border.subtle,
           paddingHorizontal: 14,
           paddingVertical: 8,
           minHeight: 44,
@@ -32,7 +33,7 @@ export function Chip({ label, active, onPress }: Props) {
       <Text style={{
         fontSize: 13,
         fontFamily: active ? FONT_FAMILY.semibold : FONT_FAMILY.medium,
-        color: active ? BRAND.light : "rgba(255,255,255,0.6)",
+        color: active ? colors.brand.light : colors.text.tertiary,
         letterSpacing: 0.1,
       }}>
         {label}

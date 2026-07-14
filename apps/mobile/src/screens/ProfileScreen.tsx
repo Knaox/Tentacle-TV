@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, STATUS, useContentPadding, useResponsive } from "../theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, useContentPadding, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
 import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
 import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
@@ -26,6 +26,8 @@ const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVA
 export function ProfileScreen() {
   const { t } = useTranslation("profile");
   const router = useRouter();
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const { logout, changeServer } = useAuth();
   const { storage } = useTentacleConfig();
   const { setServerUrl } = useServerUrl();
@@ -142,7 +144,7 @@ export function ProfileScreen() {
           style={st.privacy}
           hitSlop={8}
         >
-          <Feather name="external-link" size={13} color={colors.textMuted} />
+          <Feather name="external-link" size={13} color={theme.colors.text.tertiary} />
           <Text style={st.privacyTxt}>{t("privacyPolicy")}</Text>
         </Pressable>
       </FadeIn>
@@ -184,20 +186,24 @@ export function ProfileScreen() {
 }
 
 function SectionHeader({ title, danger }: { title: string; danger?: boolean }) {
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   return (
-    <Text style={[st.sectionTitle, danger && { color: STATUS.error }]} accessibilityRole="header">
+    <Text style={[st.sectionTitle, danger && { color: theme.colors.status.error }]} accessibilityRole="header">
       {title}
     </Text>
   );
 }
 
 function QuickActionCard({ iconName, label, onPress }: { iconName: string; label: string; onPress: () => void }) {
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={label}>
       <GlassCard>
         <View style={{ alignItems: "center", gap: 10 }}>
           <View style={st.quickIcon}>
-            <Feather name={iconName as keyof typeof Feather.glyphMap} size={20} color={BRAND.light} />
+            <Feather name={iconName as keyof typeof Feather.glyphMap} size={20} color={theme.colors.brand.light} />
           </View>
           <Text style={st.quickLabel} numberOfLines={2}>{label}</Text>
         </View>
@@ -213,8 +219,12 @@ function DangerRow({ icon, label, onPress, variant, disabled }: {
   variant?: "logout";
   disabled?: boolean;
 }) {
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const isLogout = variant === "logout";
-  const color = isLogout ? STATUS.error : "rgba(255,255,255,0.86)";
+  const color = isLogout
+    ? theme.colors.status.error
+    : withAlpha(theme.colors.text.primary, 0.86, theme.colors.text.secondary);
   return (
     <Pressable
       onPress={onPress}
@@ -223,34 +233,34 @@ function DangerRow({ icon, label, onPress, variant, disabled }: {
       accessibilityLabel={label}
       style={({ pressed }) => [
         st.dangerRow,
-        isLogout && { backgroundColor: "rgba(239,68,68,0.06)" },
+        isLogout && { backgroundColor: withAlpha(theme.colors.status.error, 0.06, theme.colors.danger.surface) },
         pressed && { opacity: 0.7 },
         disabled && { opacity: 0.45 },
       ]}
     >
-      <View style={[st.dangerIcon, { backgroundColor: isLogout ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.05)" }]}>
+      <View style={[st.dangerIcon, { backgroundColor: isLogout ? withAlpha(theme.colors.status.error, 0.12, theme.colors.danger.surface) : theme.colors.fill.subtle }]}>
         <Feather name={icon} size={17} color={color} />
       </View>
       <Text style={[st.dangerLabel, { color }]}>{label}</Text>
-      <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
+      <Feather name="chevron-right" size={16} color={theme.colors.fill.strong} />
     </Pressable>
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   hero: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.lg, marginBottom: spacing.xl },
-  heroName: { ...typography.title, fontSize: 22, fontFamily: FONT_FAMILY.extrabold, color: colors.textPrimary, letterSpacing: -0.4 },
-  heroSub: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: colors.textMuted },
+  heroName: { ...typography.title, fontSize: 22, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, letterSpacing: -0.4 },
+  heroSub: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary },
   quickRow: { flexDirection: "row" as const, gap: spacing.md, marginBottom: spacing.xxl },
-  quickIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: BRAND.soft, alignItems: "center" as const, justifyContent: "center" as const, borderWidth: 1, borderColor: "rgba(139,92,246,0.25)" },
-  quickLabel: { ...typography.bodyBold, fontSize: 12, fontFamily: FONT_FAMILY.semibold, color: colors.textPrimary, textAlign: "center" as const },
-  sectionTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 16, color: colors.textPrimary, marginBottom: spacing.md, letterSpacing: -0.2, textTransform: "uppercase" as const, opacity: 0.85 },
-  divider: { height: 1, backgroundColor: BORDER.subtle, marginVertical: spacing.md },
+  quickIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: t.colors.brand.soft, alignItems: "center" as const, justifyContent: "center" as const, borderWidth: 1, borderColor: withAlpha(t.colors.brand.violet, 0.25, t.colors.brand.glow) },
+  quickLabel: { ...typography.bodyBold, fontSize: 12, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, textAlign: "center" as const },
+  sectionTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 16, color: t.colors.text.primary, marginBottom: spacing.md, letterSpacing: -0.2, textTransform: "uppercase" as const, opacity: 0.85 },
+  divider: { height: 1, backgroundColor: t.colors.border.subtle, marginVertical: spacing.md },
   privacy: { marginTop: spacing.xxl, alignItems: "center" as const, flexDirection: "row" as const, justifyContent: "center" as const, gap: spacing.sm, paddingVertical: 12 },
-  privacyTxt: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, textDecorationLine: "underline" as const },
+  privacyTxt: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textDecorationLine: "underline" as const },
   dangerList: { gap: 2 },
-  dangerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 14, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.md, backgroundColor: "rgba(255,255,255,0.025)" },
+  dangerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 14, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.md, backgroundColor: t.colors.fill.faint },
   dangerIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center" as const, justifyContent: "center" as const },
   dangerLabel: { ...typography.bodyBold, fontFamily: FONT_FAMILY.semibold, fontSize: 14.5, flex: 1, letterSpacing: -0.1 },
-  versionTxt: { fontSize: 11, fontFamily: FONT_FAMILY.regular, color: colors.textDim },
+  versionTxt: { fontSize: 11, fontFamily: FONT_FAMILY.regular, color: t.colors.text.quaternary },
 });

@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { View, TextInput, type TextStyle } from "react-native";
-import { BRAND, FONT_FAMILY, RADIUS, STATUS } from "../../theme";
+import { FONT_FAMILY, RADIUS, useTheme } from "../../theme";
 
 interface Props {
   chars: string[];
@@ -20,6 +20,7 @@ export const PairCodeInputs = forwardRef<PairCodeInputsHandle, Props>(function P
   { chars, onChange, status }: Props,
   ref,
 ) {
+  const { colors } = useTheme();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useImperativeHandle(ref, () => ({
@@ -53,20 +54,20 @@ export const PairCodeInputs = forwardRef<PairCodeInputsHandle, Props>(function P
         const stateStyle: TextStyle =
           status === "error"
             ? {
-                backgroundColor: "rgba(239,68,68,0.08)",
+                backgroundColor: colors.danger.surface,
                 borderWidth: 2,
-                borderColor: STATUS.error,
+                borderColor: colors.status.error,
               }
             : char
             ? {
-                backgroundColor: BRAND.soft,
+                backgroundColor: colors.brand.soft,
                 borderWidth: 2,
-                borderColor: BRAND.violet,
+                borderColor: colors.brand.violet,
               }
             : {
-                backgroundColor: "rgba(255,255,255,0.05)",
+                backgroundColor: colors.fill.subtle,
                 borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.12)",
+                borderColor: colors.border.subtle,
               };
 
         return (
@@ -91,7 +92,7 @@ export const PairCodeInputs = forwardRef<PairCodeInputsHandle, Props>(function P
                 fontSize: 28,
                 fontFamily: FONT_FAMILY.extrabold,
                 fontWeight: "800",
-                color: "#FFFFFF",
+                color: colors.text.primary,
                 letterSpacing: 0,
               },
               stateStyle,
