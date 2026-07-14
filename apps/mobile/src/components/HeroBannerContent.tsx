@@ -113,7 +113,7 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
           accessibilityRole="button"
           accessibilityLabel={`${t("moreInfo")} ${item.Name}`}
         >
-          <Feather name="info" size={16} color={theme.colors.text.primary} />
+          <Feather name="info" size={16} color={theme.colors.onMedia.primary} />
           <Text style={st.infoTxt}>{t("moreInfo")}</Text>
         </Pressable>
       </View>
@@ -121,31 +121,39 @@ export function HeroContent({ item, onPlay, onInfo }: HeroContentProps): ReactNo
   );
 }
 
+// Tout le contenu du Hero est posé DIRECTEMENT sur l'affiche → texte via
+// onMedia.* (blanc + voile sombre, constant dans les deux thèmes) pour rester
+// lisible sur n'importe quelle image, thème clair inclus. `overview` garde son
+// halo via onMedia.shadow. Rendu sombre inchangé (mêmes valeurs blanches).
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   tagRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 12, flexWrap: "wrap" as const },
-  // Pastille contrastée sur image (blanc/noir en sombre, inversion cohérente en clair).
+  // Pastille contrastée sur image : violette en clair, blanche en sombre (cta.primaryBg).
   continueTag: { flexDirection: "row" as const, alignItems: "center" as const, gap: 5, backgroundColor: t.colors.cta.primaryBg, borderRadius: 3, paddingHorizontal: 7, paddingVertical: 3 },
   continueTagTxt: { fontSize: 9.5, fontFamily: FONT_FAMILY.extrabold, color: t.colors.cta.primaryFg, letterSpacing: 1.6, textTransform: "uppercase" as const },
-  epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, letterSpacing: 0.2 },
+  epLabel: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.onMedia.secondary, letterSpacing: 0.2 },
   logo: { width: 280, maxWidth: "85%", height: 92, marginBottom: 14 },
-  title: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, marginBottom: 14, letterSpacing: -0.6, lineHeight: 36, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
+  title: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: t.colors.onMedia.primary, marginBottom: 14, letterSpacing: -0.6, lineHeight: 36, textShadowColor: t.colors.onMedia.shadow, textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 12 },
   meta: { flexDirection: "row" as const, alignItems: "center" as const, gap: 9, marginBottom: 10, flexWrap: "wrap" as const },
-  metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.secondary },
-  metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
-  rBadge: { borderWidth: 1, borderColor: withAlpha(t.colors.text.primary, 0.45, t.colors.border.strong), borderRadius: 3, paddingHorizontal: 5, paddingVertical: 0.5 },
-  rBadgeTxt: { fontSize: 9, fontFamily: FONT_FAMILY.bold, color: t.colors.text.secondary, letterSpacing: 0.6 },
+  metaTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.onMedia.secondary },
+  metaTxtMuted: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.onMedia.secondary },
+  rBadge: { borderWidth: 1, borderColor: withAlpha(t.colors.onMedia.primary, 0.45, t.colors.border.strong), borderRadius: 3, paddingHorizontal: 5, paddingVertical: 0.5 },
+  rBadgeTxt: { fontSize: 9, fontFamily: FONT_FAMILY.bold, color: t.colors.onMedia.secondary, letterSpacing: 0.6 },
   ratingBox: { flexDirection: "row" as const, alignItems: "center" as const, gap: 3 },
   rating: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.status.rating },
-  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary, lineHeight: 21, marginBottom: 18, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  overview: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.onMedia.secondary, lineHeight: 21, marginBottom: 18, textShadowColor: t.colors.onMedia.shadow, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   progRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, marginBottom: 18, maxWidth: 280 },
   progTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: t.colors.fill.strong, overflow: "hidden" as const },
   progFill: { height: "100%" as const, borderRadius: 2, backgroundColor: t.colors.brand.violet },
-  progLbl: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: t.colors.text.tertiary },
+  progLbl: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: t.colors.onMedia.secondary },
   btns: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10 },
   playBtn: {
     flexDirection: "row" as const, alignItems: "center" as const, gap: 9,
     backgroundColor: t.colors.cta.primaryBg, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 26,
-    shadowColor: t.colors.brand.violet, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.55, shadowRadius: 22, elevation: 12,
+    borderWidth: t.colors.cta.primaryBorder ? 1 : 0, borderColor: t.colors.cta.primaryBorder,
+    // Sombre : halo violet historique. Clair : ombre douce neutre (bouton blanc).
+    ...(t.isDark
+      ? { shadowColor: t.colors.brand.violet, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.55, shadowRadius: 22, elevation: 12 }
+      : t.colors.shadow.card),
   },
   playTxt: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.primaryFg, letterSpacing: 0.1 },
   infoBtn: {
@@ -153,5 +161,5 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     backgroundColor: t.colors.brand.ghost, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 18,
     borderWidth: 1, borderColor: withAlpha(t.colors.brand.violet, 0.4, t.colors.brand.glow),
   },
-  infoTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
+  infoTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold, color: t.colors.onMedia.primary },
 });

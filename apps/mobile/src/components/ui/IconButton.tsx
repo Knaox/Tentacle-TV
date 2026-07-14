@@ -1,4 +1,4 @@
-import { Pressable, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, type ViewStyle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../../theme";
@@ -25,18 +25,28 @@ interface Props {
   bgColor?: string;
   accessibilityLabel?: string;
   haptic?: boolean;
+  /**
+   * Bouton posé sur une image (backdrop) : fond scrim SOMBRE + icône claire,
+   * dans les deux thèmes. Par défaut (false), rendu neutre subtil adapté aux
+   * surfaces planes (réglages, à propos…) — plus de gros cercle noir en clair.
+   */
+  onMedia?: boolean;
 }
 
 /**
  * Bouton rond avec icône Feather. Press anim Reanimated (scale spring),
- * haptic léger optionnel, fond translucide noir par défaut (overlay
- * cinematic). Touch target garanti ≥ 44pt via hitSlop.
+ * haptic léger optionnel. Deux rendus : neutre subtil (surface plane, défaut)
+ * ou scrim sombre (`onMedia`, sur backdrop). Touch target ≥ 44pt via hitSlop.
  */
 export function IconButton({
-  icon, onPress, size = 36, style, color, bgColor, accessibilityLabel, haptic = true,
+  icon, onPress, size = 36, style, color, bgColor, accessibilityLabel, haptic = true, onMedia = false,
 }: Props) {
   const theme = useTheme();
   const featherName = ICON_MAP[icon] ?? (icon as keyof typeof Feather.glyphMap);
+  // Sur média : scrim sombre + icône claire (lisible sur affiche). Sinon : puce
+  // neutre translucide + bord hairline (élégant sur fond clair comme sombre).
+  const defaultBg = onMedia ? theme.colors.overlay.scrim : theme.colors.fill.soft;
+  const iconColor = color ?? (onMedia ? theme.colors.onMedia.primary : theme.colors.text.primary);
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -58,12 +68,12 @@ export function IconButton({
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: bgColor ?? theme.colors.overlay.scrim,
+          backgroundColor: bgColor ?? defaultBg,
           justifyContent: "center" as const,
           alignItems: "center" as const,
-        }, style]}
+        }, !onMedia && !bgColor ? { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.border.subtle } : null, style]}
       >
-        <Feather name={featherName} size={Math.round(size * 0.5)} color={color ?? theme.colors.text.primary} />
+        <Feather name={featherName} size={Math.round(size * 0.5)} color={iconColor} />
       </Pressable>
     </Animated.View>
   );

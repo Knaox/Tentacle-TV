@@ -134,7 +134,7 @@ const makeStyles = (t: AppTheme) =>
     description: {
       ...typography.small,
       fontFamily: FONT_FAMILY.regular,
-      color: t.colors.text.tertiary,
+      color: t.colors.text.secondary,
       lineHeight: 18,
     },
     feedback: { ...typography.small, fontFamily: FONT_FAMILY.medium },

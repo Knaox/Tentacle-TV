@@ -56,5 +56,18 @@ export function buildDarkPalette(): ThemePalette {
       backdrop: "rgba(0, 0, 0, 0.55)",
     },
     tabBar: "rgba(0, 0, 0, 0.92)",
+    // Texte sur média : identique au clair (blanc + voile noir) — c'est déjà le
+    // combo robuste historique du sombre, désormais partagé comme token.
+    onMedia: {
+      primary: "#FFFFFF",
+      secondary: "rgba(255, 255, 255, 0.80)",
+      shadow: "rgba(0, 0, 0, 0.7)",
+    },
+    // Ombres profondes (GlassSurface ne les applique pas en sombre → rendu dark
+    // inchangé ; disponibles pour d'autres surfaces si besoin).
+    shadow: {
+      card: { shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 24, elevation: 8 },
+      sheet: { shadowColor: "#000", shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.5, shadowRadius: 28, elevation: 12 },
+    },
   };
 }

@@ -22,13 +22,14 @@ export const THEME_MODE_STORAGE_KEY = "tentacle_theme_mode";
 const VALID_MODES: readonly ThemeMode[] = ["light", "dark", "auto"];
 
 /**
- * Défaut "dark" : les installations existantes ne changent pas d'apparence
- * à la mise à jour ; clair/auto sont opt-in via le sélecteur.
+ * Défaut "auto" : sans choix explicite, l'app suit le réglage d'apparence du
+ * système (comme la plupart des apps iOS). Clair/Sombre restent forçables via le
+ * sélecteur ; un choix explicite est persisté et prime.
  */
 export function sanitizeThemeMode(value: string | null | undefined): ThemeMode {
   return (VALID_MODES as readonly string[]).includes(value ?? "")
     ? (value as ThemeMode)
-    : "dark";
+    : "auto";
 }
 
 /**
@@ -40,7 +41,7 @@ export function applyAppearance(mode: ThemeMode): void {
   Appearance.setColorScheme(mode === "auto" ? null : mode);
 }
 
-let bootMode: ThemeMode = "dark";
+let bootMode: ThemeMode = "auto";
 
 /** Appelé par index.js PRÉ-MOUNT — fixe le mode initial et l'applique à l'OS. */
 export function setBootThemeMode(mode: ThemeMode): void {

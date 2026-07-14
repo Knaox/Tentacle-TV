@@ -7,7 +7,7 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "../hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "../plugins/usePluginBundle";
-import { buildPluginHtml, buildPluginThemeVars } from "../plugins/pluginHtmlTemplate";
+import { buildPluginHtml } from "../plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "../plugins/pluginBridge";
 import { spacing, typography, useTheme } from "../theme";
 import { IconButton } from "../components/ui";
@@ -55,7 +55,7 @@ export function PluginWebViewScreen() {
       bundleCode,
       sharedDepsCode,
       pluginPath,
-      theme: buildPluginThemeVars(theme),
+      appTheme: theme,
     });
   }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, theme]);
 

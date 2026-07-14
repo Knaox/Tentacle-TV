@@ -44,6 +44,13 @@ export interface GlassSurfaceProps {
   interactive?: boolean;
   /** Opt-out Liquid Glass pour cette surface (défaut true = éligible). */
   liquid?: boolean;
+  /**
+   * Ombre portée douce (thème CLAIR uniquement) pour détacher la carte du fond
+   * nacré. Réservé aux surfaces à taille de CONTENU (cartes) : évitez-la sur les
+   * surfaces en remplissage (absoluteFill/flex) où l'inner s'effondrerait. Sombre
+   * ou fallback désactivé → rendu strictement inchangé.
+   */
+  elevated?: boolean;
 }
 
 function resolveTint(theme: AppTheme, tint: "regular" | "strong" | "panel"): string {
@@ -62,6 +69,7 @@ export function GlassSurface({
   bordered = true,
   interactive,
   liquid = true,
+  elevated = false,
 }: GlassSurfaceProps) {
   const theme = useTheme();
   const { liquidGlass } = useThemeMode();
@@ -84,7 +92,11 @@ export function GlassSurface({
     }
   }
 
-  return (
+  // Ombre douce uniquement en CLAIR + opt-in `elevated` (cartes). Impossible sur
+  // la vue clippée (overflow: hidden clippe l'ombre sous iOS) → wrapper externe.
+  const applyShadow = elevated && !theme.isDark;
+
+  const inner = (
     <View
       style={[
         {
@@ -96,7 +108,10 @@ export function GlassSurface({
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: theme.colors.border.subtle,
         },
-        style,
+        // Hors ombre : le style consommateur reste ici → rendu STRICTEMENT
+        // inchangé (sombre, fallback, surfaces en remplissage). Avec ombre, il
+        // migre sur le wrapper porteur d'ombre ci-dessous.
+        applyShadow ? null : style,
       ]}
     >
       <BlurView
@@ -105,6 +120,17 @@ export function GlassSurface({
         style={StyleSheet.absoluteFillObject}
       />
       {children}
+    </View>
+  );
+
+  if (!applyShadow) return inner;
+
+  // Wrapper externe NON clippé : porte le layout consommateur puis shadow.card
+  // (en dernier → l'emporte sur une ombre sombre passée par le consommateur,
+  // ex. GlassCard/elev2). L'inner s'étire à la largeur du wrapper (colonne).
+  return (
+    <View style={[{ borderRadius: radius }, style, theme.colors.shadow.card]}>
+      {inner}
     </View>
   );
 }
