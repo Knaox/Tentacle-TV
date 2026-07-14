@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCreateShareLink } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-import { typography, BRAND, BORDER, FONT_FAMILY, colors } from "@/theme";
+import { typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
  * « Partager ma liste » (mobile) — génère le lien de partage et ouvre la
@@ -12,6 +12,8 @@ import { typography, BRAND, BORDER, FONT_FAMILY, colors } from "@/theme";
  */
 export function ShareMyListButton() {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { serverUrl } = useServerUrl();
   const create = useCreateShareLink();
   const [busy, setBusy] = useState(false);
@@ -56,27 +58,28 @@ export function ShareMyListButton() {
       accessibilityLabel={t("shareMyList")}
       style={({ pressed }) => [styles.btn, pressed && { opacity: 0.7 }]}
     >
-      <Feather name="share-2" size={15} color={BRAND.light} />
+      <Feather name="share-2" size={15} color={colors.brand.light} />
       <Text style={styles.label}>{t("shareMyList")}</Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER.subtle,
-    backgroundColor: "rgba(255,255,255,0.05)",
-  },
-  label: {
-    ...typography.caption,
-    fontFamily: FONT_FAMILY.semibold,
-    color: colors.textPrimary,
-  },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    btn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.colors.border.subtle,
+      backgroundColor: t.colors.fill.subtle,
+    },
+    label: {
+      ...typography.caption,
+      fontFamily: FONT_FAMILY.semibold,
+      color: t.colors.text.primary,
+    },
+  });

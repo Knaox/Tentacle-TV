@@ -24,12 +24,13 @@ import { ListHeader } from "@/components/watchlist/ListHeader";
 import { SelectableGridCard } from "@/components/watchlist/SelectableGridCard";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import {
-  colors,
   spacing,
   typography,
-  BRAND,
   FONT_FAMILY,
   useGrid,
+  useTheme,
+  useThemedStyles,
+  type AppTheme,
 } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
@@ -44,6 +45,8 @@ const ITEM_GAP = spacing.sm;
  */
 export function FavoritesScreen() {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
@@ -136,7 +139,7 @@ export function FavoritesScreen() {
           <View style={styles.skeletonGrid}>{skeletons}</View>
         ) : count === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="heart" size={48} color={BRAND.light} style={{ opacity: 0.6 }} />
+            <Feather name="heart" size={48} color={colors.brand.light} style={{ opacity: 0.6 }} />
             <Text style={styles.emptyTitle}>{t("emptyFavorites")}</Text>
             <Text style={styles.emptyHint}>{t("emptyFavoritesHint")}</Text>
           </View>
@@ -158,7 +161,7 @@ export function FavoritesScreen() {
                 <RefreshControl
                   refreshing={isRefetching}
                   onRefresh={selection.active ? undefined : refetch}
-                  tintColor={BRAND.violet}
+                  tintColor={colors.brand.violet}
                 />
               }
               showsVerticalScrollIndicator={false}
@@ -188,35 +191,36 @@ export function FavoritesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  skeletonGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: spacing.screenPadding,
-    gap: ITEM_GAP,
-  },
-  gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxxl + 60 },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: spacing.screenPadding,
-    gap: spacing.sm,
-  },
-  emptyTitle: {
-    ...typography.subtitle,
-    fontFamily: FONT_FAMILY.bold,
-    fontSize: 18,
-    color: colors.textPrimary,
-    marginTop: spacing.md,
-    letterSpacing: -0.3,
-  },
-  emptyHint: {
-    ...typography.caption,
-    fontFamily: FONT_FAMILY.regular,
-    color: colors.textMuted,
-    textAlign: "center",
-    maxWidth: 280,
-  },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    skeletonGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: spacing.screenPadding,
+      gap: ITEM_GAP,
+    },
+    gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxxl + 60 },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: spacing.screenPadding,
+      gap: spacing.sm,
+    },
+    emptyTitle: {
+      ...typography.subtitle,
+      fontFamily: FONT_FAMILY.bold,
+      fontSize: 18,
+      color: t.colors.text.primary,
+      marginTop: spacing.md,
+      letterSpacing: -0.3,
+    },
+    emptyHint: {
+      ...typography.caption,
+      fontFamily: FONT_FAMILY.regular,
+      color: t.colors.text.tertiary,
+      textAlign: "center",
+      maxWidth: 280,
+    },
+  });

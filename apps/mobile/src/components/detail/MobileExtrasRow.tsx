@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSpecialFeatures, useJellyfinClient } from "@tentacle-tv/api-client";
-import { colors, spacing, FONT_FAMILY, RADIUS, SURFACE, BORDER } from "@/theme";
+import { spacing, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
 
 interface RemoteTrailer { Url: string; Name?: string }
 
@@ -42,6 +42,7 @@ export function MobileExtrasRow({
   const { t } = useTranslation("common");
   const router = useRouter();
   const client = useJellyfinClient();
+  const { colors } = useTheme();
   const { data: features } = useSpecialFeatures(itemId);
 
   const tiles: Tile[] = [];
@@ -74,7 +75,7 @@ export function MobileExtrasRow({
         style={{
           fontSize: 18,
           fontFamily: FONT_FAMILY.bold,
-          color: colors.textPrimary,
+          color: colors.text.primary,
           paddingHorizontal: spacing.screenPadding,
           marginBottom: 12,
         }}
@@ -89,16 +90,16 @@ export function MobileExtrasRow({
         contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, gap: 12 }}
         renderItem={({ item: tile }) => (
           <Pressable onPress={tile.onPress} style={({ pressed }) => [{ width: W }, pressed && { opacity: 0.8 }]}>
-            <View style={{ width: W, height: H, borderRadius: RADIUS.md, overflow: "hidden", backgroundColor: SURFACE.s2, borderWidth: 1, borderColor: BORDER.subtle }}>
+            <View style={{ width: W, height: H, borderRadius: RADIUS.md, overflow: "hidden", backgroundColor: colors.surface.s2, borderWidth: 1, borderColor: colors.border.subtle }}>
               <Image source={{ uri: tile.thumb }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
               <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" }}>
-                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" }}>
-                  <Feather name="play" size={16} color="#fff" />
+                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.overlay.scrimSoft, alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="play" size={16} color={colors.cta.brandFg} />
                 </View>
               </View>
             </View>
-            <Text numberOfLines={1} style={{ marginTop: 6, fontSize: 13, fontFamily: FONT_FAMILY.medium, color: colors.textPrimary }}>{tile.title}</Text>
-            {tile.sub ? <Text numberOfLines={1} style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>{tile.sub}</Text> : null}
+            <Text numberOfLines={1} style={{ marginTop: 6, fontSize: 13, fontFamily: FONT_FAMILY.medium, color: colors.text.primary }}>{tile.title}</Text>
+            {tile.sub ? <Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.tertiary }}>{tile.sub}</Text> : null}
           </Pressable>
         )}
       />

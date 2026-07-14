@@ -1,6 +1,6 @@
 import { Pressable, View, Text, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { typography, BORDER, FONT_FAMILY, RADIUS } from "@/theme";
+import { typography, FONT_FAMILY, RADIUS, useTheme, withAlpha } from "@/theme";
 
 interface Props {
   icon: keyof typeof Feather.glyphMap;
@@ -23,9 +23,10 @@ interface Props {
  *  • Toggle via couleur seulement — labels courts identiques active/inactive (R2).
  */
 export function DetailActionButton({ icon, iconActive, label, active, activeColor, fillOnActive, onPress }: Props) {
-  const ringBg = active ? `${activeColor}22` : "rgba(255,255,255,0.06)";
-  const ringBorder = active ? `${activeColor}55` : BORDER.subtle;
-  const iconColor = active ? activeColor : "rgba(255,255,255,0.92)";
+  const { colors } = useTheme();
+  const ringBg = active ? withAlpha(activeColor, 0.13, colors.brand.soft) : colors.fill.subtle;
+  const ringBorder = active ? withAlpha(activeColor, 0.33, colors.brand.glow) : colors.border.subtle;
+  const iconColor = active ? activeColor : colors.text.primary;
   const iconName = (active && iconActive) ? iconActive : icon;
   return (
     <Pressable
@@ -51,7 +52,7 @@ export function DetailActionButton({ icon, iconActive, label, active, activeColo
       <Text
         numberOfLines={1}
         ellipsizeMode="tail"
-        style={[st.label, { color: active ? activeColor : "rgba(255,255,255,0.7)" }]}
+        style={[st.label, { color: active ? activeColor : colors.text.secondary }]}
       >
         {label}
       </Text>

@@ -3,7 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { spacing, CONTENT_MAX_WIDTH } from "../../theme";
+import { spacing, CONTENT_MAX_WIDTH, useThemedStyles } from "../../theme";
 import { Badge } from "../ui";
 import { MobileMediaCard } from "../MobileMediaCard";
 import { MediaRow } from "../MediaRow";
@@ -11,7 +11,7 @@ import { MobileEpisodeList } from "../MobileEpisodeList";
 import { CastRow } from "../CastRow";
 import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
-import { st } from "../../screens/mediaDetailStyles";
+import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 
 interface Props {
   item: MediaItem;
@@ -31,6 +31,7 @@ interface Props {
 export function DetailBody({ item, isEpisode, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
   const router = useRouter();
   const { t } = useTranslation("common");
+  const st = useThemedStyles(makeMediaDetailStyles);
   const [expanded, setExpanded] = useState(false);
   const [overviewTruncated, setOverviewTruncated] = useState(false);
 

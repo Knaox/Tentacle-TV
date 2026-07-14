@@ -7,13 +7,13 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { spacing, BRAND, CTA, RADIUS, SURFACE, STATUS } from "../../theme";
+import { spacing, RADIUS, useTheme, useThemedStyles } from "../../theme";
 import { ProgressBar } from "../ui";
 import { DetailActionsRow } from "./DetailActionsRow";
 import { MetaTokens } from "./MetaTokens";
 import { buildSeriesPlayLabel, formatTime } from "./computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../../constants/featureFlags";
-import { st } from "../../screens/mediaDetailStyles";
+import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 import type { useMediaDetailAnimations } from "../../hooks/useMediaDetailAnimations";
 
 type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
@@ -40,6 +40,8 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
   const router = useRouter();
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
+  const theme = useTheme();
+  const st = useThemedStyles(makeMediaDetailStyles);
 
   const isSeries = item.Type === "Series";
   const posterId = isEpisode ? (item.SeriesId ?? item.Id) : item.Id;
@@ -62,11 +64,11 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
     <Animated.View style={[{ width: posterW, height: posterH }, ENABLE_SHARED_POSTER_TRANSITION ? undefined : anims.posterStyle]}>
       <Animated.Image
         source={{ uri: poster }}
-        style={{ width: posterW, height: posterH, borderRadius: RADIUS.lg, backgroundColor: SURFACE.s2, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.55, shadowRadius: 20 }}
+        style={{ width: posterW, height: posterH, borderRadius: RADIUS.lg, backgroundColor: theme.colors.surface.s2, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.55, shadowRadius: 20 }}
         resizeMode="cover"
         {...(ENABLE_SHARED_POSTER_TRANSITION ? { sharedTransitionTag: `poster-${posterId}` } : {})}
       />
-      {isWatched && <View style={st.watchedRing}><Feather name="check" size={14} color="#000" /></View>}
+      {isWatched && <View style={st.watchedRing}><Feather name="check" size={14} color={theme.colors.cta.primaryFg} /></View>}
     </Animated.View>
   );
 
@@ -76,7 +78,7 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
         item.SeriesId ? (
           <Pressable onPress={() => router.push(`/media/${item.SeriesId}`)} hitSlop={6} accessibilityRole="link" accessibilityLabel={item.SeriesName} style={st.seriesLink}>
             <Text numberOfLines={1} style={st.seriesLabel}>{item.SeriesName}</Text>
-            <Feather name="chevron-right" size={14} color={BRAND.light} />
+            <Feather name="chevron-right" size={14} color={theme.colors.brand.light} />
           </Pressable>
         ) : <Text numberOfLines={1} style={st.seriesLabel}>{item.SeriesName}</Text>
       )}
@@ -89,7 +91,7 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
         {runtimeMin != null && runtimeMin > 0 && <Text style={st.metaItem}>{t("minutesShort", { count: runtimeMin })}</Text>}
         {rating && <Text style={st.metaDot}>·</Text>}
         {rating && (
-          <View style={st.ratingRow}><Feather name="star" size={11} color={STATUS.rating} /><Text style={st.ratingTxt}>{rating}</Text></View>
+          <View style={st.ratingRow}><Feather name="star" size={11} color={theme.colors.status.rating} /><Text style={st.ratingTxt}>{rating}</Text></View>
         )}
         {isSeries && item.ChildCount != null && item.ChildCount > 0 && (
           <Text style={st.metaItem}>· {t("seasonsCount", { count: item.ChildCount })}</Text>
@@ -103,10 +105,10 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
     <Animated.View style={[{ marginTop: spacing.xl }, anims.actionsStyle]}>
       <View style={{ width: "100%", maxWidth: 420 }}>
         <Pressable style={({ pressed }) => [st.playBtn, pressed && { opacity: 0.85 }]} onPress={() => router.push(`/watch/${playTargetId}`)} accessibilityRole="button" accessibilityLabel={`${playLabel} ${item.Name}`}>
-          <Feather name="play" size={20} color={CTA.primaryFg} fill={CTA.primaryFg} />
+          <Feather name="play" size={20} color={theme.colors.cta.primaryFg} fill={theme.colors.cta.primaryFg} />
           <Text style={st.playBtnTxt} numberOfLines={1}>{playLabel}</Text>
         </Pressable>
-        {!isSeries && hasResume && <ProgressBar progress={progress} style={{ marginTop: 10 }} tint={BRAND.violet} />}
+        {!isSeries && hasResume && <ProgressBar progress={progress} style={{ marginTop: 10 }} tint={theme.colors.brand.violet} />}
       </View>
     </Animated.View>
   ) : null;

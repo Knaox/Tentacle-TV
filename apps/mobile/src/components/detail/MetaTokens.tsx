@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import { extractMediaQuality } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { BRAND, FONT_FAMILY } from "@/theme";
+import { FONT_FAMILY, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 /**
  * Méta qualité/langues en tokens discrets (jumeau RN de MetaChips web) —
@@ -10,6 +10,7 @@ import { BRAND, FONT_FAMILY } from "@/theme";
  * `extractMediaQuality` (qualité + audioLabels VF/VFQ/VOSTFR/EN…).
  */
 export function MetaTokens({ item, compact = false }: { item?: MediaItem; compact?: boolean }) {
+  const styles = useThemedStyles(makeStyles);
   const q = extractMediaQuality(item);
 
   const tokens: { label: string; accent?: boolean }[] = [];
@@ -39,27 +40,28 @@ export function MetaTokens({ item, compact = false }: { item?: MediaItem; compac
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 },
-  rowCompact: { marginTop: 4, gap: 5 },
-  chip: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  chipAccent: {
-    backgroundColor: BRAND.soft,
-    borderColor: "rgba(139,92,246,0.5)",
-  },
-  txt: {
-    fontSize: 10.5,
-    fontFamily: FONT_FAMILY.semibold,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    color: "rgba(255,255,255,0.8)",
-  },
-  txtAccent: { color: BRAND.light },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 },
+    rowCompact: { marginTop: 4, gap: 5 },
+    chip: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 5,
+      backgroundColor: t.colors.fill.subtle,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.colors.border.strong,
+    },
+    chipAccent: {
+      backgroundColor: t.colors.brand.soft,
+      borderColor: withAlpha(t.colors.brand.violet, 0.5, t.colors.brand.glow),
+    },
+    txt: {
+      fontSize: 10.5,
+      fontFamily: FONT_FAMILY.semibold,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+      color: t.colors.text.secondary,
+    },
+    txtAccent: { color: t.colors.brand.light },
+  });

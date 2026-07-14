@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, Animated, PanResponder, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, STATUS, SURFACE, SHEET_MAX_WIDTH } from "@/theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { GlassBackdrop } from "@/components/ui";
 
 // expo-haptics optional
 let Haptics: { impactAsync: (s: any) => void; ImpactFeedbackStyle: any } | null = null;
@@ -28,6 +28,8 @@ interface Props {
  */
 export function MediaActionSheet({ visible, itemId, onClose }: Props) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
   const { height: SCREEN_H } = useWindowDimensions();
@@ -101,8 +103,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
   return (
     <Modal visible transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
       <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: overlayOpacity }]}>
-        <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.55)" }]} />
+        <GlassBackdrop intensity={28} />
         <Pressable style={StyleSheet.absoluteFillObject} onPress={dismiss} accessibilityLabel={t("close")} />
       </Animated.View>
 
@@ -126,7 +127,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
                 {backdrop && (
                   <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFillObject} contentFit="cover" />
                 )}
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(10,10,15,0.78)" }]} />
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.glass.tintStrong }]} />
                 <View style={st.heroContent}>
                   {poster && (
                     <View style={st.posterWrap}>
@@ -151,7 +152,7 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
                 iconActive="heart"
                 label={isFav ? t("inFavorites") : t("addToFavorites")}
                 active={isFav}
-                activeColor={STATUS.error}
+                activeColor={theme.colors.status.error}
                 fillOnActive
                 onPress={handleAction(() => (isFav ? favorite.remove.mutate() : favorite.add.mutate()))}
               />
@@ -160,14 +161,14 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
                 iconActive="check"
                 label={isInList ? t("inMyList") : t("addToMyList")}
                 active={isInList}
-                activeColor={BRAND.violet}
+                activeColor={theme.colors.brand.violet}
                 onPress={handleAction(() => (isInList ? watchlist.remove.mutate() : watchlist.add.mutate()))}
               />
               <ActionCell
                 icon="check-circle"
                 label={isWatched ? t("markUnwatched") : t("markWatched")}
                 active={isWatched}
-                activeColor={BRAND.violet}
+                activeColor={theme.colors.brand.violet}
                 onPress={handleAction(() => (isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()))}
               />
             </View>
@@ -189,9 +190,11 @@ function ActionCell({ icon, iconActive, label, active, activeColor, fillOnActive
   fillOnActive?: boolean;
   onPress: () => void;
 }) {
-  const ringBg = active ? `${activeColor}22` : "rgba(255,255,255,0.06)";
-  const ringBorder = active ? `${activeColor}55` : BORDER.subtle;
-  const iconColor = active ? activeColor : "rgba(255,255,255,0.92)";
+  const { colors } = useTheme();
+  const st = useThemedStyles(makeStyles);
+  const ringBg = active ? withAlpha(activeColor, 0.13, colors.brand.soft) : colors.fill.subtle;
+  const ringBorder = active ? withAlpha(activeColor, 0.33, colors.brand.glow) : colors.border.subtle;
+  const iconColor = active ? activeColor : colors.text.primary;
   const iconName = (active && iconActive) ? iconActive : icon;
   return (
     <Pressable
@@ -204,35 +207,36 @@ function ActionCell({ icon, iconActive, label, active, activeColor, fillOnActive
       <View style={[st.ring, { backgroundColor: ringBg, borderColor: ringBorder }]}>
         <Feather name={iconName} size={26} color={iconColor} fill={fillOnActive && active ? activeColor : "none"} />
       </View>
-      <Text numberOfLines={2} style={[st.cellLabel, { color: active ? activeColor : "rgba(255,255,255,0.85)" }]}>
+      <Text numberOfLines={2} style={[st.cellLabel, { color: active ? activeColor : colors.text.secondary }]}>
         {label}
       </Text>
     </Pressable>
   );
 }
 
-const st = StyleSheet.create({
-  sheetWrap: {
-    position: "absolute" as const, left: 0, right: 0, bottom: 0,
-    alignItems: "center" as const,
-  },
-  sheet: {
-    width: "100%" as const, maxWidth: SHEET_MAX_WIDTH,
-    backgroundColor: SURFACE.s1,
-    borderTopLeftRadius: RADIUS["2xl"], borderTopRightRadius: RADIUS["2xl"],
-    borderTopWidth: StyleSheet.hairlineWidth, borderColor: BORDER.subtle,
-  },
-  handleArea: { alignItems: "center" as const, paddingTop: 12, paddingBottom: 6 },
-  handle: { width: 38, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.28)" },
-  hero: { marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.lg, height: 96, borderRadius: RADIUS.lg, overflow: "hidden" as const, borderWidth: StyleSheet.hairlineWidth, borderColor: BORDER.subtle },
-  heroContent: { flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.md, padding: spacing.md },
-  posterWrap: { width: 52, height: 76, borderRadius: RADIUS.sm, overflow: "hidden" as const, backgroundColor: SURFACE.s2, ...SHADOW_RN.elev2 },
-  title: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: colors.textPrimary, letterSpacing: -0.2, marginBottom: 3 },
-  meta: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: BRAND.light, letterSpacing: 0.2 },
-  grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 10, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-  cell: { flex: 1, alignItems: "center" as const, paddingVertical: 16, paddingHorizontal: 10, borderRadius: RADIUS.lg, backgroundColor: "rgba(255,255,255,0.025)" },
-  ring: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 10 },
-  cellLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, fontSize: 12.5, textAlign: "center" as const, letterSpacing: 0.1, lineHeight: 15 },
-  backLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: spacing.md, paddingVertical: 4 },
-  backLinkTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: BRAND.light },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    sheetWrap: {
+      position: "absolute" as const, left: 0, right: 0, bottom: 0,
+      alignItems: "center" as const,
+    },
+    sheet: {
+      width: "100%" as const, maxWidth: SHEET_MAX_WIDTH,
+      backgroundColor: t.colors.glass.panel,
+      borderTopLeftRadius: RADIUS["2xl"], borderTopRightRadius: RADIUS["2xl"],
+      borderTopWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle,
+    },
+    handleArea: { alignItems: "center" as const, paddingTop: 12, paddingBottom: 6 },
+    handle: { width: 38, height: 4, borderRadius: 2, backgroundColor: t.colors.fill.strong },
+    hero: { marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.lg, height: 96, borderRadius: RADIUS.lg, overflow: "hidden" as const, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle },
+    heroContent: { flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.md, padding: spacing.md },
+    posterWrap: { width: 52, height: 76, borderRadius: RADIUS.sm, overflow: "hidden" as const, backgroundColor: t.colors.surface.s2, ...SHADOW_RN.elev2 },
+    title: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, letterSpacing: -0.2, marginBottom: 3 },
+    meta: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.brand.light, letterSpacing: 0.2 },
+    grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 10, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+    cell: { flex: 1, alignItems: "center" as const, paddingVertical: 16, paddingHorizontal: 10, borderRadius: RADIUS.lg, backgroundColor: t.colors.fill.faint },
+    ring: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 10 },
+    cellLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, fontSize: 12.5, textAlign: "center" as const, letterSpacing: 0.1, lineHeight: 15 },
+    backLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: spacing.md, paddingVertical: 4 },
+    backLinkTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
+  });

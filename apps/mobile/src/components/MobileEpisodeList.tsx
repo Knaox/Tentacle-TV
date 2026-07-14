@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useSeasons, useEpisodes, useJellyfinClient, useWatchedToggle, useBatchWatchedToggle } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors, BRAND, BORDER, FONT_FAMILY, RADIUS } from "@/theme";
+import { FONT_FAMILY, RADIUS, useTheme, withAlpha } from "@/theme";
 import { MetaTokens } from "./detail/MetaTokens";
 
 let Haptics: { impactAsync: (style: any) => void; ImpactFeedbackStyle: any } | null = null;
@@ -22,6 +22,7 @@ interface Props {
 }
 
 export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId }: Props) {
+  const { colors } = useTheme();
   const { data: seasons } = useSeasons(seriesId);
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
 
@@ -45,9 +46,9 @@ export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialS
                 accessibilityRole="tab"
                 accessibilityState={{ selected: isActive }}
                 style={{
-                  backgroundColor: isActive ? BRAND.soft : "rgba(255,255,255,0.05)",
+                  backgroundColor: isActive ? colors.brand.soft : colors.fill.subtle,
                   borderWidth: 1,
-                  borderColor: isActive ? "rgba(139,92,246,0.45)" : BORDER.subtle,
+                  borderColor: isActive ? withAlpha(colors.brand.violet, 0.45, colors.brand.glow) : colors.border.subtle,
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: RADIUS.pill,
@@ -56,7 +57,7 @@ export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialS
                 }}
               >
                 <Text style={{
-                  color: isActive ? BRAND.light : "rgba(255,255,255,0.6)",
+                  color: isActive ? colors.brand.light : colors.text.tertiary,
                   fontSize: 13,
                   fontFamily: isActive ? FONT_FAMILY.semibold : FONT_FAMILY.medium,
                   letterSpacing: 0.1,
@@ -82,6 +83,7 @@ function SeasonActionBar({ seriesId, seasonId, episodes }: {
   seriesId: string; seasonId: string; episodes: MediaItem[];
 }) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
   const batchCtx = useMemo(() => ({ seriesId, seasonId }), [seriesId, seasonId]);
   const { markWatched, markUnwatched } = useBatchWatchedToggle(batchCtx);
   const allWatched = useMemo(() => episodes.every((ep) => ep.UserData?.Played), [episodes]);
@@ -108,15 +110,15 @@ function SeasonActionBar({ seriesId, seasonId, episodes }: {
         gap: 6,
         marginHorizontal: 16,
         marginBottom: 10,
-        backgroundColor: "rgba(255,255,255,0.05)",
+        backgroundColor: colors.fill.subtle,
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
         opacity: isBusy ? 0.4 : 1,
       }}
     >
-      <Feather name={allWatched ? "eye-off" : "eye"} size={14} color="rgba(255,255,255,0.6)" />
-      <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: "600" }}>
+      <Feather name={allWatched ? "eye-off" : "eye"} size={14} color={colors.text.tertiary} />
+      <Text style={{ color: colors.text.tertiary, fontSize: 12, fontWeight: "600" }}>
         {allWatched ? t("markSeasonUnwatched") : t("markSeasonWatched")}
       </Text>
     </Pressable>
@@ -128,6 +130,7 @@ function SeasonActionBar({ seriesId, seasonId, episodes }: {
 function EpisodeThumb({ ep, seriesId, client }: {
   ep: MediaItem; seriesId: string; client: ReturnType<typeof useJellyfinClient>;
 }) {
+  const { colors } = useTheme();
   const hasPrimary = !!ep.ImageTags?.Primary;
   const thumbUrl = hasPrimary
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 70 })
@@ -136,8 +139,8 @@ function EpisodeThumb({ ep, seriesId, client }: {
 
   if (imgError) {
     return (
-      <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceElevated }}>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textMuted }}>
+      <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: colors.surface.s2 }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.tertiary }}>
           {ep.IndexNumber != null ? `E${ep.IndexNumber}` : ep.Name?.charAt(0).toUpperCase() ?? "?"}
         </Text>
       </View>
@@ -161,6 +164,7 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
   client: ReturnType<typeof useJellyfinClient>; onPlay: (ep: MediaItem) => void; isCurrent?: boolean;
 }) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const played = ep.UserData?.Played === true;
   const progress = ep.UserData?.PlayedPercentage;
@@ -189,34 +193,34 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
   }, [played, markWatched, markUnwatched, scale]);
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, overflow: "hidden", minHeight: thumbH }}>
+    <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.fill.faint, borderRadius: 10, overflow: "hidden", minHeight: thumbH }}>
       <Pressable onPress={() => onPlay(ep)} style={{ flexDirection: "row", flex: 1 }}>
-        <View style={{ width: thumbW, height: thumbH, alignSelf: "center", backgroundColor: colors.surfaceElevated, borderRadius: 6, overflow: "hidden" }}>
+        <View style={{ width: thumbW, height: thumbH, alignSelf: "center", backgroundColor: colors.surface.s2, borderRadius: 6, overflow: "hidden" }}>
           <EpisodeThumb ep={ep} seriesId={seriesId} client={client} />
           {progress != null && progress > 0 && (
-            <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.2)" }}>
-              <View style={{ height: "100%", width: `${progress}%`, backgroundColor: BRAND.violet }} />
+            <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: colors.fill.strong }}>
+              <View style={{ height: "100%", width: `${progress}%`, backgroundColor: colors.brand.violet }} />
             </View>
           )}
         </View>
         <View style={{ flex: 1, padding: 10, justifyContent: "center" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {isCurrent && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: BRAND.violet }} />}
-            <Text numberOfLines={1} style={{ flex: 1, color: "#fff", fontSize: 13, fontWeight: isCurrent ? "800" : "600" }}>
+            {isCurrent && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.brand.violet }} />}
+            <Text numberOfLines={1} style={{ flex: 1, color: colors.text.primary, fontSize: 13, fontWeight: isCurrent ? "800" : "600" }}>
               {epLabel}{ep.Name}
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
             {isCurrent && (
-              <Text style={{ color: BRAND.light, fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" }}>
+              <Text style={{ color: colors.brand.light, fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" }}>
                 {t("currentEpisode")}
               </Text>
             )}
-            {runtime && <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{t("minutesShort", { count: runtime })}</Text>}
+            {runtime && <Text style={{ color: colors.text.quaternary, fontSize: 11 }}>{t("minutesShort", { count: runtime })}</Text>}
           </View>
           <MetaTokens item={ep} compact />
           {ep.Overview && (
-            <Text numberOfLines={2} style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4, lineHeight: 15 }}>
+            <Text numberOfLines={2} style={{ color: colors.text.quaternary, fontSize: 11, marginTop: 4, lineHeight: 15 }}>
               {ep.Overview}
             </Text>
           )}
@@ -239,13 +243,13 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
               borderRadius: 15,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: played ? BRAND.soft : "rgba(255,255,255,0.06)",
+              backgroundColor: played ? colors.brand.soft : colors.fill.subtle,
               borderWidth: 1,
-              borderColor: played ? "rgba(139,92,246,0.45)" : BORDER.subtle,
+              borderColor: played ? withAlpha(colors.brand.violet, 0.45, colors.brand.glow) : colors.border.subtle,
             },
           ]}
         >
-          <Feather name="check" size={16} color={played ? BRAND.light : "rgba(255,255,255,0.25)"} />
+          <Feather name="check" size={16} color={played ? colors.brand.light : colors.text.disabled} />
         </Animated.View>
       </Pressable>
     </View>

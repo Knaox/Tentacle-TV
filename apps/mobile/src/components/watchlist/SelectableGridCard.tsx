@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { PressableCard, ProgressBar } from "@/components/ui";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS, SURFACE } from "@/theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
 
@@ -43,6 +43,8 @@ export const SelectableGridCard = memo(function SelectableGridCard({
   onLongPress,
   accessibilityLabel,
 }: SelectableGridCardProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const showProgress = progressPercent != null && progressPercent > 0 && !watched;
 
   return (
@@ -62,13 +64,13 @@ export const SelectableGridCard = memo(function SelectableGridCard({
         )}
         {watched && (
           <View style={styles.watchedBadge} accessibilityLabel="vu">
-            <Feather name="check" size={12} color="#000" />
+            <Feather name="check" size={12} color={colors.cta.primaryFg} />
           </View>
         )}
         {selectable && (
           <View style={[StyleSheet.absoluteFill, styles.selectOverlay, selected && styles.selectOverlayActive]}>
             <View style={[styles.checkbox, selected && styles.checkboxActive]}>
-              {selected && <Feather name="check" size={14} color={BRAND.light} />}
+              {selected && <Feather name="check" size={14} color={colors.brand.light} />}
             </View>
           </View>
         )}
@@ -79,71 +81,72 @@ export const SelectableGridCard = memo(function SelectableGridCard({
   );
 });
 
-const styles = StyleSheet.create({
-  poster: {
-    aspectRatio: POSTER_ASPECT,
-    borderRadius: RADIUS.lg,
-    overflow: "hidden",
-    backgroundColor: SURFACE.s2,
-    borderWidth: 1,
-    borderColor: BORDER.subtle,
-  },
-  progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  // R11 — Watched check unifié (web/mobile) : pill blanc + check noir + shadow.
-  // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
-  watchedBadge: {
-    position: "absolute",
-    top: 7,
-    right: 7,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  itemTitle: {
-    ...typography.small,
-    fontFamily: FONT_FAMILY.semibold,
-    color: colors.textPrimary,
-    marginTop: spacing.xs + 2,
-    letterSpacing: -0.1,
-  },
-  itemYear: {
-    ...typography.badge,
-    fontFamily: FONT_FAMILY.medium,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  selectOverlay: {
-    backgroundColor: "rgba(0,0,0,0.32)",
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    padding: spacing.xs,
-    borderRadius: RADIUS.lg,
-  },
-  selectOverlayActive: {
-    borderWidth: 2,
-    borderColor: BRAND.violet,
-    backgroundColor: "rgba(139,92,246,0.18)",
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
-  checkboxActive: {
-    backgroundColor: BRAND.soft,
-    borderColor: "rgba(139,92,246,0.5)",
-  },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    poster: {
+      aspectRatio: POSTER_ASPECT,
+      borderRadius: RADIUS.lg,
+      overflow: "hidden",
+      backgroundColor: t.colors.surface.s2,
+      borderWidth: 1,
+      borderColor: t.colors.border.subtle,
+    },
+    progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
+    // R11 — Watched check unifié (web/mobile) : pill haut-contraste + check inversé + shadow.
+    // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
+    watchedBadge: {
+      position: "absolute",
+      top: 7,
+      right: 7,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: t.colors.cta.primaryBg,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.35,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    itemTitle: {
+      ...typography.small,
+      fontFamily: FONT_FAMILY.semibold,
+      color: t.colors.text.primary,
+      marginTop: spacing.xs + 2,
+      letterSpacing: -0.1,
+    },
+    itemYear: {
+      ...typography.badge,
+      fontFamily: FONT_FAMILY.medium,
+      color: t.colors.text.tertiary,
+      marginTop: 2,
+    },
+    selectOverlay: {
+      backgroundColor: t.colors.overlay.scrimSoft,
+      justifyContent: "flex-start",
+      alignItems: "flex-end",
+      padding: spacing.xs,
+      borderRadius: RADIUS.lg,
+    },
+    selectOverlayActive: {
+      borderWidth: 2,
+      borderColor: t.colors.brand.violet,
+      backgroundColor: withAlpha(t.colors.brand.violet, 0.18, t.colors.brand.ghost),
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: t.colors.cta.brandFg,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: t.colors.overlay.scrimSoft,
+    },
+    checkboxActive: {
+      backgroundColor: t.colors.brand.soft,
+      borderColor: withAlpha(t.colors.brand.violet, 0.5, t.colors.brand.glow),
+    },
+  });

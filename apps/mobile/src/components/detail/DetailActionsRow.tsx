@@ -2,7 +2,7 @@ import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailActionButton } from "./DetailActionButton";
-import { BRAND, spacing, STATUS } from "@/theme";
+import { spacing, useTheme } from "@/theme";
 
 interface MutationHandle { mutate: () => void }
 interface FavHandle { add: MutationHandle; remove: MutationHandle }
@@ -23,6 +23,7 @@ interface Props {
  */
 export function DetailActionsRow({ target, isWatched, favorite, watchlist, watched }: Props) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
   const isFav = !!target?.UserData?.IsFavorite;
   const isInList = !!target?.UserData?.Likes;
 
@@ -33,7 +34,7 @@ export function DetailActionsRow({ target, isWatched, favorite, watchlist, watch
         iconActive="heart"
         label={t("actionFavorite")}
         active={isFav}
-        activeColor={STATUS.error}
+        activeColor={theme.colors.status.error}
         fillOnActive
         onPress={() => isFav ? favorite.remove.mutate() : favorite.add.mutate()}
       />
@@ -42,7 +43,7 @@ export function DetailActionsRow({ target, isWatched, favorite, watchlist, watch
         iconActive="check"
         label={t("actionMyList")}
         active={isInList}
-        activeColor={BRAND.violet}
+        activeColor={theme.colors.brand.violet}
         onPress={() => isInList ? watchlist.remove.mutate() : watchlist.add.mutate()}
       />
       <DetailActionButton
@@ -50,7 +51,7 @@ export function DetailActionsRow({ target, isWatched, favorite, watchlist, watch
         iconActive="check-circle"
         label={t("actionWatched")}
         active={isWatched}
-        activeColor={BRAND.violet}
+        activeColor={theme.colors.brand.violet}
         fillOnActive
         onPress={() => isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()}
       />
