@@ -30,4 +30,17 @@ export default {
   cancel: "Annuler",
   confirm: "Confirmer",
   selected: "{{count}} selectionnee(s)",
+  // Push (écran de réglages)
+  pushSectionTitle: "Notifications push",
+  libraryAddedTitle: "Ajouts en bibliothèque",
+  libraryAddedDesc: "Être notifié des nouveaux contenus ajoutés au serveur",
+  seerAvailableTitle: "Contenu demandé disponible",
+  seerAvailableDesc: "Quand une de vos demandes devient disponible",
+  testButton: "Envoyer une notification de test",
+  testHint: "Vérifiez que les notifications arrivent bien sur cet appareil.",
+  testSent: "Notification envoyée ✓",
+  testNoDevice: "Aucun appareil enregistré. Autorisez les notifications puis réessayez.",
+  permissionDeniedTitle: "Notifications désactivées",
+  permissionDeniedBody: "Autorisez les notifications dans les Réglages pour recevoir les alertes.",
+  enableInSettings: "Ouvrir les Réglages",
 } as const;

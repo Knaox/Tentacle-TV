@@ -1,0 +1,138 @@
+import { useCallback } from "react";
+import { Text, Switch, Pressable, Alert, Linking, Platform, ActivityIndicator, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
+import {
+  usePushPreferences,
+  useSetPushPreferences,
+  useSendTestPush,
+  useRegisterPushDevice,
+  type PushPreferences,
+} from "@tentacle-tv/api-client";
+
+import { SettingsScaffold } from "./SettingsScaffold";
+import { SettingsSection, SettingsRow } from "@/components/settings";
+import { useActivePlugins } from "@/hooks/useActivePlugins";
+import { registerForPushToken } from "@/services/pushNotifications";
+import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+
+/**
+ * Sous-écran « Notifications » : deux préférences push (opt-in). Le toggle Seer
+ * n'apparaît que si le plugin `seer` est actif sur le serveur. Un bouton envoie
+ * une notif de test pour valider la chaîne bout-en-bout sur l'appareil.
+ */
+export function NotificationsScreen() {
+  const { t } = useTranslation("notifications");
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
+
+  const { data: prefs } = usePushPreferences();
+  const setPrefs = useSetPushPreferences();
+  const testPush = useSendTestPush();
+  const register = useRegisterPushDevice();
+  const { data: plugins } = useActivePlugins();
+  const seerActive = !!plugins?.some((p) => p.pluginId === "seer");
+
+  const toggle = useCallback(
+    (key: keyof PushPreferences, next: boolean) => {
+      setPrefs.mutate({ [key]: next } as Partial<PushPreferences>);
+      if (!next) return;
+      // Activer : s'assurer que l'appareil est enregistré (permission + token).
+      void (async () => {
+        const token = await registerForPushToken();
+        if (token) {
+          register.mutate({ token, platform: Platform.OS === "android" ? "android" : "ios" });
+        } else {
+          Alert.alert(t("permissionDeniedTitle"), t("permissionDeniedBody"), [
+            { text: t("cancel") },
+            { text: t("enableInSettings"), onPress: () => void Linking.openSettings() },
+          ]);
+        }
+      })();
+    },
+    [setPrefs, register, t],
+  );
+
+  const onTest = useCallback(() => {
+    testPush.mutate(undefined, {
+      onSuccess: (res) =>
+        Alert.alert(t("title"), res.sent === 0 ? t("testNoDevice") : t("testSent")),
+      onError: () => Alert.alert(t("title"), t("testNoDevice")),
+    });
+  }, [testPush, t]);
+
+  const renderSwitch = (key: keyof PushPreferences) => (
+    <Switch
+      value={prefs?.[key] ?? false}
+      onValueChange={(next) => toggle(key, next)}
+      trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
+      thumbColor={theme.colors.cta.brandFg}
+      ios_backgroundColor={theme.colors.fill.medium}
+      accessibilityLabel={key === "libraryAdded" ? t("libraryAddedTitle") : t("seerAvailableTitle")}
+    />
+  );
+
+  return (
+    <SettingsScaffold title={t("title")}>
+      <SettingsSection title={t("pushSectionTitle")}>
+        <SettingsRow
+          icon="film"
+          label={t("libraryAddedTitle")}
+          description={t("libraryAddedDesc")}
+          trailing={renderSwitch("libraryAdded")}
+          last={!seerActive}
+        />
+        {seerActive ? (
+          <SettingsRow
+            icon="download-cloud"
+            label={t("seerAvailableTitle")}
+            description={t("seerAvailableDesc")}
+            trailing={renderSwitch("seerAvailable")}
+            last
+          />
+        ) : null}
+      </SettingsSection>
+
+      <Pressable
+        onPress={onTest}
+        disabled={testPush.isPending}
+        style={({ pressed }) => [st.testBtn, pressed && st.testBtnPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={t("testButton")}
+      >
+        {testPush.isPending ? (
+          <ActivityIndicator color={theme.colors.cta.brandFg} />
+        ) : (
+          <Text style={st.testBtnLabel}>{t("testButton")}</Text>
+        )}
+      </Pressable>
+
+      <Text style={st.hint}>{t("testHint")}</Text>
+    </SettingsScaffold>
+  );
+}
+
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    testBtn: {
+      marginTop: spacing.lg,
+      minHeight: 50,
+      borderRadius: spacing.cardRadius,
+      backgroundColor: t.colors.brand.violet,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: spacing.lg,
+    },
+    testBtnPressed: { opacity: 0.85 },
+    testBtnLabel: {
+      ...typography.body,
+      fontFamily: FONT_FAMILY.semibold,
+      color: t.colors.cta.brandFg,
+    },
+    hint: {
+      ...typography.small,
+      color: t.colors.text.tertiary,
+      textAlign: "center",
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+  });

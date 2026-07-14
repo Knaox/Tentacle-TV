@@ -126,6 +126,7 @@ export function ProfileScreen() {
       <FadeIn delay={140}>
         <SettingsSection title={t("preferences")}>
           <SettingsRow icon="sun" label={t("appearance")} value={tp(THEME_MODE_LABEL[mode])} chevron onPress={() => router.push("/settings/appearance")} />
+          <SettingsRow icon="bell" label={t("notifications")} chevron onPress={() => router.push("/settings/notifications")} />
           <SettingsRow icon="play-circle" label={t("playback")} chevron last onPress={() => router.push("/settings/playback")} />
         </SettingsSection>
         <GlassCard style={st.langCard}>

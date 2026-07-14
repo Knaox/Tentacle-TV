@@ -46,6 +46,7 @@ export default {
   appearance: "Apparence",
   playback: "Lecture",
   playbackSubtitle: "Audio et sous-titres par défaut",
+  notifications: "Notifications",
   invitations: "Invitations",
   currentServer: "Serveur actuel",
   privacyPolicy: "Politique de confidentialité",

@@ -30,4 +30,17 @@ export default {
   cancel: "Cancel",
   confirm: "Confirm",
   selected: "{{count}} selected",
+  // Push (settings screen)
+  pushSectionTitle: "Push notifications",
+  libraryAddedTitle: "Library additions",
+  libraryAddedDesc: "Get notified about new content added to the server",
+  seerAvailableTitle: "Requested content available",
+  seerAvailableDesc: "When one of your requests becomes available",
+  testButton: "Send a test notification",
+  testHint: "Check that notifications reach this device.",
+  testSent: "Notification sent ✓",
+  testNoDevice: "No device registered. Allow notifications, then try again.",
+  permissionDeniedTitle: "Notifications disabled",
+  permissionDeniedBody: "Allow notifications in Settings to receive alerts.",
+  enableInSettings: "Open Settings",
 } as const;
