@@ -14,10 +14,20 @@ export type WsServerMessage =
   | { type: "pong"; t?: number; serverTime?: number }
   | { type: "home:update"; carousel: CarouselId; action: "refresh" }
   | { type: "notifications:update"; action: "refresh" }
+  /** Poussé à un appareil dont le jumelage vient d'être révoqué : la TV/le
+   *  mobile doit se déconfigurer et revenir à l'écran de jumelage. */
+  | { type: "session:revoked" }
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */
 const connections = new Map<string, Set<WebSocket>>();
+
+/** Map of device tokenHash -> its active WebSocket connection(s).
+ *  Permet de cibler UNE seule socket d'appareil (TV appairée) à la révocation,
+ *  sans toucher les autres appareils du même compte. Les tokens « user »
+ *  (web/mobile connectés directement) y figurent aussi mais leur hash ne
+ *  correspond à aucun pairedDevice, donc ils ne sont jamais ciblés. */
+const deviceSockets = new Map<string, Set<WebSocket>>();
 
 /** Debounce: max 1 event per (userId, carousel) per 5 seconds */
 const DEBOUNCE_MS = 5_000;
@@ -72,7 +82,7 @@ export function isUserOnline(userId: string): boolean {
 
 // ── Connection lifecycle ──
 
-export function addConnection(userId: string, ws: WebSocket): void {
+export function addConnection(userId: string, ws: WebSocket, tokenHash?: string): void {
   let set = connections.get(userId);
   if (!set) {
     set = new Set();
@@ -81,15 +91,46 @@ export function addConnection(userId: string, ws: WebSocket): void {
   const wasOffline = set.size === 0;
   set.add(ws);
   if (wasOffline) emitPresence(userId, true);
+
+  if (tokenHash) {
+    let dset = deviceSockets.get(tokenHash);
+    if (!dset) {
+      dset = new Set();
+      deviceSockets.set(tokenHash, dset);
+    }
+    dset.add(ws);
+  }
 }
 
-export function removeConnection(userId: string, ws: WebSocket): void {
+export function removeConnection(userId: string, ws: WebSocket, tokenHash?: string): void {
   const set = connections.get(userId);
-  if (!set) return;
-  set.delete(ws);
-  if (set.size === 0) {
-    connections.delete(userId);
-    emitPresence(userId, false);
+  if (set) {
+    set.delete(ws);
+    if (set.size === 0) {
+      connections.delete(userId);
+      emitPresence(userId, false);
+    }
+  }
+
+  if (tokenHash) {
+    const dset = deviceSockets.get(tokenHash);
+    if (dset) {
+      dset.delete(ws);
+      if (dset.size === 0) deviceSockets.delete(tokenHash);
+    }
+  }
+}
+
+/** Révocation d'un appareil appairé : pousse `session:revoked` à sa/ses
+ *  socket(s) puis les ferme, forçant la TV/le mobile à se déconfigurer
+ *  immédiatement (sinon la détection ne survient que passivement, au prochain
+ *  échec d'auth — jamais si l'appareil reste inactif sur un écran en cache). */
+export function revokeDeviceByTokenHash(tokenHash: string): void {
+  const dset = deviceSockets.get(tokenHash);
+  if (!dset) return;
+  for (const ws of dset) {
+    send(ws, { type: "session:revoked" });
+    if (ws.readyState === 1 /* OPEN */) ws.close(4009, "Device revoked");
   }
 }
 

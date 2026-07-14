@@ -6,9 +6,10 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
-  useTentacleConfig, useHomeWebSocket,
+  useTentacleConfig, useHomeWebSocket, useJellyfinClient,
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
+import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -47,7 +48,15 @@ function HomeScreenInner({ navigation }: Props) {
   const { t, i18n } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
-  useHomeWebSocket({ token: storage.getItem("tentacle_token") });
+  const jfClient = useJellyfinClient();
+  // Le serveur pousse `session:revoked` quand l'admin supprime ce jumelage :
+  // on se déconfigure et on repart sur l'écran de jumelage (doLogout purge
+  // aussi le token Jellyfin caché du direct streaming). Respecte le garde
+  // « lecture en cours » de doLogout.
+  useHomeWebSocket({
+    token: storage.getItem("tentacle_token"),
+    onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
+  });
   const { setFocusedItem } = useAmbientFocus();
   const { requestRailFocus, lastContentNodeRef } = useTVNav();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)

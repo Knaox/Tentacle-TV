@@ -31,6 +31,9 @@ interface UseHomeWebSocketOptions {
   fallbackInterval?: number;
   /** Called when WebSocket receives an auth error (invalid token). */
   onAuthError?: () => void;
+  /** Called when the server pushes `session:revoked` (device pairing removed).
+   *  The consumer should log out / reset to the pairing screen. */
+  onSessionRevoked?: () => void;
 }
 
 /**
@@ -41,7 +44,7 @@ interface UseHomeWebSocketOptions {
  * carrousel → invalidations TanStack Query et le polling de repli.
  */
 export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
-  const { token, enabled = true, fallbackInterval = 60_000, onAuthError } = options;
+  const { token, enabled = true, fallbackInterval = 60_000, onAuthError, onSessionRevoked } = options;
   const qc = useQueryClient();
 
   // Store volatile values in refs so the effect doesn't re-run on every render
@@ -49,6 +52,8 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
   qcRef.current = qc;
   const onAuthErrorRef = useRef(onAuthError);
   onAuthErrorRef.current = onAuthError;
+  const onSessionRevokedRef = useRef(onSessionRevoked);
+  onSessionRevokedRef.current = onSessionRevoked;
 
   useEffect(() => {
     if (!enabled) return;
@@ -92,6 +97,8 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
         invalidateCarousel(msg.carousel);
       } else if (msg.type === "notifications:update") {
         qcRef.current.invalidateQueries({ queryKey: ["notifications"] });
+      } else if (msg.type === "session:revoked") {
+        onSessionRevokedRef.current?.();
       }
     });
 
