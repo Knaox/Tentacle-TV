@@ -73,9 +73,38 @@ model Notification {
   refId           String?   @db.VarChar(255) // ticket or request ID
   read            Boolean   @default(false)
   createdAt       DateTime  @default(now())
+  pushedAt        DateTime? // horodatage de livraison push (null = pas encore poussée)
 
   @@index([jellyfinUserId, read])
+  @@index([type, pushedAt])
   @@map("notifications")
+}
+
+// Jeton de push Expo d'un appareil mobile, rattaché à un utilisateur Jellyfin.
+// Alimenté par POST /api/push/register ; purgé quand Expo renvoie
+// « DeviceNotRegistered ». Indépendant du jumelage TV (PairedDevice).
+model PushDevice {
+  id              String   @id @default(cuid())
+  jellyfinUserId  String   @db.VarChar(255)
+  expoPushToken   String   @unique @db.VarChar(255)
+  platform        String   @db.VarChar(10) // ios | android
+  lastSeen        DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([jellyfinUserId])
+  @@map("push_devices")
+}
+
+// Préférences de notifications push par utilisateur (opt-in : tout à false par
+// défaut). libraryAdded = nouveaux ajouts bibliothèque ; seerAvailable =
+// contenu demandé devenu disponible (mappé au type de notif « request_status »).
+model NotificationPreference {
+  jellyfinUserId  String   @id @db.VarChar(255)
+  libraryAdded    Boolean  @default(false)
+  seerAvailable   Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@map("notification_preferences")
 }
 
 model LibraryPreference {
