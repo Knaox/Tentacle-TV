@@ -215,29 +215,33 @@ export async function getItemDetail(userId: string, itemId: string): Promise<Rec
 }
 
 /**
- * Récupère un lot d'items par IDs via l'endpoint /Users/{userId}/Items (clé admin).
- * On passe par un userId (endpoint éprouvé, cf. getUserItemsBatch) plutôt que
- * /Items sans user, qui renvoie parfois vide selon la version de Jellyfin. Sert
- * à composer les notifications « nouveaux ajouts ». Renvoie [] si échec.
+ * Récupère les derniers items ajoutés (tri DateCreated desc, clé admin). Endpoint
+ * /Items filtré, déjà éprouvé par jellyfinPoller. Sert à la détection ROBUSTE des
+ * ajouts en bibliothèque (poll + watermark), indépendante de l'event WebSocket.
+ * Renvoie [] si échec (best-effort).
  */
-export async function getItemsByIds(
-  userId: string,
-  itemIds: string[],
-): Promise<{ Id: string; Name: string; Type: string; SeriesName?: string }[]> {
+export async function getRecentlyAddedItems(
+  limit: number,
+): Promise<{ Id: string; Name: string; Type: string; SeriesName?: string; DateCreated?: string }[]> {
   const jellyfinUrl = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
-  if (!jellyfinUrl || !apiKey || !userId || itemIds.length === 0) return [];
+  if (!jellyfinUrl || !apiKey) return [];
 
   const res = await fetch(
-    `${jellyfinUrl}/Users/${userId}/Items?Ids=${itemIds.join(",")}&Fields=SeriesName`,
-    { headers: { "X-Emby-Token": apiKey } },
+    `${jellyfinUrl}/Items?SortBy=DateCreated&SortOrder=Descending&Limit=${limit}` +
+      `&Recursive=true&IncludeItemTypes=Movie,Series,Episode&Fields=DateCreated,SeriesName`,
+    { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000) },
   );
   if (!res.ok) {
-    console.warn(`[LibNotif] getItemsByIds HTTP ${res.status}`);
+    console.warn(`[LibNotif] getRecentlyAddedItems HTTP ${res.status}`);
     return [];
   }
 
   const data = await res.json();
-  const items = (data?.Items ?? []) as { Id: string; Name: string; Type: string; SeriesName?: string }[];
-  return items.map((i) => ({ Id: i.Id, Name: i.Name, Type: i.Type, SeriesName: i.SeriesName }));
+  const items = (data?.Items ?? []) as {
+    Id: string; Name: string; Type: string; SeriesName?: string; DateCreated?: string;
+  }[];
+  return items.map((i) => ({
+    Id: i.Id, Name: i.Name, Type: i.Type, SeriesName: i.SeriesName, DateCreated: i.DateCreated,
+  }));
 }

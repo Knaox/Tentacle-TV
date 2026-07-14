@@ -1,63 +1,91 @@
-import { getItemsByIds } from "./jellyfin";
+import { getRecentlyAddedItems } from "./jellyfin";
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUsers } from "./pushService";
 
 // Notifie en push les utilisateurs opted-in (NotificationPreference.libraryAdded)
-// des nouveaux ajouts en bibliothèque. Détection : événement WebSocket Jellyfin
-// « LibraryChanged » (cf. jellyfinWs). Push DIRECT — pas de ligne Notification
-// in-app — pour ne pas inonder la cloche. Débounce + regroupement : une saison
-// entière ajoutée = N événements → une seule notification lisible.
+// des nouveaux ajouts en bibliothèque. Détection ROBUSTE par POLL de l'API
+// Jellyfin (recently added) + watermark persisté (ServerConfig) — ne dépend PAS
+// de l'event WebSocket, qui peut manquer ou arriver sans items. Le WS ne sert
+// plus qu'à déclencher un poll immédiat (accélérateur). Un seul détecteur (le
+// poll) → aucun doublon. Push direct, pas de ligne Notification in-app.
 
-const DEBOUNCE_MS = 20_000;
-const MAX_BUFFER = 200;
+const POLL_INTERVAL = 60_000;
+const WS_DEBOUNCE_MS = 8_000;
+const FETCH_LIMIT = 40;
+const WATERMARK_KEY = "lib_notif_watermark"; // ISO DateCreated du dernier item traité
 
-const buffer = new Set<string>();
-let timer: ReturnType<typeof setTimeout> | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+let wsTimer: ReturnType<typeof setTimeout> | null = null;
+let running = false;
 
-/** Empile des IDs d'items ajoutés (venus de LibraryChanged) et (ré)arme le débounce. */
-export function enqueue(itemIds: unknown): void {
-  if (!Array.isArray(itemIds) || itemIds.length === 0) {
-    console.log(`[LibNotif] LibraryChanged: ItemsAdded vide/absent (${Array.isArray(itemIds) ? "[]" : typeof itemIds})`);
-    return;
-  }
-  for (const id of itemIds) {
-    if (typeof id === "string" && id) buffer.add(id);
-    if (buffer.size >= MAX_BUFFER) break;
-  }
-  if (buffer.size === 0) return;
-  console.log(`[LibNotif] LibraryChanged: +${itemIds.length} ItemsAdded (buffer=${buffer.size}), flush dans ${DEBOUNCE_MS / 1000}s`);
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(() => void flush(), DEBOUNCE_MS);
+export function startLibraryAddedNotifier(): void {
+  if (pollTimer) return;
+  console.log("[LibNotif] Démarrage détection ajouts (poll 60s + WS)");
+  pollTimer = setInterval(() => void poll("interval"), POLL_INTERVAL);
+  setTimeout(() => void poll("boot"), 8_000); // baseline peu après le démarrage
 }
 
-async function flush(): Promise<void> {
-  timer = null;
-  const ids = [...buffer];
-  buffer.clear();
-  if (ids.length === 0 || !hasPrisma()) return;
+export function stopLibraryAddedNotifier(): void {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (wsTimer) { clearTimeout(wsTimer); wsTimer = null; }
+}
 
+/** Déclenché par jellyfinWs sur LibraryChanged : programme un poll immédiat (débouncé). */
+export function poke(): void {
+  if (wsTimer) clearTimeout(wsTimer);
+  wsTimer = setTimeout(() => void poll("ws"), WS_DEBOUNCE_MS);
+}
+
+async function saveWatermark(iso: string): Promise<void> {
+  await getPrisma().serverConfig.upsert({
+    where: { key: WATERMARK_KEY },
+    update: { value: iso },
+    create: { key: WATERMARK_KEY, value: iso },
+  });
+}
+
+async function poll(reason: string): Promise<void> {
+  if (running || !hasPrisma()) return;
+  running = true;
   try {
     const prisma = getPrisma();
-    // Destinataires : utilisateurs ayant activé libraryAdded. Si personne n'est
-    // abonné, inutile d'interroger Jellyfin.
+    const items = await getRecentlyAddedItems(FETCH_LIMIT);
+    if (items.length === 0) return;
+    const newest = items[0].DateCreated;
+    if (!newest) return;
+
+    const row = await prisma.serverConfig.findUnique({ where: { key: WATERMARK_KEY } });
+    // 1er run (pas de watermark) : on établit le baseline sans notifier l'existant.
+    if (!row?.value) {
+      await saveWatermark(newest);
+      console.log(`[LibNotif] baseline établie (${newest}) — pas de notif au démarrage`);
+      return;
+    }
+
+    const watermark = new Date(row.value).getTime();
+    const fresh = items.filter((i) => i.DateCreated && new Date(i.DateCreated).getTime() > watermark);
+    if (fresh.length === 0) return;
+
+    await saveWatermark(newest); // avance AVANT l'envoi (anti-doublon si crash)
+
     const prefs = await prisma.notificationPreference.findMany({
       where: { libraryAdded: true },
       select: { jellyfinUserId: true },
     });
-    console.log(`[LibNotif] flush: ${ids.length} ajout(s), ${prefs.length} destinataire(s) opted-in`);
+    console.log(`[LibNotif] poll(${reason}) : ${fresh.length} nouveau(x), ${prefs.length} destinataire(s) opted-in`);
     if (prefs.length === 0) return;
-    const userIds = prefs.map((p) => p.jellyfinUserId);
 
-    const items = await getItemsByIds(userIds[0], ids);
-    const relevant = items.filter((i) => ["Movie", "Series", "Episode"].includes(i.Type));
-    console.log(`[LibNotif] ${items.length} item(s) résolu(s), ${relevant.length} pertinent(s)`);
-    if (relevant.length === 0) return;
-
-    const { title, body } = compose(relevant);
-    const res = await sendToUsers(userIds, { title, body, data: { type: "library_added" } });
+    const { title, body } = compose(fresh);
+    const res = await sendToUsers(prefs.map((p) => p.jellyfinUserId), {
+      title,
+      body,
+      data: { type: "library_added" },
+    });
     console.log(`[LibNotif] push « ${title} » → ${JSON.stringify(res)}`);
   } catch (err) {
-    console.error("[LibNotif] flush échoué:", err);
+    console.error("[LibNotif] poll échoué:", err);
+  } finally {
+    running = false;
   }
 }
 
@@ -74,7 +102,6 @@ function compose(
       labels.push(label);
     }
   }
-
   if (labels.length === 1) {
     return { title: "Nouveau contenu", body: `« ${labels[0]} » vient d'être ajouté` };
   }

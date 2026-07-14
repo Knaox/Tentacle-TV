@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
-import { enqueue as enqueueLibraryAdded } from "./libraryAddedNotifier";
+import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 
 // Constantes de reconnexion
 const INITIAL_BACKOFF = 1_000;
@@ -39,8 +39,9 @@ function handleMessage(data: WebSocket.Data): void {
       case "LibraryChanged":
         broadcastAll("recently_added");
         broadcastAll("featured");
-        // Notifs push « nouveaux ajouts » (débouncé/regroupé, opt-in par user).
-        enqueueLibraryAdded(msg?.Data?.ItemsAdded);
+        // Accélère la détection des ajouts : déclenche un poll immédiat (le
+        // notifier poll aussi périodiquement, donc robuste même sans cet event).
+        pokeLibraryAdded();
         break;
       case "UserDataChanged":
         broadcastAll("watchlist");
