@@ -38,3 +38,29 @@ CREATE TABLE IF NOT EXISTS `provisioning_codes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `provisioning_codes_code_key` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Jeton de push Expo par appareil mobile. Voir schema.prisma > PushDevice.
+CREATE TABLE IF NOT EXISTS `push_devices` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `expoPushToken` varchar(255) NOT NULL,
+  `platform` varchar(10) NOT NULL,
+  `lastSeen` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `push_devices_expoPushToken_key` (`expoPushToken`),
+  KEY `push_devices_jellyfinUserId_idx` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Preferences de notification push par utilisateur. Voir schema.prisma > NotificationPreference.
+CREATE TABLE IF NOT EXISTS `notification_preferences` (
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `libraryAdded` tinyint(1) NOT NULL DEFAULT 0,
+  `seerAvailable` tinyint(1) NOT NULL DEFAULT 0,
+  `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Colonne de livraison push sur les notifications existantes (additif, idempotent MariaDB).
+ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `pushedAt` datetime(3) NULL;
+CREATE INDEX IF NOT EXISTS `notifications_type_pushedAt_idx` ON `notifications` (`type`, `pushedAt`);
