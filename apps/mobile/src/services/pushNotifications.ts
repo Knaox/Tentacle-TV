@@ -64,6 +64,20 @@ export async function hasNotificationPermission(): Promise<boolean> {
   return status === "granted";
 }
 
+/**
+ * Garantit la permission OS : la demande si « undetermined », renvoie l'état
+ * final accordé/refusé. À distinguer de l'obtention du token (qui peut échouer
+ * pour des raisons techniques — APNs, entitlement — SANS que la permission soit
+ * refusée). Le seul « refus » légitime pour renvoyer l'utilisateur aux Réglages.
+ */
+export async function ensureNotificationPermission(): Promise<boolean> {
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status === "granted") return true;
+  // iOS : si déjà refusé, requestPermissionsAsync renvoie « denied » sans dialog.
+  const { status: next } = await Notifications.requestPermissionsAsync();
+  return next === "granted";
+}
+
 /** Écoute les taps sur notification ; appelle onTap avec les data. Renvoie un cleanup. */
 export function addNotificationListeners(onTap: (data: PushTapData) => void): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
