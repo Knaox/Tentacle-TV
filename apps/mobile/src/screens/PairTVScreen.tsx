@@ -143,7 +143,7 @@ export function PairTVScreen() {
             size={40}
             bgColor="transparent"
             color={theme.colors.brand.light}
-            accessibilityLabel="Back"
+            accessibilityLabel={t("common:back")}
           />
         </View>
 

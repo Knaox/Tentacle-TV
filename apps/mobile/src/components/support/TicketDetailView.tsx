@@ -88,7 +88,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
                 size={40}
                 bgColor="transparent"
                 color={colors.brand.light}
-                accessibilityLabel="Back"
+                accessibilityLabel={tc("back")}
               />
             )}
             <Text

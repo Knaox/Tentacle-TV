@@ -52,7 +52,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
           onPress={() => backOrHome(router)}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t("common:back")}
           style={({ pressed }) => [{ marginRight: 8, padding: 4 }, pressed && { opacity: 0.7 }]}
         >
           <Feather name="chevron-left" size={26} color={colors.brand.light} />

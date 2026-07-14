@@ -75,7 +75,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
               size={40}
               bgColor="transparent"
               color={theme.colors.brand.light}
-              accessibilityLabel="Back"
+              accessibilityLabel={tc("back")}
             />
             <Text
               style={{
