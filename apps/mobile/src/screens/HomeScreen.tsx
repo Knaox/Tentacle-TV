@@ -13,6 +13,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, FadeIn, SubtleBackground, ProgressBar } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
+import { useHeaderHeight } from "@/components/PersistentHeader";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { MediaRow } from "@/components/MediaRow";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
@@ -25,6 +26,7 @@ export function HomeScreen() {
   const theme = useTheme();
   const st = useThemedStyles(makeErrStyles);
   const router = useRouter();
+  const headerH = useHeaderHeight();
   const userId = useUserId();
   const { storage } = useTentacleConfig();
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
@@ -92,7 +94,7 @@ export function HomeScreen() {
     <SubtleBackground ambient>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

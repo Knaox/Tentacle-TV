@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { useMobilePluginNavItems, usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
+import { GlassTabBar } from "@/components/navigation/GlassTabBar";
 import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
@@ -52,9 +53,10 @@ export default function TabsLayout() {
   return (
     <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
     <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
-    <PersistentHeader />
     <Tabs
-      tabBar={sideNav ? (props) => <TabRail {...props} onOpenMenu={() => setMenuOpen(true)} /> : undefined}
+      tabBar={sideNav
+        ? (props) => <TabRail {...props} onOpenMenu={() => setMenuOpen(true)} />
+        : (props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         // iPad paysage : rail gauche custom ; sinon barre basse inchangée.
@@ -130,6 +132,10 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    {/* Header Liquid Glass flottant : APRÈS les Tabs → overlay au-dessus du
+        contenu (qui défile dessous et se réfracte). Écrans compensés via
+        useHeaderHeight() en paddingTop. */}
+    <PersistentHeader />
     {sideNav && <RailMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} />}
     </View>
     </RailWidthContext.Provider>

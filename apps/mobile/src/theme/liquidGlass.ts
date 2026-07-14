@@ -1,34 +1,35 @@
 /**
- * Adaptateur @callstack/liquid-glass — require dynamique (même pattern que
- * SecureStore dans RNStorageAdapter) : robuste si le module natif est absent
- * (Android, ancien build, Expo Go). Fabric-only, iOS 26+ ; sur tout autre
- * environnement `getLiquidGlassModule()` renvoie null ou
- * `isLiquidGlassSupported` est false → GlassSurface rend le fallback blur.
+ * Adaptateur Liquid Glass — bascule sur la lib OFFICIELLE `expo-glass-effect`
+ * (GlassView natif iOS 26 via UIVisualEffectView) au lieu de
+ * `@callstack/liquid-glass` (flag `isLiquidGlassSupported` non fiable + bugs de
+ * rendu connus sur iOS 26.1+ : verre transparent au 1er rendu, incohérent sur
+ * device physique — issues callstack/liquid-glass #27/#33).
+ *
+ * `require` dynamique (robuste si le module natif est absent : Android, ancien
+ * build, Expo Go) : sur tout autre environnement `getLiquidGlassModule()`
+ * renvoie null ou `isLiquidGlassAvailable()` est false → GlassSurface rend le
+ * fallback blur.
  */
 
 import type { ComponentType, ReactNode } from "react";
-import type { ColorValue, StyleProp, ViewStyle } from "react-native";
+import type { StyleProp, ViewProps, ViewStyle } from "react-native";
 
 export const LIQUID_GLASS_STORAGE_KEY = "tentacle_liquid_glass";
 
-export interface LiquidGlassViewProps {
+/** Props de `GlassView` (expo-glass-effect) réellement utilisées. */
+export interface LiquidGlassViewProps extends ViewProps {
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** "regular" = verre dépoli (défaut lib), "clear" = transparent, "none". */
-  effect?: "clear" | "regular" | "none";
-  interactive?: boolean;
-  tintColor?: ColorValue;
-  colorScheme?: "light" | "dark" | "system";
+  /** "regular" = verre dépoli (défaut), "clear" = transparent, "none". */
+  glassEffectStyle?: "clear" | "regular" | "none";
+  isInteractive?: boolean;
+  tintColor?: string;
+  colorScheme?: "auto" | "light" | "dark";
 }
 
 export interface LiquidGlassModule {
-  LiquidGlassView: ComponentType<LiquidGlassViewProps>;
-  LiquidGlassContainerView: ComponentType<{
-    spacing?: number;
-    children?: ReactNode;
-    style?: StyleProp<ViewStyle>;
-  }>;
-  isLiquidGlassSupported: boolean;
+  GlassView: ComponentType<LiquidGlassViewProps>;
+  isLiquidGlassAvailable: () => boolean;
 }
 
 let cached: LiquidGlassModule | null | undefined;
@@ -37,9 +38,9 @@ export function getLiquidGlassModule(): LiquidGlassModule | null {
   if (cached !== undefined) return cached;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("@callstack/liquid-glass") as Partial<LiquidGlassModule>;
+    const mod = require("expo-glass-effect") as Partial<LiquidGlassModule>;
     cached =
-      mod && typeof mod.isLiquidGlassSupported === "boolean" && mod.LiquidGlassView
+      mod && mod.GlassView && typeof mod.isLiquidGlassAvailable === "function"
         ? (mod as LiquidGlassModule)
         : null;
   } catch {
@@ -48,10 +49,14 @@ export function getLiquidGlassModule(): LiquidGlassModule | null {
   return cached;
 }
 
-/** true ssi le module est chargeable ET l'OS supporte le rendu (iOS 26+). */
+/** true ssi le vrai Liquid Glass Apple est disponible (iOS 26+, API présente). */
 export function isLiquidGlassAvailable(): boolean {
   const mod = getLiquidGlassModule();
-  return !!mod && mod.isLiquidGlassSupported;
+  try {
+    return !!mod && mod.isLiquidGlassAvailable();
+  } catch {
+    return false;
+  }
 }
 
 // ── Amorçage pré-mount (même pattern que themeMode.bootMode) ────────────────

@@ -45,6 +45,12 @@ export interface GlassSurfaceProps {
   /** Opt-out Liquid Glass pour cette surface (défaut true = éligible). */
   liquid?: boolean;
   /**
+   * Teinte de la MATIÈRE du verre natif (GlassView) — biaise sa couleur sans
+   * la rendre opaque (le verre reste vitreux/réfractant). Utile pour le chrome
+   * clair (tab bar / header) : garder icônes/texte lisibles sur contenu sombre.
+   */
+  tintColor?: string;
+  /**
    * Ombre portée douce (thème CLAIR uniquement) pour détacher la carte du fond
    * nacré. Réservé aux surfaces à taille de CONTENU (cartes) : évitez-la sur les
    * surfaces en remplissage (absoluteFill/flex) où l'inner s'effondrerait. Sombre
@@ -70,6 +76,7 @@ export function GlassSurface({
   interactive,
   liquid = true,
   elevated = false,
+  tintColor,
 }: GlassSurfaceProps) {
   const theme = useTheme();
   const { liquidGlass } = useThemeMode();
@@ -77,17 +84,21 @@ export function GlassSurface({
 
   if (liquid && liquidGlass.enabled) {
     const mod = getLiquidGlassModule();
-    if (mod && mod.isLiquidGlassSupported) {
-      const { LiquidGlassView } = mod;
+    // Plus de gate sur mod.isLiquidGlassSupported (flag lib non fiable en iOS 26
+    // New Arch) : le module n'est retourné que si LiquidGlassView existe, et
+    // liquidGlass.enabled implique déjà isLiquidGlassAvailable() (OS ≥ 26).
+    if (mod) {
+      const { GlassView } = mod;
       return (
-        <LiquidGlassView
-          effect="regular"
+        <GlassView
+          glassEffectStyle="regular"
           colorScheme={theme.scheme}
-          interactive={interactive}
+          isInteractive={interactive}
+          tintColor={tintColor}
           style={[{ borderRadius: radius, overflow: "hidden" }, style]}
         >
           {children}
-        </LiquidGlassView>
+        </GlassView>
       );
     }
   }

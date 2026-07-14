@@ -7,6 +7,7 @@ import type { LibraryView } from "@tentacle-tv/shared";
 import { Feather } from "@expo/vector-icons";
 import { SkeletonCard, FadeIn, SubtleBackground } from "@/components/ui";
 import { LibraryCard } from "@/components/LibraryCard";
+import { useHeaderHeight } from "@/components/PersistentHeader";
 import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const CARD_GAP = 18;
@@ -24,6 +25,7 @@ export function LibrariesScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
+  const headerH = useHeaderHeight();
   const { data, isLoading, refetch, isRefetching } = useLibraries();
 
   // 1 colonne pleine largeur sur iPhone (inchangé), grille 2–3 colonnes 16:9 sur iPad.
@@ -86,7 +88,7 @@ export function LibrariesScreen() {
     <SubtleBackground ambient>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerH }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
