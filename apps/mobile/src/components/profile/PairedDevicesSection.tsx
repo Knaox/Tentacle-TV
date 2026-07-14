@@ -7,16 +7,25 @@ import { GlassCard } from "../ui";
 export function PairedDevicesSection() {
   const { t } = useTranslation("pairing");
   const theme = useTheme();
-  const { data: devices } = useMyPairedDevices();
+  const { data: devices, isLoading } = useMyPairedDevices();
   const revokeMut = useRevokeMyDevice();
 
-  if (!devices || devices.length === 0) return null;
+  // État vide explicite (écran dédié) : ne pas laisser un écran blanc quand
+  // aucun appareil n'est jumelé. Le titre est fourni par l'écran parent.
+  if (!isLoading && (!devices || devices.length === 0)) {
+    return (
+      <View style={{ marginBottom: spacing.xxl }}>
+        <Text style={{ ...typography.body, color: theme.colors.text.tertiary, textAlign: "center", paddingVertical: spacing.xl }}>
+          {t("noPairedDevices")}
+        </Text>
+      </View>
+    );
+  }
+
+  if (!devices) return null;
 
   return (
     <View style={{ marginBottom: spacing.xxl }}>
-      <Text style={{ ...typography.subtitle, color: theme.colors.text.primary, marginBottom: spacing.md }}>
-        {t("pairedDevices")}
-      </Text>
       {devices.map((device) => (
         <GlassCard key={device.id} style={{ marginBottom: spacing.sm }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
