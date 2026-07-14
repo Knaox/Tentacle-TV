@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { BRAND, FONT_FAMILY, SHADOW_RN } from "../../theme";
+import { FONT_FAMILY, SHADOW_RN, useTheme, useThemedStyles, type AppTheme } from "../../theme";
 
 interface JellyfinUser {
   Id: string;
@@ -28,6 +28,8 @@ interface Props {
  */
 export function ProfileAvatar({ user, initial }: Props) {
   const { t } = useTranslation("profile");
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
   const [tag, setTag] = useState<string | null>(user?.PrimaryImageTag ?? null);
@@ -93,7 +95,7 @@ export function ProfileAvatar({ user, initial }: Props) {
         <Image source={{ uri: photoUrl }} style={st.photo} contentFit="cover" transition={200} />
       ) : (
         <LinearGradient
-          colors={[BRAND.dark, BRAND.violet, BRAND.light]}
+          colors={[theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={st.avatar}
         >
@@ -103,12 +105,12 @@ export function ProfileAvatar({ user, initial }: Props) {
 
       {/* Affordance : petit badge caméra (la photo se change au tap) */}
       <View style={st.cameraBadge}>
-        <Feather name="camera" size={11} color="#fff" />
+        <Feather name="camera" size={11} color={theme.colors.cta.brandFg} />
       </View>
 
       {busy && (
         <View style={st.busyOverlay}>
-          <ActivityIndicator color="#fff" size="small" />
+          <ActivityIndicator color={theme.colors.cta.brandFg} size="small" />
         </View>
       )}
     </Pressable>
@@ -117,7 +119,7 @@ export function ProfileAvatar({ user, initial }: Props) {
 
 const SIZE = 76;
 
-const st = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   avatar: {
     width: SIZE, height: SIZE, borderRadius: SIZE / 2,
     alignItems: "center" as const, justifyContent: "center" as const,
@@ -125,20 +127,20 @@ const st = StyleSheet.create({
   },
   photo: {
     width: SIZE, height: SIZE, borderRadius: SIZE / 2,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: t.colors.fill.subtle,
   },
-  avatarTxt: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: "#fff", letterSpacing: -0.5 },
+  avatarTxt: { fontSize: 32, fontFamily: FONT_FAMILY.extrabold, color: t.colors.cta.brandFg, letterSpacing: -0.5 },
   cameraBadge: {
     position: "absolute" as const, right: -2, bottom: -2,
     width: 24, height: 24, borderRadius: 12,
-    backgroundColor: BRAND.violet,
-    borderWidth: 2, borderColor: "#0B0B12",
+    backgroundColor: t.colors.brand.violet,
+    borderWidth: 2, borderColor: t.colors.surface.s0,
     alignItems: "center" as const, justifyContent: "center" as const,
   },
   busyOverlay: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: SIZE / 2,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: t.colors.overlay.scrimSoft,
     alignItems: "center" as const, justifyContent: "center" as const,
   },
 });

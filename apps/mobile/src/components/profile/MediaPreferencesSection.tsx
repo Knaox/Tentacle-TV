@@ -7,7 +7,7 @@ import {
   useSetLibraryPreference,
   type LibraryPreference,
 } from "@tentacle-tv/api-client";
-import { colors, spacing, typography, BRAND, CTA, FONT_FAMILY } from "../../theme";
+import { spacing, typography, FONT_FAMILY, useTheme } from "../../theme";
 
 const LANGUAGES: { code: string; labelKey: string }[] = [
   { code: "fre", labelKey: "langFr" },
@@ -33,6 +33,7 @@ const SUBTITLE_MODES: { code: string; labelKey: string }[] = [
 
 export function MediaPreferencesSection() {
   const { t } = useTranslation("preferences");
+  const theme = useTheme();
   const { data: libraries } = useLibraries();
   const { data: prefs } = useLibraryPreferences();
   const prefsMap = useMemo(
@@ -44,10 +45,10 @@ export function MediaPreferencesSection() {
 
   return (
     <View>
-      <Text style={{ ...typography.subtitle, color: colors.textPrimary, marginBottom: 4 }}>
+      <Text style={{ ...typography.subtitle, color: theme.colors.text.primary, marginBottom: 4 }}>
         {t("title")}
       </Text>
-      <Text style={{ ...typography.caption, color: colors.textMuted, marginBottom: spacing.lg }}>
+      <Text style={{ ...typography.caption, color: theme.colors.text.tertiary, marginBottom: spacing.lg }}>
         {t("subtitle")}
       </Text>
       {libraries.map((lib) => (
@@ -68,6 +69,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
   pref: LibraryPreference | null;
 }) {
   const { t } = useTranslation(["preferences", "common"]);
+  const theme = useTheme();
   const setMut = useSetLibraryPreference();
   const [editing, setEditing] = useState(false);
   const [audio, setAudio] = useState("");
@@ -106,15 +108,15 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
 
   return (
     <View style={{
-      backgroundColor: "rgba(255,255,255,0.03)",
+      backgroundColor: theme.colors.fill.faint,
       borderRadius: spacing.cardRadius,
-      borderWidth: 1, borderColor: colors.border,
+      borderWidth: 1, borderColor: theme.colors.border.subtle,
       padding: spacing.md, marginBottom: spacing.md,
     }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: editing ? spacing.md : 0 }}>
-        <Text style={{ ...typography.bodyBold, color: colors.textPrimary }}>{libraryName}</Text>
+        <Text style={{ ...typography.bodyBold, color: theme.colors.text.primary }}>{libraryName}</Text>
         <Pressable onPress={toggleEditing} hitSlop={8}>
-          <Text style={{ ...typography.small, color: colors.accent }}>
+          <Text style={{ ...typography.small, color: theme.colors.brand.violet }}>
             {editing ? t("common:close") : t("preferences:audio") + " / " + t("preferences:subtitles")}
           </Text>
         </Pressable>
@@ -123,15 +125,15 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
       {!editing && (audioLabel || subLabel) && (
         <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
           {audioLabel && (
-            <View style={{ backgroundColor: "rgba(139,92,246,0.15)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ ...typography.badge, color: colors.accent }}>
+            <View style={{ backgroundColor: theme.colors.brand.soft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ ...typography.badge, color: theme.colors.brand.violet }}>
                 {t("audio")}: {t(audioLabel.labelKey)}
               </Text>
             </View>
           )}
           {subLabel && (
-            <View style={{ backgroundColor: "rgba(59,130,246,0.15)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ ...typography.badge, color: "#60A5FA" }}>
+            <View style={{ backgroundColor: theme.colors.statusPairs.info.bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ ...typography.badge, color: theme.colors.statusPairs.info.fg }}>
                 {t("subtitles")}: {t(subLabel.labelKey)} ({modeLabel ? t(modeLabel.labelKey) : ""})
               </Text>
             </View>
@@ -141,10 +143,10 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
 
       {editing && (
         <View>
-          <Text style={{ ...typography.caption, color: colors.textSecondary, marginBottom: 6 }}>{t("audio")}</Text>
+          <Text style={{ ...typography.caption, color: theme.colors.text.secondary, marginBottom: 6 }}>{t("audio")}</Text>
           <ChipRow items={LANGUAGES} selected={audio} onSelect={setAudio} t={t} />
 
-          <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.md, marginBottom: 6 }}>{t("subtitles")}</Text>
+          <Text style={{ ...typography.caption, color: theme.colors.text.secondary, marginTop: spacing.md, marginBottom: 6 }}>{t("subtitles")}</Text>
           <ChipRow
             items={[{ code: "", labelKey: "none" }, ...LANGUAGES]}
             selected={sub}
@@ -152,19 +154,19 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
             t={t}
           />
 
-          <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.md, marginBottom: 6 }}>{t("subtitleMode")}</Text>
+          <Text style={{ ...typography.caption, color: theme.colors.text.secondary, marginTop: spacing.md, marginBottom: 6 }}>{t("subtitleMode")}</Text>
           <ChipRow items={SUBTITLE_MODES} selected={mode} onSelect={(c) => setMode(c as typeof mode)} t={t} />
 
           <Pressable
             onPress={handleSave}
             style={({ pressed }) => [{
-              backgroundColor: CTA.primaryBg,
+              backgroundColor: theme.colors.cta.primaryBg,
               borderRadius: spacing.buttonRadius,
               paddingVertical: 12,
               alignItems: "center",
               marginTop: spacing.lg,
               opacity: pressed ? 0.88 : 1,
-              shadowColor: BRAND.violet,
+              shadowColor: theme.colors.brand.violet,
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.45,
               shadowRadius: 18,
@@ -172,7 +174,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref }: {
             }]}
             accessibilityRole="button"
           >
-            <Text style={{ ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: CTA.primaryFg, letterSpacing: 0.1 }}>
+            <Text style={{ ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: theme.colors.cta.primaryFg, letterSpacing: 0.1 }}>
               {setMut.isPending ? "..." : t("common:save")}
             </Text>
           </Pressable>
@@ -188,6 +190,7 @@ function ChipRow({ items, selected, onSelect, t }: {
   onSelect: (code: string) => void;
   t: (key: string) => string;
 }) {
+  const theme = useTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
@@ -201,9 +204,9 @@ function ChipRow({ items, selected, onSelect, t }: {
                 paddingHorizontal: 14,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: isActive ? BRAND.soft : "rgba(255,255,255,0.05)",
+                backgroundColor: isActive ? theme.colors.brand.soft : theme.colors.fill.subtle,
                 borderWidth: 1,
-                borderColor: isActive ? "rgba(139,92,246,0.45)" : colors.border,
+                borderColor: isActive ? theme.colors.brand.glow : theme.colors.border.subtle,
                 minHeight: 32,
                 justifyContent: "center",
               }}
@@ -213,7 +216,7 @@ function ChipRow({ items, selected, onSelect, t }: {
               <Text style={{
                 fontSize: 12,
                 fontFamily: isActive ? FONT_FAMILY.semibold : FONT_FAMILY.medium,
-                color: isActive ? BRAND.light : colors.textSecondary,
+                color: isActive ? theme.colors.brand.light : theme.colors.text.secondary,
                 letterSpacing: 0.1,
               }}>
                 {t(item.labelKey)}

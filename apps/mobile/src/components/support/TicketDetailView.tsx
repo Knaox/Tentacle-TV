@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground, Badge, IconButton } from "../ui";
-import { BORDER, BRAND, CTA, FONT_FAMILY, RADIUS, SURFACE, useContentPadding } from "../../theme";
+import { FONT_FAMILY, RADIUS, useContentPadding, useTheme, withAlpha } from "../../theme";
 import { STATUS_BADGE, useTicketApi, type TicketDetail, type TicketMessage } from "./ticketTypes";
 
 interface Props {
@@ -26,6 +26,7 @@ interface Props {
 export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
   const { t } = useTranslation("tickets");
   const { t: tc } = useTranslation("common");
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const contentPad = useContentPadding(720);
   const { serverUrl, headers } = useTicketApi();
@@ -61,7 +62,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
   if (isLoading || !ticket) {
     return (
       <SubtleBackground ambient style={{ justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator color={BRAND.violet} size="large" />
+        <ActivityIndicator color={colors.brand.violet} size="large" />
       </SubtleBackground>
     );
   }
@@ -77,7 +78,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
           paddingHorizontal: contentPad,
           paddingBottom: 12,
           borderBottomWidth: 1,
-          borderBottomColor: BORDER.subtle,
+          borderBottomColor: colors.border.subtle,
         }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {!hideBack && (
@@ -86,7 +87,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
                 onPress={onBack}
                 size={40}
                 bgColor="transparent"
-                color={BRAND.light}
+                color={colors.brand.light}
                 accessibilityLabel="Back"
               />
             )}
@@ -94,7 +95,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
               style={{
                 fontSize: 18,
                 fontFamily: FONT_FAMILY.bold,
-                color: "#FFFFFF",
+                color: colors.text.primary,
                 flex: 1,
                 letterSpacing: -0.2,
               }}
@@ -125,8 +126,8 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
             paddingVertical: 12,
             paddingBottom: insets.bottom + 12,
             borderTopWidth: 1,
-            borderTopColor: BORDER.subtle,
-            backgroundColor: "rgba(0,0,0,0.4)",
+            borderTopColor: colors.border.subtle,
+            backgroundColor: colors.overlay.scrimSoft,
             flexDirection: "row",
             alignItems: "flex-end",
             gap: 8,
@@ -137,19 +138,19 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
               maxLength={5000}
               multiline
               placeholder={t("replyPlaceholder")}
-              placeholderTextColor="rgba(255,255,255,0.3)"
+              placeholderTextColor={colors.text.quaternary}
               accessibilityLabel={t("replyPlaceholder")}
               style={{
                 flex: 1,
                 maxHeight: 120,
                 minHeight: 44,
-                backgroundColor: "rgba(255,255,255,0.06)",
+                backgroundColor: colors.fill.subtle,
                 borderWidth: 1,
-                borderColor: BORDER.subtle,
+                borderColor: colors.border.subtle,
                 borderRadius: RADIUS.md,
                 paddingHorizontal: 14,
                 paddingVertical: 10,
-                color: "#FFFFFF",
+                color: colors.text.primary,
                 fontSize: 14,
                 fontFamily: FONT_FAMILY.regular,
               }}
@@ -164,10 +165,10 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
                   width: 44,
                   height: 44,
                   borderRadius: RADIUS.md,
-                  backgroundColor: CTA.primaryBg,
+                  backgroundColor: colors.cta.primaryBg,
                   alignItems: "center",
                   justifyContent: "center",
-                  shadowColor: BRAND.violet,
+                  shadowColor: colors.brand.violet,
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.45,
                   shadowRadius: 14,
@@ -178,9 +179,9 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
               ]}
             >
               {replyMut.isPending ? (
-                <ActivityIndicator color={CTA.primaryFg} size="small" />
+                <ActivityIndicator color={colors.cta.primaryFg} size="small" />
               ) : (
-                <Feather name="send" size={18} color={CTA.primaryFg} />
+                <Feather name="send" size={18} color={colors.cta.primaryFg} />
               )}
             </Pressable>
           </View>
@@ -194,7 +195,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
             <Text style={{
               fontSize: 13,
               fontFamily: FONT_FAMILY.medium,
-              color: "rgba(255,255,255,0.5)",
+              color: colors.text.tertiary,
               textAlign: "center",
             }}>
               {t("ticketClosed")}
@@ -208,14 +209,15 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
 
 function MessageBubble({ msg }: { msg: TicketMessage }) {
   const { t } = useTranslation("tickets");
+  const { colors } = useTheme();
   return (
     <View
       style={{
-        backgroundColor: msg.isAdmin ? BRAND.soft : SURFACE.s2,
+        backgroundColor: msg.isAdmin ? colors.brand.soft : colors.surface.s2,
         borderRadius: RADIUS.lg,
         padding: 14,
         borderWidth: 1,
-        borderColor: msg.isAdmin ? "rgba(139,92,246,0.25)" : BORDER.subtle,
+        borderColor: msg.isAdmin ? withAlpha(colors.brand.violet, 0.25, colors.brand.glow) : colors.border.subtle,
         alignSelf: msg.isAdmin ? "flex-start" : "flex-end",
         maxWidth: "88%",
       }}
@@ -225,7 +227,7 @@ function MessageBubble({ msg }: { msg: TicketMessage }) {
         <Text style={{
           fontSize: 12,
           fontFamily: FONT_FAMILY.semibold,
-          color: msg.isAdmin ? BRAND.light : "rgba(255,255,255,0.78)",
+          color: msg.isAdmin ? colors.brand.light : colors.text.secondary,
         }}>
           {msg.username}
         </Text>
@@ -233,7 +235,7 @@ function MessageBubble({ msg }: { msg: TicketMessage }) {
         <Text style={{
           fontSize: 10,
           fontFamily: FONT_FAMILY.regular,
-          color: "rgba(255,255,255,0.4)",
+          color: colors.text.quaternary,
           marginLeft: "auto",
         }}>
           {new Date(msg.createdAt).toLocaleString()}
@@ -242,7 +244,7 @@ function MessageBubble({ msg }: { msg: TicketMessage }) {
       <Text style={{
         fontSize: 14,
         fontFamily: FONT_FAMILY.regular,
-        color: "rgba(255,255,255,0.9)",
+        color: withAlpha(colors.text.primary, 0.9, colors.text.secondary),
         lineHeight: 21,
       }}>
         {msg.body}

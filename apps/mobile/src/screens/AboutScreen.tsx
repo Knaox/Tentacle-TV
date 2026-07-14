@@ -6,12 +6,11 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import {
-  BORDER,
-  BRAND,
   FONT_FAMILY,
   RADIUS,
-  SURFACE,
   useContentPadding,
+  useTheme,
+  withAlpha,
 } from "../theme";
 import { GlassCard, FadeIn, SubtleBackground, IconButton } from "../components/ui";
 import { TentacleLogo } from "../components/TentacleLogo";
@@ -40,6 +39,7 @@ export function AboutScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const contentPad = useContentPadding();
+  const theme = useTheme();
 
   return (
     <SubtleBackground ambient>
@@ -58,7 +58,7 @@ export function AboutScreen() {
             onPress={() => backOrHome(router)}
             size={40}
             bgColor="transparent"
-            color={BRAND.light}
+            color={theme.colors.brand.light}
             accessibilityLabel="Back"
           />
           <Text
@@ -67,7 +67,7 @@ export function AboutScreen() {
               fontFamily: FONT_FAMILY.extrabold,
               fontWeight: "800",
               letterSpacing: -0.6,
-              color: "#FFFFFF",
+              color: theme.colors.text.primary,
             }}
             accessibilityRole="header"
           >
@@ -83,7 +83,7 @@ export function AboutScreen() {
               fontFamily: FONT_FAMILY.extrabold,
               fontWeight: "800",
               letterSpacing: -0.6,
-              color: "#FFFFFF",
+              color: theme.colors.text.primary,
               marginTop: 14,
             }}>
               Tentacle TV
@@ -91,7 +91,7 @@ export function AboutScreen() {
             <Text style={{
               fontSize: 12,
               fontFamily: FONT_FAMILY.medium,
-              color: BRAND.light,
+              color: theme.colors.brand.light,
               letterSpacing: 0.4,
               marginTop: 4,
             }}>
@@ -104,7 +104,7 @@ export function AboutScreen() {
           <Text style={{
             fontSize: 14,
             fontFamily: FONT_FAMILY.regular,
-            color: "rgba(255,255,255,0.78)",
+            color: theme.colors.text.secondary,
             textAlign: "center",
             marginBottom: 24,
             lineHeight: 22,
@@ -119,7 +119,7 @@ export function AboutScreen() {
             style={{
               fontSize: 12,
               fontFamily: FONT_FAMILY.bold,
-              color: "#FFFFFF",
+              color: theme.colors.text.primary,
               textTransform: "uppercase",
               letterSpacing: 0.8,
               opacity: 0.85,
@@ -144,17 +144,17 @@ export function AboutScreen() {
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    backgroundColor: BRAND.soft,
+                    backgroundColor: theme.colors.brand.soft,
                     justifyContent: "center",
                     alignItems: "center",
                   }}>
-                    <Feather name={icon} size={18} color={BRAND.light} />
+                    <Feather name={icon} size={18} color={theme.colors.brand.light} />
                   </View>
                   <Text style={{
                     flex: 1,
                     fontSize: 14,
                     fontFamily: FONT_FAMILY.medium,
-                    color: "rgba(255,255,255,0.9)",
+                    color: withAlpha(theme.colors.text.primary, 0.9, theme.colors.text.secondary),
                     letterSpacing: -0.1,
                   }}>
                     {t(key)}
@@ -172,14 +172,14 @@ export function AboutScreen() {
             accessibilityLabel={t("creditsLink")}
             style={({ pressed }) => [
               {
-                backgroundColor: SURFACE.s2,
+                backgroundColor: theme.colors.surface.s2,
                 borderRadius: RADIUS.lg,
                 padding: 16,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
                 borderWidth: 1,
-                borderColor: BORDER.subtle,
+                borderColor: theme.colors.border.subtle,
                 marginBottom: 16,
                 minHeight: 56,
               },
@@ -189,9 +189,9 @@ export function AboutScreen() {
             <Text style={{
               fontSize: 15,
               fontFamily: FONT_FAMILY.semibold,
-              color: BRAND.light,
+              color: theme.colors.brand.light,
             }}>{t("creditsLink")}</Text>
-            <Feather name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+            <Feather name="chevron-right" size={20} color={theme.colors.text.quaternary} />
           </Pressable>
         </FadeIn>
 
@@ -212,11 +212,11 @@ export function AboutScreen() {
               pressed && { opacity: 0.7 },
             ]}
           >
-            <Feather name="external-link" size={14} color="rgba(255,255,255,0.55)" />
+            <Feather name="external-link" size={14} color={theme.colors.text.tertiary} />
             <Text style={{
               fontSize: 13,
               fontFamily: FONT_FAMILY.medium,
-              color: "rgba(255,255,255,0.55)",
+              color: theme.colors.text.tertiary,
               textDecorationLine: "underline",
             }}>
               {t("privacyPolicy")}
@@ -227,7 +227,7 @@ export function AboutScreen() {
         <Text style={{
           fontSize: 11,
           fontFamily: FONT_FAMILY.regular,
-          color: "rgba(255,255,255,0.34)",
+          color: theme.colors.text.quaternary,
           textAlign: "center",
           marginTop: 16,
         }}>

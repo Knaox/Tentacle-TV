@@ -1,14 +1,14 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, type TextStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import {
-  BORDER,
-  BRAND,
   FONT_FAMILY,
   useContentPadding,
+  useTheme,
+  type AppTheme,
 } from "../theme";
 import { GlassCard, Divider, SubtleBackground, FadeIn, IconButton } from "../components/ui";
 
@@ -22,22 +22,24 @@ const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "Tauri", descKey: "techTauri" },
 ];
 
-const sectionHeaderStyle = {
+const sectionHeaderStyle = (t: AppTheme): TextStyle => ({
   fontSize: 12,
   fontFamily: FONT_FAMILY.bold,
-  color: "#FFFFFF",
+  color: t.colors.text.primary,
   textTransform: "uppercase" as const,
   letterSpacing: 0.8,
   opacity: 0.85,
   marginBottom: 12,
   paddingHorizontal: 4,
-};
+});
 
 export function CreditsScreen() {
   const { t } = useTranslation("about");
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const contentPad = useContentPadding();
+  const theme = useTheme();
+  const headerStyle = sectionHeaderStyle(theme);
 
   return (
     <SubtleBackground ambient>
@@ -56,7 +58,7 @@ export function CreditsScreen() {
             onPress={() => backOrHome(router)}
             size={40}
             bgColor="transparent"
-            color={BRAND.light}
+            color={theme.colors.brand.light}
             accessibilityLabel="Back"
           />
           <Text
@@ -65,7 +67,7 @@ export function CreditsScreen() {
               fontFamily: FONT_FAMILY.extrabold,
               fontWeight: "800",
               letterSpacing: -0.6,
-              color: "#FFFFFF",
+              color: theme.colors.text.primary,
             }}
             accessibilityRole="header"
           >
@@ -77,7 +79,7 @@ export function CreditsScreen() {
           <Text style={{
             fontSize: 14,
             fontFamily: FONT_FAMILY.regular,
-            color: "rgba(255,255,255,0.78)",
+            color: theme.colors.text.secondary,
             marginBottom: 24,
             lineHeight: 22,
           }}>
@@ -86,7 +88,7 @@ export function CreditsScreen() {
         </FadeIn>
 
         <FadeIn delay={80}>
-          <Text style={sectionHeaderStyle} accessibilityRole="header">
+          <Text style={headerStyle} accessibilityRole="header">
             {t("technologies")}
           </Text>
           <GlassCard style={{ marginBottom: 24 }}>
@@ -97,18 +99,18 @@ export function CreditsScreen() {
                     width: 32,
                     height: 32,
                     borderRadius: 8,
-                    backgroundColor: BRAND.soft,
+                    backgroundColor: theme.colors.brand.soft,
                     justifyContent: "center",
                     alignItems: "center",
                     marginTop: 2,
                   }}>
-                    <Feather name="code" size={14} color={BRAND.light} />
+                    <Feather name="code" size={14} color={theme.colors.brand.light} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{
                       fontSize: 14,
                       fontFamily: FONT_FAMILY.semibold,
-                      color: BRAND.light,
+                      color: theme.colors.brand.light,
                       letterSpacing: -0.1,
                     }}>
                       {tech.name}
@@ -116,7 +118,7 @@ export function CreditsScreen() {
                     <Text style={{
                       fontSize: 13,
                       fontFamily: FONT_FAMILY.regular,
-                      color: "rgba(255,255,255,0.55)",
+                      color: theme.colors.text.tertiary,
                       marginTop: 2,
                       lineHeight: 18,
                     }}>
@@ -124,14 +126,14 @@ export function CreditsScreen() {
                     </Text>
                   </View>
                 </View>
-                {i < TECH_STACK.length - 1 && <Divider style={{ marginVertical: 12, backgroundColor: BORDER.subtle }} />}
+                {i < TECH_STACK.length - 1 && <Divider style={{ marginVertical: 12, backgroundColor: theme.colors.border.subtle }} />}
               </View>
             ))}
           </GlassCard>
         </FadeIn>
 
         <FadeIn delay={160}>
-          <Text style={sectionHeaderStyle} accessibilityRole="header">
+          <Text style={headerStyle} accessibilityRole="header">
             {t("compatibleServices")}
           </Text>
           <GlassCard style={{ marginBottom: 24 }}>
@@ -140,18 +142,18 @@ export function CreditsScreen() {
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                backgroundColor: BRAND.soft,
+                backgroundColor: theme.colors.brand.soft,
                 justifyContent: "center",
                 alignItems: "center",
                 marginTop: 2,
               }}>
-                <Feather name="server" size={14} color={BRAND.light} />
+                <Feather name="server" size={14} color={theme.colors.brand.light} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{
                   fontSize: 14,
                   fontFamily: FONT_FAMILY.semibold,
-                  color: BRAND.light,
+                  color: theme.colors.brand.light,
                   letterSpacing: -0.1,
                 }}>
                   Jellyfin
@@ -159,7 +161,7 @@ export function CreditsScreen() {
                 <Text style={{
                   fontSize: 13,
                   fontFamily: FONT_FAMILY.regular,
-                  color: "rgba(255,255,255,0.55)",
+                  color: theme.colors.text.tertiary,
                   marginTop: 2,
                   lineHeight: 18,
                 }}>
@@ -171,7 +173,7 @@ export function CreditsScreen() {
         </FadeIn>
 
         <FadeIn delay={240}>
-          <Text style={sectionHeaderStyle} accessibilityRole="header">
+          <Text style={headerStyle} accessibilityRole="header">
             {t("license")}
           </Text>
           <GlassCard>
@@ -180,18 +182,18 @@ export function CreditsScreen() {
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                backgroundColor: BRAND.soft,
+                backgroundColor: theme.colors.brand.soft,
                 justifyContent: "center",
                 alignItems: "center",
                 marginTop: 2,
               }}>
-                <Feather name="award" size={14} color={BRAND.light} />
+                <Feather name="award" size={14} color={theme.colors.brand.light} />
               </View>
               <Text style={{
                 flex: 1,
                 fontSize: 13,
                 fontFamily: FONT_FAMILY.regular,
-                color: "rgba(255,255,255,0.78)",
+                color: theme.colors.text.secondary,
                 lineHeight: 20,
               }}>
                 {t("licenseText")}
@@ -203,7 +205,7 @@ export function CreditsScreen() {
         <Text style={{
           fontSize: 11,
           fontFamily: FONT_FAMILY.regular,
-          color: "rgba(255,255,255,0.34)",
+          color: theme.colors.text.quaternary,
           textAlign: "center",
           marginTop: 32,
         }}>

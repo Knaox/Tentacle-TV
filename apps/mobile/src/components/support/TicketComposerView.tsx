@@ -8,13 +8,14 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  type TextStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground, IconButton } from "../ui";
-import { BORDER, BRAND, CTA, FONT_FAMILY, RADIUS, useContentPadding } from "../../theme";
+import { FONT_FAMILY, RADIUS, useContentPadding, useTheme, withAlpha, type AppTheme } from "../../theme";
 import { Chip } from "./Chip";
 import { CATEGORIES, useTicketApi, type Category } from "./ticketTypes";
 
@@ -26,6 +27,7 @@ interface Props {
 export function TicketComposerView({ onBack, onCreated }: Props) {
   const { t } = useTranslation("tickets");
   const { t: tc } = useTranslation("common");
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const contentPad = useContentPadding(720);
   const { serverUrl, headers } = useTicketApi();
@@ -52,6 +54,8 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
   });
 
   const canSubmit = subject.trim().length > 0 && body.trim().length > 0 && !createMut.isPending;
+  const labelSt = sectionLabelStyle(theme);
+  const inputSt = inputStyle(theme);
 
   return (
     <SubtleBackground ambient>
@@ -70,7 +74,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
               onPress={onBack}
               size={40}
               bgColor="transparent"
-              color={BRAND.light}
+              color={theme.colors.brand.light}
               accessibilityLabel="Back"
             />
             <Text
@@ -79,7 +83,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
                 fontFamily: FONT_FAMILY.extrabold,
                 fontWeight: "800",
                 letterSpacing: -0.6,
-                color: "#FFFFFF",
+                color: theme.colors.text.primary,
                 flex: 1,
               }}
               accessibilityRole="header"
@@ -88,18 +92,18 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
             </Text>
           </View>
 
-          <Text style={sectionLabelStyle}>{t("subject")}</Text>
+          <Text style={labelSt}>{t("subject")}</Text>
           <TextInput
             value={subject}
             onChangeText={setSubject}
             maxLength={300}
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor={theme.colors.text.quaternary}
             placeholder={t("subjectPlaceholder")}
             accessibilityLabel={t("subject")}
-            style={inputStyle}
+            style={inputSt}
           />
 
-          <Text style={[sectionLabelStyle, { marginTop: 20 }]}>{t("category")}</Text>
+          <Text style={[labelSt, { marginTop: 20 }]}>{t("category")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -115,7 +119,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
             ))}
           </ScrollView>
 
-          <Text style={[sectionLabelStyle, { marginTop: 20 }]}>{t("message")}</Text>
+          <Text style={[labelSt, { marginTop: 20 }]}>{t("message")}</Text>
           <TextInput
             value={body}
             onChangeText={setBody}
@@ -123,10 +127,10 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
             multiline
             numberOfLines={6}
             textAlignVertical="top"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor={theme.colors.text.quaternary}
             placeholder={t("messagePlaceholder")}
             accessibilityLabel={t("message")}
-            style={[inputStyle, { height: 160, paddingTop: 14 }]}
+            style={[inputSt, { height: 160, paddingTop: 14 }]}
           />
 
           <Pressable
@@ -137,7 +141,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
             style={({ pressed }) => [
               {
                 marginTop: 28,
-                backgroundColor: CTA.primaryBg,
+                backgroundColor: theme.colors.cta.primaryBg,
                 borderRadius: RADIUS.md,
                 paddingVertical: 13,
                 minHeight: 46,
@@ -145,7 +149,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                shadowColor: BRAND.violet,
+                shadowColor: theme.colors.brand.violet,
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.55,
                 shadowRadius: 22,
@@ -156,12 +160,12 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
             ]}
           >
             {createMut.isPending ? (
-              <ActivityIndicator color={CTA.primaryFg} size="small" />
+              <ActivityIndicator color={theme.colors.cta.primaryFg} size="small" />
             ) : (
               <>
-                <Feather name="send" size={14} color={CTA.primaryFg} />
+                <Feather name="send" size={14} color={theme.colors.cta.primaryFg} />
                 <Text style={{
-                  color: CTA.primaryFg,
+                  color: theme.colors.cta.primaryFg,
                   fontSize: 15,
                   fontFamily: FONT_FAMILY.bold,
                   letterSpacing: 0.2,
@@ -177,23 +181,23 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
   );
 }
 
-const sectionLabelStyle = {
+const sectionLabelStyle = (t: AppTheme): TextStyle => ({
   fontSize: 12,
   fontFamily: FONT_FAMILY.bold,
-  color: "rgba(255,255,255,0.85)",
+  color: withAlpha(t.colors.text.primary, 0.85, t.colors.text.secondary),
   textTransform: "uppercase" as const,
   letterSpacing: 0.6,
   marginBottom: 8,
-};
+});
 
-const inputStyle = {
-  backgroundColor: "rgba(255,255,255,0.06)",
+const inputStyle = (t: AppTheme): TextStyle => ({
+  backgroundColor: t.colors.fill.subtle,
   borderWidth: 1,
-  borderColor: BORDER.subtle,
+  borderColor: t.colors.border.subtle,
   borderRadius: RADIUS.md,
   paddingHorizontal: 14,
   paddingVertical: 12,
-  color: "#FFFFFF",
+  color: t.colors.text.primary,
   fontSize: 15,
   fontFamily: FONT_FAMILY.regular,
-};
+});

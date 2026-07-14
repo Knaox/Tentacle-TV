@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground } from "../ui";
-import { BRAND, FONT_FAMILY, useContentPadding } from "../../theme";
+import { FONT_FAMILY, useContentPadding, useTheme, withAlpha } from "../../theme";
 import { Chip } from "./Chip";
 import { TicketCard } from "./TicketCard";
 import { FILTERS, useTicketApi, type Ticket } from "./ticketTypes";
@@ -19,6 +19,7 @@ interface Props {
 
 export function TicketListView({ onNew, onOpen }: Props) {
   const { t } = useTranslation("tickets");
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const contentPad = useContentPadding(720);
@@ -54,7 +55,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
           accessibilityLabel="Back"
           style={({ pressed }) => [{ marginRight: 8, padding: 4 }, pressed && { opacity: 0.7 }]}
         >
-          <Feather name="chevron-left" size={26} color={BRAND.light} />
+          <Feather name="chevron-left" size={26} color={colors.brand.light} />
         </Pressable>
         <Text
           style={{
@@ -62,7 +63,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
             fontFamily: FONT_FAMILY.extrabold,
             fontWeight: "800",
             letterSpacing: -0.6,
-            color: "#FFFFFF",
+            color: colors.text.primary,
             flex: 1,
           }}
           accessibilityRole="header"
@@ -83,14 +84,14 @@ export function TicketListView({ onNew, onOpen }: Props) {
       </ScrollView>
 
       {isLoading ? (
-        <ActivityIndicator color={BRAND.violet} style={{ marginTop: 48 }} />
+        <ActivityIndicator color={colors.brand.violet} style={{ marginTop: 48 }} />
       ) : tickets.length === 0 ? (
         <View style={{ alignItems: "center", marginTop: 80, paddingHorizontal: 32 }}>
-          <Feather name="inbox" size={48} color={BRAND.light} style={{ opacity: 0.5 }} />
+          <Feather name="inbox" size={48} color={colors.brand.light} style={{ opacity: 0.5 }} />
           <Text style={{
             fontSize: 15,
             fontFamily: FONT_FAMILY.medium,
-            color: "rgba(255,255,255,0.55)",
+            color: colors.text.tertiary,
             textAlign: "center",
             marginTop: 16,
           }}>
@@ -121,12 +122,12 @@ export function TicketListView({ onNew, onOpen }: Props) {
             width: 56,
             height: 56,
             borderRadius: 28,
-            backgroundColor: BRAND.ghost,
+            backgroundColor: colors.brand.ghost,
             borderWidth: 1,
-            borderColor: "rgba(139,92,246,0.45)",
+            borderColor: withAlpha(colors.brand.violet, 0.45, colors.brand.glow),
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: BRAND.violet,
+            shadowColor: colors.brand.violet,
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.55,
             shadowRadius: 22,
@@ -135,7 +136,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
           pressed && { opacity: 0.88, transform: [{ scale: 0.96 }] },
         ]}
       >
-        <Feather name="plus" size={26} color={BRAND.light} />
+        <Feather name="plus" size={26} color={colors.brand.light} />
       </Pressable>
     </SubtleBackground>
   );
