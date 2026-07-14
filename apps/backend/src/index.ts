@@ -23,6 +23,7 @@ import { preferenceRoutes } from "./routes/preferences";
 import { updateRoutes } from "./routes/update";
 import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
+import { pushRoutes } from "./routes/push";
 import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
 import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
 import { adminRoutes } from "./routes/admin";
@@ -217,6 +218,7 @@ async function main() {
   await app.register(updateRoutes, { prefix: "/api/update" });
   await app.register(ticketRoutes, { prefix: "/api/tickets" });
   await app.register(notificationRoutes, { prefix: "/api/notifications" });
+  await app.register(pushRoutes, { prefix: "/api/push" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
