@@ -11,6 +11,18 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 ### EN
 - …
 
+## [1.5.0]
+### FR
+- Notifications push : soyez prévenu des nouveaux ajouts à la bibliothèque, et — si le plugin Seer est configuré — quand un contenu que vous avez demandé devient disponible (réglages dans Profil › Préférences › Notifications)
+- Liquid Glass natif sur iOS 26 : véritables effets de verre du système sur toute l'interface (barre du haut, onglets, cartes)
+- Thème clair premium repensé, avec le mode automatique par défaut (suit votre système)
+- Profil et réglages réorganisés en un hub clair avec écrans dédiés
+### EN
+- Push notifications: get notified about new library additions, and — when the Seer plugin is set up — when content you requested becomes available (settings in Profile › Preferences › Notifications)
+- Native Liquid Glass on iOS 26: true system glass effects across the whole interface (top bar, tabs, cards)
+- Redesigned premium light theme, with automatic mode as the default (follows your system)
+- Profile and settings reorganized into a clear hub with dedicated screens
+
 ## [1.4.0]
 ### FR
 - Thème clair, sombre ou automatique (suit le réglage du système), sur iPhone, iPad et tablettes Android
