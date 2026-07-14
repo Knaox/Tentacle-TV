@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import { View, Text, ScrollView, Pressable, Alert, Linking, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import * as Application from "expo-application";
@@ -6,9 +6,9 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
-import { spacing, typography, FONT_FAMILY, RADIUS, useContentPadding, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
+import { spacing, typography, FONT_FAMILY, useContentPadding, useResponsive, useThemeMode, useTheme, useThemedStyles, type AppTheme, type ThemeMode } from "../theme";
 import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
-import { AdminSection, PairedDevicesSection, MediaPreferencesSection } from "../components/profile";
+import { SettingsSection, SettingsRow } from "../components/settings";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { ProfileAvatar } from "../components/profile/ProfileAvatar";
 import { clearCredentials } from "../auth/credentialManager";
@@ -18,16 +18,25 @@ import { useServerUrl } from "../providers/ServerUrlContext";
 const appVersion: string = Application.nativeApplicationVersion ?? require("../../app.json").expo?.version ?? "1.0.0";
 const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVACY.md";
 
+const THEME_MODE_LABEL: Record<ThemeMode, string> = {
+  light: "themeLight",
+  dark: "themeDark",
+  auto: "themeAuto",
+};
+
 /**
- * Profile — avatar XL gradient violet, sections Inter ExtraBold, Danger Zone
- * consolidée en liste compacte (logout/delete/change/clear) au lieu de 4
- * boutons séparés. Ambient orbe violet en haut.
+ * Profil — hub de réglages : identité en tête, puis sections logiques
+ * (Compte, Préférences, TV, Administration, Aide, Serveur, Zone sensible).
+ * Les domaines lourds (Apparence, Lecture, Appareils, Invitations, Mot de
+ * passe) vivent dans des sous-écrans dédiés `/settings/*`.
  */
 export function ProfileScreen() {
   const { t } = useTranslation("profile");
+  const { t: tp } = useTranslation("preferences");
   const router = useRouter();
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
+  const { mode } = useThemeMode();
   const { logout, changeServer } = useAuth();
   const { storage } = useTentacleConfig();
   const { setServerUrl } = useServerUrl();
@@ -42,10 +51,11 @@ export function ProfileScreen() {
   const isAdmin = user?.Policy?.IsAdministrator === true;
   const userName = user?.Name ?? t("defaultUsername");
   const initial = userName.charAt(0).toUpperCase();
+  const serverUrl = storage.getItem("tentacle_server_url") ?? "";
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout.mutate(undefined, { onSuccess: () => { clearCredentials(storage); router.replace("/(auth)/login"); } });
-  };
+  }, [logout, storage, router]);
 
   const handleChangeServer = useCallback(() => {
     Alert.alert(t("changeServerTitle"), t("changeServerMessage"), [
@@ -75,7 +85,6 @@ export function ProfileScreen() {
         onPress: async () => {
           setDeleting(true);
           try {
-            const serverUrl = storage.getItem("tentacle_server_url");
             const token = storage.getItem("tentacle_token");
             if (!serverUrl || !token) return;
             const res = await fetch(`${serverUrl}/api/auth/account`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -87,15 +96,14 @@ export function ProfileScreen() {
         },
       },
     ]);
-  }, [t, isAdmin, storage, queryClient, router]);
+  }, [t, isAdmin, storage, serverUrl, queryClient, router]);
 
   const contentPad = useContentPadding();
   const { isTablet, isLandscape } = useResponsive();
   const twoCol = isTablet && isLandscape;
 
-  const leftCol = (
+  const leftCol: ReactNode = (
     <>
-      {/* Hero — photo de profil Jellyfin (tap pour changer) + nom + badge admin */}
       <FadeIn delay={0}>
         <View style={st.hero}>
           <ProfileAvatar user={user} initial={initial} />
@@ -106,62 +114,75 @@ export function ProfileScreen() {
         </View>
       </FadeIn>
 
-      {/* Quick actions row — 3 cards icon glass */}
       <FadeIn delay={80}>
-        <View style={st.quickRow}>
-          <QuickActionCard iconName="monitor" label={t("pairTV")} onPress={() => router.push("/pair-tv")} />
-          <QuickActionCard iconName="help-circle" label={t("support")} onPress={() => router.push("/support")} />
-          <QuickActionCard iconName="info" label={t("about")} onPress={() => router.push("/about")} />
-        </View>
+        <SettingsSection title={t("account")}>
+          <SettingsRow icon="lock" label={t("password")} chevron onPress={() => router.push("/settings/password")} />
+          <SettingsRow icon="smartphone" label={t("pairedDevices")} chevron last onPress={() => router.push("/settings/devices")} />
+        </SettingsSection>
       </FadeIn>
 
-      {/* Préférences */}
-      <FadeIn delay={160}>
-        <SectionHeader title={t("preferences")} />
-        <GlassCard style={{ marginBottom: spacing.xl }}>
+      <FadeIn delay={140}>
+        <SettingsSection title={t("preferences")}>
+          <SettingsRow icon="sun" label={t("appearance")} value={tp(THEME_MODE_LABEL[mode])} chevron onPress={() => router.push("/settings/appearance")} />
+          <SettingsRow icon="play-circle" label={t("playback")} chevron last onPress={() => router.push("/settings/playback")} />
+        </SettingsSection>
+        <GlassCard style={st.langCard}>
           <LanguageToggle />
-          <View style={st.divider} />
-          <MediaPreferencesSection />
         </GlassCard>
       </FadeIn>
 
-      {/* Appareils appairés */}
-      <FadeIn delay={240}><PairedDevicesSection /></FadeIn>
+      <FadeIn delay={200}>
+        <SettingsSection title={t("pairTV")}>
+          <SettingsRow icon="cast" label={t("pairTV")} chevron last onPress={() => router.push("/pair-tv")} />
+        </SettingsSection>
+      </FadeIn>
     </>
   );
 
-  const rightCol = (
+  const rightCol: ReactNode = (
     <>
-      {/* Admin */}
-      {isAdmin && <FadeIn delay={320}><AdminSection /></FadeIn>}
+      {isAdmin ? (
+        <FadeIn delay={260}>
+          <SettingsSection title={t("administration")}>
+            <SettingsRow icon="mail" label={t("invitations")} chevron last onPress={() => router.push("/settings/invites")} />
+          </SettingsSection>
+        </FadeIn>
+      ) : null}
 
-      {/* Privacy */}
-      <FadeIn delay={360}>
-        <Pressable
-          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
-          accessibilityRole="link"
-          accessibilityLabel={t("privacyPolicy")}
-          style={st.privacy}
-          hitSlop={8}
-        >
-          <Feather name="external-link" size={13} color={theme.colors.text.tertiary} />
-          <Text style={st.privacyTxt}>{t("privacyPolicy")}</Text>
-        </Pressable>
+      <FadeIn delay={300}>
+        <SettingsSection title={t("help")}>
+          <SettingsRow icon="help-circle" label={t("support")} chevron onPress={() => router.push("/support")} />
+          <SettingsRow icon="info" label={t("about")} chevron last onPress={() => router.push("/about")} />
+        </SettingsSection>
       </FadeIn>
 
-      {/* Danger zone — consolidée en liste compacte */}
-      <FadeIn delay={400}>
-        <SectionHeader title={t("dangerZone")} danger />
-        <View style={st.dangerList}>
-          <DangerRow icon="server" label={t("changeServer")} onPress={handleChangeServer} />
-          <DangerRow icon="trash-2" label={t("clearCache")} onPress={handleClearCache} />
-          <DangerRow icon="user-x" label={t("deleteAccount")} onPress={handleDeleteAccount} disabled={deleting} />
-          <DangerRow icon="log-out" label={t("logout")} onPress={handleLogout} variant="logout" />
-        </View>
+      <FadeIn delay={340}>
+        <SettingsSection title={t("serverSection")} caption={serverUrl || undefined}>
+          <SettingsRow icon="server" label={t("changeServer")} chevron last onPress={handleChangeServer} />
+        </SettingsSection>
       </FadeIn>
 
-      <View style={{ marginTop: spacing.xl, alignItems: "center" }}>
-        <Text style={st.versionTxt}>Tentacle TV v{appVersion}</Text>
+      <FadeIn delay={380}>
+        <SettingsSection title={t("dangerZone")}>
+          <SettingsRow icon="trash-2" label={t("clearCache")} destructive onPress={handleClearCache} />
+          <SettingsRow icon="user-x" label={t("deleteAccount")} destructive disabled={deleting} onPress={handleDeleteAccount} />
+          <SettingsRow icon="log-out" label={t("logout")} destructive last onPress={handleLogout} />
+        </SettingsSection>
+      </FadeIn>
+
+      <Pressable
+        onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+        accessibilityRole="link"
+        accessibilityLabel={t("privacyPolicy")}
+        style={st.privacy}
+        hitSlop={8}
+      >
+        <Feather name="external-link" size={13} color={theme.colors.text.tertiary} />
+        <Text style={st.privacyTxt}>{t("privacyPolicy")}</Text>
+      </Pressable>
+
+      <View style={st.versionWrap}>
+        <Text style={st.versionTxt}>{t("version", { version: appVersion })}</Text>
       </View>
     </>
   );
@@ -170,7 +191,7 @@ export function ProfileScreen() {
     <SubtleBackground ambient>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {twoCol ? (
-          <View style={{ flexDirection: "row", gap: spacing.xl, width: "100%", maxWidth: 940, alignSelf: "center", paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl }}>
+          <View style={st.twoCol}>
             <View style={{ flex: 1 }}>{leftCol}</View>
             <View style={{ flex: 1 }}>{rightCol}</View>
           </View>
@@ -185,82 +206,14 @@ export function ProfileScreen() {
   );
 }
 
-function SectionHeader({ title, danger }: { title: string; danger?: boolean }) {
-  const theme = useTheme();
-  const st = useThemedStyles(makeStyles);
-  return (
-    <Text style={[st.sectionTitle, danger && { color: theme.colors.status.error }]} accessibilityRole="header">
-      {title}
-    </Text>
-  );
-}
-
-function QuickActionCard({ iconName, label, onPress }: { iconName: string; label: string; onPress: () => void }) {
-  const theme = useTheme();
-  const st = useThemedStyles(makeStyles);
-  return (
-    <Pressable onPress={onPress} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={label}>
-      <GlassCard>
-        <View style={{ alignItems: "center", gap: 10 }}>
-          <View style={st.quickIcon}>
-            <Feather name={iconName as keyof typeof Feather.glyphMap} size={20} color={theme.colors.brand.light} />
-          </View>
-          <Text style={st.quickLabel} numberOfLines={2}>{label}</Text>
-        </View>
-      </GlassCard>
-    </Pressable>
-  );
-}
-
-function DangerRow({ icon, label, onPress, variant, disabled }: {
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  onPress: () => void;
-  variant?: "logout";
-  disabled?: boolean;
-}) {
-  const theme = useTheme();
-  const st = useThemedStyles(makeStyles);
-  const isLogout = variant === "logout";
-  const color = isLogout
-    ? theme.colors.status.error
-    : withAlpha(theme.colors.text.primary, 0.86, theme.colors.text.secondary);
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [
-        st.dangerRow,
-        isLogout && { backgroundColor: withAlpha(theme.colors.status.error, 0.06, theme.colors.danger.surface) },
-        pressed && { opacity: 0.7 },
-        disabled && { opacity: 0.45 },
-      ]}
-    >
-      <View style={[st.dangerIcon, { backgroundColor: isLogout ? withAlpha(theme.colors.status.error, 0.12, theme.colors.danger.surface) : theme.colors.fill.subtle }]}>
-        <Feather name={icon} size={17} color={color} />
-      </View>
-      <Text style={[st.dangerLabel, { color }]}>{label}</Text>
-      <Feather name="chevron-right" size={16} color={theme.colors.fill.strong} />
-    </Pressable>
-  );
-}
-
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   hero: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.lg, marginBottom: spacing.xl },
   heroName: { ...typography.title, fontSize: 22, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, letterSpacing: -0.4 },
   heroSub: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary },
-  quickRow: { flexDirection: "row" as const, gap: spacing.md, marginBottom: spacing.xxl },
-  quickIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: t.colors.brand.soft, alignItems: "center" as const, justifyContent: "center" as const, borderWidth: 1, borderColor: withAlpha(t.colors.brand.violet, 0.25, t.colors.brand.glow) },
-  quickLabel: { ...typography.bodyBold, fontSize: 12, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, textAlign: "center" as const },
-  sectionTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, fontSize: 16, color: t.colors.text.primary, marginBottom: spacing.md, letterSpacing: -0.2, textTransform: "uppercase" as const, opacity: 0.85 },
-  divider: { height: 1, backgroundColor: t.colors.border.subtle, marginVertical: spacing.md },
-  privacy: { marginTop: spacing.xxl, alignItems: "center" as const, flexDirection: "row" as const, justifyContent: "center" as const, gap: spacing.sm, paddingVertical: 12 },
+  langCard: { marginTop: -spacing.md, marginBottom: spacing.xl },
+  twoCol: { flexDirection: "row" as const, gap: spacing.xl, width: "100%", maxWidth: 940, alignSelf: "center" as const, paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl },
+  privacy: { marginTop: spacing.sm, alignItems: "center" as const, flexDirection: "row" as const, justifyContent: "center" as const, gap: spacing.sm, paddingVertical: 12 },
   privacyTxt: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textDecorationLine: "underline" as const },
-  dangerList: { gap: 2 },
-  dangerRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 14, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.md, backgroundColor: t.colors.fill.faint },
-  dangerIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center" as const, justifyContent: "center" as const },
-  dangerLabel: { ...typography.bodyBold, fontFamily: FONT_FAMILY.semibold, fontSize: 14.5, flex: 1, letterSpacing: -0.1 },
+  versionWrap: { marginTop: spacing.lg, alignItems: "center" as const },
   versionTxt: { fontSize: 11, fontFamily: FONT_FAMILY.regular, color: t.colors.text.quaternary },
 });
