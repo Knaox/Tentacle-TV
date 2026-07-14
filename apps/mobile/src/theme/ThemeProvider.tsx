@@ -97,15 +97,26 @@ export function ThemeProvider({ backendUrl, storage, children }: ThemeProviderPr
     (next: ThemeMode) => {
       setModeState(next);
       storage.setItem(THEME_MODE_STORAGE_KEY, next);
-      // Répercute au niveau OS : les éléments natifs (alerts, clavier) suivent
-      // et useColorScheme() se met à jour, ce qui reconstruit l'AppTheme.
-      applyAppearance(next);
     },
     [storage],
   );
 
+  // Le scheme du thème dérive DU MODE (source de vérité), pas seulement de
+  // useColorScheme() : "light"/"dark" forcent le rendu quel que soit le système,
+  // "auto" suit le système. Dépendre de useColorScheme() seul (piloté par
+  // Appearance.setColorScheme) était fragile — l'override posé très tôt dans
+  // index.js ne se propage pas toujours au hook, et le mode forcé était ignoré.
   const systemScheme = useColorScheme();
-  const scheme: ResolvedScheme = systemScheme === "light" ? "light" : "dark";
+  const scheme: ResolvedScheme =
+    mode === "light" ? "light"
+      : mode === "dark" ? "dark"
+        : systemScheme === "light" ? "light" : "dark";
+
+  // Répercute le mode au niveau OS pour que les éléments NATIFS (Alert, clavier,
+  // menus contextuels) suivent aussi — au mount et à chaque changement de mode.
+  useEffect(() => {
+    applyAppearance(mode);
+  }, [mode]);
 
   // ── Liquid Glass : support natif (constant au runtime) + préférence ────────
   const liquidSupported = isLiquidGlassAvailable();
