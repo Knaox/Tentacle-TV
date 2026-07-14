@@ -11,6 +11,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.5.3]
+### FR
+- Notifications d'ajouts en bibliothèque : la notification affiche désormais le titre exact du contenu (film, série, saison, ou épisode au format SxxExx) au lieu d'un libellé générique.
+### EN
+- Library-addition notifications: the notification now shows the exact title of the added content (movie, series, season, or episode in SxxExx format) instead of a generic label.
+
 ## [1.5.2]
 ### FR
 - Notifications d'ajouts en bibliothèque : détection basée sur le nombre total d'items (fiable même quand Jellyfin date les contenus selon le fichier et non la date d'ajout), avec le titre récupéré quand c'est possible.
