@@ -14,7 +14,7 @@ import {
 } from "@/components/catalog";
 import { usePlatformFilter } from "@/hooks/usePlatformFilter";
 import type { AdvancedFilters } from "@/components/catalog";
-import { colors, spacing, typography, BRAND, BORDER, FONT_FAMILY, RADIUS } from "@/theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props { libraryId: string; libraryName?: string }
 
@@ -25,6 +25,8 @@ interface Props { libraryId: string; libraryName?: string }
  */
 export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -103,16 +105,16 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
         {/* Header sticky */}
         <View style={styles.header}>
           <Pressable onPress={() => backOrHome(router)} hitSlop={12} style={styles.backBtn} accessibilityRole="button" accessibilityLabel={t("back")}>
-            <Feather name="chevron-left" size={26} color="#fff" />
+            <Feather name="chevron-left" size={26} color={colors.text.primary} />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>{libraryName ?? ""}</Text>
           <View style={styles.headerActions}>
             <Pressable onPress={() => setSearchVisible((v) => !v)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
-              <Feather name="search" size={20} color={searchVisible ? BRAND.violet : "rgba(255,255,255,0.78)"} />
+              <Feather name="search" size={20} color={searchVisible ? colors.brand.violet : colors.text.secondary} />
             </Pressable>
             <Pressable onPress={() => setAdvancedVisible(true)} hitSlop={12} style={{ marginLeft: spacing.md }} accessibilityRole="button" accessibilityLabel={t("filters")}>
               <View>
-                <Feather name="sliders" size={20} color={advancedActiveCount > 0 ? BRAND.violet : "rgba(255,255,255,0.78)"} />
+                <Feather name="sliders" size={20} color={advancedActiveCount > 0 ? colors.brand.violet : colors.text.secondary} />
                 {advancedActiveCount > 0 && (
                   <View style={styles.headerBadge}>
                     <Text style={styles.headerBadgeText}>{advancedActiveCount}</Text>
@@ -127,12 +129,12 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
         {searchVisible && (
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrap}>
-              <Feather name="search" size={16} color="rgba(255,255,255,0.45)" />
+              <Feather name="search" size={16} color={colors.text.tertiary} />
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder={t("searchInLibrary", { name: libraryName ?? "" })}
-                placeholderTextColor={colors.textDim}
+                placeholderTextColor={colors.text.quaternary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoFocus
@@ -140,7 +142,7 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
               />
               {searchQuery.length > 0 && (
                 <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
-                  <Feather name="x" size={16} color="rgba(255,255,255,0.45)" />
+                  <Feather name="x" size={16} color={colors.text.tertiary} />
                 </Pressable>
               )}
             </View>
@@ -216,33 +218,35 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
 }
 
 function FilterChip({ label, onPress, active }: { label: string; onPress: () => void; active?: boolean }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={[styles.filterChip, active && styles.filterChipActive]} accessibilityRole="button" accessibilityLabel={label}>
       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{label}</Text>
-      <Feather name="chevron-down" size={12} color={active ? BRAND.violet : "rgba(255,255,255,0.6)"} />
+      <Feather name="chevron-down" size={12} color={active ? colors.brand.violet : colors.text.tertiary} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.screenPadding, paddingVertical: spacing.sm, gap: 4 },
   backBtn: { marginRight: spacing.xs, padding: 4 },
-  headerTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary, flex: 1 },
+  headerTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, letterSpacing: -0.4, color: t.colors.text.primary, flex: 1 },
   headerActions: { flexDirection: "row", alignItems: "center" },
   searchContainer: { paddingHorizontal: spacing.screenPadding, marginBottom: spacing.sm },
   searchInputWrap: {
     flexDirection: "row", alignItems: "center", gap: spacing.sm,
-    backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: BORDER.subtle,
+    backgroundColor: t.colors.fill.subtle, borderWidth: 1, borderColor: t.colors.border.subtle,
     borderRadius: RADIUS.md, paddingHorizontal: spacing.md, height: 44,
   },
-  searchInput: { flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular, color: colors.textPrimary, padding: 0 },
+  searchInput: { flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.primary, padding: 0 },
   filterBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.screenPadding, gap: 8, paddingVertical: spacing.xs, flexWrap: "wrap" },
-  filterChip: { flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: BORDER.subtle },
-  filterChipActive: { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.45)" },
-  filterChipText: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: "rgba(255,255,255,0.78)" },
-  filterChipTextActive: { color: BRAND.light },
-  resultCount: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, paddingHorizontal: spacing.screenPadding, paddingTop: 4, paddingBottom: spacing.sm },
-  headerBadge: { position: "absolute" as const, top: -4, right: -6, width: 15, height: 15, borderRadius: 8, backgroundColor: BRAND.violet, alignItems: "center" as const, justifyContent: "center" as const },
-  headerBadgeText: { color: "#fff", fontSize: 9, fontFamily: FONT_FAMILY.extrabold },
+  filterChip: { flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: t.colors.fill.subtle, borderWidth: 1, borderColor: t.colors.border.subtle },
+  filterChipActive: { backgroundColor: t.colors.brand.soft, borderColor: withAlpha(t.colors.brand.violet, 0.45, t.colors.brand.glow) },
+  filterChipText: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.secondary },
+  filterChipTextActive: { color: t.colors.brand.light },
+  resultCount: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, paddingHorizontal: spacing.screenPadding, paddingTop: 4, paddingBottom: spacing.sm },
+  headerBadge: { position: "absolute" as const, top: -4, right: -6, width: 15, height: 15, borderRadius: 8, backgroundColor: t.colors.brand.violet, alignItems: "center" as const, justifyContent: "center" as const },
+  headerBadgeText: { color: t.colors.cta.brandFg, fontSize: 9, fontFamily: FONT_FAMILY.extrabold },
 });

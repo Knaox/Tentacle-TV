@@ -2,7 +2,7 @@ import { memo, useCallback } from "react";
 import { ScrollView, Pressable, Text, StyleSheet, ActivityIndicator, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props {
   libraryId: string;
@@ -12,6 +12,8 @@ interface Props {
 
 export const GenreFilter = memo(function GenreFilter({ libraryId, selectedGenres, onGenresChange }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { data: genres, isLoading } = useGenres(libraryId);
 
   const toggleGenre = useCallback(
@@ -28,7 +30,7 @@ export const GenreFilter = memo(function GenreFilter({ libraryId, selectedGenres
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={colors.accent} />
+        <ActivityIndicator size="small" color={colors.brand.violet} />
       </View>
     );
   }
@@ -72,20 +74,20 @@ export const GenreFilter = memo(function GenreFilter({ libraryId, selectedGenres
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: { paddingHorizontal: spacing.screenPadding, gap: spacing.xs, paddingVertical: spacing.xs },
   loadingContainer: { paddingVertical: spacing.md, alignItems: "center" },
   chip: {
     height: 30,
     paddingHorizontal: 10,
     borderRadius: 15,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: t.colors.surface.s2,
     borderWidth: 1,
-    borderColor: colors.borderAccent,
+    borderColor: t.colors.brand.soft,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
-  chipActive: { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.45)" },
-  chipText: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
-  chipTextActive: { color: "#A78BFA", fontWeight: "600" },
+  chipActive: { backgroundColor: t.colors.brand.soft, borderColor: withAlpha(t.colors.brand.violet, 0.45, t.colors.brand.glow) },
+  chipText: { ...typography.caption, color: t.colors.text.secondary, lineHeight: 16 },
+  chipTextActive: { color: t.colors.brand.light, fontWeight: "600" },
 });

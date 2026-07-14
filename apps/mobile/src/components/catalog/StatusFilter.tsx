@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 const STATUS_OPTIONS = [
   { labelKey: "allStatus", value: null },
@@ -16,6 +16,7 @@ interface Props {
 
 export const StatusFilter = memo(function StatusFilter({ value, onChange }: Props) {
   const { t } = useTranslation("common");
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.container}>
@@ -37,19 +38,19 @@ export const StatusFilter = memo(function StatusFilter({ value, onChange }: Prop
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: { flexDirection: "row", gap: spacing.xs },
   chip: {
     height: 30,
     paddingHorizontal: 10,
     borderRadius: 15,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: t.colors.surface.s2,
     borderWidth: 1,
-    borderColor: colors.borderAccent,
+    borderColor: t.colors.brand.soft,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
-  chipActive: { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.45)" },
-  chipText: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
-  chipTextActive: { color: "#A78BFA", fontWeight: "600" },
+  chipActive: { backgroundColor: t.colors.brand.soft, borderColor: withAlpha(t.colors.brand.violet, 0.45, t.colors.brand.glow) },
+  chipText: { ...typography.caption, color: t.colors.text.secondary, lineHeight: 16 },
+  chipTextActive: { color: t.colors.brand.light, fontWeight: "600" },
 });

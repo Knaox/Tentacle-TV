@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { LibraryView } from "@tentacle-tv/shared";
 import { PressableCard, GradientOverlay } from "@/components/ui";
-import { colors, spacing, BORDER, FONT_FAMILY, RADIUS, SHADOW_RN, SURFACE } from "@/theme";
+import { spacing, FONT_FAMILY, RADIUS, SHADOW_RN, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 const ROTATE_INTERVAL = 8_000;
 
@@ -51,6 +51,8 @@ function getImageUrl(
  */
 export const LibraryCard = memo(function LibraryCard({ library, onPress, width }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const randomItems: RandomItem[] = (library as any)._randomItems ?? [];
 
@@ -80,14 +82,17 @@ export const LibraryCard = memo(function LibraryCard({ library, onPress, width }
           />
         ) : (
           <View style={styles.fallback}>
-            <Feather name={iconName} size={48} color="rgba(255,255,255,0.25)" />
+            <Feather name={iconName} size={48} color={colors.text.disabled} />
           </View>
         )}
-        <GradientOverlay direction="bottom" height="55%" color="#000000" intensity="strong" />
+        {/* Fade cinématique bas — suit le thème (défaut surface.s0 : noir pur en
+            sombre, clair en light) pour fondre la carte dans la page. */}
+        <GradientOverlay direction="bottom" height="55%" intensity="strong" />
 
-        {/* Badge icône type — glass top-left */}
+        {/* Badge icône type — glass sombre sur image (reste sombre dans les deux
+            thèmes), icône claire. */}
         <View style={styles.badge}>
-          <Feather name={iconName} size={14} color="#fff" />
+          <Feather name={iconName} size={14} color={colors.cta.brandFg} />
         </View>
 
         <View style={styles.labelContainer}>
@@ -106,21 +111,21 @@ export const LibraryCard = memo(function LibraryCard({ library, onPress, width }
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   card: {
     aspectRatio: 16 / 9,
     borderRadius: RADIUS.xl,
     overflow: "hidden",
-    backgroundColor: SURFACE.s2,
+    backgroundColor: t.colors.surface.s2,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER.subtle,
+    borderColor: t.colors.border.subtle,
     ...SHADOW_RN.elev3,
   },
   fallback: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: SURFACE.s2,
+    backgroundColor: t.colors.surface.s2,
   },
   badge: {
     position: "absolute",
@@ -129,9 +134,9 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: t.colors.glass.backdrop,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: withAlpha(t.colors.cta.brandFg, 0.18, t.colors.border.strong),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -146,7 +151,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 26,
     fontFamily: FONT_FAMILY.extrabold,
-    color: colors.textPrimary,
+    color: t.colors.text.primary,
     letterSpacing: -0.5,
     textShadowColor: "rgba(0,0,0,0.7)",
     textShadowOffset: { width: 0, height: 1 },
@@ -155,7 +160,7 @@ const styles = StyleSheet.create({
   count: {
     fontSize: 13,
     fontFamily: FONT_FAMILY.medium,
-    color: "rgba(255,255,255,0.7)",
+    color: t.colors.text.secondary,
     marginTop: 4,
     letterSpacing: 0.1,
     textShadowColor: "rgba(0,0,0,0.7)",

@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
-import { colors, typography, BRAND, RADIUS, SHADOW_RN, SURFACE, FONT_FAMILY, useResponsive } from "@/theme";
+import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -27,6 +27,8 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   item, onPress, onLongPress, width,
 }: Props) {
   const client = useJellyfinClient();
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
   const { isTablet } = useResponsive();
   // Rails : carte 130 sur iPhone (inchangé), agrandie sur iPad. Une `width`
   // explicite (grilles) l'emporte toujours.
@@ -81,19 +83,22 @@ export const MobileMediaCard = memo(function MobileMediaCard({
         </View>
         {hasProgress && (
           <View style={st.progWrap}>
-            <ProgressBar progress={progress / 100} height={3} tint={BRAND.violet} />
+            <ProgressBar progress={progress / 100} height={3} tint={theme.colors.brand.violet} />
           </View>
         )}
         {isWatched && !hasProgress && (
           <View style={st.watchedBadge}>
-            <Feather name="check" size={12} color="#000" />
+            <Feather name="check" size={12} color={theme.colors.cta.primaryFg} />
           </View>
         )}
         {isGroupedSeries && (
           // Badge "+N" violet→rose top-left — match desktop PosterCard.tsx:81
           // (from-[var(--brand)] to-[var(--brand-accent)], rose #EC4899 idem TentacleLogo).
           <LinearGradient
-            colors={[BRAND.violet, "#EC4899"]}
+            // Dégradé signature marque violet→rose (identique TentacleLogo,
+            // hors périmètre) — le rose #EC4899 n'a pas de token de palette et
+            // reste constant dans les deux thèmes.
+            colors={[theme.colors.brand.violet, "#EC4899"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={st.countBadge}
@@ -114,29 +119,29 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   );
 });
 
-const st = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   poster: {
     aspectRatio: 2 / 3,
     borderRadius: RADIUS.lg,
-    backgroundColor: SURFACE.s2,
+    backgroundColor: t.colors.surface.s2,
     ...SHADOW_RN.elev2,
   },
   imageClip: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: RADIUS.lg,
     overflow: "hidden",
-    backgroundColor: SURFACE.s2,
+    backgroundColor: t.colors.surface.s2,
   },
   fallback: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: SURFACE.s2,
+    backgroundColor: t.colors.surface.s2,
   },
   fallbackLetter: {
     fontSize: 36,
     fontFamily: FONT_FAMILY.extrabold,
-    color: "rgba(255,255,255,0.18)",
+    color: t.colors.text.disabled,
     letterSpacing: -0.5,
   },
   progWrap: {
@@ -156,7 +161,7 @@ const st = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.colors.cta.primaryBg,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -172,7 +177,7 @@ const st = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 3,
-    shadowColor: BRAND.violet,
+    shadowColor: t.colors.brand.violet,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.45,
     shadowRadius: 8,
@@ -182,20 +187,20 @@ const st = StyleSheet.create({
     fontSize: 11,
     lineHeight: 12,
     fontFamily: FONT_FAMILY.bold,
-    color: "#FFFFFF",
+    color: t.colors.cta.brandFg,
   },
   title: {
     ...typography.small,
     fontSize: 13,
     fontFamily: FONT_FAMILY.semibold,
-    color: colors.textPrimary,
+    color: t.colors.text.primary,
     marginTop: 8,
     letterSpacing: -0.1,
   },
   year: {
     ...typography.badge,
     fontFamily: FONT_FAMILY.medium,
-    color: colors.textMuted,
+    color: t.colors.text.tertiary,
     marginTop: 2,
   },
 });

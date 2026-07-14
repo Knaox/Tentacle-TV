@@ -7,7 +7,7 @@ import type { LibraryView } from "@tentacle-tv/shared";
 import { Feather } from "@expo/vector-icons";
 import { SkeletonCard, FadeIn, SubtleBackground } from "@/components/ui";
 import { LibraryCard } from "@/components/LibraryCard";
-import { colors, spacing, typography, BRAND, FONT_FAMILY, useGrid } from "@/theme";
+import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const CARD_GAP = 18;
 
@@ -21,6 +21,8 @@ const CARD_GAP = 18;
  */
 export function LibrariesScreen() {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useLibraries();
 
@@ -70,7 +72,7 @@ export function LibrariesScreen() {
         <View style={styles.container}>
           <Header title={t("librariesTitle")} />
           <View style={styles.emptyContainer}>
-            <Feather name="folder" size={48} color={BRAND.light} style={{ marginBottom: 16, opacity: 0.6 }} />
+            <Feather name="folder" size={48} color={colors.brand.light} style={{ marginBottom: 16, opacity: 0.6 }} />
             <Text style={styles.emptyText}>{t("noResults")}</Text>
           </View>
         </View>
@@ -90,8 +92,8 @@ export function LibrariesScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refetch}
-            tintColor={BRAND.violet}
-            progressBackgroundColor={colors.surface}
+            tintColor={colors.brand.violet}
+            progressBackgroundColor={colors.surface.s1}
           />
         }
       >
@@ -111,6 +113,7 @@ export function LibrariesScreen() {
 }
 
 function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.header}>
       <Text style={styles.title} accessibilityRole="header">{title}</Text>
@@ -119,7 +122,7 @@ function Header({ title, subtitle }: { title: string; subtitle?: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: spacing.xxxl + 60 },
   header: {
@@ -130,17 +133,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontFamily: FONT_FAMILY.extrabold,
-    color: colors.textPrimary,
+    color: t.colors.text.primary,
     letterSpacing: -0.8,
   },
   subtitle: {
     ...typography.caption,
     fontFamily: FONT_FAMILY.medium,
-    color: BRAND.light,
+    color: t.colors.brand.light,
     marginTop: 6,
     letterSpacing: 0.3,
   },
   listContainer: { paddingHorizontal: spacing.screenPadding, flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 80 },
-  emptyText: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: colors.textMuted, textAlign: "center" },
+  emptyText: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textAlign: "center" },
 });

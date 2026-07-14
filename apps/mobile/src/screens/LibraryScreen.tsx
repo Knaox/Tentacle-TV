@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useLibraryCatalog, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { colors, spacing, typography, BRAND, FONT_FAMILY, useGrid } from "../theme";
+import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
 import { PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
 
 interface Props {
@@ -32,6 +32,8 @@ const ITEM_GAP = spacing.sm;
 
 export function LibraryScreen({ libraryId, libraryName }: Props) {
   const { t } = useTranslation("common");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
@@ -121,7 +123,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
           value={query}
           onChangeText={setQuery}
           placeholder={t("searchPlaceholder")}
-          placeholderTextColor={colors.textDim}
+          placeholderTextColor={colors.text.quaternary}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.searchInput}
@@ -167,7 +169,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
             showsVerticalScrollIndicator={false}
             ListFooterComponent={
               isFetchingNextPage ? (
-                <ActivityIndicator size="small" color={colors.accent} style={{ paddingVertical: spacing.xl }} />
+                <ActivityIndicator size="small" color={colors.brand.violet} style={{ paddingVertical: spacing.xl }} />
               ) : (
                 <Text style={styles.footerCount}>
                   {t("itemCount", { count: itemCount })}
@@ -179,7 +181,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
       )}
 
       {isRefetching && (
-        <ActivityIndicator size="small" color={colors.accent} style={styles.refreshIndicator} />
+        <ActivityIndicator size="small" color={colors.brand.violet} style={styles.refreshIndicator} />
       )}
     </View>
   );
@@ -195,6 +197,8 @@ interface CardProps {
 }
 
 const LibraryItemCard = memo(function LibraryItemCard({ item, width, client, onPress }: CardProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const cardW = width;
   const poster = client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 });
   const year = item.ProductionYear;
@@ -203,7 +207,7 @@ const LibraryItemCard = memo(function LibraryItemCard({ item, width, client, onP
 
   return (
     <PressableCard onPress={onPress} style={{ width: cardW, marginBottom: spacing.md }}>
-      <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surfaceElevated }}>
+      <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surface.s2 }}>
         <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" />
         {progress != null && progress > 0 && !isWatched && (
           <View style={styles.progressContainer}>
@@ -212,7 +216,7 @@ const LibraryItemCard = memo(function LibraryItemCard({ item, width, client, onP
         )}
         {isWatched && (
           <View style={styles.watchedBadge}>
-            <Feather name="check" size={12} color="#000" />
+            <Feather name="check" size={12} color={colors.cta.primaryFg} />
           </View>
         )}
       </View>
@@ -228,8 +232,8 @@ const LibraryItemCard = memo(function LibraryItemCard({ item, width, client, onP
 
 /* ── Styles ──────────────────────────────────────────────── */
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const makeStyles = (t: AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.colors.surface.s0 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -237,34 +241,34 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   backButton: { marginRight: spacing.sm },
-  backArrow: { color: colors.accent, fontSize: 32, lineHeight: 32, fontWeight: "300" },
-  headerTitle: { color: colors.textPrimary, flex: 1 },
+  backArrow: { color: t.colors.brand.violet, fontSize: 32, lineHeight: 32, fontWeight: "300" },
+  headerTitle: { color: t.colors.text.primary, flex: 1 },
   searchContainer: { paddingHorizontal: spacing.screenPadding, marginBottom: spacing.md },
   searchInput: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: t.colors.fill.subtle,
     borderWidth: 1,
-    borderColor: colors.surfaceElevated,
+    borderColor: t.colors.surface.s2,
     borderRadius: spacing.cardRadius,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    color: colors.textPrimary,
+    color: t.colors.text.primary,
     ...typography.body,
   },
   sortRow: { flexDirection: "row", paddingHorizontal: spacing.screenPadding, gap: spacing.sm, marginBottom: spacing.lg },
-  sortChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: 20, backgroundColor: colors.surfaceElevated },
-  sortChipActive: { backgroundColor: BRAND.soft, borderWidth: 1, borderColor: "rgba(139,92,246,0.45)" },
-  sortChipText: { ...typography.caption, color: "rgba(255,255,255,0.6)", fontFamily: FONT_FAMILY.medium },
-  sortChipTextActive: { color: BRAND.light, fontFamily: FONT_FAMILY.semibold },
+  sortChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: 20, backgroundColor: t.colors.surface.s2 },
+  sortChipActive: { backgroundColor: t.colors.brand.soft, borderWidth: 1, borderColor: withAlpha(t.colors.brand.violet, 0.45, t.colors.brand.glow) },
+  sortChipText: { ...typography.caption, color: t.colors.text.tertiary, fontFamily: FONT_FAMILY.medium },
+  sortChipTextActive: { color: t.colors.brand.light, fontFamily: FONT_FAMILY.semibold },
   skeletonGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: spacing.screenPadding, gap: ITEM_GAP },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: { ...typography.body, color: colors.textMuted },
+  emptyText: { ...typography.body, color: t.colors.text.tertiary },
   gridContent: { paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xxl },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  // R11 — Watched check unifié (web/mobile) : pill blanc + check noir + shadow.
+  // R11 — Watched check unifié (web/mobile) : pastille contrastée + check + shadow.
   // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
-  watchedBadge: { position: "absolute", top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
-  itemTitle: { color: colors.textPrimary, fontWeight: "600", marginTop: spacing.xs + 2 },
-  itemYear: { color: colors.textMuted },
-  footerCount: { ...typography.caption, color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },
+  watchedBadge: { position: "absolute", top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: t.colors.cta.primaryBg, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
+  itemTitle: { color: t.colors.text.primary, fontWeight: "600", marginTop: spacing.xs + 2 },
+  itemYear: { color: t.colors.text.tertiary },
+  footerCount: { ...typography.caption, color: t.colors.text.tertiary, textAlign: "center", paddingVertical: spacing.lg },
   refreshIndicator: { position: "absolute", top: 100, alignSelf: "center" },
 });
