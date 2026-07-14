@@ -11,6 +11,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.5.0]
+### FR
+- Notifications push mobile : le serveur peut désormais notifier l'app mobile lors de nouveaux ajouts en bibliothèque et — si le plugin Seer est actif — quand un contenu demandé par l'utilisateur devient disponible (nouveaux endpoints `/api/push` : enregistrement du jeton, préférences opt-in, notification de test).
+### EN
+- Mobile push notifications: the server can now notify the mobile app about new library additions and — when the Seer plugin is active — when content requested by the user becomes available (new `/api/push` endpoints: token registration, opt-in preferences, test notification).
+
 ## [1.4.1]
 ### FR
 - Jumelage : un appareil (Android TV / Apple TV) dont le jumelage est révoqué est désormais déconnecté immédiatement et renvoyé à l'écran de jumelage — auparavant il pouvait rester connecté jusqu'à un échec d'authentification ultérieur (voire indéfiniment s'il restait inactif).
