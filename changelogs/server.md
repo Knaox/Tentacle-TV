@@ -13,9 +13,9 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 
 ## [1.5.0]
 ### FR
-- Notifications push mobile : le serveur peut désormais notifier l'app mobile lors de nouveaux ajouts en bibliothèque et — si le plugin Seer est actif — quand un contenu demandé par l'utilisateur devient disponible (nouveaux endpoints `/api/push` : enregistrement du jeton, préférences opt-in, notification de test).
+- **Notifications push mobile** : l'app peut désormais recevoir des notifications même fermée. Deux réglages (Profil › Préférences › Notifications, opt-in) : nouveaux **ajouts en bibliothèque**, et — si le plugin Seer est actif — **contenu demandé disponible** (uniquement ses propres demandes). Nouveaux endpoints serveur `/api/push` (enregistrement du jeton Expo, préférences, notification de test réservée aux admins). Livraison via Expo Push → APNs (iOS) / FCM (Android).
 ### EN
-- Mobile push notifications: the server can now notify the mobile app about new library additions and — when the Seer plugin is active — when content requested by the user becomes available (new `/api/push` endpoints: token registration, opt-in preferences, test notification).
+- **Mobile push notifications**: the app can now receive notifications even when closed. Two opt-in settings (Profile › Preferences › Notifications): new **library additions**, and — when the Seer plugin is active — **requested content available** (your own requests only). New server `/api/push` endpoints (Expo token registration, preferences, admin-only test notification). Delivery via Expo Push → APNs (iOS) / FCM (Android).
 
 ## [1.4.1]
 ### FR
