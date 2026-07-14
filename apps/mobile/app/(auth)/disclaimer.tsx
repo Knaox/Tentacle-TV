@@ -9,12 +9,13 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { TentacleLogo } from "@/components/TentacleLogo";
 import { SubtleBackground, GlassCard, FadeIn } from "@/components/ui";
 import {
-  BORDER,
-  BRAND,
-  CTA,
   FONT_FAMILY,
   RADIUS,
   CONTENT_MAX_WIDTH,
+  useTheme,
+  useThemedStyles,
+  withAlpha,
+  type AppTheme,
 } from "@/theme";
 
 const LANGS = [
@@ -24,6 +25,8 @@ const LANGS = [
 
 export default function DisclaimerScreen() {
   const { t } = useTranslation("disclaimer");
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { storage } = useTentacleConfig();
@@ -109,7 +112,7 @@ export default function DisclaimerScreen() {
             accessibilityLabel={t("checkboxLabel")}
           >
             <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-              {checked && <Feather name="check" size={16} color="#FFFFFF" />}
+              {checked && <Feather name="check" size={16} color={colors.cta.brandFg} />}
             </View>
             <Text style={styles.checkboxLabel}>{t("checkboxLabel")}</Text>
           </Pressable>
@@ -147,7 +150,7 @@ export default function DisclaimerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
     // Colonne centrée bornée sur grand écran (iPad / tablette) — full width sur téléphone.
@@ -164,7 +167,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 11,
     fontFamily: FONT_FAMILY.bold,
-    color: BRAND.light,
+    color: t.colors.brand.light,
     letterSpacing: 1.4,
     marginTop: 8,
     textTransform: "uppercase",
@@ -185,30 +188,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   langButtonActive: {
-    backgroundColor: BRAND.soft,
-    borderColor: "rgba(139, 92, 246, 0.4)",
+    backgroundColor: t.colors.brand.soft,
+    borderColor: withAlpha(t.colors.brand.violet, 0.4, t.colors.brand.glow),
   },
   langText: {
     fontSize: 12,
     fontFamily: FONT_FAMILY.bold,
     letterSpacing: 0.5,
-    color: "rgba(255, 255, 255, 0.4)",
+    color: t.colors.text.quaternary,
   },
   langTextActive: {
-    color: BRAND.light,
+    color: t.colors.brand.light,
   },
   title: {
     fontSize: 28,
     fontFamily: FONT_FAMILY.extrabold,
     fontWeight: "800",
     letterSpacing: -0.6,
-    color: "#FFFFFF",
+    color: t.colors.text.primary,
     textAlign: "center",
   },
   heading: {
     fontSize: 14,
     fontFamily: FONT_FAMILY.medium,
-    color: BRAND.light,
+    color: t.colors.brand.light,
     letterSpacing: 0.3,
     textAlign: "center",
     marginTop: 6,
@@ -224,7 +227,7 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 14,
     fontFamily: FONT_FAMILY.regular,
-    color: "rgba(255,255,255,0.78)",
+    color: t.colors.text.secondary,
     lineHeight: 22,
   },
   checkboxRow: {
@@ -239,30 +242,31 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.4)",
+    borderColor: t.colors.text.quaternary,
     justifyContent: "center",
     alignItems: "center",
   },
   checkboxChecked: {
-    backgroundColor: BRAND.violet,
-    borderColor: BRAND.violet,
+    backgroundColor: t.colors.brand.violet,
+    borderColor: t.colors.brand.violet,
   },
   checkboxLabel: {
     flex: 1,
     fontSize: 14,
     fontFamily: FONT_FAMILY.regular,
-    color: "rgba(255,255,255,0.78)",
+    color: t.colors.text.secondary,
     lineHeight: 20,
   },
   acceptButton: {
-    backgroundColor: CTA.primaryBg,
+    backgroundColor: t.colors.cta.primaryBg,
     borderRadius: RADIUS.md,
     paddingVertical: 13,
     minHeight: 50,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
-    shadowColor: BRAND.violet,
+    // Glow de marque sous le CTA (violet), thémé — pas une ombre noire neutre.
+    shadowColor: t.colors.brand.violet,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.55,
     shadowRadius: 22,
@@ -274,7 +278,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   acceptText: {
-    color: CTA.primaryFg,
+    color: t.colors.cta.primaryFg,
     fontSize: 15,
     fontFamily: FONT_FAMILY.bold,
     letterSpacing: 0.2,
@@ -286,12 +290,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: BORDER.subtle,
+    borderColor: t.colors.border.subtle,
   },
   declineText: {
     fontSize: 13,
     fontFamily: FONT_FAMILY.medium,
-    color: BRAND.light,
+    color: t.colors.brand.light,
     letterSpacing: 0.3,
   },
 });

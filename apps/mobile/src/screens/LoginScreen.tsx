@@ -16,24 +16,17 @@ import { TentacleLogo } from "../components/TentacleLogo";
 import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
 import { storeCredentials, attemptReAuth } from "../auth/credentialManager";
 import {
-  BORDER,
-  BRAND,
-  CTA,
-  FONT_FAMILY,
-  RADIUS,
-  STATUS,
   SubtleBackground,
   GlassCard,
   FadeIn,
-  authInputStyle,
-  authLinkStyle,
-  authPrimaryCtaStyle,
-  authSubtitleStyle,
-  authTitleStyle,
+  makeAuthStyles,
 } from "../components/auth/authStyles";
+import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles } from "@/theme";
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
+  const { colors } = useTheme();
+  const auth = useThemedStyles(makeAuthStyles);
   const insets = useSafeAreaInsets();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -133,9 +126,9 @@ export function LoginScreen() {
       <SubtleBackground ambient>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <TentacleLogo size={96} />
-          <ActivityIndicator color={BRAND.violet} style={{ marginTop: 28 }} size="large" />
+          <ActivityIndicator color={colors.brand.violet} style={{ marginTop: 28 }} size="large" />
           <Text style={{
-            color: BRAND.light,
+            color: colors.brand.light,
             fontSize: 14,
             fontFamily: FONT_FAMILY.medium,
             letterSpacing: 0.3,
@@ -162,12 +155,12 @@ export function LoginScreen() {
           <FadeIn delay={80} translateY={14} style={{ width: "100%", maxWidth: 400 }}>
             <GlassCard style={{ padding: 28 }}>
               <Text
-                style={authTitleStyle}
+                style={auth.title}
                 accessibilityRole="header"
               >
                 Tentacle TV
               </Text>
-              <Text style={authSubtitleStyle}>
+              <Text style={auth.subtitle}>
                 {t("signInSubtitle")}
               </Text>
 
@@ -175,26 +168,26 @@ export function LoginScreen() {
                 value={username}
                 onChangeText={setUsername}
                 placeholder={t("username")}
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor={colors.text.quaternary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel={t("username")}
-                style={authInputStyle}
+                style={auth.input}
               />
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder={t("password")}
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor={colors.text.quaternary}
                 secureTextEntry
                 accessibilityLabel={t("password")}
-                style={[authInputStyle, { marginTop: 12 }]}
+                style={[auth.input, { marginTop: 12 }]}
                 onSubmitEditing={handleLogin}
               />
 
               {error && (
                 <Text style={{
-                  color: STATUS.error,
+                  color: colors.status.error,
                   fontSize: 13,
                   fontFamily: FONT_FAMILY.medium,
                   marginTop: 12,
@@ -207,15 +200,15 @@ export function LoginScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t("signIn")}
                 style={({ pressed }) => [
-                  authPrimaryCtaStyle,
+                  auth.primaryCta,
                   { marginTop: 24, opacity: (loading || !username || !password) ? 0.55 : (pressed ? 0.88 : 1) },
                 ]}
               >
                 {loading ? (
-                  <ActivityIndicator color={CTA.primaryFg} />
+                  <ActivityIndicator color={colors.cta.primaryFg} />
                 ) : (
                   <Text style={{
-                    color: CTA.primaryFg,
+                    color: colors.cta.primaryFg,
                     fontSize: 15,
                     fontFamily: FONT_FAMILY.bold,
                     letterSpacing: 0.2,
@@ -232,7 +225,7 @@ export function LoginScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <Text style={authLinkStyle}>{t("forgotPassword")}</Text>
+                <Text style={auth.link}>{t("forgotPassword")}</Text>
               </Pressable>
 
               <Pressable
@@ -245,12 +238,12 @@ export function LoginScreen() {
                 ]}
               >
                 <Text style={{
-                  color: "rgba(255,255,255,0.55)",
+                  color: colors.text.tertiary,
                   fontSize: 13,
                   fontFamily: FONT_FAMILY.regular,
                 }}>
                   {t("noAccount")}{" "}
-                  <Text style={authLinkStyle}>{t("createAccount")}</Text>
+                  <Text style={auth.link}>{t("createAccount")}</Text>
                 </Text>
               </Pressable>
 
@@ -258,7 +251,7 @@ export function LoginScreen() {
                 marginTop: 12,
                 paddingTop: 12,
                 borderTopWidth: 1,
-                borderTopColor: BORDER.subtle,
+                borderTopColor: colors.border.subtle,
               }}>
                 <Pressable
                   onPress={() => router.replace("/server-setup")}
@@ -270,7 +263,7 @@ export function LoginScreen() {
                   ]}
                 >
                   <Text style={{
-                    color: "rgba(255,255,255,0.5)",
+                    color: colors.text.tertiary,
                     fontSize: 12,
                     fontFamily: FONT_FAMILY.medium,
                     letterSpacing: 0.3,

@@ -14,19 +14,12 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { verifyServer } from "@tentacle-tv/shared";
 import {
-  BRAND,
-  CTA,
-  FONT_FAMILY,
-  RADIUS,
-  STATUS,
   SubtleBackground,
   GlassCard,
   FadeIn,
-  authInputStyle,
-  authPrimaryCtaStyle,
-  authSubtitleStyle,
-  authTitleStyle,
+  makeAuthStyles,
 } from "../components/auth/authStyles";
+import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles } from "@/theme";
 
 interface ServerSetupScreenProps {
   onServerValidated: (url: string) => void;
@@ -34,6 +27,8 @@ interface ServerSetupScreenProps {
 
 export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps) {
   const { t, i18n } = useTranslation("auth");
+  const { colors } = useTheme();
+  const auth = useThemedStyles(makeAuthStyles);
   const insets = useSafeAreaInsets();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,7 +85,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               borderRadius: RADIUS.md,
               overflow: "hidden",
               borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.12)",
+              borderColor: colors.border.subtle,
             }}
             accessibilityRole="radiogroup"
             accessibilityLabel="Language"
@@ -107,7 +102,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
                     paddingHorizontal: 14,
                     paddingVertical: 8,
                     minHeight: 36,
-                    backgroundColor: i18n.language === lng ? BRAND.soft : "transparent",
+                    backgroundColor: i18n.language === lng ? colors.brand.soft : "transparent",
                     justifyContent: "center",
                   },
                   pressed && { opacity: 0.7 },
@@ -117,7 +112,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
                   fontSize: 12,
                   fontFamily: FONT_FAMILY.bold,
                   letterSpacing: 0.5,
-                  color: i18n.language === lng ? BRAND.light : "rgba(255,255,255,0.45)",
+                  color: i18n.language === lng ? colors.brand.light : colors.text.quaternary,
                 }}>
                   {lng.toUpperCase()}
                 </Text>
@@ -130,27 +125,27 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: BRAND.soft,
+              backgroundColor: colors.brand.soft,
               borderWidth: 1,
-              borderColor: "rgba(139,92,246,0.4)",
+              borderColor: colors.brand.glow,
               justifyContent: "center",
               alignItems: "center",
-              shadowColor: BRAND.violet,
+              shadowColor: colors.brand.violet,
               shadowOffset: { width: 0, height: 0 },
               shadowOpacity: 0.45,
               shadowRadius: 16,
               elevation: 8,
             }}>
-              <Feather name="server" size={40} color={BRAND.light} />
+              <Feather name="server" size={40} color={colors.brand.light} />
             </View>
           </FadeIn>
 
           <FadeIn delay={80} translateY={14} style={{ width: "100%", maxWidth: 400 }}>
             <GlassCard style={{ padding: 28 }}>
-              <Text style={authTitleStyle} accessibilityRole="header">
+              <Text style={auth.title} accessibilityRole="header">
                 {t("welcomeToTentacle")}
               </Text>
-              <Text style={authSubtitleStyle}>
+              <Text style={auth.subtitle}>
                 {t("enterServerUrl", { defaultValue: "Entrez l'URL de votre serveur Tentacle/Jellyfin" })}
               </Text>
 
@@ -159,18 +154,18 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
                   value={url}
                   onChangeText={setUrl}
                   placeholder={t("serverUrlPlaceholder")}
-                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  placeholderTextColor={colors.text.quaternary}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="url"
                   textContentType="URL"
                   accessibilityLabel={t("serverUrlLabel")}
-                  style={[authInputStyle, loading && { paddingRight: 44 }]}
+                  style={[auth.input, loading && { paddingRight: 44 }]}
                   onSubmitEditing={handleConnect}
                 />
                 {loading && (
                   <ActivityIndicator
-                    color={BRAND.violet}
+                    color={colors.brand.violet}
                     size="small"
                     style={{ position: "absolute", right: 14, top: 12 }}
                   />
@@ -179,7 +174,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
 
               <Text
                 style={{
-                  color: "rgba(255,255,255,0.4)",
+                  color: colors.text.quaternary,
                   fontSize: 12,
                   fontFamily: FONT_FAMILY.regular,
                   marginTop: 8,
@@ -191,7 +186,7 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
 
               {error && (
                 <Text style={{
-                  color: STATUS.error,
+                  color: colors.status.error,
                   fontSize: 13,
                   fontFamily: FONT_FAMILY.medium,
                   marginTop: 12,
@@ -206,15 +201,15 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
                 accessibilityRole="button"
                 accessibilityLabel={t("signIn")}
                 style={({ pressed }) => [
-                  authPrimaryCtaStyle,
+                  auth.primaryCta,
                   { marginTop: 22, opacity: !canSubmit ? 0.55 : (pressed ? 0.88 : 1) },
                 ]}
               >
                 {loading ? (
-                  <ActivityIndicator color={CTA.primaryFg} />
+                  <ActivityIndicator color={colors.cta.primaryFg} />
                 ) : (
                   <Text style={{
-                    color: CTA.primaryFg,
+                    color: colors.cta.primaryFg,
                     fontSize: 15,
                     fontFamily: FONT_FAMILY.bold,
                     letterSpacing: 0.2,

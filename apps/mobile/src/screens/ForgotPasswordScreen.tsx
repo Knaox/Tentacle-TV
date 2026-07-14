@@ -14,21 +14,17 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import {
-  CTA,
-  FONT_FAMILY,
-  STATUS,
   SubtleBackground,
   GlassCard,
   FadeIn,
-  authInputStyle,
-  authLinkStyle,
-  authPrimaryCtaStyle,
-  authSubtitleStyle,
-  authTitleStyle,
+  makeAuthStyles,
 } from "../components/auth/authStyles";
+import { FONT_FAMILY, useTheme, useThemedStyles } from "@/theme";
 
 export function ForgotPasswordScreen() {
   const { t } = useTranslation("auth");
+  const { colors } = useTheme();
+  const auth = useThemedStyles(makeAuthStyles);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { storage } = useTentacleConfig();
@@ -79,21 +75,21 @@ export function ForgotPasswordScreen() {
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  backgroundColor: "rgba(139,92,246,0.15)",
+                  backgroundColor: colors.brand.soft,
                   borderWidth: 1,
-                  borderColor: "rgba(139,92,246,0.35)",
+                  borderColor: colors.brand.glow,
                   justifyContent: "center",
                   alignItems: "center",
                   marginBottom: 12,
                 }}>
-                  <Feather name="key" size={26} color="#A78BFA" />
+                  <Feather name="key" size={26} color={colors.brand.light} />
                 </View>
               </View>
 
-              <Text style={[authTitleStyle, { fontSize: 24 }]} accessibilityRole="header">
+              <Text style={[auth.title, { fontSize: 24 }]} accessibilityRole="header">
                 {t("forgotPasswordTitle")}
               </Text>
-              <Text style={[authSubtitleStyle, { lineHeight: 20 }]}>
+              <Text style={[auth.subtitle, { lineHeight: 20 }]}>
                 {t("forgotPasswordDescription")}
               </Text>
 
@@ -103,15 +99,15 @@ export function ForgotPasswordScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 32,
-                    backgroundColor: "rgba(16,185,129,0.15)",
+                    backgroundColor: colors.statusPairs.success.bg,
                     justifyContent: "center",
                     alignItems: "center",
                     marginBottom: 16,
                   }}>
-                    <Feather name="check" size={32} color={STATUS.success} />
+                    <Feather name="check" size={32} color={colors.status.success} />
                   </View>
                   <Text style={{
-                    color: STATUS.success,
+                    color: colors.status.success,
                     fontSize: 14,
                     fontFamily: FONT_FAMILY.medium,
                     textAlign: "center",
@@ -127,7 +123,7 @@ export function ForgotPasswordScreen() {
                       pressed && { opacity: 0.7 },
                     ]}
                   >
-                    <Text style={[authLinkStyle, { fontFamily: FONT_FAMILY.semibold }]}>
+                    <Text style={[auth.link, { fontFamily: FONT_FAMILY.semibold }]}>
                       {t("signIn")}
                     </Text>
                   </Pressable>
@@ -138,11 +134,11 @@ export function ForgotPasswordScreen() {
                     value={username}
                     onChangeText={setUsername}
                     placeholder={t("username")}
-                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    placeholderTextColor={colors.text.quaternary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     accessibilityLabel={t("username")}
-                    style={authInputStyle}
+                    style={auth.input}
                     onSubmitEditing={handleSubmit}
                   />
 
@@ -152,15 +148,15 @@ export function ForgotPasswordScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={t("sendRequest")}
                     style={({ pressed }) => [
-                      authPrimaryCtaStyle,
+                      auth.primaryCta,
                       { marginTop: 22, opacity: !canSubmit ? 0.45 : (pressed ? 0.88 : 1) },
                     ]}
                   >
                     {loading ? (
-                      <ActivityIndicator color={CTA.primaryFg} />
+                      <ActivityIndicator color={colors.cta.primaryFg} />
                     ) : (
                       <Text style={{
-                        color: CTA.primaryFg,
+                        color: colors.cta.primaryFg,
                         fontSize: 15,
                         fontFamily: FONT_FAMILY.bold,
                         letterSpacing: 0.2,
@@ -179,7 +175,7 @@ export function ForgotPasswordScreen() {
                       pressed && { opacity: 0.7 },
                     ]}
                   >
-                    <Text style={authLinkStyle}>{t("signIn")}</Text>
+                    <Text style={auth.link}>{t("signIn")}</Text>
                   </Pressable>
                 </>
               )}
