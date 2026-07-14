@@ -39,9 +39,9 @@ function handleMessage(data: WebSocket.Data): void {
       case "LibraryChanged":
         broadcastAll("recently_added");
         broadcastAll("featured");
-        // Accélère la détection des ajouts : déclenche un poll immédiat (le
-        // notifier poll aussi périodiquement, donc robuste même sans cet event).
-        pokeLibraryAdded();
+        // Accélère la détection + fournit les IDs exacts des ajouts (pour titrer
+        // la notif, même si la date n'est pas fiable). Poll aussi périodiquement.
+        pokeLibraryAdded(msg?.Data?.ItemsAdded);
         break;
       case "UserDataChanged":
         broadcastAll("watchlist");

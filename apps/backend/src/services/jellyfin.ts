@@ -214,15 +214,36 @@ export async function getItemDetail(userId: string, itemId: string): Promise<Rec
   return res.json();
 }
 
+/** Item de bibliothèque + métadonnées utiles au titrage des notifs d'ajout. */
+export interface LibItem {
+  Id: string;
+  Name: string;
+  Type: string; // Movie | Series | Season | Episode
+  SeriesName?: string;
+  DateCreated?: string;
+  ParentIndexNumber?: number; // n° de saison (pour un épisode)
+  IndexNumber?: number; // n° d'épisode (Episode) ou n° de saison (Season)
+}
+
+function mapLibItems(data: unknown): LibItem[] {
+  const items = ((data as { Items?: unknown[] })?.Items ?? []) as LibItem[];
+  return items.map((i) => ({
+    Id: i.Id,
+    Name: i.Name,
+    Type: i.Type,
+    SeriesName: i.SeriesName,
+    DateCreated: i.DateCreated,
+    ParentIndexNumber: i.ParentIndexNumber,
+    IndexNumber: i.IndexNumber,
+  }));
+}
+
 /**
- * Récupère les derniers items ajoutés (tri DateCreated desc, clé admin). Endpoint
- * /Items filtré, déjà éprouvé par jellyfinPoller. Sert à la détection ROBUSTE des
- * ajouts en bibliothèque (poll + watermark), indépendante de l'event WebSocket.
+ * Derniers items ajoutés (tri DateCreated desc, clé admin). Endpoint /Items
+ * éprouvé (cf. jellyfinPoller). Fournit les titres quand la date est récente.
  * Renvoie [] si échec (best-effort).
  */
-export async function getRecentlyAddedItems(
-  limit: number,
-): Promise<{ Id: string; Name: string; Type: string; SeriesName?: string; DateCreated?: string }[]> {
+export async function getRecentlyAddedItems(limit: number): Promise<LibItem[]> {
   const jellyfinUrl = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
   if (!jellyfinUrl || !apiKey) return [];
@@ -236,14 +257,27 @@ export async function getRecentlyAddedItems(
     console.warn(`[LibNotif] getRecentlyAddedItems HTTP ${res.status}`);
     return [];
   }
+  return mapLibItems(await res.json());
+}
 
-  const data = await res.json();
-  const items = (data?.Items ?? []) as {
-    Id: string; Name: string; Type: string; SeriesName?: string; DateCreated?: string;
-  }[];
-  return items.map((i) => ({
-    Id: i.Id, Name: i.Name, Type: i.Type, SeriesName: i.SeriesName, DateCreated: i.DateCreated,
-  }));
+/**
+ * Métadonnées d'items par IDs (clé admin) — pour titrer les notifs quand les IDs
+ * viennent de l'event WebSocket ItemsAdded (fiable même si la date ne l'est pas).
+ */
+export async function getItemsByIds(ids: string[]): Promise<LibItem[]> {
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+  if (!jellyfinUrl || !apiKey || ids.length === 0) return [];
+
+  const res = await fetch(
+    `${jellyfinUrl}/Items?Ids=${ids.join(",")}&Fields=SeriesName`,
+    { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000) },
+  );
+  if (!res.ok) {
+    console.warn(`[LibNotif] getItemsByIds HTTP ${res.status}`);
+    return [];
+  }
+  return mapLibItems(await res.json());
 }
 
 /**
