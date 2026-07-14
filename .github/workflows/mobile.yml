@@ -313,6 +313,15 @@ jobs:
           plutil -replace CFBundleVersion -string "${{ needs.version.outputs.build }}" "$PLIST"
           plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
 
+      # Build de diffusion (TestFlight/App Store) → APNs production. L'entitlement
+      # committé est `development` (pour les builds Xcode locaux) ; on force
+      # `production` ici pour matcher le profil de provisioning Distribution.
+      - name: Force production APNs entitlement
+        run: |
+          ENT=apps/mobile/ios/TentacleTV/TentacleTV.entitlements
+          plutil -replace aps-environment -string production "$ENT"
+          plutil -p "$ENT" | grep aps-environment
+
       - name: Archive (xcodebuild, signature manuelle Distribution)
         run: |
           xcodebuild archive \
