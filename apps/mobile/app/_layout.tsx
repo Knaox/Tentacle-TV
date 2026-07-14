@@ -15,7 +15,7 @@ import { clearCredentials } from "@/auth/credentialManager";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-import { colors, IS_TABLET_DEVICE } from "@/theme";
+import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
 
 // Prevent splash screen from auto-hiding
@@ -175,41 +175,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ServerUrlContext.Provider value={{ serverUrl, setServerUrl: handleSetServerUrl }}>
           <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl}>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                gestureEnabled: true,
-                contentStyle: { backgroundColor: colors.background },
-                // Défaut app : portrait sur téléphone, libre sur tablette (iPad
-                // ET tablette Android). Déclaratif par écran via
-                // react-native-screens — `watch/[itemId]` force "all" pour que
-                // le téléphone tourne aussi dans le lecteur vidéo.
-                orientation: IS_TABLET_DEVICE ? "all" : "portrait_up",
-              }}
-            >
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
-              <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
-              <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
-              <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
-              <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
-              <Stack.Screen name="favorites" options={{ presentation: "card" }} />
-              {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
-                  visible derrière et son swipe-pour-fermer est capricieux). */}
-              <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
-              <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
-              <Stack.Screen name="support" options={{ presentation: "card" }} />
-              <Stack.Screen name="about" options={{ presentation: "card" }} />
-              <Stack.Screen name="credits" options={{ presentation: "card" }} />
-            </Stack>
-            <OfflineOverlay />
-            {(!ready || (!fontsLoaded && !fontError)) && (
-              <View style={styles.loading}>
-                <ActivityIndicator size="large" color={colors.accent} />
-              </View>
-            )}
+            <ThemedShell showLoading={!ready || (!fontsLoaded && !fontError)} />
           </AppProviders>
         </ServerUrlContext.Provider>
       </SafeAreaProvider>
@@ -217,10 +183,56 @@ export default function RootLayout() {
   );
 }
 
+/**
+ * Shell thémé — rendu SOUS AppProviders pour consommer le thème d'apparence :
+ * StatusBar suit le scheme, fond de scène et overlay de chargement thémés.
+ */
+function ThemedShell({ showLoading }: { showLoading: boolean }) {
+  const theme = useTheme();
+  return (
+    <>
+      <StatusBar style={theme.statusBarStyle} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          contentStyle: { backgroundColor: theme.colors.surface.s0 },
+          // Défaut app : portrait sur téléphone, libre sur tablette (iPad
+          // ET tablette Android). Déclaratif par écran via
+          // react-native-screens — `watch/[itemId]` force "all" pour que
+          // le téléphone tourne aussi dans le lecteur vidéo.
+          orientation: IS_TABLET_DEVICE ? "all" : "portrait_up",
+        }}
+      >
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
+        <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
+        <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
+        <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
+        <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
+        <Stack.Screen name="favorites" options={{ presentation: "card" }} />
+        {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
+            visible derrière et son swipe-pour-fermer est capricieux). */}
+        <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
+        <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
+        <Stack.Screen name="support" options={{ presentation: "card" }} />
+        <Stack.Screen name="about" options={{ presentation: "card" }} />
+        <Stack.Screen name="credits" options={{ presentation: "card" }} />
+      </Stack>
+      <OfflineOverlay />
+      {showLoading && (
+        <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
+          <ActivityIndicator size="large" color={theme.colors.brand.violet} />
+        </View>
+      )}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
   loading: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,

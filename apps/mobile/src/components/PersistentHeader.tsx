@@ -4,15 +4,17 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { NotificationBell } from "./NotificationBell";
 import { TentacleLogo } from "./TentacleLogo";
-import { colors, spacing } from "@/theme";
+import { spacing, useTheme, withAlpha } from "@/theme";
 
 export function PersistentHeader() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const theme = useTheme();
+  const { colors } = theme;
 
   return (
     <View style={{
-      backgroundColor: colors.background,
+      backgroundColor: colors.surface.s0,
       // Plancher 24pt = hauteur barre d'état iOS : sur iPad `insets.top` peut
       // remonter ~0 et coller le header à l'heure/WiFi/batterie. Sur iPhone à
       // encoche, insets.top (≥44) l'emporte → aucun changement.
@@ -23,7 +25,7 @@ export function PersistentHeader() {
       alignItems: "center",
       justifyContent: "space-between",
       borderBottomWidth: 1,
-      borderBottomColor: "rgba(139, 92, 246, 0.1)",
+      borderBottomColor: withAlpha(colors.brand.violet, 0.1, colors.brand.soft),
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
@@ -35,7 +37,7 @@ export function PersistentHeader() {
         <Text style={{
           fontSize: 22,
           fontWeight: "800",
-          color: colors.textPrimary,
+          color: colors.text.primary,
         }}>
           Tentacle TV
         </Text>
@@ -44,13 +46,13 @@ export function PersistentHeader() {
       {/* Right actions */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
         <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
-          <Feather name="bookmark" size={20} color={colors.textPrimary} />
+          <Feather name="bookmark" size={20} color={colors.text.primary} />
         </Pressable>
         <Pressable onPress={() => router.push("/favorites")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Favorites">
-          <Feather name="heart" size={20} color={colors.textPrimary} />
+          <Feather name="heart" size={20} color={colors.text.primary} />
         </Pressable>
         <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
-          <Feather name="search" size={20} color={colors.textPrimary} />
+          <Feather name="search" size={20} color={colors.text.primary} />
         </Pressable>
         <NotificationBell />
       </View>

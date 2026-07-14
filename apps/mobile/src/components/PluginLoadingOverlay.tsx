@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "./TentacleLogo";
-import { colors, typography } from "@/theme";
+import { typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 interface PluginLoadingOverlayProps {
   visible: boolean;
@@ -10,6 +11,9 @@ interface PluginLoadingOverlayProps {
 }
 
 export function PluginLoadingOverlay({ visible, label, onHidden }: PluginLoadingOverlayProps) {
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const opacity = useRef(new Animated.Value(1)).current;
   const [gone, setGone] = useState(false);
 
@@ -35,30 +39,31 @@ export function PluginLoadingOverlay({ visible, label, onHidden }: PluginLoading
       <TentacleLogo size={80} />
       <ActivityIndicator
         size="small"
-        color={colors.accent}
+        color={theme.colors.brand.violet}
         style={styles.spinner}
       />
       {label ? (
-        <Text style={styles.label}>Chargement de {label}…</Text>
+        <Text style={styles.label}>{t("loadingPlugin", { label })}</Text>
       ) : null}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  spinner: {
-    marginTop: 20,
-  },
-  label: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: 12,
-  },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: t.colors.surface.s0,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 10,
+    },
+    spinner: {
+      marginTop: 20,
+    },
+    label: {
+      ...typography.body,
+      color: t.colors.text.tertiary,
+      marginTop: 12,
+    },
+  });

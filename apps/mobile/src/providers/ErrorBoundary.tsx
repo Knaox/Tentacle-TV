@@ -1,6 +1,10 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Appearance, Text, TouchableOpacity, View } from "react-native";
 import i18next from "i18next";
+
+import { buildDarkPalette } from "@/theme/palette.dark";
+import { buildLightPalette } from "@/theme/palette.light";
+import type { ThemePalette } from "@/theme/palette.types";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -11,6 +15,13 @@ interface ErrorBoundaryState {
   error?: Error;
 }
 
+/**
+ * Filet de sécurité racine — monté AU-DESSUS du ThemeProvider, donc sans
+ * accès aux hooks de thème. Le scheme est lu impérativement via
+ * `Appearance.getColorScheme()` au render (le mode utilisateur est déjà
+ * répercuté au niveau OS par Appearance.setColorScheme) et la palette
+ * construite par les builders partagés — aucun littéral couleur ici.
+ */
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -31,14 +42,54 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render() {
     if (this.state.hasError) {
+      const palette: ThemePalette =
+        Appearance.getColorScheme() === "light" ? buildLightPalette() : buildDarkPalette();
+
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>{i18next.t("errors:unexpectedError")}</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: palette.surface.s0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+        >
+          <Text
+            style={{
+              color: palette.text.primary,
+              fontSize: 20,
+              fontWeight: "600",
+              marginBottom: 12,
+              textAlign: "center",
+            }}
+          >
+            {i18next.t("errors:unexpectedError")}
+          </Text>
           {__DEV__ && this.state.error && (
-            <Text style={styles.detail}>{this.state.error.message}</Text>
+            <Text
+              style={{
+                color: palette.text.tertiary,
+                fontSize: 14,
+                marginBottom: 24,
+                textAlign: "center",
+              }}
+            >
+              {this.state.error.message}
+            </Text>
           )}
-          <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>{i18next.t("common:retry")}</Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: palette.brand.violet,
+              paddingHorizontal: 32,
+              paddingVertical: 12,
+              borderRadius: 8,
+            }}
+            onPress={this.handleRetry}
+          >
+            <Text style={{ color: palette.cta.brandFg, fontSize: 16, fontWeight: "600" }}>
+              {i18next.t("common:retry")}
+            </Text>
           </TouchableOpacity>
         </View>
       );
@@ -47,37 +98,3 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return this.props.children;
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0a0a0f",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  title: {
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  detail: {
-    color: "#a1a1aa",
-    fontSize: 14,
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  button: {
-    backgroundColor: "#8b5cf6",
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
