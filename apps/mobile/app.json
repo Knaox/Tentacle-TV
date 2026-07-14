@@ -21,7 +21,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
-          "audio"
+          "audio",
+          "remote-notification"
         ],
         "AVInitialRouteSharingPolicy": "LongFormVideo",
         "NSLocalNetworkUsageDescription": "Tentacle TV needs access to your local network to connect to your self-hosted media server.",
@@ -43,6 +44,12 @@
       "expo-font",
       "expo-secure-store",
       [
+        "expo-notifications",
+        {
+          "color": "#080812"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
@@ -58,7 +65,7 @@
       "eas": {
         "projectId": "9ec680e1-8591-44c4-98e0-79867fac32ca"
       },
-      "minServer": "1.4.1"
+      "minServer": "1.5.0"
     }
   }
 }
