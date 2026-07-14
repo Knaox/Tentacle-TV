@@ -11,6 +11,20 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 ### EN
 - …
 
+## [1.4.0]
+### FR
+- Thème clair, sombre ou automatique (suit le réglage du système), sur iPhone, iPad et tablettes Android
+- Effets de verre Liquid Glass sur iOS 26 (activables dans Apparence)
+- Réglages réorganisés : compte, apparence, lecture, mot de passe et appareils dans des écrans dédiés
+- Correction : la liste des appareils jumelés s'affiche de nouveau correctement
+- Alerte quand votre serveur Tentacle TV doit être mis à jour
+### EN
+- Light, dark or automatic theme (follows the system setting), on iPhone, iPad and Android tablets
+- Liquid Glass effects on iOS 26 (toggle in Appearance)
+- Reorganized settings: account, appearance, playback, password and devices in dedicated screens
+- Fix: the paired devices list shows correctly again
+- Heads-up when your Tentacle TV server needs updating
+
 ## [1.3.1]
 ### FR
 - Sous-titres : le formatage est respecté — gras, italique et position à l'écran (panneaux en haut) au lieu de tags affichés en code brut
