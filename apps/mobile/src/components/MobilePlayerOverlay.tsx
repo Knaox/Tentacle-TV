@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
-import { TABLET_MIN_WIDTH } from "@/theme";
+import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { ArrowLeft, Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -122,7 +122,7 @@ export function MobilePlayerOverlay({
       {visible && (
         <Animated.View style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          opacity, backgroundColor: "rgba(0,0,0,0.4)",
+          opacity, backgroundColor: PLAYER.scrim,
         }}>
           {/* Background tap to dismiss */}
           <Pressable
@@ -132,9 +132,9 @@ export function MobilePlayerOverlay({
           {/* Top bar — safe-area pour ne pas chevaucher la status bar (portrait). */}
           <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "center", paddingTop: Math.max(12, insets.top), paddingLeft: Math.max(16, insets.left), paddingRight: Math.max(16, insets.right), gap: 12 }}>
             <Pressable onPress={onBack} hitSlop={16} style={{ padding: 4 }}>
-              <ArrowLeft size={Math.round(26 * ui)} color="#fff" />
+              <ArrowLeft size={Math.round(26 * ui)} color={PLAYER.text} />
             </Pressable>
-            <Text numberOfLines={1} style={{ color: "#fff", fontSize: Math.round(16 * ui), fontWeight: "600", flex: 1 }}>{title}</Text>
+            <Text numberOfLines={1} style={{ color: PLAYER.text, fontSize: Math.round(16 * ui), fontWeight: "600", flex: 1 }}>{title}</Text>
           </View>
 
           {/* Center controls — box-none : les zones vides laissent passer le tap
@@ -203,26 +203,26 @@ export function MobilePlayerOverlay({
                 <Pressable
                   onPress={() => { setShowEpisodes(true); if (hideTimer.current) clearTimeout(hideTimer.current); }}
                   hitSlop={12}
-                  style={{ padding: isTablet ? 12 : 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
+                  style={{ padding: isTablet ? 12 : 8, backgroundColor: PLAYER.borderSubtle, borderRadius: 8 }}
                 >
-                  <List size={Math.round(18 * ui)} color="rgba(255,255,255,0.8)" />
+                  <List size={Math.round(18 * ui)} color={PLAYER.textSecondary} />
                 </Pressable>
               )}
               {subtitleTracks.length > 0 && (
                 <Pressable
                   onPress={() => { setShowSubtitles(true); setShowSettings(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}
                   hitSlop={12}
-                  style={{ padding: isTablet ? 12 : 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
+                  style={{ padding: isTablet ? 12 : 8, backgroundColor: PLAYER.borderSubtle, borderRadius: 8 }}
                 >
-                  <Captions size={Math.round(18 * ui)} color="rgba(255,255,255,0.8)" />
+                  <Captions size={Math.round(18 * ui)} color={PLAYER.textSecondary} />
                 </Pressable>
               )}
               <Pressable
                 onPress={() => { setShowSettings(true); setShowSubtitles(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}
                 hitSlop={12}
-                style={{ padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 8 }}
+                style={{ padding: 8, backgroundColor: PLAYER.borderSubtle, borderRadius: 8 }}
               >
-                <Settings size={Math.round(18 * ui)} color="rgba(255,255,255,0.8)" />
+                <Settings size={Math.round(18 * ui)} color={PLAYER.textSecondary} />
               </Pressable>
             </View>
           </View>

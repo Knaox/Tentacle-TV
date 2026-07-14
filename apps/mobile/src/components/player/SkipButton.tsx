@@ -1,7 +1,7 @@
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 import { ChevronRight } from "lucide-react-native";
-import { useResponsive } from "../../theme";
+import { PLAYER, useResponsive } from "../../theme";
 
 interface Props {
   label: string;
@@ -29,9 +29,9 @@ export function SkipButton({ label, onPress, bottom, right, showChevron }: Props
         hitSlop={8}
       >
         <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFillObject} />
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.6)" }]} />
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: PLAYER.controlBg }]} />
         <Text style={[st.label, isTablet && { fontSize: 17 }]} numberOfLines={1}>{label}</Text>
-        {showChevron && <ChevronRight size={isTablet ? 20 : 16} color="#fff" />}
+        {showChevron && <ChevronRight size={isTablet ? 20 : 16} color={PLAYER.text} />}
       </Pressable>
     </View>
   );
@@ -45,7 +45,7 @@ const st = StyleSheet.create({
     minHeight: 44,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: PLAYER.border,
     paddingHorizontal: 20,
     paddingVertical: 10,
     overflow: "hidden",
@@ -57,5 +57,5 @@ const st = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 14,
   },
-  label: { color: "#fff", fontSize: 14, fontWeight: "600", letterSpacing: 0.1 },
+  label: { color: PLAYER.text, fontSize: 14, fontWeight: "600", letterSpacing: 0.1 },
 });

@@ -8,7 +8,7 @@ import Svg, { Circle } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { BRAND, SURFACE, useResponsive } from "../../theme";
+import { PLAYER, useResponsive } from "../../theme";
 
 interface Props {
   nextEpisode: MediaItem;
@@ -72,9 +72,9 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
     <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 60, opacity }]}>
       {/* Fond = bannière série assombrie */}
       <Image source={{ uri: backdropUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.72)" }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: PLAYER.scrimStrong }]} />
       <LinearGradient
-        colors={["rgba(0,0,0,0.45)", "rgba(0,0,0,0)", "rgba(0,0,0,0.7)"]}
+        colors={[PLAYER.scrim, "transparent", PLAYER.scrimStrong]}
         locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -92,12 +92,12 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
           top: Math.max(insets.top, 16) + 6,
           right: Math.max(insets.right, 16) + 6,
           width: 44, height: 44, borderRadius: 22,
-          backgroundColor: "rgba(0,0,0,0.45)",
+          backgroundColor: PLAYER.scrim,
           alignItems: "center", justifyContent: "center",
           zIndex: 2,
         }}
       >
-        <X size={22} color="rgba(255,255,255,0.9)" />
+        <X size={22} color={PLAYER.text} />
       </Pressable>
 
       {/* Panneau centré */}
@@ -105,8 +105,8 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
         <View style={{ width: "100%", maxWidth: panelMax }}>
           {/* Compte à rebours */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 16 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND.light ?? "#a78bfa" }} />
-            <Text style={{ color: "rgba(255,255,255,0.92)", fontSize: isTablet ? 14 : 12, fontWeight: "700", letterSpacing: 1.5, textTransform: "uppercase", textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 4 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PLAYER.accentLight }} />
+            <Text style={{ color: PLAYER.text, fontSize: isTablet ? 14 : 12, fontWeight: "700", letterSpacing: 1.5, textTransform: "uppercase", textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 4 }}>
               {t("autoplayCountdown", { seconds: countdown })}
             </Text>
           </View>
@@ -114,11 +114,11 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
           <View style={{ flexDirection: row ? "row" : "column", gap: isTablet ? 26 : 18, alignItems: row ? "flex-start" : "stretch" }}>
             {/* Vignette 16:9 de l'épisode suivant */}
             <View style={{ width: row ? thumbW : "100%", maxWidth: thumbW, alignSelf: "center" }}>
-              <View style={{ width: "100%", height: thumbH, borderRadius: 14, overflow: "hidden", backgroundColor: SURFACE.s1 ?? "#111", borderWidth: 1, borderColor: "rgba(139,92,246,0.28)" }}>
+              <View style={{ width: "100%", height: thumbH, borderRadius: 14, overflow: "hidden", backgroundColor: PLAYER.bg, borderWidth: 1, borderColor: PLAYER.accentSoft }}>
                 <Image source={{ uri: thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
                 <View style={[StyleSheet.absoluteFillObject, { alignItems: "center", justifyContent: "center" }]}>
-                  <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }}>
-                    <Play size={24} color="#fff" fill="#fff" />
+                  <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: PLAYER.scrim, alignItems: "center", justifyContent: "center" }}>
+                    <Play size={24} color={PLAYER.text} fill={PLAYER.text} />
                   </View>
                 </View>
               </View>
@@ -126,19 +126,19 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
 
             {/* Infos épisode */}
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" }}>
+              <Text style={{ color: PLAYER.textTertiary, fontSize: 11, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" }}>
                 {t("upNext")}
               </Text>
               {episodeLabel && (
-                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: "700", letterSpacing: 1.6, marginTop: 6 }}>
+                <Text style={{ color: PLAYER.textTertiary, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, marginTop: 6 }}>
                   {episodeLabel}
                 </Text>
               )}
-              <Text numberOfLines={2} style={{ color: "#fff", fontSize: titleSize, fontWeight: "800", letterSpacing: -0.4, lineHeight: titleSize + 4, marginTop: 3, textShadowColor: "rgba(0,0,0,0.7)", textShadowRadius: 12 }}>
+              <Text numberOfLines={2} style={{ color: PLAYER.text, fontSize: titleSize, fontWeight: "800", letterSpacing: -0.4, lineHeight: titleSize + 4, marginTop: 3, textShadowColor: "rgba(0,0,0,0.7)", textShadowRadius: 12 }}>
                 {nextEpisode.Name}
               </Text>
               {description && (
-                <Text numberOfLines={3} style={{ color: "rgba(255,255,255,0.72)", fontSize: isTablet ? 15 : 13, lineHeight: isTablet ? 22 : 19, marginTop: 10 }}>
+                <Text numberOfLines={3} style={{ color: PLAYER.textSecondary, fontSize: isTablet ? 15 : 13, lineHeight: isTablet ? 22 : 19, marginTop: 10 }}>
                   {description}
                 </Text>
               )}
@@ -151,24 +151,24 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
                   accessibilityLabel={t("playNow") as string}
                   style={({ pressed }) => [{
                     flexDirection: "row", alignItems: "center", gap: 12,
-                    backgroundColor: "#fff", borderRadius: 14, paddingLeft: 8, paddingRight: 22, paddingVertical: 8,
-                    shadowColor: BRAND.violet ?? "#8b5cf6", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 8,
+                    backgroundColor: PLAYER.text, borderRadius: 14, paddingLeft: 8, paddingRight: 22, paddingVertical: 8,
+                    shadowColor: PLAYER.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 8,
                   }, pressed && { opacity: 0.9 }]}
                 >
                   <View style={{ width: RING, height: RING }}>
                     <Svg width={RING} height={RING} style={{ transform: [{ rotate: "-90deg" }] }}>
-                      <Circle cx={RING / 2} cy={RING / 2} r={RING_R} stroke="rgba(0,0,0,0.14)" strokeWidth={4} fill="none" />
+                      <Circle cx={RING / 2} cy={RING / 2} r={RING_R} stroke={PLAYER.fillInverse} strokeWidth={4} fill="none" />
                       <Circle
                         cx={RING / 2} cy={RING / 2} r={RING_R}
-                        stroke={BRAND.violet ?? "#8b5cf6"} strokeWidth={4} fill="none" strokeLinecap="round"
+                        stroke={PLAYER.accent} strokeWidth={4} fill="none" strokeLinecap="round"
                         strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - progress)}
                       />
                     </Svg>
                     <View style={[StyleSheet.absoluteFillObject, { alignItems: "center", justifyContent: "center" }]}>
-                      <Play size={18} color="#000" fill="#000" />
+                      <Play size={18} color={PLAYER.textInverse} fill={PLAYER.textInverse} />
                     </View>
                   </View>
-                  <Text style={{ color: "#000", fontSize: isTablet ? 17 : 15, fontWeight: "800" }}>
+                  <Text style={{ color: PLAYER.textInverse, fontSize: isTablet ? 17 : 15, fontWeight: "800" }}>
                     {t("playNow")}
                   </Text>
                 </Pressable>
@@ -178,11 +178,11 @@ export function AutoPlayOverlay({ nextEpisode, countdown, totalSeconds = DEFAULT
                   accessibilityRole="button"
                   hitSlop={8}
                   style={({ pressed }) => [{
-                    borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", backgroundColor: "rgba(255,255,255,0.06)",
+                    borderRadius: 14, borderWidth: 1, borderColor: PLAYER.border, backgroundColor: PLAYER.fillSubtle,
                     paddingHorizontal: 22, paddingVertical: isTablet ? 15 : 13,
                   }, pressed && { opacity: 0.7 }]}
                 >
-                  <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: isTablet ? 16 : 14, fontWeight: "600" }}>
+                  <Text style={{ color: PLAYER.text, fontSize: isTablet ? 16 : 14, fontWeight: "600" }}>
                     {t("dismiss")}
                   </Text>
                 </Pressable>

@@ -1,5 +1,6 @@
 import { Pressable, NativeModules, Platform, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { PLAYER } from "@/theme";
 
 const { AirPlayModule } = NativeModules;
 
@@ -18,7 +19,7 @@ export function AirPlaySection() {
       accessibilityLabel="AirPlay"
       accessibilityRole="button"
     >
-      <Feather name="airplay" size={18} color="rgba(255,255,255,0.8)" />
+      <Feather name="airplay" size={18} color={PLAYER.textSecondary} />
     </Pressable>
   );
 }
@@ -26,7 +27,7 @@ export function AirPlaySection() {
 const styles = StyleSheet.create({
   button: {
     padding: 8,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: PLAYER.borderSubtle,
     borderRadius: 8,
   },
 });

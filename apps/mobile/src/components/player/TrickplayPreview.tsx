@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { View, Text, Platform } from "react-native";
 import { Image } from "expo-image";
 import type { TrickplayInfo } from "@tentacle-tv/shared";
+import { PLAYER } from "@/theme";
 import type { TrickplayFrame } from "../../hooks/useTrickplay";
 
 interface TrickplayPreviewProps {
@@ -99,9 +100,9 @@ function TrickplayPreviewImpl({
             height: cardHeight,
             borderRadius: 6,
             overflow: "hidden",
-            backgroundColor: "#000",
+            backgroundColor: PLAYER.bg,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.22)",
+            borderColor: PLAYER.border,
             // Deep shadow matches web's "0 14px 40px -10px rgba(0,0,0,0.85)"
             ...Platform.select({
               ios: {
@@ -142,12 +143,12 @@ function TrickplayPreviewImpl({
               paddingBottom: 6,
               paddingHorizontal: 8,
               alignItems: "center",
-              backgroundColor: "rgba(0,0,0,0.55)",
+              backgroundColor: PLAYER.controlBg,
             }}
           >
             <Text
               style={{
-                color: "#fff",
+                color: PLAYER.text,
                 fontSize: 13,
                 fontWeight: "600",
                 letterSpacing: 0.1,
@@ -170,7 +171,7 @@ function TrickplayPreviewImpl({
               right: 0,
               top: 0,
               height: 1,
-              backgroundColor: "rgba(255,255,255,0.18)",
+              backgroundColor: PLAYER.border,
             }}
           />
         </View>
@@ -181,9 +182,9 @@ function TrickplayPreviewImpl({
             height: TIMESTAMP_PILL_HEIGHT,
             paddingHorizontal: 10,
             borderRadius: 6,
-            backgroundColor: "rgba(0,0,0,0.85)",
+            backgroundColor: PLAYER.controlBgHeavy,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.18)",
+            borderColor: PLAYER.border,
             justifyContent: "center",
             alignItems: "center",
             ...Platform.select({
@@ -200,7 +201,7 @@ function TrickplayPreviewImpl({
         >
           <Text
             style={{
-              color: "#fff",
+              color: PLAYER.text,
               fontSize: 12,
               fontWeight: "600",
               letterSpacing: 0.1,
@@ -226,7 +227,7 @@ function TrickplayPreviewImpl({
           borderTopWidth: POINTER_SIZE,
           borderLeftColor: "transparent",
           borderRightColor: "transparent",
-          borderTopColor: hasFrame ? "rgba(0,0,0,0.95)" : "rgba(0,0,0,0.85)",
+          borderTopColor: PLAYER.controlBgHeavy,
         }}
       />
     </View>
