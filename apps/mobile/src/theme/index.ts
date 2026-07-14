@@ -1,16 +1,12 @@
 /**
  * Theme mobile — exposition publique.
  *
- * Les modules `colors`, `typography`, `spacing` sont en back-compat avec les
- * 48+ écrans/composants existants (mêmes clés, valeurs alignées sur le nouveau
- * langage cinématographique).
- *
- * Le hub `tokens` (nouveaux composants UI) expose les tokens partagés bruts
- * (BRAND, SURFACE, CTA, etc.) ainsi que les helpers mobile-only (HAPTICS,
- * getFont, preset).
+ * Apparence clair/sombre : consommer `useTheme()` (palette résolue) via
+ * `useThemedStyles`. Les tokens partagés bruts (BRAND, SURFACE, CTA…) restent
+ * exportés par `tokens` pour les cas non-schémés (ex. namespace PLAYER).
+ * `typography`/`spacing` sont des constantes de mise en page (non colorées).
  */
 
-export { colors } from "./colors";
 export { typography } from "./typography";
 export { spacing } from "./spacing";
 
