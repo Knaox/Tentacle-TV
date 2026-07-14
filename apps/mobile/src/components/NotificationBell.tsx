@@ -17,7 +17,7 @@ import {
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { BottomSheet } from "./ui";
 import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useTheme } from "@/theme";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
 try { Haptics = require("expo-haptics"); } catch {}
@@ -64,6 +64,7 @@ function formatAgo(dateStr: string, t: (k: string, opts?: Record<string, unknown
 
 export function NotificationBell() {
   const { t } = useTranslation("notifications");
+  const { colors } = useTheme();
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -128,40 +129,40 @@ export function NotificationBell() {
   return (
     <>
       <Pressable onPress={openSheet} hitSlop={8} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? `${t("title")}, ${count}` : t("title")}>
-        <Feather name="bell" size={20} color="#ffffff" />
+        <Feather name="bell" size={20} color={colors.text.primary} />
         {count > 0 && (
-          <View style={{ position: "absolute", top: -4, right: -6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 }}>
-            <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>{count > 9 ? "9+" : count}</Text>
+          <View style={{ position: "absolute", top: -4, right: -6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand.violet, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 }}>
+            <Text style={{ color: colors.cta.brandFg, fontSize: 10, fontWeight: "800" }}>{count > 9 ? "9+" : count}</Text>
           </View>
         )}
       </Pressable>
 
       <BottomSheet visible={visible} onClose={() => { setVisible(false); exitSelection(); }} snapPoints={[0.5, 1.0]}>
         {/* Header */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <Text style={{ ...typography.subtitle, color: colors.textPrimary }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.subtle }}>
+          <Text style={{ ...typography.subtitle, color: colors.text.primary }}>
             {selectionMode ? t("selected", { count: selected.size }) : t("title")}
           </Text>
           <View style={{ flexDirection: "row", gap: 12 }}>
             {selectionMode ? (
               <>
                 <Pressable onPress={handleDeleteSelected} disabled={selected.size === 0} hitSlop={8}>
-                  <Text style={{ ...typography.small, color: selected.size > 0 ? colors.danger : colors.textDim }}>{t("deleteSelected")}</Text>
+                  <Text style={{ ...typography.small, color: selected.size > 0 ? colors.status.error : colors.text.quaternary }}>{t("deleteSelected")}</Text>
                 </Pressable>
                 <Pressable onPress={exitSelection} hitSlop={8}>
-                  <Text style={{ ...typography.small, color: colors.textSecondary }}>{t("cancel")}</Text>
+                  <Text style={{ ...typography.small, color: colors.text.secondary }}>{t("cancel")}</Text>
                 </Pressable>
               </>
             ) : (
               <>
                 {count > 0 && (
                   <Pressable onPress={() => markAll.mutate()} hitSlop={8}>
-                    <Text style={{ ...typography.small, color: colors.accent }}>{t("markAllRead")}</Text>
+                    <Text style={{ ...typography.small, color: colors.brand.violet }}>{t("markAllRead")}</Text>
                   </Pressable>
                 )}
                 {notifications && notifications.length > 0 && (
                   <Pressable onPress={handleDeleteAll} hitSlop={8}>
-                    <Text style={{ ...typography.small, color: colors.danger }}>{t("deleteAll")}</Text>
+                    <Text style={{ ...typography.small, color: colors.status.error }}>{t("deleteAll")}</Text>
                   </Pressable>
                 )}
               </>
@@ -175,8 +176,8 @@ export function NotificationBell() {
           contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingTop: 12 }}
           ListEmptyComponent={
             <View style={{ alignItems: "center", marginTop: 48 }}>
-              <Feather name="bell-off" size={40} color={colors.textDim} />
-              <Text style={{ ...typography.body, color: colors.textMuted, textAlign: "center", marginTop: 16 }}>{t("noNotifications")}</Text>
+              <Feather name="bell-off" size={40} color={colors.text.quaternary} />
+              <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center", marginTop: 16 }}>{t("noNotifications")}</Text>
             </View>
           }
           renderItem={({ item: n }) => (

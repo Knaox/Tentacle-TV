@@ -176,4 +176,5 @@ export default {
   markSeasonWatched: "Saison vue",
   markSeasonUnwatched: "Saison non vue",
   loadingMore: "Chargement...",
+  loadingPlugin: "Chargement de {{label}}...",
 } as const;

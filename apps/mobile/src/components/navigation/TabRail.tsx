@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { colors, spacing, BRAND } from "@/theme";
+import { spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** Largeur du rail paysage — fine et discrète (icônes seules). */
 export const RAIL_WIDTH = 76;
@@ -19,6 +19,8 @@ interface TabRailProps extends BottomTabBarProps {
  */
 export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailProps) {
   const { t } = useTranslation("nav");
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
 
   return (
     <View style={st.rail}>
@@ -29,7 +31,7 @@ export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailP
         hitSlop={8}
         style={({ pressed }) => [st.toggle, pressed && st.pressed]}
       >
-        <Feather name="menu" size={20} color="rgba(255,255,255,0.6)" />
+        <Feather name="menu" size={20} color={theme.colors.text.tertiary} />
       </Pressable>
 
       <View style={st.items}>
@@ -38,7 +40,7 @@ export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailP
           // expo-router masque les tabs `href: null` via display:none — on les saute.
           if (StyleSheet.flatten(options.tabBarItemStyle)?.display === "none") return null;
           const focused = state.index === index;
-          const tint = focused ? colors.accent : "rgba(255,255,255,0.5)";
+          const tint = focused ? theme.colors.brand.violet : theme.colors.text.tertiary;
 
           const onPress = () => {
             const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
@@ -64,31 +66,32 @@ export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailP
   );
 }
 
-const st = StyleSheet.create({
-  rail: {
-    width: RAIL_WIDTH,
-    backgroundColor: "transparent",
-    borderRightColor: "rgba(255,255,255,0.08)",
-    borderRightWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.md,
-    alignItems: "center" as const,
-  },
-  toggle: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    marginBottom: spacing.lg,
-  },
-  items: { gap: 8, alignItems: "center" as const },
-  item: {
-    width: 50,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  itemActive: { backgroundColor: BRAND.ghost },
-  pressed: { backgroundColor: "rgba(255,255,255,0.06)" },
-});
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    rail: {
+      width: RAIL_WIDTH,
+      backgroundColor: "transparent",
+      borderRightColor: t.colors.border.subtle,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      paddingTop: spacing.md,
+      alignItems: "center" as const,
+    },
+    toggle: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      marginBottom: spacing.lg,
+    },
+    items: { gap: 8, alignItems: "center" as const },
+    item: {
+      width: 50,
+      height: 44,
+      borderRadius: 14,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    itemActive: { backgroundColor: t.colors.brand.ghost },
+    pressed: { backgroundColor: t.colors.fill.subtle },
+  });
