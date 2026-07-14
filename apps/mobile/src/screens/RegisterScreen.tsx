@@ -14,22 +14,17 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
 import {
-  BRAND,
-  CTA,
-  FONT_FAMILY,
-  STATUS,
   SubtleBackground,
   GlassCard,
   FadeIn,
-  authInputStyle,
-  authLinkStyle,
-  authPrimaryCtaStyle,
-  authSubtitleStyle,
-  authTitleStyle,
+  makeAuthStyles,
 } from "../components/auth/authStyles";
+import { FONT_FAMILY, useTheme, useThemedStyles, withAlpha } from "@/theme";
 
 export function RegisterScreen() {
   const { t } = useTranslation("auth");
+  const { colors } = useTheme();
+  const auth = useThemedStyles(makeAuthStyles);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { storage } = useTentacleConfig();
@@ -101,10 +96,10 @@ export function RegisterScreen() {
 
           <FadeIn delay={80} translateY={14} style={{ width: "100%", maxWidth: 400 }}>
             <GlassCard style={{ padding: 28 }}>
-              <Text style={authTitleStyle} accessibilityRole="header">
+              <Text style={auth.title} accessibilityRole="header">
                 {t("joinTentacle")}
               </Text>
-              <Text style={authSubtitleStyle}>
+              <Text style={auth.subtitle}>
                 {t("invitationOnly")}
               </Text>
 
@@ -112,50 +107,50 @@ export function RegisterScreen() {
                 value={inviteKey}
                 onChangeText={setInviteKey}
                 placeholder={t("inviteKey")}
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor={colors.text.quaternary}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 accessibilityLabel={t("inviteKey")}
-                style={[authInputStyle, { fontFamily: monospace, letterSpacing: 1.5 }]}
+                style={[auth.input, { fontFamily: monospace, letterSpacing: 1.5 }]}
               />
               <TextInput
                 value={username}
                 onChangeText={setUsername}
                 placeholder={t("username")}
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor={colors.text.quaternary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel={t("username")}
-                style={[authInputStyle, { marginTop: 12 }]}
+                style={[auth.input, { marginTop: 12 }]}
               />
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder={t("password")}
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor={colors.text.quaternary}
                 secureTextEntry
                 accessibilityLabel={t("password")}
-                style={[authInputStyle, { marginTop: 12 }]}
+                style={[auth.input, { marginTop: 12 }]}
               />
               <TextInput
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder={t("confirmPassword")}
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor={colors.text.quaternary}
                 secureTextEntry
                 accessibilityLabel={t("confirmPassword")}
                 style={[
-                  authInputStyle,
+                  auth.input,
                   { marginTop: 12 },
                   confirmPassword.length > 0 && !passwordsMatch && {
-                    borderColor: "rgba(239,68,68,0.5)",
+                    borderColor: withAlpha(colors.status.error, 0.5, colors.danger.border),
                   },
                 ]}
               />
 
               {confirmPassword.length > 0 && !passwordsMatch && (
                 <Text style={{
-                  color: STATUS.error,
+                  color: colors.status.error,
                   fontSize: 12,
                   fontFamily: FONT_FAMILY.medium,
                   marginTop: 8,
@@ -166,7 +161,7 @@ export function RegisterScreen() {
 
               {error && (
                 <Text style={{
-                  color: STATUS.error,
+                  color: colors.status.error,
                   fontSize: 13,
                   fontFamily: FONT_FAMILY.medium,
                   marginTop: 12,
@@ -179,15 +174,15 @@ export function RegisterScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t("createAccount")}
                 style={({ pressed }) => [
-                  authPrimaryCtaStyle,
+                  auth.primaryCta,
                   { marginTop: 24, opacity: !canSubmit ? 0.45 : (pressed ? 0.88 : 1) },
                 ]}
               >
                 {loading ? (
-                  <ActivityIndicator color={CTA.primaryFg} />
+                  <ActivityIndicator color={colors.cta.primaryFg} />
                 ) : (
                   <Text style={{
-                    color: CTA.primaryFg,
+                    color: colors.cta.primaryFg,
                     fontSize: 15,
                     fontFamily: FONT_FAMILY.bold,
                     letterSpacing: 0.2,
@@ -207,12 +202,12 @@ export function RegisterScreen() {
                 ]}
               >
                 <Text style={{
-                  color: "rgba(255,255,255,0.55)",
+                  color: colors.text.tertiary,
                   fontSize: 13,
                   fontFamily: FONT_FAMILY.regular,
                 }}>
                   {t("alreadyHaveAccount")}{" "}
-                  <Text style={[authLinkStyle, { color: BRAND.light }]}>{t("signIn")}</Text>
+                  <Text style={[auth.link, { color: colors.brand.light }]}>{t("signIn")}</Text>
                 </Text>
               </Pressable>
             </GlassCard>
