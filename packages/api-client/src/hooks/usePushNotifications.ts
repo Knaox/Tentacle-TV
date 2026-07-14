@@ -41,8 +41,8 @@ async function pushFetch<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: hasToken() ? undefined : "include",
   });
   if (!res.ok) {
-    const msg = await res.text().catch(() => `${res.status}`);
-    throw new Error(msg);
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 200)}` : ""}`);
   }
   return res.json();
 }

@@ -13,7 +13,7 @@ import {
 import { SettingsScaffold } from "./SettingsScaffold";
 import { SettingsSection, SettingsRow } from "@/components/settings";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
-import { registerForPushToken } from "@/services/pushNotifications";
+import { ensureNotificationPermission, registerForPushToken } from "@/services/pushNotifications";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
@@ -46,18 +46,26 @@ export function NotificationsScreen() {
 
   const toggle = useCallback(
     (key: keyof PushPreferences, next: boolean) => {
-      setPrefs.mutate({ [key]: next } as Partial<PushPreferences>);
+      setPrefs.mutate({ [key]: next } as Partial<PushPreferences>, {
+        onError: (err) => Alert.alert(t("title"), `⚠️ ${String((err as Error)?.message ?? err)}`),
+      });
       if (!next) return;
-      // Activer : s'assurer que l'appareil est enregistré (permission + token).
+      // Activer : d'abord la permission OS (SEUL motif légitime de renvoi aux
+      // Réglages), puis best-effort l'enregistrement du token. Un échec technique
+      // du token (APNs, réseau) ne doit PAS afficher « désactivées dans les
+      // réglages » alors que la permission est bien accordée.
       void (async () => {
-        const token = await registerForPushToken();
-        if (token) {
-          register.mutate({ token, platform: Platform.OS === "android" ? "android" : "ios" });
-        } else {
+        const granted = await ensureNotificationPermission();
+        if (!granted) {
           Alert.alert(t("permissionDeniedTitle"), t("permissionDeniedBody"), [
             { text: t("cancel") },
             { text: t("enableInSettings"), onPress: () => void Linking.openSettings() },
           ]);
+          return;
+        }
+        const token = await registerForPushToken();
+        if (token) {
+          register.mutate({ token, platform: Platform.OS === "android" ? "android" : "ios" });
         }
       })();
     },
