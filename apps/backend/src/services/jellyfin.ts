@@ -269,8 +269,10 @@ export async function getItemsByIds(ids: string[]): Promise<LibItem[]> {
   const apiKey = getJellyfinApiKey();
   if (!jellyfinUrl || !apiKey || ids.length === 0) return [];
 
+  const userId = await getAdminUserId();
+  const userParam = userId ? `&userId=${userId}` : "";
   const res = await fetch(
-    `${jellyfinUrl}/Items?Ids=${ids.join(",")}&Fields=SeriesName`,
+    `${jellyfinUrl}/Items?Ids=${ids.join(",")}&Fields=SeriesName${userParam}`,
     { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000) },
   );
   if (!res.ok) {
@@ -302,17 +304,43 @@ export async function getItemCount(): Promise<number | null> {
   }
 }
 
+// ID d'un utilisateur admin Jellyfin, mis en cache. REQUIS pour lister TOUS les
+// items : `/Items?Recursive=true` SANS `userId` masque une partie de la biblio
+// (Jellyfin renvoie moins d'items que `/Items/Counts`), dont les nouveaux ajouts.
+let cachedAdminUserId: string | null = null;
+
+async function getAdminUserId(): Promise<string | null> {
+  if (cachedAdminUserId) return cachedAdminUserId;
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+  if (!jellyfinUrl || !apiKey) return null;
+  try {
+    const res = await fetch(`${jellyfinUrl}/Users`, {
+      headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const users = (await res.json()) as Array<{ Id: string; Policy?: { IsAdministrator?: boolean } }>;
+    const admin = users.find((u) => u.Policy?.IsAdministrator) ?? users[0];
+    cachedAdminUserId = admin?.Id ?? null;
+    return cachedAdminUserId;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * TOUS les IDs d'items (Movie/Series/Episode) — paginé, champs minimaux. Sert au
  * NOMMAGE fiable des ajouts par diff (robuste vs date fichier ET WS muet) : le tri
  * par date ne remonte pas un item antidaté, seul l'ensemble des IDs le révèle.
+ * `userId` OBLIGATOIRE (sinon Jellyfin masque une partie des items → diff faux).
  * All-or-nothing : renvoie [] au moindre échec de page (une liste partielle
  * corromprait le diff → fausses notifs). Pic mémoire = une page (~100 Ko).
  */
 export async function getAllLibraryItemIds(): Promise<string[]> {
   const jellyfinUrl = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
-  if (!jellyfinUrl || !apiKey) return [];
+  const userId = await getAdminUserId();
+  if (!jellyfinUrl || !apiKey || !userId) return [];
 
   const PAGE = 1000;
   const ids: string[] = [];
@@ -320,7 +348,7 @@ export async function getAllLibraryItemIds(): Promise<string[]> {
   try {
     for (;;) {
       const res = await fetch(
-        `${jellyfinUrl}/Items?Recursive=true&IncludeItemTypes=Movie,Series,Episode` +
+        `${jellyfinUrl}/Items?userId=${userId}&Recursive=true&IncludeItemTypes=Movie,Series,Episode` +
           `&Fields=&EnableImages=false&EnableUserData=false&EnableTotalRecordCount=true` +
           `&StartIndex=${start}&Limit=${PAGE}`,
         { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(15_000) },
