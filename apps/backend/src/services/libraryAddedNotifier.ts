@@ -78,7 +78,7 @@ async function namesForIds(ids: string[]): Promise<LibItem[]> {
 async function notifyNamed(named: LibItem[]): Promise<void> {
   const prisma = getPrisma();
   const prefs = await prisma.notificationPreference.findMany({
-    where: { libraryAdded: true }, select: { jellyfinUserId: true },
+    where: { libraryAdded: true }, select: { jellyfinUserId: true, seerAvailable: true },
   });
   if (prefs.length === 0) return;
 
@@ -89,7 +89,9 @@ async function notifyNamed(named: LibItem[]): Promise<void> {
   const claimIndex = indexClaims(claims);
 
   for (const p of prefs) {
-    const userClaims = claimIndex.get(p.jellyfinUserId);
+    // Anti-doublon SEULEMENT si l'utilisateur reçoit vraiment la notif Seer
+    // (seerAvailable) : sinon Seer ne le notifiera pas → on garde la notif biblio.
+    const userClaims = p.seerAvailable ? claimIndex.get(p.jellyfinUserId) : undefined;
     const items = userClaims ? named.filter((it) => !isClaimed(it, userClaims)) : named;
     if (items.length === 0) continue;
     const { title, body } = composeItems(items);
