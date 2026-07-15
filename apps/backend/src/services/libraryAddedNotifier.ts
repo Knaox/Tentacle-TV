@@ -1,32 +1,31 @@
-import { getItemCount, getRecentlyAddedItems, getItemsByIds, type LibItem } from "./jellyfin";
+import { getItemCount, getAllLibraryItemIds, getItemsByIds, type LibItem } from "./jellyfin";
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUsers } from "./pushService";
 import { composeItems, composeGeneric } from "./libraryAddedFormat";
 
 // Notifie en push les utilisateurs opted-in des nouveaux ajouts en bibliothèque.
-// Détection ROBUSTE (indépendante de l'event WS ET du DateCreated) :
-//   - COUNT total (/Items/Counts) → détecteur fiable (monte à chaque ajout) ;
-// Titrage :
-//   - IDs de l'event WS ItemsAdded (items exacts, fiables même si date fausse) ;
-//   - sinon items datés récents (getRecentlyAddedItems) ;
-//   - sinon notif générique.
-// Le WS accélère (poll immédiat) et alimente les IDs. Push direct, pas de in-app.
+// Détection + NOMMAGE fiables par DIFF d'IDs (robuste vs date fichier ET WS muet) :
+//   - garde-fou léger : COUNT total (/Items/Counts) → déclenche seulement si ça bouge ;
+//   - sur changement : liste paginée des IDs (champs minimaux) diffée contre un
+//     instantané en mémoire → IDs réellement nouveaux ;
+//   - nommage : getItemsByIds sur ces seuls nouveaux IDs (par lots).
+// Le WS (poke) accélère le poll mais n'est plus requis pour nommer. Push direct.
 
 const POLL_INTERVAL = 60_000;
 const WS_DEBOUNCE_MS = 8_000;
-const FETCH_LIMIT = 40;
 const COUNT_KEY = "lib_notif_count";
-const DATE_KEY = "lib_notif_watermark";
 const NAMED_TYPES = ["Movie", "Series", "Season", "Episode"];
+const NAME_CHUNK = 100; // IDs par appel getItemsByIds (longueur d'URL)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let wsTimer: ReturnType<typeof setTimeout> | null = null;
 let running = false;
 const addedBuffer = new Set<string>(); // IDs venus des events WS ItemsAdded
+let knownIds: Set<string> | null = null; // instantané des IDs biblio (baseline au boot)
 
 export function startLibraryAddedNotifier(): void {
   if (pollTimer) return;
-  console.log("[LibNotif] Démarrage détection ajouts (poll 60s + WS, count + titres)");
+  console.log("[LibNotif] Démarrage détection ajouts (poll 60s + WS, diff d'IDs)");
   pollTimer = setInterval(() => void poll("interval"), POLL_INTERVAL);
   setTimeout(() => void poll("boot"), 8_000);
 }
@@ -49,6 +48,28 @@ async function setKey(key: string, value: string): Promise<void> {
   await getPrisma().serverConfig.upsert({ where: { key }, update: { value }, create: { key, value } });
 }
 
+/** Envoie une notif d'ajout aux utilisateurs opted-in (libraryAdded). */
+async function notify(payload: { title: string; body: string }): Promise<void> {
+  const prefs = await getPrisma().notificationPreference.findMany({
+    where: { libraryAdded: true },
+    select: { jellyfinUserId: true },
+  });
+  if (prefs.length === 0) return;
+  const res = await sendToUsers(prefs.map((p) => p.jellyfinUserId), {
+    title: payload.title, body: payload.body, data: { type: "library_added" },
+  });
+  console.log(`[LibNotif] push « ${payload.title} » → ${JSON.stringify(res)}`);
+}
+
+/** Métadonnées de titrage pour des IDs, par lots (longueur d'URL). */
+async function namesForIds(ids: string[]): Promise<LibItem[]> {
+  const out: LibItem[] = [];
+  for (let i = 0; i < ids.length; i += NAME_CHUNK) {
+    out.push(...(await getItemsByIds(ids.slice(i, i + NAME_CHUNK))));
+  }
+  return out;
+}
+
 async function poll(reason: string): Promise<void> {
   if (running || !hasPrisma()) return;
   running = true;
@@ -56,55 +77,44 @@ async function poll(reason: string): Promise<void> {
     const prisma = getPrisma();
     const wsIds = [...addedBuffer];
     addedBuffer.clear();
-    const [total, items] = await Promise.all([getItemCount(), getRecentlyAddedItems(FETCH_LIMIT)]);
-    const newest = items[0]?.DateCreated ?? null;
 
+    const total = await getItemCount();
     const countRow = await prisma.serverConfig.findUnique({ where: { key: COUNT_KEY } });
-    const dateRow = await prisma.serverConfig.findUnique({ where: { key: DATE_KEY } });
     const prevCount = countRow?.value != null ? Number(countRow.value) : null;
-    const watermark = dateRow?.value ? new Date(dateRow.value).getTime() : null;
 
-    console.log(
-      `[LibNotif] poll(${reason}): count=${total ?? "∅"} (prev=${prevCount ?? "∅"}) | ` +
-        `wsAdded=${wsIds.length} | top="${items[0]?.Name ?? "∅"}" created=${newest ?? "∅"}`,
-    );
+    console.log(`[LibNotif] poll(${reason}): count=${total ?? "∅"} (prev=${prevCount ?? "∅"}) | wsAdded=${wsIds.length}`);
 
-    // 1er run : baseline (mémorise count + date sans notifier l'existant).
-    if (prevCount === null || watermark === null) {
+    // 1er run OU instantané non chargé : baseline (mémorise count + IDs, sans notifier l'existant).
+    if (prevCount === null || knownIds === null) {
+      const ids = await getAllLibraryItemIds();
+      if (ids.length > 0) knownIds = new Set(ids);
       if (total !== null) await setKey(COUNT_KEY, String(total));
-      if (newest) await setKey(DATE_KEY, newest);
-      console.log(`[LibNotif] baseline (count=${total ?? "∅"})`);
+      console.log(`[LibNotif] baseline (count=${total ?? "∅"}, ids=${ids.length})`);
       return;
     }
 
-    const fresh = items.filter((i) => i.DateCreated && new Date(i.DateCreated).getTime() > watermark);
-    const countDelta = total !== null ? total - prevCount : 0;
+    // Garde-fou : rien n'a bougé (count stable + pas de signal WS) → pas de fetch paginé.
+    if (total !== null && total === prevCount && wsIds.length === 0) return;
 
-    // Rafraîchit toujours les repères (gère aussi les suppressions).
+    // Récupère tous les IDs (paginé, champs minimaux) et diffe contre l'instantané.
+    const currentIds = await getAllLibraryItemIds();
+    if (currentIds.length === 0) {
+      // Échec du fetch : repli générique si le count a monté (ne PAS toucher knownIds).
+      const delta = total !== null ? total - prevCount : 0;
+      if (delta > 0) await notify(composeGeneric(delta));
+      if (total !== null) await setKey(COUNT_KEY, String(total));
+      return;
+    }
+
+    const newIds = currentIds.filter((id) => !knownIds!.has(id));
+    knownIds = new Set(currentIds);
     if (total !== null) await setKey(COUNT_KEY, String(total));
-    if (newest) await setKey(DATE_KEY, newest);
 
-    if (fresh.length === 0 && countDelta <= 0 && wsIds.length === 0) return; // rien de neuf
+    console.log(`[LibNotif] diff(${reason}): ids=${currentIds.length}, nouveaux=${newIds.length}`);
+    if (newIds.length === 0) return; // suppression / changement méta uniquement
 
-    const prefs = await prisma.notificationPreference.findMany({
-      where: { libraryAdded: true },
-      select: { jellyfinUserId: true },
-    });
-
-    // Items pour titrer : IDs WS (fiables) en priorité, sinon les datés récents.
-    let named: LibItem[] = wsIds.length > 0 ? await getItemsByIds(wsIds) : [];
-    if (named.length === 0) named = fresh;
-    named = named.filter((i) => NAMED_TYPES.includes(i.Type));
-
-    console.log(
-      `[LibNotif] nouveau : wsIds=${wsIds.length}, fresh=${fresh.length}, countDelta=${countDelta}, ` +
-        `named=${named.length} → ${prefs.length} destinataire(s)`,
-    );
-    if (prefs.length === 0) return;
-
-    const { title, body } = named.length > 0 ? composeItems(named) : composeGeneric(Math.max(countDelta, 1));
-    const res = await sendToUsers(prefs.map((p) => p.jellyfinUserId), { title, body, data: { type: "library_added" } });
-    console.log(`[LibNotif] push « ${title} » → ${JSON.stringify(res)}`);
+    const named = (await namesForIds(newIds)).filter((i) => NAMED_TYPES.includes(i.Type));
+    await notify(named.length > 0 ? composeItems(named) : composeGeneric(newIds.length));
   } catch (err) {
     console.error("[LibNotif] poll échoué:", err);
   } finally {
