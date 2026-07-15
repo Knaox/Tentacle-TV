@@ -11,6 +11,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.5.4]
+### FR
+- Notifications d'ajouts en bibliothèque : formulation « <contenu> est sorti·e sur Tentacle TV » avec accord grammatical (film/épisode/série/saison). Quand plusieurs épisodes d'une même saison arrivent ensemble, ils sont regroupés en « Série — Saison N (X épisodes) » au lieu d'être listés un par un.
+### EN
+- Library-addition notifications: new wording “<content> is now on Tentacle TV” with correct French grammatical agreement. When several episodes of the same season arrive together, they are grouped as “Series — Season N (X episodes)” instead of being listed one by one.
+
 ## [1.5.3]
 ### FR
 - Notifications d'ajouts en bibliothèque : la notification affiche désormais le titre exact du contenu (film, série, saison, ou épisode au format SxxExx) au lieu d'un libellé générique.
