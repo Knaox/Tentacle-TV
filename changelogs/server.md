@@ -14,8 +14,10 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ## [1.5.4]
 ### FR
 - Notifications d'ajouts en bibliothèque : formulation « <contenu> est sorti·e sur Tentacle TV » avec accord grammatical (film/épisode/série/saison). Quand plusieurs épisodes d'une même saison arrivent ensemble, ils sont regroupés en « Série — Saison N (X épisodes) » au lieu d'être listés un par un.
+- Le média est désormais nommé de façon fiable même quand Jellyfin date les fichiers par leur date d'origine (l'item n'apparaissait pas comme « récent ») — fini la notification générique « Nouveau sur Tentacle TV » sans titre.
 ### EN
 - Library-addition notifications: new wording “<content> is now on Tentacle TV” with correct French grammatical agreement. When several episodes of the same season arrive together, they are grouped as “Series — Season N (X episodes)” instead of being listed one by one.
+- The media is now reliably named even when Jellyfin dates files by their original date (the item didn't show up as “recent”) — no more generic “New on Tentacle TV” notification without a title.
 
 ## [1.5.3]
 ### FR

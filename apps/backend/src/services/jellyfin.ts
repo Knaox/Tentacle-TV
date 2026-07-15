@@ -301,3 +301,42 @@ export async function getItemCount(): Promise<number | null> {
     return null;
   }
 }
+
+/**
+ * TOUS les IDs d'items (Movie/Series/Episode) — paginé, champs minimaux. Sert au
+ * NOMMAGE fiable des ajouts par diff (robuste vs date fichier ET WS muet) : le tri
+ * par date ne remonte pas un item antidaté, seul l'ensemble des IDs le révèle.
+ * All-or-nothing : renvoie [] au moindre échec de page (une liste partielle
+ * corromprait le diff → fausses notifs). Pic mémoire = une page (~100 Ko).
+ */
+export async function getAllLibraryItemIds(): Promise<string[]> {
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+  if (!jellyfinUrl || !apiKey) return [];
+
+  const PAGE = 1000;
+  const ids: string[] = [];
+  let start = 0;
+  try {
+    for (;;) {
+      const res = await fetch(
+        `${jellyfinUrl}/Items?Recursive=true&IncludeItemTypes=Movie,Series,Episode` +
+          `&Fields=&EnableImages=false&EnableUserData=false&EnableTotalRecordCount=true` +
+          `&StartIndex=${start}&Limit=${PAGE}`,
+        { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(15_000) },
+      );
+      if (!res.ok) {
+        console.warn(`[LibNotif] getAllLibraryItemIds HTTP ${res.status}`);
+        return [];
+      }
+      const data = (await res.json()) as { Items?: Array<{ Id?: string }>; TotalRecordCount?: number };
+      const items = data.Items ?? [];
+      for (const it of items) if (it.Id) ids.push(it.Id);
+      start += items.length;
+      if (items.length < PAGE || items.length === 0 || start >= (data.TotalRecordCount ?? 0)) break;
+    }
+  } catch {
+    return []; // timeout / réseau → all-or-nothing
+  }
+  return ids;
+}
