@@ -1,6 +1,7 @@
 import { getItemCount, getRecentlyAddedItems, getItemsByIds, type LibItem } from "./jellyfin";
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUsers } from "./pushService";
+import { composeItems, composeGeneric } from "./libraryAddedFormat";
 
 // Notifie en push les utilisateurs opted-in des nouveaux ajouts en bibliothèque.
 // Détection ROBUSTE (indépendante de l'event WS ET du DateCreated) :
@@ -109,48 +110,4 @@ async function poll(reason: string): Promise<void> {
   } finally {
     running = false;
   }
-}
-
-const pad2 = (n: number): string => String(n).padStart(2, "0");
-
-/** Libellé d'un item selon son type (film, série, saison, épisode). */
-function describe(it: LibItem): string {
-  if (it.Type === "Episode") {
-    const series = it.SeriesName ?? it.Name;
-    const code =
-      it.ParentIndexNumber != null && it.IndexNumber != null
-        ? ` S${pad2(it.ParentIndexNumber)}E${pad2(it.IndexNumber)}`
-        : "";
-    const ep = it.Name && it.Name !== series ? ` — ${it.Name}` : "";
-    return `${series}${code}${ep}`;
-  }
-  if (it.Type === "Season") {
-    const num = it.IndexNumber != null ? ` — Saison ${it.IndexNumber}` : it.Name ? ` — ${it.Name}` : "";
-    return `${it.SeriesName ?? it.Name}${num}`;
-  }
-  return it.Name; // Movie, Series
-}
-
-/** Titre/corps avec les vrais titres des items ajoutés. */
-function composeItems(items: LibItem[]): { title: string; body: string } {
-  const labels: string[] = [];
-  const seen = new Set<string>();
-  for (const it of items) {
-    const l = describe(it);
-    if (l && !seen.has(l)) { seen.add(l); labels.push(l); }
-  }
-  if (labels.length === 1) {
-    return { title: labels[0], body: "a été ajouté à votre bibliothèque" };
-  }
-  const preview = labels.slice(0, 3).join(" · ");
-  const extra = labels.length > 3 ? ` +${labels.length - 3}` : "";
-  return { title: `${labels.length} nouveautés ajoutées`, body: `${preview}${extra}` };
-}
-
-/** Repli générique : count monté mais aucun item identifiable (date fichier, WS muet). */
-function composeGeneric(n: number): { title: string; body: string } {
-  return {
-    title: n === 1 ? "Nouveau contenu" : `${n} nouveautés ajoutées`,
-    body: "Ajouté à votre bibliothèque",
-  };
 }
