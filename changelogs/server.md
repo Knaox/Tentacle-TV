@@ -15,9 +15,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### FR
 - Anti-doublon : un contenu demandé via le plugin Seer ne déclenche plus qu'UNE notification (celle de Seer, « … est sortie ») au lieu de deux (Seer + « ajout bibliothèque »). Les autres utilisateurs reçoivent toujours leur notification d'ajout.
 - Les notifications d'ajout survivent au redémarrage : les contenus ajoutés pendant que le serveur était éteint sont notifiés au redémarrage (instantané persistant, plus « avalés » par la baseline).
+- Notifications d'ajout : on attend que Jellyfin ait fini d'indexer un contenu avant de notifier — fini les titres en « nom de fichier » brut et les épisodes non regroupés quand les métadonnées (série, saison, numéro) n'étaient pas encore récupérées.
 ### EN
 - Deduplication: content requested via the Seer plugin now triggers only ONE notification (Seer's “… is now on Tentacle TV”) instead of two (Seer + “library added”). Other users still get their library-addition notification.
 - Library-addition notifications survive restarts: content added while the server was down is notified on restart (persistent snapshot, no longer swallowed by the baseline).
+- Library-addition notifications: wait until Jellyfin has finished indexing an item before notifying — no more raw "filename" titles or ungrouped episodes when metadata (series, season, number) hadn't been fetched yet.
 
 ## [1.5.4]
 ### FR

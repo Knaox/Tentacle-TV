@@ -1,7 +1,7 @@
 import { getItemCount, getAllLibraryItemIds, getItemsByIds, type LibItem } from "./jellyfin";
 import { getPrisma, hasPrisma } from "./db";
-import { sendToUser, sendToUsers } from "./pushService";
-import { composeItems, composeGeneric } from "./libraryAddedFormat";
+import { sendToUser } from "./pushService";
+import { composeItems } from "./libraryAddedFormat";
 import { indexClaims, isClaimed } from "./libraryAddedDedup";
 
 // Notifie en push les ajouts bibliothèque. Détection + nommage par DIFF d'IDs
@@ -21,6 +21,14 @@ let wsTimer: ReturnType<typeof setTimeout> | null = null;
 let running = false;
 const addedBuffer = new Set<string>(); // IDs venus des events WS ItemsAdded
 let knownIds: Set<string> | null = null; // chargé depuis library_known_id au 1er poll
+const deferCount = new Map<string, number>(); // itemId → reports (métadonnées Jellyfin pas prêtes)
+const MAX_DEFER = 5; // au-delà, on notifie avec le Name brut (métadonnées jamais venues)
+
+/** Métadonnées prêtes pour un titre propre ? (épisode : nom de série + numéros requis). */
+function isReady(it: LibItem): boolean {
+  if (it.Type === "Episode") return it.SeriesName != null && it.IndexNumber != null;
+  return !!it.Name;
+}
 
 export function startLibraryAddedNotifier(): void {
   if (pollTimer) return;
@@ -64,18 +72,6 @@ async function namesForIds(ids: string[]): Promise<LibItem[]> {
     out.push(...(await getItemsByIds(ids.slice(i, i + NAME_CHUNK))));
   }
   return out;
-}
-
-/** Repli générique (aucun item nommé) : envoi à tous les opted-in. */
-async function notifyGeneric(payload: { title: string; body: string }): Promise<void> {
-  const prefs = await getPrisma().notificationPreference.findMany({
-    where: { libraryAdded: true }, select: { jellyfinUserId: true },
-  });
-  if (prefs.length === 0) return;
-  await sendToUsers(prefs.map((p) => p.jellyfinUserId), {
-    title: payload.title, body: payload.body, data: { type: "library_added" },
-  });
-  console.log(`[LibNotif] push « ${payload.title} » → tous`);
 }
 
 /** Envoi PAR UTILISATEUR avec filtrage anti-doublon (claims plugins). */
@@ -137,15 +133,41 @@ async function poll(reason: string): Promise<void> {
     const newIds = currentIds.filter((id) => !knownIds!.has(id));
     const removedIds = [...knownIds].filter((id) => !currentSet.has(id));
 
-    await persistDelta(newIds, removedIds);
-    knownIds = currentSet;
+    // Rien de neuf (juste des suppressions éventuelles) → MAJ silencieuse.
+    if (newIds.length === 0) {
+      if (removedIds.length > 0) { await persistDelta([], removedIds); knownIds = currentSet; }
+      return;
+    }
 
-    console.log(`[LibNotif] diff(${reason}): ids=${currentIds.length}, nouveaux=${newIds.length}, retirés=${removedIds.length}`);
-    if (newIds.length === 0) return; // suppression / changement méta uniquement
+    // Jellyfin peuple les métadonnées (série, numéros, vrai titre) de façon
+    // ASYNCHRONE après l'ajout : au tout début, Name = nom de fichier brut. On
+    // DIFFÈRE les items pas encore prêts (hors knownIds) pour les re-tenter au
+    // prochain poll → titres propres ET regroupement « Saison N » correct.
+    const byId = new Map((await namesForIds(newIds)).map((it) => [it.Id, it] as const));
+    const readyIds: string[] = [];
+    const readyItems: LibItem[] = [];
+    const deferIds: string[] = [];
+    for (const id of newIds) {
+      const it = byId.get(id);
+      const tries = deferCount.get(id) ?? 0;
+      if (!it || isReady(it) || tries >= MAX_DEFER) {
+        deferCount.delete(id);
+        readyIds.push(id);
+        if (it && NAMED_TYPES.includes(it.Type)) readyItems.push(it);
+      } else {
+        deferCount.set(id, tries + 1);
+        deferIds.push(id);
+      }
+    }
 
-    const named = (await namesForIds(newIds)).filter((i) => NAMED_TYPES.includes(i.Type));
-    if (named.length > 0) await notifyNamed(named);
-    else await notifyGeneric(composeGeneric(newIds.length));
+    // Commit UNIQUEMENT les items prêts ; les différés restent hors knownIds
+    // (re-détectés au prochain poll ; le count-gate se rouvre tant qu'il en reste).
+    const deferSet = new Set(deferIds);
+    await persistDelta(readyIds, removedIds);
+    knownIds = new Set(currentIds.filter((id) => !deferSet.has(id)));
+
+    console.log(`[LibNotif] diff(${reason}): nouveaux=${newIds.length}, prêts=${readyItems.length}, différés=${deferIds.length}, retirés=${removedIds.length}`);
+    if (readyItems.length > 0) await notifyNamed(readyItems);
   } catch (err) {
     console.error("[LibNotif] poll échoué:", err);
   } finally {
