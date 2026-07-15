@@ -223,10 +223,13 @@ export interface LibItem {
   DateCreated?: string;
   ParentIndexNumber?: number; // n° de saison (pour un épisode)
   IndexNumber?: number; // n° d'épisode (Episode) ou n° de saison (Season)
+  tmdbId?: number; // depuis ProviderIds.Tmdb — pour l'anti-doublon (claims plugins)
 }
 
 function mapLibItems(data: unknown): LibItem[] {
-  const items = ((data as { Items?: unknown[] })?.Items ?? []) as LibItem[];
+  const items = ((data as { Items?: unknown[] })?.Items ?? []) as Array<
+    LibItem & { ProviderIds?: { Tmdb?: string } }
+  >;
   return items.map((i) => ({
     Id: i.Id,
     Name: i.Name,
@@ -235,6 +238,7 @@ function mapLibItems(data: unknown): LibItem[] {
     DateCreated: i.DateCreated,
     ParentIndexNumber: i.ParentIndexNumber,
     IndexNumber: i.IndexNumber,
+    tmdbId: i.ProviderIds?.Tmdb ? Number(i.ProviderIds.Tmdb) || undefined : undefined,
   }));
 }
 
@@ -272,7 +276,7 @@ export async function getItemsByIds(ids: string[]): Promise<LibItem[]> {
   const userId = await getAdminUserId();
   const userParam = userId ? `&userId=${userId}` : "";
   const res = await fetch(
-    `${jellyfinUrl}/Items?Ids=${ids.join(",")}&Fields=SeriesName${userParam}`,
+    `${jellyfinUrl}/Items?Ids=${ids.join(",")}&Fields=SeriesName,ProviderIds${userParam}`,
     { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000) },
   );
   if (!res.ok) {

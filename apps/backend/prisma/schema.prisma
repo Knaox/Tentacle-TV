@@ -127,6 +127,31 @@ model ServerConfig {
   @@map("server_config")
 }
 
+// Revendication GÉNÉRIQUE de contenu par un plugin (ex. Seer) : tant qu'un claim
+// non expiré existe pour (tmdbId, user), le notifier d'ajouts bibliothèque
+// N'ENVOIE PAS de push pour ce contenu à cet utilisateur (le plugin le notifie
+// déjà). Le core reste générique : il ne connaît pas le plugin, juste le claim.
+model ContentClaim {
+  tmdbId          Int
+  jellyfinUserId  String   @db.VarChar(255)
+  mediaType       String   @db.VarChar(10)  // movie | tv
+  title           String   @db.VarChar(500) // titre normalisé (match épisodes par nom de série)
+  expiresAt       DateTime
+
+  @@id([tmdbId, jellyfinUserId])
+  @@index([expiresAt])
+  @@map("content_claims")
+}
+
+// Instantané PERSISTANT des IDs d'items bibliothèque (Movie/Series/Episode) pour
+// la détection d'ajouts par diff, robuste aux redémarrages (rattrape les ajouts
+// faits pendant une coupure). Un item = une ligne.
+model LibraryKnownId {
+  itemId  String  @id @db.VarChar(64)
+
+  @@map("library_known_id")
+}
+
 model PairingCode {
   id                    String    @id @default(cuid())
   code                  String    @unique @db.VarChar(4)

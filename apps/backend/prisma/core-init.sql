@@ -64,3 +64,20 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
 -- Colonne de livraison push sur les notifications existantes (additif, idempotent MariaDB).
 ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `pushedAt` datetime(3) NULL;
 CREATE INDEX IF NOT EXISTS `notifications_type_pushedAt_idx` ON `notifications` (`type`, `pushedAt`);
+
+-- Revendication générique de contenu par un plugin (anti-doublon notifs). Voir schema.prisma > ContentClaim.
+CREATE TABLE IF NOT EXISTS `content_claims` (
+  `tmdbId` int NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `title` varchar(500) NOT NULL,
+  `expiresAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`tmdbId`, `jellyfinUserId`),
+  KEY `content_claims_expiresAt_idx` (`expiresAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Instantané persistant des IDs biblio (détection d'ajouts par diff). Voir schema.prisma > LibraryKnownId.
+CREATE TABLE IF NOT EXISTS `library_known_id` (
+  `itemId` varchar(64) NOT NULL,
+  PRIMARY KEY (`itemId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

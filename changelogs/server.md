@@ -11,6 +11,14 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.5.5]
+### FR
+- Anti-doublon : un contenu demandé via le plugin Seer ne déclenche plus qu'UNE notification (celle de Seer, « … est sortie ») au lieu de deux (Seer + « ajout bibliothèque »). Les autres utilisateurs reçoivent toujours leur notification d'ajout.
+- Les notifications d'ajout survivent au redémarrage : les contenus ajoutés pendant que le serveur était éteint sont notifiés au redémarrage (instantané persistant, plus « avalés » par la baseline).
+### EN
+- Deduplication: content requested via the Seer plugin now triggers only ONE notification (Seer's “… is now on Tentacle TV”) instead of two (Seer + “library added”). Other users still get their library-addition notification.
+- Library-addition notifications survive restarts: content added while the server was down is notified on restart (persistent snapshot, no longer swallowed by the baseline).
+
 ## [1.5.4]
 ### FR
 - Notifications d'ajouts en bibliothèque : formulation « <contenu> est sorti·e sur Tentacle TV » avec accord grammatical (film/épisode/série/saison). Quand plusieurs épisodes d'une même saison arrivent ensemble, ils sont regroupés en « Série — Saison N (X épisodes) » au lieu d'être listés un par un.
