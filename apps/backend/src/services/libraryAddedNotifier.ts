@@ -3,6 +3,8 @@ import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
 import { composeItems } from "./libraryAddedFormat";
 import { indexClaims, isClaimed } from "./libraryAddedDedup";
+import { resolveSeriesTmdbIds } from "./libraryAddedSeries";
+import { filterRecentlyAnnounced } from "./libraryAddedRecent";
 
 // Notifie en push les ajouts bibliothèque. Détection + nommage par DIFF d'IDs
 // (robuste vs date fichier ET WS muet). Instantané PERSISTANT (table
@@ -27,6 +29,10 @@ const MAX_DEFER = 5; // au-delà, on notifie avec le Name brut (métadonnées ja
 /** Métadonnées prêtes pour un titre propre ? (épisode : nom de série + numéros requis). */
 function isReady(it: LibItem): boolean {
   if (it.Type === "Episode") return it.SeriesName != null && it.IndexNumber != null;
+  // Film/série : attendre AUSSI le tmdbId (ProviderIds.Tmdb, indexé en asynchrone
+  // par Jellyfin) pour que l'anti-doublon Seer matche par identifiant TMDB et non
+  // par titre. Le filet MAX_DEFER notifie quand même au bout de 5 reports.
+  if (it.Type === "Movie" || it.Type === "Series") return !!it.Name && it.tmdbId != null;
   return !!it.Name;
 }
 
@@ -82,6 +88,22 @@ async function notifyNamed(named: LibItem[]): Promise<void> {
   });
   if (prefs.length === 0) return;
 
+  // Résout le tmdbId de la SÉRIE parente des épisodes (via les SeriesId uniques)
+  // → l'anti-doublon Seer matche par identifiant TMDB, pas par titre (langue).
+  const seriesIds = [...new Set(named.filter((it) => it.SeriesId).map((it) => it.SeriesId!))];
+  if (seriesIds.length > 0) {
+    const seriesTmdb = await resolveSeriesTmdbIds(seriesIds);
+    for (const it of named) {
+      if (it.SeriesId) it.seriesTmdbId = seriesTmdb.get(it.SeriesId);
+    }
+  }
+
+  // Anti-doublon « saison éclatée » : une seule notif par contenu sur la fenêtre,
+  // même si les épisodes arrivent sur plusieurs polls. Filtrage GLOBAL (avant le
+  // fan-out par utilisateur) — requiert le seriesTmdbId ci-dessus pour la clé.
+  const fresh = filterRecentlyAnnounced(named);
+  if (fresh.length === 0) return;
+
   const claims = await prisma.contentClaim.findMany({
     where: { expiresAt: { gt: new Date() } },
     select: { tmdbId: true, jellyfinUserId: true, title: true },
@@ -92,7 +114,7 @@ async function notifyNamed(named: LibItem[]): Promise<void> {
     // Anti-doublon SEULEMENT si l'utilisateur reçoit vraiment la notif Seer
     // (seerAvailable) : sinon Seer ne le notifiera pas → on garde la notif biblio.
     const userClaims = p.seerAvailable ? claimIndex.get(p.jellyfinUserId) : undefined;
-    const items = userClaims ? named.filter((it) => !isClaimed(it, userClaims)) : named;
+    const items = userClaims ? fresh.filter((it) => !isClaimed(it, userClaims)) : fresh;
     if (items.length === 0) continue;
     const { title, body } = composeItems(items);
     await sendToUser(p.jellyfinUserId, { title, body, data: { type: "library_added" } });

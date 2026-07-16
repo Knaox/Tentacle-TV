@@ -220,10 +220,12 @@ export interface LibItem {
   Name: string;
   Type: string; // Movie | Series | Season | Episode
   SeriesName?: string;
+  SeriesId?: string; // GUID Jellyfin de la série parente (renvoyé par défaut sur les Episode)
   DateCreated?: string;
   ParentIndexNumber?: number; // n° de saison (pour un épisode)
   IndexNumber?: number; // n° d'épisode (Episode) ou n° de saison (Season)
   tmdbId?: number; // depuis ProviderIds.Tmdb — pour l'anti-doublon (claims plugins)
+  seriesTmdbId?: number; // tmdbId TMDB de la SÉRIE parente (résolu à part, cf. libraryAddedSeries)
 }
 
 function mapLibItems(data: unknown): LibItem[] {
@@ -235,6 +237,7 @@ function mapLibItems(data: unknown): LibItem[] {
     Name: i.Name,
     Type: i.Type,
     SeriesName: i.SeriesName,
+    SeriesId: i.SeriesId,
     DateCreated: i.DateCreated,
     ParentIndexNumber: i.ParentIndexNumber,
     IndexNumber: i.IndexNumber,

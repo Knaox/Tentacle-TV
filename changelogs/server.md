@@ -11,6 +11,14 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.5.6]
+### FR
+- Notifications d'ajout : fini le doublon quand une saison arrive épisode par épisode — une seule notification « Série — Saison N » est envoyée par ajout, même si Jellyfin importe les épisodes en plusieurs vagues.
+- Anti-doublon Seer/bibliothèque plus fiable : un contenu demandé via Seer est reconnu par son identifiant TMDB (et non plus par son titre), y compris pour les épisodes (via la série) et les films — plus de notification « ajout bibliothèque » en double quand le titre Jellyfin diffère du titre Seer (langue), ou quand le film vient d'être importé.
+### EN
+- Library-addition notifications: no more duplicate when a season arrives episode by episode — a single “Series — Season N” notification is sent per addition, even if Jellyfin imports the episodes in several waves.
+- More reliable Seer/library deduplication: content requested through Seer is matched by its TMDB id (no longer by title), including for episodes (via the series) and movies — no more duplicate “library added” notification when the Jellyfin title differs from the Seer title (language), or when the movie was just imported.
+
 ## [1.5.5]
 ### FR
 - Anti-doublon : un contenu demandé via le plugin Seer ne déclenche plus qu'UNE notification (celle de Seer, « … est sortie ») au lieu de deux (Seer + « ajout bibliothèque »). Les autres utilisateurs reçoivent toujours leur notification d'ajout.
