@@ -14,3 +14,7 @@ local.properties
 
 # Bundle artifacts
 *.jsbundle
+
+# Firebase / FCM — fichier CLIENT fourni via secret GitHub (MOBILE_GOOGLE_SERVICES_JSON,
+# décodé en CI) ; présent en local pour le build. Non commité (repo public).
+app/google-services.json

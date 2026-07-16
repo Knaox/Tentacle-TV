@@ -151,6 +151,20 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # google-services.json (Firebase/FCM) : fichier client non commité (repo public),
+      # restauré depuis un secret base64. Requis par le plugin google-services au build.
+      - name: Decode google-services.json (Firebase/FCM)
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.MOBILE_GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > apps/mobile/android/app/google-services.json
+            echo "google-services.json restauré (Firebase/FCM)."
+          else
+            echo "::error::Secret MOBILE_GOOGLE_SERVICES_JSON absent — le build Android échouera (plugin google-services). Ajoute-le dans Settings → Secrets → Actions."
+            exit 1
+          fi
+
       - name: Build release (AAB)
         working-directory: apps/mobile/android
         env:
