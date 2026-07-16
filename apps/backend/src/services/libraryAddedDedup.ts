@@ -43,13 +43,16 @@ export function indexClaims(claims: Claim[]): Map<string, UserClaims> {
 
 /**
  * Vrai si l'item est revendiqué pour cet utilisateur :
- *  - film/série : match par tmdbId ;
- *  - épisode : match par nom de série normalisé (Seer demande au niveau série,
- *    le titre TMDB ≈ SeriesName Jellyfin) — évite de résoudre le tmdb série.
+ *  - épisode/saison : match par tmdbId de la SÉRIE (seriesTmdbId, résolu à part) —
+ *    le claim Seer porte le tmdb série ; le `tmdbId` d'un Episode est celui de
+ *    l'épisode, jamais de la série (donc on ne le teste PAS pour un épisode) ;
+ *  - film/série : match par tmdbId de l'item ;
+ *  - repli commun : nom de série normalisé (si le tmdb n'a pas pu être résolu).
  */
 export function isClaimed(item: LibItem, claim: UserClaims | undefined): boolean {
   if (!claim) return false;
-  if (item.tmdbId != null && claim.tmdbs.has(item.tmdbId)) return true;
+  if (item.seriesTmdbId != null && claim.tmdbs.has(item.seriesTmdbId)) return true;
+  if (item.Type !== "Episode" && item.tmdbId != null && claim.tmdbs.has(item.tmdbId)) return true;
   const seriesName = item.SeriesName ?? (item.Type === "Series" ? item.Name : undefined);
   if (seriesName && claim.titles.has(normalizeTitle(seriesName))) return true;
   return false;
