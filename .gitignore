@@ -20,6 +20,12 @@ scripts/
 *.ipa
 *.msi
 
+# Secrets — NE JAMAIS committer. Les clés de service Firebase (service_account,
+# private_key) vont chez Expo (eas credentials), jamais dans le repo ni l'app.
+*firebase-adminsdk*.json
+*-service-account*.json
+service-account*.json
+
 # Tauri
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/.tauri-keys/tentacle.key
