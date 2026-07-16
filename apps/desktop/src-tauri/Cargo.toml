@@ -34,7 +34,10 @@ libloading = "0.8"
 # mpv embarqué via `--wid` (fenêtre enfant WS_CHILD) : conservé sur Windows où
 # WebView2 sait composer l'overlay HTML transparent au-dessus. Linux utilise
 # désormais le Render API custom (cf. src/linux/), macOS le sien (src/macos/).
-tauri-plugin-libmpv = "0.3.2"
+# FORK VENDORED (base 0.3.2) : l'upstream tenait son mutex global pendant les
+# appels FFI bloquants → deadlock + gel total de l'app capturé en prod le
+# 15.07.2026 (freeze-probe). Verrouillage par instance — cf. VENDORED.md.
+tauri-plugin-libmpv = { path = "vendored/tauri-plugin-libmpv" }
 windows = { version = "0.61", features = [
   "Services_Store",
   "Foundation",
