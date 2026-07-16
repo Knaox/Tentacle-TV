@@ -176,9 +176,14 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     "demuxer-max-back-bytes": "75MiB",
     "cache-pause-wait": 3,
     "demuxer-readahead-secs": 30,
-    // HLS/network resilience
+    // HLS/network resilience. `reconnect_max_retries` BORNE la boucle de
+    // reconnexion ffmpeg : sans elle, un flux invalidé côté serveur (403/404
+    // après fin de session Jellyfin) était réessayé À L'INFINI — le teardown
+    // de l'instance mpv ne finissait jamais (threads select()/join du dump
+    // freeze-probe du 15.07.2026) et l'audio zombie persistait. Option
+    // inconnue du libmpv embarqué = simple warning mpv, jamais fatal.
     "network-timeout": 30,
-    "stream-lavf-o": "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_on_http_error=4xx\\,5xx,reconnect_delay_max=5",
+    "stream-lavf-o": "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_on_http_error=4xx\\,5xx,reconnect_delay_max=5,reconnect_max_retries=8",
     "demuxer-lavf-o": "probesize=10000000,analyzeduration=10000000",
     osc: "no",
     "input-default-bindings": "no",
