@@ -27,10 +27,13 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
                   dynamicRange:(NSInteger)dynRange
                   audioIndex:(NSInteger)audioIndex
                   startSec:(double)startSec
+                  audioOrdinal:(NSInteger)audioOrdinal
+                  audioLang:(NSString *)audioLang
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-  TVLOG("start: entry dyn=%ld audioIndex=%ld startSec=%.0f", (long)dynRange, (long)audioIndex, startSec);
+  TVLOG("start: entry dyn=%ld audioIndex=%ld ord=%ld lang=%{public}s startSec=%.0f",
+        (long)dynRange, (long)audioIndex, (long)audioOrdinal, audioLang.UTF8String ?: "", startSec);
   static dispatch_once_t once;
   dispatch_once(&once, ^{ TVLOG("init network"); av_log_set_callback(TVAvLog); avformat_network_init(); gRemuxQueue = dispatch_queue_create("tv.localremux", DISPATCH_QUEUE_SERIAL); });
 
@@ -145,6 +148,8 @@ RCT_EXPORT_METHOD(start:(NSString *)sourceUrl
     } else {
       gCurrentSource = sourceUrl;
       gWantAudioIdx = (int)audioIndex;   // re-remux si la piste audio change (clé de session)
+      gWantAudioOrdinal = (int)audioOrdinal;   // secours de résolution (cf. TVStreamMap)
+      strlcpy(gWantAudioLang, audioLang.UTF8String ?: "", sizeof(gWantAudioLang));
       gWantStartSec = (int)startSec;     // reprise/seek : av_seek_frame positionne l'entrée sur la keyframe ≤ T
       gSessionStartSec = startSec;       // origine PROVISOIRE (T demandé) — affinée au 1ᵉʳ paquet muxé
                                          // (TVNoteFirstDts : keyframe ≤ T − amorce B-frames) → offset JS exact
