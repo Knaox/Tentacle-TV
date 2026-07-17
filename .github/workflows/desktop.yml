@@ -274,11 +274,17 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      - name: Build app (version injectée depuis versions.json ; exe dans target/release)
+      - name: Injecter la version (versions.json) dans tauri.conf.json
+        # PAS de JSON inline en --config ici : pwsh→pnpm→cmd mange les guillemets
+        # internes sous Windows (tauri reçoit `{version:x}` invalide — vécu au
+        # run 1.12.2). On patche le fichier, comme le job Linux ; sans quoi l'exe
+        # embarque la version stale et « À propos » (getVersion) l'affiche.
+        shell: pwsh
+        run: node -e "const f='apps/desktop/src-tauri/tauri.conf.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
+
+      - name: Build app (exe dans target/release)
         working-directory: apps/desktop
-        # --config version : sans elle, l'exe embarque la version (potentiellement
-        # stale) de tauri.conf.json et « À propos » (getVersion) l'affiche.
-        run: pnpm tauri build --bundles nsis --config '{"version":"${{ needs.version.outputs.version }}"}'
+        run: pnpm tauri build --bundles nsis
 
       - name: Assemble MSIX payload + manifest versionné
         shell: pwsh
