@@ -4,7 +4,7 @@ import { isUserOnline, onPresenceChange, sendToUser } from "../wsManager";
 import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor, type Room } from "./roomStore";
 import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
-import { handleChat, handleReaction, sendChatHistory } from "./chat";
+import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
 import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./protocol";
 
 /**
@@ -75,6 +75,11 @@ export function handleWtMessage(
 
   if (msg.type === "wt:reaction") {
     handleReaction(room, user, msg.emoji);
+    return;
+  }
+
+  if (msg.type === "wt:gif") {
+    handleGif(room, user, msg);
     return;
   }
 

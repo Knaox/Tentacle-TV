@@ -6,13 +6,15 @@ import type { WtChatMessageDto } from "@tentacle-tv/shared";
  * (le fil de chat n'a ni epoch ni rapport avec l'état de lecture).
  */
 
-/** Réaction emoji éphémère en cours d'animation (purgée par TTL). */
+/** Réaction éphémère en cours d'animation (purgée par TTL) : emoji OU gif. */
 export interface WtFloatingReaction {
   /** Clé d'animation unique (userId:at:n). */
   key: string;
   userId: string;
   username: string;
-  emoji: string;
+  /** Un seul des deux est renseigné. */
+  emoji?: string;
+  gif?: { url: string; w?: number; h?: number };
 }
 
 export interface WtChatState {
@@ -30,6 +32,11 @@ export interface WtChatState {
 
 /** Nombre max d'aperçus empilés simultanément. */
 export const WT_CHAT_TOAST_MAX = 4;
+
+/** Cap de réactions flottantes simultanées (spam multi-membres) : au-delà, les
+ *  plus anciennes sont évincées — leur timer d'expiration devient un filter
+ *  sans effet, inoffensif. */
+export const WT_FLOAT_MAX = 40;
 
 export const initialChatState: WtChatState = {
   groupId: null,
@@ -75,7 +82,7 @@ export function chatReducer(state: WtChatState, action: WtChatAction): WtChatSta
       };
     }
     case "reaction_add":
-      return { ...state, reactions: [...state.reactions, action.reaction] };
+      return { ...state, reactions: [...state.reactions, action.reaction].slice(-WT_FLOAT_MAX) };
     case "reaction_expire":
       return { ...state, reactions: state.reactions.filter((r) => r.key !== action.key) };
     case "toast_expire":

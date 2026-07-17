@@ -4,10 +4,12 @@ import { WT_CHAT_MAX_LENGTH, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
 import type { WtChatApi } from "./useWtChat";
+import { ReactionPicker, type PickerTab } from "./picker/ReactionPicker";
 
 /**
  * Watch Together — corps du panneau de chat : liste des messages (auto-scroll
- * collé en bas), barre de réactions rapides, champ de saisie.
+ * collé en bas), sélecteur emojis/GIFs, barre de réactions rapides, champ de
+ * saisie.
  */
 
 const QUICK_EMOJIS = ["😂", "❤️", "🔥", "😮", "👍", "😭"] as const;
@@ -62,6 +64,7 @@ export function ChatPanel({
   const { t } = useTranslation("watchTogether");
   const { selfId } = useWatchTogether();
   const [draft, setDraft] = useState("");
+  const [pickerTab, setPickerTab] = useState<PickerTab | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const { messages } = chat.state;
@@ -110,6 +113,14 @@ export function ChatPanel({
         )}
       </div>
 
+      <ReactionPicker
+        tab={pickerTab}
+        onTabChange={setPickerTab}
+        onClose={() => setPickerTab(null)}
+        chat={chat}
+        onInputFocusChange={onInputFocusChange}
+      />
+
       <div className="flex shrink-0 items-center justify-center gap-1 border-t border-white/10 px-2 py-1.5">
         {QUICK_EMOJIS.map((emoji) => (
           <button
@@ -121,6 +132,33 @@ export function ChatPanel({
             {emoji}
           </button>
         ))}
+        <span className="mx-0.5 h-4 w-px shrink-0 bg-white/10" />
+        <button
+          onClick={() => setPickerTab((cur) => (cur === "emoji" ? null : "emoji"))}
+          aria-label={t("pickerOpenEmojis")}
+          title={t("pickerOpenEmojis")}
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
+            pickerTab === "emoji" ? "bg-purple-500/25 text-purple-200" : "text-white/60 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+            <circle cx="12" cy="12" r="9" />
+            <path strokeLinecap="round" d="M8.5 14a4.2 4.2 0 0 0 7 0" />
+            <path strokeLinecap="round" d="M9 9.4v.01M15 9.4v.01" strokeWidth={2.6} />
+          </svg>
+        </button>
+        <button
+          onClick={() => setPickerTab((cur) => (cur === "gif" ? null : "gif"))}
+          aria-label={t("pickerOpenGifs")}
+          title={t("pickerOpenGifs")}
+          className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-wide transition-colors ${
+            pickerTab === "gif"
+              ? "border-purple-400/50 bg-purple-500/25 text-purple-200"
+              : "border-white/15 text-white/60 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          GIF
+        </button>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-white/10 p-2">

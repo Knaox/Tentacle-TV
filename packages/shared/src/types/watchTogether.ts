@@ -43,11 +43,16 @@ export const WT_CLOCK_BURST_SPACING_MS = 200;
 export const WT_CHAT_MAX_LENGTH = 500;
 /** Chat : fil conservé en mémoire par room (renvoyé au join/resync). */
 export const WT_CHAT_HISTORY_SIZE = 50;
-/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre. */
+/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre.
+ *  Réactions volontairement permissives (~8/s) : le spam d'emojis est un usage voulu. */
 export const WT_MIN_CHAT_INTERVAL_MS = 400;
-export const WT_MIN_REACTION_INTERVAL_MS = 250;
+export const WT_MIN_REACTION_INTERVAL_MS = 120;
 /** Réaction : longueur max (un emoji composé ZWJ tient en ≤ 16 unités UTF-16). */
 export const WT_REACTION_MAX_LENGTH = 16;
+/** GIF : intervalle minimal entre deux envois d'un membre (plus lourd qu'un emoji). */
+export const WT_MIN_GIF_INTERVAL_MS = 1_500;
+/** GIF : longueur max de l'URL broadcastée (un tinygif Tenor fait ~60-90 caractères). */
+export const WT_GIF_URL_MAX_LENGTH = 512;
 
 // ── DTOs ──
 
@@ -141,7 +146,9 @@ export type WtClientMessage =
   /** Message texte du chat de groupe (trim + tronqué à WT_CHAT_MAX_LENGTH). */
   | { type: "wt:chat"; text: string }
   /** Réaction emoji éphémère (non stockée côté serveur). */
-  | { type: "wt:reaction"; emoji: string };
+  | { type: "wt:reaction"; emoji: string }
+  /** GIF éphémère (URL tinygif Tenor, allowlist d'hôtes côté serveur — jamais stocké). */
+  | { type: "wt:gif"; url: string; w?: number; h?: number };
 
 // ── Messages serveur → clients ──
 
@@ -168,6 +175,8 @@ export type WtServerMessage =
   | { type: "wt:chat"; message: WtChatMessageDto }
   /** Réaction emoji transient (hors state/epoch, comme autonextDismiss). */
   | { type: "wt:reaction"; userId: string; username: string; emoji: string; at: number }
+  /** GIF transient (même sémantique que wt:reaction — jamais stocké). */
+  | { type: "wt:gif"; userId: string; username: string; url: string; w?: number; h?: number; at: number }
   /** Fil complet (ring buffer) — envoyé au join et à chaque syncRequest. */
   | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] };
 
