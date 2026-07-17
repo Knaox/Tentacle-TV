@@ -27,7 +27,15 @@
 #include <float.h>   // DBL_MAX (init de gTVMinFirstDts avant la 1ʳᵉ écriture)
 #include <strings.h> // strcasecmp (résolution de piste audio par langue, TVStreamMap)
 
-#define TVLOG(fmt, ...) os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__)
+// Ring buffer de logs ponté vers JS/Metro (TVLogBuffer.m — drainé par fetchLogs).
+void TVLogAppendFmt(const char *fmt, ...);
+NSArray<NSString *> *TVLogDrain(void);
+// TVLOG : chaque ligne part dans os_log (Console.app) ET dans le ring buffer.
+// NB : les arguments sont évalués DEUX fois — jamais d'effet de bord dedans.
+#define TVLOG(fmt, ...) do { \
+  os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__); \
+  TVLogAppendFmt("[TVLR] " fmt, ##__VA_ARGS__); \
+} while (0)
 #define TVLR_REORDER 8   // profondeur de réordonnancement B-frames couverte (HEVC grand public ≤ 4-8)
 // Fenêtrage disque (TVWindow.m) : plafond DUR (octets) + marge conservée DERRIÈRE la tête.
 #define TVLR_DISK_CAP   (1600LL * 1024 * 1024)   // 1,6 Go → tient sur Apple TV 32/64 Go quel que soit le film
@@ -50,12 +58,14 @@
 #define TVLR_SEG_WAIT_MS      2500                // handler HLS : attente max (long-poll) d'un segment
                                                   // demandé DEVANT le dernier produit, avant 404
 
-// Route les logs internes de FFmpeg vers Console.app (raison exacte des échecs).
+// Route les logs internes de FFmpeg vers Console.app ET le ring buffer JS
+// (raison exacte des échecs, visible dans Metro).
 static void TVAvLog(void *avcl, int level, const char *fmt, va_list vl) {
   if (level > AV_LOG_WARNING) return;
   char line[512];
   vsnprintf(line, sizeof(line), fmt, vl);
   os_log_error(OS_LOG_DEFAULT, "[TVLR-ff] %{public}s", line);
+  TVLogAppendFmt("[TVLR-ff] %s", line);
 }
 
 static long long TVFileSize(NSString *path) {

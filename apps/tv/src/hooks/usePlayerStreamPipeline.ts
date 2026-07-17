@@ -11,6 +11,7 @@ import { useTVSubtitleControl } from "./useTVSubtitleControl";
 import { useTVInitialResume } from "./useTVInitialResume";
 import { useTVStreamUrl } from "./useTVStreamUrl";
 import { useTVRemuxInfo } from "./useTVRemuxInfo";
+import { useTVRemuxLogPump } from "./useTVRemuxLogPump";
 import { useTVRemuxStallRecovery } from "./useTVRemuxStallRecovery";
 import { useTVRemuxFamineWatchdog } from "./useTVRemuxFamineWatchdog";
 import { useTVRemuxPause } from "./useTVRemuxPause";
@@ -118,6 +119,8 @@ export function usePlayerStreamPipeline(args: {
   // État de production du remux (poll 1 Hz sessionInfo) : borne la fenêtre de seek natif
   // à l'ÉCRIT réel + alimente stall-recovery et détecteur de fin. Inerte hors remux.
   const remuxInfoRef = useTVRemuxInfo(isLocalRemux);
+  // Dev : déverse les logs NATIFS [TVLR] du remux dans Metro (diagnostic device).
+  useTVRemuxLogPump();
 
   // Récupération de stall remux (-11866) — sauf à ≤5 s de la fin d'un remux terminé (= FIN).
   const { onRemuxStall } = useTVRemuxStallRecovery({

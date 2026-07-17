@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { NativeModules } from "react-native";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { RemuxInfo } from "./useTVRemuxInfo";
+import { plog } from "../utils/playerDiag";
 
 const Remux = (NativeModules as { TVLocalRemux?: { prepareResume?: () => void } }).TVLocalRemux;
 
@@ -99,6 +100,7 @@ export function useTVRemuxSeek(args: {
         const target = pendingTargetRef.current;
         pendingTargetRef.current = null;
         if (target == null) return;
+        plog("seek", `re-remux session fraîche @${target.toFixed(1)}s`);
         Remux?.prepareResume?.();                     // force une session fraîche à la cible (saute withinAvail)
         softReloadRef.current = true;
         holdForReload();                              // lecteur en pause pendant le reload (anti son sortant)
@@ -131,6 +133,7 @@ export function useTVRemuxSeek(args: {
 
     // 2. Dans la fenêtre ÉCRITE → seek natif immédiat (réutilise la session).
     if (!dead && clamped >= lower && clamped <= upperNative) {
+      plog("seek", `natif @${clamped.toFixed(1)}s (fenêtre [${lower.toFixed(0)}..${upperNative.toFixed(0)}])`);
       handleSeek(clamped);
       if (controlsCurrentTimeRef) controlsCurrentTimeRef.current = clamped;
       return;
@@ -138,6 +141,7 @@ export function useTVRemuxSeek(args: {
 
     // 3. Devant l'écrit mais dans la fenêtre de pacing → seek natif DIFFÉRÉ (dès que produit).
     if (!dead && info && !info.done && clamped > upperNative && clamped <= pos + 295 && clamped >= lower) {
+      plog("seek", `différé @${clamped.toFixed(1)}s (écrit=${writtenAbs.toFixed(0)}s, attente production)`);
       showOptimistic();
       notifySeekRef.current(clamped, DEFER_TIMEOUT_MS + 1500, false);
       const deadline = Date.now() + DEFER_TIMEOUT_MS;
@@ -151,6 +155,7 @@ export function useTVRemuxSeek(args: {
           return;
         }
         if (Date.now() >= deadline) {   // production trop lente (cap disque…) → repli re-remux
+          plog("seek", `différé @${clamped.toFixed(1)}s : timeout 7 s → repli re-remux`);
           clearDefer();
           notifySeekRef.current(clamped, SEEK_DEBOUNCE_MS + 1700, false);
           scheduleRemux();

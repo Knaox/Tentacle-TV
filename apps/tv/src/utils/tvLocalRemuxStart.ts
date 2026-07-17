@@ -1,5 +1,6 @@
 import { NativeModules } from "react-native";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { plog } from "./playerDiag";
 
 /**
  * Démarrage du remux local tvOS « façon Infuse » — décision d'éligibilité + start()
@@ -101,7 +102,8 @@ export async function startLocalRemux(a: {
           gen: res.gen ?? 0,
         };
       }
-    } catch {
+    } catch (e) {
+      plog("remux", `start() tentative ${attempt + 1}/3 échouée : ${(e as { code?: string; message?: string })?.code ?? ""} ${(e as { message?: string })?.message ?? String(e)}`);
       if (a.isCancelled()) return null;
       if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
     }

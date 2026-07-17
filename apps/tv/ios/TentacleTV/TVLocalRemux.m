@@ -9,6 +9,7 @@
 //
 
 #import "TVCommon.h"
+#import "TVLogBuffer.m"     // ring buffer de logs (TVLogAppendFmt/TVLogDrain) ponté vers Metro
 #import "TVAudioTranscode.m"
 #import "TVHLSPlaylist.m"
 #import "TVWindow.m"        // fenêtrage disque (TVPurgeBehind/TVPaceAndPurge) — DOIT précéder TVRemuxEngine.m
@@ -242,6 +243,13 @@ RCT_EXPORT_METHOD(sessionInfo:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromi
 {
   resolve(@{ @"writtenSec": @(gWrittenSec), @"sessionStartSec": @(gSessionStartSec),
              @"done": @(gDone ? YES : NO), @"error": @(gError ? YES : NO), @"gen": @(gGen) });
+}
+
+// Draine le ring buffer de logs natifs (TVLogBuffer.m), pollé ~2 s par le JS en
+// dev (useTVRemuxLogPump) → les lignes [TVLR]/[TVLR-ff] arrivent dans Metro.
+RCT_EXPORT_METHOD(fetchLogs:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+  resolve(TVLogDrain());
 }
 
 // Position de lecture (s) poussée par JS (onProgress) → le remux ne va pas trop loin devant.

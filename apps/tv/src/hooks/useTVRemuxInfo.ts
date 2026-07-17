@@ -1,5 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { NativeModules } from "react-native";
+import { plog } from "../utils/playerDiag";
 
 /** Instantané de production de la session remux locale (natif `sessionInfo`). */
 export interface RemuxInfo {
@@ -32,7 +33,13 @@ export function useTVRemuxInfo(isLocalRemux: boolean): MutableRefObject<RemuxInf
     let alive = true;
     const tick = () => {
       Remux.sessionInfo!()
-        .then((r) => { if (alive && r) infoRef.current = { ...r, at: Date.now() }; })
+        .then((r) => {
+          if (!alive || !r) return;
+          const prev = infoRef.current;
+          if (r.error && !prev?.error) plog("remux", `sessionInfo: ERREUR native (gen=${r.gen})`);
+          if (r.done && !r.error && !prev?.done) plog("remux", `sessionInfo: remux terminé (écrit=${r.writtenSec.toFixed(0)}s)`);
+          infoRef.current = { ...r, at: Date.now() };
+        })
         .catch(() => {});
     };
     tick();
