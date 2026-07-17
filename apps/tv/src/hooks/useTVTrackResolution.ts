@@ -34,7 +34,12 @@ export function useTVTrackResolution(args: {
     resolveTracks.mutate({
       libraryId: candidates[0], libraryIds: candidates,
       audioTracks: streams.filter((s) => s.Type === "Audio")
-        .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault })),
+        // title obligatoire pour matcher une VARIANTE (VFF/VFQ) : le backend la
+        // reconnaît uniquement dans le titre de la piste (parité web).
+        .map((s) => ({
+          index: s.Index, language: s.Language, isDefault: s.IsDefault,
+          title: [s.Title, s.DisplayTitle].filter(Boolean).join(" "),
+        })),
       subtitleTracks: streams.filter((s) => s.Type === "Subtitle")
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
     }, {
