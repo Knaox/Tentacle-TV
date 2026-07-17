@@ -31,8 +31,13 @@ COPY versions.json versions.json
 WORKDIR /app/apps/web
 RUN pnpm build
 
-# Build backend
+# Build backend — la clé Klipy (GIFs du chat WT) est GRAVÉE dans le code
+# compilé avant tsc (secret GitHub KLIPY_API_KEY → build-arg) : elle ne passe
+# ni par l'ENV de l'image finale ni par docker-compose, et n'est pas
+# modifiable par l'opérateur. Absente = GIFs proprement désactivés.
 WORKDIR /app/apps/backend
+ARG KLIPY_API_KEY=""
+RUN KLIPY_API_KEY="$KLIPY_API_KEY" node scripts/bake-klipy-key.mjs
 RUN npx prisma generate && pnpm build
 
 # Build shared-deps.js for plugin sandbox
@@ -66,12 +71,6 @@ COPY --from=base /app/versions.json ./versions.json
 # Copy entrypoint script
 COPY apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh
 RUN chmod +x ./apps/backend/docker-entrypoint.sh
-
-# Clé Klipy des GIFs du chat Watch Together — clé UNIQUE au niveau application,
-# injectée au build par la CI (secret GitHub KLIPY_API_KEY). Vide = les GIFs
-# sont proprement désactivés (état « non disponible » côté client).
-ARG KLIPY_API_KEY=""
-ENV KLIPY_API_KEY=${KLIPY_API_KEY}
 
 EXPOSE 3000
 
