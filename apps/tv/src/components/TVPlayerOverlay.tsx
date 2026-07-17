@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
-import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, FastForwardIcon, RewindIcon } from "./icons/TVIcons";
+import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, FastForwardIcon } from "./icons/TVIcons";
 import { SpeedPill } from "./player/SpeedPill";
 import { useOverlayFocus } from "./player/focus/useOverlayFocus";
 import { Colors } from "../theme/colors";
@@ -34,20 +34,9 @@ interface TVPlayerOverlayProps {
   onSkipBack: () => void;
   /** Skip forward uses ref-based time — no stale closure */
   onSkipForward: () => void;
-  /** Recul rapide : DÉBUT du maintien (accélération continue tant que tenu) */
-  onRewind: () => void;
-  /** Recul rapide : FIN du maintien (fantôme figé — OK confirme, Back annule) */
-  onRewindEnd: () => void;
-  /** Avance rapide : DÉBUT du maintien */
-  onFastForward: () => void;
-  /** Avance rapide : FIN du maintien */
-  onFastForwardEnd: () => void;
-  /** TAP court ⏪ (Android) : petit saut immédiat ; en scrub préparé, confirme. */
-  onRewindTap?: () => void;
-  /** TAP court ⏩ (Android) : petit saut immédiat ; en scrub préparé, confirme. */
-  onFastForwardTap?: () => void;
-  /** Scrub initié par un bouton OSD maintenu → ne pas verrouiller le focus */
-  scrubViaButton?: boolean;
+  /** Appui sur ⏩ : entre en mode scrub (l'OSD se masque, plein écran trickplay) ;
+   *  en scrub, le même appui CONFIRME le seek (guardScrub côté caller). */
+  onScrub: () => void;
   onBack: () => void;
   onSettings: () => void;
   /** Next episode — hidden if not provided */
@@ -71,28 +60,30 @@ function formatTime(seconds: number): string {
 export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   title, currentTime, bufferedTime = 0, duration, paused, visible,
   speedLabel, scrubbing = false, scrubPosition = 0, focusSignal = 0,
-  onPlayPause, onSkipBack, onSkipForward,
-  onRewind, onRewindEnd, onFastForward, onFastForwardEnd,
-  onRewindTap, onFastForwardTap, scrubViaButton,
+  onPlayPause, onSkipBack, onSkipForward, onScrub,
   onBack, onSettings,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
   onEpisodes,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
+  // `paused` maintient l'OSD affiché — SAUF en scrub (la pause du scrub ne doit
+  // pas ré-épingler l'OSD masqué : TVScrubFullscreen est la seule UI de scrub).
+  const pinnedByPause = paused && !scrubbing;
+
   useEffect(() => {
-    opacity.value = withTiming(visible || paused ? 1 : 0, { duration: 250 });
-  }, [visible, paused, opacity]);
+    opacity.value = withTiming(visible || pinnedByPause ? 1 : 0, { duration: 250 });
+  }, [visible, pinnedByPause, opacity]);
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const buffered = duration > 0 ? (bufferedTime / duration) * 100 : 0;
   const scrubPct = duration > 0 ? Math.min((scrubPosition / duration) * 100, 100) : 0;
-  const isShown = visible || paused;
+  const isShown = visible || pinnedByPause;
 
   // --- Mémoire de focus de l'OSD (source unique partagée ; primitive de
   //     restauration spécifique plateforme injectée par le hook résolu Metro) ---
-  const focus = useOverlayFocus({ focusSignal, scrubbing, scrubViaButton });
+  const focus = useOverlayFocus({ focusSignal, scrubbing });
 
   return (
     <Animated.View
@@ -205,12 +196,6 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </Focusable>
           )}
 
-          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("rewind")} onPress={onRewindTap} onPressIn={onRewind} onPressOut={onRewindEnd} {...focus.buttonProps("rewind")}>
-            <View style={{ padding: 10 }}>
-              <RewindIcon size={22} color={Colors.textPrimary} />
-            </View>
-          </Focusable>
-
           <Focusable variant="button" phantomPressGuard ref={focus.registerButton("skipback")} onPress={onSkipBack} {...focus.buttonProps("skipback")}>
             <View style={{ padding: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <SkipBackIcon size={22} color={Colors.textPrimary} />
@@ -241,7 +226,9 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
             </View>
           </Focusable>
 
-          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("fastforward")} onPress={onFastForwardTap} onPressIn={onFastForward} onPressOut={onFastForwardEnd} {...focus.buttonProps("fastforward")}>
+          {/* Avance rapide : UN bouton — appui simple = mode scrub (fantôme +
+              plein écran, ←/→ ou trackpad pour naviguer, OK valide, Back annule). */}
+          <Focusable variant="button" phantomPressGuard ref={focus.registerButton("scrub")} onPress={onScrub} {...focus.buttonProps("scrub")}>
             <View style={{ padding: 10 }}>
               <FastForwardIcon size={22} color={Colors.textPrimary} />
             </View>

@@ -10,7 +10,6 @@ export type { TransportKey, OverlayFocusControl, OverlayButtonProps } from "./ov
 interface UseOverlayFocusArgs {
   focusSignal: number;
   scrubbing: boolean;
-  scrubViaButton?: boolean;
 }
 
 /**
@@ -19,9 +18,9 @@ interface UseOverlayFocusArgs {
  * simple `setNativeProps({ hasTVPreferredFocus: true })` suffit à déplacer le
  * focus. (tvOS exige un cycle false→true, cf. `useOverlayFocus.ios.ts`.)
  */
-export function useOverlayFocus({ focusSignal, scrubbing, scrubViaButton }: UseOverlayFocusArgs): OverlayFocusControl {
+export function useOverlayFocus({ focusSignal, scrubbing }: UseOverlayFocusArgs): OverlayFocusControl {
   const restore = useCallback((node: FocusNode) => {
     node?.setNativeProps?.({ hasTVPreferredFocus: true });
   }, []);
-  return useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton, restore });
+  return useOverlayFocusCore({ focusSignal, scrubbing, restore });
 }
