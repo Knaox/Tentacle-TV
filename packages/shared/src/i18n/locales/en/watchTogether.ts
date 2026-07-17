@@ -89,11 +89,10 @@ export default {
   gifSearchPlaceholder: "Search GIFs…",
   gifNoResults: "No GIFs found.",
   gifError: "Couldn't load GIFs. Try again.",
-  gifNotConfigured: "GIFs are not set up on this server.",
-  gifNotConfiguredHint: "Ask an administrator to add a Tenor key.",
-  gifNotConfiguredAdminCta: "Set up GIFs",
+  gifNotConfigured: "GIFs are not available on this server.",
+  gifNotConfiguredHint: "Update the server (or set KLIPY_API_KEY in dev).",
   gifSendAria: "Send this GIF",
-  gifAttribution: "Via Tenor",
+  gifAttribution: "GIFs by KLIPY",
 
   // Errors
   alreadyInGroup: "You are already in a group.",

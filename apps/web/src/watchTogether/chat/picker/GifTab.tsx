@@ -1,16 +1,15 @@
 import { memo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getUserInfo } from "../../../components/userMenu/menuItems";
 import type { WtChatApi } from "../useWtChat";
 import { useGifSearch, type GifItem } from "./useGifSearch";
 
 /**
  * Watch Together — onglet GIF du sélecteur : recherche debouncée + grille de
- * tinygifs Tenor (tendances quand la recherche est vide). Un clic envoie le
+ * tinygifs Klipy (tendances quand la recherche est vide). Un clic envoie le
  * GIF IMMÉDIATEMENT (comme un emoji) sans fermer le sélecteur ; un cooldown
  * client aligné sur le rate limit serveur évite les envois silencieusement
- * ignorés. Sans clé Tenor configurée : état explicite (CTA admin si admin).
+ * ignorés. La clé Klipy est au niveau application (image Docker) : l'état
+ * « non disponible » ne concerne que les vieux serveurs / le dev sans .env.
  */
 
 /** Aligné sur WT_MIN_GIF_INTERVAL_MS (serveur) — évite les drops silencieux. */
@@ -64,21 +63,12 @@ export const GifTab = memo(function GifTab({
     setTimeout(() => setSentId((cur) => (cur === gif.id ? null : cur)), 700);
   };
 
-  // Clé Tenor absente sur ce serveur : état explicite, pas de recherche.
+  // Serveur sans clé GIF (vieille image / dev sans .env) : état explicite.
   if (data && !data.configured) {
-    const { isAdmin } = getUserInfo();
     return (
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
         <p className="text-xs font-medium text-white/70">{t("gifNotConfigured")}</p>
         <p className="text-[11px] text-white/40">{t("gifNotConfiguredHint")}</p>
-        {isAdmin && (
-          <Link
-            to="/admin/services"
-            className="mt-1.5 rounded-lg bg-purple-500/25 px-2.5 py-1 text-[11px] font-semibold text-purple-200 transition-colors hover:bg-purple-500/40"
-          >
-            {t("gifNotConfiguredAdminCta")}
-          </Link>
-        )}
       </div>
     );
   }

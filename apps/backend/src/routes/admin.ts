@@ -14,7 +14,6 @@ import { getPrisma } from "../services/db";
 import { injectCorsHosts } from "../services/jellyfinCors";
 import { adminUsersRoutes } from "./adminUsers";
 import { adminProvisioningRoutes } from "./adminProvisioning";
-import { adminGifConfigRoutes } from "./adminGifConfig";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
@@ -51,9 +50,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Code de jumelage de provisionnement (hérite du hook requireAdmin).
   await app.register(adminProvisioningRoutes);
-
-  // Clé API Tenor des GIFs du chat (hérite du hook requireAdmin).
-  await app.register(adminGifConfigRoutes);
 
   /** GET /api/admin/services — Status of all configured services. */
   app.get("/services", async () => {
