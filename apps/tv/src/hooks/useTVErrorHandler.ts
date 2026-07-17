@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
+import { plog } from "../utils/playerDiag";
 
 /**
  * Gestion d'erreur du lecteur : une erreur de CODEC en direct play bascule en
@@ -36,25 +37,28 @@ export function useTVErrorHandler(args: {
   const handleError = useCallback((error: string) => {
     if (error === "REMUX_STALL") {
       // En pause : récupération différée (lazy) — hors garde anti-boucle.
-      if (pausedStateRef?.current) { onRemuxStall?.(); return; }
+      if (pausedStateRef?.current) { plog("err", "REMUX_STALL en pause → récupération lazy"); onRemuxStall?.(); return; }
       const now = Date.now(); const s = stallRef.current;
       s.count = now - s.last < 8000 ? s.count + 1 : 1; s.last = now;
-      if (s.count > 4) { setVideoError("Playback Stopped"); return; }
+      if (s.count > 4) { plog("err", `REMUX_STALL x${s.count} en <8 s → Playback Stopped`); setVideoError("Playback Stopped"); return; }
+      plog("err", `REMUX_STALL (${s.count}/4) → récupération`);
       onRemuxStall?.(); return;
     }
     // 401/403 sur le stream en DIRECT streaming : token Jellyfin mort →
     // redemande d'un token frais + reload en direct (jamais de bascule proxy).
-    if (tryDirectAuthRecovery(error)) return;
+    if (tryDirectAuthRecovery(error)) { plog("err", "401/403 direct → refresh token + reload"); return; }
     const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
       || error.includes("codec") || error.includes("Could not open");
     if (isCodecError && !forceTranscode) {
       // Bascule transcode en cours de lecture : reprendre à la position
       // courante (avant : repartait à zéro).
+      plog("err", `erreur codec → bascule transcode forcé (${error})`);
       captureReloadTicks();
       setVideoError(null);
       setForceTranscode(true);
       return;
     }
+    plog("err", `erreur SURFACÉE à l'écran : ${error}`);
     setVideoError(error);
   }, [forceTranscode, captureReloadTicks, onRemuxStall, tryDirectAuthRecovery]); // eslint-disable-line react-hooks/exhaustive-deps
 
