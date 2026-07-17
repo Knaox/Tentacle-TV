@@ -274,9 +274,11 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      - name: Build app (config de base ; on récupère l'exe de target/release)
+      - name: Build app (version injectée depuis versions.json ; exe dans target/release)
         working-directory: apps/desktop
-        run: pnpm tauri build --bundles nsis
+        # --config version : sans elle, l'exe embarque la version (potentiellement
+        # stale) de tauri.conf.json et « À propos » (getVersion) l'affiche.
+        run: pnpm tauri build --bundles nsis --config '{"version":"${{ needs.version.outputs.version }}"}'
 
       - name: Assemble MSIX payload + manifest versionné
         shell: pwsh
