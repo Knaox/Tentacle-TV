@@ -39,10 +39,12 @@ NSArray<NSString *> *TVLogDrain(void);
 #define TVLR_REORDER 8   // profondeur de réordonnancement B-frames couverte (HEVC grand public ≤ 4-8)
 // Fenêtrage disque (TVWindow.m) : plafond DUR (octets) + marge conservée DERRIÈRE la tête.
 #define TVLR_DISK_CAP   (1600LL * 1024 * 1024)   // 1,6 Go → tient sur Apple TV 32/64 Go quel que soit le film
-#define TVLR_BEHIND_SEC 90.0                      // fenêtre conservée derrière la tête. ⚠️ ≥ 90 s : AVPlayer
-                                                  // maintient un back-buffer (~60 s) qu'il RE-TÉLÉCHARGE en continu
-                                                  // derrière la lecture — à 60 s pile, la purge le supprimait juste
-                                                  // avant sa re-demande (404 en rafale, observé en soak 2026-07-13)
+#define TVLR_BEHIND_SEC 120.0                     // fenêtre conservée derrière la tête. AVPlayer RE-TÉLÉCHARGE en
+                                                  // continu un back-buffer derrière la lecture ; à 60 s puis même à
+                                                  // 90 s (segments ~5,4 s, soak 2026-07-17), la purge supprimait le
+                                                  // segment JUSTE avant sa re-demande (404 en rafale). 120 s = ~2
+                                                  // segments de marge au-delà du back-buffer observé (~92 s) ;
+                                                  // coût disque ≈ +35 Mo, négligeable vs cap 1,6 Go.
 #define TVLR_PREBUFFER_SEC 8.0                    // s produites (0-based) avant de résoudre start() → cushion anti-stall de démarrage
 #define TVLR_RESUME_PREBUFFER_SEC 3.0             // cushion réduit pour une session de REPRISE/seek (gResumePending) → start() résout en ~2-3 s
 // Compensation de dérive A/V du transcode audio (TVAudioTranscode.m) : au-delà de 100 ms d'écart
