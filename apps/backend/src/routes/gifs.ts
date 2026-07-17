@@ -1,14 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../middleware/auth";
+import { BAKED_KLIPY_KEY } from "../generated/klipyKey";
 
 /**
  * Proxy Klipy — GIFs du chat Watch Together (mode compat Tenor : l'API Tenor
  * a fermé le 30/06/2026 et Klipy en est le remplacement officiel drop-in —
  * mêmes chemins /v2, mêmes paramètres, même format de réponse).
  *
- * Clé UNIQUE au niveau application : KLIPY_API_KEY, injectée dans l'image
- * Docker par la CI (secret GitHub) — aucun réglage par serveur. En dev local,
- * la variable d'env (.env) fait foi. Sans clé, l'API répond
+ * Clé UNIQUE au niveau application, COMPILÉE dans le build par la CI
+ * (generated/klipyKey.ts, gravée avant tsc par scripts/bake-klipy-key.mjs) :
+ * ni env d'image, ni docker-compose — non modifiable par l'opérateur d'un
+ * serveur. Le repli process.env.KLIPY_API_KEY ne sert qu'au dev local (et il
+ * est ignoré dès qu'une clé compilée existe). Sans clé, l'API répond
  * `{ configured: false }` et le client affiche un état « non disponible » :
  * rien ne casse. Réponses toujours en 200 (hors 400 de validation) pour que
  * le client distingue non-configuré / erreur / vide.
@@ -35,9 +38,10 @@ const QUERY_MAX_LENGTH = 100;
 const CACHE_TTL_MS = 5 * 60_000;
 const CACHE_MAX_ENTRIES = 200;
 
-/** Clé Klipy de l'application (injectée par la CI ; .env en dev). */
+/** Clé Klipy : la clé compilée (CI) prime et rend l'env inopérant ;
+ *  l'env n'est qu'un repli de dev local. */
 function getKlipyKey(): string {
-  return process.env.KLIPY_API_KEY || "";
+  return BAKED_KLIPY_KEY || process.env.KLIPY_API_KEY || "";
 }
 
 const LOCALE_RE = /^[a-z]{2}(_[A-Z]{2})?$/;
