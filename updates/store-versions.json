@@ -17,28 +17,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.12.1",
-    "tag": "desktop-v1.12.1",
+    "version": "1.12.2",
+    "tag": "desktop-v1.12.2-r1",
     "notes": {
       "fr": "• Anti-veille universel : plus de verrouillage ni d'écran éteint pendant la lecture (inhibiteur Wayland natif, fonctionne aussi sans hypridle — Hyprland/caelestia, sway…)\n• Volume système mémorisé : le volume réglé via le mélangeur du système est réappliqué à chaque média (plus de retour à 100 %)",
       "en": "• Universal keep-awake: no more locking or screen blanking during playback (native Wayland inhibitor, also works without any idle daemon — Hyprland/caelestia, sway…)\n• System volume memory: the volume set through the system mixer is re-applied for every media (no more jumping back to 100%)"
     },
     "assets": {
       "appimage": {
-        "name": "Tentacle.TV_1.12.1_amd64.AppImage",
-        "sha256": "d1dd09c9c97684225f778631eacc6b5c2478bb7ba11a9bc1153702457f28a7f5"
+        "name": "Tentacle.TV_1.12.2_amd64.AppImage",
+        "sha256": "b8ac0f36a989f550e6f8f10ddd643f4ad6eccec8cd70effa2ede976fda576890"
       },
       "deb": {
-        "name": "Tentacle.TV_1.12.1_amd64.deb",
-        "sha256": "a6635e28118a4ef96acb435e927e2322e5c814a422cbbaea77c8e8f3f2772969"
+        "name": "Tentacle.TV_1.12.2_amd64.deb",
+        "sha256": "4d3e2d5e2ad7d2a0e4ce9faa98a5e383525e831fcbf92953f2bf6315766bdfdb"
       },
       "rpm": {
-        "name": "Tentacle.TV-1.12.1-1.x86_64.rpm",
-        "sha256": "66a52e3d3c72f3ab5a8f957abe7597aff9a58375ef084d1d08559d4bf0d7baf9"
+        "name": "Tentacle.TV-1.12.2-1.x86_64.rpm",
+        "sha256": "2cd25b0af17eae3f9ef6880289287e110359c1eb8f5cfccf1646c76fccf9c4d2"
       },
       "pacman": {
-        "name": "tentacle-tv-1.12.1-1-x86_64.pkg.tar.zst",
-        "sha256": "77cdd127bb090f79583dbef4c8fd054ecabd6f135ae1ae5d18e8e41e1032180d"
+        "name": "tentacle-tv-1.12.2-1-x86_64.pkg.tar.zst",
+        "sha256": "6e51c2e06f041802ca229834ec2f752a188b092ac89b4b90df2f2e7b81341f5f"
       }
     }
   }
