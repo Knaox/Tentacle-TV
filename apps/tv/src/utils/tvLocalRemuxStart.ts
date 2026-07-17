@@ -12,7 +12,7 @@ import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 export interface RemuxStart { url: string; actualStartSec: number; gen: number }
 
 interface RemuxModule {
-  start?: (u: string, dyn: number, aud: number, startSec: number) =>
+  start?: (u: string, dyn: number, aud: number, startSec: number, audOrdinal: number, audLang: string) =>
     Promise<string | { url?: string; startSec?: number; gen?: number }>;
   cancel?: (gen: number) => void;
 }
@@ -80,9 +80,16 @@ export async function startLocalRemux(a: {
   const range = (vstream?.VideoRangeType ?? "").toUpperCase();
   const isDV = (vstream?.DvProfile ?? 0) > 0 || range.includes("DOVI") || range.includes("DOLBY");
   const dyn = isDV ? 3 : (range.includes("HDR") || range.includes("PQ") || range.includes("HLG")) ? 4 : 1;
+  // Hints de SECOURS pour le natif : si MediaStream.Index ne résout pas une piste
+  // AUDIO du fichier ouvert par FFmpeg (indexation divergente : pistes externes,
+  // état initial), il retombe sur le n-ième flux audio puis sur la langue — au
+  // lieu de la première piste du fichier en silence (mauvaise langue entendue).
+  const audios = a.streams.filter((s) => s.Type === "Audio");
+  const audioOrdinal = audios.findIndex((s) => s.Index === a.audioIndex);
+  const audioLang = audios.find((s) => s.Index === a.audioIndex)?.Language ?? "";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await TVRemux.start(a.rawUrl, dyn, a.audioIndex, Math.floor(a.startSeconds));
+      const res = await TVRemux.start(a.rawUrl, dyn, a.audioIndex, Math.floor(a.startSeconds), audioOrdinal, audioLang);
       if (a.isCancelled()) return null;
       if (typeof res === "string") {
         return res ? { url: res, actualStartSec: Math.floor(a.startSeconds), gen: 0 } : null;

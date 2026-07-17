@@ -25,6 +25,7 @@
 #import <libavutil/samplefmt.h>
 #import <os/log.h>
 #include <float.h>   // DBL_MAX (init de gTVMinFirstDts avant la 1ʳᵉ écriture)
+#include <strings.h> // strcasecmp (résolution de piste audio par langue, TVStreamMap)
 
 #define TVLOG(fmt, ...) os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__)
 #define TVLR_REORDER 8   // profondeur de réordonnancement B-frames couverte (HEVC grand public ≤ 4-8)
@@ -83,6 +84,10 @@ extern NSString     *gCurrentUrl;
 extern int    gTVDynRange;
 extern double gTVFps;
 extern volatile int gWantAudioIdx;  // index de piste audio (MediaStream.Index JS) à mapper ; -1 = 1ʳᵉ dispo
+// Hints de SECOURS si gWantAudioIdx ne résout pas un flux audio du fichier (indexation
+// Jellyfin ≠ FFmpeg : pistes externes, état initial) — cf. cascade de TVMapStreams.
+extern volatile int gWantAudioOrdinal;  // n-ième flux AUDIO voulu (0-based) ; -1 = inconnu
+extern char gWantAudioLang[8];          // langue ISO 639 voulue ("jpn"…) ; "" = inconnue
 extern volatile int    gWantStartSec; // position de reprise (s) demandée par JS
 extern volatile double gWrittenSec;   // position max ÉCRITE par le remux (s) → gate de reprise
 extern volatile long long gDiskBytes; // octets cumulés des segments (fenêtrage disque, TVWindow.m)
