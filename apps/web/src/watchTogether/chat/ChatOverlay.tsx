@@ -4,6 +4,7 @@ import { animate, AnimatePresence, motion, useDragControls, type MotionValue } f
 import type { WtChatApi } from "./useWtChat";
 import { ChatPanel } from "./ChatPanel";
 import { useWatchOverlayState } from "./chatUiStore";
+import { useChatPanelSize } from "./useChatPanelSize";
 
 /**
  * Watch Together — overlay flottant du chat : bulle réduite (badge non-lus)
@@ -88,6 +89,9 @@ export function ChatOverlay({
     if (dy) animate(dragY, dragY.get() + dy, { type: "spring", bounce: 0, duration: 0.3 });
   }, [dragX, dragY]);
 
+  // Taille du panneau desktop (poignée coin haut-gauche, persistée).
+  const { size, resizing, startResize } = useChatPanelSize(settleIntoViewport);
+
   useEffect(() => {
     if (open) {
       const raf = requestAnimationFrame(settleIntoViewport);
@@ -157,9 +161,20 @@ export function ChatOverlay({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 12 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="flex h-[420px] w-80 flex-col overflow-hidden rounded-2xl"
-            style={GLASS}
+            className={`relative flex flex-col overflow-hidden rounded-2xl ${resizing ? "select-none" : ""}`}
+            style={{ ...GLASS, width: size.w, height: size.h }}
           >
+            {/* Poignée de redimensionnement — coin haut-gauche (le panneau est
+                ancré bas-droite : tirer vers la gauche/le haut agrandit). */}
+            <div
+              onPointerDown={startResize}
+              className="absolute left-0 top-0 z-10 h-6 w-6 cursor-nwse-resize p-1.5 text-white/25 transition-colors hover:text-white/70"
+              aria-hidden
+            >
+              <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.3} className="h-full w-full">
+                <path strokeLinecap="round" d="M1 5 5 1M1 9 9 1" />
+              </svg>
+            </div>
             <ChatHeader
               title={t("chatTitle")}
               onClose={() => chat.setOpen(false)}
