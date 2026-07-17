@@ -27,14 +27,8 @@ interface ControlsCtx {
   showOverlay: () => void;
   handleSkipBack: () => void;
   handleSkipForward: () => void;
-  /** Tap court ⏪/⏩ (Android) : petit saut immédiat sans fantôme */
-  handleNudgeBack: () => void;
-  handleNudgeForward: () => void;
-  /** Avance/recul rapide au MAINTIEN : début (accélération) / fin (figé, OK confirme) */
-  buttonSeekStart: (dir: "forward" | "backward") => void;
-  buttonSeekStop: () => void;
-  /** Scrub initié par un bouton OSD maintenu → focus non verrouillé */
-  scrubViaButton: boolean;
+  /** Bouton ⏩ : appui simple → mode scrub (l'OSD se masque, plein écran) */
+  enterScrub: () => void;
   /** En mode scrub, OK sur un bouton valide le scrub au lieu d'agir */
   guardScrub: <T extends unknown[]>(fn: (...args: T) => void) => (...args: T) => void;
 }
@@ -134,7 +128,9 @@ export function TVPlayerView({
 
   // Le fond n'est focusable que quand l'OSD est CACHÉ (et aucun panneau) :
   // OK/direction sur le fond → showOverlay, puis le focus passe aux boutons.
-  const overlayShown = controls.overlayVisible || paused;
+  // En SCRUB, `paused` est vrai mais l'OSD est masqué : le fond DOIT reprendre
+  // le focus (←/→ → curseur fantôme, OK → confirmation globale).
+  const overlayShown = controls.overlayVisible || (paused && !controls.scrubbing);
   const panelOpen = showSettings || autoPlayActive || !!showEpisodes;
   const backgroundFocusable = !overlayShown && !panelOpen;
 
@@ -225,23 +221,9 @@ export function TVPlayerView({
         onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
         onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
         onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}
-        onRewind={() => { controls.buttonSeekStart("backward"); controls.showOverlay(); }}
-        onRewindEnd={() => controls.buttonSeekStop()}
-        onFastForward={() => { controls.buttonSeekStart("forward"); controls.showOverlay(); }}
-        onFastForwardEnd={() => controls.buttonSeekStop()}
-        // Android : le MAINTIEN passe par le canal natif tntCenterHold (les
-        // pressIn/Out JS y sont ignorés) — le press JS ne reste déclenché que
-        // par un TAP court : petit saut immédiat ; en scrub préparé, guardScrub
-        // CONFIRME le seek (OK sur ⏩/⏪ = « Lire ici », comme les autres boutons).
-        // tvOS garde pressIn/Out (maintien JS) : pas de onPress, sinon le
-        // relâchement d'un hold confirmerait le scrub (auto-confirm de facto).
-        onRewindTap={Platform.OS === "android"
-          ? controls.guardScrub(() => { controls.handleNudgeBack(); controls.showOverlay(); })
-          : undefined}
-        onFastForwardTap={Platform.OS === "android"
-          ? controls.guardScrub(() => { controls.handleNudgeForward(); controls.showOverlay(); })
-          : undefined}
-        scrubViaButton={controls.scrubViaButton}
+        // Bouton ⏩ unique : appui simple → mode scrub ; déjà en scrub →
+        // guardScrub transforme l'appui en CONFIRMATION du seek.
+        onScrub={controls.guardScrub(controls.enterScrub)}
         // SEUL handler OSD historiquement non gardé : en scrub, le focus peut être
         // resté sur Retour → OK déclenchait son onPress natif et QUITTAIT la vidéo.
         // guardScrub : pendant un scrub, OK = valider le seek, jamais l'action du bouton.
@@ -253,8 +235,8 @@ export function TVPlayerView({
         onEpisodes={item?.SeriesId && onToggleEpisodes ? controls.guardScrub(onToggleEpisodes) : undefined}
       />
       {/* Prévisualisation trickplay PLEIN ÉCRAN pendant le scrub (façon
-          Netflix) — couvre l'OSD, qui reste monté dessous (boutons FF/RW
-          tenus + verrou focus). Aucun focusable, pointerEvents none. */}
+          Netflix) — l'OSD est MASQUÉ pendant le scrub, le fond reprend le
+          focus. Aucun focusable, pointerEvents none. */}
       {controls.scrubbing && (
         <TVScrubFullscreen
           scrubPosition={controls.scrubPosition}
