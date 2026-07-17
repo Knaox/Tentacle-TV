@@ -69,6 +69,16 @@ static int TVMapStreams(AVFormatContext *ic, AVFormatContext *oc, int *smap, TVM
     smap[i] = -1;
     AVCodecParameters *p = ic->streams[i]->codecpar;
     if (p->codec_type == AVMEDIA_TYPE_VIDEO) {
+      // POCHETTE EMBARQUÉE (cover MJPEG « attached pic », fréquente dans les MKV
+      // d'anime) et flux vidéo surnuméraires : JAMAIS mappés. movenc exige des
+      // dimensions (la cover n'en a pas → write_header -22 « Invalid argument »,
+      // remux mort-né ×3 puis repli transcode silencieux) et AVPlayer ne lit
+      // qu'une seule vidéo de toute façon.
+      if ((ic->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC) || m->vInIdx >= 0) {
+        TVLOG("remux: skip video stream %u (attached_pic=%d, déjà une vidéo=%d)",
+              i, (int)!!(ic->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC), m->vInIdx >= 0);
+        continue;
+      }
     } else if (p->codec_type == AVMEDIA_TYPE_AUDIO && !audioTaken && (int)i == wantAud) {
       audioTaken = 1;   // piste validée (sélectionnée ou 1ʳᵉ) ; codecs non gérés → transcode EAC3
     } else continue;
