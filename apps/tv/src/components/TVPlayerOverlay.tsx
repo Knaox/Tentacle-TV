@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
-import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, FastForwardIcon } from "./icons/TVIcons";
+import { PlayIcon, PauseIcon, BackIcon, SkipForwardIcon, SkipBackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, ScrubIcon } from "./icons/TVIcons";
 import { SpeedPill } from "./player/SpeedPill";
 import { useOverlayFocus } from "./player/focus/useOverlayFocus";
 import { Colors } from "../theme/colors";
@@ -230,7 +230,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
               plein écran, ←/→ ou trackpad pour naviguer, OK valide, Back annule). */}
           <Focusable variant="button" phantomPressGuard ref={focus.registerButton("scrub")} onPress={onScrub} {...focus.buttonProps("scrub")}>
             <View style={{ padding: 10 }}>
-              <FastForwardIcon size={22} color={Colors.textPrimary} />
+              <ScrubIcon size={22} color={Colors.textPrimary} />
             </View>
           </Focusable>
 

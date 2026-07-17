@@ -172,6 +172,17 @@ export function RewindIcon({ size = S, color = C }: IconProps) {
   );
 }
 
+/** Mode scrub : triangles opposés autour du curseur — naviguer dans les deux sens. */
+export function ScrubIcon({ size = S, color = C }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <Rect x={11} y={5} width={2} height={14} rx={1} />
+      <Path d="M8 8l-5 4 5 4z" />
+      <Path d="M16 8l5 4-5 4z" />
+    </Svg>
+  );
+}
+
 export function NextTrackIcon({ size = S, color = C }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
