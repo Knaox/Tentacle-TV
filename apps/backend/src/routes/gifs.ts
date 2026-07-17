@@ -1,15 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../middleware/auth";
-import { getConfigValue } from "../services/configStore";
 
 /**
- * Proxy Tenor v2 — GIFs du chat Watch Together.
+ * Proxy Klipy — GIFs du chat Watch Together (mode compat Tenor : l'API Tenor
+ * a fermé le 30/06/2026 et Klipy en est le remplacement officiel drop-in —
+ * mêmes chemins /v2, mêmes paramètres, même format de réponse).
  *
- * La clé API reste côté serveur (config DB `tenor_api_key`, éditable depuis
- * l'admin ; repli variable d'env TENOR_API_KEY — même idiome que public_url).
- * Sans clé, l'API répond `{ configured: false }` et le client affiche un état
- * « non configuré » : rien ne casse. Réponses toujours en 200 (hors 400 de
- * validation) pour que le client distingue non-configuré / erreur / vide.
+ * Clé UNIQUE au niveau application : KLIPY_API_KEY, injectée dans l'image
+ * Docker par la CI (secret GitHub) — aucun réglage par serveur. En dev local,
+ * la variable d'env (.env) fait foi. Sans clé, l'API répond
+ * `{ configured: false }` et le client affiche un état « non disponible » :
+ * rien ne casse. Réponses toujours en 200 (hors 400 de validation) pour que
+ * le client distingue non-configuré / erreur / vide.
  */
 
 export interface GifDto {
@@ -23,19 +25,19 @@ export interface GifDto {
 export interface GifsResponse {
   configured: boolean;
   results: GifDto[];
-  /** Tenor injoignable / en erreur (distinct d'une recherche sans résultat). */
+  /** Klipy injoignable / en erreur (distinct d'une recherche sans résultat). */
   error?: boolean;
 }
 
-const TENOR_BASE = "https://tenor.googleapis.com/v2";
+const KLIPY_BASE = "https://api.klipy.com/v2";
 const GIF_LIMIT = 32;
 const QUERY_MAX_LENGTH = 100;
 const CACHE_TTL_MS = 5 * 60_000;
 const CACHE_MAX_ENTRIES = 200;
 
-/** Clé Tenor : config DB (admin) prioritaire, repli env. */
-function getTenorKey(): string {
-  return getConfigValue("tenor_api_key") || process.env.TENOR_API_KEY || "";
+/** Clé Klipy de l'application (injectée par la CI ; .env en dev). */
+function getKlipyKey(): string {
+  return process.env.KLIPY_API_KEY || "";
 }
 
 const LOCALE_RE = /^[a-z]{2}(_[A-Z]{2})?$/;
@@ -70,18 +72,18 @@ function cacheSet(key: string, data: GifsResponse): void {
   cache.set(key, { at: Date.now(), data });
 }
 
-interface TenorMediaFormat {
+interface KlipyMediaFormat {
   url?: string;
   dims?: number[];
 }
-interface TenorResult {
+interface KlipyResult {
   id?: string;
-  media_formats?: Record<string, TenorMediaFormat>;
+  media_formats?: Record<string, KlipyMediaFormat>;
 }
 
-/** Appel amont Tenor (search ou featured) → DTO slim, avec cache. */
-async function fetchTenor(kind: "search" | "featured", q: string, locale: string): Promise<GifsResponse> {
-  const key = getTenorKey();
+/** Appel amont Klipy (search ou featured) → DTO slim, avec cache. */
+async function fetchKlipy(kind: "search" | "featured", q: string, locale: string): Promise<GifsResponse> {
+  const key = getKlipyKey();
   if (!key) return { configured: false, results: [] };
 
   const cacheKey = `${kind}:${locale}:${q}`;
@@ -99,12 +101,12 @@ async function fetchTenor(kind: "search" | "featured", q: string, locale: string
   if (kind === "search") params.set("q", q);
 
   try {
-    const res = await fetch(`${TENOR_BASE}/${kind}?${params.toString()}`, {
+    const res = await fetch(`${KLIPY_BASE}/${kind}?${params.toString()}`, {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return { configured: true, results: [], error: true };
 
-    const data = (await res.json()) as { results?: TenorResult[] };
+    const data = (await res.json()) as { results?: KlipyResult[] };
     const results: GifDto[] = [];
     for (const r of data.results ?? []) {
       const tiny = r.media_formats?.tinygif;
@@ -130,16 +132,16 @@ export async function gifRoutes(app: FastifyInstance) {
   /** GET /api/gifs/featured?locale= — tendances (grille remplie sans recherche). */
   app.get("/featured", async (request) => {
     const { locale } = request.query as { locale?: string };
-    return fetchTenor("featured", "", normalizeLocale(locale));
+    return fetchKlipy("featured", "", normalizeLocale(locale));
   });
 
-  /** GET /api/gifs/search?q=&locale= — recherche plein texte Tenor. */
+  /** GET /api/gifs/search?q=&locale= — recherche plein texte Klipy. */
   app.get("/search", async (request, reply) => {
     const { q, locale } = request.query as { q?: string; locale?: string };
     const query = typeof q === "string" ? q.trim() : "";
     if (!query || query.length > QUERY_MAX_LENGTH) {
       return reply.status(400).send({ message: "invalid q" });
     }
-    return fetchTenor("search", query, normalizeLocale(locale));
+    return fetchKlipy("search", query, normalizeLocale(locale));
   });
 }

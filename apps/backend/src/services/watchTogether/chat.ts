@@ -66,7 +66,7 @@ export function handleReaction(room: Room, user: JellyfinUser, emoji: string): v
 
 /** GIF éphémère : rate limit dédié (plus strict que l'emoji — un GIF est
  *  visuellement lourd), diffusion. Transient, jamais stocké. L'URL a déjà été
- *  validée par parseWtClientMessage (https + allowlist d'hôtes Tenor). */
+ *  validée par parseWtClientMessage (https + allowlist d'hôtes Klipy). */
 export function handleGif(
   room: Room,
   user: JellyfinUser,

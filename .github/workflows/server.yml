@@ -57,6 +57,10 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
+          # Clé Klipy niveau application (GIFs du chat WT) — secret facultatif :
+          # absent, les GIFs sont simplement désactivés dans l'image produite.
+          build-args: |
+            KLIPY_API_KEY=${{ secrets.KLIPY_API_KEY }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true

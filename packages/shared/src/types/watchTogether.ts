@@ -51,7 +51,7 @@ export const WT_MIN_REACTION_INTERVAL_MS = 120;
 export const WT_REACTION_MAX_LENGTH = 16;
 /** GIF : intervalle minimal entre deux envois d'un membre (plus lourd qu'un emoji). */
 export const WT_MIN_GIF_INTERVAL_MS = 1_500;
-/** GIF : longueur max de l'URL broadcastée (un tinygif Tenor fait ~60-90 caractères). */
+/** GIF : longueur max de l'URL broadcastée (une URL tinygif Klipy reste courte). */
 export const WT_GIF_URL_MAX_LENGTH = 512;
 
 // ── DTOs ──
@@ -147,7 +147,7 @@ export type WtClientMessage =
   | { type: "wt:chat"; text: string }
   /** Réaction emoji éphémère (non stockée côté serveur). */
   | { type: "wt:reaction"; emoji: string }
-  /** GIF éphémère (URL tinygif Tenor, allowlist d'hôtes côté serveur — jamais stocké). */
+  /** GIF éphémère (URL tinygif Klipy, allowlist d'hôtes côté serveur — jamais stocké). */
   | { type: "wt:gif"; url: string; w?: number; h?: number };
 
 // ── Messages serveur → clients ──

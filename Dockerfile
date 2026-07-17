@@ -67,6 +67,12 @@ COPY --from=base /app/versions.json ./versions.json
 COPY apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh
 RUN chmod +x ./apps/backend/docker-entrypoint.sh
 
+# Clé Klipy des GIFs du chat Watch Together — clé UNIQUE au niveau application,
+# injectée au build par la CI (secret GitHub KLIPY_API_KEY). Vide = les GIFs
+# sont proprement désactivés (état « non disponible » côté client).
+ARG KLIPY_API_KEY=""
+ENV KLIPY_API_KEY=${KLIPY_API_KEY}
+
 EXPOSE 3000
 
 WORKDIR /app/apps/backend

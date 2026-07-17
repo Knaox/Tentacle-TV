@@ -34,7 +34,7 @@ export const WT_MIN_REACTION_INTERVAL_MS = 120;
 export const WT_REACTION_MAX_LENGTH = 16;
 /** GIF : intervalle minimal entre deux envois d'un membre (plus lourd qu'un emoji). */
 export const WT_MIN_GIF_INTERVAL_MS = 1_500;
-/** GIF : longueur max de l'URL broadcastée (un tinygif Tenor fait ~60-90 caractères). */
+/** GIF : longueur max de l'URL broadcastée (une URL tinygif Klipy reste courte). */
 export const WT_GIF_URL_MAX_LENGTH = 512;
 
 // ── DTOs ──
@@ -154,18 +154,22 @@ export function clampTicks(n: unknown): number {
 
 const SET_ITEM_REASONS: readonly string[] = ["manual", "nextEp", "prevEp", "autonext"];
 
-/** Hôtes autorisés pour les GIFs (CDN Tenor uniquement — anti-injection d'URL :
- *  l'URL broadcastée est chargée en <img> par TOUS les membres du groupe). */
-const WT_GIF_ALLOWED_HOSTS = new Set(["media.tenor.com", "c.tenor.com"]);
+/** Hôte autorisé pour les GIFs : le CDN Klipy uniquement (anti-injection
+ *  d'URL — l'URL broadcastée est chargée en <img> par TOUS les membres).
+ *  Suffixe strict `.klipy.com` : couvre les sous-domaines média variables
+ *  (media./static./cdn.…) sans accepter `evilklipy.com`. */
+function isAllowedGifHost(hostname: string): boolean {
+  return hostname === "klipy.com" || hostname.endsWith(".klipy.com");
+}
 
-/** URL de GIF sûre : https, hôte Tenor en correspondance EXACTE, longueur bornée.
- *  `new URL` neutralise les contournements (`media.tenor.com@evil.com`,
- *  `media.tenor.com.evil.com`, protocoles data:/javascript:). */
+/** URL de GIF sûre : https, hôte Klipy, longueur bornée. `new URL` neutralise
+ *  les contournements (`static.klipy.com@evil.com` → hostname evil.com,
+ *  `static.klipy.com.evil.com` → suffixe non satisfait, data:/javascript:). */
 export function isAllowedGifUrl(raw: string): boolean {
   if (raw.length > WT_GIF_URL_MAX_LENGTH) return false;
   try {
     const u = new URL(raw);
-    return u.protocol === "https:" && WT_GIF_ALLOWED_HOSTS.has(u.hostname);
+    return u.protocol === "https:" && isAllowedGifHost(u.hostname);
   } catch {
     return false;
   }

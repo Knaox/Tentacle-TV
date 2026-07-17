@@ -5,7 +5,7 @@ import { getBackendBase } from "../../../lib/backendBase";
 
 /**
  * Watch Together — recherche de GIFs via le proxy backend `/api/gifs`
- * (clé Tenor côté serveur uniquement). Requête vide → tendances (featured),
+ * (clé Klipy côté serveur uniquement). Requête vide → tendances (featured),
  * sinon recherche plein texte. Pattern fetch identique à useTmdbTrailers.
  */
 
@@ -20,7 +20,7 @@ export interface GifItem {
 export interface GifsPayload {
   configured: boolean;
   results: GifItem[];
-  /** Tenor en erreur/injoignable (distinct d'une recherche sans résultat). */
+  /** Klipy en erreur/injoignable (distinct d'une recherche sans résultat). */
   error?: boolean;
 }
 
@@ -28,7 +28,7 @@ function getToken(): string {
   return localStorage.getItem("tentacle_token") ?? "";
 }
 
-/** Valeur debouncée — évite une requête Tenor à chaque frappe. */
+/** Valeur debouncée — évite une requête Klipy à chaque frappe. */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
