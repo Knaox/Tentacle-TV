@@ -32,6 +32,7 @@ import { pairRoutes } from "./routes/pair";
 import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
 import { trailerRoutes } from "./routes/trailers";
+import { gifRoutes } from "./routes/gifs";
 import { themeRoutes } from "./routes/theme";
 import { wsRoutes } from "./routes/ws";
 import { watchTogetherRoutes } from "./routes/watchTogether";
@@ -44,6 +45,7 @@ import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
+import { registerBodyParsers } from "./services/bodyParsers";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -141,33 +143,8 @@ async function main() {
     });
   });
 
-  // Override default JSON parser to tolerate empty bodies (fixes DELETE with Content-Type: application/json)
-  app.removeContentTypeParser("application/json");
-  app.addContentTypeParser(
-    "application/json",
-    { parseAs: "string" },
-    (_req, body, done) => {
-      const str = typeof body === "string" ? body : "";
-      if (!str.trim()) { done(null, undefined); return; }
-      try { done(null, JSON.parse(str)); } catch (err) { done(err as Error, undefined); }
-    }
-  );
-
-  // Content type parser for raw binary (proxied bodies)
-  app.addContentTypeParser(
-    "application/octet-stream",
-    { parseAs: "buffer" },
-    (_req, body, done) => done(null, body)
-  );
-
-  // Images proxied to Jellyfin (avatar upload: POST Users/{id}/Images/Primary
-  // envoie le fichier en BASE64 texte avec Content-Type image/*) — sans parser,
-  // Fastify répondrait 415 avant même d'atteindre le proxy.
-  app.addContentTypeParser(
-    /^image\/.*/,
-    { parseAs: "string", bodyLimit: 20 * 1024 * 1024 },
-    (_req, body, done) => done(null, body)
-  );
+  // Parsers de corps custom (JSON tolérant, binaire brut, image/*) — voir services/bodyParsers.ts
+  registerBodyParsers(app);
 
   // ── Setup routes (always available) ──
   await app.register(setupRoutes, { prefix: "/api/setup" });
@@ -226,6 +203,7 @@ async function main() {
   await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
   await app.register(trailerRoutes, { prefix: "/api/trailers" });
+  await app.register(gifRoutes, { prefix: "/api/gifs" });
   await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });

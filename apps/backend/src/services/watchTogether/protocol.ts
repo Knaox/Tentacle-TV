@@ -26,11 +26,16 @@ export const WT_MAX_POSITION_TICKS = 1_000_000_000_000;
 export const WT_CHAT_MAX_LENGTH = 500;
 /** Chat : fil conservé en mémoire par room (renvoyé au join/resync). */
 export const WT_CHAT_HISTORY_SIZE = 50;
-/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre. */
+/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre.
+ *  Réactions volontairement permissives (~8/s) : le spam d'emojis est un usage voulu. */
 export const WT_MIN_CHAT_INTERVAL_MS = 400;
-export const WT_MIN_REACTION_INTERVAL_MS = 250;
+export const WT_MIN_REACTION_INTERVAL_MS = 120;
 /** Réaction : longueur max (un emoji composé ZWJ tient en ≤ 16 unités UTF-16). */
 export const WT_REACTION_MAX_LENGTH = 16;
+/** GIF : intervalle minimal entre deux envois d'un membre (plus lourd qu'un emoji). */
+export const WT_MIN_GIF_INTERVAL_MS = 1_500;
+/** GIF : longueur max de l'URL broadcastée (un tinygif Tenor fait ~60-90 caractères). */
+export const WT_GIF_URL_MAX_LENGTH = 512;
 
 // ── DTOs ──
 
@@ -104,7 +109,8 @@ export type WtClientMessage =
   | { type: "wt:goodbye" }
   | { type: "wt:syncRequest" }
   | { type: "wt:chat"; text: string }
-  | { type: "wt:reaction"; emoji: string };
+  | { type: "wt:reaction"; emoji: string }
+  | { type: "wt:gif"; url: string; w?: number; h?: number };
 
 // ── Messages serveur → clients ──
 
@@ -126,6 +132,7 @@ export type WtServerMessage =
   | { type: "wt:error"; code: WtErrorCode; message?: string }
   | { type: "wt:chat"; message: WtChatMessageDto }
   | { type: "wt:reaction"; userId: string; username: string; emoji: string; at: number }
+  | { type: "wt:gif"; userId: string; username: string; url: string; w?: number; h?: number; at: number }
   | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] };
 
 // ── Helpers ──
@@ -146,6 +153,30 @@ export function clampTicks(n: unknown): number {
 }
 
 const SET_ITEM_REASONS: readonly string[] = ["manual", "nextEp", "prevEp", "autonext"];
+
+/** Hôtes autorisés pour les GIFs (CDN Tenor uniquement — anti-injection d'URL :
+ *  l'URL broadcastée est chargée en <img> par TOUS les membres du groupe). */
+const WT_GIF_ALLOWED_HOSTS = new Set(["media.tenor.com", "c.tenor.com"]);
+
+/** URL de GIF sûre : https, hôte Tenor en correspondance EXACTE, longueur bornée.
+ *  `new URL` neutralise les contournements (`media.tenor.com@evil.com`,
+ *  `media.tenor.com.evil.com`, protocoles data:/javascript:). */
+export function isAllowedGifUrl(raw: string): boolean {
+  if (raw.length > WT_GIF_URL_MAX_LENGTH) return false;
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:" && WT_GIF_ALLOWED_HOSTS.has(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** Dimension décorative (aspect-ratio UI) : nombre fini positif clampé, sinon absente. */
+function gifDim(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) && v > 0
+    ? Math.min(Math.round(v), 1024)
+    : undefined;
+}
 
 /** Validation de forme des messages entrants (payloads non fiables). */
 export function parseWtClientMessage(msg: { type: string } & Record<string, unknown>): WtClientMessage | null {
@@ -205,6 +236,12 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
       const emoji = msg.emoji.trim();
       if (!emoji || emoji.length > WT_REACTION_MAX_LENGTH) return null;
       return { type: "wt:reaction", emoji };
+    }
+    case "wt:gif": {
+      if (typeof msg.url !== "string") return null;
+      const url = msg.url.trim();
+      if (!isAllowedGifUrl(url)) return null;
+      return { type: "wt:gif", url, w: gifDim(msg.w), h: gifDim(msg.h) };
     }
     default:
       return null;

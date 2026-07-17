@@ -46,9 +46,10 @@ export interface Room {
   chat: WtChatMessageDto[];
   /** Compteur monotone d'ids de messages (`groupId:seq`). */
   chatSeq: number;
-  /** Anti-spam chat/réactions : dernier envoi accepté par membre. */
+  /** Anti-spam chat/réactions/GIFs : dernier envoi accepté par membre. */
   lastChatAt: Map<string, number>;
   lastReactionAt: Map<string, number>;
+  lastGifAt: Map<string, number>;
   createdAt: number;
 }
 
@@ -126,6 +127,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     chatSeq: 0,
     lastChatAt: new Map(),
     lastReactionAt: new Map(),
+    lastGifAt: new Map(),
     createdAt: now,
   };
   rooms.set(room.groupId, room);
@@ -166,6 +168,7 @@ export function removeMember(userId: string): RemovalResult | null {
   room.lastSeekAt.delete(userId);
   room.lastChatAt.delete(userId);
   room.lastReactionAt.delete(userId);
+  room.lastGifAt.delete(userId);
   memberIndex.delete(userId);
 
   if (room.members.size === 0) {

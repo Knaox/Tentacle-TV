@@ -4,6 +4,7 @@ import type { Room } from "./roomStore";
 import {
   WT_CHAT_HISTORY_SIZE,
   WT_MIN_CHAT_INTERVAL_MS,
+  WT_MIN_GIF_INTERVAL_MS,
   WT_MIN_REACTION_INTERVAL_MS,
   type WtChatMessageDto,
 } from "./protocol";
@@ -59,6 +60,30 @@ export function handleReaction(room: Room, user: JellyfinUser, emoji: string): v
     userId: user.userId,
     username: user.username,
     emoji,
+    at: now,
+  });
+}
+
+/** GIF éphémère : rate limit dédié (plus strict que l'emoji — un GIF est
+ *  visuellement lourd), diffusion. Transient, jamais stocké. L'URL a déjà été
+ *  validée par parseWtClientMessage (https + allowlist d'hôtes Tenor). */
+export function handleGif(
+  room: Room,
+  user: JellyfinUser,
+  gif: { url: string; w?: number; h?: number },
+): void {
+  const now = Date.now();
+  const last = room.lastGifAt.get(user.userId) ?? 0;
+  if (now - last < WT_MIN_GIF_INTERVAL_MS) return;
+  room.lastGifAt.set(user.userId, now);
+
+  broadcastToMembers(room, {
+    type: "wt:gif",
+    userId: user.userId,
+    username: user.username,
+    url: gif.url,
+    w: gif.w,
+    h: gif.h,
     at: now,
   });
 }

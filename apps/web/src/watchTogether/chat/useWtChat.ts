@@ -16,13 +16,23 @@ import {
 
 /** Durée d'affichage d'une réaction flottante (animation ReactionLayer). */
 export const WT_REACTION_TTL_MS = 2_600;
+/** Durée d'affichage d'un GIF flottant (contenu à regarder → plus long). */
+export const WT_GIF_TTL_MS = 4_200;
 /** Durée d'affichage d'un aperçu de message reçu panneau fermé. */
 export const WT_CHAT_TOAST_TTL_MS = 5_000;
+
+/** GIF envoyable (URL tinygif issue du proxy /api/gifs). */
+export interface WtGifPayload {
+  url: string;
+  w?: number;
+  h?: number;
+}
 
 export interface WtChatApi {
   state: WtChatState;
   sendChat: (text: string) => void;
   sendReaction: (emoji: string) => void;
+  sendGif: (gif: WtGifPayload) => void;
   setOpen: (open: boolean) => void;
 }
 
@@ -77,6 +87,18 @@ export function useWtChat(): WtChatApi {
           scheduleExpiry({ type: "reaction_expire", key }, WT_REACTION_TTL_MS);
           break;
         }
+        case "wt:gif": {
+          const key = `${msg.userId}:${msg.at}:g${seqRef.current++}`;
+          dispatch({
+            type: "reaction_add",
+            reaction: {
+              key, userId: msg.userId, username: msg.username,
+              gif: { url: msg.url, w: msg.w, h: msg.h },
+            },
+          });
+          scheduleExpiry({ type: "reaction_expire", key }, WT_GIF_TTL_MS);
+          break;
+        }
       }
     });
     const timers = timersRef.current;
@@ -103,9 +125,13 @@ export function useWtChat(): WtChatApi {
     send({ type: "wt:reaction", emoji });
   }, [send]);
 
+  const sendGif = useCallback((gif: WtGifPayload) => {
+    send({ type: "wt:gif", url: gif.url, w: gif.w, h: gif.h });
+  }, [send]);
+
   const setOpen = useCallback((open: boolean) => {
     dispatch({ type: "set_open", open });
   }, []);
 
-  return { state, sendChat, sendReaction, setOpen };
+  return { state, sendChat, sendReaction, sendGif, setOpen };
 }
