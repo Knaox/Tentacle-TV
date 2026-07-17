@@ -11,6 +11,16 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.6.0]
+### FR
+- Watch Together : GIFs dans le chat de groupe — tendances et recherche (propulsées par KLIPY), envoi en un clic, animation à l'écran chez tous les membres. Aucune configuration : la clé est intégrée à l'application.
+- Watch Together : réactions emoji plus fluides en rafale (limite anti-spam serveur assouplie) et nouveau canal temps réel dédié aux GIFs
+- Sécurité : les URLs de GIFs partagées sont validées côté serveur (domaines KLIPY uniquement, HTTPS)
+### EN
+- Watch Together: GIFs in the group chat — trending and search (powered by KLIPY), one-click send, animated on screen for every member. Zero configuration: the key ships with the application.
+- Watch Together: smoother rapid-fire emoji reactions (relaxed server anti-spam limit) and a new dedicated realtime channel for GIFs
+- Security: shared GIF URLs are validated server-side (KLIPY domains only, HTTPS)
+
 ## [1.5.6]
 ### FR
 - Notifications d'ajout : fini le doublon quand une saison arrive épisode par épisode — une seule notification « Série — Saison N » est envoyée par ajout, même si Jellyfin importe les épisodes en plusieurs vagues.
