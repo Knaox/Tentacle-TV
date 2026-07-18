@@ -66,8 +66,16 @@ pub unsafe fn create_gl_surface(ns_window: *mut c_void) -> Result<GlSurface, Str
     ];
     let gl_view: *mut AnyObject = msg_send![gl_view, initWithFrame: frame, pixelFormat: pixel_format];
     if gl_view.is_null() {
+        // La vue n'a pas pu retenir le format : on relache notre +1 avant de sortir.
+        let _: () = msg_send![pixel_format, release];
         return Err("Failed to create NSOpenGLView".to_string());
     }
+
+    // La NSOpenGLView retient desormais le pixel format. Sans ce `release`, le
+    // +1 de `alloc`/`initWithAttributes:` n'est jamais rendu et le
+    // NSOpenGLPixelFormat fuit a CHAQUE session de lecture — donc a chaque
+    // changement d'episode, puisque le lecteur est remonte par `key={itemId}`.
+    let _: () = msg_send![pixel_format, release];
 
     // Enable Retina (wantsBestResolutionOpenGLSurface)
     let _: () = msg_send![gl_view, setWantsBestResolutionOpenGLSurface: Bool::YES];
