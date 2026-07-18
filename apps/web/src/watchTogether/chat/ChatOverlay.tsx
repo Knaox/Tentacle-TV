@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
 import type { WtChatApi } from "./useWtChat";
 import { ChatPanel } from "./ChatPanel";
-import { useWatchOverlayState } from "./chatUiStore";
+import { reportChatActivity, useWatchOverlayState } from "./chatUiStore";
 import { useChatPanelSize } from "./useChatPanelSize";
 import { useChatActivity } from "./useChatActivity";
 
@@ -67,12 +67,13 @@ export function ChatOverlay({
   // (onDragStart ne se déclenche qu'au-delà du seuil de mouvement ~3 px).
   const wasDraggedRef = useRef(false);
 
-  // Page player : bulle ET panneau suivent le fondu de l'overlay des
-  // contrôles (les aperçus MessageToastLayer restent visibles, eux) — SAUF
-  // pendant une interaction avec le chat : saisie, survol, clics émoji,
-  // scroll GIFs, redimensionnement (useChatActivity + resizing). Le chat est
-  // dans un portail hors du conteneur vidéo : ses événements ne réarment pas
-  // le timer des contrôles, le garde doit donc EMPÊCHER le masquage.
+  // Page player : bulle ET panneau suivent STRICTEMENT le fondu de l'overlay
+  // des contrôles (les aperçus MessageToastLayer restent visibles, eux). Une
+  // interaction avec le chat (saisie, survol, clics émoji, scroll GIFs,
+  // resize) ne rend pas le chat indépendant : elle est PUBLIÉE au lecteur
+  // (reportChatActivity), dont le timer d'auto-masquage s'abstient de cacher
+  // les contrôles tant qu'elle dure — chat et contrôles restent visibles et
+  // s'estompent toujours ENSEMBLE.
   const [inputFocused, setInputFocused] = useState(false);
   const activity = useChatActivity();
 
@@ -96,8 +97,13 @@ export function ChatOverlay({
   // Taille du panneau desktop (poignée coin haut-gauche, persistée).
   const { size, resizing, startResize } = useChatPanelSize(settleIntoViewport);
 
-  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible
-    && !inputFocused && !activity.active && !resizing;
+  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible;
+
+  const chatBusy = activity.active || inputFocused || resizing;
+  useEffect(() => {
+    reportChatActivity(chatBusy);
+  }, [chatBusy]);
+  useEffect(() => () => reportChatActivity(false), []);
 
   useEffect(() => {
     if (open) {
