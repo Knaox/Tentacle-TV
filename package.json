@@ -23,7 +23,8 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:rebuild": "docker compose up -d --build",
-    "docker:reset": "docker compose down -v && docker compose up -d --build"
+    "docker:reset": "docker compose down -v && docker compose up -d --build",
+    "emu:tv": "powershell -ExecutionPolicy Bypass -File scripts/tv-emulator.ps1"
   },
   "engines": {
     "node": ">=20.0.0",
