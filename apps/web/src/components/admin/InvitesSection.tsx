@@ -81,7 +81,7 @@ export function InvitesSection({ id }: Props) {
               className={cls.inp} />
           </div>
           <button onClick={createInvite} disabled={creating}
-            className={`${cls.bp} w-full xs:w-auto`} style={cls.bpStyle}>
+            className={`${cls.bp} w-full xs:w-auto`}>
             {creating ? "..." : t("generate")}
           </button>
         </div>

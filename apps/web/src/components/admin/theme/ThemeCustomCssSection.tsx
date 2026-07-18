@@ -135,7 +135,7 @@ export function ThemeCustomCssSection({ state }: ThemeCustomCssSectionProps) {
           onClick={() => applyMutation.mutate()}
           disabled={busy}
           className={cls.bp}
-          style={cls.bpStyle}
+         
         >
           {applyMutation.isPending ? t("saving") : t("customCssApply")}
         </button>

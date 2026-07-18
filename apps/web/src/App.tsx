@@ -31,7 +31,8 @@ const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ defa
 const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
 
 const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
-const Admin = lazy(() => import("./pages/Admin").then((m) => ({ default: m.Admin })));
+const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
+const AdminInvites = lazy(() => import("./pages/AdminInvites").then((m) => ({ default: m.AdminInvites })));
 const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
 const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
@@ -220,32 +221,39 @@ export function App() {
             <Route path="settings" element={<Preferences />} />
             <Route path="profile" element={<MobileProfile />} />
             <Route path="pair-device" element={<PairDevice />} />
-            <Route path="admin" element={<Admin />} />
-            <Route path="admin/users" element={<AdminUsers />} />
-            <Route path="admin/tickets" element={<AdminTicketsPage />} />
-            <Route path="admin/services" element={<AdminServicesPage />} />
-            <Route path="admin/plugins" element={<AdminPlugins />} />
-            <Route path="admin/theme" element={<AdminTheme />} />
-            <Route path="admin/theme/tokens" element={<AdminThemeTokens />} />
-            <Route path="admin/theme/reference" element={<AdminThemeReference />} />
+            {/* Admin en maitre-detail : route PARENTE avec rail de sections.
+                Les URLs restent identiques a l'avant (`/admin/users`,
+                `/admin/theme/tokens`, `/admin/plugins/<id>`), elles deviennent
+                simplement des enfants — aucun lien profond ne casse. */}
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={null} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="invites" element={<AdminInvites />} />
+              <Route path="tickets" element={<AdminTicketsPage />} />
+              <Route path="services" element={<AdminServicesPage />} />
+              <Route path="plugins" element={<AdminPlugins />} />
+              <Route path="theme" element={<AdminTheme />} />
+              <Route path="theme/tokens" element={<AdminThemeTokens />} />
+              <Route path="theme/reference" element={<AdminThemeReference />} />
 
-            {/* Dynamic plugin admin routes (sandboxed iframes) — convention: /admin/plugins/:pluginId */}
-            {activePluginsMeta
-              .filter((plugin) => plugin.hasBundle)
-              .map((plugin) => (
-                <Route
-                  key={`admin-${plugin.pluginId}`}
-                  path={`admin/plugins/${plugin.pluginId}`}
-                  element={
-                    <PluginIframe
-                      pluginId={plugin.pluginId}
-                      bundleUrl={`${backendUrl}/api/plugins/${plugin.pluginId}/bundle?v=${plugin.version}`}
-                      pluginPath={`/admin/plugins/${plugin.pluginId}`}
-                    />
-                  }
-                />
-              ))
-            }
+              {/* Dynamic plugin admin routes (sandboxed iframes) — convention: /admin/plugins/:pluginId */}
+              {activePluginsMeta
+                .filter((plugin) => plugin.hasBundle)
+                .map((plugin) => (
+                  <Route
+                    key={`admin-${plugin.pluginId}`}
+                    path={`plugins/${plugin.pluginId}`}
+                    element={
+                      <PluginIframe
+                        pluginId={plugin.pluginId}
+                        bundleUrl={`${backendUrl}/api/plugins/${plugin.pluginId}/bundle?v=${plugin.version}`}
+                        pluginPath={`/admin/plugins/${plugin.pluginId}`}
+                      />
+                    }
+                  />
+                ))
+              }
+            </Route>
             <Route path="about" element={<About />} />
             <Route path="credits" element={<Credits />} />
 

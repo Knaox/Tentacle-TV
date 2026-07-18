@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { backendUrl, isTauriApp } from "../main";
 
 export const BACKEND = backendUrl;
@@ -16,9 +15,14 @@ export const creds = (): RequestCredentials | undefined =>
 
 /**
  * Tokens visuels admin alignés sur le MASTER design-system.
- * - CTA Netflix : pill blanc + halo violet signature (bp + bpStyle inline)
+ * - CTA : pill sobre, un SEUL style de bouton primaire dans toute l'admin
  * - Buttons height 44 (h-11), touch target ≥ 44pt garanti
  * - Tokens-only : aucune valeur hex hardcodée (var(--brand), var(--status-*))
+ *
+ * Le halo violet (`bpStyle`) a été retiré : c'était la signature la plus datée
+ * de l'écran, et il était par ailleurs recopié à l'identique dans une douzaine
+ * de fichiers. L'élévation est désormais portée par la bordure fine et l'état
+ * de survol, pas par une lueur colorée.
  */
 export const cls = {
   // Card layouts (radius 12, border subtle, surface fill-faint)
@@ -29,9 +33,9 @@ export const cls = {
   inp: "w-full h-11 rounded-lg bg-fill-subtle border border-line-subtle px-3 text-sm text-content-primary outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 placeholder:text-content-quaternary",
   lbl: "mb-1 block text-xs font-medium text-content-tertiary",
 
-  // CTA primary (Netflix — white pill + halo violet via bpStyle inline)
-  bp: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition-all hover:bg-cta-primary-bg-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
-  bpStyle: { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" } as CSSProperties,
+  // CTA primary — liseré + survol, sans halo. En clair, `--cta-primary-border`
+  // détache le bouton blanc du fond nacré ; en sombre il vaut `transparent`.
+  bp: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition-all hover:bg-cta-primary-bg-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
 
   // CTA secondary (gris translucide)
   bs: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-fill-soft border border-line-subtle text-content-primary text-sm font-semibold transition hover:bg-fill-medium disabled:opacity-50 disabled:cursor-not-allowed",

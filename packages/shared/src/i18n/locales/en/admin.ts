@@ -1,5 +1,8 @@
 export default {
   title: "Administration",
+  // Short label for the section rail — `existingInvites` is too long to fit.
+  invitesTitle: "Invitations",
+  overviewDescription: "Select a section to configure it.",
   services: "Services",
   statusConnected: "Connected",
   statusError: "Error",

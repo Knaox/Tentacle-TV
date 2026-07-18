@@ -194,7 +194,7 @@ export function ProvisioningCodeSection() {
           {state.enabled ? (
             <button onClick={() => apply(false)} disabled={busy || readOnly} className={cls.bd}>{t("provisioningDisable")}</button>
           ) : (
-            <button onClick={() => apply(true)} disabled={busy || readOnly} className={cls.bp} style={cls.bpStyle}>{t("provisioningEnable")}</button>
+            <button onClick={() => apply(true)} disabled={busy || readOnly} className={cls.bp}>{t("provisioningEnable")}</button>
           )}
           {msg && (
             <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>

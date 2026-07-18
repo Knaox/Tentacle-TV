@@ -157,7 +157,7 @@ export function DirectStreamingSection() {
           <button onClick={testUrls} disabled={testing || (!publicUrl.trim() && !privateUrl.trim())} className={cls.bs}>
             {testing ? `${t("admin:test")}...` : t("admin:test")}
           </button>
-          <button onClick={save} disabled={busy} className={cls.bp} style={cls.bpStyle}>
+          <button onClick={save} disabled={busy} className={cls.bp}>
             {busy ? "..." : t("admin:save")}
           </button>
           {msg && <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>}
