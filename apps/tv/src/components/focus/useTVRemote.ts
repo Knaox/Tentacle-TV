@@ -99,18 +99,32 @@ export function useTVRemote(options: TVRemoteOptions) {
     // haut) — on l'ignore ici quel que soit son action.
     if (Platform.OS === "android" && (eventType === "menu" || eventType === "back")) return;
 
+    // longLeft/longRight : action=0 = DÉBUT du maintien (→ avance rapide).
+    // TOUTE autre valeur — 1 (Ended) ou undefined (recognizer tvOS en état
+    // Cancelled/Failed/Changed : eventKeyAction est nil) — signifie que
+    // l'appui n'est PLUS actif : traiter en RELÂCHEMENT, et ne JAMAIS
+    // retomber dans le switch. Sans ça, un long-press ANNULÉ par tvOS ne
+    // stoppait jamais le tick d'avance (avance rapide infinie) et pouvait
+    // même la relancer après le lever du doigt.
+    if (eventType === "longLeft" || eventType === "longRight") {
+      if (eventKeyAction === 0) {
+        if (eventType === "longLeft") o.onLongLeft?.();
+        else o.onLongRight?.();
+      } else {
+        o.onKeyUp?.(eventType);
+      }
+      return;
+    }
+
     // Key-down (a=0, y compris répétitions de maintien) : agir, et mémoriser
     // que ce type a été traité au down — son key-up jumeau ne ré-agira pas.
     if (eventKeyAction === 0) {
       sawDownRef.current.add(eventType);
-      // longLeft/longRight : cases dédiées plus bas (déclenchées au down).
     }
 
     // Key-up: notify for hold release detection
     if (eventKeyAction === 1) {
       o.onKeyUp?.(eventType);
-      // longLeft/longRight already fired on key-down (action=0) — don't re-trigger
-      if (eventType === "longLeft" || eventType === "longRight") return;
       // Action déjà exécutée au key-down correspondant → ne pas doubler.
       if (sawDownRef.current.has(eventType)) {
         sawDownRef.current.delete(eventType);
@@ -150,12 +164,6 @@ export function useTVRemote(options: TVRemoteOptions) {
       case "down":
         o.onDown?.();
         o.onAnyPress?.();
-        break;
-      case "longLeft":
-        o.onLongLeft?.();
-        break;
-      case "longRight":
-        o.onLongRight?.();
         break;
       case "rewind":
         o.onRewind?.();

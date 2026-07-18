@@ -97,7 +97,10 @@ export function useScrubGestures({
     lastTickRef.current = Date.now();
     loopRef.current = setInterval(() => {
       const now = Date.now();
-      const dt = (now - lastTickRef.current) / 1000;
+      // Cap du dt : si le thread JS a été bloqué (jank trickplay/progress), ne
+      // PAS rattraper tout le temps perdu d'un coup — l'avance suit ce que
+      // l'utilisateur perçoit et l'overshoot au relâchement disparaît.
+      const dt = Math.min((now - lastTickRef.current) / 1000, 0.1);
       lastTickRef.current = now;
       if (rateRef.current !== 0) cbRef.current.onNudgeScrub(rateRef.current * dt);
     }, LOOP_MS);
