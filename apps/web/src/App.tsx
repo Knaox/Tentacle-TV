@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateModal } from "./components/UpdateModal";
@@ -21,36 +21,9 @@ import { isTauriApp } from "./main";
 import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
-const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
-const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
-const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m.Register })));
-const SharedListView = lazy(() => import("./pages/SharedListView").then((m) => ({ default: m.SharedListView })));
-const SharedItemDetail = lazy(() => import("./pages/SharedItemDetail").then((m) => ({ default: m.SharedItemDetail })));
-const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
-const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
-const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
-
-const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
-const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
-const AdminInvites = lazy(() => import("./pages/AdminInvites").then((m) => ({ default: m.AdminInvites })));
-const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
-const SettingsLayout = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })));
-const SettingsAppearance = lazy(() => import("./pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));
-const SettingsSecurity = lazy(() => import("./pages/settings/SettingsSecurity").then((m) => ({ default: m.SettingsSecurity })));
-const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
-const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
-const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
-const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
-const AdminUsers = lazy(() => import("./pages/AdminUsers").then((m) => ({ default: m.AdminUsers })));
-const AdminTicketsPage = lazy(() => import("./pages/AdminTicketsPage").then((m) => ({ default: m.AdminTicketsPage })));
-const AdminServicesPage = lazy(() => import("./pages/AdminServicesPage").then((m) => ({ default: m.AdminServicesPage })));
-const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({ default: m.AdminTheme })));
-const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").then((m) => ({ default: m.AdminThemeTokens })));
-const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
-const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
-const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
-const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
-const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
+import {
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound
+} from "./lazyPages";
 
 function PageSpinner() {
   return (
