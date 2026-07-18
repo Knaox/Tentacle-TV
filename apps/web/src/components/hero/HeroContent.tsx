@@ -6,6 +6,7 @@ import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, StarIcon } from "../icons/HeroIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
+import { RichOverview } from "../../lib/overviewHtml";
 import { LanguagePill, QualityChips, hasQualityChips, soberMetaText } from "../media/MetaChips";
 
 interface HeroContentProps {
@@ -137,7 +138,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             pour que la description reste strictement dans la colonne hero. */}
         {item.Overview && (
           <p className="mb-6 hidden text-base leading-relaxed text-white/85 line-clamp-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:block">
-            {item.Overview}
+            <RichOverview text={item.Overview} />
           </p>
         )}
 

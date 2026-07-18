@@ -12,6 +12,7 @@ import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
+import { stripOverviewHtml } from "../lib/overviewHtml";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -168,8 +169,10 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const nextEpisodeThumbUrl = nextEpisode?.Id
     ? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 90 })
     : nextEpisodeImageUrl;
-  const nextEpisodeDescription = nextEpisode?.Overview
-    ? (nextEpisode.Overview.length > 300 ? nextEpisode.Overview.slice(0, 300) + "…" : nextEpisode.Overview) : undefined;
+  // stripOverviewHtml AVANT le slice : couper du HTML brut sectionnerait une balise.
+  const nextOverviewText = nextEpisode?.Overview ? stripOverviewHtml(nextEpisode.Overview) : undefined;
+  const nextEpisodeDescription = nextOverviewText
+    ? (nextOverviewText.length > 300 ? nextOverviewText.slice(0, 300) + "…" : nextOverviewText) : undefined;
 
   return (
     <div className="relative h-screen w-screen">
