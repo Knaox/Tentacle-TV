@@ -13,6 +13,13 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.1.0]
 ### FR
+- Avance rapide repensée : un seul bouton — un appui ouvre la navigation dans le film (flèches ou trackpad), OK lit à la position visée, Retour annule
+- La piste audio entendue est désormais toujours celle affichée, dès le lancement (fini l'épisode qui démarre dans la mauvaise langue)
+- Préférences de langue : « Français (VFF) » et « Français (VFQ) » disponibles, appliquées automatiquement à chaque lecture
+- Lecture réparée pour les fichiers avec pochette intégrée (le lecteur optimisé refusait de démarrer et basculait en transcodage)
+- Retours arrière plus fiables pendant la lecture (fin des micro-erreurs de segments expirés)
+- Sauvegarde de progression : reconnexion automatique si la session expire en cours de lecture, et bandeau d'alerte quand le jumelage doit être reconfirmé
+- Reprise silencieuse après une pause très longue ou une mise en veille (plus de message d'erreur)
 - Sous-titres : le formatage est enfin respecté — gras, italique et position à l'écran (panneaux en haut) au lieu de tags affichés en code brut
 - Sous-titres : nouveau rendu net — texte blanc à contour noir, sans bandeau, taille agrandie pour le salon
 - Logo adapté à la résolution du téléviseur
@@ -24,6 +31,13 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - Lecteur Apple TV : la lecture reprend correctement après un passage par l'écran d'accueil
 - Lecteur Apple TV : récupération automatique en cas d'interruption du flux, retours arrière plus fiables
 ### EN
+- Fast-forward reimagined: a single button — one press opens in-movie navigation (arrows or trackpad), OK plays at the target position, Back cancels
+- The audio track you hear is now always the one displayed, right from launch (no more episodes starting in the wrong language)
+- Language preferences: "French (VFF)" and "French (VFQ)" available, applied automatically on every playback
+- Fixed playback for files with embedded cover art (the optimized player refused to start and fell back to transcoding)
+- More reliable rewinds during playback (no more expired-segment micro errors)
+- Progress saving: automatic reconnection if the session expires mid-playback, plus an alert banner when pairing needs reconfirming
+- Silent resume after a very long pause or sleep (no more error message)
 - Subtitles: formatting is finally honored — bold, italics and on-screen position (top signs) instead of raw tags showing as text
 - Subtitles: crisp new rendering — white text with a black outline, no background box, larger size for the living room
 - Logo now scales with the TV resolution
