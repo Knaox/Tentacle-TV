@@ -84,21 +84,45 @@ pub unsafe fn create_gl_surface(ns_window: *mut c_void) -> Result<GlSurface, Str
     let mask: usize = (1 << 1) | (1 << 4); // NSViewWidthSizable | NSViewHeightSizable
     let _: () = msg_send![gl_view, setAutoresizingMask: mask];
 
-    // Add below web content (NSWindowBelow = -1)
-    let first_subview: *mut AnyObject = {
+    // Inserer SOUS la WKWebView (NSWindowBelow = -1).
+    //
+    // L'ancien code visait `subviews[0]`, en supposant que la premiere sous-vue
+    // EST la WKWebView. L'hypothese tient tant que la contentView n'a qu'une
+    // sous-vue, mais elle s'inverse des qu'une couche de fond est ajoutee
+    // (materiau verre, vibrancy) : cette couche devient `subviews[0]` et la vue
+    // GL se retrouve inseree SOUS elle, donc la video passe DERRIERE le
+    // materiau. Et comme le lecteur est remonte a chaque changement d'episode
+    // (`key={itemId}`), le defaut se rejouerait a chaque episode.
+    //
+    // On cible donc explicitement la WKWebView par sa classe, ce qui reste
+    // correct quel que soit le nombre de sous-vues et leur ordre.
+    let webview: *mut AnyObject = {
         let subviews: *mut AnyObject = msg_send![content_view, subviews];
         let count: usize = msg_send![subviews, count];
-        if count > 0 {
-            msg_send![subviews, objectAtIndex: 0usize]
-        } else {
-            std::ptr::null_mut()
+        let wk_class = objc2::runtime::AnyClass::get(
+            CStr::from_bytes_with_nul(b"WKWebView\0").unwrap()
+        );
+        let mut found: *mut AnyObject = std::ptr::null_mut();
+        if let Some(cls) = wk_class {
+            for i in 0..count {
+                let view: *mut AnyObject = msg_send![subviews, objectAtIndex: i];
+                let is_webview: Bool = msg_send![view, isKindOfClass: cls];
+                if is_webview.as_bool() {
+                    found = view;
+                    break;
+                }
+            }
         }
+        found
     };
 
-    if !first_subview.is_null() {
-        let _: () = msg_send![content_view, addSubview: gl_view, positioned: -1i64, relativeTo: first_subview];
+    if !webview.is_null() {
+        let _: () = msg_send![content_view, addSubview: gl_view, positioned: -1i64, relativeTo: webview];
     } else {
-        let _: () = msg_send![content_view, addSubview: gl_view];
+        // Aucune WKWebView trouvee (ne devrait pas arriver) : on place la vue GL
+        // sous TOUTES les sous-vues. `relativeTo: nil` + NSWindowBelow signifie
+        // « en dessous de tout », ce qui reste le comportement le plus sur.
+        let _: () = msg_send![content_view, addSubview: gl_view, positioned: -1i64, relativeTo: std::ptr::null_mut::<AnyObject>()];
     }
 
     // Get CGL context
