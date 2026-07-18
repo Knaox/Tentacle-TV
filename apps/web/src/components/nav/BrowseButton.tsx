@@ -75,7 +75,11 @@ export function BrowseButton() {
             className="pointer-events-none absolute -right-0.5 -top-0.5 h-2 w-2"
           >
             <span className="absolute inset-0 animate-ping rounded-full bg-[rgba(var(--brand-rgb),0.7)]" />
-            <span className="absolute inset-0 rounded-full bg-[var(--brand)] shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
+            {/* Pastille de marque sans halo. L'ombre portait un violet HEX en
+                dur (167,139,250) qui ne suivait donc PAS une surcharge de
+                couleur de marque par l'admin — la pastille changeait de teinte,
+                sa lueur non. */}
+            <span className="absolute inset-0 rounded-full bg-tentacle-accent" />
           </span>
         )}
       </button>

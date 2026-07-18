@@ -107,7 +107,7 @@ export function MobileTabBar() {
     <>
       {/* bg-black/95 : fond du chrome bas non migré, même logique que TopNav
           (opacité de scroll JS) — refonte prévue dans une phase ultérieure. */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-line-subtle bg-black/95 backdrop-blur-xl safe-area-pb">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-line-subtle bg-surface-toolbar backdrop-blur-xl safe-area-pb">
         {tabs.map((tab) => {
           const active = isActive(tab);
           return (
@@ -124,13 +124,13 @@ export function MobileTabBar() {
                 active ? "text-content-primary" : "text-content-quaternary"
               }`}
             >
+              {/* Liseré actif sobre, aligné sur la TopNav : le dégradé de marque
+                  surmonté d'un halo employait deux valeurs d'opacité differentes
+                  entre les deux barres (0.55 ici, 0.6 dans TopNavLinks) — un
+                  écart invisible mais révélateur d'une duplication. */}
               {active && (
                 <span
-                  className="absolute inset-x-6 top-0 h-[2px] rounded-full"
-                  style={{
-                    background: "linear-gradient(90deg, var(--brand), var(--brand-light))",
-                    boxShadow: "0 0 10px rgba(var(--brand-rgb), 0.55)",
-                  }}
+                  className="absolute inset-x-6 top-0 h-[2px] rounded-full bg-tentacle-accent"
                   aria-hidden
                 />
               )}

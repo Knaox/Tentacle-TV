@@ -62,26 +62,23 @@ export function TopNavLinks() {
       {links.map((link) => {
         const active = isActive(link);
         return (
+          /*
+            Etat actif : pilule pleine et discrete. Remplace le soulignement en
+            degrade de marque surmonte d'un halo — la signature la plus datee de
+            la barre, et la seule qui imposait un `style` inline sur un lien.
+            Le focus clavier n'etait visible NULLE PART ici auparavant.
+          */
           <Link
             key={link.key}
             to={link.path}
-            className={`relative whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
+            aria-current={active ? "page" : undefined}
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               active
-                ? "text-content-primary"
-                : "text-content-tertiary hover:text-content-primary"
+                ? "bg-fill-soft font-semibold text-content-primary"
+                : "font-medium text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
             }`}
           >
             {link.label}
-            {active && (
-              <span
-                className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full"
-                style={{
-                  background: "linear-gradient(90deg, var(--brand), var(--brand-light))",
-                  boxShadow: "0 0 10px rgba(var(--brand-rgb), 0.6)",
-                }}
-                aria-hidden
-              />
-            )}
           </Link>
         );
       })}
