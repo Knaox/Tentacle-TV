@@ -131,7 +131,7 @@ export function ServicesSection() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={testJ} disabled={!!busy || !jUrl || !jKey} className={cls.bs}>{busy === "tj" ? `${t("test")}...` : t("test")}</button>
-          <button onClick={saveJ} disabled={!!busy || !jUrl || !jKey} className={cls.bp} style={cls.bpStyle}>{busy === "sj" ? "..." : t("save")}</button>
+          <button onClick={saveJ} disabled={!!busy || !jUrl || !jKey} className={cls.bp}>{busy === "sj" ? "..." : t("save")}</button>
           <Msg m={jMsg} />
         </div>
       </div>
@@ -168,7 +168,7 @@ export function ServicesSection() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={saveDb} disabled={!!busy || !dbHost || !dbUser || !dbPass} className={cls.bp} style={cls.bpStyle}>{busy === "sdb" ? "..." : t("save")}</button>
+          <button onClick={saveDb} disabled={!!busy || !dbHost || !dbUser || !dbPass} className={cls.bp}>{busy === "sdb" ? "..." : t("save")}</button>
           <Msg m={dbMsg} />
         </div>
         <p className="text-xs text-[var(--status-warning-fg)]/80">{t("dbRestartNote")}</p>

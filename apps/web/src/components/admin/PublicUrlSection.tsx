@@ -63,7 +63,7 @@ export function PublicUrlSection() {
             onChange={(e) => setUrl(e.target.value)}
             className={`${cls.inp} min-w-[260px] flex-1`}
           />
-          <button onClick={save} disabled={busy} className={cls.bp} style={cls.bpStyle}>{busy ? "..." : t("save")}</button>
+          <button onClick={save} disabled={busy} className={cls.bp}>{busy ? "..." : t("save")}</button>
           {msg && <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>}
         </div>
         <p className="mt-1 text-xs text-content-quaternary">{t("publicUrlHelp")}</p>

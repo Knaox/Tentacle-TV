@@ -41,7 +41,7 @@ function TicketDetail({ id, onBack }: { id: string; onBack: () => void }) {
     {ticket.status !== "closed" && <form onSubmit={handleReply} className="mt-4">
       <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder={t("admin:replyAsAdmin")} rows={3}
         className="w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2 text-sm text-content-primary placeholder:text-content-quaternary outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 resize-none" />
-      <button type="submit" disabled={rMut.isPending || !reply.trim()} className={`${cls.bp} mt-2`} style={cls.bpStyle}>
+      <button type="submit" disabled={rMut.isPending || !reply.trim()} className={`${cls.bp} mt-2`}>
         {rMut.isPending ? t("common:sending") : t("admin:reply")}</button></form>}
   </div>);
 }
