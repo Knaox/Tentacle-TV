@@ -8,7 +8,6 @@ import { TentacleLogo } from "../components/ui/TentacleLogo";
 // purple en primary, surface glass légère en secondary.
 const CTA_PRIMARY =
   "inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
-const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" };
 const CTA_SECONDARY =
   "inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-5 text-sm font-semibold text-content-primary transition-all hover:border-line-strong hover:bg-fill-soft active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -307,7 +306,7 @@ function Btn({ children, onClick, disabled, secondary, className = "" }: {
       onClick={onClick}
       disabled={disabled}
       className={`${secondary ? CTA_SECONDARY : CTA_PRIMARY} ${className}`}
-      style={secondary ? undefined : CTA_PRIMARY_HALO}
+     
     >
       {children}
     </button>

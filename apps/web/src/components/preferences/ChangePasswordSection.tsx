@@ -106,7 +106,7 @@ export function ChangePasswordSection() {
           type="submit"
           disabled={pending || !current || !next || !confirmNext}
           className="inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+         
         >
           {pending ? t("preferences:passwordChanging") : t("common:save")}
         </button>

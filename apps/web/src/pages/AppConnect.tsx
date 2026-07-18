@@ -114,7 +114,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
             onClick={handleConnect}
             disabled={testing || !url}
             className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-            style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+           
           >
             {testing ? t("connecting") : t("signIn")}
           </button>

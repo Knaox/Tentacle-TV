@@ -42,7 +42,7 @@ function TicketList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string)
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-content-primary">{t("tickets:myTickets")}</h2>
-        <button onClick={onNew} className="flex-shrink-0 rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold hover:bg-cta-primary-bg-hover" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
+        <button onClick={onNew} className="flex-shrink-0 rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold hover:bg-cta-primary-bg-hover">
           {t("tickets:newTicket")}
         </button>
       </div>
@@ -352,7 +352,7 @@ function NewTicketForm({ onBack, onCreated }: { onBack: () => void; onCreated: (
             className="w-full rounded-lg border border-line-subtle bg-tentacle-surface px-4 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)] resize-none" maxLength={5000} />
         </div>
         <button type="submit" disabled={createMut.isPending || !subject.trim() || !body.trim()}
-          className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold hover:bg-cta-primary-bg-hover disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
+          className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold hover:bg-cta-primary-bg-hover disabled:opacity-50">
           {createMut.isPending ? t("common:sending") : t("tickets:createTicket")}
         </button>
       </form>
@@ -426,7 +426,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: string; onBack: () => vo
           <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("tickets:replyPlaceholder")} rows={3}
             className="w-full rounded-lg border border-line-subtle bg-tentacle-surface px-4 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)] resize-none" maxLength={5000} />
           <button type="submit" disabled={replyMut.isPending || !reply.trim()}
-            className="mt-2 rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold hover:bg-cta-primary-bg-hover disabled:opacity-50" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
+            className="mt-2 rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold hover:bg-cta-primary-bg-hover disabled:opacity-50">
             {replyMut.isPending ? t("common:sending") : t("common:send")}
           </button>
         </form>

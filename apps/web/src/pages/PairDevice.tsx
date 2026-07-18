@@ -209,7 +209,7 @@ export function PairDevice() {
                       <button
                         onClick={handleReset}
                         className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition hover:bg-cta-primary-bg-hover"
-                        style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+                       
                       >
                         {t("common:retry")}
                       </button>
@@ -218,7 +218,7 @@ export function PairDevice() {
                         onClick={handleSubmit}
                         disabled={!canSubmit}
                         className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition hover:bg-cta-primary-bg-hover disabled:cursor-not-allowed disabled:opacity-40"
-                        style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+                       
                       >
                         {status === "pairing" ? (
                           <span className="flex items-center gap-2">

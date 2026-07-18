@@ -9,7 +9,6 @@ const BACKEND_URL = backendUrl;
 
 const CTA_PRIMARY =
   "inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
-const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" };
 const INPUT_BASE =
   "h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
 
@@ -122,7 +121,7 @@ export function Register() {
               type="submit"
               disabled={isLoading || !confirmPassword || passwordsMismatch}
               className={CTA_PRIMARY}
-              style={CTA_PRIMARY_HALO}
+
             >
               {isLoading ? t("creatingAccount") : t("createAccount")}
             </button>

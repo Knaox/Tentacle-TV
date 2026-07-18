@@ -2,6 +2,9 @@ import { useEffect, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { GLASS_FILTER_ID } from "@tentacle-tv/ui";
+
+import { useLiquidGlass } from "../../theme/useLiquidGlass";
 
 interface ModalProps {
   open: boolean;
@@ -57,6 +60,7 @@ export function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const { level: glassLevel } = useLiquidGlass();
 
   // Esc to close
   useEffect(() => {
@@ -113,8 +117,11 @@ export function Modal({
           onClick={handleBackdrop}
           role="presentation"
           style={{
-            // Scrim de modale : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
-            background: "rgba(0,0,0,0.65)",
+            // `--glass-backdrop` EST le scrim de modale du design system : il
+            // reste sombre dans les deux schémas (standard iOS au-dessus de
+            // contenus photo/vidéo), simplement plus léger en clair. Le
+            // `rgba(0,0,0,0.65)` en dur qu'il remplace ignorait le thème.
+            background: "var(--glass-backdrop)",
             backdropFilter: "blur(var(--blur-modal))",
             WebkitBackdropFilter: "blur(var(--blur-modal))",
           }}
@@ -133,6 +140,15 @@ export function Modal({
               border: "1px solid var(--border-subtle)",
               borderRadius: "var(--radius-xl)",
               boxShadow: "var(--shadow-modal)",
+              // Réfraction Liquid Glass sur le panneau, quand le moteur sait
+              // l'exécuter ET que l'utilisateur l'a laissée active. Sinon la
+              // surface garde son fond tokenisé, jamais une surface nue.
+              ...(glassLevel === "refraction"
+                ? {
+                    backdropFilter: `blur(var(--blur-modal)) saturate(180%) url(#${GLASS_FILTER_ID})`,
+                    WebkitBackdropFilter: `blur(var(--blur-modal)) saturate(180%)`,
+                  }
+                : {}),
             }}
             variants={PANEL_VARIANTS}
             initial="hidden"

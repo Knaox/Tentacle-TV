@@ -48,7 +48,7 @@ export function ConfirmDialog({
                 ? "inline-flex h-11 items-center justify-center rounded-lg bg-[var(--status-error-bg)] border border-[var(--status-error)]/30 px-5 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-[var(--status-error)]/25 disabled:opacity-50"
                 : "inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:opacity-50"
             }
-            style={danger ? undefined : { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+           
           >
             {confirmLabel}
           </button>
