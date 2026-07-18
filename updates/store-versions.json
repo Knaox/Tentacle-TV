@@ -1,18 +1,18 @@
 {
-  "$comment": "Source de vérité des versions publiées sur les stores desktop, lue par l'app (apps/web/src/lib/storeVersions.ts) via raw.githubusercontent.com. À mettre à jour à CHAQUE bump de version desktop (les APIs stores ne sont pas fiables : iTunes Lookup ignore la fiche macOS d'une app en achat universel, WinRT n'expose pas la version d'une MAJ MSIX). Les notes fr/en s'affichent dans la popup de mise à jour.",
+  "$comment": "Source de vérité des versions publiées sur les stores desktop, lue par l'app (apps/web/src/lib/storeVersions.ts) via raw.githubusercontent.com. MAINTENU AUTOMATIQUEMENT par le job « manifest » de desktop.yml à chaque tag desktop-v* (.github/scripts/patch-store-manifest.mjs : version + notes FR/EN depuis changelogs/desktop.md ; patch-linux-manifest.mjs : assets linux). Les APIs stores ne sont pas fiables (iTunes Lookup ignore la fiche macOS d'une app en achat universel, WinRT n'expose pas la version d'une MAJ MSIX). Repli manuel si la CI échoue : node .github/scripts/patch-store-manifest.mjs <version>.",
   "macAppStore": {
-    "version": "1.2.1",
+    "version": "1.12.2",
     "appId": "6760205634",
     "notes": {
-      "fr": "• Le curseur de la souris se masque automatiquement avec les contrôles après quelques secondes d'inactivité\n• Corrections diverses et améliorations de stabilité",
-      "en": "• The mouse cursor now hides automatically with the controls after a few seconds of inactivity\n• Various fixes and stability improvements"
+      "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
+      "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
     }
   },
   "microsoftStore": {
-    "version": "1.11.2",
+    "version": "1.12.2",
     "notes": {
-      "fr": "• Le curseur de la souris se masque automatiquement avec les contrôles après quelques secondes d'inactivité\n• Corrections diverses et améliorations de stabilité",
-      "en": "• The mouse cursor now hides automatically with the controls after a few seconds of inactivity\n• Various fixes and stability improvements"
+      "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
+      "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
     }
   },
   "linux": {
@@ -20,8 +20,8 @@
     "version": "1.12.1",
     "tag": "desktop-v1.12.1",
     "notes": {
-      "fr": "• Anti-veille universel : plus de verrouillage ni d'écran éteint pendant la lecture (inhibiteur Wayland natif, fonctionne aussi sans hypridle — Hyprland/caelestia, sway…)\n• Volume système mémorisé : le volume réglé via le mélangeur du système est réappliqué à chaque média (plus de retour à 100 %)",
-      "en": "• Universal keep-awake: no more locking or screen blanking during playback (native Wayland inhibitor, also works without any idle daemon — Hyprland/caelestia, sway…)\n• System volume memory: the volume set through the system mixer is re-applied for every media (no more jumping back to 100%)"
+      "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
+      "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
     },
     "assets": {
       "appimage": {
