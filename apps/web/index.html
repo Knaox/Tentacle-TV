@@ -16,19 +16,31 @@
       // Volontairement inline et sans dépendance : tout report après le parsing
       // du bundle réintroduirait le flash.
       (function () {
+        var dark = true; // rendu historique de l'app, et repli si tout echoue
         try {
           var mode = localStorage.getItem("tentacle_theme_mode");
           if (mode !== "light" && mode !== "dark") mode = "auto"; // défaut + valeurs corrompues
-          var dark =
+          dark =
             mode === "dark" ||
             (mode === "auto" &&
               window.matchMedia("(prefers-color-scheme: dark)").matches);
-          document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
         } catch (e) {
-          // localStorage indisponible (mode privé, WebView verrouillée) : on
-          // retombe sur le sombre, qui est le rendu historique de l'app.
-          document.documentElement.setAttribute("data-theme", "dark");
+          // localStorage indisponible (mode privé, WebView verrouillée).
         }
+        var root = document.documentElement;
+        root.setAttribute("data-theme", dark ? "dark" : "light");
+
+        // Peint un fond opaque DES MAINTENANT. La fenetre Tauri est
+        // `transparent: true` sur macOS ET Windows — c'est requis : les
+        // controles HTML du lecteur sont dessines par-dessus la video a
+        // travers la webview. Tant que la feuille de style n'est pas
+        // appliquee, rien ne peint et on voit le BUREAU. En dev c'est tres
+        // visible, Vite injectant le CSS via le graphe JS.
+        //
+        // Style inline, donc prioritaire : `ThemeProvider` le retire au montage
+        // (`releaseBootBackground`) pour rendre la main a `--surface-0` et ne
+        // pas figer la surcharge admin ni la bascule de schema.
+        root.style.background = dark ? "#000000" : "#F4F4F7";
       })();
     </script>
   </head>
