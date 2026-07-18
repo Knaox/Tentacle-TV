@@ -280,6 +280,17 @@
   --shadow-sheet: 0 -8px 32px rgba(11, 11, 16, 0.12);
 }
 
+/* Liquid Glass — neutralise la réfraction sous `prefers-reduced-motion`.
+ * Le displacement SVG se recalcule au scroll et au redimensionnement : c'est du
+ * mouvement, même sans animation déclarée. On garde le flou et le liseré, qui
+ * ne bougent pas, et on retire la seule partie qui réagit au défilement. */
+@media (prefers-reduced-motion: reduce) {
+  [style*="tentacle-glass-refract"] {
+    backdrop-filter: blur(var(--blur-sheet)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--blur-sheet)) saturate(180%) !important;
+  }
+}
+
 /* Reduced motion — kill all heavy motion when user opts out. */
 @media (prefers-reduced-motion: reduce) {
   :root {
