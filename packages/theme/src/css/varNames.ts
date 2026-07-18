@@ -130,6 +130,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
     },
     danger: {
       surface: "--danger-surface",
+      surfaceHover: "--danger-surface-hover",
       border: "--danger-border",
     },
   },
