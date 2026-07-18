@@ -4,7 +4,7 @@ import { BACKEND, hdrs, creds } from "../../pages/adminUtils";
 import { getImpersonationState } from "../../lib/impersonation";
 
 const INPUT =
-  "h-11 w-full rounded-lg border border-white/10 bg-tentacle-surface px-3 pr-11 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
+  "h-11 w-full rounded-lg border border-line-subtle bg-tentacle-surface px-3 pr-11 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
 
 /**
  * Section "Mot de passe" du profil (web + desktop) — change le mot de passe
@@ -61,9 +61,9 @@ export function ChangePasswordSection() {
   };
 
   return (
-    <div className="mt-8 rounded-xl border border-white/5 bg-white/5 p-5">
-      <h3 className="mb-1 text-sm font-semibold text-white">{t("preferences:changePasswordTitle")}</h3>
-      <p className="mb-4 text-xs text-white/50">{t("preferences:changePasswordDescription")}</p>
+    <div className="mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
+      <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("preferences:changePasswordTitle")}</h3>
+      <p className="mb-4 text-xs text-content-tertiary">{t("preferences:changePasswordDescription")}</p>
 
       <form onSubmit={handleSubmit} className="max-w-sm space-y-3">
         <PasswordField
@@ -105,7 +105,7 @@ export function ChangePasswordSection() {
         <button
           type="submit"
           disabled={pending || !current || !next || !confirmNext}
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:cursor-not-allowed disabled:opacity-40"
           style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
         >
           {pending ? t("preferences:passwordChanging") : t("common:save")}
@@ -127,7 +127,7 @@ function PasswordField({ id, label, value, onChange, show, onToggleShow, toggleL
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs font-medium text-white/60">{label}</label>
+      <label htmlFor={id} className="mb-1 block text-xs font-medium text-content-tertiary">{label}</label>
       <div className="relative">
         <input
           id={id}
@@ -143,7 +143,7 @@ function PasswordField({ id, label, value, onChange, show, onToggleShow, toggleL
             type="button"
             onClick={onToggleShow}
             aria-label={toggleLabel}
-            className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-white/45 transition hover:bg-white/10 hover:text-white/80"
+            className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-content-quaternary transition hover:bg-fill-soft hover:text-content-secondary"
           >
             {show ? <EyeOffIcon /> : <EyeIcon />}
           </button>

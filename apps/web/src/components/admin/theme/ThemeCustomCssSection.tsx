@@ -76,16 +76,16 @@ export function ThemeCustomCssSection({ state }: ThemeCustomCssSectionProps) {
 
   return (
     <div className={cls.card}>
-      <h2 className="mb-1 text-lg font-semibold text-white">
+      <h2 className="mb-1 text-lg font-semibold text-content-primary">
         {t("customCssTitle")}
       </h2>
-      <p className="mb-4 text-sm text-white/55">{t("customCssHelp")}</p>
+      <p className="mb-4 text-sm text-content-tertiary">{t("customCssHelp")}</p>
 
       <div className="mb-4 rounded-lg border border-[var(--status-warning)]/35 bg-[var(--status-warning-bg)] p-3">
         <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--status-warning-fg)]">
           {t("customCssRiskTitle")}
         </h4>
-        <p className="mt-1 text-xs text-white/65">{t("customCssRisk")}</p>
+        <p className="mt-1 text-xs text-content-tertiary">{t("customCssRisk")}</p>
       </div>
 
       <div className="mb-4">
@@ -151,7 +151,7 @@ export function ThemeCustomCssSection({ state }: ThemeCustomCssSectionProps) {
         )}
       </div>
 
-      <div className="mt-4 text-xs text-white/45">
+      <div className="mt-4 text-xs text-content-quaternary">
         {state.customCss.hasContent ? (
           <>
             <span className={`${cls.chip} bg-[var(--status-success-bg)] text-[var(--status-success-fg)]`}>
@@ -164,7 +164,7 @@ export function ThemeCustomCssSection({ state }: ThemeCustomCssSectionProps) {
             )}
           </>
         ) : (
-          <span className={`${cls.chip} bg-white/[0.06] text-white/55`}>
+          <span className={`${cls.chip} bg-fill-subtle text-content-tertiary`}>
             {t("customCssNone")}
           </span>
         )}
@@ -194,8 +194,8 @@ function SourceToggle({
       onClick={onClick}
       className={`h-9 rounded-lg px-3 text-xs font-semibold transition ${
         active
-          ? "bg-[var(--brand)] text-white"
-          : "bg-white/[0.06] text-white/60 hover:bg-white/[0.10] hover:text-white/80"
+          ? "bg-[var(--brand)] text-cta-brand-fg"
+          : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"
       }`}
     >
       {label}

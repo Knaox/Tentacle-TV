@@ -36,7 +36,7 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
 
   return (
     <section className="row-gutter mb-8">
-      <h2 className="mb-3 text-base font-semibold text-white/90 md:text-lg">
+      <h2 className="mb-3 text-base font-semibold text-content-primary md:text-lg">
         {title ? `${t("common:extras")} — ${title}` : t("common:extras")}
       </h2>
       <HorizontalScrollRow
@@ -130,18 +130,20 @@ function ExtraTile({
             onError={youtubeId ? () => setUnavailable(true) : undefined}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-white/25">
+          <div className="flex h-full w-full items-center justify-center text-content-disabled">
             <PlayIcon />
           </div>
         )}
+        {/* Halo lecture posé SUR la vignette : reste blanc/noir dans les deux
+            thèmes (cf. règle « posé sur média »). */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 text-white transition-colors duration-200 group-hover/extra:bg-black/35">
           <span className="opacity-0 transition-opacity duration-200 group-hover/extra:opacity-100">
             <PlayIcon />
           </span>
         </div>
       </div>
-      <p className="mt-1.5 truncate text-sm font-medium text-white/90">{label}</p>
-      {sublabel && <p className="truncate text-xs text-white/45">{sublabel}</p>}
+      <p className="mt-1.5 truncate text-sm font-medium text-content-primary">{label}</p>
+      {sublabel && <p className="truncate text-xs text-content-quaternary">{sublabel}</p>}
     </button>
   );
 }

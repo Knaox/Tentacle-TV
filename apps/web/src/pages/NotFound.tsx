@@ -28,10 +28,10 @@ export function NotFound() {
           404
         </p>
 
-        <h1 className="mb-3 text-3xl font-bold tracking-tight text-white md:text-4xl">
+        <h1 className="mb-3 text-3xl font-bold tracking-tight text-content-primary md:text-4xl">
           {t("common:notFoundTitle", { defaultValue: "Page introuvable" })}
         </h1>
-        <p className="mb-8 max-w-md text-sm leading-relaxed text-white/60">
+        <p className="mb-8 max-w-md text-sm leading-relaxed text-content-tertiary">
           {t("common:notFoundDescription", {
             defaultValue:
               "Le tentacle a cherché partout, mais cette page semble avoir disparu dans les abysses.",
@@ -40,7 +40,7 @@ export function NotFound() {
 
         <Link
           to="/"
-          className="inline-flex items-center gap-2 rounded-md bg-white px-7 py-3 text-base font-bold text-black transition-all duration-200 hover:scale-[1.03] hover:bg-white/90"
+          className="inline-flex items-center gap-2 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover"
           style={{ boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35)" }}
         >
           {t("common:backHome", { defaultValue: "Retour à l'accueil" })}

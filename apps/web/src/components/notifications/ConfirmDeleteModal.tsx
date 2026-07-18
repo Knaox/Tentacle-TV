@@ -17,16 +17,16 @@ export function ConfirmDeleteModal({
   return (
     <Modal open={open} onClose={onCancel} maxWidth={400} labelledBy="confirm-delete-title">
       <div className="p-6">
-        <h3 id="confirm-delete-title" className="text-base font-semibold text-white">
+        <h3 id="confirm-delete-title" className="text-base font-semibold text-content-primary">
           {title}
         </h3>
-        <p className="mt-2 text-sm text-white/55">{message}</p>
+        <p className="mt-2 text-sm text-content-tertiary">{message}</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-sm text-white/65 transition-colors hover:bg-white/10 hover:text-white/90"
+            className="rounded-lg px-4 py-2 text-sm text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
           >
             {cancelLabel}
           </button>
@@ -38,6 +38,9 @@ export function ConfirmDeleteModal({
             style={{
               background: "var(--status-error-bg)",
               color: "var(--status-error-fg)",
+              // Bordure : nuance rouge fixe (hors table de correspondance -
+              // pas d'équivalent alpha-composable pour un style inline), reste
+              // cohérente visuellement dans les deux thèmes.
               border: "1px solid rgba(239, 68, 68, 0.4)",
             }}
           >

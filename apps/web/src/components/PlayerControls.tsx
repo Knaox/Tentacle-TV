@@ -51,6 +51,10 @@ export interface PlayerControlsProps {
   applyToSeries?: ApplyToSeriesControl;
 }
 
+// Contrôles superposés à la vidéo (top/bottom bar en dégradé vers transparent)
+// → text-white/bg-white volontairement en dur dans les deux thèmes.
+// (TrackSelector / EpisodeSelectorPanel ouverts depuis ici sont eux tokenisés :
+// panneaux détachés à fond quasi-opaque, pas posés sur la vidéo.)
 export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
   item, mediaSourceId,

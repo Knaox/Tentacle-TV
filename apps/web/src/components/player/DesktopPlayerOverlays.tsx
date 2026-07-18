@@ -34,6 +34,9 @@ interface DesktopPlayerOverlaysProps {
  * Overlays du player desktop : chargement (bannière + LoadingBar), spinner de
  * buffering, boutons skip intro/générique, et les deux écrans « épisode
  * suivant » (bannière crédits / affiche pleine EOF). Extraction mécanique.
+ *
+ * Tout est posé sur la vidéo → text-white/bg-black volontairement en dur,
+ * identiques dans les deux thèmes clair/sombre.
  */
 export function DesktopPlayerOverlays({
   showLoadingOverlay, buffering, posterUrl,

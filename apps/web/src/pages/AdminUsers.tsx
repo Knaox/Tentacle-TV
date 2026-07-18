@@ -104,8 +104,8 @@ export function AdminUsers() {
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-white">{t("usersTitle")}</h1>
-          <p className="mb-6 text-sm text-white/50">{t("usersDescription")}</p>
+          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-content-primary">{t("usersTitle")}</h1>
+          <p className="mb-6 text-sm text-content-tertiary">{t("usersDescription")}</p>
 
           {/* Barre d'outils : recherche + filtres */}
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -128,12 +128,12 @@ export function AdminUsers() {
                     onClick={() => setFilter(f.key)}
                     className={`inline-flex items-center gap-1.5 h-9 rounded-full border px-3.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40 ${
                       active
-                        ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-white"
-                        : "border-white/[0.08] bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white"
+                        ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-content-primary"
+                        : "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
                     }`}
                   >
                     {f.label}
-                    <span className="tabular-nums text-white/45">{f.count}</span>
+                    <span className="tabular-nums text-content-quaternary">{f.count}</span>
                   </button>
                 );
               })}
@@ -151,15 +151,15 @@ export function AdminUsers() {
               ))}
 
             {isError && (
-              <div className="flex flex-col items-start gap-3 rounded-lg border border-white/[0.06] p-4 xs:flex-row xs:items-center xs:justify-between">
-                <p className="text-sm text-white/40">{t("usersError")}</p>
+              <div className="flex flex-col items-start gap-3 rounded-lg border border-line-subtle p-4 xs:flex-row xs:items-center xs:justify-between">
+                <p className="text-sm text-content-quaternary">{t("usersError")}</p>
                 <button onClick={() => refetch()} className={cls.bs}>{t("retry")}</button>
               </div>
             )}
 
             {!isLoading && !isError && filtered.length === 0 && (
-              <div className="rounded-lg border border-dashed border-white/[0.1] p-8 text-center">
-                <p className="text-sm text-white/40">{t("noUsers")}</p>
+              <div className="rounded-lg border border-dashed border-line-subtle p-8 text-center">
+                <p className="text-sm text-content-quaternary">{t("noUsers")}</p>
               </div>
             )}
 
@@ -172,18 +172,18 @@ export function AdminUsers() {
                   initial={reduce ? false : { opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: reduce ? 0 : Math.min(i * 0.035, 0.3), ease: "easeOut" }}
-                  className="flex flex-col items-start gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 transition-colors hover:border-white/[0.12] xs:flex-row xs:items-center xs:justify-between"
+                  className="flex flex-col items-start gap-3 rounded-lg border border-line-subtle bg-fill-faint p-4 transition-colors hover:border-line-strong xs:flex-row xs:items-center xs:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div
                       aria-hidden
-                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-sm font-bold text-white"
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-sm font-bold text-cta-brand-fg"
                     >
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-medium text-white">{user.name}</p>
+                        <p className="truncate text-sm font-medium text-content-primary">{user.name}</p>
                         {user.isAdministrator && (
                           <span className={`${cls.chip} bg-[var(--brand-soft)] text-[var(--brand-light)]`}>{t("userAdmin")}</span>
                         )}
@@ -191,10 +191,10 @@ export function AdminUsers() {
                           <span className={`${cls.chip} bg-[var(--status-error-bg)] text-[var(--status-error-fg)]`}>{t("userDisabled")}</span>
                         )}
                         {isSelf && (
-                          <span className={`${cls.chip} bg-white/10 text-white/60`}>{t("userYou")}</span>
+                          <span className={`${cls.chip} bg-fill-soft text-content-tertiary`}>{t("userYou")}</span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-white/40">
+                      <p className="mt-1 text-xs text-content-quaternary">
                         {user.lastActivityDate
                           ? t("lastActivity", { date: new Date(user.lastActivityDate).toLocaleDateString() })
                           : t("lastActivityNever")}

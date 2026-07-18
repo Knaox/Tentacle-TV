@@ -10,6 +10,10 @@ import { useWatchTogether } from "./WatchTogetherProvider";
  * lecture en train de démarrer). Si plus personne ne regarde, pas de pilule ;
  * dès que quelqu'un relance une lecture, elle apparaît en temps réel (presence
  * diffusée). Clic → resynchronisation.
+ *
+ * Couleurs volontairement en dur : barre flottante au même verre sombre que
+ * l'overlay de chat en lecture (rgba(15,15,25,…) + liseré marque) — reste
+ * identique quel que soit le thème de la page qu'elle survole.
  */
 export function GroupPlaybackPill() {
   const { room } = useWatchTogether();

@@ -60,8 +60,9 @@ export function UpNextCard({
         WebkitBackdropFilter: "blur(var(--blur-modal))",
       }}
     >
-      {/* Top progress bar — gradient violet with glow */}
-      <div className="h-[3px] w-full overflow-hidden bg-white/10">
+      {/* Top progress bar — gradient violet with glow. Posée sur le fond
+          `surface-modal` de la carte (pas sur l'image) → tokenisée. */}
+      <div className="h-[3px] w-full overflow-hidden bg-fill-soft">
         <div
           className="h-full transition-[width] duration-1000 ease-linear"
           style={{
@@ -72,7 +73,9 @@ export function UpNextCard({
         />
       </div>
 
-      {/* Backdrop image strip — fades into surface for text legibility */}
+      {/* Backdrop image strip — fades into surface for text legibility.
+          Badges/bouton fermer sont posés sur l'image : restent en dur
+          (text-white, rgba(0,0,0,X)) quel que soit le thème. */}
       <div className="relative aspect-[16/7] w-full overflow-hidden">
         {episodeImageUrl ? (
           <img
@@ -140,20 +143,21 @@ export function UpNextCard({
         </button>
       </div>
 
-      {/* Episode meta + actions */}
+      {/* Episode meta + actions — sous la bannière, sur le fond `surface-modal`
+          de la carte (pas sur l'image) : tokenisé, suit le thème. */}
       <div className="px-5 pb-4 pt-1">
         {episodeLabel && (
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-content-tertiary">
             {episodeLabel}
           </p>
         )}
         {episodeTitle && (
-          <p className="mt-0.5 truncate text-[15px] font-semibold text-white">
+          <p className="mt-0.5 truncate text-[15px] font-semibold text-content-primary">
             {episodeTitle}
           </p>
         )}
         {episodeDescription && (
-          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-white/55">
+          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-content-tertiary">
             {episodeDescription}
           </p>
         )}
@@ -162,7 +166,7 @@ export function UpNextCard({
           <button
             type="button"
             onClick={onPlay}
-            className="group/play flex flex-1 items-center justify-center gap-2 rounded-md bg-white py-2.5 text-sm font-bold text-black transition-all duration-150 hover:scale-[1.02] hover:bg-white/90"
+            className="group/play flex flex-1 items-center justify-center gap-2 rounded-md bg-cta-primary-bg py-2.5 text-sm font-bold text-cta-primary-fg transition-all duration-150 hover:scale-[1.02] hover:bg-cta-primary-bg-hover"
             style={{ boxShadow: "0 6px 22px var(--brand-glow)" }}
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -173,7 +177,7 @@ export function UpNextCard({
           <button
             type="button"
             onClick={onDismiss}
-            className="rounded-md px-4 py-2.5 text-sm font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-md px-4 py-2.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
           >
             {t("player:dismiss")}
           </button>

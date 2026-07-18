@@ -59,14 +59,19 @@ export function MobileUserSheet({ onClose }: Props) {
       aria-modal="true"
       aria-label={t("profile")}
     >
+      {/* Voile derrière la sheet : reste sombre dans les deux thèmes (règle scrim de modale). */}
       <style>{`
         @keyframes sheetOverlayIn { from { background: transparent; } to { background: rgba(0,0,0,0.5); } }
         @keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       `}</style>
 
       <div
-        className="max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-white/10 safe-area-pb"
+        className="max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-line-subtle safe-area-pb"
         style={{
+          // Fond du panneau : littéral hors table de correspondance (ni bg-white/*
+          // ni bg-black/*) — implémentation ad hoc antérieure au primitive Sheet
+          // (qui utilise déjà var(--surface-sheet), adaptatif). Non migré ici :
+          // wiring vers surface-sheet hors périmètre de cette passe.
           background: "rgba(12,12,22,0.98)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
@@ -75,20 +80,20 @@ export function MobileUserSheet({ onClose }: Props) {
       >
         {/* Drag handle */}
         <div className="flex justify-center py-3">
-          <div className="h-1 w-10 rounded-full bg-white/20" aria-hidden />
+          <div className="h-1 w-10 rounded-full bg-fill-medium" aria-hidden />
         </div>
 
         {/* Header utilisateur */}
         <div className="flex items-center gap-4 px-5 pb-4">
           <div
-            className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full text-lg font-bold text-white"
+            className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full text-lg font-bold text-cta-brand-fg"
             style={AVATAR_RING_STYLE}
             aria-hidden
           >
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold text-white">
+            <p className="truncate text-base font-semibold text-content-primary">
               {name || t("profile")}
             </p>
             {isAdmin && (
@@ -101,7 +106,7 @@ export function MobileUserSheet({ onClose }: Props) {
           </div>
         </div>
 
-        <div className="mx-5 mb-2 h-px bg-white/[0.08]" aria-hidden />
+        <div className="mx-5 mb-2 h-px bg-fill-soft" aria-hidden />
 
         {/* Items réguliers */}
         <div className="pb-2">
@@ -111,17 +116,17 @@ export function MobileUserSheet({ onClose }: Props) {
               type="button"
               role="menuitem"
               onClick={item.action}
-              className="flex w-full items-center gap-4 px-5 py-3 text-left text-[15px] text-white/85 transition-colors duration-150 active:bg-white/[0.06]"
+              className="flex w-full items-center gap-4 px-5 py-3 text-left text-[15px] text-content-secondary transition-colors duration-150 active:bg-fill-subtle"
             >
-              <span className="flex-shrink-0 text-white/60">{item.icon}</span>
+              <span className="flex-shrink-0 text-content-tertiary">{item.icon}</span>
               <span className="flex-1">{item.label}</span>
-              <span className="flex-shrink-0 text-white/30" aria-hidden>›</span>
+              <span className="flex-shrink-0 text-content-quaternary" aria-hidden>›</span>
             </button>
           ))}
         </div>
 
         {/* Séparateur avant logout */}
-        <div className="mx-5 my-2 h-px bg-white/[0.08]" aria-hidden />
+        <div className="mx-5 my-2 h-px bg-fill-soft" aria-hidden />
 
         {/* Logout (danger) */}
         <div className="pb-4">

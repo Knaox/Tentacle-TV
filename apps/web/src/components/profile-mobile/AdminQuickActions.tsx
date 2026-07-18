@@ -51,7 +51,7 @@ export function AdminQuickActions() {
 
   return (
     <section aria-label={tNav("admin")}>
-      <h2 className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-white/40">
+      <h2 className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
         {tNav("admin")}
       </h2>
       <div className="grid grid-cols-1 gap-2 xs:grid-cols-3">
@@ -66,8 +66,8 @@ export function AdminQuickActions() {
               {a.icon}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-white">{a.title}</span>
-              <span className="mt-0.5 block truncate text-xs text-white/45">{a.description}</span>
+              <span className="block truncate text-sm font-semibold text-content-primary">{a.title}</span>
+              <span className="mt-0.5 block truncate text-xs text-content-quaternary">{a.description}</span>
             </span>
           </button>
         ))}

@@ -14,6 +14,9 @@ export type SplashPhase = "enter" | "clap" | "splash" | "exit";
 
 /**
  * Animation d'intro poulpe pirate : apparition → révélation du lecteur vidéo.
+ *
+ * Splash plein écran (fond de scène cinéma) → bg-black/text-white
+ * volontairement en dur dans les deux thèmes clair/sombre.
  */
 export function PlayerTransition({ children, transparent = false, onComplete }: PlayerTransitionProps) {
   const [phase, setPhase] = useState<SplashPhase>("enter");

@@ -79,7 +79,8 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
         {/* Méta discrète (qualité + langues), révélée au survol — image propre au repos. */}
         <CardMetaOverlay item={item} reveal="hover" />
 
-        {/* Bottom-fade so episode label stays readable on bright scenes */}
+        {/* Scrim + libellé épisode posés SUR la vignette : blanc/noir constants
+            dans les deux thèmes (cf. règle « posé sur média »). */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
         <div className="absolute inset-x-0 bottom-1.5 pl-3 pr-28 text-white">
@@ -106,8 +107,8 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
       </div>
 
       <div className="mt-2 px-0.5">
-        <h3 className="truncate text-sm font-medium text-white/90">{seriesName}</h3>
-        {runtime && <p className="mt-0.5 text-xs text-white/45">{runtime}</p>}
+        <h3 className="truncate text-sm font-medium text-content-primary">{seriesName}</h3>
+        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
       </div>
 
       {ctx.ctxMenu && (

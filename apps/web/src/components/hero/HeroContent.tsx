@@ -60,6 +60,10 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
     }
   };
 
+  // Tout ce bloc est en superposition ABSOLUE du backdrop du hero (HeroBackdrop,
+  // image + dégradés) : titre, méta, barre de progression et CTA restent en
+  // blanc/noir dans les deux thèmes — la lisibilité dépend de l'image derrière,
+  // pas du thème choisi. Volontairement non migré (cf. règle « posé sur média »).
   return (
     <div className="absolute inset-x-0 bottom-[15%] z-10 px-4 sm:px-8 md:bottom-[18%] md:px-14 lg:bottom-[20%]">
       <div

@@ -7,10 +7,10 @@ import { isTauriApp, backendUrl } from "../main";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 
 const CTA_PRIMARY =
-  "inline-flex h-11 w-full items-center justify-center rounded-lg bg-white text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
+  "inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
 const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" };
 const INPUT_BASE =
-  "h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
+  "h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -63,10 +63,10 @@ export function Login() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <TentacleLogo size="lg" variant="glow" />
-          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-content-primary">
             {t("tentacle")}
           </h1>
-          <p className="text-sm text-white/55">{t("signInSubtitle")}</p>
+          <p className="text-sm text-content-tertiary">{t("signInSubtitle")}</p>
         </div>
 
         <GlassCard className="p-6">
@@ -84,7 +84,7 @@ export function Login() {
             <>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label htmlFor="username" className="mb-1 block text-xs font-medium text-white/60">
+                  <label htmlFor="username" className="mb-1 block text-xs font-medium text-content-tertiary">
                     {t("username")}
                   </label>
                   <input
@@ -95,7 +95,7 @@ export function Login() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="password" className="mb-1 block text-xs font-medium text-white/60">
+                  <label htmlFor="password" className="mb-1 block text-xs font-medium text-content-tertiary">
                     {t("password")}
                   </label>
                   <input
@@ -128,12 +128,12 @@ export function Login() {
 
               <button
                 onClick={() => setShowForgot(true)}
-                className="mt-3 w-full text-center text-sm font-medium text-white/45 transition-colors hover:text-[var(--brand-light)]"
+                className="mt-3 w-full text-center text-sm font-medium text-content-quaternary transition-colors hover:text-[var(--brand-light)]"
               >
                 {t("forgotPassword")}
               </button>
 
-              <p className="mt-5 text-center text-sm text-white/45">
+              <p className="mt-5 text-center text-sm text-content-quaternary">
                 {t("haveInviteKey")}{" "}
                 <Link to="/register" className="font-semibold text-[var(--brand-light)] hover:underline">
                   {t("createAccount")}
@@ -143,7 +143,7 @@ export function Login() {
               {isTauriApp && (
                 <button
                   onClick={() => changeServer.mutate(undefined, { onSettled: () => window.location.reload() })}
-                  className="mt-5 w-full text-center text-xs font-medium text-white/35 transition-colors hover:text-white/65"
+                  className="mt-5 w-full text-center text-xs font-medium text-content-quaternary transition-colors hover:text-content-tertiary"
                 >
                   {t("changeServer")}
                 </button>
@@ -179,11 +179,11 @@ function ForgotPasswordForm({ t, forgotUsername, setForgotUsername, forgotSendin
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-lg font-bold tracking-tight text-white">{t("forgotPasswordTitle")}</h2>
-        <p className="text-sm text-white/55">{t("forgotPasswordDescription")}</p>
+        <h2 className="text-lg font-bold tracking-tight text-content-primary">{t("forgotPasswordTitle")}</h2>
+        <p className="text-sm text-content-tertiary">{t("forgotPasswordDescription")}</p>
       </div>
       <div>
-        <label htmlFor="forgot-username" className="mb-1 block text-xs font-medium text-white/60">
+        <label htmlFor="forgot-username" className="mb-1 block text-xs font-medium text-content-tertiary">
           {t("username")}
         </label>
         <input
@@ -196,7 +196,7 @@ function ForgotPasswordForm({ t, forgotUsername, setForgotUsername, forgotSendin
       <button type="submit" disabled={forgotSending} className={CTA_PRIMARY} style={CTA_PRIMARY_HALO}>
         {forgotSending ? t("common:sending") : t("sendRequest")}
       </button>
-      <button type="button" onClick={onBack} className="w-full text-center text-sm font-medium text-white/45 transition-colors hover:text-[var(--brand-light)]">
+      <button type="button" onClick={onBack} className="w-full text-center text-sm font-medium text-content-quaternary transition-colors hover:text-[var(--brand-light)]">
         {t("signIn")}
       </button>
     </form>

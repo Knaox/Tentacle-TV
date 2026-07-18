@@ -232,6 +232,9 @@ export function DesktopPlayer({
     ? false
     : sourceChanging || (!state.playing && !hasStartedRef.current);
 
+  // Toile plein écran du lecteur (erreur mpv / pas encore prêt) : même
+  // traitement que le canevas vidéo (letterboxing) → bg-black/text-white
+  // volontairement en dur dans les deux thèmes clair/sombre.
   if (error && onFallbackToWeb) { onFallbackToWeb(); return null; }
   if (error) return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">

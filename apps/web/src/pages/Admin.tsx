@@ -26,8 +26,8 @@ export function Admin() {
     <div id={id} className={cls.card}>
       <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
         <div>
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">{title}{badge}</h2>
-          <p className="mt-1 text-sm text-white/40">{description}</p>
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-content-primary">{title}{badge}</h2>
+          <p className="mt-1 text-sm text-content-quaternary">{description}</p>
         </div>
         <button onClick={() => navigate(to)} className={`${cls.bp} self-start xs:self-auto`} style={cls.bpStyle}>
           {button}
@@ -40,7 +40,7 @@ export function Admin() {
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-white">{t("title")}</h1>
+          <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-content-primary">{t("title")}</h1>
 
           {shortcut(t("pluginsTitle"), t("pluginsDescription"), t("managePlugins"), "/admin/plugins")}
           {/* Gestion du thème : fonctionnalité ALPHA (expérimentale) */}

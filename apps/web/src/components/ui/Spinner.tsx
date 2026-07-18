@@ -41,6 +41,9 @@ export function Spinner({
   );
 }
 
+// "neutral" et "white" : paliers de gris volontairement proches mais distincts
+// (hors granularité de la table fill-*, qui les aurait confondus) — non migrés
+// pour préserver les 3 tons distincts que ce composant expose.
 const TONE_RING: Record<SpinnerTone, string> = {
   brand: "rgba(var(--brand-rgb), 0.18)",
   neutral: "rgba(255, 255, 255, 0.12)",

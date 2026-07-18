@@ -93,7 +93,7 @@ function chipCls(active: boolean, accent: "violet" | "rose" = "violet"): string 
   const base =
     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors backdrop-blur-md";
   if (!active) {
-    return `${base} bg-white/5 text-white/70 ring-1 ring-white/10 hover:bg-white/10 hover:text-white`;
+    return `${base} bg-fill-subtle text-content-secondary ring-1 ring-line-subtle hover:bg-fill-soft hover:text-content-primary`;
   }
   if (accent === "rose") {
     return `${base} bg-[rgba(var(--brand-accent-rgb),0.18)] text-[var(--brand-accent-light)] ring-1 ring-[rgba(var(--brand-accent-rgb),0.45)]`;
@@ -171,7 +171,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
           {t("common:favorites")}
         </button>
 
-        <div className="mx-1 h-5 w-px bg-white/10" />
+        <div className="mx-1 h-5 w-px bg-fill-soft" />
 
         {/* Bouton "Filtres avancés" — même pill que le reste, juste avec icône. */}
         <button

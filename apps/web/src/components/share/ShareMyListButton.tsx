@@ -12,7 +12,7 @@ export function ShareMyListButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        className="flex items-center gap-1.5 rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
       >
         <ShareIcon className="h-4 w-4" />
         {t("common:shareMyList")}

@@ -78,9 +78,11 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
       >
         <CardImage src={imageUrl} alt={item.Name} />
 
-        {/* Badge compteur d'épisodes récemment ajoutés (tuile série groupée). */}
+        {/* Badge compteur d'épisodes récemment ajoutés (tuile série groupée).
+            Texte posé sur un fond de MARQUE (dégradé brand), pas sur l'affiche
+            elle-même : suit le token dédié, identique dans les deux thèmes. */}
         {addedCount > 1 && (
-          <div className="absolute left-1.5 top-1.5 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-[0_2px_8px_rgba(var(--brand-rgb),0.45)]">
+          <div className="absolute left-1.5 top-1.5 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[11px] font-bold leading-none text-cta-brand-fg shadow-[0_2px_8px_rgba(var(--brand-rgb),0.45)]">
             +{addedCount}
           </div>
         )}
@@ -91,7 +93,8 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
             épisode n'aurait pas de sens pour un lot. */}
         {addedCount <= 1 && <CardMetaOverlay item={item} density="compact" reveal="hover" />}
 
-        {/* Bottom dark fade so quick-actions stay readable on bright posters */}
+        {/* Scrim posé SUR l'affiche : blanc/noir constants dans les deux
+            thèmes (cf. règle « posé sur média »). */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/30 to-transparent transition-opacity duration-200"
           style={{ opacity: hovered ? 1 : 0 }}
@@ -106,7 +109,8 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
           <CardQuickActions item={item} variant="compact" />
         </div>
 
-        {/* Watched check (replaces quick actions when watched) */}
+        {/* Watched check (replaces quick actions when watched) — badge d'angle
+            sur poster : reste blanc/noir dans les deux thèmes. */}
         {watched && !hovered && (
           <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow">
             <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
@@ -117,20 +121,20 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
       </div>
 
       <div className="mt-2 px-0.5">
-        <h3 className="truncate text-sm font-medium text-white/90">
+        <h3 className="truncate text-sm font-medium text-content-primary">
           {isEpisode ? (item.SeriesName ?? item.Name) : item.Name}
         </h3>
         {addedCount > 1 ? (
-          <p className="mt-0.5 truncate text-xs text-white/45">
+          <p className="mt-0.5 truncate text-xs text-content-quaternary">
             {t("common:addedEpisodes", { count: addedCount })}
           </p>
         ) : isEpisode ? (
-          <p className="mt-0.5 truncate text-xs text-white/45">
+          <p className="mt-0.5 truncate text-xs text-content-quaternary">
             {[epLabel, item.Name].filter(Boolean).join(" · ")}
           </p>
         ) : (
           item.ProductionYear && (
-            <p className="mt-0.5 text-xs text-white/45">{item.ProductionYear}</p>
+            <p className="mt-0.5 text-xs text-content-quaternary">{item.ProductionYear}</p>
           )
         )}
       </div>

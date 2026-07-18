@@ -17,6 +17,11 @@ import { useChatActivity } from "./useChatActivity";
  * au relâcher, l'overlay est ramené en douceur dans le viewport s'il dépasse.
  * Sur une page player, bulle et panneau suivent le fondu des contrôles
  * (chatUiStore) — les messages restent lisibles via MessageToastLayer.
+ *
+ * Couleurs volontairement en dur (ici et dans ChatPanel/ReactionPicker/
+ * EmojiTab/GifTab) : c'est l'« overlay de chat en lecture » — même verre
+ * sombre flottant au-dessus de la vidéo ou de n'importe quelle page, donc
+ * indépendant du thème choisi.
  */
 
 const GLASS: React.CSSProperties = {

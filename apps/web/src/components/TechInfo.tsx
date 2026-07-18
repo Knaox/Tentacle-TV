@@ -20,33 +20,33 @@ export function TechInfo({ streams }: TechInfoProps) {
     <div className="mt-4">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white/70"
+        className="flex items-center gap-2 text-sm text-content-tertiary transition-colors hover:text-content-secondary"
       >
         <ChevronIcon open={open} />
         {t("media:techInfo")}
       </button>
       {open && (
-        <div className="mt-2 space-y-1.5 rounded-lg bg-white/5 p-3 text-xs text-white/60">
+        <div className="mt-2 space-y-1.5 rounded-lg bg-fill-subtle p-3 text-xs text-content-tertiary">
           {video && (
             <div className="flex items-center gap-2">
-              <span className="font-medium text-white/70">{t("media:video")}:</span>
+              <span className="font-medium text-content-secondary">{t("media:video")}:</span>
               <span>{video.Codec?.toUpperCase()} {video.Width}×{video.Height}</span>
               {video.VideoRangeType && video.VideoRangeType !== "SDR" && (
-                <span className="rounded border border-white/20 px-1.5 py-0.5">{video.VideoRangeType}</span>
+                <span className="rounded border border-line-strong px-1.5 py-0.5">{video.VideoRangeType}</span>
               )}
             </div>
           )}
           {audioTracks.map((a, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="font-medium text-white/70">{t("media:audioTrack")} {i + 1}:</span>
+              <span className="font-medium text-content-secondary">{t("media:audioTrack")} {i + 1}:</span>
               <span>{a.DisplayTitle || a.Codec?.toUpperCase()}</span>
-              {a.Language && <span className="uppercase text-white/40">{a.Language}</span>}
+              {a.Language && <span className="uppercase text-content-quaternary">{a.Language}</span>}
               {a.Channels != null && <span>{a.Channels >= 8 ? "7.1" : a.Channels >= 6 ? "5.1" : `${a.Channels}.0`}</span>}
             </div>
           ))}
           {subtitleCount > 0 && (
             <div className="flex items-center gap-2">
-              <span className="font-medium text-white/70">{t("media:subtitleTracks")}:</span>
+              <span className="font-medium text-content-secondary">{t("media:subtitleTracks")}:</span>
               <span>{subtitleCount} {subtitleCount > 1 ? "tracks" : "track"}</span>
             </div>
           )}

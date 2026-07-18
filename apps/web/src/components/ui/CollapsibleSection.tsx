@@ -24,18 +24,18 @@ export function CollapsibleSection({ title, count, defaultOpen = false, children
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-md"
+        className="flex w-full cursor-pointer items-center justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-line-focus rounded-md"
       >
         <span className="flex items-center gap-2.5">
-          <span className="text-lg font-semibold text-white">{title}</span>
+          <span className="text-lg font-semibold text-content-primary">{title}</span>
           {count != null && (
-            <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white/70">
+            <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-fill-soft px-2 py-0.5 text-xs font-semibold text-content-secondary">
               {count}
             </span>
           )}
         </span>
         <svg
-          className={`h-5 w-5 shrink-0 text-white/40 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`h-5 w-5 shrink-0 text-content-quaternary transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />

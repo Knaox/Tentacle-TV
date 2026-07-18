@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
  * Barre de chargement indéterminée (segment qui glisse). Repli accessible :
  * sous `prefers-reduced-motion`, barre pleine en pulsation douce plutôt qu'un
  * mouvement continu. Réutilisée par l'écran de chargement et l'overlay player.
+ *
+ * Toujours posée sur un backdrop/vidéo → bg-white/12 volontairement en dur.
  */
 export function LoadingBar({ className = "" }: { className?: string }) {
   return (
@@ -26,6 +28,9 @@ interface PlayerLoadingScreenProps {
  * Écran affiché pendant le chargement d'un média (avant le démarrage de la
  * lecture) : bannière de l'épisode/film + barre de chargement. Remplace
  * l'ancien splash animé « poulpe TENTACLE ».
+ *
+ * Posé sur le backdrop de l'épisode/film → couleurs volontairement en dur
+ * (text-white, scrim bg-black) dans les deux thèmes clair/sombre.
  */
 export function PlayerLoadingScreen({ posterUrl, title, subtitle }: PlayerLoadingScreenProps) {
   const { t } = useTranslation("player");

@@ -25,7 +25,7 @@ export function DetailOverview({ item }: DetailOverviewProps) {
   return (
     <>
       {tagline && (
-        <motion.p variants={fadeUp} className="mt-4 text-sm italic text-white/45">
+        <motion.p variants={fadeUp} className="mt-4 text-sm italic text-content-quaternary">
           « {tagline} »
         </motion.p>
       )}
@@ -40,7 +40,7 @@ export function DetailOverview({ item }: DetailOverviewProps) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`text-sm leading-relaxed text-white/75 ${!expanded ? "line-clamp-3" : ""}`}
+                className={`text-sm leading-relaxed text-content-secondary ${!expanded ? "line-clamp-3" : ""}`}
               >
                 <RichOverview text={overview} />
               </motion.p>
@@ -50,7 +50,7 @@ export function DetailOverview({ item }: DetailOverviewProps) {
             <button
               type="button"
               onClick={() => setExpanded((p) => !p)}
-              className="mt-1 text-xs font-medium text-white/65 transition-colors hover:text-white"
+              className="mt-1 text-xs font-medium text-content-tertiary transition-colors hover:text-content-primary"
             >
               {expanded ? t("common:showLess") : t("common:showMore")}
             </button>

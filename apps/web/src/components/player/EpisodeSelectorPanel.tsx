@@ -39,23 +39,25 @@ export function EpisodeSelectorPanel({
   };
 
   return (
+    // Panneau DÉTACHÉ (même traitement que TrackSelector) : fond quasi-opaque
+    // `surface-dropdown`, suit le thème clair/sombre — pas posé sur la vidéo.
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-white/10 bg-black/90 backdrop-blur-xl"
+      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <span className="text-sm font-semibold text-white">{t("player:episodes")}</span>
-        <button onClick={onClose} aria-label={t("player:close")} className="text-lg leading-none text-white/40 transition-colors hover:text-white">
+      <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
+        <span className="text-sm font-semibold text-content-primary">{t("player:episodes")}</span>
+        <button onClick={onClose} aria-label={t("player:close")} className="text-lg leading-none text-content-quaternary transition-colors hover:text-content-primary">
           &times;
         </button>
       </div>
 
       {seasons && seasons.length > 1 && (
         <HorizontalScrollRow
-          wrapperClassName="border-b border-white/10"
+          wrapperClassName="border-b border-line-subtle"
           className="items-center gap-2 px-4 py-2"
           ariaLabel={t("player:episodes")}
         >
@@ -66,7 +68,7 @@ export function EpisodeSelectorPanel({
               className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
                 s.Id === effectiveSeasonId
                   ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                  : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                  : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
               }`}
             >
               {s.Name}
@@ -85,7 +87,7 @@ export function EpisodeSelectorPanel({
           />
         ))}
         {(!episodes || episodes.length === 0) && (
-          <p className="px-3 py-8 text-center text-sm text-white/40">{t("player:noEpisodes")}</p>
+          <p className="px-3 py-8 text-center text-sm text-content-quaternary">{t("player:noEpisodes")}</p>
         )}
       </div>
     </motion.div>
@@ -104,9 +106,11 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
-        active ? "bg-[var(--brand-soft)]" : "hover:bg-white/5"
+        active ? "bg-[var(--brand-soft)]" : "hover:bg-fill-subtle"
       }`}
     >
+      {/* Vignette = image média : badge « vu » et barre de progression restent
+          en dur (posés sur une miniature, comme les cartes média ailleurs). */}
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
         <img src={thumb} alt={ep.Name} loading="lazy" className="h-full w-full object-cover" />
         {watched && (
@@ -121,11 +125,11 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-light)]" : "text-white/45"}`}>
+        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-light)]" : "text-content-quaternary"}`}>
           {epLabel}
         </p>
-        <p className="line-clamp-1 text-sm font-medium text-white/90">{ep.Name}</p>
-        {runtime && <p className="mt-0.5 text-xs text-white/40">{runtime}</p>}
+        <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.Name}</p>
+        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
       </div>
     </button>
   );

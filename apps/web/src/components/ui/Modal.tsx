@@ -113,6 +113,7 @@ export function Modal({
           onClick={handleBackdrop}
           role="presentation"
           style={{
+            // Scrim de modale : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
             background: "rgba(0,0,0,0.65)",
             backdropFilter: "blur(var(--blur-modal))",
             WebkitBackdropFilter: "blur(var(--blur-modal))",

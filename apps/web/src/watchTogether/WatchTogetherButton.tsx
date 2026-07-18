@@ -29,7 +29,7 @@ export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogethe
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all duration-200 hover:bg-white/10 hover:text-white/80"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-all duration-200 hover:bg-fill-soft hover:text-content-secondary"
         style={{ background: "rgba(255,255,255,0.05)" }}
         aria-label="Watch Together"
       >

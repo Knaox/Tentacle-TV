@@ -29,6 +29,9 @@ const RING_C = 2 * Math.PI * RING_R;
  * la vignette de l'épisode suivant + saison/épisode + résumé + compte à rebours
  * bien visible. Auto-play annulable. Cohérente avec le thème glassmorphism
  * violet→rose de l'app (tokens --brand). Lecteur desktop (Tauri / MPV).
+ *
+ * Tout le composant est posé sur la bannière de la série → texte/scrims
+ * volontairement en dur (text-white, bg-black/rgba noir) dans les deux thèmes.
  */
 export function NextEpisodeFullscreen({
   countdown,

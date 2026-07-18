@@ -38,10 +38,10 @@ export function TokenRow({
   }, [draft, value, onApply]);
 
   return (
-    <div className="grid grid-cols-[1fr_auto] items-start gap-3 rounded-lg border border-white/[0.05] bg-white/[0.015] p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
+    <div className="grid grid-cols-[1fr_auto] items-start gap-3 rounded-lg border border-line-subtle bg-fill-faint p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-semibold text-white">
+          <span className="truncate text-sm font-semibold text-content-primary">
             {token.label}
           </span>
           {isOverridden && (
@@ -50,25 +50,25 @@ export function TokenRow({
             </span>
           )}
         </div>
-        <code className="mt-0.5 block truncate text-[11px] text-white/40">
+        <code className="mt-0.5 block truncate text-[11px] text-content-quaternary">
           {token.cssVar ?? token.path}
         </code>
       </div>
 
       <div className="col-span-2 sm:col-span-1">
         <TokenEditor token={token} value={draft} onChange={setDraft} />
-        <p className="mt-1 truncate font-mono text-[10px] text-white/30">
+        <p className="mt-1 truncate font-mono text-[10px] text-content-quaternary">
           default: {token.defaultValue}
         </p>
       </div>
 
       <div className="col-span-2 flex items-center justify-end gap-2 sm:col-span-1">
-        {saving && <span className="text-[10px] text-white/50">…</span>}
+        {saving && <span className="text-[10px] text-content-tertiary">…</span>}
         <button
           type="button"
           onClick={onReset}
           disabled={!isOverridden || saving}
-          className="rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/50 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+          className="rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-content-tertiary transition hover:bg-fill-subtle hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         >
           Reset
         </button>
@@ -87,7 +87,7 @@ function TokenEditor({
   onChange: (next: string) => void;
 }) {
   const sharedInput =
-    "h-9 w-full rounded-md bg-white/[0.06] border border-white/[0.08] px-2 text-xs text-white outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]";
+    "h-9 w-full rounded-md bg-fill-subtle border border-line-subtle px-2 text-xs text-content-primary outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]";
 
   if (token.type === "color") {
     return (
@@ -96,7 +96,7 @@ function TokenEditor({
           type="color"
           value={value.toLowerCase()}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
-          className="h-9 w-12 cursor-pointer rounded-md border border-white/[0.08] bg-transparent"
+          className="h-9 w-12 cursor-pointer rounded-md border border-line-subtle bg-transparent"
         />
         <input
           type="text"

@@ -10,6 +10,9 @@ import { GifTab } from "./GifTab";
  * il hérite ainsi du portail fullscreen, du drag et du layout mobile sans
  * aucun calcul d'ancrage. L'envoi (emoji ou GIF) ne le ferme JAMAIS — il se
  * ferme via X, Échap, le re-clic du déclencheur ou la fermeture du panneau.
+ *
+ * Couleurs volontairement en dur : section du panneau de chat (ChatPanel),
+ * qui garde son verre sombre quel que soit le thème.
  */
 
 export type PickerTab = "emoji" | "gif";

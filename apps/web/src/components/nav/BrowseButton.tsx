@@ -60,8 +60,8 @@ export function BrowseButton() {
         aria-label={t("libraries")}
         className={`group relative flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors duration-200 ${
           open
-            ? "bg-white/10 text-white"
-            : "text-white/70 hover:bg-white/[0.06] hover:text-white"
+            ? "bg-fill-soft text-content-primary"
+            : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
         }`}
       >
         <GridIcon />

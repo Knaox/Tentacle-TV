@@ -43,12 +43,13 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
                 <img src={posterUrl(item)} alt={item.Name} loading="lazy" className="h-full w-full object-cover" />
               </div>
               <div className="p-2">
-                <p className="line-clamp-1 text-sm font-medium text-white">{item.Name}</p>
-                {item.ProductionYear && <p className="text-xs text-white/45">{item.ProductionYear}</p>}
+                <p className="line-clamp-1 text-sm font-medium text-content-primary">{item.Name}</p>
+                {item.ProductionYear && <p className="text-xs text-content-quaternary">{item.ProductionYear}</p>}
               </div>
             </button>
 
-            {/* Case de sélection (connecté) — toggle sans ouvrir la fiche. */}
+            {/* Case de sélection (connecté) — badge posé sur l'affiche, reste
+                constant dans les deux thèmes (règle "posé sur une image"). */}
             {authed && (
               <button
                 type="button"

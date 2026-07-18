@@ -38,7 +38,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         title={t("changePhoto")}
-        className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-white transition-transform duration-200 active:scale-95"
+        className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-cta-brand-fg transition-transform duration-200 active:scale-95"
         style={AVATAR_RING_STYLE}
       >
         {avatarUrl && !imageFailed ? (
@@ -52,6 +52,8 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         ) : (
           initial
         )}
+        {/* Scrim superposé à la photo d'avatar (conteneur absolute inset-0 au-dessus d'un <img>) :
+            reste noir/blanc dans les deux thèmes, hors périmètre de la migration. */}
         <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           {uploading ? (
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -71,7 +73,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         }}
       />
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-xl font-bold text-white">
+        <h1 className="truncate text-xl font-bold text-content-primary">
           {name || t("defaultUsername")}
         </h1>
         {isAdmin ? (
@@ -79,7 +81,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
             {tNav("admin")}
           </span>
         ) : (
-          <p className="mt-1 text-sm text-white/40">{t("title")}</p>
+          <p className="mt-1 text-sm text-content-quaternary">{t("title")}</p>
         )}
       </div>
     </header>
@@ -87,6 +89,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
 }
 
 function CameraIcon() {
+  // Icône affichée dans le scrim posé sur l'avatar (on-media) : reste blanche, hors périmètre.
   return (
     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />

@@ -14,7 +14,7 @@ const variantClasses: Record<Variant, string> = {
   primary: "text-cta-brand-fg shadow-lg shadow-[rgba(var(--brand-rgb),0.2)]",
   secondary: "bg-fill-soft text-content-primary hover:bg-fill-medium border border-line-subtle",
   ghost: "text-content-secondary hover:bg-fill-soft hover:text-content-primary",
-  danger: "bg-danger-surface text-status-error-fg hover:bg-danger-border border border-danger-border",
+  danger: "bg-danger-surface text-status-error-fg hover:bg-danger-surface-hover border border-danger-border",
 };
 
 const variantStyles: Record<Variant, Record<string, string>> = {

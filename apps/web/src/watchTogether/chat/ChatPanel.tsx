@@ -10,6 +10,9 @@ import { ReactionPicker, type PickerTab } from "./picker/ReactionPicker";
  * Watch Together — corps du panneau de chat : liste des messages (auto-scroll
  * collé en bas), sélecteur emojis/GIFs, barre de réactions rapides, champ de
  * saisie.
+ *
+ * Couleurs volontairement en dur : intérieur de l'overlay de chat en lecture
+ * (ChatOverlay), qui garde son verre sombre quel que soit le thème.
  */
 
 const QUICK_EMOJIS = ["😂", "❤️", "🔥", "😮", "👍", "😭"] as const;

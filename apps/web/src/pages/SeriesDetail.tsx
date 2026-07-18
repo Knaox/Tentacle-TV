@@ -30,7 +30,8 @@ export function SeriesDetail() {
     <div className="min-h-screen bg-tentacle-bg">
       <Navbar />
 
-      {/* Hero */}
+      {/* Hero — titre/méta/overview en superposition ABSOLUE du backdrop :
+          restent en blanc/noir dans les deux thèmes (cf. règle « posé sur média »). */}
       <div className="relative h-[50vh] w-full overflow-hidden">
         {backdropUrl && <img src={backdropUrl} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
         <div className="absolute inset-0 bg-gradient-to-t from-tentacle-bg via-tentacle-bg/50 to-transparent" />
@@ -60,7 +61,7 @@ export function SeriesDetail() {
                 className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   selectedSeasonId === s.Id
                     ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]"
-                    : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                    : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
                 }`}
               >
                 {s.Name}
@@ -94,8 +95,9 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
 
   return (
     <div onClick={onPlay}
-      className="group flex cursor-pointer gap-4 rounded-xl bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.07]">
-      {/* Thumbnail */}
+      className="group flex cursor-pointer gap-4 rounded-xl bg-fill-faint p-3 transition-colors hover:bg-fill-soft">
+      {/* Thumbnail — halo/bouton lecture/progression posés SUR la vignette :
+          restent blanc/noir dans les deux thèmes (cf. règle « posé sur média »). */}
       <div className="relative w-44 flex-shrink-0 overflow-hidden rounded-lg bg-tentacle-surface">
         <div className="aspect-video">
           {thumbUrl && <img src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
@@ -115,16 +117,16 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
       {/* Info */}
       <div className="flex-1 py-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">
+          <span className="text-sm font-semibold text-content-primary">
             {ep.IndexNumber}. {ep.Name}
           </span>
           {played && <span className="text-xs text-tentacle-accent">{t("common:watched")}</span>}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-content-quaternary">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
         </div>
-        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2"><RichOverview text={ep.Overview} /></p>}
+        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-content-tertiary line-clamp-2"><RichOverview text={ep.Overview} /></p>}
       </div>
     </div>
   );

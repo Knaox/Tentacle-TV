@@ -108,7 +108,7 @@ function LibraryRow({
   if (isLoading) {
     return (
       <section className="row-gutter mb-10">
-        <h2 className="mb-3 text-base font-semibold text-white/90 md:text-lg">
+        <h2 className="mb-3 text-base font-semibold text-content-primary md:text-lg">
           {t("common:latestAdditions", { name: libraryName })}
         </h2>
         <div className="flex gap-3 overflow-hidden">

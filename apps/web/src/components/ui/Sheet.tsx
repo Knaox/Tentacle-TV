@@ -71,6 +71,7 @@ export function Sheet({
           exit={{ opacity: 0, transition: { duration: 0.12 } }}
           onClick={onClose}
           role="presentation"
+          // Scrim de sheet : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
           style={{ background: "rgba(0,0,0,0.55)" }}
         >
           <motion.div

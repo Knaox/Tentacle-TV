@@ -87,7 +87,7 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
               className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 selectedSeasonId === s.Id
                   ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]"
-                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                  : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
               }`}
             >
               {s.Name}
@@ -102,14 +102,14 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
           <button
             onClick={handleSeasonToggle}
             disabled={isBusy}
-            className="rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+            className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary disabled:opacity-40"
           >
             {allWatched ? t("common:markSeasonUnwatched") : t("common:markSeasonWatched")}
           </button>
           {!ms.isSelecting && (
             <button
               onClick={ms.enterSelectionMode}
-              className="rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
             >
               {t("common:select")}
             </button>
@@ -208,13 +208,13 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
       className={`group flex cursor-pointer gap-4 rounded-xl p-3 transition-colors ${
         isSelecting && isSelected
           ? "bg-tentacle-accent/10 ring-1 ring-tentacle-accent/40"
-          : "bg-white/[0.03] hover:bg-white/[0.07]"
+          : "bg-fill-faint hover:bg-fill-soft"
       }`}>
       {/* Selection checkbox or thumbnail */}
       {isSelecting ? (
         <div className="flex w-24 flex-shrink-0 xs:w-28 items-center justify-center sm:w-44">
           <div className={`h-5 w-5 rounded border-2 transition-colors ${
-            isSelected ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]" : "border-white/30"
+            isSelected ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]" : "border-line-strong"
           }`}>
             {isSelected && (
               <svg className="h-full w-full text-[var(--brand-light)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -228,6 +228,8 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
           <div className="aspect-video">
             {thumbUrl && <FadeImage src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
           </div>
+          {/* Halo + bouton lecture + barre de progression posés SUR la vignette :
+              restent blanc/noir dans les deux thèmes (cf. règle « posé sur média »). */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90">
               <svg className="ml-0.5 h-5 w-5 text-tentacle-bg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
@@ -244,7 +246,7 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
       {/* Info */}
       <div className="flex-1 py-1">
         <div className="flex items-center gap-2">
-          <span className={`text-sm text-white ${isCurrent ? "font-bold" : "font-semibold"}`}>
+          <span className={`text-sm text-content-primary ${isCurrent ? "font-bold" : "font-semibold"}`}>
             {isCurrent && (
               <span
                 className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brand)] align-middle shadow-[0_0_8px_rgba(var(--brand-rgb),0.7)]"
@@ -263,7 +265,7 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
               onClick={handleWatchedToggle}
               title={played ? t("common:markUnwatched") : t("common:markWatched")}
               className={`flex-shrink-0 transition-colors ${
-                played ? "text-tentacle-accent hover:text-white/50" : "text-white/20 hover:text-tentacle-accent"
+                played ? "text-tentacle-accent hover:text-content-tertiary" : "text-content-disabled hover:text-tentacle-accent"
               }`}
             >
               {played ? (
@@ -278,14 +280,14 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
             </button>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-quaternary">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
           {/* Méta qualité + langues à côté du titre (plus sur la miniature). */}
           <QualityChips quality={quality} density="full" />
           <LanguagePill labels={quality.audioLabels} max={3} />
         </div>
-        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2"><RichOverview text={ep.Overview} /></p>}
+        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-content-tertiary line-clamp-2"><RichOverview text={ep.Overview} /></p>}
       </div>
     </div>
   );

@@ -239,6 +239,8 @@ export function VideoPlayer({
         if (dx > 0) skipBy(30);
         else skipBy(-10);
       }}
+      // Toile du lecteur (letterboxing derrière la vidéo) → bg-black
+      // volontairement en dur dans les deux thèmes clair/sombre.
       className={`relative flex h-screen w-screen items-center justify-center bg-black ${showControls ? "" : "cursor-none"}`}>
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}

@@ -57,19 +57,19 @@ export function AccountActions() {
 
   return (
     <section
-      className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03]"
+      className="overflow-hidden rounded-2xl border border-line-subtle bg-fill-faint"
       aria-label={t("title")}
     >
-      <ul className="divide-y divide-white/[0.05]">
+      <ul className="divide-y divide-line-subtle">
         {isTauriApp && (
           <li>
             <button
               type="button"
               onClick={handleChangeServer}
               disabled={busy !== null}
-              className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-white/85 transition-colors active:bg-white/[0.04] disabled:opacity-50"
+              className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-content-secondary transition-colors active:bg-fill-faint disabled:opacity-50"
             >
-              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/70">
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-fill-subtle text-content-secondary">
                 <ServerIcon />
               </span>
               <span className="flex-1">{t("changeServer")}</span>
@@ -81,9 +81,9 @@ export function AccountActions() {
             type="button"
             onClick={handleClearCache}
             disabled={busy !== null}
-            className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-white/85 transition-colors active:bg-white/[0.04] disabled:opacity-50"
+            className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-content-secondary transition-colors active:bg-fill-faint disabled:opacity-50"
           >
-            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/70">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-fill-subtle text-content-secondary">
               <TrashIcon />
             </span>
             <span className="flex-1">{t("clearCache")}</span>

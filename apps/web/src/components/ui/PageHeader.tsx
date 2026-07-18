@@ -43,7 +43,7 @@ export function PageHeader({
               backTo === -1 ? navigate(-1) : navigate(backTo as string)
             }
             aria-label="Retour"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/75 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-line-subtle bg-fill-subtle text-content-secondary transition-colors hover:border-line-strong hover:bg-fill-soft hover:text-content-primary"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -52,14 +52,14 @@ export function PageHeader({
         )}
         <div className="min-w-0">
           <h1
-            className={`truncate font-bold tracking-tight text-white ${
+            className={`truncate font-bold tracking-tight text-content-primary ${
               hero ? "text-display-3 md:text-display-2" : "text-2xl md:text-3xl"
             }`}
           >
             {title}
           </h1>
           {subtitle && (
-            <div className="mt-1.5 text-sm text-white/55">{subtitle}</div>
+            <div className="mt-1.5 text-sm text-content-tertiary">{subtitle}</div>
           )}
         </div>
       </div>

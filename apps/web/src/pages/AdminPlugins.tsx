@@ -22,8 +22,8 @@ export function AdminPlugins() {
     <PageTransition>
     <div className="px-4 pt-6 pb-16 md:px-12">
       <div className="mx-auto max-w-4xl">
-        <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-white">{t("adminPlugins:pageTitle")}</h1>
-        <p className="mb-6 text-sm text-white/50">
+        <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-content-primary">{t("adminPlugins:pageTitle")}</h1>
+        <p className="mb-6 text-sm text-content-tertiary">
           {t("adminPlugins:subtitle")}
         </p>
 

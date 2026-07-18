@@ -31,13 +31,13 @@ export function Credits() {
   return (
     <PageTransition>
     <div className="mx-auto max-w-2xl px-6 pt-12">
-      <h1 className="text-2xl font-bold text-white">{t("about:creditsTitle")}</h1>
-      <p className="mt-3 text-sm leading-relaxed text-white/60">
+      <h1 className="text-2xl font-bold text-content-primary">{t("about:creditsTitle")}</h1>
+      <p className="mt-3 text-sm leading-relaxed text-content-tertiary">
         {t("about:creditsIntro")}
       </p>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:technologies")}</h2>
-      <ul className="mt-3 divide-y divide-white/5">
+      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:technologies")}</h2>
+      <ul className="mt-3 divide-y divide-line-subtle">
         {TECH_STACK.map((tk) => (
           <li key={tk.name} className="flex items-center justify-between py-2.5">
             <div>
@@ -46,15 +46,15 @@ export function Credits() {
                 className="text-sm font-medium text-[var(--brand)] hover:underline">
                 {tk.name}
               </a>
-              <p className="text-xs text-white/40">{tk.desc}</p>
+              <p className="text-xs text-content-quaternary">{tk.desc}</p>
             </div>
             <ExternalIcon />
           </li>
         ))}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:compatibleServices")}</h2>
-      <ul className="mt-3 divide-y divide-white/5">
+      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:compatibleServices")}</h2>
+      <ul className="mt-3 divide-y divide-line-subtle">
         {SERVICES.map((s) => (
           <li key={s.name} className="flex items-center justify-between py-2.5">
             <div>
@@ -63,19 +63,19 @@ export function Credits() {
                 className="text-sm font-medium text-[var(--brand)] hover:underline">
                 {s.name}
               </a>
-              <p className="text-xs text-white/40">{s.desc}</p>
+              <p className="text-xs text-content-quaternary">{s.desc}</p>
             </div>
             <ExternalIcon />
           </li>
         ))}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:license")}</h2>
-      <p className="mt-3 text-sm leading-relaxed text-white/60">
+      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:license")}</h2>
+      <p className="mt-3 text-sm leading-relaxed text-content-tertiary">
         {t("about:licenseText")}
       </p>
 
-      <p className="mt-12 text-xs text-white/30">
+      <p className="mt-12 text-xs text-content-quaternary">
         {t("about:creditsDisclaimer")}
       </p>
     </div>
@@ -85,7 +85,7 @@ export function Credits() {
 
 function ExternalIcon() {
   return (
-    <svg className="h-4 w-4 flex-shrink-0 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="h-4 w-4 flex-shrink-0 text-content-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
     </svg>
   );

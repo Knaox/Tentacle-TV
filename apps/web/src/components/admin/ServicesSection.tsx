@@ -9,7 +9,7 @@ interface SvcData {
 }
 
 const dot = (s: string) =>
-  `inline-block h-2 w-2 rounded-full mr-1.5 ${s === "connected" ? "bg-[var(--status-success-fg)]" : s === "error" ? "bg-[var(--status-error-fg)]" : "bg-white/30"}`;
+  `inline-block h-2 w-2 rounded-full mr-1.5 ${s === "connected" ? "bg-[var(--status-success-fg)]" : s === "error" ? "bg-[var(--status-error-fg)]" : "bg-fill-strong"}`;
 
 /**
  * Section "Services" admin (Jellyfin + DB + reset). Extraite depuis Admin.tsx
@@ -98,8 +98,8 @@ export function ServicesSection() {
   if (!d) {
     return (
       <div className={cls.card}>
-        <h2 className="text-lg font-semibold text-white">{t("services")}</h2>
-        <p className="mt-2 text-sm text-white/40">{t("loading", { ns: "common" })}</p>
+        <h2 className="text-lg font-semibold text-content-primary">{t("services")}</h2>
+        <p className="mt-2 text-sm text-content-quaternary">{t("loading", { ns: "common" })}</p>
       </div>
     );
   }
@@ -109,15 +109,15 @@ export function ServicesSection() {
 
   return (
     <div className={`${cls.card} space-y-6`}>
-      <h2 className="text-lg font-semibold text-white">{t("services")}</h2>
+      <h2 className="text-lg font-semibold text-content-primary">{t("services")}</h2>
 
       {/* Jellyfin */}
       <div className={cls.sub}>
         <div className="flex flex-wrap items-center gap-2">
           <span className={dot(d.jellyfin.status)} />
-          <span className="text-sm font-medium text-white">{t("jellyfin")}</span>
-          <span className="text-xs text-white/40">{sLabel(d.jellyfin.status)}</span>
-          {d.jellyfin.version && <span className="ml-auto rounded bg-white/5 px-2 py-0.5 text-xs text-white/50">v{d.jellyfin.version}</span>}
+          <span className="text-sm font-medium text-content-primary">{t("jellyfin")}</span>
+          <span className="text-xs text-content-quaternary">{sLabel(d.jellyfin.status)}</span>
+          {d.jellyfin.version && <span className="ml-auto rounded bg-fill-subtle px-2 py-0.5 text-xs text-content-tertiary">v{d.jellyfin.version}</span>}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -140,8 +140,8 @@ export function ServicesSection() {
       <div className={cls.sub}>
         <div className="flex flex-wrap items-center gap-2">
           <span className={dot(d.database.status)} />
-          <span className="text-sm font-medium text-white">{t("database")}</span>
-          <span className="text-xs text-white/40">{sLabel(d.database.status)}</span>
+          <span className="text-sm font-medium text-content-primary">{t("database")}</span>
+          <span className="text-xs text-content-quaternary">{sLabel(d.database.status)}</span>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="sm:col-span-2">
@@ -174,7 +174,7 @@ export function ServicesSection() {
         <p className="text-xs text-[var(--status-warning-fg)]/80">{t("dbRestartNote")}</p>
 
         {/* Reset server */}
-        <div className="mt-4 border-t border-white/[0.06] pt-4">
+        <div className="mt-4 border-t border-line-subtle pt-4">
           {!resetConfirm ? (
             <button onClick={() => setResetConfirm(true)} disabled={!!busy}
               className={cls.bd}>
@@ -183,7 +183,7 @@ export function ServicesSection() {
           ) : (
             <div className="space-y-3 rounded-lg border border-[var(--status-error)]/30 bg-[var(--status-error-bg)] p-4">
               <p className="text-sm font-medium text-[var(--status-error-fg)]">{t("resetConfirmTitle")}</p>
-              <p className="text-xs text-white/50">{t("resetConfirmMessage")}</p>
+              <p className="text-xs text-content-tertiary">{t("resetConfirmMessage")}</p>
               <div className="flex flex-wrap gap-2">
                 <button onClick={resetServer} disabled={!!busy}
                   className={cls.bd}>

@@ -66,7 +66,7 @@ export function InvitesSection({ id }: Props) {
   return (
     <>
       <div className={cls.card} id={id}>
-        <h2 className="mb-4 text-lg font-semibold text-white">{t("generateInvite")}</h2>
+        <h2 className="mb-4 text-lg font-semibold text-content-primary">{t("generateInvite")}</h2>
         <div className="flex flex-col gap-3 xs:flex-row xs:flex-wrap xs:items-end xs:gap-4">
           <div className="xs:w-28">
             <label className={cls.lbl}>{t("maxUses")}</label>
@@ -95,11 +95,11 @@ export function InvitesSection({ id }: Props) {
           aria-expanded={expanded}
           className="flex w-full items-center justify-between text-left"
         >
-          <span className="text-lg font-semibold text-white">
+          <span className="text-lg font-semibold text-content-primary">
             {t("existingInvites")}
-            <span className="ml-2 text-sm font-normal text-white/40">({invites.length})</span>
+            <span className="ml-2 text-sm font-normal text-content-quaternary">({invites.length})</span>
           </span>
-          <svg className={`h-5 w-5 text-white/50 transition-transform ${expanded ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <svg className={`h-5 w-5 text-content-tertiary transition-transform ${expanded ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
           </svg>
         </button>
@@ -107,7 +107,7 @@ export function InvitesSection({ id }: Props) {
         {expanded && (
           <div className="mt-4">
             {invites.length === 0 ? (
-              <p className="text-sm text-white/40">{t("noInvites")}</p>
+              <p className="text-sm text-content-quaternary">{t("noInvites")}</p>
             ) : (
               <div className="space-y-3">
                 {invites.map((inv) => {
@@ -115,11 +115,11 @@ export function InvitesSection({ id }: Props) {
                   const full = inv.currentUses >= inv.maxUses;
                   const active = !expired && !full;
                   return (
-                    <div key={inv.id} className={`rounded-lg border p-4 ${active ? "border-white/[0.06]" : "border-white/[0.04] opacity-50"}`}>
+                    <div key={inv.id} className={`rounded-lg border p-4 ${active ? "border-line-subtle" : "border-line-subtle opacity-50"}`}>
                       <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between xs:gap-4">
                         <div className="min-w-0">
                           <code className="block break-all text-sm font-mono text-[var(--brand-light)]">{inv.key}</code>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/40">
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-content-quaternary">
                             <span>{t("usesCount", { current: inv.currentUses, max: inv.maxUses })}</span>
                             {inv.expiresAt && <span>{t("expiresOn", { date: new Date(inv.expiresAt).toLocaleDateString() })}</span>}
                             <span>{t("createdOn", { date: new Date(inv.createdAt).toLocaleDateString() })}</span>
@@ -127,7 +127,7 @@ export function InvitesSection({ id }: Props) {
                           {inv.usages.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {inv.usages.map((u) => (
-                                <span key={u.username} className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/50">{u.username}</span>
+                                <span key={u.username} className="rounded bg-fill-subtle px-2 py-0.5 text-xs text-content-tertiary">{u.username}</span>
                               ))}
                             </div>
                           )}
@@ -143,7 +143,7 @@ export function InvitesSection({ id }: Props) {
                             disabled={deletingId === inv.id}
                             aria-label={t("deleteInvite")}
                             title={t("deleteInvite")}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] text-white/50 transition-colors hover:border-red-400/50 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line-subtle text-content-tertiary transition-colors hover:border-danger-border hover:bg-danger-surface hover:text-status-error-fg disabled:opacity-40"
                           >
                             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 0v12a1 1 0 001 1h6a1 1 0 001-1V7" />

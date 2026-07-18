@@ -46,7 +46,7 @@ export function Toast({ type, message, onDismiss }: ToastProps) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 50 }}
       transition={{ duration: 0.2 }}
-      className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-white shadow-lg"
+      className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg"
       style={{ background: c.bg, border: `1px solid ${c.border}`, backdropFilter: "blur(12px)" }}
       onClick={onDismiss}
     >

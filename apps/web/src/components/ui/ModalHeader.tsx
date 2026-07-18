@@ -21,12 +21,12 @@ export function ModalHeader({ title, subtitle, onClose, titleId }: ModalHeaderPr
       <div className="min-w-0 flex-1">
         <h2
           id={titleId}
-          className="truncate text-lg font-semibold tracking-tight text-white"
+          className="truncate text-lg font-semibold tracking-tight text-content-primary"
         >
           {title}
         </h2>
         {subtitle && (
-          <p className="mt-1 text-sm text-white/55">{subtitle}</p>
+          <p className="mt-1 text-sm text-content-tertiary">{subtitle}</p>
         )}
       </div>
       {onClose && (
@@ -34,7 +34,7 @@ export function ModalHeader({ title, subtitle, onClose, titleId }: ModalHeaderPr
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="-mr-2 -mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+          className="-mr-2 -mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

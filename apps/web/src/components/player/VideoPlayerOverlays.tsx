@@ -30,6 +30,9 @@ interface VideoPlayerOverlaysProps {
  * Overlays du player web : chargement (bannière initiale / spinner en cours de
  * lecture), bouton play (autoplay policy), badge « appuyer pour le son »,
  * boutons « passer l'intro / le générique ». Extraction mécanique de VideoPlayer.
+ *
+ * Tout est posé sur la vidéo → text-white/bg-black volontairement en dur,
+ * identiques dans les deux thèmes clair/sombre.
  */
 export function VideoPlayerOverlays({
   loading, playing, showPlayButton, policyMuted, posterUrl,

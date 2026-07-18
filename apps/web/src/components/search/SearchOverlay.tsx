@@ -52,6 +52,8 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     <div
       className="fixed inset-0 z-[100] flex flex-col"
       style={{
+        // Fond du takeover recherche : littéral hors table (implémentation ad
+        // hoc, pas de surface-* adaptatif câblé) — non migré, cf. rapport.
         background: "rgba(0,0,0,0.92)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
@@ -64,23 +66,23 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     >
       {/* Header — input + close */}
       <div
-        className="row-gutter flex items-center gap-4 border-b border-white/[0.06] py-5"
+        className="row-gutter flex items-center gap-4 border-b border-line-subtle py-5"
         onClick={(e) => e.stopPropagation()}
         style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top, 0px))" }}
       >
-        <SearchIcon className="h-6 w-6 flex-shrink-0 text-white/55" />
+        <SearchIcon className="h-6 w-6 flex-shrink-0 text-content-tertiary" />
         <input
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("common:searchMediaLong")}
-          className="flex-1 bg-transparent text-2xl font-light text-white placeholder-white/30 outline-none md:text-3xl"
+          className="flex-1 bg-transparent text-2xl font-light text-content-primary placeholder-content-quaternary outline-none md:text-3xl"
         />
         <button
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
         >
           <CloseIcon />
         </button>
@@ -92,19 +94,20 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {debounced.length < 2 && (
-          <p className="pt-4 text-center text-sm text-white/35">
+          <p className="pt-4 text-center text-sm text-content-quaternary">
             {t("common:searchPlaceholder")}
           </p>
         )}
 
         {debounced.length >= 2 && isLoading && (
           <div className="flex justify-center pt-12">
+            {/* Spinner posé sur le fond figé rgba(0,0,0,0.92) ci-dessus : reste blanc. */}
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-white" />
           </div>
         )}
 
         {debounced.length >= 2 && !isLoading && (!results || results.length === 0) && (
-          <p className="pt-12 text-center text-sm text-white/45">{t("common:noResults")}</p>
+          <p className="pt-12 text-center text-sm text-content-quaternary">{t("common:noResults")}</p>
         )}
 
         {debounced.length >= 2 && visibleResults.length > 0 && (
@@ -176,8 +179,8 @@ function ResultCard({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
         </div>
-        <p className="mt-2 truncate text-sm font-medium text-white/90">{item.Name}</p>
-        <p className="text-xs text-white/45">
+        <p className="mt-2 truncate text-sm font-medium text-content-primary">{item.Name}</p>
+        <p className="text-xs text-content-quaternary">
           {type}
           {item.ProductionYear ? ` · ${item.ProductionYear}` : ""}
         </p>

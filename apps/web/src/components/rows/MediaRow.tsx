@@ -53,7 +53,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
     return (
       <section className="mb-8">
         <RowHeader title={title} />
-        <p className="row-gutter text-sm text-white/45">{t("common:noResults")}</p>
+        <p className="row-gutter text-sm text-content-quaternary">{t("common:noResults")}</p>
       </section>
     );
   }

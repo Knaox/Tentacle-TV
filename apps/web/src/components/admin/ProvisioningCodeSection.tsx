@@ -125,17 +125,17 @@ export function ProvisioningCodeSection() {
   return (
     <div className={cls.card}>
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-white">{t("provisioningTitle")}</h2>
+        <h2 className="text-lg font-semibold text-content-primary">{t("provisioningTitle")}</h2>
         <span
-          className={`${cls.chip} ${state.enabled ? "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]" : "bg-white/10 text-white/50"}`}
+          className={`${cls.chip} ${state.enabled ? "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]" : "bg-fill-soft text-content-tertiary"}`}
         >
           {state.enabled ? t("provisioningEnabled") : t("provisioningDisable")}
         </span>
       </div>
-      <p className="mb-4 text-sm text-white/40">{t("provisioningDescription")}</p>
+      <p className="mb-4 text-sm text-content-quaternary">{t("provisioningDescription")}</p>
 
       {readOnly && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-[var(--status-warning)]/30 bg-[var(--status-warning-bg)] px-3 py-2 text-xs text-[var(--status-warning-fg)]">
           <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.4 14.55A1.5 1.5 0 003.19 21h17.62a1.5 1.5 0 001.3-2.59l-8.4-14.55a1.5 1.5 0 00-2.62 0z" />
           </svg>
@@ -147,7 +147,7 @@ export function ProvisioningCodeSection() {
         {/* Code */}
         <label className={cls.lbl}>{t("provisioningCodeLabel")}</label>
         <div className="flex flex-wrap items-center gap-3">
-          <code className="rounded-lg bg-white/[0.06] px-3 py-2 text-lg font-bold tracking-[0.3em] text-white">
+          <code className="rounded-lg bg-fill-subtle px-3 py-2 text-lg font-bold tracking-[0.3em] text-content-primary">
             {state.code}
           </code>
           <button onClick={copyCode} className={`${cls.bs} pointer-events-auto`}>{t("provisioningCopy")}</button>
@@ -157,7 +157,7 @@ export function ProvisioningCodeSection() {
         {/* Compte dédié */}
         <label className={`${cls.lbl} mt-4`}>{t("provisioningAccount")}</label>
         {state.account && (
-          <p className="text-xs text-white/40">{t("provisioningCurrentAccount", { name: state.account })}</p>
+          <p className="text-xs text-content-quaternary">{t("provisioningCurrentAccount", { name: state.account })}</p>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -179,7 +179,7 @@ export function ProvisioningCodeSection() {
             className={`${cls.inp} min-w-[180px] flex-1`}
           />
         </div>
-        <p className="text-xs text-white/30">{t("provisioningAccountHelp")}</p>
+        <p className="text-xs text-content-quaternary">{t("provisioningAccountHelp")}</p>
 
         {/* Expiration + actions */}
         <label className={`${cls.lbl} mt-4`}>{t("provisioningExpiresAt")}</label>

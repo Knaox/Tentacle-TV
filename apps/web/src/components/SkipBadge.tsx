@@ -6,6 +6,9 @@ export interface SkipFlash {
 /**
  * Badge éphémère « +30s / −10s » après un saut (boutons ±10/30, flèches
  * clavier, swipe) — pilule latérale côté du sens du saut, façon Netflix.
+ *
+ * Posé sur la vidéo → border-white/bg-black/text-white volontairement en dur
+ * dans les deux thèmes clair/sombre.
  */
 export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
   if (!flash) return null;

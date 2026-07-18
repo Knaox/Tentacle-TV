@@ -7,10 +7,10 @@ import { TentacleLogo } from "../components/ui/TentacleLogo";
 // boutons du setup soient raccord avec le reste de l'app : blanc/bold + halo
 // purple en primary, surface glass légère en secondary.
 const CTA_PRIMARY =
-  "inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
+  "inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
 const CTA_PRIMARY_HALO = { boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" };
 const CTA_SECONDARY =
-  "inline-flex h-11 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.06] px-5 text-sm font-semibold text-white transition-all hover:border-white/[0.14] hover:bg-white/[0.10] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-5 text-sm font-semibold text-content-primary transition-all hover:border-line-strong hover:bg-fill-soft active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40";
 
 type SetupStep = "db" | "jellyfin" | "admin";
 
@@ -66,7 +66,7 @@ export function ServerSetup({ onComplete }: SetupProps) {
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
       {/* Language toggle */}
-      <div className="absolute right-4 top-4 flex overflow-hidden rounded-lg border border-white/10">
+      <div className="absolute right-4 top-4 flex overflow-hidden rounded-lg border border-line-subtle">
         {["fr", "en"].map((lng) => (
           <button
             key={lng}
@@ -74,7 +74,7 @@ export function ServerSetup({ onComplete }: SetupProps) {
             className={`px-3 py-1.5 text-xs font-medium transition ${
               i18n.language === lng
                 ? "bg-[rgba(var(--brand-rgb),0.3)] text-[var(--brand-light)]"
-                : "text-white/40 hover:text-white/60"
+                : "text-content-quaternary hover:text-content-tertiary"
             }`}
           >
             {lng.toUpperCase()}
@@ -112,10 +112,10 @@ function StepHeader({ step }: { step: SetupStep }) {
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
             <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              i < idx ? "bg-green-500/20 border border-green-400/45 text-green-300" : i === idx ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-white/10 text-white/40"
-            }`}>{i < idx ? "\u2713" : i + 1}</div>
-            <span className={`text-xs ${i === idx ? "text-white" : "text-white/40"}`}>{s.label}</span>
-            {i < steps.length - 1 && <div className="h-px w-6 bg-white/20" />}
+              i < idx ? "bg-status-success-bg border border-status-success text-status-success-fg" : i === idx ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-fill-soft text-content-quaternary"
+            }`}>{i < idx ? "✓" : i + 1}</div>
+            <span className={`text-xs ${i === idx ? "text-content-primary" : "text-content-quaternary"}`}>{s.label}</span>
+            {i < steps.length - 1 && <div className="h-px w-6 bg-fill-medium" />}
           </div>
         ))}
       </div>
@@ -169,7 +169,7 @@ function DbStep({ onNext }: { onNext: () => void }) {
   return (
     <GlassCard className="p-6">
       <h2 className="mb-1 text-lg font-semibold">{t("dbTitle")}</h2>
-      <p className="mb-4 text-sm text-white/50">{t("dbSubtitle")}</p>
+      <p className="mb-4 text-sm text-content-tertiary">{t("dbSubtitle")}</p>
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 xs:grid-cols-3">
           <div className="xs:col-span-2"><Inp label={t("dbHost")} value={host} set={setHost} /></div>
@@ -179,8 +179,8 @@ function DbStep({ onNext }: { onNext: () => void }) {
         <Inp label={t("dbUser")} value={user} set={setUser} />
         <Inp label={t("dbPassword")} value={password} set={setPassword} type="password" />
       </div>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      {ok && <p className="mt-3 text-sm text-green-400">{t("dbConnectionSuccess")}</p>}
+      {error && <p className="mt-3 text-sm text-status-error-fg">{error}</p>}
+      {ok && <p className="mt-3 text-sm text-status-success-fg">{t("dbConnectionSuccess")}</p>}
       <div className="mt-4 flex gap-3">
         <Btn onClick={handleTest} disabled={testing || !password} secondary>
           {testing ? t("dbTesting") : t("dbTestConnection")}
@@ -228,13 +228,13 @@ function JellyfinStep({ onNext }: { onNext: () => void }) {
   return (
     <GlassCard className="p-6">
       <h2 className="mb-1 text-lg font-semibold">{t("jellyfinTitle")}</h2>
-      <p className="mb-4 text-sm text-white/50">{t("jellyfinSubtitle")}</p>
+      <p className="mb-4 text-sm text-content-tertiary">{t("jellyfinSubtitle")}</p>
       <div className="space-y-3">
         <Inp label={t("jellyfinUrl")} value={url} set={setUrl} placeholder={t("jellyfinUrlPlaceholder")} />
         <Inp label={t("jellyfinApiKey")} value={apiKey} set={setApiKey} />
       </div>
-      {version && <p className="mt-3 text-sm text-green-400">{t("jellyfinDetected", { version })}</p>}
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {version && <p className="mt-3 text-sm text-status-success-fg">{t("jellyfinDetected", { version })}</p>}
+      {error && <p className="mt-3 text-sm text-status-error-fg">{error}</p>}
       <div className="mt-4 flex gap-3">
         <Btn onClick={handleTest} disabled={testing || !url || !apiKey} secondary>
           {testing ? t("dbTesting") : t("jellyfinTest")}
@@ -269,14 +269,14 @@ function AdminStep({ onComplete }: { onComplete: (token: string, user: any) => v
   return (
     <GlassCard className="p-6">
       <h2 className="mb-1 text-lg font-semibold">{t("adminTitle")}</h2>
-      <p className="mb-4 text-sm text-white/50">
+      <p className="mb-4 text-sm text-content-tertiary">
         {t("adminSubtitle")}
       </p>
       <div className="space-y-3">
         <Inp label={t("adminUsername")} value={username} set={setUsername} />
         <Inp label={t("adminPassword")} value={password} set={setPassword} type="password" />
       </div>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-status-error-fg">{error}</p>}
       <div className="mt-4">
         <Btn onClick={handleCreate} disabled={creating || !username || !password} className="w-full">
           {creating ? t("adminVerifying") : t("adminVerifyCreate")}
@@ -291,9 +291,9 @@ function Inp({ label, value, set, placeholder, type = "text" }: {
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-white/60">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-content-tertiary">{label}</label>
       <input type={type} value={value} onChange={(e) => set(e.target.value)} placeholder={placeholder}
-        className="h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30" />
+        className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30" />
     </div>
   );
 }

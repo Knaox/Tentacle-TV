@@ -145,26 +145,26 @@ export function PairDevice() {
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-4xl">
-        <h1 className="mb-2 text-xl font-bold text-white sm:text-2xl">
+        <h1 className="mb-2 text-xl font-bold text-content-primary sm:text-2xl">
           {t("pairing:pairYourTV")}
         </h1>
-        <p className="mb-6 text-sm text-white/50 sm:mb-8">
+        <p className="mb-6 text-sm text-content-tertiary sm:mb-8">
           {t("pairing:enterTVCode")}
         </p>
 
         {available === false ? (
           <PairingLockedNotice isAdmin={isAdmin} />
         ) : available === null ? (
-          <div className="flex justify-center rounded-xl border border-white/5 bg-white/[0.03] p-10">
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+          <div className="flex justify-center rounded-xl border border-line-subtle bg-fill-faint p-10">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-line-strong border-t-content-primary" />
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 xs:p-6 sm:p-8">
+            <div className="rounded-xl border border-line-subtle bg-fill-faint p-4 xs:p-6 sm:p-8">
               {status === "success" ? (
                 <div className="flex flex-col items-center gap-3 py-4">
-                  <div className="text-5xl text-green-400">&#x2713;</div>
-                  <p className="text-lg font-semibold text-green-400">
+                  <div className="text-5xl text-status-success-fg">&#x2713;</div>
+                  <p className="text-lg font-semibold text-status-success-fg">
                     {t("pairing:tvPairedSuccess")}
                   </p>
                 </div>
@@ -187,10 +187,10 @@ export function PairDevice() {
                         disabled={status === "pairing"}
                         className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition-all xs:h-16 xs:w-14 xs:text-2xl ${
                           status === "error"
-                            ? "bg-red-500/10 ring-2 ring-red-500 text-white"
+                            ? "bg-danger-surface ring-2 ring-status-error text-content-primary"
                             : char
-                            ? "bg-[rgba(var(--brand-rgb),0.1)] ring-2 ring-[var(--brand)] text-white"
-                            : "bg-white/[0.03] ring-1 ring-white/10 text-white"
+                            ? "bg-[rgba(var(--brand-rgb),0.1)] ring-2 ring-[var(--brand)] text-content-primary"
+                            : "bg-fill-faint ring-1 ring-line-subtle text-content-primary"
                         } focus:ring-2 focus:ring-[var(--brand)] disabled:opacity-50`}
                       />
                     ))}
@@ -198,7 +198,7 @@ export function PairDevice() {
 
                   {/* Error message */}
                   {status === "error" && errorMsg && (
-                    <p className="mt-4 text-center text-sm text-red-400">
+                    <p className="mt-4 text-center text-sm text-status-error-fg">
                       {errorMsg}
                     </p>
                   )}
@@ -208,7 +208,7 @@ export function PairDevice() {
                     {status === "error" ? (
                       <button
                         onClick={handleReset}
-                        className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90"
+                        className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition hover:bg-cta-primary-bg-hover"
                         style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
                       >
                         {t("common:retry")}
@@ -217,12 +217,12 @@ export function PairDevice() {
                       <button
                         onClick={handleSubmit}
                         disabled={!canSubmit}
-                        className="rounded-lg h-11 px-5 bg-white text-black text-sm font-bold transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition hover:bg-cta-primary-bg-hover disabled:cursor-not-allowed disabled:opacity-40"
                         style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
                       >
                         {status === "pairing" ? (
                           <span className="flex items-center gap-2">
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-cta-primary-fg border-t-transparent" />
                             {t("pairing:pairing")}
                           </span>
                         ) : (
@@ -235,7 +235,7 @@ export function PairDevice() {
               )}
             </div>
 
-            <p className="mt-6 text-center text-xs text-white/30">
+            <p className="mt-6 text-center text-xs text-content-quaternary">
               {t("pairing:codeExpireNote")}
             </p>
           </>

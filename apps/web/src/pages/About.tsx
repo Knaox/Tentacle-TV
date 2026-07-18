@@ -36,7 +36,7 @@ export function About() {
         <TentacleLogo size="xl" variant="glow" />
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-4xl font-bold tracking-tight text-white">Tentacle TV</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-content-primary">Tentacle TV</h1>
             {preReleaseTag && (
               <span
                 className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] backdrop-blur-md"
@@ -50,16 +50,16 @@ export function About() {
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-white/55">{t("about:version", { version: versionLabel })} — {platform}</p>
+          <p className="mt-1 text-sm text-content-tertiary">{t("about:version", { version: versionLabel })} — {platform}</p>
         </div>
       </div>
 
-      <p className="mt-8 leading-relaxed text-white/70">
+      <p className="mt-8 leading-relaxed text-content-secondary">
         {t("about:description")}
       </p>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:features")}</h2>
-      <ul className="mt-3 space-y-2 text-sm text-white/60">
+      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:features")}</h2>
+      <ul className="mt-3 space-y-2 text-sm text-content-tertiary">
         <li className="flex items-center gap-2"><Dot /> {t("about:featurePlayer")}</li>
         <li className="flex items-center gap-2"><Dot /> {t("about:featureResume")}</li>
         <li className="flex items-center gap-2"><Dot /> {t("about:featureRequests")}</li>
@@ -68,8 +68,8 @@ export function About() {
         <li className="flex items-center gap-2"><Dot /> {t("about:featureNotifications")}</li>
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-white">{t("about:contact")}</h2>
-      <p className="mt-3 text-sm text-white/60">
+      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:contact")}</h2>
+      <p className="mt-3 text-sm text-content-tertiary">
         {t("about:contactText")}
       </p>
 
@@ -82,7 +82,7 @@ export function About() {
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
       </Link>
 
-      <p className="mt-8 text-xs text-white/30">
+      <p className="mt-8 text-xs text-content-quaternary">
         {t("about:copyright", { version: versionLabel, year: new Date().getFullYear() })}
       </p>
     </div>

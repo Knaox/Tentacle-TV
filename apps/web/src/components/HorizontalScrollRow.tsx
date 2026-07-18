@@ -38,7 +38,7 @@ export function HorizontalScrollRow({
           if (e.key === "ArrowRight") { e.preventDefault(); scrollBy("right"); }
           else if (e.key === "ArrowLeft") { e.preventDefault(); scrollBy("left"); }
         }}
-        className={`flex overflow-x-auto scrollbar-hide outline-none rounded-md focus-visible:ring-2 focus-visible:ring-white/30 ${className}`}
+        className={`flex overflow-x-auto scrollbar-hide outline-none rounded-md focus-visible:ring-2 focus-visible:ring-line-strong ${className}`}
         style={{ overscrollBehaviorX: "contain", scrollBehavior: "smooth", ...innerStyle }}
       >
         {children}
@@ -79,7 +79,7 @@ function ChevronEdge({
       }}
     >
       <span
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-sm transition-transform duration-150 hover:bg-white/20 hover:scale-105"
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-fill-soft text-content-primary ring-1 ring-line-strong backdrop-blur-sm transition-transform duration-150 hover:bg-fill-medium hover:scale-105"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           {side === "left" ? (

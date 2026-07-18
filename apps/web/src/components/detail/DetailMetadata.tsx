@@ -31,11 +31,11 @@ export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps)
     <>
       <motion.div
         variants={fadeUp}
-        className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-white/70"
+        className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-content-secondary"
       >
         {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
         {item.OfficialRating && (
-          <span className="rounded border border-white/30 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">
+          <span className="rounded border border-line-strong px-1.5 py-0.5 text-[10px] font-bold tracking-wider">
             {item.OfficialRating}
           </span>
         )}
@@ -49,7 +49,7 @@ export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps)
           <span>{item.ChildCount} {t("common:seasons")}</span>
         )}
         {isSeries && item.Status && (
-          <span className="rounded bg-white/10 px-2 py-0.5 text-[11px]">
+          <span className="rounded bg-fill-soft px-2 py-0.5 text-[11px]">
             {item.Status === "Continuing" ? t("common:ongoing") : t("common:ended")}
           </span>
         )}
@@ -62,7 +62,7 @@ export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps)
           {item.Genres.map((g) => (
             <span
               key={g}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/65"
+              className="rounded-full border border-line-subtle bg-fill-subtle px-3 py-1 text-xs text-content-tertiary"
             >
               {g}
             </span>

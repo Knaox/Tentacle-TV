@@ -9,7 +9,7 @@ export function SearchLibrary({ items }: { items: MediaItem[] }) {
   const client = useJellyfinClient();
 
   if (items.length === 0) {
-    return <p className="py-20 text-center text-white/40">{t("common:noResultsLibrary")}</p>;
+    return <p className="py-20 text-center text-content-quaternary">{t("common:noResultsLibrary")}</p>;
   }
 
   return (
@@ -26,8 +26,8 @@ export function SearchLibrary({ items }: { items: MediaItem[] }) {
               <img src={poster} alt={item.Name} className="h-full w-full object-cover" loading="lazy" />
             </div>
             <div className="p-2.5">
-              <p className="text-sm font-medium text-white line-clamp-1">{item.Name}</p>
-              <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
+              <p className="text-sm font-medium text-content-primary line-clamp-1">{item.Name}</p>
+              <div className="mt-0.5 flex items-center gap-2 text-xs text-content-quaternary">
                 {item.ProductionYear && <span>{item.ProductionYear}</span>}
                 <span>{item.Type === "Movie" ? t("common:movie") : t("common:series")}</span>
               </div>

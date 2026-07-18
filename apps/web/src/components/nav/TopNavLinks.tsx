@@ -67,8 +67,8 @@ export function TopNavLinks() {
             to={link.path}
             className={`relative whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
               active
-                ? "text-white"
-                : "text-white/60 hover:text-white"
+                ? "text-content-primary"
+                : "text-content-tertiary hover:text-content-primary"
             }`}
           >
             {link.label}

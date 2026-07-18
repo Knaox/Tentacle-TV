@@ -12,11 +12,11 @@ interface SelectionToolbarProps {
 export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDeleting }: SelectionToolbarProps) {
   return createPortal(
     <div
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#12121a]/95 backdrop-blur-lg"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
       style={{ animation: "slideUp 0.25s ease" }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-12">
-        <span className="text-sm font-medium text-white/70">
+        <span className="text-sm font-medium text-content-secondary">
           <Counter count={count} />
         </span>
         <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ function SelectAllButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+      className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
     >
       {t("common:selectAll")}
     </button>
@@ -53,7 +53,7 @@ function CancelButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+      className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
     >
       {t("common:cancel")}
     </button>
@@ -66,7 +66,7 @@ function DeleteButton({ count, onClick, disabled, isDeleting }: { count: number;
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 ring-1 ring-red-500/30 transition-all hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+      className="rounded-lg bg-danger-surface px-4 py-1.5 text-sm font-medium text-status-error-fg ring-1 ring-danger-border transition-all hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
     >
       {isDeleting ? t("common:loading") : t("common:deleteCount", { count })}
     </button>

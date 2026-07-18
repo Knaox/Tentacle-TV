@@ -34,9 +34,9 @@ export function EmptyState({ icon, title, description, action, className }: Empt
           {icon}
         </div>
       )}
-      <h2 className="text-xl font-semibold text-white">{title}</h2>
+      <h2 className="text-xl font-semibold text-content-primary">{title}</h2>
       {description && (
-        <p className="mt-2 text-sm leading-relaxed text-white/60">{description}</p>
+        <p className="mt-2 text-sm leading-relaxed text-content-tertiary">{description}</p>
       )}
       {action && <div className="mt-6">{action}</div>}
     </motion.div>

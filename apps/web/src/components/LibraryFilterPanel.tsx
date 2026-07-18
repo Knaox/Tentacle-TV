@@ -55,7 +55,8 @@ export function LibraryFilterPanel({
 
   return (
     <>
-      {/* Backdrop — exact Seer style */}
+      {/* Backdrop — exact Seer style. Voile derrière le panneau : reste sombre
+          dans les deux thèmes (règle scrim de modale). */}
       {open && (
         <div
           onClick={onClose}
@@ -78,20 +79,21 @@ export function LibraryFilterPanel({
           open ? "translate-x-0" : "translate-x-full"
         }`}
         style={{
+          // Fond du panneau : littéral hors table (implémentation ad hoc) — non migré.
           zIndex: 101,
           background: "rgba(18,18,26,0.92)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           boxShadow: "-8px 0 40px rgba(0,0,0,0.5), -2px 0 8px rgba(0,0,0,0.3)",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
+          borderLeft: "1px solid var(--border-subtle)",
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-line-subtle px-5 py-4">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-white">{t("filters")}</h3>
+            <h3 className="text-base font-semibold text-content-primary">{t("filters")}</h3>
             {activeFilterCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-cta-brand-fg">
                 {activeFilterCount}
               </span>
             )}
@@ -104,7 +106,7 @@ export function LibraryFilterPanel({
             )}
             <button
               onClick={onClose}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-white/40 hover:text-white"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-fill-subtle text-content-quaternary hover:text-content-primary"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -117,7 +119,7 @@ export function LibraryFilterPanel({
         <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5" style={{ scrollbarWidth: "thin", scrollbarColor: "var(--brand) transparent" }}>
           {/* Sort */}
           <div>
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
               {t("sortBy")}
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -127,8 +129,8 @@ export function LibraryFilterPanel({
                   onClick={() => onSortByChange(opt.value)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                     filters.sortBy === opt.value
-                      ? "bg-[var(--brand)] text-white"
-                      : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                      ? "bg-[var(--brand)] text-cta-brand-fg"
+                      : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"
                   }`}
                 >
                   {t(opt.key)}
@@ -136,7 +138,7 @@ export function LibraryFilterPanel({
               ))}
               <button
                 onClick={() => onSortOrderChange(filters.sortOrder === "Descending" ? "Ascending" : "Descending")}
-                className="flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/50 transition-colors hover:bg-white/10 hover:text-white/70"
+                className="flex items-center gap-1 rounded-lg bg-fill-subtle px-2.5 py-1.5 text-xs font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-secondary"
                 title={filters.sortOrder === "Descending" ? t("sortOrderDesc") : t("sortOrderAsc")}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -153,7 +155,7 @@ export function LibraryFilterPanel({
           {/* Genres — exact Seer GenreFilter style */}
           {genres && genres.length > 0 && (
             <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
                 {t("genres")}
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -166,7 +168,7 @@ export function LibraryFilterPanel({
                       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                         active
                           ? "bg-[var(--brand)]/20 text-[var(--brand)] ring-1 ring-[var(--brand)]/50"
-                          : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                          : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"
                       }`}
                     >
                       {g.Name}
@@ -179,7 +181,7 @@ export function LibraryFilterPanel({
 
           {/* Plateformes — exact Seer PlatformFilter style */}
           <div>
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
               Plateformes
             </h4>
             <div className="grid grid-cols-2 gap-2">
@@ -192,7 +194,7 @@ export function LibraryFilterPanel({
                     className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                       active
                         ? "border border-[var(--brand)]/50 bg-[var(--brand)]/10 text-[var(--brand)]"
-                        : "border border-white/5 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                        : "border border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"
                     }`}
                   >
                     {active && (
@@ -209,7 +211,7 @@ export function LibraryFilterPanel({
 
           {/* Year — exact Seer YearRangeFilter style */}
           <div>
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
               {t("sortYear")}
             </h4>
             <div className="flex items-center gap-3">
@@ -220,9 +222,9 @@ export function LibraryFilterPanel({
                 placeholder={t("yearFrom")}
                 value={filters.yearFrom ?? ""}
                 onChange={(e) => onYearFromChange(parseYear(e.target.value))}
-                className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-[rgba(var(--brand-rgb),0.4)]"
+                className="w-24 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-1.5 text-xs text-content-primary placeholder-content-quaternary outline-none focus:border-[rgba(var(--brand-rgb),0.4)]"
               />
-              <span className="text-xs text-white/30">&mdash;</span>
+              <span className="text-xs text-content-quaternary">&mdash;</span>
               <input
                 type="number"
                 min={1900}
@@ -230,7 +232,7 @@ export function LibraryFilterPanel({
                 placeholder={t("yearTo")}
                 value={filters.yearTo ?? ""}
                 onChange={(e) => onYearToChange(parseYear(e.target.value))}
-                className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-[rgba(var(--brand-rgb),0.4)]"
+                className="w-24 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-1.5 text-xs text-content-primary placeholder-content-quaternary outline-none focus:border-[rgba(var(--brand-rgb),0.4)]"
               />
             </div>
           </div>
@@ -238,10 +240,10 @@ export function LibraryFilterPanel({
           {/* Rating — exact Seer RatingSlider style */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-white/40">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-content-quaternary">
                 {t("ratingMin")}
               </h4>
-              <span className="text-xs font-medium text-white/60">
+              <span className="text-xs font-medium text-content-tertiary">
                 {ratingCurrent > 0 ? `${ratingCurrent.toFixed(1)}+` : t("ratingAny")}
               </span>
             </div>
@@ -257,7 +259,7 @@ export function LibraryFilterPanel({
               }}
               className="w-full accent-[var(--brand)]"
             />
-            <div className="mt-1 flex justify-between text-[10px] text-white/20">
+            <div className="mt-1 flex justify-between text-[10px] text-content-disabled">
               <span>0</span>
               <span>5</span>
               <span>10</span>
