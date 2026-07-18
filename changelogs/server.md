@@ -11,6 +11,16 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.6.1]
+### FR
+- Notifications : plus jamais de doublon — un contenu annoncé à un utilisateur ne l'est plus une deuxième fois, même après un redémarrage du serveur, un changement de préférences ou entre Seer et les ajouts bibliothèque (registre persistant consulté avant chaque envoi, alias TMDB + titre enregistrés ensemble pour neutraliser la résolution TMDB tardive)
+- Notifications : toujours 1 notification par ajout (une série multi-épisodes = une seule notification groupée par saison), sans jamais retarder l'envoi — si les métadonnées ne sont pas prêtes, le nom brut est utilisé comme avant
+- La notification de test devient un outil de diagnostic réservé au développement (invisible en production, même pour les administrateurs)
+### EN
+- Notifications: duplicates are gone for good — content announced to a user is never announced twice, even after a server restart, a preference change, or across Seer and library additions (persistent registry checked before every push, TMDB + title aliases recorded together to neutralize late TMDB resolution)
+- Notifications: always 1 notification per addition (a multi-episode series = a single season-grouped notification), without ever delaying delivery — when metadata isn't ready the raw name is used, as before
+- The test notification becomes a development-only diagnostic tool (invisible in production, even for administrators)
+
 ## [1.6.0]
 ### FR
 - Watch Together : GIFs dans le chat de groupe — tendances et recherche (propulsées par KLIPY), envoi en un clic, animation à l'écran chez tous les membres. Aucune configuration : la clé est intégrée à l'application.
