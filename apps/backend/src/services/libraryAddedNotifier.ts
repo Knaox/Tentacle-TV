@@ -10,9 +10,12 @@ import { filterAnnounced, libraryContentKeys, recordAnnounced } from "./announce
 // (robuste vs date fichier ET WS muet). Instantané PERSISTANT (table
 // library_known_id → rattrape les ajouts faits pendant une coupure serveur).
 // Anti-doublon : registre persistant announced_contents (une annonce par
-// contenu et par utilisateur, restarts et pipeline Seer compris) + les
-// contenus revendiqués par un plugin (content_claims, ex. Seer) ne sont pas
-// re-notifiés côté biblio à l'utilisateur concerné.
+// contenu et par utilisateur, restarts et pipeline Seer compris). Contenus
+// revendiqués par un plugin (content_claims, ex. Seer) : annoncés côté biblio
+// à PERSONNE d'autre que leur demandeur — règle produit : une demande ne
+// regarde que celui qui l'a faite (le pipeline Seer, adossé à la vérité
+// Jellyfin, notifie le demandeur) ; le demandeur lui-même ne garde la notif
+// biblio que si la notif Seer ne prend pas le relais (seerAvailable off).
 
 const POLL_INTERVAL = 60_000;
 const WS_DEBOUNCE_MS = 8_000;
@@ -105,6 +108,9 @@ async function notifyNamed(named: LibItem[]): Promise<void> {
     select: { tmdbId: true, jellyfinUserId: true, title: true },
   });
   const claimIndex = indexClaims(claims);
+  // Ensemble GLOBAL des claims (tous demandeurs confondus) : un contenu arrivé
+  // via une demande Seer n'est annoncé ici à personne d'autre que son demandeur.
+  const allClaims = indexClaims(claims.map((c) => ({ ...c, jellyfinUserId: "*" }))).get("*");
 
   // Clés multi-alias (tmdb + titre) calculées une fois — le registre persistant
   // announced_contents remplace l'ancien cache RAM 6 h (clé instable titre→tmdb,
@@ -120,10 +126,16 @@ async function notifyNamed(named: LibItem[]): Promise<void> {
     const aliasKeys = named.filter((_, i) => announced[i]).flatMap(libraryContentKeys);
     if (aliasKeys.length > 0) await recordAnnounced(p.jellyfinUserId, aliasKeys);
     let items = named.filter((_, i) => !announced[i]);
-    // Anti-doublon SEULEMENT si l'utilisateur reçoit vraiment la notif Seer
-    // (seerAvailable) : sinon Seer ne le notifiera pas → on garde la notif biblio.
-    const userClaims = p.seerAvailable ? claimIndex.get(p.jellyfinUserId) : undefined;
-    if (userClaims) items = items.filter((it) => !isClaimed(it, userClaims));
+    // Contenus issus d'une demande Seer : jamais annoncés à quelqu'un d'AUTRE
+    // que le demandeur. Pour le demandeur lui-même : supprimé seulement si la
+    // notif Seer prend le relais (seerAvailable) — sinon la notif biblio reste
+    // son seul signal (comportement 1.5.5 conservé pour ses propres demandes).
+    const own = claimIndex.get(p.jellyfinUserId);
+    items = items.filter((it) => {
+      if (!isClaimed(it, allClaims)) return true;
+      if (isClaimed(it, own)) return !p.seerAvailable;
+      return false;
+    });
     if (items.length === 0) continue;
     const { title, body } = composeItems(items);
     await sendToUser(p.jellyfinUserId, { title, body, data: { type: "library_added" } });
