@@ -107,6 +107,17 @@ export function seerContentKeys(
   return keys.map(clamp);
 }
 
+/** Clés d'UNE saison d'une annonce Seer (planificateur de push par saison) :
+ *  mêmes formats s:t:/s:n: que ci-dessus, pour une saison donnée. tmdbId null
+ *  (contenu non résolu) → clé titre seule. */
+export function seerSeasonKeys(tmdbId: number | null, title: string, season: number): string[] {
+  const keys: string[] = [];
+  if (tmdbId != null) keys.push(`s:t:${tmdbId}:${season}`);
+  const norm = normalizeTitle(title);
+  if (norm) keys.push(`s:n:${norm}:${season}`);
+  return keys.map(clamp);
+}
+
 /** true si AU MOINS une des clés est déjà enregistrée pour cet utilisateur. */
 export async function isAnnounced(jellyfinUserId: string, keys: string[]): Promise<boolean> {
   if (keys.length === 0) return false;
