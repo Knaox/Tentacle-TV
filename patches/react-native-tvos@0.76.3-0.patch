@@ -1,0 +1,17 @@
+diff --git a/React/Base/RCTTVNavigationEventNotification.mm b/React/Base/RCTTVNavigationEventNotification.mm
+index 16fd52c7fb85eb76852f4bc8303a56c251f7dec9..978251a8ded45b0efeb3ad46a5c0e33f0a55c6e8 100644
+--- a/React/Base/RCTTVNavigationEventNotification.mm	
++++ b/React/Base/RCTTVNavigationEventNotification.mm
+@@ -72,6 +72,12 @@
+         case UIGestureRecognizerStateBegan:
+             return RCTTVRemoteEventKeyActionDown;
+         case UIGestureRecognizerStateEnded:
++        // Tentacle patch : un long-press ANNULE par tvOS (drift du doigt,
++        // recognizer concurrent, perte de focus) n'emettait AUCUN keyAction —
++        // le JS ne voyait jamais le relachement (longLeft/longRight) et
++        // l'avance rapide ne s'arretait plus. Cancelled/Failed = fin d'appui.
++        case UIGestureRecognizerStateCancelled:
++        case UIGestureRecognizerStateFailed:
+             return RCTTVRemoteEventKeyActionUp;
+         default:
+             return nil;

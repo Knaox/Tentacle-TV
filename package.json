@@ -43,7 +43,8 @@
       "@react-native/community-cli-plugin>@react-native-community/cli-server-api": "14.1.2"
     },
     "patchedDependencies": {
-      "react-native-video@6.19.0": "patches/react-native-video@6.19.0.patch"
+      "react-native-video@6.19.0": "patches/react-native-video@6.19.0.patch",
+      "react-native-tvos@0.76.3-0": "patches/react-native-tvos@0.76.3-0.patch"
     }
   }
 }
