@@ -16,11 +16,13 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - Notifications Seer : fini les fausses annonces « est sorti(e) sur Tentacle TV » — le serveur vérifie désormais la présence RÉELLE du film ou des saisons dans la bibliothèque Jellyfin avant chaque envoi ; si le contenu n'y est pas (statut Jellyseerr périmé, ex. après une suppression), l'envoi est différé jusqu'à son arrivée réelle — une demande fraîchement créée ne peut plus déclencher une annonce de disponibilité mensongère
 - Notifications Seer : disponibilité par saison — chaque saison est annoncée quand ELLE arrive (« Saison 1 est sortie », puis « Saison 2 est sortie » à son tour) ; l'annonce groupée n'est utilisée que si tout est disponible en même temps
 - Anti-doublon renforcé entre Seer et les ajouts bibliothèque : le contenu d'une notification Seer est identifié par son TMDB (retrouvé via la demande d'origine) même quand la revendication temporaire a expiré — les notifications de demandes restent, comme avant, strictement personnelles (chacun ne reçoit que SES demandes)
+- Installation des plugins réparée sur un serveur Windows : l'extraction employait une option GNU tar (« --force-local ») inconnue du tar de Windows, faisant échouer toute installation depuis le marketplace — l'extraction passe par des chemins relatifs, compatibles avec les deux variantes de tar
 - Version serveur minimale requise par les clients portée à 1.6.2
 ### EN
 - Seer notifications: no more false “released on Tentacle TV” announcements — the server now verifies the movie or seasons are ACTUALLY present in the Jellyfin library before every push; if the content isn't there (stale Jellyseerr status, e.g. after a deletion), delivery is deferred until it really lands — a freshly created request can no longer trigger a lying availability announcement
 - Seer notifications: per-season availability — each season is announced when IT arrives (“Season 1 released”, then “Season 2 released” in turn); the grouped announcement is only used when everything is available at once
 - Stronger Seer ↔ library-addition deduplication: the content of a Seer notification is identified by its TMDB id (recovered from the original request) even when the temporary claim has expired — request notifications remain, as before, strictly personal (everyone only receives THEIR own requests)
+- Plugin installation fixed on Windows servers: extraction used a GNU-tar-only option (“--force-local”) unknown to the Windows tar, making every marketplace install fail — extraction now uses relative paths, compatible with both tar flavors
 - Minimum server version required by the clients raised to 1.6.2
 
 ## [1.6.1]

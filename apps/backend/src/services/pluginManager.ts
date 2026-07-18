@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { existsSync, readFileSync, mkdirSync, rmSync, writeFileSync, createWriteStream } from "fs";
-import { resolve, join, sep } from "path";
+import { dirname, join, relative, resolve, sep } from "path";
 import { pipeline } from "stream/promises";
 
 // ── Types ──
@@ -272,14 +272,15 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   mkdirSync(destDir, { recursive: true });
 
   const { execSync } = await import("child_process");
-  // On Windows: use forward slashes (tar misinterprets backslashes) and
-  // --force-local (prevents tar from interpreting "C:" as a remote host)
-  const isWin = process.platform === "win32";
-  const archive = isWin ? archivePath.replace(/\\/g, "/") : archivePath;
-  const dest = isWin ? destDir.replace(/\\/g, "/") : destDir;
-  const forceLocal = isWin ? " --force-local" : "";
-  execSync(`tar -xzf "${archive}"${forceLocal} -C "${dest}"`, {
-    stdio: "pipe", timeout: 30_000,
+  // Chemins RELATIFS + cwd : aucun « C: » dans les arguments, donc compatible
+  // avec les DEUX saveurs de tar sans aucune option — GNU tar (Linux/Docker),
+  // qui prendrait « C: » pour un hôte distant, ET bsdtar (Windows/System32),
+  // qui ne connaît pas « --force-local » (l'ancienne option GNU passée sous
+  // Windows faisait échouer TOUTE installation de plugin sur ce système).
+  const cwd = dirname(archivePath);
+  const rel = (p: string): string => relative(cwd, p).split(sep).join("/");
+  execSync(`tar -xzf "${rel(archivePath)}" -C "${rel(destDir)}"`, {
+    cwd, stdio: "pipe", timeout: 30_000,
   });
   rmSync(archivePath, { force: true });
   return destDir;
