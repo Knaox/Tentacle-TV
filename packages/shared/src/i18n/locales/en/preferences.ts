@@ -23,7 +23,29 @@ export default {
   themeAutoHint: "Follows the system setting",
   effects: "Effects",
   liquidGlassTitle: "Liquid Glass",
-  liquidGlassDescription: "Uses the native iOS 26 glass rendering for translucent surfaces. When off, the app falls back to the classic glass effect.",
+  // Deliberately platform-neutral: mobile uses the native iOS 26 rendering,
+  // web uses an SVG refraction. Naming iOS here would be wrong on desktop,
+  // where this same key is displayed.
+  liquidGlassDescription: "Adds refraction to translucent surfaces. When off, the app falls back to the classic glass effect.",
+  liquidGlassUnavailable: "Not available on this rendering engine — the classic glass effect is used.",
+
+  // ── Settings shell sections ──
+  sectionAccount: "Account",
+  sectionSecurity: "Security",
+  sectionAppearance: "Appearance",
+  sectionPlayback: "Playback",
+  sectionHelp: "Help",
+  sectionDanger: "Danger zone",
+  back: "Back",
+
+  // ── Security (consolidates what was scattered across 4 screens) ──
+  securityDescription: "Password, paired devices and server connection.",
+  securityPassword: "Password",
+  securityPasswordHint: "Change your Jellyfin account password",
+  securityDevices: "My paired devices",
+  securityDevicesHint: "Televisions and apps authorised on this account",
+  securityServer: "Server",
+  securityServerHint: "Switch Tentacle server",
   audio: "Audio",
   subtitles: "Subtitles",
   subtitleMode: "Subtitle mode",

@@ -23,7 +23,29 @@ export default {
   themeAutoHint: "Suit le réglage du système",
   effects: "Effets",
   liquidGlassTitle: "Liquid Glass",
-  liquidGlassDescription: "Utilise le rendu verre natif d'iOS 26 pour les surfaces translucides. Désactivé, l'application revient à l'effet verre classique.",
+  // Formulation volontairement neutre : le mobile s'appuie sur le rendu natif
+  // d'iOS 26, le web sur une réfraction SVG. Mentionner iOS ici serait faux sur
+  // desktop, où cette même clé est affichée.
+  liquidGlassDescription: "Ajoute une réfraction aux surfaces translucides. Désactivé, l'application revient à l'effet verre classique.",
+  liquidGlassUnavailable: "Non disponible sur ce moteur de rendu — l'effet verre classique est utilisé.",
+
+  // ── Sections de la coquille de réglages ──
+  sectionAccount: "Compte",
+  sectionSecurity: "Sécurité",
+  sectionAppearance: "Apparence",
+  sectionPlayback: "Lecture",
+  sectionHelp: "Aide",
+  sectionDanger: "Zone sensible",
+  back: "Retour",
+
+  // ── Sécurité (regroupe ce qui était dispersé sur 4 écrans) ──
+  securityDescription: "Mot de passe, appareils jumelés et connexion au serveur.",
+  securityPassword: "Mot de passe",
+  securityPasswordHint: "Modifier le mot de passe du compte Jellyfin",
+  securityDevices: "Mes appareils jumelés",
+  securityDevicesHint: "Téléviseurs et applications autorisés sur ce compte",
+  securityServer: "Serveur",
+  securityServerHint: "Changer de serveur Tentacle",
   audio: "Audio",
   subtitles: "Sous-titres",
   subtitleMode: "Mode sous-titres",
