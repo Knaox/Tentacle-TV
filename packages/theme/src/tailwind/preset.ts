@@ -29,6 +29,13 @@ export const tentacleTailwindPreset: Partial<Config> = {
           1: cssVar(CSS_VAR_NAMES.color.surface.s1),
           2: cssVar(CSS_VAR_NAMES.color.surface.s2),
           3: cssVar(CSS_VAR_NAMES.color.surface.s3),
+          // Paliers de chrome flottant. Ils existaient dans tokens.css mais pas
+          // en classe, ce qui obligeait à écrire `bg-[var(--surface-dropdown)]`.
+          modal: cssVar(CSS_VAR_NAMES.color.surface.modal),
+          dropdown: cssVar(CSS_VAR_NAMES.color.surface.dropdown),
+          sheet: cssVar(CSS_VAR_NAMES.color.surface.sheet),
+          toolbar: cssVar(CSS_VAR_NAMES.color.surface.toolbar),
+          "0-tint": cssVar(CSS_VAR_NAMES.color.surface.s0Tint),
         },
         brand: {
           DEFAULT: cssVar(CSS_VAR_NAMES.color.brand.base),
