@@ -3,8 +3,22 @@
  * Powers the admin "all tokens" editor — each entry is renderable as a row
  * with a type-appropriate editor (color picker, dimension input, etc.).
  *
- * Total: 98 tokens (46 color + 4 blur + 7 shadow + 6 radius + 12 motion +
- * 5 layout + 4 component + 10 spacing + 11 typography).
+ * Total: 121 tokens (63 color + 12 typography + 10 spacing + 10 motion +
+ * 7 shadow + 6 radius + 5 layout + 4 component + 4 blur).
+ *
+ * Comptes vérifiés par `grep -c`. L'en-tête précédent annonçait « 98 tokens
+ * (… 12 motion … 11 typography) » : le total ET deux catégories étaient faux,
+ * et la somme annoncée ne correspondait même pas à son propre détail. Le vrai
+ * point de départ était 104.
+ *
+ * ATTENTION — ce tableau est écrit à la main : seul `defaultValue` est dérivé
+ * de `DEFAULT_THEME`. Ajouter un token au thème ne le rend PAS surchargeable
+ * tout seul ; il faut quatre couches, dans cet ordre :
+ *   1. `packages/theme/src/types.ts`        → l'arbre typé
+ *   2. `packages/theme/src/css/varNames.ts` → le nom de variable CSS
+ *   3. ce fichier                           → la ligne d'éditeur (type + label)
+ *   4. `apps/backend/src/services/themeStore.ts` → le schéma Zod `.strict()`,
+ *      qui REJETTE en 400 tout groupe non whitelisté, même envoyé par le front.
  */
 
 import { DEFAULT_THEME } from "@tentacle-tv/theme";
@@ -57,6 +71,7 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
   { category: "color", path: "color.surface.dropdown", cssVar: "--surface-dropdown", defaultValue: t.color.surface.dropdown, type: "rgba", label: "Surface dropdown" },
   { category: "color", path: "color.surface.sheet", cssVar: "--surface-sheet", defaultValue: t.color.surface.sheet, type: "rgba", label: "Surface sheet" },
   { category: "color", path: "color.surface.toolbar", cssVar: "--surface-toolbar", defaultValue: t.color.surface.toolbar, type: "rgba", label: "Surface toolbar" },
+  { category: "color", path: "color.surface.s0Tint", cssVar: "--surface-0-tint", defaultValue: t.color.surface.s0Tint, type: "color", label: "Surface 0 tint (dégradé fond)" },
 
   // ── COLOR : Brand ──
   { category: "color", path: "color.brand.base", cssVar: "--brand", defaultValue: t.color.brand.base, type: "color", label: "Brand (base)" },
@@ -85,6 +100,7 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
   { category: "color", path: "color.cta.secondaryFg", cssVar: "--cta-secondary-fg", defaultValue: t.color.cta.secondaryFg, type: "color", label: "CTA secondary fg" },
   { category: "color", path: "color.cta.ghostBg", cssVar: "--cta-ghost-bg", defaultValue: t.color.cta.ghostBg, type: "rgba", label: "CTA ghost bg" },
   { category: "color", path: "color.cta.ghostBgHover", cssVar: "--cta-ghost-bg-hover", defaultValue: t.color.cta.ghostBgHover, type: "rgba", label: "CTA ghost hover" },
+  { category: "color", path: "color.cta.primaryBorder", cssVar: "--cta-primary-border", defaultValue: t.color.cta.primaryBorder, type: "rgba", label: "CTA primaire — liseré (clair)" },
 
   // ── COLOR : Border ──
   { category: "color", path: "color.border.subtle", cssVar: "--border-subtle", defaultValue: t.color.border.subtle, type: "rgba", label: "Border subtle" },
@@ -104,6 +120,30 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
   { category: "color", path: "color.status.info.base", cssVar: "--status-info", defaultValue: t.color.status.info.base, type: "color", label: "Info base" },
   { category: "color", path: "color.status.info.bg", cssVar: "--status-info-bg", defaultValue: t.color.status.info.bg, type: "rgba", label: "Info bg" },
   { category: "color", path: "color.status.info.fg", cssVar: "--status-info-fg", defaultValue: t.color.status.info.fg, type: "color", label: "Info fg" },
+
+  // ── COLOR : Fill (remplissages neutres translucides) ──
+  // Cibles de migration des `bg-white/5` &co. Inversés en noir en thème clair.
+  { category: "color", path: "color.fill.faint", cssVar: "--fill-faint", defaultValue: t.color.fill.faint, type: "rgba", label: "Fill faint (3%)" },
+  { category: "color", path: "color.fill.subtle", cssVar: "--fill-subtle", defaultValue: t.color.fill.subtle, type: "rgba", label: "Fill subtle (5%)" },
+  { category: "color", path: "color.fill.soft", cssVar: "--fill-soft", defaultValue: t.color.fill.soft, type: "rgba", label: "Fill soft (8%)" },
+  { category: "color", path: "color.fill.medium", cssVar: "--fill-medium", defaultValue: t.color.fill.medium, type: "rgba", label: "Fill medium (12%)" },
+  { category: "color", path: "color.fill.strong", cssVar: "--fill-strong", defaultValue: t.color.fill.strong, type: "rgba", label: "Fill strong (28%)" },
+  { category: "color", path: "color.fill.shimmer", cssVar: "--fill-shimmer", defaultValue: t.color.fill.shimmer, type: "rgba", label: "Fill shimmer (skeletons)" },
+
+  // ── COLOR : Glass (surfaces verre) ──
+  { category: "color", path: "color.glass.tint", cssVar: "--glass-tint", defaultValue: t.color.glass.tint, type: "rgba", label: "Glass tint" },
+  { category: "color", path: "color.glass.tintStrong", cssVar: "--glass-tint-strong", defaultValue: t.color.glass.tintStrong, type: "rgba", label: "Glass tint strong" },
+  { category: "color", path: "color.glass.panel", cssVar: "--glass-panel", defaultValue: t.color.glass.panel, type: "color", label: "Glass panel (sheets)" },
+  { category: "color", path: "color.glass.backdrop", cssVar: "--glass-backdrop", defaultValue: t.color.glass.backdrop, type: "rgba", label: "Glass backdrop (scrim modale)" },
+
+  // ── COLOR : On media (texte sur affiche — constant clair/sombre) ──
+  { category: "color", path: "color.onMedia.primary", cssVar: "--on-media-primary", defaultValue: t.color.onMedia.primary, type: "color", label: "Sur média — primaire" },
+  { category: "color", path: "color.onMedia.secondary", cssVar: "--on-media-secondary", defaultValue: t.color.onMedia.secondary, type: "rgba", label: "Sur média — secondaire" },
+  { category: "color", path: "color.onMedia.shadow", cssVar: "--on-media-shadow", defaultValue: t.color.onMedia.shadow, type: "rgba", label: "Sur média — ombre du texte" },
+
+  // ── COLOR : Danger (actions destructives) ──
+  { category: "color", path: "color.danger.surface", cssVar: "--danger-surface", defaultValue: t.color.danger.surface, type: "rgba", label: "Danger surface" },
+  { category: "color", path: "color.danger.border", cssVar: "--danger-border", defaultValue: t.color.danger.border, type: "rgba", label: "Danger border" },
 
   // ── BLUR ──
   { category: "blur", path: "blur.overlay", cssVar: "--blur-overlay", defaultValue: t.blur.overlay, type: "dimension-px", label: "Blur overlay" },
