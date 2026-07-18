@@ -4,6 +4,13 @@
  */
 
 const LANGUAGE_MAP: Record<string, string> = {
+  // Variantes françaises des préférences (VFF = France, VFQ = Québec) — le
+  // backend matche la variante sur le TITRE des pistes. Formes 2 ET 3 lettres :
+  // les préférences posées depuis le web/mobile arrivent en "fre-vff"/"fre-vfq".
+  "fr-vff": "Français (VFF)",
+  "fr-vfq": "Français (VFQ)",
+  "fre-vff": "Français (VFF)",
+  "fre-vfq": "Français (VFQ)",
   // ISO 639-1 (2-letter) — readable Latin names
   fr: "Français",
   en: "English",

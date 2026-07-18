@@ -19,6 +19,7 @@ import Video, {
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
 import { parseStart } from "../../utils/playerHelpers";
+import { plog } from "../../utils/playerDiag";
 import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
 
 /**
@@ -239,8 +240,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
       (e: { error?: { code?: number; localizedDescription?: string; localizedFailureReason?: string } }) => {
         const err = e?.error;
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
-        // Remux : pause longue → manifeste HLS `event` figé → -11866 « ended unexpectedly » (récupérable, segments sur disque) → relance à la position.
-        if (isRemux && (err?.code === -11866 || /ended unexpectedly/i.test(detail))) { onError?.("REMUX_STALL"); return; }
+        plog("averr", `AVPlayer BRUT code=${err?.code ?? "?"} remux=${isRemux ? 1 : 0} : ${detail}`);
+        // Remux : -11866 (manifeste event figé après pause longue) et -1004 (serveur LOCAL
+        // injoignable — sockets gelées par une suspension/pause VOD, observé en session) sont
+        // RÉCUPÉRABLES → chemin REMUX_STALL (lazy en pause, remount en lecture), jamais surfacés.
+        if (isRemux && (err?.code === -11866 || err?.code === -1004 || /ended unexpectedly/i.test(detail))) { onError?.("REMUX_STALL"); return; }
         // -19601 (CoreMedia) : flux remux invalide (ex. hvcC vide — extradata source introuvable).
         // Classé « codec » → PlayerScreen bascule en transcode serveur au lieu d'afficher l'erreur.
         const codecLike =

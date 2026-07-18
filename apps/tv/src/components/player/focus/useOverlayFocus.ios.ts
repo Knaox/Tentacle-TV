@@ -10,7 +10,6 @@ export type { TransportKey, OverlayFocusControl, OverlayButtonProps } from "./ov
 interface UseOverlayFocusArgs {
   focusSignal: number;
   scrubbing: boolean;
-  scrubViaButton?: boolean;
 }
 
 /**
@@ -25,11 +24,11 @@ interface UseOverlayFocusArgs {
  * MÊME dernier bouton (plus de `hasTVPreferredFocus` permanent sur play/pause qui
  * causait le « saut » de focus sur Apple TV).
  */
-export function useOverlayFocus({ focusSignal, scrubbing, scrubViaButton }: UseOverlayFocusArgs): OverlayFocusControl {
+export function useOverlayFocus({ focusSignal, scrubbing }: UseOverlayFocusArgs): OverlayFocusControl {
   const restore = useCallback((node: FocusNode) => {
     if (!node?.setNativeProps) return;
     node.setNativeProps({ hasTVPreferredFocus: false });
     setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
   }, []);
-  return useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton, restore });
+  return useOverlayFocusCore({ focusSignal, scrubbing, restore });
 }

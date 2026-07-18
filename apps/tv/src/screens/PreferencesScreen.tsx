@@ -22,7 +22,7 @@ const INTERFACE_LANGS = [
 ];
 
 const AUDIO_LANGS = [
-  "fr", "en", "ja", "de", "es", "it", "pt", "ru", "ko", "zh",
+  "fr", "fr-vff", "fr-vfq", "en", "ja", "de", "es", "it", "pt", "ru", "ko", "zh",
   "ar", "pl", "nl", "hi", "sv", "no", "fi", "tr",
 ];
 

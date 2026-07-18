@@ -3,6 +3,7 @@ import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
+import { plog } from "../utils/playerDiag";
 import { remuxEligible, startLocalRemux, TVRemux } from "../utils/tvLocalRemuxStart";
 import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
@@ -143,6 +144,21 @@ export function useTVStreamUrl(args: {
     if (!softReload) setResult((r) => ({ ...r, baseUrl: null, failed: false }));
     else setResult((r) => (r.failed ? { ...r, failed: false } : r));
 
+    // Piste audio EFFECTIVE. `audioIndex` démarre à 0 (= flux vidéo) et son
+    // alignement sur le défaut (useTVReloadState) est un setState ASYNCHRONE :
+    // au cold start, cet effet (déclenché par `vcodec`, même flush) lisait
+    // l'index périmé → le natif retombait en silence sur la PREMIÈRE piste
+    // audio du fichier (FR entendu alors que l'UI affichait la piste défaut).
+    // Si l'index courant ne pointe pas une piste audio réelle, on résout ici le
+    // MÊME défaut que l'UI (IsDefault puis première) — quel que soit l'ordre
+    // des effets.
+    const audios = streams.filter((s) => s.Type === "Audio");
+    const effAudio = audios.some((s) => s.Index === audioRef.current)
+      ? audioRef.current
+      : (audios.find((s) => s.IsDefault)?.Index ?? audios[0]?.Index ?? audioRef.current);
+    if (effAudio !== audioRef.current)
+      plog("stream", `audioIndex ${audioRef.current} invalide → défaut résolu ${effAudio}`);
+
     (async () => {
       try {
         // Lecteur local « façon Infuse » : contenu HEVC/H264 (souvent en MKV non
@@ -151,7 +167,7 @@ export function useTVStreamUrl(args: {
         // HDR/DV. Zéro transcodage serveur. Repli sur le flux Jellyfin si échec.
         // Décision + start natif (retries) : cf. utils/tvLocalRemuxStart.ts.
         if (remuxEligible({
-          container, streams, audioIndex: audioRef.current, vcodec,
+          container, streams, audioIndex: effAudio, vcodec,
           forceTranscode, isTranscodingQuality, burnInIndex,
         })) {
           try {
@@ -163,19 +179,21 @@ export function useTVStreamUrl(args: {
             // `|n<reloadNonce>` : une reprise après pause longue (useTVRemuxPause) bump le nonce → BUST de la
             // clé → start() est rappelé (consomme gResumePending → nouvelle session à P), au lieu du
             // court-circuit de réutilisation qui renverrait l'URL de l'ancienne session (offset faux).
-            const remuxKey = contentKey + "|a" + audioRef.current + "|t" + Math.floor(startSeconds ?? 0) + "|n" + (args.reloadNonce ?? 0);
+            const remuxKey = contentKey + "|a" + effAudio + "|t" + Math.floor(startSeconds ?? 0) + "|n" + (args.reloadNonce ?? 0);
             // Idempotent : même contenu + même audio + même nonce déjà remuxé → réutiliser l'URL locale
             // (ET son frag d'origine exact) sans relancer start(). Cache-buster `&r` : force AVPlayer à
             // re-fetch le manifeste (anti-cache EVENT→VOD).
             const cached = remuxCacheRef.current;
             if (cached && cached.key === remuxKey) {
+              plog("stream", "remux: session en cache réutilisée");
               const busted = cached.url + (cached.url.includes("?") ? "&" : "?") + "r=" + (args.reloadNonce ?? 0);
               setResult({ baseUrl: busted, resumeFrag: cached.frag, isDirectPlay: true, isLocalRemux: true });
               return;
             }
+            plog("stream", `remux éligible → start(audio=${effAudio}, t=${Math.floor(startSeconds ?? 0)}s)`);
             const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
             const res = await startLocalRemux({
-              rawUrl, streams, audioIndex: audioRef.current, startSeconds: startSeconds ?? 0,
+              rawUrl, streams, audioIndex: effAudio, startSeconds: startSeconds ?? 0,
               isCancelled: () => fetchIdRef.current !== fetchId,
             });
             if (fetchIdRef.current !== fetchId) return;
@@ -186,9 +204,11 @@ export function useTVStreamUrl(args: {
               const frag = res.actualStartSec > 0.5 ? `#tnt-start=${res.actualStartSec.toFixed(2)}` : "";
               remuxCacheRef.current = { key: remuxKey, url: res.url, frag };
               remuxGenRef.current = res.gen;
+              plog("stream", `remux OK gen=${res.gen} origine=${res.actualStartSec.toFixed(1)}s`);
               setResult({ baseUrl: res.url, resumeFrag: frag, isDirectPlay: true, isLocalRemux: true });
               return;
             }
+            plog("stream", "remux ÉCHOUÉ (3 tentatives) → repli PlaybackInfo serveur");
             // tous les essais ont échoué → repli silencieux sur PlaybackInfo (transcode/direct serveur)
           } catch { /* repli PlaybackInfo */ }
         }
@@ -206,7 +226,7 @@ export function useTVStreamUrl(args: {
 
         const info = await client.getPlaybackInfo(itemId, {
           userId, deviceProfile: profile, mediaSourceId,
-          audioStreamIndex: audioRef.current,
+          audioStreamIndex: effAudio,
           subtitleStreamIndex: burnInIndex >= 0 ? burnInIndex : undefined,
           startTimeTicks: 0, // timeline absolue (reprise via #tnt-start)
           maxStreamingBitrate: cap,
@@ -229,22 +249,24 @@ export function useTVStreamUrl(args: {
         } else if (isTranscodingQuality && maxBitrate) {
           streamUrl = client.getStreamUrl(itemId, {
             directPlay: false, maxBitrate, maxHeight,
-            audioIndex: audioRef.current, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
+            audioIndex: effAudio, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
           });
         } else {
           // Remux / fallback codec : HLS 8 Mbps (parité avec le fallback Android).
           streamUrl = client.getStreamUrl(itemId, {
             directPlay: false, maxBitrate: 8_000_000,
-            audioIndex: audioRef.current, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
+            audioIndex: effAudio, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
           });
         }
 
+        plog("stream", `PlaybackInfo → ${directPlay ? "direct play serveur" : "transcode HLS"} (audio=${effAudio})`);
         // Fragment de reprise CUIT avec la baseUrl (atomique → un seul reload).
         setResult({ baseUrl: streamUrl, resumeFrag, playSessionId, isDirectPlay: directPlay });
       } catch {
         if (fetchIdRef.current !== fetchId) return;
         // Échec TOTAL (remux + PlaybackInfo) : surfacer au lieu de laisser l'écran de
         // chargement tourner pour toujours (baseUrl null silencieux).
+        plog("stream", "résolution du flux ÉCHOUÉE (remux + PlaybackInfo) → écran d'erreur");
         setResult({ baseUrl: null, isDirectPlay: false, failed: true });
       }
     })();

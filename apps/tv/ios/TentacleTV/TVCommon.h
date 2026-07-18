@@ -25,15 +25,26 @@
 #import <libavutil/samplefmt.h>
 #import <os/log.h>
 #include <float.h>   // DBL_MAX (init de gTVMinFirstDts avant la 1ʳᵉ écriture)
+#include <strings.h> // strcasecmp (résolution de piste audio par langue, TVStreamMap)
 
-#define TVLOG(fmt, ...) os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__)
+// Ring buffer de logs ponté vers JS/Metro (TVLogBuffer.m — drainé par fetchLogs).
+void TVLogAppendFmt(const char *fmt, ...);
+NSArray<NSString *> *TVLogDrain(void);
+// TVLOG : chaque ligne part dans os_log (Console.app) ET dans le ring buffer.
+// NB : les arguments sont évalués DEUX fois — jamais d'effet de bord dedans.
+#define TVLOG(fmt, ...) do { \
+  os_log_error(OS_LOG_DEFAULT, "[TVLR] " fmt, ##__VA_ARGS__); \
+  TVLogAppendFmt("[TVLR] " fmt, ##__VA_ARGS__); \
+} while (0)
 #define TVLR_REORDER 8   // profondeur de réordonnancement B-frames couverte (HEVC grand public ≤ 4-8)
 // Fenêtrage disque (TVWindow.m) : plafond DUR (octets) + marge conservée DERRIÈRE la tête.
 #define TVLR_DISK_CAP   (1600LL * 1024 * 1024)   // 1,6 Go → tient sur Apple TV 32/64 Go quel que soit le film
-#define TVLR_BEHIND_SEC 90.0                      // fenêtre conservée derrière la tête. ⚠️ ≥ 90 s : AVPlayer
-                                                  // maintient un back-buffer (~60 s) qu'il RE-TÉLÉCHARGE en continu
-                                                  // derrière la lecture — à 60 s pile, la purge le supprimait juste
-                                                  // avant sa re-demande (404 en rafale, observé en soak 2026-07-13)
+#define TVLR_BEHIND_SEC 120.0                     // fenêtre conservée derrière la tête. AVPlayer RE-TÉLÉCHARGE en
+                                                  // continu un back-buffer derrière la lecture ; à 60 s puis même à
+                                                  // 90 s (segments ~5,4 s, soak 2026-07-17), la purge supprimait le
+                                                  // segment JUSTE avant sa re-demande (404 en rafale). 120 s = ~2
+                                                  // segments de marge au-delà du back-buffer observé (~92 s) ;
+                                                  // coût disque ≈ +35 Mo, négligeable vs cap 1,6 Go.
 #define TVLR_PREBUFFER_SEC 8.0                    // s produites (0-based) avant de résoudre start() → cushion anti-stall de démarrage
 #define TVLR_RESUME_PREBUFFER_SEC 3.0             // cushion réduit pour une session de REPRISE/seek (gResumePending) → start() résout en ~2-3 s
 // Compensation de dérive A/V du transcode audio (TVAudioTranscode.m) : au-delà de 100 ms d'écart
@@ -49,12 +60,14 @@
 #define TVLR_SEG_WAIT_MS      2500                // handler HLS : attente max (long-poll) d'un segment
                                                   // demandé DEVANT le dernier produit, avant 404
 
-// Route les logs internes de FFmpeg vers Console.app (raison exacte des échecs).
+// Route les logs internes de FFmpeg vers Console.app ET le ring buffer JS
+// (raison exacte des échecs, visible dans Metro).
 static void TVAvLog(void *avcl, int level, const char *fmt, va_list vl) {
   if (level > AV_LOG_WARNING) return;
   char line[512];
   vsnprintf(line, sizeof(line), fmt, vl);
   os_log_error(OS_LOG_DEFAULT, "[TVLR-ff] %{public}s", line);
+  TVLogAppendFmt("[TVLR-ff] %s", line);
 }
 
 static long long TVFileSize(NSString *path) {
@@ -83,6 +96,10 @@ extern NSString     *gCurrentUrl;
 extern int    gTVDynRange;
 extern double gTVFps;
 extern volatile int gWantAudioIdx;  // index de piste audio (MediaStream.Index JS) à mapper ; -1 = 1ʳᵉ dispo
+// Hints de SECOURS si gWantAudioIdx ne résout pas un flux audio du fichier (indexation
+// Jellyfin ≠ FFmpeg : pistes externes, état initial) — cf. cascade de TVMapStreams.
+extern volatile int gWantAudioOrdinal;  // n-ième flux AUDIO voulu (0-based) ; -1 = inconnu
+extern char gWantAudioLang[8];          // langue ISO 639 voulue ("jpn"…) ; "" = inconnue
 extern volatile int    gWantStartSec; // position de reprise (s) demandée par JS
 extern volatile double gWrittenSec;   // position max ÉCRITE par le remux (s) → gate de reprise
 extern volatile long long gDiskBytes; // octets cumulés des segments (fenêtrage disque, TVWindow.m)

@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useRef, useState, type Component } from "react";
 import { findNodeHandle } from "react-native";
-import { osdFocusedKeyRef, osdPlayPauseNodeRef } from "./osdFocusBus";
+import { osdPlayPauseNodeRef } from "./osdFocusBus";
 
 /** Boutons de transport de l'OSD du lecteur, dans l'ordre de la rangée. */
 export type TransportKey =
-  | "back" | "prev" | "rewind" | "skipback" | "playpause"
-  | "skipforward" | "fastforward" | "next" | "episodes" | "settings";
+  | "back" | "prev" | "skipback" | "playpause"
+  | "skipforward" | "scrub" | "next" | "episodes" | "settings";
 
 export type FocusNode = { setNativeProps?: (p: Record<string, unknown>) => void } | null;
 
 export interface OverlayButtonProps {
   onFocus: () => void;
-  onBlur: () => void;
   hasTVPreferredFocus?: boolean;
   nextFocusUp?: number;
   nextFocusDown?: number;
@@ -29,11 +28,9 @@ export interface OverlayFocusControl {
 interface CoreArgs {
   /** Incrément : redonne le focus au dernier bouton utilisé (réapparition OSD). */
   focusSignal: number;
-  /** En scrub, le focus est verrouillé sur play/pause. */
+  /** En scrub (OSD masqué, fond focusable) : verrou de navigation en filet et
+   *  gel de la mémoire de focus. */
   scrubbing: boolean;
-  /** Scrub initié par un bouton OSD maintenu (FF/rewind) : NE PAS verrouiller le
-   *  focus (il doit rester sur le bouton tenu). */
-  scrubViaButton?: boolean;
   /** Primitive de restauration du focus natif — SEUL point spécifique à la
    *  plateforme (Android = setNativeProps direct ; tvOS = cycle false→true). */
   restore: (node: FocusNode) => void;
@@ -49,13 +46,10 @@ interface CoreArgs {
  */
 /** Rangée transport HORIZONTALE (sans `back`, qui est sur la rangée du haut). */
 const TRANSPORT_ROW: TransportKey[] = [
-  "prev", "rewind", "skipback", "playpause", "skipforward", "fastforward", "next", "episodes", "settings",
+  "prev", "skipback", "playpause", "skipforward", "scrub", "next", "episodes", "settings",
 ];
 
-export function useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton = false, restore }: CoreArgs): OverlayFocusControl {
-  // Verrou de focus scrub UNIQUEMENT pour les scrubs au D-pad/shuttle, pas pour un
-  // bouton OSD maintenu (le focus doit rester sur le bouton tenu).
-  const lockScrub = scrubbing && !scrubViaButton;
+export function useOverlayFocusCore({ focusSignal, scrubbing, restore }: CoreArgs): OverlayFocusControl {
   const btnRefs = useRef<Partial<Record<TransportKey, FocusNode>>>({});
   // Node handles natifs par bouton — alimentent nextFocusLeft/Right (Android :
   // moteur de proximité ; tvOS : ignorés mais inoffensifs). Une map + un compteur
@@ -134,11 +128,10 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton = f
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [focusSignal, restore]);
 
-  // NB : en scrub via raccourci (shuttle/D-pad), on NE déplace PLUS le focus vers
-  // play/pause — il reste à son emplacement initial (demande utilisateur : l'avance
-  // rapide ne doit pas bouger le focus). Le verrou `lockScrub` (buttonProps) suffit
-  // à neutraliser la navigation entre boutons si le focus est déjà sur l'un d'eux ;
-  // la validation OK pendant le scrub est gérée globalement (useTVPlayerControls).
+  // NB : pendant un scrub, l'OSD est MASQUÉ (boutons non focusables, le fond
+  // reprend le focus) — le verrou de navigation ci-dessous n'est qu'un filet si
+  // un focus transitoire subsiste sur un bouton ; la validation OK pendant le
+  // scrub est gérée globalement (useTVPlayerControls).
 
   // Voisins gauche/droite parmi les boutons RÉELLEMENT rendus (handle présent) :
   // saute automatiquement les conditionnels absents (prev/next/episodes).
@@ -153,35 +146,35 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, scrubViaButton = f
   }, []);
 
   const buttonProps = useCallback((key: TransportKey): OverlayButtonProps => {
+    // Mémoire gelée pendant la restauration ET pendant un scrub (un focus
+    // transitoire sur un bouton masqué ne doit pas écraser le dernier utilisé).
     const onFocus = () => {
-      osdFocusedKeyRef.current = key;
-      if (!restoringFocusRef.current) lastFocusedRef.current = key;
+      if (!restoringFocusRef.current && !scrubbing) lastFocusedRef.current = key;
     };
-    const onBlur = () => { if (osdFocusedKeyRef.current === key) osdFocusedKeyRef.current = null; };
     const playPauseNode = handlesRef.current.playpause;
     const backNode = handlesRef.current.back;
     const preferred = key === "playpause" ? initialPreferred : undefined;
 
-    if (lockScrub) {
+    if (scrubbing) {
       // Verrou complet sur play/pause : ←/→/↑/↓ ne déplacent pas le focus, OK
       // confirme le scrub. (back reste accessible vers le bas.)
-      if (key === "back") return { onFocus, onBlur, nextFocusDown: playPauseNode };
+      if (key === "back") return { onFocus, nextFocusDown: playPauseNode };
       return {
-        onFocus, onBlur, hasTVPreferredFocus: preferred,
+        onFocus, hasTVPreferredFocus: preferred,
         nextFocusUp: playPauseNode, nextFocusDown: playPauseNode,
         nextFocusLeft: playPauseNode, nextFocusRight: playPauseNode,
       };
     }
 
-    if (key === "back") return { onFocus, onBlur, nextFocusDown: playPauseNode };
+    if (key === "back") return { onFocus, nextFocusDown: playPauseNode };
     // Chaînage horizontal explicite entre boutons adjacents rendus.
     const { left, right } = neighbors(key);
     return {
-      onFocus, onBlur, hasTVPreferredFocus: preferred,
+      onFocus, hasTVPreferredFocus: preferred,
       nextFocusUp: backNode, nextFocusLeft: left, nextFocusRight: right,
     };
     // handlesVersion : recompute quand les handles/conditionnels changent.
-  }, [lockScrub, initialPreferred, neighbors, handlesVersion]);
+  }, [scrubbing, initialPreferred, neighbors, handlesVersion]);
 
   return { registerButton, buttonProps };
 }

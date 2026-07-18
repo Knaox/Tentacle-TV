@@ -54,6 +54,9 @@ export default {
   lastActive: "Last active: {{date}}",
   revoke: "Revoke",
 
+  // "Pairing expired" banner (device Jellyfin token dead server-side)
+  pairingExpiredBanner: "Pairing expired — reconfirm pairing from your profile to restore progress saving.",
+
   // Pairing unavailable (public server URL not configured on the backend)
   pairingUnavailable: "TV pairing is unavailable — this option must be enabled by the administrator.",
   pairingUnavailableAdmin: "Please first set the “Public Tentacle TV server URL” to enable TV pairing.",

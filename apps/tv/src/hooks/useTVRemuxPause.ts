@@ -2,6 +2,7 @@ import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateA
 import { NativeModules } from "react-native";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { RemuxInfo } from "./useTVRemuxInfo";
+import { plog } from "../utils/playerDiag";
 
 /**
  * Vraie pause permanente du lecteur remux on-device tvOS (anti `AVFoundationErrorDomain -11866`).
@@ -83,9 +84,11 @@ export function useTVRemuxPause(args: {
       if (vodTimerRef.current) clearTimeout(vodTimerRef.current);
       timerRef.current = setTimeout(() => {
         capturePauseFrame?.();   // frame encore affichée (aucun stall possible avant l'engage)
+        plog("pause", "pause native engagée (keepalive EVENT)");
         Remux?.setPaused?.(true);
         engagedRef.current = true;
         vodTimerRef.current = setTimeout(() => {
+          plog("pause", "pause longue (>20 s) → snapshot VOD+ENDLIST");
           Remux?.setSnapshotMode?.(1);   // étage 2 : snapshot VOD+ENDLIST servi → AVPlayer arrête de poller
           vodEngagedRef.current = true;
         }, VOD_AFTER_MS);
@@ -107,7 +110,8 @@ export function useTVRemuxPause(args: {
     // n'est pas « empoisonné », la dé-pause nue suffit.
     const info = infoRef?.current;
     const trulyDone = !!(info && info.done && !info.error);
-    if (!dead && (!sawEndlist || trulyDone)) return;   // étage 1 seul (ou ENDLIST réel) : rien à recharger
+    if (!dead && (!sawEndlist || trulyDone)) { plog("pause", "reprise → dé-pause nue (session intacte)"); return; }   // étage 1 seul (ou ENDLIST réel) : rien à recharger
+    plog("pause", `reprise → remount session fraîche @${positionRef.current.toFixed(1)}s (morte=${dead ? 1 : 0}, endlist=${sawEndlist ? 1 : 0})`);
     deadSessionRef.current = false;
     // Remount sur une nouvelle session re-remuxée à P (point de pause exact préservé). On arme
     // SYNCHRONIQUEMENT, AVANT le reload async :
