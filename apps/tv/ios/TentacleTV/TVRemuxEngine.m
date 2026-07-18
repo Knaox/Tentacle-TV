@@ -26,6 +26,8 @@ NSString     *gCurrentUrl;
 int    gTVDynRange = 0;
 double gTVFps = 0;
 volatile int gWantAudioIdx = -1;  // index de piste audio (MediaStream.Index JS) à mapper ; -1 = 1ʳᵉ dispo
+volatile int gWantAudioOrdinal = -1;  // secours : n-ième flux audio voulu (cf. TVStreamMap)
+char gWantAudioLang[8] = "";          // secours : langue ISO 639 voulue
 volatile int    gWantStartSec = 0; // position de reprise (s) demandée par JS
 volatile double gWrittenSec = 0;   // position max ÉCRITE par le remux (s) → gate de reprise
 // Origine ABSOLUE de la timeline playlist. Provisoirement le startSec demandé (posé par start()),

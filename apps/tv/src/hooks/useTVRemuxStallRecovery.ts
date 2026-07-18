@@ -2,6 +2,7 @@ import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction 
 import { NativeModules } from "react-native";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { RemuxInfo } from "./useTVRemuxInfo";
+import { plog } from "../utils/playerDiag";
 
 const Remux = (NativeModules as { TVLocalRemux?: { prepareResume?: () => void } }).TVLocalRemux;
 
@@ -60,6 +61,7 @@ export function useTVRemuxStallRecovery(args: {
     const info = infoRef?.current;
     if (!pausedStateRef.current && info && info.done && !info.error
         && p >= info.sessionStartSec + info.writtenSec - 5) {
+      plog("stall", `stall au bord d'un remux TERMINÉ @${p.toFixed(1)}s → fin de lecture`);
       if (endedRef && !endedRef.current) {
         endedRef.current = true;
         onEndRef?.current();
@@ -70,6 +72,7 @@ export function useTVRemuxStallRecovery(args: {
       // PAUSE → lazy : marquer la session morte, figer l'image à P, rester en
       // pause. Les stalls suivants sont absorbés (flag déjà posé).
       if (!deadSessionRef.current) {
+        plog("stall", `pause → session marquée morte (lazy) @${p.toFixed(1)}s`);
         deadSessionRef.current = true;
         setReloadFrameSec(p);
       }
@@ -79,6 +82,7 @@ export function useTVRemuxStallRecovery(args: {
     // la reprise (useTVRemuxPause) pilote le re-remux, ne pas doubler.
     if (deadSessionRef.current) return;
     // LECTURE → reload immédiat à la position courante (jamais startSeconds).
+    plog("stall", `lecture → remount immédiat @${p.toFixed(1)}s (écrit=${info ? (info.sessionStartSec + info.writtenSec).toFixed(1) : "?"}s)`);
     Remux?.prepareResume?.(); // session fraîche garantie (manifeste frais, anti re-stall)
     softReloadRef.current = true;
     holdForReload();

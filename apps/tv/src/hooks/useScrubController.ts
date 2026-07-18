@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { getSpeedTier, SCRUB_STEP_SECONDS } from "./scrubAcceleration";
-import { useButtonSeek } from "./useButtonSeek";
 
 /** Gap entre deux événements répétés au-delà duquel le hold est terminé */
 const HOLD_RELEASE_MS = 350;
@@ -14,7 +13,7 @@ const SCRUB_HOLD_EXTRA_MS = 700;
 const HOLD_SCRUB_TICK_MS = 250;
 /** Délai d'INACTIVITÉ en scrub avant d'ANNULER seul (reprise à la position
  *  d'origine, AUCUN seek). Le seek ne part QUE sur confirmation explicite :
- *  OK (select), bouton ▶︎❙❙, ou relâchement d'un bouton OSD FF/RW tenu.
+ *  OK (select) ou bouton ▶︎❙❙.
  *  Filet anti-seek accidentel : saisir la télécommande n'engage au pire qu'un
  *  scrub visuel qui se résorbe seul sans déplacer la lecture. */
 const SCRUB_IDLE_CANCEL_MS = 7000;
@@ -28,6 +27,9 @@ type Ref<T> = MutableRefObject<T>;
 
 interface ScrubControllerArgs {
   showOverlay: () => void;
+  /** Masque l'OSD à l'ENTRÉE en scrub : la seule UI de scrub est le plein écran
+   *  trickplay (TVScrubFullscreen) et le fond reprend le focus. */
+  hideOverlay: () => void;
   currentTimeRef: Ref<number>;
   durationRef: Ref<number>;
   onSeekRef: Ref<(seconds: number) => void>;
@@ -42,21 +44,18 @@ interface ScrubControllerArgs {
  * Moteur de SCRUB du lecteur (mode « Netflix ») — PARTAGÉ Android/tvOS, extrait
  * de useTVPlayerControls (budget 300 lignes). Curseur fantôme, AUCUN seek tant
  * que non confirmé, accélération par paliers pendant un maintien. Les entrées
- * (←/→, long-press, rewind/FF côté Android ; gestes pan côté tvOS) appellent les
- * mêmes handlers exposés ici → comportement identique partout (source unique).
+ * (bouton ⏩ de l'OSD, ←/→, long-press, touches media rewind/FF ; gestes pan
+ * côté tvOS) appellent les mêmes handlers exposés ici → comportement identique
+ * partout (source unique).
  */
 export function useScrubController({
-  showOverlay, currentTimeRef, durationRef, onSeekRef, onScrubPauseRef,
+  showOverlay, hideOverlay, currentTimeRef, durationRef, onSeekRef, onScrubPauseRef,
   overlayVisibleRef, panelOpenRef, skipAnyPressRef,
 }: ScrubControllerArgs) {
   const [scrubbing, setScrubbing] = useState(false);
   const scrubbingRef = useRef(false);
   const [scrubPosition, setScrubPosition] = useState(0);
   const scrubPositionRef = useRef(0);
-  // Scrub initié par un BOUTON OSD maintenu (FF/rewind) : le focus doit RESTER sur
-  // le bouton tenu → on supprime le verrou focus→play/pause de l'OSD dans ce cas.
-  const [scrubViaButton, setScrubViaButton] = useState(false);
-  const scrubViaButtonRef = useRef(false);
 
   const [speedLabel, setSpeedLabel] = useState<string | null>(null);
   // Fin du dernier scrub (confirm OU cancel) : un OK génère À LA FOIS l'event TV
@@ -88,7 +87,6 @@ export function useScrubController({
   const confirmScrub = useCallback(() => {
     if (__DEV__) console.log(`[SCRUB] confirmScrub (scrubbing=${scrubbingRef.current})`);
     clearIdleCancel();
-    scrubViaButtonRef.current = false; setScrubViaButton(false);
     if (!scrubbingRef.current) return;
     scrubEndedAtRef.current = Date.now();
     scrubbingRef.current = false;
@@ -105,7 +103,6 @@ export function useScrubController({
 
   const cancelScrub = useCallback(() => {
     clearIdleCancel();
-    scrubViaButtonRef.current = false; setScrubViaButton(false);
     if (!scrubbingRef.current) return;
     scrubEndedAtRef.current = Date.now();
     scrubbingRef.current = false;
@@ -148,20 +145,28 @@ export function useScrubController({
     armIdleCancel();
   }, [endHold, durationRef, armIdleCancel]);
 
+  // Entrée réelle en scrub (anti-jumeau) : un OK sur le bouton ⏩ émet AUSSI
+  // l'event TV global « select » (même key-up, ordre indéterminé sur tvOS) — sans
+  // cette fenêtre, le jumeau confirmerait le scrub à l'instant de son ouverture.
+  const scrubStartedAtRef = useRef(0);
+
   const startScrubbing = useCallback((dir?: "forward" | "backward") => {
     // Déjà en scrub (ex. shuttle tvOS : doigt levé puis reposé) → NE PAS
-    // réinitialiser la position fantôme, juste garder l'OSD. Évite le saut au
-    // point de lecture live à la reprise du geste.
-    if (scrubbingRef.current) { armIdleCancel(); showOverlay(); return; }
+    // réinitialiser la position fantôme. Évite le saut au point de lecture live
+    // à la reprise du geste.
+    if (scrubbingRef.current) { armIdleCancel(); return; }
+    scrubStartedAtRef.current = Date.now();
     scrubbingRef.current = true;
     setScrubbing(true);
     scrubPositionRef.current = currentTimeRef.current;
     setScrubPosition(currentTimeRef.current);
     onScrubPauseRef.current(true);
-    showOverlay();
+    // L'OSD se MASQUE pendant le scrub : TVScrubFullscreen est la seule UI, le
+    // fond redevient focusable et capte OK/←/→ sans navigation entre boutons.
+    hideOverlay();
     armIdleCancel();
     if (dir) moveScrub(dir);
-  }, [showOverlay, moveScrub, currentTimeRef, onScrubPauseRef, armIdleCancel]);
+  }, [hideOverlay, moveScrub, currentTimeRef, onScrubPauseRef, armIdleCancel]);
 
   // Avance CONTINUE de la position fantôme (modèle shuttle tvOS) : delta signé en
   // secondes, clamp [0, durée]. N'utilise PAS les paliers de maintien (réservés au
@@ -186,11 +191,6 @@ export function useScrubController({
     if (!scrubbingRef.current) return;
     armIdleCancel();
   }, [endHold, armIdleCancel]);
-
-  const { startButtonSeek, stopButtonSeek } = useButtonSeek({
-    durationRef, startScrubbing, nudgeScrub, clearIdleCancel,
-    scrubbingRef, scrubViaButtonRef, setScrubViaButton, setSpeedLabel,
-  });
 
   // --- Maintien ←/→ : tick JS d'avance continue (le système n'émet pas les
   //     répétitions pendant un hold) + délai d'armement. ---
@@ -257,10 +257,9 @@ export function useScrubController({
   }, [cancelScrubHold, stopHoldScrub, endHold, armIdleCancel]);
 
   return {
-    scrubbing, scrubPosition, speedLabel, scrubbingRef, scrubViaButton,
-    scrubViaButtonRef, scrubEndedAtRef, lastMediaKeyAtRef,
+    scrubbing, scrubPosition, speedLabel, scrubbingRef,
+    scrubEndedAtRef, scrubStartedAtRef, lastMediaKeyAtRef,
     moveScrub, nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endHold, endShuttleGesture,
-    startButtonSeek, stopButtonSeek,
     handleDpadDirection, handleLongDirection, handleMediaSeekKey, onHoldRelease,
   };
 }

@@ -17,28 +17,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.12.1",
-    "tag": "desktop-v1.12.1",
+    "version": "1.12.2",
+    "tag": "desktop-v1.12.2-r1",
     "notes": {
       "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
       "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
     },
     "assets": {
       "appimage": {
-        "name": "Tentacle.TV_1.12.1_amd64.AppImage",
-        "sha256": "d1dd09c9c97684225f778631eacc6b5c2478bb7ba11a9bc1153702457f28a7f5"
+        "name": "Tentacle.TV_1.12.2_amd64.AppImage",
+        "sha256": "b8ac0f36a989f550e6f8f10ddd643f4ad6eccec8cd70effa2ede976fda576890"
       },
       "deb": {
-        "name": "Tentacle.TV_1.12.1_amd64.deb",
-        "sha256": "a6635e28118a4ef96acb435e927e2322e5c814a422cbbaea77c8e8f3f2772969"
+        "name": "Tentacle.TV_1.12.2_amd64.deb",
+        "sha256": "4d3e2d5e2ad7d2a0e4ce9faa98a5e383525e831fcbf92953f2bf6315766bdfdb"
       },
       "rpm": {
-        "name": "Tentacle.TV-1.12.1-1.x86_64.rpm",
-        "sha256": "66a52e3d3c72f3ab5a8f957abe7597aff9a58375ef084d1d08559d4bf0d7baf9"
+        "name": "Tentacle.TV-1.12.2-1.x86_64.rpm",
+        "sha256": "2cd25b0af17eae3f9ef6880289287e110359c1eb8f5cfccf1646c76fccf9c4d2"
       },
       "pacman": {
-        "name": "tentacle-tv-1.12.1-1-x86_64.pkg.tar.zst",
-        "sha256": "77cdd127bb090f79583dbef4c8fd054ecabd6f135ae1ae5d18e8e41e1032180d"
+        "name": "tentacle-tv-1.12.2-1-x86_64.pkg.tar.zst",
+        "sha256": "6e51c2e06f041802ca229834ec2f752a188b092ac89b4b90df2f2e7b81341f5f"
       }
     }
   }

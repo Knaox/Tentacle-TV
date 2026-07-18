@@ -32,6 +32,7 @@ import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow, doLogout } from "./auth/sessionFlow";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
+import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { TVNavChrome, deriveRailKey } from "./components/nav/TVNavChrome";
 import { TVNavProvider } from "./context/TVNavContext";
@@ -261,6 +262,7 @@ function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null 
             {/* Rail persistant monté une seule fois (overlay sibling du Navigator) */}
             <TVNavChrome railKey={railKey} />
             <OfflineBanner visible={!isReachable} onRetry={retry} />
+            <PairingExpiredBanner />
           </NavigationContainer>
         </TVNavProvider>
       </SidebarProvider>

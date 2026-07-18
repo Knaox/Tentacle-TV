@@ -1,3 +1,5 @@
+import { fetchStreamingConfig } from "./useStreamingConfig";
+
 const TICKS_PER_SEC = 10_000_000;
 const DBG = "[Playback]";
 
@@ -33,6 +35,7 @@ export type JfClient = {
   getAuthHeader: (token?: string) => string;
   useCredentials: boolean;
   getDirectStreaming?: () => { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null;
+  setDirectStreaming?: (config: { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null) => void;
   reportDirectStreamingError?: () => void;
 };
 
@@ -40,6 +43,29 @@ export type JfClient = {
  *  route les POST suivants directement via le proxy — inutile de re-payer un
  *  préflight voué à l'échec à chaque report (10 s). Reset au rechargement. */
 let directTelemetryBroken = false;
+
+/** 401/403 sur la route directe : le token Jellyfin de l'appareil est mort
+ *  (révoqué/expiré côté serveur, observé EN PLEINE lecture). On redemande un
+ *  token frais au backend — même canal self-healing que la récupération de
+ *  stream (useTVDirectStreamRecovery) — au lieu de basculer définitivement sur
+ *  le proxy : celui-ci remplace le JWT par la clé admin SANS contexte user
+ *  (cassé pour le playstate en Jellyfin 10.11) → la position de reprise ne se
+ *  sauvait plus du tout. Bridé à une tentative/min ; les reports suivants
+ *  (~10 s) repartent en direct dès que le token frais est posé. */
+let directAuthRefreshAt = 0;
+const DIRECT_AUTH_REFRESH_MS = 60_000;
+
+async function refreshDirectToken(client: JfClient): Promise<void> {
+  if (!client.setDirectStreaming) return;
+  if (Date.now() - directAuthRefreshAt < DIRECT_AUTH_REFRESH_MS) return;
+  directAuthRefreshAt = Date.now();
+  const prev = client.getDirectStreaming?.()?.jellyfinToken ?? null;
+  const cfg = await fetchStreamingConfig(client.useCredentials ? "__cookie__" : client.getToken());
+  if (cfg.enabled && cfg.mediaBaseUrl && cfg.jellyfinToken && cfg.jellyfinToken !== prev) {
+    client.setDirectStreaming({ enabled: true, mediaBaseUrl: cfg.mediaBaseUrl, jellyfinToken: cfg.jellyfinToken });
+    console.warn(DBG, "token Jellyfin rafraîchi — télémétrie directe rétablie");
+  }
+}
 
 /**
  * Fire-and-forget POST to Jellyfin session endpoint.
@@ -75,6 +101,14 @@ export async function sessionPost(
         },
       });
       if (res.ok || res.status === 204) return;
+      if (res.status === 401 || res.status === 403) {
+        // Token appareil mort : refresh (bridé) — la route directe RESTE active,
+        // le prochain report repartira avec le token frais. Pas de tentative
+        // proxy : le playstate y est impossible (clé admin, JF 10.11).
+        console.error(DBG, `${label} direct: ${res.status} — refresh du token Jellyfin demandé`);
+        void refreshDirectToken(client).catch(() => {});
+        return;
+      }
       console.error(DBG, `${label} direct: ${res.status} — télémétrie via proxy désormais`);
       directTelemetryBroken = true;
     } catch (err: unknown) {

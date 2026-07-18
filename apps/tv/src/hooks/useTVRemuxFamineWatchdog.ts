@@ -1,5 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import type { RemuxInfo } from "./useTVRemuxInfo";
+import { plog } from "../utils/playerDiag";
 
 /** Aucun onProgress depuis ce délai en lecture remux active → tentative de récupération. */
 const STALL_RECOVER_MS = 8000;
@@ -79,12 +80,14 @@ export function useTVRemuxFamineWatchdog(args: {
       const now = Date.now();
       guardRef.current = guardRef.current.filter((t) => now - t < GUARD_WINDOW_MS);
       if (guardRef.current.length >= GUARD_MAX) {
+        plog("famine", `${GUARD_MAX} récupérations en <120 s → Playback Stopped`);
         setVideoError("Playback Stopped");
         armedAtRef.current = now;
         return;
       }
       guardRef.current.push(now);
       armedAtRef.current = now;
+      plog("famine", `aucun progress depuis 8 s @${positionRef.current.toFixed(1)}s (avance dispo=${ahead.toFixed(1)}s, done=${info?.done ? 1 : 0}) → récupération`);
       onRemuxStall();
     }, 1000);
     return () => clearInterval(id);

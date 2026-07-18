@@ -11,6 +11,7 @@ import { useTVSubtitleControl } from "./useTVSubtitleControl";
 import { useTVInitialResume } from "./useTVInitialResume";
 import { useTVStreamUrl } from "./useTVStreamUrl";
 import { useTVRemuxInfo } from "./useTVRemuxInfo";
+import { useTVRemuxLogPump } from "./useTVRemuxLogPump";
 import { useTVRemuxStallRecovery } from "./useTVRemuxStallRecovery";
 import { useTVRemuxFamineWatchdog } from "./useTVRemuxFamineWatchdog";
 import { useTVRemuxPause } from "./useTVRemuxPause";
@@ -118,6 +119,8 @@ export function usePlayerStreamPipeline(args: {
   // État de production du remux (poll 1 Hz sessionInfo) : borne la fenêtre de seek natif
   // à l'ÉCRIT réel + alimente stall-recovery et détecteur de fin. Inerte hors remux.
   const remuxInfoRef = useTVRemuxInfo(isLocalRemux);
+  // Dev : déverse les logs NATIFS [TVLR] du remux dans Metro (diagnostic device).
+  useTVRemuxLogPump();
 
   // Récupération de stall remux (-11866) — sauf à ≤5 s de la fin d'un remux terminé (= FIN).
   const { onRemuxStall } = useTVRemuxStallRecovery({
@@ -159,12 +162,16 @@ export function usePlayerStreamPipeline(args: {
   const trackRes = useTVTrackResolution({
     streams, item, ancestors,
     positionRef, setAudioIndex, setSubtitleIndex, setStartTicks,
-    // Préférence audio ≠ défaut → reload : transcode (audio non commutable) ET REMUX local
-    // (audio muxé → re-remux). Sans `|| isLocalRemux`, le remux gardait l'audio par défaut.
+    // Préférence audio ≠ défaut → reload INCONDITIONNEL. L'ancien gate
+    // (`!isDirectPlayRef || isLocalRemuxRef`) se fermait à tort pendant le
+    // DÉMARRAGE : la résolution des préférences (async backend) arrive souvent
+    // AVANT que le mode soit établi (result init isDirectPlay=true, remux pas
+    // encore résolu) → aucun reload, l'UI affichait la préférence (VFQ) mais le
+    // flux gardait l'audio par défaut (eng). En direct play natif établi, le
+    // bump est un no-op d'URL (même stream, image figée auto-retirée) — sans
+    // danger ; en remux/transcode il relance avec la bonne piste.
     onAudioReloadNeeded: () => {
-      if (!isDirectPlayRef.current || isLocalRemuxRef.current) {
-        softReloadRef.current = true; setReloadFrameSec(positionRef.current); setReloadNonce((n) => n + 1);
-      }
+      softReloadRef.current = true; setReloadFrameSec(positionRef.current); setReloadNonce((n) => n + 1);
     },
   });
   resetPrefsAppliedRef.current = trackRes.resetPrefsApplied;

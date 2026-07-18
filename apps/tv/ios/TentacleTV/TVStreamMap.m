@@ -33,21 +33,52 @@ static int TVVideoParamsMissing(const AVCodecParameters *p) {
 // entrée → sortie, -1 = ignoré) et `m`. Retourne < 0 si aucun flux mappé ou échec.
 static int TVMapStreams(AVFormatContext *ic, AVFormatContext *oc, int *smap, TVMapOut *m) {
   int oi = 0, audioTaken = 0;
-  // Valider l'index audio voulu (MediaStream.Index JS) : s'il NE pointe PAS un flux AUDIO
-  // (ex. 0 = vidéo, ou état initial audioIndex=0 avant chargement), retomber sur le 1ᵉʳ flux
-  // audio → JAMAIS de silence (régression AAC sinon).
+  // Résolution de la piste audio voulue — CASCADE (jamais de silence, jamais la
+  // mauvaise langue en silence) :
+  //  1) gWantAudioIdx (MediaStream.Index JS) si c'est bien un flux AUDIO du fichier ;
+  //  2) sinon gWantAudioOrdinal : n-ième flux audio (indexation Jellyfin ≠ FFmpeg :
+  //     pistes externes, index périmé) ;
+  //  3) sinon gWantAudioLang : 1ᵉʳ flux audio dont metadata `language` correspond ;
+  //  4) sinon 1ᵉʳ flux audio du fichier (comportement historique).
   int wantAud = gWantAudioIdx;
+  const char *how = "index";
   if (wantAud < 0 || wantAud >= (int)ic->nb_streams ||
       ic->streams[wantAud]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
     wantAud = -1;
-    for (unsigned k = 0; k < ic->nb_streams; k++)
-      if (ic->streams[k]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) { wantAud = (int)k; break; }
+    int aseen = 0;
+    for (unsigned k = 0; k < ic->nb_streams && wantAud < 0; k++) {
+      if (ic->streams[k]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) continue;
+      if (aseen == gWantAudioOrdinal) { wantAud = (int)k; how = "ordinal"; }
+      aseen++;
+    }
+    if (wantAud < 0 && gWantAudioLang[0])
+      for (unsigned k = 0; k < ic->nb_streams && wantAud < 0; k++) {
+        if (ic->streams[k]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) continue;
+        AVDictionaryEntry *lang = av_dict_get(ic->streams[k]->metadata, "language", NULL, 0);
+        if (lang && lang->value && strcasecmp(lang->value, gWantAudioLang) == 0) { wantAud = (int)k; how = "lang"; }
+      }
+    if (wantAud < 0) {
+      how = "first";
+      for (unsigned k = 0; k < ic->nb_streams; k++)
+        if (ic->streams[k]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) { wantAud = (int)k; break; }
+    }
   }
-  TVLOG("remux: audio want=%d → stream %d", gWantAudioIdx, wantAud);
+  TVLOG("remux: audio want=%d ord=%d lang=%{public}s → stream %d (via %{public}s)",
+        gWantAudioIdx, gWantAudioOrdinal, gWantAudioLang, wantAud, how);
   for (unsigned i = 0; i < ic->nb_streams; i++) {
     smap[i] = -1;
     AVCodecParameters *p = ic->streams[i]->codecpar;
     if (p->codec_type == AVMEDIA_TYPE_VIDEO) {
+      // POCHETTE EMBARQUÉE (cover MJPEG « attached pic », fréquente dans les MKV
+      // d'anime) et flux vidéo surnuméraires : JAMAIS mappés. movenc exige des
+      // dimensions (la cover n'en a pas → write_header -22 « Invalid argument »,
+      // remux mort-né ×3 puis repli transcode silencieux) et AVPlayer ne lit
+      // qu'une seule vidéo de toute façon.
+      if ((ic->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC) || m->vInIdx >= 0) {
+        TVLOG("remux: skip video stream %u (attached_pic=%d, déjà une vidéo=%d)",
+              i, (int)!!(ic->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC), m->vInIdx >= 0);
+        continue;
+      }
     } else if (p->codec_type == AVMEDIA_TYPE_AUDIO && !audioTaken && (int)i == wantAud) {
       audioTaken = 1;   // piste validée (sélectionnée ou 1ʳᵉ) ; codecs non gérés → transcode EAC3
     } else continue;
