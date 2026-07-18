@@ -18,6 +18,7 @@ export default {
   autoRetryFailed: "Permanently failed for \"{{title}}\" after {{max}} attempts",
   updateNow: "Update now",
   updateOpenStore: "Open the App Store",
+  updateStoreOpenedHint: "The App Store is open — click “Update”; the app will close automatically.",
   updateInstalling: "Installing...",
   updateRestarting: "Restarting the app...",
   updateReleaseNotes: "Release notes",
