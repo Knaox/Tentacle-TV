@@ -148,6 +148,20 @@ export function useScrubController({
     armIdleCancel();
   }, [endHold, durationRef, armIdleCancel]);
 
+  /** Appui SIMPLE ←/→ en scrub : pas FIXE de ±SCRUB_STEP_SECONDS, SANS
+   *  accélération — la montée 2x/4x/8x est réservée au MAINTIEN (tick du hold
+   *  motor, temps réel). Avant : chaque appui passait par moveScrub → des
+   *  appuis rapprochés héritaient du palier d'accélération (« tout à x8 »). */
+  const stepScrub = useCallback((dir: "forward" | "backward") => {
+    endHold();
+    const delta = (dir === "forward" ? 1 : -1) * SCRUB_STEP_SECONDS;
+    const dur = durationRef.current || 0;
+    const next = Math.max(0, dur > 0 ? Math.min(scrubPositionRef.current + delta, dur) : scrubPositionRef.current + delta);
+    scrubPositionRef.current = next;
+    setScrubPosition(next);
+    armIdleCancel();
+  }, [endHold, durationRef, armIdleCancel]);
+
   // Entrée réelle en scrub (anti-jumeau) : un OK sur le bouton ⏩ émet AUSSI
   // l'event TV global « select » (même key-up, ordre indéterminé sur tvOS) — sans
   // cette fenêtre, le jumeau confirmerait le scrub à l'instant de son ouverture.
@@ -209,7 +223,7 @@ export function useScrubController({
       // Hold en cours (ou key-up résiduel) : avance pilotée par le tick JS —
       // les events directionnels seraient des doublons parasites.
       if (hold.isHoldTicking()) return;
-      moveScrub(dir);
+      stepScrub(dir);
       return;
     }
     // OSD caché → 1er appui : afficher l'OSD. Android : réveil DIFFÉRÉ au
@@ -218,7 +232,7 @@ export function useScrubController({
     // qu'au key-up → le réveil est déjà « au relâchement ».
     if (Platform.OS === "android") hold.requestDeferredWake();
     else showOverlay();
-  }, [showOverlay, moveScrub, panelOpenRef, skipAnyPressRef, hold]);
+  }, [showOverlay, stepScrub, panelOpenRef, skipAnyPressRef, hold]);
 
   // Touches rewind/fast-forward dédiées : scrub direct, même OSD visible.
   const handleMediaSeekKey = useCallback((dir: "forward" | "backward") => {
