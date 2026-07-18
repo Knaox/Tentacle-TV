@@ -13,7 +13,12 @@
   }
 
   html, body {
-    background: var(--surface-0);
+    /* Repli en dur volontaire. La fenetre Tauri est `transparent: true` sur
+     * macOS (overlay mpv) : si `--surface-0` ne resout pas — feuille pas encore
+     * appliquee, token renomme, surcharge admin cassee — `background: var(--x)`
+     * devient invalide et la fenetre laisse voir le BUREAU. Le repli garantit
+     * qu'on retombe au pire sur du noir, jamais sur du vide. */
+    background: var(--surface-0, #000000);
   }
 
   body {
