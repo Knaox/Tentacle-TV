@@ -61,23 +61,43 @@ export function useScrubHoldMotor(args: {
   }, []);
   useEffect(() => () => cancelScrubHold(), [cancelScrubHold]);
 
+  // Direction du tick en cours — un maintien dans l'AUTRE sens re-démarre le
+  // tick avec la nouvelle direction au lieu d'être ignoré.
+  const tickDirRef = useRef<"forward" | "backward" | null>(null);
+
+  const startTicking = useCallback((dir: "forward" | "backward") => {
+    stopHoldScrub();
+    tickDirRef.current = dir;
+    holdScrubIntervalRef.current = setInterval(() => {
+      // Auto-guérison : scrub terminé (OK/Back/annulation) sans key-up reçu
+      // (event perdu/annulé côté système) → JAMAIS de tick fantôme résiduel.
+      if (!scrubbingRef.current) { stopHoldScrub(); return; }
+      moveScrub(dir);
+    }, HOLD_SCRUB_TICK_MS);
+  }, [stopHoldScrub, moveScrub, scrubbingRef]);
+
   const handleLongDirection = useCallback((dir: "forward" | "backward") => {
-    if (panelOpenRef.current || scrubbingRef.current) return;
-    if (overlayVisibleRef.current) return; // OSD visible = navigation, pas d'avance rapide
+    if (panelOpenRef.current || overlayVisibleRef.current) return;
+    if (scrubbingRef.current) {
+      // DÉJÀ en scrub (bouton ⏩, maintien précédent, appui simple) : le
+      // maintien accélère IMMÉDIATEMENT — pas de délai d'armement, pas de
+      // re-startScrubbing. Android n'émet NI répétition de ←/→ NI second
+      // longLeft/longRight pendant un hold : sans ce branchement, maintenir
+      // une flèche dans le scrub ne faisait qu'un pas (+10) puis plus rien.
+      if (!holdScrubIntervalRef.current || tickDirRef.current !== dir) {
+        pendingWakeRef.current = false;
+        startTicking(dir);
+      }
+      return;
+    }
     if (scrubHoldTimerRef.current) clearTimeout(scrubHoldTimerRef.current);
     scrubHoldTimerRef.current = setTimeout(() => {
       scrubHoldTimerRef.current = null;
       pendingWakeRef.current = false; // le maintien a engagé le scrub → pas de réveil OSD
       startScrubbing(dir);
-      stopHoldScrub();
-      holdScrubIntervalRef.current = setInterval(() => {
-        // Auto-guérison : scrub terminé (OK/Back/annulation) sans key-up reçu
-        // (event perdu/annulé côté système) → JAMAIS de tick fantôme résiduel.
-        if (!scrubbingRef.current) { stopHoldScrub(); return; }
-        moveScrub(dir);
-      }, HOLD_SCRUB_TICK_MS);
+      startTicking(dir);
     }, SCRUB_HOLD_EXTRA_MS);
-  }, [startScrubbing, stopHoldScrub, moveScrub, panelOpenRef, overlayVisibleRef, scrubbingRef]);
+  }, [startScrubbing, startTicking, panelOpenRef, overlayVisibleRef, scrubbingRef]);
 
   /** Tap ←/→ OSD caché (Android) : demande un réveil au KEY-UP. */
   const requestDeferredWake = useCallback(() => { pendingWakeRef.current = true; }, []);
