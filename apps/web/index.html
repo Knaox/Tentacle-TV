@@ -1,13 +1,38 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<!-- `data-theme` est posé par le script du <head> avant le premier paint.
+     L'ancienne classe `dark` était INERTE : Tailwind n'est pas configuré en
+     darkMode:"class" et aucune variante `dark:` n'existe dans le code. -->
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/tentacle-logo-pirate.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: http:; media-src 'self' blob: https: http:; connect-src 'self' https: http: ws: wss: http://ipc.localhost ipc:; font-src 'self' https://fonts.gstatic.com; frame-src 'self' blob: https://www.youtube-nocookie.com https://www.youtube.com; object-src 'none'; base-uri 'self'; form-action 'self';">
     <title>Tentacle</title>
+    <script>
+      // Pose data-theme AVANT le premier paint. Sans ce bloc, l'app s'ouvre en
+      // sombre (valeurs de :root) puis bascule en clair au montage de React —
+      // le flash est très visible sur desktop où la fenêtre s'ouvre déjà peinte.
+      // Volontairement inline et sans dépendance : tout report après le parsing
+      // du bundle réintroduirait le flash.
+      (function () {
+        try {
+          var mode = localStorage.getItem("tentacle_theme_mode");
+          if (mode !== "light" && mode !== "dark") mode = "auto"; // défaut + valeurs corrompues
+          var dark =
+            mode === "dark" ||
+            (mode === "auto" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        } catch (e) {
+          // localStorage indisponible (mode privé, WebView verrouillée) : on
+          // retombe sur le sombre, qui est le rendu historique de l'app.
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-tentacle-bg text-white antialiased">
+  <body class="bg-tentacle-bg text-content-primary antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

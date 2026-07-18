@@ -1,8 +1,10 @@
 import { createContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { applyTokenOverride, clearTokenOverride } from "./applyTokens";
+import { syncFromDocument } from "./colorScheme";
 import { CustomCssInjector } from "./CustomCssInjector";
 import { fetchThemeState } from "./themeApi";
+import { useThemeMode } from "./useThemeMode";
 import type { BackendThemeState } from "./types";
 
 interface ThemeContextValue {
@@ -30,13 +32,19 @@ interface ThemeProviderProps {
 /**
  * Boot-time theme bootstrap.
  *
- * Cascade strategy:
+ * Cascade strategy (4 couches, de la plus faible à la plus forte) :
  *  1. Static `tokens.css` (imported by `index.css`) defines every token at
  *     `:root`. This is the lossless baseline — no async dependency.
- *  2. On mount, fetch `/api/theme` and write any token overrides as inline
+ *  2. `:root[data-theme="light"]` dans le même fichier redéclare les tokens
+ *     colorimétriques du schéma clair. Spécificité (0,2,0) > (0,1,0), donc
+ *     aucun `!important`. L'attribut est posé par le script inline de
+ *     `index.html` AVANT le premier paint, puis piloté par `colorScheme.ts`.
+ *  3. On mount, fetch `/api/theme` and write any token overrides as inline
  *     custom properties on `<html>`. Inline styles beat the stylesheet, so
- *     overrides win without `!important`.
- *  3. When `customCss.hasContent` is true, mount `<CustomCssInjector>` at the
+ *     overrides win without `!important` — Y COMPRIS sur le bloc clair, d'où
+ *     le partitionnement par affinité de schéma dans `applyTokens.ts` : sans
+ *     lui, une surface sombre saisie par l'admin fuiterait en thème clair.
+ *  4. When `customCss.hasContent` is true, mount `<CustomCssInjector>` at the
  *     end of the tree — the resulting `<style>` element lives at the bottom of
  *     `<body>`, so its rules win document-order cascade.
  *
@@ -48,24 +56,40 @@ export function ThemeProvider({ backendUrl, children }: ThemeProviderProps) {
   const queryClient = useQueryClient();
   const lastAppliedRef = useRef<string[]>([]);
 
+  const { scheme } = useThemeMode();
+
   const { data, isLoading } = useQuery({
     queryKey: ["theme", backendUrl],
     queryFn: () => fetchThemeState(backendUrl),
-    staleTime: 5 * 60 * 1000,
+    // Toujours considéré périmé → refetch au montage et au retour sur la
+    // fenêtre. Auparavant `staleTime: 5min` + `refetchOnWindowFocus: false`,
+    // et comme ce provider est monté à la racine et ne se démonte jamais, RIEN
+    // ne déclenchait de refetch : le thème était lu UNE SEULE FOIS par session.
+    // Un changement de marque admin n'atteignait les autres utilisateurs qu'au
+    // rechargement de la page — et sur desktop, qu'au redémarrage de l'app.
+    // Aligné sur le mobile, qui refetch déjà au premier plan. Requête rare.
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
     retry: 1,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 
+  // Resynchronise l'attribut posé par le script d'amorçage de `index.html`.
+  useEffect(() => {
+    syncFromDocument();
+  }, []);
+
+  // Dépend AUSSI de `scheme` : l'override admin est partitionné par affinité de
+  // schéma, il doit donc être réappliqué à chaque bascule clair/sombre.
   useEffect(() => {
     const override = data?.tokens;
     clearTokenOverride(lastAppliedRef.current);
-    lastAppliedRef.current = override ? applyTokenOverride(override) : [];
+    lastAppliedRef.current = override ? applyTokenOverride(override, scheme) : [];
     return () => {
       clearTokenOverride(lastAppliedRef.current);
       lastAppliedRef.current = [];
     };
-  }, [data?.tokens]);
+  }, [data?.tokens, scheme]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({

@@ -17,7 +17,10 @@
   }
 
   body {
-    @apply min-h-screen font-sans text-white antialiased;
+    /* `text-content-primary` et non `text-white` : cette règle forçait le texte
+     * en blanc pour toute l'app, avant même React, et rendait tout thème clair
+     * impossible. `--surface-0` ci-dessus bascule déjà via `[data-theme]`. */
+    @apply min-h-screen font-sans text-content-primary antialiased;
     font-feature-settings: "ss01", "cv11"; /* Inter — better digits + alt 'a' */
     letter-spacing: -0.005em;
   }
