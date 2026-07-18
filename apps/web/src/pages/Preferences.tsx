@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useMyPairedDevices, useRevokeMyDevice, useAuth } from "@tentacle-tv/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage } from "@tentacle-tv/api-client";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 import { PageTransition } from "../components/PageTransition";
-import { ChangePasswordSection } from "../components/preferences/ChangePasswordSection";
-import { isTauriApp } from "../main";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -95,12 +93,8 @@ export function Preferences() {
 
   return (
     <PageTransition>
-    <div className="px-4 pt-6 pb-12 md:px-12">
-      <main className="mx-auto max-w-4xl">
-        <h1 className="mb-2 text-2xl font-bold text-content-primary">{t("preferences:title")}</h1>
-        <p className="mb-8 text-sm text-content-tertiary">
-          {t("preferences:subtitle")}
-        </p>
+      <div className="max-w-2xl">
+        {/* Le titre et le sous-titre sont portes par SettingsShell. */}
 
         {/* Interface language */}
         <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
@@ -123,7 +117,7 @@ export function Preferences() {
         )}
 
         <div className="space-y-4">
-          {libraries?.map((lib: any) => (
+          {libraries?.map((lib: { Id: string; Name: string }) => (
             <LibraryPrefCard
               key={lib.Id}
               libraryId={lib.Id}
@@ -138,44 +132,11 @@ export function Preferences() {
           ))}
         </div>
 
-        {/* Compte : changement du mot de passe Jellyfin */}
-        <ChangePasswordSection />
-
-        {/* Paired devices section */}
-        <PairedDevicesSection />
-
-        {/* Desktop only: change server URL */}
-        {isTauriApp && <ChangeServerSection />}
-      </main>
-    </div>
+        {/* Mot de passe, appareils jumeles et changement de serveur ont ete
+            regroupes dans Reglages > Securite : ils etaient enterres ici, sous
+            une carte PAR bibliotheque. */}
+      </div>
     </PageTransition>
-  );
-}
-
-function ChangeServerSection() {
-  const { t } = useTranslation(["profile", "common"]);
-  const { changeServer } = useAuth();
-
-  const handleChangeServer = () => {
-    const confirmed = window.confirm(t("profile:changeServerMessage"));
-    if (!confirmed) return;
-    changeServer.mutate(undefined, {
-      onSettled: () => window.location.reload(),
-    });
-  };
-
-  return (
-    <div className="mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-      <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("profile:changeServerTitle")}</h3>
-      <p className="mb-4 text-xs text-content-tertiary">{t("profile:changeServerMessage")}</p>
-      <button
-        onClick={handleChangeServer}
-        disabled={changeServer.isPending}
-        className="rounded-lg border border-line-subtle bg-fill-subtle px-4 py-2 text-xs font-semibold text-content-secondary transition hover:bg-fill-soft disabled:opacity-40"
-      >
-        {t("profile:changeServer")}
-      </button>
-    </div>
   );
 }
 
@@ -300,42 +261,3 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
   );
 }
 
-function PairedDevicesSection() {
-  const { t } = useTranslation("pairing");
-  const { data: devices } = useMyPairedDevices();
-  const revokeMut = useRevokeMyDevice();
-
-  if (!devices || devices.length === 0) return null;
-
-  return (
-    <div className="mt-8">
-      <h2 className="mb-4 text-lg font-semibold text-content-primary">
-        {t("pairing:pairedDevices")}
-      </h2>
-      <div className="space-y-3">
-        {devices.map((device) => (
-          <div
-            key={device.id}
-            className="flex items-center justify-between rounded-xl border border-line-subtle bg-fill-subtle p-4"
-          >
-            <div>
-              <p className="text-sm font-medium text-content-primary">{device.name}</p>
-              <p className="mt-1 text-xs text-content-quaternary">
-                {t("pairing:lastActive", {
-                  date: new Date(device.lastSeen).toLocaleDateString(),
-                })}
-              </p>
-            </div>
-            <button
-              onClick={() => revokeMut.mutate(device.id)}
-              disabled={revokeMut.isPending}
-              className="rounded-lg bg-danger-surface px-4 py-1.5 text-xs font-medium text-status-error-fg hover:bg-danger-surface-hover disabled:opacity-40 transition"
-            >
-              {t("pairing:revoke")}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
