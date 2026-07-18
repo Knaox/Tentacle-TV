@@ -52,6 +52,7 @@ function ModalContent({
   progress,
   error,
   isStoreUpdate,
+  storeOpened,
   onInstall,
   onDismiss,
   t,
@@ -61,6 +62,7 @@ function ModalContent({
   progress: number;
   error: string | null;
   isStoreUpdate: boolean;
+  storeOpened: boolean;
   onInstall: () => void;
   onDismiss: () => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -123,13 +125,16 @@ function ModalContent({
           {t("notifications:later")}
         </button>
       </div>
+      {isStoreUpdate && storeOpened && (
+        <p className="text-center text-xs text-white/45">{t("notifications:updateStoreOpenedHint")}</p>
+      )}
     </>
   );
 }
 
 export function UpdateModal() {
   const { t } = useTranslation("notifications");
-  const { available, phase, version, notes, progress, error, isStoreUpdate, installUpdate, dismiss } = useAutoUpdate();
+  const { available, phase, version, notes, progress, error, isStoreUpdate, storeOpened, installUpdate, dismiss } = useAutoUpdate();
 
 
   if (!available) return null;
@@ -166,6 +171,7 @@ export function UpdateModal() {
           progress={progress}
           error={error}
           isStoreUpdate={isStoreUpdate}
+          storeOpened={storeOpened}
           onInstall={installUpdate}
           onDismiss={dismiss}
           t={t}
