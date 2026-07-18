@@ -121,3 +121,10 @@ venv/
 coverage/
 .nyc_output/
 .tentacle-ctl/
+
+# Android SDK local (chemin machine-specifique)
+local.properties
+
+# Artefacts de build Gradle locaux (churn binaire a chaque build)
+apps/tv/android/.gradle/
+apps/mobile/android/.gradle/
