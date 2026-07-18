@@ -26,7 +26,7 @@ export function GlassCard({ children, className = "", onClick }: GlassCardProps)
             tabIndex: 0,
           }
         : {})}
-      className={`rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-xl ${className}`}
+      className={`rounded-2xl border border-line-subtle bg-fill-subtle backdrop-blur-xl shadow-xl ${className}`}
     >
       {children}
     </motion.div>

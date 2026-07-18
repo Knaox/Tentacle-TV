@@ -48,6 +48,7 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     // Pilule blanche pleine en sombre : aucun liseré, mais le token est émis
     // pour que le composant applique un `border` inconditionnel.
     primaryBorder: "transparent",
+    brandFg: "#FFFFFF",
   },
   border: {
     subtle: "rgba(255, 255, 255, 0.08)",

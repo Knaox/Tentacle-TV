@@ -9,10 +9,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: "text-white shadow-lg shadow-[rgba(var(--brand-rgb),0.2)]",
-  secondary: "bg-white/10 text-white hover:bg-white/15 border border-white/10",
-  ghost: "text-white/70 hover:bg-white/10 hover:text-white",
-  danger: "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20",
+  // `text-cta-brand-fg` et non `text-content-primary` : le texte est posé sur le
+  // dégradé de marque, sa lisibilité dépend de l'accent et non du schéma.
+  primary: "text-cta-brand-fg shadow-lg shadow-[rgba(var(--brand-rgb),0.2)]",
+  secondary: "bg-fill-soft text-content-primary hover:bg-fill-medium border border-line-subtle",
+  ghost: "text-content-secondary hover:bg-fill-soft hover:text-content-primary",
+  danger: "bg-danger-surface text-status-error-fg hover:bg-danger-border border border-danger-border",
 };
 
 const variantStyles: Record<Variant, Record<string, string>> = {

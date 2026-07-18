@@ -48,6 +48,9 @@
   /* Pilule blanche pleine en sombre : pas de liseré, mais le token est émis
    * pour que le CTA applique un `border` inconditionnel (visible en clair). */
   --cta-primary-border: transparent;
+  /* Texte sur aplat/dégradé de marque — blanc dans les DEUX schémas (c'est la
+   * lisibilité sur l'accent qui commande, pas le thème). Non redéclaré en clair. */
+  --cta-brand-fg: #FFFFFF;
 
   /* ── Borders ────────────────────────────────────────────────── */
   --border-subtle: rgba(255, 255, 255, 0.08);

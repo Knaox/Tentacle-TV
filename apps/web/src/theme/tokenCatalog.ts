@@ -101,6 +101,7 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
   { category: "color", path: "color.cta.ghostBg", cssVar: "--cta-ghost-bg", defaultValue: t.color.cta.ghostBg, type: "rgba", label: "CTA ghost bg" },
   { category: "color", path: "color.cta.ghostBgHover", cssVar: "--cta-ghost-bg-hover", defaultValue: t.color.cta.ghostBgHover, type: "rgba", label: "CTA ghost hover" },
   { category: "color", path: "color.cta.primaryBorder", cssVar: "--cta-primary-border", defaultValue: t.color.cta.primaryBorder, type: "rgba", label: "CTA primaire — liseré (clair)" },
+  { category: "color", path: "color.cta.brandFg", cssVar: "--cta-brand-fg", defaultValue: t.color.cta.brandFg, type: "color", label: "CTA — texte sur fond de marque" },
 
   // ── COLOR : Border ──
   { category: "color", path: "color.border.subtle", cssVar: "--border-subtle", defaultValue: t.color.border.subtle, type: "rgba", label: "Border subtle" },

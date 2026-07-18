@@ -44,11 +44,33 @@ export const tentacleTailwindPreset: Partial<Config> = {
           "accent-light": cssVar(CSS_VAR_NAMES.color.brand.light),
           "accent-muted": cssVar(CSS_VAR_NAMES.color.brand.light),
         },
+        /**
+         * Statuts. Les paires `bg`/`fg` sont exposées en plus de la base :
+         * les badges et toasts les utilisent partout, et `text-red-400` &co.
+         * correspondent exactement aux `fg` — sans ces clés, ces cas n'avaient
+         * pas de cible et restaient sur la palette Tailwind par défaut.
+         */
         status: {
-          success: cssVar(CSS_VAR_NAMES.color.status.success.base),
-          warning: cssVar(CSS_VAR_NAMES.color.status.warning.base),
-          error: cssVar(CSS_VAR_NAMES.color.status.error.base),
-          info: cssVar(CSS_VAR_NAMES.color.status.info.base),
+          success: {
+            DEFAULT: cssVar(CSS_VAR_NAMES.color.status.success.base),
+            bg: cssVar(CSS_VAR_NAMES.color.status.success.bg),
+            fg: cssVar(CSS_VAR_NAMES.color.status.success.fg),
+          },
+          warning: {
+            DEFAULT: cssVar(CSS_VAR_NAMES.color.status.warning.base),
+            bg: cssVar(CSS_VAR_NAMES.color.status.warning.bg),
+            fg: cssVar(CSS_VAR_NAMES.color.status.warning.fg),
+          },
+          error: {
+            DEFAULT: cssVar(CSS_VAR_NAMES.color.status.error.base),
+            bg: cssVar(CSS_VAR_NAMES.color.status.error.bg),
+            fg: cssVar(CSS_VAR_NAMES.color.status.error.fg),
+          },
+          info: {
+            DEFAULT: cssVar(CSS_VAR_NAMES.color.status.info.base),
+            bg: cssVar(CSS_VAR_NAMES.color.status.info.bg),
+            fg: cssVar(CSS_VAR_NAMES.color.status.info.fg),
+          },
         },
 
         // ── Familles ajoutées pour la migration des couleurs en dur ────────
@@ -99,6 +121,25 @@ export const tentacleTailwindPreset: Partial<Config> = {
         "on-media": {
           primary: cssVar(CSS_VAR_NAMES.color.onMedia.primary),
           secondary: cssVar(CSS_VAR_NAMES.color.onMedia.secondary),
+        },
+
+        /**
+         * Boutons et actions. Sans cette famille, un `bg-white` de CTA n'avait
+         * aucune cible tokenisée — or en clair un CTA blanc sur fond nacré doit
+         * gagner un liseré (`border-cta-primary-border`) pour rester lisible.
+         */
+        cta: {
+          "primary-bg": cssVar(CSS_VAR_NAMES.color.cta.primaryBg),
+          "primary-bg-hover": cssVar(CSS_VAR_NAMES.color.cta.primaryBgHover),
+          "primary-fg": cssVar(CSS_VAR_NAMES.color.cta.primaryFg),
+          "primary-border": cssVar(CSS_VAR_NAMES.color.cta.primaryBorder),
+          "secondary-bg": cssVar(CSS_VAR_NAMES.color.cta.secondaryBg),
+          "secondary-bg-hover": cssVar(CSS_VAR_NAMES.color.cta.secondaryBgHover),
+          "secondary-fg": cssVar(CSS_VAR_NAMES.color.cta.secondaryFg),
+          "ghost-bg": cssVar(CSS_VAR_NAMES.color.cta.ghostBg),
+          "ghost-bg-hover": cssVar(CSS_VAR_NAMES.color.cta.ghostBgHover),
+          /** Texte sur aplat de marque — blanc dans les deux schémas. */
+          "brand-fg": cssVar(CSS_VAR_NAMES.color.cta.brandFg),
         },
 
         /** Actions destructives. */
