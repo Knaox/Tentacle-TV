@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-<!-- `data-theme` est posé par le script du <head> avant le premier paint.
-     L'ancienne classe `dark` était INERTE : Tailwind n'est pas configuré en
-     darkMode:"class" et aucune variante `dark:` n'existe dans le code. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -10,6 +7,16 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: http:; media-src 'self' blob: https: http:; connect-src 'self' https: http: ws: wss: http://ipc.localhost ipc:; font-src 'self' https://fonts.gstatic.com; frame-src 'self' blob: https://www.youtube-nocookie.com https://www.youtube.com; object-src 'none'; base-uri 'self'; form-action 'self';">
     <title>Tentacle</title>
     <script>
+      // NE PAS placer de commentaire HTML entre <!doctype> et la balise
+      // ouvrante : Vite y injecte le preamble react-refresh et le client HMR
+      // par heuristique, et un commentaire a cet endroit les AVALE — ils se
+      // retrouvent commentes, React refresh ne s'initialise jamais et l'app
+      // meurt sur « @vitejs/plugin-react can't detect preamble ».
+      //
+      // L'attribut `data-theme` remplace l'ancienne classe `dark`, qui etait
+      // INERTE : Tailwind n'est pas configure en darkMode:"class" et aucune
+      // variante `dark:` n'existe dans le code.
+      //
       // Pose data-theme AVANT le premier paint. Sans ce bloc, l'app s'ouvre en
       // sombre (valeurs de :root) puis bascule en clair au montage de React —
       // le flash est très visible sur desktop où la fenêtre s'ouvre déjà peinte.
