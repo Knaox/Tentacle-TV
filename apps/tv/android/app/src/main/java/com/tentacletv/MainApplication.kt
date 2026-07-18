@@ -1,6 +1,8 @@
 package com.tentacletv
 
 import android.app.Application
+import android.content.Context
+import android.content.res.Configuration
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeHost
@@ -13,6 +15,15 @@ import com.tentacletv.exoplayer.ExoPackage
 import com.tentacletv.mpv.MpvPackage
 
 class MainApplication : Application(), ReactApplication {
+
+  /** Densité normalisée (cf. TvDensity) posée AUSSI sur le contexte APPLICATION :
+   *  React Native calcule `Dimensions` depuis celui-ci (DisplayMetricsHolder) —
+   *  sans ça, seule la partie native serait à l'échelle, pas l'UI JS. */
+  override fun attachBaseContext(base: Context) {
+    val cfg = Configuration()
+    cfg.densityDpi = TvDensity.densityDpi(base)
+    super.attachBaseContext(base.createConfigurationContext(cfg))
+  }
 
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {

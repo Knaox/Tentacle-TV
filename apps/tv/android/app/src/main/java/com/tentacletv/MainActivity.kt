@@ -1,5 +1,7 @@
 package com.tentacletv
 
+import android.content.Context
+import android.content.res.Configuration
 import android.view.KeyEvent
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -7,6 +9,15 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
+
+  /** Densité normalisée → fenêtre logique 1920×1080 dp (parité Apple TV, cf.
+   *  TvDensity). Doit être posée AVANT toute création des Resources. */
+  override fun attachBaseContext(newBase: Context) {
+    super.attachBaseContext(newBase)
+    val cfg = Configuration()
+    cfg.densityDpi = TvDensity.densityDpi(newBase)
+    applyOverrideConfiguration(cfg)
+  }
 
   override fun getMainComponentName(): String = "TentacleTV"
 
