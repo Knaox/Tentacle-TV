@@ -68,10 +68,14 @@ export async function checkMsixUpdate(): Promise<MsixCheckResult | null> {
     const { getVersion } = await import("@tauri-apps/api/app");
     const current = await getVersion();
     const ms = (await fetchStoreVersions())?.microsoftStore;
+    // Notes TOUJOURS affichées si présentes : la détection (WinRT) et le
+    // manifest sont découplés — un manifest en retard d'une version privait la
+    // modale de tout texte. La pastille de version, elle, n'apparaît que si le
+    // manifest est plus récent que l'installé (jamais un numéro périmé).
+    notes = ms?.notes ? pickManifestNotes(ms.notes) : undefined;
     if (ms?.version && isNewerVersion(ms.version, current)) {
       displayVersion = ms.version;
-      notes = pickManifestNotes(ms.notes);
     }
-  } catch { /* pastille de version simplement absente */ }
+  } catch { /* pastille/notes simplement absentes */ }
   return { displayVersion, notes };
 }
