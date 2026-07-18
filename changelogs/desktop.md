@@ -11,6 +11,13 @@ Release GitHub Linux (illimité). Une seule version pour les trois OS
 ### EN
 - …
 
+## [1.13.1]
+### FR
+- Corrections mineures de l'interface
+
+### EN
+- Minor UI bug fixes
+
 ## [1.13.0]
 ### FR
 - Lecture : les sous-titres s'affichent de nouveau pendant le transcodage, avec leur mise en forme complète (identique à la lecture directe)
