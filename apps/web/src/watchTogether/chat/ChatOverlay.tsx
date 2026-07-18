@@ -5,6 +5,7 @@ import type { WtChatApi } from "./useWtChat";
 import { ChatPanel } from "./ChatPanel";
 import { useWatchOverlayState } from "./chatUiStore";
 import { useChatPanelSize } from "./useChatPanelSize";
+import { useChatActivity } from "./useChatActivity";
 
 /**
  * Watch Together — overlay flottant du chat : bulle réduite (badge non-lus)
@@ -68,9 +69,12 @@ export function ChatOverlay({
 
   // Page player : bulle ET panneau suivent le fondu de l'overlay des
   // contrôles (les aperçus MessageToastLayer restent visibles, eux) — SAUF
-  // pendant la saisie : on ne masque jamais un message en cours d'écriture.
+  // pendant une interaction avec le chat : saisie, survol, clics émoji,
+  // scroll GIFs, redimensionnement (useChatActivity + resizing). Le chat est
+  // dans un portail hors du conteneur vidéo : ses événements ne réarment pas
+  // le timer des contrôles, le garde doit donc EMPÊCHER le masquage.
   const [inputFocused, setInputFocused] = useState(false);
-  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible && !inputFocused;
+  const activity = useChatActivity();
 
   // Rappel dans le viewport (marge 8 px) après un drag ou une ouverture qui
   // ferait dépasser le panneau (bulle garée près d'un bord).
@@ -91,6 +95,9 @@ export function ChatOverlay({
 
   // Taille du panneau desktop (poignée coin haut-gauche, persistée).
   const { size, resizing, startResize } = useChatPanelSize(settleIntoViewport);
+
+  const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible
+    && !inputFocused && !activity.active && !resizing;
 
   useEffect(() => {
     if (open) {
@@ -126,6 +133,7 @@ export function ChatOverlay({
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="fixed inset-x-2 bottom-2 z-50 flex max-h-[60vh] flex-col overflow-hidden rounded-2xl"
         style={{ ...GLASS, pointerEvents: hidden ? "none" : "auto" }}
+        {...activity.handlers}
       >
         <ChatHeader title={t("chatTitle")} onClose={() => chat.setOpen(false)} />
         <ChatPanel chat={chat} onInputFocusChange={setInputFocused} />
@@ -152,6 +160,7 @@ export function ChatOverlay({
       transition={{ duration: 0.3 }}
       style={{ x: dragX, y: dragY, pointerEvents: hidden ? "none" : "auto" }}
       className="fixed bottom-24 right-5 z-50 flex flex-col items-end"
+      {...activity.handlers}
     >
       <AnimatePresence mode="wait" initial={false}>
         {open ? (
