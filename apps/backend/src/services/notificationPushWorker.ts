@@ -1,5 +1,6 @@
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
+import { exactPushKey, isAnnounced, recordAnnounced, seerContentKeys } from "./announcedRegistry";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -7,6 +8,12 @@ import { sendToUser } from "./pushService";
 // on ne connaît ici que des chaînes de type déjà déclarées dans le schéma core
 // (le plugin Seer, lui, continue d'écrire ses lignes `request_status` sans
 // aucune modification — on ne fait que les livrer).
+//
+// Garde anti-doublon (registre announced_contents) : avant chaque push, on
+// vérifie que ce contenu n'a pas déjà été annoncé à cet utilisateur — par ce
+// worker (le syncGlobal du plugin recrée une notif à CHAQUE transition de
+// statut) OU par le notifier bibliothèque (croisement Seer ↔ biblio). Seul le
+// PUSH est étouffé : la notification in-app (cloche) reste intacte.
 //
 // Correspondance type de notification → clé de préférence (extensible :
 // ex. ticket_reply → une future préférence « tickets »).
@@ -45,16 +52,39 @@ async function tick(): Promise<void> {
     });
     const prefByUser = new Map(prefs.map((p) => [p.jellyfinUserId, p]));
 
+    // Claims des utilisateurs du lot — IDENTIFICATION du contenu (titre → tmdb)
+    // pour les clés du registre, pas suppression : on n'exclut pas les expirés.
+    const claims = await prisma.contentClaim.findMany({
+      where: { jellyfinUserId: { in: userIds } },
+      select: { jellyfinUserId: true, tmdbId: true, title: true, mediaType: true },
+    });
+    const claimsByUser = new Map<string, typeof claims>();
+    for (const c of claims) {
+      const list = claimsByUser.get(c.jellyfinUserId) ?? [];
+      list.push(c);
+      claimsByUser.set(c.jellyfinUserId, list);
+    }
+
     for (const n of notifs) {
       const prefKey = PUSHABLE[n.type];
       const enabled = !!prefKey && prefByUser.get(n.jellyfinUserId)?.[prefKey] === true;
-      if (enabled) {
-        await sendToUser(n.jellyfinUserId, {
-          title: n.title,
-          body: n.body ?? "",
-          data: { type: n.type, refId: n.refId ?? undefined },
-        });
+      if (!enabled) continue;
+      const keys = [
+        exactPushKey(n),
+        ...seerContentKeys(n, claimsByUser.get(n.jellyfinUserId) ?? []),
+      ];
+      if (await isAnnounced(n.jellyfinUserId, keys)) {
+        // Enrichissement : mêmes contenus, alias éventuellement nouveaux.
+        await recordAnnounced(n.jellyfinUserId, keys);
+        console.log(`[NotifPush] skip doublon[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} »`);
+        continue;
       }
+      await sendToUser(n.jellyfinUserId, {
+        title: n.title,
+        body: n.body ?? "",
+        data: { type: n.type, refId: n.refId ?? undefined },
+      });
+      await recordAnnounced(n.jellyfinUserId, keys);
     }
 
     // Marque TOUTES les notifs balayées comme poussées (opted-out incluses) pour

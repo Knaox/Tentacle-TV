@@ -81,3 +81,12 @@ CREATE TABLE IF NOT EXISTS `library_known_id` (
   `itemId` varchar(64) NOT NULL,
   PRIMARY KEY (`itemId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Registre persistant des annonces push par (clé de contenu, utilisateur) — anti-re-notification. Voir schema.prisma > AnnouncedContent.
+CREATE TABLE IF NOT EXISTS `announced_contents` (
+  `contentKey` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `notifiedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`contentKey`, `jellyfinUserId`),
+  KEY `announced_contents_notifiedAt_idx` (`notifiedAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

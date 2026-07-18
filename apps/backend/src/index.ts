@@ -43,6 +43,7 @@ import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
 import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
+import { startAnnouncedPurge } from "./services/announcedRegistry";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
@@ -275,6 +276,7 @@ async function main() {
     startJellyfinWs();
     startNotificationPushWorker();
     startLibraryAddedNotifier();
+    startAnnouncedPurge();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
