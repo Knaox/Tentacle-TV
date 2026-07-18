@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
-import { formatDuration } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, StarIcon } from "../icons/HeroIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
@@ -34,8 +34,13 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
       : null;
 
   const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
-  const episodeLabel = isEpisode
-    ? `S${item.ParentIndexNumber ?? "?"}E${item.IndexNumber ?? "?"} · ${item.Name}`
+  // Le code S/E va sur le bouton Reprendre/Lecture (compact) — plus de titre
+  // d'épisode dans le mini-tag (trop coûteux en espace sur la bannière).
+  const resumeEp = isEpisode
+    ? item
+    : (isSeries && watchState?.type !== "completed" ? watchState?.episode : undefined);
+  const buttonEpisodeCode = resumeEp
+    ? formatEpisodeCode(resumeEp.ParentIndexNumber, resumeEp.IndexNumber)
     : null;
 
   const runtime = formatDuration(item.RunTimeTicks);
@@ -63,15 +68,12 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         style={{ animation: "fadeSlideUp 0.7s var(--ease-out, ease-out) both" }}
       >
         {/* Mini-tag row above the title */}
-        {(hasProgress || episodeLabel) && (
+        {(hasProgress || episodeSoberMeta) && (
           <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em]">
             {hasProgress && (
               <span className="text-white/85">
                 <span className="text-white">▶</span> {t("common:continueLabel")}
               </span>
-            )}
-            {episodeLabel && (
-              <span className="text-white/55 normal-case tracking-normal">{episodeLabel}</span>
             )}
             {episodeSoberMeta && (
               <span className="text-white/45 tracking-[0.12em]">{episodeSoberMeta}</span>
@@ -165,6 +167,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           >
             <PlayIcon />
             {hasProgress ? t("common:resume") : t("common:play")}
+            {buttonEpisodeCode && <span className="font-semibold text-black/60">{buttonEpisodeCode}</span>}
           </button>
         </div>
       </div>

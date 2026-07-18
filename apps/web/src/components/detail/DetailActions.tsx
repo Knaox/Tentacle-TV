@@ -10,6 +10,7 @@ import {
   useWatchlistSeriesIds,
   useFavoriteSeriesIds,
 } from "@tentacle-tv/api-client";
+import { formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
 import { TrailerButton } from "./TrailerButton";
@@ -69,7 +70,7 @@ export function DetailActions({ item }: DetailActionsProps) {
     if (isSeries) {
       if (!watchState || watchState.type === "completed") return null;
       const ep = watchState.episode;
-      const epLabel = `S${String(ep.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(ep.IndexNumber ?? 0).padStart(2, "0")}`;
+      const epLabel = formatEpisodeCode(ep.ParentIndexNumber, ep.IndexNumber);
       if (watchState.type === "continue") return `${t("common:resume")} ${epLabel}`;
       if (watchState.type === "next") return `${t("common:play")} ${epLabel}`;
       return t("common:play");

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
@@ -45,7 +46,7 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
   const progress = item.UserData?.PlayedPercentage;
   const widths = POSTER_WIDTH[size];
   const epLabel = isEpisode
-    ? `S${String(item.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(item.IndexNumber ?? 0).padStart(2, "0")}`
+    ? formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })
     : null;
 
   const handleClick = () => {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { formatDuration } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
@@ -42,7 +42,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
   const runtime = formatDuration(item.RunTimeTicks);
 
   const epLabel = isEpisode
-    ? `S${String(item.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(item.IndexNumber ?? 0).padStart(2, "0")}`
+    ? formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })
     : null;
   const seriesName = isEpisode ? item.SeriesName : item.Name;
   const episodeName = isEpisode ? item.Name : null;

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
-import { formatDuration } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 
@@ -98,7 +98,7 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
   const watched = ep.UserData?.Played === true;
   const progress = ep.UserData?.PlayedPercentage;
   const runtime = formatDuration(ep.RunTimeTicks);
-  const epLabel = `S${String(ep.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(ep.IndexNumber ?? 0).padStart(2, "0")}`;
+  const epLabel = formatEpisodeCode(ep.ParentIndexNumber, ep.IndexNumber, { style: "padded" });
 
   return (
     <button

@@ -1,5 +1,6 @@
 import type { MediaItem, UserItemData } from "./types/media";
 import { TICKS_PER_SECOND } from "./constants";
+import { formatEpisodeCode } from "./utils/episodeCode";
 
 /** Watch state for a single media item. */
 export type WatchStatus = "unwatched" | "in_progress" | "watched";
@@ -90,7 +91,7 @@ export function getNextEpisode(episodes: MediaItem[]): NextEpisodeResult {
 export function getNextEpisodeLabel(result: NextEpisodeResult): string | null {
   if (result.type === "completed") return null;
   const ep = result.episode;
-  const num = `S${String(ep.ParentIndexNumber ?? 0).padStart(2, "0")}E${String(ep.IndexNumber ?? 0).padStart(2, "0")}`;
+  const num = formatEpisodeCode(ep.ParentIndexNumber, ep.IndexNumber, { style: "padded" });
 
   switch (result.type) {
     case "start":

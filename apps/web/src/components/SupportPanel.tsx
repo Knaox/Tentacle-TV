@@ -11,6 +11,7 @@ import {
   useJellyfinClient,
 } from "@tentacle-tv/api-client";
 import type { SupportTicket } from "@tentacle-tv/api-client";
+import { formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 export function SupportPanel() {
@@ -143,7 +144,7 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
       return;
     }
     const name = item.Type === "Episode"
-      ? `${item.SeriesName} — S${item.ParentIndexNumber}E${item.IndexNumber} — ${item.Name}`
+      ? `${item.SeriesName} — ${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}`
       : item.Name;
     onSelect({ itemId: item.Id, displayName: name });
     setShowDropdown(false);
@@ -152,7 +153,7 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
   };
 
   const selectEpisode = (ep: MediaItem) => {
-    const name = `${pickedSeries?.Name} — S${ep.ParentIndexNumber}E${ep.IndexNumber} — ${ep.Name}`;
+    const name = `${pickedSeries?.Name} — ${formatEpisodeCode(ep.ParentIndexNumber, ep.IndexNumber, { style: "padded" })} — ${ep.Name}`;
     onSelect({ itemId: ep.Id, displayName: name });
     setShowDropdown(false);
     setSearch("");
