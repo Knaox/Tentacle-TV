@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { View, Text, ScrollView, TVFocusGuideView, Platform } from "react-native";
+import { View, Text, ScrollView, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, interpolate,
 } from "react-native-reanimated";
@@ -131,6 +131,21 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     if (grabFocusSignal) activeRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
   }, [grabFocusSignal]);
 
+  // Pont de focus ANDROID entre les DEUX groupes du rail : depuis le 1er item
+  // du bas (Préférences), UP doit atteindre la DERNIÈRE bibliothèque (fin du
+  // ScrollView du haut) — la recherche géométrique native préférait parfois un
+  // focusable de la PAGE (à droite) et « redescendait » dans le contenu
+  // (constaté sur Préférences/À propos). nextFocusUp/Down court-circuitent la
+  // géométrie. Android uniquement : tvOS a son propre moteur + ponts dédiés.
+  const [lastTopHandle, setLastTopHandle] = useState<number | null>(null);
+  const [firstBottomHandle, setFirstBottomHandle] = useState<number | null>(null);
+  const captureLastTop = useCallback((n: View | null) => {
+    setLastTopHandle(n ? findNodeHandle(n) : null);
+  }, []);
+  const captureFirstBottom = useCallback((n: View | null) => {
+    setFirstBottomHandle(n ? findNodeHandle(n) : null);
+  }, []);
+
   const expand = useCallback(() => {
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current += 1;
@@ -175,7 +190,11 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     { key: "Logout", label: t("logout"), icon: (c) => <LogoutIcon size={ICON_SIZE} color={c} />, danger: true },
   ];
 
-  const renderItem = (item: RailItem, index?: number) => (
+  const renderItem = (
+    item: RailItem,
+    index?: number,
+    bridge?: { captureNode?: (n: View | null) => void; nextFocusUp?: number; nextFocusDown?: number },
+  ) => (
     <RailRow
       key={item.key}
       item={item}
@@ -189,6 +208,9 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       cancelPrefetch={cancelPrefetch}
       makeOnFocus={makeOnFocus}
       setActiveRef={setActiveItemRef}
+      captureNode={bridge?.captureNode}
+      nextFocusUp={bridge?.nextFocusUp}
+      nextFocusDown={bridge?.nextFocusDown}
     />
   );
 
@@ -238,11 +260,17 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
         </View>
 
         <ScrollView ref={itemsScrollRef} showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          {items.map((item, i) => renderItem(item, i))}
+          {items.map((item, i) => renderItem(item, i,
+            Platform.OS === "android" && i === items.length - 1
+              ? { captureNode: captureLastTop, nextFocusDown: firstBottomHandle ?? undefined }
+              : undefined))}
         </ScrollView>
 
         <View style={{ height: 1, backgroundColor: Colors.divider, marginVertical: 10 }} />
-        {bottomItems.map((item) => renderItem(item))}
+        {bottomItems.map((item, bi) => renderItem(item, undefined,
+          Platform.OS === "android" && bi === 0
+            ? { captureNode: captureFirstBottom, nextFocusUp: lastTopHandle ?? undefined }
+            : undefined))}
       </TVFocusGuideView>
     </Animated.View>
   );
