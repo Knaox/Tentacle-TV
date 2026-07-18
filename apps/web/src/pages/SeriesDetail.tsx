@@ -6,6 +6,7 @@ import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Navbar } from "../components/Navbar";
 import { HorizontalScrollRow } from "../components/HorizontalScrollRow";
+import { RichOverview } from "../lib/overviewHtml";
 
 export function SeriesDetail() {
   const { t } = useTranslation("common");
@@ -42,7 +43,7 @@ export function SeriesDetail() {
             {series?.CommunityRating && <span>{t("common:ratingOutOfTen", { rating: series.CommunityRating.toFixed(1) })}</span>}
             {series?.Status && <span>{series.Status === "Continuing" ? t("common:ongoing") : t("common:ended")}</span>}
           </div>
-          {series?.Overview && <p className="max-w-2xl text-sm leading-relaxed text-white/60 line-clamp-3">{series.Overview}</p>}
+          {series?.Overview && <p className="max-w-2xl text-sm leading-relaxed text-white/60 line-clamp-3"><RichOverview text={series.Overview} /></p>}
         </div>
       </div>
 
@@ -123,7 +124,7 @@ function EpisodeRow({ episode: ep, client, onPlay }: { episode: MediaItem; clien
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
         </div>
-        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2">{ep.Overview}</p>}
+        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2"><RichOverview text={ep.Overview} /></p>}
       </div>
     </div>
   );

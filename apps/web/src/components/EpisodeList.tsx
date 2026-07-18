@@ -10,6 +10,7 @@ import { extractMediaQuality } from "../lib/mediaQuality";
 import { WatchedSelectionToolbar } from "./WatchedSelectionToolbar";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { HorizontalScrollRow } from "./HorizontalScrollRow";
+import { RichOverview } from "../lib/overviewHtml";
 
 interface EpisodeListProps {
   seriesId: string;
@@ -284,7 +285,7 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
           <QualityChips quality={quality} density="full" />
           <LanguagePill labels={quality.audioLabels} max={3} />
         </div>
-        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2">{ep.Overview}</p>}
+        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-white/50 line-clamp-2"><RichOverview text={ep.Overview} /></p>}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { RichOverview } from "../../lib/overviewHtml";
 
 interface DetailOverviewProps {
   item: MediaItem;
@@ -41,7 +42,7 @@ export function DetailOverview({ item }: DetailOverviewProps) {
                 transition={{ duration: 0.2 }}
                 className={`text-sm leading-relaxed text-white/75 ${!expanded ? "line-clamp-3" : ""}`}
               >
-                {overview}
+                <RichOverview text={overview} />
               </motion.p>
             </AnimatePresence>
           </motion.div>

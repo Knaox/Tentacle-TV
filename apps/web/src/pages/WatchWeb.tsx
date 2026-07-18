@@ -15,6 +15,7 @@ import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
+import { stripOverviewHtml } from "../lib/overviewHtml";
 
 export function WatchWeb() {
   const { t } = useTranslation("common");
@@ -176,8 +177,10 @@ export function WatchWeb() {
     const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
     return client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 });
   })();
-  const nextEpisodeDescription = nextEpisode?.Overview
-    ? (nextEpisode.Overview.length > 120 ? nextEpisode.Overview.slice(0, 120) + "…" : nextEpisode.Overview) : undefined;
+  // stripOverviewHtml AVANT le slice : couper du HTML brut sectionnerait une balise.
+  const nextOverviewText = nextEpisode?.Overview ? stripOverviewHtml(nextEpisode.Overview) : undefined;
+  const nextEpisodeDescription = nextOverviewText
+    ? (nextOverviewText.length > 120 ? nextOverviewText.slice(0, 120) + "…" : nextOverviewText) : undefined;
 
   const resumeTimeFormatted = startPositionSeconds && startPositionSeconds > 0
     ? formatDuration(Math.round(startPositionSeconds) * 10_000_000) : null;

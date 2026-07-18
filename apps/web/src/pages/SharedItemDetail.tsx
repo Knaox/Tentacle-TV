@@ -10,6 +10,7 @@ import { TrailerModal } from "../components/detail/TrailerModal";
 import { parseYouTubeId } from "../components/detail/youtube";
 import { useItemRemoteTrailers } from "../hooks/useItemRemoteTrailers";
 import { StarIcon } from "../components/icons/HeroIcons";
+import { RichOverview } from "../lib/overviewHtml";
 
 /** Item de repli stable pendant le chargement (les hooks doivent rester appelés). */
 const EMPTY_ITEM = {} as MediaItem;
@@ -78,7 +79,7 @@ export function SharedItemDetail() {
         </div>
 
         {item.Overview && (
-          <p className="mt-6 max-w-3xl text-base leading-relaxed text-white/85">{item.Overview}</p>
+          <p className="mt-6 max-w-3xl text-base leading-relaxed text-white/85"><RichOverview text={item.Overview} /></p>
         )}
 
         {trailers.length > 0 && (
