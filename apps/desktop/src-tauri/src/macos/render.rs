@@ -326,6 +326,16 @@ pub fn destroy(state: &Arc<RenderState>) {
             use objc2::runtime::AnyObject;
             let view = view_addr as *mut AnyObject;
             let _: () = msg_send![view, removeFromSuperview];
+            // `removeFromSuperview` ne relache QUE le retain detenu par le
+            // superview. Le +1 de `alloc`/`initWithFrame:pixelFormat:`
+            // (gl_surface.rs) restait, donc la NSOpenGLView et son contexte CGL
+            // fuyaient a chaque session de lecture : des contextes orphelins
+            // s'accumulaient episode apres episode.
+            //
+            // Sur : le thread de rendu est deja arrete et le handle mpv detruit
+            // (etapes 1 a 7 ci-dessus), et `state.gl_view` vient d'etre remis a
+            // null — plus personne ne detient ce pointeur.
+            let _: () = msg_send![view, release];
         });
     }
 
