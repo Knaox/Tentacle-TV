@@ -1,7 +1,7 @@
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
-import { exactPushKey, isAnnounced, recordAnnounced, seerContentKeys } from "./announcedRegistry";
-import { checkJellyfinPresence, parseSeerAvailability, resolveSeerContent } from "./seerAvailabilityGuard";
+import { exactPushKey, isAnnounced, recordAnnounced } from "./announcedRegistry";
+import { planSeerAvailabilityPush } from "./seerPushPlanner";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -16,14 +16,16 @@ import { checkJellyfinPresence, parseSeerAvailability, resolveSeerContent } from
 // statut) OU par le notifier bibliothèque (croisement Seer ↔ biblio). Seul le
 // PUSH est étouffé : la notification in-app (cloche) reste intacte.
 //
-// Garde de VÉRITÉ (seerAvailabilityGuard) : une annonce de dispo (« … est
-// sorti sur Tentacle TV ») dont le contenu n'est PAS réellement dans Jellyfin
-// (statut Jellyseerr périmé) est DIFFÉRÉE — ni push, ni registre, ni pushedAt.
-// La fenêtre de fraîcheur comparant à un bootTime FIXE, la ligne différée est
-// re-scannée à chaque tick et poussée à l'arrivée RÉELLE du contenu. Assumé :
-// restart serveur (ou suppression de la notif dans la cloche) = abandon du
-// différé ; annonce multi-saisons = all-or-nothing (jamais de demi-vérité) ;
-// la ligne (fausse) écrite par le plugin reste visible dans la cloche.
+// Garde de VÉRITÉ (seerAvailabilityGuard + seerPushPlanner) : une annonce de
+// dispo (« … est sorti sur Tentacle TV ») dont le contenu n'est PAS réellement
+// dans Jellyfin (statut Jellyseerr périmé) est DIFFÉRÉE — ni push, ni registre,
+// ni pushedAt. La fenêtre de fraîcheur comparant à un bootTime FIXE, la ligne
+// différée est re-scannée à chaque tick et poussée à l'arrivée RÉELLE du
+// contenu. Multi-saisons : chaque saison est poussée QUAND elle arrive
+// (« Saison N est sortie ») et la ligne reste différée jusqu'à avoir honoré
+// toutes les saisons annoncées. Assumé : restart serveur (ou suppression de la
+// notif dans la cloche) = abandon du différé ; la ligne (fausse) écrite par le
+// plugin reste visible dans la cloche.
 //
 // Correspondance type de notification → clé de préférence (extensible :
 // ex. ticket_reply → une future préférence « tickets »).
@@ -80,38 +82,34 @@ async function tick(): Promise<void> {
       const prefKey = PUSHABLE[n.type];
       const enabled = !!prefKey && prefByUser.get(n.jellyfinUserId)?.[prefKey] === true;
       if (!enabled) continue;
-      // Annonce de dispo ? → résolution du contenu (refId → seer_requests,
-      // sinon claim par titre) AVANT le calcul des clés : le claim synthétique
-      // garantit les clés tmdb même quand le claim TTL 30 min a été purgé — la
-      // dédup croisée biblio ↔ Seer tient sur l'identifiant, pas sur le titre.
+      // Annonce de dispo Seer → plan du planificateur (vérité Jellyfin,
+      // découpage par saison, clés tmdb via claim synthétique). Sinon (autres
+      // statuts de demande), chemin générique à clé exacte.
       const userClaims = claimsByUser.get(n.jellyfinUserId) ?? [];
-      const avail = parseSeerAvailability(n);
-      const resolved = avail ? await resolveSeerContent(n, userClaims) : null;
-      const keys = [
-        exactPushKey(n),
-        ...seerContentKeys(n, resolved ? [resolved, ...userClaims] : userClaims),
-      ];
-      if (await isAnnounced(n.jellyfinUserId, keys)) {
+      const plan = await planSeerAvailabilityPush(n, userClaims);
+      if (plan?.action === "defer") {
+        deferredIds.add(n.id);
+        continue;
+      }
+      const keys = plan ? plan.keys : [exactPushKey(n)];
+      if (plan?.action === "skip" || (!plan && (await isAnnounced(n.jellyfinUserId, keys)))) {
         // Enrichissement : mêmes contenus, alias éventuellement nouveaux.
         await recordAnnounced(n.jellyfinUserId, keys);
         console.log(`[NotifPush] skip doublon[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} »`);
         continue;
       }
-      // Vérité bibliothèque : contenu annoncé « sorti » mais absent de
-      // Jellyfin → différé (re-tenté au prochain tick). 'unknown' → fail-open.
-      if (avail && (await checkJellyfinPresence(resolved, avail.seasons)) === "absent") {
-        deferredIds.add(n.id);
-        continue;
-      }
       const res = await sendToUser(n.jellyfinUserId, {
         title: n.title,
-        body: n.body ?? "",
+        body: plan ? plan.body : (n.body ?? ""),
         data: { type: n.type, refId: n.refId ?? undefined },
       });
       console.log(
         `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} » (sent:${res.sent}, invalid:${res.invalid})`,
       );
       await recordAnnounced(n.jellyfinUserId, keys);
+      // Push partiel (saisons manquantes) : la ligne reste différée pour
+      // livrer le reste à l'arrivée.
+      if (plan && !plan.complete) deferredIds.add(n.id);
     }
 
     // Marque les notifs balayées comme poussées (opted-out incluses) pour ne

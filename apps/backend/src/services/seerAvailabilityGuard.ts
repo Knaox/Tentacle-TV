@@ -10,9 +10,11 @@ import type { RegistryClaim } from "./announcedRegistry";
 // supprimé de la bibliothèque, availability-sync en retard) : une simple
 // DEMANDE pouvait déclencher une fausse annonce de dispo immédiate.
 // Blindage côté core : avant de POUSSER une annonce de dispo, on vérifie que
-// le film (ou CHAQUE saison annoncée) est réellement présent dans Jellyfin.
+// le film (ou chaque saison annoncée) est réellement présent dans Jellyfin.
 // Absent → le worker DIFFÈRE le push (la ligne reste pushedAt=null) et la
 // ré-évalue à chaque tick : la notif part quand le contenu atterrit vraiment.
+// Le découpage par saison (quelle saison pousser quand) vit dans
+// seerPushPlanner.ts ; ici on ne fait que constater la présence.
 //
 // Sans couplage dur au plugin : la résolution du contenu passe d'abord par
 // refId → seer_requests (lecture SQL brute, try/catch — table créée par le
@@ -29,7 +31,11 @@ export interface SeerAvailability {
 }
 
 const NEGATIVE_TTL_MS = 5 * 60_000; // « absent » re-vérifié au plus toutes les 5 min
-const negativeCache = new Map<string, number>(); // clé contenu → expiration (epoch ms)
+const negativeCache = new Map<string, number>(); // clé contenu/saison → expiration (epoch ms)
+
+function purgeNegativeCache(now: number): void {
+  for (const [k, exp] of negativeCache) if (exp <= now) negativeCache.delete(k);
+}
 
 /**
  * null si la notif n'est PAS une annonce de disponibilité. Prédicat et regex
@@ -80,7 +86,8 @@ export async function resolveSeerContent(
 type Lookup = { kind: "found"; id: string } | { kind: "missing" } | { kind: "error" };
 
 /** Item Movie/Series par identifiant TMDB — stratégie éprouvée de routes/tmdb.ts
- *  (AnyProviderIdEquals + filtre exact, puis scan complet en repli), MAIS avec le
+ *  (AnyProviderIdEquals + filtre exact, puis scan complet en repli — nécessaire :
+ *  AnyProviderIdEquals ne filtre pas sur certaines versions Jellyfin), avec le
  *  userId admin : sans lui, /Items?Recursive=true masque une partie de la
  *  bibliothèque et produirait de faux « absent » (= reports indus). */
 async function findByTmdb(tmdbId: number, mediaType: "movie" | "tv"): Promise<Lookup> {
@@ -140,22 +147,22 @@ async function fetchSeasonNumbers(seriesId: string): Promise<Set<number> | null>
 }
 
 /**
- * Verdict de présence RÉELLE en bibliothèque. 'absent' est mémorisé 5 min
- * (cache négatif, purge paresseuse) pour ne pas marteler Jellyfin à chaque tick
- * de 15 s ; 'present' et 'unknown' ne sont JAMAIS cachés (fraîcheur au moment
- * du push, panne transitoire). Log uniquement sur verdict fraîchement calculé.
+ * Verdict de présence REELLE d'un contenu SANS détail de saison (film ou série
+ * entière). 'absent' est mémorisé 5 min (cache négatif, purge paresseuse) pour
+ * ne pas marteler Jellyfin à chaque tick de 15 s ; 'present' et 'unknown' ne
+ * sont JAMAIS cachés (fraîcheur au moment du push, panne transitoire).
+ * Log uniquement sur verdict fraîchement calculé.
  */
 export async function checkJellyfinPresence(
   resolved: RegistryClaim | null,
-  seasons: number[],
 ): Promise<AvailabilityVerdict> {
   if (!resolved || (resolved.mediaType !== "movie" && resolved.mediaType !== "tv")) {
     return "unknown";
   }
   const now = Date.now();
-  for (const [k, exp] of negativeCache) if (exp <= now) negativeCache.delete(k);
-  const key = `${resolved.mediaType}:${resolved.tmdbId}:${seasons.join(",")}`;
-  if ((negativeCache.get(key) ?? 0) > now) return "absent";
+  purgeNegativeCache(now);
+  const key = `${resolved.mediaType}:${resolved.tmdbId}`;
+  if (negativeCache.has(key)) return "absent";
 
   const label = `« ${resolved.title} » (${resolved.mediaType} tmdb:${resolved.tmdbId})`;
   const lookup = await findByTmdb(resolved.tmdbId, resolved.mediaType);
@@ -168,19 +175,50 @@ export async function checkJellyfinPresence(
     console.log(`[SeerGuard] ${label} absent de Jellyfin → push différé`);
     return "absent";
   }
-  if (resolved.mediaType === "tv" && seasons.length > 0) {
-    const have = await fetchSeasonNumbers(lookup.id);
-    if (have === null) {
-      console.log(`[SeerGuard] ${label} saisons invérifiables → push (fail-open)`);
-      return "unknown";
-    }
-    const missing = seasons.filter((s) => !have.has(s));
-    if (missing.length > 0) {
-      negativeCache.set(key, now + NEGATIVE_TTL_MS);
-      console.log(`[SeerGuard] ${label} saisons manquantes [${missing.join(",")}] → push différé`);
-      return "absent";
-    }
-  }
   console.log(`[SeerGuard] ${label} présent dans Jellyfin → push`);
   return "present";
+}
+
+/**
+ * Présence PAR SAISON dans Jellyfin (une seule passe HTTP pour tout le lot).
+ * Retourne l'ensemble des saisons réellement présentes, ou 'unknown' si
+ * invérifiable (fail-open géré par l'appelant). Chaque saison absente est
+ * mémorisée 5 min ; si TOUTES les saisons demandées sont en cache négatif,
+ * aucune requête n'est émise (et rien n'est loggé — anti-spam des ticks).
+ */
+export async function checkSeasonsPresence(
+  resolved: RegistryClaim,
+  seasons: number[],
+): Promise<Set<number> | "unknown"> {
+  const now = Date.now();
+  purgeNegativeCache(now);
+  const sKey = (s: number): string => `s:${resolved.tmdbId}:${s}`;
+  if (seasons.every((s) => negativeCache.has(sKey(s)))) return new Set();
+
+  const label = `« ${resolved.title} » (tv tmdb:${resolved.tmdbId})`;
+  const lookup = await findByTmdb(resolved.tmdbId, "tv");
+  if (lookup.kind === "error") {
+    console.log(`[SeerGuard] ${label} vérification impossible → push (fail-open)`);
+    return "unknown";
+  }
+  if (lookup.kind === "missing") {
+    for (const s of seasons) negativeCache.set(sKey(s), now + NEGATIVE_TTL_MS);
+    console.log(`[SeerGuard] ${label} série absente de Jellyfin → push différé`);
+    return new Set();
+  }
+  const have = await fetchSeasonNumbers(lookup.id);
+  if (have === null) {
+    console.log(`[SeerGuard] ${label} saisons invérifiables → push (fail-open)`);
+    return "unknown";
+  }
+  const present = new Set(seasons.filter((s) => have.has(s)));
+  const missing = seasons.filter((s) => !present.has(s));
+  for (const s of missing) negativeCache.set(sKey(s), now + NEGATIVE_TTL_MS);
+  if (missing.length > 0) {
+    console.log(`[SeerGuard] ${label} saisons manquantes [${missing.join(",")}] → différées`);
+  }
+  if (present.size > 0) {
+    console.log(`[SeerGuard] ${label} saisons présentes [${[...present].join(",")}] → push`);
+  }
+  return present;
 }
