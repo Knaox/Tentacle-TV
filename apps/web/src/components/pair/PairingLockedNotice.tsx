@@ -24,7 +24,7 @@ export function PairingLockedNotice({ isAdmin }: { isAdmin: boolean }) {
           <Link
             to="/admin/services#publicurl"
             className="inline-flex h-10 items-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover"
-            style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.4)" }}
+           
           >
             {t("pairingConfigureNow")}
           </Link>

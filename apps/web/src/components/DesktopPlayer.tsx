@@ -239,7 +239,7 @@ export function DesktopPlayer({
   if (error) return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
       <p className="text-lg text-red-400">{t("player:mpvError", { error })}</p>
-      <button onClick={() => goBack()} className="rounded-lg h-11 px-5 bg-white text-black font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>{t("common:back")}</button>
+      <button onClick={() => goBack()} className="rounded-lg h-11 px-5 bg-white text-black font-bold hover:bg-white/90">{t("common:back")}</button>
     </div>
   );
   if (!ready) return (

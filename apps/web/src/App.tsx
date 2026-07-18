@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { GlassFilters } from "@tentacle-tv/ui";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateModal } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
@@ -167,6 +168,11 @@ export function App() {
   return (
     <ToastProvider>
       <WatchTogetherProvider>
+      {/* Definitions SVG de la refraction Liquid Glass. Montees UNE fois pres
+          de la racine : les surfaces verre y referent par `url(#...)`, un
+          filtre non monte resoudrait sur rien et le verre retomberait
+          silencieusement sur un flou plat. */}
+      <GlassFilters />
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />

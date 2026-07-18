@@ -116,7 +116,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
           className={`mt-6 w-full rounded-xl h-11 text-sm font-bold transition-opacity bg-cta-primary-bg text-cta-primary-fg hover:bg-cta-primary-bg-hover ${
             checked ? "" : "opacity-40 cursor-not-allowed"
           }`}
-          style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
+
         >
           {t("accept")}
         </button>
