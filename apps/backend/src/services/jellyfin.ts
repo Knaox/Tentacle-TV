@@ -316,7 +316,7 @@ export async function getItemCount(): Promise<number | null> {
 // (Jellyfin renvoie moins d'items que `/Items/Counts`), dont les nouveaux ajouts.
 let cachedAdminUserId: string | null = null;
 
-async function getAdminUserId(): Promise<string | null> {
+export async function getAdminUserId(): Promise<string | null> {
   if (cachedAdminUserId) return cachedAdminUserId;
   const jellyfinUrl = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();

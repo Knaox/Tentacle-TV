@@ -1,6 +1,7 @@
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
 import { exactPushKey, isAnnounced, recordAnnounced, seerContentKeys } from "./announcedRegistry";
+import { checkJellyfinPresence, parseSeerAvailability, resolveSeerContent } from "./seerAvailabilityGuard";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -14,6 +15,15 @@ import { exactPushKey, isAnnounced, recordAnnounced, seerContentKeys } from "./a
 // worker (le syncGlobal du plugin recrée une notif à CHAQUE transition de
 // statut) OU par le notifier bibliothèque (croisement Seer ↔ biblio). Seul le
 // PUSH est étouffé : la notification in-app (cloche) reste intacte.
+//
+// Garde de VÉRITÉ (seerAvailabilityGuard) : une annonce de dispo (« … est
+// sorti sur Tentacle TV ») dont le contenu n'est PAS réellement dans Jellyfin
+// (statut Jellyseerr périmé) est DIFFÉRÉE — ni push, ni registre, ni pushedAt.
+// La fenêtre de fraîcheur comparant à un bootTime FIXE, la ligne différée est
+// re-scannée à chaque tick et poussée à l'arrivée RÉELLE du contenu. Assumé :
+// restart serveur (ou suppression de la notif dans la cloche) = abandon du
+// différé ; annonce multi-saisons = all-or-nothing (jamais de demi-vérité) ;
+// la ligne (fausse) écrite par le plugin reste visible dans la cloche.
 //
 // Correspondance type de notification → clé de préférence (extensible :
 // ex. ticket_reply → une future préférence « tickets »).
@@ -65,13 +75,21 @@ async function tick(): Promise<void> {
       claimsByUser.set(c.jellyfinUserId, list);
     }
 
+    const deferredIds = new Set<string>();
     for (const n of notifs) {
       const prefKey = PUSHABLE[n.type];
       const enabled = !!prefKey && prefByUser.get(n.jellyfinUserId)?.[prefKey] === true;
       if (!enabled) continue;
+      // Annonce de dispo ? → résolution du contenu (refId → seer_requests,
+      // sinon claim par titre) AVANT le calcul des clés : le claim synthétique
+      // garantit les clés tmdb même quand le claim TTL 30 min a été purgé — la
+      // dédup croisée biblio ↔ Seer tient sur l'identifiant, pas sur le titre.
+      const userClaims = claimsByUser.get(n.jellyfinUserId) ?? [];
+      const avail = parseSeerAvailability(n);
+      const resolved = avail ? await resolveSeerContent(n, userClaims) : null;
       const keys = [
         exactPushKey(n),
-        ...seerContentKeys(n, claimsByUser.get(n.jellyfinUserId) ?? []),
+        ...seerContentKeys(n, resolved ? [resolved, ...userClaims] : userClaims),
       ];
       if (await isAnnounced(n.jellyfinUserId, keys)) {
         // Enrichissement : mêmes contenus, alias éventuellement nouveaux.
@@ -79,20 +97,33 @@ async function tick(): Promise<void> {
         console.log(`[NotifPush] skip doublon[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} »`);
         continue;
       }
-      await sendToUser(n.jellyfinUserId, {
+      // Vérité bibliothèque : contenu annoncé « sorti » mais absent de
+      // Jellyfin → différé (re-tenté au prochain tick). 'unknown' → fail-open.
+      if (avail && (await checkJellyfinPresence(resolved, avail.seasons)) === "absent") {
+        deferredIds.add(n.id);
+        continue;
+      }
+      const res = await sendToUser(n.jellyfinUserId, {
         title: n.title,
         body: n.body ?? "",
         data: { type: n.type, refId: n.refId ?? undefined },
       });
+      console.log(
+        `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} » (sent:${res.sent}, invalid:${res.invalid})`,
+      );
       await recordAnnounced(n.jellyfinUserId, keys);
     }
 
-    // Marque TOUTES les notifs balayées comme poussées (opted-out incluses) pour
-    // ne pas les re-scanner indéfiniment.
-    await prisma.notification.updateMany({
-      where: { id: { in: notifs.map((n) => n.id) } },
-      data: { pushedAt: new Date() },
-    });
+    // Marque les notifs balayées comme poussées (opted-out incluses) pour ne
+    // pas les re-scanner indéfiniment — SAUF les différées (guard de vérité),
+    // qui doivent rester éligibles jusqu'à l'arrivée réelle du contenu.
+    const toMark = notifs.filter((n) => !deferredIds.has(n.id)).map((n) => n.id);
+    if (toMark.length > 0) {
+      await prisma.notification.updateMany({
+        where: { id: { in: toMark } },
+        data: { pushedAt: new Date() },
+      });
+    }
   } catch (err) {
     console.error("[NotifPush] Tick échoué:", err);
   } finally {
