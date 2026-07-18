@@ -219,6 +219,10 @@ export function useScrubController({
   const handleDpadDirection = useCallback((dir: "forward" | "backward") => {
     if (panelOpenRef.current) return; // panneau ouvert → D-pad au panneau
     skipAnyPressRef.current = true;
+    // Android agit au key-DOWN → armer la détection de maintien AUTONOME
+    // (down sans key-up = hold) : le signal long-press natif n'est pas fiable
+    // sur émulateur/certaines manettes. Gardes ré-évaluées au déclenchement.
+    if (Platform.OS === "android") hold.armHoldFromDown(dir);
     if (scrubbingRef.current) {
       // Hold en cours (ou key-up résiduel) : avance pilotée par le tick JS —
       // les events directionnels seraient des doublons parasites.
