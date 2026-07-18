@@ -76,3 +76,20 @@ export {
 } from "./css/toCssVariables";
 
 export { tentacleTailwindPreset } from "./tailwind/preset";
+
+export type {
+  ResolvedScheme,
+  ShadowStyle,
+  ThemeMode,
+  ThemePalette,
+} from "./schemes/types";
+
+export {
+  buildDarkPalette,
+  buildLightPalette,
+  buildPalette,
+  resolveScheme,
+  sanitizeThemeMode,
+} from "./schemes";
+
+export { darken, hexToRgb, withAlpha, type Rgb } from "./utils/color";
