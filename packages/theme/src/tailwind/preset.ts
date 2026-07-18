@@ -146,6 +146,7 @@ export const tentacleTailwindPreset: Partial<Config> = {
         danger: {
           DEFAULT: cssVar(CSS_VAR_NAMES.color.status.error.base),
           surface: cssVar(CSS_VAR_NAMES.color.danger.surface),
+          "surface-hover": cssVar(CSS_VAR_NAMES.color.danger.surfaceHover),
           border: cssVar(CSS_VAR_NAMES.color.danger.border),
         },
       },

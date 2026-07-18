@@ -98,6 +98,7 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
   },
   danger: {
     surface: "rgba(239, 68, 68, 0.1)",
+    surfaceHover: "rgba(239, 68, 68, 0.22)",
     border: "rgba(239, 68, 68, 0.2)",
   },
 };

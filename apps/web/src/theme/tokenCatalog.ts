@@ -144,6 +144,7 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
 
   // ── COLOR : Danger (actions destructives) ──
   { category: "color", path: "color.danger.surface", cssVar: "--danger-surface", defaultValue: t.color.danger.surface, type: "rgba", label: "Danger surface" },
+  { category: "color", path: "color.danger.surfaceHover", cssVar: "--danger-surface-hover", defaultValue: t.color.danger.surfaceHover, type: "rgba", label: "Danger surface (survol)" },
   { category: "color", path: "color.danger.border", cssVar: "--danger-border", defaultValue: t.color.danger.border, type: "rgba", label: "Danger border" },
 
   // ── BLUR ──

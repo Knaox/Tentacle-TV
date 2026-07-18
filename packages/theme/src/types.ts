@@ -121,6 +121,12 @@ export interface OnMediaColorTokens {
 /** Surfaces d'action destructive. */
 export interface DangerColorTokens {
   surface: string;
+  /**
+   * Survol. Sans ce palier, un `hover:bg-danger-surface` pointe sur la même
+   * valeur que l'état de base et le survol devient invisible — c'est ce qui
+   * s'est produit à la migration des boutons rouges de `Preferences`.
+   */
+  surfaceHover: string;
   border: string;
 }
 

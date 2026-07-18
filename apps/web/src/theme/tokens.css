@@ -78,6 +78,7 @@
 
   /* ── Actions destructives ───────────────────────────────────── */
   --danger-surface: rgba(239, 68, 68, 0.1);
+  --danger-surface-hover: rgba(239, 68, 68, 0.22);
   --danger-border: rgba(239, 68, 68, 0.2);
 
   /* ── Status (foreground) ────────────────────────────────────── */
@@ -263,6 +264,7 @@
 
   /* ── Actions destructives ───────────────────────────────────── */
   --danger-surface: rgba(220, 38, 38, 0.08);
+  --danger-surface-hover: rgba(220, 38, 38, 0.18);
   --danger-border: rgba(220, 38, 38, 0.18);
 
   /* ── Élévation — des ombres NOIRES à 0.4-0.7 sont invisibles sur fond
