@@ -4,13 +4,15 @@ import { sendToUser } from "./pushService";
 import { composeItems } from "./libraryAddedFormat";
 import { indexClaims, isClaimed } from "./libraryAddedDedup";
 import { resolveSeriesTmdbIds } from "./libraryAddedSeries";
-import { filterRecentlyAnnounced } from "./libraryAddedRecent";
+import { filterAnnounced, libraryContentKeys, recordAnnounced } from "./announcedRegistry";
 
 // Notifie en push les ajouts bibliothèque. Détection + nommage par DIFF d'IDs
 // (robuste vs date fichier ET WS muet). Instantané PERSISTANT (table
 // library_known_id → rattrape les ajouts faits pendant une coupure serveur).
-// Anti-doublon : les contenus revendiqués par un plugin (content_claims, ex.
-// Seer) ne sont pas re-notifiés côté biblio à l'utilisateur concerné.
+// Anti-doublon : registre persistant announced_contents (une annonce par
+// contenu et par utilisateur, restarts et pipeline Seer compris) + les
+// contenus revendiqués par un plugin (content_claims, ex. Seer) ne sont pas
+// re-notifiés côté biblio à l'utilisateur concerné.
 
 const POLL_INTERVAL = 60_000;
 const WS_DEBOUNCE_MS = 8_000;
@@ -98,26 +100,34 @@ async function notifyNamed(named: LibItem[]): Promise<void> {
     }
   }
 
-  // Anti-doublon « saison éclatée » : une seule notif par contenu sur la fenêtre,
-  // même si les épisodes arrivent sur plusieurs polls. Filtrage GLOBAL (avant le
-  // fan-out par utilisateur) — requiert le seriesTmdbId ci-dessus pour la clé.
-  const fresh = filterRecentlyAnnounced(named);
-  if (fresh.length === 0) return;
-
   const claims = await prisma.contentClaim.findMany({
     where: { expiresAt: { gt: new Date() } },
     select: { tmdbId: true, jellyfinUserId: true, title: true },
   });
   const claimIndex = indexClaims(claims);
 
+  // Clés multi-alias (tmdb + titre) calculées une fois — le registre persistant
+  // announced_contents remplace l'ancien cache RAM 6 h (clé instable titre→tmdb,
+  // perdu au restart) : anti « saison éclatée » ET anti re-notification, par
+  // utilisateur, quel que soit le pipeline qui a annoncé en premier.
+  const keySets = named.map(libraryContentKeys);
+
   for (const p of prefs) {
+    const announced = await filterAnnounced(p.jellyfinUserId, keySets);
+    // Enrichissement d'alias : un contenu déjà annoncé (via son alias titre)
+    // dont le tmdb vient d'être résolu enregistre AUSSI son alias tmdb — le
+    // matching croisé Seer ↔ biblio reste complet malgré la résolution tardive.
+    const aliasKeys = named.filter((_, i) => announced[i]).flatMap(libraryContentKeys);
+    if (aliasKeys.length > 0) await recordAnnounced(p.jellyfinUserId, aliasKeys);
+    let items = named.filter((_, i) => !announced[i]);
     // Anti-doublon SEULEMENT si l'utilisateur reçoit vraiment la notif Seer
     // (seerAvailable) : sinon Seer ne le notifiera pas → on garde la notif biblio.
     const userClaims = p.seerAvailable ? claimIndex.get(p.jellyfinUserId) : undefined;
-    const items = userClaims ? fresh.filter((it) => !isClaimed(it, userClaims)) : fresh;
+    if (userClaims) items = items.filter((it) => !isClaimed(it, userClaims));
     if (items.length === 0) continue;
     const { title, body } = composeItems(items);
     await sendToUser(p.jellyfinUserId, { title, body, data: { type: "library_added" } });
+    await recordAnnounced(p.jellyfinUserId, items.flatMap(libraryContentKeys));
     console.log(`[LibNotif] push[${p.jellyfinUserId.slice(0, 8)}] « ${title} »`);
   }
 }

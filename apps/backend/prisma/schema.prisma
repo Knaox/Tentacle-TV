@@ -152,6 +152,23 @@ model LibraryKnownId {
   @@map("library_known_id")
 }
 
+// Registre PERSISTANT des annonces push par (clé de contenu, utilisateur),
+// consulté et alimenté par LES DEUX pipelines (notifier bibliothèque + worker
+// Seer) au moment de l'envoi : un contenu annoncé à un utilisateur ne l'est
+// JAMAIS deux fois (restart, changement de prefs et pipeline croisé compris).
+// Multi-alias : les clés tmdb ET titre normalisé d'un même envoi sont
+// enregistrées ensemble (neutralise la résolution TMDB tardive). Purge 30 j.
+// Voir services/announcedRegistry.ts pour le format des clés.
+model AnnouncedContent {
+  contentKey      String   @db.VarChar(191)
+  jellyfinUserId  String   @db.VarChar(255)
+  notifiedAt      DateTime @default(now())
+
+  @@id([contentKey, jellyfinUserId])
+  @@index([notifiedAt])
+  @@map("announced_contents")
+}
+
 model PairingCode {
   id                    String    @id @default(cuid())
   code                  String    @unique @db.VarChar(4)
