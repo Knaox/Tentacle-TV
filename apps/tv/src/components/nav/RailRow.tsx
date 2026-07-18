@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { Focusable } from "../focus/Focusable";
@@ -21,6 +21,11 @@ interface RailRowProps {
   makeOnFocus: (index: number, pad: number) => () => void;
   /** Ref de l'item actif (cible du TVFocusGuideView quand on entre dans le rail). */
   setActiveRef: (node: View | null) => void;
+  /** Capture du nœud natif (pont de focus inter-groupes, cf. TVSideRail). */
+  captureNode?: (node: View | null) => void;
+  /** Cibles de navigation explicites (Android : court-circuite la géométrie). */
+  nextFocusUp?: number;
+  nextFocusDown?: number;
 }
 
 /**
@@ -31,16 +36,24 @@ interface RailRowProps {
  */
 export const RailRow = memo(function RailRow({
   item, index, active, labelStyle, onNavigate, onExpand, onCollapse,
-  schedulePrefetch, cancelPrefetch, makeOnFocus, setActiveRef,
+  schedulePrefetch, cancelPrefetch, makeOnFocus, setActiveRef, captureNode,
+  nextFocusUp, nextFocusDown,
 }: RailRowProps) {
   const iconColor = item.danger ? Colors.error : active ? Colors.textPrimary : Colors.textTertiary;
   const scrollFocus = index != null ? makeOnFocus(index, 48) : null;
   const libraryId = item.key.startsWith("Library_") ? item.key.slice("Library_".length) : null;
+  // Ref composée : capture (pont inter-groupes) + item actif (entrée du rail).
+  const refCb = useCallback((node: View | null) => {
+    captureNode?.(node);
+    if (active) setActiveRef(node);
+  }, [captureNode, active, setActiveRef]);
 
   return (
     <Focusable
-      ref={active ? setActiveRef : undefined}
+      ref={captureNode || active ? refCb : undefined}
       variant="row"
+      nextFocusUp={nextFocusUp}
+      nextFocusDown={nextFocusDown}
       focusRadius={Radius.buttonLarge}
       onPress={() => onNavigate(item.key)}
       onFocus={() => {
