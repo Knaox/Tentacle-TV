@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { Platform } from "react-native";
 import { getSpeedTier, SCRUB_STEP_SECONDS } from "./scrubAcceleration";
+import { useScrubHoldMotor } from "./useScrubHoldMotor";
 
 /** Gap entre deux événements répétés au-delà duquel le hold est terminé */
 const HOLD_RELEASE_MS = 350;
-/** Maintien ←/→ avant d'entrer en avance/recul rapide : le signal long-press
- *  système (~300ms) + ce délai ≈ 1s de maintien total. */
-const SCRUB_HOLD_EXTRA_MS = 700;
-/** Cadence d'avance du curseur pendant un MAINTIEN ←/→ : react-native-tvos
- *  n'émet PAS les répétitions système pendant un hold — sans ce tick JS, le
- *  scrub démarrait (pause) mais le curseur ne bougeait jamais.
- *  DOIT rester < HOLD_RELEASE_MS pour entretenir le palier d'accélération. */
-const HOLD_SCRUB_TICK_MS = 250;
 /** Délai d'INACTIVITÉ en scrub avant d'ANNULER seul (reprise à la position
  *  d'origine, AUCUN seek). Le seek ne part QUE sur confirmation explicite :
  *  OK (select) ou bouton ▶︎❙❙.
@@ -46,7 +40,8 @@ interface ScrubControllerArgs {
  * que non confirmé, accélération par paliers pendant un maintien. Les entrées
  * (bouton ⏩ de l'OSD, ←/→, long-press, touches media rewind/FF ; gestes pan
  * côté tvOS) appellent les mêmes handlers exposés ici → comportement identique
- * partout (source unique).
+ * partout (source unique). Le MAINTIEN ←/→ (armement + tick + réveil différé)
+ * vit dans useScrubHoldMotor (budget 300 lignes).
  */
 export function useScrubController({
   showOverlay, hideOverlay, currentTimeRef, durationRef, onSeekRef, onScrubPauseRef,
@@ -70,6 +65,9 @@ export function useScrubController({
   const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Timer d'annulation sur inactivité (cf. armIdleCancel / endShuttleGesture).
   const idleCancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Arrêt des moteurs de maintien (rempli après useScrubHoldMotor — confirm/
+  // cancel sont déclarés avant lui dans la chaîne de dépendances).
+  const stopMotorsRef = useRef<() => void>(() => {});
   const clearIdleCancel = useCallback(() => {
     if (idleCancelTimerRef.current) { clearTimeout(idleCancelTimerRef.current); idleCancelTimerRef.current = null; }
   }, []);
@@ -84,9 +82,13 @@ export function useScrubController({
 
   // confirm/cancel déclarés AVANT les mouvements : armIdleCancel (annulation sur
   // inactivité) en dépend, et chaque avance du fantôme réarme ce timer.
+  // Les DEUX stoppent les moteurs de maintien : si le key-up n'arrive jamais
+  // (long-press ANNULÉ par tvOS → aucun keyAction), le tick mourait ici au
+  // plus tard au lieu d'avancer le curseur pour toujours.
   const confirmScrub = useCallback(() => {
     if (__DEV__) console.log(`[SCRUB] confirmScrub (scrubbing=${scrubbingRef.current})`);
     clearIdleCancel();
+    stopMotorsRef.current();
     if (!scrubbingRef.current) return;
     scrubEndedAtRef.current = Date.now();
     scrubbingRef.current = false;
@@ -103,6 +105,7 @@ export function useScrubController({
 
   const cancelScrub = useCallback(() => {
     clearIdleCancel();
+    stopMotorsRef.current();
     if (!scrubbingRef.current) return;
     scrubEndedAtRef.current = Date.now();
     scrubbingRef.current = false;
@@ -185,26 +188,19 @@ export function useScrubController({
   // ouvert : OK / ▶︎❙❙ VALIDENT le seek, BACK annule, et l'inactivité
   // (armIdleCancel) annule seule SANS seek — saisir la télécommande ne déplace
   // plus jamais la lecture. (Avant : auto-validation du seek 800 ms après le
-  // lever du doigt → seeks accidentels de quelques secondes.)
+  // lever du doigt → seeks accidentels.)
   const endShuttleGesture = useCallback(() => {
     endHold();
     if (!scrubbingRef.current) return;
     armIdleCancel();
   }, [endHold, armIdleCancel]);
 
-  // --- Maintien ←/→ : tick JS d'avance continue (le système n'émet pas les
-  //     répétitions pendant un hold) + délai d'armement. ---
-  const scrubHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const holdScrubIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const holdScrubStoppedAtRef = useRef(0);
-  const stopHoldScrub = useCallback(() => {
-    if (holdScrubIntervalRef.current) {
-      clearInterval(holdScrubIntervalRef.current);
-      holdScrubIntervalRef.current = null;
-      holdScrubStoppedAtRef.current = Date.now();
-    }
-  }, []);
-  useEffect(() => () => stopHoldScrub(), [stopHoldScrub]);
+  // --- Maintien ←/→ : armement + tick JS + réveil différé (useScrubHoldMotor). ---
+  const hold = useScrubHoldMotor({
+    scrubbingRef, panelOpenRef, overlayVisibleRef, holdRef,
+    startScrubbing, moveScrub, showOverlay, armIdleCancel, endHold,
+  });
+  stopMotorsRef.current = hold.stopAll;
 
   const handleDpadDirection = useCallback((dir: "forward" | "backward") => {
     if (panelOpenRef.current) return; // panneau ouvert → D-pad au panneau
@@ -212,31 +208,17 @@ export function useScrubController({
     if (scrubbingRef.current) {
       // Hold en cours (ou key-up résiduel) : avance pilotée par le tick JS —
       // les events directionnels seraient des doublons parasites.
-      if (holdScrubIntervalRef.current || Date.now() - holdScrubStoppedAtRef.current < 400) return;
+      if (hold.isHoldTicking()) return;
       moveScrub(dir);
       return;
     }
-    // OSD caché → 1er appui : afficher l'OSD. Avance rapide via MAINTIEN ←/→,
-    // touches rewind/FF, ou boutons ±10/30 de l'OSD.
-    showOverlay();
-  }, [showOverlay, moveScrub, panelOpenRef, skipAnyPressRef]);
-
-  const handleLongDirection = useCallback((dir: "forward" | "backward") => {
-    if (panelOpenRef.current || scrubbingRef.current) return;
-    if (overlayVisibleRef.current) return;
-    if (scrubHoldTimerRef.current) clearTimeout(scrubHoldTimerRef.current);
-    scrubHoldTimerRef.current = setTimeout(() => {
-      scrubHoldTimerRef.current = null;
-      startScrubbing(dir);
-      stopHoldScrub();
-      holdScrubIntervalRef.current = setInterval(() => moveScrub(dir), HOLD_SCRUB_TICK_MS);
-    }, SCRUB_HOLD_EXTRA_MS);
-  }, [startScrubbing, stopHoldScrub, moveScrub, panelOpenRef, overlayVisibleRef]);
-
-  const cancelScrubHold = useCallback(() => {
-    if (scrubHoldTimerRef.current) { clearTimeout(scrubHoldTimerRef.current); scrubHoldTimerRef.current = null; }
-  }, []);
-  useEffect(() => () => cancelScrubHold(), [cancelScrubHold]);
+    // OSD caché → 1er appui : afficher l'OSD. Android : réveil DIFFÉRÉ au
+    // key-up — l'afficher au key-down rendait l'OSD visible AVANT le signal
+    // long-press et bloquait l'avance rapide au MAINTIEN. tvOS : ←/→ n'arrive
+    // qu'au key-up → le réveil est déjà « au relâchement ».
+    if (Platform.OS === "android") hold.requestDeferredWake();
+    else showOverlay();
+  }, [showOverlay, moveScrub, panelOpenRef, skipAnyPressRef, hold]);
 
   // Touches rewind/fast-forward dédiées : scrub direct, même OSD visible.
   const handleMediaSeekKey = useCallback((dir: "forward" | "backward") => {
@@ -247,19 +229,13 @@ export function useScrubController({
     startScrubbing(dir);
   }, [moveScrub, startScrubbing, panelOpenRef, skipAnyPressRef]);
 
-  /** Nettoyage au key-up (fin de maintien) : stoppe tick + accélération. Un
-   *  scrub laissé ouvert s'annulera seul sur inactivité (aucun seek). */
-  const onHoldRelease = useCallback(() => {
-    cancelScrubHold();
-    stopHoldScrub();
-    if (holdRef.current) endHold();
-    if (scrubbingRef.current) armIdleCancel();
-  }, [cancelScrubHold, stopHoldScrub, endHold, armIdleCancel]);
-
   return {
     scrubbing, scrubPosition, speedLabel, scrubbingRef,
     scrubEndedAtRef, scrubStartedAtRef, lastMediaKeyAtRef,
     moveScrub, nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endHold, endShuttleGesture,
-    handleDpadDirection, handleLongDirection, handleMediaSeekKey, onHoldRelease,
+    handleDpadDirection,
+    handleLongDirection: hold.handleLongDirection,
+    onHoldRelease: hold.onHoldRelease,
+    handleMediaSeekKey,
   };
 }
