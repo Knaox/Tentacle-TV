@@ -161,6 +161,11 @@ export function useVideoSource({
         enableWorker: true,
         startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
         lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
+        // Les sous-titres sont des <track> VTT sidecar gérés par React
+        // (useNativeMediaTracks) : hls.js ne doit ni créer ni piloter de
+        // TextTracks natifs — sinon il écrase les modes des pistes manuelles
+        // (hls.js #4032) et les sous-titres disparaissent en transcode.
+        renderTextTracksNatively: false,
         backBufferLength: Infinity,    // VOD: keep all played segments — instant backward seek
         maxBufferLength: 30,          // buffer 30s ahead for smooth playback
         maxMaxBufferLength: 120,      // allow up to 120s buffer for sustained streaming
