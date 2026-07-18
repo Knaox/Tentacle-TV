@@ -33,7 +33,8 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
         className="fixed inset-x-0 top-0 z-40 h-[56px] transition-colors duration-300"
         style={{
           // Fond : même logique JS d'opacité au scroll que TopNav — non migrée.
-          background: `rgba(0, 0, 0, ${bgOpacity})`,
+          // Voir TopNav : suit `--surface-0` pour rester coherent en theme clair.
+          background: `color-mix(in srgb, var(--surface-0) ${bgOpacity * 100}%, transparent)`,
           backdropFilter: scrollProgress > 0.3 ? "blur(10px)" : "none",
           WebkitBackdropFilter: scrollProgress > 0.3 ? "blur(10px)" : "none",
           paddingTop: "env(safe-area-inset-top, 0px)",

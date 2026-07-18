@@ -33,7 +33,10 @@ export function TopNav({ showSearch = true }: TopNavProps) {
       style={{
         // Fond + bordure : opacité pilotée en JS au scroll, non migrée (cf. note
         // de mission — refonte prévue dans une phase ultérieure dédiée au chrome nav).
-        background: `rgba(0, 0, 0, ${bgOpacity})`,
+        // `color-mix` plutot qu'un `rgba(0,0,0,X)` fige : la barre doit se
+        // fondre dans le fond de page, qui devient nacre en theme clair. Un
+        // noir en dur donnait une barre sombre dans une app claire.
+        background: `color-mix(in srgb, var(--surface-0) ${bgOpacity * 100}%, transparent)`,
         borderBottom: `1px solid rgba(255, 255, 255, ${borderOpacity})`,
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
