@@ -82,7 +82,8 @@ export function DesktopPlayer({
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const hasStartedRef = useRef(false);
   const prevSrcRef = useRef("");
-  const loadedExternalSubs = useRef<Set<number>>(new Set());
+  // Pistes externes déjà sub-add sur la source courante : jfIndex → sid mpv.
+  const loadedExternalSubs = useRef<Map<number, number>>(new Map());
   // Absolute position ref — survives across direct play ↔ transcode transitions
   const lastAbsolutePosRef = useRef(0);
   // PTS detection: mpv may report absolute PTS (offset baked into HLS) or relative PTS.

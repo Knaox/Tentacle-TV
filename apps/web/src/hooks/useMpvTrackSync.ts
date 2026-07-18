@@ -1,4 +1,5 @@
-import { useCallback, useEffect, type MutableRefObject } from "react";
+import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
+import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { findMpvTrack, nativeSubUrl } from "../components/player/mpvTrackMapping";
 import type { MpvState, MpvTrack } from "./useDesktopPlayer";
@@ -18,10 +19,10 @@ interface UseMpvTrackSyncOptions {
   currentSubtitle: number | null;
   setAudioTrack: (id: number) => Promise<void>;
   setSubtitleTrack: (id: number) => Promise<void>;
-  addSubtitle: (url: string, select?: boolean) => Promise<void>;
+  addSubtitle: (url: string, select?: boolean) => Promise<number | null>;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
-  loadedExternalSubs: MutableRefObject<Set<number>>;
+  loadedExternalSubs: MutableRefObject<Map<number, number>>;
 }
 
 /**
@@ -58,28 +59,57 @@ export function useMpvTrackSync({
     onAudioChange(jfIndex);
   }, [audioTracks, mpvAudio, setAudioTrack, onAudioChange, isDirectPlay]);
 
+  // ── Sélection d'une piste externe (sub-add du format natif ass/srt) ──
+  // Mémorise le sid attribué (jfIndex → sid, purgé à chaque source) : une
+  // re-sélection réutilise la piste au lieu de re-sub-add (mpv dupliquerait).
+  // pendingExternal évite le double sub-add concurrent (handler + effet de préf).
+  const pendingExternal = useRef<Set<number>>(new Set());
+  const selectExternalSub = useCallback(async (jfIndex: number) => {
+    const known = loadedExternalSubs.current.get(jfIndex);
+    if (known != null) { await setSubtitleTrack(known); return; }
+    if (pendingExternal.current.has(jfIndex)) return;
+    const subTrack = subtitleTracks.find((t) => t.index === jfIndex);
+    if (!subTrack?.url) return;
+    pendingExternal.current.add(jfIndex);
+    try {
+      const url = nativeSubUrl(subTrack.url, subTrack.codec);
+      console.debug(DBG, "loading external subtitle", { url: url.substring(0, 80), codec: subTrack.codec });
+      const sid = await addSubtitle(url, true);
+      if (sid != null) loadedExternalSubs.current.set(jfIndex, sid);
+    } finally {
+      pendingExternal.current.delete(jfIndex);
+    }
+  }, [subtitleTracks, addSubtitle, setSubtitleTrack, loadedExternalSubs]);
+
+  /** Sous-titre bitmap (PGS…) ? → burn-in serveur, rien à faire côté mpv. */
+  const isBitmapSub = useCallback((jfIndex: number) => {
+    const codec = subtitleTracks.find((t) => t.index === jfIndex)?.codec;
+    return BURN_IN_SUBTITLE_CODECS.test(codec ?? "");
+  }, [subtitleTracks]);
+
   // ── Subtitle change handler ──
   const handleSubtitleChange = useCallback((jfIndex: number | null) => {
-    console.debug(DBG, "subtitle change", { jfIndex, mpvSubsCount: mpvSubs.length });
+    console.debug(DBG, "subtitle change", { jfIndex, mpvSubsCount: mpvSubs.length, isDirectPlay });
     if (jfIndex == null) {
-      setSubtitleTrack(0);
+      setSubtitleTrack(0); // sid=no — désactive aussi une piste externe
       onSubtitleChange(null);
+      return;
+    }
+    if (!isDirectPlay) {
+      // Transcode : les renditions VTT du manifeste HLS (SubtitleMethod=Hls,
+      // requis tvOS) ne sont pas rendues par mpv → TOUJOURS charger la piste
+      // externe au format natif (ass/srt, mise en forme complète). Bitmap →
+      // burn-in serveur déclenché par le parent (WatchDesktop), rien ici.
+      if (!isBitmapSub(jfIndex)) void selectExternalSub(jfIndex);
+      onSubtitleChange(jfIndex);
       return;
     }
     const mpvId = findMpvTrack(jfIndex, subtitleTracks, mpvSubs);
     console.debug(DBG, "mapped subtitle", { jfIndex, mpvId });
-    if (mpvId != null) {
-      setSubtitleTrack(mpvId);
-    } else {
-      const subTrack = subtitleTracks.find((t) => t.index === jfIndex);
-      if (subTrack?.url) {
-        const url = nativeSubUrl(subTrack.url, subTrack.codec);
-        console.debug(DBG, "loading external subtitle", { url: url.substring(0, 80), codec: subTrack.codec });
-        addSubtitle(url, true);
-      }
-    }
+    if (mpvId != null) setSubtitleTrack(mpvId);
+    else void selectExternalSub(jfIndex);
     onSubtitleChange(jfIndex);
-  }, [subtitleTracks, mpvSubs, setSubtitleTrack, addSubtitle, onSubtitleChange]);
+  }, [subtitleTracks, mpvSubs, isDirectPlay, isBitmapSub, setSubtitleTrack, selectExternalSub, onSubtitleChange]);
 
   // ── Apply audio preference from parent ──
   // Wait for fileLoaded — mpv cannot accept aid/sid before a file is loaded.
@@ -121,6 +151,12 @@ export function useMpvTrackSync({
       return;
     }
 
+    if (!isDirectPlay) {
+      // Transcode : externe natif systématique (voir handleSubtitleChange).
+      if (!isBitmapSub(currentSubtitle)) void selectExternalSub(currentSubtitle);
+      return;
+    }
+
     // Try embedded subtitle matching first
     if (mpvSubs.length > 0) {
       const mpvId = findMpvTrack(currentSubtitle, subtitleTracks, mpvSubs);
@@ -132,17 +168,9 @@ export function useMpvTrackSync({
       }
     }
 
-    // External subtitle fallback
-    if (!loadedExternalSubs.current.has(currentSubtitle)) {
-      const subTrack = subtitleTracks.find((t) => t.index === currentSubtitle);
-      if (subTrack?.url) {
-        const url = nativeSubUrl(subTrack.url, subTrack.codec);
-        console.debug(DBG, "pref apply subtitle (external)", { currentSubtitle, url: url.substring(0, 80), codec: subTrack.codec });
-        loadedExternalSubs.current.add(currentSubtitle);
-        addSubtitle(url, true);
-      }
-    }
-  }, [currentSubtitle, mpvSubs, fileLoaded, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+    // External subtitle fallback (dédupliqué par selectExternalSub)
+    void selectExternalSub(currentSubtitle);
+  }, [currentSubtitle, mpvSubs, fileLoaded, ready, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleAudioChange, handleSubtitleChange };
 }

@@ -136,17 +136,24 @@ export function useMpvCommands({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Load an external subtitle file (URL or path) into mpv. */
-  const addSubtitle = useCallback(async (url: string, select = true) => {
+  /** Load an external subtitle file (URL or path) into mpv.
+   *  Retourne le sid attribué (piste sélectionnée) — permet une re-sélection
+   *  ultérieure sans re-sub-add (mpv dupliquerait la piste). */
+  const addSubtitle = useCallback(async (url: string, select = true): Promise<number | null> => {
     const api = getMpvApi();
-    if (!api) return;
+    if (!api) return null;
     console.debug("[mpv] sub-add", { url: url.substring(0, 100), select });
     try {
       await api.command("sub-add", [url, select ? "select" : "auto"]);
-      if (select) await api.setProperty("sub-visibility", true).catch(() => {});
+      if (select) {
+        await api.setProperty("sub-visibility", true).catch(() => {});
+        const sid = await api.getProperty("sid", "int64").catch(() => null);
+        return typeof sid === "number" ? sid : null;
+      }
     } catch (e) {
       console.error("[mpv] sub-add failed:", e);
     }
+    return null;
   }, []);
 
   const stop = useCallback(async () => {

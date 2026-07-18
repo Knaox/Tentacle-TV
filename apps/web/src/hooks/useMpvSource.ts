@@ -19,7 +19,7 @@ interface UseMpvSourceOptions {
   offsetDetectedForSrc: MutableRefObject<string>;
   prevSrcRef: MutableRefObject<string>;
   hasStartedRef: MutableRefObject<boolean>;
-  loadedExternalSubs: MutableRefObject<Set<number>>;
+  loadedExternalSubs: MutableRefObject<Map<number, number>>;
 }
 
 /**
