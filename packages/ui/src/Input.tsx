@@ -16,7 +16,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         ref={ref}
-        className={`w-full rounded-lg border border-white/10 bg-white/5 text-white placeholder-white/30 outline-none transition-all focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.5)] focus:border-[rgba(var(--brand-rgb),0.5)] ${sizeClasses[inputSize]} ${className}`}
+        className={`w-full rounded-lg border border-line-subtle bg-fill-subtle text-content-primary placeholder-content-quaternary outline-none transition-all focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.5)] focus:border-[rgba(var(--brand-rgb),0.5)] ${sizeClasses[inputSize]} ${className}`}
         {...props}
       />
     );

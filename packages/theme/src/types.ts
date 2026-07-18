@@ -68,6 +68,13 @@ export interface CtaColorTokens {
    * Toujours émis pour que le composant applique un `border` inconditionnel.
    */
   primaryBorder: string;
+  /**
+   * Texte/icône posé sur un aplat ou un dégradé de MARQUE. Blanc dans les deux
+   * schémas : c'est la lisibilité sur l'accent qui commande, pas le thème.
+   * Sans ce token, les `text-white` posés sur un fond brand n'ont aucune cible
+   * de migration et resteraient des couleurs en dur.
+   */
+  brandFg: string;
 }
 
 /**

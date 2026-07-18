@@ -80,6 +80,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       ghostBg: "--cta-ghost-bg",
       ghostBgHover: "--cta-ghost-bg-hover",
       primaryBorder: "--cta-primary-border",
+      brandFg: "--cta-brand-fg",
     },
     border: {
       subtle: "--border-subtle",
