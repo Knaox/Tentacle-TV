@@ -69,8 +69,17 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /api/push/test — envoie une notif de test aux appareils de l'utilisateur.
   // reason:"no_device" permet à l'app d'inviter à autoriser/enregistrer d'abord.
-  app.post("/test", async (request) => {
+  // Outil de diagnostic : DEV uniquement (introuvable en prod, même admin) et
+  // réservé aux admins — l'UI mobile applique le même double gate (__DEV__ +
+  // admin), le serveur reste l'autorité.
+  app.post("/test", async (request, reply) => {
+    if (process.env.NODE_ENV === "production") {
+      return reply.status(404).send({ message: "Not found" });
+    }
     const user = (request as any).user as JellyfinUser;
+    if (!user.isAdmin) {
+      return reply.status(403).send({ message: "Réservé aux administrateurs" });
+    }
     const result = await sendToUser(user.userId, {
       title: "Tentacle TV",
       body: "Notification de test ✓",

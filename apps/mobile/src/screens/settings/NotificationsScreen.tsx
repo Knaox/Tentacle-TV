@@ -33,7 +33,9 @@ export function NotificationsScreen() {
   const { data: plugins } = useActivePlugins();
   const seerActive = !!plugins?.some((p) => p.pluginId === "seer");
 
-  // Bouton de test réservé aux admins (diagnostic), pas montré aux utilisateurs.
+  // Bouton de test : outil de diagnostic DEV uniquement (invisible en prod,
+  // même pour les admins — l'endpoint backend refuse aussi) et réservé aux
+  // admins en dev.
   const { storage } = useTentacleConfig();
   const isAdmin = (() => {
     try {
@@ -43,6 +45,7 @@ export function NotificationsScreen() {
       return false;
     }
   })();
+  const showTestButton = __DEV__ && isAdmin;
 
   const toggle = useCallback(
     (key: keyof PushPreferences, next: boolean) => {
@@ -112,7 +115,7 @@ export function NotificationsScreen() {
         ) : null}
       </SettingsSection>
 
-      {isAdmin ? (
+      {showTestButton ? (
         <>
           <Pressable
             onPress={onTest}
