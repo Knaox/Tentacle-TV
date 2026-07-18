@@ -7,9 +7,21 @@ import type { MPVPlayerHandle, MpvTrack } from "../components/player/MPVPlayer";
  *  - Mapping Jellyfin index → MPV track ID via `handleTracks`
  *  - Application réactive de la sélection audio courante
  *
- * NOTE sous-titres : les pistes TEXTE sont rendues côté JS (useTVSubtitles +
- * TVSubtitleOverlay) — plus aucun loadSubtitle/addSubtitleTrack natif
- * (Media3 exigeait un nouveau MediaItem → re-prepare visible de la vidéo).
+ * Mapping SOUS-TITRES (ExoPlayer) — deux familles de pistes natives :
+ *  1) Side-loadées (VTT/ASS Jellyfin) : `nativeId` = "jf:<jellyfinIndex>"
+ *     (SubtitleConfiguration.setId, propagé dans Format.id) → clé FIABLE.
+ *  2) Embarquées dans le conteneur (texte interne + image PGS/DVB/VobSub) :
+ *     Format.id nu (numéro de piste Matroska) → zip ORDONNÉ avec les subs
+ *     Jellyfin INTERNES (IsExternal ≠ true), même ordre conteneur des deux
+ *     côtés. Ne comble que les trous : pour le texte interne, la copie
+ *     side-loadée (1) reste prioritaire. Donne un id natif aux pistes IMAGE
+ *     embarquées → sélection PGS native SANS transcodage (useTVSubtitleControl).
+ *     Zip UNIQUEMENT en direct play : en transcode (HLS), les pistes exposées
+ *     par le flux n'ont plus rien à voir avec celles du conteneur d'origine.
+ *
+ * L'ancien mapping « N dernières pistes » comptait les subs IMAGE (exclues du
+ * sideload) et ignorait les pistes embarquées → décalage → mauvaise piste
+ * sélectionnée (« VFF forced » affichait de l'anglais).
  *
  * Inerte pendant un transcode (le serveur gère la sélection via l'URL HLS).
  */
@@ -37,16 +49,22 @@ export function useTVMpvTracks(args: {
     jellyfinAudio.forEach((s, i) => { if (i < audioTracks.length) map[s.Index] = audioTracks[i].id; });
     jellyfinSubs.forEach((s, i) => { if (i < subTracks.length) map[s.Index] = subTracks[i].id; });
     setMpvTrackMap(map);
-    // Sous-titres : nos pistes side-loadées (VTT/ASS externes) arrivent APRÈS
-    // les pistes internes du conteneur, dans l'ordre de déclaration (= ordre
-    // jellyfinSubs). Media3 ne propage PAS SubtitleConfiguration.setId dans
-    // Format.id ("groupe:piste"), donc on mappe par position EN QUEUE :
-    // les N dernières pistes texte ↔ les N pistes Jellyfin (texte) dans l'ordre.
+
     const sub: Record<number, number> = {};
-    const sideLoaded = subTracks.slice(Math.max(0, subTracks.length - jellyfinSubs.length));
-    jellyfinSubs.forEach((s, i) => { if (i < sideLoaded.length) sub[s.Index] = sideLoaded[i].id; });
+    const embedded: MpvTrack[] = [];
+    for (const t of subTracks) {
+      const m = /^jf:(\d+)$/.exec(t.nativeId ?? "");
+      if (m) sub[Number(m[1])] = t.id;
+      else embedded.push(t);
+    }
+    if (isDirectPlay) {
+      const internalSubs = jellyfinSubs.filter((s) => !s.IsExternal);
+      internalSubs.forEach((s, i) => {
+        if (i < embedded.length && sub[s.Index] == null) sub[s.Index] = embedded[i].id;
+      });
+    }
     setSubtitleTrackMap(sub);
-  }, [streams]);
+  }, [streams, isDirectPlay]);
 
   // Applique la piste audio via MPV en direct play (changement de track natif sans rebuilder l'URL)
   useEffect(() => {
