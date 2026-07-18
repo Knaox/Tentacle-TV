@@ -102,8 +102,8 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all duration-200 hover:bg-white/10 hover:text-white/80"
-        style={{ background: "rgba(255,255,255,0.05)" }}
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-all duration-200 hover:bg-fill-soft hover:text-content-secondary"
+        style={{ background: "var(--fill-subtle)" }}
       >
         <BellIcon />
         {count > 0 && (
@@ -122,27 +122,29 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
               : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 origin-top-right"
           }`}
           style={{
-            background: "rgba(15,15,25,0.95)",
+            // Fond du panneau : littéral hors table (implémentation ad hoc,
+            // non basée sur var(--surface-dropdown)) — non migré, cf. rapport.
+            background: "var(--surface-dropdown)",
             backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <span className="text-sm font-semibold text-white">
+          <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
+            <span className="text-sm font-semibold text-content-primary">
               {sel.isSelecting ? t("notifications:selected", { count: sel.count }) : t("notifications:title")}
             </span>
             <div className="flex items-center gap-1">
               {sel.isSelecting ? (
                 <>
-                  <button onClick={() => sel.selectAll((notifications ?? []).map((n) => n.id))} title={t("notifications:select")} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 hover:bg-white/10 hover:text-white/70">
+                  <button onClick={() => sel.selectAll((notifications ?? []).map((n) => n.id))} title={t("notifications:select")} className="flex h-7 w-7 items-center justify-center rounded-lg text-content-quaternary hover:bg-fill-soft hover:text-content-secondary">
                     <SelectAllIcon />
                   </button>
-                  <button onClick={handleDeleteSelected} disabled={sel.count === 0} title={t("notifications:deleteSelected")} className="flex h-7 w-7 items-center justify-center rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-30">
+                  <button onClick={handleDeleteSelected} disabled={sel.count === 0} title={t("notifications:deleteSelected")} className="flex h-7 w-7 items-center justify-center rounded-lg text-status-error-fg hover:bg-danger-surface disabled:opacity-30">
                     <TrashIcon />
                   </button>
-                  <button onClick={() => sel.exitSelectionMode()} className="rounded-lg px-2 py-1 text-xs text-white/50 hover:bg-white/10">
+                  <button onClick={() => sel.exitSelectionMode()} className="rounded-lg px-2 py-1 text-xs text-content-tertiary hover:bg-fill-soft">
                     {t("notifications:cancel")}
                   </button>
                 </>
@@ -151,17 +153,17 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
                   {count > 0 && (
                     <button
                       onClick={(e) => { e.stopPropagation(); markAllMut.mutate(); }}
-                      className="rounded-lg px-2 py-1 text-xs text-[var(--brand)] hover:bg-white/10 hover:text-[var(--brand-light)]"
+                      className="rounded-lg px-2 py-1 text-xs text-[var(--brand)] hover:bg-fill-soft hover:text-[var(--brand-light)]"
                     >
                       {t("notifications:markAllRead")}
                     </button>
                   )}
                   {notifications && notifications.length > 0 && (
                     <>
-                      <button onClick={() => sel.enterSelectionMode()} title={t("notifications:select")} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 hover:bg-white/10 hover:text-white/60">
+                      <button onClick={() => sel.enterSelectionMode()} title={t("notifications:select")} className="flex h-7 w-7 items-center justify-center rounded-lg text-content-quaternary hover:bg-fill-soft hover:text-content-tertiary">
                         <SelectIcon />
                       </button>
-                      <button onClick={() => setConfirmDeleteAll(true)} title={t("notifications:deleteAll")} className="flex h-7 w-7 items-center justify-center rounded-lg text-red-400/60 hover:bg-red-500/10 hover:text-red-400">
+                      <button onClick={() => setConfirmDeleteAll(true)} title={t("notifications:deleteAll")} className="flex h-7 w-7 items-center justify-center rounded-lg text-status-error-fg hover:bg-danger-surface">
                         <TrashIcon />
                       </button>
                     </>
@@ -174,7 +176,7 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
           {/* List */}
           <div className="max-h-80 overflow-y-auto">
             {!notifications || notifications.length === 0 ? (
-              <p className="py-8 text-center text-sm text-white/40">{t("notifications:noNotifications")}</p>
+              <p className="py-8 text-center text-sm text-content-quaternary">{t("notifications:noNotifications")}</p>
             ) : (
               notifications.map((n) => (
                 <NotifRow

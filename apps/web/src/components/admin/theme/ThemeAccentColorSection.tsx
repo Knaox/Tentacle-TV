@@ -94,10 +94,10 @@ export function ThemeAccentColorSection({
 
   return (
     <div className={cls.sub}>
-      <h3 className="text-base font-semibold text-white">
+      <h3 className="text-base font-semibold text-content-primary">
         {t("accentSectionTitle")}
       </h3>
-      <p className="text-xs text-white/55">{t("accentSectionHelp")}</p>
+      <p className="text-xs text-content-tertiary">{t("accentSectionHelp")}</p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div>
@@ -107,7 +107,7 @@ export function ThemeAccentColorSection({
               type="color"
               value={value}
               onChange={(e) => setValue(e.target.value.toLowerCase())}
-              className="h-11 w-12 cursor-pointer rounded-lg border border-white/[0.08] bg-transparent"
+              className="h-11 w-12 cursor-pointer rounded-lg border border-line-subtle bg-transparent"
             />
             <input
               type="text"

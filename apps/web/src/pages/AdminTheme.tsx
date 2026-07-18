@@ -35,15 +35,15 @@ export function AdminTheme() {
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-3 flex items-center gap-3 text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="mb-3 flex items-center gap-3 text-3xl font-extrabold tracking-tight text-content-primary">
             {t("title")}
             <AlphaBadge />
           </h1>
-          <p className="mb-8 text-sm text-white/55">{t("description")}</p>
+          <p className="mb-8 text-sm text-content-tertiary">{t("description")}</p>
 
           {isLoading && (
             <div className={cls.card}>
-              <p className="text-sm text-white/55">{t("saving")}</p>
+              <p className="text-sm text-content-tertiary">{t("saving")}</p>
             </div>
           )}
 
@@ -63,10 +63,10 @@ export function AdminTheme() {
               <div className={cls.card}>
                 <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-lg font-semibold text-content-primary">
                       {t("tokensCardTitle")}
                     </h2>
-                    <p className="mt-1 text-sm text-white/40">
+                    <p className="mt-1 text-sm text-content-quaternary">
                       {t("tokensCardDescription")}
                     </p>
                   </div>
@@ -82,10 +82,10 @@ export function AdminTheme() {
               <div className={cls.card}>
                 <div className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-lg font-semibold text-content-primary">
                       {t("refCardTitle")}
                     </h2>
-                    <p className="mt-1 text-sm text-white/40">
+                    <p className="mt-1 text-sm text-content-quaternary">
                       {t("refCardDescription")}
                     </p>
                   </div>
@@ -99,7 +99,7 @@ export function AdminTheme() {
               </div>
 
               <div className={cls.card}>
-                <h2 className="mb-4 text-lg font-semibold text-white">
+                <h2 className="mb-4 text-lg font-semibold text-content-primary">
                   {t("currentTheme")}
                 </h2>
                 <div className="space-y-4">

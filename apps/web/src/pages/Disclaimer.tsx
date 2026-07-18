@@ -47,12 +47,14 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-screen flex-col items-center justify-center bg-[#080812] px-4 opacity-0 transition-opacity duration-500"
+      // Suit le schéma : un écran plein cadre figé en indigo sombre aurait été
+      // incohérent en thème clair, où toute l'app est nacrée.
+      className="flex min-h-screen flex-col items-center justify-center bg-surface-0 px-4 opacity-0 transition-opacity duration-500"
     >
       <div className="w-full max-w-lg">
         <div className="mb-6 flex flex-col items-center">
           <TentacleLogo size="lg" variant="glow" />
-          <p className="mt-3 text-xs tracking-[0.18em] text-white/40">TENTACLE TV</p>
+          <p className="mt-3 text-xs tracking-[0.18em] text-content-quaternary">TENTACLE TV</p>
         </div>
 
         {/* Language switcher */}
@@ -65,7 +67,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 lang === l.code
                   ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand)] border border-[rgba(var(--brand-rgb),0.3)]"
-                  : "text-white/30 hover:text-white/50 border border-transparent"
+                  : "text-content-quaternary hover:text-content-tertiary border border-transparent"
               }`}
             >
               {l.label}
@@ -74,12 +76,12 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
         </div>
 
         {/* Title */}
-        <h1 className="text-center text-2xl font-bold text-white">{t("title")}</h1>
+        <h1 className="text-center text-2xl font-bold text-content-primary">{t("title")}</h1>
         <p className="mt-1 text-center text-sm text-[var(--brand)]">{t("heading")}</p>
 
         {/* Glass body */}
-        <div className="mt-6 max-h-64 overflow-y-auto rounded-2xl border border-white/[0.07] bg-white/[0.035] p-5">
-          <p className="whitespace-pre-line text-sm leading-relaxed text-white/60">
+        <div className="mt-6 max-h-64 overflow-y-auto rounded-2xl border border-line-subtle bg-fill-faint p-5">
+          <p className="whitespace-pre-line text-sm leading-relaxed text-content-tertiary">
             {t("body")}
           </p>
         </div>
@@ -94,7 +96,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
               checked
                 ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]"
-                : "border-white/30 bg-transparent"
+                : "border-line-strong bg-transparent"
             }`}
           >
             {checked && (
@@ -103,7 +105,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
               </svg>
             )}
           </button>
-          <span className="text-sm text-white/60">{t("checkboxLabel")}</span>
+          <span className="text-sm text-content-tertiary">{t("checkboxLabel")}</span>
         </label>
 
         {/* Accept */}
@@ -111,7 +113,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
           type="button"
           onClick={handleAccept}
           disabled={!checked}
-          className={`mt-6 w-full rounded-xl h-11 text-sm font-bold transition-opacity bg-white text-black hover:bg-white/90 ${
+          className={`mt-6 w-full rounded-xl h-11 text-sm font-bold transition-opacity bg-cta-primary-bg text-cta-primary-fg hover:bg-cta-primary-bg-hover ${
             checked ? "" : "opacity-40 cursor-not-allowed"
           }`}
           style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
@@ -123,16 +125,16 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
         <button
           type="button"
           onClick={handleDecline}
-          className="mt-3 w-full rounded-xl border border-white/10 py-2.5 text-xs text-white/40 transition-colors hover:border-white/20 hover:text-white/60"
+          className="mt-3 w-full rounded-xl border border-line-subtle py-2.5 text-xs text-content-quaternary transition-colors hover:border-line-strong hover:text-content-tertiary"
         >
           {t("decline")}
         </button>
 
         {/* Decline message */}
         {showDecline && (
-          <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-center">
-            <p className="text-sm font-medium text-red-400">{t("declineTitle")}</p>
-            <p className="mt-1 text-xs text-red-400/70">{t("declineMessage")}</p>
+          <div className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-center">
+            <p className="text-sm font-medium text-status-error-fg">{t("declineTitle")}</p>
+            <p className="mt-1 text-xs text-status-error-fg">{t("declineMessage")}</p>
           </div>
         )}
       </div>

@@ -58,7 +58,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
       />
 
       {/* Language toggle — violet ghost when active */}
-      <div className="absolute right-4 top-4 flex overflow-hidden rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur">
+      <div className="absolute right-4 top-4 flex overflow-hidden rounded-full border border-line-subtle bg-fill-faint backdrop-blur">
         {["fr", "en"].map((lng) => {
           const active = i18n.language === lng;
           return (
@@ -68,7 +68,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
               className={`px-3.5 py-1.5 text-xs font-semibold tracking-wide transition ${
                 active
                   ? "bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                  : "text-white/55 hover:text-white/85"
+                  : "text-content-tertiary hover:text-content-secondary"
               }`}
             >
               {lng.toUpperCase()}
@@ -80,17 +80,17 @@ export function AppConnect({ onConnected }: AppConnectProps) {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <TentacleLogo size="lg" variant="glow" />
-          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-content-primary">
             {t("welcomeToTentacle")}
           </h1>
-          <p className="text-sm text-white/55">
+          <p className="text-sm text-content-tertiary">
             {t("enterServerUrl")}
           </p>
         </div>
 
         <GlassCard className="p-6">
           <div className="mb-4">
-            <label htmlFor="server-url" className="mb-1 block text-xs font-medium text-white/60">
+            <label htmlFor="server-url" className="mb-1 block text-xs font-medium text-content-tertiary">
               {t("serverAddress")}
             </label>
             <input
@@ -99,11 +99,11 @@ export function AppConnect({ onConnected }: AppConnectProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={t("serverUrlPlaceholder")}
-              className="h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30"
+              className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30"
               onKeyDown={(e) => e.key === "Enter" && url && handleConnect()}
               autoFocus
             />
-            <p className="mt-1.5 text-xs text-white/35">
+            <p className="mt-1.5 text-xs text-content-quaternary">
               {t("serverUrlHint")}
             </p>
           </div>
@@ -113,7 +113,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
           <button
             onClick={handleConnect}
             disabled={testing || !url}
-            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-white text-sm font-bold text-black transition-all hover:-translate-y-0.5 hover:bg-white/95 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
             style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}
           >
             {testing ? t("connecting") : t("signIn")}

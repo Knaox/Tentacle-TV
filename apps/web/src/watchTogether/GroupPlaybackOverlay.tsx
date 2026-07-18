@@ -9,6 +9,10 @@ import { memberStatus, WtAvatar } from "./WatchTogetherRows";
  * chip centrale « X met en mémoire tampon… » pendant un group-wait.
  * Les avatars suivent la visibilité des contrôles du player (`controlsVisible`) ;
  * la chip group-wait reste toujours affichée (information de blocage).
+ *
+ * Couleurs volontairement en dur : posé directement sur la vidéo (rendu en
+ * sibling de <VideoPlayer> dans WatchWeb/WatchDesktop) — texte blanc et fond
+ * sombre quel que soit le thème, comme les contrôles du lecteur.
  */
 export function GroupPlaybackOverlay({
   itemId,

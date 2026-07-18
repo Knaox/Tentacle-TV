@@ -47,6 +47,8 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
     <Modal open={open} onClose={onClose} maxWidth={880} labelledBy="trailer-title">
       <ModalHeader title={title} onClose={onClose} titleId="trailer-title" />
       <div className="p-4">
+        {/* Canevas vidéo (iframe/placeholder) : fond noir constant dans les
+            deux thèmes, comme un lecteur vidéo (cf. règle « posé sur média »). */}
         {ytId ? (
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
             <iframe
@@ -73,7 +75,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
           target="_blank"
           rel="noopener noreferrer"
           onClick={externalLinkHandler(current.Url)}
-          className="mt-3 inline-flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-sm font-medium text-white/85 transition-colors hover:border-white/50 hover:text-white"
+          className="mt-3 inline-flex items-center gap-2 rounded-md border border-line-strong px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary"
         >
           <ExternalLinkIcon /> {t("common:openOnYoutube")}
         </a>
@@ -88,7 +90,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
                 className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                   i === index
                     ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                    : "border-white/10 bg-white/5 text-white/65 hover:bg-white/10 hover:text-white"
+                    : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
                 }`}
               >
                 {tr.Name || `${t("common:trailer")} ${i + 1}`}

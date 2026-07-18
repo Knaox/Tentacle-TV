@@ -49,7 +49,7 @@ export function TrailerButton({ item }: { item: MediaItem }) {
         type="button"
         onClick={handleClick}
         aria-label={t("common:watchTrailer")}
-        className="flex items-center gap-2 rounded-md border border-white/25 bg-white/10 px-5 py-3 text-base font-semibold text-white backdrop-blur-sm transition-colors duration-150 hover:border-white/50 hover:bg-white/20"
+        className="flex items-center gap-2 rounded-md border border-line-strong bg-fill-soft px-5 py-3 text-base font-semibold text-content-primary backdrop-blur-sm transition-colors duration-150 hover:border-line-strong hover:bg-fill-medium"
       >
         <FilmIcon /> {t("common:trailer")}
       </button>

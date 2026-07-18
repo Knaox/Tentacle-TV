@@ -55,38 +55,39 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
 
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-[#0a0a0f]/95 backdrop-blur-md"
+      // Fond plein écran : littéral hors table (implémentation ad hoc) — non migré.
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-modal backdrop-blur-md"
       style={{ animation: "fadeIn 0.4s ease-out" }}
     >
       <div className="flex flex-col items-center px-8 text-center">
         <CryingTentacle size={160} />
-        <h2 className="mt-8 text-2xl font-bold text-white">
+        <h2 className="mt-8 text-2xl font-bold text-content-primary">
           {t("offlineTitle")}
         </h2>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-content-tertiary">
           {t("offlineMessage")}
         </p>
-        <p className="mt-2 max-w-md text-xs leading-relaxed text-white/35">
+        <p className="mt-2 max-w-md text-xs leading-relaxed text-content-quaternary">
           {t("offlineHint")}
         </p>
         {/* Boutons alignés sur le design system : CTA primaire = bouton blanc
             (même style que le Play de la fiche média), secondaires en ghost. */}
         <button
           onClick={retry}
-          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md bg-white px-7 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-[1.03] hover:bg-white/85 active:scale-[0.98]"
+          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md bg-cta-primary-bg px-7 py-3 text-sm font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover active:scale-[0.98]"
         >
           {t("retryConnection")}
         </button>
         <button
           onClick={handleLogout}
-          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-red-500/40 bg-red-500/12 px-7 py-3 text-sm font-semibold text-red-300 backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-red-500/20 active:scale-[0.98]"
+          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-danger-border bg-danger-surface px-7 py-3 text-sm font-semibold text-status-error-fg backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-danger-surface active:scale-[0.98]"
         >
           {t("offlineLogout")}
         </button>
         {isTauriApp && (
           <button
             onClick={handleChangeServer}
-            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-white/15 bg-white/5 px-7 py-3 text-sm font-semibold text-white/80 backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-white/10 active:scale-[0.98]"
+            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-line-strong bg-fill-subtle px-7 py-3 text-sm font-semibold text-content-secondary backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-fill-soft active:scale-[0.98]"
           >
             {t("changeServer")}
           </button>

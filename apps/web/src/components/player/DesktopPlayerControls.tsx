@@ -59,6 +59,11 @@ interface DesktopPlayerControlsProps {
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
  * et bottom bar (seekbar, transport, volume mpv 0-100, sélecteurs de pistes et
  * d'épisodes, fullscreen). Extraction mécanique de DesktopPlayer.
+ *
+ * Barres superposées à la vidéo (gradient bg-black/70 → transparent) →
+ * text-white/bg-white volontairement en dur, identiques dans les deux thèmes.
+ * (TrackSelector / EpisodeSelectorPanel qu'elles ouvrent sont eux tokenisés :
+ * ce sont des panneaux détachés, pas posés sur la vidéo.)
  */
 export function DesktopPlayerControls({
   visible, state, title, subtitle, isDirectPlay, isEpisode, item,

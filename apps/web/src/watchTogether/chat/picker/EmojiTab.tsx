@@ -6,6 +6,9 @@ import { EMOJI_CATEGORIES } from "./emojiData";
  * Watch Together — onglet Emojis du sélecteur : chips de catégories (saut par
  * ancre) + grille scrollable. Le clic envoie IMMÉDIATEMENT la réaction et ne
  * ferme JAMAIS le sélecteur : le spam d'emojis est un usage voulu.
+ *
+ * Couleurs volontairement en dur : section du panneau de chat (ChatPanel),
+ * qui garde son verre sombre quel que soit le thème.
  */
 
 export const EmojiTab = memo(function EmojiTab({ onPick }: { onPick: (emoji: string) => void }) {

@@ -58,13 +58,13 @@ export function CollectionGrid({
       <div className="mb-4 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-white/70 transition-colors hover:bg-white/10"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fill-subtle text-content-secondary transition-colors hover:bg-fill-soft"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-2xl font-bold text-white truncate">{title}</h1>
+        <h1 className="text-2xl font-bold text-content-primary truncate">{title}</h1>
       </div>
 
       {/* Filter tabs + actions */}
@@ -76,7 +76,7 @@ export function CollectionGrid({
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
               filter === tab.key
                 ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
-                : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"
             }`}
           >
             {tab.label}
@@ -91,14 +91,14 @@ export function CollectionGrid({
       {isLoading ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
           {Array.from({ length: 24 }).map((_, i) => (
-            <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-white/5" />
+            <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-fill-subtle" />
           ))}
         </div>
       ) : !filtered || filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center">
           {emptyIcon && <div className="mb-4 text-5xl opacity-40">{emptyIcon}</div>}
-          <p className="text-lg text-white/40">{emptyMessage}</p>
-          {emptyHint && <p className="mt-2 text-sm text-white/25">{emptyHint}</p>}
+          <p className="text-lg text-content-quaternary">{emptyMessage}</p>
+          {emptyHint && <p className="mt-2 text-sm text-content-disabled">{emptyHint}</p>}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
@@ -176,7 +176,9 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
         <CardMetaOverlay item={item} density="compact" reveal="hover" />
       </div>
 
-      {/* Hover action buttons */}
+      {/* Hover action buttons — badges d'angle posés SUR le poster : fond noir
+          translucide + icônes blanches constants dans les deux thèmes
+          (cf. règle « posé sur média »). */}
       <div className={`absolute right-1.5 top-1.5 z-10 flex flex-col gap-1 transition-opacity ${isSelecting ? "hidden" : "opacity-0 group-hover:opacity-100"}`}
         style={{ pointerEvents: "none" }}>
         <div style={{ pointerEvents: "auto" }} className="flex flex-col gap-1">
@@ -214,12 +216,14 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
       </div>
 
       <div className="p-2.5">
-        <p className="text-sm font-medium text-white line-clamp-1">{item.Name}</p>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-white/50">
+        <p className="text-sm font-medium text-content-primary line-clamp-1">{item.Name}</p>
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-content-tertiary">
           {item.ProductionYear && <span>{item.ProductionYear}</span>}
           <span>{item.Type === "Movie" ? t("common:movie") : t("common:series")}</span>
         </div>
       </div>
+      {/* Barre de progression posée SUR le poster : reste claire dans les deux
+          thèmes (cf. règle « posé sur média »). */}
       {progress != null && progress > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
           <div className="h-full bg-tentacle-accent" style={{ width: `${progress}%` }} />

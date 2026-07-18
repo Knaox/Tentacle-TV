@@ -37,7 +37,7 @@ export function CardImage({ src, alt, className, fallback }: CardImageProps) {
         />
       )}
       {errored && (
-        <div className="absolute inset-0 flex items-center justify-center bg-surface-2 text-white/30">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-2 text-content-quaternary">
           {fallback ?? <FallbackIcon />}
         </div>
       )}

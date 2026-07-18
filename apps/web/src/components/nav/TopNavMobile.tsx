@@ -32,6 +32,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
         data-host-chrome="topbar-mobile"
         className="fixed inset-x-0 top-0 z-40 h-[56px] transition-colors duration-300"
         style={{
+          // Fond : même logique JS d'opacité au scroll que TopNav — non migrée.
           background: `rgba(0, 0, 0, ${bgOpacity})`,
           backdropFilter: scrollProgress > 0.3 ? "blur(10px)" : "none",
           WebkitBackdropFilter: scrollProgress > 0.3 ? "blur(10px)" : "none",
@@ -59,7 +60,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
               aria-label={t("profile")}
               aria-haspopup="menu"
               aria-expanded={sheetOpen}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white transition-transform duration-200 active:scale-95"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 active:scale-95"
               style={AVATAR_RING_STYLE}
             >
               {initial}

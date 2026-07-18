@@ -17,6 +17,8 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
 
+  // Bouton retour + dégradés posés directement SUR le backdrop : restent en
+  // blanc/noir dans les deux thèmes (cf. règle « posé sur média »).
   return (
     <div className="relative h-[70vh] w-full overflow-hidden md:h-[78vh]">
       <button

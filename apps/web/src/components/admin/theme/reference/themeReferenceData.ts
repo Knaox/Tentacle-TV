@@ -30,7 +30,7 @@ nav[aria-label="Primary"] a[aria-current="page"]  /* Active nav link */
 [class*="aspect-[2/3]"][class*="rounded-md"]
 
 /* Buttons */
-button.bg-white                               /* CTA primary white pill */
+button.bg-cta-primary-bg                      /* CTA primary pill */
 button[class*="bg-[var(--brand-soft)]"]       /* Brand ghost button */
 button[class*="bg-[var(--status-error-bg)]"]  /* Danger button */
 

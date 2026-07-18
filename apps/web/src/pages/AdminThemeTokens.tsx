@@ -66,18 +66,18 @@ export function AdminThemeTokens() {
           <button
             type="button"
             onClick={() => navigate("/admin/theme")}
-            className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white"
+            className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-content-tertiary transition hover:text-content-primary"
           >
             ← {t("tokensBackToTheme")}
           </button>
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-content-primary">
             {t("tokensPageTitle")}
           </h1>
-          <p className="mb-8 text-sm text-white/55">{t("tokensPageHelp")}</p>
+          <p className="mb-8 text-sm text-content-tertiary">{t("tokensPageHelp")}</p>
 
           {isLoading && (
             <div className={cls.card}>
-              <p className="text-sm text-white/55">{t("saving")}</p>
+              <p className="text-sm text-content-tertiary">{t("saving")}</p>
             </div>
           )}
 

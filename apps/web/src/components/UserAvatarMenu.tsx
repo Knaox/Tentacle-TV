@@ -73,7 +73,7 @@ export function UserAvatarMenu() {
         aria-label={t("preferences")}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white transition-transform duration-200 hover:-translate-y-0.5"
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 hover:-translate-y-0.5"
         style={AVATAR_RING_STYLE}
       >
         {avatarContent}
@@ -81,17 +81,19 @@ export function UserAvatarMenu() {
 
       <Dropdown open={open} onClose={close} placement="bottom-end" minWidth={224}>
         {/* En-tête profil : avatar cliquable = changer la photo (Jellyfin) */}
-        <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
             aria-label={tProfile("changePhoto")}
             title={tProfile("changePhoto")}
-            className="group relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold text-white"
+            className="group relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold text-cta-brand-fg"
             style={AVATAR_RING_STYLE}
           >
             {avatarContent}
+            {/* Scrim posé sur la photo de profil (image ou fallback) : reste noir/blanc
+                dans les deux thèmes, cf. règle "posé sur une image". */}
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
               {uploading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -101,8 +103,8 @@ export function UserAvatarMenu() {
             </span>
           </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{name || "—"}</p>
-            <p className="text-xs text-white/40">{tProfile("changePhoto")}</p>
+            <p className="truncate text-sm font-semibold text-content-primary">{name || "—"}</p>
+            <p className="text-xs text-content-quaternary">{tProfile("changePhoto")}</p>
           </div>
         </div>
 
@@ -112,7 +114,7 @@ export function UserAvatarMenu() {
             const showDivider = isLogout && idx > 0 && !items[idx - 1].danger;
             return (
               <div key={item.key}>
-                {showDivider && <div className="my-1.5 border-t border-white/[0.06]" />}
+                {showDivider && <div className="my-1.5 border-t border-line-subtle" />}
                 <button
                   type="button"
                   role="menuitem"
@@ -120,7 +122,7 @@ export function UserAvatarMenu() {
                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 ${
                     isLogout
                       ? "text-[color:var(--status-error-fg)] hover:bg-[color:var(--status-error-bg)]"
-                      : "text-white/75 hover:bg-white/5 hover:text-white"
+                      : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
                   }`}
                 >
                   <span className="flex-shrink-0">{item.icon}</span>

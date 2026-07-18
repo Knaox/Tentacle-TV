@@ -75,8 +75,8 @@ export function UsersSection({ id }: { id?: string }) {
 
   return (
     <div id={id} className={cls.card}>
-      <h2 className="text-lg font-semibold text-white">{t("usersTitle")}</h2>
-      <p className="mt-1 text-sm text-white/40">{t("usersDescription")}</p>
+      <h2 className="text-lg font-semibold text-content-primary">{t("usersTitle")}</h2>
+      <p className="mt-1 text-sm text-content-quaternary">{t("usersDescription")}</p>
 
       {users && users.length > 6 && (
         <input
@@ -101,13 +101,13 @@ export function UsersSection({ id }: { id?: string }) {
 
         {isError && (
           <div className="flex flex-col items-start gap-3 xs:flex-row xs:items-center xs:justify-between">
-            <p className="text-sm text-white/40">{t("usersError")}</p>
+            <p className="text-sm text-content-quaternary">{t("usersError")}</p>
             <button onClick={() => refetch()} className={cls.bs}>{t("retry")}</button>
           </div>
         )}
 
         {!isLoading && !isError && filtered.length === 0 && (
-          <p className="text-sm text-white/40">{t("noUsers")}</p>
+          <p className="text-sm text-content-quaternary">{t("noUsers")}</p>
         )}
 
         {filtered.map((user) => {
@@ -116,18 +116,18 @@ export function UsersSection({ id }: { id?: string }) {
           return (
             <div
               key={user.id}
-              className="flex flex-col items-start gap-3 rounded-lg border border-white/[0.06] p-4 xs:flex-row xs:items-center xs:justify-between"
+              className="flex flex-col items-start gap-3 rounded-lg border border-line-subtle p-4 xs:flex-row xs:items-center xs:justify-between"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <div
                   aria-hidden
-                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-sm font-bold text-white"
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-sm font-bold text-cta-brand-fg"
                 >
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-medium text-white">{user.name}</p>
+                    <p className="truncate text-sm font-medium text-content-primary">{user.name}</p>
                     {user.isAdministrator && (
                       <span className={`${cls.chip} bg-[var(--brand-soft)] text-[var(--brand-light)]`}>
                         {t("userAdmin")}
@@ -140,7 +140,7 @@ export function UsersSection({ id }: { id?: string }) {
                     )}
                   </div>
                   {user.lastActivityDate && (
-                    <p className="mt-1 text-xs text-white/40">
+                    <p className="mt-1 text-xs text-content-quaternary">
                       {t("lastActivity", { date: new Date(user.lastActivityDate).toLocaleDateString() })}
                     </p>
                   )}

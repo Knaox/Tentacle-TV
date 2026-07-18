@@ -9,6 +9,9 @@ import { WtAvatar } from "../WatchTogetherRows";
  * s'estompent après quelques secondes. Toujours visibles, même quand
  * l'overlay lecteur (et donc la bulle) est masqué — on suit la conversation
  * sans rien ouvrir. Couche transparente aux interactions.
+ *
+ * Couleurs volontairement en dur : même famille overlay de chat, flotte sur
+ * la vidéo comme sur n'importe quelle page — indépendant du thème.
  */
 
 const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto }) {

@@ -14,6 +14,8 @@ interface DesktopSeekbarProps {
  * Barre de progression du player desktop : buffer, progression, thumb au
  * survol/drag, vignette trickplay. Extraction mécanique de DesktopPlayer —
  * la logique (scrub/hover/trickplay) vit dans useDesktopSeekbar.
+ *
+ * Posée sur la vidéo → bg-white/* volontairement en dur dans les deux thèmes.
  */
 export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSeekbarProps) {
   const {

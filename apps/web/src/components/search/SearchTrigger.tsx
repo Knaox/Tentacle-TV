@@ -16,12 +16,12 @@ export function SearchTrigger({ onClick }: SearchTriggerProps) {
       type="button"
       onClick={onClick}
       aria-label={t("common:searchPlaceholder")}
-      className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white/55 transition-colors duration-150 hover:border-white/20 hover:text-white/85 sm:w-[220px]"
+      className="flex items-center gap-2 rounded-md border border-line-subtle bg-fill-subtle px-3 py-2 text-sm text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:text-content-secondary sm:w-[220px]"
     >
       <SearchIcon />
       <span className="hidden flex-1 text-left sm:inline">{t("common:searchPlaceholder")}</span>
       <kbd
-        className="hidden rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-white/45 sm:inline"
+        className="hidden rounded border border-line-subtle bg-fill-subtle px-1.5 py-0.5 text-[10px] font-medium text-content-quaternary sm:inline"
       >
         {t("common:ctrlK")}
       </kbd>

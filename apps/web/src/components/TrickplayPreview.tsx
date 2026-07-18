@@ -36,6 +36,9 @@ const ENTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
  * Tile mosaic preview shown above the seekbar at hover/scrub.
  * Netflix-inspired: 256px wide, thin white outline + deep black shadow,
  * timestamp overlaid inside the bottom of the frame for compactness.
+ *
+ * Vignette posée sur la vidéo → bg-black/text-white volontairement en dur
+ * dans les deux thèmes clair/sombre.
  */
 function TrickplayPreviewImpl({
   visible,

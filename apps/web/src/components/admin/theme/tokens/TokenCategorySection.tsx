@@ -45,19 +45,19 @@ export function TokenCategorySection({
   }, 0);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
+    <section className="overflow-hidden rounded-xl border border-line-subtle bg-fill-faint">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-fill-faint"
       >
         <div className="min-w-0">
-          <h3 className="text-base font-semibold capitalize text-white">{title}</h3>
-          <p className="mt-0.5 truncate text-xs text-white/45">{description}</p>
+          <h3 className="text-base font-semibold capitalize text-content-primary">{title}</h3>
+          <p className="mt-0.5 truncate text-xs text-content-quaternary">{description}</p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold text-white/60">
+          <span className="rounded-full bg-fill-subtle px-2 py-0.5 text-[10px] font-semibold text-content-tertiary">
             {rows.length}
           </span>
           {overrideCount > 0 && (
@@ -66,7 +66,7 @@ export function TokenCategorySection({
             </span>
           )}
           <svg
-            className={`h-4 w-4 text-white/40 transition-transform ${
+            className={`h-4 w-4 text-content-quaternary transition-transform ${
               open ? "rotate-180" : ""
             }`}
             viewBox="0 0 20 20"
@@ -82,7 +82,7 @@ export function TokenCategorySection({
       </button>
 
       {open && (
-        <div className="space-y-2 border-t border-white/[0.05] p-3">
+        <div className="space-y-2 border-t border-line-subtle p-3">
           {rows.map((token) => {
             const current = getTokenValue(
               state.tokens,

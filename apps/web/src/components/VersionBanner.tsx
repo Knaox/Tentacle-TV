@@ -30,9 +30,12 @@ export function VersionBanner() {
   return (
     <div
       role="alert"
-      className="relative z-30 flex items-start gap-3 border-y border-amber-500/40 bg-amber-500/15 px-4 py-3 text-sm md:px-8"
+      // border-amber-500/40 : pas de token "border-status-warning" autorisé pour
+      // cette famille — laissé en dur (cf. rapport). amber-200/100 plus bas :
+      // hiérarchie de teintes volontaire, hors granularité de status-warning-fg.
+      className="relative z-30 flex items-start gap-3 border-y border-amber-500/40 bg-status-warning-bg px-4 py-3 text-sm md:px-8"
     >
-      <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-status-warning-fg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.4 14.55A1.5 1.5 0 003.19 21h17.62a1.5 1.5 0 001.3-2.59l-8.4-14.55a1.5 1.5 0 00-2.62 0z" />
       </svg>
       <div className="min-w-0 flex-1">

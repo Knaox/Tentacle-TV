@@ -42,7 +42,7 @@ export function ThemeNameSection({ state }: ThemeNameSectionProps) {
 
   return (
     <div className={cls.sub}>
-      <h3 className="text-base font-semibold text-white">
+      <h3 className="text-base font-semibold text-content-primary">
         {t("nameSectionTitle")}
       </h3>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

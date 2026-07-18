@@ -31,6 +31,8 @@ export function TopNav({ showSearch = true }: TopNavProps) {
       data-host-chrome="topbar"
       className="fixed inset-x-0 top-0 z-40 h-[68px] transition-colors duration-300"
       style={{
+        // Fond + bordure : opacité pilotée en JS au scroll, non migrée (cf. note
+        // de mission — refonte prévue dans une phase ultérieure dédiée au chrome nav).
         background: `rgba(0, 0, 0, ${bgOpacity})`,
         borderBottom: `1px solid rgba(255, 255, 255, ${borderOpacity})`,
         backdropFilter: "blur(8px)",
@@ -46,7 +48,7 @@ export function TopNav({ showSearch = true }: TopNavProps) {
         >
           <TentacleLogo size="md" variant="bare" />
           <span
-            className="hidden text-base font-bold tracking-tight text-white sm:inline"
+            className="hidden text-base font-bold tracking-tight text-content-primary sm:inline"
             style={{ letterSpacing: "-0.02em" }}
           >
             Tentacle

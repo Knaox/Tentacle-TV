@@ -27,6 +27,10 @@ const STATUS_RING: Record<Exclude<WtAvatarStatus, "none">, string> = {
   offline: "rgba(255,255,255,0.25)",
 };
 
+// Couleurs volontairement en dur : WtAvatar est partagé avec des contextes
+// toujours sombres (overlay lecteur, bulle/toasts de chat flottants) où le
+// texte doit rester blanc quel que soit le thème — un token clair y casserait
+// le contraste.
 export function WtAvatar({
   userId, name, hasAvatar = true, size = 32, status = "none",
 }: {
@@ -95,7 +99,7 @@ export function MemberRow({
       <WtAvatar userId={member.userId} name={member.username} hasAvatar={member.hasAvatar} status={status} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-white">
+          <span className="truncate text-sm font-medium text-content-primary">
             {member.username}{isSelf ? ` (${t("you")})` : ""}
           </span>
           {member.isHost && (
@@ -107,13 +111,13 @@ export function MemberRow({
             </span>
           )}
         </div>
-        <span className="text-xs text-white/40">{statusLabel}</span>
+        <span className="text-xs text-content-quaternary">{statusLabel}</span>
       </div>
       {canKick && !isSelf && (
         <button
           onClick={onKick}
           title={t("kick")}
-          className="rounded-lg px-2 py-1 text-xs text-red-400/70 transition-colors hover:bg-red-500/10 hover:text-red-400"
+          className="rounded-lg px-2 py-1 text-xs text-status-error-fg transition-colors hover:bg-danger-surface hover:text-status-error-fg"
         >
           {t("kick")}
         </button>
@@ -132,7 +136,7 @@ export function InviteRow({
   const { t } = useTranslation("watchTogether");
   return (
     <div className="px-4 py-3">
-      <p className="text-sm text-white/85">
+      <p className="text-sm text-content-secondary">
         {invite.itemName
           ? t("invitedByWithItem", { name: invite.fromUsername, title: invite.itemName })
           : t("invitedBy", { name: invite.fromUsername })}
@@ -141,14 +145,14 @@ export function InviteRow({
         <button
           onClick={() => onRespond(true)}
           disabled={busy}
-          className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-black transition-colors duration-150 hover:bg-white/85 disabled:opacity-40"
+          className="rounded-lg bg-cta-primary-bg px-3 py-1.5 text-xs font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover disabled:opacity-40"
         >
           {t("accept")}
         </button>
         <button
           onClick={() => onRespond(false)}
           disabled={busy}
-          className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 transition-colors hover:bg-white/20 disabled:opacity-40"
+          className="rounded-lg bg-fill-soft px-3 py-1.5 text-xs font-semibold text-content-secondary transition-colors hover:bg-fill-medium disabled:opacity-40"
         >
           {t("decline")}
         </button>

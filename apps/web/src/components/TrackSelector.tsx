@@ -33,17 +33,20 @@ export function TrackSelector({
   onAudioChange, onSubtitleChange, onQualityChange, onClose, applyToSeries,
 }: TrackSelectorProps) {
   const { t } = useTranslation("player");
+  // Panneau de réglages DÉTACHÉ (fond quasi-opaque `surface-dropdown`, pas la
+  // vidéo en transparence) : contrairement aux contrôles du lecteur, il suit
+  // le thème clair/sombre — d'où la tokenisation du texte/bordures ici.
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 w-80 rounded-xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl"
+      className="absolute bottom-20 right-6 z-50 w-80 rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4 backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">{t("player:settings")}</span>
-        <button onClick={onClose} className="text-white/40 hover:text-white">&times;</button>
+        <span className="text-sm font-semibold text-content-primary">{t("player:settings")}</span>
+        <button onClick={onClose} className="text-content-quaternary hover:text-content-primary">&times;</button>
       </div>
 
       <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
@@ -96,7 +99,7 @@ export function TrackSelector({
           className={`mt-3 flex select-none items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
             applyToSeries.pending
               ? "pointer-events-none opacity-50"
-              : "cursor-pointer text-white/70 hover:bg-white/5 hover:text-white"
+              : "cursor-pointer text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
           }`}
         >
           <input
@@ -111,11 +114,11 @@ export function TrackSelector({
             className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors ${
               applyToSeries.checked
                 ? "border-tentacle-accent bg-tentacle-accent"
-                : "border-white/30 bg-white/5"
+                : "border-line-strong bg-fill-subtle"
             }`}
           >
             {applyToSeries.checked && (
-              <svg viewBox="0 0 12 12" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 12 12" className="h-3 w-3 text-cta-brand-fg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2.5 6.5 5 9l4.5-6" />
               </svg>
             )}
@@ -130,7 +133,7 @@ export function TrackSelector({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-3 last:mb-0">
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-white/40">{title}</p>
+      <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-content-quaternary">{title}</p>
       <div className="space-y-0.5">{children}</div>
     </div>
   );
@@ -155,13 +158,13 @@ function QualityOption({
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-        active ? "bg-tentacle-accent/25 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"
+        active ? "bg-tentacle-accent/25 text-content-primary font-medium" : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
       }`}
     >
-      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-white/20"}`} />
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />
       <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
         <span className="truncate">{label}</span>
-        {resSuffix && <span className="text-white/40">— {resSuffix}</span>}
+        {resSuffix && <span className="text-content-quaternary">— {resSuffix}</span>}
         {isOriginal && sourceQuality?.isDolbyVision && <Badge color="purple">DV</Badge>}
         {isOriginal && sourceQuality?.isHDR && <Badge color="amber">HDR</Badge>}
         {isOriginal && sourceQuality?.isDolbyAtmos && <Badge color="amber">Atmos</Badge>}
@@ -178,10 +181,10 @@ function TrackOption({ label, active, onClick }: { label: string; active: boolea
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-        active ? "bg-tentacle-accent/25 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"
+        active ? "bg-tentacle-accent/25 text-content-primary font-medium" : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
       }`}
     >
-      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-white/20"}`} />
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />
       <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
         <span className="truncate">{title}</span>
         {lang && <Badge color="purple">{lang}</Badge>}
@@ -196,7 +199,7 @@ function Badge({ color, children }: { color: "purple" | "zinc" | "amber"; childr
     ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)]"
     : color === "amber"
       ? "bg-amber-500/20 text-amber-300"
-      : "bg-white/10 text-white/50";
+      : "bg-fill-soft text-content-tertiary";
   return <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>{children}</span>;
 }
 

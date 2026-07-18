@@ -41,7 +41,7 @@ export function Watchlist() {
                 {items && items.length > 0 && (
                   <button
                     onClick={sel.enterSelectionMode}
-                    className="rounded-full bg-white/5 px-3 py-1.5 text-sm font-medium text-white/50 transition-colors hover:bg-white/10 hover:text-white/70"
+                    className="rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-secondary"
                   >
                     {t("common:select")}
                   </button>

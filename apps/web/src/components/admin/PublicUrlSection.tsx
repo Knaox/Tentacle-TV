@@ -50,8 +50,8 @@ export function PublicUrlSection() {
   if (!loaded) return null;
   return (
     <div className={cls.card}>
-      <h2 className="mb-1 text-lg font-semibold text-white">{t("publicUrl")}</h2>
-      <p className="mb-4 text-sm text-white/40">{t("publicUrlDescription")}</p>
+      <h2 className="mb-1 text-lg font-semibold text-content-primary">{t("publicUrl")}</h2>
+      <p className="mb-4 text-sm text-content-quaternary">{t("publicUrlDescription")}</p>
       <div className={cls.sub}>
         <label className={cls.lbl}>{t("publicUrlLabel")}</label>
         <div className="flex flex-wrap items-center gap-3">
@@ -66,7 +66,7 @@ export function PublicUrlSection() {
           <button onClick={save} disabled={busy} className={cls.bp} style={cls.bpStyle}>{busy ? "..." : t("save")}</button>
           {msg && <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>}
         </div>
-        <p className="mt-1 text-xs text-white/30">{t("publicUrlHelp")}</p>
+        <p className="mt-1 text-xs text-content-quaternary">{t("publicUrlHelp")}</p>
       </div>
     </div>
   );

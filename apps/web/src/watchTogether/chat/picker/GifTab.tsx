@@ -10,6 +10,9 @@ import { useGifSearch, type GifItem } from "./useGifSearch";
  * client aligné sur le rate limit serveur évite les envois silencieusement
  * ignorés. La clé Klipy est au niveau application (image Docker) : l'état
  * « non disponible » ne concerne que les vieux serveurs / le dev sans .env.
+ *
+ * Couleurs volontairement en dur : section du panneau de chat (ChatPanel),
+ * qui garde son verre sombre quel que soit le thème.
  */
 
 /** Aligné sur WT_MIN_GIF_INTERVAL_MS (serveur) — évite les drops silencieux. */

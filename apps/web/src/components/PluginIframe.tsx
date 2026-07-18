@@ -29,7 +29,7 @@ const LOADER_TEXTS = {
 function PluginLoader({ lang, error }: { lang: string; error?: string }) {
   const t = LOADER_TEXTS[lang === "fr" ? "fr" : "en"];
   return (
-    <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center gap-6 bg-[#080812]">
+    <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center gap-6 bg-surface-1">
       <div className={`relative ${error ? "" : "animate-pulse"}`}>
         <img
           src="/tentacle-logo-pirate.svg"
@@ -44,8 +44,8 @@ function PluginLoader({ lang, error }: { lang: string; error?: string }) {
       </div>
       {error ? (
         <div className="text-center">
-          <p className="text-sm font-medium text-red-400">{t.error}</p>
-          <p className="mt-1 max-w-xs text-xs text-red-400/60">{error}</p>
+          <p className="text-sm font-medium text-status-error-fg">{t.error}</p>
+          <p className="mt-1 max-w-xs text-xs text-status-error-fg">{error}</p>
         </div>
       ) : (
         <p className="text-sm text-gray-400/80">{t.loading}</p>

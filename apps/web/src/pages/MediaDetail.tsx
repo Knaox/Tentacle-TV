@@ -39,7 +39,7 @@ export function MediaDetail() {
   if (isLoading || !item) {
     return (
       <div className="flex h-screen items-center justify-center bg-surface-0">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/15 border-t-white" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
       </div>
     );
   }
@@ -88,7 +88,7 @@ export function MediaDetail() {
                 <img
                   src={posterUrl}
                   alt={item.Name}
-                  className="w-24 shadow-2xl ring-1 ring-white/10 md:w-56"
+                  className="w-24 shadow-2xl ring-1 ring-line-subtle md:w-56"
                   draggable={false}
                 />
                 {/* Overlay qualité + drapeaux directement sur le poster, comme
@@ -100,12 +100,12 @@ export function MediaDetail() {
             <div className="flex-1 pt-4">
               <motion.h1
                 variants={fadeUp}
-                className="text-display-3 font-bold text-white drop-shadow-[0_4px_20px_var(--surface-overlay)] line-clamp-2 break-words max-w-3xl md:text-display-2"
+                className="text-display-3 font-bold text-content-primary drop-shadow-[0_4px_20px_var(--surface-overlay)] line-clamp-2 break-words max-w-3xl md:text-display-2"
               >
                 {item.Name}
               </motion.h1>
               {item.OriginalTitle && item.OriginalTitle !== item.Name && (
-                <motion.p variants={fadeUp} className="mt-0.5 text-sm text-white/45">
+                <motion.p variants={fadeUp} className="mt-0.5 text-sm text-content-quaternary">
                   {item.OriginalTitle}
                 </motion.p>
               )}
@@ -116,7 +116,7 @@ export function MediaDetail() {
                   onClick={() => navigate(`/media/${item.SeriesId}`)}
                   aria-label={t("common:goToSeries")}
                   title={t("common:goToSeries")}
-                  className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-white/60 transition-colors hover:text-white"
+                  className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-content-tertiary transition-colors hover:text-content-primary"
                 >
                   <span className="underline-offset-4 group-hover/series:underline">
                     {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}
@@ -171,7 +171,7 @@ export function MediaDetail() {
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="row-gutter text-xl font-semibold text-white">{t("common:seasonsEpisodes")}</h2>
+            <h2 className="row-gutter text-xl font-semibold text-content-primary">{t("common:seasonsEpisodes")}</h2>
             <EpisodeList
               seriesId={episodeListSeriesId}
               currentEpisodeId={highlightEpisodeId}

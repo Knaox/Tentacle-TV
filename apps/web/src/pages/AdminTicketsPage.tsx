@@ -14,7 +14,7 @@ export function AdminTicketsPage() {
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-white">{t("supportTickets")}</h1>
+          <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-content-primary">{t("supportTickets")}</h1>
           <AdminTickets />
         </div>
       </div>

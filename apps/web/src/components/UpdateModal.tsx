@@ -28,7 +28,7 @@ function SparkleIcon() {
 function ProgressBar({ progress }: { progress: number }) {
   return (
     <div className="w-full space-y-2">
-      <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-fill-soft">
         <div
           className="h-full rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] transition-all duration-300"
           style={{ width: `${progress}%` }}
@@ -38,10 +38,10 @@ function ProgressBar({ progress }: { progress: number }) {
           className="absolute inset-y-0 left-0 h-full overflow-hidden rounded-full"
           style={{ width: `${progress}%` }}
         >
-          <div className="h-full w-full animate-pulse bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="h-full w-full animate-pulse bg-gradient-to-r from-transparent via-fill-shimmer to-transparent" />
         </div>
       </div>
-      <p className="text-center text-xs font-medium text-white/60">{progress}%</p>
+      <p className="text-center text-xs font-medium text-content-tertiary">{progress}%</p>
     </div>
   );
 }
@@ -71,8 +71,8 @@ function ModalContent({
     return (
       <div className="space-y-4 py-2">
         <ProgressBar progress={progress} />
-        <p className="text-center text-sm text-white/60">{t("notifications:downloading", { progress })}</p>
-        <p className="text-center text-xs text-white/40">{t("notifications:restartHint")}</p>
+        <p className="text-center text-sm text-content-tertiary">{t("notifications:downloading", { progress })}</p>
+        <p className="text-center text-xs text-content-quaternary">{t("notifications:restartHint")}</p>
       </div>
     );
   }
@@ -81,7 +81,7 @@ function ModalContent({
     return (
       <div className="flex flex-col items-center gap-3 py-4">
         <Spinner />
-        <p className="text-sm text-white/70">{t("notifications:updateInstalling")}</p>
+        <p className="text-sm text-content-secondary">{t("notifications:updateInstalling")}</p>
       </div>
     );
   }
@@ -90,7 +90,7 @@ function ModalContent({
     return (
       <div className="flex flex-col items-center gap-3 py-4">
         <Spinner />
-        <p className="text-sm text-white/70">{t("notifications:updateRestarting")}</p>
+        <p className="text-sm text-content-secondary">{t("notifications:updateRestarting")}</p>
       </div>
     );
   }
@@ -99,34 +99,34 @@ function ModalContent({
   return (
     <>
       {notes && (
-        <div className="max-h-32 overflow-y-auto rounded-lg bg-white/5 p-3">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-white/40">
+        <div className="max-h-32 overflow-y-auto rounded-lg bg-fill-subtle p-3">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-content-quaternary">
             {t("notifications:updateReleaseNotes")}
           </p>
-          <p className="whitespace-pre-line text-sm text-white/60">{notes}</p>
+          <p className="whitespace-pre-line text-sm text-content-tertiary">{notes}</p>
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-          <p className="text-sm text-red-300">{error}</p>
+        <div className="rounded-lg border border-danger-border bg-danger-surface p-3">
+          <p className="text-sm text-status-error-fg">{error}</p>
         </div>
       )}
       <div className="flex gap-3 pt-2">
         <button
           onClick={onInstall}
-          className="flex-1 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-black transition-colors hover:bg-white/90"
+          className="flex-1 rounded-xl bg-cta-primary-bg px-4 py-2.5 text-sm font-bold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover"
         >
           {isStoreUpdate ? t("notifications:updateOpenStore") : t("notifications:updateNow")}
         </button>
         <button
           onClick={onDismiss}
-          className="rounded-xl bg-white/5 px-4 py-2.5 text-sm text-white/60 transition-colors hover:bg-white/10"
+          className="rounded-xl bg-fill-subtle px-4 py-2.5 text-sm text-content-tertiary transition-colors hover:bg-fill-soft"
         >
           {t("notifications:later")}
         </button>
       </div>
       {isStoreUpdate && storeOpened && (
-        <p className="text-center text-xs text-white/45">{t("notifications:updateStoreOpenedHint")}</p>
+        <p className="text-center text-xs text-content-quaternary">{t("notifications:updateStoreOpenedHint")}</p>
       )}
     </>
   );
@@ -143,18 +143,20 @@ export function UpdateModal() {
 
   return createPortal(
     <div
+      // Scrim de modale : reste sombre dans les deux thèmes (règle scrim).
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={canClose ? dismiss : undefined}
     >
       <div
-        className="mx-4 w-full max-w-md space-y-4 rounded-2xl border border-white/10 bg-[#080812]/95 p-6 shadow-2xl backdrop-blur-xl"
+        // Fond du panneau : littéral hors table (implémentation ad hoc) — non migré.
+        className="mx-4 w-full max-w-md space-y-4 rounded-2xl border border-line-subtle bg-surface-modal p-6 shadow-2xl backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <SparkleIcon />
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-content-primary">
               {t("notifications:updateAvailable")}
             </h2>
           </div>

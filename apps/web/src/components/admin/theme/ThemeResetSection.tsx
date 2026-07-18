@@ -33,10 +33,10 @@ export function ThemeResetSection() {
 
   return (
     <div className={cls.sub}>
-      <h3 className="text-base font-semibold text-white">
+      <h3 className="text-base font-semibold text-content-primary">
         {t("resetAllSectionTitle")}
       </h3>
-      <p className="text-xs text-white/55">{t("resetAllLabel")}</p>
+      <p className="text-xs text-content-tertiary">{t("resetAllLabel")}</p>
       {confirming ? (
         <div className="flex flex-wrap gap-2">
           <button

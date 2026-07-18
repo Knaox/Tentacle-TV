@@ -60,24 +60,27 @@ export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
   // et s'afficherait coupée dans la barre.
   return createPortal(
     <div
+      // Voile de modale : reste sombre dans les deux thèmes (standard iOS).
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/* Le puits d'input (bg-black/40) reste en dur : c'est un creux, pas une
+          surface de chrome. Le fond de carte, lui, est passé sur --surface-modal. */}
       <div
-        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl border border-white/12 bg-[#12121a]/95 shadow-2xl"
+        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl border border-line-strong bg-surface-modal shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="p-6 pb-4">
-          <h2 className="text-lg font-bold text-white">{t("selectUsers")}</h2>
+          <h2 className="text-lg font-bold text-content-primary">{t("selectUsers")}</h2>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("searchUsers")}
             autoFocus
-            className="mt-4 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"
+            className="mt-4 w-full rounded-lg border border-line-subtle bg-black/40 px-3 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none transition-colors focus:border-purple-400/50"
           />
         </div>
 
@@ -85,11 +88,11 @@ export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
           {isLoading ? (
             <div className="space-y-2 px-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-11 animate-pulse rounded-lg bg-white/5" />
+                <div key={i} className="h-11 animate-pulse rounded-lg bg-fill-subtle" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-sm text-white/40">{t("noUsersFound")}</p>
+            <p className="py-8 text-center text-sm text-content-quaternary">{t("noUsersFound")}</p>
           ) : (
             filtered.map((u) => {
               const isSelected = selected.has(u.id);
@@ -98,12 +101,12 @@ export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
                   key={u.id}
                   onClick={() => toggle(u.id)}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
-                    isSelected ? "bg-purple-500/15" : "hover:bg-white/5"
+                    isSelected ? "bg-purple-500/15" : "hover:bg-fill-subtle"
                   }`}
                 >
                   <WtAvatar userId={u.id} name={u.name} hasAvatar={u.hasAvatar} size={32} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-white">{u.name}</span>
-                  <span className="flex items-center gap-1.5 text-xs text-white/40">
+                  <span className="min-w-0 flex-1 truncate text-sm text-content-primary">{u.name}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-content-quaternary">
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{ background: u.isOnline ? "#34d399" : "rgba(255,255,255,0.2)" }}
@@ -113,8 +116,8 @@ export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all ${
                       isSelected
-                        ? "border-purple-400 bg-purple-500 text-white"
-                        : "border-white/25 text-transparent"
+                        ? "border-purple-400 bg-purple-500 text-cta-brand-fg"
+                        : "border-line-strong text-transparent"
                     }`}
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -127,17 +130,17 @@ export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
           )}
         </div>
 
-        <div className="flex gap-2 border-t border-white/10 p-4">
+        <div className="flex gap-2 border-t border-line-subtle p-4">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg bg-white/10 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:bg-white/20"
+            className="flex-1 rounded-lg bg-fill-soft py-2.5 text-sm font-semibold text-content-secondary transition-colors hover:bg-fill-medium"
           >
             {t("cancel")}
           </button>
           <button
             onClick={send}
             disabled={selected.size === 0 || sending}
-            className="flex-1 rounded-lg bg-white py-2.5 text-sm font-bold text-black transition-colors duration-150 hover:bg-white/85 disabled:opacity-40"
+            className="flex-1 rounded-lg bg-cta-primary-bg py-2.5 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover disabled:opacity-40"
           >
             {selected.size > 0 ? t("sendInvitesCount", { count: selected.size }) : t("sendInvites")}
           </button>

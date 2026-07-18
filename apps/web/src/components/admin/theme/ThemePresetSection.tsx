@@ -64,10 +64,10 @@ export function ThemePresetSection() {
 
   return (
     <div className={cls.card}>
-      <h2 className="mb-1 text-lg font-semibold text-white">
+      <h2 className="mb-1 text-lg font-semibold text-content-primary">
         {t("presetSectionTitle")}
       </h2>
-      <p className="mb-4 text-sm text-white/55">
+      <p className="mb-4 text-sm text-content-tertiary">
         {t("presetSectionHelp")}
       </p>
 
@@ -76,6 +76,13 @@ export function ThemePresetSection() {
         role="radiogroup"
         aria-label={t("presetSectionTitle")}
       >
+        {/*
+          Carte de preset : posée sur un dégradé de couleurs arbitraires
+          (preset.swatch, propre à chaque thème saisonnier), au même titre
+          qu'une affiche média — le scrim et le texte doivent rester lisibles
+          quel que soit le thème clair/sombre ET quelles que soient les
+          couleurs du preset. Volontairement laissé en dur (non tokenisé).
+        */}
         {PRESETS.map((preset) => {
           const selected = activeId === preset.id;
           const pending =

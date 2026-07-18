@@ -25,6 +25,9 @@ export function CardMoreInfoButton({ detailId, visible }: CardMoreInfoButtonProp
     navigate(`/media/${detailId}`);
   };
 
+  // Bouton + scrim posés directement SUR la carte (image 16/9) : restent en
+  // blanc/noir dans les deux thèmes, comme les autres overlays de carte
+  // (cf. règle « posé sur média »).
   return (
     <div
       className="pointer-events-none absolute inset-x-0 bottom-0 z-10 transition-opacity duration-200"

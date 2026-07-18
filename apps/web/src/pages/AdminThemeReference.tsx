@@ -30,21 +30,21 @@ export function AdminThemeReference() {
           <button
             type="button"
             onClick={() => navigate("/admin/theme")}
-            className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white"
+            className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-content-tertiary transition hover:text-content-primary"
           >
             ← {t("tokensBackToTheme")}
           </button>
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-content-primary">
             {t("refPageTitle")}
           </h1>
-          <p className="mb-8 text-sm text-white/55">{t("refPageHelp")}</p>
+          <p className="mb-8 text-sm text-content-tertiary">{t("refPageHelp")}</p>
 
           {/* The killer block — everything in one copy */}
           <div className="mb-8 rounded-2xl border border-[var(--brand)]/35 bg-[var(--brand-soft)] p-6">
-            <h2 className="mb-2 text-xl font-bold text-white">
+            <h2 className="mb-2 text-xl font-bold text-content-primary">
               {t("refAllInOneTitle")}
             </h2>
-            <p className="mb-4 text-sm text-white/75">{t("refAllInOneHelp")}</p>
+            <p className="mb-4 text-sm text-content-secondary">{t("refAllInOneHelp")}</p>
             <CodeBlock
               title={t("refAllInOneBlockTitle")}
               description={t("refAllInOneBlockDesc")}
@@ -54,10 +54,10 @@ export function AdminThemeReference() {
           </div>
 
           {/* Working presets as inspiration */}
-          <h2 className="mb-3 text-xl font-semibold text-white">
+          <h2 className="mb-3 text-xl font-semibold text-content-primary">
             {t("refExamplesTitle")}
           </h2>
-          <p className="mb-6 text-sm text-white/55">{t("refExamplesHelp")}</p>
+          <p className="mb-6 text-sm text-content-tertiary">{t("refExamplesHelp")}</p>
 
           <CodeBlock
             title={t("refExampleXmasTitle")}

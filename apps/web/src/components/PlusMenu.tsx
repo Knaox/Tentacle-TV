@@ -80,14 +80,17 @@ export function PlusMenu({ onClose, isMobile, anchorRect, placement = "sidebar" 
   return createPortal(
     <div ref={overlayRef} className="fixed inset-0 z-50">
       <div
-        className="absolute overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
+        className="absolute overflow-hidden rounded-2xl border border-line-subtle shadow-2xl"
         style={{
           left: panelLeft,
           top: panelTop,
           width: PANEL_WIDTH,
           maxHeight: PANEL_MAX_HEIGHT,
           overflowY: "auto",
-          background: "rgba(12,12,22,0.96)",
+          // Fond du panneau : littéral hors table (ni bg-white/* ni bg-black/*),
+          // implémentation ad hoc antérieure au primitive Dropdown (déjà sur
+          // var(--surface-dropdown), adaptatif). Non migré ici, cf. rapport de mission.
+          background: "var(--surface-dropdown)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           transformOrigin: `${originX} ${originY}`,
@@ -137,6 +140,7 @@ function MobileSheet({ onClose }: { onClose: () => void }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{ animation: "sheetOverlayIn 200ms ease forwards" }}
     >
+      {/* Voile derrière la sheet : reste sombre dans les deux thèmes (règle scrim de modale). */}
       <style>{`
         @keyframes sheetOverlayIn { from { background: transparent; } to { background: rgba(0,0,0,0.5); } }
         @keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -144,16 +148,18 @@ function MobileSheet({ onClose }: { onClose: () => void }) {
 
       <div
         ref={sheetRef}
-        className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-white/10 safe-area-pb"
+        className="max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-line-subtle safe-area-pb"
         style={{
-          background: "rgba(12,12,22,0.98)",
+          // Fond du panneau : même cas que le panneau desktop ci-dessus (littéral
+          // hors table, non migré).
+          background: "var(--surface-dropdown)",
           backdropFilter: "blur(24px)",
           animation: "sheetSlideUp 250ms cubic-bezier(0.32,0.72,0,1) forwards",
         }}
       >
         {/* Drag handle */}
         <div className="flex justify-center py-3">
-          <div className="h-1 w-10 rounded-full bg-white/20" />
+          <div className="h-1 w-10 rounded-full bg-fill-medium" />
         </div>
 
         <PanelContent
@@ -211,7 +217,7 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
       </button>
 
       {/* ── Libraries ── */}
-      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-white/30">
+      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-content-quaternary">
         {t("nav:libraries")}
       </p>
       <div className="space-y-1">
@@ -255,12 +261,12 @@ function PinnableRow({
   onNavigate: () => void;
 }) {
   return (
-    <div className="group flex items-center gap-2 rounded-xl transition-colors hover:bg-white/[0.04]">
+    <div className="group flex items-center gap-2 rounded-xl transition-colors hover:bg-fill-subtle">
       <button
         onClick={onNavigate}
-        className="flex flex-1 items-center gap-3 py-2.5 pl-3 text-left text-sm font-medium text-white/70 transition-colors hover:text-white"
+        className="flex flex-1 items-center gap-3 py-2.5 pl-3 text-left text-sm font-medium text-content-secondary transition-colors hover:text-content-primary"
       >
-        <span className="flex-shrink-0 text-white/40">{icon}</span>
+        <span className="flex-shrink-0 text-content-quaternary">{icon}</span>
         <span className="truncate">{label}</span>
       </button>
       <button
@@ -268,7 +274,7 @@ function PinnableRow({
         className={`mr-2 flex-shrink-0 rounded-lg p-2 transition-all ${
           isPinned
             ? "text-[var(--brand)] hover:bg-[rgba(var(--brand-rgb),0.1)]"
-            : "text-white/25 hover:bg-white/5 hover:text-white/50"
+            : "text-content-disabled hover:bg-fill-subtle hover:text-content-tertiary"
         }`}
         title={isPinned ? "Unpin" : "Pin"}
       >

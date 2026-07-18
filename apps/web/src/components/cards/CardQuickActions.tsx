@@ -60,6 +60,9 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   const iconSize = variant === "compact" ? "h-3.5 w-3.5" : "h-4 w-4";
   const dir = variant === "compact" ? "flex-col" : "flex-row";
 
+  // Cluster de boutons posé directement sur l'affiche/la vignette (badges
+  // d'angle) : fond noir translucide + icônes blanches volontairement
+  // constants dans les deux thèmes (cf. règle « posé sur média »).
   return (
     <div className={`flex ${dir} gap-1.5`}>
       <button

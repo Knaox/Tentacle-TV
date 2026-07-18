@@ -22,7 +22,7 @@ export function AdminServicesPage() {
     <PageTransition>
       <div className="px-4 pt-6 pb-16 md:px-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-white">{t("services")}</h1>
+          <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-content-primary">{t("services")}</h1>
           <div id="publicurl"><PublicUrlSection /></div>
           <ServicesSection />
           <DirectStreamingSection />

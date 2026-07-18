@@ -97,18 +97,18 @@ export function Preferences() {
     <PageTransition>
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-4xl">
-        <h1 className="mb-2 text-2xl font-bold text-white">{t("preferences:title")}</h1>
-        <p className="mb-8 text-sm text-white/50">
+        <h1 className="mb-2 text-2xl font-bold text-content-primary">{t("preferences:title")}</h1>
+        <p className="mb-8 text-sm text-content-tertiary">
           {t("preferences:subtitle")}
         </p>
 
         {/* Interface language */}
-        <div className="mb-8 rounded-xl border border-white/5 bg-white/5 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-white">{t("preferences:interfaceLanguage")}</h3>
+        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
+          <h3 className="mb-3 text-sm font-semibold text-content-primary">{t("preferences:interfaceLanguage")}</h3>
           <select
             value={i18n.language}
             onChange={(e) => handleInterfaceLangChange(e.target.value)}
-            className="w-full max-w-xs appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white"
+            className="w-full max-w-xs appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
           >
             {INTERFACE_LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>{lang.label}</option>
@@ -165,13 +165,13 @@ function ChangeServerSection() {
   };
 
   return (
-    <div className="mt-8 rounded-xl border border-white/5 bg-white/5 p-5">
-      <h3 className="mb-1 text-sm font-semibold text-white">{t("profile:changeServerTitle")}</h3>
-      <p className="mb-4 text-xs text-white/50">{t("profile:changeServerMessage")}</p>
+    <div className="mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
+      <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("profile:changeServerTitle")}</h3>
+      <p className="mb-4 text-xs text-content-tertiary">{t("profile:changeServerMessage")}</p>
       <button
         onClick={handleChangeServer}
         disabled={changeServer.isPending}
-        className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/10 disabled:opacity-40"
+        className="rounded-lg border border-line-subtle bg-fill-subtle px-4 py-2 text-xs font-semibold text-content-secondary transition hover:bg-fill-soft disabled:opacity-40"
       >
         {t("profile:changeServer")}
       </button>
@@ -222,19 +222,19 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
   };
 
   return (
-    <div className="rounded-xl border border-white/5 bg-white/5 p-5">
+    <div className="rounded-xl border border-line-subtle bg-fill-subtle p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">{libraryName}</h3>
+        <h3 className="text-sm font-semibold text-content-primary">{libraryName}</h3>
         <div className="flex items-center gap-2">
           {pref && !editing && (
-            <div className="flex items-center gap-2 text-xs text-white/50">
+            <div className="flex items-center gap-2 text-xs text-content-tertiary">
               {pref.audioLang && (
                 <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-[var(--brand-light)]">
                   {t("preferences:audio")}: {languages.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
                 </span>
               )}
               {pref.subtitleLang && pref.subtitleMode !== "none" && (
-                <span className="rounded bg-blue-500/20 px-2 py-0.5 text-blue-300">
+                <span className="rounded bg-status-info-bg px-2 py-0.5 text-status-info-fg">
                   ST: {languages.find((l) => l.code === pref.subtitleLang)?.label ?? pref.subtitleLang}
                   ({subtitleModes.find((m) => m.value === pref.subtitleMode)?.label})
                 </span>
@@ -242,7 +242,7 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
             </div>
           )}
           <button onClick={() => setEditing(!editing)}
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/70 hover:bg-white/20">
+            className="rounded-lg bg-fill-soft px-3 py-1.5 text-xs text-content-secondary hover:bg-fill-medium">
             {editing ? t("common:cancel") : t("common:edit")}
           </button>
         </div>
@@ -251,9 +251,9 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
       {editing && (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-white/50">{t("preferences:audio")}</label>
+            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:audio")}</label>
             <select value={audioLang} onChange={(e) => setAudioLang(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
+              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
               <option value="">{t("preferences:default")}</option>
               {languages.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -262,9 +262,9 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-white/50">{t("preferences:subtitles")}</label>
+            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:subtitles")}</label>
             <select value={subtitleLang} onChange={(e) => setSubtitleLang(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
+              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
               <option value="">{t("preferences:none")}</option>
               {languages.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -273,9 +273,9 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-white/50">{t("preferences:subtitleMode")}</label>
+            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:subtitleMode")}</label>
             <select value={subtitleMode} onChange={(e) => setSubtitleMode(e.target.value as any)}
-              className="w-full appearance-none rounded-lg border border-white/10 bg-tentacle-surface px-3 py-2 text-sm text-white [&>option]:bg-tentacle-surface [&>option]:text-white">
+              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
               {subtitleModes.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
@@ -284,12 +284,12 @@ function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleMode
 
           <div className="flex gap-2 sm:col-span-3">
             <button onClick={handleSave}
-              className="rounded-lg h-11 px-5 bg-white text-black text-xs font-bold hover:bg-white/90" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
+              className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-xs font-bold hover:bg-cta-primary-bg-hover" style={{ boxShadow: "0 8px 22px rgba(var(--brand-rgb), 0.45)" }}>
               {t("common:save")}
             </button>
             {pref && (
               <button onClick={handleReset}
-                className="rounded-lg bg-red-500/10 px-4 py-2 text-xs text-red-400 hover:bg-red-500/25">
+                className="rounded-lg bg-danger-surface px-4 py-2 text-xs text-status-error-fg hover:bg-danger-surface-hover">
                 {t("preferences:reset")}
               </button>
             )}
@@ -309,18 +309,18 @@ function PairedDevicesSection() {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-4 text-lg font-semibold text-white">
+      <h2 className="mb-4 text-lg font-semibold text-content-primary">
         {t("pairing:pairedDevices")}
       </h2>
       <div className="space-y-3">
         {devices.map((device) => (
           <div
             key={device.id}
-            className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-4"
+            className="flex items-center justify-between rounded-xl border border-line-subtle bg-fill-subtle p-4"
           >
             <div>
-              <p className="text-sm font-medium text-white">{device.name}</p>
-              <p className="mt-1 text-xs text-white/40">
+              <p className="text-sm font-medium text-content-primary">{device.name}</p>
+              <p className="mt-1 text-xs text-content-quaternary">
                 {t("pairing:lastActive", {
                   date: new Date(device.lastSeen).toLocaleDateString(),
                 })}
@@ -329,7 +329,7 @@ function PairedDevicesSection() {
             <button
               onClick={() => revokeMut.mutate(device.id)}
               disabled={revokeMut.isPending}
-              className="rounded-lg bg-red-600/20 px-4 py-1.5 text-xs font-medium text-red-400 hover:bg-red-600/30 disabled:opacity-40 transition"
+              className="rounded-lg bg-danger-surface px-4 py-1.5 text-xs font-medium text-status-error-fg hover:bg-danger-surface-hover disabled:opacity-40 transition"
             >
               {t("pairing:revoke")}
             </button>

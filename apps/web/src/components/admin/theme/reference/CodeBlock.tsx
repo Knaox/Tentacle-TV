@@ -40,16 +40,16 @@ export function CodeBlock({
   const charCount = code.length;
 
   return (
-    <section className="mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
-      <header className="flex flex-col gap-2 border-b border-white/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="mb-6 overflow-hidden rounded-xl border border-line-subtle bg-fill-faint">
+      <header className="flex flex-col gap-2 border-b border-line-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
+          <h3 className="text-base font-semibold text-content-primary">{title}</h3>
           {description && (
-            <p className="mt-0.5 text-xs text-white/55">{description}</p>
+            <p className="mt-0.5 text-xs text-content-tertiary">{description}</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-white/35">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-content-quaternary">
             {language} · {lineCount} {t("refLines")} · {charCount} {t("refChars")}
           </span>
           <button
@@ -84,6 +84,11 @@ export function CodeBlock({
           </button>
         </div>
       </header>
+      {/*
+        Bloc "terminal" : code brut à copier-coller, fond et texte
+        volontairement fixes (comme un visuel média) pour rester lisible
+        indépendamment du thème clair/sombre. Non tokenisé à dessein.
+      */}
       <pre className="max-h-[480px] overflow-auto bg-black/40 p-4 text-xs leading-relaxed text-white/85">
         <code className="font-mono">{code}</code>
       </pre>

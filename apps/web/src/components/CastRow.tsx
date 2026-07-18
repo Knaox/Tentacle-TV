@@ -47,20 +47,20 @@ export function CastRow({ people, studios }: CastRowProps) {
       {/* Crew & Studios */}
       {hasCrew && (
         <div>
-          <h3 className="mb-3 text-lg font-semibold text-white/90">{t("media:crewSection")}</h3>
+          <h3 className="mb-3 text-lg font-semibold text-content-primary">{t("media:crewSection")}</h3>
           <div className="flex flex-wrap gap-x-8 gap-y-3">
             {crewGroups.map((group) => (
               <div key={group.type}>
-                <p className="text-xs font-medium text-white/40">{group.label}</p>
-                <p className="mt-0.5 text-sm text-white/80">
+                <p className="text-xs font-medium text-content-quaternary">{group.label}</p>
+                <p className="mt-0.5 text-sm text-content-secondary">
                   {group.members.map((m) => m.Name).join(", ")}
                 </p>
               </div>
             ))}
             {studios && studios.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-white/40">{t("media:studioLabel")}</p>
-                <p className="mt-0.5 text-sm text-white/80">
+                <p className="text-xs font-medium text-content-quaternary">{t("media:studioLabel")}</p>
+                <p className="mt-0.5 text-sm text-content-secondary">
                   {studios.map((s) => s.Name).join(", ")}
                 </p>
               </div>
@@ -72,7 +72,7 @@ export function CastRow({ people, studios }: CastRowProps) {
       {/* Actors */}
       {actors.length > 0 && (
         <div>
-          <h3 className="mb-3 text-lg font-semibold text-white/90">{t("media:castSection")}</h3>
+          <h3 className="mb-3 text-lg font-semibold text-content-primary">{t("media:castSection")}</h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {actors.map((person) => (
               <div key={person.Id} className="w-20 flex-shrink-0 text-center sm:w-24 group/actor">
@@ -85,13 +85,13 @@ export function CastRow({ people, studios }: CastRowProps) {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-2xl text-white/20">
+                    <div className="flex h-full w-full items-center justify-center text-2xl text-content-disabled">
                       {person.Name.charAt(0)}
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-xs font-medium text-white line-clamp-1">{person.Name}</p>
-                {person.Role && <p className="text-xs text-white/40 line-clamp-1">{person.Role}</p>}
+                <p className="mt-2 text-xs font-medium text-content-primary line-clamp-1">{person.Name}</p>
+                {person.Role && <p className="text-xs text-content-quaternary line-clamp-1">{person.Role}</p>}
               </div>
             ))}
           </div>

@@ -50,7 +50,7 @@ export function Navbar() {
         <NotificationBell />
         <button
           onClick={() => navigate("/preferences")}
-          className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          className="rounded-full p-2 text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
           title={t("languagePreferences")}
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -60,7 +60,7 @@ export function Navbar() {
         {admin && (
           <button
             onClick={() => navigate("/admin")}
-            className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-full p-2 text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
             title={t("admin")}
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -71,7 +71,7 @@ export function Navbar() {
         )}
         <button
           onClick={handleLogout}
-          className="rounded-lg bg-white/10 px-4 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+          className="rounded-lg bg-fill-soft px-4 py-1.5 text-sm text-content-secondary transition-colors hover:bg-fill-medium hover:text-content-primary"
         >
           {t("logout")}
         </button>

@@ -34,22 +34,22 @@ export function ProfileLinks({ isAdmin }: Props) {
 
   return (
     <section
-      className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03]"
+      className="overflow-hidden rounded-2xl border border-line-subtle bg-fill-faint"
       aria-label={t("profile")}
     >
-      <ul className="divide-y divide-white/[0.05]">
+      <ul className="divide-y divide-line-subtle">
         {links.map((link) => (
           <li key={link.key}>
             <button
               type="button"
               onClick={() => navigate(link.path)}
-              className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-white/85 transition-colors duration-150 active:bg-white/[0.04]"
+              className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-content-secondary transition-colors duration-150 active:bg-fill-faint"
             >
-              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/70">
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-fill-subtle text-content-secondary">
                 {link.icon}
               </span>
               <span className="flex-1">{link.label}</span>
-              <span className="flex-shrink-0 text-white/30" aria-hidden>›</span>
+              <span className="flex-shrink-0 text-content-quaternary" aria-hidden>›</span>
             </button>
           </li>
         ))}

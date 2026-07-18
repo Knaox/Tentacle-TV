@@ -6,6 +6,8 @@ interface SelectionCheckboxProps {
 }
 
 export const SelectionCheckbox = memo(function SelectionCheckbox({ checked, onClick }: SelectionCheckboxProps) {
+  // Badge d'angle posé SUR le poster : fond noir translucide + liseré blanc
+  // constants dans les deux thèmes (cf. règle « posé sur média »).
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(e); }}

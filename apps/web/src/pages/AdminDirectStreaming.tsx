@@ -74,18 +74,18 @@ export function DirectStreamingSection() {
   if (!loaded) return null;
   return (
     <div className={cls.card}>
-      <h2 className="mb-1 text-lg font-semibold text-white">{t("admin:directStreaming")}</h2>
-      <p className="mb-2 text-sm text-white/40">{t("admin:directStreamingDescription")}</p>
-      <p className="mb-4 text-xs text-white/25">{t("admin:directStreamingCorsHelp")}</p>
+      <h2 className="mb-1 text-lg font-semibold text-content-primary">{t("admin:directStreaming")}</h2>
+      <p className="mb-2 text-sm text-content-quaternary">{t("admin:directStreamingDescription")}</p>
+      <p className="mb-4 text-xs text-content-disabled">{t("admin:directStreamingCorsHelp")}</p>
       <div className={cls.sub}>
         <label className="flex cursor-pointer items-center gap-3">
           <div className="relative">
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)}
               className="peer sr-only" />
-            <div className="h-5 w-9 rounded-full bg-white/10 transition-colors peer-checked:bg-[var(--brand-soft)] peer-checked:border peer-checked:border-[var(--brand)]/45" />
-            <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
+            <div className="h-5 w-9 rounded-full bg-fill-soft transition-colors peer-checked:bg-[var(--brand-soft)] peer-checked:border peer-checked:border-[var(--brand)]/45" />
+            <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-cta-primary-bg transition-transform peer-checked:translate-x-4" />
           </div>
-          <span className="text-sm text-white">{t("admin:directStreamingEnabled")}</span>
+          <span className="text-sm text-content-primary">{t("admin:directStreamingEnabled")}</span>
         </label>
 
         <div className={`space-y-3 transition-opacity ${enabled ? "opacity-100" : "pointer-events-none opacity-40"}`}>
@@ -93,7 +93,7 @@ export function DirectStreamingSection() {
             <label className={cls.lbl}>{t("admin:directStreamingPublicUrl")}</label>
             <input value={publicUrl} onChange={(e) => setPublicUrl(e.target.value)}
               placeholder="https://jf.example.com" className={cls.inp} />
-            <p className="mt-1 text-xs text-white/30">{t("admin:directStreamingPublicUrlHelp")}</p>
+            <p className="mt-1 text-xs text-content-quaternary">{t("admin:directStreamingPublicUrlHelp")}</p>
             {publicHttpWarning && (
               <p className="mt-1 text-xs text-[var(--status-warning-fg)]">{t("admin:directStreamingHttpWarning")}</p>
             )}
@@ -102,7 +102,7 @@ export function DirectStreamingSection() {
             <label className={cls.lbl}>{t("admin:directStreamingPrivateUrl")}</label>
             <input value={privateUrl} onChange={(e) => setPrivateUrl(e.target.value)}
               placeholder="http://192.168.1.50:8096" className={cls.inp} />
-            <p className="mt-1 text-xs text-white/30">{t("admin:directStreamingPrivateUrlHelp")}</p>
+            <p className="mt-1 text-xs text-content-quaternary">{t("admin:directStreamingPrivateUrlHelp")}</p>
             {privateHttpWarning && (
               <p className="mt-1 text-xs text-[var(--status-warning-fg)]">{t("admin:directStreamingHttpWarning")}</p>
             )}
@@ -110,12 +110,12 @@ export function DirectStreamingSection() {
 
           {/* Test results */}
           {testResult && (
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+            <div className="rounded-lg border border-line-subtle bg-fill-faint p-3 space-y-2">
               {testResult.public && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-xs">
                     <span className={dot(testResult.public.ok)} />
-                    <span className="text-white/60">{t("admin:directStreamingPublicUrl")}:</span>
+                    <span className="text-content-tertiary">{t("admin:directStreamingPublicUrl")}:</span>
                     <span className={testResult.public.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}>
                       {testResult.public.ok ? `Jellyfin ${testResult.public.version}` : testResult.public.error}
                     </span>
@@ -134,7 +134,7 @@ export function DirectStreamingSection() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-xs">
                     <span className={dot(testResult.private.ok)} />
-                    <span className="text-white/60">{t("admin:directStreamingPrivateUrl")}:</span>
+                    <span className="text-content-tertiary">{t("admin:directStreamingPrivateUrl")}:</span>
                     <span className={testResult.private.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}>
                       {testResult.private.ok ? `Jellyfin ${testResult.private.version}` : testResult.private.error}
                     </span>

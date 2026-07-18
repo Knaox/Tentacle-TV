@@ -105,7 +105,9 @@ export function MobileTabBar() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-white/[0.08] bg-black/95 backdrop-blur-xl safe-area-pb">
+      {/* bg-black/95 : fond du chrome bas non migré, même logique que TopNav
+          (opacité de scroll JS) — refonte prévue dans une phase ultérieure. */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-line-subtle bg-black/95 backdrop-blur-xl safe-area-pb">
         {tabs.map((tab) => {
           const active = isActive(tab);
           return (
@@ -119,7 +121,7 @@ export function MobileTabBar() {
                 }
               }}
               className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                active ? "text-white" : "text-white/45"
+                active ? "text-content-primary" : "text-content-quaternary"
               }`}
             >
               {active && (
@@ -161,7 +163,7 @@ function PlusTabIcon() {
 function ProfileTabIcon({ initial }: { initial: string }) {
   return (
     <span
-      className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+      className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-cta-brand-fg"
       style={{ background: AVATAR_GRADIENT_BG }}
       aria-hidden
     >

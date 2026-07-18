@@ -7,6 +7,10 @@ import type { WtFloatingReaction } from "./chatState";
  * réaction s'élève depuis le bas-droite de l'écran (côté bulle de chat) en
  * s'estompant, avec une dérive horizontale pseudo-aléatoire seedée par sa clé
  * (stable au re-render). Couche entièrement transparente aux interactions.
+ *
+ * Couleurs volontairement en dur : flotte au-dessus de la vidéo comme de
+ * n'importe quelle page (famille overlay de chat) — le tag de pseudo doit
+ * rester lisible sur n'importe quel fond, pas seulement selon le thème.
  */
 
 /** Hash déterministe [0..1) — dérive/offset propres à chaque réaction. */

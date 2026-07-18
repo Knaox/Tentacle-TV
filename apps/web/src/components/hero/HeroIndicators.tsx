@@ -15,6 +15,9 @@ interface HeroIndicatorsProps {
 export function HeroIndicators({ count, activeIndex, onSelect, onPrev, onNext }: HeroIndicatorsProps) {
   if (count <= 1) return null;
 
+  // Flèches et pastilles flottent directement sur le backdrop image du hero :
+  // fond noir translucide + icônes blanches volontairement constants dans les
+  // deux thèmes (contrôles superposés à l'image, cf. règle « posé sur média »).
   return (
     <>
       <button

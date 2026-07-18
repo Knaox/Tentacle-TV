@@ -186,6 +186,8 @@ export function WatchWeb() {
     ? formatDuration(Math.round(startPositionSeconds) * 10_000_000) : null;
 
   return (
+    // Toile du lecteur (bg-black) + toast « reprendre à » posé sur la vidéo :
+    // volontairement en dur (text-white, rgba noir) dans les deux thèmes.
     <div className="relative h-screen w-screen bg-black">
       {showResumeIndicator && resumeTimeFormatted && (
         <div

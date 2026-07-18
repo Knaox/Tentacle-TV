@@ -56,8 +56,8 @@ export function PlaybackSection() {
   if (!loaded) return null;
   return (
     <div className={cls.card}>
-      <h2 className="mb-1 text-lg font-semibold text-white">{t("playback")}</h2>
-      <p className="mb-4 text-sm text-white/40">{t("playbackDescription")}</p>
+      <h2 className="mb-1 text-lg font-semibold text-content-primary">{t("playback")}</h2>
+      <p className="mb-4 text-sm text-content-quaternary">{t("playbackDescription")}</p>
       <div className={cls.sub}>
         <div className="flex flex-wrap items-center gap-3">
           <label className={cls.lbl}>{t("autoplayNextEnabled")}</label>
@@ -67,15 +67,15 @@ export function PlaybackSection() {
             aria-checked={enabled}
             disabled={busy}
             onClick={() => save(!enabled)}
-            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-150 ${enabled ? "bg-[var(--brand)]" : "bg-white/15"}`}
+            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-150 ${enabled ? "bg-[var(--brand)]" : "bg-fill-medium"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all duration-150 ${enabled ? "left-[22px]" : "left-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-cta-primary-bg transition-all duration-150 ${enabled ? "left-[22px]" : "left-0.5"}`} />
           </button>
           {msg && <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>}
         </div>
-        <p className="mt-2 text-xs text-white/30">{t("autoplayNextHelp")}</p>
+        <p className="mt-2 text-xs text-content-quaternary">{t("autoplayNextHelp")}</p>
         {pct != null && (
-          <p className="mt-1 text-xs text-white/40">{t("autoplayCurrentThreshold", { pct })}</p>
+          <p className="mt-1 text-xs text-content-quaternary">{t("autoplayCurrentThreshold", { pct })}</p>
         )}
       </div>
     </div>

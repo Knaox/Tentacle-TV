@@ -86,7 +86,7 @@ export function DetailActions({ item }: DetailActionsProps) {
           onClick={handlePlay}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-2.5 rounded-md bg-white px-7 py-3 text-base font-bold text-black transition-colors duration-150 hover:bg-white/85"
+          className="flex items-center gap-2.5 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
         >
           <PlayIcon /> {playLabel}
         </motion.button>
@@ -134,7 +134,7 @@ export function DetailActions({ item }: DetailActionsProps) {
       )}
 
       {hasResume && !isSeries && (
-        <span className="text-sm text-white/50">
+        <span className="text-sm text-content-tertiary">
           {t("common:percentWatched", { percent: Math.round(progress!) })}
         </span>
       )}
@@ -173,10 +173,10 @@ function CircleAction({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all hover:bg-white/15 ${
+      className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all hover:bg-fill-medium ${
         active
-          ? "border-white bg-white/15 text-white"
-          : "border-white/30 text-white/85"
+          ? "border-content-primary bg-fill-medium text-content-primary"
+          : "border-line-strong text-content-secondary"
       }`}
     >
       {icon}
