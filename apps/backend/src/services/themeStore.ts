@@ -49,6 +49,13 @@ export const partialThemeTokensSchema = z
         cta: oneLevel.optional(),
         border: oneLevel.optional(),
         status: twoLevel.optional(),
+        // Groupes ajoutés avec la tokenisation clair/sombre. Sans eux, le
+        // `.strict()` REJETTE l'override (400) alors que le front l'envoie
+        // sans erreur — le token serait tokenisé mais non surchargeable.
+        fill: oneLevel.optional(),
+        glass: oneLevel.optional(),
+        onMedia: oneLevel.optional(),
+        danger: oneLevel.optional(),
       })
       .strict()
       .optional(),

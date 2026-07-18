@@ -28,10 +28,15 @@ export interface CssEmittedTokens {
 }
 
 /**
- * Token-path → CSS variable name. Every name here is byte-for-byte identical
- * to a declaration in `apps/web/src/theme/tokens.css` so that swapping the
- * generator in for the static file is a no-op for existing consumers
- * (`var(--brand)`, `bg-[var(--surface-0)]`, etc.).
+ * Token-path → CSS variable name. Every name here has a matching declaration
+ * in `apps/web/src/theme/tokens.css`, so swapping the generator in for the
+ * static file stays a no-op for existing consumers (`var(--brand)`,
+ * `bg-[var(--surface-0)]`, etc.).
+ *
+ * Cette correspondance est vérifiée par `cssVars.test.ts` : le fichier statique
+ * et cette carte ne peuvent plus diverger silencieusement. Les `--fill-*`
+ * avaient précisément dérivé ainsi — présents dans `tokens.css`, absents ici,
+ * donc jamais surchargeables depuis l'éditeur admin.
  */
 export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
   color: {
@@ -45,6 +50,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       dropdown: "--surface-dropdown",
       sheet: "--surface-sheet",
       toolbar: "--surface-toolbar",
+      s0Tint: "--surface-0-tint",
     },
     brand: {
       base: "--brand",
@@ -73,6 +79,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       secondaryFg: "--cta-secondary-fg",
       ghostBg: "--cta-ghost-bg",
       ghostBgHover: "--cta-ghost-bg-hover",
+      primaryBorder: "--cta-primary-border",
     },
     border: {
       subtle: "--border-subtle",
@@ -100,6 +107,29 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
         bg: "--status-info-bg",
         fg: "--status-info-fg",
       },
+    },
+    fill: {
+      faint: "--fill-faint",
+      subtle: "--fill-subtle",
+      soft: "--fill-soft",
+      medium: "--fill-medium",
+      strong: "--fill-strong",
+      shimmer: "--fill-shimmer",
+    },
+    glass: {
+      tint: "--glass-tint",
+      tintStrong: "--glass-tint-strong",
+      panel: "--glass-panel",
+      backdrop: "--glass-backdrop",
+    },
+    onMedia: {
+      primary: "--on-media-primary",
+      secondary: "--on-media-secondary",
+      shadow: "--on-media-shadow",
+    },
+    danger: {
+      surface: "--danger-surface",
+      border: "--danger-border",
     },
   },
   blur: {

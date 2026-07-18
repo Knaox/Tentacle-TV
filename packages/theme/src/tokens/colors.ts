@@ -16,6 +16,7 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     dropdown: "rgba(20, 20, 26, 0.95)",
     sheet: "rgba(15, 15, 21, 0.96)",
     toolbar: "rgba(20, 20, 26, 0.92)",
+    s0Tint: "#070710",
   },
   brand: {
     base: "#8B5CF6",
@@ -44,6 +45,9 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     secondaryFg: "#FFFFFF",
     ghostBg: "rgba(255, 255, 255, 0.08)",
     ghostBgHover: "rgba(255, 255, 255, 0.14)",
+    // Pilule blanche pleine en sombre : aucun liseré, mais le token est émis
+    // pour que le composant applique un `border` inconditionnel.
+    primaryBorder: "transparent",
   },
   border: {
     subtle: "rgba(255, 255, 255, 0.08)",
@@ -71,5 +75,28 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
       bg: "rgba(59, 130, 246, 0.15)",
       fg: "#60A5FA",
     },
+  },
+  fill: {
+    faint: "rgba(255, 255, 255, 0.03)",
+    subtle: "rgba(255, 255, 255, 0.05)",
+    soft: "rgba(255, 255, 255, 0.08)",
+    medium: "rgba(255, 255, 255, 0.12)",
+    strong: "rgba(255, 255, 255, 0.28)",
+    shimmer: "rgba(255, 255, 255, 0.05)",
+  },
+  glass: {
+    tint: "rgba(20, 20, 26, 0.6)",
+    tintStrong: "rgba(10, 10, 18, 0.72)",
+    panel: "#0a0a0a",
+    backdrop: "rgba(0, 0, 0, 0.55)",
+  },
+  onMedia: {
+    primary: "#FFFFFF",
+    secondary: "rgba(255, 255, 255, 0.80)",
+    shadow: "rgba(0, 0, 0, 0.7)",
+  },
+  danger: {
+    surface: "rgba(239, 68, 68, 0.1)",
+    border: "rgba(239, 68, 68, 0.2)",
   },
 };

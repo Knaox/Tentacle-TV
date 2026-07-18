@@ -21,6 +21,8 @@ export interface SurfaceColorTokens {
   dropdown: string;
   sheet: string;
   toolbar: string;
+  /** Fin du dégradé cinématique du fond racine (SubtleBackground). */
+  s0Tint: string;
 }
 
 export interface BrandColorTokens {
@@ -60,6 +62,59 @@ export interface CtaColorTokens {
   secondaryFg: string;
   ghostBg: string;
   ghostBgHover: string;
+  /**
+   * Contour du CTA principal. `transparent` en sombre (pilule blanche pleine),
+   * liseré discret en clair pour détacher le bouton blanc du fond nacré.
+   * Toujours émis pour que le composant applique un `border` inconditionnel.
+   */
+  primaryBorder: string;
+}
+
+/**
+ * Remplissages neutres translucides — cible de migration des `bg-white/5`
+ * &co. Inversés en clair (rgba noirs) : c'est ce qui rend la bascule de
+ * schéma possible sans toucher au markup.
+ */
+export interface FillColorTokens {
+  faint: string;
+  subtle: string;
+  soft: string;
+  medium: string;
+  /** Grips, poignées, pistes actives. */
+  strong: string;
+  /** Reflet du shimmer des skeletons — reste un éclat CLAIR dans les 2 schémas. */
+  shimmer: string;
+}
+
+/**
+ * Formule verre unifiée (GlassSurface) : voile posé sous le flou.
+ * `panel` = fond opaque des sheets. `backdrop` = scrim des fonds de modale,
+ * qui reste sombre en clair (standard iOS au-dessus de contenus photo/vidéo).
+ */
+export interface GlassColorTokens {
+  tint: string;
+  tintStrong: string;
+  panel: string;
+  backdrop: string;
+}
+
+/**
+ * Texte posé DIRECTEMENT sur une image (backdrop, poster). CONSTANT entre les
+ * deux schémas : la luminosité d'une affiche ne dépend pas du thème choisi,
+ * donc on reste blanc-sur-voile-sombre dans les deux cas. Évite le texte
+ * quasi-noir + ombre noire illisible en clair.
+ */
+export interface OnMediaColorTokens {
+  primary: string;
+  secondary: string;
+  /** Couleur du `text-shadow` porté par le texte. */
+  shadow: string;
+}
+
+/** Surfaces d'action destructive. */
+export interface DangerColorTokens {
+  surface: string;
+  border: string;
 }
 
 export interface BorderColorTokens {
@@ -88,6 +143,10 @@ export interface ColorTokens {
   cta: CtaColorTokens;
   border: BorderColorTokens;
   status: StatusColorTokens;
+  fill: FillColorTokens;
+  glass: GlassColorTokens;
+  onMedia: OnMediaColorTokens;
+  danger: DangerColorTokens;
 }
 
 export interface BlurTokens {

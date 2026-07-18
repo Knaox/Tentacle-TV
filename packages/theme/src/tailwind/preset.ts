@@ -50,6 +50,63 @@ export const tentacleTailwindPreset: Partial<Config> = {
           error: cssVar(CSS_VAR_NAMES.color.status.error.base),
           info: cssVar(CSS_VAR_NAMES.color.status.info.base),
         },
+
+        // ── Familles ajoutées pour la migration des couleurs en dur ────────
+        // Sans elles il n'existait AUCUNE classe tokenisée équivalente à
+        // `bg-white/5` ou `text-white/40` — d'où le repli massif du code sur
+        // la palette Tailwind par défaut, qui casse en thème clair.
+
+        /** Remplissages neutres translucides — remplace `bg-white/{3,5,8,12,28}`. */
+        fill: {
+          faint: cssVar(CSS_VAR_NAMES.color.fill.faint),
+          subtle: cssVar(CSS_VAR_NAMES.color.fill.subtle),
+          soft: cssVar(CSS_VAR_NAMES.color.fill.soft),
+          medium: cssVar(CSS_VAR_NAMES.color.fill.medium),
+          strong: cssVar(CSS_VAR_NAMES.color.fill.strong),
+          shimmer: cssVar(CSS_VAR_NAMES.color.fill.shimmer),
+        },
+
+        /**
+         * Couleur de texte — remplace les 15 paliers `text-white/*`.
+         * Nommé `content` et non `text` : Tailwind génère déjà les classes
+         * `text-*` pour la couleur, un token `text` produirait
+         * `text-text-primary`. `text-content-secondary` se lit correctement.
+         */
+        content: {
+          primary: cssVar(CSS_VAR_NAMES.color.text.primary),
+          secondary: cssVar(CSS_VAR_NAMES.color.text.secondary),
+          tertiary: cssVar(CSS_VAR_NAMES.color.text.tertiary),
+          quaternary: cssVar(CSS_VAR_NAMES.color.text.quaternary),
+          disabled: cssVar(CSS_VAR_NAMES.color.text.disabled),
+        },
+
+        /** Bordures — remplace `border-white/{5,10,16,20}`. */
+        line: {
+          subtle: cssVar(CSS_VAR_NAMES.color.border.subtle),
+          strong: cssVar(CSS_VAR_NAMES.color.border.strong),
+          focus: cssVar(CSS_VAR_NAMES.color.border.focus),
+        },
+
+        /** Surfaces verre (GlassSurface). */
+        glass: {
+          tint: cssVar(CSS_VAR_NAMES.color.glass.tint),
+          "tint-strong": cssVar(CSS_VAR_NAMES.color.glass.tintStrong),
+          panel: cssVar(CSS_VAR_NAMES.color.glass.panel),
+          backdrop: cssVar(CSS_VAR_NAMES.color.glass.backdrop),
+        },
+
+        /** Texte posé sur une affiche — identique dans les deux schémas. */
+        "on-media": {
+          primary: cssVar(CSS_VAR_NAMES.color.onMedia.primary),
+          secondary: cssVar(CSS_VAR_NAMES.color.onMedia.secondary),
+        },
+
+        /** Actions destructives. */
+        danger: {
+          DEFAULT: cssVar(CSS_VAR_NAMES.color.status.error.base),
+          surface: cssVar(CSS_VAR_NAMES.color.danger.surface),
+          border: cssVar(CSS_VAR_NAMES.color.danger.border),
+        },
       },
       fontSize: {
         "display-1": [
