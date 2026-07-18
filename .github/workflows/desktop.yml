@@ -599,10 +599,14 @@ jobs:
       - name: Patch du bloc linux (version/tag/assets/sha256)
         run: |
           node .github/scripts/patch-linux-manifest.mjs "${{ needs.version.outputs.version }}" "${GITHUB_REF_NAME}" SHA256SUMS
+      - name: Patch des blocs stores (macAppStore + microsoftStore + notes linux)
+        run: |
+          node .github/scripts/patch-store-manifest.mjs "${{ needs.version.outputs.version }}"
       - name: Commit + push sur main
         run: |
           git config user.name "tentacle-bot"
           git config user.email "bot@tentacletv.app"
           git add updates/store-versions.json
-          git commit -m "chore(update): manifeste Linux ${GITHUB_REF_NAME}" || { echo "rien à committer"; exit 0; }
+          git commit -m "chore(update): manifeste stores ${GITHUB_REF_NAME}" || { echo "rien à committer"; exit 0; }
+          git pull --rebase origin main
           git push origin main
