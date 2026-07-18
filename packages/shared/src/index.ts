@@ -2,6 +2,7 @@ export * from "./types/media";
 export * from "./types/auth";
 export * from "./utils/trickplay";
 export * from "./utils/mediaQuality";
+export * from "./utils/episodeCode";
 export * from "./types/websocket";
 export * from "./types/watchTogether";
 export * from "./constants";

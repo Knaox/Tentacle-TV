@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, formatDuration } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
@@ -163,9 +163,9 @@ export function WatchWeb() {
 
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
-    ? `S${item.ParentIndexNumber}E${item.IndexNumber} — ${item.Name}` : undefined;
+    ? `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}` : undefined;
   const nextEpTitle = nextEpisode
-    ? `S${nextEpisode.ParentIndexNumber}E${nextEpisode.IndexNumber} — ${nextEpisode.Name}` : undefined;
+    ? `${formatEpisodeCode(nextEpisode.ParentIndexNumber, nextEpisode.IndexNumber, { style: "padded" })} — ${nextEpisode.Name}` : undefined;
   const nextEpisodeImageUrl = (() => {
     if (!nextEpisode?.Id) return undefined;
     const hasOwnBackdrop = (nextEpisode.BackdropImageTags?.length ?? 0) > 0;
