@@ -404,11 +404,13 @@ class ExoPlayerView(
         if (pendingTextTracks.isNotEmpty()) {
             // Toutes les pistes texte VTT chargées d'emblée → rendu natif par le
             // subtitleView, sélection via setSubtitleTrack sans re-prepare.
-            // setId(jellyfinIndex) : clé de mapping fiable (cf. sendTrackList).
+            // setId("jf:<jellyfinIndex>") : clé de mapping fiable, le préfixe la
+            // distingue des Format.id NUMÉRIQUES des pistes embarquées du
+            // conteneur (numéros de piste Matroska — cf. sendTrackList).
             // PAS de SELECTION_FLAG_DEFAULT → état initial OFF.
             builder.setSubtitleConfigurations(pendingTextTracks.map { t ->
                 MediaItem.SubtitleConfiguration.Builder(Uri.parse(t.uri))
-                    .setId(t.jellyfinIndex.toString())
+                    .setId("jf:${t.jellyfinIndex}")
                     .setMimeType(mimeForSubtitleUrl(t.uri))
                     .setLanguage(t.language.ifEmpty { null })
                     .setLabel(t.label.ifEmpty { null })
@@ -578,7 +580,9 @@ class ExoPlayerView(
                     putString("lang", info.lang); putString("title", info.title)
                     putString("codec", info.codec)
                     // nativeId = Format.id : pour les pistes texte side-loadées,
-                    // c'est le jellyfinIndex injecté via SubtitleConfiguration.setId.
+                    // c'est "jf:<jellyfinIndex>" injecté via SubtitleConfiguration
+                    // .setId ; pour les pistes EMBARQUÉES du conteneur, un id nu
+                    // (numéro de piste Matroska) — le préfixe les discrimine.
                     putString("nativeId", fmt.id ?: "")
                     putBoolean("default", info.isDefault); putBoolean("selected", info.isSelected)
                 })
