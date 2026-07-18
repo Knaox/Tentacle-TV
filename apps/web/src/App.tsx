@@ -34,6 +34,9 @@ const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.S
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const AdminInvites = lazy(() => import("./pages/AdminInvites").then((m) => ({ default: m.AdminInvites })));
 const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
+const SettingsLayout = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })));
+const SettingsAppearance = lazy(() => import("./pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));
+const SettingsSecurity = lazy(() => import("./pages/settings/SettingsSecurity").then((m) => ({ default: m.SettingsSecurity })));
 const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
 const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
 const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
@@ -218,7 +221,15 @@ export function App() {
             <Route path="favorites" element={<Favorites />} />
 
             <Route path="support" element={<Support />} />
-            <Route path="settings" element={<Preferences />} />
+            {/* Reglages en maitre-detail, meme coquille que l'admin.
+                `/settings` reste l'URL d'entree ; les sections deviennent des
+                enfants, et Securite regroupe ce qui etait disperse. */}
+            <Route path="settings" element={<SettingsLayout />}>
+              <Route index element={null} />
+              <Route path="appearance" element={<SettingsAppearance />} />
+              <Route path="security" element={<SettingsSecurity />} />
+              <Route path="playback" element={<Preferences />} />
+            </Route>
             <Route path="profile" element={<MobileProfile />} />
             <Route path="pair-device" element={<PairDevice />} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
