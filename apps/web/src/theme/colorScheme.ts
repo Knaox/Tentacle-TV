@@ -112,3 +112,16 @@ export function subscribe(listener: () => void): () => void {
 export function syncFromDocument(): void {
   applyToDocument(scheme);
 }
+
+/**
+ * Retire le fond opaque pose en ligne par le script d'amorcage de `index.html`.
+ *
+ * Ce fond existe pour qu'une fenetre Tauri `transparent: true` ne laisse pas
+ * voir le bureau avant que la feuille de style ne soit appliquee. Une fois
+ * l'app montee, le CSS prend le relais via `--surface-0` : on doit liberer le
+ * style inline, sinon il FIGERAIT le fond et neutraliserait a la fois la
+ * bascule clair/sombre et la surcharge de surface de l'admin.
+ */
+export function releaseBootBackground(): void {
+  document.documentElement.style.background = "";
+}

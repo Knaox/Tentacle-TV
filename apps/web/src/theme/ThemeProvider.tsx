@@ -1,7 +1,7 @@
 import { createContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { applyTokenOverride, clearTokenOverride } from "./applyTokens";
-import { syncFromDocument } from "./colorScheme";
+import { releaseBootBackground, syncFromDocument } from "./colorScheme";
 import { CustomCssInjector } from "./CustomCssInjector";
 import { fetchThemeState } from "./themeApi";
 import { useThemeMode } from "./useThemeMode";
@@ -74,9 +74,11 @@ export function ThemeProvider({ backendUrl, children }: ThemeProviderProps) {
     refetchOnWindowFocus: true,
   });
 
-  // Resynchronise l'attribut posé par le script d'amorçage de `index.html`.
+  // Resynchronise l'attribut posé par le script d'amorçage de `index.html`, et
+  // rend la main au CSS pour le fond (voir `releaseBootBackground`).
   useEffect(() => {
     syncFromDocument();
+    releaseBootBackground();
   }, []);
 
   // Dépend AUSSI de `scheme` : l'override admin est partitionné par affinité de
