@@ -1,44 +1,44 @@
 {
   "$comment": "Source de vérité des versions publiées sur les stores desktop, lue par l'app (apps/web/src/lib/storeVersions.ts) via raw.githubusercontent.com. MAINTENU AUTOMATIQUEMENT par le job « manifest » de desktop.yml à chaque tag desktop-v* (.github/scripts/patch-store-manifest.mjs : version + notes FR/EN depuis changelogs/desktop.md ; patch-linux-manifest.mjs : assets linux). Les APIs stores ne sont pas fiables (iTunes Lookup ignore la fiche macOS d'une app en achat universel, WinRT n'expose pas la version d'une MAJ MSIX). Repli manuel si la CI échoue : node .github/scripts/patch-store-manifest.mjs <version>.",
   "macAppStore": {
-    "version": "1.12.2",
+    "version": "1.13.0",
     "appId": "6760205634",
     "notes": {
-      "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
-      "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
+      "fr": "• Lecture : les sous-titres s'affichent de nouveau pendant le transcodage, avec leur mise en forme complète (identique à la lecture directe)\n• Watch Together : le chat ne disparaît plus pendant qu'on l'utilise — survol, saisie, émojis en rafale, défilement des GIFs et redimensionnement le gardent visible ; sans interaction, il s'estompe avec les contrôles comme avant\n• macOS : « Ouvrir l'App Store » ouvre désormais la fiche Tentacle TV sans fermer l'application — cliquez sur « Mettre à jour » dans l'App Store, il s'occupe du reste\n• Windows : les nouveautés s'affichent enfin dans la fenêtre de mise à jour, comme sur macOS et Linux\n• La fenêtre de mise à jour suit le thème de l'application (bouton principal blanc)\n• Les descriptions de films, séries et épisodes interprètent leur mise en forme (gras, italique, retours à la ligne) au lieu d'afficher le code brut\n• Bannière d'accueil : bouton « Reprendre S2 · E5 » compact (numéro de saison/épisode sur le bouton, plus de titre d'épisode qui déborde) — harmonisé sur toutes les fiches",
+      "en": "• Playback: subtitles show up again while transcoding, with their full styling (identical to direct play)\n• Watch Together: the chat no longer vanishes while you're using it — hovering, typing, rapid-fire emojis, GIF scrolling and resizing keep it visible; when idle it still fades with the controls\n• macOS: \"Open the App Store\" now opens the Tentacle TV page without closing the app — click \"Update\" in the App Store and it handles the rest\n• Windows: release notes finally show in the update window, just like on macOS and Linux\n• The update window follows the app theme (white primary button)\n• Movie, series and episode descriptions render their formatting (bold, italics, line breaks) instead of showing raw markup\n• Home banner: compact \"Resume S2 · E5\" button (season/episode number on the button, no more overflowing episode title) — harmonized across all detail pages"
     }
   },
   "microsoftStore": {
-    "version": "1.12.2",
+    "version": "1.13.0",
     "notes": {
-      "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
-      "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
+      "fr": "• Lecture : les sous-titres s'affichent de nouveau pendant le transcodage, avec leur mise en forme complète (identique à la lecture directe)\n• Watch Together : le chat ne disparaît plus pendant qu'on l'utilise — survol, saisie, émojis en rafale, défilement des GIFs et redimensionnement le gardent visible ; sans interaction, il s'estompe avec les contrôles comme avant\n• macOS : « Ouvrir l'App Store » ouvre désormais la fiche Tentacle TV sans fermer l'application — cliquez sur « Mettre à jour » dans l'App Store, il s'occupe du reste\n• Windows : les nouveautés s'affichent enfin dans la fenêtre de mise à jour, comme sur macOS et Linux\n• La fenêtre de mise à jour suit le thème de l'application (bouton principal blanc)\n• Les descriptions de films, séries et épisodes interprètent leur mise en forme (gras, italique, retours à la ligne) au lieu d'afficher le code brut\n• Bannière d'accueil : bouton « Reprendre S2 · E5 » compact (numéro de saison/épisode sur le bouton, plus de titre d'épisode qui déborde) — harmonisé sur toutes les fiches",
+      "en": "• Playback: subtitles show up again while transcoding, with their full styling (identical to direct play)\n• Watch Together: the chat no longer vanishes while you're using it — hovering, typing, rapid-fire emojis, GIF scrolling and resizing keep it visible; when idle it still fades with the controls\n• macOS: \"Open the App Store\" now opens the Tentacle TV page without closing the app — click \"Update\" in the App Store and it handles the rest\n• Windows: release notes finally show in the update window, just like on macOS and Linux\n• The update window follows the app theme (white primary button)\n• Movie, series and episode descriptions render their formatting (bold, italics, line breaks) instead of showing raw markup\n• Home banner: compact \"Resume S2 · E5\" button (season/episode number on the button, no more overflowing episode title) — harmonized across all detail pages"
     }
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.12.2",
-    "tag": "desktop-v1.12.2-r1",
+    "version": "1.13.0",
+    "tag": "desktop-v1.13.0",
     "notes": {
-      "fr": "• Watch Together : nouveau sélecteur de réactions dans le chat — ~470 emojis en 8 catégories, envoi en un clic, spam bienvenu (le sélecteur reste ouvert)\n• Watch Together : GIFs dans le chat (recherche + tendances, propulsés par KLIPY) — un clic et le GIF s'anime à l'écran pour tout le groupe (nécessite un serveur 1.6.0+)\n• Watch Together : panneau de chat redimensionnable (poignée en haut à gauche, taille mémorisée)\n• Windows : correction d'un gel de l'application pendant la lecture (interblocage du moteur vidéo)\n• À propos : la version affichée pouvait rester bloquée sur un numéro antérieur (Windows et développement) — corrigé",
-      "en": "• Watch Together: new reaction picker in the chat — ~470 emojis across 8 categories, one-click send, spam-friendly (the picker stays open)\n• Watch Together: GIFs in the chat (search + trending, powered by KLIPY) — one click and the GIF animates on screen for the whole group (requires a 1.6.0+ server)\n• Watch Together: resizable chat panel (top-left handle, size remembered)\n• Windows: fixed an application freeze during playback (video engine deadlock)\n• About: the displayed version could stay stuck on an older number (Windows and development builds) — fixed"
+      "fr": "• Lecture : les sous-titres s'affichent de nouveau pendant le transcodage, avec leur mise en forme complète (identique à la lecture directe)\n• Watch Together : le chat ne disparaît plus pendant qu'on l'utilise — survol, saisie, émojis en rafale, défilement des GIFs et redimensionnement le gardent visible ; sans interaction, il s'estompe avec les contrôles comme avant\n• macOS : « Ouvrir l'App Store » ouvre désormais la fiche Tentacle TV sans fermer l'application — cliquez sur « Mettre à jour » dans l'App Store, il s'occupe du reste\n• Windows : les nouveautés s'affichent enfin dans la fenêtre de mise à jour, comme sur macOS et Linux\n• La fenêtre de mise à jour suit le thème de l'application (bouton principal blanc)\n• Les descriptions de films, séries et épisodes interprètent leur mise en forme (gras, italique, retours à la ligne) au lieu d'afficher le code brut\n• Bannière d'accueil : bouton « Reprendre S2 · E5 » compact (numéro de saison/épisode sur le bouton, plus de titre d'épisode qui déborde) — harmonisé sur toutes les fiches",
+      "en": "• Playback: subtitles show up again while transcoding, with their full styling (identical to direct play)\n• Watch Together: the chat no longer vanishes while you're using it — hovering, typing, rapid-fire emojis, GIF scrolling and resizing keep it visible; when idle it still fades with the controls\n• macOS: \"Open the App Store\" now opens the Tentacle TV page without closing the app — click \"Update\" in the App Store and it handles the rest\n• Windows: release notes finally show in the update window, just like on macOS and Linux\n• The update window follows the app theme (white primary button)\n• Movie, series and episode descriptions render their formatting (bold, italics, line breaks) instead of showing raw markup\n• Home banner: compact \"Resume S2 · E5\" button (season/episode number on the button, no more overflowing episode title) — harmonized across all detail pages"
     },
     "assets": {
       "appimage": {
-        "name": "Tentacle.TV_1.12.2_amd64.AppImage",
-        "sha256": "b8ac0f36a989f550e6f8f10ddd643f4ad6eccec8cd70effa2ede976fda576890"
+        "name": "Tentacle.TV_1.13.0_amd64.AppImage",
+        "sha256": "432becdade62814d814fef238d59ad52622c83de8cff22817d2e2636cad36327"
       },
       "deb": {
-        "name": "Tentacle.TV_1.12.2_amd64.deb",
-        "sha256": "4d3e2d5e2ad7d2a0e4ce9faa98a5e383525e831fcbf92953f2bf6315766bdfdb"
+        "name": "Tentacle.TV_1.13.0_amd64.deb",
+        "sha256": "d11e684455956e8ff23b5d845587aade7717a084b4bd86ce6e4a9712f46fa646"
       },
       "rpm": {
-        "name": "Tentacle.TV-1.12.2-1.x86_64.rpm",
-        "sha256": "2cd25b0af17eae3f9ef6880289287e110359c1eb8f5cfccf1646c76fccf9c4d2"
+        "name": "Tentacle.TV-1.13.0-1.x86_64.rpm",
+        "sha256": "6e10fb03931cac7a05c563ff9316e0aa63da66570bfebb56eb2582eaeff54860"
       },
       "pacman": {
-        "name": "tentacle-tv-1.12.2-1-x86_64.pkg.tar.zst",
-        "sha256": "6e51c2e06f041802ca229834ec2f752a188b092ac89b4b90df2f2e7b81341f5f"
+        "name": "tentacle-tv-1.13.0-1-x86_64.pkg.tar.zst",
+        "sha256": "eac3c75a5cd50e815a43ea6cf513ff8f2fbc6e32dd62d46d8578fec08a9bc967"
       }
     }
   }
