@@ -41,3 +41,22 @@ export function useReportPlayerOverlay(controlsVisible: boolean): void {
   }, [controlsVisible]);
   useEffect(() => () => emit({ onWatchPage: false, controlsVisible: true }), []);
 }
+
+// ── Canal inverse : activité du chat → timer d'auto-masquage du lecteur ──
+// Le chat vit dans un portail HORS du conteneur vidéo : ses événements
+// n'atteignent jamais le onMouseMove du lecteur. ChatOverlay publie ici son
+// état « interaction en cours » (survol, saisie, gestes, resize) ; le timer
+// des lecteurs le lit de façon synchrone avant de masquer les contrôles —
+// le chat, lui, suit STRICTEMENT le fondu des contrôles (jamais de visibilité
+// indépendante).
+let chatActive = false;
+
+/** Publié par ChatOverlay (remis à false à son démontage). */
+export function reportChatActivity(active: boolean): void {
+  chatActive = active;
+}
+
+/** Lu par les timers d'auto-masquage (VideoPlayer / DesktopPlayer). */
+export function isChatActive(): boolean {
+  return chatActive;
+}

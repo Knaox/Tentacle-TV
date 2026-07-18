@@ -12,6 +12,7 @@ import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
+import { isChatActive } from "../watchTogether/chat/chatUiStore";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
@@ -134,7 +135,15 @@ export function VideoPlayer({
   const scheduleHide = useCallback(() => {
     clearTimeout(hideTimer.current);
     setShowControls(true);
-    hideTimer.current = setTimeout(() => { if (playing) setShowControls(false); }, 3000);
+    // Watch Together : jamais de masquage pendant une interaction avec le chat
+    // (portail hors conteneur — ses événements n'atteignent pas ce onMouseMove).
+    // Re-vérifie chaque seconde ; à la fin de l'interaction, contrôles ET chat
+    // s'estompent ensemble.
+    const attemptHide = () => {
+      if (isChatActive()) { hideTimer.current = setTimeout(attemptHide, 1000); return; }
+      if (playing) setShowControls(false);
+    };
+    hideTimer.current = setTimeout(attemptHide, 3000);
   }, [playing]);
 
   useNativeMediaTracks({ videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay });

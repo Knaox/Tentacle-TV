@@ -11,6 +11,7 @@ import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
+import { isChatActive } from "../watchTogether/chat/chatUiStore";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
@@ -142,9 +143,15 @@ export function DesktopPlayer({
   const scheduleHide = useCallback(() => {
     clearTimeout(hideTimer.current);
     setShowControls(true);
-    hideTimer.current = setTimeout(() => {
+    // Watch Together : jamais de masquage pendant une interaction avec le chat
+    // (portail hors conteneur — ses événements n'atteignent pas ce onMouseMove).
+    // Re-vérifie chaque seconde ; à la fin de l'interaction, contrôles ET chat
+    // s'estompent ensemble.
+    const attemptHide = () => {
+      if (isChatActive()) { hideTimer.current = setTimeout(attemptHide, 1000); return; }
       if (!state.paused) setShowControls(false);
-    }, 3000);
+    };
+    hideTimer.current = setTimeout(attemptHide, 3000);
   }, [state.paused]);
 
   // Contrôles média système Windows (SMTC) : touches média + overlay + Stream Deck.
