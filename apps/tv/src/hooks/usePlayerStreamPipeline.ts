@@ -46,7 +46,7 @@ export function usePlayerStreamPipeline(args: {
     controlsCurrentTimeRef, deadSessionRef, endedRef, handleEndRef, sessionStartRef,
     setDisplayTime, setVideoError, setPauseFrameUri, capturePauseFrame,
     reloadHoldRef, holdForReload,
-    isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef,
+    isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef, subtitleTrackMapRef,
     notifySeekRef, checkTriggerRef, setAudioIndexRef, setSubtitleIndexRef,
     resetPrefsAppliedRef, resetLoadedRef,
   } = s;
@@ -90,7 +90,7 @@ export function usePlayerStreamPipeline(args: {
   setAudioIndexRef.current = setAudioIndex;
 
   const subtitle = useTVSubtitleControl({
-    streams, isDirectPlayRef,
+    streams, isDirectPlayRef, subtitleTrackMapRef,
     positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks,
   });
   const { subtitleIndex, setSubtitleIndex, handleSubtitleChange } = subtitle;
@@ -181,6 +181,7 @@ export function usePlayerStreamPipeline(args: {
     isDirectPlay, itemId, mediaSourceId,
   });
   mpvTrackMapRef.current = mpvTracks.mpvTrackMap;
+  subtitleTrackMapRef.current = mpvTracks.subtitleTrackMap;
 
   const { handleSeek } = useTVSeekControl({
     jellyfinDuration, playerRef, paused,

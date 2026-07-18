@@ -58,6 +58,9 @@ export function usePlayerMediaState() {
   const isDirectPlayRef = useRef(false);
   const isLocalRemuxRef = useRef(false);
   const mpvTrackMapRef = useRef<Record<number, number>>({});
+  // jellyfinIndex sous-titre → id de piste native ExoPlayer (side-loadées +
+  // embarquées) — lu au CLIC par handleSubtitleChange (bascule native vs burn-in).
+  const subtitleTrackMapRef = useRef<Record<number, number>>({});
   // notifySeek/checkTrigger : remplis après useTVPlayerEventHandlers.
   const notifySeekRef = useRef<(target: number, windowMs?: number, afterReload?: boolean) => void>(() => {});
   const checkTriggerRef = useRef<(seconds: number) => void>(() => {});
@@ -80,7 +83,7 @@ export function usePlayerMediaState() {
     pauseFrameUri, setPauseFrameUri, capturePauseFrame,
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
     reloadHold, reloadHoldRef, holdForReload,
-    isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef,
+    isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef, subtitleTrackMapRef,
     notifySeekRef, checkTriggerRef, setAudioIndexRef, setSubtitleIndexRef,
     resetPrefsAppliedRef, resetLoadedRef, sessionStartRef, routeBackRef,
   };
