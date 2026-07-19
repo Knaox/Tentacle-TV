@@ -50,7 +50,7 @@ export function MarketplaceTab() {
                   {updateMut.isPending ? "..." : t("adminPlugins:update")}
                 </button>
               ) : (
-                <span className="flex-shrink-0 rounded-lg bg-fill-subtle px-3 py-1.5 text-xs text-content-quaternary">
+                <span className="flex-shrink-0 rounded-lg bg-fill-subtle px-3 py-1.5 text-xs text-content-tertiary">
                   {t("adminPlugins:installed")}
                 </span>
               )
