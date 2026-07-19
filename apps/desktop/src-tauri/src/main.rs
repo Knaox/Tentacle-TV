@@ -70,7 +70,16 @@ fn main() {
     // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        // Sélecteur de dossier natif (emplacement des téléchargements) —
+        // masqué côté UI sur le build Mac App Store (pas d'entitlement fichiers).
+        .plugin(tauri_plugin_dialog::init())
+        // Cache de la racine de téléchargements + protocole local (affiches,
+        // méta, sous-titres servis à la webview depuis le disque).
+        .manage(downloads::fsops::RootCache::default())
+        .register_uri_scheme_protocol("tentacle-local", |ctx, request| {
+            downloads::protocol::handle(ctx.app_handle(), request)
+        });
 
     // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : depuis un thread dédié, mesure
     // séparément la réactivité du thread UI et du thread fenêtre de mpv pendant un gel.
