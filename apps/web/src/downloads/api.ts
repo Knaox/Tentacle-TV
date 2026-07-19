@@ -97,6 +97,12 @@ export interface DownloadEntry {
   autoDeleteAfterWatch: boolean;
 }
 
+export interface SubtitleSideCarInput {
+  index: number;
+  format: "srt" | "ass" | "vtt";
+  langTag: string;
+}
+
 export interface EnqueueItemInput {
   itemId: string;
   mediaSourceId: string;
@@ -113,6 +119,9 @@ export interface EnqueueItemInput {
   title?: string;
   seriesName?: string;
   autoDeleteAfterWatch: boolean;
+  audioStreamIndex?: number;
+  burnSubtitleIndex?: number;
+  subtitles?: SubtitleSideCarInput[];
 }
 
 export interface EnqueueOutcome {

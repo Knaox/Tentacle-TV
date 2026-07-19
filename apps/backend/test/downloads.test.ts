@@ -75,11 +75,23 @@ function tokenFromHeaders(headers: Headers): string | null {
   return match ? match[1] : null;
 }
 
+/** Dernière URL de stream Allégé reçue par le faux Jellyfin (assertions). */
+let lastStreamUrl = "";
+
 function fakeJellyfin(input: RequestInfo | URL, init?: RequestInit): Response {
   const url = String(input);
   const headers = new Headers(init?.headers);
   const token = tokenFromHeaders(headers);
   const policy = token ? POLICIES[token] : undefined;
+
+  if (url.includes("/stream.mp4")) {
+    if (!policy) return new Response("", { status: 401 });
+    lastStreamUrl = url;
+    return new Response("LIGHTDATA", {
+      status: 200,
+      headers: { "content-type": "video/mp4" },
+    });
+  }
 
   if (url.includes("/Users/Me")) {
     if (!policy) return new Response("", { status: 401 });
@@ -240,6 +252,56 @@ describe("GET /api/downloads/original/:itemId", () => {
     const app = await buildApp();
     const res = await app.inject({
       url: "/api/downloads/original/..%2Fadmin",
+      headers: { authorization: "Bearer tok-full" },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+describe("GET /api/downloads/light/:itemId", () => {
+  it("avec droit → 200 fMP4, session de transcodage exposée, paramètres corrects", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p720&audioStreamIndex=2`,
+      headers: { authorization: "Bearer tok-full" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toBe("LIGHTDATA");
+    expect(res.headers["x-tentacle-play-session"]).toBeTruthy();
+    expect(res.headers["x-tentacle-device-id"]).toContain("tentacle-dl-");
+    expect(lastStreamUrl).toContain("static=false");
+    expect(lastStreamUrl).toContain("videoCodec=h264");
+    expect(lastStreamUrl).toContain("videoBitRate=4000000");
+    expect(lastStreamUrl).toContain("maxHeight=720");
+    expect(lastStreamUrl).toContain("audioStreamIndex=2");
+    expect(lastStreamUrl).not.toContain("subtitleMethod");
+  });
+
+  it("burn-in demandé → subtitleStreamIndex + subtitleMethod=Encode transmis", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p480&burnSubtitleIndex=5`,
+      headers: { authorization: "Bearer tok-full" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(lastStreamUrl).toContain("subtitleStreamIndex=5");
+    expect(lastStreamUrl).toContain("subtitleMethod=Encode");
+  });
+
+  it("sans droit de conversion → 404 générique (même avec droit de téléchargement)", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p720`,
+      headers: { authorization: "Bearer tok-noconv" },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual({ error: "Not found" });
+  });
+
+  it("preset inconnu → 404 générique", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p4000`,
       headers: { authorization: "Bearer tok-full" },
     });
     expect(res.statusCode).toBe(404);

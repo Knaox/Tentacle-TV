@@ -255,12 +255,22 @@ fn run_worker(
         return transfer::TransferEnd::Failed { code: "io", bytes_done: file.bytes_done };
     };
 
+    let agent = ureq::AgentBuilder::new()
+        .timeout(std::time::Duration::from_secs(20))
+        .build();
     if !meta::snapshot_exists(&root, &file.item_id) {
         if let Ok(Some(spec)) = meta::get_spec(&conn, &file.item_id) {
-            let agent = ureq::AgentBuilder::new()
-                .timeout(std::time::Duration::from_secs(20))
-                .build();
             let _ = meta::snapshot(&agent, &creds.server_url, &creds.token, &root, &conn, &spec);
+        }
+    }
+    // Sous-titres texte en side-cars (les deux variantes) — best-effort.
+    if let Some(json) = &file.subtitles_json {
+        let specs = super::subs::parse_specs(json);
+        if !specs.is_empty() {
+            let _ = super::subs::fetch_all(
+                &agent, &creds.server_url, &creds.token, &root,
+                &file.item_id, &file.media_source_id, &specs,
+            );
         }
     }
 
@@ -272,9 +282,21 @@ fn run_worker(
             "{}/api/downloads/original/{}?mediaSourceId={}",
             creds.server_url, file.item_id, file.media_source_id
         ),
-        // Variante Allégé branchée en phase 6 (route /api/downloads/light).
         _ => {
-            return transfer::TransferEnd::Failed { code: "unavailable", bytes_done: 0 };
+            let mut light_url = format!(
+                "{}/api/downloads/light/{}?mediaSourceId={}&preset={}",
+                creds.server_url,
+                file.item_id,
+                file.media_source_id,
+                file.preset.as_deref().unwrap_or("p720")
+            );
+            if let Some(audio) = file.audio_stream_index {
+                light_url.push_str(&format!("&audioStreamIndex={audio}"));
+            }
+            if let Some(burn) = file.burn_subtitle_index {
+                light_url.push_str(&format!("&burnSubtitleIndex={burn}"));
+            }
+            light_url
         }
     };
     let job = transfer::TransferJob {
@@ -283,6 +305,7 @@ fn run_worker(
         final_path,
         variant: file.variant.clone(),
         expected_size: file.expected_size,
+        server_url: creds.server_url.clone(),
     };
     let app_for_events = app.clone();
     let file_id = file.id;

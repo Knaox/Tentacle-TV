@@ -23,6 +23,11 @@ pub struct FileRow {
     pub bytes_done: i64,
     pub status: String,
     pub error_code: Option<String>,
+    pub audio_stream_index: Option<i64>,
+    pub burn_subtitle_index: Option<i64>,
+    /// Liste JSON des sous-titres texte à récupérer en side-cars (subs.rs).
+    #[serde(skip_serializing)]
+    pub subtitles_json: Option<String>,
 }
 
 pub(super) fn map_file_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FileRow> {
@@ -37,13 +42,34 @@ pub(super) fn map_file_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FileRow>
         bytes_done: row.get(7)?,
         status: row.get(8)?,
         error_code: row.get(9)?,
+        audio_stream_index: row.get(10)?,
+        burn_subtitle_index: row.get(11)?,
+        subtitles_json: row.get(12)?,
     })
 }
 
 /// Colonnes préfixées `files.` — les requêtes joignent `claims`.
 pub(super) const FILE_COLS: &str =
     "files.id, files.item_id, files.media_source_id, files.variant, files.preset, \
-     files.rel_path, files.expected_size, files.bytes_done, files.status, files.error_code";
+     files.rel_path, files.expected_size, files.bytes_done, files.status, files.error_code, \
+     files.audio_stream_index, files.burn_subtitle_index, files.subtitles_json";
+
+/// Paramètres du mode Allégé + side-cars, posés à l'enqueue (idempotent).
+pub fn set_light_params(
+    conn: &Connection,
+    file_id: i64,
+    audio_stream_index: Option<i64>,
+    burn_subtitle_index: Option<i64>,
+    subtitles_json: Option<&str>,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE files SET audio_stream_index = ?2, burn_subtitle_index = ?3,
+         subtitles_json = ?4 WHERE id = ?1",
+        params![file_id, audio_stream_index, burn_subtitle_index, subtitles_json],
+    )
+    .map_err(|e| format!("set light params: {e}"))?;
+    Ok(())
+}
 
 /// Fichier existant pour une identité (item, source, variante, preset) ?
 pub fn find_file(
