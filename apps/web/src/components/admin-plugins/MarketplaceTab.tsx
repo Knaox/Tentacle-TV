@@ -31,8 +31,8 @@ export function MarketplaceTab() {
           <div className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-white">{p.name}</span>
-                <span className="text-xs text-white/40">v{p.version}</span>
+                <span className="text-sm font-medium text-content-primary">{p.name}</span>
+                <span className="text-xs text-content-quaternary">v{p.version}</span>
                 {p.official && (
                   <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-xs text-[var(--brand-light)]">
                     {t("adminPlugins:official")}
@@ -50,7 +50,7 @@ export function MarketplaceTab() {
                   {updateMut.isPending ? "..." : t("adminPlugins:update")}
                 </button>
               ) : (
-                <span className="flex-shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/40">
+                <span className="flex-shrink-0 rounded-lg bg-fill-subtle px-3 py-1.5 text-xs text-content-quaternary">
                   {t("adminPlugins:installed")}
                 </span>
               )
@@ -64,15 +64,15 @@ export function MarketplaceTab() {
               </button>
             )}
           </div>
-          <p className="text-xs text-white/50 line-clamp-2">{p.description}</p>
-          <div className="mt-2 flex items-center gap-3 text-xs text-white/30">
+          <p className="text-xs text-content-tertiary line-clamp-2">{p.description}</p>
+          <div className="mt-2 flex items-center gap-3 text-xs text-content-quaternary">
             <span>{t("adminPlugins:byAuthor", { author: p.author })}</span>
             {p.sourceName && <span>{p.sourceName}</span>}
           </div>
           {p.tags && p.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {p.tags.map((tag) => (
-                <span key={tag} className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/30">
+                <span key={tag} className="rounded bg-fill-subtle px-2 py-0.5 text-xs text-content-quaternary">
                   {tag}
                 </span>
               ))}
