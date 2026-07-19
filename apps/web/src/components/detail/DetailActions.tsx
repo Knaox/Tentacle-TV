@@ -13,6 +13,7 @@ import {
 import { formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
+import { PressableScale } from "../ui/PressableScale";
 import { TrailerButton } from "./TrailerButton";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { InviteUsersModal } from "../../watchTogether/InviteUsersModal";
@@ -81,15 +82,14 @@ export function DetailActions({ item }: DetailActionsProps) {
   return (
     <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center gap-3">
       {playLabel && (
-        <motion.button
-          type="button"
+        <PressableScale
+          hoverScale={1.04}
+          tapScale={0.97}
           onClick={handlePlay}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
           className="flex items-center gap-2.5 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
         >
           <PlayIcon /> {playLabel}
-        </motion.button>
+        </PressableScale>
       )}
 
       <TrailerButton item={item} />
@@ -168,18 +168,19 @@ function CircleAction({
   icon: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <PressableScale
+      hoverScale={1.06}
+      tapScale={0.94}
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all hover:bg-fill-medium ${
+      className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors hover:bg-fill-medium ${
         active
           ? "border-content-primary bg-fill-medium text-content-primary"
           : "border-line-strong text-content-secondary"
       }`}
     >
       {icon}
-    </button>
+    </PressableScale>
   );
 }

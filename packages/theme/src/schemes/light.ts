@@ -123,6 +123,8 @@ export function buildLightPalette(): ThemePalette {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.80)",
       shadow: "rgba(0, 0, 0, 0.7)",
+      scrimRgb: "0, 0, 0",
+      muted: "rgba(255, 255, 255, 0.30)",
     },
     shadow: {
       card: { shadowColor: "#0B0B10", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 24, elevation: 3 },

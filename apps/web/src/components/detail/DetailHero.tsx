@@ -44,18 +44,21 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
         />
       )}
 
-      {/* Pile de degrades — chaines completes dans index.css
-          (`--detail-scrim-*`), geometrie distincte par schema : en clair la
-          couture basse porte la lisibilite du bloc titre, l'affiche au-dessus
-          reste quasi propre. En sombre, valeurs historiques inchangees. */}
-      {/* Flou progressif vertical (clair uniquement) — cf. index.css .detail-glass */}
-      <div className="detail-glass detail-glass-1 absolute inset-x-0 bottom-0 h-[70%]" />
-      <div className="detail-glass detail-glass-2 absolute inset-x-0 bottom-0 h-[70%]" />
-      <div className="detail-glass detail-glass-3 absolute inset-x-0 bottom-0 h-[70%]" />
+      {/* Pile de degrades — chaines completes dans theme/scrims.css
+          (`--detail-scrim-*`) : assise NOIRE constante sous le bloc titre
+          on-media dans les DEUX schemas (recette mobile, image vive — plus de
+          flou ni de voile clair). Seul le voile haut suit le theme. */}
       <div className="absolute inset-0" style={{ background: "var(--detail-scrim-left)" }} />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{ background: "var(--detail-scrim-bottom)" }}
+      />
+      {/* Raccord bas vers la page — `none` en sombre, fondu opaque a 55 % du
+          calque en clair (la meta themee sous le titre repose sur la page). */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[16%]"
+        style={{ background: "var(--detail-page-fade)" }}
+        aria-hidden
       />
       <div
         className="absolute inset-x-0 top-0 h-32"

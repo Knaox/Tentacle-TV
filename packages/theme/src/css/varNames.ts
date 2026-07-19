@@ -127,6 +127,8 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       primary: "--on-media-primary",
       secondary: "--on-media-secondary",
       shadow: "--on-media-shadow",
+      scrimRgb: "--scrim-media-rgb",
+      muted: "--on-media-muted",
     },
     danger: {
       surface: "--danger-surface",

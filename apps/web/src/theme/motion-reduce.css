@@ -1,0 +1,37 @@
+/* Politique `prefers-reduced-motion` — regroupée ici (source unique).
+ * Trois niveaux : neutralisation des animations/transitions globales,
+ * mise à zéro des tokens de durée, et cas particulier Liquid Glass. */
+
+/* Kill global : toute animation/transition devient imperceptible. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Tokens de durée à zéro — les consommateurs JS (framer, hover preview)
+ * lisent ces variables et suivent donc la préférence sans code dédié. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-page: 0ms;
+    --hover-delay: 0ms;
+    --hover-scale: 1;
+  }
+}
+
+/* Liquid Glass — neutralise la réfraction sous `prefers-reduced-motion`.
+ * Le displacement SVG se recalcule au scroll et au redimensionnement : c'est du
+ * mouvement, même sans animation déclarée. On garde le flou et le liseré, qui
+ * ne bougent pas, et on retire la seule partie qui réagit au défilement. */
+@media (prefers-reduced-motion: reduce) {
+  [style*="tentacle-glass-refract"] {
+    backdrop-filter: blur(var(--blur-sheet)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--blur-sheet)) saturate(180%) !important;
+  }
+}

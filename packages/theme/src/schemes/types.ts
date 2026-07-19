@@ -145,6 +145,10 @@ export interface ThemePalette {
     secondary: string;
     /** Couleur du textShadow (voile sombre porté par le texte). */
     shadow: string;
+    /** Triplet RGB de l'assise des scrims sur média (`rgba(var(...), α)`) — noir constant. */
+    scrimRgb: string;
+    /** Surfaces discrètes posées sur média (tracks, bordures de chip, indicateurs inactifs). */
+    muted: string;
   };
   /**
    * Ombres portées des surfaces verre / cartes. Douces en clair pour que les

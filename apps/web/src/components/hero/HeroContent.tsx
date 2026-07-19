@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -8,6 +9,8 @@ import { PlayIcon, StarIcon } from "../icons/HeroIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { RichOverview } from "../../lib/overviewHtml";
 import { LanguagePill, QualityChips, hasQualityChips, soberMetaText } from "../media/MetaChips";
+import { PressableScale } from "../ui/PressableScale";
+import { fadeUp, stagger } from "../../theme/motion";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -21,6 +24,7 @@ interface HeroContentProps {
 export function HeroContent({ item, animationKey }: HeroContentProps) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
+  const reduced = useReducedMotion();
   const client = useJellyfinClient();
   const { data: watchState } = useSeriesWatchState(item.Type === "Series" ? item.Id : undefined);
 
@@ -60,46 +64,55 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
     }
   };
 
-  // Ce bloc est superposé au backdrop, MAIS il ne repose jamais sur l'image
-  // nue : HeroBackdrop l'adosse à ses voiles `--scrim-page-rgb`, qui suivent le
-  // schéma (noirs en sombre, nacrés en clair). Le texte suit donc AUSSI le
-  // schéma — en sombre le rendu est identique à l'historique (content-* =
-  // blancs), en clair il devient foncé sur voile nacré, façon Apple TV. La
-  // règle « posé sur média » (blanc constant) ne s'applique qu'au texte posé
-  // sur l'image SANS voile thémé : badges d'angle, contrôles du lecteur.
+  // Ce bloc repose sur les scrims NOIRS constants de HeroBackdrop
+  // (`--scrim-media-rgb`, cf. theme/scrims.css) : le texte est donc en tokens
+  // `on-media-*` (blanc constant + ombre noire) dans les DEUX schémas —
+  // recette mobile, règle « posé sur média ». Même sur une affiche claire,
+  // blanc sur scrim 49-70 % tient le contraste. Le texte thémé ne reprend
+  // que SOUS la bannière (fond de page).
+  // Entrée en cascade (mini-tag → titre → méta → synopsis → progression →
+  // CTA, ~40 ms d'écart) rejouée à chaque slide via `key={animationKey}`.
+  // Sous reduced-motion, variants absents → contenu affiché sans animation.
+  const groupVariants = reduced ? undefined : stagger(0.05, 0.04);
+  const itemVariants = reduced ? undefined : fadeUp;
+
   return (
     <div className="absolute inset-x-0 bottom-[15%] z-10 px-4 sm:px-8 md:bottom-[18%] md:px-14 lg:bottom-[20%]">
-      <div
+      <motion.div
         key={animationKey}
         className="max-w-xl"
-        style={{ animation: "fadeSlideUp 0.7s var(--ease-out, ease-out) both" }}
+        variants={groupVariants}
+        initial="hidden"
+        animate="show"
       >
         {/* Mini-tag row above the title */}
         {(hasProgress || episodeSoberMeta) && (
-          <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em]">
+          <motion.div variants={itemVariants} className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em]">
             {hasProgress && (
-              <span className="text-content-secondary">
-                <span className="text-content-primary">▶</span> {t("common:continueLabel")}
+              <span className="text-on-media-secondary">
+                <span className="text-on-media-primary">▶</span> {t("common:continueLabel")}
               </span>
             )}
             {episodeSoberMeta && (
-              <span className="text-content-quaternary tracking-[0.12em]">{episodeSoberMeta}</span>
+              <span className="text-on-media-secondary tracking-[0.12em]">{episodeSoberMeta}</span>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Logo / Title — bornés à la colonne hero (max-w-xl du parent) pour
             ne jamais déborder vers les flèches du carrousel à droite. */}
         {logoUrl ? (
-          <img
+          <motion.img
+            variants={itemVariants}
             src={logoUrl}
             alt={displayName}
-            className="mb-4 h-20 max-w-[440px] object-contain object-left drop-shadow-[0_4px_24px_var(--surface-overlay)] md:h-28 lg:h-32"
+            className="mb-4 h-20 max-w-[440px] object-contain object-left drop-shadow-[0_4px_24px_var(--on-media-shadow)] md:h-28 lg:h-32"
             draggable={false}
           />
         ) : (
-          <h1
-            className="mb-4 font-bold text-content-primary drop-shadow-[0_4px_24px_var(--hero-text-shadow)] line-clamp-2 break-words tracking-tight"
+          <motion.h1
+            variants={itemVariants}
+            className="mb-4 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words tracking-tight"
             style={{
               fontSize: "clamp(1.75rem, 3.6vw, 3.25rem)",
               lineHeight: 1.1,
@@ -107,14 +120,14 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
             }}
           >
             {displayName}
-          </h1>
+          </motion.h1>
         )}
 
         {/* Metadata row */}
-        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-content-secondary">
+        <motion.div variants={itemVariants} className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-on-media-secondary">
           {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
           {item.OfficialRating && (
-            <span className="rounded border border-line-strong px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-content-secondary">
+            <span className="rounded border border-on-media-muted px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-on-media-secondary">
               {item.OfficialRating}
             </span>
           )}
@@ -123,9 +136,9 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
               <StarIcon /> {item.CommunityRating.toFixed(1)}
             </span>
           )}
-          {runtime && <span className="text-content-secondary">{runtime}</span>}
+          {runtime && <span className="text-on-media-secondary">{runtime}</span>}
           {item.Genres?.slice(0, 3).map((g) => (
-            <span key={g} className="text-content-tertiary">· {g}</span>
+            <span key={g} className="text-on-media-secondary">· {g}</span>
           ))}
           {/* Qualité + langues — chips inline pour films/séries. Pour un épisode,
               la rangée serait trop chargée : la méta passe en version sobre à
@@ -133,7 +146,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           {!isEpisode && (
             <>
               {(hasQualityChips(quality) || quality.audioLabels.length > 0) && (
-                <span aria-hidden className="mx-1 text-content-quaternary">·</span>
+                <span aria-hidden className="mx-1 text-on-media-muted">·</span>
               )}
               <span className="flex items-center gap-1.5">
                 <QualityChips quality={quality} density="full" />
@@ -141,43 +154,42 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
               </span>
             </>
           )}
-        </div>
+        </motion.div>
 
         {/* Overview — clamped to 2 lines (max-w-xl du parent borne la largeur)
             pour que la description reste strictement dans la colonne hero. */}
         {item.Overview && (
-          <p className="mb-6 hidden text-base leading-relaxed text-content-secondary line-clamp-2 drop-shadow-[0_2px_12px_var(--hero-text-shadow)] sm:block">
+          <motion.p variants={itemVariants} className="mb-6 hidden text-base leading-relaxed text-on-media-secondary line-clamp-2 drop-shadow-[0_1px_4px_var(--on-media-shadow)] sm:block">
             <RichOverview text={item.Overview} />
-          </p>
+          </motion.p>
         )}
 
         {/* Progress bar — slim, beneath overview when applicable */}
         {hasProgress && (
-          <div className="mb-5 flex max-w-md items-center gap-3">
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-fill-strong">
+          <motion.div variants={itemVariants} className="mb-5 flex max-w-md items-center gap-3">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-on-media-muted">
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs font-medium text-content-secondary">{Math.round(progress)}%</span>
-          </div>
+            <span className="text-xs font-medium text-on-media-secondary">{Math.round(progress)}%</span>
+          </motion.div>
         )}
 
         {/* CTA — Play unique sur la bannière (pas de bouton « Plus d'infos » ici). */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
+        <motion.div variants={itemVariants} className="flex items-center gap-3">
+          <PressableScale
             onClick={handlePlay}
-            className="flex items-center gap-2.5 rounded-md border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover"
+            className="flex items-center gap-2.5 rounded-md border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-200 hover:bg-cta-primary-bg-hover"
             style={{ boxShadow: "var(--elev-2)" }}
           >
             <PlayIcon />
             {hasProgress ? t("common:resume") : t("common:play")}
             {buttonEpisodeCode && <span className="font-semibold text-cta-primary-fg opacity-60">{buttonEpisodeCode}</span>}
-          </button>
-        </div>
-      </div>
+          </PressableScale>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

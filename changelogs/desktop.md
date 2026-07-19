@@ -11,6 +11,18 @@ Release GitHub Linux (illimité). Une seule version pour les trois OS
 ### EN
 - …
 
+## [1.15.1]
+### FR
+- Thème clair refondu sur les bannières et les fiches : l'affiche reste vive (plus de voile nacré ni de flou), le texte posé sur l'image est blanc dans les deux thèmes, sur un dégradé sombre lisible même quand l'affiche est claire
+- Micro-interactions raffinées : boutons à ressort, pastille de navigation qui glisse entre les onglets, entrée en cascade de la bannière, survol des affiches avec élévation douce — « réduire les animations » respecté
+- Ombres des cartes et liseré de la barre de navigation harmonisés avec le thème (fini les traits blancs et ombres noires figés en clair)
+- Espacement des rangées de l'accueil resserré
+### EN
+- Light theme reworked on banners and detail pages: artwork stays vivid (no more pearly veil or blur), on-image text is white in both themes, over a dark gradient that stays readable even on bright posters
+- Refined micro-interactions: springy buttons, navigation pill sliding between tabs, cascading banner entrance, soft card hover lift — "reduce motion" honored
+- Card shadows and navigation bar border aligned with the theme (no more fixed white lines and black shadows in light mode)
+- Tighter spacing between home rows
+
 ## [1.15.0]
 ### FR
 - Thème clair, sombre ou automatique : l'application suit le réglage de votre système en direct, sur Windows comme sur macOS — choix dans Réglages, section Apparence

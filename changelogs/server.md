@@ -11,6 +11,20 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.7.1]
+### FR
+- Web : thème clair refondu sur les bannières et les fiches — l'affiche reste vive (plus de voile nacré ni de flou), le texte posé sur l'image est blanc dans les deux thèmes, adossé à un dégradé sombre qui garantit la lisibilité même sur une affiche claire (même recette que le mobile)
+- Web : micro-interactions raffinées — boutons à ressort, pastille de navigation qui glisse entre les onglets, entrée en cascade de la bannière, survol des affiches avec élévation douce, remplissage de l'indicateur au rythme du carrousel ; le tout respecte « réduire les animations »
+- Web : ombres des cartes et liseré de la barre de navigation passés aux tokens du thème (fini les noirs et blancs figés, illisibles en clair)
+- Web : l'espace excessif entre les rangées de l'accueil est resserré
+- Plugins : les tokens « texte sur média » (blanc constant + assise sombre) sont désormais fournis à l'iframe des plugins
+### EN
+- Web: light theme reworked on banners and detail pages — artwork stays vivid (no more pearly veil or blur), on-image text is white in both themes, backed by a dark gradient that keeps it readable even over a bright poster (same recipe as mobile)
+- Web: refined micro-interactions — springy buttons, navigation pill sliding between tabs, cascading banner entrance, soft card hover lift, carousel indicator fill synced to rotation; all honoring "reduce motion"
+- Web: card shadows and navigation bar border now use theme tokens (no more fixed blacks and whites, unreadable in light mode)
+- Web: excessive spacing between home rows tightened
+- Plugins: "on-media" text tokens (constant white + dark backing) are now provided to the plugin iframe
+
 ## [1.7.0]
 ### FR
 - Web : thème clair, sombre ou automatique — l'interface suit le réglage du système en direct ; choix dans Réglages, section Apparence

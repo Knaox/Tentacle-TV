@@ -68,12 +68,15 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
       {...ctx.contextHandlers}
     >
       <div
-        className="relative aspect-[2/3] overflow-hidden rounded-md transition-all duration-200"
+        className="relative aspect-[2/3] overflow-hidden rounded-md transition-[transform,box-shadow] duration-300 ease-[var(--ease-spring)] motion-reduce:transition-none"
         style={{
-          transform: hovered ? "scale(1.04) translateY(-2px)" : "scale(1)",
+          // Lift à ressort (ease-spring) + ombres TOKENISÉES : `--elev-*` suit
+          // le thème (ombres douces en clair — un noir 0.45 en dur salissait le
+          // fond nacré ou disparaissait). Le ring brand reste la signature.
+          transform: hovered ? "scale(1.045) translateY(-5px)" : "scale(1)",
           boxShadow: hovered
-            ? "0 12px 28px var(--surface-overlay), 0 0 0 2px rgba(var(--brand-rgb), 0.7), 0 0 28px rgba(var(--brand-rgb), 0.25)"
-            : "0 2px 8px rgba(0,0,0,0.45)",
+            ? "var(--elev-card-hover), 0 0 0 2px rgba(var(--brand-rgb), 0.7), 0 0 28px rgba(var(--brand-rgb), 0.25)"
+            : "var(--elev-1)",
         }}
       >
         <CardImage src={imageUrl} alt={item.Name} />
