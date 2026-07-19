@@ -30,6 +30,9 @@ export default {
   liquidGlassUnavailable: "Non disponible sur ce moteur de rendu — l'effet verre classique est utilisé.",
 
   // ── Sections de la coquille de réglages ──
+  // Titre ombrelle de l'écran (atterrissage mobile). `title` reste le titre
+  // historique de la seule page Lecture (« Préférences de langues »).
+  settingsTitle: "Réglages",
   sectionAccount: "Compte",
   sectionSecurity: "Sécurité",
   sectionAppearance: "Apparence",

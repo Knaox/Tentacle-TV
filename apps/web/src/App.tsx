@@ -23,7 +23,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound
 } from "./lazyPages";
 
 function PageSpinner() {
@@ -204,7 +204,7 @@ export function App() {
                 `/settings` reste l'URL d'entree ; les sections deviennent des
                 enfants, et Securite regroupe ce qui etait disperse. */}
             <Route path="settings" element={<SettingsLayout />}>
-              <Route index element={null} />
+              <Route index element={<SettingsIndex />} />
               <Route path="appearance" element={<SettingsAppearance />} />
               <Route path="security" element={<SettingsSecurity />} />
               <Route path="playback" element={<Preferences />} />
