@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  HardDriveDownload,
   LifeBuoy,
   Mail,
   Palette,
@@ -38,6 +39,7 @@ export function AdminLayout() {
   const sections = useMemo<SettingsShellSection[]>(
     () => [
       { id: "users", label: t("usersTitle"), icon: <Users size={ICON_SIZE} /> },
+      { id: "downloads", label: t("downloadsTitle"), icon: <HardDriveDownload size={ICON_SIZE} /> },
       { id: "invites", label: t("invitesTitle"), icon: <Mail size={ICON_SIZE} /> },
       { id: "tickets", label: t("supportTickets"), icon: <LifeBuoy size={ICON_SIZE} /> },
       { id: "plugins", label: t("pluginsTitle"), icon: <Puzzle size={ICON_SIZE} /> },

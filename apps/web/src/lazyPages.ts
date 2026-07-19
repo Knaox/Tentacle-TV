@@ -31,6 +31,7 @@ export const Credits = lazy(() => import("./pages/Credits").then((m) => ({ defau
 export const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
 export const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
 export const AdminUsers = lazy(() => import("./pages/AdminUsers").then((m) => ({ default: m.AdminUsers })));
+export const AdminDownloads = lazy(() => import("./pages/AdminDownloads").then((m) => ({ default: m.AdminDownloads })));
 export const AdminTicketsPage = lazy(() => import("./pages/AdminTicketsPage").then((m) => ({ default: m.AdminTicketsPage })));
 export const AdminServicesPage = lazy(() => import("./pages/AdminServicesPage").then((m) => ({ default: m.AdminServicesPage })));
 export const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({ default: m.AdminTheme })));
