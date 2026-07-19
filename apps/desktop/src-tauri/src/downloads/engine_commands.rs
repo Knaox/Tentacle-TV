@@ -40,6 +40,12 @@ pub struct EnqueueItem {
     pub title: Option<String>,
     pub series_name: Option<String>,
     pub auto_delete_after_watch: bool,
+    /// Mode Allégé : piste audio à embarquer et sous-titre image à incruster.
+    pub audio_stream_index: Option<i64>,
+    pub burn_subtitle_index: Option<i64>,
+    /// Sous-titres texte à récupérer en side-cars (specs JSON-compatibles
+    /// avec `subs::SubtitleSpec` : index / format / langTag).
+    pub subtitles: Option<Vec<super::subs::SubtitleSpec>>,
 }
 
 #[derive(Serialize)]
@@ -144,6 +150,19 @@ pub fn downloads_enqueue(
             item.expected_size,
             item.auto_delete_after_watch,
             now,
+        )?;
+        let subtitles_json = match &item.subtitles {
+            Some(specs) if !specs.is_empty() => {
+                Some(serde_json::to_string(specs).map_err(|e| format!("subs json: {e}"))?)
+            }
+            _ => None,
+        };
+        store::set_light_params(
+            &conn,
+            outcome.file_id,
+            item.audio_stream_index,
+            item.burn_subtitle_index,
+            subtitles_json.as_deref(),
         )?;
         file_ids.push(outcome.file_id);
     }

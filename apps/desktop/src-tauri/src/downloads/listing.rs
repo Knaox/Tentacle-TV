@@ -25,14 +25,15 @@ const LIST_EXTRA_COLS: &str =
 
 fn map_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<DownloadListEntry> {
     let file = map_file_row(row)?;
+    // FILE_COLS occupe les indices 0..=12 — les extras démarrent à 13.
     Ok(DownloadListEntry {
         file,
-        title: row.get(10)?,
-        series_name: row.get(11)?,
-        kind: row.get(12)?,
-        series_id: row.get(13)?,
-        season_id: row.get(14)?,
-        auto_delete_after_watch: row.get::<_, i64>(15)? != 0,
+        title: row.get(13)?,
+        series_name: row.get(14)?,
+        kind: row.get(15)?,
+        series_id: row.get(16)?,
+        season_id: row.get(17)?,
+        auto_delete_after_watch: row.get::<_, i64>(18)? != 0,
     })
 }
 

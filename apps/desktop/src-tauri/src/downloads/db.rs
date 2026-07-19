@@ -138,6 +138,14 @@ ALTER TABLE item_meta ADD COLUMN title TEXT;
 ALTER TABLE item_meta ADD COLUMN series_name TEXT;
 ";
 
+/// v4 — mode Allégé : piste audio choisie, sous-titre incrusté (burn-in) et
+/// liste des sous-titres texte à télécharger en side-cars (JSON).
+const SCHEMA_V4: &str = "
+ALTER TABLE files ADD COLUMN audio_stream_index INTEGER;
+ALTER TABLE files ADD COLUMN burn_subtitle_index INTEGER;
+ALTER TABLE files ADD COLUMN subtitles_json TEXT;
+";
+
 fn migrate(conn: &Connection) -> Result<(), String> {
     let version: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
@@ -150,6 +158,9 @@ fn migrate(conn: &Connection) -> Result<(), String> {
     }
     if version < 3 {
         apply(conn, SCHEMA_V3, 3)?;
+    }
+    if version < 4 {
+        apply(conn, SCHEMA_V4, 4)?;
     }
     Ok(())
 }

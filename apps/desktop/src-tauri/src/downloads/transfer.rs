@@ -33,6 +33,31 @@ pub struct TransferJob {
     pub final_path: PathBuf,
     pub variant: String,
     pub expected_size: Option<i64>,
+    /// Base du serveur Tentacle — arrêt propre du transcodage Allégé
+    /// (`DELETE Videos/ActiveEncodings` via le proxy) à toute fin de transfert.
+    pub server_url: String,
+}
+
+/// Session de transcodage annoncée par le backend (mode Allégé uniquement).
+struct TranscodeSession {
+    play_session_id: String,
+    device_id: String,
+}
+
+/// Fin de session serveur, best-effort : libère ffmpeg + fichiers temporaires
+/// côté Jellyfin, que le transfert ait abouti, été annulé ou mis en pause.
+fn kill_transcode(job: &TransferJob, session: &Option<TranscodeSession>) {
+    let Some(session) = session else { return };
+    let url = format!(
+        "{}/api/jellyfin/Videos/ActiveEncodings?deviceId={}&playSessionId={}",
+        job.server_url, session.device_id, session.play_session_id
+    );
+    let _ = ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .delete(&url)
+        .set("Authorization", &format!("Bearer {}", job.token))
+        .call();
 }
 
 const BUF_SIZE: usize = 256 * 1024;
@@ -87,6 +112,19 @@ pub fn run(job: &TransferJob, flags: &TransferFlags, on_progress: &dyn Fn(i64)) 
         Err(_) => return TransferEnd::Failed { code: "network", bytes_done: start },
     };
 
+    // Session de transcodage (Allégé) : capturée AVANT la consommation du
+    // corps — nécessaire pour l'arrêt propre à toute sortie de boucle.
+    let session: Option<TranscodeSession> = match (
+        response.header("x-tentacle-play-session"),
+        response.header("x-tentacle-device-id"),
+    ) {
+        (Some(play), Some(device)) => Some(TranscodeSession {
+            play_session_id: play.to_string(),
+            device_id: device.to_string(),
+        }),
+        _ => None,
+    };
+
     // 200 alors qu'on demandait une reprise → le serveur a ignoré le Range :
     // on repart de zéro proprement.
     if response.status() == 200 && start > 0 {
@@ -112,10 +150,12 @@ pub fn run(job: &TransferJob, flags: &TransferFlags, on_progress: &dyn Fn(i64)) 
         if flags.cancel.load(Ordering::Relaxed) {
             drop(file);
             let _ = std::fs::remove_file(&part_path);
+            kill_transcode(job, &session);
             return TransferEnd::Canceled;
         }
         if flags.pause.load(Ordering::Relaxed) {
             let _ = file.sync_all();
+            kill_transcode(job, &session);
             return TransferEnd::Paused { bytes_done: total };
         }
 
@@ -124,6 +164,7 @@ pub fn run(job: &TransferJob, flags: &TransferFlags, on_progress: &dyn Fn(i64)) 
             Ok(n) => n,
             Err(_) => {
                 let _ = file.sync_all();
+                kill_transcode(job, &session);
                 return TransferEnd::Failed { code: "network", bytes_done: total };
             }
         };
@@ -134,6 +175,7 @@ pub fn run(job: &TransferJob, flags: &TransferFlags, on_progress: &dyn Fn(i64)) 
                 "io"
             };
             let _ = file.sync_all();
+            kill_transcode(job, &session);
             return TransferEnd::Failed { code, bytes_done: total };
         }
         total += read as i64;
@@ -146,6 +188,10 @@ pub fn run(job: &TransferJob, flags: &TransferFlags, on_progress: &dyn Fn(i64)) 
             on_progress(total);
         }
     }
+
+    // Fin de flux atteinte : la session de transcodage éventuelle peut être
+    // libérée quel que soit le verdict d'intégrité qui suit.
+    kill_transcode(job, &session);
 
     if file.sync_all().is_err() {
         return TransferEnd::Failed { code: "io", bytes_done: total };
