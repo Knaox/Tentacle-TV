@@ -40,17 +40,18 @@
     /* Halo clair : une ombre noire sous du texte fonce salirait le rendu. */
     --hero-text-shadow: rgba(244, 244, 247, 0.9);
 
-    /* Accueil : voile serre sur la colonne de texte (~30 % de large), eteint
-     * des 58 % — le reste de l'affiche garde ses couleurs pleines. La couture
-     * basse ne demarre qu'aux deux tiers de sa bande. */
-    --hero-scrim-left: linear-gradient(90deg, var(--surface-0) 0%, rgba(var(--scrim-page-rgb), 0.8) 22%, rgba(var(--scrim-page-rgb), 0.38) 42%, transparent 58%);
+    /* Accueil : PAS de voile lateral en clair — la lisibilite du texte est
+     * portee par le flou progressif (.hero-glass, plus bas), qui conserve les
+     * couleurs de l'affiche la ou un aplat nacre se lisait comme du brouillard. */
+    --hero-scrim-left: none;
     --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(var(--scrim-page-rgb), 0.55) 80%, var(--surface-0) 100%);
     --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.6) 0%, rgba(var(--scrim-page-rgb), 0.22) 55%, transparent 100%);
 
-    /* Fiche : le bloc titre chevauche le bas du backdrop — la couture basse
-     * porte la lisibilite, le voile lateral reste discret. */
-    --detail-scrim-left: linear-gradient(90deg, rgba(var(--scrim-page-rgb), 0.65) 0%, rgba(var(--scrim-page-rgb), 0.25) 38%, transparent 62%);
-    --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(var(--scrim-page-rgb), 0.6) 76%, var(--surface-0) 100%);
+    /* Fiche : pas de voile lateral, et la couture basse est reduite au strict
+     * raccord de page — la lisibilite du bloc titre est portee par le flou
+     * progressif vertical (.detail-glass), comme sur l'accueil. */
+    --detail-scrim-left: none;
+    --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 55%, rgba(var(--scrim-page-rgb), 0.5) 85%, var(--surface-0) 100%);
     --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.45) 0%, transparent 100%);
   }
 
@@ -58,6 +59,71 @@
    * nacre il se lit comme de la salissure. */
   :root[data-theme="light"] .noise-texture {
     display: none;
+  }
+
+  /* Flou progressif derriere la colonne de texte du hero — THEME CLAIR SEUL.
+   * Trois couches de blur d'intensite croissante, chacune masquee en degrade
+   * horizontal : le flou monte vers le texte et s'eteint vers l'affiche
+   * (technique « gradient blur » iOS/visionOS). Le flou CONSERVE les couleurs
+   * de l'image — c'est ce qui le distingue du voile nacre, qui se lisait comme
+   * du brouillard. Seule la couche la plus floue porte une pointe de teinte,
+   * plancher de contraste pour le texte fonce sur zones sombres d'affiche.
+   * En sombre : rien — les voiles cinema historiques suffisent. */
+  .hero-glass {
+    display: none;
+    pointer-events: none;
+  }
+  :root[data-theme="light"] .hero-glass {
+    display: block;
+  }
+  :root[data-theme="light"] .hero-glass-1 {
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+    -webkit-mask-image: linear-gradient(90deg, #000 42%, transparent 68%);
+    mask-image: linear-gradient(90deg, #000 42%, transparent 68%);
+  }
+  :root[data-theme="light"] .hero-glass-2 {
+    backdrop-filter: blur(22px) saturate(120%);
+    -webkit-backdrop-filter: blur(22px) saturate(120%);
+    -webkit-mask-image: linear-gradient(90deg, #000 28%, transparent 52%);
+    mask-image: linear-gradient(90deg, #000 28%, transparent 52%);
+  }
+  :root[data-theme="light"] .hero-glass-3 {
+    background: rgba(var(--scrim-page-rgb), 0.3);
+    backdrop-filter: blur(44px) saturate(125%);
+    -webkit-backdrop-filter: blur(44px) saturate(125%);
+    -webkit-mask-image: linear-gradient(90deg, #000 10%, transparent 36%);
+    mask-image: linear-gradient(90deg, #000 10%, transparent 36%);
+  }
+
+  /* Variante VERTICALE pour les fiches media : le bloc titre chevauche le BAS
+   * du backdrop, le flou monte donc depuis le bas et fond dans la couture de
+   * page. Meme principe, autre axe. */
+  .detail-glass {
+    display: none;
+    pointer-events: none;
+  }
+  :root[data-theme="light"] .detail-glass {
+    display: block;
+  }
+  :root[data-theme="light"] .detail-glass-1 {
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 30%, #000 62%);
+    mask-image: linear-gradient(180deg, transparent 30%, #000 62%);
+  }
+  :root[data-theme="light"] .detail-glass-2 {
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 80%);
+    mask-image: linear-gradient(180deg, transparent 48%, #000 80%);
+  }
+  :root[data-theme="light"] .detail-glass-3 {
+    background: rgba(var(--scrim-page-rgb), 0.28);
+    backdrop-filter: blur(40px) saturate(125%);
+    -webkit-backdrop-filter: blur(40px) saturate(125%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 62%, #000 94%);
+    mask-image: linear-gradient(180deg, transparent 62%, #000 94%);
   }
 
   :focus-visible {

@@ -29,7 +29,9 @@ export function ToggleSwitch({ checked, onChange, label, disabled }: ToggleSwitc
     >
       <span
         aria-hidden="true"
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm transition-transform duration-200 ${
+        /* ring : sans lisere, le pouce blanc en butee droite fusionnait avec la
+           carte blanche derriere — la pilule semblait pleine, « buggee ». */
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm ring-1 ring-black/15 transition-transform duration-200 ${
           checked ? "translate-x-[22px]" : "translate-x-0.5"
         }`}
       />

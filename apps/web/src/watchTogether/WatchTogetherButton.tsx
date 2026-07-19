@@ -29,8 +29,7 @@ export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogethe
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-all duration-200 hover:bg-fill-soft hover:text-content-secondary"
-        style={{ background: "rgba(255,255,255,0.05)" }}
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-fill-subtle text-content-secondary transition-all duration-200 hover:bg-fill-soft hover:text-content-primary"
         aria-label="Watch Together"
       >
         <GroupIcon active={isInGroup} />
@@ -78,7 +77,7 @@ export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogethe
 function GroupIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`h-5 w-5 ${active ? "text-purple-300" : ""}`}
+      className={`h-5 w-5 ${active ? "text-brand" : ""}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"

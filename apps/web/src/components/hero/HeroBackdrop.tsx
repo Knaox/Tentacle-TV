@@ -40,6 +40,12 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
           historiques en sombre, voile confine a la colonne de texte en clair
           pour que l'affiche reste propre. Recolorer les memes stops donnait un
           brouillard laiteux sur toute l'image. */}
+      {/* Flou progressif (clair uniquement, cf. index.css .hero-glass) : trois
+          couches SOUS les degrades, pour que la couture basse se fonde aussi
+          dans la zone floutee. */}
+      <div className="hero-glass hero-glass-1 absolute inset-y-0 left-0 w-[64%]" />
+      <div className="hero-glass hero-glass-2 absolute inset-y-0 left-0 w-[64%]" />
+      <div className="hero-glass hero-glass-3 absolute inset-y-0 left-0 w-[64%]" />
       <div className="absolute inset-0" style={{ background: "var(--hero-scrim-left)" }} />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"

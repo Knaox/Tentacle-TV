@@ -39,11 +39,15 @@ export function buildPluginHtml({
     backendUrl,
   };
 
-  // Propage le schema clair/sombre de l'hote a l'iframe : le tokens.css inline
-  // contient bien le bloc `:root[data-theme="light"]`, mais sans l'attribut sur
-  // <html> il ne s'applique jamais — les plugins restaient sombres en clair.
-  // Snapshot au build du srcdoc ; une bascule de theme en cours de session
-  // s'appliquera au prochain montage du plugin.
+  // Propage le schema de l'hote a l'iframe. Le markup des plugins (Seer) est
+  // concu sombre-only avec des classes `white`/`black` en dur et le bundle est
+  // intouchable (regle projet) — l'adaptation se fait donc COTE HOTE : c'est
+  // nous qui fournissons la config du runtime Tailwind de l'iframe, on y
+  // redefinit `white` et `black` comme canaux RGB pilotes par `data-theme`
+  // (voir le bloc <style> plus bas). En clair, chaque text-white/70, bg-white/5
+  // ou border-white/10 du plugin resout vers de l'encre — alphas preserves —
+  // sans modifier une ligne du bundle. Snapshot au build du srcdoc ; une
+  // bascule en cours de session s'applique au prochain montage.
   const currentTheme =
     document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
 
@@ -61,6 +65,13 @@ export function buildPluginHtml({
           // Utiliser bg-tentacle-surface-1 / text-tentacle-brand / border-tentacle-subtle
           // au lieu de classes hardcodées : si le thème change, le plugin suit.
           colors: {
+            // Inversion pilotee par schema : white/black deviennent des canaux
+            // RGB variables. Le format rgb(var / <alpha-value>) est requis pour
+            // que les modificateurs d'opacite Tailwind (white/70, black/40)
+            // continuent de composer. NB : pas de backtick dans ce commentaire,
+            // on est DANS le template literal du srcdoc.
+            white: "rgb(var(--plugin-white-rgb) / <alpha-value>)",
+            black: "rgb(var(--plugin-black-rgb) / <alpha-value>)",
             tentacle: {
               "surface-0": "var(--surface-0)",
               "surface-1": "var(--surface-1)",
@@ -200,6 +211,19 @@ export function buildPluginHtml({
       --surface: var(--surface-1);
       --accent: var(--brand);
       --text: var(--text-primary);
+    }
+    /* Canaux RGB des couleurs white/black du runtime Tailwind du plugin.
+       Les bundles (Seer) sont ecrits sombre-only avec text-white/bg-black en
+       dur : en clair on INVERSE les deux canaux, et comme la config Tailwind
+       les consomme en rgb(var / alpha), tous les modificateurs d'opacite du
+       plugin (white/70, black/40...) continuent de composer normalement. */
+    :root {
+      --plugin-white-rgb: 255 255 255;
+      --plugin-black-rgb: 0 0 0;
+    }
+    :root[data-theme="light"] {
+      --plugin-white-rgb: 11 11 16;
+      --plugin-black-rgb: 255 255 255;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {

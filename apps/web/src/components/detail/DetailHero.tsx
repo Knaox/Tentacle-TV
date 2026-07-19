@@ -48,6 +48,10 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
           (`--detail-scrim-*`), geometrie distincte par schema : en clair la
           couture basse porte la lisibilite du bloc titre, l'affiche au-dessus
           reste quasi propre. En sombre, valeurs historiques inchangees. */}
+      {/* Flou progressif vertical (clair uniquement) — cf. index.css .detail-glass */}
+      <div className="detail-glass detail-glass-1 absolute inset-x-0 bottom-0 h-[70%]" />
+      <div className="detail-glass detail-glass-2 absolute inset-x-0 bottom-0 h-[70%]" />
+      <div className="detail-glass detail-glass-3 absolute inset-x-0 bottom-0 h-[70%]" />
       <div className="absolute inset-0" style={{ background: "var(--detail-scrim-left)" }} />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
