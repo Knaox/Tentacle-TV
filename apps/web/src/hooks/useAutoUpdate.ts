@@ -169,7 +169,7 @@ export function useAutoUpdate() {
     // sur la fiche), qui ferme l'app lui-même au moment d'installer. L'ancien
     // exit(0) fermait l'app sans MAJ — perçu comme un simple redémarrage.
     if (isAppStoreBuild()) {
-      const url = storeUrlRef.current || `macappstore://apps.apple.com/app/id${APP_STORE_ID}`;
+      const url = storeUrlRef.current || `macappstore://apps.apple.com/app/id${APP_STORE_ID}?mt=12`;
       try {
         await openExternal(url);
         setInfo((prev) => ({ ...prev, storeOpened: true, error: null }));

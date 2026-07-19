@@ -1,0 +1,68 @@
+name: Store Watch (manifeste macOS)
+
+# Aligne le bloc macAppStore du manifeste d'auto-update sur ce qu'App Store
+# Connect declare REELLEMENT en vente (READY_FOR_SALE). Le tag desktop-v* ne
+# patche plus ce bloc : entre le tag et l'approbation Apple il s'ecoule des
+# heures, et patcher au tag faisait annoncer aux utilisateurs une version
+# encore introuvable sur le store — pop-up vers le vide.
+#
+# Toutes les 30 minutes + declenchable a la main. Idempotent : ne committe que
+# si la version en vente differe du manifeste ET que son bloc changelog existe.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: store-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Version macOS en vente (ASC)
+        id: live
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER: ${{ secrets.ASC_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          BUNDLE_ID: com.tentacle.mobile
+        run: |
+          LIVE=$(node .github/scripts/asc-live-version.mjs)
+          echo "Version en vente sur l'App Store : ${LIVE}"
+          echo "live=${LIVE}" >> "$GITHUB_OUTPUT"
+      - name: Comparer au manifeste
+        id: cmp
+        run: |
+          CURRENT=$(node -p "require('./updates/store-versions.json').macAppStore.version")
+          echo "Manifeste : ${CURRENT} — ASC : ${{ steps.live.outputs.live }}"
+          if [ "${CURRENT}" = "${{ steps.live.outputs.live }}" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Patcher le bloc macAppStore
+        if: steps.cmp.outputs.changed == 'true'
+        run: |
+          node .github/scripts/patch-store-manifest.mjs "${{ steps.live.outputs.live }}" --only=mac
+      - name: Commit + push sur main
+        if: steps.cmp.outputs.changed == 'true'
+        run: |
+          git config user.name "tentacle-bot"
+          git config user.email "bot@tentacletv.app"
+          git add updates/store-versions.json
+          git commit -m "chore(update): manifeste macAppStore ${{ steps.live.outputs.live }} (en vente sur ASC)" || { echo "rien à committer"; exit 0; }
+          git pull --rebase origin main
+          git push origin main
