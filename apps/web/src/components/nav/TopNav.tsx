@@ -8,6 +8,7 @@ import { TentacleLogo } from "../ui/TentacleLogo";
 import { BrowseButton } from "./BrowseButton";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 import { ConnectivityChip } from "../../offline/ConnectivityChip";
+import { DownloadsNavButton } from "../../downloads/DownloadsNavButton";
 
 interface TopNavProps {
   showSearch?: boolean;
@@ -70,6 +71,7 @@ export function TopNav({ showSearch = true }: TopNavProps) {
         {/* Right cluster: offline chip (desktop) + search + watch-together + notif + avatar */}
         <div className="flex flex-shrink-0 items-center gap-2">
           <ConnectivityChip />
+          <DownloadsNavButton />
           {showSearch && <GlobalSearch />}
           <WatchTogetherButton />
           <NotificationBell />

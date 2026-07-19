@@ -11,6 +11,7 @@ import { WatchedSelectionToolbar } from "./WatchedSelectionToolbar";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { HorizontalScrollRow } from "./HorizontalScrollRow";
 import { RichOverview } from "../lib/overviewHtml";
+import { SeasonDownloadAction } from "../downloads/SeasonDownloadAction";
 
 interface EpisodeListProps {
   seriesId: string;
@@ -114,6 +115,8 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
               {t("common:select")}
             </button>
           )}
+          {/* Téléchargement de la saison (desktop, droit requis — sinon absent). */}
+          <SeasonDownloadAction episodes={episodes ?? []} />
         </div>
       ) : null}
 

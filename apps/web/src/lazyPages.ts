@@ -38,5 +38,7 @@ export const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").th
 export const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
 export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
+export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
+export const SettingsDownloads = lazy(() => import("./pages/settings/SettingsDownloads").then((m) => ({ default: m.SettingsDownloads })));
 export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
 export const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
