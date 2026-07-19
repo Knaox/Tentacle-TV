@@ -128,7 +128,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("common:searchInLibrary", { name: libraryName })}
-          className="w-full max-w-md rounded-xl bg-white/5 px-5 py-3 text-white placeholder-white/30 outline-none ring-1 ring-white/10 transition-all focus:ring-[rgba(var(--brand-rgb),0.5)]"
+          className="w-full max-w-md rounded-xl bg-fill-subtle px-5 py-3 text-content-primary placeholder-content-quaternary outline-none ring-1 ring-line-subtle transition-all focus:ring-[rgba(var(--brand-rgb),0.5)]"
         />
       </div>
 
@@ -160,11 +160,11 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
             {Array.from({ length: 24 }).map((_, i) => (
-              <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-white/5" />
+              <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-fill-subtle" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="py-20 text-center text-white/40">
+          <p className="py-20 text-center text-content-quaternary">
             {debounced.length >= 2 ? t("common:noResults") : t("common:emptyLibrary")}
           </p>
         ) : (
@@ -196,7 +196,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
                     {isLoaderRow ? (
                       <div className="flex h-full items-center justify-center">
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-                        <span className="ml-2 text-sm text-white/40">{t("common:loadingMore")}</span>
+                        <span className="ml-2 text-sm text-content-quaternary">{t("common:loadingMore")}</span>
                       </div>
                     ) : (
                       <div
@@ -223,7 +223,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
             {isFetchingNextPage && (
               <div className="flex items-center justify-center py-4">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-                <span className="ml-2 text-sm text-white/40">{t("common:loadingMore")}</span>
+                <span className="ml-2 text-sm text-content-quaternary">{t("common:loadingMore")}</span>
               </div>
             )}
           </div>

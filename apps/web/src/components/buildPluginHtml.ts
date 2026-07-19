@@ -39,8 +39,16 @@ export function buildPluginHtml({
     backendUrl,
   };
 
+  // Propage le schema clair/sombre de l'hote a l'iframe : le tokens.css inline
+  // contient bien le bloc `:root[data-theme="light"]`, mais sans l'attribut sur
+  // <html> il ne s'applique jamais — les plugins restaient sombres en clair.
+  // Snapshot au build du srcdoc ; une bascule de theme en cours de session
+  // s'appliquera au prochain montage du plugin.
+  const currentTheme =
+    document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+
   return `<!DOCTYPE html>
-<html>
+<html data-theme="${currentTheme}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

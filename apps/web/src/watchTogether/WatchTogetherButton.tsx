@@ -55,10 +55,12 @@ export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogethe
               : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 origin-top-right"
           }`}
           style={{
-            background: "rgba(15,15,25,0.95)",
+            // Panneau flottant sur le fond de page : suit le schema. Le
+            // rgba(15,15,25) fige restait sombre en theme clair.
+            background: "var(--surface-dropdown)",
             backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-dropdown)",
           }}
         >
           <WatchTogetherPanel
