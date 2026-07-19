@@ -2,8 +2,8 @@
 //! suffisant pour les opérations de session ; le moteur de téléchargement
 //! (phase ultérieure) aura son propre état managé longue durée.
 
-use super::{db, session};
-use tauri::AppHandle;
+use super::{db, fsops, session, store};
+use tauri::{AppHandle, State};
 
 fn now_ms() -> i64 {
     std::time::SystemTime::now()
@@ -40,4 +40,35 @@ pub fn session_cache_set(
 pub fn session_cache_clear(app: AppHandle, user_id: String) -> Result<(), String> {
     let conn = open_db(&app)?;
     session::clear(&conn, &user_id)
+}
+
+/* ---- Stockage : racine, espace, occupation ---- */
+
+#[tauri::command]
+pub fn downloads_get_root(app: AppHandle) -> Result<String, String> {
+    Ok(fsops::resolve_root(&app)?.to_string_lossy().into_owned())
+}
+
+/// Codes d'erreur stables : `root-not-empty`, `root-not-writable`.
+#[tauri::command]
+pub fn downloads_set_root(
+    app: AppHandle,
+    cache: State<'_, fsops::RootCache>,
+    path: String,
+) -> Result<String, String> {
+    let conn = open_db(&app)?;
+    let new_root = fsops::set_root(&conn, &cache, std::path::Path::new(&path))?;
+    Ok(new_root.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+pub fn downloads_disk_free(app: AppHandle) -> Result<u64, String> {
+    let root = fsops::resolve_root(&app)?;
+    fsops::free_space(&root)
+}
+
+#[tauri::command]
+pub fn downloads_disk_usage(app: AppHandle) -> Result<i64, String> {
+    let conn = open_db(&app)?;
+    store::disk_usage(&conn)
 }

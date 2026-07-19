@@ -17,4 +17,7 @@
 
 pub mod commands;
 pub mod db;
+pub mod fsops;
+pub mod protocol;
 pub mod session;
+pub mod store;
