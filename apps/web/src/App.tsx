@@ -20,6 +20,7 @@ import { ConnectivityBinding } from "./offline/ConnectivityBinding";
 import { OfflineSessionSync } from "./offline/OfflineSessionSync";
 import { OfflineSessionGate } from "./offline/OfflineSessionGate";
 import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
+import { DownloadsEvents } from "./downloads/DownloadsEvents";
 import { reportPossibleOutage } from "./offline/connectivityStore";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
@@ -28,7 +29,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads
 } from "./lazyPages";
 
 function PageSpinner() {
@@ -192,6 +193,7 @@ export function App() {
           garde « reconnexion nécessaire » à l'expiration des 30 j hors ligne. */}
       {authed && <OfflineSessionSync />}
       {authed && <DownloadsEngineBoot />}
+      {authed && <DownloadsEvents />}
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
@@ -217,6 +219,9 @@ export function App() {
             <Route path="library/:libraryId" element={<Library />} />
             <Route path="watchlist" element={<Watchlist />} />
             <Route path="favorites" element={<Favorites />} />
+            {/* Desktop uniquement — la page se redirige elle-même hors droit
+                et hors contenu local (invisibilité stricte). */}
+            <Route path="downloads" element={<DownloadsPage />} />
 
             <Route path="support" element={<Support />} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
@@ -227,6 +232,7 @@ export function App() {
               <Route path="appearance" element={<SettingsAppearance />} />
               <Route path="security" element={<SettingsSecurity />} />
               <Route path="playback" element={<Preferences />} />
+              <Route path="downloads" element={<SettingsDownloads />} />
             </Route>
             <Route path="profile" element={<MobileProfile />} />
             <Route path="pair-device" element={<PairDevice />} />
