@@ -11,4 +11,7 @@ export default {
   offlineRetry: "Retry",
   offlineStayOffline: "Stay offline",
   offlineGoOnline: "Go back online",
+  sessionExpiredTitle: "Reconnection required",
+  sessionExpiredMessage:
+    "The offline session has expired (more than 30 days without contacting the server). An online reconnection is required to verify the account and access downloads again. Local data is preserved.",
 } as const;

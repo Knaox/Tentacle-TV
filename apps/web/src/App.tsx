@@ -17,6 +17,9 @@ import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
 import { ConnectivityBinding } from "./offline/ConnectivityBinding";
+import { OfflineSessionSync } from "./offline/OfflineSessionSync";
+import { OfflineSessionGate } from "./offline/OfflineSessionGate";
+import { reportPossibleOutage } from "./offline/connectivityStore";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { isTauriApp } from "./main";
@@ -113,9 +116,15 @@ export function App() {
   useEffect(() => {
     if (needsServerUrl) { setSetupRequired(false); return; }
     const base = isTauriApp ? (localStorage.getItem("tentacle_server_url") || "") : "";
+    // Desktop : UNE tentative bornée à 4 s — un boot hors ligne ne doit pas
+    // bloquer ~10 s sur les retries web ; le mode Hors ligne prend le relais
+    // (reportPossibleOutage → sonde immédiate → pastille + session locale).
+    const maxAttempts = isTauriApp ? 1 : 5;
     let attempts = 0;
     const check = () => {
-      fetch(`${base}/api/setup/status`)
+      const controller = new AbortController();
+      const timeoutId = isTauriApp ? setTimeout(() => controller.abort(), 4000) : null;
+      fetch(`${base}/api/setup/status`, isTauriApp ? { signal: controller.signal } : undefined)
         .then((r) => {
           if (r.status >= 500) throw new Error(`backend ${r.status}`);
           return r.json();
@@ -123,11 +132,12 @@ export function App() {
         .then((data) => { setBackendDown(false); setSetupRequired(data.state !== "running"); })
         .catch(() => {
           attempts++;
-          if (attempts < 5) { setTimeout(check, 2000); return; }
-          // After 5 failed attempts: backend is unreachable — don't show setup wizard
-          if (isTauriApp) { setSetupRequired(false); }
+          if (attempts < maxAttempts) { setTimeout(check, 2000); return; }
+          // Backend injoignable — pas de wizard de setup.
+          if (isTauriApp) { setSetupRequired(false); reportPossibleOutage(); }
           else { setBackendDown(true); setSetupRequired(false); }
-        });
+        })
+        .finally(() => { if (timeoutId !== null) clearTimeout(timeoutId); });
     };
     check();
   }, [needsServerUrl]);
@@ -177,6 +187,9 @@ export function App() {
       {/* Pont connectivité ↔ TanStack : erreurs réseau → sonde, retour en
           ligne → invalidations échelonnées. Web ET desktop. */}
       <ConnectivityBinding />
+      {/* Desktop : photo de session (profil+droits) rafraîchie en ligne, et
+          garde « reconnexion nécessaire » à l'expiration des 30 j hors ligne. */}
+      {authed && <OfflineSessionSync />}
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
@@ -278,6 +291,7 @@ export function App() {
         </Routes>
       </Suspense>
       <UpdateModal />
+      {authed && <OfflineSessionGate />}
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
           remplace le blocage — l'app reste utilisable sur le contenu local. */}

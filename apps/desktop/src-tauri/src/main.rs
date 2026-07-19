@@ -3,6 +3,10 @@
 
 mod video_surface;
 
+/// Mode Hors ligne & Téléchargements : base SQLite locale (cache de session,
+/// puis index des téléchargements). Commun aux 3 OS.
+mod downloads;
+
 #[cfg(target_os = "windows")]
 mod msix_update;
 
@@ -108,6 +112,9 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
                 macos::commands::mpv_init,
                 macos::commands::mpv_command,
                 macos::commands::mpv_set_property,
@@ -130,6 +137,9 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
                 msix_update::check_msix_update,
                 msix_update::download_and_install_msix_update,
                 smtc::smtc_init,
@@ -147,6 +157,9 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
                 msix_update::check_msix_update,
                 msix_update::download_and_install_msix_update,
                 smtc::smtc_init,
@@ -205,6 +218,9 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
                 linux_update::detect::detect_linux_install_format,
                 linux_update::install::download_update,
                 linux_update::install::install_linux_update,
