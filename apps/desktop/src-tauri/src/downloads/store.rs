@@ -235,9 +235,7 @@ pub fn delete_claim(
 }
 
 /// Meilleur fichier COMPLET revendiqué par l'utilisateur pour un item —
-/// Original prioritaire sur Allégé. Consommé par la résolution de source à
-/// la lecture (phase lecteur) via `downloads_local_source`.
-#[allow(dead_code)] // branché par la commande downloads_local_source (phase lecteur)
+/// Original prioritaire sur Allégé (résolution de source à la lecture).
 pub fn complete_file_for_item(
     conn: &Connection,
     user_id: &str,

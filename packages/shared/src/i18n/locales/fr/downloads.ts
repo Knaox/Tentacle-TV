@@ -42,6 +42,7 @@ export default {
   seasonQueued: "{{count}} épisodes ajoutés à la file.",
   startFailed: "Impossible de lancer le téléchargement.",
 
+  localPlayback: "Lecture locale",
   statusQueued: "En attente",
   statusDownloading: "Téléchargement",
   statusPaused: "En pause",
