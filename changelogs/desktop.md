@@ -22,6 +22,8 @@ Release GitHub Linux (illimité). Une seule version pour les trois OS
 - Barre de navigation modernisée : état actif en pastille sobre, navigation au clavier visible
 - Confirmations : plus aucune boîte de dialogue système muette sur macOS
 - Notifications de mise à jour : correction d'un enchaînement qui pouvait laisser macOS et Windows sans annonce alors qu'une version était disponible
+- macOS : « Ouvrir l'App Store » ouvre réellement la fiche Tentacle TV — le lien vers le store était bloqué silencieusement par la liste d'autorisations d'ouverture d'URL
+- macOS : la notification de mise à jour n'apparaît plus avant que la version soit réellement en ligne sur l'App Store
 ### EN
 - Light, dark or automatic theme: the app follows your system setting live, on Windows and macOS alike — pick yours in Settings, Appearance section
 - Settings redesigned with side navigation (Appearance, Security, Playback): password, paired devices and server switching are finally grouped under Security
@@ -32,6 +34,8 @@ Release GitHub Linux (illimité). Une seule version pour les trois OS
 - Modernized navigation bar: sober pill active state, visible keyboard navigation
 - Confirmations: no more silent system dialogs on macOS
 - Update notifications: fixed a sequence that could leave macOS and Windows unannounced while a version was available
+- macOS: "Open the App Store" really opens the Tentacle TV page — the store link was silently blocked by the URL-opening allowlist
+- macOS: the update notification no longer shows before the version is actually live on the App Store
 
 ## [1.13.1]
 ### FR

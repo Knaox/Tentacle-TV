@@ -631,9 +631,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Patch des blocs stores (macAppStore + microsoftStore)
+      - name: Patch des blocs stores (microsoftStore + notes linux)
+        # --only=ms : le bloc macAppStore n'est PLUS patche au tag. Le tag
+        # precede la review Apple de plusieurs heures — patcher ici faisait
+        # annoncer une version introuvable sur le store. C'est store-watch.yml
+        # qui l'aligne sur l'etat READY_FOR_SALE d'App Store Connect.
         run: |
-          node .github/scripts/patch-store-manifest.mjs "${{ needs.version.outputs.version }}"
+          node .github/scripts/patch-store-manifest.mjs "${{ needs.version.outputs.version }}" --only=ms
       - name: Commit + push sur main
         run: |
           git config user.name "tentacle-bot"

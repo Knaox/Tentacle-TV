@@ -39,7 +39,7 @@ export async function checkAppStoreUpdate(): Promise<{ version: string; notes?: 
   return {
     version: mac.version,
     notes: pickManifestNotes(mac.notes),
-    storeUrl: `macappstore://apps.apple.com/app/id${mac.appId ?? APP_STORE_ID}`,
+    storeUrl: `macappstore://apps.apple.com/app/id${mac.appId ?? APP_STORE_ID}?mt=12`,
   };
 }
 
