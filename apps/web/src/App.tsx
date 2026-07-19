@@ -16,6 +16,7 @@ import { AutoWatchHarness } from "./dev/autoWatch";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
+import { ConnectivityBinding } from "./offline/ConnectivityBinding";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { isTauriApp } from "./main";
@@ -173,6 +174,9 @@ export function App() {
           filtre non monte resoudrait sur rien et le verre retomberait
           silencieusement sur un flou plat. */}
       <GlassFilters />
+      {/* Pont connectivité ↔ TanStack : erreurs réseau → sonde, retour en
+          ligne → invalidations échelonnées. Web ET desktop. */}
+      <ConnectivityBinding />
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
@@ -274,7 +278,10 @@ export function App() {
         </Routes>
       </Suspense>
       <UpdateModal />
-      <OfflineBanner />
+      {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
+          Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
+          remplace le blocage — l'app reste utilisable sur le contenu local. */}
+      {!isTauriApp && <OfflineBanner />}
       </WatchTogetherProvider>
     </ToastProvider>
   );

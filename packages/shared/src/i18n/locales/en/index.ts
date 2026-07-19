@@ -16,10 +16,11 @@ import errors from "./errors";
 import profile from "./profile";
 import disclaimer from "./disclaimer";
 import watchTogether from "./watchTogether";
+import downloads from "./downloads";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, adminTheme, media, errors, profile, disclaimer,
-  watchTogether,
+  watchTogether, downloads,
 };
