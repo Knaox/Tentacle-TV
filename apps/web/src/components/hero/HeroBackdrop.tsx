@@ -35,28 +35,32 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   // Solid base + gradients restent rendus en permanence (jamais animés).
   const overlays = (
     <>
-      {/* Cinema-grade gradient stack — left fade for text, bottom fade to surface-0 */}
+      {/* Pile de degrades cinema. `--scrim-page-rgb` : noir en sombre (rendu
+          historique identique), nacre en clair — le texte du hero suit le
+          schema, son voile aussi. Un voile noir sous du texte fonce donnait le
+          lavis gris signale sur l'accueil clair. */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 35%, transparent 60%)",
+            "linear-gradient(90deg, rgba(var(--scrim-page-rgb),0.85) 0%, rgba(var(--scrim-page-rgb),0.5) 35%, transparent 60%)",
         }}
       />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{
           background:
-            "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 55%, var(--surface-0) 100%)",
+            "linear-gradient(180deg, transparent 0%, rgba(var(--scrim-page-rgb),0.55) 55%, var(--surface-0) 100%)",
         }}
       />
-      {/* Top vignette under the TopNav — renforcée pour garantir la lisibilité
-          de la nav par-dessus un backdrop clair (Ryland Grace, kiosques lumineux…). */}
+      {/* Vignette haute sous la TopNav — meme logique : la nav est en texte
+          theme, son assise doit suivre le schema pour rester lisible sur un
+          backdrop sombre en clair comme sur un backdrop clair en sombre. */}
       <div
         className="absolute inset-x-0 top-0 h-40"
         style={{
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 45%, transparent 100%)",
+            "linear-gradient(180deg, rgba(var(--scrim-page-rgb),0.72) 0%, rgba(var(--scrim-page-rgb),0.35) 45%, transparent 100%)",
         }}
       />
       {/* Tiny grain to avoid banding on solid color zones — pas de mix-blend-mode

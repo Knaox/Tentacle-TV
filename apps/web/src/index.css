@@ -6,6 +6,27 @@
 @tailwind utilities;
 
 @layer base {
+  /* Voiles poses sur les images (hero, fiches) qui adossent du texte THEME.
+   * En sombre : noirs, rendu strictement identique a l'historique. En clair :
+   * nacres — un voile noir sous du texte devenu fonce donnait le lavis gris
+   * « sale » releve sur l'accueil et les fiches. Les scrims qui adossent du
+   * blanc CONSTANT pose sur l'affiche (badges, barres du lecteur) restent eux
+   * en noir en dur, regle « sur media ».
+   *
+   * Declares ICI et non dans tokens.css : le test de parite du theme exige que
+   * toute variable de tokens.css soit surchargeable par l'admin (types,
+   * varNames, catalogue, Zod). Ce sont des variables de presentation, pas des
+   * tokens de design. */
+  :root {
+    --scrim-page-rgb: 0, 0, 0;
+    --hero-text-shadow: rgba(0, 0, 0, 0.8);
+  }
+  :root[data-theme="light"] {
+    --scrim-page-rgb: 244, 244, 247;
+    /* Halo clair : une ombre noire sous du texte fonce salirait le rendu. */
+    --hero-text-shadow: rgba(244, 244, 247, 0.9);
+  }
+
   :focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
@@ -103,13 +124,6 @@
   .safe-area-top { top: env(safe-area-inset-top, 0px); }
 
   /* Cinematic gradient — used for hero fade-to-black */
-  .cinema-fade-bottom {
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 50%, var(--surface-0) 100%);
-  }
-  .cinema-fade-left {
-    background: linear-gradient(90deg, var(--surface-0) 0%, rgba(0,0,0,0.6) 30%, transparent 70%);
-  }
-
   /* Row gutter — single source of truth */
   .row-gutter {
     padding-left: var(--row-gutter-mobile);

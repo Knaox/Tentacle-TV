@@ -44,25 +44,28 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
         />
       )}
 
-      {/* Cinematic gradient stack */}
+      {/* Pile de degrades. `--scrim-page-rgb` suit le schema : le bloc
+          titre/actions de la fiche est en texte theme et chevauche ce voile —
+          en clair, l'ancien passage noir 0.6 -> blanc produisait le lavis gris
+          « sale » sous le titre. En sombre, rendu identique a l'historique. */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, transparent 70%)",
+            "linear-gradient(90deg, rgba(var(--scrim-page-rgb),0.85) 0%, rgba(var(--scrim-page-rgb),0.35) 45%, transparent 70%)",
         }}
       />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{
           background:
-            "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 55%, var(--surface-0) 100%)",
+            "linear-gradient(180deg, transparent 0%, rgba(var(--scrim-page-rgb),0.6) 55%, var(--surface-0) 100%)",
         }}
       />
       <div
         className="absolute inset-x-0 top-0 h-32"
         style={{
-          background: "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 100%)",
+          background: "linear-gradient(180deg, rgba(var(--scrim-page-rgb),0.55) 0%, transparent 100%)",
         }}
       />
     </div>

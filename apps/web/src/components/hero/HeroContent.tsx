@@ -60,10 +60,13 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
     }
   };
 
-  // Tout ce bloc est en superposition ABSOLUE du backdrop du hero (HeroBackdrop,
-  // image + dégradés) : titre, méta, barre de progression et CTA restent en
-  // blanc/noir dans les deux thèmes — la lisibilité dépend de l'image derrière,
-  // pas du thème choisi. Volontairement non migré (cf. règle « posé sur média »).
+  // Ce bloc est superposé au backdrop, MAIS il ne repose jamais sur l'image
+  // nue : HeroBackdrop l'adosse à ses voiles `--scrim-page-rgb`, qui suivent le
+  // schéma (noirs en sombre, nacrés en clair). Le texte suit donc AUSSI le
+  // schéma — en sombre le rendu est identique à l'historique (content-* =
+  // blancs), en clair il devient foncé sur voile nacré, façon Apple TV. La
+  // règle « posé sur média » (blanc constant) ne s'applique qu'au texte posé
+  // sur l'image SANS voile thémé : badges d'angle, contrôles du lecteur.
   return (
     <div className="absolute inset-x-0 bottom-[15%] z-10 px-4 sm:px-8 md:bottom-[18%] md:px-14 lg:bottom-[20%]">
       <div
@@ -75,12 +78,12 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         {(hasProgress || episodeSoberMeta) && (
           <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em]">
             {hasProgress && (
-              <span className="text-white/85">
-                <span className="text-white">▶</span> {t("common:continueLabel")}
+              <span className="text-content-secondary">
+                <span className="text-content-primary">▶</span> {t("common:continueLabel")}
               </span>
             )}
             {episodeSoberMeta && (
-              <span className="text-white/45 tracking-[0.12em]">{episodeSoberMeta}</span>
+              <span className="text-content-quaternary tracking-[0.12em]">{episodeSoberMeta}</span>
             )}
           </div>
         )}
@@ -96,7 +99,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           />
         ) : (
           <h1
-            className="mb-4 font-bold text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] line-clamp-2 break-words tracking-tight"
+            className="mb-4 font-bold text-content-primary drop-shadow-[0_4px_24px_var(--hero-text-shadow)] line-clamp-2 break-words tracking-tight"
             style={{
               fontSize: "clamp(1.75rem, 3.6vw, 3.25rem)",
               lineHeight: 1.1,
@@ -108,10 +111,10 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         )}
 
         {/* Metadata row */}
-        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-white/85">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-content-secondary">
           {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
           {item.OfficialRating && (
-            <span className="rounded border border-white/30 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-white/70">
+            <span className="rounded border border-line-strong px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-content-secondary">
               {item.OfficialRating}
             </span>
           )}
@@ -120,9 +123,9 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
               <StarIcon /> {item.CommunityRating.toFixed(1)}
             </span>
           )}
-          {runtime && <span className="text-white/70">{runtime}</span>}
+          {runtime && <span className="text-content-secondary">{runtime}</span>}
           {item.Genres?.slice(0, 3).map((g) => (
-            <span key={g} className="text-white/65">· {g}</span>
+            <span key={g} className="text-content-tertiary">· {g}</span>
           ))}
           {/* Qualité + langues — chips inline pour films/séries. Pour un épisode,
               la rangée serait trop chargée : la méta passe en version sobre à
@@ -130,7 +133,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           {!isEpisode && (
             <>
               {(hasQualityChips(quality) || quality.audioLabels.length > 0) && (
-                <span aria-hidden className="mx-1 text-white/30">·</span>
+                <span aria-hidden className="mx-1 text-content-quaternary">·</span>
               )}
               <span className="flex items-center gap-1.5">
                 <QualityChips quality={quality} density="full" />
@@ -143,7 +146,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         {/* Overview — clamped to 2 lines (max-w-xl du parent borne la largeur)
             pour que la description reste strictement dans la colonne hero. */}
         {item.Overview && (
-          <p className="mb-6 hidden text-base leading-relaxed text-white/85 line-clamp-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:block">
+          <p className="mb-6 hidden text-base leading-relaxed text-content-secondary line-clamp-2 drop-shadow-[0_2px_12px_var(--hero-text-shadow)] sm:block">
             <RichOverview text={item.Overview} />
           </p>
         )}
@@ -151,13 +154,13 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         {/* Progress bar — slim, beneath overview when applicable */}
         {hasProgress && (
           <div className="mb-5 flex max-w-md items-center gap-3">
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/20">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-fill-strong">
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs font-medium text-white/70">{Math.round(progress)}%</span>
+            <span className="text-xs font-medium text-content-secondary">{Math.round(progress)}%</span>
           </div>
         )}
 
@@ -166,12 +169,12 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
           <button
             type="button"
             onClick={handlePlay}
-            className="flex items-center gap-2.5 rounded-md bg-white px-7 py-3 text-base font-bold text-black transition-all duration-200 hover:scale-[1.03] hover:bg-white/90"
-            style={{ boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35), 0 0 0 1px rgba(255,255,255,0.7) inset" }}
+            className="flex items-center gap-2.5 rounded-md border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover"
+            style={{ boxShadow: "var(--elev-2)" }}
           >
             <PlayIcon />
             {hasProgress ? t("common:resume") : t("common:play")}
-            {buttonEpisodeCode && <span className="font-semibold text-black/60">{buttonEpisodeCode}</span>}
+            {buttonEpisodeCode && <span className="font-semibold text-cta-primary-fg opacity-60">{buttonEpisodeCode}</span>}
           </button>
         </div>
       </div>
