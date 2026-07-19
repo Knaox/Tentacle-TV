@@ -79,12 +79,12 @@ export function SourcesTab() {
                   onClick={() => toggleMut.mutate(s.id)}
                   disabled={toggleMut.isPending}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
-                    s.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-fill-medium"
+                    s.enabled ? "bg-tentacle-accent border border-transparent" : "bg-fill-medium border border-transparent"
                   }`}
                   title={s.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm transition-transform ${
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm ring-1 ring-black/15 transition-transform ${
                       s.enabled ? "translate-x-5" : "translate-x-0"
                     }`}
                   />
