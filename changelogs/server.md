@@ -11,6 +11,22 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.7.0]
+### FR
+- Web : thème clair, sombre ou automatique — l'interface suit le réglage du système en direct ; choix dans Réglages, section Apparence
+- Web : Réglages et Administration repensés en navigation latérale ; mot de passe, appareils jumelés et changement de serveur regroupés dans une section Sécurité
+- Web : bannières et fiches en thème clair avec flou progressif — l'affiche garde ses couleurs, le texte reste lisible ; effet Liquid Glass activable
+- Web : les plugins suivent le thème de l'application, clair compris
+- Thème (admin) : les remplissages, surfaces verre, textes sur média et surfaces destructives deviennent surchargeables — l'éditeur passe de 104 à 121 tokens
+- Thème (admin) : un changement de couleurs se propage désormais aux utilisateurs web au retour sur l'onglet, sans rechargement de page
+### EN
+- Web: light, dark or automatic theme — the interface follows the system setting live; pick yours in Settings, Appearance section
+- Web: Settings and Administration redesigned with side navigation; password, paired devices and server switching grouped under a Security section
+- Web: banners and detail pages in light theme use a progressive blur — artwork keeps its colors, text stays readable; Liquid Glass effect available
+- Web: plugins follow the app theme, light included
+- Theme (admin): fills, glass surfaces, on-media text and destructive surfaces become overridable — the editor grows from 104 to 121 tokens
+- Theme (admin): color changes now reach web users when they return to the tab, without a page reload
+
 ## [1.6.2]
 ### FR
 - Notifications Seer : fini les fausses annonces « est sorti(e) sur Tentacle TV » — le serveur vérifie désormais la présence RÉELLE du film ou des saisons dans la bibliothèque Jellyfin avant chaque envoi ; si le contenu n'y est pas (statut Jellyseerr périmé, ex. après une suppression), l'envoi est différé jusqu'à son arrivée réelle — une demande fraîchement créée ne peut plus déclencher une annonce de disponibilité mensongère
