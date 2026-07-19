@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { formatEpisodeCode } from "@tentacle-tv/shared";
+import { useConnectivity } from "../offline/useConnectivity";
+import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
@@ -28,11 +31,25 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
+    isLocalPlayback, localSource,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
+  const { t: tDownloads } = useTranslation("downloads");
 
   const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
+  });
+
+  // Hors ligne : aucun reporting réseau — la progression est persistée
+  // localement (et resynchronisée vers Jellyfin au retour en ligne).
+  const { state: connectivityState } = useConnectivity();
+  const online = connectivityState === "online" || connectivityState === "checking";
+  useLocalPlaybackReporting({
+    enabled: isLocalPlayback,
+    itemId,
+    localSource,
+    positionRef,
+    durationSeconds: jellyfinDuration,
   });
 
   // ── Watch Together : transport + handlers de groupe + moteur de sync ──
@@ -133,8 +150,11 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
-    updatePosition(seconds, paused);
-  }, [updatePosition, positionRef]);
+    // Hors ligne : pas d'appels réseau de playstate (persistance locale via
+    // useLocalPlaybackReporting) ; en ligne, reporting normal — y compris en
+    // lecture locale (la source est le disque, la progression va au serveur).
+    if (online) updatePosition(seconds, paused);
+  }, [updatePosition, positionRef, online]);
 
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
@@ -183,7 +203,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
         currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
         onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-        onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
+        onProgress={handleProgress} onStarted={() => { if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
         nextSeriesBackdropUrl={nextSeriesBackdropUrl} nextEpisodeThumbUrl={nextEpisodeThumbUrl}
@@ -201,6 +221,12 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         applyToSeries={applyToSeries}
       />
       <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
+      {/* Indicateur discret « Lecture locale » — suit le fondu des contrôles. */}
+      {isLocalPlayback && controlsVisible && (
+        <div className="pointer-events-none absolute right-4 top-4 z-40 rounded-full bg-status-success-bg px-3 py-1 text-xs font-semibold text-status-success-fg">
+          {tDownloads("localPlayback")}
+        </div>
+      )}
     </div>
   );
 }

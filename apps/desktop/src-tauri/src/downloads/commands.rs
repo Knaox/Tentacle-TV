@@ -2,7 +2,7 @@
 //! suffisant pour les opérations de session ; le moteur de téléchargement
 //! (phase ultérieure) aura son propre état managé longue durée.
 
-use super::{db, fsops, session, store};
+use super::{db, fsops, playback, session, store};
 use tauri::{AppHandle, State};
 
 fn now_ms() -> i64 {
@@ -71,4 +71,40 @@ pub fn downloads_disk_free(app: AppHandle) -> Result<u64, String> {
 pub fn downloads_disk_usage(app: AppHandle) -> Result<i64, String> {
     let conn = open_db(&app)?;
     store::disk_usage(&conn)
+}
+
+/* ---- Lecture locale ---- */
+
+fn now_ms_pub() -> i64 {
+    now_ms()
+}
+
+/// Source locale LISIBLE pour un item (fichier revérifié sur disque),
+/// avec side-cars de sous-titres et progression locale.
+#[tauri::command]
+pub fn downloads_local_source(
+    app: AppHandle,
+    user_id: String,
+    item_id: String,
+) -> Result<Option<playback::LocalSource>, String> {
+    let root = fsops::resolve_root(&app)?;
+    let conn = open_db(&app)?;
+    playback::local_source(&conn, &root, &user_id, &item_id, now_ms_pub())
+}
+
+/// Progression locale ; `queue_for_sync` = lecture hors ligne (resynchro
+/// différée vers Jellyfin au retour en ligne).
+#[tauri::command]
+pub fn downloads_playback_set(
+    app: AppHandle,
+    user_id: String,
+    item_id: String,
+    position_ticks: i64,
+    played: bool,
+    queue_for_sync: bool,
+) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    playback::set_playback_state(
+        &conn, &user_id, &item_id, position_ticks, played, queue_for_sync, now_ms_pub(),
+    )
 }

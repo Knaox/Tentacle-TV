@@ -42,6 +42,7 @@ export default {
   seasonQueued: "{{count}} episodes added to the queue.",
   startFailed: "Could not start the download.",
 
+  localPlayback: "Local playback",
   statusQueued: "Queued",
   statusDownloading: "Downloading",
   statusPaused: "Paused",

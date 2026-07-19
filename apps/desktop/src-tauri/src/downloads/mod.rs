@@ -22,6 +22,7 @@ pub mod engine_commands;
 pub mod fsops;
 pub mod listing;
 pub mod meta;
+pub mod playback;
 pub mod protocol;
 pub mod queue;
 pub mod session;
