@@ -44,29 +44,18 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
         />
       )}
 
-      {/* Pile de degrades. `--scrim-page-rgb` suit le schema : le bloc
-          titre/actions de la fiche est en texte theme et chevauche ce voile —
-          en clair, l'ancien passage noir 0.6 -> blanc produisait le lavis gris
-          « sale » sous le titre. En sombre, rendu identique a l'historique. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(90deg, rgba(var(--scrim-page-rgb),0.85) 0%, rgba(var(--scrim-page-rgb),0.35) 45%, transparent 70%)",
-        }}
-      />
+      {/* Pile de degrades — chaines completes dans index.css
+          (`--detail-scrim-*`), geometrie distincte par schema : en clair la
+          couture basse porte la lisibilite du bloc titre, l'affiche au-dessus
+          reste quasi propre. En sombre, valeurs historiques inchangees. */}
+      <div className="absolute inset-0" style={{ background: "var(--detail-scrim-left)" }} />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
-        style={{
-          background:
-            "linear-gradient(180deg, transparent 0%, rgba(var(--scrim-page-rgb),0.6) 55%, var(--surface-0) 100%)",
-        }}
+        style={{ background: "var(--detail-scrim-bottom)" }}
       />
       <div
         className="absolute inset-x-0 top-0 h-32"
-        style={{
-          background: "linear-gradient(180deg, rgba(var(--scrim-page-rgb),0.55) 0%, transparent 100%)",
-        }}
+        style={{ background: "var(--detail-scrim-top)" }}
       />
     </div>
   );

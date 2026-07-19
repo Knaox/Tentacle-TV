@@ -46,15 +46,15 @@ export function InstalledTab() {
             <div className="flex items-center gap-2">
               {/* Health indicator */}
               <span
-                className={`h-2 w-2 rounded-full ${p.enabled ? "bg-green-500" : "bg-white/20"}`}
+                className={`h-2 w-2 rounded-full ${p.enabled ? "bg-status-success" : "bg-fill-strong"}`}
                 title={p.enabled ? t("adminPlugins:enable") : t("adminPlugins:disable")}
               />
-              <span className="text-sm font-medium text-white">{p.name}</span>
-              <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-white/40">
+              <span className="text-sm font-medium text-content-primary">{p.name}</span>
+              <span className="rounded bg-fill-subtle px-2 py-0.5 text-xs text-content-quaternary">
                 v{p.version}
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-white/30">
+            <p className="mt-0.5 text-xs text-content-quaternary">
               {new Date(p.installedAt).toLocaleDateString()}
             </p>
           </div>
@@ -65,12 +65,12 @@ export function InstalledTab() {
               onClick={() => toggleMut.mutate(p.id)}
               disabled={toggleMut.isPending}
               className={`relative h-6 w-11 rounded-full transition-colors ${
-                p.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-white/10"
+                p.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-fill-medium"
               }`}
               title={p.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
             >
               <span
-                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm transition-transform ${
                   p.enabled ? "translate-x-5" : "translate-x-0"
                 }`}
               />

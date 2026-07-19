@@ -20,11 +20,44 @@
   :root {
     --scrim-page-rgb: 0, 0, 0;
     --hero-text-shadow: rgba(0, 0, 0, 0.8);
+
+    /* Degrades COMPLETS des heros (accueil + fiche). La couleur ne suffit pas :
+     * la geometrie doit differer par schema. En sombre, des voiles larges sur
+     * toute l'image donnent le rendu cinema historique — ces chaines sont les
+     * valeurs d'origine, bit-a-bit. En clair, la meme geometrie devient un
+     * brouillard laiteux qui noie l'affiche : le bloc clair ci-dessous confine
+     * le voile a la colonne de texte et a une couture basse courte, l'image
+     * reste quasi propre. */
+    --hero-scrim-left: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 35%, transparent 60%);
+    --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 55%, var(--surface-0) 100%);
+    --hero-scrim-top: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 45%, transparent 100%);
+    --detail-scrim-left: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, transparent 70%);
+    --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 55%, var(--surface-0) 100%);
+    --detail-scrim-top: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 100%);
   }
   :root[data-theme="light"] {
     --scrim-page-rgb: 244, 244, 247;
     /* Halo clair : une ombre noire sous du texte fonce salirait le rendu. */
     --hero-text-shadow: rgba(244, 244, 247, 0.9);
+
+    /* Accueil : voile serre sur la colonne de texte (~30 % de large), eteint
+     * des 58 % — le reste de l'affiche garde ses couleurs pleines. La couture
+     * basse ne demarre qu'aux deux tiers de sa bande. */
+    --hero-scrim-left: linear-gradient(90deg, var(--surface-0) 0%, rgba(var(--scrim-page-rgb), 0.8) 22%, rgba(var(--scrim-page-rgb), 0.38) 42%, transparent 58%);
+    --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(var(--scrim-page-rgb), 0.55) 80%, var(--surface-0) 100%);
+    --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.6) 0%, rgba(var(--scrim-page-rgb), 0.22) 55%, transparent 100%);
+
+    /* Fiche : le bloc titre chevauche le bas du backdrop — la couture basse
+     * porte la lisibilite, le voile lateral reste discret. */
+    --detail-scrim-left: linear-gradient(90deg, rgba(var(--scrim-page-rgb), 0.65) 0%, rgba(var(--scrim-page-rgb), 0.25) 38%, transparent 62%);
+    --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(var(--scrim-page-rgb), 0.6) 76%, var(--surface-0) 100%);
+    --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.45) 0%, transparent 100%);
+  }
+
+  /* Le grain anti-banding est calibre pour des degrades sombres ; sur un fond
+   * nacre il se lit comme de la salissure. */
+  :root[data-theme="light"] .noise-texture {
+    display: none;
   }
 
   :focus-visible {

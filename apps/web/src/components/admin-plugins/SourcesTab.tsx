@@ -63,14 +63,14 @@ export function SourcesTab() {
             <div key={s.id} className={cls.row}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white">{s.name}</span>
+                  <span className="text-sm font-medium text-content-primary">{s.name}</span>
                   {s.official && (
                     <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-xs text-[var(--brand-light)]">
                       {t("adminPlugins:official")}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-white/40 truncate">{s.url}</p>
+                <p className="mt-1 text-xs text-content-quaternary truncate">{s.url}</p>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -79,12 +79,12 @@ export function SourcesTab() {
                   onClick={() => toggleMut.mutate(s.id)}
                   disabled={toggleMut.isPending}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
-                    s.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-white/10"
+                    s.enabled ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45" : "bg-fill-medium"
                   }`}
                   title={s.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm transition-transform ${
                       s.enabled ? "translate-x-5" : "translate-x-0"
                     }`}
                   />
@@ -113,7 +113,7 @@ export function SourcesTab() {
       {/* Add source form */}
       {showForm ? (
         <div className={cls.card}>
-          <h3 className="mb-3 text-sm font-semibold text-white">{t("adminPlugins:addSource")}</h3>
+          <h3 className="mb-3 text-sm font-semibold text-content-primary">{t("adminPlugins:addSource")}</h3>
           <p className="mb-3 text-xs text-yellow-400/80">{t("adminPlugins:sourceWarning")}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
