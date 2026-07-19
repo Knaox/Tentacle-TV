@@ -52,9 +52,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     <div
       className="fixed inset-0 z-[100] flex flex-col"
       style={{
-        // Fond du takeover recherche : littéral hors table (implémentation ad
-        // hoc, pas de surface-* adaptatif câblé) — non migré, cf. rapport.
-        background: "rgba(0,0,0,0.92)",
+        // Takeover plein ecran en texte theme : son fond suit le schema.
+        // Le rgba(0,0,0,0.92) fige donnait une page 100 % noire en clair.
+        background: "rgba(var(--scrim-page-rgb), 0.92)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
         animation: "fadeIn 200ms ease-out",
