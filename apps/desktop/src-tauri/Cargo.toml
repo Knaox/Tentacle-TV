@@ -13,6 +13,9 @@ tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Mode Hors ligne & Téléchargements : index local + cache de session (SQLite
+# embarqué, aucune dépendance système — cf. src/downloads/).
+rusqlite = { version = "0.32", features = ["bundled"] }
 
 # Auto-updater Linux (aucun store) : téléchargement HTTPS + vérif SHA256.
 # Lecteur Linux : mpv Render API OpenGL dessiné dans un GtkGLArea, webview

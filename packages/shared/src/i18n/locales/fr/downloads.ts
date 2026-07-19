@@ -11,4 +11,7 @@ export default {
   offlineRetry: "Réessayer",
   offlineStayOffline: "Rester hors ligne",
   offlineGoOnline: "Repasser en ligne",
+  sessionExpiredTitle: "Reconnexion nécessaire",
+  sessionExpiredMessage:
+    "La session hors ligne a expiré (plus de 30 jours sans contact avec le serveur). Une reconnexion en ligne est nécessaire pour vérifier le compte et retrouver les téléchargements. Les données locales sont conservées.",
 } as const;
