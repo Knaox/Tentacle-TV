@@ -24,7 +24,7 @@ export function HeroIndicators({ count, activeIndex, onSelect, onPrev, onNext }:
         type="button"
         onClick={onPrev}
         aria-label="Précédent"
-        className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 transition-all duration-300 hover:bg-black/60 group-hover/billboard:opacity-100 md:left-6"
+        className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-black/60 group-hover/billboard:opacity-100 md:left-6"
         style={{
           background: "rgba(0,0,0,0.4)",
           backdropFilter: "blur(8px)",
@@ -38,7 +38,7 @@ export function HeroIndicators({ count, activeIndex, onSelect, onPrev, onNext }:
         type="button"
         onClick={onNext}
         aria-label="Suivant"
-        className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 transition-all duration-300 hover:bg-black/60 group-hover/billboard:opacity-100 md:right-6"
+        className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-black/60 group-hover/billboard:opacity-100 md:right-6"
         style={{
           background: "rgba(0,0,0,0.4)",
           backdropFilter: "blur(8px)",
