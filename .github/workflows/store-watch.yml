@@ -35,9 +35,9 @@ jobs:
       - name: Version macOS en vente (ASC)
         id: live
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER: ${{ secrets.ASC_ISSUER }}
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
         run: |
           LIVE=$(node .github/scripts/asc-live-version.mjs)
