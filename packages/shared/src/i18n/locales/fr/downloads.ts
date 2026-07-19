@@ -53,6 +53,13 @@ export default {
 
   sectionActive: "En cours",
   sectionMovies: "Films",
+  sectionSeries: "Séries",
+  filterAll: "Tout",
+  offlineManage: "Gérer les téléchargements",
+  offlineSearchPlaceholder: "Rechercher dans les téléchargements",
+  offlineEmptyTitle: "Aucun contenu hors ligne",
+  offlineEmptyMessage:
+    "Aucun téléchargement lisible sur cet appareil pour ce compte. Le catalogue complet reviendra dès que le serveur répondra.",
   emptyTitle: "Aucun téléchargement",
   emptyMessage:
     "Les films et les épisodes téléchargés depuis leurs fiches apparaîtront ici, prêts à être regardés hors ligne.",

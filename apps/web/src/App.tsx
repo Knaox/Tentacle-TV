@@ -29,8 +29,9 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, OfflineCatalog
 } from "./lazyPages";
+import { useOfflineMode } from "./offline/useOfflineMode";
 
 function PageSpinner() {
   return (
@@ -108,6 +109,10 @@ export function App() {
   const activePluginsMeta = useActivePluginsMeta();
   const refreshPlugins = useRefreshPlugins();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
+  // Mode Hors ligne (desktop) : navigation réduite au contenu local — les
+  // sections serveur ne sont pas rendues, elles redirigent vers le catalogue.
+  const offlineMode = useOfflineMode();
+  const onlineOnly = (el: React.ReactElement) => (offlineMode ? <Navigate to="/" replace /> : el);
 
   // Re-fetch plugins after login (backendUrl doesn't change so the effect won't re-run otherwise)
   useEffect(() => {
@@ -211,19 +216,20 @@ export function App() {
 
           {/* Protected — immersive (no sidebar/tabbar) */}
           <Route path="/watch/:itemId" element={guard(<Watch />)} />
-          <Route path="/media/:itemId" element={guard(<MediaDetail />)} />
+          <Route path="/media/:itemId" element={guard(onlineOnly(<MediaDetail />))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           <Route element={guard(<AppLayout />)}>
-            <Route index element={<Home />} />
-            <Route path="library/:libraryId" element={<Library />} />
-            <Route path="watchlist" element={<Watchlist />} />
-            <Route path="favorites" element={<Favorites />} />
+            {/* Hors ligne : l'accueil devient le catalogue local. */}
+            <Route index element={offlineMode ? <OfflineCatalog /> : <Home />} />
+            <Route path="library/:libraryId" element={onlineOnly(<Library />)} />
+            <Route path="watchlist" element={onlineOnly(<Watchlist />)} />
+            <Route path="favorites" element={onlineOnly(<Favorites />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
 
-            <Route path="support" element={<Support />} />
+            <Route path="support" element={onlineOnly(<Support />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
                 `/settings` reste l'URL d'entree ; les sections deviennent des
                 enfants, et Securite regroupe ce qui etait disperse. */}
@@ -234,13 +240,13 @@ export function App() {
               <Route path="playback" element={<Preferences />} />
               <Route path="downloads" element={<SettingsDownloads />} />
             </Route>
-            <Route path="profile" element={<MobileProfile />} />
-            <Route path="pair-device" element={<PairDevice />} />
+            <Route path="profile" element={onlineOnly(<MobileProfile />)} />
+            <Route path="pair-device" element={onlineOnly(<PairDevice />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
                 Les URLs restent identiques a l'avant (`/admin/users`,
                 `/admin/theme/tokens`, `/admin/plugins/<id>`), elles deviennent
                 simplement des enfants — aucun lien profond ne casse. */}
-            <Route path="admin" element={<AdminLayout />}>
+            <Route path="admin" element={onlineOnly(<AdminLayout />)}>
               <Route index element={null} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="invites" element={<AdminInvites />} />

@@ -53,6 +53,13 @@ export default {
 
   sectionActive: "In progress",
   sectionMovies: "Movies",
+  sectionSeries: "Series",
+  filterAll: "All",
+  offlineManage: "Manage downloads",
+  offlineSearchPlaceholder: "Search downloads",
+  offlineEmptyTitle: "No offline content",
+  offlineEmptyMessage:
+    "No playable download on this device for this account. The full catalog will come back as soon as the server responds.",
   emptyTitle: "No downloads",
   emptyMessage:
     "Movies and episodes downloaded from their pages will appear here, ready to watch offline.",
