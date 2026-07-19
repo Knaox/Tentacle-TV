@@ -67,3 +67,170 @@ export function localResourceUrl(relPath: string): string {
     ? `tentacle-local://localhost/${relPath}`
     : `http://tentacle-local.localhost/${relPath}`;
 }
+
+/* ---- Moteur de téléchargement ---- */
+
+export type DownloadStatus =
+  | "queued"
+  | "downloading"
+  | "paused"
+  | "complete"
+  | "error"
+  | "canceled";
+
+export interface DownloadEntry {
+  id: number;
+  itemId: string;
+  mediaSourceId: string;
+  variant: "original" | "light";
+  preset: string | null;
+  relPath: string;
+  expectedSize: number | null;
+  bytesDone: number;
+  status: DownloadStatus;
+  errorCode: string | null;
+  title: string | null;
+  seriesName: string | null;
+  kind: "movie" | "episode" | null;
+  seriesId: string | null;
+  seasonId: string | null;
+  autoDeleteAfterWatch: boolean;
+}
+
+export interface EnqueueItemInput {
+  itemId: string;
+  mediaSourceId: string;
+  variant: "original" | "light";
+  preset?: string;
+  containerExt: string;
+  expectedSize?: number;
+  estimatedSize?: number;
+  kind: "movie" | "episode";
+  seriesId?: string;
+  seasonId?: string;
+  libraryId?: string;
+  runtimeTicks?: number;
+  title?: string;
+  seriesName?: string;
+  autoDeleteAfterWatch: boolean;
+}
+
+export interface EnqueueOutcome {
+  accepted: boolean;
+  neededBytes: number;
+  freeBytes: number;
+  fileIds: number[];
+}
+
+/** Démarre/rafraîchit le moteur (credentials en mémoire côté Rust, jamais persistés). */
+export async function engineStart(serverUrl: string, token: string): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await invoke("downloads_engine_start", { serverUrl, token });
+  } catch {
+    /* moteur indisponible : les commandes suivantes échoueront proprement */
+  }
+}
+
+export async function enqueueDownloads(
+  userId: string,
+  serverUrl: string,
+  token: string,
+  items: EnqueueItemInput[],
+): Promise<EnqueueOutcome | null> {
+  if (!isTauri()) return null;
+  try {
+    return await invoke<EnqueueOutcome>("downloads_enqueue", { userId, serverUrl, token, items });
+  } catch {
+    return null;
+  }
+}
+
+export async function pauseDownload(fileId: number): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await invoke("downloads_pause", { fileId });
+  } catch { /* no-op */ }
+}
+
+export async function resumeDownload(fileId: number): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await invoke("downloads_resume", { fileId });
+  } catch { /* no-op */ }
+}
+
+export async function cancelDownload(fileId: number): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await invoke("downloads_cancel", { fileId });
+  } catch { /* no-op */ }
+}
+
+export interface DeleteOutcome {
+  fileDeleted: boolean;
+  metaDeleted: boolean;
+}
+
+export async function deleteDownload(userId: string, fileId: number): Promise<DeleteOutcome | null> {
+  if (!isTauri()) return null;
+  try {
+    return await invoke<DeleteOutcome>("downloads_delete", { userId, fileId });
+  } catch {
+    return null;
+  }
+}
+
+export async function listDownloads(userId: string): Promise<DownloadEntry[]> {
+  if (!isTauri()) return [];
+  try {
+    return await invoke<DownloadEntry[]>("downloads_list", { userId });
+  } catch {
+    return [];
+  }
+}
+
+export async function downloadStateForItem(
+  userId: string,
+  itemId: string,
+): Promise<DownloadEntry | null> {
+  if (!isTauri()) return null;
+  try {
+    return await invoke<DownloadEntry | null>("downloads_state_for_item", { userId, itemId });
+  } catch {
+    return null;
+  }
+}
+
+export async function setAutoDeleteAfterWatch(
+  userId: string,
+  fileId: number,
+  enabled: boolean,
+): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await invoke("downloads_set_auto_delete", { userId, fileId, enabled });
+  } catch { /* no-op */ }
+}
+
+export interface DownloadProgressEvent {
+  fileId: number;
+  bytesDone: number;
+  expectedSize: number | null;
+}
+
+/** Abonnement aux changements d'état (invalider les listes). */
+export async function onDownloadsChanged(callback: () => void): Promise<() => void> {
+  if (!isTauri()) return () => undefined;
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen("downloads://changed", callback);
+}
+
+/** Abonnement à la progression (throttlée côté Rust, ~2 événements/s). */
+export async function onDownloadsProgress(
+  callback: (event: DownloadProgressEvent) => void,
+): Promise<() => void> {
+  if (!isTauri()) return () => undefined;
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen<DownloadProgressEvent>("downloads://progress", (event) => callback(event.payload));
+}

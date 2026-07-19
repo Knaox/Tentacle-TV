@@ -3,6 +3,7 @@
 //! (`files`) + un claim par compte. La suppression du dernier claim entraîne
 //! la suppression PHYSIQUE (fichier + .part), et si plus aucun fichier ne
 //! référence l'item, la méta locale de l'item part aussi.
+//! Tests : `store_tests.rs` (limite de 300 lignes par fichier).
 
 use super::fsops;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -24,7 +25,7 @@ pub struct FileRow {
     pub error_code: Option<String>,
 }
 
-fn map_file_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FileRow> {
+pub(super) fn map_file_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FileRow> {
     Ok(FileRow {
         id: row.get(0)?,
         item_id: row.get(1)?,
@@ -40,9 +41,28 @@ fn map_file_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FileRow> {
 }
 
 /// Colonnes préfixées `files.` — les requêtes joignent `claims`.
-const FILE_COLS: &str =
+pub(super) const FILE_COLS: &str =
     "files.id, files.item_id, files.media_source_id, files.variant, files.preset, \
      files.rel_path, files.expected_size, files.bytes_done, files.status, files.error_code";
+
+/// Fichier existant pour une identité (item, source, variante, preset) ?
+pub fn find_file(
+    conn: &Connection,
+    item_id: &str,
+    media_source_id: &str,
+    variant: &str,
+    preset: Option<&str>,
+) -> Result<Option<(i64, String)>, String> {
+    conn.query_row(
+        "SELECT id, status FROM files
+         WHERE item_id = ?1 AND media_source_id = ?2 AND variant = ?3
+           AND COALESCE(preset, '') = COALESCE(?4, '')",
+        params![item_id, media_source_id, variant, preset],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )
+    .optional()
+    .map_err(|e| format!("find file: {e}"))
+}
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -85,7 +105,7 @@ pub fn claim_or_create_file(
             if status == "canceled" {
                 tx.execute(
                     "UPDATE files SET status = 'queued', bytes_done = 0, error_code = NULL,
-                     updated_at = ?2 WHERE id = ?1",
+                     paused_by_user = 0, updated_at = ?2 WHERE id = ?1",
                     params![id, now_ms],
                 )
                 .map_err(|e| format!("requeue file: {e}"))?;
@@ -188,26 +208,10 @@ pub fn delete_claim(
     Ok(DeleteOutcome { file_deleted: true, meta_deleted: meta_orphan })
 }
 
-/// Fichiers revendiqués par un utilisateur (tous statuts).
-pub fn list_for_user(conn: &Connection, user_id: &str) -> Result<Vec<FileRow>, String> {
-    let mut stmt = conn
-        .prepare(&format!(
-            "SELECT {FILE_COLS} FROM files
-             JOIN claims ON claims.file_id = files.id
-             WHERE claims.jellyfin_user_id = ?1
-             ORDER BY files.created_at DESC"
-        ))
-        .map_err(|e| format!("prepare list: {e}"))?;
-    let rows = stmt
-        .query_map(params![user_id], map_file_row)
-        .map_err(|e| format!("query list: {e}"))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("collect list: {e}"))?;
-    Ok(rows)
-}
-
 /// Meilleur fichier COMPLET revendiqué par l'utilisateur pour un item —
-/// Original prioritaire sur Allégé (résolution de source à la lecture).
+/// Original prioritaire sur Allégé. Consommé par la résolution de source à
+/// la lecture (phase lecteur) via `downloads_local_source`.
+#[allow(dead_code)] // branché par la commande downloads_local_source (phase lecteur)
 pub fn complete_file_for_item(
     conn: &Connection,
     user_id: &str,
@@ -240,135 +244,5 @@ pub fn disk_usage(conn: &Connection) -> Result<i64, String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::downloads::db;
-
-    fn write_media(root: &Path, rel: &str) {
-        let path = root.join(rel);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, b"data").unwrap();
-    }
-
-    #[test]
-    fn dedup_deux_comptes_un_seul_fichier() {
-        let mut conn = db::open_in_memory();
-        let a = claim_or_create_file(
-            &mut conn, "userA", "item1", "ms1", "original", None,
-            "media/item1/original-ms1.mkv", Some(4), false, 1_000,
-        )
-        .unwrap();
-        assert!(a.created);
-        let b = claim_or_create_file(
-            &mut conn, "userB", "item1", "ms1", "original", None,
-            "media/item1/original-ms1.mkv", Some(4), false, 2_000,
-        )
-        .unwrap();
-        assert!(!b.created);
-        assert_eq!(a.file_id, b.file_id);
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM files", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(count, 1);
-    }
-
-    #[test]
-    fn suppression_dernier_claim_efface_le_fichier_physique() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path();
-        fsops::ensure_layout(root).unwrap();
-        let rel = "media/item1/original-ms1.mkv";
-        write_media(root, rel);
-
-        let mut conn = db::open_in_memory();
-        let o = claim_or_create_file(
-            &mut conn, "userA", "item1", "ms1", "original", None, rel, Some(4), false, 1_000,
-        )
-        .unwrap();
-        claim_or_create_file(
-            &mut conn, "userB", "item1", "ms1", "original", None, rel, Some(4), false, 1_000,
-        )
-        .unwrap();
-
-        // userA supprime : userB référence encore → fichier conservé.
-        let d1 = delete_claim(&mut conn, root, "userA", o.file_id).unwrap();
-        assert!(!d1.file_deleted);
-        assert!(root.join(rel).exists());
-
-        // Dernier claim → suppression physique + méta orpheline purgée.
-        let d2 = delete_claim(&mut conn, root, "userB", o.file_id).unwrap();
-        assert!(d2.file_deleted);
-        assert!(d2.meta_deleted);
-        assert!(!root.join(rel).exists());
-    }
-
-    #[test]
-    fn listes_cloisonnees_par_utilisateur() {
-        let mut conn = db::open_in_memory();
-        claim_or_create_file(
-            &mut conn, "userA", "item1", "ms1", "original", None,
-            "media/item1/original-ms1.mkv", None, false, 1_000,
-        )
-        .unwrap();
-        claim_or_create_file(
-            &mut conn, "userB", "item2", "ms2", "light", Some("p720"),
-            "media/item2/light-ms2-p720.mp4", None, false, 1_000,
-        )
-        .unwrap();
-        let a = list_for_user(&conn, "userA").unwrap();
-        let b = list_for_user(&conn, "userB").unwrap();
-        assert_eq!(a.len(), 1);
-        assert_eq!(b.len(), 1);
-        assert_eq!(a[0].item_id, "item1");
-        assert_eq!(b[0].item_id, "item2");
-        assert!(list_for_user(&conn, "userC").unwrap().is_empty());
-    }
-
-    #[test]
-    fn resolution_prefere_l_original_complet() {
-        let mut conn = db::open_in_memory();
-        let light = claim_or_create_file(
-            &mut conn, "u", "item1", "ms1", "light", Some("p720"),
-            "media/item1/light-ms1-p720.mp4", None, false, 1_000,
-        )
-        .unwrap();
-        let original = claim_or_create_file(
-            &mut conn, "u", "item1", "ms1", "original", None,
-            "media/item1/original-ms1.mkv", None, false, 1_000,
-        )
-        .unwrap();
-        conn.execute("UPDATE files SET status = 'complete'", []).unwrap();
-        let best = complete_file_for_item(&conn, "u", "item1").unwrap().unwrap();
-        assert_eq!(best.id, original.file_id);
-        assert_ne!(best.id, light.file_id);
-        // L'autre compte ne voit rien.
-        assert!(complete_file_for_item(&conn, "autre", "item1").unwrap().is_none());
-    }
-
-    #[test]
-    fn reactivation_d_un_fichier_annule() {
-        let mut conn = db::open_in_memory();
-        let o = claim_or_create_file(
-            &mut conn, "u", "item1", "ms1", "original", None,
-            "media/item1/original-ms1.mkv", None, false, 1_000,
-        )
-        .unwrap();
-        conn.execute(
-            "UPDATE files SET status = 'canceled', bytes_done = 42",
-            [],
-        )
-        .unwrap();
-        let again = claim_or_create_file(
-            &mut conn, "u", "item1", "ms1", "original", None,
-            "media/item1/original-ms1.mkv", None, false, 2_000,
-        )
-        .unwrap();
-        assert_eq!(again.file_id, o.file_id);
-        let (status, bytes): (String, i64) = conn
-            .query_row("SELECT status, bytes_done FROM files WHERE id = ?1",
-                params![o.file_id], |r| Ok((r.get(0)?, r.get(1)?)))
-            .unwrap();
-        assert_eq!(status, "queued");
-        assert_eq!(bytes, 0);
-    }
-}
+#[path = "store_tests.rs"]
+mod tests;

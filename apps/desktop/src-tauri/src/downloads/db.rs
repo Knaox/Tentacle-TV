@@ -129,6 +129,15 @@ CREATE TABLE IF NOT EXISTS report_queue (
 CREATE INDEX IF NOT EXISTS report_queue_pending ON report_queue (synced, jellyfin_user_id);
 ";
 
+/// v3 — moteur de téléchargement : distinction pause utilisateur / pause
+/// système (coupure réseau, boot) pour l'auto-reprise, et titres dénormalisés
+/// dans item_meta (liste des téléchargements sans lire N fichiers JSON).
+const SCHEMA_V3: &str = "
+ALTER TABLE files ADD COLUMN paused_by_user INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE item_meta ADD COLUMN title TEXT;
+ALTER TABLE item_meta ADD COLUMN series_name TEXT;
+";
+
 fn migrate(conn: &Connection) -> Result<(), String> {
     let version: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
@@ -138,6 +147,9 @@ fn migrate(conn: &Connection) -> Result<(), String> {
     }
     if version < 2 {
         apply(conn, SCHEMA_V2, 2)?;
+    }
+    if version < 3 {
+        apply(conn, SCHEMA_V3, 3)?;
     }
     Ok(())
 }

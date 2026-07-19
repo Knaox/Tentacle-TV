@@ -19,6 +19,7 @@ import { useScrollMemory } from "./hooks/useScrollMemory";
 import { ConnectivityBinding } from "./offline/ConnectivityBinding";
 import { OfflineSessionSync } from "./offline/OfflineSessionSync";
 import { OfflineSessionGate } from "./offline/OfflineSessionGate";
+import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { reportPossibleOutage } from "./offline/connectivityStore";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
@@ -190,6 +191,7 @@ export function App() {
       {/* Desktop : photo de session (profil+droits) rafraîchie en ligne, et
           garde « reconnexion nécessaire » à l'expiration des 30 j hors ligne. */}
       {authed && <OfflineSessionSync />}
+      {authed && <DownloadsEngineBoot />}
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
