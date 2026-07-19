@@ -20,6 +20,9 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 fs4 = "0.13"
 # Sélecteur de dossier natif (emplacement des téléchargements, hors MAS).
 tauri-plugin-dialog = "2"
+# Client HTTP du moteur de téléchargement (streaming + Range). Déjà utilisé
+# par l'updater Linux — promu en dépendance commune aux 3 OS.
+ureq = "2"
 
 [dev-dependencies]
 # Tests du store de téléchargements (suppression physique, refcount).
@@ -34,7 +37,6 @@ tempfile = "3"
 # - webkit2gtk : set_background_color(alpha 0) sur la WebView Tauri.
 # - libloading : dlopen libmpv.so.2 + symboles du Render API (comme macOS).
 [target.'cfg(target_os = "linux")'.dependencies]
-ureq = "2"
 sha2 = "0.10"
 hex = "0.4"
 gtk = "0.18"
