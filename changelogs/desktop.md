@@ -11,6 +11,28 @@ Release GitHub Linux (illimité). Une seule version pour les trois OS
 ### EN
 - …
 
+## [1.15.0]
+### FR
+- Thème clair, sombre ou automatique : l'application suit le réglage de votre système en direct, sur Windows comme sur macOS — choix dans Réglages, section Apparence
+- Réglages repensés en navigation latérale (Apparence, Sécurité, Lecture) : mot de passe, appareils jumelés et changement de serveur sont enfin regroupés dans Sécurité
+- Administration repensée sur le même modèle : chaque section accessible d'un clic, sans défilement, avec sa propre icône — et sans les boutons redondants
+- Bannières d'accueil et fiches : en thème clair, un flou progressif remplace les voiles — l'affiche garde ses couleurs, le texte reste lisible
+- Effet Liquid Glass activable dans Apparence : réfraction sur les surfaces translucides, repli automatique sur l'effet verre classique quand le moteur ne le permet pas
+- Les plugins suivent désormais le thème de l'application, clair compris
+- Barre de navigation modernisée : état actif en pastille sobre, navigation au clavier visible
+- Confirmations : plus aucune boîte de dialogue système muette sur macOS
+- Notifications de mise à jour : correction d'un enchaînement qui pouvait laisser macOS et Windows sans annonce alors qu'une version était disponible
+### EN
+- Light, dark or automatic theme: the app follows your system setting live, on Windows and macOS alike — pick yours in Settings, Appearance section
+- Settings redesigned with side navigation (Appearance, Security, Playback): password, paired devices and server switching are finally grouped under Security
+- Administration redesigned on the same model: every section one click away, no scrolling, each with its own icon — and without the redundant buttons
+- Home banners and detail pages: in light theme, a progressive blur replaces the veils — artwork keeps its colors, text stays readable
+- Liquid Glass effect available in Appearance: refraction on translucent surfaces, automatic fallback to the classic glass effect when the engine cannot render it
+- Plugins now follow the app theme, light included
+- Modernized navigation bar: sober pill active state, visible keyboard navigation
+- Confirmations: no more silent system dialogs on macOS
+- Update notifications: fixed a sequence that could leave macOS and Windows unannounced while a version was available
+
 ## [1.13.1]
 ### FR
 - Corrections mineures de l'interface
