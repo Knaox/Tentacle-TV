@@ -30,6 +30,9 @@ export default {
   liquidGlassUnavailable: "Not available on this rendering engine — the classic glass effect is used.",
 
   // ── Settings shell sections ──
+  // Umbrella title of the screen (mobile landing). `title` remains the
+  // historical title of the Playback page alone ("Language preferences").
+  settingsTitle: "Settings",
   sectionAccount: "Account",
   sectionSecurity: "Security",
   sectionAppearance: "Appearance",

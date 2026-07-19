@@ -1,8 +1,10 @@
 import { useMemo } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Palette, Play, ShieldCheck } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
+
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 /**
  * Coquille des réglages utilisateur.
@@ -18,6 +20,18 @@ import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
  */
 
 const ICON = 17;
+
+/**
+ * Index de `/settings`. Sur desktop l'index n'affichait qu'un titre au-dessus
+ * d'un panneau vide — on redirige vers Apparence, la premiere section. Sur
+ * mobile on garde le rail comme ecran d'atterrissage : rediriger ici ferait
+ * BOUCLER le bouton Retour (Retour -> /settings -> redirection -> la meme page).
+ */
+export function SettingsIndex() {
+  const isMobile = useIsMobile();
+  if (isMobile) return null;
+  return <Navigate to="/settings/appearance" replace />;
+}
 
 export function SettingsLayout() {
   const { t } = useTranslation("preferences");
@@ -46,8 +60,11 @@ export function SettingsLayout() {
         sections={sections}
         activeId={activeId}
         onSelect={(id) => navigate(`/settings/${id}`)}
-        title={active ? active.label : t("title")}
-        description={active ? undefined : t("subtitle")}
+        /* Le titre generique n'apparait que sur l'atterrissage mobile (le rail).
+           `t("title")` = « Preferences de langues » etait faux comme ombrelle :
+           c'est le titre historique de la seule page Lecture. */
+        title={active ? active.label : t("settingsTitle")}
+        description={undefined}
         onBack={() => navigate("/settings")}
         backLabel={t("back")}
       >
