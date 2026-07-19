@@ -132,7 +132,6 @@ export default {
   downloadsLoadError: "Impossible de lire les droits depuis Jellyfin (clé API et connexion à vérifier dans Services).",
   rightDownload: "Téléchargement",
   rightLight: "Mode Allégé",
-  adminBadge: "Admin",
   downloadsAllLibraries: "Toutes les bibliothèques",
   downloadsSomeLibraries: "{{count}} bibliothèque(s) autorisée(s) — géré dans Jellyfin",
 } as const;
