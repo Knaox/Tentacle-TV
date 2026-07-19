@@ -102,8 +102,8 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
       </div>
 
       <div className="p-2.5">
-        <p className="text-sm font-medium text-white line-clamp-1">{item.Name}</p>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-white/50">
+        <p className="text-sm font-medium text-content-primary line-clamp-1">{item.Name}</p>
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-content-tertiary">
           {item.ProductionYear && <span>{item.ProductionYear}</span>}
           <span>{item.Type === "Movie" ? t("common:movie") : t("common:series")}</span>
         </div>
