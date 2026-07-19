@@ -1,0 +1,61 @@
+/* Scrims des heros (accueil + fiche média) — recette « image vive » alignée
+ * sur le mobile : l'affiche n'est JAMAIS voilée de clair ni floutée ; le texte
+ * posé dessus est en tokens `--on-media-*` (blanc constant) et repose sur des
+ * dégradés NOIRS (`--scrim-media-rgb`, constant entre schémas). Le seul
+ * overlay qui suit le thème est le scrim HAUT (`--scrim-page-rgb`), assise de
+ * la barre de navigation — jamais sous le texte.
+ *
+ * Déclarées ICI et non dans tokens.css : le test de parité du thème exige que
+ * toute variable de tokens.css soit surchargeable par l'admin (types,
+ * varNames, catalogue, Zod). Ce sont des variables de présentation, pas des
+ * tokens de design. */
+:root {
+  --scrim-page-rgb: 0, 0, 0;
+
+  /* SOMBRE — géométrie cinéma historique : voiles larges, fondu bas vers la
+   * page (`--surface-0` = noir, donc le raccord est invisible). Rendu
+   * identique à l'historique : seul le littéral noir est passé par le token
+   * `--scrim-media-rgb` (0, 0, 0). */
+  --hero-scrim-left: linear-gradient(90deg, rgba(var(--scrim-media-rgb), 0.85) 0%, rgba(var(--scrim-media-rgb), 0.5) 35%, transparent 60%);
+  --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.55) 55%, var(--surface-0) 100%);
+  --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.72) 0%, rgba(var(--scrim-media-rgb), 0.35) 45%, transparent 100%);
+  --detail-scrim-left: linear-gradient(90deg, rgba(var(--scrim-media-rgb), 0.85) 0%, rgba(var(--scrim-media-rgb), 0.35) 45%, transparent 70%);
+  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.6) 55%, var(--surface-0) 100%);
+  --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.55) 0%, transparent 100%);
+
+  /* Raccord bas de bannière vers la page : inutile en sombre, le scrim bas y
+   * fond déjà vers `--surface-0`. */
+  --hero-page-fade: none;
+  --detail-page-fade: none;
+}
+
+:root[data-theme="light"] {
+  /* Réservé au scrim TOP (assise nav) — seul voile clair autorisé. */
+  --scrim-page-rgb: 244, 244, 247;
+
+  /* CLAIR — les scrims qui adossent le texte restent NOIRS (recette mobile,
+   * alphas sombres ×0.7) : l'affiche garde ses couleurs, le texte on-media
+   * (blanc) reste lisible même sur backdrop blanc — blanc sur noir 49-70 %
+   * tient le contraste AA quel que soit le pixel dessous. */
+  --hero-scrim-left: linear-gradient(90deg, rgba(var(--scrim-media-rgb), 0.60) 0%, rgba(var(--scrim-media-rgb), 0.35) 35%, transparent 60%);
+  --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.18) 35%, rgba(var(--scrim-media-rgb), 0.49) 70%, rgba(var(--scrim-media-rgb), 0.70) 100%);
+  --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.85) 0%, rgba(var(--scrim-page-rgb), 0.40) 45%, rgba(var(--scrim-page-rgb), 0.10) 80%, transparent 100%);
+  --detail-scrim-left: linear-gradient(90deg, rgba(var(--scrim-media-rgb), 0.60) 0%, rgba(var(--scrim-media-rgb), 0.25) 45%, transparent 70%);
+  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.18) 35%, rgba(var(--scrim-media-rgb), 0.49) 70%, rgba(var(--scrim-media-rgb), 0.70) 100%);
+  --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.45) 0%, transparent 100%);
+
+  /* Raccord bas : fondu vers la page claire, confiné au bord inférieur
+   * (calque dédié dans HeroBackdrop/DetailHero, SOUS la zone de texte).
+   * Complétion à 55 % du calque : les rangées qui CHEVAUCHENT le bas du hero
+   * (`-mt-12/-mt-16` sur l'accueil) reposent ainsi sur un aplat 100 %
+   * `--surface-0`, jamais sur la zone de mélange sombre→clair (titre de
+   * rangée « flottant » sinon). Passer à `none` pour une coupure nette. */
+  --hero-page-fade: linear-gradient(180deg, transparent 0%, var(--surface-0) 55%);
+  --detail-page-fade: linear-gradient(180deg, transparent 0%, var(--surface-0) 55%);
+}
+
+/* Le grain anti-banding est calibré pour des dégradés sombres pleine image ;
+ * sur l'image vive du thème clair il se lit comme de la salissure. */
+:root[data-theme="light"] .noise-texture {
+  display: none;
+}

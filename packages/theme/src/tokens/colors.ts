@@ -95,6 +95,8 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     primary: "#FFFFFF",
     secondary: "rgba(255, 255, 255, 0.80)",
     shadow: "rgba(0, 0, 0, 0.7)",
+    scrimRgb: "0, 0, 0",
+    muted: "rgba(255, 255, 255, 0.30)",
   },
   danger: {
     surface: "rgba(239, 68, 68, 0.1)",

@@ -141,6 +141,8 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
   { category: "color", path: "color.onMedia.primary", cssVar: "--on-media-primary", defaultValue: t.color.onMedia.primary, type: "color", label: "Sur média — primaire" },
   { category: "color", path: "color.onMedia.secondary", cssVar: "--on-media-secondary", defaultValue: t.color.onMedia.secondary, type: "rgba", label: "Sur média — secondaire" },
   { category: "color", path: "color.onMedia.shadow", cssVar: "--on-media-shadow", defaultValue: t.color.onMedia.shadow, type: "rgba", label: "Sur média — ombre du texte" },
+  { category: "color", path: "color.onMedia.scrimRgb", cssVar: "--scrim-media-rgb", defaultValue: t.color.onMedia.scrimRgb, type: "rgb-triplet", label: "Sur média — assise des scrims (RGB)" },
+  { category: "color", path: "color.onMedia.muted", cssVar: "--on-media-muted", defaultValue: t.color.onMedia.muted, type: "rgba", label: "Sur média — surfaces discrètes" },
 
   // ── COLOR : Danger (actions destructives) ──
   { category: "color", path: "color.danger.surface", cssVar: "--danger-surface", defaultValue: t.color.danger.surface, type: "rgba", label: "Danger surface" },

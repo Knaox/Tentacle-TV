@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { motion, useReducedMotion } from "framer-motion";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
 import { usePinnedNav } from "../../hooks/usePinnedNav";
+import { springSoft } from "../../theme/motion";
 
 interface NavLink {
   key: string;
@@ -15,6 +17,7 @@ interface NavLink {
 export function TopNavLinks() {
   const { pathname } = useLocation();
   const { t, i18n } = useTranslation("nav");
+  const reduced = useReducedMotion();
   const { data: libraries } = useLibraries();
   const activePluginsMeta = useActivePluginsMeta();
   const pinned = usePinnedNav();
@@ -63,22 +66,30 @@ export function TopNavLinks() {
         const active = isActive(link);
         return (
           /*
-            Etat actif : pilule pleine et discrete. Remplace le soulignement en
-            degrade de marque surmonte d'un halo — la signature la plus datee de
-            la barre, et la seule qui imposait un `style` inline sur un lien.
-            Le focus clavier n'etait visible NULLE PART ici auparavant.
+            Etat actif : pilule pleine et discrete, qui GLISSE d'un lien a
+            l'autre (`layoutId` partage, ressort doux — pattern segmented
+            control iOS). Le fond actif vit dans le span anime, pas sur le
+            lien, pour que seul le deplacement soit anime.
           */
           <Link
             key={link.key}
             to={link.path}
             aria-current={active ? "page" : undefined}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`relative whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               active
-                ? "bg-fill-soft font-semibold text-content-primary"
+                ? "font-semibold text-content-primary"
                 : "font-medium text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
             }`}
           >
-            {link.label}
+            {active && (
+              <motion.span
+                layoutId="topnav-active-pill"
+                className="absolute inset-0 rounded-lg bg-fill-soft"
+                transition={reduced ? { duration: 0 } : springSoft}
+                aria-hidden
+              />
+            )}
+            <span className="relative z-10">{link.label}</span>
           </Link>
         );
       })}

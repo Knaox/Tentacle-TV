@@ -67,6 +67,8 @@ const CONSTANTS_ENTRE_SCHEMAS = [
   "--on-media-primary",
   "--on-media-secondary",
   "--on-media-shadow",
+  "--scrim-media-rgb",
+  "--on-media-muted",
   // Texte sur aplat de marque : blanc dans les deux schémas, pour la même
   // raison — c'est le contraste avec l'accent qui commande, pas le thème.
   "--cta-brand-fg",

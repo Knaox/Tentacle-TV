@@ -100,12 +100,12 @@ export function MediaDetail() {
             <div className="flex-1 pt-4">
               <motion.h1
                 variants={fadeUp}
-                className="text-display-3 font-bold text-content-primary drop-shadow-[0_4px_20px_var(--surface-overlay)] line-clamp-2 break-words max-w-3xl md:text-display-2"
+                className="text-display-3 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words max-w-3xl md:text-display-2"
               >
                 {item.Name}
               </motion.h1>
               {item.OriginalTitle && item.OriginalTitle !== item.Name && (
-                <motion.p variants={fadeUp} className="mt-0.5 text-sm text-content-quaternary">
+                <motion.p variants={fadeUp} className="mt-0.5 text-sm text-on-media-secondary">
                   {item.OriginalTitle}
                 </motion.p>
               )}
@@ -116,7 +116,7 @@ export function MediaDetail() {
                   onClick={() => navigate(`/media/${item.SeriesId}`)}
                   aria-label={t("common:goToSeries")}
                   title={t("common:goToSeries")}
-                  className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-content-tertiary transition-colors hover:text-content-primary"
+                  className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-on-media-secondary transition-colors hover:text-on-media-primary"
                 >
                   <span className="underline-offset-4 group-hover/series:underline">
                     {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}

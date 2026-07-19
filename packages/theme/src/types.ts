@@ -116,6 +116,15 @@ export interface OnMediaColorTokens {
   secondary: string;
   /** Couleur du `text-shadow` porté par le texte. */
   shadow: string;
+  /**
+   * Triplet RGB (« R, G, B ») de l'assise des scrims posés sur média — à
+   * composer via `rgba(var(--scrim-media-rgb), α)`. Noir dans les deux
+   * schémas : un voile clair délave l'affiche et prive le texte on-media
+   * de son contraste.
+   */
+  scrimRgb: string;
+  /** Surfaces discrètes posées sur média (track de progression, bordure de chip, indicateur inactif). */
+  muted: string;
 }
 
 /** Surfaces d'action destructive. */

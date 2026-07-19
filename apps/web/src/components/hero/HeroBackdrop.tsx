@@ -35,21 +35,24 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   // Solid base + gradients restent rendus en permanence (jamais animés).
   const overlays = (
     <>
-      {/* Pile de degrades cinema. Les degrades COMPLETS vivent dans index.css
-          (`--hero-scrim-*`) : la geometrie differe par schema — voiles larges
-          historiques en sombre, voile confine a la colonne de texte en clair
-          pour que l'affiche reste propre. Recolorer les memes stops donnait un
-          brouillard laiteux sur toute l'image. */}
-      {/* Flou progressif (clair uniquement, cf. index.css .hero-glass) : trois
-          couches SOUS les degrades, pour que la couture basse se fonde aussi
-          dans la zone floutee. */}
-      <div className="hero-glass hero-glass-1 absolute inset-y-0 left-0 w-[64%]" />
-      <div className="hero-glass hero-glass-2 absolute inset-y-0 left-0 w-[64%]" />
-      <div className="hero-glass hero-glass-3 absolute inset-y-0 left-0 w-[64%]" />
+      {/* Pile de degrades cinema. Les chaines COMPLETES vivent dans
+          theme/scrims.css (`--hero-scrim-*`) : assise NOIRE constante
+          (`--scrim-media-rgb`) sous le texte on-media dans les DEUX schemas —
+          recette mobile, l'affiche reste vive, aucun voile clair ni flou.
+          Seul le voile haut suit le theme (assise de la TopNav). */}
       <div className="absolute inset-0" style={{ background: "var(--hero-scrim-left)" }} />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{ background: "var(--hero-scrim-bottom)" }}
+      />
+      {/* Raccord bas de banniere vers la page — `none` en sombre (le scrim bas
+          y fond deja vers --surface-0). En clair : fondu opaque a 55 % du
+          calque, pour que la premiere rangee (qui chevauche en -mt) repose sur
+          un aplat page et non sur la couture. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%]"
+        style={{ background: "var(--hero-page-fade)" }}
+        aria-hidden
       />
       {/* Vignette haute sous la TopNav — la nav est en texte theme, son assise
           suit le schema. */}

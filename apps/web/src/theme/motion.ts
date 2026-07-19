@@ -8,6 +8,11 @@ const prefersReducedMotion = (): boolean => {
 export const easeOut = [0.22, 1, 0.36, 1] as const;
 export const easeInOut = [0.65, 0, 0.35, 1] as const;
 
+/** Ressort « press » — réponse vive des contrôles (hover/tap), ~180 ms perçus. */
+export const springPress: Transition = { type: "spring", stiffness: 420, damping: 28, mass: 0.6 };
+/** Ressort doux — éléments partagés (pastille de nav), sans rebond marqué. */
+export const springSoft: Transition = { type: "spring", stiffness: 320, damping: 32 };
+
 export const duration = {
   fast: 0.15,
   base: 0.24,

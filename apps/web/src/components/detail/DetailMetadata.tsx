@@ -29,13 +29,17 @@ export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps)
 
   return (
     <>
+      {/* Rangée méta : encore posée sur le scrim de la bannière (le bloc
+          remonte en -mt-48) → tokens on-media constants, comme le titre.
+          Les chips genres et le synopsis, eux, tombent sur le fond de page
+          et restent thémés. */}
       <motion.div
         variants={fadeUp}
-        className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-content-secondary"
+        className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
       >
         {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
         {item.OfficialRating && (
-          <span className="rounded border border-line-strong px-1.5 py-0.5 text-[10px] font-bold tracking-wider">
+          <span className="rounded border border-on-media-muted px-1.5 py-0.5 text-[10px] font-bold tracking-wider">
             {item.OfficialRating}
           </span>
         )}
@@ -49,7 +53,10 @@ export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps)
           <span>{item.ChildCount} {t("common:seasons")}</span>
         )}
         {isSeries && item.Status && (
-          <span className="rounded bg-fill-soft px-2 py-0.5 text-[11px]">
+          <span
+            className="rounded px-2 py-0.5 text-[11px] text-on-media-secondary"
+            style={{ background: "rgba(var(--scrim-media-rgb), 0.45)" }}
+          >
             {item.Status === "Continuing" ? t("common:ongoing") : t("common:ended")}
           </span>
         )}

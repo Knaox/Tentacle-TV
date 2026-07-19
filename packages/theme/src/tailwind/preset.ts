@@ -128,6 +128,7 @@ export const tentacleTailwindPreset: Partial<Config> = {
         "on-media": {
           primary: cssVar(CSS_VAR_NAMES.color.onMedia.primary),
           secondary: cssVar(CSS_VAR_NAMES.color.onMedia.secondary),
+          muted: cssVar(CSS_VAR_NAMES.color.onMedia.muted),
         },
 
         /**

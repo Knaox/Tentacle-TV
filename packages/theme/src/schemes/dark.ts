@@ -72,6 +72,8 @@ export function buildDarkPalette(): ThemePalette {
       primary: "#FFFFFF",
       secondary: "rgba(255, 255, 255, 0.80)",
       shadow: "rgba(0, 0, 0, 0.7)",
+      scrimRgb: "0, 0, 0",
+      muted: "rgba(255, 255, 255, 0.30)",
     },
     // Ombres profondes (GlassSurface ne les applique pas en sombre → rendu dark
     // inchangé ; disponibles pour d'autres surfaces si besoin).

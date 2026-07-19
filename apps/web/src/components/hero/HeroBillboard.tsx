@@ -84,6 +84,7 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
       <HeroIndicators
         count={items.length}
         activeIndex={index}
+        durationMs={rotateMs}
         onSelect={(i) => { goTo(i); pause(); setTimeout(resume, 100); }}
         onPrev={() => { advance(-1); pause(); setTimeout(resume, 100); }}
         onNext={() => { advance(1); pause(); setTimeout(resume, 100); }}

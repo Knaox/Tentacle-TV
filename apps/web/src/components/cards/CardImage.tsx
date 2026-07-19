@@ -29,10 +29,12 @@ export function CardImage({ src, alt, className, fallback }: CardImageProps) {
           draggable={false}
           onLoad={() => setLoaded(true)}
           onError={() => setErrored(true)}
-          className="h-full w-full object-cover"
+          // Zoom interne discret au survol de la carte parente (`group/card`) —
+          // le conteneur masque le débord (overflow-hidden côté carte).
+          className="h-full w-full object-cover group-hover/card:scale-[1.06] motion-reduce:!transform-none"
           style={{
             opacity: loaded ? 1 : 0,
-            transition: "opacity 240ms ease-out",
+            transition: "opacity 240ms ease-out, transform 300ms var(--ease-out)",
           }}
         />
       )}

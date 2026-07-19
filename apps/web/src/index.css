@@ -1,131 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "./theme/tokens.css";
+@import "./theme/scrims.css";
+@import "./theme/motion-reduce.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Voiles poses sur les images (hero, fiches) qui adossent du texte THEME.
-   * En sombre : noirs, rendu strictement identique a l'historique. En clair :
-   * nacres — un voile noir sous du texte devenu fonce donnait le lavis gris
-   * « sale » releve sur l'accueil et les fiches. Les scrims qui adossent du
-   * blanc CONSTANT pose sur l'affiche (badges, barres du lecteur) restent eux
-   * en noir en dur, regle « sur media ».
-   *
-   * Declares ICI et non dans tokens.css : le test de parite du theme exige que
-   * toute variable de tokens.css soit surchargeable par l'admin (types,
-   * varNames, catalogue, Zod). Ce sont des variables de presentation, pas des
-   * tokens de design. */
-  :root {
-    --scrim-page-rgb: 0, 0, 0;
-    --hero-text-shadow: rgba(0, 0, 0, 0.8);
-
-    /* Degrades COMPLETS des heros (accueil + fiche). La couleur ne suffit pas :
-     * la geometrie doit differer par schema. En sombre, des voiles larges sur
-     * toute l'image donnent le rendu cinema historique — ces chaines sont les
-     * valeurs d'origine, bit-a-bit. En clair, la meme geometrie devient un
-     * brouillard laiteux qui noie l'affiche : le bloc clair ci-dessous confine
-     * le voile a la colonne de texte et a une couture basse courte, l'image
-     * reste quasi propre. */
-    --hero-scrim-left: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 35%, transparent 60%);
-    --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 55%, var(--surface-0) 100%);
-    --hero-scrim-top: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 45%, transparent 100%);
-    --detail-scrim-left: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, transparent 70%);
-    --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 55%, var(--surface-0) 100%);
-    --detail-scrim-top: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 100%);
-  }
-  :root[data-theme="light"] {
-    --scrim-page-rgb: 244, 244, 247;
-    /* Halo clair : une ombre noire sous du texte fonce salirait le rendu. */
-    --hero-text-shadow: rgba(244, 244, 247, 0.9);
-
-    /* Accueil : PAS de voile lateral en clair — la lisibilite du texte est
-     * portee par le flou progressif (.hero-glass, plus bas), qui conserve les
-     * couleurs de l'affiche la ou un aplat nacre se lisait comme du brouillard. */
-    --hero-scrim-left: none;
-    --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(var(--scrim-page-rgb), 0.55) 80%, var(--surface-0) 100%);
-    --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.6) 0%, rgba(var(--scrim-page-rgb), 0.22) 55%, transparent 100%);
-
-    /* Fiche : pas de voile lateral, et la couture basse est reduite au strict
-     * raccord de page — la lisibilite du bloc titre est portee par le flou
-     * progressif vertical (.detail-glass), comme sur l'accueil. */
-    --detail-scrim-left: none;
-    --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, transparent 55%, rgba(var(--scrim-page-rgb), 0.5) 85%, var(--surface-0) 100%);
-    --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.45) 0%, transparent 100%);
-  }
-
-  /* Le grain anti-banding est calibre pour des degrades sombres ; sur un fond
-   * nacre il se lit comme de la salissure. */
-  :root[data-theme="light"] .noise-texture {
-    display: none;
-  }
-
-  /* Flou progressif derriere la colonne de texte du hero — THEME CLAIR SEUL.
-   * Trois couches de blur d'intensite croissante, chacune masquee en degrade
-   * horizontal : le flou monte vers le texte et s'eteint vers l'affiche
-   * (technique « gradient blur » iOS/visionOS). Le flou CONSERVE les couleurs
-   * de l'image — c'est ce qui le distingue du voile nacre, qui se lisait comme
-   * du brouillard. Seule la couche la plus floue porte une pointe de teinte,
-   * plancher de contraste pour le texte fonce sur zones sombres d'affiche.
-   * En sombre : rien — les voiles cinema historiques suffisent. */
-  .hero-glass {
-    display: none;
-    pointer-events: none;
-  }
-  :root[data-theme="light"] .hero-glass {
-    display: block;
-  }
-  :root[data-theme="light"] .hero-glass-1 {
-    backdrop-filter: blur(8px) saturate(115%);
-    -webkit-backdrop-filter: blur(8px) saturate(115%);
-    -webkit-mask-image: linear-gradient(90deg, #000 42%, transparent 68%);
-    mask-image: linear-gradient(90deg, #000 42%, transparent 68%);
-  }
-  :root[data-theme="light"] .hero-glass-2 {
-    backdrop-filter: blur(22px) saturate(120%);
-    -webkit-backdrop-filter: blur(22px) saturate(120%);
-    -webkit-mask-image: linear-gradient(90deg, #000 28%, transparent 52%);
-    mask-image: linear-gradient(90deg, #000 28%, transparent 52%);
-  }
-  :root[data-theme="light"] .hero-glass-3 {
-    background: rgba(var(--scrim-page-rgb), 0.3);
-    backdrop-filter: blur(44px) saturate(125%);
-    -webkit-backdrop-filter: blur(44px) saturate(125%);
-    -webkit-mask-image: linear-gradient(90deg, #000 10%, transparent 36%);
-    mask-image: linear-gradient(90deg, #000 10%, transparent 36%);
-  }
-
-  /* Variante VERTICALE pour les fiches media : le bloc titre chevauche le BAS
-   * du backdrop, le flou monte donc depuis le bas et fond dans la couture de
-   * page. Meme principe, autre axe. */
-  .detail-glass {
-    display: none;
-    pointer-events: none;
-  }
-  :root[data-theme="light"] .detail-glass {
-    display: block;
-  }
-  :root[data-theme="light"] .detail-glass-1 {
-    backdrop-filter: blur(8px) saturate(115%);
-    -webkit-backdrop-filter: blur(8px) saturate(115%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 30%, #000 62%);
-    mask-image: linear-gradient(180deg, transparent 30%, #000 62%);
-  }
-  :root[data-theme="light"] .detail-glass-2 {
-    backdrop-filter: blur(20px) saturate(120%);
-    -webkit-backdrop-filter: blur(20px) saturate(120%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 80%);
-    mask-image: linear-gradient(180deg, transparent 48%, #000 80%);
-  }
-  :root[data-theme="light"] .detail-glass-3 {
-    background: rgba(var(--scrim-page-rgb), 0.28);
-    backdrop-filter: blur(40px) saturate(125%);
-    -webkit-backdrop-filter: blur(40px) saturate(125%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 62%, #000 94%);
-    mask-image: linear-gradient(180deg, transparent 62%, #000 94%);
-  }
-
   :focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
@@ -222,7 +104,6 @@
   .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .safe-area-top { top: env(safe-area-inset-top, 0px); }
 
-  /* Cinematic gradient — used for hero fade-to-black */
   /* Row gutter — single source of truth */
   .row-gutter {
     padding-left: var(--row-gutter-mobile);
@@ -285,13 +166,4 @@ video::cue {
   0%   { transform: translateX(0%); }
   60%  { transform: translateX(450%); }
   100% { transform: translateX(450%); }
-}
-
-/* Reduced motion — kill heavy ambient animations */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }
