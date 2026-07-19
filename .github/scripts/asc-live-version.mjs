@@ -18,6 +18,12 @@ if (!ASC_KEY_ID || !ASC_ISSUER || !ASC_KEY_P8 || !BUNDLE_ID) {
   process.exit(1);
 }
 
+// Vocabulaire moderne (appVersionState) : READY_FOR_DISTRIBUTION. L'ancien
+// READY_FOR_SALE n'existe que dans appStoreState, champ DEPRECIE qu'Apple ne
+// maintient plus de facon fiable : il peut rester fige a READY_FOR_SALE sur
+// une version pourtant REPLACED_WITH_NEW_VERSION — d'ou la priorite absolue
+// a appVersionState quand il est present (bug vu : 1.13.1 annoncee en vente
+// alors que 1.15.0 etait en ligne).
 const LIVE_STATES = new Set(['READY_FOR_SALE', 'READY_FOR_DISTRIBUTION']);
 
 const api = createAscClient({ keyId: ASC_KEY_ID, issuer: ASC_ISSUER, p8: ASC_KEY_P8 });
@@ -31,14 +37,15 @@ const main = async () => {
     'GET',
     `/v1/apps/${app.id}/appStoreVersions?filter[platform]=MAC_OS&limit=20`,
   );
-  const live = (r.data ?? []).find((v) => {
-    const a = v.attributes ?? {};
-    return LIVE_STATES.has(a.appStoreState) || LIVE_STATES.has(a.appVersionState);
-  });
+  const versions = r.data ?? [];
+  // Etat effectif : appVersionState fait foi ; appStoreState (deprecie) ne
+  // sert de secours que s'il est absent de la reponse.
+  const stateOf = (v) => v.attributes?.appVersionState ?? v.attributes?.appStoreState;
+  console.error('[live] versions MAC_OS vues: '
+    + versions.map((v) => `${v.attributes?.versionString}=${stateOf(v)}`).join(', '));
+  const live = versions.find((v) => LIVE_STATES.has(stateOf(v)));
   if (!live) {
-    console.error('[live] aucune version macOS en vente (etats vus: '
-      + (r.data ?? []).map((v) => v.attributes?.appStoreState ?? v.attributes?.appVersionState).join(', ')
-      + ')');
+    console.error('[live] aucune version macOS en vente');
     process.exit(1);
   }
   process.stdout.write(String(live.attributes.versionString));
