@@ -28,6 +28,7 @@ import {
   type LinkQuality,
 } from "./connectivityMachine";
 import { setNetworkSuspectListener } from "@tentacle-tv/api-client";
+import { isTauri } from "../hooks/mpvRuntime";
 import { backendUrl } from "../main";
 
 export type OfflineReason = "backend" | "jellyfin" | null;
@@ -48,12 +49,16 @@ export const MANUAL_OFFLINE_STORAGE_KEY = "tentacle_offline_manual";
 
 const PROBE_TIMEOUT_MS = 5_000;
 const OFFLINE_PROBE_INTERVAL_MS = 15_000;
-/** En ligne : sonde LÉGÈRE (health seul) uniquement pour suivre la latence, et
- *  très espacée — à ~0,7 Ko l'aller-retour, sonder toutes les 60 s coûterait
- *  ~84 Ko sur 2 h de film, soit plus que tout le reste du budget. Une
- *  dégradation de lien n'a pas besoin d'être vue en une minute, et une vraie
- *  panne déclenche déjà une sonde immédiate via `reportPossibleOutage`. */
-const ONLINE_PROBE_INTERVAL_MS = 300_000;
+/** En ligne : sonde LÉGÈRE (health seul) uniquement pour suivre la latence.
+ *  Web : très espacée — à ~0,7 Ko l'aller-retour, sonder toutes les 60 s
+ *  coûterait ~84 Ko sur 2 h de film ; une vraie panne déclenche de toute façon
+ *  une sonde immédiate via `reportPossibleOutage`. Desktop : resserrée à 90 s
+ *  — rester faussement « en ligne » masque le catalogue local (pire cas
+ *  d'inertie si AUCUNE requête ne circule), coût négligeable sur un poste. */
+const ONLINE_PROBE_INTERVAL_WEB_MS = 300_000;
+const ONLINE_PROBE_INTERVAL_DESKTOP_MS = 90_000;
+const onlineProbeIntervalMs = (): number =>
+  isTauri() ? ONLINE_PROBE_INTERVAL_DESKTOP_MS : ONLINE_PROBE_INTERVAL_WEB_MS;
 const CONFIRM_PROBE_DELAY_MS = 3_000;
 const MIN_PROBE_SPACING_MS = 2_000;
 const INITIAL_PROBE_DELAY_MS = 1_000;
@@ -99,15 +104,14 @@ let lastProbeStartAt = 0;
 /** Sonde périodique TOUJOURS active, à deux cadences :
  *  - hors « online » (offline auto, manuel — pour renseigner la joignabilité
  *    dans le popover — et checking) : 15 s, sonde complète ;
- *  - en « online » : 5 min, sonde légère, uniquement pour suivre la latence. */
+ *  - en « online » : 5 min web / 90 s desktop, sonde légère (latence seule). */
 const ensureTimers = (): void => {
-  const wanted =
-    snapshot.state === "online" ? ONLINE_PROBE_INTERVAL_MS : OFFLINE_PROBE_INTERVAL_MS;
+  const online = snapshot.state === "online";
+  const wanted = online ? onlineProbeIntervalMs() : OFFLINE_PROBE_INTERVAL_MS;
   if (intervalId !== null && intervalMs === wanted) return;
   if (intervalId !== null) clearInterval(intervalId);
   intervalMs = wanted;
-  const latencyOnly = wanted === ONLINE_PROBE_INTERVAL_MS;
-  intervalId = setInterval(() => void probe(latencyOnly), wanted);
+  intervalId = setInterval(() => void probe(online), wanted);
 };
 
 const scheduleConfirm = (): void => {
