@@ -6,7 +6,7 @@ use super::*;
 use crate::downloads::db;
 use crate::downloads::store::claim_or_create_file;
 
-fn seed_complete(conn: &mut Connection, root: &Path, rel: &str, size: i64) -> i64 {
+fn seed_complete(conn: &mut Connection, _root: &Path, rel: &str, size: i64) -> i64 {
     let file_id = claim_or_create_file(
         conn, "u", "item1", "ms1", "original", None, rel, Some(size), false, 1_000,
     )

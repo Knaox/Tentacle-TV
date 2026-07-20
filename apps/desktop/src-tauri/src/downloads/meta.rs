@@ -85,8 +85,12 @@ pub fn snapshot(
     let mut ok_parts: Vec<&str> = Vec::new();
 
     // DTO de l'item + parents (épisodes) — JSON bruts, relus hors ligne.
+    // `fields=Trickplay` : le manifeste des aperçus est opt-in.
     let json_targets: Vec<(String, String)> = {
-        let mut targets = vec![(format!("{base}/Items/{}", spec.item_id), format!("{dir}/item.json"))];
+        let mut targets = vec![(
+            format!("{base}/Items/{}?fields=Trickplay", spec.item_id),
+            format!("{dir}/item.json"),
+        )];
         if let Some(series) = &spec.series_id {
             targets.push((format!("{base}/Items/{series}"), format!("{dir}/series.json")));
         }
@@ -95,17 +99,31 @@ pub fn snapshot(
         }
         targets
     };
+    let mut item_json: Vec<u8> = Vec::new();
     for (url, rel) in &json_targets {
         if let Ok(bytes) = fetch_to_vec(agent, url, token) {
             if save_bytes(root, rel, &bytes).is_ok() {
-                ok_parts.push(if rel.ends_with("item.json") {
-                    "item"
+                if rel.ends_with("item.json") {
+                    item_json = bytes;
+                    ok_parts.push("item");
                 } else if rel.ends_with("series.json") {
-                    "series"
+                    ok_parts.push("series");
                 } else {
-                    "season"
-                });
+                    ok_parts.push("season");
+                }
             }
+        }
+    }
+
+    // Tuiles trickplay (aperçu au survol) — depuis le manifeste de item.json.
+    if !item_json.is_empty() {
+        let media_source_id = super::store::first_media_source_id(conn, &spec.item_id)
+            .unwrap_or_else(|| spec.item_id.clone());
+        let saved = super::trickplay::download(
+            agent, server_url, token, root, &spec.item_id, &media_source_id, &item_json,
+        );
+        if saved > 0 {
+            ok_parts.push("trickplay");
         }
     }
 

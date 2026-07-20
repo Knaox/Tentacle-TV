@@ -18,17 +18,11 @@ pub const STORAGE_ROOT_KEY: &str = "storage_root";
 pub const CAPACITY_MARGIN_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
 /// Cache mémoire de la racine résolue (une seule lecture SQLite par session).
-/// Invalidé par `set_root`.
+/// Invalidé par `set_root`. Les ressources locales sont servies à la webview
+/// par `localserver` (serveur HTTP loopback), qui relit la racine à chaque
+/// requête — pas de portée à enregistrer ici.
 #[derive(Default)]
 pub struct RootCache(pub RwLock<Option<PathBuf>>);
-
-/// Autorise la racine dans la portée du protocole ASSET de Tauri : la webview
-/// lit affiches et méta locales via `convertFileSrc` (chemin éprouvé dev+prod
-/// sur les 3 OS). Idempotent, best-effort.
-pub fn allow_asset_scope(app: &AppHandle, root: &Path) {
-    use tauri::Manager;
-    let _ = app.asset_protocol_scope().allow_directory(root, true);
-}
 
 pub fn default_root(app: &AppHandle) -> Result<PathBuf, String> {
     use tauri::Manager;
@@ -64,7 +58,6 @@ pub fn resolve_root(app: &AppHandle) -> Result<PathBuf, String> {
         None => default_root(app)?,
     };
     ensure_layout(&root)?;
-    allow_asset_scope(app, &root);
     if let Some(cache) = app.try_state::<RootCache>() {
         if let Ok(mut guard) = cache.0.write() {
             *guard = Some(root.clone());

@@ -8,6 +8,8 @@ interface UseDesktopSeekbarArgs {
   isDirectPlay: boolean;
   item?: MediaItem;
   mediaSourceId?: string;
+  /** Lecture locale : trickplay servi depuis le disque (serveur loopback). */
+  localItemId?: string;
   effectiveMpvOffset: MutableRefObject<number>;
   seek: (pos: number) => Promise<void>;
   setPause: (paused: boolean) => Promise<void>;
@@ -19,7 +21,7 @@ interface UseDesktopSeekbarArgs {
  * de DesktopPlayer — le JSX correspondant vit dans DesktopSeekbar.tsx.
  */
 export function useDesktopSeekbar({
-  dur, paused, isDirectPlay, item, mediaSourceId, effectiveMpvOffset, seek, setPause,
+  dur, paused, isDirectPlay, item, mediaSourceId, localItemId, effectiveMpvOffset, seek, setPause,
 }: UseDesktopSeekbarArgs) {
   const seekBarRef = useRef<HTMLDivElement>(null);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
@@ -75,8 +77,8 @@ export function useDesktopSeekbar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dur, pctFromEvent, seek, setPause, isDirectPlay]);
 
-  // ── Trickplay hover preview ──
-  const trickplay = useTrickplay(item, mediaSourceId);
+  // ── Trickplay hover preview (local d'abord en lecture locale) ──
+  const trickplay = useTrickplay(item, mediaSourceId, localItemId);
   const trickplayFrame = useMemo(
     () => (hoverTime !== null ? trickplay.getFrameAt(hoverTime * 1000) : null),
     [hoverTime, trickplay],

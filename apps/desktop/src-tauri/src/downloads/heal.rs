@@ -4,9 +4,25 @@
 //! idempotente (tout ce qui existe est sauté), best-effort, et répare
 //! notamment les téléchargements faits avant un correctif de récupération.
 
-use super::{db, engine::Creds, fsops, meta, subs};
+use super::{db, engine::Creds, fsops, meta, store, subs, trickplay};
 use rusqlite::Connection;
 use tauri::{AppHandle, Emitter};
+
+fn fetch_json(agent: &ureq::Agent, url: &str, token: &str) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let response = agent
+        .get(url)
+        .set("X-Emby-Token", token)
+        .call()
+        .map_err(|e| format!("GET: {e}"))?;
+    let mut bytes = Vec::new();
+    response
+        .into_reader()
+        .take(8 * 1024 * 1024)
+        .read_to_end(&mut bytes)
+        .map_err(|e| format!("read: {e}"))?;
+    Ok(bytes)
+}
 
 fn complete_files(conn: &Connection) -> Vec<(String, String, Option<String>)> {
     let Ok(mut stmt) = conn.prepare(
@@ -42,6 +58,19 @@ pub fn run(app: &AppHandle, creds: &Creds) -> usize {
                 {
                     touched = true;
                 }
+            }
+        }
+        // Trickplay manquant (téléchargements d'avant ce correctif) : récupérer
+        // le manifeste (fields=Trickplay) puis les planches.
+        if !trickplay::exists(&root, &item_id) {
+            let url = format!("{}/api/jellyfin/Items/{item_id}?fields=Trickplay", creds.server_url);
+            if let Ok(item_json) = fetch_json(&agent, &url, &creds.token) {
+                let msrc = store::first_media_source_id(&conn, &item_id)
+                    .unwrap_or_else(|| item_id.clone());
+                let saved = trickplay::download(
+                    &agent, &creds.server_url, &creds.token, &root, &item_id, &msrc, &item_json,
+                );
+                touched = touched || saved > 0;
             }
         }
         if let Some(json) = &subtitles_json {

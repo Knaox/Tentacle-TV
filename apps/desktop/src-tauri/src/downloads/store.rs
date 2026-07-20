@@ -257,6 +257,19 @@ pub fn complete_file_for_item(
     .map_err(|e| format!("file for item: {e}"))
 }
 
+/// mediaSourceId d'un fichier de cet item (le plus récent) — utile pour cibler
+/// le manifeste trickplay (clé = mediaSourceId Jellyfin).
+pub fn first_media_source_id(conn: &Connection, item_id: &str) -> Option<String> {
+    conn.query_row(
+        "SELECT media_source_id FROM files WHERE item_id = ?1 ORDER BY id DESC LIMIT 1",
+        params![item_id],
+        |row| row.get::<_, String>(0),
+    )
+    .optional()
+    .ok()
+    .flatten()
+}
+
 /// Octets occupés sur le disque par TOUS les fichiers (partiels compris).
 pub fn disk_usage(conn: &Connection) -> Result<i64, String> {
     conn.query_row(

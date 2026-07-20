@@ -74,9 +74,9 @@ fn main() {
         // Sélecteur de dossier natif (emplacement des téléchargements) —
         // masqué côté UI sur le build Mac App Store (pas d'entitlement fichiers).
         .plugin(tauri_plugin_dialog::init())
-        // Cache de la racine de téléchargements. Les affiches/méta locales
-        // sont servies à la webview par le protocole ASSET officiel de Tauri
-        // (portée étendue à la racine dans fsops::resolve_root/set_root).
+        // Cache de la racine de téléchargements. Les affiches/méta/trickplay
+        // locaux sont servis à la webview par un serveur HTTP loopback
+        // (downloads::localserver, démarré à la 1re demande d'URL locale).
         .manage(downloads::fsops::RootCache::default())
         .manage(downloads::engine::Engine::new());
 
@@ -126,6 +126,7 @@ fn main() {
                 downloads::commands::downloads_get_root,
                 downloads::commands::downloads_set_root,
                 downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
                 downloads::commands::downloads_disk_usage,
                 downloads::engine_commands::downloads_engine_start,
                 downloads::engine_commands::downloads_enqueue,
@@ -168,6 +169,7 @@ fn main() {
                 downloads::commands::downloads_get_root,
                 downloads::commands::downloads_set_root,
                 downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
                 downloads::commands::downloads_disk_usage,
                 downloads::engine_commands::downloads_engine_start,
                 downloads::engine_commands::downloads_enqueue,
@@ -205,6 +207,7 @@ fn main() {
                 downloads::commands::downloads_get_root,
                 downloads::commands::downloads_set_root,
                 downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
                 downloads::commands::downloads_disk_usage,
                 downloads::engine_commands::downloads_engine_start,
                 downloads::engine_commands::downloads_enqueue,
@@ -283,6 +286,7 @@ fn main() {
                 downloads::commands::downloads_get_root,
                 downloads::commands::downloads_set_root,
                 downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
                 downloads::commands::downloads_disk_usage,
                 downloads::engine_commands::downloads_engine_start,
                 downloads::engine_commands::downloads_enqueue,
