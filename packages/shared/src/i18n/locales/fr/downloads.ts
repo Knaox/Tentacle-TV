@@ -83,4 +83,11 @@ export default {
   locationLocked: "Impossible : des téléchargements existent déjà. Supprime-les d'abord.",
   locationNotWritable: "Ce dossier n'est pas accessible en écriture.",
   spaceTitle: "Espace disque",
+
+  seasonLabel: "Saison {{num}}",
+  seasonUnknown: "Épisodes",
+  episodesCount_one: "{{count}} épisode",
+  episodesCount_other: "{{count}} épisodes",
+  episodePlay: "Lire l'épisode",
+  seasonNotFound: "Cette saison n'est plus téléchargée.",
 } as const;

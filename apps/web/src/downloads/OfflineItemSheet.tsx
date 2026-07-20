@@ -7,47 +7,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { formatEpisodeCode } from "@tentacle-tv/shared";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
+import { useLocalSnapshot } from "./useLocalSnapshot";
 import { formatBytes } from "./presets";
-
-interface SnapshotItem {
-  Name?: string;
-  Overview?: string;
-  ProductionYear?: number;
-  RunTimeTicks?: number;
-  SeriesName?: string;
-  ParentIndexNumber?: number;
-  IndexNumber?: number;
-  OfficialRating?: string;
-  CommunityRating?: number;
-}
 
 export function OfflineItemSheet({ entry, onClose }: { entry: DownloadEntry; onClose: () => void }) {
   const { t } = useTranslation(["downloads", "common"]);
   const navigate = useNavigate();
-  const [item, setItem] = useState<SnapshotItem | null>(null);
   const [backdropFailed, setBackdropFailed] = useState(false);
   const rootReady = useDownloadsRootReady();
   const backdropUrl = localResourceUrl(`meta/${entry.itemId}/backdrop.jpg`);
-
-  useEffect(() => {
-    if (!rootReady) return;
-    const url = localResourceUrl(`meta/${entry.itemId}/item.json`);
-    if (!url) return;
-    let cancelled = false;
-    void fetch(url)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: SnapshotItem | null) => {
-        if (!cancelled) setItem(data);
-      })
-      .catch(() => {
-        if (!cancelled) setItem(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [entry.itemId, rootReady]);
+  const item = useLocalSnapshot(entry.itemId, "item.json", rootReady);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -58,9 +30,12 @@ export function OfflineItemSheet({ entry, onClose }: { entry: DownloadEntry; onC
   }, [onClose]);
 
   const title = item?.Name ?? entry.title ?? entry.itemId;
+  // Numéros du snapshot, sinon ceux de la base locale (snapshot non récupéré).
+  const seasonNumber = item?.ParentIndexNumber ?? entry.parentIndexNumber;
+  const episodeNumber = item?.IndexNumber ?? entry.indexNumber;
   const episodeCode =
-    entry.kind === "episode" && item?.ParentIndexNumber != null && item?.IndexNumber != null
-      ? `S${String(item.ParentIndexNumber).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")}`
+    entry.kind === "episode" && seasonNumber != null && episodeNumber != null
+      ? formatEpisodeCode(seasonNumber, episodeNumber, { style: "padded" })
       : null;
   const runtimeMinutes = item?.RunTimeTicks ? Math.round(item.RunTimeTicks / 600_000_000) : null;
   const metaBits = [
