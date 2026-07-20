@@ -18,6 +18,7 @@ import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
 import { useSetupStatus } from "./hooks/useSetupStatus";
 import { ConnectivityBinding } from "./offline/ConnectivityBinding";
+import { DataSaverBinding } from "./offline/DataSaverBinding";
 import { OfflineSessionSync } from "./offline/OfflineSessionSync";
 import { OfflineSessionGate } from "./offline/OfflineSessionGate";
 import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
@@ -164,6 +165,9 @@ export function App() {
       {/* Pont connectivité ↔ TanStack : erreurs réseau → sonde, retour en
           ligne → invalidations échelonnées. Web ET desktop. */}
       <ConnectivityBinding />
+      {/* Décide du mode économie (réglage ∘ latence mesurée) et le pousse dans
+          api-client — avant que le moindre queryFn ne s'exécute. */}
+      <DataSaverBinding />
       {/* Desktop : photo de session (profil+droits) rafraîchie en ligne, et
           garde « reconnexion nécessaire » à l'expiration des 30 j hors ligne. */}
       {authed && <OfflineSessionSync />}
