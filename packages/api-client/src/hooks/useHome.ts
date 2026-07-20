@@ -9,6 +9,7 @@ import {
   buildSmartNextUp,
   groupLatestByRuns,
 } from "../utils/mediaFilters";
+import { homeLimits, staleFactor } from "../net/dataSaver";
 
 // MediaSources est requis pour afficher le badge qualité (4K / HDR / Dolby)
 // sur les items du hero. Payload +~5KB par item — acceptable pour un Limit=12.
@@ -31,7 +32,7 @@ export function useResumeItems() {
         .then((r) => r.Items),
     select: dedupResumeBySeries,
     enabled: !!userId,
-    staleTime: 30_000,
+    staleTime: 30_000 * staleFactor(),
   });
 }
 
@@ -47,11 +48,11 @@ interface LatestItemsOptions {
 // les ajouts récents d'épisodes uniques). Overview/Genres restent exclus.
 const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,MediaSources";
 
-// Fenêtre d'épisodes récupérée avant regroupement par série. Assez large pour
-// qu'une saison ajoutée en masse n'éjecte pas les séries précédentes, mais
-// bornée : 200 → 100 divisait le payload par 2 sans perte visible (la rangée
-// n'affiche qu'une vingtaine de groupes).
-const EPISODE_LATEST_LIMIT = 100;
+// Fenêtre d'épisodes récupérée avant regroupement par série : cf.
+// `homeLimits().latestEpisodes`. Assez large pour qu'une saison ajoutée en
+// masse n'éjecte pas les séries précédentes, mais bornée — 200 → 100 divisait
+// le payload par 2 sans perte visible (la rangée n'affiche qu'une vingtaine de
+// groupes), et le mode économie descend à 40.
 
 export function useLatestItems(parentId: string | undefined, options?: LatestItemsOptions) {
   const client = useJellyfinClient();
@@ -69,7 +70,7 @@ export function useLatestItems(parentId: string | undefined, options?: LatestIte
         return client
           .fetch<{ Items: MediaItem[] }>(
             `/Users/${userId}/Items?ParentId=${parentId}&Recursive=true&IncludeItemTypes=Episode` +
-              `&SortBy=DateCreated&SortOrder=Descending&Limit=${EPISODE_LATEST_LIMIT}` +
+              `&SortBy=DateCreated&SortOrder=Descending&Limit=${homeLimits().latestEpisodes}` +
               `&Fields=${EPISODE_FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
           )
           .then((r) => r.Items);
@@ -86,7 +87,7 @@ export function useLatestItems(parentId: string | undefined, options?: LatestIte
     },
     select: episodeMode ? groupLatestByRuns : undefined,
     enabled: !!userId && !!parentId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 2 * 60 * 1000 * staleFactor(),
   });
 }
 
@@ -122,7 +123,7 @@ export function useNextUp() {
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 30_000,
+    staleTime: 30_000 * staleFactor(),
   });
 
   // Supplement: all unwatched episodes (sorted by season+episode number,
@@ -135,12 +136,12 @@ export function useNextUp() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?IncludeItemTypes=Episode&Filters=IsUnplayed&Recursive=true` +
-            `&SortBy=ParentIndexNumber,IndexNumber&Limit=250` +
+            `&SortBy=ParentIndexNumber,IndexNumber&Limit=${homeLimits().unwatched}` +
             `&Fields=PrimaryImageAspectRatio,MediaSources&${IMAGE_OPTS}&${USER_DATA}`,
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 60_000 * staleFactor(),
     // Don't block the carousel if this fails — primary still has data.
     retry: 1,
   });
@@ -152,11 +153,11 @@ export function useNextUp() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?IncludeItemTypes=Episode&Filters=IsPlayed&Recursive=true` +
-            `&SortBy=DatePlayed&SortOrder=Descending&Limit=300&${USER_DATA}`,
+            `&SortBy=DatePlayed&SortOrder=Descending&Limit=${homeLimits().engaged}&${USER_DATA}`,
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 60_000 * staleFactor(),
     retry: 1,
   });
 
@@ -238,7 +239,7 @@ export function useWatchedItems() {
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000 * staleFactor(),
   });
 }
 
@@ -256,6 +257,6 @@ export function useFeaturedItems() {
         )
         .then((r) => r.Items),
     enabled: !!userId,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000 * staleFactor(),
   });
 }
