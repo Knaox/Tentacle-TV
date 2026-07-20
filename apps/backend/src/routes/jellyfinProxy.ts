@@ -12,6 +12,7 @@ import {
   SKIP_RESPONSE_HEADERS,
   SKIP_API_RESPONSE_HEADERS,
   buildForwardHeaders,
+  imageCacheControl,
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { buildPlaystateRewrite, type PlaystateRewrite } from "./jellyfinProxy/playstate";
@@ -267,6 +268,11 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         if (!isMediaResponse && SKIP_API_RESPONSE_HEADERS.has(lower)) continue;
         reply.header(key, value);
       }
+
+      // Images : cache navigateur explicite (cf. imageCacheControl). Après la
+      // boucle pour écraser Jellyfin, et jamais sur une 404 d'affiche.
+      const imageCache = response.status < 400 ? imageCacheControl(wildcardPath) : null;
+      if (imageCache) reply.header("cache-control", imageCache);
 
       // Log Jellyfin error responses for debugging — without buffering the
       // whole body, which would force the entire (potentially multi-MB) error
