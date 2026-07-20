@@ -11,10 +11,18 @@
  */
 
 import { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useUserId } from "@tentacle-tv/api-client";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import type { MpvTrack } from "./useDesktopPlayer";
 import { prefForLibrary, sameLang } from "../offline/localTrackPrefs";
+import { formatLocalTrackLabel } from "./localTrackLabels";
+
+/** Contexte de libellé : langue d'interface + repli traduit. */
+interface LabelContext {
+  locale: string;
+  fallbackFor: (index: number) => string;
+}
 
 interface Options {
   isLocalPlayback: boolean;
@@ -33,22 +41,22 @@ interface Options {
   sourceKey: string;
 }
 
-function mpvAudioToTracks(tracks: MpvTrack[]): AudioTrack[] {
+function mpvAudioToTracks(tracks: MpvTrack[], ctx: LabelContext): AudioTrack[] {
   return tracks
     .filter((t) => typeof t.id === "number")
     .map((t) => ({
       index: t.id,
-      label: t.title || t.lang || `Piste ${t.id}`,
+      label: formatLocalTrackLabel(t, { locale: ctx.locale, fallback: ctx.fallbackFor(t.id) }),
       lang: t.lang ?? undefined,
     }));
 }
 
-function mpvSubsToTracks(tracks: MpvTrack[]): SubtitleTrack[] {
+function mpvSubsToTracks(tracks: MpvTrack[], ctx: LabelContext): SubtitleTrack[] {
   return tracks
     .filter((t) => typeof t.id === "number")
     .map((t) => ({
       index: t.id,
-      label: t.title || t.lang || `Sous-titre ${t.id}`,
+      label: formatLocalTrackLabel(t, { locale: ctx.locale, fallback: ctx.fallbackFor(t.id) }),
       url: "", // piste interne — mpv la lit nativement (sid), pas d'URL
       lang: t.lang ?? undefined,
     }));
@@ -60,15 +68,23 @@ export function useLocalPlaybackTracks({
   localLibraryId, onAudioChange, onSubtitleChange, sourceKey,
 }: Options): { displayAudio: AudioTrack[]; displaySubs: SubtitleTrack[] } {
   const userId = useUserId();
+  const { t, i18n } = useTranslation("player");
+  const labelCtx = useMemo<LabelContext>(
+    () => ({
+      locale: i18n.language || "fr",
+      fallbackFor: (index: number) => t("player:trackFallback", { index }),
+    }),
+    [i18n.language, t],
+  );
 
   // Menus : DTO Jellyfin si présent, sinon pistes mpv (hors ligne).
   const displayAudio = useMemo(
-    () => (audioTracks.length > 0 || !isLocalPlayback ? audioTracks : mpvAudioToTracks(mpvAudio)),
-    [audioTracks, isLocalPlayback, mpvAudio],
+    () => (audioTracks.length > 0 || !isLocalPlayback ? audioTracks : mpvAudioToTracks(mpvAudio, labelCtx)),
+    [audioTracks, isLocalPlayback, mpvAudio, labelCtx],
   );
   const displaySubs = useMemo(
-    () => (subtitleTracks.length > 0 || !isLocalPlayback ? subtitleTracks : mpvSubsToTracks(mpvSubs)),
-    [subtitleTracks, isLocalPlayback, mpvSubs],
+    () => (subtitleTracks.length > 0 || !isLocalPlayback ? subtitleTracks : mpvSubsToTracks(mpvSubs, labelCtx)),
+    [subtitleTracks, isLocalPlayback, mpvSubs, labelCtx],
   );
 
   // Application des préférences hors ligne : une fois, quand la track-list mpv
