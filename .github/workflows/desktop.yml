@@ -402,6 +402,12 @@ jobs:
           # fenêtre transparente au démarrage. On force transparent:false pour ce build.
           node -e "const f='apps/desktop/src-tauri/tauri.conf.json';const c=require('fs');const j=JSON.parse(c.readFileSync(f));j.version='$VER';(j.app?.windows||[]).forEach(w=>{w.transparent=false});c.writeFileSync(f,JSON.stringify(j,null,2)+'\n');"
 
+      # Le cache Cargo restaure aussi target/release/bundle : sans purge, les
+      # paquets d'une version PRÉCÉDENTE cohabitent avec les nouveaux quand
+      # Cargo.lock n'a pas changé (globs *.deb → deux versions, job pacman KO).
+      - name: Purger les bundles restaurés par le cache
+        run: rm -rf apps/desktop/src-tauri/target/release/bundle
+
       - name: Build Tauri (deb + rpm + appimage)
         working-directory: apps/desktop
         run: pnpm tauri build --bundles deb,rpm,appimage
@@ -532,7 +538,8 @@ jobs:
           echo "pacman → pkgver=$VER pkgrel=$REL"
 
           mkdir -p build/pkgroot
-          cp debpkg/*.deb build/app.deb
+          # Filtre par version : ceinture+bretelles si un .deb parasite traînait.
+          cp debpkg/*"${VER}"*.deb build/app.deb
           ( cd build && ar x app.deb && tar -xf data.tar.* -C pkgroot )
 
           cat > build/PKGBUILD <<PKGB
