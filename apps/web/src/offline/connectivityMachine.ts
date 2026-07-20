@@ -18,7 +18,9 @@ export type ConnectivityState = "checking" | "online" | "offline-auto" | "offlin
 export interface HysteresisConfig {
   /** Nombre de résultats consécutifs opposés requis pour basculer. */
   flipThreshold: number;
-  /** Temps de séjour minimal dans un état avant d'autoriser la bascule inverse. */
+  /** Temps de séjour minimal avant d'autoriser le retour vers `ok=true`
+   *  (anti-flap du « online »). ASYMÉTRIQUE : la bascule vers l'échec ne
+   *  l'attend pas — voir `applyProbeResult`. */
   dwellMs: number;
 }
 
@@ -48,8 +50,9 @@ export const initialHysteresis: HysteresisState = {
 /**
  * Applique un résultat de sonde. Premier résultat = vérité immédiate (pas
  * d'hystérésis au boot). Ensuite : un résultat conforme remet le compteur à
- * zéro ; un résultat contraire l'incrémente et ne bascule qu'au seuil ET après
- * le temps de séjour minimal — sinon on redemande une confirmation rapprochée.
+ * zéro ; un résultat contraire l'incrémente et ne bascule qu'au seuil — plus,
+ * pour le seul retour vers `ok=true`, le temps de séjour minimal. Sinon on
+ * redemande une confirmation rapprochée.
  */
 export function applyProbeResult(
   state: HysteresisState,
@@ -71,7 +74,11 @@ export function applyProbeResult(
   }
 
   const streak = state.streak + 1;
-  const dwellElapsed = now - state.lastFlipAt >= cfg.dwellMs;
+  // Temps de séjour ASYMÉTRIQUE : il ne freine que le retour vers ok=true
+  // (anti-flap du « online »). La bascule vers l'échec est immédiate dès le
+  // seuil : rester faussement « en ligne » coûte une Home morte, l'inverse ne
+  // coûte qu'un passage prudent par le catalogue local.
+  const dwellElapsed = !ok || now - state.lastFlipAt >= cfg.dwellMs;
   if (streak >= cfg.flipThreshold && dwellElapsed) {
     return {
       next: { reachable: ok, streak: 0, lastFlipAt: now },

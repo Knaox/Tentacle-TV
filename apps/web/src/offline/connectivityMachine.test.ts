@@ -64,6 +64,17 @@ describe("applyProbeResult", () => {
     expect(s3.next.reachable).toBe(true);
   });
 
+  it("la bascule vers hors ligne ignore le temps de séjour (asymétrie)", () => {
+    // Bascule en ligne toute récente (dwell non écoulé) : la panne doit quand
+    // même l'emporter dès le seuil de 2 échecs.
+    const s1 = applyProbeResult(online(100_000), false, 101_000, CFG);
+    expect(s1.flipped).toBe(false); // le seuil, lui, reste exigé
+    expect(s1.wantConfirm).toBe(true);
+    const s2 = applyProbeResult(s1.next, false, 104_000, CFG);
+    expect(s2.flipped).toBe(true);
+    expect(s2.next.reachable).toBe(false);
+  });
+
   it("le retour en ligne exige aussi le seuil de succès consécutifs", () => {
     const s1 = applyProbeResult(offline(0), true, 20_000, CFG);
     expect(s1.flipped).toBe(false);
