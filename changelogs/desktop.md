@@ -32,6 +32,8 @@ les notes Apple doivent rester génériques.
 - Lecture locale prioritaire : un contenu téléchargé est toujours lu depuis le disque, même connecté ; la position est conservée hors ligne et resynchronisée avec le serveur au retour en ligne
 - Multi-comptes : chaque compte ne voit que ses téléchargements ; un même contenu téléchargé par deux comptes n'occupe l'espace qu'une seule fois
 - Droits pilotés par le serveur : l'administrateur choisit qui peut télécharger et qui a droit au mode Allégé (écrit directement dans Jellyfin)
+- Catalogue hors ligne organisé par saison, avec page dédiée : bannière, résumé et épisodes triés par numéro
+- Hors ligne comme en ligne : aperçus de la barre de progression, affiche au chargement, sous-titres, menu des langues lisible et préférences de langues appliquées
 ### EN
 - Downloads: save a movie, an episode or a whole season to your computer from its page, as Original (source file) or Light quality (1080p, 720p or 480p, size estimated up front, subtitles included)
 - Offline mode: automatic switch when the server stops responding, automatic return as soon as it responds, manual switch available — local catalog with artwork, pages and playback without any connection
@@ -39,6 +41,8 @@ les notes Apple doivent rester génériques.
 - Local playback first: downloaded content always plays from disk, even while online; position is kept offline and resynced with the server when back online
 - Multi-account: each account only sees its own downloads; the same content downloaded by two accounts only uses disk space once
 - Server-driven rights: the administrator chooses who can download and who gets Light mode (written directly into Jellyfin)
+- Offline catalog organized by season, with a dedicated page: banner, summary and episodes sorted by number
+- Offline as online: seek bar previews, loading artwork, subtitles, readable language menu and language preferences applied
 
 ## [1.15.1]
 ### FR
