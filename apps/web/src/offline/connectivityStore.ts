@@ -27,6 +27,7 @@ import {
   type HysteresisState,
   type LinkQuality,
 } from "./connectivityMachine";
+import { setNetworkSuspectListener } from "@tentacle-tv/api-client";
 import { backendUrl } from "../main";
 
 export type OfflineReason = "backend" | "jellyfin" | null;
@@ -231,6 +232,9 @@ export function subscribeConnectivity(listener: () => void): () => void {
 /* Amorçage : sonde initiale différée + réveils sur les signaux navigateur.
  * Module-level (comme colorScheme.ts) — vit toute la durée de l'app. */
 if (typeof window !== "undefined") {
+  // Chaque tentative fetch en échec réseau/timeout (fetchWithRetry) déclenche
+  // une sonde — throttlée par MIN_PROBE_SPACING_MS + le drapeau `probing`.
+  setNetworkSuspectListener(() => reportPossibleOutage());
   ensureTimers();
   setTimeout(() => probeNow(true), INITIAL_PROBE_DELAY_MS);
   window.addEventListener("online", () => probeNow(true));

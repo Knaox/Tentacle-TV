@@ -27,6 +27,7 @@ import {
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
+  setRequestTimeoutMs,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -88,6 +89,10 @@ export function configureBackendUrls(url: string) {
 }
 
 configureBackendUrls(backendUrl);
+
+// Desktop : le catalogue local existe — un fetch qui pend doit échouer vite
+// (12 s) pour nourrir la bascule hors ligne. Web : 30 s historiques conservés.
+if (isTauriApp) setRequestTimeoutMs(12_000);
 
 // Plugin registration (legacy — plugins now run in sandboxed iframes on web)
 // Mobile/desktop still use inline registration.
