@@ -9,36 +9,36 @@
     }
   },
   "microsoftStore": {
-    "version": "1.15.1",
+    "version": "1.16.0",
     "notes": {
-      "fr": "• Thème clair refondu sur les bannières et les fiches : l'affiche reste vive (plus de voile nacré ni de flou), le texte posé sur l'image est blanc dans les deux thèmes, sur un dégradé sombre lisible même quand l'affiche est claire\n• Micro-interactions raffinées : boutons à ressort, pastille de navigation qui glisse entre les onglets, entrée en cascade de la bannière, survol des affiches avec élévation douce — « réduire les animations » respecté\n• Ombres des cartes et liseré de la barre de navigation harmonisés avec le thème (fini les traits blancs et ombres noires figés en clair)\n• Espacement des rangées de l'accueil resserré",
-      "en": "• Light theme reworked on banners and detail pages: artwork stays vivid (no more pearly veil or blur), on-image text is white in both themes, over a dark gradient that stays readable even on bright posters\n• Refined micro-interactions: springy buttons, navigation pill sliding between tabs, cascading banner entrance, soft card hover lift — \"reduce motion\" honored\n• Card shadows and navigation bar border aligned with the theme (no more fixed white lines and black shadows in light mode)\n• Tighter spacing between home rows"
+      "fr": "• Téléchargements : enregistrez un film, un épisode ou une saison entière sur l'ordinateur depuis sa fiche, en qualité Originale (fichier source) ou Allégée (1080p, 720p ou 480p, taille estimée avant lancement, sous-titres inclus)\n• Mode Hors ligne : bascule automatique quand le serveur ne répond plus, retour automatique dès qu'il répond, bascule manuelle possible — catalogue local avec affiches, fiches et lecture sans aucune connexion\n• Écran Téléchargements : progression en direct, pause/reprise (y compris après une coupure ou un redémarrage), suppression avec confirmation, espace occupé et espace libre, option « supprimer après visionnage »\n• Lecture locale prioritaire : un contenu téléchargé est toujours lu depuis le disque, même connecté ; la position est conservée hors ligne et resynchronisée avec le serveur au retour en ligne\n• Multi-comptes : chaque compte ne voit que ses téléchargements ; un même contenu téléchargé par deux comptes n'occupe l'espace qu'une seule fois\n• Droits pilotés par le serveur : l'administrateur choisit qui peut télécharger et qui a droit au mode Allégé (écrit directement dans Jellyfin)\n• Catalogue hors ligne organisé par saison, avec page dédiée : bannière, résumé et épisodes triés par numéro\n• Hors ligne comme en ligne : aperçus de la barre de progression, affiche au chargement, sous-titres, menu des langues lisible et préférences de langues appliquées",
+      "en": "• Downloads: save a movie, an episode or a whole season to your computer from its page, as Original (source file) or Light quality (1080p, 720p or 480p, size estimated up front, subtitles included)\n• Offline mode: automatic switch when the server stops responding, automatic return as soon as it responds, manual switch available — local catalog with artwork, pages and playback without any connection\n• Downloads screen: live progress, pause/resume (including after a network cut or an app restart), confirmed deletion, used and free space, per-item \"delete after watching\" option\n• Local playback first: downloaded content always plays from disk, even while online; position is kept offline and resynced with the server when back online\n• Multi-account: each account only sees its own downloads; the same content downloaded by two accounts only uses disk space once\n• Server-driven rights: the administrator chooses who can download and who gets Light mode (written directly into Jellyfin)\n• Offline catalog organized by season, with a dedicated page: banner, summary and episodes sorted by number\n• Offline as online: seek bar previews, loading artwork, subtitles, readable language menu and language preferences applied"
     }
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.15.1",
-    "tag": "desktop-v1.15.1",
+    "version": "1.16.0",
+    "tag": "linux-v1.16.0",
     "notes": {
-      "fr": "• Thème clair refondu sur les bannières et les fiches : l'affiche reste vive (plus de voile nacré ni de flou), le texte posé sur l'image est blanc dans les deux thèmes, sur un dégradé sombre lisible même quand l'affiche est claire\n• Micro-interactions raffinées : boutons à ressort, pastille de navigation qui glisse entre les onglets, entrée en cascade de la bannière, survol des affiches avec élévation douce — « réduire les animations » respecté\n• Ombres des cartes et liseré de la barre de navigation harmonisés avec le thème (fini les traits blancs et ombres noires figés en clair)\n• Espacement des rangées de l'accueil resserré",
-      "en": "• Light theme reworked on banners and detail pages: artwork stays vivid (no more pearly veil or blur), on-image text is white in both themes, over a dark gradient that stays readable even on bright posters\n• Refined micro-interactions: springy buttons, navigation pill sliding between tabs, cascading banner entrance, soft card hover lift — \"reduce motion\" honored\n• Card shadows and navigation bar border aligned with the theme (no more fixed white lines and black shadows in light mode)\n• Tighter spacing between home rows"
+      "fr": "• Téléchargements : enregistrez un film, un épisode ou une saison entière sur l'ordinateur depuis sa fiche, en qualité Originale (fichier source) ou Allégée (1080p, 720p ou 480p, taille estimée avant lancement, sous-titres inclus)\n• Mode Hors ligne : bascule automatique quand le serveur ne répond plus, retour automatique dès qu'il répond, bascule manuelle possible — catalogue local avec affiches, fiches et lecture sans aucune connexion\n• Écran Téléchargements : progression en direct, pause/reprise (y compris après une coupure ou un redémarrage), suppression avec confirmation, espace occupé et espace libre, option « supprimer après visionnage »\n• Lecture locale prioritaire : un contenu téléchargé est toujours lu depuis le disque, même connecté ; la position est conservée hors ligne et resynchronisée avec le serveur au retour en ligne\n• Multi-comptes : chaque compte ne voit que ses téléchargements ; un même contenu téléchargé par deux comptes n'occupe l'espace qu'une seule fois\n• Droits pilotés par le serveur : l'administrateur choisit qui peut télécharger et qui a droit au mode Allégé (écrit directement dans Jellyfin)\n• Catalogue hors ligne organisé par saison, avec page dédiée : bannière, résumé et épisodes triés par numéro\n• Hors ligne comme en ligne : aperçus de la barre de progression, affiche au chargement, sous-titres, menu des langues lisible et préférences de langues appliquées",
+      "en": "• Downloads: save a movie, an episode or a whole season to your computer from its page, as Original (source file) or Light quality (1080p, 720p or 480p, size estimated up front, subtitles included)\n• Offline mode: automatic switch when the server stops responding, automatic return as soon as it responds, manual switch available — local catalog with artwork, pages and playback without any connection\n• Downloads screen: live progress, pause/resume (including after a network cut or an app restart), confirmed deletion, used and free space, per-item \"delete after watching\" option\n• Local playback first: downloaded content always plays from disk, even while online; position is kept offline and resynced with the server when back online\n• Multi-account: each account only sees its own downloads; the same content downloaded by two accounts only uses disk space once\n• Server-driven rights: the administrator chooses who can download and who gets Light mode (written directly into Jellyfin)\n• Offline catalog organized by season, with a dedicated page: banner, summary and episodes sorted by number\n• Offline as online: seek bar previews, loading artwork, subtitles, readable language menu and language preferences applied"
     },
     "assets": {
       "appimage": {
-        "name": "Tentacle.TV_1.15.1_amd64.AppImage",
-        "sha256": "797fa1898640de341479eaa971aa61053cbe4025e65fcc44459bd9a97ee4f2ab"
+        "name": "Tentacle.TV_1.16.0_amd64.AppImage",
+        "sha256": "5bd4ee99b3202bb428e3ddaab8cde023a88625a1ad3f0e1cdc3aa4606fbfb3cc"
       },
       "deb": {
-        "name": "Tentacle.TV_1.15.1_amd64.deb",
-        "sha256": "6acdb4df3816b761a025d9530d0cb7516dfaaab9f590021bbb5ef035c5eeedbc"
+        "name": "Tentacle.TV_1.16.0_amd64.deb",
+        "sha256": "46cf65837d0ed5179ef0f5821657d45cb41345739afe5992851ac8032e8f7742"
       },
       "rpm": {
-        "name": "Tentacle.TV-1.15.1-1.x86_64.rpm",
-        "sha256": "819df4f9ab6a3261aaf0455d3e29596e2564cfc82597f7c7da0580ac0b020541"
+        "name": "Tentacle.TV-1.16.0-1.x86_64.rpm",
+        "sha256": "22987f21ad53767949ac42cdb4a813936ccc9ad9f0f0379574e2e80bcc16f98b"
       },
       "pacman": {
-        "name": "tentacle-tv-1.15.1-1-x86_64.pkg.tar.zst",
-        "sha256": "370c1978d5fb12bfa15c7f6ca534c23d79f64c8ab4f44f6cc429e23ff9e382bc"
+        "name": "tentacle-tv-1.16.0-1-x86_64.pkg.tar.zst",
+        "sha256": "8ec5012fe6ecb2b3d8f3ea86872acf6facea76bad08c6dd97a95be9d15d9a574"
       }
     }
   }
