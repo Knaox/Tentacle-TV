@@ -34,3 +34,16 @@ export function setNetworkSuspectListener(listener: (() => void) | null): void {
 export function reportNetworkSuspect(): void {
   suspectListener?.();
 }
+
+/** L'app pousse ici « je me SAIS hors ligne » (état confirmé par ses sondes,
+ *  pas une simple suspicion). Relu à CHAQUE itération de l'échelle de retries :
+ *  une bascule hors ligne tue aussi les échelles déjà en vol. */
+let offlineHintSupplier: (() => boolean) | null = null;
+
+export function setOfflineHintSupplier(supplier: (() => boolean) | null): void {
+  offlineHintSupplier = supplier;
+}
+
+export function isOfflineHinted(): boolean {
+  return offlineHintSupplier?.() ?? false;
+}
