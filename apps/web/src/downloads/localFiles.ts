@@ -23,10 +23,18 @@ interface AssetBase {
 
 let cachedBase: AssetBase | null = null;
 let loading = false;
+/** Dernier échec IPC : on retente, mais pas à chaque render — le bind Rust est
+ *  retenté à chaque appel, et sur un serveur qui ne PEUT pas démarrer (ex.
+ *  sandbox MAS sans entitlement network.server) chaque render déclencherait
+ *  une tentative de bind. Le catalogue reste utilisable sans lui (titres via
+ *  IPC, images en placeholder) ; à la réussite, les listeners re-rendent. */
+let lastFailureAt = 0;
+const RETRY_COOLDOWN_MS = 15_000;
 const listeners = new Set<() => void>();
 
 export function primeDownloadsRoot(): void {
   if (!isTauri() || cachedBase !== null || loading) return;
+  if (Date.now() - lastFailureAt < RETRY_COOLDOWN_MS) return;
   loading = true;
   void invoke<AssetBase>("downloads_asset_base")
     .then((base) => {
@@ -34,10 +42,13 @@ export function primeDownloadsRoot(): void {
       if (base?.base && base?.token) {
         cachedBase = base;
         for (const listener of listeners) listener();
+      } else {
+        lastFailureAt = Date.now();
       }
     })
     .catch(() => {
       loading = false;
+      lastFailureAt = Date.now();
     });
 }
 
