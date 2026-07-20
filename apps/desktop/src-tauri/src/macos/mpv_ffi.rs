@@ -157,6 +157,17 @@ impl MpvLib {
     }
 
     fn find_lib_path() -> Result<PathBuf, String> {
+        // 0. Dev (debug uniquement) : les dylibs LGPL du repo (src-tauri/lib/),
+        //    c'est-à-dire EXACTEMENT les bibliothèques embarquées en prod.
+        //    Sans ça, le dev retombait sur la libmpv Homebrew — version/ffmpeg
+        //    différents → crashs sporadiques au lancement d'une lecture.
+        #[cfg(debug_assertions)]
+        {
+            let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("lib/libmpv.dylib");
+            if dev_path.exists() {
+                return Ok(dev_path);
+            }
+        }
         if let Ok(exe) = std::env::current_exe() {
             let exe_dir = exe.parent().unwrap_or(&exe);
             // 1. App Store: Contents/Frameworks/libmpv.dylib (emplacement Apple pour
