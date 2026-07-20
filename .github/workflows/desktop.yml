@@ -434,6 +434,20 @@ jobs:
           path: dist-linux/*.deb
           if-no-files-found: error
 
+      # Les paquets n'existaient QUE dans la Release, elle-même gatée sur le
+      # tag : une livraison en dispatch (ex. publier Linux sans déclencher la
+      # soumission macOS) laissait rpm/AppImage inaccessibles, donc aucune
+      # Release possible et aucune notification de mise à jour.
+      - name: Upload des paquets Linux (livraison hors tag)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-linux-packages
+          path: |
+            dist-linux/*.deb
+            dist-linux/*.rpm
+            dist-linux/*.AppImage
+          if-no-files-found: error
+
       - name: Upload SHA256SUMS (deb/rpm/appimage) pour le job manifest
         uses: actions/upload-artifact@v4
         with:
@@ -560,6 +574,15 @@ jobs:
         with:
           name: tentacle-sums-pacman
           path: dist-arch/SHA256SUMS.pacman
+
+      # Même raison que côté deb/rpm/AppImage : rendre le paquet récupérable
+      # quand la livraison ne passe pas par un tag.
+      - name: Upload du paquet pacman (livraison hors tag)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-pacman
+          path: dist-arch/*.pkg.tar.zst
+          if-no-files-found: error
           if-no-files-found: error
 
   # ── Manifeste d'auto-update (updates/store-versions.json, bloc « linux ») ──
