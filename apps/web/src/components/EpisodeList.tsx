@@ -12,6 +12,9 @@ import { useMultiSelect } from "../hooks/useMultiSelect";
 import { HorizontalScrollRow } from "./HorizontalScrollRow";
 import { RichOverview } from "../lib/overviewHtml";
 import { SeasonDownloadAction } from "../downloads/SeasonDownloadAction";
+import { EpisodeDownloadAction } from "../downloads/EpisodeDownloadAction";
+import { DownloadDialog } from "../downloads/DownloadDialog";
+import { useDownloadsVisibility } from "../downloads/useDownloadState";
 
 interface EpisodeListProps {
   seriesId: string;
@@ -24,6 +27,11 @@ interface EpisodeListProps {
 export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: EpisodeListProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
+  const { t: tDownloads } = useTranslation("downloads");
+  // Desktop + droit Jellyfin uniquement — sinon aucune action de
+  // téléchargement n'est rendue (invisibilité stricte).
+  const { canDownload } = useDownloadsVisibility();
+  const [batchItems, setBatchItems] = useState<MediaItem[] | null>(null);
   const client = useJellyfinClient();
   const { data: seasons, isLoading: seasonsLoading } = useSeasons(seriesId);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>();
@@ -151,6 +159,27 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
           onMarkWatched={handleBatchWatched}
           onMarkUnwatched={handleBatchUnwatched}
           isBusy={isBusy}
+          onDownload={
+            canDownload
+              ? () => {
+                  const selection = (episodes ?? []).filter((ep) => ms.isSelected(ep.Id));
+                  if (selection.length === 0) return;
+                  setBatchItems(selection);
+                  ms.exitSelectionMode();
+                }
+              : undefined
+          }
+          downloadLabel={canDownload ? tDownloads("downloadSelection") : undefined}
+        />
+      )}
+
+      {/* Téléchargement groupé de la sélection d'épisodes */}
+      {batchItems && (
+        <DownloadDialog
+          items={batchItems}
+          seasonMode
+          batchTitle={tDownloads("dialogTitleSelection", { count: batchItems.length })}
+          onClose={() => setBatchItems(null)}
         />
       )}
     </div>
@@ -263,6 +292,8 @@ function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSe
               {t("common:currentEpisode")}
             </span>
           )}
+          {/* Téléchargement de CET épisode (desktop, droit requis — sinon absent) */}
+          {!isSelecting && <EpisodeDownloadAction episode={ep} />}
           {!isSelecting && (
             <button
               onClick={handleWatchedToggle}

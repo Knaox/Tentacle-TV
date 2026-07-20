@@ -17,6 +17,9 @@ export default {
 
   download: "Télécharger",
   seasonDownload: "Télécharger la saison",
+  episodeDownload: "Télécharger l'épisode",
+  downloadSelection: "Télécharger la sélection",
+  dialogTitleSelection: "Télécharger la sélection ({{count}} épisodes)",
   downloadedBadge: "Téléchargé",
   dialogTitle: "Télécharger",
   dialogTitleSeason: "Télécharger la saison ({{count}} épisodes)",
