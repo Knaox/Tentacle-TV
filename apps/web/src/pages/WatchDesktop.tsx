@@ -181,7 +181,12 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     return code ? `${code} — ${name}` : name || undefined;
   })();
 
-  if (isLoading || !streamUrl) {
+  // Lecture locale + hors ligne : le DTO serveur ne viendra pas — on ne
+  // l'attend pas (titre, durée, position et pistes viennent du local, la page
+  // est conçue pour). En ligne, on l'attend : position de reprise cross-device
+  // et pistes serveur doivent être là au montage.
+  const waitForServerItem = isLoading && !(isLocalPlayback && !online);
+  if (waitForServerItem || !streamUrl) {
     return <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />;
   }
 
