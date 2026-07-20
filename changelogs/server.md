@@ -11,6 +11,22 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.9.0]
+### FR
+- Mode économie de données : l'application mesure la latence de ses sondes et détecte les connexions lentes. Elle allège alors les images, ne charge l'accueil qu'au fil du défilement et réduit les quotas des carrousels. Réglable dans Réglages › Données (automatique / toujours / jamais), avec une pastille dans la barre du haut quand il est actif
+- Affiches et backdrops mis en cache par le navigateur (24 h fermes, une semaine de revalidation en arrière-plan) : ils redescendaient du serveur à chaque lancement, alors que les tuiles de trickplay étaient déjà cachées un an
+- Cache de l'accueil : au-delà du plafond de taille, les données les plus récentes sont conservées au lieu que tout soit abandonné. Le cache ne s'écrivait plus du tout dès que les carrousels dépassaient 2 Mo — donc plus aucun affichage instantané au démarrage
+- Rangées de bibliothèque chargées à l'approche de l'écran : leurs données descendaient même hors champ
+- Desktop : le démarrage n'attend plus la vérification d'installation (jusqu'à 4 s d'écran figé sur une connexion lente ou coupée), elle se fait en arrière-plan
+- Desktop : pendant un film téléchargé, la position de lecture est envoyée au début et à la fin plutôt que toutes les 10 s en mode économie — 720 requêtes de moins sur 2 h. Elle reste écrite localement toutes les 10 s et remonte au lancement suivant en cas d'arrêt brutal
+### EN
+- Data saver mode: the app measures its probe latency and detects slow connections. It then serves lighter images, loads the home as you scroll and reduces carousel quotas. Configurable under Settings › Data (automatic / always / never), with a chip in the top bar when active
+- Posters and backdrops are now cached by the browser (24 h firm, one week of background revalidation): they were re-downloaded on every launch, while trickplay tiles were already cached for a year
+- Home cache: past the size ceiling, the freshest entries are kept instead of the whole save being dropped. The cache stopped being written entirely once carousels exceeded 2 MB — so the instant startup never actually happened
+- Library rows load as they approach the viewport: their data was fetched even off-screen
+- Desktop: startup no longer waits on the install check (up to 4 s of frozen screen on a slow or dead connection), it now runs in the background
+- Desktop: during a downloaded film, playback position is sent at start and end rather than every 10 s in data saver mode — 720 fewer requests over 2 h. It is still written locally every 10 s and syncs on next launch after a hard stop
+
 ## [1.8.0]
 ### FR
 - Téléchargements desktop : nouvelles routes /api/downloads (capacités par utilisateur, fichier original avec reprise par plages, variante Allégée en MP4 fragmenté transcodé par Jellyfin) — chaque démarrage revérifie EN DIRECT la policy Jellyfin (droit de téléchargement + périmètre de bibliothèques) ; refus en 404 générique, sans divulgation
