@@ -156,7 +156,10 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     if (online) updatePosition(seconds, paused);
   }, [updatePosition, positionRef, online]);
 
-  const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
+  // Titre : DTO serveur, sinon méta locale (démarrage 100 % hors ligne).
+  const title = item
+    ? (item.Type === "Episode" ? item.SeriesName ?? item.Name : item.Name ?? "")
+    : (localSource?.seriesName ?? localSource?.title ?? "");
   const epSubtitle = item?.Type === "Episode"
     ? `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}` : undefined;
 

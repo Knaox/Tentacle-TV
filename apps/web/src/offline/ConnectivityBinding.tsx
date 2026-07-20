@@ -9,8 +9,11 @@
 
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUserId } from "@tentacle-tv/api-client";
+import { isTauriApp } from "../main";
 import { useConnectivity } from "./useConnectivity";
 import { reportPossibleOutage } from "./connectivityStore";
+import { drainReportQueue } from "./resync";
 
 const RECONNECT_DEBOUNCE_MS = 5_000;
 const STAGGER_DELAY_MS = 2_000;
@@ -30,6 +33,9 @@ const looksLikeOutage = (error: unknown): boolean => {
 export function ConnectivityBinding() {
   const queryClient = useQueryClient();
   const { state } = useConnectivity();
+  const userId = useUserId();
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
   const prevStateRef = useRef(state);
   const lastReconnectRef = useRef(0);
 
@@ -54,7 +60,9 @@ export function ConnectivityBinding() {
     };
   }, [queryClient]);
 
-  // Transition hors ligne → en ligne : rafraîchissement échelonné du catalogue.
+  // Transition hors ligne → en ligne : d'abord RESYNCHRONISER la progression
+  // regardée hors ligne (desktop), PUIS rafraîchir le catalogue — sinon
+  // « Reprendre » refléterait l'état d'avant la resynchro.
   useEffect(() => {
     const prev = prevStateRef.current;
     prevStateRef.current = state;
@@ -62,16 +70,34 @@ export function ConnectivityBinding() {
     if (!wasOffline || state !== "online") return;
     if (Date.now() - lastReconnectRef.current < RECONNECT_DEBOUNCE_MS) return;
     lastReconnectRef.current = Date.now();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["featured"] });
-    const staggered = setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["libraries"] });
-    }, STAGGER_DELAY_MS);
-    return () => clearTimeout(staggered);
+
+    let staggered: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    const run = async () => {
+      const uid = userIdRef.current;
+      if (isTauriApp && uid) {
+        try {
+          await drainReportQueue(uid);
+        } catch {
+          /* la file reste en place, retentée au prochain retour en ligne */
+        }
+      }
+      if (cancelled) return;
+      queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+      queryClient.invalidateQueries({ queryKey: ["next-up"] });
+      queryClient.invalidateQueries({ queryKey: ["featured"] });
+      staggered = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: ["libraries"] });
+      }, STAGGER_DELAY_MS);
+    };
+    void run();
+    return () => {
+      cancelled = true;
+      if (staggered) clearTimeout(staggered);
+    };
   }, [state, queryClient]);
 
   return null;

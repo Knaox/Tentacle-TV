@@ -258,7 +258,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     () => mapSubtitlesToLocal(buildSubtitleTracks(streams, client, itemId!, mediaSourceId!, t), localSource),
     [streams, client, itemId, mediaSourceId, t, localSource]);
 
-  const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  // Durée : DTO serveur, sinon méta locale (démarrage hors ligne).
+  const jellyfinDuration = useMemo(
+    () => ticksToSeconds(item?.RunTimeTicks ?? localSource?.runtimeTicks ?? undefined),
+    [item, localSource]);
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
   const posterUrl = useMemo(() => buildPosterUrl(client, item), [client, item]);
   const startPositionSeconds = useMemo(() => {
