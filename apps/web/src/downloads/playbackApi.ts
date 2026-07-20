@@ -23,6 +23,9 @@ export interface LocalSource {
   title: string | null;
   seriesName: string | null;
   runtimeTicks: number | null;
+  /** Numéros de saison/épisode : sous-titre du lecteur sans DTO serveur. */
+  indexNumber: number | null;
+  parentIndexNumber: number | null;
   /** Bibliothèque de l'item (préférences de pistes hors ligne). */
   libraryId: string | null;
 }
