@@ -31,6 +31,7 @@ export const Credits = lazy(() => import("./pages/Credits").then((m) => ({ defau
 export const PairDevice = lazy(() => import("./pages/PairDevice").then((m) => ({ default: m.PairDevice })));
 export const AdminPlugins = lazy(() => import("./pages/AdminPlugins").then((m) => ({ default: m.AdminPlugins })));
 export const AdminUsers = lazy(() => import("./pages/AdminUsers").then((m) => ({ default: m.AdminUsers })));
+export const AdminDownloads = lazy(() => import("./pages/AdminDownloads").then((m) => ({ default: m.AdminDownloads })));
 export const AdminTicketsPage = lazy(() => import("./pages/AdminTicketsPage").then((m) => ({ default: m.AdminTicketsPage })));
 export const AdminServicesPage = lazy(() => import("./pages/AdminServicesPage").then((m) => ({ default: m.AdminServicesPage })));
 export const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({ default: m.AdminTheme })));
@@ -38,5 +39,9 @@ export const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").th
 export const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
 export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
+export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
+export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));
+export const OfflineSeasonView = lazy(() => import("./downloads/OfflineSeasonView").then((m) => ({ default: m.OfflineSeasonView })));
+export const SettingsDownloads = lazy(() => import("./pages/settings/SettingsDownloads").then((m) => ({ default: m.SettingsDownloads })));
 export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
 export const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));

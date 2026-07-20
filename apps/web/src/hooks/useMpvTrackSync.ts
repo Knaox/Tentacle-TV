@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { findMpvTrack, nativeSubUrl } from "../components/player/mpvTrackMapping";
+import { isSideCarIndex } from "./localPlaybackTrackSources";
 import type { MpvState, MpvTrack } from "./useDesktopPlayer";
 
 const DBG = "[DesktopPlayer]";
@@ -95,6 +96,13 @@ export function useMpvTrackSync({
       onSubtitleChange(null);
       return;
     }
+    // Side-car local : fichier séparé, jamais dans la track-list mpv — le
+    // mapping positionnel le confondrait avec une interne de même langue.
+    if (isSideCarIndex(jfIndex)) {
+      void selectExternalSub(jfIndex);
+      onSubtitleChange(jfIndex);
+      return;
+    }
     if (!isDirectPlay) {
       // Transcode : les renditions VTT du manifeste HLS (SubtitleMethod=Hls,
       // requis tvOS) ne sont pas rendues par mpv → TOUJOURS charger la piste
@@ -148,6 +156,12 @@ export function useMpvTrackSync({
     if (currentSubtitle == null) {
       console.debug(DBG, "pref apply subtitle: disable (null)");
       setSubtitleTrack(0);
+      return;
+    }
+
+    // Side-car local : toujours par sub-add (voir handleSubtitleChange).
+    if (isSideCarIndex(currentSubtitle)) {
+      void selectExternalSub(currentSubtitle);
       return;
     }
 

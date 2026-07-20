@@ -7,6 +7,7 @@ import {
   type MediaItem,
   type TrickplayInfo,
 } from "@tentacle-tv/shared";
+import { useLocalTrickplay } from "./useLocalTrickplay";
 
 export interface TrickplayFrame {
   url: string;
@@ -36,11 +37,16 @@ const DEV_CACHE_SOFT_CAP = 20;
 export function useTrickplay(
   item: MediaItem | undefined,
   mediaSourceId?: string,
+  /** Lecture locale : trickplay servi depuis le disque (serveur loopback). */
+  localItemId?: string,
 ): UseTrickplayResult {
   const client = useJellyfinClient();
+  const local = useLocalTrickplay(localItemId);
+  // Source du manifeste : local d'abord (lecture locale), sinon le DTO Jellyfin.
+  const trickplayManifest = local?.manifest ?? item?.Trickplay;
   const selection = useMemo(
-    () => pickBestTrickplayWidth(item?.Trickplay, mediaSourceId),
-    [item?.Trickplay, mediaSourceId],
+    () => pickBestTrickplayWidth(trickplayManifest, mediaSourceId),
+    [trickplayManifest, mediaSourceId],
   );
 
   const cacheRef = useRef<Map<number, HTMLImageElement>>(new Map());
@@ -52,11 +58,14 @@ export function useTrickplay(
     return () => {
       cacheRef.current.clear();
     };
-  }, [selection?.mediaSourceId, selection?.width, item?.Id]);
+  }, [selection?.mediaSourceId, selection?.width, item?.Id, localItemId]);
 
   const buildTileUrl = useCallback(
     (tileIndex: number): string | null => {
-      if (!selection || !item?.Id) return null;
+      if (!selection) return null;
+      // Lecture locale : tuiles servies par le serveur loopback.
+      if (local) return local.buildTileUrl(tileIndex);
+      if (!item?.Id) return null;
       // Absolute URL: hits the same backend as the rest of the Jellyfin client.
       // Token via query param (api_key) because background-image / new Image()
       // cannot send custom headers nor cross-origin cookies.
@@ -66,7 +75,7 @@ export function useTrickplay(
       if (token) params.set("api_key", token);
       return `${base}/items/${item.Id}/trickplay/${selection.width}/${tileIndex}.jpg?${params.toString()}`;
     },
-    [selection, item?.Id, client],
+    [selection, item?.Id, client, local],
   );
 
   const ensureCached = useCallback(

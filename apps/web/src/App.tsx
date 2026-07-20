@@ -16,6 +16,12 @@ import { AutoWatchHarness } from "./dev/autoWatch";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
+import { ConnectivityBinding } from "./offline/ConnectivityBinding";
+import { OfflineSessionSync } from "./offline/OfflineSessionSync";
+import { OfflineSessionGate } from "./offline/OfflineSessionGate";
+import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
+import { DownloadsEvents } from "./downloads/DownloadsEvents";
+import { reportPossibleOutage } from "./offline/connectivityStore";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { isTauriApp } from "./main";
@@ -23,8 +29,9 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, OfflineCatalog, OfflineSeasonView, AdminDownloads
 } from "./lazyPages";
+import { useOfflineMode } from "./offline/useOfflineMode";
 
 function PageSpinner() {
   return (
@@ -102,6 +109,10 @@ export function App() {
   const activePluginsMeta = useActivePluginsMeta();
   const refreshPlugins = useRefreshPlugins();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
+  // Mode Hors ligne (desktop) : navigation réduite au contenu local — les
+  // sections serveur ne sont pas rendues, elles redirigent vers le catalogue.
+  const offlineMode = useOfflineMode();
+  const onlineOnly = (el: React.ReactElement) => (offlineMode ? <Navigate to="/" replace /> : el);
 
   // Re-fetch plugins after login (backendUrl doesn't change so the effect won't re-run otherwise)
   useEffect(() => {
@@ -112,9 +123,15 @@ export function App() {
   useEffect(() => {
     if (needsServerUrl) { setSetupRequired(false); return; }
     const base = isTauriApp ? (localStorage.getItem("tentacle_server_url") || "") : "";
+    // Desktop : UNE tentative bornée à 4 s — un boot hors ligne ne doit pas
+    // bloquer ~10 s sur les retries web ; le mode Hors ligne prend le relais
+    // (reportPossibleOutage → sonde immédiate → pastille + session locale).
+    const maxAttempts = isTauriApp ? 1 : 5;
     let attempts = 0;
     const check = () => {
-      fetch(`${base}/api/setup/status`)
+      const controller = new AbortController();
+      const timeoutId = isTauriApp ? setTimeout(() => controller.abort(), 4000) : null;
+      fetch(`${base}/api/setup/status`, isTauriApp ? { signal: controller.signal } : undefined)
         .then((r) => {
           if (r.status >= 500) throw new Error(`backend ${r.status}`);
           return r.json();
@@ -122,11 +139,12 @@ export function App() {
         .then((data) => { setBackendDown(false); setSetupRequired(data.state !== "running"); })
         .catch(() => {
           attempts++;
-          if (attempts < 5) { setTimeout(check, 2000); return; }
-          // After 5 failed attempts: backend is unreachable — don't show setup wizard
-          if (isTauriApp) { setSetupRequired(false); }
+          if (attempts < maxAttempts) { setTimeout(check, 2000); return; }
+          // Backend injoignable — pas de wizard de setup.
+          if (isTauriApp) { setSetupRequired(false); reportPossibleOutage(); }
           else { setBackendDown(true); setSetupRequired(false); }
-        });
+        })
+        .finally(() => { if (timeoutId !== null) clearTimeout(timeoutId); });
     };
     check();
   }, [needsServerUrl]);
@@ -173,6 +191,14 @@ export function App() {
           filtre non monte resoudrait sur rien et le verre retomberait
           silencieusement sur un flou plat. */}
       <GlassFilters />
+      {/* Pont connectivité ↔ TanStack : erreurs réseau → sonde, retour en
+          ligne → invalidations échelonnées. Web ET desktop. */}
+      <ConnectivityBinding />
+      {/* Desktop : photo de session (profil+droits) rafraîchie en ligne, et
+          garde « reconnexion nécessaire » à l'expiration des 30 j hors ligne. */}
+      {authed && <OfflineSessionSync />}
+      {authed && <DownloadsEngineBoot />}
+      {authed && <DownloadsEvents />}
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       <ScrollMemoryWrapper />
@@ -190,34 +216,47 @@ export function App() {
 
           {/* Protected — immersive (no sidebar/tabbar) */}
           <Route path="/watch/:itemId" element={guard(<Watch />)} />
-          <Route path="/media/:itemId" element={guard(<MediaDetail />)} />
+          <Route path="/media/:itemId" element={guard(onlineOnly(<MediaDetail />))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           <Route element={guard(<AppLayout />)}>
-            <Route index element={<Home />} />
-            <Route path="library/:libraryId" element={<Library />} />
-            <Route path="watchlist" element={<Watchlist />} />
-            <Route path="favorites" element={<Favorites />} />
+            {/* Hors ligne : l'accueil devient le catalogue local. */}
+            <Route index element={offlineMode ? <OfflineCatalog /> : <Home />} />
+            <Route path="library/:libraryId" element={onlineOnly(<Library />)} />
+            <Route path="watchlist" element={onlineOnly(<Watchlist />)} />
+            <Route path="favorites" element={onlineOnly(<Favorites />)} />
+            {/* Desktop uniquement — la page se redirige elle-même hors droit
+                et hors contenu local (invisibilité stricte). */}
+            <Route path="downloads" element={<DownloadsPage />} />
+            {/* Saison téléchargée : contenu 100 % local, donc accessible aussi
+                en ligne (le retour navigateur fonctionne normalement). */}
+            <Route path="offline/season/:groupKey" element={<OfflineSeasonView />} />
 
-            <Route path="support" element={<Support />} />
+            <Route path="support" element={onlineOnly(<Support />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
                 `/settings` reste l'URL d'entree ; les sections deviennent des
                 enfants, et Securite regroupe ce qui etait disperse. */}
             <Route path="settings" element={<SettingsLayout />}>
               <Route index element={<SettingsIndex />} />
               <Route path="appearance" element={<SettingsAppearance />} />
-              <Route path="security" element={<SettingsSecurity />} />
+              {/* Sécurité (mot de passe, appareils, serveur) : sans objet hors ligne. */}
+              <Route
+                path="security"
+                element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsSecurity />}
+              />
               <Route path="playback" element={<Preferences />} />
+              <Route path="downloads" element={<SettingsDownloads />} />
             </Route>
-            <Route path="profile" element={<MobileProfile />} />
-            <Route path="pair-device" element={<PairDevice />} />
+            <Route path="profile" element={onlineOnly(<MobileProfile />)} />
+            <Route path="pair-device" element={onlineOnly(<PairDevice />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
                 Les URLs restent identiques a l'avant (`/admin/users`,
                 `/admin/theme/tokens`, `/admin/plugins/<id>`), elles deviennent
                 simplement des enfants — aucun lien profond ne casse. */}
-            <Route path="admin" element={<AdminLayout />}>
+            <Route path="admin" element={onlineOnly(<AdminLayout />)}>
               <Route index element={null} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="downloads" element={<AdminDownloads />} />
               <Route path="invites" element={<AdminInvites />} />
               <Route path="tickets" element={<AdminTicketsPage />} />
               <Route path="services" element={<AdminServicesPage />} />
@@ -274,7 +313,11 @@ export function App() {
         </Routes>
       </Suspense>
       <UpdateModal />
-      <OfflineBanner />
+      {authed && <OfflineSessionGate />}
+      {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
+          Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
+          remplace le blocage — l'app reste utilisable sur le contenu local. */}
+      {!isTauriApp && <OfflineBanner />}
       </WatchTogetherProvider>
     </ToastProvider>
   );

@@ -125,4 +125,13 @@ export default {
   servicesDescription: "Jellyfin, base de données, URL publique et réglages du serveur.",
   manageServices: "Gérer les services",
   provisioningNeedsPublicUrl: "Renseignez d'abord l'URL publique du serveur Tentacle TV pour configurer le code de provisionnement.",
+  downloadsTitle: "Téléchargements",
+  downloadsIntro: "Droits de téléchargement par utilisateur — écrits directement dans Jellyfin, qui reste la source de vérité. Le périmètre par bibliothèque se gère dans Jellyfin.",
+  downloadsSaved: "Droits mis à jour dans Jellyfin.",
+  downloadsSaveError: "Échec de l'écriture dans Jellyfin.",
+  downloadsLoadError: "Impossible de lire les droits depuis Jellyfin (clé API et connexion à vérifier dans Services).",
+  rightDownload: "Téléchargement",
+  rightLight: "Mode Allégé",
+  downloadsAllLibraries: "Toutes les bibliothèques",
+  downloadsSomeLibraries: "{{count}} bibliothèque(s) autorisée(s) — géré dans Jellyfin",
 } as const;

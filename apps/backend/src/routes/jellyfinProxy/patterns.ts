@@ -17,6 +17,8 @@ const ALLOWED_PROXY_PATTERNS: RegExp[] = [
   // User data
   /^Users\/[^/]+\/Images\/Primary$/,
   /^Users\/[^/]+\/Items/,
+  // Resynchro de la progression hors ligne (style moderne 10.9+, pérenne 12.0)
+  /^UserItems\/[^/]+\/UserData$/,
   /^Users\/[^/]+\/FavoriteItems\/[^/]+$/,
   /^Users\/[^/]+\/PlayedItems\/[^/]+$/,
   /^Users\/[^/]+\/Views$/,

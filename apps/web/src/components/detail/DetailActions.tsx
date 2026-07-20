@@ -15,6 +15,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
 import { PressableScale } from "../ui/PressableScale";
 import { TrailerButton } from "./TrailerButton";
+import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { InviteUsersModal } from "../../watchTogether/InviteUsersModal";
 import { useToast } from "../../contexts/ToastContext";
@@ -112,6 +113,10 @@ export function DetailActions({ item }: DetailActionsProps) {
         label={isWatched ? "Marquer comme non vu" : "Marquer comme vu"}
         icon={<CheckCircleIcon filled={isWatched} />}
       />
+
+      {/* Téléchargement (desktop) : rendu UNIQUEMENT avec le droit Jellyfin —
+          le composant s'efface totalement sinon (invisibilité stricte). */}
+      <DetailDownloadAction item={item} />
 
       {/* Watch Together : crée le groupe (média en contexte) puis invite ;
           en groupe, l'hôte peut inviter d'ici. Lancer la lecture = bouton

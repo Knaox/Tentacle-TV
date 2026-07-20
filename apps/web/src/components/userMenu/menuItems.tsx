@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, PairIcon, SettingsIcon } from "./icons";
+import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, PairIcon, SettingsIcon } from "./icons";
 
 export interface UserInfo {
   name: string;
@@ -29,6 +29,8 @@ interface BuildItemsOptions {
   handleLogout: () => void;
   /** When true, include extra entries that are only relevant on mobile (Credits). */
   extended?: boolean;
+  /** Bascule manuelle en mode hors ligne (desktop Tauri, uniquement en ligne). */
+  goOffline?: () => void;
 }
 
 export function getUserInfo(): UserInfo {
@@ -50,7 +52,7 @@ export function getUserInfo(): UserInfo {
  * Aide → Crédits (mobile uniquement) → séparateur → Déconnexion.
  */
 export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
-  const { t, isAdmin, navigate, handleLogout, extended } = opts;
+  const { t, isAdmin, navigate, handleLogout, extended, goOffline } = opts;
   const items: UserMenuItem[] = [
     { key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") },
   ];
@@ -62,6 +64,9 @@ export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
   items.push({ key: "help", label: t("help"), icon: <HelpIcon />, action: () => navigate("/support") });
   if (extended) {
     items.push({ key: "credits", label: t("credits"), icon: <CreditsIcon />, action: () => navigate("/credits") });
+  }
+  if (goOffline) {
+    items.push({ key: "goOffline", label: t("goOffline"), icon: <OfflineIcon />, action: goOffline });
   }
   items.push({ key: "logout", label: t("logout"), icon: <LogoutIcon />, action: handleLogout, danger: true });
   return items;
