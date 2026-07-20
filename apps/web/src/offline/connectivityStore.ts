@@ -27,7 +27,7 @@ import {
   type HysteresisState,
   type LinkQuality,
 } from "./connectivityMachine";
-import { setNetworkSuspectListener } from "@tentacle-tv/api-client";
+import { setNetworkSuspectListener, setOfflineHintSupplier } from "@tentacle-tv/api-client";
 import { isTauri } from "../hooks/mpvRuntime";
 import { backendUrl } from "../main";
 
@@ -239,6 +239,12 @@ if (typeof window !== "undefined") {
   // Chaque tentative fetch en échec réseau/timeout (fetchWithRetry) déclenche
   // une sonde — throttlée par MIN_PROBE_SPACING_MS + le drapeau `probing`.
   setNetworkSuspectListener(() => reportPossibleOutage());
+  // État CONFIRMÉ hors ligne : fetchWithRetry coupe alors son échelle de
+  // retries (relu à chaque itération — tue aussi les échelles déjà en vol).
+  setOfflineHintSupplier(() => {
+    const s = snapshot.state;
+    return s === "offline-auto" || s === "offline-manual";
+  });
   ensureTimers();
   setTimeout(() => probeNow(true), INITIAL_PROBE_DELAY_MS);
   window.addEventListener("online", () => probeNow(true));
