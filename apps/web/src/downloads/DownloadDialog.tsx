@@ -21,10 +21,12 @@ import { useDiskInfo } from "./useDownloadState";
 interface DownloadDialogProps {
   items: MediaItem[];
   seasonMode?: boolean;
+  /** Titre spécifique (ex. « Télécharger la sélection (3 épisodes) »). */
+  batchTitle?: string;
   onClose: () => void;
 }
 
-export function DownloadDialog({ items, seasonMode = false, onClose }: DownloadDialogProps) {
+export function DownloadDialog({ items, seasonMode = false, batchTitle, onClose }: DownloadDialogProps) {
   const { t } = useTranslation(["downloads", "common"]);
   const { show } = useToast();
   const userId = useUserId();
@@ -74,9 +76,11 @@ export function DownloadDialog({ items, seasonMode = false, onClose }: DownloadD
     onClose();
   };
 
-  const title = seasonMode
-    ? t("downloads:dialogTitleSeason", { count: items.length })
-    : t("downloads:dialogTitle");
+  const title =
+    batchTitle ??
+    (seasonMode
+      ? t("downloads:dialogTitleSeason", { count: items.length })
+      : t("downloads:dialogTitle"));
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>

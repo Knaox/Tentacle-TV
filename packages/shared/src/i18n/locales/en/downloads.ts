@@ -17,6 +17,9 @@ export default {
 
   download: "Download",
   seasonDownload: "Download season",
+  episodeDownload: "Download episode",
+  downloadSelection: "Download selection",
+  dialogTitleSelection: "Download selection ({{count}} episodes)",
   downloadedBadge: "Downloaded",
   dialogTitle: "Download",
   dialogTitleSeason: "Download season ({{count}} episodes)",
