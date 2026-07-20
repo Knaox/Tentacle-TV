@@ -52,11 +52,12 @@ fn kill_transcode(job: &TransferJob, session: &Option<TranscodeSession>) {
         "{}/api/jellyfin/Videos/ActiveEncodings?deviceId={}&playSessionId={}",
         job.server_url, session.device_id, session.play_session_id
     );
+    // X-Emby-Token : la route passe par le proxy /api/jellyfin.
     let _ = ureq::AgentBuilder::new()
         .timeout(Duration::from_secs(10))
         .build()
         .delete(&url)
-        .set("Authorization", &format!("Bearer {}", job.token))
+        .set("X-Emby-Token", &job.token)
         .call();
 }
 

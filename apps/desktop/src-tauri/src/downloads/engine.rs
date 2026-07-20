@@ -94,15 +94,17 @@ impl Engine {
     }
 
     /// Démarrage/reconnexion : pose les credentials, normalise la file
-    /// (interrompus + pauses système → queued) et relance.
+    /// (interrompus + pauses système → queued), relance, et répare en fond
+    /// les snapshots/sous-titres manquants des téléchargements complets.
     pub fn start(&self, app: &AppHandle, creds: Creds) -> Result<(), String> {
         let _ = self.inner.app.set(app.clone());
-        *lock(&self.inner.creds) = Some(creds);
+        *lock(&self.inner.creds) = Some(creds.clone());
         let conn = db::open(&db::db_path(app)?)?;
         queue::normalize_on_engine_start(&conn, now_ms())?;
         drop(conn);
         self.emit_changed();
         self.pump();
+        super::heal::spawn(app.clone(), creds);
         Ok(())
     }
 

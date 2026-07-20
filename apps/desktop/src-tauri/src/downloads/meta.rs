@@ -53,9 +53,12 @@ fn save_bytes(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
 }
 
 fn fetch_to_vec(agent: &ureq::Agent, url: &str, token: &str) -> Result<Vec<u8>, String> {
+    // X-Emby-Token : format d'auth du proxy /api/jellyfin (transmis tel quel à
+    // Jellyfin). Un `Bearer` n'est PAS compris par Jellyfin → 401 silencieux
+    // (c'est ce qui laissait les snapshots JSON vides).
     let response = agent
         .get(url)
-        .set("Authorization", &format!("Bearer {token}"))
+        .set("X-Emby-Token", token)
         .call()
         .map_err(|e| format!("GET: {e}"))?;
     let mut bytes = Vec::new();

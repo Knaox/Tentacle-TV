@@ -69,11 +69,8 @@ pub fn fetch_all(
             "{server_url}/api/jellyfin/Videos/{item_id}/{media_source_id}/Subtitles/{}/Stream.{}",
             spec.index, spec.format
         );
-        let Ok(response) = agent
-            .get(&url)
-            .set("Authorization", &format!("Bearer {token}"))
-            .call()
-        else {
+        // X-Emby-Token : format du proxy /api/jellyfin (un Bearer y ferait 401).
+        let Ok(response) = agent.get(&url).set("X-Emby-Token", token).call() else {
             continue;
         };
         let mut bytes = Vec::new();

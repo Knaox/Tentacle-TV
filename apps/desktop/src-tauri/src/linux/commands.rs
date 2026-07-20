@@ -124,6 +124,29 @@ fn observe_properties(state: &RenderState, properties: &[Value]) -> Result<(), S
     Ok(())
 }
 
+/// Quote un argument pour la syntaxe TEXTE de commande mpv — miroir exact de
+/// `macos/commands.rs::quote_command_arg` (les arguments simples restent
+/// inchangés, seuls espaces/quotes/backslash/dièse déclenchent le quoting).
+fn quote_command_arg(raw: &str) -> String {
+    let needs_quoting = raw.is_empty()
+        || raw
+            .chars()
+            .any(|c| c.is_whitespace() || c == '"' || c == '\\' || c == '#' || c == '\'');
+    if !needs_quoting {
+        return raw.to_string();
+    }
+    let mut quoted = String::with_capacity(raw.len() + 2);
+    quoted.push('"');
+    for c in raw.chars() {
+        if c == '"' || c == '\\' {
+            quoted.push('\\');
+        }
+        quoted.push(c);
+    }
+    quoted.push('"');
+    quoted
+}
+
 #[command]
 pub async fn mpv_command(
     state: State<'_, Arc<RenderState>>,
@@ -134,10 +157,12 @@ pub async fn mpv_command(
     if mpv.is_null() {
         return Err("mpv non initialisé".to_string());
     }
+    // Les chaînes passent par quote_command_arg : `mpv_command_string` scinde
+    // sur les espaces — un chemin local avec espaces cassait `loadfile`/`sub-add`.
     let mut parts = vec![name];
     for arg in &args {
         match arg {
-            Value::String(s) => parts.push(s.clone()),
+            Value::String(s) => parts.push(quote_command_arg(s)),
             Value::Number(n) => parts.push(n.to_string()),
             Value::Bool(b) => parts.push(if *b { "yes".to_string() } else { "no".to_string() }),
             _ => parts.push(arg.to_string()),
