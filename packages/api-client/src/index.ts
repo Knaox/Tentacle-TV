@@ -123,3 +123,10 @@ export {
   localReportMode,
 } from "./net/dataSaver";
 export type { HomeLimits, ImageBudget, LocalReportMode } from "./net/dataSaver";
+
+// Politique réseau — timeout par tentative + suspicion de panne (cf. net/requestPolicy)
+export {
+  requestTimeoutMs,
+  setRequestTimeoutMs,
+  setNetworkSuspectListener,
+} from "./net/requestPolicy";

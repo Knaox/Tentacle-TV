@@ -1,4 +1,5 @@
 import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
+import { reportNetworkSuspect, requestTimeoutMs } from "../net/requestPolicy";
 import { JellyfinError } from "./types";
 
 export interface FetchWithRetryOptions {
@@ -23,16 +24,16 @@ export interface FetchWithRetryState {
 }
 
 const AUTH_EXPIRE_THRESHOLD = 5;
-/** Timeout par requête : sans ça, un Jellyfin qui « pend » (TCP ouvert, aucune
- *  réponse) laisse le fetch en attente INDÉFINIE → query bloquée en loading.
- *  IMPORTANT : on N'utilise PAS AbortController/signal (passer un signal au
- *  `fetch` cassait/annulait la requête PlaybackInfo POST sur certains runtimes RN
- *  → le flux ne se résolvait jamais, lecteur figé au chargement). À la place,
- *  `Promise.race` : le fetch tourne INTACT, on arrête juste d'attendre après le
- *  délai. 30 s = très généreux (un serveur lent répond en deçà), tout en bornant
- *  les vrais hangs infinis. Le fetch sous-jacent continue mais son résultat est
- *  ignoré (inoffensif). */
-const REQUEST_TIMEOUT_MS = 30000;
+/* Timeout par requête : sans ça, un Jellyfin qui « pend » (TCP ouvert, aucune
+ * réponse) laisse le fetch en attente INDÉFINIE → query bloquée en loading.
+ * IMPORTANT : on N'utilise PAS AbortController/signal (passer un signal au
+ * `fetch` cassait/annulait la requête PlaybackInfo POST sur certains runtimes RN
+ * → le flux ne se résolvait jamais, lecteur figé au chargement). À la place,
+ * `Promise.race` : le fetch tourne INTACT, on arrête juste d'attendre après le
+ * délai. La valeur vient de `net/requestPolicy` (relue à CHAQUE tentative) :
+ * 30 s par défaut — très généreux, borne les vrais hangs — et 12 s poussés par
+ * le desktop, qui préfère échouer vite vers son catalogue local. Le fetch
+ * sous-jacent continue mais son résultat est ignoré (inoffensif). */
 
 /** Échoue si `fetch` n'a pas répondu dans `timeoutMs`, SANS toucher au fetch
  *  lui-même (pas de signal/abort). */
@@ -75,7 +76,7 @@ export async function fetchWithRetry<T>(
         ...opts.init,
         headers,
         credentials: opts.useCredentials ? "include" : undefined,
-      }, REQUEST_TIMEOUT_MS);
+      }, requestTimeoutMs());
       networkError = null;
       // "Backend restarting" codes — retry silently
       if (response.status === 502 || response.status === 503 || response.status === 504) {
@@ -87,6 +88,10 @@ export async function fetchWithRetry<T>(
       break;
     } catch (err) {
       networkError = err;
+      // Suspicion de panne signalée DÈS la première tentative en échec : la
+      // sonde de connectivité (côté app) tranche pendant que les retries
+      // continuent — sans attendre la fin de l'échelle.
+      reportNetworkSuspect();
       // Erreurs réseau + timeout : retry avec backoff (connexion refusée =
       // backend en redémarrage, récupération rapide typique).
       if (attempt < RETRY_DELAYS_MS.length) {
