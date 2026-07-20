@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { HardDriveDownload, Palette, Play, ShieldCheck } from "lucide-react";
+import { Gauge, HardDriveDownload, Palette, Play, ShieldCheck } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -56,6 +56,9 @@ export function SettingsLayout() {
       ...(downloadsVisible
         ? [{ id: "downloads", label: t("sectionDownloads"), icon: <HardDriveDownload size={ICON} /> }]
         : []),
+      // Économie de données : utile sur toutes les plateformes, y compris hors
+      // ligne (le réglage vaut pour le retour en ligne).
+      { id: "data", label: t("sectionData"), icon: <Gauge size={ICON} /> },
     ],
     [t, downloadsVisible, offline],
   );

@@ -43,5 +43,6 @@ export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then
 export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));
 export const OfflineSeasonView = lazy(() => import("./downloads/OfflineSeasonView").then((m) => ({ default: m.OfflineSeasonView })));
 export const SettingsDownloads = lazy(() => import("./pages/settings/SettingsDownloads").then((m) => ({ default: m.SettingsDownloads })));
+export const SettingsData = lazy(() => import("./pages/settings/SettingsData").then((m) => ({ default: m.SettingsData })));
 export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
 export const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));

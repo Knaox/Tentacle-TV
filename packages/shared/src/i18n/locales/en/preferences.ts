@@ -38,6 +38,7 @@ export default {
   sectionAppearance: "Appearance",
   sectionPlayback: "Playback",
   sectionDownloads: "Downloads",
+  sectionData: "Data",
   sectionHelp: "Help",
   sectionDanger: "Danger zone",
   back: "Back",
