@@ -87,3 +87,17 @@ export async function markReportSynced(
     /* best-effort : restera en file, retenté au prochain retour en ligne */
   }
 }
+
+/**
+ * Retire un item de la file de resynchronisation — à appeler quand sa position
+ * a déjà été portée à Jellyfin par une autre voie (`/Sessions/Playing/Stopped`
+ * d'une fermeture propre). Sans cela, l'entrée serait rejouée au prochain
+ * lancement et pourrait écraser une progression faite entre-temps sur un autre
+ * appareil.
+ */
+export async function clearReportQueueForItem(userId: string, itemId: string): Promise<void> {
+  if (!isTauri()) return;
+  const pending = await pendingReports(userId);
+  const entry = pending.find((r) => r.itemId === itemId);
+  if (entry) await markReportSynced(userId, itemId, entry.id);
+}

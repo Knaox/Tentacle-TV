@@ -38,6 +38,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
+    // Fichier local + mode économie → reporting « bords » (début/fin) au lieu
+    // d'un battement toutes les 10 s. La progression fine reste en SQLite.
+    localPlayback: isLocalPlayback,
   });
 
   // Hors ligne : aucun reporting réseau — la progression est persistée
@@ -50,6 +53,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     localSource,
     positionRef,
     durationSeconds: jellyfinDuration,
+    stopPromiseRef: lastStopPromiseRef,
   });
 
   // ── Watch Together : transport + handlers de groupe + moteur de sync ──

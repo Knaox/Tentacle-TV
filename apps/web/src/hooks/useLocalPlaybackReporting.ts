@@ -9,10 +9,14 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useUserId } from "@tentacle-tv/api-client";
+import { localReportMode, useUserId } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { deleteDownload } from "../downloads/api";
-import { saveLocalPlaybackState, type LocalSource } from "../downloads/playbackApi";
+import {
+  clearReportQueueForItem,
+  saveLocalPlaybackState,
+  type LocalSource,
+} from "../downloads/playbackApi";
 import { useConnectivity } from "../offline/useConnectivity";
 
 const SAVE_INTERVAL_MS = 10_000;
@@ -25,6 +29,9 @@ interface LocalReportingParams {
   /** Position courante en secondes (ref partagée avec le lecteur). */
   positionRef: React.MutableRefObject<number>;
   durationSeconds: number | undefined;
+  /** Promesse du dernier `/Sessions/Playing/Stopped` — sert à ne purger la
+   *  file de resynchronisation qu'une fois la position confirmée côté serveur. */
+  stopPromiseRef?: React.MutableRefObject<Promise<void>>;
 }
 
 export function useLocalPlaybackReporting({
@@ -33,6 +40,7 @@ export function useLocalPlaybackReporting({
   localSource,
   positionRef,
   durationSeconds,
+  stopPromiseRef,
 }: LocalReportingParams): void {
   const userId = useUserId();
   const { state } = useConnectivity();
@@ -40,6 +48,18 @@ export function useLocalPlaybackReporting({
   onlineRef.current = state === "online" || state === "checking";
   const durationRef = useRef(durationSeconds);
   durationRef.current = durationSeconds;
+
+  /**
+   * La file de resynchronisation est alimentée quand la position ne peut PAS
+   * partir vers Jellyfin en continu :
+   *  - hors ligne (comportement historique) ;
+   *  - en mode « bords », où le heartbeat est coupé — c'est là le filet
+   *    anti-crash : si l'app meurt sans `Stopped`, la position écrite en SQLite
+   *    toutes les 10 s remonte au lancement suivant.
+   * Tout est lu à l'appel (ref + état du socle), donc jamais périmé même
+   * capturé dans une closure d'effet.
+   */
+  const shouldQueue = () => !onlineRef.current || localReportMode() === "edges";
 
   useEffect(() => {
     if (!enabled || !userId || !itemId || !localSource) return;
@@ -59,19 +79,38 @@ export function useLocalPlaybackReporting({
     const persist = () => {
       const { ticks, played } = snapshot();
       if (ticks <= 0 && !played) return;
-      void saveLocalPlaybackState(userId, itemId, ticks, played, !onlineRef.current);
+      void saveLocalPlaybackState(userId, itemId, ticks, played, shouldQueue());
     };
 
     const interval = setInterval(persist, SAVE_INTERVAL_MS);
     return () => {
       clearInterval(interval);
       const { ticks, played } = snapshot();
+      const queued = shouldQueue();
       if (ticks > 0 || played) {
-        void saveLocalPlaybackState(userId, itemId, ticks, played, !onlineRef.current);
+        void saveLocalPlaybackState(userId, itemId, ticks, played, queued);
       }
       if (autoDelete && played) {
         void deleteDownload(userId, fileId);
       }
+      // Fermeture propre EN LIGNE : le `/Sessions/Playing/Stopped` a porté la
+      // position à Jellyfin, l'entrée de file ferait doublon — et serait
+      // rejouée au prochain lancement, écrasant une progression faite
+      // entre-temps sur un autre appareil. On la purge, mais SEULEMENT si le
+      // Stopped a réussi ; sinon elle reste, c'est tout l'intérêt du filet.
+      // Déféré d'un microtask comme dans WatchDesktop : les cleanups React
+      // tournent en ordre inverse, le vrai stop promise n'est pas encore
+      // assigné à cet instant.
+      if (queued && onlineRef.current && stopPromiseRef) {
+        queueMicrotask(() => {
+          stopPromiseRef.current.then(
+            () => void clearReportQueueForItem(userId, itemId),
+            () => {
+              /* Stopped en échec — la file est conservée et sera drainée */
+            },
+          );
+        });
+      }
     };
-  }, [enabled, userId, itemId, localSource, positionRef]);
+  }, [enabled, userId, itemId, localSource, positionRef, stopPromiseRef]);
 }

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { beaconUrl, killActiveEncoding, safePositionTicks, sessionPost } from "./playbackTransport";
+import { isDataSaverActive, localReportMode, subscribeDataSaver } from "../net/dataSaver";
 
 const REPORT_INTERVAL_MS = 10_000;
 
@@ -13,13 +14,35 @@ export interface PlaybackReportingOptions {
   playSessionId: string | undefined;
   audioStreamIndex: number;
   subtitleStreamIndex: number | null;
+  /** Lecture d'un fichier LOCAL (desktop) : autorise le reporting « bords »
+   *  en mode économie. En streaming le heartbeat maintient aussi le
+   *  transcodage vivant côté Jellyfin — on n'y touche jamais. */
+  localPlayback?: boolean;
 }
 
 export function usePlaybackReporting({
   itemId, mediaSourceId, isDirectPlay, isDirectStream,
-  playSessionId, audioStreamIndex, subtitleStreamIndex,
+  playSessionId, audioStreamIndex, subtitleStreamIndex, localPlayback,
 }: PlaybackReportingOptions) {
   const client = useJellyfinClient();
+
+  // Souscription au mode économie : c'est elle qui redéclenche le rendu quand
+  // il bascule en cours de lecture. La décision reste dans le socle.
+  useSyncExternalStore(subscribeDataSaver, isDataSaverActive, isDataSaverActive);
+  /**
+   * Reporting « bords » : `/Sessions/Playing` au début, `/Sessions/Playing/Stopped`
+   * à la fin, RIEN entre les deux — ni interval fetch, ni interval beacon.
+   * 720 requêtes → 2 sur un film de 2 h.
+   *
+   * Rien n'est perdu pour autant : la position continue d'être écrite en SQLite
+   * toutes les 10 s par `useLocalPlaybackReporting` (0 octet réseau) et rejoint
+   * la file de resynchronisation, drainée au lancement suivant — c'est le filet
+   * anti-crash. Les beacons ponctuels (passage en arrière-plan, fermeture de
+   * fenêtre) sont eux CONSERVÉS : un message, pas un battement.
+   */
+  const edgesOnly = !!localPlayback && localReportMode() === "edges";
+  const edgesOnlyRef = useRef(edgesOnly);
+  edgesOnlyRef.current = edgesOnly;
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
   const startedRef = useRef(false);
@@ -110,10 +133,10 @@ export function usePlaybackReporting({
 
   const resetInterval = useCallback(() => {
     clearProgressInterval();
-    if (startedRef.current && !bgModeRef.current) {
+    if (startedRef.current && !bgModeRef.current && !edgesOnly) {
       intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL_MS);
     }
-  }, [reportProgress, clearProgressInterval]);
+  }, [reportProgress, clearProgressInterval, edgesOnly]);
 
   const reportStart = useCallback((initialPositionSeconds?: number) => {
     if (!itemId || startedRef.current) return;
@@ -150,6 +173,9 @@ export function usePlaybackReporting({
   const reportSeek = useCallback((seconds: number, isPaused: boolean) => {
     positionRef.current = seconds;
     pausedRef.current = isPaused;
+    // Mode « bords » : un seek ne vaut pas un aller-retour réseau — la position
+    // est de toute façon écrite en SQLite et envoyée à la fermeture.
+    if (edgesOnlyRef.current) return;
     reportProgress();   // send immediately with new position
     resetInterval();    // restart 10s timer from now
   }, [reportProgress, resetInterval]);
@@ -185,6 +211,11 @@ export function usePlaybackReporting({
 
     const startBgBeaconInterval = () => {
       if (bgIntervalRef.current) clearInterval(bgIntervalRef.current);
+      // Mode « bords » : pas de battement en arrière-plan non plus. C'était un
+      // second heartbeat, invisible dans l'onglet Network et donc facile à
+      // oublier — il aurait annulé tout le bénéfice pour une lecture en
+      // arrière-plan (cas courant : fenêtre réduite pendant un film).
+      if (edgesOnlyRef.current) return;
       bgIntervalRef.current = setInterval(sendProgressBeacon, REPORT_INTERVAL_MS);
     };
 

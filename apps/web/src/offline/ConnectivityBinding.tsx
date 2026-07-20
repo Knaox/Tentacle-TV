@@ -60,6 +60,21 @@ export function ConnectivityBinding() {
     };
   }, [queryClient]);
 
+  // Drain au MONTAGE — le filet anti-crash. La resynchronisation ci-dessous
+  // n'écoute qu'une TRANSITION hors ligne → en ligne : après un arrêt brutal
+  // (crash, coupure de courant, kill), l'app redémarre directement « online »,
+  // donc sans transition, et la position serait restée en file indéfiniment.
+  // Coût nul dans le cas courant : `drainReportQueue` commence par lire la file
+  // en SQLite et ne touche au réseau que si elle contient quelque chose.
+  const bootDrainedRef = useRef(false);
+  useEffect(() => {
+    if (!isTauriApp || !userId || bootDrainedRef.current) return;
+    bootDrainedRef.current = true;
+    void drainReportQueue(userId).catch(() => {
+      /* la file reste en place, retentée au prochain retour en ligne */
+    });
+  }, [userId]);
+
   // Transition hors ligne → en ligne : d'abord RESYNCHRONISER la progression
   // regardée hors ligne (desktop), PUIS rafraîchir le catalogue — sinon
   // « Reprendre » refléterait l'état d'avant la resynchro.
