@@ -574,6 +574,7 @@ jobs:
         with:
           name: tentacle-sums-pacman
           path: dist-arch/SHA256SUMS.pacman
+          if-no-files-found: error
 
       # Même raison que côté deb/rpm/AppImage : rendre le paquet récupérable
       # quand la livraison ne passe pas par un tag.
@@ -582,7 +583,6 @@ jobs:
         with:
           name: tentacle-pacman
           path: dist-arch/*.pkg.tar.zst
-          if-no-files-found: error
           if-no-files-found: error
 
   # ── Manifeste d'auto-update (updates/store-versions.json, bloc « linux ») ──
