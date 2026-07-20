@@ -20,7 +20,11 @@ const STAGGER_DELAY_MS = 2_000;
 
 const looksLikeOutage = (error: unknown): boolean => {
   const msg = (error as Error)?.message ?? "";
-  const isNetworkError = error instanceof TypeError && msg === "Failed to fetch";
+  const isNetworkError =
+    (error instanceof TypeError && msg === "Failed to fetch") ||
+    // Hang borné par fetchWithRetry (Promise.race) : panne probable — sans ce
+    // cas, un serveur qui « pend » ne déclenchait jamais de sonde.
+    msg === "RequestTimeout";
   const status = (error as { status?: number })?.status;
   const isServerError =
     (typeof status === "number" && status >= 500) ||
