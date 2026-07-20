@@ -41,6 +41,9 @@ interface LatestItemsOptions {
    *  la rangée renvoie des épisodes, regroupés en collection par runs consécutifs
    *  d'une même série (cf. groupLatestByRuns). */
   collectionType?: string;
+  /** Différer la requête jusqu'à ce que la rangée approche du viewport
+   *  (mode économie). Par défaut la rangée charge dès le montage. */
+  enabled?: boolean;
 }
 
 // Champs pour le rendu épisode (image, label SxxExx, navigation). MediaSources
@@ -86,7 +89,7 @@ export function useLatestItems(parentId: string | undefined, options?: LatestIte
         .then((r) => r.Items);
     },
     select: episodeMode ? groupLatestByRuns : undefined,
-    enabled: !!userId && !!parentId,
+    enabled: !!userId && !!parentId && (options?.enabled ?? true),
     staleTime: 2 * 60 * 1000 * staleFactor(),
   });
 }
