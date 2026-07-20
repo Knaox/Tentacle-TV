@@ -109,7 +109,12 @@ export function attachQueryPersister(
   const save = async (): Promise<void> => {
     try {
       const all = qc.getQueryCache().findAll();
-      const out: Record<string, PersistedEntry> = {};
+
+      // Candidats sérialisés un par un : une query au `data` non sérialisable
+      // (cycle, BigInt…) ne doit pas faire tomber la persistance des autres —
+      // même isolation qu'à l'hydratation. La sérialisation individuelle sert
+      // aussi à connaître le coût de chaque entrée AVANT d'arbitrer.
+      const candidates: Array<{ keyJson: string; entry: PersistedEntry; cost: number }> = [];
       for (const q of all) {
         const queryKey = q.queryKey;
         if (!Array.isArray(queryKey) || queryKey.length === 0) continue;
@@ -117,14 +122,36 @@ export function attachQueryPersister(
         if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) continue;
         const state = q.state;
         if (state.status !== "success" || state.data === undefined) continue;
-        out[JSON.stringify(queryKey)] = {
-          data: state.data,
-          dataUpdatedAt: state.dataUpdatedAt,
-        };
+        try {
+          const keyJson = JSON.stringify(queryKey);
+          const entry: PersistedEntry = { data: state.data, dataUpdatedAt: state.dataUpdatedAt };
+          candidates.push({
+            keyJson,
+            entry,
+            // `keyJson` est re-échappé une fois posé en clé d'objet ; +2 pour
+            // le `:` de la paire et la `,` de séparation.
+            cost: JSON.stringify(keyJson).length + JSON.stringify(entry).length + 2,
+          });
+        } catch {
+          // Entrée non sérialisable — ignorée, le reste est conservé
+        }
       }
-      const serialized = JSON.stringify(out);
-      if (serialized.length > maxBytes) return; // Skip — trop gros, on attend la prochaine sauvegarde
-      await Promise.resolve(storage.setItem(key, serialized));
+
+      // Éviction par fraîcheur plutôt qu'abandon global : au-delà du budget on
+      // GARDE les données les plus récentes au lieu de tout jeter. L'ancien
+      // `return` sur dépassement laissait le cache vide en permanence dès que
+      // les hubs volumineux (next-up) saturaient les 2 Mo — donc plus aucun
+      // cold start instantané, silencieusement.
+      candidates.sort((a, b) => b.entry.dataUpdatedAt - a.entry.dataUpdatedAt);
+      const out: Record<string, PersistedEntry> = {};
+      let total = 2; // les accolades englobantes
+      for (const c of candidates) {
+        if (total + c.cost > maxBytes) continue; // trop gros : on tente les suivants, plus petits
+        out[c.keyJson] = c.entry;
+        total += c.cost;
+      }
+
+      await Promise.resolve(storage.setItem(key, JSON.stringify(out)));
     } catch {
       // Sauvegarde best-effort — silencieux en cas d'erreur
     }
@@ -149,7 +176,11 @@ export function attachQueryPersister(
   };
 }
 
-/** Whitelist par défaut : les caches de la page d'accueil. */
+/** Whitelist par défaut : les caches de la page d'accueil.
+ *  NB : pas de `"library-items"` — les vraies clés des bibliothèques sont
+ *  `["library", id, "items", …]`, donc ce préfixe ne matchait rien. Le
+ *  « corriger » en `"library"` persisterait tout le catalogue parcouru,
+ *  ce qui n'est pas le rôle de ce cache (les hubs de la home). */
 export const HOME_PERSIST_WHITELIST = [
   "resume-items",
   "latest-items",
@@ -158,5 +189,4 @@ export const HOME_PERSIST_WHITELIST = [
   "featured",
   "watchlist",
   "libraries",
-  "library-items",
 ] as const;

@@ -90,10 +90,13 @@ const tvPersistStorage = {
   },
 };
 
-// `library-items` (potentiellement énorme : tout le contenu d'une bibliothèque)
-// exclu de la persistance TV — re-fetché à la navigation, inutile au cold start
-// home et principal responsable du dépassement de la limite NSUserDefaults.
-const TV_HOME_WHITELIST = HOME_PERSIST_WHITELIST.filter((k) => k !== "library-items");
+// Le contenu des bibliothèques (potentiellement énorme) n'est pas persisté :
+// `HOME_PERSIST_WHITELIST` ne liste que les hubs de la home. Il était le
+// principal responsable du dépassement de la limite NSUserDefaults, d'où le
+// filtre explicite qui vivait ici — désormais inutile, l'entrée morte a été
+// retirée de la liste source. Le persister évince par fraîcheur sous
+// `maxBytes`, donc un dépassement ne vide plus tout le cache.
+const TV_HOME_WHITELIST = HOME_PERSIST_WHITELIST;
 
 // Purge unique d'un blob déjà surdimensionné (laissé par l'ancien plafond 2 Mo)
 // pour repartir d'un domaine NSUserDefaults sain. tvOS only : Settings n'existe
