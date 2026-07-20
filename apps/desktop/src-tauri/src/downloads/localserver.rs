@@ -13,7 +13,7 @@
 //! un « secure context » : pas de blocage mixed-content depuis la page.
 
 use super::fsops;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use tauri::AppHandle;
 use tiny_http::{Header, Response, Server};
 
@@ -23,6 +23,9 @@ pub struct AssetServer {
 }
 
 static SERVER: OnceLock<AssetServer> = OnceLock::new();
+/// Sérialise l'initialisation : deux commandes IPC concurrentes bindaient
+/// sinon deux sockets — le perdant fuyait un port ouvert et un thread.
+static INIT_LOCK: Mutex<()> = Mutex::new(());
 
 fn random_token() -> String {
     let mut bytes = [0u8; 16];
@@ -91,7 +94,20 @@ pub fn ensure_started(app: &AppHandle) -> Result<&'static AssetServer, String> {
     if let Some(server) = SERVER.get() {
         return Ok(server);
     }
-    let http = Server::http("127.0.0.1:0").map_err(|e| format!("bind loopback: {e}"))?;
+    let _guard = INIT_LOCK
+        .lock()
+        .map_err(|_| "init loopback: verrou empoisonné".to_string())?;
+    if let Some(server) = SERVER.get() {
+        return Ok(server); // un appel concurrent vient de terminer l'init
+    }
+    // Échec typique : sandbox MAS sans l'entitlement network.server
+    // (« Operation not permitted »). L'échec n'est PAS mémorisé : le OnceLock
+    // reste vierge et le prochain appel retentera le bind.
+    let http = Server::http("127.0.0.1:0").map_err(|e| {
+        let msg = format!("bind loopback 127.0.0.1: {e}");
+        eprintln!("[localserver] {msg}");
+        msg
+    })?;
     let port = http
         .server_addr()
         .to_ip()
