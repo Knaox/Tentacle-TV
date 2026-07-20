@@ -4,12 +4,41 @@ Blocs `## [X.Y.Z]` avec `### FR` / `### EN`. Lu par `.github/workflows/desktop.y
 Mac App Store / TestFlight (max 4000 caractères), Microsoft Store (max 1500),
 Release GitHub Linux (illimité). Une seule version pour les trois OS
 (`versions.json` → `desktop`), un seul tag `desktop-vX.Y.Z`.
+Variante par canal : un bloc `## [mac-X.Y.Z]` remplace le bloc nu pour App
+Store Connect uniquement (`asc-release-notes.mjs`, CHANNEL=mac) — utile quand
+les notes Apple doivent rester génériques.
 
 ## [Unreleased]
 ### FR
 - …
 ### EN
 - …
+
+## [mac-1.16.0]
+### FR
+- Améliorations de la lecture et de la stabilité
+- Optimisations de performance et corrections diverses
+- Interface affinée dans les thèmes clair et sombre
+### EN
+- Playback and stability improvements
+- Performance optimizations and various fixes
+- Interface refinements in light and dark themes
+
+## [1.16.0]
+### FR
+- Téléchargements : enregistrez un film, un épisode ou une saison entière sur l'ordinateur depuis sa fiche, en qualité Originale (fichier source) ou Allégée (1080p, 720p ou 480p, taille estimée avant lancement, sous-titres inclus)
+- Mode Hors ligne : bascule automatique quand le serveur ne répond plus, retour automatique dès qu'il répond, bascule manuelle possible — catalogue local avec affiches, fiches et lecture sans aucune connexion
+- Écran Téléchargements : progression en direct, pause/reprise (y compris après une coupure ou un redémarrage), suppression avec confirmation, espace occupé et espace libre, option « supprimer après visionnage »
+- Lecture locale prioritaire : un contenu téléchargé est toujours lu depuis le disque, même connecté ; la position est conservée hors ligne et resynchronisée avec le serveur au retour en ligne
+- Multi-comptes : chaque compte ne voit que ses téléchargements ; un même contenu téléchargé par deux comptes n'occupe l'espace qu'une seule fois
+- Droits pilotés par le serveur : l'administrateur choisit qui peut télécharger et qui a droit au mode Allégé (écrit directement dans Jellyfin)
+### EN
+- Downloads: save a movie, an episode or a whole season to your computer from its page, as Original (source file) or Light quality (1080p, 720p or 480p, size estimated up front, subtitles included)
+- Offline mode: automatic switch when the server stops responding, automatic return as soon as it responds, manual switch available — local catalog with artwork, pages and playback without any connection
+- Downloads screen: live progress, pause/resume (including after a network cut or an app restart), confirmed deletion, used and free space, per-item "delete after watching" option
+- Local playback first: downloaded content always plays from disk, even while online; position is kept offline and resynced with the server when back online
+- Multi-account: each account only sees its own downloads; the same content downloaded by two accounts only uses disk space once
+- Server-driven rights: the administrator chooses who can download and who gets Light mode (written directly into Jellyfin)
 
 ## [1.15.1]
 ### FR
