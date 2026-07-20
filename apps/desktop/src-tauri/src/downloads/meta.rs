@@ -145,6 +145,27 @@ pub fn snapshot(
         }
     }
 
+    // Bibliothèque (CollectionFolder de premier niveau) via Ancestors — sert
+    // aux préférences de pistes par bibliothèque en mode hors ligne.
+    if let Ok(bytes) = fetch_to_vec(agent, &format!("{base}/Items/{}/Ancestors", spec.item_id), token) {
+        if let Ok(ancestors) = serde_json::from_slice::<Vec<serde_json::Value>>(&bytes) {
+            let library_id = ancestors
+                .iter()
+                .rev()
+                .find(|a| a.get("Type").and_then(|t| t.as_str()) == Some("CollectionFolder"))
+                .and_then(|a| a.get("Id").and_then(|id| id.as_str()))
+                .map(str::to_owned);
+            if let Some(library_id) = library_id {
+                conn.execute(
+                    "UPDATE item_meta SET library_id = ?2 WHERE item_id = ?1",
+                    params![spec.item_id, library_id],
+                )
+                .ok();
+                ok_parts.push("library");
+            }
+        }
+    }
+
     let state = format!(
         "{{\"ok\":[{}]}}",
         ok_parts
