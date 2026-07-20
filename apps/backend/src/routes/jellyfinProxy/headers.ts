@@ -18,6 +18,31 @@ export const SKIP_API_RESPONSE_HEADERS = new Set([
   "content-encoding", "content-length",
 ]);
 
+/** Affiches, backdrops, logos, vignettes — `patterns.ts` autorise déjà ce motif. */
+const IMAGE_PATH = /^Items\/[^/]+\/Images\//i;
+
+/**
+ * `Cache-Control` pour les images du proxy.
+ *
+ * Rien n'était émis jusqu'ici : les affiches et backdrops redescendaient du
+ * serveur à CHAQUE lancement de l'app, alors que les tuiles de trickplay, elles,
+ * sont cachées un an (`jellyfinTrickplay.ts`). Sur une connexion lente c'est le
+ * premier poste de consommation évitable — les images pèsent ~75 % du fil d'un
+ * premier écran et sont incompressibles.
+ *
+ * - `private` : le proxy est authentifié, un cache partagé ne doit pas stocker.
+ * - `max-age=86400` : une journée ferme. Pas d'`immutable` ni de durée d'un an —
+ *   aucun appelant ne passe le `tag` Jellyfin (cf. `urlBuilder.ts`), donc les
+ *   URLs ne sont PAS adressées par contenu : une affiche modifiée doit finir
+ *   par ressortir.
+ * - `stale-while-revalidate` : une semaine d'affichage immédiat pendant que la
+ *   revalidation se fait en arrière-plan — exactement le comportement voulu au
+ *   lancement sur un lien lent.
+ */
+export function imageCacheControl(path: string): string | null {
+  return IMAGE_PATH.test(path) ? "private, max-age=86400, stale-while-revalidate=604800" : null;
+}
+
 /** Build the headers to forward to Jellyfin, swapping the X-Emby auth fields
  *  to use the admin API key when the incoming request carries a verified
  *  device JWT. */
