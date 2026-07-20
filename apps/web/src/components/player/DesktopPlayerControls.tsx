@@ -49,7 +49,7 @@ interface DesktopPlayerControlsProps {
   toggleFullscreen: () => void;
   handleAudioChange: (index: number) => void;
   handleSubtitleChange: (index: number | null) => void;
-  onQualityChange: (key: QualityKey) => void;
+  onQualityChange?: (key: QualityKey) => void;
   applyToSeries?: ApplyToSeriesControl;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;

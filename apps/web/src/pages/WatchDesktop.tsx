@@ -5,8 +5,6 @@ import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api
 import { formatEpisodeCode } from "@tentacle-tv/shared";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
-import { applyOfflineTrackSelection } from "../offline/offlineTrackHints";
-import { useUserId } from "@tentacle-tv/api-client";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
@@ -46,7 +44,6 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // localement (et resynchronisée vers Jellyfin au retour en ligne).
   const { state: connectivityState } = useConnectivity();
   const online = connectivityState === "online" || connectivityState === "checking";
-  const localUserId = useUserId();
   useLocalPlaybackReporting({
     enabled: isLocalPlayback,
     itemId,
@@ -208,15 +205,14 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
         currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
-        onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-        onProgress={handleProgress} onStarted={() => {
-          if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds);
-          // Hors ligne : préférences de pistes appliquées via la track-list
-          // mpv du fichier local (en ligne, la résolution serveur pilote déjà).
-          if (!online && isLocalPlayback && localUserId) {
-            void applyOfflineTrackSelection(localUserId, localSource?.libraryId ?? null);
-          }
-        }}
+        onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
+        /* Lecture locale : le fichier EST la source — changer la « qualité »
+           n'a aucun sens, le sélecteur est retiré (TrackSelector le masque
+           quand onQualityChange est absent). */
+        onQualityChange={isLocalPlayback ? undefined : handleQualityChange}
+        isLocalPlayback={isLocalPlayback} offline={!online}
+        localLibraryId={localSource?.libraryId ?? null}
+        onProgress={handleProgress} onStarted={() => { if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
         nextSeriesBackdropUrl={nextSeriesBackdropUrl} nextEpisodeThumbUrl={nextEpisodeThumbUrl}
