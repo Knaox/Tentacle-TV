@@ -14,20 +14,30 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ## [1.9.0]
 ### FR
 - Mode économie de données : l'application mesure la latence de ses sondes et détecte les connexions lentes. Elle allège alors les images, ne charge l'accueil qu'au fil du défilement et réduit les quotas des carrousels. Réglable dans Réglages › Données (automatique / toujours / jamais), avec une pastille dans la barre du haut quand il est actif
-- Affiches et backdrops mis en cache par le navigateur (24 h fermes, une semaine de revalidation en arrière-plan) : ils redescendaient du serveur à chaque lancement, alors que les tuiles de trickplay étaient déjà cachées un an
+- Affiches et backdrops mis en cache par le navigateur (24 h fermes, une semaine de revalidation en arrière-plan) : ils repartaient du serveur à chaque lancement, alors que les tuiles de trickplay étaient déjà cachées un an
 - Cache de l'accueil : au-delà du plafond de taille, les données les plus récentes sont conservées au lieu que tout soit abandonné. Le cache ne s'écrivait plus du tout dès que les carrousels dépassaient 2 Mo — donc plus aucun affichage instantané au démarrage
-- Rangées de bibliothèque chargées à l'approche de l'écran : leurs données descendaient même hors champ
-- Desktop : le démarrage n'attend plus la vérification d'installation (jusqu'à 4 s d'écran figé sur une connexion lente ou coupée), elle se fait en arrière-plan
-- Desktop : pendant un film téléchargé, la position de lecture est envoyée au début et à la fin plutôt que toutes les 10 s en mode économie — 720 requêtes de moins sur 2 h. Elle reste écrite localement toutes les 10 s et remonte au lancement suivant en cas d'arrêt brutal
+- Rangées de bibliothèque chargées à l'approche de l'écran : leurs données étaient récupérées même hors champ
+- Démarrage du client desktop : plus d'attente bloquante sur la vérification d'installation (jusqu'à 4 s d'écran figé sur une connexion lente ou coupée), elle se fait maintenant en arrière-plan
+- Lecture d'un fichier local : la position est transmise en début et en fin de session plutôt qu'à intervalle régulier lorsque le mode économie est actif — 720 requêtes de moins sur deux heures. Elle reste enregistrée localement et se resynchronise au lancement suivant après un arrêt brutal
+- Nouvelles routes `/api/downloads` réservées au client desktop : capacités par utilisateur revérifiées EN DIRECT auprès de la policy Jellyfin à chaque démarrage (droits et périmètre de bibliothèques) ; tout refus est un 404 générique, sans divulgation
+- Admin : droits par utilisateur écrits directement dans la policy Jellyfin — lecture complète, fusion, écriture, relecture de vérification ; aucune copie locale divergente
+- Proxy : route moderne `UserItems/{id}/UserData` autorisée (resynchronisation de la progression enregistrée localement)
+- minServer relevé à 1.9.0
 ### EN
 - Data saver mode: the app measures its probe latency and detects slow connections. It then serves lighter images, loads the home as you scroll and reduces carousel quotas. Configurable under Settings › Data (automatic / always / never), with a chip in the top bar when active
-- Posters and backdrops are now cached by the browser (24 h firm, one week of background revalidation): they were re-downloaded on every launch, while trickplay tiles were already cached for a year
+- Posters and backdrops are now cached by the browser (24 h firm, one week of background revalidation): they came back from the server on every launch, while trickplay tiles were already cached for a year
 - Home cache: past the size ceiling, the freshest entries are kept instead of the whole save being dropped. The cache stopped being written entirely once carousels exceeded 2 MB — so the instant startup never actually happened
 - Library rows load as they approach the viewport: their data was fetched even off-screen
-- Desktop: startup no longer waits on the install check (up to 4 s of frozen screen on a slow or dead connection), it now runs in the background
-- Desktop: during a downloaded film, playback position is sent at start and end rather than every 10 s in data saver mode — 720 fewer requests over 2 h. It is still written locally every 10 s and syncs on next launch after a hard stop
+- Desktop client startup: no longer blocks on the install check (up to 4 s of frozen screen on a slow or dead connection), it now runs in the background
+- Local file playback: position is sent at session start and end rather than at a regular interval while data saver is active — 720 fewer requests over two hours. It is still recorded locally and resyncs on next launch after a hard stop
+- New `/api/downloads` routes, reserved for the desktop client: per-user capabilities re-checked LIVE against the Jellyfin policy on every start (rights and library scope); any refusal is a generic 404, no disclosure
+- Admin: per-user rights written directly into the Jellyfin policy — full read, merge, write, verification re-read; no diverging local copy
+- Proxy: modern `UserItems/{id}/UserData` route allowed (resync of locally recorded progress)
+- minServer raised to 1.9.0
 
 ## [1.8.0]
+<!-- Jamais publiée sur GitHub (la dernière Release serveur était la 1.7.1) :
+     ces notes ont été reprises dans le bloc 1.9.0 ci-dessus. Archive. -->
 ### FR
 - Téléchargements desktop : nouvelles routes /api/downloads (capacités par utilisateur, fichier original avec reprise par plages, variante Allégée en MP4 fragmenté transcodé par Jellyfin) — chaque démarrage revérifie EN DIRECT la policy Jellyfin (droit de téléchargement + périmètre de bibliothèques) ; refus en 404 générique, sans divulgation
 - Admin > Téléchargements : droits par utilisateur (Téléchargement, Mode Allégé) écrits directement dans la policy Jellyfin — lecture complète, fusion, écriture, relecture de vérification ; aucune copie locale divergente
