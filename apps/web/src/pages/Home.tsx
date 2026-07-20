@@ -106,11 +106,15 @@ function LibraryRow({
 }) {
   const { t } = useTranslation("common");
   const dataSaver = useDataSaverActive();
-  const { ref, near } = useNearViewport<HTMLElement>();
-  // Mode économie : on ne lance la requête qu'à l'approche de la rangée. Le
-  // lazy loading de MediaRow ne gouverne que le RENDU — les données des rangées
-  // hors écran descendaient quand même, soit ~17 requêtes au lancement.
-  const enabled = !dataSaver || near;
+  // On ne lance la requête qu'à l'approche de la rangée — en économie COMME en
+  // connexion rapide. Le lazy loading de MediaRow ne gouverne que le RENDU :
+  // les données des rangées hors écran descendaient quand même, et télécharger
+  // ce que l'utilisateur ne verra peut-être jamais est un gaspillage sans
+  // contrepartie. Seule la marge d'anticipation dépend du mode : très large en
+  // temps normal (les rangées d'un écran classique restent toutes chargées
+  // d'emblée, l'arrivée est invisible), resserrée quand chaque octet compte.
+  const { ref, near } = useNearViewport<HTMLElement>(dataSaver ? "600px" : "1400px");
+  const enabled = near;
   const { data: items, isLoading } = useLatestItems(libraryId, { collectionType, enabled });
 
   // Squelette tant que la requête n'a pas abouti. Il porte AUSSI la cible de
