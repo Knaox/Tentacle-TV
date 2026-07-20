@@ -194,9 +194,11 @@ export function DesktopPlayer({
 
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
-  // Scrub + hover + trickplay de la seekbar
+  // Scrub + hover + trickplay de la seekbar (local d'abord en lecture locale)
   const seekbar = useDesktopSeekbar({
-    dur, paused: state.paused, isDirectPlay, item, mediaSourceId, effectiveMpvOffset, seek, setPause,
+    dur, paused: state.paused, isDirectPlay, item, mediaSourceId,
+    localItemId: isLocalPlayback ? itemId : undefined,
+    effectiveMpvOffset, seek, setPause,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;

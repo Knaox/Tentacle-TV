@@ -2,7 +2,8 @@
 //! suffisant pour les opérations de session ; le moteur de téléchargement
 //! (phase ultérieure) aura son propre état managé longue durée.
 
-use super::{db, fsops, playback, session, store};
+use super::{db, fsops, localserver, playback, session, store};
+use serde::Serialize;
 use tauri::{AppHandle, State};
 
 fn now_ms() -> i64 {
@@ -58,7 +59,6 @@ pub fn downloads_set_root(
 ) -> Result<String, String> {
     let conn = open_db(&app)?;
     let new_root = fsops::set_root(&conn, &cache, std::path::Path::new(&path))?;
-    fsops::allow_asset_scope(&app, &new_root);
     Ok(new_root.to_string_lossy().into_owned())
 }
 
@@ -66,6 +66,24 @@ pub fn downloads_set_root(
 pub fn downloads_disk_free(app: AppHandle) -> Result<u64, String> {
     let root = fsops::resolve_root(&app)?;
     fsops::free_space(&root)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetBase {
+    pub base: String,
+    pub token: String,
+}
+
+/// Base + jeton du serveur loopback qui sert affiches/méta/trickplay locaux.
+/// Démarre le serveur au premier appel (idempotent).
+#[tauri::command]
+pub fn downloads_asset_base(app: AppHandle) -> Result<AssetBase, String> {
+    let server = localserver::ensure_started(&app)?;
+    Ok(AssetBase {
+        base: format!("http://127.0.0.1:{}", server.port),
+        token: server.token.clone(),
+    })
 }
 
 #[tauri::command]

@@ -1,33 +1,44 @@
 /**
- * Ressources locales (affiches, méta JSON) servies à la webview via le
- * protocole ASSET officiel de Tauri (`convertFileSrc`) — chemin éprouvé
- * dev + prod sur les 3 OS. La portée asset est étendue à la racine des
- * téléchargements côté Rust (fsops::allow_asset_scope).
+ * Ressources locales (affiches, méta JSON, tuiles trickplay) servies à la
+ * webview par le serveur HTTP loopback du backend (downloads::localserver) —
+ * base `http://127.0.0.1:<port>` + jeton, résolus une fois par session via IPC.
  *
- * La racine est résolue UNE fois par session (IPC) puis cachée dans un store
- * externe : `localResourceUrl` est synchrone dès l'amorçage terminé, et les
- * composants abonnés via `useDownloadsRootReady` re-rendent à l'arrivée.
+ * Pourquoi pas le protocole asset de Tauri : buggé sur macOS et surtout son
+ * CSP/scope sont IGNORÉS en mode dev (la page vient alors de localhost:5174).
+ * 127.0.0.1 est un « secure context » : pas de blocage mixed-content.
+ *
+ * La base est cachée dans un store externe : `localResourceUrl` est synchrone
+ * dès l'amorçage terminé, et les composants abonnés via `useDownloadsRootReady`
+ * re-rendent à l'arrivée.
  */
 
 import { useSyncExternalStore } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../hooks/mpvRuntime";
-import { getDownloadsRoot } from "./api";
 
-let cachedRoot: string | null = null;
+interface AssetBase {
+  base: string;
+  token: string;
+}
+
+let cachedBase: AssetBase | null = null;
 let loading = false;
 const listeners = new Set<() => void>();
 
 export function primeDownloadsRoot(): void {
-  if (!isTauri() || cachedRoot !== null || loading) return;
+  if (!isTauri() || cachedBase !== null || loading) return;
   loading = true;
-  void getDownloadsRoot().then((root) => {
-    loading = false;
-    if (root) {
-      cachedRoot = root;
-      for (const listener of listeners) listener();
-    }
-  });
+  void invoke<AssetBase>("downloads_asset_base")
+    .then((base) => {
+      loading = false;
+      if (base?.base && base?.token) {
+        cachedBase = base;
+        for (const listener of listeners) listener();
+      }
+    })
+    .catch(() => {
+      loading = false;
+    });
 }
 
 function subscribe(listener: () => void): () => void {
@@ -37,25 +48,25 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-const getRoot = (): string | null => cachedRoot;
+const getReady = (): boolean => cachedBase !== null;
 
-/** true dès que la racine est connue (déclenche l'amorçage au besoin). */
+/** true dès que la base loopback est connue (déclenche l'amorçage au besoin). */
 export function useDownloadsRootReady(): boolean {
-  const root = useSyncExternalStore(subscribe, getRoot, getRoot);
-  if (root === null) primeDownloadsRoot();
-  return root !== null;
+  const ready = useSyncExternalStore(subscribe, getReady, getReady);
+  if (!ready) primeDownloadsRoot();
+  return ready;
 }
 
 /**
  * URL webview d'une ressource locale, `relPath` RELATIF à la racine
- * (`meta/<itemId>/primary.jpg`). null tant que la racine n'est pas résolue
- * (ou hors Tauri) — les composants abonnés re-rendent à l'arrivée.
+ * (`meta/<itemId>/primary.jpg`). null tant que la base n'est pas résolue (ou
+ * hors Tauri) — les composants abonnés re-rendent à l'arrivée.
  */
 export function localResourceUrl(relPath: string): string | null {
   if (!isTauri()) return null;
-  if (cachedRoot === null) {
+  if (cachedBase === null) {
     primeDownloadsRoot();
     return null;
   }
-  return convertFileSrc(`${cachedRoot}/${relPath}`);
+  return `${cachedBase.base}/${relPath}?t=${cachedBase.token}`;
 }
