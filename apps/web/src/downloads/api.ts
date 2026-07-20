@@ -7,7 +7,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { isTauri, isMacOS } from "../hooks/mpvRuntime";
+import { isTauri, isWindows } from "../hooks/mpvRuntime";
 
 export type SetRootResult =
   | { ok: true; path: string }
@@ -59,13 +59,14 @@ export async function getDiskUsage(): Promise<number | null> {
 /**
  * URL webview d'une ressource locale (affiche, méta JSON, sous-titre),
  * `relPath` étant RELATIF à la racine (`meta/<itemId>/primary.jpg`).
- * WKWebView (macOS) expose le scheme custom tel quel ; WebView2 et WebKitGTK
- * le mappent sur `http://<scheme>.localhost/`.
+ * Convention Tauri v2 : WKWebView (macOS) ET WebKitGTK (Linux) exposent le
+ * scheme custom tel quel ; SEUL WebView2 (Windows) le mappe sur
+ * `http://<scheme>.localhost/`.
  */
 export function localResourceUrl(relPath: string): string {
-  return isMacOS()
-    ? `tentacle-local://localhost/${relPath}`
-    : `http://tentacle-local.localhost/${relPath}`;
+  return isWindows()
+    ? `http://tentacle-local.localhost/${relPath}`
+    : `tentacle-local://localhost/${relPath}`;
 }
 
 /* ---- Moteur de téléchargement ---- */

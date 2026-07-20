@@ -30,9 +30,10 @@ export async function drainReportQueue(userId: string): Promise<number> {
       body.LastPlayedDate = new Date(report.occurredAtUtc).toISOString();
     }
     try {
+      // X-Emby-Token : format du proxy /api/jellyfin (un Bearer y ferait 401).
       const res = await fetch(`${backendUrl}/api/jellyfin/UserItems/${report.itemId}/UserData`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "X-Emby-Token": token, "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!res.ok) break;

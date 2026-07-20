@@ -94,6 +94,52 @@ pub async fn mpv_init(
     Ok("mpv initialized with render API".to_string())
 }
 
+/// Quote un argument pour la syntaxe TEXTE de commande mpv : nécessaire dès
+/// qu'il contient espace/quote/backslash/dièse (sinon il est scindé ou
+/// interprété). Les arguments « simples » restent inchangés (aucun impact sur
+/// les commandes existantes du lecteur).
+fn quote_command_arg(raw: &str) -> String {
+    let needs_quoting = raw.is_empty()
+        || raw
+            .chars()
+            .any(|c| c.is_whitespace() || c == '"' || c == '\\' || c == '#' || c == '\'');
+    if !needs_quoting {
+        return raw.to_string();
+    }
+    let mut quoted = String::with_capacity(raw.len() + 2);
+    quoted.push('"');
+    for c in raw.chars() {
+        if c == '"' || c == '\\' {
+            quoted.push('\\');
+        }
+        quoted.push(c);
+    }
+    quoted.push('"');
+    quoted
+}
+
+#[cfg(test)]
+mod quote_tests {
+    use super::quote_command_arg;
+
+    #[test]
+    fn les_arguments_simples_restent_inchanges() {
+        assert_eq!(quote_command_arg("select"), "select");
+        assert_eq!(quote_command_arg("https://ex.tld/a?b=c"), "https://ex.tld/a?b=c");
+    }
+
+    #[test]
+    fn chemins_avec_espaces_et_caracteres_speciaux() {
+        assert_eq!(
+            quote_command_arg("/Users/a/Library/Application Support/f.mkv"),
+            "\"/Users/a/Library/Application Support/f.mkv\""
+        );
+        assert_eq!(quote_command_arg("a\"b"), "\"a\\\"b\"");
+        assert_eq!(quote_command_arg("a\\b"), "\"a\\\\b\"");
+        assert_eq!(quote_command_arg(""), "\"\"");
+    }
+}
+
 #[command]
 pub async fn mpv_command(
     state: State<'_, Arc<RenderState>>,
@@ -106,10 +152,13 @@ pub async fn mpv_command(
     }
 
     // Build command string: "name arg1 arg2 ..."
+    // Les chaînes passent par quote_command_arg : `mpv_command_string` scinde
+    // sur les espaces, et un chemin local (« …/Application Support/… ») ou un
+    // titre avec espaces cassait `loadfile`/`sub-add` (lecture hors ligne).
     let mut parts = vec![name];
     for arg in &args {
         match arg {
-            Value::String(s) => parts.push(s.clone()),
+            Value::String(s) => parts.push(quote_command_arg(s)),
             Value::Number(n) => parts.push(n.to_string()),
             Value::Bool(b) => parts.push(if *b { "yes".to_string() } else { "no".to_string() }),
             _ => parts.push(arg.to_string()),
