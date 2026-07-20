@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage } from "@tentacle-tv/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useUserId } from "@tentacle-tv/api-client";
+import { cacheLibraryPrefs } from "../offline/localTrackPrefs";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 import { PageTransition } from "../components/PageTransition";
 
@@ -66,6 +67,14 @@ export function Preferences() {
   const setMut = useSetLibraryPreference();
   const deleteMut = useDeleteLibraryPreference();
   const setLangMut = useSetInterfaceLanguage();
+
+  // Toute lecture réussie alimente le cache hors ligne (y compris après une
+  // sauvegarde, l'invalidation refetch) : le lecteur local applique alors les
+  // MÊMES préférences sans backend.
+  const userId = useUserId();
+  useEffect(() => {
+    if (userId && prefs) cacheLibraryPrefs(userId, prefs);
+  }, [userId, prefs]);
 
   const handleInterfaceLangChange = (lng: string) => {
     i18n.changeLanguage(lng);

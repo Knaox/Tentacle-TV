@@ -41,6 +41,30 @@ export function cacheLibraryPrefs(userId: string, rows: unknown): void {
   }
 }
 
+/**
+ * Photographie les préférences du compte pour l'usage hors ligne. Appelée à
+ * chaque passage en ligne, à chaque téléchargement lancé et après chaque
+ * lecture réussie des préférences : un cache vide signifierait « aucune
+ * préférence » et le lecteur local retomberait sur les pistes par défaut du
+ * fichier. Best-effort, jamais bloquant.
+ */
+export async function refreshLibraryPrefsCache(
+  userId: string,
+  backendBase: string,
+): Promise<void> {
+  try {
+    const token = localStorage.getItem("tentacle_token");
+    if (!token) return;
+    const res = await fetch(`${backendBase}/api/preferences`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    cacheLibraryPrefs(userId, await res.json());
+  } catch {
+    /* hors ligne ou backend injoignable : on garde le cache précédent */
+  }
+}
+
 export function readLibraryPrefs(userId: string): CachedLibraryPref[] {
   try {
     const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${userId}`);

@@ -15,8 +15,12 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { isChatActive } from "../watchTogether/chat/chatUiStore";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
+
+/** Référence stable : une valeur par défaut inline relancerait les mémos. */
+const EMPTY_SUBTITLE_FILES: LocalSubtitleFile[] = [];
 
 interface DesktopPlayerProps {
   src: string; title: string; subtitle?: string;
@@ -33,6 +37,8 @@ interface DesktopPlayerProps {
   offline?: boolean;
   /** Bibliothèque de l'item local (préférences de pistes hors ligne). */
   localLibraryId?: string | null;
+  /** Side-cars de sous-titres téléchargés (menus en lecture locale). */
+  localSubtitleFiles?: LocalSubtitleFile[];
   onProgress?: (seconds: number, paused: boolean) => void; onStarted?: () => void;
   isDirectPlay?: boolean; streamOffset?: number; posterUrl?: string;
   introSegment?: SegmentTimestamps | null; creditsSegment?: SegmentTimestamps | null;
@@ -69,6 +75,7 @@ export function DesktopPlayer({
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
   isLocalPlayback = false, offline = false, localLibraryId = null,
+  localSubtitleFiles = EMPTY_SUBTITLE_FILES,
   onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
   introSegment, creditsSegment,
@@ -114,7 +121,7 @@ export function DesktopPlayer({
   // onSubtitleChange — même pipeline d'application que le online. ──
   const { displayAudio, displaySubs } = useLocalPlaybackTracks({
     isLocalPlayback, offline, fileLoaded, ready,
-    audioTracks, subtitleTracks, mpvAudio, mpvSubs,
+    audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
     localLibraryId, onAudioChange, onSubtitleChange, sourceKey: src,
   });
 

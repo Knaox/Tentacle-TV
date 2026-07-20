@@ -1,5 +1,6 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
+import { queryTrackList } from "./mpvTrackList";
 
 /**
  * Commandes de contrôle mpv (pause/seek/pistes/volume/vitesse/plein écran) +
@@ -145,6 +146,13 @@ export function useMpvCommands({
     console.debug("[mpv] sub-add", { url: url.substring(0, 100), select });
     try {
       await api.command("sub-add", [url, select ? "select" : "auto"]);
+      // La piste ajoutée n'était pas dans la track-list lue au file-loaded :
+      // sans relecture, l'état mpv l'ignore (surbrillance et mappings faux).
+      void queryTrackList(api)
+        .then((tracks) => {
+          if (tracks.length > 0) setState((prev) => ({ ...prev, tracks }));
+        })
+        .catch(() => {});
       if (select) {
         await api.setProperty("sub-visibility", true).catch(() => {});
         const sid = await api.getProperty("sid", "int64").catch(() => null);
@@ -154,7 +162,7 @@ export function useMpvCommands({
       console.error("[mpv] sub-add failed:", e);
     }
     return null;
-  }, []);
+  }, [setState]);
 
   const stop = useCallback(async () => {
     const api = getMpvApi();
