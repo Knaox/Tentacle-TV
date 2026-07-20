@@ -17,11 +17,15 @@
 
 import {
   applyProbeResult,
+  deriveLinkQuality,
   deriveState,
   initialHysteresis,
+  LATENCY_HYSTERESIS,
+  SLOW_LINK_MS,
   type ConnectivityState,
   type HysteresisConfig,
   type HysteresisState,
+  type LinkQuality,
 } from "./connectivityMachine";
 import { backendUrl } from "../main";
 
@@ -34,12 +38,21 @@ export interface ConnectivitySnapshot {
   reachable: boolean | null;
   /** Cause de la dernière sonde en échec (affichage popover). */
   reason: OfflineReason;
+  /** Qualité du lien mesurée sur la latence des sondes — indépendante de
+   *  `state` : on peut être « online » ET lent. Alimente le mode économie. */
+  linkQuality: LinkQuality;
 }
 
 export const MANUAL_OFFLINE_STORAGE_KEY = "tentacle_offline_manual";
 
 const PROBE_TIMEOUT_MS = 5_000;
 const OFFLINE_PROBE_INTERVAL_MS = 15_000;
+/** En ligne : sonde LÉGÈRE (health seul) uniquement pour suivre la latence, et
+ *  très espacée — à ~0,7 Ko l'aller-retour, sonder toutes les 60 s coûterait
+ *  ~84 Ko sur 2 h de film, soit plus que tout le reste du budget. Une
+ *  dégradation de lien n'a pas besoin d'être vue en une minute, et une vraie
+ *  panne déclenche déjà une sonde immédiate via `reportPossibleOutage`. */
+const ONLINE_PROBE_INTERVAL_MS = 300_000;
 const CONFIRM_PROBE_DELAY_MS = 3_000;
 const MIN_PROBE_SPACING_MS = 2_000;
 const INITIAL_PROBE_DELAY_MS = 1_000;
@@ -54,43 +67,46 @@ const readManual = (): boolean => {
 };
 
 let hysteresis: HysteresisState = initialHysteresis;
+/** Hystérésis de la LATENCE — `reachable` y porte « dernière mesure rapide ». */
+let latency: HysteresisState = initialHysteresis;
 let manual = readManual();
 let reason: OfflineReason = null;
 
-let snapshot: ConnectivitySnapshot = {
+const buildSnapshot = (): ConnectivitySnapshot => ({
   state: deriveState(manual, hysteresis.reachable),
   manual,
   reachable: hysteresis.reachable,
   reason,
-};
+  linkQuality: deriveLinkQuality(latency.reachable),
+});
+
+let snapshot: ConnectivitySnapshot = buildSnapshot();
 
 const listeners = new Set<() => void>();
 
 const rebuildSnapshot = (): void => {
-  snapshot = {
-    state: deriveState(manual, hysteresis.reachable),
-    manual,
-    reachable: hysteresis.reachable,
-    reason,
-  };
+  snapshot = buildSnapshot();
   for (const l of listeners) l();
 };
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let intervalMs = 0;
 let confirmId: ReturnType<typeof setTimeout> | null = null;
 let probing = false;
 let lastProbeStartAt = 0;
 
-/** Sonde périodique active dès qu'on n'est pas « online » (offline auto,
- *  manuel — pour renseigner la joignabilité dans le popover — et checking). */
+/** Sonde périodique TOUJOURS active, à deux cadences :
+ *  - hors « online » (offline auto, manuel — pour renseigner la joignabilité
+ *    dans le popover — et checking) : 15 s, sonde complète ;
+ *  - en « online » : 5 min, sonde légère, uniquement pour suivre la latence. */
 const ensureTimers = (): void => {
-  const needsInterval = snapshot.state !== "online";
-  if (needsInterval && intervalId === null) {
-    intervalId = setInterval(() => void probe(), OFFLINE_PROBE_INTERVAL_MS);
-  } else if (!needsInterval && intervalId !== null) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
+  const wanted =
+    snapshot.state === "online" ? ONLINE_PROBE_INTERVAL_MS : OFFLINE_PROBE_INTERVAL_MS;
+  if (intervalId !== null && intervalMs === wanted) return;
+  if (intervalId !== null) clearInterval(intervalId);
+  intervalMs = wanted;
+  const latencyOnly = wanted === ONLINE_PROBE_INTERVAL_MS;
+  intervalId = setInterval(() => void probe(latencyOnly), wanted);
 };
 
 const scheduleConfirm = (): void => {
@@ -104,45 +120,70 @@ const scheduleConfirm = (): void => {
 interface ProbeResult {
   ok: boolean;
   reason: OfflineReason;
+  /** Latence de `/api/health` en ms — `null` si la sonde a échoué (pas de
+   *  mesure exploitable : on gèle alors la dernière qualité connue). */
+  latencyMs: number | null;
 }
 
 /** Backend puis Jellyfin (via proxy), timeout commun de 5 s.
  *  NB : `backendUrl` (import circulaire via main.tsx) n'est lu qu'ICI, à
  *  l'exécution — jamais au chargement du module (TDZ). Même patron que
- *  l'ancien useServerReachable. */
-async function runProbe(): Promise<ProbeResult> {
+ *  l'ancien useServerReachable.
+ *
+ *  `latencyOnly` : on s'arrête après le backend. La latence suffit à qualifier
+ *  le lien, et revérifier Jellyfin toutes les 5 min doublerait le coût pour
+ *  rien — une panne Jellyfin se manifeste de toute façon par l'échec d'une
+ *  requête applicative, qui déclenche une sonde COMPLÈTE immédiate. */
+async function runProbe(latencyOnly: boolean): Promise<ProbeResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+  const startedAt = Date.now();
   try {
     const backendRes = await fetch(`${backendUrl}/api/health`, { signal: controller.signal });
-    if (!backendRes.ok) return { ok: false, reason: "backend" };
+    const latencyMs = Date.now() - startedAt;
+    if (!backendRes.ok) return { ok: false, reason: "backend", latencyMs: null };
+    if (latencyOnly) return { ok: true, reason: null, latencyMs };
     try {
       const jellyfinRes = await fetch(`${backendUrl}/api/jellyfin/System/Info/Public`, {
         signal: controller.signal,
       });
       // 503 = Jellyfin non configuré (wizard) → ne pas basculer hors ligne.
-      if (jellyfinRes.status === 503) return { ok: true, reason: null };
-      return jellyfinRes.ok ? { ok: true, reason: null } : { ok: false, reason: "jellyfin" };
+      if (jellyfinRes.status === 503) return { ok: true, reason: null, latencyMs };
+      return jellyfinRes.ok
+        ? { ok: true, reason: null, latencyMs }
+        : { ok: false, reason: "jellyfin", latencyMs };
     } catch {
-      return { ok: false, reason: "jellyfin" };
+      return { ok: false, reason: "jellyfin", latencyMs };
     }
   } catch {
-    return { ok: false, reason: "backend" };
+    return { ok: false, reason: "backend", latencyMs: null };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function probe(): Promise<void> {
+async function probe(latencyOnly = false): Promise<void> {
   if (probing) return;
   probing = true;
   lastProbeStartAt = Date.now();
   try {
-    const result = await runProbe();
-    const outcome = applyProbeResult(hysteresis, result.ok, Date.now(), HYSTERESIS);
+    const result = await runProbe(latencyOnly);
+    const now = Date.now();
+    const outcome = applyProbeResult(hysteresis, result.ok, now, HYSTERESIS);
     hysteresis = outcome.next;
     reason = result.ok ? null : result.reason;
-    if (outcome.flipped) {
+
+    // Qualité du lien : MÊME machine d'hystérésis, dimension indépendante.
+    // Sans mesure (sonde en échec) on ne touche à rien — la dernière qualité
+    // connue est conservée pour le retour en ligne.
+    let qualityFlipped = false;
+    if (result.latencyMs !== null) {
+      const q = applyProbeResult(latency, result.latencyMs < SLOW_LINK_MS, now, LATENCY_HYSTERESIS);
+      latency = q.next;
+      qualityFlipped = q.flipped;
+    }
+
+    if (outcome.flipped || qualityFlipped) {
       rebuildSnapshot();
       ensureTimers();
     }
@@ -152,7 +193,7 @@ async function probe(): Promise<void> {
   }
 }
 
-/** Sonde immédiate. `force` court-circuite l'espacement anti-rafale. */
+/** Sonde immédiate et COMPLÈTE. `force` court-circuite l'anti-rafale. */
 export function probeNow(force = false): void {
   if (!force && Date.now() - lastProbeStartAt < MIN_PROBE_SPACING_MS) return;
   void probe();

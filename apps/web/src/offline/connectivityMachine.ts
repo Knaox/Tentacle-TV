@@ -88,3 +88,36 @@ export function deriveState(manual: boolean, reachable: boolean | null): Connect
   if (reachable === null) return "checking";
   return reachable ? "online" : "offline-auto";
 }
+
+/* ── Qualité du lien ────────────────────────────────────────────────────────
+ * TROISIÈME dimension, orthogonale aux deux précédentes : un serveur peut être
+ * parfaitement joignable ET répondre en 3 s. L'app ne savait que « ça répond »
+ * ou « ça ne répond pas », donc elle traitait un lien à 200 kb/s comme de la
+ * fibre — d'où un premier écran à ~1,3 Mo sur un tuyau qui n'en passe que 25
+ * Ko/s. On mesure la latence des sondes pour alimenter le mode économie.
+ *
+ * Volontairement PAS un membre de `ConnectivityState` : ajouter un « slow » à
+ * l'union casserait tous les consommateurs qui testent `=== "online"`
+ * (useOfflineMode, ConnectivityChip, useServerReachable, useDownloadCapabilities).
+ */
+
+export type LinkQuality = "fast" | "slow";
+
+/** Latence de `/api/health` au-delà de laquelle le lien est jugé lent.
+ *  L'endpoint est trivial : ce qu'on mesure est bien le RTT + la congestion,
+ *  pas le temps de traitement serveur. */
+export const SLOW_LINK_MS = 1200;
+
+/** Même hystérésis que la joignabilité (2 mesures concordantes), mais sans
+ *  temps de séjour : les sondes en ligne sont déjà très espacées, le seuil de
+ *  2 suffit à absorber un pic isolé. */
+export const LATENCY_HYSTERESIS: HysteresisConfig = { flipThreshold: 2, dwellMs: 0 };
+
+/**
+ * Dérive la qualité de lien depuis l'hystérésis de latence, dont le champ
+ * `reachable` porte ici « la dernière mesure RAPIDE confirmée ».
+ * `null` (jamais mesuré) → optimiste : on ne dégrade jamais sans preuve.
+ */
+export function deriveLinkQuality(fastConfirmed: boolean | null): LinkQuality {
+  return fastConfirmed === false ? "slow" : "fast";
+}
