@@ -1,5 +1,5 @@
 import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
-import { reportNetworkSuspect, requestTimeoutMs } from "../net/requestPolicy";
+import { isOfflineHinted, reportNetworkSuspect, requestTimeoutMs } from "../net/requestPolicy";
 import { JellyfinError } from "./types";
 
 export interface FetchWithRetryOptions {
@@ -93,8 +93,10 @@ export async function fetchWithRetry<T>(
       // continuent — sans attendre la fin de l'échelle.
       reportNetworkSuspect();
       // Erreurs réseau + timeout : retry avec backoff (connexion refusée =
-      // backend en redémarrage, récupération rapide typique).
-      if (attempt < RETRY_DELAYS_MS.length) {
+      // backend en redémarrage, récupération rapide typique). Sauf si l'app se
+      // SAIT hors ligne : dérouler l'échelle ne ferait que retarder l'échec
+      // qui libère l'écran (le catalogue local prend le relais).
+      if (attempt < RETRY_DELAYS_MS.length && !isOfflineHinted()) {
         await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
         continue;
       }

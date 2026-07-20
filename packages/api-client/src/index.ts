@@ -129,4 +129,5 @@ export {
   requestTimeoutMs,
   setRequestTimeoutMs,
   setNetworkSuspectListener,
+  setOfflineHintSupplier,
 } from "./net/requestPolicy";
