@@ -8,7 +8,7 @@ edition = "2021"
 # Le build Mac App Store la NEUTRALISE via la config (`macOSPrivateApi: false`
 # dans tauri.appstore.conf.json) → le code privé reste dormant (approche
 # recommandée par Tauri pour le MAS).
-tauri = { version = "2", features = ["macos-private-api"] }
+tauri = { version = "2", features = ["macos-private-api", "protocol-asset"] }
 tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }

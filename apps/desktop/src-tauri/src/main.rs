@@ -74,13 +74,11 @@ fn main() {
         // Sélecteur de dossier natif (emplacement des téléchargements) —
         // masqué côté UI sur le build Mac App Store (pas d'entitlement fichiers).
         .plugin(tauri_plugin_dialog::init())
-        // Cache de la racine de téléchargements + protocole local (affiches,
-        // méta, sous-titres servis à la webview depuis le disque).
+        // Cache de la racine de téléchargements. Les affiches/méta locales
+        // sont servies à la webview par le protocole ASSET officiel de Tauri
+        // (portée étendue à la racine dans fsops::resolve_root/set_root).
         .manage(downloads::fsops::RootCache::default())
-        .manage(downloads::engine::Engine::new())
-        .register_uri_scheme_protocol("tentacle-local", |ctx, request| {
-            downloads::protocol::handle(ctx.app_handle(), request)
-        });
+        .manage(downloads::engine::Engine::new());
 
     // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : depuis un thread dédié, mesure
     // séparément la réactivité du thread UI et du thread fenêtre de mpv pendant un gel.
