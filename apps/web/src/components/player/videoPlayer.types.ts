@@ -2,7 +2,15 @@ import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@t
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
-export interface SubtitleTrack { index: number; label: string; url: string; lang?: string; codec?: string }
+export interface SubtitleTrack {
+  index: number;
+  label: string;
+  url: string;
+  lang?: string;
+  codec?: string;
+  /** Piste forcée — connue des side-cars locaux (leur nom de fichier la porte). */
+  forced?: boolean;
+}
 export interface AudioTrack { index: number; label: string; lang?: string }
 
 export interface VideoPlayerProps {

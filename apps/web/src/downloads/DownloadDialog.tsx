@@ -13,6 +13,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { backendUrl } from "../main";
 import { useToast } from "../contexts/ToastContext";
 import { enqueueDownloads } from "./api";
+import { refreshLibraryPrefsCache } from "../offline/localTrackPrefs";
 import { LIGHT_PRESETS, formatBytes, type LightPresetId } from "./presets";
 import { audioTracks, batchSizeBytes, buildEnqueueItem, imageSubtitleTracks } from "./downloadTargets";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
@@ -72,6 +73,10 @@ export function DownloadDialog({ items, seasonMode = false, batchTitle, onClose 
       setSpaceError({ needed: outcome.neededBytes, free: outcome.freeBytes });
       return;
     }
+    // Photographie les préférences de langues au moment du téléchargement :
+    // elles doivent être disponibles hors ligne même si l'utilisateur ne
+    // repasse plus jamais en ligne d'ici la lecture.
+    void refreshLibraryPrefsCache(userId, backendUrl);
     show("success", seasonMode ? t("downloads:seasonQueued", { count: items.length }) : t("downloads:queued"));
     onClose();
   };

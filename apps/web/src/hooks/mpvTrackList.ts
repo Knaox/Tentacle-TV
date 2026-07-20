@@ -7,6 +7,10 @@ export interface MpvTrack {
   selected: boolean;
   /** Piste « forcée » (sous-titres) — préférences de langue hors ligne. */
   forced?: boolean;
+  /** Piste par défaut du conteneur — repli quand aucune préférence ne matche. */
+  default?: boolean;
+  /** Piste chargée depuis un fichier séparé (`sub-add`), pas dans le conteneur. */
+  external?: boolean;
 }
 
 type PluginApi = typeof import("tauri-plugin-libmpv-api");
@@ -27,12 +31,14 @@ export async function queryTrackList(mpv: PluginApi): Promise<MpvTrack[]> {
     ]);
     if (id == null || type == null) continue;
     // Optional properties — fetch in parallel, all fault-tolerant
-    const [lang, title, codec, selected, forced] = await Promise.all([
+    const [lang, title, codec, selected, forced, isDefault, external] = await Promise.all([
       safeProp(mpv.getProperty(`track-list/${i}/lang`, "string")),
       safeProp(mpv.getProperty(`track-list/${i}/title`, "string")),
       safeProp(mpv.getProperty(`track-list/${i}/codec`, "string")),
       safeProp(mpv.getProperty(`track-list/${i}/selected`, "flag")),
       safeProp(mpv.getProperty(`track-list/${i}/forced`, "flag")),
+      safeProp(mpv.getProperty(`track-list/${i}/default`, "flag")),
+      safeProp(mpv.getProperty(`track-list/${i}/external`, "flag")),
     ]);
     tracks.push({
       id: id as number,
@@ -42,6 +48,8 @@ export async function queryTrackList(mpv: PluginApi): Promise<MpvTrack[]> {
       codec: (codec as string | null) ?? undefined,
       selected: (selected as boolean | null) ?? false,
       forced: (forced as boolean | null) ?? false,
+      default: (isDefault as boolean | null) ?? false,
+      external: (external as boolean | null) ?? false,
     });
   }
   console.debug("[mpv] queryTrackList result:", tracks.map(t => ({ id: t.id, type: t.type, lang: t.lang, selected: t.selected })));

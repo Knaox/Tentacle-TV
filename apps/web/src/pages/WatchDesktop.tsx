@@ -223,6 +223,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onQualityChange={isLocalPlayback ? undefined : handleQualityChange}
         isLocalPlayback={isLocalPlayback} offline={!online}
         localLibraryId={localSource?.libraryId ?? null}
+        localSubtitleFiles={localSource?.subtitleFiles}
         onProgress={handleProgress} onStarted={() => { if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}

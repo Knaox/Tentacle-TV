@@ -74,34 +74,22 @@ export function useDesktopSource(params: DesktopSourceParams): {
  * Remplace les URLs (proxy) des sous-titres EXTERNES par les side-cars locaux
  * quand la lecture est locale — fichiers nommés `<indexJellyfin>-<langue>.<ext>`.
  * Les pistes internes n'ont pas d'URL : mpv les lit nativement dans le fichier.
- * Démarrage 100 % hors ligne (DTO serveur indisponible → aucune piste connue) :
- * les pistes sont SYNTHÉTISÉES depuis les side-cars.
+ *
+ * Sans DTO serveur (démarrage 100 % hors ligne), il n'y a rien à réécrire : la
+ * liste des pistes est alors CONSTRUITE par useLocalPlaybackTracks, qui fusionne
+ * les pistes internes du fichier et les side-cars. Synthétiser ici masquerait
+ * les pistes internes et mélangerait deux espaces d'index.
  */
 export function mapSubtitlesToLocal(
   tracks: SubtitleTrack[],
   localSource: LocalSource | null,
 ): SubtitleTrack[] {
   if (!localSource || localSource.subtitleFiles.length === 0) return tracks;
-  if (tracks.length === 0) return sideCarSubtitleTracks(localSource);
   return tracks.map((track) => {
     if (!track.url) return track;
     const match = localSource.subtitleFiles.find((file) =>
       file.fileName.startsWith(`${track.index}-`),
     );
     return match ? { ...track, url: match.absolutePath } : track;
-  });
-}
-
-/** `3-fre-forced.srt` → piste index 3, libellé « FRE (forced) ». */
-function sideCarSubtitleTracks(localSource: LocalSource): SubtitleTrack[] {
-  return localSource.subtitleFiles.flatMap((file) => {
-    const match = file.fileName.match(/^(\d+)-([a-z0-9-]+)\.(srt|ass|vtt)$/i);
-    if (!match) return [];
-    const index = Number(match[1]);
-    const parts = match[2].split("-");
-    const lang = parts[0] ?? "und";
-    const suffixes = parts.slice(1).filter((p) => p === "forced" || p === "sdh");
-    const label = `${lang.toUpperCase()}${suffixes.length ? ` (${suffixes.join(", ")})` : ""}`;
-    return [{ index, label, url: file.absolutePath, lang }];
   });
 }
