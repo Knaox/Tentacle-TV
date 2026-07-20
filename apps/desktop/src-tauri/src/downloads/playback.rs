@@ -32,6 +32,8 @@ pub struct LocalSource {
     pub title: Option<String>,
     pub series_name: Option<String>,
     pub runtime_ticks: Option<i64>,
+    /// Bibliothèque de l'item (préférences de pistes hors ligne).
+    pub library_id: Option<String>,
 }
 
 fn list_subtitles(root: &Path, item_id: &str) -> Vec<LocalSubtitleFile> {
@@ -106,15 +108,17 @@ pub fn local_source(
         .optional()
         .map_err(|e| format!("playback state: {e}"))?;
 
-    let meta: Option<(Option<String>, Option<String>, Option<i64>)> = conn
+    type MetaTuple = (Option<String>, Option<String>, Option<i64>, Option<String>);
+    let meta: Option<MetaTuple> = conn
         .query_row(
-            "SELECT title, series_name, runtime_ticks FROM item_meta WHERE item_id = ?1",
+            "SELECT title, series_name, runtime_ticks, library_id FROM item_meta WHERE item_id = ?1",
             params![item_id],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
         )
         .optional()
         .map_err(|e| format!("item meta: {e}"))?;
-    let (title, series_name, runtime_ticks) = meta.unwrap_or((None, None, None));
+    let (title, series_name, runtime_ticks, library_id) =
+        meta.unwrap_or((None, None, None, None));
 
     Ok(Some(LocalSource {
         file_id: file.id,
@@ -127,6 +131,7 @@ pub fn local_source(
         title,
         series_name,
         runtime_ticks,
+        library_id,
     }))
 }
 

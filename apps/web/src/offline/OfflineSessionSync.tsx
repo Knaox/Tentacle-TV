@@ -9,9 +9,10 @@
 
 import { useEffect } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
-import { isTauriApp } from "../main";
+import { backendUrl, isTauriApp } from "../main";
 import { useConnectivity } from "./useConnectivity";
 import { saveCachedSession } from "./offlineSession";
+import { cacheLibraryPrefs } from "./localTrackPrefs";
 
 export function OfflineSessionSync() {
   const userId = useUserId();
@@ -24,6 +25,23 @@ export function OfflineSessionSync() {
       if (raw) void saveCachedSession(userId, raw);
     } catch {
       /* localStorage inaccessible : rien à mettre en cache. */
+    }
+    // Préférences de pistes par bibliothèque — photographiées pour la
+    // résolution simplifiée hors ligne (offlineTrackHints).
+    try {
+      const token = localStorage.getItem("tentacle_token");
+      if (token) {
+        void fetch(`${backendUrl}/api/preferences`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((rows) => {
+            if (rows) cacheLibraryPrefs(userId, rows);
+          })
+          .catch(() => {});
+      }
+    } catch {
+      /* cache best-effort */
     }
   }, [userId, state]);
 

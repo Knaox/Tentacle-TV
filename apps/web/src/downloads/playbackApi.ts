@@ -23,6 +23,8 @@ export interface LocalSource {
   title: string | null;
   seriesName: string | null;
   runtimeTicks: number | null;
+  /** Bibliothèque de l'item (préférences de pistes hors ligne). */
+  libraryId: string | null;
 }
 
 export async function localSourceForItem(

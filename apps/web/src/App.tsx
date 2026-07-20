@@ -236,7 +236,11 @@ export function App() {
             <Route path="settings" element={<SettingsLayout />}>
               <Route index element={<SettingsIndex />} />
               <Route path="appearance" element={<SettingsAppearance />} />
-              <Route path="security" element={<SettingsSecurity />} />
+              {/* Sécurité (mot de passe, appareils, serveur) : sans objet hors ligne. */}
+              <Route
+                path="security"
+                element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsSecurity />}
+              />
               <Route path="playback" element={<Preferences />} />
               <Route path="downloads" element={<SettingsDownloads />} />
             </Route>
