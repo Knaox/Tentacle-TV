@@ -14,6 +14,16 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.16.1]
+### FR
+- Coupure de connexion détectée en quelques secondes : l'application réagit immédiatement au lieu d'attendre
+- La lecture démarre sans délai quand le serveur est injoignable
+- Fiabilité du mode hors ligne renforcée et corrections diverses
+### EN
+- Connection loss now detected within seconds: the app reacts immediately instead of waiting
+- Playback starts without delay when the server is unreachable
+- Improved offline mode reliability and various fixes
+
 ## [mac-1.16.0]
 ### FR
 - Améliorations de la lecture et de la stabilité
