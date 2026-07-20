@@ -18,7 +18,7 @@ import { groupOfflineEntries, seasonGroupMatches, type OfflineSeasonGroup } from
 type Filter = "all" | "movies" | "series";
 
 export function OfflineCatalog() {
-  const { t } = useTranslation(["downloads", "nav"]);
+  const { t } = useTranslation(["downloads", "nav", "common"]);
   const navigate = useNavigate();
   const entries = useDownloadsList();
   const [filter, setFilter] = useState<Filter>("all");
@@ -84,6 +84,11 @@ export function OfflineCatalog() {
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-content-quaternary">
             {t("downloads:offlineEmptyMessage")}
           </p>
+        </div>
+      ) : shownMovies.length === 0 && shownSeasons.length === 0 ? (
+        <div className="mt-20 flex flex-col items-center text-center">
+          <p className="text-sm font-medium text-content-secondary">{t("common:noResults")}</p>
+          <p className="mt-1 text-xs text-content-quaternary">{t("common:noResultsHint")}</p>
         </div>
       ) : (
         <div className="mt-8 space-y-10">
