@@ -3,6 +3,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
+import { useDataSaverActive } from "../../offline/useDataSaver";
 
 interface HeroBillboardProps {
   items: MediaItem[];
@@ -20,6 +21,7 @@ const DEFAULT_ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
  * fade-to-black bottom flows seamlessly into the first row below.
  */
 export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillboardProps) {
+  const dataSaver = useDataSaverActive();
   const [index, setIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -45,10 +47,15 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
 
   const startTimer = useCallback(() => {
     clearInterval(timerRef.current);
+    // Mode économie : hero figé. Chaque rotation charge un backdrop 1920px
+    // sans lazy ni préchargement (~250-400 Ko), et rien n'est mis en cache :
+    // 5 min passées sur l'accueil coûtent jusqu'à ~10 Mo en pure perte.
+    // La navigation manuelle (flèches, indicateurs) reste disponible.
+    if (dataSaver) return;
     if (rotateMs > 0 && items.length > 1 && !pausedRef.current) {
       timerRef.current = setInterval(() => advance(1), rotateMs);
     }
-  }, [rotateMs, items.length, advance]);
+  }, [rotateMs, items.length, advance, dataSaver]);
 
   useEffect(() => {
     startTimer();
