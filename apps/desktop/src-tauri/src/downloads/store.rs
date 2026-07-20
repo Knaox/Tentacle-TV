@@ -230,6 +230,9 @@ pub fn delete_claim(
     fsops::remove_media_file(root, &rel_path)?;
     if meta_orphan {
         fsops::remove_item_meta_dir(root, &item_id)?;
+        // Plus aucun fichier pour cet item : le dossier média entier part avec
+        // lui (side-cars de sous-titres compris, sinon laissés orphelins).
+        fsops::remove_item_media_dir(root, &item_id)?;
     }
     Ok(DeleteOutcome { file_deleted: true, meta_deleted: meta_orphan })
 }

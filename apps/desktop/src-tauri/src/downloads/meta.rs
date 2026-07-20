@@ -225,7 +225,18 @@ pub fn get_spec(conn: &Connection, item_id: &str) -> Result<Option<MetaSpec>, St
 
 /// Le snapshot est-il déjà présent (item.json) ?
 pub fn snapshot_exists(root: &Path, item_id: &str) -> bool {
-    fsops::safe_join(root, &format!("meta/{item_id}/item.json"))
+    meta_file_exists(root, item_id, "item.json")
+}
+
+/// L'affiche VERTICALE de la série est-elle là ? Elle illustre les groupes
+/// « série · saison » du catalogue hors ligne ; les téléchargements antérieurs
+/// à son ajout ne l'ont pas (d'où le re-snapshot par `heal`).
+pub fn series_primary_exists(root: &Path, item_id: &str) -> bool {
+    meta_file_exists(root, item_id, "series-primary.jpg")
+}
+
+fn meta_file_exists(root: &Path, item_id: &str, name: &str) -> bool {
+    fsops::safe_join(root, &format!("meta/{item_id}/{name}"))
         .map(|p| p.exists())
         .unwrap_or(false)
 }
