@@ -160,8 +160,19 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const title = item
     ? (item.Type === "Episode" ? item.SeriesName ?? item.Name : item.Name ?? "")
     : (localSource?.seriesName ?? localSource?.title ?? "");
-  const epSubtitle = item?.Type === "Episode"
-    ? `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}` : undefined;
+  // Sous-titre : DTO serveur, sinon numéros de la méta locale (hors ligne).
+  // Sans numéros connus, on n'invente pas de « S00E00 » — titre seul.
+  const epSubtitle = (() => {
+    if (item?.Type === "Episode") {
+      return `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}`;
+    }
+    if (item || !localSource?.seriesName) return undefined;
+    const code = localSource.parentIndexNumber != null && localSource.indexNumber != null
+      ? formatEpisodeCode(localSource.parentIndexNumber, localSource.indexNumber, { style: "padded" })
+      : null;
+    const name = localSource.title ?? "";
+    return code ? `${code} — ${name}` : name || undefined;
+  })();
 
   if (isLoading || !streamUrl) {
     return <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />;
