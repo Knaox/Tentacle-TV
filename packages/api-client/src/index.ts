@@ -111,3 +111,15 @@ export {
   HOME_PERSIST_WHITELIST,
 } from "./persist/queryPersister";
 export type { PersistStorage, PersisterOptions } from "./persist/queryPersister";
+
+// Mode économie de données — poussé par l'app (cf. net/dataSaver)
+export {
+  isDataSaverActive,
+  setDataSaverActive,
+  subscribeDataSaver,
+  homeLimits,
+  staleFactor,
+  imageBudget,
+  localReportMode,
+} from "./net/dataSaver";
+export type { HomeLimits, ImageBudget, LocalReportMode } from "./net/dataSaver";
