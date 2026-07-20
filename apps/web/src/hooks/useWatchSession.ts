@@ -10,6 +10,8 @@ import { useDesktopSource, mapSubtitlesToLocal } from "./useDesktopSource";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
 import { useServerTrackPrefs } from "./useServerTrackPrefs";
+import { useOfflineMode } from "../offline/useOfflineMode";
+import { useLocalEpisodeNavigation } from "../downloads/useLocalEpisodeNavigation";
 import { wtLog } from "../watchTogether/wtLog";
 
 const DBG = "[Tentacle:Player]";
@@ -43,7 +45,13 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // à jour en ≤ ~60 s sans spammer l'API — cache backend 30 s + poll 30 s).
   const { data: autoplayConfig } = useAutoplayConfig(true);
   const { data: ancestors } = useItemAncestors(itemId);
-  const { nextEpisode, previousEpisode } = useEpisodeNavigation(item);
+  // Navigation entre épisodes : Jellyfin en ligne (série complète), liste des
+  // téléchargements hors ligne — un épisode non téléchargé serait de toute
+  // façon illisible sans serveur.
+  const offlineMode = useOfflineMode();
+  const serverNav = useEpisodeNavigation(item);
+  const localNav = useLocalEpisodeNavigation(itemId, offlineMode);
+  const { nextEpisode, previousEpisode } = offlineMode ? localNav : serverNav;
 
   // Sécurité : si l'item n'est pas lisible (série, saison, boxset), rediriger vers la page détail
   useEffect(() => {

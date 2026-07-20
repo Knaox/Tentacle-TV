@@ -36,7 +36,8 @@ function seasonKey(entry: DownloadEntry): string {
   return `series:${series}`;
 }
 
-function byEpisodeNumber(a: DownloadEntry, b: DownloadEntry): number {
+/** Ordre de diffusion : saison, puis épisode. Sans numéro → à la fin. */
+export function byEpisodeNumber(a: DownloadEntry, b: DownloadEntry): number {
   const seasonDiff = (a.parentIndexNumber ?? LAST) - (b.parentIndexNumber ?? LAST);
   if (seasonDiff !== 0) return seasonDiff;
   const episodeDiff = (a.indexNumber ?? LAST) - (b.indexNumber ?? LAST);

@@ -16,7 +16,7 @@ import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
-import { stripOverviewHtml } from "../lib/overviewHtml";
+import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -82,6 +82,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const [controlsVisible, setControlsVisible] = useState(true);
   // La bulle de chat de groupe suit le même fondu que les contrôles.
   useReportPlayerOverlay(controlsVisible);
+
+  // Visuels de l'épisode suivant : Jellyfin en ligne, disque hors ligne.
+  const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online);
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);
@@ -180,34 +183,6 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   const nextEpTitle = nextEpisode
     ? `${formatEpisodeCode(nextEpisode.ParentIndexNumber, nextEpisode.IndexNumber, { style: "padded" })} — ${nextEpisode.Name}` : undefined;
-  const nextEpisodeImageUrl = (() => {
-    if (!nextEpisode?.Id) return undefined;
-    const hasOwnBackdrop = (nextEpisode.BackdropImageTags?.length ?? 0) > 0;
-    const hasParentBackdrop = (nextEpisode.ParentBackdropImageTags?.length ?? 0) > 0;
-    const isEpisode = nextEpisode.Type === "Episode";
-    const backdropId = isEpisode
-      ? (hasOwnBackdrop ? nextEpisode.Id : (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id))
-      : nextEpisode.Id;
-    const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
-    return client.getImageUrl(backdropId, imageType, { width: 1920, quality: 85 });
-  })();
-  // Fond immersif de l'affiche de fin = bannière de la SÉRIE (fallback : backdrop épisode).
-  const nextSeriesBackdropUrl = (() => {
-    if (!nextEpisode?.Id) return undefined;
-    const seriesId = nextEpisode.SeriesId ?? nextEpisode.ParentBackdropItemId;
-    if (seriesId) return client.getImageUrl(seriesId, "Backdrop", { width: 1920, quality: 85 });
-    return (nextEpisode.BackdropImageTags?.length ?? 0) > 0
-      ? client.getImageUrl(nextEpisode.Id, "Backdrop", { width: 1920, quality: 85 })
-      : nextEpisodeImageUrl;
-  })();
-  // Vignette de l'épisode suivant = image Primary (miniature).
-  const nextEpisodeThumbUrl = nextEpisode?.Id
-    ? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 90 })
-    : nextEpisodeImageUrl;
-  // stripOverviewHtml AVANT le slice : couper du HTML brut sectionnerait une balise.
-  const nextOverviewText = nextEpisode?.Overview ? stripOverviewHtml(nextEpisode.Overview) : undefined;
-  const nextEpisodeDescription = nextOverviewText
-    ? (nextOverviewText.length > 300 ? nextOverviewText.slice(0, 300) + "…" : nextOverviewText) : undefined;
 
   return (
     <div className="relative h-screen w-screen">
@@ -226,9 +201,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         localSubtitleFiles={localSource?.subtitleFiles}
         onProgress={handleProgress} onStarted={() => { if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
-        nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-        nextSeriesBackdropUrl={nextSeriesBackdropUrl} nextEpisodeThumbUrl={nextEpisodeThumbUrl}
-        nextEpisodeDescription={nextEpisodeDescription} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
+        nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
+        nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}
+        nextEpisodeDescription={nextArtwork.description} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
         onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
