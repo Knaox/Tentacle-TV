@@ -125,4 +125,13 @@ export default {
   impersonateConfirmTitle: "Impersonation mode",
   impersonateConfirm: "Browse as {{name}}? You will see the app exactly as this user does (session limited to 8h, no admin rights).",
   impersonateError: "Impersonation failed",
+  downloadsTitle: "Downloads",
+  downloadsIntro: "Per-user download rights — written directly into Jellyfin, which remains the source of truth. Library scope is managed in Jellyfin.",
+  downloadsSaved: "Rights updated in Jellyfin.",
+  downloadsSaveError: "Failed to write to Jellyfin.",
+  downloadsLoadError: "Could not read rights from Jellyfin (check the API key and connection in Services).",
+  rightDownload: "Download",
+  rightLight: "Light mode",
+  downloadsAllLibraries: "All libraries",
+  downloadsSomeLibraries: "{{count}} allowed library(ies) — managed in Jellyfin",
 } as const;

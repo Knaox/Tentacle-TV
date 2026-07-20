@@ -1,10 +1,12 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SkipBadge, type SkipFlash } from "./SkipBadge";
+import { SkipBadge } from "./SkipBadge";
+import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useSmtc } from "../hooks/useSmtc";
 import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
+import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
 import { useDesktopAutoNext } from "../hooks/useDesktopAutoNext";
 import { useDesktopTransport } from "../hooks/useDesktopTransport";
@@ -13,8 +15,12 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { isChatActive } from "../watchTogether/chat/chatUiStore";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
+
+/** Référence stable : une valeur par défaut inline relancerait les mémos. */
+const EMPTY_SUBTITLE_FILES: LocalSubtitleFile[] = [];
 
 interface DesktopPlayerProps {
   src: string; title: string; subtitle?: string;
@@ -23,7 +29,16 @@ interface DesktopPlayerProps {
   currentAudio: number; currentSubtitle: number | null; currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
   onAudioChange: (index: number) => void; onSubtitleChange: (index: number | null) => void;
-  onQualityChange: (key: QualityKey) => void;
+  /** Absent en lecture locale : le sélecteur de qualité est alors masqué. */
+  onQualityChange?: (key: QualityKey) => void;
+  /** Lecture depuis un fichier local (masque la qualité, pistes via mpv). */
+  isLocalPlayback?: boolean;
+  /** Mode hors ligne (préférences de pistes résolues localement). */
+  offline?: boolean;
+  /** Bibliothèque de l'item local (préférences de pistes hors ligne). */
+  localLibraryId?: string | null;
+  /** Side-cars de sous-titres téléchargés (menus en lecture locale). */
+  localSubtitleFiles?: LocalSubtitleFile[];
   onProgress?: (seconds: number, paused: boolean) => void; onStarted?: () => void;
   isDirectPlay?: boolean; streamOffset?: number; posterUrl?: string;
   introSegment?: SegmentTimestamps | null; creditsSegment?: SegmentTimestamps | null;
@@ -59,6 +74,8 @@ export function DesktopPlayer({
   audioTracks = [], subtitleTracks = [],
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
+  isLocalPlayback = false, offline = false, localLibraryId = null,
+  localSubtitleFiles = EMPTY_SUBTITLE_FILES,
   onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
   introSegment, creditsSegment,
@@ -98,14 +115,22 @@ export function DesktopPlayer({
   const mpvAudio = useMemo(() => state.tracks.filter((t) => t.type === "audio"), [state.tracks]);
   const mpvSubs = useMemo(() => state.tracks.filter((t) => t.type === "sub"), [state.tracks]);
 
-  // ── Always show Jellyfin tracks in selector (better labels, consistent) ──
-  const displayAudio = audioTracks;
-  const displaySubs = subtitleTracks;
+  // ── Pistes affichées : DTO Jellyfin (labels riches) en ligne, ou track-list
+  // mpv du fichier local hors ligne (le DTO n'existe alors pas). Les
+  // préférences de langue hors ligne sont remontées via onAudioChange/
+  // onSubtitleChange — même pipeline d'application que le online. ──
+  const { displayAudio, displaySubs } = useLocalPlaybackTracks({
+    isLocalPlayback, offline, fileLoaded, ready,
+    audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
+    localLibraryId, onAudioChange, onSubtitleChange, sourceKey: src,
+  });
 
-  // Handlers + application des préférences de pistes audio/sous-titres
+  // Handlers + application des préférences de pistes audio/sous-titres.
+  // useMpvTrackSync reçoit les pistes AFFICHÉES (DTO ou fallback mpv) pour que
+  // clics manuels et application de préférence partagent la même source.
   const { handleAudioChange, handleSubtitleChange } = useMpvTrackSync({
     state, ready, fileLoaded, isDirectPlay,
-    audioTracks, subtitleTracks, mpvAudio, mpvSubs,
+    audioTracks: displayAudio, subtitleTracks: displaySubs, mpvAudio, mpvSubs,
     currentAudio, currentSubtitle,
     setAudioTrack, setSubtitleTrack, addSubtitle,
     onAudioChange, onSubtitleChange, loadedExternalSubs,
@@ -168,45 +193,19 @@ export function DesktopPlayer({
     onPrevious: hasPreviousEpisode ? onPreviousEpisode : undefined,
   });
 
-  // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier)
-  const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
-  const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
-  const skipAccumRef = useRef(0);
-  const skipBy = useCallback((delta: number) => {
-    seekRelative(delta);
-    // Appuis rapides dans le MÊME sens → cumul de l'affichage (+30 → +60 → +90),
-    // façon TV/Netflix. mpv coalesce déjà les seeks relatifs, on ne cumule donc
-    // que le badge. Reset au changement de sens ou après 1,5 s d'inactivité.
-    const sameDir = skipAccumRef.current !== 0 && Math.sign(delta) === Math.sign(skipAccumRef.current);
-    skipAccumRef.current = sameDir ? skipAccumRef.current + delta : delta;
-    setSkipFlash({ delta: skipAccumRef.current, id: Date.now() });
-    clearTimeout(skipFlashTimer.current);
-    skipFlashTimer.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, 1500);
-  }, [seekRelative]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space") { e.preventDefault(); togglePause(); }
-      if (e.code === "Escape") {
-        if (fullscreenRef.current) toggleFullscreen();
-        else goBack();
-      }
-      if (e.code === "ArrowRight") skipBy(30);
-      if (e.code === "ArrowLeft") skipBy(-10);
-      if (e.code === "KeyF") toggleFullscreen();
-      if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
-      if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, goBack, skipBy, toggleFullscreen, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
+  const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
+    seekRelative, togglePause, goBack, toggleFullscreen, fullscreenRef,
+    hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode,
+  });
 
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
-  // Scrub + hover + trickplay de la seekbar
+  // Scrub + hover + trickplay de la seekbar (local d'abord en lecture locale)
   const seekbar = useDesktopSeekbar({
-    dur, paused: state.paused, isDirectPlay, item, mediaSourceId, effectiveMpvOffset, seek, setPause,
+    dur, paused: state.paused, isDirectPlay, item, mediaSourceId,
+    localItemId: isLocalPlayback ? itemId : undefined,
+    effectiveMpvOffset, seek, setPause,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;

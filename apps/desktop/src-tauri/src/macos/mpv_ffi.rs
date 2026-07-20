@@ -1,5 +1,5 @@
 use std::ffi::{c_char, c_int, c_void};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 // --- mpv format constants ---
 pub const MPV_FORMAT_NONE: c_int = 0;
@@ -121,10 +121,8 @@ unsafe impl Sync for MpvLib {}
 
 impl MpvLib {
     pub fn load() -> Result<Self, String> {
-        let lib_path = Self::find_lib_path()?;
+        let (lib, _lib_path) = Self::open_first_loadable()?;
         unsafe {
-            let lib = libloading::Library::new(&lib_path)
-                .map_err(|e| format!("Failed to load libmpv from {}: {e}", lib_path.display()))?;
 
             macro_rules! sym {
                 ($name:expr, $ty:ty) => {{
@@ -156,36 +154,65 @@ impl MpvLib {
         }
     }
 
-    fn find_lib_path() -> Result<PathBuf, String> {
+    /// Candidats DANS L'ORDRE. La sélection se fait au `dlopen` RÉUSSI, pas à
+    /// la simple présence du fichier : un dylib présent mais aux dépendances
+    /// `@loader_path` manquantes (jeu incohérent) ne doit pas être fatal — on
+    /// passe au suivant.
+    fn candidate_paths() -> Vec<PathBuf> {
+        let mut candidates: Vec<PathBuf> = Vec::new();
+        // 0. Dev (debug uniquement) : les dylibs LGPL du repo (src-tauri/lib/),
+        //    c'est-à-dire les bibliothèques embarquées en prod. Sans ça, le dev
+        //    retombait sur la libmpv Homebrew — version/ffmpeg différents →
+        //    crashs sporadiques au lancement d'une lecture. Les deux noms sont
+        //    tentés : libmpv.dylib peut être un orphelin d'une autre série
+        //    ffmpeg, libmpv.2.dylib est le binaire versionné.
+        #[cfg(debug_assertions)]
+        {
+            let dev_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("lib");
+            candidates.push(dev_dir.join("libmpv.dylib"));
+            candidates.push(dev_dir.join("libmpv.2.dylib"));
+        }
         if let Ok(exe) = std::env::current_exe() {
-            let exe_dir = exe.parent().unwrap_or(&exe);
-            // 1. App Store: Contents/Frameworks/libmpv.dylib (emplacement Apple pour
-            //    le code embarqué — requis par la sandbox MAS).
-            let frameworks_path = exe_dir.join("../Frameworks/libmpv.dylib");
-            if frameworks_path.exists() {
-                return Ok(frameworks_path);
-            }
-            // 2. Bundle DMG: Contents/Resources/lib/libmpv.dylib
-            let bundle_path = exe_dir.join("../Resources/lib/libmpv.dylib");
-            if bundle_path.exists() {
-                return Ok(bundle_path);
-            }
-            // 3. Old bundle path fallback: exe_dir/lib/libmpv.dylib
-            let old_bundle_path = exe_dir.join("lib/libmpv.dylib");
-            if old_bundle_path.exists() {
-                return Ok(old_bundle_path);
+            let exe_dir = exe.parent().map(Path::to_path_buf).unwrap_or(exe);
+            // 1. App Store : Contents/Frameworks (emplacement Apple, requis MAS).
+            // 2. Bundle DMG : Contents/Resources/lib. 3. Ancien chemin de bundle.
+            for dir in ["../Frameworks", "../Resources/lib", "lib"] {
+                candidates.push(exe_dir.join(dir).join("libmpv.dylib"));
+                candidates.push(exe_dir.join(dir).join("libmpv.2.dylib"));
             }
         }
-        // 3. Dev fallback: Homebrew arm64
-        let homebrew_arm = PathBuf::from("/opt/homebrew/lib/libmpv.dylib");
-        if homebrew_arm.exists() {
-            return Ok(homebrew_arm);
+        // 4. Replis Homebrew (arm64 puis x86_64).
+        candidates.push(PathBuf::from("/opt/homebrew/lib/libmpv.dylib"));
+        candidates.push(PathBuf::from("/usr/local/lib/libmpv.dylib"));
+        candidates
+    }
+
+    fn open_first_loadable() -> Result<(libloading::Library, PathBuf), String> {
+        let mut errors: Vec<String> = Vec::new();
+        for path in Self::candidate_paths() {
+            if !path.exists() {
+                continue;
+            }
+            match unsafe { libloading::Library::new(&path) } {
+                Ok(lib) => return Ok((lib, path)),
+                Err(e) => errors.push(format!("{}: {e}", path.display())),
+            }
         }
-        // 4. Dev fallback: Homebrew x86_64
-        let homebrew_x86 = PathBuf::from("/usr/local/lib/libmpv.dylib");
-        if homebrew_x86.exists() {
-            return Ok(homebrew_x86);
-        }
-        Err("libmpv.dylib not found in bundle or Homebrew paths".to_string())
+        Err(format!(
+            "libmpv introuvable ou non chargeable. Tentatives : {}",
+            if errors.is_empty() { "aucun fichier candidat présent".to_string() } else { errors.join(" | ") }
+        ))
+    }
+}
+
+#[cfg(test)]
+mod load_tests {
+    use super::MpvLib;
+
+    /// Garantit qu'au moins un candidat se CHARGE réellement (dylibs du repo
+    /// en debug) — c'est le crash de démarrage dev qu'on verrouille ici.
+    #[test]
+    fn libmpv_se_charge_depuis_un_candidat() {
+        MpvLib::load().expect("aucun libmpv chargeable");
     }
 }

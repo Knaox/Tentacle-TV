@@ -27,6 +27,8 @@ import { pushRoutes } from "./routes/push";
 import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
 import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
 import { adminRoutes } from "./routes/admin";
+import { adminDownloadRoutes } from "./routes/adminDownloads";
+import { downloadRoutes } from "./routes/downloads";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { shareRoutes } from "./routes/share";
@@ -199,6 +201,8 @@ async function main() {
   await app.register(notificationRoutes, { prefix: "/api/notifications" });
   await app.register(pushRoutes, { prefix: "/api/push" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
+  await app.register(adminDownloadRoutes, { prefix: "/api/admin/downloads" });
+  await app.register(downloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
   await app.register(shareRoutes, { prefix: "/api/share" });

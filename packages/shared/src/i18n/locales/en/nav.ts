@@ -10,6 +10,7 @@ export default {
   admin: "Administration",
   logout: "Sign out",
   changeServer: "Change server",
+  goOffline: "Go offline",
   profile: "Profile",
   search: "Search",
   discover: "Discover",

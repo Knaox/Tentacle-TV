@@ -37,6 +37,7 @@ export default {
   sectionSecurity: "Sécurité",
   sectionAppearance: "Apparence",
   sectionPlayback: "Lecture",
+  sectionDownloads: "Téléchargements",
   sectionHelp: "Aide",
   sectionDanger: "Zone sensible",
   back: "Retour",

@@ -7,6 +7,9 @@ import { UserAvatarMenu } from "../UserAvatarMenu";
 import { TentacleLogo } from "../ui/TentacleLogo";
 import { BrowseButton } from "./BrowseButton";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
+import { ConnectivityChip } from "../../offline/ConnectivityChip";
+import { DownloadsNavButton } from "../../downloads/DownloadsNavButton";
+import { useOfflineMode } from "../../offline/useOfflineMode";
 
 interface TopNavProps {
   showSearch?: boolean;
@@ -19,6 +22,9 @@ interface TopNavProps {
  */
 export function TopNav({ showSearch = true }: TopNavProps) {
   const scrollProgress = useScrollOpacity(120);
+  // Hors ligne (desktop) : la navigation serveur n'est PAS rendue — restent
+  // le logo, la pastille d'état, les téléchargements et le menu utilisateur.
+  const offline = useOfflineMode();
 
   // Baseline opacity 0.28 even at scroll=0 garantit la lisibilité du nav par-dessus
   // n'importe quel backdrop hero ; ramp jusqu'à 0.92 au scroll pour rester
@@ -59,18 +65,20 @@ export function TopNav({ showSearch = true }: TopNavProps) {
         </Link>
 
         {/* Browse menu (libraries pin manager) */}
-        <BrowseButton />
+        {!offline && <BrowseButton />}
 
         {/* Primary nav (horizontal) — only shows pinned items */}
         <div className="min-w-0 flex-1">
-          <TopNavLinks />
+          {!offline && <TopNavLinks />}
         </div>
 
-        {/* Right cluster: search + watch-together + notif + avatar */}
+        {/* Right cluster: offline chip (desktop) + search + watch-together + notif + avatar */}
         <div className="flex flex-shrink-0 items-center gap-2">
-          {showSearch && <GlobalSearch />}
-          <WatchTogetherButton />
-          <NotificationBell />
+          <ConnectivityChip />
+          <DownloadsNavButton />
+          {showSearch && !offline && <GlobalSearch />}
+          {!offline && <WatchTogetherButton />}
+          {!offline && <NotificationBell />}
           <UserAvatarMenu />
         </div>
       </div>

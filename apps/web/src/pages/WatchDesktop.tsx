@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { formatEpisodeCode } from "@tentacle-tv/shared";
+import { useConnectivity } from "../offline/useConnectivity";
+import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
@@ -13,7 +16,7 @@ import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
-import { stripOverviewHtml } from "../lib/overviewHtml";
+import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -28,11 +31,25 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
+    isLocalPlayback, localSource,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
+  const { t: tDownloads } = useTranslation("downloads");
 
   const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
+  });
+
+  // Hors ligne : aucun reporting réseau — la progression est persistée
+  // localement (et resynchronisée vers Jellyfin au retour en ligne).
+  const { state: connectivityState } = useConnectivity();
+  const online = connectivityState === "online" || connectivityState === "checking";
+  useLocalPlaybackReporting({
+    enabled: isLocalPlayback,
+    itemId,
+    localSource,
+    positionRef,
+    durationSeconds: jellyfinDuration,
   });
 
   // ── Watch Together : transport + handlers de groupe + moteur de sync ──
@@ -65,6 +82,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const [controlsVisible, setControlsVisible] = useState(true);
   // La bulle de chat de groupe suit le même fondu que les contrôles.
   useReportPlayerOverlay(controlsVisible);
+
+  // Visuels de l'épisode suivant : Jellyfin en ligne, disque hors ligne.
+  const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online);
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);
@@ -133,12 +153,29 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
-    updatePosition(seconds, paused);
-  }, [updatePosition, positionRef]);
+    // Hors ligne : pas d'appels réseau de playstate (persistance locale via
+    // useLocalPlaybackReporting) ; en ligne, reporting normal — y compris en
+    // lecture locale (la source est le disque, la progression va au serveur).
+    if (online) updatePosition(seconds, paused);
+  }, [updatePosition, positionRef, online]);
 
-  const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
-  const epSubtitle = item?.Type === "Episode"
-    ? `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}` : undefined;
+  // Titre : DTO serveur, sinon méta locale (démarrage 100 % hors ligne).
+  const title = item
+    ? (item.Type === "Episode" ? item.SeriesName ?? item.Name : item.Name ?? "")
+    : (localSource?.seriesName ?? localSource?.title ?? "");
+  // Sous-titre : DTO serveur, sinon numéros de la méta locale (hors ligne).
+  // Sans numéros connus, on n'invente pas de « S00E00 » — titre seul.
+  const epSubtitle = (() => {
+    if (item?.Type === "Episode") {
+      return `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}`;
+    }
+    if (item || !localSource?.seriesName) return undefined;
+    const code = localSource.parentIndexNumber != null && localSource.indexNumber != null
+      ? formatEpisodeCode(localSource.parentIndexNumber, localSource.indexNumber, { style: "padded" })
+      : null;
+    const name = localSource.title ?? "";
+    return code ? `${code} — ${name}` : name || undefined;
+  })();
 
   if (isLoading || !streamUrl) {
     return <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />;
@@ -146,34 +183,6 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   const nextEpTitle = nextEpisode
     ? `${formatEpisodeCode(nextEpisode.ParentIndexNumber, nextEpisode.IndexNumber, { style: "padded" })} — ${nextEpisode.Name}` : undefined;
-  const nextEpisodeImageUrl = (() => {
-    if (!nextEpisode?.Id) return undefined;
-    const hasOwnBackdrop = (nextEpisode.BackdropImageTags?.length ?? 0) > 0;
-    const hasParentBackdrop = (nextEpisode.ParentBackdropImageTags?.length ?? 0) > 0;
-    const isEpisode = nextEpisode.Type === "Episode";
-    const backdropId = isEpisode
-      ? (hasOwnBackdrop ? nextEpisode.Id : (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id))
-      : nextEpisode.Id;
-    const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
-    return client.getImageUrl(backdropId, imageType, { width: 1920, quality: 85 });
-  })();
-  // Fond immersif de l'affiche de fin = bannière de la SÉRIE (fallback : backdrop épisode).
-  const nextSeriesBackdropUrl = (() => {
-    if (!nextEpisode?.Id) return undefined;
-    const seriesId = nextEpisode.SeriesId ?? nextEpisode.ParentBackdropItemId;
-    if (seriesId) return client.getImageUrl(seriesId, "Backdrop", { width: 1920, quality: 85 });
-    return (nextEpisode.BackdropImageTags?.length ?? 0) > 0
-      ? client.getImageUrl(nextEpisode.Id, "Backdrop", { width: 1920, quality: 85 })
-      : nextEpisodeImageUrl;
-  })();
-  // Vignette de l'épisode suivant = image Primary (miniature).
-  const nextEpisodeThumbUrl = nextEpisode?.Id
-    ? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 90 })
-    : nextEpisodeImageUrl;
-  // stripOverviewHtml AVANT le slice : couper du HTML brut sectionnerait une balise.
-  const nextOverviewText = nextEpisode?.Overview ? stripOverviewHtml(nextEpisode.Overview) : undefined;
-  const nextEpisodeDescription = nextOverviewText
-    ? (nextOverviewText.length > 300 ? nextOverviewText.slice(0, 300) + "…" : nextOverviewText) : undefined;
 
   return (
     <div className="relative h-screen w-screen">
@@ -182,12 +191,19 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
         currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
-        onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-        onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
+        onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
+        /* Lecture locale : le fichier EST la source — changer la « qualité »
+           n'a aucun sens, le sélecteur est retiré (TrackSelector le masque
+           quand onQualityChange est absent). */
+        onQualityChange={isLocalPlayback ? undefined : handleQualityChange}
+        isLocalPlayback={isLocalPlayback} offline={!online}
+        localLibraryId={localSource?.libraryId ?? null}
+        localSubtitleFiles={localSource?.subtitleFiles}
+        onProgress={handleProgress} onStarted={() => { if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
-        nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-        nextSeriesBackdropUrl={nextSeriesBackdropUrl} nextEpisodeThumbUrl={nextEpisodeThumbUrl}
-        nextEpisodeDescription={nextEpisodeDescription} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
+        nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
+        nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}
+        nextEpisodeDescription={nextArtwork.description} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
         onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
@@ -201,6 +217,12 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         applyToSeries={applyToSeries}
       />
       <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
+      {/* Indicateur discret « Lecture locale » — suit le fondu des contrôles. */}
+      {isLocalPlayback && controlsVisible && (
+        <div className="pointer-events-none absolute right-4 top-4 z-40 rounded-full bg-status-success-bg px-3 py-1 text-xs font-semibold text-status-success-fg">
+          {tDownloads("localPlayback")}
+        </div>
+      )}
     </div>
   );
 }

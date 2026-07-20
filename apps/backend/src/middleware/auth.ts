@@ -115,8 +115,10 @@ export async function validateToken(token: string): Promise<ValidationResult> {
   }
 }
 
-/** Extract auth token from cookie (web) or Authorization header (mobile/desktop). */
-function getTokenFromRequest(request: FastifyRequest): string | null {
+/** Extract auth token from cookie (web) or Authorization header (mobile/desktop).
+ *  Exporté : les routes de téléchargement relisent le token BRUT pour
+ *  interroger la policy Jellyfin de l'utilisateur lui-même (Users/Me). */
+export function getTokenFromRequest(request: FastifyRequest): string | null {
   // 1. Cookie (web — httpOnly, XSS-proof)
   const cookieToken = (request as any).cookies?.tentacle_token;
   if (cookieToken) return cookieToken;

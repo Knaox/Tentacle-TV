@@ -3,6 +3,10 @@
 
 mod video_surface;
 
+/// Mode Hors ligne & Téléchargements : base SQLite locale (cache de session,
+/// puis index des téléchargements). Commun aux 3 OS.
+mod downloads;
+
 #[cfg(target_os = "windows")]
 mod msix_update;
 
@@ -66,7 +70,15 @@ fn main() {
     // (MAJ gérées par l'App Store) et Windows via le Microsoft Store (MSIX).
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        // Sélecteur de dossier natif (emplacement des téléchargements) —
+        // masqué côté UI sur le build Mac App Store (pas d'entitlement fichiers).
+        .plugin(tauri_plugin_dialog::init())
+        // Cache de la racine de téléchargements. Les affiches/méta/trickplay
+        // locaux sont servis à la webview par un serveur HTTP loopback
+        // (downloads::localserver, démarré à la 1re demande d'URL locale).
+        .manage(downloads::fsops::RootCache::default())
+        .manage(downloads::engine::Engine::new());
 
     // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : depuis un thread dédié, mesure
     // séparément la réactivité du thread UI et du thread fenêtre de mpv pendant un gel.
@@ -108,6 +120,27 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
+                downloads::commands::downloads_get_root,
+                downloads::commands::downloads_set_root,
+                downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
+                downloads::commands::downloads_disk_usage,
+                downloads::engine_commands::downloads_engine_start,
+                downloads::engine_commands::downloads_enqueue,
+                downloads::engine_commands::downloads_pause,
+                downloads::engine_commands::downloads_resume,
+                downloads::engine_commands::downloads_cancel,
+                downloads::engine_commands::downloads_delete,
+                downloads::engine_commands::downloads_list,
+                downloads::engine_commands::downloads_state_for_item,
+                downloads::engine_commands::downloads_set_auto_delete,
+                downloads::commands::downloads_local_source,
+                downloads::commands::downloads_playback_set,
+                downloads::commands::downloads_reports_pending,
+                downloads::commands::downloads_reports_mark_synced,
                 macos::commands::mpv_init,
                 macos::commands::mpv_command,
                 macos::commands::mpv_set_property,
@@ -130,6 +163,27 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
+                downloads::commands::downloads_get_root,
+                downloads::commands::downloads_set_root,
+                downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
+                downloads::commands::downloads_disk_usage,
+                downloads::engine_commands::downloads_engine_start,
+                downloads::engine_commands::downloads_enqueue,
+                downloads::engine_commands::downloads_pause,
+                downloads::engine_commands::downloads_resume,
+                downloads::engine_commands::downloads_cancel,
+                downloads::engine_commands::downloads_delete,
+                downloads::engine_commands::downloads_list,
+                downloads::engine_commands::downloads_state_for_item,
+                downloads::engine_commands::downloads_set_auto_delete,
+                downloads::commands::downloads_local_source,
+                downloads::commands::downloads_playback_set,
+                downloads::commands::downloads_reports_pending,
+                downloads::commands::downloads_reports_mark_synced,
                 msix_update::check_msix_update,
                 msix_update::download_and_install_msix_update,
                 smtc::smtc_init,
@@ -147,6 +201,27 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
+                downloads::commands::downloads_get_root,
+                downloads::commands::downloads_set_root,
+                downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
+                downloads::commands::downloads_disk_usage,
+                downloads::engine_commands::downloads_engine_start,
+                downloads::engine_commands::downloads_enqueue,
+                downloads::engine_commands::downloads_pause,
+                downloads::engine_commands::downloads_resume,
+                downloads::engine_commands::downloads_cancel,
+                downloads::engine_commands::downloads_delete,
+                downloads::engine_commands::downloads_list,
+                downloads::engine_commands::downloads_state_for_item,
+                downloads::engine_commands::downloads_set_auto_delete,
+                downloads::commands::downloads_local_source,
+                downloads::commands::downloads_playback_set,
+                downloads::commands::downloads_reports_pending,
+                downloads::commands::downloads_reports_mark_synced,
                 msix_update::check_msix_update,
                 msix_update::download_and_install_msix_update,
                 smtc::smtc_init,
@@ -205,6 +280,27 @@ fn main() {
                 video_surface::toggle_fullscreen,
                 video_surface::is_fullscreen,
                 video_surface::exit_fullscreen,
+                downloads::commands::session_cache_get,
+                downloads::commands::session_cache_set,
+                downloads::commands::session_cache_clear,
+                downloads::commands::downloads_get_root,
+                downloads::commands::downloads_set_root,
+                downloads::commands::downloads_disk_free,
+                downloads::commands::downloads_asset_base,
+                downloads::commands::downloads_disk_usage,
+                downloads::engine_commands::downloads_engine_start,
+                downloads::engine_commands::downloads_enqueue,
+                downloads::engine_commands::downloads_pause,
+                downloads::engine_commands::downloads_resume,
+                downloads::engine_commands::downloads_cancel,
+                downloads::engine_commands::downloads_delete,
+                downloads::engine_commands::downloads_list,
+                downloads::engine_commands::downloads_state_for_item,
+                downloads::engine_commands::downloads_set_auto_delete,
+                downloads::commands::downloads_local_source,
+                downloads::commands::downloads_playback_set,
+                downloads::commands::downloads_reports_pending,
+                downloads::commands::downloads_reports_mark_synced,
                 linux_update::detect::detect_linux_install_format,
                 linux_update::install::download_update,
                 linux_update::install::install_linux_update,

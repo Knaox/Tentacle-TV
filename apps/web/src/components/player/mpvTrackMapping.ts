@@ -4,6 +4,8 @@ import type { MpvTrack } from "../../hooks/useDesktopPlayer";
 // Handles ISO 639-1 (ja, fr), 639-2/B (fre, ger) and 639-2/T (fra, deu).
 // All variants for each language map to the same canonical (639-2/T) code.
 const LANG_NORM: Record<string, string> = {};
+/** Code canonique (639-2/T) → sous-tag primaire ISO 639-1, pour Intl.DisplayNames. */
+const LANG_PRIMARY: Record<string, string> = {};
 ([
   ["ja", "jpn"], ["fr", "fre", "fra"], ["en", "eng"], ["de", "ger", "deu"],
   ["es", "spa"], ["it", "ita"], ["pt", "por"], ["ru", "rus"],
@@ -20,8 +22,20 @@ const LANG_NORM: Record<string, string> = {};
   ["nb", "nob"], ["nn", "nno"], ["ta", "tam"], ["te", "tel"],
 ] as string[][]).forEach(group => {
   const canon = group[group.length - 1];
-  group.forEach(c => { LANG_NORM[c] = canon; });
+  const primary = group[0]; // toujours le code ISO 639-1 dans ces groupes
+  group.forEach(c => { LANG_NORM[c] = canon; LANG_PRIMARY[c] = primary; });
 });
+
+/**
+ * Sous-tag primaire à 2 lettres d'un code de langue (« fre »/« fra » → « fr »).
+ * Intl.DisplayNames ne reconnaît pas les codes ISO 639-2/B que rend mpv.
+ * null si le code est inconnu de la table.
+ */
+export function primaryLangSubtag(code: string | undefined): string | null {
+  if (!code) return null;
+  const lower = code.toLowerCase();
+  return LANG_PRIMARY[lower] ?? (/^[a-z]{2}$/.test(lower) ? lower : null);
+}
 
 /** Compare two language codes — normalizes all ISO 639 variants. */
 export function langMatch(a?: string, b?: string): boolean {

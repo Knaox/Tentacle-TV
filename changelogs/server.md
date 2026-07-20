@@ -11,6 +11,18 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.8.0]
+### FR
+- Téléchargements desktop : nouvelles routes /api/downloads (capacités par utilisateur, fichier original avec reprise par plages, variante Allégée en MP4 fragmenté transcodé par Jellyfin) — chaque démarrage revérifie EN DIRECT la policy Jellyfin (droit de téléchargement + périmètre de bibliothèques) ; refus en 404 générique, sans divulgation
+- Admin > Téléchargements : droits par utilisateur (Téléchargement, Mode Allégé) écrits directement dans la policy Jellyfin — lecture complète, fusion, écriture, relecture de vérification ; aucune copie locale divergente
+- Proxy : route moderne UserItems/{id}/UserData autorisée (resynchronisation de la progression regardée hors ligne)
+- minServer relevé à 1.8.0 : le desktop 1.16.0 requiert ce serveur
+### EN
+- Desktop downloads: new /api/downloads routes (per-user capabilities, original file with range resume, Light variant as Jellyfin-transcoded fragmented MP4) — every start re-checks the Jellyfin policy LIVE (download right + library scope); refusals are generic 404s, no disclosure
+- Admin > Downloads: per-user rights (Download, Light mode) written directly into the Jellyfin policy — full read, merge, write, verification re-read; no diverging local copy
+- Proxy: modern UserItems/{id}/UserData route allowed (resync of progress watched offline)
+- minServer raised to 1.8.0: desktop 1.16.0 requires this server
+
 ## [1.7.1]
 ### FR
 - Web : thème clair refondu sur les bannières et les fiches — l'affiche reste vive (plus de voile nacré ni de flou), le texte posé sur l'image est blanc dans les deux thèmes, adossé à un dégradé sombre qui garantit la lisibilité même sur une affiche claire (même recette que le mobile)

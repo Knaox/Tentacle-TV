@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Palette, Play, ShieldCheck } from "lucide-react";
+import { HardDriveDownload, Palette, Play, ShieldCheck } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { useDownloadsVisibility } from "../../downloads/useDownloadState";
+import { useOfflineMode } from "../../offline/useOfflineMode";
 
 /**
  * Coquille des réglages utilisateur.
@@ -37,14 +39,25 @@ export function SettingsLayout() {
   const { t } = useTranslation("preferences");
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  // Desktop uniquement, et seulement avec le droit Jellyfin OU du contenu
+  // local déjà présent — sinon la section n'existe pas (invisibilité stricte).
+  const { visible: downloadsVisible } = useDownloadsVisibility();
+  // Hors ligne : la section Sécurité (mot de passe, appareils, serveur)
+  // n'a aucun sens sans serveur — non rendue.
+  const offline = useOfflineMode();
 
   const sections = useMemo<SettingsShellSection[]>(
     () => [
       { id: "appearance", label: t("sectionAppearance"), icon: <Palette size={ICON} /> },
-      { id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={ICON} /> },
+      ...(offline
+        ? []
+        : [{ id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={ICON} /> }]),
       { id: "playback", label: t("sectionPlayback"), icon: <Play size={ICON} /> },
+      ...(downloadsVisible
+        ? [{ id: "downloads", label: t("sectionDownloads"), icon: <HardDriveDownload size={ICON} /> }]
+        : []),
     ],
-    [t],
+    [t, downloadsVisible, offline],
   );
 
   const activeId = useMemo(() => {

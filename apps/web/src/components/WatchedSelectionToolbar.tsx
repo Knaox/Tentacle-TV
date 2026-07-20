@@ -8,6 +8,10 @@ interface Props {
   onMarkWatched: () => void;
   onMarkUnwatched: () => void;
   isBusy: boolean;
+  /** Action groupée « télécharger la sélection » (desktop, droit requis) —
+   *  bouton rendu UNIQUEMENT quand les deux props sont fournies. */
+  onDownload?: () => void;
+  downloadLabel?: string;
 }
 
 /**
@@ -22,6 +26,8 @@ export function WatchedSelectionToolbar({
   onMarkWatched,
   onMarkUnwatched,
   isBusy,
+  onDownload,
+  downloadLabel,
 }: Props) {
   const { t } = useTranslation("common");
   return createPortal(
@@ -46,6 +52,15 @@ export function WatchedSelectionToolbar({
           >
             {t("common:cancel")}
           </button>
+          {onDownload && downloadLabel && (
+            <button
+              onClick={onDownload}
+              disabled={count === 0 || isBusy}
+              className="rounded-lg bg-fill-subtle px-4 py-1.5 text-sm font-medium text-content-secondary ring-1 ring-line-subtle transition-all hover:bg-fill-soft hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {downloadLabel}
+            </button>
+          )}
           <button
             onClick={onMarkWatched}
             disabled={count === 0 || isBusy}

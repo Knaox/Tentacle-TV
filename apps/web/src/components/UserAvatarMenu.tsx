@@ -6,6 +6,9 @@ import { Dropdown } from "./ui/Dropdown";
 import { AVATAR_RING_STYLE, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
 import { useToast } from "../contexts/ToastContext";
+import { isTauriApp } from "../main";
+import { useConnectivity } from "../offline/useConnectivity";
+import { setManualOffline } from "../offline/connectivityStore";
 
 /**
  * Bouton avatar + dropdown menu pour le desktop (TopNav).
@@ -22,6 +25,7 @@ export function UserAvatarMenu() {
   const { show } = useToast();
   const { logout } = useAuth();
   const { name, initial, isAdmin } = getUserInfo();
+  const connectivity = useConnectivity();
   const { avatarUrl, avatarVersion, uploading, upload } = useAvatarUpload();
   const [imageFailed, setImageFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,11 +49,22 @@ export function UserAvatarMenu() {
     if (fileRef.current) fileRef.current.value = "";
   }, [upload, show, tProfile]);
 
+  // Bascule manuelle hors ligne : desktop uniquement, et seulement quand tout
+  // va bien (hors ligne, la pastille du TopNav porte déjà l'action inverse).
+  const goOffline =
+    isTauriApp && connectivity.state === "online"
+      ? () => {
+          close();
+          setManualOffline(true);
+        }
+      : undefined;
+
   const items = buildUserMenuItems({
     t,
     isAdmin,
     navigate: navigateTo,
     handleLogout,
+    goOffline,
   });
 
   const showImage = !!avatarUrl && !imageFailed;
