@@ -83,4 +83,11 @@ export default {
   locationLocked: "Not possible: downloads already exist. Delete them first.",
   locationNotWritable: "This folder is not writable.",
   spaceTitle: "Disk space",
+
+  seasonLabel: "Season {{num}}",
+  seasonUnknown: "Episodes",
+  episodesCount_one: "{{count}} episode",
+  episodesCount_other: "{{count}} episodes",
+  episodePlay: "Play episode",
+  seasonNotFound: "This season is no longer downloaded.",
 } as const;
