@@ -24,7 +24,6 @@ pub mod heal;
 pub mod listing;
 pub mod meta;
 pub mod playback;
-pub mod protocol;
 pub mod queue;
 pub mod session;
 pub mod store;

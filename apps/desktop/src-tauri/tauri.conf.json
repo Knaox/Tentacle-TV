@@ -23,8 +23,12 @@
     ],
     "macOSPrivateApi": true,
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: http: tentacle-local:; media-src 'self' blob: https: http:; connect-src 'self' https: http: ws: wss: http://ipc.localhost ipc: tentacle-local:; font-src 'self' https://fonts.gstatic.com; frame-src 'self' blob: data: http: https:; child-src 'self' blob: data: http: https:; object-src 'none'; base-uri 'self'; form-action 'self';",
-      "dangerousDisableAssetCspModification": true
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: http: asset: http://asset.localhost; media-src 'self' blob: https: http:; connect-src 'self' https: http: ws: wss: http://ipc.localhost ipc: asset: http://asset.localhost; font-src 'self' https://fonts.gstatic.com; frame-src 'self' blob: data: http: https:; child-src 'self' blob: data: http: https:; object-src 'none'; base-uri 'self'; form-action 'self';",
+      "dangerousDisableAssetCspModification": true,
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
     }
   },
   "bundle": {

@@ -1,13 +1,14 @@
 /**
  * Fiche locale (mode Hors ligne) : panneau modal alimenté par le snapshot
- * `meta/<itemId>/item.json` (servi par tentacle-local) — synopsis, méta,
+ * `meta/<itemId>/item.json` (protocole asset Tauri) — synopsis, méta,
  * bouton Lire. Aucune requête serveur. Tokens de thème, animation CSS pure.
  */
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { localResourceUrl, type DownloadEntry } from "./api";
+import type { DownloadEntry } from "./api";
+import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { formatBytes } from "./presets";
 
 interface SnapshotItem {
@@ -27,10 +28,15 @@ export function OfflineItemSheet({ entry, onClose }: { entry: DownloadEntry; onC
   const navigate = useNavigate();
   const [item, setItem] = useState<SnapshotItem | null>(null);
   const [backdropFailed, setBackdropFailed] = useState(false);
+  const rootReady = useDownloadsRootReady();
+  const backdropUrl = localResourceUrl(`meta/${entry.itemId}/backdrop.jpg`);
 
   useEffect(() => {
+    if (!rootReady) return;
+    const url = localResourceUrl(`meta/${entry.itemId}/item.json`);
+    if (!url) return;
     let cancelled = false;
-    void fetch(localResourceUrl(`meta/${entry.itemId}/item.json`))
+    void fetch(url)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: SnapshotItem | null) => {
         if (!cancelled) setItem(data);
@@ -41,7 +47,7 @@ export function OfflineItemSheet({ entry, onClose }: { entry: DownloadEntry; onC
     return () => {
       cancelled = true;
     };
-  }, [entry.itemId]);
+  }, [entry.itemId, rootReady]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -77,10 +83,10 @@ export function OfflineItemSheet({ entry, onClose }: { entry: DownloadEntry; onC
           WebkitBackdropFilter: "blur(var(--blur-modal))",
         }}
       >
-        {!backdropFailed && (
+        {backdropUrl && !backdropFailed && (
           <div className="relative h-40 w-full overflow-hidden">
             <img
-              src={localResourceUrl(`meta/${entry.itemId}/backdrop.jpg`)}
+              src={backdropUrl}
               alt=""
               className="h-full w-full object-cover"
               onError={() => setBackdropFailed(true)}

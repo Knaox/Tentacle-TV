@@ -1,6 +1,6 @@
 /**
  * Catalogue local — page d'accueil du mode Hors ligne (desktop).
- * Grille d'affiches servies par tentacle-local://, filtres Films/Séries,
+ * Grille d'affiches locales (protocole asset Tauri), filtres Films/Séries,
  * recherche locale, fiche locale (OfflineItemSheet), lien vers la gestion.
  * Seuls les téléchargements COMPLETS et lisibles du compte sont montrés.
  */
@@ -8,7 +8,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { localResourceUrl, type DownloadEntry } from "./api";
+import type { DownloadEntry } from "./api";
+import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { useDownloadsList } from "./useDownloadState";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 
@@ -150,6 +151,8 @@ function PosterCard({
   episodeLabel: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  useDownloadsRootReady(); // re-rend quand la racine locale est résolue
+  const posterUrl = localResourceUrl(`meta/${entry.itemId}/primary.jpg`);
   const title = entry.title ?? entry.itemId;
   return (
     <button
@@ -159,9 +162,9 @@ function PosterCard({
       title={title}
     >
       <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line-subtle">
-        {!failed ? (
+        {posterUrl && !failed ? (
           <img
-            src={localResourceUrl(`meta/${entry.itemId}/primary.jpg`)}
+            src={posterUrl}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"

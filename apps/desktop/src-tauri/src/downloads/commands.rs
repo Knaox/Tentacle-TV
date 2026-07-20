@@ -58,6 +58,7 @@ pub fn downloads_set_root(
 ) -> Result<String, String> {
     let conn = open_db(&app)?;
     let new_root = fsops::set_root(&conn, &cache, std::path::Path::new(&path))?;
+    fsops::allow_asset_scope(&app, &new_root);
     Ok(new_root.to_string_lossy().into_owned())
 }
 

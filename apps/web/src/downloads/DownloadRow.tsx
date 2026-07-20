@@ -1,5 +1,5 @@
 /**
- * Ligne d'un téléchargement : affiche locale (protocole tentacle-local),
+ * Ligne d'un téléchargement : affiche locale (protocole asset Tauri),
  * titre, méta (variante/preset/taille), progression LIVE (store de
  * progression, hors TanStack), badge d'état en tokens status-*, actions par
  * statut (pause, reprise, annulation, suppression, auto-suppression).
@@ -9,12 +9,12 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   cancelDownload,
-  localResourceUrl,
   pauseDownload,
   resumeDownload,
   setAutoDeleteAfterWatch,
   type DownloadEntry,
 } from "./api";
+import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { formatBytes } from "./presets";
 import { useFileProgress } from "./progressStore";
 
@@ -30,6 +30,8 @@ interface DownloadRowProps {
 export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProps) {
   const { t } = useTranslation("downloads");
   const [posterFailed, setPosterFailed] = useState(false);
+  useDownloadsRootReady(); // re-rend quand la racine locale est résolue
+  const posterUrl = localResourceUrl(`meta/${entry.itemId}/primary.jpg`);
   const live = useFileProgress(entry.id);
 
   const bytesDone = live?.bytesDone ?? entry.bytesDone;
@@ -52,9 +54,9 @@ export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProp
   return (
     <div className="flex items-center gap-3 rounded-xl bg-fill-faint p-3 transition-colors hover:bg-fill-subtle">
       <div className="h-16 w-11 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
-        {!posterFailed && (
+        {posterUrl && !posterFailed && (
           <img
-            src={localResourceUrl(`meta/${entry.itemId}/primary.jpg`)}
+            src={posterUrl}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"
