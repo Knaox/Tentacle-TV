@@ -16,5 +16,10 @@
   <!-- Accès réseau sortant : streaming Jellyfin + jumelage. -->
   <key>com.apple.security.network.client</key>
   <true/>
+  <!-- Serveur loopback (downloads/localserver.rs) : en App Sandbox, bind()/
+       listen() exigent network.server MÊME sur 127.0.0.1 — sans lui,
+       « Operation not permitted » et aucune affiche/méta/trickplay locale. -->
+  <key>com.apple.security.network.server</key>
+  <true/>
 </dict>
 </plist>
