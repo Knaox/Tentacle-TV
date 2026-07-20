@@ -14,6 +14,8 @@ import { HeroBillboard } from "../components/hero/HeroBillboard";
 import { MediaRow } from "../components/rows/MediaRow";
 import { ContinueWatchingRow } from "../components/rows/ContinueWatchingRow";
 import { PageTransition } from "../components/PageTransition";
+import { useNearViewport } from "../hooks/useNearViewport";
+import { useDataSaverActive } from "../offline/useDataSaver";
 
 export function Home() {
   const client = useJellyfinClient();
@@ -103,11 +105,20 @@ function LibraryRow({
   delayIndex: number;
 }) {
   const { t } = useTranslation("common");
-  const { data: items, isLoading } = useLatestItems(libraryId, { collectionType });
+  const dataSaver = useDataSaverActive();
+  const { ref, near } = useNearViewport<HTMLElement>();
+  // Mode économie : on ne lance la requête qu'à l'approche de la rangée. Le
+  // lazy loading de MediaRow ne gouverne que le RENDU — les données des rangées
+  // hors écran descendaient quand même, soit ~17 requêtes au lancement.
+  const enabled = !dataSaver || near;
+  const { data: items, isLoading } = useLatestItems(libraryId, { collectionType, enabled });
 
-  if (isLoading) {
+  // Squelette tant que la requête n'a pas abouti. Il porte AUSSI la cible de
+  // l'observer : sans un élément monté, une rangée en attente ne serait jamais
+  // déclenchée et resterait vide indéfiniment.
+  if (!enabled || isLoading) {
     return (
-      <section className="row-gutter mb-10">
+      <section ref={ref} className="row-gutter mb-10">
         <h2 className="mb-3 text-base font-semibold text-content-primary md:text-lg">
           {t("common:latestAdditions", { name: libraryName })}
         </h2>
