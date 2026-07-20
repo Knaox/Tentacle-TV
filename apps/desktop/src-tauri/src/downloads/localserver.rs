@@ -64,6 +64,16 @@ fn header(name: &str, value: &str) -> Header {
     Header::from_bytes(name.as_bytes(), value.as_bytes()).expect("header statique")
 }
 
+/// La page (http://localhost:5174 en dev, tauri://localhost en prod) et ce
+/// serveur sont deux origines distinctes : sans cet en-tête, les `<img>`
+/// passent mais tout `fetch()` est bloqué par la webview — trickplay.json,
+/// item.json et season.json échouaient silencieusement. `*` n'élargit rien :
+/// la ressource reste protégée par le jeton aléatoire exigé en query, qu'une
+/// page tierce ne peut pas connaître (port éphémère + 128 bits).
+fn cors_header() -> Header {
+    header("Access-Control-Allow-Origin", "*")
+}
+
 fn serve(app: &AppHandle, token: &str, url: &str) -> Result<(Vec<u8>, &'static str), u16> {
     let (rel, provided) = parse_request(url);
     if provided.as_deref() != Some(token) {
@@ -96,7 +106,7 @@ pub fn ensure_started(app: &AppHandle) -> Result<&'static AssetServer, String> {
     std::thread::spawn(move || {
         for request in http.incoming_requests() {
             if request.method() != &tiny_http::Method::Get {
-                let _ = request.respond(Response::empty(405));
+                let _ = request.respond(Response::empty(405).with_header(cors_header()));
                 continue;
             }
             let url = request.url().to_string();
@@ -104,11 +114,14 @@ pub fn ensure_started(app: &AppHandle) -> Result<&'static AssetServer, String> {
                 Ok((bytes, mime)) => {
                     let response = Response::from_data(bytes)
                         .with_header(header("Content-Type", mime))
-                        .with_header(header("Cache-Control", "public, max-age=86400"));
+                        .with_header(header("Cache-Control", "public, max-age=86400"))
+                        .with_header(cors_header());
                     let _ = request.respond(response);
                 }
                 Err(status) => {
-                    let _ = request.respond(Response::empty(status as i32));
+                    // CORS aussi sur les erreurs : sans lui, la webview masque le
+                    // vrai code (403/404) derrière une erreur CORS opaque.
+                    let _ = request.respond(Response::empty(status as i32).with_header(cors_header()));
                 }
             }
         }
@@ -118,7 +131,7 @@ pub fn ensure_started(app: &AppHandle) -> Result<&'static AssetServer, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{mime_for, parse_request};
+    use super::{cors_header, mime_for, parse_request};
 
     #[test]
     fn parse_extrait_chemin_et_jeton() {
@@ -135,5 +148,13 @@ mod tests {
         assert_eq!(mime_for("a.json"), Some("application/json"));
         assert_eq!(mime_for("a.mkv"), None); // les médias ne transitent JAMAIS par la webview
         assert_eq!(mime_for("noext"), None);
+    }
+
+    #[test]
+    fn cors_autorise_la_webview() {
+        // Sans cet en-tête, fetch() sur trickplay.json/item.json est bloqué.
+        let header = cors_header();
+        assert_eq!(header.field.as_str().as_str(), "Access-Control-Allow-Origin");
+        assert_eq!(header.value.as_str(), "*");
     }
 }

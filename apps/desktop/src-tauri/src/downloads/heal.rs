@@ -51,8 +51,13 @@ pub fn run(app: &AppHandle, creds: &Creds) -> usize {
     let mut healed = 0;
     for (item_id, media_source_id, subtitles_json) in complete_files(&conn) {
         let mut touched = false;
-        if !meta::snapshot_exists(&root, &item_id) {
-            if let Ok(Some(spec)) = meta::get_spec(&conn, &item_id) {
+        // Snapshot absent, ou épisode sans affiche de série (téléchargements
+        // antérieurs à son ajout) : un re-snapshot complet répare les deux, il
+        // saute de lui-même ce qui est déjà en place.
+        if let Ok(Some(spec)) = meta::get_spec(&conn, &item_id) {
+            let missing_series_poster =
+                spec.series_id.is_some() && !meta::series_primary_exists(&root, &item_id);
+            if !meta::snapshot_exists(&root, &item_id) || missing_series_poster {
                 if meta::snapshot(&agent, &creds.server_url, &creds.token, &root, &conn, &spec)
                     .is_ok()
                 {

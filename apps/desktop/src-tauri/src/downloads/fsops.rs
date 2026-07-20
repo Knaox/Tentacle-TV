@@ -136,11 +136,22 @@ pub fn remove_media_file(root: &Path, rel: &str) -> Result<(), String> {
 
 /// Supprime récursivement le dossier de méta d'un item (best-effort).
 pub fn remove_item_meta_dir(root: &Path, item_id: &str) -> Result<(), String> {
-    let dir = safe_join(root, &format!("meta/{item_id}"))?;
+    remove_item_dir(root, "meta", item_id)
+}
+
+/// Supprime récursivement le dossier média d'un item — le fichier vidéo a déjà
+/// été retiré, mais les side-cars de sous-titres (`media/<id>/subs/`) restaient
+/// orphelins sur le disque après une suppression.
+pub fn remove_item_media_dir(root: &Path, item_id: &str) -> Result<(), String> {
+    remove_item_dir(root, "media", item_id)
+}
+
+fn remove_item_dir(root: &Path, kind: &str, item_id: &str) -> Result<(), String> {
+    let dir = safe_join(root, &format!("{kind}/{item_id}"))?;
     match std::fs::remove_dir_all(&dir) {
         Ok(()) => Ok(()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(format!("remove meta {item_id}: {e}")),
+        Err(e) => Err(format!("remove {kind} {item_id}: {e}")),
     }
 }
 
