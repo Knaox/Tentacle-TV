@@ -57,12 +57,12 @@ pub fn run(app: &AppHandle, creds: &Creds) -> usize {
         if let Ok(Some(spec)) = meta::get_spec(&conn, &item_id) {
             let missing_series_poster =
                 spec.series_id.is_some() && !meta::series_primary_exists(&root, &item_id);
-            if !meta::snapshot_exists(&root, &item_id) || missing_series_poster {
-                if meta::snapshot(&agent, &creds.server_url, &creds.token, &root, &conn, &spec)
+            let needs_snapshot = !meta::snapshot_exists(&root, &item_id) || missing_series_poster;
+            if needs_snapshot
+                && meta::snapshot(&agent, &creds.server_url, &creds.token, &root, &conn, &spec)
                     .is_ok()
-                {
-                    touched = true;
-                }
+            {
+                touched = true;
             }
         }
         // Trickplay manquant (téléchargements d'avant ce correctif) : récupérer

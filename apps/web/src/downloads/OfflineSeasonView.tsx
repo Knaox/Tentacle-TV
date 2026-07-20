@@ -44,9 +44,13 @@ export function OfflineSeasonView() {
   }, [entries.length, group, navigate]);
 
   if (!group) {
+    // Liste encore vide = chargement en cours : ne pas annoncer une absence
+    // qui n'en est pas une (l'effet ci-dessus redirige si elle se confirme).
     return (
       <div className="mx-auto min-h-screen w-full max-w-5xl px-4 pt-24 md:px-8">
-        <p className="text-sm text-content-quaternary">{t("downloads:seasonNotFound")}</p>
+        {entries.length > 0 && (
+          <p className="text-sm text-content-quaternary">{t("downloads:seasonNotFound")}</p>
+        )}
       </div>
     );
   }
