@@ -16,12 +16,18 @@ pub struct DownloadListEntry {
     pub kind: Option<String>,
     pub series_id: Option<String>,
     pub season_id: Option<String>,
+    /// Numéro d'épisode / de saison : tri et regroupement du catalogue local.
+    pub index_number: Option<i64>,
+    pub parent_index_number: Option<i64>,
+    /// Durée (affichée sur les vignettes d'épisode).
+    pub runtime_ticks: Option<i64>,
     pub auto_delete_after_watch: bool,
 }
 
 const LIST_EXTRA_COLS: &str =
     "item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id, \
-     item_meta.season_id, claims.auto_delete_after_watch";
+     item_meta.season_id, item_meta.index_number, item_meta.parent_index_number, \
+     item_meta.runtime_ticks, claims.auto_delete_after_watch";
 
 fn map_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<DownloadListEntry> {
     let file = map_file_row(row)?;
@@ -33,7 +39,10 @@ fn map_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<DownloadListEntry> {
         kind: row.get(15)?,
         series_id: row.get(16)?,
         season_id: row.get(17)?,
-        auto_delete_after_watch: row.get::<_, i64>(18)? != 0,
+        index_number: row.get(18)?,
+        parent_index_number: row.get(19)?,
+        runtime_ticks: row.get(20)?,
+        auto_delete_after_watch: row.get::<_, i64>(21)? != 0,
     })
 }
 

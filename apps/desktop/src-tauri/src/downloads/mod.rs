@@ -19,6 +19,7 @@ pub mod commands;
 pub mod db;
 pub mod engine;
 pub mod engine_commands;
+pub mod episode_numbers;
 pub mod fsops;
 pub mod heal;
 pub mod listing;

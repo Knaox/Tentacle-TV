@@ -39,6 +39,9 @@ pub struct EnqueueItem {
     pub runtime_ticks: Option<i64>,
     pub title: Option<String>,
     pub series_name: Option<String>,
+    /// Épisode : numéros de saison/épisode (tri du catalogue hors ligne).
+    pub index_number: Option<i64>,
+    pub parent_index_number: Option<i64>,
     pub auto_delete_after_watch: bool,
     /// Mode Allégé : piste audio à embarquer et sous-titre image à incruster.
     pub audio_stream_index: Option<i64>,
@@ -136,6 +139,8 @@ pub fn downloads_enqueue(
                 runtime_ticks: item.runtime_ticks,
                 title: item.title.clone(),
                 series_name: item.series_name.clone(),
+                index_number: item.index_number,
+                parent_index_number: item.parent_index_number,
             },
             now,
         )?;
@@ -220,12 +225,22 @@ pub fn downloads_delete(
     Ok(outcome)
 }
 
+/// Rattrapage des numéros d'épisode : une seule tentative par session, à la
+/// première liste demandée. Lit les `item.json` du disque — donc opérant même
+/// démarrage 100 % hors ligne (contrairement à `heal`, qui exige le réseau).
+static BACKFILL_NUMBERS: std::sync::Once = std::sync::Once::new();
+
 #[tauri::command]
 pub fn downloads_list(
     app: AppHandle,
     user_id: String,
 ) -> Result<Vec<listing::DownloadListEntry>, String> {
     let conn = open_db(&app)?;
+    BACKFILL_NUMBERS.call_once(|| {
+        if let Ok(root) = fsops::resolve_root(&app) {
+            super::episode_numbers::backfill(&conn, &root);
+        }
+    });
     listing::list_for_user(&conn, &user_id)
 }
 

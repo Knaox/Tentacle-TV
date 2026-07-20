@@ -111,6 +111,8 @@ export function buildEnqueueItem(item: MediaItem, options: DownloadOptions): Enq
     runtimeTicks: item.RunTimeTicks ?? undefined,
     title: item.Name ?? undefined,
     seriesName: isEpisode ? (item.SeriesName ?? undefined) : undefined,
+    indexNumber: isEpisode ? (item.IndexNumber ?? undefined) : undefined,
+    parentIndexNumber: isEpisode ? (item.ParentIndexNumber ?? undefined) : undefined,
     autoDeleteAfterWatch: options.autoDeleteAfterWatch,
     subtitles: subtitleSideCars(item, options.variant),
   };

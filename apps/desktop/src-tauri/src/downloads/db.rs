@@ -146,6 +146,13 @@ ALTER TABLE files ADD COLUMN burn_subtitle_index INTEGER;
 ALTER TABLE files ADD COLUMN subtitles_json TEXT;
 ";
 
+/// v5 — numéros de saison/épisode dénormalisés : le catalogue hors ligne
+/// regroupe et trie les épisodes sans relire N `item.json` sur le disque.
+const SCHEMA_V5: &str = "
+ALTER TABLE item_meta ADD COLUMN index_number INTEGER;
+ALTER TABLE item_meta ADD COLUMN parent_index_number INTEGER;
+";
+
 fn migrate(conn: &Connection) -> Result<(), String> {
     let version: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
@@ -161,6 +168,9 @@ fn migrate(conn: &Connection) -> Result<(), String> {
     }
     if version < 4 {
         apply(conn, SCHEMA_V4, 4)?;
+    }
+    if version < 5 {
+        apply(conn, SCHEMA_V5, 5)?;
     }
     Ok(())
 }

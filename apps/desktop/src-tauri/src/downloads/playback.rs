@@ -32,6 +32,10 @@ pub struct LocalSource {
     pub title: Option<String>,
     pub series_name: Option<String>,
     pub runtime_ticks: Option<i64>,
+    /// Numéros de saison/épisode : sous-titre « S02E04 — … » du lecteur quand
+    /// aucun DTO serveur n'est disponible.
+    pub index_number: Option<i64>,
+    pub parent_index_number: Option<i64>,
     /// Bibliothèque de l'item (préférences de pistes hors ligne).
     pub library_id: Option<String>,
 }
@@ -108,17 +112,25 @@ pub fn local_source(
         .optional()
         .map_err(|e| format!("playback state: {e}"))?;
 
-    type MetaTuple = (Option<String>, Option<String>, Option<i64>, Option<String>);
+    type MetaTuple = (
+        Option<String>, Option<String>, Option<i64>, Option<String>, Option<i64>, Option<i64>,
+    );
     let meta: Option<MetaTuple> = conn
         .query_row(
-            "SELECT title, series_name, runtime_ticks, library_id FROM item_meta WHERE item_id = ?1",
+            "SELECT title, series_name, runtime_ticks, library_id, index_number,
+                    parent_index_number
+             FROM item_meta WHERE item_id = ?1",
             params![item_id],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            |row| {
+                Ok((
+                    row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?,
+                ))
+            },
         )
         .optional()
         .map_err(|e| format!("item meta: {e}"))?;
-    let (title, series_name, runtime_ticks, library_id) =
-        meta.unwrap_or((None, None, None, None));
+    let (title, series_name, runtime_ticks, library_id, index_number, parent_index_number) =
+        meta.unwrap_or((None, None, None, None, None, None));
 
     Ok(Some(LocalSource {
         file_id: file.id,
@@ -131,6 +143,8 @@ pub fn local_source(
         title,
         series_name,
         runtime_ticks,
+        index_number,
+        parent_index_number,
         library_id,
     }))
 }

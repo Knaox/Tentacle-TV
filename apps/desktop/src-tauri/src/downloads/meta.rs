@@ -19,13 +19,18 @@ pub struct MetaSpec {
     pub runtime_ticks: Option<i64>,
     pub title: Option<String>,
     pub series_name: Option<String>,
+    /// Numéro d'épisode (`IndexNumber`) — tri du catalogue hors ligne.
+    pub index_number: Option<i64>,
+    /// Numéro de saison (`ParentIndexNumber`) — regroupement « série · saison ».
+    pub parent_index_number: Option<i64>,
 }
 
 pub fn upsert_item_meta(conn: &Connection, spec: &MetaSpec, now_ms: i64) -> Result<(), String> {
     conn.execute(
         "INSERT INTO item_meta (item_id, kind, series_id, season_id, library_id,
-                                runtime_ticks, title, series_name, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)
+                                runtime_ticks, title, series_name,
+                                index_number, parent_index_number, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?11)
          ON CONFLICT(item_id) DO UPDATE SET
            kind = excluded.kind,
            series_id = excluded.series_id,
@@ -34,10 +39,13 @@ pub fn upsert_item_meta(conn: &Connection, spec: &MetaSpec, now_ms: i64) -> Resu
            runtime_ticks = excluded.runtime_ticks,
            title = COALESCE(excluded.title, item_meta.title),
            series_name = COALESCE(excluded.series_name, item_meta.series_name),
+           index_number = COALESCE(excluded.index_number, item_meta.index_number),
+           parent_index_number = COALESCE(excluded.parent_index_number, item_meta.parent_index_number),
            updated_at = excluded.updated_at",
         params![
             spec.item_id, spec.kind, spec.series_id, spec.season_id, spec.library_id,
-            spec.runtime_ticks, spec.title, spec.series_name, now_ms
+            spec.runtime_ticks, spec.title, spec.series_name,
+            spec.index_number, spec.parent_index_number, now_ms
         ],
     )
     .map_err(|e| format!("upsert item_meta: {e}"))?;
@@ -113,6 +121,12 @@ pub fn snapshot(
                 }
             }
         }
+    }
+
+    // Numéros de saison/épisode : le DTO fraîchement récupéré fait autorité
+    // (l'enqueue les pose déjà, ceci répare un enqueue d'avant la v5).
+    if !item_json.is_empty() {
+        super::episode_numbers::apply(conn, &spec.item_id, &item_json);
     }
 
     // Tuiles trickplay (aperçu au survol) — depuis le manifeste de item.json.
@@ -203,7 +217,8 @@ pub fn snapshot(
 /// Relit le spec catalogique depuis `item_meta` (posé à l'enqueue).
 pub fn get_spec(conn: &Connection, item_id: &str) -> Result<Option<MetaSpec>, String> {
     conn.query_row(
-        "SELECT item_id, kind, series_id, season_id, library_id, runtime_ticks, title, series_name
+        "SELECT item_id, kind, series_id, season_id, library_id, runtime_ticks, title,
+                series_name, index_number, parent_index_number
          FROM item_meta WHERE item_id = ?1",
         params![item_id],
         |row| {
@@ -216,6 +231,8 @@ pub fn get_spec(conn: &Connection, item_id: &str) -> Result<Option<MetaSpec>, St
                 runtime_ticks: row.get(5)?,
                 title: row.get(6)?,
                 series_name: row.get(7)?,
+                index_number: row.get(8)?,
+                parent_index_number: row.get(9)?,
             })
         },
     )

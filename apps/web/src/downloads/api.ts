@@ -82,6 +82,11 @@ export interface DownloadEntry {
   kind: "movie" | "episode" | null;
   seriesId: string | null;
   seasonId: string | null;
+  /** Épisode : numéros de saison/épisode (regroupement et tri du catalogue). */
+  indexNumber: number | null;
+  parentIndexNumber: number | null;
+  /** Durée de l'item (vignettes d'épisode). */
+  runtimeTicks: number | null;
   autoDeleteAfterWatch: boolean;
 }
 
@@ -106,6 +111,8 @@ export interface EnqueueItemInput {
   runtimeTicks?: number;
   title?: string;
   seriesName?: string;
+  indexNumber?: number;
+  parentIndexNumber?: number;
   autoDeleteAfterWatch: boolean;
   audioStreamIndex?: number;
   burnSubtitleIndex?: number;
