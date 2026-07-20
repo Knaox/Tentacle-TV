@@ -1,4 +1,5 @@
 import { buildQuery } from "./types";
+import { imageBudget } from "../net/dataSaver";
 
 /** Callback that rewrites a same-origin proxy URL to the direct-streaming URL
  *  when direct streaming is active, otherwise returns the proxy URL unchanged. */
@@ -14,6 +15,16 @@ export interface ImageUrlOptions {
   index?: number;
 }
 
+/**
+ * Point d'accroche UNIQUE des ~60 appelants d'images : c'est ici, et nulle part
+ * ailleurs, que s'applique le budget du mode économie. Les images pèsent ~75 %
+ * du fil et sont incompressibles (`image/jpeg` n'est pas compressible au sens
+ * de mime-db, donc @fastify/compress ne les touche pas) — c'est le principal
+ * gisement d'économie de l'app.
+ *
+ * En mode normal le budget est neutre (scale 1, plafond 100 > toutes les
+ * qualités demandées) : les URLs produites sont identiques à l'existant.
+ */
 export function buildImageUrl(
   baseUrl: string,
   itemId: string,
@@ -21,10 +32,11 @@ export function buildImageUrl(
   options: ImageUrlOptions | undefined,
   resolveMediaUrl: ResolveMediaUrl,
 ): string {
+  const { scale, maxQuality } = imageBudget();
   const p: Record<string, string> = {};
-  if (options?.width) p.maxWidth = String(options.width);
-  if (options?.height) p.maxHeight = String(options.height);
-  if (options?.quality) p.quality = String(options.quality);
+  if (options?.width) p.maxWidth = String(Math.round(options.width * scale));
+  if (options?.height) p.maxHeight = String(Math.round(options.height * scale));
+  if (options?.quality) p.quality = String(Math.min(options.quality, maxQuality));
   if (options?.tag) p.tag = options.tag;
   const idx = options?.index ?? 0;
   const suffix = imageType === "Backdrop" && idx > 0 ? `/${idx}` : "";
