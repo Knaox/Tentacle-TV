@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { useJellyfinClient } from "./useJellyfinClient";
-import { beaconUrl, killActiveEncoding, safePositionTicks, sessionPost } from "./playbackTransport";
+import { killActiveEncoding, safePositionTicks, sessionPost } from "./playbackTransport";
+import { usePlaybackBeacons } from "./usePlaybackBeacons";
 import { isDataSaverActive, localReportMode, subscribeDataSaver } from "../net/dataSaver";
 
 const REPORT_INTERVAL_MS = 10_000;
@@ -180,92 +181,29 @@ export function usePlaybackReporting({
     resetInterval();    // restart 10s timer from now
   }, [reportProgress, resetInterval]);
 
-  // --- beforeunload + visibilitychange (background tab resilience) ---
-  // Chrome throttles/freezes setInterval in background tabs after ~5 min.
-  // When the tab goes hidden, switch to sendBeacon-based periodic reporting
-  // (fire-and-forget, survives throttling). Restore normal fetch interval
-  // when the tab returns to foreground.
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
-
-    const buildProgressBody = () => JSON.stringify({
-      ItemId: itemIdRef.current,
-      MediaSourceId: msIdRef.current ?? itemIdRef.current,
-      PlaySessionId: playSessionIdRef.current ?? undefined,
-      PositionTicks: safePositionTicks(positionRef.current),
-      IsPaused: pausedRef.current,
-      CanSeek: true,
-      PlayMethod: playMethodRef.current,
-      AudioStreamIndex: audioIdxRef.current,
-      SubtitleStreamIndex: subIdxRef.current ?? -1,
-    });
-
-    const sendProgressBeacon = () => {
-      if (!itemIdRef.current || !startedRef.current) return;
-      const url = beaconUrl(clientRef.current, "/Sessions/Playing/Progress");
-      const blob = new Blob([buildProgressBody()], { type: "application/json" });
-      if (typeof navigator.sendBeacon === "function") {
-        navigator.sendBeacon(url, blob);
-      }
-    };
-
-    const startBgBeaconInterval = () => {
-      if (bgIntervalRef.current) clearInterval(bgIntervalRef.current);
-      // Mode « bords » : pas de battement en arrière-plan non plus. C'était un
-      // second heartbeat, invisible dans l'onglet Network et donc facile à
-      // oublier — il aurait annulé tout le bénéfice pour une lecture en
-      // arrière-plan (cas courant : fenêtre réduite pendant un film).
-      if (edgesOnlyRef.current) return;
-      bgIntervalRef.current = setInterval(sendProgressBeacon, REPORT_INTERVAL_MS);
-    };
-
-    const onBeforeUnload = () => {
-      if (!itemIdRef.current || !startedRef.current) return;
-      clearProgressInterval();
-      startedRef.current = false;
-      killActiveEncoding(clientRef.current, playSessionIdRef.current, true);
-      const url = beaconUrl(clientRef.current, "/Sessions/Playing/Stopped");
-      const blob = new Blob([JSON.stringify({
-        ItemId: itemIdRef.current,
-        MediaSourceId: msIdRef.current ?? itemIdRef.current,
-        PlaySessionId: playSessionIdRef.current ?? undefined,
-        PositionTicks: safePositionTicks(positionRef.current),
-      })], { type: "application/json" });
-      if (typeof navigator.sendBeacon === "function") {
-        navigator.sendBeacon(url, blob);
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        if (!itemIdRef.current || !startedRef.current) return;
-        // Tab → background: kill the fetch-based interval (will be throttled/frozen)
-        // and switch to beacon-based reporting.
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        bgModeRef.current = true;
-        sendProgressBeacon();
-        startBgBeaconInterval();
-      } else {
-        // Tab → foreground: restore normal fetch-based reporting.
-        // clearProgressInterval handles both intervals + resets bgModeRef.
-        clearProgressInterval();
-        if (itemIdRef.current && startedRef.current) {
-          sendProgressBeacon(); // immediate catch-up report
-        }
-        resetIntervalRef.current();
-      }
-    };
-
-    window.addEventListener("beforeunload", onBeforeUnload);
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Résilience arrière-plan / fermeture (beacons) — extrait dans son propre
+  // fichier pour tenir la limite de 300 lignes.
+  usePlaybackBeacons({
+    reportIntervalMs: REPORT_INTERVAL_MS,
+    clearProgressInterval,
+    refs: {
+      client: clientRef,
+      itemId: itemIdRef,
+      mediaSourceId: msIdRef,
+      playSessionId: playSessionIdRef,
+      audioStreamIndex: audioIdxRef,
+      subtitleStreamIndex: subIdxRef,
+      playMethod: playMethodRef,
+      position: positionRef,
+      paused: pausedRef,
+      started: startedRef,
+      interval: intervalRef,
+      bgInterval: bgIntervalRef,
+      bgMode: bgModeRef,
+      edgesOnly: edgesOnlyRef,
+      resetInterval: resetIntervalRef,
+    },
+  });
 
   // Report stop on unmount only — refs ensure we use latest values without
   // triggering cleanup on every dependency change.
