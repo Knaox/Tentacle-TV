@@ -108,3 +108,24 @@ pub fn downloads_playback_set(
         &conn, &user_id, &item_id, position_ticks, played, queue_for_sync, now_ms_pub(),
     )
 }
+
+/// File de resynchronisation (dédupliquée : dernier état par item).
+#[tauri::command]
+pub fn downloads_reports_pending(
+    app: AppHandle,
+    user_id: String,
+) -> Result<Vec<playback::PendingReport>, String> {
+    let conn = open_db(&app)?;
+    playback::pending_reports(&conn, &user_id)
+}
+
+#[tauri::command]
+pub fn downloads_reports_mark_synced(
+    app: AppHandle,
+    user_id: String,
+    item_id: String,
+    up_to_id: i64,
+) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    playback::mark_item_synced(&conn, &user_id, &item_id, up_to_id)
+}

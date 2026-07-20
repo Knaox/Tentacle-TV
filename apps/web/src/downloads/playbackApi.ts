@@ -19,6 +19,10 @@ export interface LocalSource {
   positionTicks: number;
   played: boolean;
   autoDeleteAfterWatch: boolean;
+  /** Méta dénormalisée — lecteur présentable en démarrage 100 % hors ligne. */
+  title: string | null;
+  seriesName: string | null;
+  runtimeTicks: number | null;
 }
 
 export async function localSourceForItem(
@@ -45,5 +49,36 @@ export async function saveLocalPlaybackState(
     await invoke("downloads_playback_set", { userId, itemId, positionTicks, played, queueForSync });
   } catch {
     /* best-effort */
+  }
+}
+
+export interface PendingReport {
+  id: number;
+  itemId: string;
+  positionTicks: number;
+  played: boolean;
+  occurredAtUtc: number;
+}
+
+/** File de resynchronisation, dédupliquée (dernier état par item). */
+export async function pendingReports(userId: string): Promise<PendingReport[]> {
+  if (!isTauri()) return [];
+  try {
+    return await invoke<PendingReport[]>("downloads_reports_pending", { userId });
+  } catch {
+    return [];
+  }
+}
+
+export async function markReportSynced(
+  userId: string,
+  itemId: string,
+  upToId: number,
+): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await invoke("downloads_reports_mark_synced", { userId, itemId, upToId });
+  } catch {
+    /* best-effort : restera en file, retenté au prochain retour en ligne */
   }
 }

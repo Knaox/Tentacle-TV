@@ -27,6 +27,11 @@ pub struct LocalSource {
     pub position_ticks: i64,
     pub played: bool,
     pub auto_delete_after_watch: bool,
+    /// Méta dénormalisée (item_meta) : le lecteur reste présentable même en
+    /// démarrage 100 % hors ligne, sans DTO serveur.
+    pub title: Option<String>,
+    pub series_name: Option<String>,
+    pub runtime_ticks: Option<i64>,
 }
 
 fn list_subtitles(root: &Path, item_id: &str) -> Vec<LocalSubtitleFile> {
@@ -101,6 +106,16 @@ pub fn local_source(
         .optional()
         .map_err(|e| format!("playback state: {e}"))?;
 
+    let meta: Option<(Option<String>, Option<String>, Option<i64>)> = conn
+        .query_row(
+            "SELECT title, series_name, runtime_ticks FROM item_meta WHERE item_id = ?1",
+            params![item_id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .optional()
+        .map_err(|e| format!("item meta: {e}"))?;
+    let (title, series_name, runtime_ticks) = meta.unwrap_or((None, None, None));
+
     Ok(Some(LocalSource {
         file_id: file.id,
         variant: file.variant.clone(),
@@ -109,6 +124,9 @@ pub fn local_source(
         position_ticks: state.map(|s| s.0).unwrap_or(0),
         played: state.map(|s| s.1 != 0).unwrap_or(false),
         auto_delete_after_watch: auto_delete,
+        title,
+        series_name,
+        runtime_ticks,
     }))
 }
 
@@ -145,80 +163,63 @@ pub fn set_playback_state(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::downloads::db;
-    use crate::downloads::store::claim_or_create_file;
-
-    fn seed_complete(conn: &mut Connection, root: &Path, rel: &str, size: i64) -> i64 {
-        let file_id = claim_or_create_file(
-            conn, "u", "item1", "ms1", "original", None, rel, Some(size), false, 1_000,
-        )
-        .unwrap()
-        .file_id;
-        conn.execute("UPDATE files SET status = 'complete', bytes_done = ?1", params![size])
-            .unwrap();
-        file_id
-    }
-
-    #[test]
-    fn source_locale_valide_et_progression() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path();
-        fsops::ensure_layout(root).unwrap();
-        let rel = "media/item1/original-ms1.mkv";
-        let path = root.join(rel);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, b"1234").unwrap();
-
-        let mut conn = db::open_in_memory();
-        seed_complete(&mut conn, root, rel, 4);
-        set_playback_state(&conn, "u", "item1", 5_000, false, false, 2_000).unwrap();
-
-        let source = local_source(&conn, root, "u", "item1", 3_000).unwrap().unwrap();
-        assert!(source.absolute_path.ends_with("original-ms1.mkv"));
-        assert_eq!(source.position_ticks, 5_000);
-        assert!(!source.played);
-        // Cloisonnement : un autre compte n'a rien.
-        assert!(local_source(&conn, root, "autre", "item1", 3_000).unwrap().is_none());
-    }
-
-    #[test]
-    fn fichier_tronque_hors_app_marque_erreur() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path();
-        fsops::ensure_layout(root).unwrap();
-        let rel = "media/item1/original-ms1.mkv";
-        let path = root.join(rel);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, b"12").unwrap(); // 2 octets au lieu de 4
-
-        let mut conn = db::open_in_memory();
-        let file_id = seed_complete(&mut conn, root, rel, 4);
-        assert!(local_source(&conn, root, "u", "item1", 3_000).unwrap().is_none());
-        let (status, code): (String, Option<String>) = conn
-            .query_row("SELECT status, error_code FROM files WHERE id = ?1", params![file_id],
-                |r| Ok((r.get(0)?, r.get(1)?)))
-            .unwrap();
-        assert_eq!(status, "error");
-        assert_eq!(code.as_deref(), Some("integrity"));
-    }
-
-    #[test]
-    fn hors_ligne_alimente_la_file_de_resynchro() {
-        let conn = db::open_in_memory();
-        set_playback_state(&conn, "u", "item1", 1_000, false, true, 2_000).unwrap();
-        set_playback_state(&conn, "u", "item1", 9_000, true, true, 3_000).unwrap();
-        let pending: i64 = conn
-            .query_row("SELECT COUNT(*) FROM report_queue WHERE synced = 0", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(pending, 2);
-        // `played` ne redescend jamais via l'upsert local.
-        set_playback_state(&conn, "u", "item1", 100, false, false, 4_000).unwrap();
-        let played: i64 = conn
-            .query_row("SELECT played FROM playback_state WHERE item_id = 'item1'", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(played, 1);
-    }
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingReport {
+    pub id: i64,
+    pub item_id: String,
+    pub position_ticks: i64,
+    pub played: bool,
+    pub occurred_at_utc: i64,
 }
+
+/// Rapports à resynchroniser — DÉDUPLIQUÉS : un seul (le plus récent) par
+/// item. Les entrées plus anciennes du même item seront marquées synced en
+/// même temps que lui (`mark_item_synced`).
+pub fn pending_reports(conn: &Connection, user_id: &str) -> Result<Vec<PendingReport>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, item_id, position_ticks, played, occurred_at_utc
+             FROM report_queue AS rq
+             WHERE synced = 0 AND jellyfin_user_id = ?1
+               AND id = (SELECT MAX(id) FROM report_queue
+                         WHERE jellyfin_user_id = rq.jellyfin_user_id
+                           AND item_id = rq.item_id AND synced = 0)
+             ORDER BY id ASC",
+        )
+        .map_err(|e| format!("prepare pending: {e}"))?;
+    let rows = stmt
+        .query_map(params![user_id], |row| {
+            Ok(PendingReport {
+                id: row.get(0)?,
+                item_id: row.get(1)?,
+                position_ticks: row.get(2)?,
+                played: row.get::<_, i64>(3)? != 0,
+                occurred_at_utc: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("query pending: {e}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("collect pending: {e}"))?;
+    Ok(rows)
+}
+
+/// Marque synchronisés TOUS les rapports d'un item jusqu'à `up_to_id` inclus.
+pub fn mark_item_synced(
+    conn: &Connection,
+    user_id: &str,
+    item_id: &str,
+    up_to_id: i64,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE report_queue SET synced = 1
+         WHERE jellyfin_user_id = ?1 AND item_id = ?2 AND id <= ?3",
+        params![user_id, item_id, up_to_id],
+    )
+    .map_err(|e| format!("mark synced: {e}"))?;
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "playback_tests.rs"]
+mod tests;
