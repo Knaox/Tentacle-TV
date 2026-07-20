@@ -1,13 +1,15 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useItemAncestors, useJellyfinClient, useResolveMediaTracks, useEpisodeNavigation, useIntroSkipper, useAutoplayConfig } from "@tentacle-tv/api-client";
+import { useMediaItem, useItemAncestors, useJellyfinClient, useEpisodeNavigation, useIntroSkipper, useAutoplayConfig } from "@tentacle-tv/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
 import { useDesktopSource, mapSubtitlesToLocal } from "./useDesktopSource";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId } from "./watchSessionMedia";
+import { useLocalPosterUrl } from "./useLocalPosterUrl";
+import { useServerTrackPrefs } from "./useServerTrackPrefs";
 import { wtLog } from "../watchTogether/wtLog";
 
 const DBG = "[Tentacle:Player]";
@@ -141,53 +143,13 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
 
   const desktopIsDirectStream = isDesktop && !desktopIsDirectPlay && needsAudioTranscode && quality == null;
 
-  // Preference resolution
-  const resolveTracks = useResolveMediaTracks();
-  useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item) return;
-    if ((item.Type === "Episode" || item.Type === "Season") && ancestors === undefined) return;
-    const parentId = item.ParentId;
-    const seriesId = item.SeriesId;
-    const ancestorIds = (ancestors ?? []).map((a) => a.Id);
-    const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
-    if (allCandidates.length === 0) { setPrefsReady(true); return; }
-    prefsApplied.current = true;
-    const aTracks = streams.filter((s) => s.Type === "Audio")
-      .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
-    const sTracks = streams.filter((s) => s.Type === "Subtitle")
-      .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
-    resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, audioTracks: aTracks, subtitleTracks: sTracks }, {
-      onSuccess: (result) => {
-        if (result.audioIndex != null && !audioOverrideRef.current) {
-          if (isDesktop) {
-            // Desktop: check if new audio changes direct play status
-            const newStream = streams.find((s) => s.Type === "Audio" && s.Index === result.audioIndex);
-            const codec = newStream?.Codec?.toLowerCase() ?? "";
-            const channels = newStream?.Channels ?? 2;
-            const needsXcode = checkAudioTranscode ? checkAudioTranscode(codec, channels) : false;
-            const willBeDP = quality == null && !needsXcode
-              && (result.audioIndex === defaultAudio || supportsNativeAudioTracks);
-            if (!willBeDP) {
-              const resumeTicks = item?.UserData?.PlaybackPositionTicks;
-              if (resumeTicks && resumeTicks > 0) { setStartTicks(resumeTicks); resumeApplied.current = true; }
-            }
-          }
-          // Web: server determines direct play via PlaybackInfo — no client check needed
-          setAudioIndex(result.audioIndex);
-        }
-        if (result.subtitleIndex != null && !subtitleOverrideRef.current) {
-          const idx = result.subtitleIndex === -1 ? null : result.subtitleIndex;
-          setSubtitleIndex(idx);
-          if (idx != null) {
-            const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === idx);
-            if (sub && BURN_IN_SUBTITLE_CODECS.test(sub.Codec ?? "")) setBurnInSubtitleIndex(idx);
-          }
-        }
-        setPrefsReady(true);
-      },
-      onError: () => setPrefsReady(true),
-    });
-  }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Résolution des préférences EN LIGNE (backend) — cf. useServerTrackPrefs.
+  useServerTrackPrefs({
+    item, streams, ancestors, isDesktop, quality, defaultAudio,
+    supportsNativeAudioTracks, checkAudioTranscode,
+    prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
+    setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
+  });
 
   useEffect(() => {
     if (prefsReady) return;
@@ -263,7 +225,11 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     () => ticksToSeconds(item?.RunTimeTicks ?? localSource?.runtimeTicks ?? undefined),
     [item, localSource]);
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
-  const posterUrl = useMemo(() => buildPosterUrl(client, item), [client, item]);
+  // Affiche : le fichier local prime en lecture locale (immédiat, et seule
+  // source hors ligne où l'URL Jellyfin est injoignable ou absente).
+  const localPosterUrl = useLocalPosterUrl(itemId, isLocalPlayback);
+  const remotePosterUrl = useMemo(() => buildPosterUrl(client, item), [client, item]);
+  const posterUrl = localPosterUrl ?? remotePosterUrl;
   const startPositionSeconds = useMemo(() => {
     // Reprise = max(position serveur, position locale) — une lecture faite
     // hors ligne (non encore resynchronisée) doit gagner sur le serveur.
