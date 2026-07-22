@@ -43,6 +43,9 @@ pub struct EnqueueItem {
     pub index_number: Option<i64>,
     pub parent_index_number: Option<i64>,
     pub auto_delete_after_watch: bool,
+    /// Délai d'auto-suppression après visionnage (minutes, 0 = immédiat).
+    #[serde(default)]
+    pub auto_delete_delay_minutes: i64,
     /// Mode Allégé : piste audio à embarquer et sous-titre image à incruster.
     pub audio_stream_index: Option<i64>,
     pub burn_subtitle_index: Option<i64>,
@@ -169,6 +172,13 @@ pub fn downloads_enqueue(
             item.burn_subtitle_index,
             subtitles_json.as_deref(),
         )?;
+        // Applique bascule + délai même sur un claim préexistant (re-téléchargement :
+        // l'intention exprimée dans le dialogue gagne).
+        if item.auto_delete_after_watch {
+            listing::set_auto_delete(
+                &conn, &user_id, outcome.file_id, true, item.auto_delete_delay_minutes, now,
+            )?;
+        }
         file_ids.push(outcome.file_id);
     }
     drop(conn);
@@ -261,9 +271,12 @@ pub fn downloads_set_auto_delete(
     user_id: String,
     file_id: i64,
     enabled: bool,
+    delay_minutes: i64,
 ) -> Result<(), String> {
     let conn = open_db(&app)?;
-    listing::set_auto_delete(&conn, &user_id, file_id, enabled)?;
+    listing::set_auto_delete(
+        &conn, &user_id, file_id, enabled, delay_minutes, super::engine::now_ms(),
+    )?;
     drop(conn);
     engine.notify_changed();
     Ok(())
