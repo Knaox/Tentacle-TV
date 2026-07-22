@@ -87,8 +87,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // La bulle de chat de groupe suit le même fondu que les contrôles.
   useReportPlayerOverlay(controlsVisible);
 
-  // Visuels de l'épisode suivant : Jellyfin en ligne, disque hors ligne.
-  const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online);
+  // Visuels de l'épisode suivant : disque en lecture locale ou hors ligne
+  // (zéro réseau), Jellyfin en streaming.
+  const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online || isLocalPlayback);
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);
@@ -157,11 +158,12 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
-    // Hors ligne : pas d'appels réseau de playstate (persistance locale via
-    // useLocalPlaybackReporting) ; en ligne, reporting normal — y compris en
-    // lecture locale (la source est le disque, la progression va au serveur).
-    if (online) updatePosition(seconds, paused);
-  }, [updatePosition, positionRef, online]);
+    // Lecture locale ou hors ligne : AUCUN appel réseau de playstate pendant
+    // la lecture (zéro bande passante) — la progression vit en SQLite via
+    // useLocalPlaybackReporting et la file est drainée vers Jellyfin en fin
+    // de lecture. En streaming en ligne, reporting live normal.
+    if (online && !isLocalPlayback) updatePosition(seconds, paused);
+  }, [updatePosition, positionRef, online, isLocalPlayback]);
 
   // Titre : DTO serveur, sinon méta locale (démarrage 100 % hors ligne).
   const title = item
@@ -208,7 +210,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         isLocalPlayback={isLocalPlayback} offline={!online}
         localLibraryId={localSource?.libraryId ?? null}
         localSubtitleFiles={localSource?.subtitleFiles}
-        onProgress={handleProgress} onStarted={() => { if (online) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
+        onProgress={handleProgress} onStarted={() => { if (online && !isLocalPlayback) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
         nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}

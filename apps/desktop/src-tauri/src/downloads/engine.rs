@@ -105,6 +105,9 @@ impl Engine {
         self.emit_changed();
         self.pump();
         super::heal::spawn(app.clone(), creds);
+        // Purge d'auto-suppression : première itération immédiate = rattrapage
+        // des échéances passées app fermée, puis tick 60 s (Once interne).
+        super::purge::spawn_periodic(app.clone());
         Ok(())
     }
 

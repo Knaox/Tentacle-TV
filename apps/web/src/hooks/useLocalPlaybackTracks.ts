@@ -1,15 +1,15 @@
 /**
  * Pistes du lecteur en LECTURE LOCALE.
  *
- * En ligne, les menus audio/sous-titres et la résolution des préférences
- * viennent du DTO Jellyfin (résolu côté serveur). Hors ligne (item absent), ce
- * DTO n'existe pas : les menus sont peuplés depuis la track-list mpv du fichier
- * ET les side-cars téléchargés, et les préférences sont résolues localement
- * avec `resolveMediaTracks` — LE MÊME algorithme que le backend (alias de
- * langues, variantes VFF/VFQ, heuristique des pistes forcées, modes
- * signs/always). Le résultat est remonté par les callbacks existants
- * (onAudioChange/onSubtitleChange), donc le pipeline d'application mpv
- * (useMpvTrackSync) reste unique et inchangé.
+ * En streaming, les menus audio/sous-titres et la résolution des préférences
+ * viennent du DTO Jellyfin (résolu côté serveur). En LECTURE LOCALE — en ligne
+ * comme hors ligne, zéro réseau — les menus viennent du DTO snapshot quand il
+ * existe, sinon de la track-list mpv du fichier ET des side-cars téléchargés,
+ * et les préférences sont résolues localement avec `resolveMediaTracks` — LE
+ * MÊME algorithme que le backend (alias de langues, variantes VFF/VFQ,
+ * heuristique des pistes forcées, modes signs/always). Le résultat est remonté
+ * par les callbacks existants (onAudioChange/onSubtitleChange), donc le
+ * pipeline d'application mpv (useMpvTrackSync) reste unique et inchangé.
  */
 
 import { useEffect, useMemo, useRef } from "react";
@@ -29,7 +29,6 @@ import {
 
 interface Options {
   isLocalPlayback: boolean;
-  offline: boolean;
   fileLoaded: boolean;
   ready: boolean;
   /** DTO Jellyfin (présent en ligne, vide hors ligne). */
@@ -55,7 +54,7 @@ function baseLang(lang: string | undefined): string | undefined {
 }
 
 export function useLocalPlaybackTracks({
-  isLocalPlayback, offline, fileLoaded, ready,
+  isLocalPlayback, fileLoaded, ready,
   audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
   localLibraryId, onAudioChange, onSubtitleChange, sourceKey,
 }: Options): { displayAudio: AudioTrack[]; displaySubs: SubtitleTrack[] } {
@@ -83,12 +82,13 @@ export function useLocalPlaybackTracks({
     [subtitleTracks, isLocalPlayback, mpvSubs, localSubtitleFiles, labelCtx],
   );
 
-  // Application des préférences hors ligne : une fois, quand les pistes du
-  // fichier sont connues. En ligne, la résolution serveur (useWatchSession)
-  // s'en charge déjà — on ne double pas.
+  // Application des préférences en lecture locale (en ligne comme hors
+  // ligne) : une fois, quand les pistes du fichier sont connues. En streaming,
+  // la résolution serveur (useServerTrackPrefs) s'en charge — on ne double pas
+  // (elle est neutralisée dès que isLocalPlayback).
   const appliedForSource = useRef("");
   useEffect(() => {
-    if (!isLocalPlayback || !offline || !fileLoaded || !ready || !userId) return;
+    if (!isLocalPlayback || !fileLoaded || !ready || !userId) return;
     if (displayAudio.length === 0 && displaySubs.length === 0) return;
     if (appliedForSource.current === sourceKey) return;
     const cached = prefForLibrary(userId, localLibraryId);
@@ -123,7 +123,7 @@ export function useLocalPlaybackTracks({
 
     if (audioIndex != null) onAudioChange(audioIndex);
     onSubtitleChange(subtitleIndex);
-  }, [isLocalPlayback, offline, fileLoaded, ready, userId, displayAudio, displaySubs,
+  }, [isLocalPlayback, fileLoaded, ready, userId, displayAudio, displaySubs,
       mpvAudio, localLibraryId, sourceKey, onAudioChange, onSubtitleChange]);
 
   return { displayAudio, displaySubs };

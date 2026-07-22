@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SkipBadge } from "./SkipBadge";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
@@ -13,7 +13,7 @@ import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
-import { isChatActive } from "../watchTogether/chat/chatUiStore";
+import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
@@ -91,8 +91,7 @@ export function DesktopPlayer({
   const { t } = useTranslation("player");
   const { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [showControls, setShowControls] = useState(true);
+  const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [showSettings, setShowSettings] = useState(false);
@@ -120,7 +119,7 @@ export function DesktopPlayer({
   // préférences de langue hors ligne sont remontées via onAudioChange/
   // onSubtitleChange — même pipeline d'application que le online. ──
   const { displayAudio, displaySubs } = useLocalPlaybackTracks({
-    isLocalPlayback, offline, fileLoaded, ready,
+    isLocalPlayback, fileLoaded, ready,
     audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
     localLibraryId, onAudioChange, onSubtitleChange, sourceKey: src,
   });
@@ -164,20 +163,6 @@ export function DesktopPlayer({
     setPause, seek, setSpeed, cancelAutoPlay,
     onPlayStateChange, onBufferingChange,
   });
-
-  const scheduleHide = useCallback(() => {
-    clearTimeout(hideTimer.current);
-    setShowControls(true);
-    // Watch Together : jamais de masquage pendant une interaction avec le chat
-    // (portail hors conteneur — ses événements n'atteignent pas ce onMouseMove).
-    // Re-vérifie chaque seconde ; à la fin de l'interaction, contrôles ET chat
-    // s'estompent ensemble.
-    const attemptHide = () => {
-      if (isChatActive()) { hideTimer.current = setTimeout(attemptHide, 1000); return; }
-      if (!state.paused) setShowControls(false);
-    };
-    hideTimer.current = setTimeout(attemptHide, 3000);
-  }, [state.paused]);
 
   // Contrôles média système Windows (SMTC) : touches média + overlay + Stream Deck.
   useSmtc({
@@ -276,6 +261,7 @@ export function DesktopPlayer({
       <DesktopPlayerControls
         visible={showControls} state={state} title={title} subtitle={subtitle}
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item}
+        useLocalEpisodes={offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
         curAudio={curAudio} curSub={curSub}
         currentQuality={currentQuality} sourceQuality={sourceQuality}

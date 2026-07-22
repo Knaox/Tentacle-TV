@@ -5,12 +5,15 @@
  * stream classique est construite (chaîne existante inchangée).
  * On attend la résolution locale avant de retomber sur le stream : évite un
  * chargement réseau furtif suivi d'un rechargement local.
+ *
+ * La résolution locale elle-même (query `local-source`) vit dans
+ * useLocalSource : useWatchSession en a besoin AVANT ce hook pour gater
+ * toutes ses requêtes serveur (zéro réseau en lecture locale).
  */
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useUserId, type JellyfinClient } from "@tentacle-tv/api-client";
-import { localSourceForItem, type LocalSource } from "../downloads/playbackApi";
+import type { JellyfinClient } from "@tentacle-tv/api-client";
+import type { LocalSource } from "../downloads/playbackApi";
 import type { SubtitleTrack } from "../components/VideoPlayer";
 
 interface DesktopSourceParams {
@@ -27,29 +30,19 @@ interface DesktopSourceParams {
   desktopPlaySessionId: string;
   burnInSubtitleIndex: number | undefined;
   useProgressiveRemux: boolean;
+  /** Résolution locale (useLocalSource). */
+  localSource: LocalSource | null;
+  waitingLocal: boolean;
 }
 
 export function useDesktopSource(params: DesktopSourceParams): {
   desktopStreamUrl: string | null;
-  isLocalPlayback: boolean;
-  localSource: LocalSource | null;
 } {
-  const userId = useUserId();
   const {
     isDesktop, itemId, prefsReady, client, mediaSourceId, urlAudioIndex, quality,
     qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId,
-    burnInSubtitleIndex, useProgressiveRemux,
+    burnInSubtitleIndex, useProgressiveRemux, localSource, waitingLocal,
   } = params;
-
-  const localQuery = useQuery({
-    queryKey: ["local-source", userId, itemId],
-    queryFn: () => localSourceForItem(userId as string, itemId as string),
-    enabled: isDesktop && !!userId && !!itemId,
-    staleTime: 0,
-    gcTime: 5_000,
-  });
-  const localSource = localQuery.data ?? null;
-  const waitingLocal = isDesktop && !!userId && !!itemId && !localQuery.isFetched;
 
   const remoteUrl = useMemo(() => {
     if (!isDesktop || !itemId || !prefsReady) return null;
@@ -62,12 +55,10 @@ export function useDesktopSource(params: DesktopSourceParams): {
     });
   }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId, prefsReady, burnInSubtitleIndex, isDesktop, useProgressiveRemux]);
 
-  if (!isDesktop) return { desktopStreamUrl: null, isLocalPlayback: false, localSource: null };
-  if (waitingLocal) return { desktopStreamUrl: null, isLocalPlayback: false, localSource: null };
-  if (localSource) {
-    return { desktopStreamUrl: localSource.absolutePath, isLocalPlayback: true, localSource };
-  }
-  return { desktopStreamUrl: remoteUrl, isLocalPlayback: false, localSource: null };
+  if (!isDesktop) return { desktopStreamUrl: null };
+  if (waitingLocal) return { desktopStreamUrl: null };
+  if (localSource) return { desktopStreamUrl: localSource.absolutePath };
+  return { desktopStreamUrl: remoteUrl };
 }
 
 /**

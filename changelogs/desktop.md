@@ -14,6 +14,24 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.16.2]
+### FR
+- Chat de groupe (Watch Together) : les contrôles du lecteur ne restent plus bloqués à l'écran après avoir écrit un message ou cliqué dans le chat — ils s'estompent dès que vous ne touchez plus à rien et reviennent en tapant ou en bougeant la souris
+- Lecture d'un fichier téléchargé : zéro donnée réseau consommée pendant la lecture, même en ligne — fiche, chapitres, « passer l'intro » / « passer le générique », préférences de langues et épisode suivant fonctionnent entièrement depuis le disque (le sélecteur d'épisodes, ouvert volontairement, affiche toute la série quand vous êtes en ligne)
+- « Passer l'intro » et « passer le générique » fonctionnent désormais hors ligne sur les contenus téléchargés (enregistrés au téléchargement, récupérés automatiquement pour les téléchargements existants)
+- Sélecteur d'épisodes du lecteur disponible hors ligne : il liste les épisodes téléchargés de la série, groupés par saison
+- Préférences de langues et langue de l'interface entièrement consultables et modifiables hors ligne : enregistrées localement puis synchronisées automatiquement au retour en ligne, sans écrasement
+- Suppression après visionnage : choisissez un délai (immédiatement, 1 h, 6 h, 12 h ou 24 h) ; le téléchargement affiche quand il sera supprimé, et la suppression a lieu même si l'application était fermée à l'échéance
+- La progression d'un fichier lu localement est envoyée à Jellyfin en fin de lecture (reprise à jour sur vos autres appareils)
+### EN
+- Group chat (Watch Together): player controls no longer stay stuck on screen after typing a message or clicking in the chat — they fade as soon as you stop interacting and come back when you type or move the mouse
+- Playing a downloaded file: zero network data used during playback, even while online — details, chapters, "skip intro" / "skip credits", language preferences and next episode all work entirely from disk (the episode picker, opened deliberately, shows the full series while you are online)
+- "Skip intro" and "skip credits" now work offline on downloaded content (saved at download time, fetched automatically for existing downloads)
+- In-player episode picker available offline: it lists the downloaded episodes of the series, grouped by season
+- Language preferences and interface language fully viewable and editable offline: saved locally, then synced automatically once back online, with no overwrite
+- Delete after watching: pick a delay (immediately, 1 h, 6 h, 12 h or 24 h); the download shows when it will be removed, and deletion happens even if the app was closed when the time came
+- Progress of a locally played file is sent to Jellyfin at the end of playback (up-to-date resume on your other devices)
+
 ## [1.16.1]
 ### FR
 - Coupure de connexion détectée en quelques secondes : l'application réagit immédiatement au lieu d'attendre

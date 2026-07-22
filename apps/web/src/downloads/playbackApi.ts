@@ -19,6 +19,9 @@ export interface LocalSource {
   positionTicks: number;
   played: boolean;
   autoDeleteAfterWatch: boolean;
+  /** Délai (minutes, 0 = immédiat) + échéance (epoch secondes) posée au « vu ». */
+  autoDeleteDelayMinutes: number;
+  deleteScheduledAt: number | null;
   /** Méta dénormalisée — lecteur présentable en démarrage 100 % hors ligne. */
   title: string | null;
   seriesName: string | null;

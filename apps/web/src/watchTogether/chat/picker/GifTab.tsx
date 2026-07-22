@@ -44,12 +44,7 @@ const GifCell = memo(function GifCell({
   );
 });
 
-export const GifTab = memo(function GifTab({
-  chat, onInputFocusChange,
-}: {
-  chat: WtChatApi;
-  onInputFocusChange?: (focused: boolean) => void;
-}) {
+export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
   const { t } = useTranslation("watchTogether");
   const [query, setQuery] = useState("");
   const { data, isLoading } = useGifSearch(query);
@@ -84,8 +79,6 @@ export const GifTab = memo(function GifTab({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.stopPropagation()}
           onKeyUp={(e) => e.stopPropagation()}
-          onFocus={() => onInputFocusChange?.(true)}
-          onBlur={() => onInputFocusChange?.(false)}
           maxLength={100}
           placeholder={t("gifSearchPlaceholder")}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"

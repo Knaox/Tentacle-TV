@@ -153,6 +153,21 @@ ALTER TABLE item_meta ADD COLUMN index_number INTEGER;
 ALTER TABLE item_meta ADD COLUMN parent_index_number INTEGER;
 ";
 
+/// v6 — version du contenu du snapshot méta : `heal` re-snapshotte les
+/// téléchargements antérieurs (DTO enrichi Chapters/Overview + segments
+/// « passer l'intro » persistés pour la lecture locale zéro réseau).
+const SCHEMA_V6: &str = "
+ALTER TABLE item_meta ADD COLUMN meta_version INTEGER NOT NULL DEFAULT 0;
+";
+
+/// v7 — auto-suppression DIFFÉRÉE des vus : délai par claim (minutes, 0 =
+/// immédiat) + échéance absolue (epoch SECONDES) posée au passage « vu » —
+/// purgée même si l'app était fermée à l'échéance (rattrapage au démarrage).
+const SCHEMA_V7: &str = "
+ALTER TABLE claims ADD COLUMN auto_delete_delay_minutes INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE claims ADD COLUMN delete_scheduled_at INTEGER;
+";
+
 fn migrate(conn: &Connection) -> Result<(), String> {
     let version: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
@@ -171,6 +186,12 @@ fn migrate(conn: &Connection) -> Result<(), String> {
     }
     if version < 5 {
         apply(conn, SCHEMA_V5, 5)?;
+    }
+    if version < 6 {
+        apply(conn, SCHEMA_V6, 6)?;
+    }
+    if version < 7 {
+        apply(conn, SCHEMA_V7, 7)?;
     }
     Ok(())
 }
