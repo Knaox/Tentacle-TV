@@ -74,7 +74,7 @@ export function DesktopPlayer({
   audioTracks = [], subtitleTracks = [],
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
-  isLocalPlayback = false, localLibraryId = null,
+  isLocalPlayback = false, offline = false, localLibraryId = null,
   localSubtitleFiles = EMPTY_SUBTITLE_FILES,
   onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
@@ -261,6 +261,7 @@ export function DesktopPlayer({
       <DesktopPlayerControls
         visible={showControls} state={state} title={title} subtitle={subtitle}
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item}
+        useLocalEpisodes={isLocalPlayback || offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
         curAudio={curAudio} curSub={curSub}
         currentQuality={currentQuality} sourceQuality={sourceQuality}

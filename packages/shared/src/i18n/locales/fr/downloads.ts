@@ -102,6 +102,7 @@ export default {
 
   seasonLabel: "Saison {{num}}",
   seasonUnknown: "Épisodes",
+  episodesDownloadedHint: "Téléchargés",
   episodesCount_one: "{{count}} épisode",
   episodesCount_other: "{{count}} épisodes",
   episodePlay: "Lire l'épisode",
