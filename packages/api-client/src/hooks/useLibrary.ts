@@ -3,7 +3,7 @@ import type { LibraryView, MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 
-export function useLibraries() {
+export function useLibraries(options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
   const userId = useUserId();
 
@@ -50,7 +50,7 @@ export function useLibraries() {
 
       return enriched;
     },
-    enabled: !!userId,
+    enabled: !!userId && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -119,7 +119,7 @@ export function useEpisodes(seriesId: string | undefined, seasonId: string | und
   });
 }
 
-export function useMediaItem(itemId: string | undefined) {
+export function useMediaItem(itemId: string | undefined, options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
   const userId = useUserId();
 
@@ -129,7 +129,7 @@ export function useMediaItem(itemId: string | undefined) {
       client.fetch<MediaItem>(
         `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status&EnableUserData=true`
       ),
-    enabled: !!userId && !!itemId,
+    enabled: !!userId && !!itemId && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -154,7 +154,7 @@ export function useSearchItems(query: string) {
 }
 
 /** Fetch all ancestors of an item — used to find which library it belongs to. */
-export function useItemAncestors(itemId: string | undefined) {
+export function useItemAncestors(itemId: string | undefined, options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
   const userId = useUserId();
 
@@ -164,7 +164,7 @@ export function useItemAncestors(itemId: string | undefined) {
       client.fetch<Array<{ Id: string; Name: string; Type: string }>>(
         `/Items/${itemId}/Ancestors?userId=${userId}`
       ),
-    enabled: !!userId && !!itemId,
+    enabled: !!userId && !!itemId && (options?.enabled ?? true),
     staleTime: 30 * 60 * 1000,
   });
 }

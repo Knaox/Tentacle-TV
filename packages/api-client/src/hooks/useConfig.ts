@@ -53,7 +53,8 @@ const defaultAutoplayConfig: AutoplayConfig = { enabled: true, maxResumePct: 90 
  * (`active=true` → refetch 30 s ; le backend cache MaxResumePct 30 s → une
  * mise à jour dans Jellyfin s'applique en ≤ ~60 s, même en cours de lecture).
  */
-export function useAutoplayConfig(active: boolean) {
+export function useAutoplayConfig(active: boolean, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   return useQuery({
     queryKey: ["autoplay-config"],
     queryFn: async (): Promise<AutoplayConfig> => {
@@ -61,8 +62,9 @@ export function useAutoplayConfig(active: boolean) {
       if (!res.ok) return defaultAutoplayConfig;
       return res.json();
     },
+    enabled,
     staleTime: 15_000,
-    refetchInterval: active ? 30_000 : false,
+    refetchInterval: active && enabled ? 30_000 : false,
     retry: false,
   });
 }

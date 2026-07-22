@@ -18,8 +18,8 @@ export { usePlaybackReporting } from "./hooks/usePlayback";
 export type { PlaybackReportingOptions } from "./hooks/usePlayback";
 export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
-export { useIntroSkipper } from "./hooks/useIntroSkipper";
-export type { SkipSegments } from "./hooks/useIntroSkipper";
+export { useIntroSkipper, normalizeSkipSegments } from "./hooks/useIntroSkipper";
+export type { SkipSegments, RawSkipSources, MediaSegmentsResponse, PluginSegmentDict, PluginTimestamps } from "./hooks/useIntroSkipper";
 // Library language/subtitle preferences
 export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";

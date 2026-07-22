@@ -51,14 +51,14 @@ export interface TrackResolution {
 
 // ---------- Hooks ----------
 
-export function useLibraryPreferences() {
+export function useLibraryPreferences(options?: { enabled?: boolean }) {
   const hasToken = !!_tokenOverride
     || (typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user")));
 
   return useQuery({
     queryKey: ["library-preferences"],
     queryFn: () => prefFetch<LibraryPreference[]>("/"),
-    enabled: hasToken,
+    enabled: hasToken && (options?.enabled ?? true),
     staleTime: 5 * 60_000,
   });
 }
