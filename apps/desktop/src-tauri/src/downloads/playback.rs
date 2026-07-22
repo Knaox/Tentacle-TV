@@ -27,6 +27,10 @@ pub struct LocalSource {
     pub position_ticks: i64,
     pub played: bool,
     pub auto_delete_after_watch: bool,
+    /// Délai après visionnage (minutes, 0 = immédiat) + échéance posée
+    /// (epoch secondes) — visuel « Se supprime dans X » côté UI.
+    pub auto_delete_delay_minutes: i64,
+    pub delete_scheduled_at: Option<i64>,
     /// Méta dénormalisée (item_meta) : le lecteur reste présentable même en
     /// démarrage 100 % hors ligne, sans DTO serveur.
     pub title: Option<String>,
@@ -90,17 +94,17 @@ pub fn local_source(
         }
     }
 
-    let auto_delete: bool = conn
+    let claim: Option<(i64, i64, Option<i64>)> = conn
         .query_row(
-            "SELECT auto_delete_after_watch FROM claims
-             WHERE jellyfin_user_id = ?1 AND file_id = ?2",
+            "SELECT auto_delete_after_watch, auto_delete_delay_minutes, delete_scheduled_at
+             FROM claims WHERE jellyfin_user_id = ?1 AND file_id = ?2",
             params![user_id, file.id],
-            |row| row.get::<_, i64>(0),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
         .optional()
-        .map_err(|e| format!("claim flag: {e}"))?
-        .map(|v| v != 0)
-        .unwrap_or(false);
+        .map_err(|e| format!("claim flag: {e}"))?;
+    let (auto_delete, auto_delete_delay_minutes, delete_scheduled_at) =
+        claim.map(|(a, d, s)| (a != 0, d, s)).unwrap_or((false, 0, None));
 
     let state: Option<(i64, i64)> = conn
         .query_row(
@@ -140,6 +144,8 @@ pub fn local_source(
         position_ticks: state.map(|s| s.0).unwrap_or(0),
         played: state.map(|s| s.1 != 0).unwrap_or(false),
         auto_delete_after_watch: auto_delete,
+        auto_delete_delay_minutes,
+        delete_scheduled_at,
         title,
         series_name,
         runtime_ticks,

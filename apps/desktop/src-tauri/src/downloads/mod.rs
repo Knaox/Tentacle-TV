@@ -26,6 +26,7 @@ pub mod listing;
 pub mod localserver;
 pub mod meta;
 pub mod playback;
+pub mod purge;
 pub mod queue;
 pub mod segments_snapshot;
 pub mod session;
