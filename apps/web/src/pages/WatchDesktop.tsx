@@ -87,8 +87,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // La bulle de chat de groupe suit le même fondu que les contrôles.
   useReportPlayerOverlay(controlsVisible);
 
-  // Visuels de l'épisode suivant : Jellyfin en ligne, disque hors ligne.
-  const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online);
+  // Visuels de l'épisode suivant : disque en lecture locale ou hors ligne
+  // (zéro réseau), Jellyfin en streaming.
+  const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online || isLocalPlayback);
 
   const runStopInvalidation = useWatchStopInvalidation();
   const itemRef = useRef(item);
