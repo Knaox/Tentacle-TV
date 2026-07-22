@@ -88,6 +88,10 @@ export interface DownloadEntry {
   /** Durée de l'item (vignettes d'épisode). */
   runtimeTicks: number | null;
   autoDeleteAfterWatch: boolean;
+  /** Délai après visionnage avant suppression (minutes, 0 = immédiat). */
+  autoDeleteDelayMinutes: number;
+  /** Échéance de suppression (epoch secondes) — posée quand l'item est vu. */
+  deleteScheduledAt: number | null;
 }
 
 export interface SubtitleSideCarInput {
@@ -114,6 +118,8 @@ export interface EnqueueItemInput {
   indexNumber?: number;
   parentIndexNumber?: number;
   autoDeleteAfterWatch: boolean;
+  /** Délai d'auto-suppression après visionnage (minutes, 0 = immédiat). */
+  autoDeleteDelayMinutes?: number;
   audioStreamIndex?: number;
   burnSubtitleIndex?: number;
   subtitles?: SubtitleSideCarInput[];
@@ -210,11 +216,24 @@ export async function setAutoDeleteAfterWatch(
   userId: string,
   fileId: number,
   enabled: boolean,
+  delayMinutes: number,
 ): Promise<void> {
   if (!isTauri()) return;
   try {
-    await invoke("downloads_set_auto_delete", { userId, fileId, enabled });
+    await invoke("downloads_set_auto_delete", { userId, fileId, enabled, delayMinutes });
   } catch { /* no-op */ }
+}
+
+/** Purge des échéances d'auto-suppression passées ; `itemId` = item qui vient
+ *  de se terminer (exempté de la garde « lecture active » — couvre le délai
+ *  0 « immédiatement » au démontage du lecteur). */
+export async function purgeDueDownloads(itemId?: string): Promise<number> {
+  if (!isTauri()) return 0;
+  try {
+    return await invoke<number>("downloads_purge_due", { itemId: itemId ?? null });
+  } catch {
+    return 0;
+  }
 }
 
 export interface DownloadProgressEvent {

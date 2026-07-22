@@ -11,9 +11,9 @@ import {
   cancelDownload,
   pauseDownload,
   resumeDownload,
-  setAutoDeleteAfterWatch,
   type DownloadEntry,
 } from "./api";
+import { AutoDeleteControl } from "./AutoDeleteControl";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { formatBytes } from "./presets";
 import { useFileProgress } from "./progressStore";
@@ -105,18 +105,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProp
           <SmallAction label={t("cancelTransfer")} onClick={() => void cancelDownload(entry.id)} glyph="stop" />
         ) : null}
         {entry.status === "complete" && (
-          <label
-            className="flex cursor-pointer items-center gap-1.5 rounded-md bg-fill-subtle px-2 py-1.5 text-[10px] font-medium text-content-tertiary transition-colors hover:bg-fill-soft"
-            title={t("autoDeleteAfterWatch")}
-          >
-            <input
-              type="checkbox"
-              checked={entry.autoDeleteAfterWatch}
-              onChange={(e) => void setAutoDeleteAfterWatch(userId, entry.id, e.target.checked)}
-              className="h-3 w-3 accent-[var(--brand)]"
-            />
-            {t("autoDeleteShort")}
-          </label>
+          <AutoDeleteControl entry={entry} userId={userId} />
         )}
         <SmallAction label={t("delete")} onClick={() => onDelete(entry)} glyph="trash" danger />
       </div>

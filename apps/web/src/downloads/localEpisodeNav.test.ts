@@ -22,6 +22,8 @@ function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry
     parentIndexNumber: null,
     runtimeTicks: null,
     autoDeleteAfterWatch: false,
+    autoDeleteDelayMinutes: 0,
+    deleteScheduledAt: null,
     ...over,
   };
 }
