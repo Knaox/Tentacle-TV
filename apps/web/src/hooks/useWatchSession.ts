@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useItemAncestors, useJellyfinClient, useEpisodeNavigation, useIntroSkipper } from "@tentacle-tv/api-client";
+import { useItemAncestors, useJellyfinClient, useEpisodeNavigation } from "@tentacle-tv/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
@@ -11,6 +11,7 @@ import { useLocalSource } from "./useLocalSource";
 import { useLocalFirstMedia } from "./useLocalFirstMedia";
 import { useAutoplayConfigLocalFirst } from "./useAutoplayConfigLocalFirst";
 import { useWebPlaybackInfoFetch } from "./useWebPlaybackInfoFetch";
+import { useSkipSegmentsLocalFirst } from "./useSkipSegmentsLocalFirst";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
 import { useServerTrackPrefs } from "./useServerTrackPrefs";
@@ -138,7 +139,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (resumeTicks && resumeTicks > 0) { resumeApplied.current = true; setStartTicks(resumeTicks); }
   }, [isDesktop, desktopIsDirectPlay, item, startTicks]);
 
-  const skipSegments = useIntroSkipper(itemId, item);
+  // Segments « passer l'intro » : snapshot disque en lecture locale (zéro
+  // réseau), requêtes serveur en streaming.
+  const skipSegments = useSkipSegmentsLocalFirst(itemId, item, isLocalPlayback);
 
   const getPositionTicks = useCallback((): number => {
     if (positionRef.current > 0) return Math.floor(positionRef.current * TICKS_PER_SECOND);

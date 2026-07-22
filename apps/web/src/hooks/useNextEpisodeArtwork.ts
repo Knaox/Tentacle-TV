@@ -1,10 +1,10 @@
 /**
  * Visuels et résumé de l'ÉPISODE SUIVANT (bannière auto-next + affiche de fin).
  *
- * En ligne, tout vient de Jellyfin. Hors ligne, ces URLs sont injoignables :
- * l'écran de fin s'affichait alors sans image ni synopsis. Les mêmes visuels
- * existent pourtant sur le disque pour un épisode téléchargé — et hors ligne,
- * l'épisode suivant proposé EST forcément téléchargé.
+ * En streaming, tout vient de Jellyfin. En lecture LOCALE (zéro réseau, même
+ * en ligne) ou hors ligne, tout vient du disque : l'épisode suivant proposé
+ * est alors forcément téléchargé (navigation locale), ses visuels et son
+ * synopsis sont dans son snapshot.
  *
  * Extrait de WatchDesktop (limite de 300 lignes par fichier).
  */
@@ -31,20 +31,21 @@ export interface NextEpisodeArtwork {
 export function useNextEpisodeArtwork(
   nextEpisode: MediaItem | null | undefined,
   client: JellyfinClient,
-  offline: boolean,
+  /** Servir depuis le disque : lecture locale (zéro réseau) OU hors ligne. */
+  useLocalArtwork: boolean,
 ): NextEpisodeArtwork {
   const rootReady = useDownloadsRootReady();
   const nextId = nextEpisode?.Id;
-  // Hors ligne, le synopsis n'est pas dénormalisé en base : il vit dans le
+  // En local, le synopsis n'est pas dénormalisé en base : il vit dans le
   // snapshot du prochain épisode.
-  const snapshot = useLocalSnapshot(offline ? nextId : undefined, "item.json", rootReady);
+  const snapshot = useLocalSnapshot(useLocalArtwork ? nextId : undefined, "item.json", rootReady);
 
   return useMemo(() => {
     if (!nextId) {
       return { imageUrl: undefined, seriesBackdropUrl: undefined, thumbUrl: undefined, description: undefined };
     }
 
-    const rawOverview = offline ? snapshot?.Overview : nextEpisode?.Overview;
+    const rawOverview = useLocalArtwork ? snapshot?.Overview : nextEpisode?.Overview;
     const text = rawOverview ? stripOverviewHtml(rawOverview) : undefined;
     // stripOverviewHtml AVANT le découpage : couper du HTML brut sectionnerait
     // une balise.
@@ -52,7 +53,7 @@ export function useNextEpisodeArtwork(
       ? (text.length > MAX_DESCRIPTION ? `${text.slice(0, MAX_DESCRIPTION)}…` : text)
       : undefined;
 
-    if (offline) {
+    if (useLocalArtwork) {
       const backdrop = rootReady ? localResourceUrl(`meta/${nextId}/backdrop.jpg`) ?? undefined : undefined;
       const primary = rootReady ? localResourceUrl(`meta/${nextId}/primary.jpg`) ?? undefined : undefined;
       return {
@@ -85,5 +86,5 @@ export function useNextEpisodeArtwork(
       thumbUrl: client.getImageUrl(nextId, "Primary", { width: 500, quality: 90 }),
       description,
     };
-  }, [nextId, nextEpisode, client, offline, snapshot, rootReady]);
+  }, [nextId, nextEpisode, client, useLocalArtwork, snapshot, rootReady]);
 }
