@@ -14,6 +14,8 @@ export default {
   title: "Préférences de langues",
   subtitle: "Configurez les pistes audio et sous-titres par défaut pour chaque bibliothèque.",
   interfaceLanguage: "Langue de l'interface",
+  offlineSavedLocally: "Hors ligne : les modifications sont enregistrées localement et seront synchronisées au retour en ligne.",
+  offlineNoCacheHint: "Bibliothèques inconnues hors ligne — repasse en ligne une fois pour les mémoriser.",
   appearance: "Apparence",
   appearanceDescription: "Choisissez le thème de l'application.",
   theme: "Thème",

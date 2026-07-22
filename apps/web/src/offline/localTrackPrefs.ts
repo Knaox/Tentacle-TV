@@ -6,6 +6,8 @@
  * ligne (OfflineSessionSync). Par appareil et par utilisateur — aucun secret.
  */
 
+import { readPendingPrefs } from "./pendingPrefs";
+
 export type SubtitleMode = "none" | "always" | "forced" | "signs";
 
 export interface CachedLibraryPref {
@@ -60,8 +62,85 @@ export async function refreshLibraryPrefsCache(
     });
     if (!res.ok) return;
     cacheLibraryPrefs(userId, await res.json());
+    // Les modifications faites hors ligne et pas encore poussées PRIMENT sur
+    // la photo serveur (elles partiront via flushPendingPrefs).
+    applyPendingOverCache(userId);
   } catch {
     /* hors ligne ou backend injoignable : on garde le cache précédent */
+  }
+}
+
+function applyPendingOverCache(userId: string): void {
+  const pending = readPendingPrefs(userId);
+  if (pending.length === 0) return;
+  const base = readLibraryPrefs(userId).filter(
+    (p) => !pending.some((q) => q.libraryId === p.libraryId),
+  );
+  for (const q of pending) {
+    if (!q.reset) {
+      base.push({
+        libraryId: q.libraryId,
+        audioLang: q.audioLang,
+        subtitleLang: q.subtitleLang,
+        subtitleMode: q.subtitleMode,
+      });
+    }
+  }
+  try {
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(base));
+  } catch {
+    /* cache best-effort */
+  }
+}
+
+/* ── Bibliothèques (id + nom) — page Préférences utilisable hors ligne ── */
+
+export interface CachedLibrary {
+  id: string;
+  name: string;
+}
+
+const LIBRARIES_KEY_PREFIX = "tentacle_libraries_";
+
+export function cacheLibrariesList(
+  userId: string,
+  libs: Array<{ Id: string; Name: string }>,
+): void {
+  try {
+    const list: CachedLibrary[] = libs.map((lib) => ({ id: lib.Id, name: lib.Name }));
+    localStorage.setItem(`${LIBRARIES_KEY_PREFIX}${userId}`, JSON.stringify(list));
+  } catch {
+    /* cache best-effort */
+  }
+}
+
+export function readLibrariesList(userId: string): CachedLibrary[] {
+  try {
+    const raw = localStorage.getItem(`${LIBRARIES_KEY_PREFIX}${userId}`);
+    const parsed = raw ? (JSON.parse(raw) as CachedLibrary[]) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Photographie id + nom des bibliothèques (léger : /Views sans enrichissement). */
+export async function refreshLibrariesCache(userId: string, backendBase: string): Promise<void> {
+  try {
+    const token = localStorage.getItem("tentacle_token");
+    if (!token) return;
+    const res = await fetch(`${backendBase}/api/jellyfin/Users/${userId}/Views`, {
+      headers: { "X-Emby-Token": token },
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as { Items?: Array<{ Id?: unknown; Name?: unknown }> };
+    const items = (data.Items ?? []).filter(
+      (lib): lib is { Id: string; Name: string } =>
+        typeof lib.Id === "string" && typeof lib.Name === "string",
+    );
+    cacheLibrariesList(userId, items);
+  } catch {
+    /* on garde le cache précédent */
   }
 }
 
