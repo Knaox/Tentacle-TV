@@ -2,9 +2,9 @@
 //! suffisant pour les opérations de session ; le moteur de téléchargement
 //! (phase ultérieure) aura son propre état managé longue durée.
 
-use super::{db, fsops, localserver, playback, session, store};
+use super::{db, fsops, localserver, playback, purge, session, store};
 use serde::Serialize;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 fn now_ms() -> i64 {
     std::time::SystemTime::now()
@@ -111,8 +111,10 @@ pub fn downloads_local_source(
     playback::local_source(&conn, &root, &user_id, &item_id, now_ms_pub())
 }
 
-/// Progression locale ; `queue_for_sync` = lecture hors ligne (resynchro
-/// différée vers Jellyfin au retour en ligne).
+/// Progression locale ; `queue_for_sync` = resynchro différée vers Jellyfin
+/// (lecture locale : la file est l'unique chemin, drainée en fin de lecture).
+/// Pose aussi l'échéance d'auto-suppression au passage « vu » (côté Rust :
+/// robuste même si l'UI meurt avant le démontage du lecteur).
 #[tauri::command]
 pub fn downloads_playback_set(
     app: AppHandle,
@@ -123,9 +125,25 @@ pub fn downloads_playback_set(
     queue_for_sync: bool,
 ) -> Result<(), String> {
     let conn = open_db(&app)?;
+    let now = now_ms_pub();
     playback::set_playback_state(
-        &conn, &user_id, &item_id, position_ticks, played, queue_for_sync, now_ms_pub(),
-    )
+        &conn, &user_id, &item_id, position_ticks, played, queue_for_sync, now,
+    )?;
+    purge::schedule_on_played(&conn, &user_id, &item_id, now)
+}
+
+/// Purge des échéances d'auto-suppression passées. `item_id` = item exempté
+/// de la garde « lecture active » (celui qui vient de se terminer — couvre le
+/// délai 0 « immédiatement » au démontage du lecteur).
+#[tauri::command]
+pub fn downloads_purge_due(app: AppHandle, item_id: Option<String>) -> Result<usize, String> {
+    let root = fsops::resolve_root(&app)?;
+    let mut conn = open_db(&app)?;
+    let purged = purge::purge_due_claims(&mut conn, &root, now_ms_pub(), item_id.as_deref())?;
+    if purged > 0 {
+        let _ = app.emit(super::engine::EVENT_CHANGED, ());
+    }
+    Ok(purged)
 }
 
 /// File de resynchronisation (dédupliquée : dernier état par item).

@@ -10,10 +10,12 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserId } from "@tentacle-tv/api-client";
-import { isTauriApp } from "../main";
+import { backendUrl, isTauriApp } from "../main";
 import { useConnectivity } from "./useConnectivity";
 import { reportPossibleOutage } from "./connectivityStore";
 import { drainReportQueue } from "./resync";
+import { refreshLibraryPrefsCache } from "./localTrackPrefs";
+import { flushPendingInterfaceLanguage, flushPendingPrefs } from "./pendingPrefs";
 
 const RECONNECT_DEBOUNCE_MS = 5_000;
 const STAGGER_DELAY_MS = 2_000;
@@ -77,6 +79,10 @@ export function ConnectivityBinding() {
     void drainReportQueue(userId).catch(() => {
       /* la file reste en place, retentée au prochain retour en ligne */
     });
+    // Préférences modifiées hors ligne lors d'une session précédente (l'app a
+    // pu être fermée avant le retour en ligne) : poussées dès le boot.
+    void flushPendingPrefs(userId, backendUrl);
+    void flushPendingInterfaceLanguage(backendUrl);
   }, [userId]);
 
   // Transition hors ligne → en ligne : d'abord RESYNCHRONISER la progression
@@ -100,6 +106,13 @@ export function ConnectivityBinding() {
         } catch {
           /* la file reste en place, retentée au prochain retour en ligne */
         }
+      }
+      if (uid) {
+        // Préférences éditées hors ligne : POUSSÉES avant de re-photographier
+        // le cache (la photo reflète alors les modifications synchronisées).
+        await flushPendingPrefs(uid, backendUrl);
+        await flushPendingInterfaceLanguage(backendUrl);
+        void refreshLibraryPrefsCache(uid, backendUrl);
       }
       if (cancelled) return;
       queryClient.invalidateQueries({ queryKey: ["resume-items"] });

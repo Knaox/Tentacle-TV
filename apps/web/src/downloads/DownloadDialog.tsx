@@ -15,6 +15,7 @@ import { useToast } from "../contexts/ToastContext";
 import { enqueueDownloads } from "./api";
 import { refreshLibraryPrefsCache } from "../offline/localTrackPrefs";
 import { LIGHT_PRESETS, formatBytes, type LightPresetId } from "./presets";
+import { AutoDeleteSelect } from "./AutoDeleteSelect";
 import { audioTracks, batchSizeBytes, buildEnqueueItem, imageSubtitleTracks } from "./downloadTargets";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
 import { useDiskInfo } from "./useDownloadState";
@@ -38,7 +39,8 @@ export function DownloadDialog({ items, seasonMode = false, batchTitle, onClose 
   const [preset, setPreset] = useState<LightPresetId>("p720");
   const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
   const [burnIndex, setBurnIndex] = useState<number | undefined>(undefined);
-  const [autoDelete, setAutoDelete] = useState(false);
+  /** null = pas d'auto-suppression ; sinon délai en minutes (0 = immédiat). */
+  const [autoDeleteDelay, setAutoDeleteDelay] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [spaceError, setSpaceError] = useState<{ needed: number; free: number } | null>(null);
 
@@ -53,7 +55,12 @@ export function DownloadDialog({ items, seasonMode = false, batchTitle, onClose 
   const single = !seasonMode && items.length === 1 ? items[0] : null;
   const audio = useMemo(() => (single ? audioTracks(single) : []), [single]);
   const imageSubs = useMemo(() => (single ? imageSubtitleTracks(single) : []), [single]);
-  const options = { variant, preset, autoDeleteAfterWatch: autoDelete, audioStreamIndex: audioIndex, burnSubtitleIndex: burnIndex };
+  const options = {
+    variant, preset,
+    autoDeleteAfterWatch: autoDeleteDelay != null,
+    autoDeleteDelayMinutes: autoDeleteDelay ?? 0,
+    audioStreamIndex: audioIndex, burnSubtitleIndex: burnIndex,
+  };
   const size = useMemo(() => batchSizeBytes(items, options), [items, variant, preset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStart = async () => {
@@ -178,16 +185,11 @@ export function DownloadDialog({ items, seasonMode = false, batchTitle, onClose 
             />
           )}
 
-          {/* Supprimer après visionnage */}
-          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-fill-faint px-3 py-2.5">
+          {/* Supprimer après visionnage : délai au choix */}
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-fill-faint px-3 py-2.5">
             <span className="text-sm text-content-secondary">{t("downloads:autoDeleteAfterWatch")}</span>
-            <input
-              type="checkbox"
-              checked={autoDelete}
-              onChange={(e) => setAutoDelete(e.target.checked)}
-              className="h-4 w-4 accent-[var(--brand)]"
-            />
-          </label>
+            <AutoDeleteSelect value={autoDeleteDelay} onChange={setAutoDeleteDelay} />
+          </div>
 
           {/* Tailles + espace */}
           <div className="space-y-1 text-xs text-content-tertiary">

@@ -44,19 +44,49 @@ export function useReportPlayerOverlay(controlsVisible: boolean): void {
 
 // ── Canal inverse : activité du chat → timer d'auto-masquage du lecteur ──
 // Le chat vit dans un portail HORS du conteneur vidéo : ses événements
-// n'atteignent jamais le onMouseMove du lecteur. ChatOverlay publie ici son
-// état « interaction en cours » (survol, saisie, gestes, resize) ; le timer
-// des lecteurs le lit de façon synchrone avant de masquer les contrôles —
-// le chat, lui, suit STRICTEMENT le fondu des contrôles (jamais de visibilité
-// indépendante).
-let chatActive = false;
+// n'atteignent jamais le onMouseMove du lecteur. Le chat publie donc ici des
+// IMPULSIONS d'activité horodatées (frappe, pointeur en mouvement, molette,
+// focus) qui expirent SEULES — jamais d'état collant : un focus resté dans
+// l'input après l'envoi d'un message, ou un pointerleave raté quand le
+// panneau se replie sous le curseur, ne peuvent pas bloquer le masquage. Seul
+// le drag de redimensionnement pose un verrou dur, borné par son pointerup.
+let chatLastActivityAt = 0;
+let chatResizeLock = false;
 
-/** Publié par ChatOverlay (remis à false à son démontage). */
-export function reportChatActivity(active: boolean): void {
-  chatActive = active;
+/** Fenêtre pendant laquelle une impulsion maintient les contrôles visibles. */
+const CHAT_ACTIVITY_MS = 4000;
+
+/** Impulsion d'activité — publiée par useChatActivity (conteneurs du chat). */
+export function markChatActivity(): void {
+  chatLastActivityAt = Date.now();
 }
 
-/** Lu par les timers d'auto-masquage (VideoPlayer / DesktopPlayer). */
+/** Verrou dur pendant le drag de redimensionnement du panneau (ChatOverlay). */
+export function setChatResizeLock(locked: boolean): void {
+  chatResizeLock = locked;
+  if (locked) chatLastActivityAt = Date.now();
+}
+
+/** Lu par les timers d'auto-masquage (useControlsAutoHide). */
 export function isChatActive(): boolean {
-  return chatActive;
+  return chatResizeLock || Date.now() - chatLastActivityAt < CHAT_ACTIVITY_MS;
+}
+
+// ── Réveil : frappe dans le chat pendant que l'overlay est caché ──
+// Après masquage, le focus peut être resté dans l'input (invisible) : taper
+// doit re-afficher contrôles ET chat. Le lecteur monté enregistre ici son
+// scheduleHide ; useChatActivity l'appelle sur chaque keydown.
+let controlsWaker: (() => void) | null = null;
+
+/** Enregistré par le lecteur (useControlsAutoHide) ; retourne le cleanup. */
+export function registerControlsWaker(waker: () => void): () => void {
+  controlsWaker = waker;
+  return () => {
+    if (controlsWaker === waker) controlsWaker = null;
+  };
+}
+
+/** Appelé par le chat (frappe) : relance l'affichage des contrôles. */
+export function wakePlayerControls(): void {
+  controlsWaker?.();
 }

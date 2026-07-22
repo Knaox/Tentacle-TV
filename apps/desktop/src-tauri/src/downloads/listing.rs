@@ -22,12 +22,17 @@ pub struct DownloadListEntry {
     /// Durée (affichée sur les vignettes d'épisode).
     pub runtime_ticks: Option<i64>,
     pub auto_delete_after_watch: bool,
+    /// Délai après visionnage avant suppression (minutes, 0 = immédiat).
+    pub auto_delete_delay_minutes: i64,
+    /// Échéance de suppression (epoch SECONDES) — posée quand l'item est vu.
+    pub delete_scheduled_at: Option<i64>,
 }
 
 const LIST_EXTRA_COLS: &str =
     "item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id, \
      item_meta.season_id, item_meta.index_number, item_meta.parent_index_number, \
-     item_meta.runtime_ticks, claims.auto_delete_after_watch";
+     item_meta.runtime_ticks, claims.auto_delete_after_watch, \
+     claims.auto_delete_delay_minutes, claims.delete_scheduled_at";
 
 fn map_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<DownloadListEntry> {
     let file = map_file_row(row)?;
@@ -43,6 +48,8 @@ fn map_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<DownloadListEntry> {
         parent_index_number: row.get(19)?,
         runtime_ticks: row.get(20)?,
         auto_delete_after_watch: row.get::<_, i64>(21)? != 0,
+        auto_delete_delay_minutes: row.get(22)?,
+        delete_scheduled_at: row.get(23)?,
     })
 }
 
@@ -89,16 +96,68 @@ pub fn state_for_item(
     .map_err(|e| format!("state for item: {e}"))
 }
 
+/// Bascule + délai d'auto-suppression d'un claim. OFF ⇒ tout est remis à
+/// zéro (échéance comprise). ON avec échéance existante et délai changé ⇒
+/// REBASE : l'échéance reste ancrée au moment du visionnage d'origine. ON sur
+/// un item DÉJÀ vu sans échéance ⇒ planification depuis MAINTENANT (jamais de
+/// suppression surprise en activant l'option a posteriori).
 pub fn set_auto_delete(
     conn: &Connection,
     user_id: &str,
     file_id: i64,
     enabled: bool,
+    delay_minutes: i64,
+    now_ms: i64,
 ) -> Result<(), String> {
+    if !enabled {
+        conn.execute(
+            "UPDATE claims SET auto_delete_after_watch = 0, auto_delete_delay_minutes = 0,
+                    delete_scheduled_at = NULL
+             WHERE jellyfin_user_id = ?1 AND file_id = ?2",
+            params![user_id, file_id],
+        )
+        .map_err(|e| format!("set auto delete off: {e}"))?;
+        return Ok(());
+    }
+
+    let delay = delay_minutes.max(0);
+    let current: Option<(Option<i64>, i64, String)> = conn
+        .query_row(
+            "SELECT c.delete_scheduled_at, c.auto_delete_delay_minutes, f.item_id
+             FROM claims c JOIN files f ON f.id = c.file_id
+             WHERE c.jellyfin_user_id = ?1 AND c.file_id = ?2",
+            params![user_id, file_id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .optional()
+        .map_err(|e| format!("read claim: {e}"))?;
+    let Some((scheduled, old_delay, item_id)) = current else {
+        return Ok(());
+    };
+
+    let new_scheduled: Option<i64> = match scheduled {
+        Some(at) => Some(at - old_delay * 60 + delay * 60),
+        None => {
+            let played: bool = conn
+                .query_row(
+                    "SELECT played FROM playback_state
+                     WHERE jellyfin_user_id = ?1 AND item_id = ?2",
+                    params![user_id, item_id],
+                    |row| row.get::<_, i64>(0),
+                )
+                .optional()
+                .map_err(|e| format!("read played: {e}"))?
+                .map(|v| v != 0)
+                .unwrap_or(false);
+            if played { Some(now_ms / 1000 + delay * 60) } else { None }
+        }
+    };
+
     conn.execute(
-        "UPDATE claims SET auto_delete_after_watch = ?3
+        "UPDATE claims SET auto_delete_after_watch = 1, auto_delete_delay_minutes = ?3,
+                delete_scheduled_at = ?4
          WHERE jellyfin_user_id = ?1 AND file_id = ?2",
-        params![user_id, file_id, enabled as i64],
+        params![user_id, file_id, delay, new_scheduled],
     )
     .map_err(|e| format!("set auto delete: {e}"))?;
     Ok(())

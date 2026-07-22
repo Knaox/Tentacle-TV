@@ -14,6 +14,8 @@ export default {
   title: "Language preferences",
   subtitle: "Configure default audio and subtitle tracks for each library.",
   interfaceLanguage: "Interface language",
+  offlineSavedLocally: "Offline: changes are saved locally and will sync once back online.",
+  offlineNoCacheHint: "Libraries unknown offline — go online once so they can be remembered.",
   appearance: "Appearance",
   appearanceDescription: "Choose the app theme.",
   theme: "Theme",

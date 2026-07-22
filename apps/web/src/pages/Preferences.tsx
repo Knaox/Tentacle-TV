@@ -2,9 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useUserId } from "@tentacle-tv/api-client";
-import { cacheLibraryPrefs } from "../offline/localTrackPrefs";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
+import { cacheLibrariesList, cacheLibraryPrefs, readLibrariesList, readLibraryPrefs, type SubtitleMode } from "../offline/localTrackPrefs";
+import { clearPendingInterfaceLanguage, markInterfaceLanguagePending, queuePendingPref } from "../offline/pendingPrefs";
+import { useOfflineMode } from "../offline/useOfflineMode";
 import { PageTransition } from "../components/PageTransition";
+import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -62,25 +65,81 @@ const INTERFACE_LANGUAGES = [
 export function Preferences() {
   const { t, i18n } = useTranslation("preferences");
   const queryClient = useQueryClient();
-  const { data: libraries } = useLibraries();
-  const { data: prefs } = useLibraryPreferences();
+  // HORS LIGNE : aucune requête (la page vivait en spinner infini) — les
+  // caches locaux prennent le relais et les modifications rejoignent une file
+  // synchronisée automatiquement au retour en ligne (ConnectivityBinding).
+  const offline = useOfflineMode();
+  const { data: libraries } = useLibraries({ enabled: !offline });
+  const { data: prefs } = useLibraryPreferences({ enabled: !offline });
   const setMut = useSetLibraryPreference();
   const deleteMut = useDeleteLibraryPreference();
   const setLangMut = useSetInterfaceLanguage();
 
   // Toute lecture réussie alimente le cache hors ligne (y compris après une
   // sauvegarde, l'invalidation refetch) : le lecteur local applique alors les
-  // MÊMES préférences sans backend.
+  // MÊMES préférences sans backend. Les bibliothèques (id + nom) sont cachées
+  // pour que cette page reste utilisable hors ligne.
   const userId = useUserId();
   useEffect(() => {
     if (userId && prefs) cacheLibraryPrefs(userId, prefs);
   }, [userId, prefs]);
+  useEffect(() => {
+    if (userId && libraries) cacheLibrariesList(userId, libraries);
+  }, [userId, libraries]);
+
+  // Version du cache : bumpée à chaque édition hors ligne (re-rendu des cartes).
+  const [cacheVersion, setCacheVersion] = useState(0);
+  const cachedLibraries = useMemo(
+    () => (offline && userId ? readLibrariesList(userId) : []),
+    [offline, userId],
+  );
+  const cachedPrefs = useMemo(
+    () => (offline && userId ? readLibraryPrefs(userId) : []),
+    [offline, userId, cacheVersion], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const handleInterfaceLangChange = (lng: string) => {
     i18n.changeLanguage(lng);
     localStorage.setItem("tentacle_language", lng);
-    setLangMut.mutate(lng);
+    if (offline) {
+      // Poussée au retour en ligne (flushPendingInterfaceLanguage) ; le pull
+      // du démarrage (main.tsx) la respecte — pas d'écrasement.
+      markInterfaceLanguagePending(lng);
+    } else {
+      clearPendingInterfaceLanguage();
+      setLangMut.mutate(lng);
+    }
     queryClient.invalidateQueries();
+  };
+
+  const savePref = (data: { libraryId: string; audioLang?: string | null; subtitleLang?: string | null; subtitleMode?: SubtitleMode }) => {
+    if (offline && userId) {
+      const entry = {
+        libraryId: data.libraryId,
+        audioLang: data.audioLang ?? null,
+        subtitleLang: data.subtitleLang ?? null,
+        subtitleMode: data.subtitleMode ?? ("none" as SubtitleMode),
+      };
+      // Cache local D'ABORD (la lecture locale applique aussitôt), file ensuite.
+      cacheLibraryPrefs(userId, [
+        ...readLibraryPrefs(userId).filter((p) => p.libraryId !== entry.libraryId),
+        entry,
+      ]);
+      queuePendingPref(userId, entry);
+      setCacheVersion((v) => v + 1);
+      return;
+    }
+    setMut.mutate(data);
+  };
+
+  const deletePref = (libraryId: string) => {
+    if (offline && userId) {
+      cacheLibraryPrefs(userId, readLibraryPrefs(userId).filter((p) => p.libraryId !== libraryId));
+      queuePendingPref(userId, { libraryId, audioLang: null, subtitleLang: null, subtitleMode: "none", reset: true });
+      setCacheVersion((v) => v + 1);
+      return;
+    }
+    deleteMut.mutate(libraryId);
   };
 
   const LANGUAGES = useMemo(() =>
@@ -98,12 +157,28 @@ export function Preferences() {
     { value: "signs" as const, label: t("preferences:modeSignsSongs") },
   ], [t]);
 
-  const prefsMap = new Map(prefs?.map((p) => [p.libraryId, p]) ?? []);
+  const displayLibraries: Array<{ Id: string; Name: string }> = offline
+    ? cachedLibraries.map((lib) => ({ Id: lib.id, Name: lib.name }))
+    : (libraries ?? []);
+  const prefsMap = new Map<string, LibraryPreference>(
+    offline
+      ? cachedPrefs.map((p) => [p.libraryId, {
+          id: p.libraryId, jellyfinUserId: userId ?? "", libraryId: p.libraryId,
+          audioLang: p.audioLang, subtitleLang: p.subtitleLang, subtitleMode: p.subtitleMode,
+        }])
+      : (prefs ?? []).map((p) => [p.libraryId, p]),
+  );
 
   return (
     <PageTransition>
       <div className="max-w-2xl">
         {/* Le titre et le sous-titre sont portes par SettingsShell. */}
+
+        {offline && (
+          <div className="mb-4 rounded-lg bg-status-warning-bg px-3 py-2 text-xs font-medium text-status-warning-fg">
+            {t("preferences:offlineSavedLocally")}
+          </div>
+        )}
 
         {/* Interface language */}
         <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
@@ -119,14 +194,17 @@ export function Preferences() {
           </select>
         </div>
 
-        {!libraries && (
+        {!offline && !libraries && (
           <div className="flex justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
           </div>
         )}
+        {offline && displayLibraries.length === 0 && (
+          <p className="py-10 text-center text-sm text-content-quaternary">{t("preferences:offlineNoCacheHint")}</p>
+        )}
 
         <div className="space-y-4">
-          {libraries?.map((lib: { Id: string; Name: string }) => (
+          {displayLibraries.map((lib) => (
             <LibraryPrefCard
               key={lib.Id}
               libraryId={lib.Id}
@@ -135,8 +213,8 @@ export function Preferences() {
               languages={LANGUAGES}
               subtitleModes={SUBTITLE_MODES}
               t={t}
-              onSave={(data) => setMut.mutate(data)}
-              onDelete={() => deleteMut.mutate(lib.Id)}
+              onSave={savePref}
+              onDelete={() => deletePref(lib.Id)}
             />
           ))}
         </div>
@@ -148,125 +226,3 @@ export function Preferences() {
     </PageTransition>
   );
 }
-
-function LibraryPrefCard({ libraryId, libraryName, pref, languages, subtitleModes, t, onSave, onDelete }: {
-  libraryId: string;
-  libraryName: string;
-  pref: LibraryPreference | null;
-  languages: { code: string; label: string }[];
-  subtitleModes: { value: string; label: string }[];
-  t: (key: string) => string;
-  onSave: (data: { libraryId: string; audioLang?: string | null; subtitleLang?: string | null; subtitleMode?: "none" | "always" | "forced" | "signs" }) => void;
-  onDelete: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [audioLang, setAudioLang] = useState(pref?.audioLang ?? "");
-  const [subtitleLang, setSubtitleLang] = useState(pref?.subtitleLang ?? "");
-  const [subtitleMode, setSubtitleMode] = useState<"none" | "always" | "forced" | "signs">(pref?.subtitleMode ?? "none");
-
-  // Sync state when pref loads/changes (e.g. after query completes)
-  useEffect(() => {
-    if (!editing) {
-      setAudioLang(pref?.audioLang ?? "");
-      setSubtitleLang(pref?.subtitleLang ?? "");
-      setSubtitleMode(pref?.subtitleMode ?? "none");
-    }
-  }, [pref]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSave = () => {
-    onSave({
-      libraryId,
-      audioLang: audioLang || null,
-      subtitleLang: subtitleLang || null,
-      subtitleMode,
-    });
-    setEditing(false);
-  };
-
-  const handleReset = () => {
-    onDelete();
-    setAudioLang("");
-    setSubtitleLang("");
-    setSubtitleMode("none");
-    setEditing(false);
-  };
-
-  return (
-    <div className="rounded-xl border border-line-subtle bg-fill-subtle p-5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-content-primary">{libraryName}</h3>
-        <div className="flex items-center gap-2">
-          {pref && !editing && (
-            <div className="flex items-center gap-2 text-xs text-content-tertiary">
-              {pref.audioLang && (
-                <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-[var(--brand-light)]">
-                  {t("preferences:audio")}: {languages.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
-                </span>
-              )}
-              {pref.subtitleLang && pref.subtitleMode !== "none" && (
-                <span className="rounded bg-status-info-bg px-2 py-0.5 text-status-info-fg">
-                  ST: {languages.find((l) => l.code === pref.subtitleLang)?.label ?? pref.subtitleLang}
-                  ({subtitleModes.find((m) => m.value === pref.subtitleMode)?.label})
-                </span>
-              )}
-            </div>
-          )}
-          <button onClick={() => setEditing(!editing)}
-            className="rounded-lg bg-fill-soft px-3 py-1.5 text-xs text-content-secondary hover:bg-fill-medium">
-            {editing ? t("common:cancel") : t("common:edit")}
-          </button>
-        </div>
-      </div>
-
-      {editing && (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:audio")}</label>
-            <select value={audioLang} onChange={(e) => setAudioLang(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
-              <option value="">{t("preferences:default")}</option>
-              {languages.map((l) => (
-                <option key={l.code} value={l.code}>{l.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:subtitles")}</label>
-            <select value={subtitleLang} onChange={(e) => setSubtitleLang(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
-              <option value="">{t("preferences:none")}</option>
-              {languages.map((l) => (
-                <option key={l.code} value={l.code}>{l.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:subtitleMode")}</label>
-            <select value={subtitleMode} onChange={(e) => setSubtitleMode(e.target.value as any)}
-              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
-              {subtitleModes.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-2 sm:col-span-3">
-            <button onClick={handleSave}
-              className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-xs font-bold hover:bg-cta-primary-bg-hover">
-              {t("common:save")}
-            </button>
-            {pref && (
-              <button onClick={handleReset}
-                className="rounded-lg bg-danger-surface px-4 py-2 text-xs text-status-error-fg hover:bg-danger-surface-hover">
-                {t("preferences:reset")}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-

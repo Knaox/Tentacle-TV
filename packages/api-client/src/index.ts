@@ -1,8 +1,9 @@
 export { JellyfinClient, JellyfinError } from "./jellyfin";
 export type { DirectStreamingState } from "./jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinClient";
-export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useSearchItems, useGenres, useStudios, useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibrary";
-export type { CatalogFilters } from "./hooks/useLibrary";
+export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useSearchItems, useGenres, useStudios } from "./hooks/useLibrary";
+export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibraryCatalog";
+export type { CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
 export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
 export { useFavorite, useFavoriteForItem } from "./hooks/useFavorite";
@@ -18,8 +19,8 @@ export { usePlaybackReporting } from "./hooks/usePlayback";
 export type { PlaybackReportingOptions } from "./hooks/usePlayback";
 export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
-export { useIntroSkipper } from "./hooks/useIntroSkipper";
-export type { SkipSegments } from "./hooks/useIntroSkipper";
+export { useIntroSkipper, normalizeSkipSegments } from "./hooks/useIntroSkipper";
+export type { SkipSegments, RawSkipSources, MediaSegmentsResponse, PluginSegmentDict, PluginTimestamps } from "./hooks/useIntroSkipper";
 // Library language/subtitle preferences
 export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";
