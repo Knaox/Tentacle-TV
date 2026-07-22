@@ -15,7 +15,7 @@
 import { useEffect, useRef } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
-import { deleteDownload } from "../downloads/api";
+import { purgeDueDownloads } from "../downloads/api";
 import { saveLocalPlaybackState, type LocalSource } from "../downloads/playbackApi";
 import { drainReportQueue } from "../offline/resync";
 import { useConnectivity } from "../offline/useConnectivity";
@@ -52,7 +52,6 @@ export function useLocalPlaybackReporting({
 
   useEffect(() => {
     if (!enabled || !userId || !itemId || !localSource) return;
-    const fileId = localSource.fileId;
     const autoDelete = localSource.autoDeleteAfterWatch;
 
     const snapshot = () => {
@@ -93,8 +92,12 @@ export function useLocalPlaybackReporting({
           /* hors ligne / échec : la file reste, drainée au retour en ligne */
         });
       if (stopPromiseRef) stopPromiseRef.current = syncDone;
+      // Auto-suppression : l'échéance a été posée côté Rust par le
+      // playback_set final (schedule_on_played) — la purge immédiate couvre
+      // le délai 0 « immédiatement » (item exempté de la garde de lecture) ;
+      // les délais plus longs partent au tick 60 s ou au prochain démarrage.
       if (autoDelete && played) {
-        void deleteDownload(userId, fileId);
+        void save.then(() => purgeDueDownloads(itemId));
       }
     };
   }, [enabled, userId, itemId, localSource, positionRef, stopPromiseRef]);

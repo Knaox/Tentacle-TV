@@ -28,6 +28,8 @@ export interface DownloadOptions {
   variant: "original" | "light";
   preset: LightPresetId;
   autoDeleteAfterWatch: boolean;
+  /** Délai d'auto-suppression après visionnage (minutes, 0 = immédiat). */
+  autoDeleteDelayMinutes: number;
   audioStreamIndex?: number;
   burnSubtitleIndex?: number;
 }
@@ -114,6 +116,7 @@ export function buildEnqueueItem(item: MediaItem, options: DownloadOptions): Enq
     indexNumber: isEpisode ? (item.IndexNumber ?? undefined) : undefined,
     parentIndexNumber: isEpisode ? (item.ParentIndexNumber ?? undefined) : undefined,
     autoDeleteAfterWatch: options.autoDeleteAfterWatch,
+    autoDeleteDelayMinutes: options.autoDeleteDelayMinutes,
     subtitles: subtitleSideCars(item, options.variant),
   };
   if (options.variant === "original") {
