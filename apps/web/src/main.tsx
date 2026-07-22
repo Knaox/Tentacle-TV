@@ -49,7 +49,11 @@ initI18n({ lng: savedLang });
 
 // If authenticated (user info persisted), fetch the authoritative language from backend
 const _hasUser = !!localStorage.getItem("tentacle_user");
-if (_hasUser) {
+// Langue changée HORS LIGNE et pas encore poussée : le pull backend (valeur
+// périmée) ne doit PAS l'écraser — elle sera poussée au retour en ligne
+// (flushPendingInterfaceLanguage, ConnectivityBinding).
+const _pendingLang = localStorage.getItem("tentacle_language_pending");
+if (_hasUser && !_pendingLang) {
   // For web: credentials cookie is sent automatically; token param is only for mobile/desktop
   const _token = localStorage.getItem("tentacle_token");
   fetchInterfaceLanguage(_token || "__cookie__").then((lang) => {

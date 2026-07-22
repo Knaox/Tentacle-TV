@@ -12,7 +12,7 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { backendUrl, isTauriApp } from "../main";
 import { useConnectivity } from "./useConnectivity";
 import { saveCachedSession } from "./offlineSession";
-import { refreshLibraryPrefsCache } from "./localTrackPrefs";
+import { refreshLibrariesCache, refreshLibraryPrefsCache } from "./localTrackPrefs";
 
 export function OfflineSessionSync() {
   const userId = useUserId();
@@ -27,8 +27,10 @@ export function OfflineSessionSync() {
       /* localStorage inaccessible : rien à mettre en cache. */
     }
     // Préférences de pistes par bibliothèque — photographiées pour leur
-    // résolution hors ligne (useLocalPlaybackTracks).
+    // résolution hors ligne (useLocalPlaybackTracks) — et liste des
+    // bibliothèques (page Préférences utilisable hors ligne).
     void refreshLibraryPrefsCache(userId, backendUrl);
+    void refreshLibrariesCache(userId, backendUrl);
   }, [userId, state]);
 
   return null;
