@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
 import type { WtChatApi } from "./useWtChat";
 import { ChatPanel } from "./ChatPanel";
-import { reportChatActivity, useWatchOverlayState } from "./chatUiStore";
+import { setChatResizeLock, useWatchOverlayState } from "./chatUiStore";
 import { useChatPanelSize } from "./useChatPanelSize";
 import { useChatActivity } from "./useChatActivity";
 
@@ -73,13 +73,13 @@ export function ChatOverlay({
   const wasDraggedRef = useRef(false);
 
   // Page player : bulle ET panneau suivent STRICTEMENT le fondu de l'overlay
-  // des contrôles (les aperçus MessageToastLayer restent visibles, eux). Une
-  // interaction avec le chat (saisie, survol, clics émoji, scroll GIFs,
-  // resize) ne rend pas le chat indépendant : elle est PUBLIÉE au lecteur
-  // (reportChatActivity), dont le timer d'auto-masquage s'abstient de cacher
-  // les contrôles tant qu'elle dure — chat et contrôles restent visibles et
-  // s'estompent toujours ENSEMBLE.
-  const [inputFocused, setInputFocused] = useState(false);
+  // des contrôles (les aperçus MessageToastLayer restent visibles, eux). Les
+  // interactions avec le chat (frappe, survol en mouvement, clics, scroll)
+  // sont publiées au lecteur en impulsions horodatées AUTO-EXPIRANTES
+  // (useChatActivity → chatUiStore) : le timer d'auto-masquage attend que la
+  // dernière impulsion soit froide, puis chat et contrôles s'estompent
+  // ENSEMBLE — un focus resté dans l'input après un envoi ne bloque plus
+  // jamais le masquage. Seul le drag de resize pose un verrou dur.
   const activity = useChatActivity();
 
   // Rappel dans le viewport (marge 8 px) après un drag ou une ouverture qui
@@ -104,11 +104,10 @@ export function ChatOverlay({
 
   const hidden = watchOverlay.onWatchPage && !watchOverlay.controlsVisible;
 
-  const chatBusy = activity.active || inputFocused || resizing;
   useEffect(() => {
-    reportChatActivity(chatBusy);
-  }, [chatBusy]);
-  useEffect(() => () => reportChatActivity(false), []);
+    setChatResizeLock(resizing);
+  }, [resizing]);
+  useEffect(() => () => setChatResizeLock(false), []);
 
   useEffect(() => {
     if (open) {
@@ -147,7 +146,7 @@ export function ChatOverlay({
         {...activity.handlers}
       >
         <ChatHeader title={t("chatTitle")} onClose={() => chat.setOpen(false)} />
-        <ChatPanel chat={chat} onInputFocusChange={setInputFocused} />
+        <ChatPanel chat={chat} />
       </motion.div>
     );
   }
@@ -200,7 +199,7 @@ export function ChatOverlay({
               onClose={() => chat.setOpen(false)}
               onDragStart={(e) => dragControls.start(e)}
             />
-            <ChatPanel chat={chat} onInputFocusChange={setInputFocused} />
+            <ChatPanel chat={chat} />
           </motion.div>
         ) : (
           <motion.button

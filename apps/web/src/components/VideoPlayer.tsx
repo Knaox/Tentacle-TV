@@ -12,7 +12,7 @@ import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
-import { isChatActive } from "../watchTogether/chat/chatUiStore";
+import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
@@ -34,7 +34,6 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
 
   const [playing, setPlaying] = useState(false);
@@ -51,7 +50,7 @@ export function VideoPlayer({
   const offsetDetectedRef = useRef(false);
 
   const [videoDuration, setVideoDuration] = useState(0);
-  const [showControls, setShowControls] = useState(true);
+  const { showControls, scheduleHide } = useControlsAutoHide(playing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [volume, setVolume] = useState(() => {
@@ -131,20 +130,6 @@ export function VideoPlayer({
     const v = videoRef.current as HTMLVideoElement & { webkitEnterFullscreen?: () => void } | null;
     if (v?.webkitEnterFullscreen) v.webkitEnterFullscreen();
   }, []);
-
-  const scheduleHide = useCallback(() => {
-    clearTimeout(hideTimer.current);
-    setShowControls(true);
-    // Watch Together : jamais de masquage pendant une interaction avec le chat
-    // (portail hors conteneur — ses événements n'atteignent pas ce onMouseMove).
-    // Re-vérifie chaque seconde ; à la fin de l'interaction, contrôles ET chat
-    // s'estompent ensemble.
-    const attemptHide = () => {
-      if (isChatActive()) { hideTimer.current = setTimeout(attemptHide, 1000); return; }
-      if (playing) setShowControls(false);
-    };
-    hideTimer.current = setTimeout(attemptHide, 3000);
-  }, [playing]);
 
   useNativeMediaTracks({ videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
 

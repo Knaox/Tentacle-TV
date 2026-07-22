@@ -18,14 +18,12 @@ import { GifTab } from "./GifTab";
 export type PickerTab = "emoji" | "gif";
 
 export function ReactionPicker({
-  tab, onTabChange, onClose, chat, onInputFocusChange,
+  tab, onTabChange, onClose, chat,
 }: {
   tab: PickerTab | null;
   onTabChange: (tab: PickerTab) => void;
   onClose: () => void;
   chat: WtChatApi;
-  /** Saisie en cours (recherche GIF) : le parent ne doit pas estomper le panneau. */
-  onInputFocusChange?: (focused: boolean) => void;
 }) {
   const { t } = useTranslation("watchTogether");
 
@@ -75,7 +73,7 @@ export function ReactionPicker({
             {tab === "emoji" ? (
               <EmojiTab onPick={(emoji) => chat.sendReaction(emoji)} />
             ) : (
-              <GifTab chat={chat} onInputFocusChange={onInputFocusChange} />
+              <GifTab chat={chat} />
             )}
           </div>
         </motion.div>
