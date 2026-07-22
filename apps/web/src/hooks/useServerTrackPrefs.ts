@@ -4,8 +4,9 @@
  * des pistes forcées) à partir des MediaStreams Jellyfin.
  *
  * Extraction mécanique de useWatchSession (limite de 300 lignes par fichier) —
- * comportement inchangé. Hors ligne, c'est useLocalPlaybackTracks qui applique
- * les préférences depuis le cache local.
+ * comportement inchangé. En LECTURE LOCALE (fichier téléchargé, en ligne comme
+ * hors ligne), aucune requête : c'est useLocalPlaybackTracks qui applique les
+ * préférences depuis le cache local — zéro bande passante.
  */
 
 import { useEffect, type MutableRefObject } from "react";
@@ -18,6 +19,8 @@ interface Options {
   streams: JfStream[];
   ancestors: { Id: string }[] | undefined;
   isDesktop: boolean;
+  /** Lecture d'un fichier téléchargé : résolution locale, aucun POST /resolve. */
+  isLocalPlayback: boolean;
   quality: number | null;
   defaultAudio: number;
   supportsNativeAudioTracks: boolean;
@@ -34,7 +37,7 @@ interface Options {
 }
 
 export function useServerTrackPrefs({
-  item, streams, ancestors, isDesktop, quality, defaultAudio,
+  item, streams, ancestors, isDesktop, isLocalPlayback, quality, defaultAudio,
   supportsNativeAudioTracks, checkAudioTranscode,
   prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
   setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
@@ -42,6 +45,13 @@ export function useServerTrackPrefs({
   const resolveTracks = useResolveMediaTracks();
   useEffect(() => {
     if (prefsApplied.current || streams.length === 0 || !item) return;
+    if (isLocalPlayback) {
+      // Lecture locale : useLocalPlaybackTracks applique les préférences
+      // depuis le cache — ce chemin serveur est neutralisé (zéro réseau).
+      prefsApplied.current = true;
+      setPrefsReady(true);
+      return;
+    }
     if ((item.Type === "Episode" || item.Type === "Season") && ancestors === undefined) return;
     const parentId = item.ParentId;
     const seriesId = item.SeriesId;
@@ -84,5 +94,5 @@ export function useServerTrackPrefs({
       },
       onError: () => setPrefsReady(true),
     });
-  }, [streams, item, ancestors]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [streams, item, ancestors, isLocalPlayback]); // eslint-disable-line react-hooks/exhaustive-deps
 }

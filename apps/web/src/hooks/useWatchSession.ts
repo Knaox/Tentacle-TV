@@ -1,12 +1,16 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useItemAncestors, useJellyfinClient, useEpisodeNavigation, useIntroSkipper, useAutoplayConfig } from "@tentacle-tv/api-client";
+import { useItemAncestors, useJellyfinClient, useEpisodeNavigation, useIntroSkipper } from "@tentacle-tv/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
 import { useDesktopSource, mapSubtitlesToLocal } from "./useDesktopSource";
+import { useLocalSource } from "./useLocalSource";
+import { useLocalFirstMedia } from "./useLocalFirstMedia";
+import { useAutoplayConfigLocalFirst } from "./useAutoplayConfigLocalFirst";
+import { useWebPlaybackInfoFetch } from "./useWebPlaybackInfoFetch";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
 import { useServerTrackPrefs } from "./useServerTrackPrefs";
@@ -40,18 +44,23 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
   const client = useJellyfinClient();
-  const { data: item, isLoading } = useMediaItem(itemId);
-  // Config auto-play pollée pendant la lecture (seuil = MaxResumePct Jellyfin,
-  // à jour en ≤ ~60 s sans spammer l'API — cache backend 30 s + poll 30 s).
-  const { data: autoplayConfig } = useAutoplayConfig(true);
-  const { data: ancestors } = useItemAncestors(itemId);
-  // Navigation entre épisodes : Jellyfin en ligne (série complète), liste des
-  // téléchargements hors ligne — un épisode non téléchargé serait de toute
-  // façon illisible sans serveur.
+  // Résolution de la source locale AVANT toute requête serveur : en lecture
+  // locale (fichier téléchargé), AUCUNE query réseau ne doit partir — zéro
+  // bande passante, en ligne comme hors ligne.
   const offlineMode = useOfflineMode();
-  const serverNav = useEpisodeNavigation(item);
-  const localNav = useLocalEpisodeNavigation(itemId, offlineMode);
-  const { nextEpisode, previousEpisode } = offlineMode ? localNav : serverNav;
+  const { localSource, isLocalPlayback, waitingLocal } = useLocalSource({ isDesktop, itemId });
+  const { item, isLoading } = useLocalFirstMedia({ itemId, isLocalPlayback, waitingLocal });
+  // Config auto-play : pollée pendant une lecture STREAMING (seuil MaxResumePct
+  // à jour en ≤ ~60 s) ; en lecture locale, dernier état connu (localStorage).
+  const autoplayConfig = useAutoplayConfigLocalFirst(true, isLocalPlayback);
+  const { data: ancestors } = useItemAncestors(itemId, { enabled: !isLocalPlayback });
+  // Navigation entre épisodes : Jellyfin en streaming (série complète), liste
+  // des téléchargements en lecture locale ou hors ligne — zéro réseau en
+  // local, et un épisode non téléchargé serait illisible sans serveur.
+  const useLocalNav = offlineMode || isLocalPlayback;
+  const serverNav = useEpisodeNavigation(useLocalNav ? undefined : item);
+  const localNav = useLocalEpisodeNavigation(itemId, useLocalNav);
+  const { nextEpisode, previousEpisode } = useLocalNav ? localNav : serverNav;
 
   // Sécurité : si l'item n'est pas lisible (série, saison, boxset), rediriger vers la page détail
   useEffect(() => {
@@ -152,8 +161,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const desktopIsDirectStream = isDesktop && !desktopIsDirectPlay && needsAudioTranscode && quality == null;
 
   // Résolution des préférences EN LIGNE (backend) — cf. useServerTrackPrefs.
+  // Neutralisée en lecture locale (résolution locale, zéro réseau).
   useServerTrackPrefs({
-    item, streams, ancestors, isDesktop, quality, defaultAudio,
+    item, streams, ancestors, isDesktop, isLocalPlayback, quality, defaultAudio,
     supportsNativeAudioTracks, checkAudioTranscode,
     prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
     setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
@@ -168,34 +178,22 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     return () => clearTimeout(timer);
   }, [prefsReady, streams.length, item, isLoading]);
 
-  // ── Web: fetch PlaybackInfo when params change ──
-  useEffect(() => {
-    if (isDesktop || !prefsReady || !itemId) return;
-    const resumeTicks = item?.UserData?.PlaybackPositionTicks ?? 0;
-    const ticks = startTicks > 0 ? startTicks : resumeTicks;
-    // Edge/Chrome: no native audioTracks API — if user wants non-default audio,
-    // force server-side audio selection (remux/transcode) instead of direct play.
-    const forceTranscode = !supportsNativeAudioTracks && audioIndex !== defaultAudio;
-    pbInfo.fetchPlaybackInfo({
-      itemId,
-      mediaSourceId,
-      audioStreamIndex: audioIndex,
-      subtitleStreamIndex: burnInSubtitleIndex,
-      startTimeTicks: ticks > 0 ? ticks : undefined,
-      maxStreamingBitrate: quality ?? 42_000_000,
-      forceTranscode,
-    });
-  }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Web: fetch PlaybackInfo when params change (extraction — cf. hook) ──
+  useWebPlaybackInfoFetch({
+    isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
+    burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
+  });
 
   // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
   // stream classique — construit dans useDesktopSource (chaîne inchangée). ──
   const qualityMaxHeight = qualityPreset.height ?? undefined;
   const urlAudioIndex = desktopIsDirectPlay ? undefined : audioIndex;
 
-  const { desktopStreamUrl, isLocalPlayback, localSource } = useDesktopSource({
+  const { desktopStreamUrl } = useDesktopSource({
     isDesktop, itemId, prefsReady, client, mediaSourceId, urlAudioIndex,
     quality, qualityMaxHeight, desktopIsDirectPlay, startTicks,
     desktopPlaySessionId, burnInSubtitleIndex, useProgressiveRemux,
+    localSource, waitingLocal,
   });
 
   // ── Unified return values ──
@@ -254,8 +252,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (previousEpisode) navigate(`/watch/${previousEpisode.Id}`, { replace: true });
   }, [previousEpisode, navigate]);
 
-  const autoplayNextEnabled = autoplayConfig?.enabled ?? true;
-  const maxResumePct = autoplayConfig?.maxResumePct ?? 90;
+  const autoplayNextEnabled = autoplayConfig.enabled;
+  const maxResumePct = autoplayConfig.maxResumePct;
 
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
