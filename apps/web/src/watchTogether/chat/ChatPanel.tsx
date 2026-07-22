@@ -57,13 +57,7 @@ const MessageRow = memo(function MessageRow({
   );
 });
 
-export function ChatPanel({
-  chat, onInputFocusChange,
-}: {
-  chat: WtChatApi;
-  /** Saisie en cours : le parent ne doit pas estomper le panneau. */
-  onInputFocusChange?: (focused: boolean) => void;
-}) {
+export function ChatPanel({ chat }: { chat: WtChatApi }) {
   const { t } = useTranslation("watchTogether");
   const { selfId } = useWatchTogether();
   const [draft, setDraft] = useState("");
@@ -121,7 +115,6 @@ export function ChatPanel({
         onTabChange={setPickerTab}
         onClose={() => setPickerTab(null)}
         chat={chat}
-        onInputFocusChange={onInputFocusChange}
       />
 
       <div className="flex shrink-0 items-center justify-center gap-1 border-t border-white/10 px-2 py-1.5">
@@ -175,8 +168,6 @@ export function ChatPanel({
             if (e.key === "Enter") submit();
           }}
           onKeyUp={(e) => e.stopPropagation()}
-          onFocus={() => onInputFocusChange?.(true)}
-          onBlur={() => onInputFocusChange?.(false)}
           maxLength={WT_CHAT_MAX_LENGTH}
           placeholder={t("chatPlaceholder")}
           className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"
