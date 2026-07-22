@@ -27,6 +27,7 @@ pub mod localserver;
 pub mod meta;
 pub mod playback;
 pub mod queue;
+pub mod segments_snapshot;
 pub mod session;
 pub mod store;
 pub mod subs;
