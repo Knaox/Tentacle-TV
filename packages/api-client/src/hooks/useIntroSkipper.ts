@@ -6,12 +6,12 @@ import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 // ---------- Response types ----------
 
 /** intro-skipper plugin: GET /Episode/{id}/IntroSkipperSegments (dictionary format) */
-interface PluginSegmentDict {
+export interface PluginSegmentDict {
   [key: string]: { episodeId?: string; start?: number; end?: number; Start?: number; End?: number } | undefined;
 }
 
 /** intro-skipper plugin: GET /Episode/{id}/Timestamps (named-properties format) */
-interface PluginTimestamps {
+export interface PluginTimestamps {
   introduction?: { episodeId?: string; start?: number; end?: number };
   credits?: { episodeId?: string; start?: number; end?: number };
   recap?: { episodeId?: string; start?: number; end?: number };
@@ -20,7 +20,7 @@ interface PluginTimestamps {
 }
 
 /** Jellyfin 10.9+ native MediaSegments API */
-interface MediaSegmentDto {
+export interface MediaSegmentDto {
   Id: string;
   ItemId: string;
   Type: string; // "Intro" | "Outro" | "Commercial" | "Preview" | "Recap"
@@ -28,9 +28,17 @@ interface MediaSegmentDto {
   EndTicks: number;
 }
 
-interface MediaSegmentsResponse {
+export interface MediaSegmentsResponse {
   Items: MediaSegmentDto[];
   TotalRecordCount: number;
+}
+
+/** Payloads BRUTS des trois sources de segments — même forme que le
+ *  `segments.json` persisté par le snapshot desktop pour la lecture locale. */
+export interface RawSkipSources {
+  mediaSegments?: MediaSegmentsResponse | null;
+  pluginDict?: PluginSegmentDict | null;
+  pluginTs?: PluginTimestamps | null;
 }
 
 export interface SkipSegments {
@@ -47,18 +55,51 @@ function seg(s: { start?: number; end?: number; Start?: number; End?: number } |
 }
 
 /**
- * Detect skip intro/outro segments.
+ * Normalisation PURE des segments — partagée entre useIntroSkipper (requêtes
+ * serveur) et la lecture locale desktop (segments.json du snapshot).
  * Priority order:
  * 1. Jellyfin 10.9+ MediaSegments API (native)
- * 2. intro-skipper plugin — /Episode/{id}/IntroSkipperSegments (dictionary)
- * 3. intro-skipper plugin — /Episode/{id}/Timestamps (named properties)
+ * 2. intro-skipper plugin — IntroSkipperSegments (dictionary)
+ * 3. intro-skipper plugin — Timestamps (named properties)
  * 4. Chapter markers named "Intro" / "Credits"
+ */
+export function normalizeSkipSegments(raw: RawSkipSources, chapters?: ChapterInfo[]): SkipSegments {
+  const native = raw.mediaSegments;
+  if (native?.Items?.length) {
+    const intro = native.Items.find((s) => s.Type === "Intro");
+    const outro = native.Items.find((s) => s.Type === "Outro");
+    return {
+      intro: intro ? { start: intro.StartTicks / TICKS_PER_SECOND, end: intro.EndTicks / TICKS_PER_SECOND } : null,
+      credits: outro ? { start: outro.StartTicks / TICKS_PER_SECOND, end: outro.EndTicks / TICKS_PER_SECOND } : null,
+    };
+  }
+
+  // Keys can be PascalCase ("Introduction","Credits") or camelCase ("introduction","credits")
+  const dict = raw.pluginDict;
+  if (dict && Object.values(dict).some((v) => v && ((v.end ?? v.End ?? 0) > 0))) {
+    return { intro: seg(dict.Introduction ?? dict.introduction), credits: seg(dict.Credits ?? dict.credits) };
+  }
+
+  const ts = raw.pluginTs;
+  if (ts && (ts.introduction || ts.credits)) {
+    return { intro: seg(ts.introduction), credits: seg(ts.credits) };
+  }
+
+  return parseChapters(chapters);
+}
+
+/**
+ * Detect skip intro/outro segments (voir l'ordre de priorité de
+ * normalizeSkipSegments). `options.enabled=false` coupe les trois requêtes
+ * (lecture locale desktop : les segments viennent alors du disque).
  */
 export function useIntroSkipper(
   itemId: string | undefined,
-  item: MediaItem | undefined
+  item: MediaItem | undefined,
+  options?: { enabled?: boolean }
 ): SkipSegments {
   const client = useJellyfinClient();
+  const on = options?.enabled ?? true;
 
   // Try Jellyfin 10.9+ native MediaSegments API
   const { data: segmentsData, isFetched: segmentsFetched } = useQuery({
@@ -72,7 +113,7 @@ export function useIntroSkipper(
         return null;
       }
     },
-    enabled: !!itemId,
+    enabled: !!itemId && on,
     staleTime: Infinity,
     retry: false,
   });
@@ -91,7 +132,7 @@ export function useIntroSkipper(
         return null;
       }
     },
-    enabled: !!itemId && segmentsFetched && !hasNativeSegments && item?.Type === "Episode",
+    enabled: !!itemId && on && segmentsFetched && !hasNativeSegments && item?.Type === "Episode",
     staleTime: Infinity,
     retry: false,
   });
@@ -112,36 +153,12 @@ export function useIntroSkipper(
         return null;
       }
     },
-    enabled: !!itemId && segmentsFetched && !hasNativeSegments && pluginDictDone && !hasPluginDict && item?.Type === "Episode",
+    enabled: !!itemId && on && segmentsFetched && !hasNativeSegments && pluginDictDone && !hasPluginDict && item?.Type === "Episode",
     staleTime: Infinity,
     retry: false,
   });
 
-  // Priority 1: Native MediaSegments
-  if (hasNativeSegments) {
-    const intro = segmentsData!.Items.find((s) => s.Type === "Intro");
-    const outro = segmentsData!.Items.find((s) => s.Type === "Outro");
-    return {
-      intro: intro ? { start: intro.StartTicks / TICKS_PER_SECOND, end: intro.EndTicks / TICKS_PER_SECOND } : null,
-      credits: outro ? { start: outro.StartTicks / TICKS_PER_SECOND, end: outro.EndTicks / TICKS_PER_SECOND } : null,
-    };
-  }
-
-  // Priority 2: intro-skipper IntroSkipperSegments (dictionary)
-  // Keys can be PascalCase ("Introduction","Credits") or camelCase ("introduction","credits")
-  if (hasPluginDict) {
-    const introSeg = pluginDict!.Introduction ?? pluginDict!.introduction;
-    const creditsSeg = pluginDict!.Credits ?? pluginDict!.credits;
-    return { intro: seg(introSeg), credits: seg(creditsSeg) };
-  }
-
-  // Priority 3: intro-skipper Timestamps (named properties, always camelCase)
-  if (pluginTs && (pluginTs.introduction || pluginTs.credits)) {
-    return { intro: seg(pluginTs.introduction), credits: seg(pluginTs.credits) };
-  }
-
-  // Priority 4: Chapter markers
-  return parseChapters(item?.Chapters);
+  return normalizeSkipSegments({ mediaSegments: segmentsData, pluginDict, pluginTs }, item?.Chapters);
 }
 
 function parseChapters(chapters: ChapterInfo[] | undefined): SkipSegments {
