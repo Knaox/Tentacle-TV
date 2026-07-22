@@ -102,6 +102,7 @@ export default {
 
   seasonLabel: "Season {{num}}",
   seasonUnknown: "Episodes",
+  episodesDownloadedHint: "Downloaded",
   episodesCount_one: "{{count}} episode",
   episodesCount_other: "{{count}} episodes",
   episodePlay: "Play episode",

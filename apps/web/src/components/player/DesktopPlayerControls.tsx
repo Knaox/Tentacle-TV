@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "../TrackSelector";
 import { EpisodeSelectorPanel } from "./EpisodeSelectorPanel";
+import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
 import {
@@ -21,6 +22,9 @@ interface DesktopPlayerControlsProps {
   subtitle?: string;
   isDirectPlay: boolean;
   isEpisode: boolean;
+  /** Lecture locale ou hors ligne : panneau d'épisodes servi par les
+   *  téléchargements (zéro requête serveur). */
+  useLocalEpisodes: boolean;
   item?: MediaItem;
   displayAudio: AudioTrack[];
   displaySubs: SubtitleTrack[];
@@ -66,7 +70,7 @@ interface DesktopPlayerControlsProps {
  * ce sont des panneaux détachés, pas posés sur la vidéo.)
  */
 export function DesktopPlayerControls({
-  visible, state, title, subtitle, isDirectPlay, isEpisode, item,
+  visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item,
   displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality,
   hasSettings, hasNextEpisode, hasPreviousEpisode,
   dur, actualPos, displayProgress, bufProg, seekbar,
@@ -115,12 +119,19 @@ export function DesktopPlayerControls({
               />
             )}
             {showEpisodes && isEpisode && item?.SeriesId && (
-              <EpisodeSelectorPanel
-                seriesId={item.SeriesId}
-                currentEpisodeId={item.Id}
-                currentSeasonId={item.SeasonId}
-                onClose={closePanels.episodes}
-              />
+              useLocalEpisodes ? (
+                <LocalEpisodeSelectorPanel
+                  currentEpisodeId={item.Id}
+                  onClose={closePanels.episodes}
+                />
+              ) : (
+                <EpisodeSelectorPanel
+                  seriesId={item.SeriesId}
+                  currentEpisodeId={item.Id}
+                  currentSeasonId={item.SeasonId}
+                  onClose={closePanels.episodes}
+                />
+              )
             )}
           </AnimatePresence>
 
