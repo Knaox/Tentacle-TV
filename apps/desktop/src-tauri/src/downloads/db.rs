@@ -153,6 +153,13 @@ ALTER TABLE item_meta ADD COLUMN index_number INTEGER;
 ALTER TABLE item_meta ADD COLUMN parent_index_number INTEGER;
 ";
 
+/// v6 — version du contenu du snapshot méta : `heal` re-snapshotte les
+/// téléchargements antérieurs (DTO enrichi Chapters/Overview + segments
+/// « passer l'intro » persistés pour la lecture locale zéro réseau).
+const SCHEMA_V6: &str = "
+ALTER TABLE item_meta ADD COLUMN meta_version INTEGER NOT NULL DEFAULT 0;
+";
+
 fn migrate(conn: &Connection) -> Result<(), String> {
     let version: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
@@ -171,6 +178,9 @@ fn migrate(conn: &Connection) -> Result<(), String> {
     }
     if version < 5 {
         apply(conn, SCHEMA_V5, 5)?;
+    }
+    if version < 6 {
+        apply(conn, SCHEMA_V6, 6)?;
     }
     Ok(())
 }

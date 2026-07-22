@@ -9,6 +9,11 @@ use rusqlite::{params, Connection, OptionalExtension};
 use std::io::Read;
 use std::path::Path;
 
+/// Version du CONTENU du snapshot. 2 = DTO enrichi (Chapters, Overview,
+/// MediaStreams…) + `segments.json` (passer l'intro/générique). Un item sous
+/// cette version est re-snapshotté par `heal` au prochain démarrage en ligne.
+pub const CURRENT_META_VERSION: i64 = 2;
+
 #[derive(Debug, Clone)]
 pub struct MetaSpec {
     pub item_id: String,
@@ -52,7 +57,7 @@ pub fn upsert_item_meta(conn: &Connection, spec: &MetaSpec, now_ms: i64) -> Resu
     Ok(())
 }
 
-fn save_bytes(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
+pub(super) fn save_bytes(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
     let path = fsops::safe_join(root, rel)?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("mkdir meta: {e}"))?;
@@ -60,7 +65,7 @@ fn save_bytes(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
     std::fs::write(&path, bytes).map_err(|e| format!("write {rel}: {e}"))
 }
 
-fn fetch_to_vec(agent: &ureq::Agent, url: &str, token: &str) -> Result<Vec<u8>, String> {
+pub(super) fn fetch_to_vec(agent: &ureq::Agent, url: &str, token: &str) -> Result<Vec<u8>, String> {
     // X-Emby-Token : format d'auth du proxy /api/jellyfin (transmis tel quel à
     // Jellyfin). Un `Bearer` n'est PAS compris par Jellyfin → 401 silencieux
     // (c'est ce qui laissait les snapshots JSON vides).
@@ -93,10 +98,16 @@ pub fn snapshot(
     let mut ok_parts: Vec<&str> = Vec::new();
 
     // DTO de l'item + parents (épisodes) — JSON bruts, relus hors ligne.
-    // `fields=Trickplay` : le manifeste des aperçus est opt-in.
+    // Champs alignés sur useMediaItem (api-client) : en lecture locale ce
+    // snapshot REMPLACE le DTO serveur (Chapters pour le skip, Overview…).
+    // Pas d'EnableUserData : figé au téléchargement il serait périmé — la
+    // progression locale vit dans playback_state.
     let json_targets: Vec<(String, String)> = {
         let mut targets = vec![(
-            format!("{base}/Items/{}?fields=Trickplay", spec.item_id),
+            format!(
+                "{base}/Items/{}?fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status",
+                spec.item_id
+            ),
             format!("{dir}/item.json"),
         )];
         if let Some(series) = &spec.series_id {
@@ -198,6 +209,14 @@ pub fn snapshot(
         }
     }
 
+    // Segments « passer l'intro / générique » — persistés BRUTS pour la
+    // lecture locale (normalisation côté TS, zéro réseau au playback).
+    if super::segments_snapshot::fetch_and_save(
+        agent, &base, token, root, &spec.item_id, spec.kind == "episode",
+    ) {
+        ok_parts.push("segments");
+    }
+
     let state = format!(
         "{{\"ok\":[{}]}}",
         ok_parts
@@ -207,8 +226,8 @@ pub fn snapshot(
             .join(",")
     );
     conn.execute(
-        "UPDATE item_meta SET images_state = ?2, updated_at = ?3 WHERE item_id = ?1",
-        params![spec.item_id, state, now_ms_helper()],
+        "UPDATE item_meta SET images_state = ?2, meta_version = ?3, updated_at = ?4 WHERE item_id = ?1",
+        params![spec.item_id, state, CURRENT_META_VERSION, now_ms_helper()],
     )
     .map_err(|e| format!("images_state: {e}"))?;
     Ok(())
@@ -250,6 +269,16 @@ pub fn snapshot_exists(root: &Path, item_id: &str) -> bool {
 /// à son ajout ne l'ont pas (d'où le re-snapshot par `heal`).
 pub fn series_primary_exists(root: &Path, item_id: &str) -> bool {
     meta_file_exists(root, item_id, "series-primary.jpg")
+}
+
+/// Version de snapshot enregistrée (0 si base ancienne / jamais posée).
+pub fn meta_version(conn: &Connection, item_id: &str) -> i64 {
+    conn.query_row(
+        "SELECT COALESCE(meta_version, 0) FROM item_meta WHERE item_id = ?1",
+        params![item_id],
+        |row| row.get(0),
+    )
+    .unwrap_or(0)
 }
 
 fn meta_file_exists(root: &Path, item_id: &str, name: &str) -> bool {
