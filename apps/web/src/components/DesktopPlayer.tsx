@@ -74,7 +74,7 @@ export function DesktopPlayer({
   audioTracks = [], subtitleTracks = [],
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   onAudioChange, onSubtitleChange, onQualityChange,
-  isLocalPlayback = false, offline = false, localLibraryId = null,
+  isLocalPlayback = false, localLibraryId = null,
   localSubtitleFiles = EMPTY_SUBTITLE_FILES,
   onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
@@ -119,7 +119,7 @@ export function DesktopPlayer({
   // préférences de langue hors ligne sont remontées via onAudioChange/
   // onSubtitleChange — même pipeline d'application que le online. ──
   const { displayAudio, displaySubs } = useLocalPlaybackTracks({
-    isLocalPlayback, offline, fileLoaded, ready,
+    isLocalPlayback, fileLoaded, ready,
     audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
     localLibraryId, onAudioChange, onSubtitleChange, sourceKey: src,
   });
