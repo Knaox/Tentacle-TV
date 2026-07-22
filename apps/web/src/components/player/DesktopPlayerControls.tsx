@@ -22,8 +22,11 @@ interface DesktopPlayerControlsProps {
   subtitle?: string;
   isDirectPlay: boolean;
   isEpisode: boolean;
-  /** Lecture locale ou hors ligne : panneau d'épisodes servi par les
-   *  téléchargements (zéro requête serveur). */
+  /** Hors ligne (auto OU manuel — les requêtes serveur sont alors
+   *  court-circuitées) : panneau d'épisodes servi par les téléchargements.
+   *  En ligne, panneau serveur COMPLET même en lecture locale : ouvrir le
+   *  sélecteur est une action utilisateur, une requête est assumée — le
+   *  « zéro réseau » ne vaut que pour la lecture passive. */
   useLocalEpisodes: boolean;
   item?: MediaItem;
   displayAudio: AudioTrack[];
