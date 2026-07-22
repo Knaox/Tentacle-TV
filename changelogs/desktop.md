@@ -17,7 +17,7 @@ les notes Apple doivent rester génériques.
 ## [1.16.2]
 ### FR
 - Chat de groupe (Watch Together) : les contrôles du lecteur ne restent plus bloqués à l'écran après avoir écrit un message ou cliqué dans le chat — ils s'estompent dès que vous ne touchez plus à rien et reviennent en tapant ou en bougeant la souris
-- Lecture d'un fichier téléchargé : zéro donnée réseau consommée, même en ligne — fiche, chapitres, « passer l'intro » / « passer le générique », préférences de langues, épisode suivant et sélecteur d'épisodes fonctionnent entièrement depuis le disque
+- Lecture d'un fichier téléchargé : zéro donnée réseau consommée pendant la lecture, même en ligne — fiche, chapitres, « passer l'intro » / « passer le générique », préférences de langues et épisode suivant fonctionnent entièrement depuis le disque (le sélecteur d'épisodes, ouvert volontairement, affiche toute la série quand vous êtes en ligne)
 - « Passer l'intro » et « passer le générique » fonctionnent désormais hors ligne sur les contenus téléchargés (enregistrés au téléchargement, récupérés automatiquement pour les téléchargements existants)
 - Sélecteur d'épisodes du lecteur disponible hors ligne : il liste les épisodes téléchargés de la série, groupés par saison
 - Préférences de langues et langue de l'interface entièrement consultables et modifiables hors ligne : enregistrées localement puis synchronisées automatiquement au retour en ligne, sans écrasement
@@ -25,7 +25,7 @@ les notes Apple doivent rester génériques.
 - La progression d'un fichier lu localement est envoyée à Jellyfin en fin de lecture (reprise à jour sur vos autres appareils)
 ### EN
 - Group chat (Watch Together): player controls no longer stay stuck on screen after typing a message or clicking in the chat — they fade as soon as you stop interacting and come back when you type or move the mouse
-- Playing a downloaded file: zero network data used, even while online — details, chapters, "skip intro" / "skip credits", language preferences, next episode and the episode picker all work entirely from disk
+- Playing a downloaded file: zero network data used during playback, even while online — details, chapters, "skip intro" / "skip credits", language preferences and next episode all work entirely from disk (the episode picker, opened deliberately, shows the full series while you are online)
 - "Skip intro" and "skip credits" now work offline on downloaded content (saved at download time, fetched automatically for existing downloads)
 - In-player episode picker available offline: it lists the downloaded episodes of the series, grouped by season
 - Language preferences and interface language fully viewable and editable offline: saved locally, then synced automatically once back online, with no overwrite

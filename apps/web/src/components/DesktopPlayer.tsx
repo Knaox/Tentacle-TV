@@ -261,7 +261,7 @@ export function DesktopPlayer({
       <DesktopPlayerControls
         visible={showControls} state={state} title={title} subtitle={subtitle}
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item}
-        useLocalEpisodes={isLocalPlayback || offline}
+        useLocalEpisodes={offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
         curAudio={curAudio} curSub={curSub}
         currentQuality={currentQuality} sourceQuality={sourceQuality}
