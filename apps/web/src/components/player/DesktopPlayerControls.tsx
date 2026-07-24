@@ -160,11 +160,19 @@ export function DesktopPlayerControls({
               )}
               <div className="group/vol flex items-center gap-2">
                 <button onClick={() => toggleMute()} className="rounded-full p-2 hover:bg-white/10">
-                  {state.muted || state.volume === 0 ? <MuteIcon /> : <VolumeIcon />}
+                  {/* Quatre états qui suivent le volume : coupé, bas (≤33),
+                      moyen (≤66), fort — comme un OSD système. */}
+                  {state.muted || state.volume === 0
+                    ? <MuteIcon />
+                    : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
                 </button>
+                {/* `accent-color` d'un input natif ne prend qu'une couleur
+                    unie — pas le dégradé du token. On pose donc le rose plein
+                    (`--brand-accent`), la teinte dominante de la barre de
+                    progression, pour que les deux se lisent de la même couleur. */}
                 <input type="range" min={0} max={100} step={1} value={state.volume}
                   onChange={(e) => setVolume(Number(e.target.value))}
-                  className="hidden w-20 accent-tentacle-accent group-hover/vol:block" />
+                  className="hidden w-20 accent-[color:var(--brand-accent)] group-hover/vol:block" />
               </div>
               <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>
