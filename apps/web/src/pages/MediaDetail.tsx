@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -40,14 +40,40 @@ export function MediaDetail() {
   // Collection (BoxSet) : contenu navigable de la collection
   const { data: collectionItems } = useCollectionItems(item?.Type === "BoxSet" ? item.Id : undefined);
 
-  // Origine de l'ouverture, lue UNE fois au montage (initialiseur paresseux) :
-  // le rectangle de la carte cliquée, capturé juste avant la navigation.
+  // Origine de l'ouverture : le rectangle du visuel cliqué, capturé juste avant
+  // la navigation.
   const [origin, setOrigin] = useState<DetailOrigin | null>(() => consumeDetailOrigin(itemId));
+  // Relue à CHAQUE changement d'item, et pas seulement au montage. React Router
+  // réutilise ce composant d'une fiche à l'autre — un initialiseur `useState` ne
+  // s'y rejoue pas —, si bien que passer d'une fiche à une fiche similaire
+  // n'animait rien du tout. La lecture est non destructive et rend le même objet
+  // tant que rien n'a été recapturé : la rejouer est sans effet.
+  useEffect(() => {
+    setOrigin(consumeDetailOrigin(itemId));
+    setTarget(null);
+  }, [itemId]);
   // Place finale du visuel, remontée par `DetailPoster` une fois la mise en
   // page faite : c'est la cible du vol. `useCallback` pour ne pas relancer la
   // mesure à chaque rendu de la page.
   const [target, setTarget] = useState<TargetRect | null>(null);
-  const handleMeasure = useCallback((rect: TargetRect) => setTarget(rect), []);
+  /**
+   * La cible est remontée à chaque changement de taille du visuel, pas une
+   * seule fois — et la plupart de ces remontées donnent le MÊME rectangle
+   * (mise en page qui se stabilise, police qui arrive, image qui se décode).
+   * Sans cette comparaison, chacune crée un objet neuf, donc un rendu de la
+   * page, donc un nouveau `target` pour le calque : l'animation se relançait en
+   * boucle et clignotait.
+   */
+  const handleMeasure = useCallback((rect: TargetRect) => {
+    setTarget((prev) =>
+      prev && prev.top === rect.top && prev.left === rect.left
+        && prev.width === rect.width && prev.height === rect.height
+        ? prev
+        : rect,
+    );
+  }, []);
+  /** Stable : passé en dépendance de l'effet qui LANCE l'animation du calque. */
+  const handleOverlayDone = useCallback(() => setOrigin(null), []);
 
   // Calculé AVANT le retour anticipé : le calque d'ouverture en a besoin, et il
   // doit rester au même index de fragment dans les deux branches (React
@@ -61,7 +87,7 @@ export function MediaDetail() {
       origin={origin}
       backdropUrl={backdropUrl}
       target={target}
-      onDone={() => setOrigin(null)}
+      onDone={handleOverlayDone}
     />
   );
 
