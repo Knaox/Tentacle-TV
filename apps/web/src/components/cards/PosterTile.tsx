@@ -8,7 +8,7 @@ import { CardProgressBar } from "./CardProgressBar";
 import { CardQuickActions } from "./CardQuickActions";
 import { playTargetPath } from "./playTarget";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
-import { InfoIcon, PlayIcon } from "../icons/HeroIcons";
+import { PlayIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
 
 interface PosterTileProps {
@@ -72,12 +72,6 @@ export function PosterTile({
     navigate(playTargetPath(item));
   };
 
-  const handleInfo = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    navigate(`/media/${item.Id}`);
-  };
-
   return (
     <CardFrame hovered={hovered} aspect="aspect-[2/3]" imageUrl={imageUrl}>
       <CardImage src={imageUrl} alt={item.Name} />
@@ -125,10 +119,9 @@ export function PosterTile({
             className="pointer-events-none absolute inset-x-0 bottom-0 h-24"
             style={{ background: "var(--card-reveal-scrim)" }}
           />
-          {/* Lecture à gauche, accès à la fiche à droite : les deux seules
-              destinations d'une affiche. Le clic sur la carte ouvre déjà la
-              fiche, mais rien ne le signalait — d'où ce repère explicite. */}
-          <div className="relative flex items-center justify-between px-2 pb-2.5">
+          {/* Lecture seule : le clic sur la carte ouvre déjà la fiche, le
+              bouton « Plus d'infos » qui l'accompagnait faisait doublon. */}
+          <div className="relative flex items-center px-2 pb-2.5">
             <PressableScale
               onClick={handlePlay}
               aria-label={t("common:play")}
@@ -137,15 +130,6 @@ export function PosterTile({
               style={{ boxShadow: "var(--elev-2)" }}
             >
               <PlayIcon />
-            </PressableScale>
-
-            <PressableScale
-              onClick={handleInfo}
-              aria-label={t("common:moreInfo")}
-              title={t("common:moreInfo")}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.5)] text-on-media-primary backdrop-blur-sm transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.7)]"
-            >
-              <InfoIcon className="h-4 w-4" />
             </PressableScale>
           </div>
         </div>
