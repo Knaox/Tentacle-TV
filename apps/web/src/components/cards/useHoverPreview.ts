@@ -247,14 +247,41 @@ export function useHoverPreview(disabled = false): HoverPreview {
       });
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+
+    /**
+     * Toute interaction AILLEURS referme l'aperçu.
+     *
+     * Ouvrir le menu profil, le panneau Watch Together, une boîte de dialogue —
+     * n'importe quelle surface — laissait sinon l'aperçu ouvert derrière elle :
+     * périmé, et suspendu à un curseur qui est déjà parti ailleurs. Le remettre
+     * simplement sous ces surfaces dans l'ordre d'empilement ne suffit pas ; il
+     * n'a plus rien à faire à l'écran.
+     *
+     * Écouté en phase de CAPTURE sur `pointerdown`, donc avant que la surface
+     * visée ne s'ouvre et avant tout `click`. Et surtout : aucune de ces
+     * surfaces n'a à connaître l'existence de l'aperçu. C'est lui qui se retire,
+     * ce qui vaut aussi pour celles qui n'existent pas encore.
+     */
+    const onPointerDown = (e: PointerEvent) => {
+      const node = e.target;
+      const el = node instanceof Element ? node : null;
+      if (!el) return;
+      // Sur la carte elle-même : c'est un clic de navigation, la carte s'en
+      // charge. Dans le panneau : ce sont ses propres actions.
+      if (anchorRef.current?.contains(el) || el.closest("[data-preview-panel]")) return;
+      close();
+    };
+
     window.addEventListener("scroll", reflow, true);
     window.addEventListener("resize", reflow);
     document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", reflow, true);
       window.removeEventListener("resize", reflow);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
     };
   }, [open, close]);
 

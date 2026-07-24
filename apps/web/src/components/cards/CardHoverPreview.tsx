@@ -77,7 +77,21 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
           // léger, se lit comme de l'agitation quand il se répète à chaque carte
           // survolée — d'où un amortissement conservé haut.
           transition={{ type: "spring", stiffness: 300, damping: 28, mass: 0.8 }}
-          className="fixed z-40"
+          // `z-30` et non `z-40`, qui était le défaut.
+          //
+          // `TopNav` est en `fixed z-40`, et le menu profil comme le panneau
+          // Watch Together vivent DEDANS en `z-50` — un z-index qui n'a cours
+          // que dans le contexte d'empilement de la nav, pas au niveau racine.
+          // Face à ce panneau, également en `z-40` mais portalisé sur
+          // `document.body`, c'est donc l'ORDRE DU DOM qui départageait : le
+          // portail étant ajouté en dernier, l'aperçu passait par-dessus les
+          // menus ouverts.
+          //
+          // L'échelle, du plus bas au plus haut : contenu de page 10-20,
+          // APERÇU 30, navigation et ses menus 40-50, transition d'ouverture
+          // 60, bandeaux 90, plein écran 100+. Un aperçu est la surface la plus
+          // éphémère de toutes : sa place est en bas de cette liste.
+          className="fixed z-30"
           style={{
             // Toujours le bord HAUT de la carte : le panneau part d'elle et n'en
             // bouge plus. En `down` il grandit vers le bas au fil du déroulé du
