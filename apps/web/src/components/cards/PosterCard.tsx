@@ -62,7 +62,8 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
   return (
     <div
       ref={rootRef}
-      className="group/card row-dim-card relative flex-shrink-0 cursor-pointer"
+      // `snap-start` : point d'accroche de la rangée (cf. `MediaRow`).
+      className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
         width: `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
         animation: "fadeSlideUp 0.45s ease both",

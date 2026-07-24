@@ -64,7 +64,10 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
       // intentions — vignette pour lire, tiroir pour la fiche — et chacune de
       // ses zones affiche son propre curseur. Laisser la main sur la carte
       // dessous laissait croire à une troisième cible cliquable.
-      className={`group/card row-dim-card relative flex-shrink-0 ${preview.panelActive ? "" : "cursor-pointer"}`}
+      // `snap-start` : point d'accroche de la rangée (cf. `MediaRow`). C'est ce
+      // qui fait qu'un défilement s'arrête sur une carte entière plutôt qu'au
+      // milieu de l'une d'elles.
+      className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
       style={{
         width: `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
         animation: "fadeSlideUp 0.45s ease both",

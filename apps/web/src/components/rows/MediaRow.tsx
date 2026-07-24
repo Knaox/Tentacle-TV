@@ -89,11 +89,21 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
             Le panneau d'aperçu, lui, est portalisé : il ne déborde pas d'ici.
 
             `row-dim` porté par le SCROLLER et non par la <section> : sur la
-            section, survoler une flèche ou le titre éteindrait toute la rangée. */}
+            section, survoler une flèche ou le titre éteindrait toute la rangée.
+
+            Accroche au défilement : `proximity` et non `mandatory`. Le
+            défilement libre à la molette reste naturel — `mandatory` reprend la
+            main à chaque impulsion et donne une rangée qui « colle » —, mais
+            tout arrêt près d'un bord de carte recale la rangée dessus. Le
+            `scroll-padding` gauche vaut la gouttière : sans lui, la carte
+            accrochée viendrait se coller au bord de la fenêtre au lieu de
+            s'aligner sur le titre de la rangée. Conséquence directe : la carte
+            de tête n'est plus rognée, donc son survol se comporte comme les
+            autres. */}
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="row-dim row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-4 pt-3 scrollbar-hide"
+          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-4 pt-3 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
           {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
               un carrousel (ex. doublon de bibliothèque) — un Id seul provoque
