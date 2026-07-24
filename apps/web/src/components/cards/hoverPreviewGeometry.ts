@@ -5,10 +5,23 @@ export interface AnchorRect {
   height: number;
 }
 
+/**
+ * Sens de déploiement du tiroir d'informations.
+ *  • `down` — cas nominal : la vignette se pose sur la carte, le tiroir se
+ *    déroule dessous ;
+ *  • `up` — carte trop basse : le tiroir se déroule AU-DESSUS. La vignette,
+ *    elle, ne bouge pas d'un pixel dans les deux cas.
+ */
+export type PreviewDirection = "down" | "up";
+
 export interface PreviewRect {
-  top: number;
   left: number;
   width: number;
+  direction: PreviewDirection;
+  /** Ancrage CSS `top` — renseigné en `down` uniquement. */
+  top?: number;
+  /** Ancrage CSS `bottom` — renseigné en `up` uniquement. */
+  bottom?: number;
 }
 
 /** Marge minimale entre le panneau et le haut / bas de la fenêtre. */
@@ -29,8 +42,26 @@ export interface PreviewBounds {
   left: number;
   right: number;
 }
-/** Hauteur du bloc d'informations déroulé, pour le clamp vertical. */
+/** Hauteur du bloc d'informations déroulé, pour le choix du sens. */
 const BODY_HEIGHT = 150;
+
+/**
+ * Décalage horizontal toléré avant de renoncer au panneau, en fraction de la
+ * largeur de carte.
+ *
+ * La règle précédente était binaire : la carte devait tenir ENTIÈREMENT entre
+ * les bornes de la rangée, sinon rien. Or la dernière carte visible d'une
+ * rangée est presque toujours rognée par le bord — c'est le principe même d'un
+ * carrousel, qui laisse dépasser la suivante pour signaler qu'il y a un
+ * ailleurs. Ces cartes-là n'avaient donc jamais de panneau, alors qu'elles sont
+ * parfaitement survolables.
+ *
+ * Le panneau vient désormais BUTER contre la borne de rangée. Il n'est refusé
+ * que si l'écart qui en résulte dépasse un quart de la carte : en deçà il
+ * recouvre encore l'essentiel de son affiche et désigne sans ambiguïté le bon
+ * média ; au-delà il commence à empiéter sur la voisine.
+ */
+const MAX_SHIFT_RATIO = 0.25;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(value, max));
@@ -41,19 +72,59 @@ export function estimatePreviewHeight(cardWidth: number): number {
 }
 
 /**
- * Décalage vertical que le panneau subirait pour tenir dans la fenêtre. Sert à
- * REFUSER l'ouverture quand il devrait trop remonter : sur une carte proche du
- * bas de l'écran, le clamp l'arrachait de sa carte et le posait plus haut, sur
- * une rangée qui n'était pas la sienne.
+ * Bord gauche du panneau, borné par la rangée. Le panneau reprenant la largeur
+ * EXACTE de la carte, l'idéal est le bord gauche de la carte elle-même.
  */
-export function previewUpwardShift(
-  cardTop: number,
-  cardWidth: number,
-  viewportHeight: number,
+function boundedLeft(anchor: AnchorRect, viewportWidth: number, bounds?: PreviewBounds): number {
+  const minX = bounds ? bounds.left : EDGE_MARGIN;
+  const maxX = bounds ? bounds.right : viewportWidth - EDGE_MARGIN;
+  return clamp(anchor.left, minX, Math.max(minX, maxX - anchor.width));
+}
+
+/**
+ * De combien le panneau doit-il glisser latéralement pour tenir dans la
+ * rangée ? Zéro quand la carte est entièrement visible.
+ */
+export function previewHorizontalShift(
+  anchor: AnchorRect,
+  viewportWidth: number,
+  bounds?: PreviewBounds,
 ): number {
-  const height = estimatePreviewHeight(cardWidth);
-  const maxTop = Math.max(EDGE_MARGIN, viewportHeight - height - EDGE_MARGIN);
-  return Math.max(0, cardTop - clamp(cardTop, EDGE_MARGIN, maxTop));
+  return Math.abs(boundedLeft(anchor, viewportWidth, bounds) - anchor.left);
+}
+
+/**
+ * Le panneau peut-il s'ouvrir sur cette carte ?
+ *
+ * Une seule condition reste : le décalage horizontal doit rester raisonnable
+ * (cf. `MAX_SHIFT_RATIO`). La contrainte verticale a disparu — elle refusait
+ * les cartes trop basses parce que le panneau, toujours déroulé vers le bas,
+ * aurait dû remonter pour tenir à l'écran, et se serait retrouvé sur la rangée
+ * du dessus. Le sens de déploiement s'inverse désormais (`up`) : le panneau
+ * reste sur sa carte quelle que soit sa position dans la fenêtre.
+ */
+export function canAnchorPreview(
+  anchor: AnchorRect,
+  viewport: { width: number; height: number },
+  bounds?: PreviewBounds,
+): boolean {
+  if (anchor.width === 0) return false;
+  return previewHorizontalShift(anchor, viewport.width, bounds) <= anchor.width * MAX_SHIFT_RATIO;
+}
+
+/**
+ * Sens de déploiement : vers le bas tant qu'il y a la place, vers le haut
+ * sinon. À égalité de manque de place, on garde le bas (cas nominal).
+ */
+function resolveDirection(
+  anchor: AnchorRect,
+  viewportHeight: number,
+  height: number,
+): PreviewDirection {
+  const roomBelow = viewportHeight - EDGE_MARGIN - anchor.top;
+  const roomAbove = anchor.top + anchor.height - EDGE_MARGIN;
+  if (height <= roomBelow) return "down";
+  return roomAbove > roomBelow ? "up" : "down";
 }
 
 /**
@@ -68,47 +139,45 @@ export function previewUpwardShift(
  *
  * Le panneau reprend EXACTEMENT la largeur et l'origine de la carte. Il ne
  * l'agrandit pas et ne recadre pas son image : il s'y superpose au pixel près,
- * puis déroule son bloc d'informations vers le bas. Toutes les versions qui
- * l'élargissaient — même de 12 % — produisaient un décalage visible avec la
- * carte restée dessous, et il fallait ruser pour le rattraper. Ne rien changer
- * à la géométrie de départ supprime le problème à la racine.
+ * puis déroule son bloc d'informations. Toutes les versions qui l'élargissaient
+ * — même de 12 % — produisaient un décalage visible avec la carte restée
+ * dessous, et il fallait ruser pour le rattraper. Ne rien changer à la
+ * géométrie de départ supprime le problème à la racine.
+ *
+ * Verticalement, le panneau n'est JAMAIS recadré dans la fenêtre : il est
+ * ancré par le bord de la carte du côté où il se déroule (`top` en `down`,
+ * `bottom` en `up`). Un recadrage l'arracherait de sa carte pour le poser sur
+ * une rangée qui n'est pas la sienne — c'est ce que faisait le clamp vertical
+ * d'origine, raison pour laquelle il fallait alors refuser l'ouverture.
  */
 export function computePreviewRect(
   anchor: AnchorRect,
   viewport: { width: number; height: number },
   bounds?: PreviewBounds,
 ): PreviewRect {
-  const minX = bounds ? bounds.left : EDGE_MARGIN;
-  const maxX = bounds ? bounds.right : viewport.width - EDGE_MARGIN;
   const width = anchor.width;
-  const height = (width * 9) / 16 + BODY_HEIGHT;
+  const left = boundedLeft(anchor, viewport.width, bounds);
+  const direction = resolveDirection(anchor, viewport.height, estimatePreviewHeight(width));
 
-  const left = clamp(
-    anchor.left + anchor.width / 2 - width / 2,
-    minX,
-    Math.max(minX, maxX - width),
-  );
-  // Aligné sur le HAUT de la carte, jamais centré dessus. Le panneau est plus
-  // haut qu'elle (≈313 px contre 194) : centré, il débordait d'une soixantaine
-  // de pixels vers le haut et recouvrait le TITRE de la rangée. Aligné en haut,
-  // il ne se déploie que vers le bas, sur l'espace libre entre deux rangées.
-  const top = clamp(
-    anchor.top,
-    EDGE_MARGIN,
-    Math.max(EDGE_MARGIN, viewport.height - height - EDGE_MARGIN),
-  );
-
-  return { top, left, width };
+  // Aligné sur un BORD de la carte, jamais centré dessus. Le panneau est plus
+  // haut qu'elle (≈313 px contre 194) : centré, il déborderait d'une soixantaine
+  // de pixels du mauvais côté et recouvrirait le titre de la rangée.
+  return direction === "down"
+    ? { left, width, direction, top: anchor.top }
+    : { left, width, direction, bottom: viewport.height - (anchor.top + anchor.height) };
 }
 
 /**
  * Origine de l'animation d'ouverture, en pourcentages du panneau : le zoom
  * part du centre de la CARTE, pas du centre du panneau. Sans ça, un panneau
- * recadré contre un bord d'écran semble surgir d'ailleurs.
+ * buté contre un bord d'écran semble surgir d'ailleurs — et en déploiement
+ * `up`, où la vignette occupe le BAS du panneau, il dériverait franchement.
  */
 export function previewOrigin(anchor: AnchorRect, rect: PreviewRect): string {
-  const height = rect.width * 0.5625 + BODY_HEIGHT;
+  const height = estimatePreviewHeight(rect.width);
+  const panelTop =
+    rect.direction === "down" ? (rect.top ?? anchor.top) : anchor.top + anchor.height - height;
   const x = ((anchor.left + anchor.width / 2 - rect.left) / rect.width) * 100;
-  const y = ((anchor.top + anchor.height / 2 - rect.top) / height) * 100;
+  const y = ((anchor.top + anchor.height / 2 - panelTop) / height) * 100;
   return `${clamp(x, 0, 100)}% ${clamp(y, 0, 100)}%`;
 }
