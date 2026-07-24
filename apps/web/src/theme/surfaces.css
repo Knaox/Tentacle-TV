@@ -58,11 +58,17 @@
   --hero-ambilight-sat: 1.7;
   --hero-ambilight-opacity: 0.55;
 
-  /* Fiche média : même halo, plus discret. Sa bannière est à fond perdu, sa
-   * lumière ne s'échappe donc que par le BAS — c'est-à-dire derrière le bloc
-   * titre, en texte blanc. Au réglage de l'accueil, où la lumière ne tombe que
-   * sur du fond de page, elle y mangeait le contraste. */
-  --detail-ambilight-opacity: 0.4;
+  /* Halo des bannières À FOND PERDU (fiche média, bibliothèque).
+   *
+   * Elles ne sont pas encadrées : leur bas se résout à la couleur de page pour
+   * raccorder sans couture, si bien qu'un halo posé DERRIÈRE est masqué dans la
+   * bannière et n'apparaît que dessous, avec un bord supérieur net — la « ligne
+   * de séparation ». Il est donc posé PAR-DESSUS le bas de la bannière, en
+   * fusion `screen` : ce mode n'assombrit jamais (screen sur du noir rend la
+   * couleur telle quelle, screen sur du blanc rend blanc), il ne peut donc pas
+   * créer de bande sombre. Un masque vertical doux aux deux bouts interdit la
+   * moindre arête. La lumière nappe la couture et déborde dans la page. */
+  --detail-ambilight-opacity: 0.6;
 
   /* Il n'y a PAS de hairline de couture basse (`--hero-edge-light`, supprimée).
    * Elle supposait une couture visible entre bannière et page. En réalité les
@@ -232,7 +238,11 @@
    * `--hero-brand-wash`, dont les alphas sont divisés par deux en clair. */
   --hero-ambilight-sat: 1.25;
   --hero-ambilight-opacity: 0.3;
-  --detail-ambilight-opacity: 0.2;
+  /* En clair, `screen` sur fond nacré est quasiment neutre — la lumière ne se
+   * pose que sur ce qu'il reste de sombre au bas de la bannière. On peut donc
+   * monter l'intensité sans salir : c'est le contraire du halo DERRIÈRE, qui
+   * salissait. */
+  --detail-ambilight-opacity: 0.5;
   --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.14);
 }
 
@@ -253,6 +263,23 @@
 
 .card-spotlight[data-lit="true"]::after {
   opacity: 1;
+}
+
+/* ── Lueur de raccord des bannières à fond perdu ────────────────────────
+ * `screen` : la lumière ne peut qu'ÉCLAIRCIR le raccord, donc aucune bande
+ * sombre. Le masque vertical s'éteint aux DEUX bouts — nul en haut (l'image
+ * vive de la bannière n'est pas délavée), plein sur la couture, nul en bas (la
+ * lumière se fond dans la page) : aucun bord franc n'est possible d'un côté
+ * comme de l'autre. C'est ce double garde-fou — mode additif + masque bilatéral
+ * — qui donne le halo SANS la ligne.
+ *
+ * Posée en frère de la boîte image, mais peinte AVANT le bloc titre (frère
+ * `z-10` de `MediaDetail`) : la fusion se mélange à la bannière et à la page,
+ * jamais au texte du titre, qui reste intact. */
+.hero-glow {
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);
 }
 
 /* ── Halo de ciblage ────────────────────────────────────────────────────
