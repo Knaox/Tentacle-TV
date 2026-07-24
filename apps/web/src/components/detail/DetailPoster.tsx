@@ -57,7 +57,13 @@ export function DetailPoster({ item, onMeasure }: DetailPosterProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className={`relative flex-shrink-0 overflow-hidden rounded-[var(--radius-lg)] ring-1 ring-line-subtle ${
+      // `self-start` : sans lui la boîte s'ÉTIRE sur toute la hauteur de la
+      // rangée flex (comportement par défaut, `align-items: stretch`), pendant
+      // que l'image garde son ratio. Le cadre arrondi se retrouvait alors
+      // beaucoup plus haut que son image, avec un aplat vide en dessous —
+      // criant sur un still d'épisode (352 × 198 dans un cadre de 330 de haut),
+      // discret sur une affiche 2:3 qui remplit presque la rangée.
+      className={`relative flex-shrink-0 self-start overflow-hidden rounded-[var(--radius-lg)] ring-1 ring-line-subtle ${
         isEpisode ? "w-40 md:w-[22rem]" : "w-24 md:w-56"
       }`}
       style={{ boxShadow: "var(--elev-3)" }}

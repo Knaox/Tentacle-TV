@@ -126,9 +126,16 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           aplat opaque y ferait une marche visible. */}
       <div className="mb-4 px-4 md:px-8">
         <div className="relative w-full max-w-md">
+          {/* Le champ repose SUR la bannière : `bg-glass-tint` (une teinte à
+              peine posée) et `ring-line-subtle` s'y perdaient complètement —
+              sur une affiche lumineuse on ne distinguait plus ni le contour ni
+              le texte d'invite. Fond opaque de surface et liseré franc : c'est
+              un contrôle, il doit se lire comme tel avant même d'être survolé.
+              L'icône et l'invite montent d'un cran de contraste pour la même
+              raison. */}
           <svg
             aria-hidden
-            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-content-quaternary"
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-content-secondary"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -140,7 +147,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t("common:searchInLibrary", { name: libraryName })}
-            className="w-full rounded-full bg-glass-tint py-3 pl-11 pr-5 text-content-primary placeholder-content-quaternary shadow-[var(--elev-1)] outline-none ring-1 ring-line-subtle backdrop-blur-md transition-all focus:ring-[rgba(var(--brand-rgb),0.6)]"
+            className="w-full rounded-full bg-[color:var(--surface-2)] py-3 pl-11 pr-5 text-content-primary placeholder-content-tertiary shadow-[var(--elev-2)] outline-none ring-1 ring-line-strong transition-all focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.75)]"
           />
         </div>
       </div>

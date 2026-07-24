@@ -20,7 +20,15 @@ interface HoverPreviewInfoProps {
    *    thème clair.
    */
   tone?: "panel" | "media";
-  /** Sans synopsis : la version superposée n'a que la hauteur de la carte. */
+  /**
+   * Version resserrée, pour le voile superposé qui n'a que la hauteur de la
+   * carte : pas de synopsis, pas de rangée d'actions (elle vit alors dans le
+   * coin de la vignette), et le code d'épisode replié dans la ligne méta.
+   *
+   * Empilés, titre + actions + code + méta faisaient quatre rangées dans 194 px
+   * de carte : le voile mangeait plus de la moitié de l'image, et l'aperçu ne
+   * montrait plus grand-chose du média qu'il est censé faire voir.
+   */
   compact?: boolean;
   /** Ouverture de la fiche — le bloc est cliquable dans son intégralité. */
   onOpenDetail: (e: React.MouseEvent) => void;
@@ -69,11 +77,13 @@ export function HoverPreviewInfo({
     >
       {/* Le CTA de lecture n'est pas ici : c'est l'icône posée en haut à gauche
           de la vignette, qui sert de repère au survol sans masquer l'image. */}
-      <div className="flex items-center gap-1.5">
-        <CardQuickActions item={item} variant="bar" />
-      </div>
+      {!compact && (
+        <div className="flex items-center gap-1.5">
+          <CardQuickActions item={item} variant="bar" />
+        </div>
+      )}
 
-      {epLabel && (
+      {epLabel && !compact && (
         <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${labelClass}`}>
           {epLabel}
         </p>
@@ -82,6 +92,11 @@ export function HoverPreviewInfo({
       {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on annonce
           alors le nombre d'épisodes, plutôt que de laisser la ligne vide. */}
       <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${metaClass}`}>
+        {/* En version resserrée le code d'épisode rejoint cette ligne au lieu
+            d'occuper la sienne — une rangée gagnée sur quatre. */}
+        {epLabel && compact && (
+          <span className={`font-bold uppercase tracking-[0.12em] ${labelClass}`}>{epLabel}</span>
+        )}
         {addedCount > 1 ? (
           <span className={`font-medium ${highlightClass}`}>
             {t("common:addedEpisodes", { count: addedCount })}
