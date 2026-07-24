@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DETAIL_HERO_BOX, DETAIL_SCRIM_BOTTOM } from "./DetailHero";
@@ -53,16 +53,35 @@ const FALLBACK_MS = 1000;
 export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: DetailOpenOverlayProps) {
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(false);
+  /**
+   * Origine déjà lancée. Une ouverture ne se joue QU'UNE FOIS.
+   *
+   * L'effet ci-dessous dépend de `onDone`, et rien ne garantit qu'un appelant
+   * le mémoïse ; il se rejouait donc à chaque rendu de la page. Tant que la
+   * cible était mesurée une seule fois, ces rendus étaient rares et le défaut
+   * invisible. Dès que la mesure a suivi la mise en page, ils se sont
+   * multipliés — et chaque exécution remettait `playing` à vrai, y compris
+   * pendant la sortie : l'animation repartait de son point de départ, encore et
+   * encore. C'est le clignotement. Le composant se protège lui-même plutôt que
+   * de compter sur la discipline de ses appelants.
+   */
+  const startedFor = useRef<DetailOrigin | null>(null);
+  const guardRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    if (!origin) return;
+    if (!origin || startedFor.current === origin) return;
+    startedFor.current = origin;
     // Sous `prefers-reduced-motion`, la fiche apparaît directement : pas de
     // vol, pas de zoom, aucune surface géante qui traverse l'écran.
     if (reduced) { onDone(); return; }
     setPlaying(true);
-    const guard = setTimeout(() => setPlaying(false), FALLBACK_MS);
-    return () => clearTimeout(guard);
+    clearTimeout(guardRef.current);
+    guardRef.current = setTimeout(() => setPlaying(false), FALLBACK_MS);
   }, [origin, reduced, onDone]);
+
+  // Nettoyage au démontage SEULEMENT : purger le garde-fou à chaque passage de
+  // l'effet le supprimerait dès le premier rendu suivant l'ouverture.
+  useEffect(() => () => clearTimeout(guardRef.current), []);
 
   if (!origin || reduced) return null;
 
