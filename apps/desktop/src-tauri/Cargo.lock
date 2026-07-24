@@ -4347,6 +4347,7 @@ dependencies = [
 name = "tentacle-desktop"
 version = "1.15.0"
 dependencies = [
+ "base64 0.22.1",
  "fs4",
  "getrandom 0.2.17",
  "gtk",

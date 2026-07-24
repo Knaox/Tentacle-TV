@@ -2,7 +2,7 @@
 //! suffisant pour les opérations de session ; le moteur de téléchargement
 //! (phase ultérieure) aura son propre état managé longue durée.
 
-use super::{db, fsops, localserver, playback, purge, session, store};
+use super::{avatar, db, fsops, localserver, playback, purge, session, store};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 
@@ -41,6 +41,21 @@ pub fn session_cache_set(
 pub fn session_cache_clear(app: AppHandle, user_id: String) -> Result<(), String> {
     let conn = open_db(&app)?;
     session::clear(&conn, &user_id)
+}
+
+/* ---- Photo de profil hors ligne ---- */
+
+/// Met la photo de profil en cache local (JPEG en base64). Appelé à chaque
+/// contact serveur réussi : la copie locale suit donc les changements de photo.
+#[tauri::command]
+pub fn avatar_cache_put(app: AppHandle, user_id: String, base64_jpeg: String) -> Result<(), String> {
+    avatar::put(&app, &user_id, &base64_jpeg)
+}
+
+/// Relit la photo mise en cache (base64), ou `None` s'il n'y en a jamais eu.
+#[tauri::command]
+pub fn avatar_cache_get(app: AppHandle, user_id: String) -> Result<Option<String>, String> {
+    avatar::get(&app, &user_id)
 }
 
 /* ---- Stockage : racine, espace, occupation ---- */

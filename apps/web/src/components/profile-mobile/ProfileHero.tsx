@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AVATAR_RING_STYLE } from "../userMenu/menuItems";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
@@ -19,13 +19,11 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
   const { t } = useTranslation("profile");
   const { t: tNav } = useTranslation("nav");
   const { show } = useToast();
-  const { avatarUrl, avatarVersion, uploading, upload, userId } = useAvatarUpload();
+  const { avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId } = useAvatarUpload();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [imageFailed, setImageFailed] = useState(false);
 
   const handleFile = async (file: File) => {
     const ok = await upload(file);
-    if (ok) setImageFailed(false);
     show(ok ? "success" : "error", t(ok ? "avatarUpdated" : "avatarUpdateFailed"));
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -41,13 +39,15 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-cta-brand-fg transition-transform duration-200 active:scale-95"
         style={AVATAR_RING_STYLE}
       >
-        {avatarUrl && !imageFailed ? (
+        {/* `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis
+            sur l'initiale s'il n'y en a aucune (cf. `useAvatarUpload`). */}
+        {avatarSrc ? (
           <img
-            key={avatarVersion}
-            src={avatarUrl}
+            key={`${avatarVersion}-${avatarSrc}`}
+            src={avatarSrc}
             alt=""
             className="h-full w-full object-cover"
-            onError={() => setImageFailed(true)}
+            onError={onAvatarError}
           />
         ) : (
           initial
