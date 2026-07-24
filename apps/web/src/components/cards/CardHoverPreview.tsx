@@ -77,14 +77,21 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
           transition={{ type: "spring", stiffness: 190, damping: 26, mass: 1 }}
           className="fixed z-40"
           style={{
+            // `top` OU `bottom`, jamais les deux : le panneau est ancré par le
+            // bord de la carte du côté où son tiroir se déroule. En `up`, il
+            // grandit donc VERS LE HAUT au fil du déroulé, et la vignette reste
+            // rigoureusement sur la carte.
             top: placement.rect.top,
+            bottom: placement.rect.bottom,
             left: placement.rect.left,
             width: placement.rect.width,
             maxHeight: `calc(100vh - 32px)`,
-            // Origine au CENTRE de la vignette, pas au centre du panneau : le
-            // bloc d'infos se déroule sous elle, un centre géométrique ferait
-            // dériver l'image vers le haut au fur et à mesure du déroulé.
-            transformOrigin: "50% 25%",
+            // Origine au CENTRE de la VIGNETTE, pas au centre du panneau : le
+            // bloc d'infos se déroule d'un côté, un centre géométrique ferait
+            // dériver l'image au fur et à mesure. La valeur était jusqu'ici
+            // figée à « 50% 25% » — juste en déploiement vers le bas, fausse
+            // dès que le tiroir passe au-dessus.
+            transformOrigin: placement.origin,
             willChange: "transform",
           }}
         >
@@ -113,7 +120,12 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
               boxShadow: "var(--elev-card-hover), var(--card-ring-glow), var(--preview-panel-ring)",
             }}
           >
-            <HoverPreviewBody item={item} cardImageUrl={cardImageUrl} onNavigate={onClose} />
+            <HoverPreviewBody
+              item={item}
+              cardImageUrl={cardImageUrl}
+              direction={placement.rect.direction}
+              onNavigate={onClose}
+            />
           </div>
         </motion.div>
       )}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
-import { previewUpwardShift } from "./hoverPreviewGeometry";
+import { canAnchorPreview } from "./hoverPreviewGeometry";
 import type { AnchorRect, PreviewBounds } from "./hoverPreviewGeometry";
 
 /**
@@ -32,23 +32,24 @@ function boundsFor(card: HTMLElement | null): PreviewBounds | undefined {
 }
 
 /**
- * Le panneau peut-il se poser SUR cette carte, sans être déplacé ?
+ * Le panneau peut-il se poser SUR cette carte ?
  *
- * Règle unique des deux axes : un aperçu qu'il faut bouger pour le faire tenir
- * ne désigne plus son média — il vaut mieux ne pas l'ouvrir et laisser la carte
- * afficher son propre survol.
- *  • horizontalement, la carte doit tenir entre les bornes de la rangée
- *    (carte à demi sortie → le panneau atterrissait sur la voisine) ;
- *  • verticalement, le panneau ne doit pas remonter de plus de 40 % de la
- *    hauteur de la carte (carte trop basse → il partait sur une autre rangée).
+ * Toute la règle vit dans `canAnchorPreview` (géométrie pure, testable) : le
+ * panneau bute contre les bornes de la rangée et n'est refusé que si l'écart
+ * dépasse un quart de la carte. Deux refus historiques ont disparu :
+ *  • la carte devait tenir ENTIÈREMENT dans la rangée — or la dernière carte
+ *    visible d'un carrousel est presque toujours rognée par construction ;
+ *  • le panneau ne devait pas remonter pour tenir à l'écran — il se déroule
+ *    désormais vers le HAUT quand la carte est trop basse.
  */
 function canPlacePanel(card: HTMLElement | null): boolean {
   if (!card) return false;
   const r = card.getBoundingClientRect();
-  if (r.width === 0) return false;
-  const b = boundsFor(card);
-  if (b && (r.left < b.left - 1 || r.right > b.right + 1)) return false;
-  return previewUpwardShift(r.top, r.width, window.innerHeight) <= r.height * 0.4;
+  return canAnchorPreview(
+    { top: r.top, left: r.left, width: r.width, height: r.height },
+    { width: window.innerWidth, height: window.innerHeight },
+    boundsFor(card),
+  );
 }
 
 /**
