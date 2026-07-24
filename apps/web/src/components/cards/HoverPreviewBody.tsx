@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardProgressBar } from "./CardProgressBar";
+import { CardQuickActions } from "./CardQuickActions";
 import { HoverPreviewInfo } from "./HoverPreviewInfo";
 import { playTargetPath } from "./playTarget";
 import type { PreviewDirection } from "./hoverPreviewGeometry";
@@ -131,6 +132,20 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
     </motion.div>
   );
 
+  /**
+   * Actions rapides en superposition : dans le COIN de la vignette et non dans
+   * le voile. Une rangée de trois pastilles de 36 px y ajoutait une quatrième
+   * ligne, et le voile finissait par manger plus de la moitié de l'image —
+   * l'aperçu ne montrait plus le média qu'il est censé faire voir. Au coin
+   * elles ne coûtent aucune hauteur, et c'est déjà leur place sur les cartes
+   * qui n'ont pas de panneau.
+   */
+  const cornerActions = (
+    <div className="absolute right-2 top-2 z-10" onClick={(e) => e.stopPropagation()}>
+      <CardQuickActions item={item} variant="bar" />
+    </div>
+  );
+
   // Vignette cliquable = LECTURE (le bloc d'infos, lui, mène à la fiche).
   // En `overlay` elle occupe TOUTE la hauteur du panneau — donc exactement la
   // carte — au lieu d'imposer son ratio 16:9 : la carte est déjà en 16:9, et
@@ -183,6 +198,7 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
         </>
       )}
 
+      {overlay && cornerActions}
       {overlay && infoOverlay}
 
       {/* Progression reprise de la carte : le panneau la masquait en se

@@ -25,31 +25,30 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
   // blanc/noir dans les deux thèmes (cf. règle « posé sur média »), mais via
   // les tokens `on-media-*` / `--scrim-media-rgb` plutôt qu'en littéraux.
   return (
-    // Conteneur SANS `overflow-hidden` : il ne porte que le halo, dont le
-    // débordement est tout l'effet. La bannière garde le sien, un cran plus
-    // bas, pour le zoom de son image.
-    //
-    // La bannière de la fiche est à fond perdu, contrairement à celle de
-    // l'accueil : sa lumière ne peut s'échapper que par le BAS — donc juste
-    // derrière le bloc titre, là où la page reprend. C'est exactement là qu'on
-    // la veut, et c'est aussi pourquoi son intensité est réduite : elle passe
-    // sous du texte, pas sur un fond nu.
+    /**
+     * Deux boîtes distinctes, et c'est tout l'enjeu.
+     *
+     * La boîte de MISE EN PAGE (la seule qui occupe de la place dans le flux)
+     * mesure 70/78 vh. La boîte IMAGE, elle, déborde de 260 px en dessous.
+     *
+     * Tant que les deux se confondaient, l'image devait finir de s'éteindre
+     * avant son propre bord : le dégradé passait de visible à noir opaque en une
+     * centaine de pixels, ce qui se lit comme une bande — d'autant plus nette
+     * que l'affiche est lumineuse. Avec 260 px de rab, le fondu se déroule sous
+     * le bloc titre puis se termine dans le vide, là où personne ne le voit. Le
+     * bloc titre repose alors sur une image qui s'estompe, jamais sur un aplat.
+     *
+     * Aucun `overflow-hidden` sur le conteneur : le halo et le débord de la
+     * boîte image en dépendent.
+     */
     <div className="relative w-full">
-      {/* Boîte du halo débordée VERS LE BAS (`-bottom-24`) : c'est le seul côté
-          par lequel la lumière d'une bannière à fond perdu peut sortir, et c'est
-          aussi là que se joue la « bande noire ». Le raccord vers la page se
-          faisait sur un aplat mort — même noir de part et d'autre, donc une
-          frontière franche. Le halo le teinte, et la frontière disparaît. */}
       <HeroAmbilight
         item={item}
         opacity="var(--detail-ambilight-opacity)"
-        className="absolute inset-x-0 top-0 -bottom-24"
+        className="absolute inset-x-0 top-0 -bottom-[260px]"
       />
 
-      {/* Scrim bas porté à 64 % de la hauteur (au lieu de 55 %) : la rampe
-          adoucie de `--detail-scrim-bottom` a besoin de plus de course pour
-          arriver à l'opacité sans marche. */}
-      <div className="relative h-[70vh] w-full overflow-hidden md:h-[78vh]">
+      <div className="absolute inset-x-0 top-0 -bottom-[260px] overflow-hidden">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -89,8 +88,11 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
           style={{ background: "var(--detail-brand-wash)" }}
           aria-hidden
         />
+        {/* 74 % de la boîte IMAGE (qui déborde de 260 px) : le fondu court donc
+            bien au-delà du bas visible de la bannière et n'a plus à se terminer
+            dans un mouchoir de poche. */}
         <div
-          className="absolute inset-x-0 bottom-0 h-[64%]"
+          className="absolute inset-x-0 bottom-0 h-[74%]"
           style={{ background: "var(--detail-scrim-bottom)" }}
         />
         {/* Raccord bas vers la page — `none` en sombre, fondu opaque a 55 % du
@@ -110,6 +112,11 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
             contenu, et la hairline y traçait un trait violet en travers du
             synopsis. Le raccord n'a rien à souligner quand il est recouvert. */}
       </div>
+
+      {/* Réserve de mise en page : c'est ELLE qui occupe la place dans le flux,
+          la boîte image étant hors flux. Le bloc titre de `MediaDetail` remonte
+          par rapport à ce bord-ci, pas par rapport au bas de l'image. */}
+      <div className="h-[70vh] w-full md:h-[78vh]" aria-hidden />
     </div>
   );
 }
