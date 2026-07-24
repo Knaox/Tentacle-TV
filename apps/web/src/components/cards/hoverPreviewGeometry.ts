@@ -6,22 +6,36 @@ export interface AnchorRect {
 }
 
 /**
- * Sens de déploiement du tiroir d'informations.
- *  • `down` — cas nominal : la vignette se pose sur la carte, le tiroir se
- *    déroule dessous ;
- *  • `up` — carte trop basse : le tiroir se déroule AU-DESSUS. La vignette,
- *    elle, ne bouge pas d'un pixel dans les deux cas.
+ * Disposition du panneau.
+ *  • `down` — cas nominal : le panneau se pose sur la carte et déroule son
+ *    tiroir d'informations DESSOUS, dans l'espace libre entre deux rangées ;
+ *  • `overlay` — le panneau ne dépasse pas d'un pixel de la carte : le tiroir
+ *    se pose SUR l'image, en voile translucide.
+ *
+ * `overlay` a remplacé un `up` qui dépliait le tiroir vers le haut. Le geste
+ * était géométriquement correct — la vignette ne bougeait pas — mais il
+ * recouvrait le titre de la rangée du dessus, et surtout un tiroir qui s'ouvre
+ * vers le haut sur certaines cartes et vers le bas sur d'autres se lit comme
+ * une incohérence, pas comme une adaptation. Rester DANS la carte règle les
+ * deux cas d'un même geste : plus rien à recouvrir, plus rien à déborder.
  */
-export type PreviewDirection = "down" | "up";
+export type PreviewDirection = "down" | "overlay";
 
 export interface PreviewRect {
+  top: number;
   left: number;
   width: number;
   direction: PreviewDirection;
-  /** Ancrage CSS `top` — renseigné en `down` uniquement. */
-  top?: number;
-  /** Ancrage CSS `bottom` — renseigné en `up` uniquement. */
-  bottom?: number;
+  /**
+   * Hauteur imposée — `overlay` uniquement, où le panneau épouse exactement la
+   * carte. En `down` la hauteur suit le contenu (vignette + tiroir déroulé).
+   */
+  height?: number;
+  /**
+   * Rognage à appliquer au panneau, en pixels depuis chaque bord, pour qu'il ne
+   * dépasse jamais de la rangée. Non nul seulement sur une carte de bord.
+   */
+  clip?: { left: number; right: number };
 }
 
 /** Marge minimale entre le panneau et le haut / bas de la fenêtre. */
@@ -45,31 +59,6 @@ export interface PreviewBounds {
 /** Hauteur du bloc d'informations déroulé, pour le choix du sens. */
 const BODY_HEIGHT = 150;
 
-/**
- * Décalage horizontal toléré avant de renoncer au panneau, en fraction de la
- * largeur de carte.
- *
- * La règle précédente était binaire : la carte devait tenir ENTIÈREMENT entre
- * les bornes de la rangée, sinon rien. Or la dernière carte visible d'une
- * rangée est presque toujours rognée par le bord — c'est le principe même d'un
- * carrousel, qui laisse dépasser la suivante pour signaler qu'il y a un
- * ailleurs. Ces cartes-là n'avaient donc jamais de panneau, alors qu'elles sont
- * parfaitement survolables.
- *
- * Le panneau vient désormais BUTER contre la borne de rangée. Il n'est refusé
- * que si l'écart qui en résulte dépasse un TIERS de la carte : en deçà, le
- * panneau recouvre les deux tiers de son affiche et n'en mord qu'un tiers sur
- * la voisine — il désigne sans ambiguïté le bon média ; à la moitié il serait
- * centré entre les deux et ne désignerait plus rien.
- *
- * Le seuil n'est pas arbitraire : sur une rangée de 1320 px de contenu et des
- * cartes de 346 px au pas de 358, la dernière carte visible est rognée de 98 px
- * — 28 % — et le reste à toute largeur de fenêtre, puisque c'est le reste d'une
- * division. Un quart de carte laissait donc dehors précisément le cas que cette
- * règle doit couvrir.
- */
-const MAX_SHIFT_RATIO = 0.34;
-
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(value, max));
 
@@ -79,59 +68,54 @@ export function estimatePreviewHeight(cardWidth: number): number {
 }
 
 /**
- * Bord gauche du panneau, borné par la rangée. Le panneau reprenant la largeur
- * EXACTE de la carte, l'idéal est le bord gauche de la carte elle-même.
+ * De combien la carte dépasse-t-elle des bornes de la rangée ? Zéro quand elle
+ * est entièrement visible.
+ *
+ * C'est ce dépassement qui décide de la disposition : une carte rognée reçoit
+ * le panneau `overlay`, qui ne dépasse pas d'elle et se rogne comme elle. Le
+ * panneau ne GLISSE plus jamais latéralement — le faire buter contre la borne
+ * de rangée le désolidarisait de sa carte, et il fallait alors un seuil
+ * arbitraire au-delà duquel on renonçait à l'ouvrir.
  */
-function boundedLeft(anchor: AnchorRect, viewportWidth: number, bounds?: PreviewBounds): number {
-  const minX = bounds ? bounds.left : EDGE_MARGIN;
-  const maxX = bounds ? bounds.right : viewportWidth - EDGE_MARGIN;
-  return clamp(anchor.left, minX, Math.max(minX, maxX - anchor.width));
-}
-
-/**
- * De combien le panneau doit-il glisser latéralement pour tenir dans la
- * rangée ? Zéro quand la carte est entièrement visible.
- */
-export function previewHorizontalShift(
+export function previewOverflow(
   anchor: AnchorRect,
   viewportWidth: number,
   bounds?: PreviewBounds,
-): number {
-  return Math.abs(boundedLeft(anchor, viewportWidth, bounds) - anchor.left);
+): { left: number; right: number } {
+  const minX = bounds ? bounds.left : EDGE_MARGIN;
+  const maxX = bounds ? bounds.right : viewportWidth - EDGE_MARGIN;
+  return {
+    left: Math.max(0, minX - anchor.left),
+    right: Math.max(0, anchor.left + anchor.width - maxX),
+  };
 }
 
 /**
- * Le panneau peut-il s'ouvrir sur cette carte ?
+ * Le panneau peut-il s'ouvrir sur cette carte ? Oui, dès qu'elle a une largeur.
  *
- * Une seule condition reste : le décalage horizontal doit rester raisonnable
- * (cf. `MAX_SHIFT_RATIO`). La contrainte verticale a disparu — elle refusait
- * les cartes trop basses parce que le panneau, toujours déroulé vers le bas,
- * aurait dû remonter pour tenir à l'écran, et se serait retrouvé sur la rangée
- * du dessus. Le sens de déploiement s'inverse désormais (`up`) : le panneau
- * reste sur sa carte quelle que soit sa position dans la fenêtre.
+ * Toutes les conditions de refus ont disparu, une par une, parce que chacune
+ * privait d'aperçu des cartes parfaitement survolables : la carte devait tenir
+ * entièrement dans la rangée (or la dernière visible d'un carrousel est rognée
+ * par construction), puis le décalage de butée devait rester sous un tiers de
+ * la carte. La disposition `overlay` supprime la cause : un panneau qui ne
+ * quitte pas sa carte n'a besoin ni de place ni de tolérance.
  */
-export function canAnchorPreview(
-  anchor: AnchorRect,
-  viewport: { width: number; height: number },
-  bounds?: PreviewBounds,
-): boolean {
-  if (anchor.width === 0) return false;
-  return previewHorizontalShift(anchor, viewport.width, bounds) <= anchor.width * MAX_SHIFT_RATIO;
+export function canAnchorPreview(anchor: AnchorRect): boolean {
+  return anchor.width > 0;
 }
 
 /**
- * Sens de déploiement : vers le bas tant qu'il y a la place, vers le haut
- * sinon. À égalité de manque de place, on garde le bas (cas nominal).
+ * Disposition : tiroir déroulé sous la carte tant qu'il y a la place ET que la
+ * carte est entière ; sinon panneau confiné à la carte.
  */
 function resolveDirection(
   anchor: AnchorRect,
   viewportHeight: number,
   height: number,
+  overflow: { left: number; right: number },
 ): PreviewDirection {
-  const roomBelow = viewportHeight - EDGE_MARGIN - anchor.top;
-  const roomAbove = anchor.top + anchor.height - EDGE_MARGIN;
-  if (height <= roomBelow) return "down";
-  return roomAbove > roomBelow ? "up" : "down";
+  if (overflow.left > 0 || overflow.right > 0) return "overlay";
+  return anchor.top + height <= viewportHeight - EDGE_MARGIN ? "down" : "overlay";
 }
 
 /**
@@ -151,11 +135,12 @@ function resolveDirection(
  * dessous, et il fallait ruser pour le rattraper. Ne rien changer à la
  * géométrie de départ supprime le problème à la racine.
  *
- * Verticalement, le panneau n'est JAMAIS recadré dans la fenêtre : il est
- * ancré par le bord de la carte du côté où il se déroule (`top` en `down`,
- * `bottom` en `up`). Un recadrage l'arracherait de sa carte pour le poser sur
- * une rangée qui n'est pas la sienne — c'est ce que faisait le clamp vertical
- * d'origine, raison pour laquelle il fallait alors refuser l'ouverture.
+ * Le panneau ne se DÉPLACE jamais pour tenir quelque part : il part de la carte
+ * et y reste. Quand la place manque en bas, ou quand la carte est rognée par le
+ * bord de la rangée, c'est la disposition qui change (`overlay`) — le tiroir se
+ * pose alors sur l'image au lieu de se dérouler dessous. Toutes les variantes
+ * qui déplaçaient le panneau, latéralement contre une borne ou verticalement
+ * pour rentrer dans la fenêtre, ont fini par le désigner à côté de son média.
  */
 export function computePreviewRect(
   anchor: AnchorRect,
@@ -163,28 +148,37 @@ export function computePreviewRect(
   bounds?: PreviewBounds,
 ): PreviewRect {
   const width = anchor.width;
-  const left = boundedLeft(anchor, viewport.width, bounds);
-  const direction = resolveDirection(anchor, viewport.height, estimatePreviewHeight(width));
+  const overflow = previewOverflow(anchor, viewport.width, bounds);
+  const direction = resolveDirection(
+    anchor,
+    viewport.height,
+    estimatePreviewHeight(width),
+    overflow,
+  );
 
-  // Aligné sur un BORD de la carte, jamais centré dessus. Le panneau est plus
-  // haut qu'elle (≈313 px contre 194) : centré, il déborderait d'une soixantaine
-  // de pixels du mauvais côté et recouvrirait le titre de la rangée.
-  return direction === "down"
-    ? { left, width, direction, top: anchor.top }
-    : { left, width, direction, bottom: viewport.height - (anchor.top + anchor.height) };
+  const rect: PreviewRect = { top: anchor.top, left: anchor.left, width, direction };
+  if (direction === "down") return rect;
+
+  // Confiné à la carte : même hauteur, et rogné exactement comme elle l'est par
+  // la rangée. Sans ce rognage, le panneau — portalisé hors du conteneur qui
+  // rogne la carte — révélerait une partie que la carte ne montre pas, et
+  // passerait par-dessus les flèches de défilement.
+  return {
+    ...rect,
+    height: anchor.height,
+    clip: overflow.left > 0 || overflow.right > 0 ? overflow : undefined,
+  };
 }
 
 /**
- * Origine de l'animation d'ouverture, en pourcentages du panneau : le zoom
- * part du centre de la CARTE, pas du centre du panneau. Sans ça, un panneau
- * buté contre un bord d'écran semble surgir d'ailleurs — et en déploiement
- * `up`, où la vignette occupe le BAS du panneau, il dériverait franchement.
+ * Origine de l'animation d'ouverture, en pourcentages du panneau : le zoom part
+ * du centre de la VIGNETTE. En `overlay` la vignette EST le panneau, l'origine
+ * est donc son centre ; en `down` elle n'occupe que le haut, et un centre
+ * géométrique ferait dériver l'image au fil du déroulé du tiroir.
  */
 export function previewOrigin(anchor: AnchorRect, rect: PreviewRect): string {
+  if (rect.direction === "overlay") return "50% 50%";
   const height = estimatePreviewHeight(rect.width);
-  const panelTop =
-    rect.direction === "down" ? (rect.top ?? anchor.top) : anchor.top + anchor.height - height;
-  const x = ((anchor.left + anchor.width / 2 - rect.left) / rect.width) * 100;
-  const y = ((anchor.top + anchor.height / 2 - panelTop) / height) * 100;
-  return `${clamp(x, 0, 100)}% ${clamp(y, 0, 100)}%`;
+  const y = ((anchor.top + anchor.height / 2 - rect.top) / height) * 100;
+  return `50% ${clamp(y, 0, 100)}%`;
 }

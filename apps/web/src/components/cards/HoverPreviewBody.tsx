@@ -23,18 +23,18 @@ interface HoverPreviewBodyProps {
 
 /**
  * Contenu du panneau d'aperçu : une vignette 16:9 qui se superpose au pixel
- * près à la carte survolée, et un tiroir d'informations qui se déroule à côté.
- *
- * Le SENS du déroulé dépend de la place disponible (`direction`) :
- *  • `down` — cas nominal, le tiroir descend sous la vignette ;
- *  • `up` — carte proche du bas de la fenêtre : le tiroir monte au-dessus.
- *    C'est le placement « flip » classique des surfaces flottantes. Dans les
- *    deux cas la VIGNETTE ne bouge pas : le panneau reste rigoureusement sur sa
- *    carte, ce qui était jusqu'ici obtenu en refusant purement et simplement de
- *    l'ouvrir sur les cartes basses.
+ * près à la carte survolée, et un bloc d'informations dont la place dépend de
+ * `direction` :
+ *  • `down` — cas nominal, il se déroule SOUS la vignette, dans l'espace libre
+ *    entre deux rangées ;
+ *  • `overlay` — pas de place dessous, ou carte rognée par le bord de la
+ *    rangée : il se pose SUR la vignette, en voile translucide, et le panneau
+ *    ne dépasse alors pas d'un pixel de la carte.
  *
  * Règle de couleurs : ce qui est posé SUR l'image reste blanc/noir constant ;
- * ce qui repose sur `--preview-panel-bg` suit les tokens thémés.
+ * ce qui repose sur `--preview-panel-bg` suit les tokens thémés. En `overlay`
+ * le bloc d'infos est POSÉ SUR l'image — il passe donc en on-media, avec un
+ * voile assez opaque pour tenir le contraste sans effacer le visuel.
  *
  * `memo` : le panneau suit sa carte au défilement, donc son conteneur se
  * repositionne à chaque image. Sans cette barrière, tout ce contenu — vignette,
@@ -80,12 +80,67 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
 
   const playPath = playTargetPath(item);
 
-  // Vignette cliquable = LECTURE (le tiroir, lui, mène à la fiche).
+  const overlay = direction === "overlay";
+
+  const titleBlock = logoUrl ? (
+    <img
+      src={logoUrl}
+      alt={title}
+      draggable={false}
+      className="h-8 max-w-[62%] object-contain object-left drop-shadow-[0_2px_10px_var(--on-media-shadow)]"
+    />
+  ) : (
+    <p className="line-clamp-2 text-sm font-bold leading-tight text-on-media-primary drop-shadow-[0_2px_8px_var(--on-media-shadow)]">
+      {title}
+    </p>
+  );
+
+  /**
+   * Voile d'informations POSÉ SUR la vignette — disposition superposée.
+   *
+   * Il remplace un tiroir qui se dépliait vers le haut quand la place manquait
+   * en bas. Le geste était géométriquement juste mais recouvrait le titre de la
+   * rangée du dessus, et un tiroir qui s'ouvre vers le haut sur certaines cartes
+   * et vers le bas sur d'autres se lit comme une incohérence. Ici rien ne sort
+   * de la carte : c'est la carte elle-même qui révèle ses informations.
+   *
+   * Translucide et légèrement flouté : l'image reste lisible derrière, ce qui
+   * maintient le lien avec le média — un aplat opaque aurait juste remplacé la
+   * vignette par une fiche. Le flou porte sur un cinquième de carte, sans
+   * commune mesure avec le `backdrop-filter` plein panneau qu'il a fallu retirer.
+   */
+  const infoOverlay = (
+    <motion.div
+      className="absolute inset-x-0 bottom-0 z-[5]"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1], delay: 0.04 }}
+      style={{
+        background: "var(--preview-overlay-bg)",
+        backdropFilter: "blur(var(--preview-overlay-blur))",
+        WebkitBackdropFilter: "blur(var(--preview-overlay-blur))",
+      }}
+    >
+      <div className="px-3 pt-2">{titleBlock}</div>
+      <HoverPreviewInfo
+        item={item}
+        tone="media"
+        compact
+        onOpenDetail={go(`/media/${item.Id}`)}
+      />
+    </motion.div>
+  );
+
+  // Vignette cliquable = LECTURE (le bloc d'infos, lui, mène à la fiche).
+  // En `overlay` elle occupe TOUTE la hauteur du panneau — donc exactement la
+  // carte — au lieu d'imposer son ratio 16:9 : la carte est déjà en 16:9, et
+  // laisser les deux le calculer chacun de leur côté produisait un écart d'un
+  // pixel selon les arrondis.
   const visual = (
     <div
       key="visual"
       data-preview-visual
-      className="relative aspect-video w-full cursor-pointer overflow-hidden"
+      className={`relative w-full cursor-pointer overflow-hidden ${overlay ? "h-full" : "aspect-video"}`}
       role="button"
       aria-label={`${t("common:play")} — ${title}`}
       onClick={go(playPath)}
@@ -114,25 +169,21 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
         <PlayIcon />
       </PressableScale>
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5"
-        style={{ background: "var(--card-reveal-scrim)" }}
-      />
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-2">
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={title}
-            draggable={false}
-            className="h-8 max-w-[62%] object-contain object-left drop-shadow-[0_2px_10px_var(--on-media-shadow)]"
+      {/* Scrim + titre du bas : uniquement en `down`. En `overlay` c'est le
+          voile d'informations qui occupe cette zone, et il porte déjà le titre —
+          les empiler donnait deux fois le même texte à quelques pixels près. */}
+      {!overlay && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5"
+            style={{ background: "var(--card-reveal-scrim)" }}
           />
-        ) : (
-          <p className="line-clamp-2 text-sm font-bold leading-tight text-on-media-primary drop-shadow-[0_2px_8px_var(--on-media-shadow)]">
-            {title}
-          </p>
-        )}
-      </div>
+          <div className="absolute inset-x-0 bottom-0 px-3 pb-2">{titleBlock}</div>
+        </>
+      )}
+
+      {overlay && infoOverlay}
 
       {/* Progression reprise de la carte : le panneau la masquait en se
           superposant, l'utilisateur perdait de vue où il en était. */}
@@ -164,20 +215,14 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
     </motion.div>
   );
 
-  // Clés explicites : le sens de déploiement peut s'inverser EN COURS de survol
-  // (la page défile, la carte remonte et libère la place en bas). Sans clés,
-  // React réconcilierait par position — la vignette et le tiroir échangeant leur
-  // rang, il démonterait les deux et les remonterait, ce qui rejouerait le
-  // dépliement du tiroir et referait clignoter l'image.
-  return direction === "down" ? (
+  // Clés explicites : la disposition peut basculer EN COURS de survol (la page
+  // défile, la carte remonte et libère la place en bas). Sans clés, React
+  // réconcilierait par position et démonterait la vignette pour la remonter, ce
+  // qui referait clignoter l'image.
+  return (
     <>
       {visual}
-      {drawer}
-    </>
-  ) : (
-    <>
-      {drawer}
-      {visual}
+      {!overlay && drawer}
     </>
   );
 });

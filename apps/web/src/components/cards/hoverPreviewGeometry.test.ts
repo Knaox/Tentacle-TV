@@ -3,20 +3,23 @@ import {
   canAnchorPreview,
   computePreviewRect,
   estimatePreviewHeight,
-  previewHorizontalShift,
   previewOrigin,
+  previewOverflow,
   type AnchorRect,
 } from "./hoverPreviewGeometry";
 
 /**
  * Géométrie du panneau d'aperçu.
  *
- * Elle se vérifie mal à l'œil : le panneau s'ouvre après un délai, se referme
- * au moindre défilement, et l'écart qu'on cherche à débusquer se compte en
- * dizaines de pixels sur une image qui, elle, ne bouge pas. Un décalage de
- * 48 px — la hauteur du bloc titre d'une carte — est passé inaperçu tant que le
- * panneau ne se déroulait que vers le bas : les deux boîtes partagent alors
- * leur bord HAUT, et c'est le bord BAS qui diverge.
+ * Elle se vérifie mal à l'œil : le panneau s'ouvre après un délai, et l'écart
+ * qu'on cherche à débusquer se compte en dizaines de pixels sur une image qui,
+ * elle, ne bouge pas. Un décalage de 48 px — la hauteur du bloc titre d'une
+ * carte — est passé inaperçu tant que le panneau ne se déroulait que vers le
+ * bas : les deux boîtes partagent alors leur bord HAUT.
+ *
+ * La règle que ces tests figent : le panneau part de la carte et n'en bouge
+ * JAMAIS. Quand la place manque, ou quand la carte est rognée par le bord de la
+ * rangée, c'est la DISPOSITION qui change, pas la position.
  */
 
 /** Mesures réelles d'une rangée « Reprendre la lecture » en 1440 × 900. */
@@ -31,76 +34,92 @@ const card = (over: Partial<AnchorRect> = {}): AnchorRect => ({
   ...over,
 });
 
-describe("butée horizontale", () => {
-  it("ne décale pas une carte entièrement visible", () => {
-    expect(previewHorizontalShift(card(), VIEWPORT.width, BOUNDS)).toBe(0);
+describe("le panneau ne bouge jamais de sa carte", () => {
+  it("reprend exactement l'origine de la carte, entière ou rognée", () => {
+    for (const left of [56, 414, 1129]) {
+      const rect = computePreviewRect(card({ left }), VIEWPORT, BOUNDS);
+      expect(rect.left).toBe(left);
+      expect(rect.top).toBe(325);
+      expect(rect.width).toBe(346);
+    }
   });
 
-  it("cale le panneau sur le bord de la rangée quand la carte le dépasse", () => {
-    // Dernière carte visible de la rangée : rognée de 99 px, soit 28,6 %.
-    const cut = card({ left: 1129 });
-    expect(previewHorizontalShift(cut, VIEWPORT.width, BOUNDS)).toBe(99);
-    const rect = computePreviewRect(cut, VIEWPORT, BOUNDS);
-    expect(rect.left + rect.width).toBe(BOUNDS.right);
-  });
-
-  it("accepte ce rognage de 28,6 %, refuse au-delà d'un tiers", () => {
-    expect(canAnchorPreview(card({ left: 1129 }), VIEWPORT, BOUNDS)).toBe(true);
-    // 120 px de décalage = 34,7 % de la carte : le panneau mordrait trop sur la
-    // voisine pour désigner encore son propre média.
-    expect(canAnchorPreview(card({ left: 1151 }), VIEWPORT, BOUNDS)).toBe(false);
+  it("n'oppose plus aucun refus", () => {
+    // Trois cas qui étaient tous refusés par les versions précédentes.
+    expect(canAnchorPreview(card({ left: 1129 }))).toBe(true); // rognée à droite
+    expect(canAnchorPreview(card({ top: 780 }))).toBe(true); // collée en bas
+    expect(canAnchorPreview(card({ left: -100 }))).toBe(true); // rognée à gauche
+    expect(canAnchorPreview(card({ width: 0 }))).toBe(false); // pas encore mesurée
   });
 });
 
-describe("sens de déploiement", () => {
-  it("descend quand la place est suffisante", () => {
+describe("dépassement des bornes de rangée", () => {
+  it("est nul quand la carte est entièrement visible", () => {
+    expect(previewOverflow(card(), VIEWPORT.width, BOUNDS)).toEqual({ left: 0, right: 0 });
+  });
+
+  it("mesure le rognage de la dernière carte visible", () => {
+    // 1129 + 346 = 1475, soit 99 px au-delà de la borne droite (28,6 %).
+    expect(previewOverflow(card({ left: 1129 }), VIEWPORT.width, BOUNDS)).toEqual({
+      left: 0,
+      right: 99,
+    });
+  });
+
+  it("mesure aussi le rognage à gauche, rangée défilée", () => {
+    expect(previewOverflow(card({ left: 20 }), VIEWPORT.width, BOUNDS)).toEqual({
+      left: 36,
+      right: 0,
+    });
+  });
+});
+
+describe("disposition", () => {
+  it("déroule le tiroir dessous quand la carte est entière et la place suffisante", () => {
     const rect = computePreviewRect(card(), VIEWPORT, BOUNDS);
     expect(rect.direction).toBe("down");
-    // Ancré par le HAUT, sur le haut du visuel.
-    expect(rect.top).toBe(325);
-    expect(rect.bottom).toBeUndefined();
+    // Hauteur libre (suit le contenu) et aucun rognage.
+    expect(rect.height).toBeUndefined();
+    expect(rect.clip).toBeUndefined();
   });
 
-  it("remonte quand la carte est trop basse, ancré sur le BAS du visuel", () => {
-    // Carte en bas de fenêtre : son visuel court de 628 à 822.
-    const low = card({ top: 628 });
-    const rect = computePreviewRect(low, VIEWPORT, BOUNDS);
-    expect(rect.direction).toBe("up");
-    expect(rect.top).toBeUndefined();
-    // C'est LA régression à empêcher : l'ancre doit être le bas du VISUEL
-    // (900 − 822 = 78), pas celui de la carte titre compris (900 − 870 = 30),
-    // sinon la vignette du panneau atterrit 48 px sous celle de la carte.
-    expect(rect.bottom).toBe(78);
+  it("passe en superposition quand la place manque en bas", () => {
+    // Visuel de 628 à 822 : le panneau déroulé ferait 345 px, il déborderait.
+    const rect = computePreviewRect(card({ top: 628 }), VIEWPORT, BOUNDS);
+    expect(rect.direction).toBe("overlay");
+    // Confiné à la carte : même hauteur, donc rien qui dépasse.
+    expect(rect.height).toBe(194);
+    expect(rect.top).toBe(628);
   });
 
-  it("choisit le côté le plus dégagé quand aucun des deux ne suffit", () => {
-    // Fenêtre trop courte pour le panneau (345 px) dans les deux sens : il
-    // débordera de toute façon, autant que ce soit du côté le plus large.
-    const short = { width: 1440, height: 300 };
-    expect(computePreviewRect(card({ top: 100 }), short, BOUNDS).direction).toBe("up");
-    // Carte collée en haut : il reste plus de place dessous, on garde le bas —
-    // qui est aussi le cas nominal, donc le repli naturel à égalité.
-    expect(computePreviewRect(card({ top: 20 }), short, BOUNDS).direction).toBe("down");
+  it("passe en superposition ET se rogne comme la carte au bord de la rangée", () => {
+    const rect = computePreviewRect(card({ left: 1129 }), VIEWPORT, BOUNDS);
+    expect(rect.direction).toBe("overlay");
+    // Sans ce rognage, le panneau — portalisé hors du conteneur qui rogne la
+    // carte — révélerait une partie qu'elle ne montre pas.
+    expect(rect.clip).toEqual({ left: 0, right: 99 });
+  });
+
+  it("fait primer le bord de rangée sur la place disponible", () => {
+    // Même avec toute la place du monde en dessous, une carte rognée reste en
+    // superposition : c'est le débordement qui décide en premier.
+    const rect = computePreviewRect(card({ left: 1129, top: 100 }), VIEWPORT, BOUNDS);
+    expect(rect.direction).toBe("overlay");
   });
 });
 
 describe("origine du zoom", () => {
-  const heightOf = (width: number) => estimatePreviewHeight(width);
-
-  it("vise le centre de la vignette en déploiement vers le bas", () => {
+  it("vise le centre de la vignette quand le tiroir se déroule dessous", () => {
     const anchor = card();
     const rect = computePreviewRect(anchor, VIEWPORT, BOUNDS);
-    // Centre du visuel = 325 + 97 ; panneau ancré à 325 sur 344,6 de haut.
-    const expected = ((97 / heightOf(anchor.width)) * 100).toFixed(0);
-    expect(previewOrigin(anchor, rect).split(" ")[1]).toContain(expected);
+    // Centre du visuel à 97 px du haut, panneau de 344,6 px de haut.
+    const expected = Math.round((97 / estimatePreviewHeight(anchor.width)) * 100);
+    expect(previewOrigin(anchor, rect)).toContain(`${expected}`);
   });
 
-  it("vise le BAS du panneau en déploiement vers le haut", () => {
+  it("vise le centre du panneau en superposition — il EST la vignette", () => {
     const anchor = card({ top: 628 });
     const rect = computePreviewRect(anchor, VIEWPORT, BOUNDS);
-    const y = parseFloat(previewOrigin(anchor, rect).split(" ")[1]);
-    // La vignette occupe le bas du panneau : son centre est aux ~72 %.
-    expect(y).toBeGreaterThan(65);
-    expect(y).toBeLessThan(85);
+    expect(previewOrigin(anchor, rect)).toBe("50% 50%");
   });
 });

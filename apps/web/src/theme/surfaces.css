@@ -142,6 +142,19 @@
    * laissait transparaître qu'une rangée déjà masquée. */
   --preview-panel-bg: var(--surface-2);
   --preview-panel-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.3);
+
+  /* Voile d'informations POSÉ SUR la vignette (disposition superposée, quand le
+   * panneau doit rester dans les limites de la carte). Noir constant dans les
+   * deux schémas — règle « posé sur média » : le texte y est en `on-media`.
+   * Translucide en haut, appuyé en bas : l'image reste lisible derrière, ce qui
+   * maintient le lien avec le média, tout en tenant le contraste sous le texte. */
+  --preview-overlay-bg: linear-gradient(
+    180deg,
+    rgba(var(--scrim-media-rgb), 0.3) 0%,
+    rgba(var(--scrim-media-rgb), 0.76) 30%,
+    rgba(var(--scrim-media-rgb), 0.9) 100%
+  );
+  --preview-overlay-blur: 7px;
 }
 
 :root[data-theme="light"] {
