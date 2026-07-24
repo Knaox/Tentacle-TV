@@ -10,24 +10,40 @@ import { RichOverview } from "../../lib/overviewHtml";
 
 interface HoverPreviewInfoProps {
   item: MediaItem;
-  /** Ouverture de la fiche — le tiroir est cliquable dans son intégralité. */
+  /**
+   * Sur quoi le bloc repose.
+   *  • `panel` — le tiroir déroulé sous la vignette : fond de panneau thémé,
+   *    donc texte en tokens de contenu ;
+   *  • `media` — posé SUR l'image (disposition superposée) : blanc constant
+   *    dans les deux schémas, comme tout ce qui est posé sur un visuel. Des
+   *    tokens de contenu y deviendraient du texte sombre sur voile sombre en
+   *    thème clair.
+   */
+  tone?: "panel" | "media";
+  /** Sans synopsis : la version superposée n'a que la hauteur de la carte. */
+  compact?: boolean;
+  /** Ouverture de la fiche — le bloc est cliquable dans son intégralité. */
   onOpenDetail: (e: React.MouseEvent) => void;
 }
 
 /**
- * Tiroir d'informations du panneau d'aperçu : actions rapides, code d'épisode,
+ * Bloc d'informations du panneau d'aperçu : actions rapides, code d'épisode,
  * ligne méta, synopsis.
  *
- * Extrait de `HoverPreviewBody` quand celui-ci a dû gérer les deux sens de
- * déploiement (règle des 300 lignes). La séparation est nette : ce fichier ne
- * connaît que le CONTENU, `HoverPreviewBody` ne s'occupe que de l'ordre et de
- * l'animation des deux blocs.
+ * Extrait de `HoverPreviewBody` quand celui-ci a dû gérer deux dispositions
+ * (règle des 300 lignes). La séparation est nette : ce fichier ne connaît que le
+ * CONTENU, `HoverPreviewBody` ne s'occupe que de sa place et de son animation.
  *
- * Tiroir ENTIÈREMENT cliquable vers la fiche détail — l'image, elle, lance la
+ * Bloc ENTIÈREMENT cliquable vers la fiche détail — l'image, elle, lance la
  * lecture. Deux zones, deux intentions, chacune avec son propre curseur : le
  * panneau n'a donc pas besoin d'un bouton « Plus d'infos » séparé.
  */
-export function HoverPreviewInfo({ item, onOpenDetail }: HoverPreviewInfoProps) {
+export function HoverPreviewInfo({
+  item,
+  tone = "panel",
+  compact = false,
+  onOpenDetail,
+}: HoverPreviewInfoProps) {
   const { t } = useTranslation("common");
 
   const isEpisode = item.Type === "Episode";
@@ -38,9 +54,14 @@ export function HoverPreviewInfo({ item, onOpenDetail }: HoverPreviewInfoProps) 
   const progress = item.UserData?.PlayedPercentage;
   const hasProgress = progress != null && progress > 0 && progress < 99;
 
+  const onMedia = tone === "media";
+  const metaClass = onMedia ? "text-on-media-secondary" : "text-content-tertiary";
+  const labelClass = onMedia ? "text-on-media-secondary" : "text-content-quaternary";
+  const highlightClass = onMedia ? "text-on-media-primary" : "text-[var(--brand-light)]";
+
   return (
     <div
-      className="flex cursor-pointer flex-col gap-2 px-3 pb-3 pt-2.5"
+      className={`flex cursor-pointer flex-col gap-2 px-3 pb-3 ${compact ? "pt-2" : "pt-2.5"}`}
       data-preview-info
       role="link"
       aria-label={t("common:moreInfo")}
@@ -53,16 +74,16 @@ export function HoverPreviewInfo({ item, onOpenDetail }: HoverPreviewInfoProps) 
       </div>
 
       {epLabel && (
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-content-quaternary">
+        <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${labelClass}`}>
           {epLabel}
         </p>
       )}
 
       {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on annonce
           alors le nombre d'épisodes, plutôt que de laisser la ligne vide. */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-content-tertiary">
+      <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${metaClass}`}>
         {addedCount > 1 ? (
-          <span className="font-medium text-[var(--brand-light)]">
+          <span className={`font-medium ${highlightClass}`}>
             {t("common:addedEpisodes", { count: addedCount })}
           </span>
         ) : (
@@ -75,7 +96,7 @@ export function HoverPreviewInfo({ item, onOpenDetail }: HoverPreviewInfoProps) 
             )}
             {runtime && <span>{runtime}</span>}
             {hasProgress && (
-              <span className="font-medium text-[var(--brand-light)]">
+              <span className={`font-medium ${highlightClass}`}>
                 {t("common:percentWatched", { percent: Math.round(progress) })}
               </span>
             )}
@@ -87,7 +108,7 @@ export function HoverPreviewInfo({ item, onOpenDetail }: HoverPreviewInfoProps) 
         </span>
       </div>
 
-      {item.Overview && (
+      {!compact && item.Overview && (
         <p className="line-clamp-2 text-[11px] leading-relaxed text-content-secondary">
           <RichOverview text={item.Overview} />
         </p>

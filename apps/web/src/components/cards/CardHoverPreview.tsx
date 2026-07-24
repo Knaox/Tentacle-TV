@@ -77,21 +77,25 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
           transition={{ type: "spring", stiffness: 190, damping: 26, mass: 1 }}
           className="fixed z-40"
           style={{
-            // `top` OU `bottom`, jamais les deux : le panneau est ancré par le
-            // bord de la carte du côté où son tiroir se déroule. En `up`, il
-            // grandit donc VERS LE HAUT au fil du déroulé, et la vignette reste
-            // rigoureusement sur la carte.
+            // Toujours le bord HAUT de la carte : le panneau part d'elle et n'en
+            // bouge plus. En `down` il grandit vers le bas au fil du déroulé du
+            // tiroir ; en `overlay` sa hauteur est celle de la carte, au pixel.
             top: placement.rect.top,
-            bottom: placement.rect.bottom,
             left: placement.rect.left,
             width: placement.rect.width,
+            height: placement.rect.height,
             maxHeight: `calc(100vh - 32px)`,
-            // Origine au CENTRE de la VIGNETTE, pas au centre du panneau : le
-            // bloc d'infos se déroule d'un côté, un centre géométrique ferait
-            // dériver l'image au fur et à mesure. La valeur était jusqu'ici
-            // figée à « 50% 25% » — juste en déploiement vers le bas, fausse
-            // dès que le tiroir passe au-dessus.
+            // Origine au CENTRE de la VIGNETTE, pas du panneau : en `down` le
+            // tiroir se déroule dessous, et un centre géométrique ferait dériver
+            // l'image au fur et à mesure du déroulé.
             transformOrigin: placement.origin,
+            // Rogné exactement comme la carte l'est par sa rangée. Le panneau
+            // étant portalisé hors du conteneur qui rogne la carte, il
+            // révélerait sinon une partie qu'elle ne montre pas, et passerait
+            // par-dessus les flèches de défilement.
+            clipPath: placement.rect.clip
+              ? `inset(0 ${placement.rect.clip.right}px 0 ${placement.rect.clip.left}px)`
+              : undefined,
             willChange: "transform",
           }}
         >
@@ -114,7 +118,9 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
               surface fixe de la taille du panneau, à l'image près de son
               ouverture. C'est le pire moment pour en demander une. */}
           <div
-            className="relative overflow-hidden rounded-[var(--radius-lg)]"
+            className={`relative overflow-hidden rounded-[var(--radius-lg)] ${
+              placement.rect.direction === "overlay" ? "h-full" : ""
+            }`}
             style={{
               background: "var(--preview-panel-bg)",
               boxShadow: "var(--elev-card-hover), var(--card-ring-glow), var(--preview-panel-ring)",

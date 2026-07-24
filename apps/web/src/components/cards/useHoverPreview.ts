@@ -47,23 +47,17 @@ function visualRect(card: HTMLElement): AnchorRect {
 }
 
 /**
- * Le panneau peut-il se poser SUR cette carte ?
+ * Le panneau peut-il se poser SUR cette carte ? Oui, dès qu'elle a une largeur.
  *
- * Toute la règle vit dans `canAnchorPreview` (géométrie pure, testable) : le
- * panneau bute contre les bornes de la rangée et n'est refusé que si l'écart
- * dépasse un quart de la carte. Deux refus historiques ont disparu :
- *  • la carte devait tenir ENTIÈREMENT dans la rangée — or la dernière carte
- *    visible d'un carrousel est presque toujours rognée par construction ;
- *  • le panneau ne devait pas remonter pour tenir à l'écran — il se déroule
- *    désormais vers le HAUT quand la carte est trop basse.
+ * Cette fonction ne refuse plus rien, et c'est le résultat de trois itérations.
+ * Elle exigeait d'abord que la carte tienne entièrement dans la rangée, puis que
+ * le décalage de butée reste sous un tiers de sa largeur — chaque règle privait
+ * d'aperçu des cartes parfaitement survolables. La disposition superposée
+ * (`overlay`) supprime la cause : un panneau qui ne quitte jamais sa carte n'a
+ * besoin ni de place libre ni de tolérance.
  */
 function canPlacePanel(card: HTMLElement | null): boolean {
-  if (!card) return false;
-  return canAnchorPreview(
-    visualRect(card),
-    { width: window.innerWidth, height: window.innerHeight },
-    boundsFor(card),
-  );
+  return card ? canAnchorPreview(visualRect(card)) : false;
 }
 
 /**
