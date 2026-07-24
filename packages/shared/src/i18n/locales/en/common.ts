@@ -58,6 +58,7 @@ export default {
   voiceOrType: "Speak or type…",
   space: "Space",
   clear: "Clear",
+  recentSearches: "Recent searches",
   minutesShort: "{{count}} min",
   ratingOutOfTen: "{{rating}} / 10",
   notAvailable: "N/A",

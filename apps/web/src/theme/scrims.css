@@ -59,8 +59,29 @@
    * (`-mt-12/-mt-16` sur l'accueil) reposent ainsi sur un aplat 100 %
    * `--surface-0`, jamais sur la zone de mélange sombre→clair (titre de
    * rangée « flottant » sinon). Passer à `none` pour une coupure nette. */
-  --hero-page-fade: linear-gradient(180deg, transparent 0%, var(--surface-0) 55%);
-  --detail-page-fade: linear-gradient(180deg, transparent 0%, var(--surface-0) 55%);
+  /* Alpha 0 sur la MÊME couleur, jamais `transparent` : celui-ci vaut
+   * `rgba(0,0,0,0)`, et l'interpolation vers un blanc nacré passe donc par des
+   * gris sales. Même piège que les dégradés de flèches de rangée
+   * (`--row-fade-*`), documenté là-bas — il traînait encore ici.
+   *
+   * Montée plus franche qu'auparavant : depuis que l'image se prolonge sous le
+   * bloc titre, la méta, le synopsis et les genres — en texte THÉMÉ, donc
+   * sombre en clair — se retrouvent posés dessus. C'est ce calque qui leur rend
+   * une assise de page, il ne peut plus se contenter d'arriver à 55 %. */
+  --hero-page-fade: linear-gradient(
+    180deg,
+    rgba(var(--scrim-page-rgb), 0) 0%,
+    rgba(var(--scrim-page-rgb), 0.55) 22%,
+    rgba(var(--scrim-page-rgb), 0.92) 52%,
+    rgb(var(--scrim-page-rgb)) 100%
+  );
+  --detail-page-fade: linear-gradient(
+    180deg,
+    rgba(var(--scrim-page-rgb), 0) 0%,
+    rgba(var(--scrim-page-rgb), 0.55) 22%,
+    rgba(var(--scrim-page-rgb), 0.92) 52%,
+    rgb(var(--scrim-page-rgb)) 100%
+  );
 }
 
 /* Le grain anti-banding est calibré pour des dégradés sombres pleine image ;

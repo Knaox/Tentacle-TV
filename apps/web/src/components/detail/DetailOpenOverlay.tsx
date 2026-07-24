@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { DETAIL_HERO_BOX, DETAIL_SCRIM_BOTTOM } from "./DetailHero";
 import type { DetailOrigin } from "./detailTransition";
 
 export interface TargetRect {
@@ -89,42 +90,47 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
             transition={{ duration: TRAVEL_S * 0.45, ease: "easeOut" }}
           />
-          {backdropUrl && (
-            <motion.img
-              src={backdropUrl}
-              alt=""
-              draggable={false}
-              className="absolute inset-0 h-full w-full object-cover"
-              // Zoom et flou de départ réduits (1.08 / 12 px au lieu de 1.14 /
-              // 18 px) : sur la course raccourcie, l'ancien réglage devenait une
-              // mise au point précipitée — et un flou plein écran animé est la
-              // plus coûteuse des opérations de cette transition.
-              initial={{ opacity: 0, scale: 1.08, filter: "blur(12px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-              transition={{ duration: TRAVEL_S * 1.05, ease: SETTLE }}
-            />
-          )}
-          {/* Scrims de la fiche montés à l'avance : à l'effacement du calque,
-              les pixels dessous sont déjà identiques, donc pas de ressaut.
-              La hauteur du scrim bas doit suivre celle de `DetailHero` (64 %) :
-              un écart de neuf points, c'est exactement le ressaut que ces
-              calques existent pour éviter. */}
-          {[
-            { style: "var(--detail-scrim-diagonal)", cls: "absolute inset-0" },
-            { style: "var(--detail-scrim-bottom)", cls: "absolute inset-x-0 bottom-0 h-[64%]" },
-            { style: "var(--detail-brand-wash)", cls: "absolute inset-0" },
-          ].map((layer) => (
-            <motion.div
-              key={layer.style}
-              className={layer.cls}
-              style={{ background: layer.style }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-              transition={{ duration: TRAVEL_S * 0.7, delay: TRAVEL_S * 0.25, ease: "easeOut" }}
-            />
-          ))}
+          {/* Décor monté à l'avance, dans la MÊME boîte que `DetailHero` : à
+              l'effacement du calque, les pixels dessous sont déjà identiques,
+              donc pas de ressaut. C'est toute sa raison d'être — et c'est
+              exactement ce qui s'était cassé quand la bannière a gagné son
+              débord de 260 px sans que ce calque le suive : le décor sautait à
+              l'atterrissage de chaque ouverture de fiche. Les dimensions
+              viennent désormais des mêmes constantes. */}
+          <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
+            {backdropUrl && (
+              <motion.img
+                src={backdropUrl}
+                alt=""
+                draggable={false}
+                className="absolute inset-0 h-full w-full object-cover"
+                // Zoom et flou de départ réduits (1.08 / 12 px au lieu de 1.14 /
+                // 18 px) : sur la course raccourcie, l'ancien réglage devenait
+                // une mise au point précipitée — et un flou plein écran animé
+                // est la plus coûteuse des opérations de cette transition.
+                initial={{ opacity: 0, scale: 1.08, filter: "blur(12px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
+                transition={{ duration: TRAVEL_S * 1.05, ease: SETTLE }}
+              />
+            )}
+            {[
+              { style: "var(--detail-scrim-diagonal)", cls: "absolute inset-0" },
+              { style: "var(--detail-scrim-bottom)", cls: `absolute inset-x-0 bottom-0 ${DETAIL_SCRIM_BOTTOM}` },
+              { style: "var(--detail-brand-wash)", cls: "absolute inset-0" },
+              { style: "var(--detail-page-fade)", cls: "absolute inset-x-0 bottom-0 h-[46%]" },
+            ].map((layer) => (
+              <motion.div
+                key={layer.style}
+                className={layer.cls}
+                style={{ background: layer.style }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
+                transition={{ duration: TRAVEL_S * 0.7, delay: TRAVEL_S * 0.25, ease: "easeOut" }}
+              />
+            ))}
+          </div>
 
           {/* ── Le visuel en vol ─────────────────────────────────────────── */}
           <motion.div
