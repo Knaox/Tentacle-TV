@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { useJellyfinClient, useLatestItems } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useLatestItems, useRandomLibraryBackdrop } from "@tentacle-tv/api-client";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
@@ -17,18 +17,19 @@ interface LibraryHeroProps {
  * la page est un catalogue, pas une vitrine, la grille doit rester à portée
  * de regard sans défilement.
  *
- * Le backdrop réutilise `useLatestItems`, déjà en cache : l'accueil a chargé
- * cette même requête pour la rangée « Derniers ajouts » de la bibliothèque, et
- * la clé TanStack Query est identique. Arriver ici ne déclenche donc aucun
- * appel réseau supplémentaire dans le cas courant.
+ * Le backdrop est un item ALÉATOIRE de la bibliothèque (`useRandomLibraryBackdrop`),
+ * re-tiré à chaque visite. Repli sur le premier des « Derniers ajouts »
+ * (`useLatestItems`, souvent déjà en cache) quand le tirage ne renvoie rien —
+ * petite bibliothèque, aucun backdrop.
  */
 export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryHeroProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const reduced = useReducedMotion();
-  const { data: items } = useLatestItems(libraryId, { collectionType });
+  const { data: randomItem } = useRandomLibraryBackdrop(libraryId);
+  const { data: latest } = useLatestItems(libraryId, { collectionType });
 
-  const featured = firstBackdropItem(items);
+  const featured = randomItem ?? firstBackdropItem(latest);
   const backdropId = featured ? resolveBackdropId(featured) : null;
   const url = backdropId
     ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 82 })
