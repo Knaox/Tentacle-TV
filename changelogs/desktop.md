@@ -56,7 +56,7 @@ les notes Apple doivent rester génériques.
 - Your profile picture stays visible offline: it is kept on the device and refreshed every time you come back online
 - Light theme: carousel scroll gradients fixed, they turned black
 
-## [mac-1.16.2]
+## [mac-1.17.0]
 ### FR
 - Nouvelle interface : bannière encadrée dont les couleurs débordent en un halo qui suit l'image, affiches au liseré lumineux, halo qui suit le curseur
 - Aperçu au survol des épisodes : la vignette déplie un volet avec lecture, résumé, note, durée, qualité et progression — sans à-coup, sur toutes les cartes (celles du bord de rangée s'y calent, celles du bas de l'écran déplient vers le haut), et il suit sa carte quand vous faites défiler la page
@@ -66,11 +66,10 @@ les notes Apple doivent rester génériques.
 - Filtres de bibliothèque en menus déroulants (tri, genres cherchables, année, note, plateformes) : la grille reste visible pendant le filtrage
 - Le bouton Lecture d'une série lance directement l'épisode à reprendre, ou le premier si vous la commencez
 - Votre photo de profil reste affichée hors ligne, mise à jour à chaque retour en ligne
-- Lecture d'un fichier téléchargé : zéro donnée réseau consommée, même en ligne — fiche, chapitres, « passer l'intro » / « passer le générique », préférences de langues et épisode suivant fonctionnent depuis le disque
+- Lecture hors ligne : aucune donnée réseau consommée pendant la lecture — fiche, chapitres, « passer l'intro » / « passer le générique », préférences de langues et épisode suivant fonctionnent de bout en bout
 - Sélecteur d'épisodes du lecteur disponible hors ligne, groupé par saison
 - Préférences de langues et langue de l'interface modifiables hors ligne : enregistrées localement puis synchronisées au retour en ligne, sans écrasement
-- Suppression après visionnage : choisissez un délai (immédiatement, 1 h, 6 h, 12 h ou 24 h) ; elle a lieu même si l'application était fermée à l'échéance
-- La progression d'un fichier lu localement est envoyée à Jellyfin en fin de lecture
+- La progression vue hors ligne est envoyée à Jellyfin dès le retour en ligne (reprise à jour sur vos autres appareils)
 - Chat de groupe (Watch Together) : les contrôles du lecteur ne restent plus bloqués à l'écran après avoir écrit un message
 - Thème clair : dégradés de défilement des carrousels corrigés, ils viraient au noir
 ### EN
@@ -82,11 +81,10 @@ les notes Apple doivent rester génériques.
 - Library filters as dropdown menus (sort, searchable genres, year, rating, platforms): the grid stays visible while filtering
 - A series' Play button starts the episode to resume, or the first one if you are beginning it
 - Your profile picture stays visible offline, refreshed every time you come back online
-- Playing a downloaded file: zero network data used, even while online — details, chapters, "skip intro" / "skip credits", language preferences and next episode all work from disk
+- Offline playback: no network data used during playback — details, chapters, "skip intro" / "skip credits", language preferences and next episode all work end to end
 - In-player episode picker available offline, grouped by season
 - Language preferences and interface language editable offline: saved locally, then synced once back online, with no overwrite
-- Delete after watching: pick a delay (immediately, 1 h, 6 h, 12 h or 24 h); it happens even if the app was closed when the time came
-- Progress of a locally played file is sent to Jellyfin at the end of playback
+- Progress watched offline is sent to Jellyfin as soon as you are back online (up-to-date resume on your other devices)
 - Group chat (Watch Together): player controls no longer stay stuck on screen after typing a message
 - Light theme: carousel scroll gradients fixed, they turned black
 
