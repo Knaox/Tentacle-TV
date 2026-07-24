@@ -124,14 +124,14 @@ function LocalEpisodeItem({ ep, active, onClick }: { ep: DownloadEntry; active: 
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
-        active ? "bg-[var(--brand-soft)]" : "hover:bg-fill-subtle"
+        active ? "bg-[var(--brand-accent-soft)]" : "hover:bg-fill-subtle"
       }`}
     >
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
         {thumb && <img src={thumb} alt={ep.title ?? ""} loading="lazy" className="h-full w-full object-cover" />}
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-light)]" : "text-content-quaternary"}`}>
+        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-quaternary"}`}>
           {epLabel}
         </p>
         <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.title ?? ""}</p>

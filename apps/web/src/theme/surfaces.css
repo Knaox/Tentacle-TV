@@ -13,6 +13,12 @@
  * clair. Ce sont des variables de PRÉSENTATION (géométrie de dégradés), pas des
  * tokens de design surchargeables un par un. */
 :root {
+  /* Rose de marque translucide — équivalent rose de `--brand-soft` (violet),
+   * qui n'a pas de pendant dans tokens.css. Sert de fond aux marqueurs
+   * « épisode actuel », passés du violet au rose. Déclaré ici (présentation) et
+   * non dans tokens.css pour ne pas alourdir le contrat surchargeable. */
+  --brand-accent-soft: rgba(var(--brand-accent-rgb), 0.15);
+
   /* ── Bannières ───────────────────────────────────────────────────────
    * 72deg : la direction pointe vers le HAUT-DROITE, donc le coin sombre
    * tombe en BAS-GAUCHE, pile sous la colonne de texte. Inclinaison légère

@@ -106,7 +106,7 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
-        active ? "bg-[var(--brand-soft)]" : "hover:bg-fill-subtle"
+        active ? "bg-[var(--brand-accent-soft)]" : "hover:bg-fill-subtle"
       }`}
     >
       {/* Vignette = image média : badge « vu » et barre de progression restent
@@ -125,7 +125,7 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-light)]" : "text-content-quaternary"}`}>
+        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-quaternary"}`}>
           {epLabel}
         </p>
         <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.Name}</p>

@@ -108,14 +108,14 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
           <span className={`text-sm text-content-primary ${isCurrent ? "font-bold" : "font-semibold"}`}>
             {isCurrent && (
               <span
-                className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brand)] align-middle shadow-[0_0_8px_rgba(var(--brand-rgb),0.7)]"
+                className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brand-accent)] align-middle shadow-[0_0_8px_rgba(var(--brand-accent-rgb),0.7)]"
                 aria-hidden
               />
             )}
             {ep.IndexNumber}. {ep.Name}
           </span>
           {isCurrent && (
-            <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-light)]">
+            <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-accent-light)]">
               {t("common:currentEpisode")}
             </span>
           )}
