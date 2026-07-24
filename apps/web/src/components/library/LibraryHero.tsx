@@ -18,9 +18,9 @@ interface LibraryHeroProps {
  * de regard sans défilement.
  *
  * Le backdrop est un item ALÉATOIRE de la bibliothèque (`useRandomLibraryBackdrop`),
- * re-tiré à chaque visite. Repli sur le premier des « Derniers ajouts »
- * (`useLatestItems`, souvent déjà en cache) quand le tirage ne renvoie rien —
- * petite bibliothèque, aucun backdrop.
+ * tiré une fois par session puis mis en cache — pas d'appel à chaque visite.
+ * Repli sur le premier des « Derniers ajouts » (`useLatestItems`, souvent déjà
+ * en cache) quand le tirage ne renvoie rien — petite bibliothèque, aucun backdrop.
  */
 export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryHeroProps) {
   const { t } = useTranslation("common");

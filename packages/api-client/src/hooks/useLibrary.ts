@@ -86,12 +86,15 @@ export function useLibraryItems(
 
 /**
  * Un item ALÉATOIRE de la bibliothèque possédant un backdrop — pour l'image de
- * la bannière de bibliothèque, qui doit changer à chaque visite.
+ * la bannière de bibliothèque.
  *
  * `SortBy=Random` + `HasBackdrop=true` + `Limit=1` : le serveur tire l'item, on
- * n'a pas à filtrer côté client. `staleTime: 0` + `refetchOnMount: "always"` :
- * un NOUVEAU tirage à chaque montage (chaque ouverture de la page), stable tant
- * qu'on y reste. Renvoie `MediaItem | undefined`.
+ * n'a pas à filtrer côté client. Le tirage est gardé toute la SESSION
+ * (`staleTime`/`gcTime: Infinity`) : une seule requête par bibliothèque, quels
+ * que soient les allers-venues, et l'image (déjà en cache navigateur) ne se
+ * recharge pas. Elle change au prochain lancement de l'app, quand le cache
+ * mémoire est reparti de zéro — assez de variété sans un appel réseau à chaque
+ * visite. Renvoie `MediaItem | undefined`.
  */
 export function useRandomLibraryBackdrop(libraryId: string | undefined) {
   const client = useJellyfinClient();
@@ -109,8 +112,8 @@ export function useRandomLibraryBackdrop(libraryId: string | undefined) {
         )
         .then((r) => r.Items[0]),
     enabled: !!userId && !!libraryId,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
