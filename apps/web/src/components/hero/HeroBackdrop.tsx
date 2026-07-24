@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { resolveBackdropId } from "./resolveBackdrop";
+import { heroBackdropUrl } from "./resolveBackdrop";
 
 interface HeroBackdropProps {
   items: MediaItem[];
@@ -95,10 +95,11 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
     );
   }
 
-  const backdropId = resolveBackdropId(item);
-  const url = backdropId
-    ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 85 })
-    : null;
+  // URL résolue par `resolveBackdrop`, partagée avec la transition d'ouverture
+  // de fiche : celle-ci reprend donc un pixel DÉJÀ décodé, sans un octet de
+  // plus. Une URL recalculée d'un côté ou de l'autre (largeur ou qualité
+  // différente) suffirait à provoquer un second chargement, donc un blanc.
+  const url = heroBackdropUrl(client, item);
 
   return (
     <>
