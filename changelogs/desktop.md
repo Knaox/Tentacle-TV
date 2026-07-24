@@ -22,6 +22,14 @@ les notes Apple doivent rester génériques.
 - Ouverture d'une fiche animée : l'affiche cliquée rejoint sa place sur la fiche, qui se charge par anticipation dès le survol
 - Fiche média revue : le visuel d'un épisode s'affiche enfin au bon format, actions plus lisibles, et la page s'ouvre sur la bannière au lieu de sauter à la liste des épisodes
 - Filtres de bibliothèque en menus déroulants (tri, genres cherchables, année, note, plateformes) : la grille reste visible pendant le filtrage
+- Bannière encadrée : ses couleurs débordent du cadre en un halo qui suit l'image et son zoom, sur l'accueil comme sur la fiche média
+- Survol des épisodes : plus de à-coup à l'ouverture de l'aperçu, qui prolonge désormais la vignette au lieu de s'y superposer
+- L'aperçu s'ouvre sur toutes les cartes : celles du bord de la rangée s'y calent, celles du bas de l'écran déplient leur volet vers le haut
+- L'aperçu suit sa carte quand vous faites défiler la page au lieu de disparaître, et change de sens tout seul dès qu'il retrouve la place
+- Les rangées se calent sur des cartes entières : plus de carte coupée en deux au bord du carrousel
+- Ouverture d'une fiche : le visuel garde son format pendant tout le trajet, et la bannière d'accueil ouvre la fiche avec la même animation que les cartes
+- La fiche média s'ouvre toujours en haut, sur sa bannière
+- Votre photo de profil reste affichée hors ligne : elle est conservée sur l'appareil et mise à jour à chaque retour en ligne
 - Thème clair : dégradés de défilement des carrousels corrigés, ils viraient au noir
 ### EN
 - New interface: reworked home banner, posters with a glowing edge and a highlight that follows the cursor
@@ -30,6 +38,48 @@ les notes Apple doivent rester génériques.
 - Animated detail opening: the poster you clicked travels to its place on the page, which preloads on hover
 - Revised media page: an episode's artwork finally uses the right format, clearer actions, and the page opens on the banner instead of jumping to the episode list
 - Library filters as dropdown menus (sort, searchable genres, year, rating, platforms): the grid stays visible while filtering
+- Framed banner: its colours spill out of the frame as a glow that follows the artwork and its zoom, on the home page and the media page alike
+- Episode hover: no more jolt when the preview opens — it now continues the thumbnail instead of stacking on top of it
+- The preview opens on every card: those at the edge of a row line up against it, those near the bottom of the screen unfold their panel upwards
+- The preview follows its card as you scroll instead of vanishing, and flips direction on its own as soon as there is room again
+- Rows settle on whole cards: no more card cut in half at the edge of the carousel
+- Opening a media page: the artwork keeps its shape for the whole journey, and the home banner opens the page with the same animation as the cards
+- The media page always opens at the top, on its banner
+- Your profile picture stays visible offline: it is kept on the device and refreshed every time you come back online
+- Light theme: carousel scroll gradients fixed, they turned black
+
+## [mac-1.16.2]
+### FR
+- Nouvelle interface : bannière encadrée dont les couleurs débordent en un halo qui suit l'image, affiches au liseré lumineux, halo qui suit le curseur
+- Aperçu au survol des épisodes : la vignette déplie un volet avec lecture, résumé, note, durée, qualité et progression — sans à-coup, sur toutes les cartes (celles du bord de rangée s'y calent, celles du bas de l'écran déplient vers le haut), et il suit sa carte quand vous faites défiler la page
+- Les rangées se calent sur des cartes entières : plus de carte coupée en deux au bord du carrousel
+- Ouverture d'une fiche animée : le visuel cliqué rejoint sa place sur la fiche en gardant son format, la bannière d'accueil comprise, et la page s'ouvre en haut
+- Fiche média revue : le visuel d'un épisode s'affiche au bon format, actions plus lisibles
+- Filtres de bibliothèque en menus déroulants (tri, genres cherchables, année, note, plateformes) : la grille reste visible pendant le filtrage
+- Le bouton Lecture d'une série lance directement l'épisode à reprendre, ou le premier si vous la commencez
+- Votre photo de profil reste affichée hors ligne, mise à jour à chaque retour en ligne
+- Lecture d'un fichier téléchargé : zéro donnée réseau consommée, même en ligne — fiche, chapitres, « passer l'intro » / « passer le générique », préférences de langues et épisode suivant fonctionnent depuis le disque
+- Sélecteur d'épisodes du lecteur disponible hors ligne, groupé par saison
+- Préférences de langues et langue de l'interface modifiables hors ligne : enregistrées localement puis synchronisées au retour en ligne, sans écrasement
+- Suppression après visionnage : choisissez un délai (immédiatement, 1 h, 6 h, 12 h ou 24 h) ; elle a lieu même si l'application était fermée à l'échéance
+- La progression d'un fichier lu localement est envoyée à Jellyfin en fin de lecture
+- Chat de groupe (Watch Together) : les contrôles du lecteur ne restent plus bloqués à l'écran après avoir écrit un message
+- Thème clair : dégradés de défilement des carrousels corrigés, ils viraient au noir
+### EN
+- New interface: framed banner whose colours spill out as a glow that follows the artwork, posters with a glowing edge and a highlight that follows the cursor
+- Episode hover preview: the thumbnail unfolds a panel with playback, synopsis, rating, runtime, quality and progress — without a jolt, on every card (those at the edge of a row line up against it, those near the bottom unfold upwards), and it follows its card as you scroll
+- Rows settle on whole cards: no more card cut in half at the edge of the carousel
+- Animated page opening: the artwork you clicked travels to its place keeping its shape, home banner included, and the page opens at the top
+- Revised media page: an episode's artwork uses the right format, clearer actions
+- Library filters as dropdown menus (sort, searchable genres, year, rating, platforms): the grid stays visible while filtering
+- A series' Play button starts the episode to resume, or the first one if you are beginning it
+- Your profile picture stays visible offline, refreshed every time you come back online
+- Playing a downloaded file: zero network data used, even while online — details, chapters, "skip intro" / "skip credits", language preferences and next episode all work from disk
+- In-player episode picker available offline, grouped by season
+- Language preferences and interface language editable offline: saved locally, then synced once back online, with no overwrite
+- Delete after watching: pick a delay (immediately, 1 h, 6 h, 12 h or 24 h); it happens even if the app was closed when the time came
+- Progress of a locally played file is sent to Jellyfin at the end of playback
+- Group chat (Watch Together): player controls no longer stay stuck on screen after typing a message
 - Light theme: carousel scroll gradients fixed, they turned black
 
 ## [1.16.2]
