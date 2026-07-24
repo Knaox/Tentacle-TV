@@ -5,8 +5,14 @@ import { resolveBackdropId } from "./resolveBackdrop";
 import { HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 
 interface HeroAmbilightProps {
-  items: MediaItem[];
-  activeIndex: number;
+  /** Item dont l'affiche éclaire le cadre. `undefined` = pas de halo. */
+  item: MediaItem | undefined;
+  /**
+   * Intensité, en valeur CSS. La fiche média la baisse : son halo se répand
+   * DERRIÈRE le bloc titre, qui est en texte blanc — au réglage de l'accueil,
+   * où la lumière ne tombe que sur du fond de page, il mangeait le contraste.
+   */
+  opacity?: string;
 }
 
 /**
@@ -45,11 +51,13 @@ const TARGET_SCALE = 1.12;
  * Neutralisé sous `prefers-reduced-motion` : c'est un ornement animé en
  * permanence, exactement ce que ce réglage demande de taire.
  */
-export function HeroAmbilight({ items, activeIndex }: HeroAmbilightProps) {
+export function HeroAmbilight({
+  item,
+  opacity = "var(--hero-ambilight-opacity)",
+}: HeroAmbilightProps) {
   const reduced = useReducedMotion();
   const client = useJellyfinClient();
 
-  const item = items[activeIndex];
   const backdropId = item ? resolveBackdropId(item) : null;
   if (reduced || !item || !backdropId) return null;
 
@@ -65,7 +73,7 @@ export function HeroAmbilight({ items, activeIndex }: HeroAmbilightProps) {
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0"
-      style={{ opacity: "var(--hero-ambilight-opacity)" }}
+      style={{ opacity }}
     >
       <AnimatePresence>
         <motion.img

@@ -95,7 +95,7 @@ export function MediaDetail() {
     <>
     <PageTransition>
       <div className="min-h-screen bg-surface-0">
-        <DetailHero backdropUrl={backdropUrl} />
+        <DetailHero backdropUrl={backdropUrl} item={item} />
 
         <motion.div
           className="-mt-48 relative z-10 px-4 md:px-12"
