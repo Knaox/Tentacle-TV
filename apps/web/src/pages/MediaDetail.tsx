@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -46,14 +46,42 @@ export function MediaDetail() {
   // Origine de l'ouverture : le rectangle du visuel cliqué, capturé juste avant
   // la navigation.
   const [origin, setOrigin] = useState<DetailOrigin | null>(() => consumeDetailOrigin(itemId));
+
+  /**
+   * La page a-t-elle été ouverte PAR une transition ?
+   *
+   * C'est la clé du défaut d'ouverture. Le calque recouvre l'écran pendant que
+   * cette page, dessous, joue sa PROPRE entrée — voile de page, cascade de
+   * texte, fondu de l'affiche. Les deux ne peuvent pas être synchronisées : le
+   * calque ne démarre son vol qu'une fois la requête revenue ET l'affiche
+   * mesurée. Selon que l'item est en cache ou non, il s'efface avant ou après la
+   * fin de la cascade — et quand c'est avant, on découvre le titre et l'affiche
+   * à mi-opacité, invisibles sur un backdrop lumineux, puis l'entrée se termine
+   * sous nos yeux. D'où un défaut intermittent, qui dépend du contenu.
+   *
+   * Une seule chorégraphie à la fois : quand le calque prend en charge
+   * l'ouverture, le contenu qu'il découvre doit être PRÊT, pas en train de se
+   * monter. Sans origine (rechargement, lien direct, retour), la cascade joue
+   * normalement — c'est là qu'elle a du sens.
+   *
+   * `useRef` et non l'état : `origin` retombe à null dès que le calque a fini,
+   * et l'entrée ne doit surtout pas se déclencher à ce moment-là.
+   */
+  const openedByTransition = useRef(origin !== null);
+
   // Relue à CHAQUE changement d'item, et pas seulement au montage. React Router
   // réutilise ce composant d'une fiche à l'autre — un initialiseur `useState` ne
   // s'y rejoue pas —, si bien que passer d'une fiche à une fiche similaire
   // n'animait rien du tout. La lecture est non destructive et rend le même objet
   // tant que rien n'a été recapturé : la rejouer est sans effet.
   useEffect(() => {
-    setOrigin(consumeDetailOrigin(itemId));
+    const next = consumeDetailOrigin(itemId);
+    setOrigin(next);
     setTarget(null);
+    // Le composant étant réutilisé d'une fiche à l'autre, le régime d'entrée
+    // doit suivre l'item courant : la fiche suivante peut très bien s'ouvrir
+    // sans transition (lien direct) après une qui en avait une.
+    openedByTransition.current = next !== null;
   }, [itemId]);
   // Place finale du visuel, remontée par `DetailPoster` une fois la mise en
   // page faite : c'est la cible du vol. `useCallback` pour ne pas relancer la
@@ -122,13 +150,20 @@ export function MediaDetail() {
 
   return (
     <>
-    <PageTransition>
+    {/* Voile de page neutralisé quand le calque ouvre la fiche : il déplace la
+        page de 12 px et l'échelonne à 99,5 % SOUS le calque, mouvement que
+        personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
+    <PageTransition skip={openedByTransition.current}>
       <div className="min-h-screen bg-surface-0">
         <DetailHero backdropUrl={backdropUrl} item={item} />
 
         <motion.div
           className="-mt-48 relative z-10 px-4 md:px-12"
-          initial="hidden"
+          // `initial={false}` quand le calque a ouvert la page : le contenu rend
+          // son état FINAL d'emblée. Sinon la cascade se joue sous le calque,
+          // invisible, et il ne lui reste plus qu'à se terminer au mauvais
+          // moment — c'est le défaut d'ouverture.
+          initial={openedByTransition.current ? false : "hidden"}
           animate="show"
           // Constante de module (cf. `theme/motion`), jamais un littéral en
           // ligne : un objet neuf à chaque rendu fait rejouer toute la cascade
@@ -137,7 +172,11 @@ export function MediaDetail() {
           variants={textCascadeDelayed}
         >
           <div className="flex flex-col gap-4 md:flex-row md:gap-8">
-            <DetailPoster item={item} onMeasure={handleMeasure} />
+            <DetailPoster
+              item={item}
+              onMeasure={handleMeasure}
+              instant={openedByTransition.current}
+            />
 
             <div className="flex-1 pt-4">
               <motion.h1
