@@ -77,14 +77,20 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
     >
       {/* Le liseré répond dès l'entrée du curseur, mais la carte ne se déplace
           jamais quand un panneau doit prendre le relais : c'est LUI qui porte
-          le lift, dans la continuité. */}
+          le lift, dans la continuité. Et dès qu'il est ouvert, la carte
+          s'efface : il occupe sa place au pixel près, deux calques n'ont plus
+          rien à faire l'un sur l'autre. */}
       <CardFrame
         hovered={hovered}
         suppressLift={preview.panelActive}
+        concealed={preview.open}
         aspect="aspect-video"
         lift={{ scale: 1.03, y: -5 }}
       >
-        <CardImage src={imageUrl} alt={item.Name} />
+        {/* Pas de zoom interne quand le panneau prend le relais : il peindrait
+            la même image à un autre cadrage, d'où le recul brutal ressenti à
+            l'ouverture. */}
+        <CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />
 
         {/* Qualité/langues au survol UNIQUEMENT là où il n'y a pas de panneau
             (toucher, petit écran) : sinon elles s'affichaient sur la vignette

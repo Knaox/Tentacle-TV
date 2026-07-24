@@ -6,13 +6,26 @@ interface CardImageProps {
   className?: string;
   /** Fallback rendered when the image fails to load. */
   fallback?: React.ReactNode;
+  /**
+   * Zoom interne au survol de la carte parente. À couper (`false`) dès qu'un
+   * panneau d'aperçu prend le relais du survol.
+   *
+   * C'était LA cause de la saccade ressentie sur les vignettes 16:9 : la carte
+   * commençait un zoom de 6 % sur 300 ms, et 110 ms plus tard le panneau
+   * peignait la MÊME image à l'échelle 1 par-dessus. Le contenu reculait donc
+   * d'un coup en pleine course — deux images du même média à deux cadrages
+   * différents, ce qui se lit exactement comme « une carte se met par-dessus
+   * l'ancienne ». Aucun réglage de durée ou de délai ne pouvait le corriger :
+   * il fallait supprimer l'un des deux mouvements.
+   */
+  zoom?: boolean;
 }
 
 /**
  * Lazy-loaded image with shimmer skeleton + graceful error fallback.
  * Used by both PosterCard and EpisodeCard.
  */
-export function CardImage({ src, alt, className, fallback }: CardImageProps) {
+export function CardImage({ src, alt, className, fallback, zoom = true }: CardImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
 
@@ -31,7 +44,9 @@ export function CardImage({ src, alt, className, fallback }: CardImageProps) {
           onError={() => setErrored(true)}
           // Zoom interne discret au survol de la carte parente (`group/card`) —
           // le conteneur masque le débord (overflow-hidden côté carte).
-          className="h-full w-full object-cover group-hover/card:scale-[1.06] motion-reduce:!transform-none"
+          className={`h-full w-full object-cover motion-reduce:!transform-none ${
+            zoom ? "group-hover/card:scale-[1.06]" : ""
+          }`}
           style={{
             opacity: loaded ? 1 : 0,
             transition: "opacity 240ms ease-out, transform 300ms var(--ease-out)",

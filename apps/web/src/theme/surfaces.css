@@ -103,8 +103,14 @@
     rgba(var(--scrim-page-rgb), 0) 100%
   );
 
-  /* ── Panneau d'aperçu au survol (portalisé) ──────────────────────────── */
-  --preview-panel-bg: var(--surface-dropdown);
+  /* ── Panneau d'aperçu au survol (portalisé) ────────────────────────────
+   * Fond OPAQUE (`--surface-2`, la surface « panneau » des deux schémas) et
+   * non plus `--surface-dropdown` à 0.95 d'alpha. Cette translucidité imposait
+   * un `backdrop-filter: blur(12px)` — une passe de compositing sur toute la
+   * surface du panneau, demandée à l'image même de son ouverture, alors qu'il
+   * n'y a rien à voir au travers : la vignette est opaque et le tiroir ne
+   * laissait transparaître qu'une rangée déjà masquée. */
+  --preview-panel-bg: var(--surface-2);
   --preview-panel-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.3);
 }
 
