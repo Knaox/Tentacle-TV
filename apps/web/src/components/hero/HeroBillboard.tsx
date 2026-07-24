@@ -1,9 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { HeroAmbilight } from "./HeroAmbilight";
 import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 import { useDataSaverActive } from "../../offline/useDataSaver";
+
+/**
+ * Hauteur de la carte. Réduite depuis le passage au cadre : à fond perdu elle
+ * pouvait occuper 92 vh puisqu'elle commençait sous la barre de navigation et
+ * se fondait dans la page. Encadrée, elle démarre SOUS la nav et doit laisser
+ * voir son cadre en bas — sans quoi il n'y a plus de cadre, juste une bannière
+ * aux coins arrondis.
+ */
+const CARD_HEIGHT = "h-[62vh] md:h-[70vh] lg:h-[76vh]";
+/** Gouttière du cadre = celle des rangées : le bord gauche de la bannière tombe
+ *  alors exactement sur la première affiche de chaque rangée. */
+const FRAME_GUTTER = "px-[var(--row-gutter-mobile)] md:px-[var(--row-gutter-desktop)]";
 
 interface HeroBillboardProps {
   items: MediaItem[];
@@ -73,7 +86,7 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   };
 
   if (!items.length) {
-    return <div className="h-[80vh] w-full md:h-[88vh] lg:h-[92vh]" />;
+    return <div className={`w-full ${CARD_HEIGHT}`} />;
   }
 
   // NB: pas de onMouseEnter={pause}/onMouseLeave={resume} sur la section —
@@ -82,23 +95,41 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   // l'utilisateur peut toujours interrompre via les flèches / indicateurs
   // (qui font un pause éphémère 100ms pour absorber le clic).
   return (
+    // Le CADRE : fond de page, gouttières de rangée. Aucun `overflow-hidden`
+    // ici — le halo doit pouvoir déborder de la carte sur le fond, c'est tout
+    // l'effet. `bg-surface-0` et non un noir littéral : en thème clair le cadre
+    // doit être nacré comme la page, pas une bande sombre autour d'elle.
     <section
-      // Repère de la transition d'ouverture : c'est ce cadre que « Plus
-      // d'infos » fait s'ouvrir jusqu'au plein écran de la fiche.
-      data-hero-frame
-      className="group/billboard relative w-full overflow-hidden h-[80vh] md:h-[88vh] lg:h-[92vh]"
+      className={`relative w-full bg-surface-0 pb-6 md:pb-10 ${FRAME_GUTTER}`}
       aria-label="Featured content"
     >
-      <HeroBackdrop items={items} activeIndex={index} />
-      <HeroContent item={items[index]} animationKey={animKey} />
-      <HeroIndicators
-        count={items.length}
-        activeIndex={index}
-        durationMs={rotateMs}
-        onSelect={(i) => { goTo(i); pause(); setTimeout(resume, 100); }}
-        onPrev={() => { advance(-1); pause(); setTimeout(resume, 100); }}
-        onNext={() => { advance(1); pause(); setTimeout(resume, 100); }}
-      />
+      <div className="relative">
+        {/* Halo, DERRIÈRE la carte : il occupe exactement sa surface et sa
+            lumière s'échappe tout autour. */}
+        <HeroAmbilight items={items} activeIndex={index} />
+
+        {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
+            « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche. */}
+        <div
+          data-hero-frame
+          className={`group/billboard relative w-full overflow-hidden ${CARD_HEIGHT}`}
+          style={{
+            borderRadius: "var(--hero-frame-radius)",
+            boxShadow: "var(--hero-frame-ring)",
+          }}
+        >
+          <HeroBackdrop items={items} activeIndex={index} />
+          <HeroContent item={items[index]} animationKey={animKey} />
+          <HeroIndicators
+            count={items.length}
+            activeIndex={index}
+            durationMs={rotateMs}
+            onSelect={(i) => { goTo(i); pause(); setTimeout(resume, 100); }}
+            onPrev={() => { advance(-1); pause(); setTimeout(resume, 100); }}
+            onNext={() => { advance(1); pause(); setTimeout(resume, 100); }}
+          />
+        </div>
+      </div>
     </section>
   );
 }

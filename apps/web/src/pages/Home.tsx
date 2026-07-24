@@ -37,18 +37,21 @@ export function Home() {
 
   return (
     <PageTransition>
-      {/* Hero billboard — escapes AppLayout top padding so the transparent
-          TopNav floats over the backdrop. */}
-      <div className="-mt-[56px] md:-mt-[68px]">
-        {heroLoading ? (
-          <div className="skeleton-shimmer h-[80vh] w-full md:h-[88vh] lg:h-[92vh]" />
-        ) : (
-          <HeroBillboard items={heroItems} />
-        )}
-      </div>
+      {/* Bannière encadrée. Plus de remontée sous la barre de navigation : la
+          nav flotte désormais sur le CADRE, pas sur l'affiche. C'est ce qui
+          donne au cadre ses quatre côtés — sans quoi la bannière toucherait le
+          haut de l'écran et il n'en resterait que trois. */}
+      {heroLoading ? (
+        <div className="px-[var(--row-gutter-mobile)] pb-6 md:px-[var(--row-gutter-desktop)] md:pb-10">
+          <div className="skeleton-shimmer h-[62vh] w-full rounded-[var(--hero-frame-radius)] md:h-[70vh] lg:h-[76vh]" />
+        </div>
+      ) : (
+        <HeroBillboard items={heroItems} />
+      )}
 
-      {/* Content rows — relative z-index above hero fade */}
-      <div className="relative z-10 -mt-12 space-y-0 pb-24 md:-mt-16">
+      {/* Rangées. Plus de chevauchement négatif non plus : il masquait la
+          couture d'une bannière à fond perdu, qui n'existe plus. */}
+      <div className="relative z-10 space-y-0 pb-24">
         {resumeItems && resumeItems.length > 0 && (
           <ContinueWatchingRow
             title={t("common:resumeWatching")}
