@@ -59,15 +59,12 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{ background: "var(--hero-scrim-bottom)" }}
       />
-      {/* Raccord bas de banniere vers la page — `none` en sombre (le scrim bas
-          y fond deja vers --surface-0). En clair : fondu opaque a 55 % du
-          calque, pour que la premiere rangee (qui chevauche en -mt) repose sur
-          un aplat page et non sur la couture. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%]"
-        style={{ background: "var(--hero-page-fade)" }}
-        aria-hidden
-      />
+      {/* PAS de raccord bas vers la page (`--hero-page-fade`, retiré). Il
+          existait pour fondre une bannière à FOND PERDU dans la page : la
+          première rangée la chevauchait, il fallait effacer la couture. La
+          bannière est désormais encadrée — son bord bas est un vrai bord, net,
+          et plus rien ne la chevauche. Le fondu n'y assombrissait plus que le
+          bas de la carte, sans rien raccorder. */}
       {/* Vignette haute sous la TopNav — la nav est en texte theme, son assise
           suit le schema. */}
       <div

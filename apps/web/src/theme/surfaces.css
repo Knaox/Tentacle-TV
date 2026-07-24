@@ -34,6 +34,30 @@
     radial-gradient(118% 88% at 2% 98%, rgba(var(--brand-rgb), 0.26) 0%, rgba(var(--brand-rgb), 0.09) 38%, transparent 66%),
     radial-gradient(72% 62% at 98% 2%, rgba(var(--brand-accent-rgb), 0.13) 0%, transparent 62%);
 
+  /* ── Cadre de la bannière + halo « ambilight » ───────────────────────
+   * La bannière n'est plus à fond perdu : elle est posée dans un cadre dont le
+   * fond est celui de la PAGE (`--surface-0`, donc noir en sombre et nacré en
+   * clair — jamais un noir écrit en dur, sans quoi le thème clair afficherait
+   * une bande sombre autour d'une page nacrée), et son propre halo de couleurs
+   * déborde dessus.
+   *
+   * Le halo est l'affiche elle-même, réduite et floutée (cf. `HeroAmbilight`) :
+   * ces variables n'en règlent que l'intensité. */
+  --hero-frame-radius: 20px;
+  /* Liseré d'un pixel sur le bord de la carte : sans lui, une affiche sombre se
+   * fond dans le cadre et la bannière n'a plus de contour. Teinté marque, comme
+   * le liseré des cartes. */
+  --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.22);
+
+  /* Rayon modeste : la source du halo fait 128 px de large, agrandie une
+   * quinzaine de fois. L'interpolation du navigateur a déjà fait l'essentiel du
+   * lissage, le flou n'a plus qu'à finir — un rayon trois fois plus grand ne
+   * changerait rien à l'œil et coûterait cher (le coût d'un flou croît avec son
+   * rayon). */
+  --hero-ambilight-blur: 48px;
+  --hero-ambilight-sat: 1.7;
+  --hero-ambilight-opacity: 0.55;
+
   /* Il n'y a PAS de hairline de couture basse (`--hero-edge-light`, supprimée).
    * Elle supposait une couture visible entre bannière et page. En réalité les
    * trois surfaces font remonter leur contenu par-dessus — rangées de
@@ -142,6 +166,15 @@
   );
 
   --card-ring-glow: 0 0 28px rgba(var(--brand-rgb), 0.18);
+
+  /* Halo de bannière : nettement plus discret sur fond nacré. Une lumière
+   * colorée se lit par CONTRASTE avec ce qu'elle éclaire — sur un fond clair il
+   * n'y a presque rien à éclairer, et les mêmes réglages ne produisent plus un
+   * rayonnement mais une salissure autour du cadre. Même arbitrage que
+   * `--hero-brand-wash`, dont les alphas sont divisés par deux en clair. */
+  --hero-ambilight-sat: 1.25;
+  --hero-ambilight-opacity: 0.3;
+  --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.14);
 }
 
 /* ── Halo de curseur ────────────────────────────────────────────────────
