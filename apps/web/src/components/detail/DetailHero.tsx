@@ -1,14 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import type { MediaItem } from "@tentacle-tv/shared";
-import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 
 interface DetailHeroProps {
   backdropUrl: string | null;
-  /** Item dont l'affiche alimente le halo. */
-  item?: MediaItem;
 }
 
 /**
@@ -40,7 +36,7 @@ export const DETAIL_SCRIM_BOTTOM = "h-[74%]";
  * La qualité (4K / HDR / Dolby) n'est PAS affichée ici : elle vit à côté du
  * titre (DetailMetadata) pour ne pas surcharger la bannière.
  */
-export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
+export function DetailHero({ backdropUrl }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
 
@@ -52,12 +48,20 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
     // aucun `overflow-hidden` sur le conteneur : le halo et le débord de la
     // boîte image en dépendent.
     <div className="relative w-full">
-      <HeroAmbilight
-        item={item}
-        opacity="var(--detail-ambilight-opacity)"
-        className={`absolute inset-x-0 top-0 ${DETAIL_HERO_BOX}`}
-      />
+      {/* PAS de halo « ambilight » ici, contrairement à la bannière d'accueil,
+          et c'est structurel — pas un réglage.
 
+          Le bas de cette bannière DOIT se résoudre à la couleur de page pour
+          raccorder sans couture : le dégradé y devient opaque. Un halo posé
+          derrière ne peut donc jamais apparaître DANS la bannière — il est
+          masqué de bout en bout. Le seul endroit où il ressortait était SOUS
+          elle, par le débord de son flou (72 px) et de son zoom (57 px) : une
+          bande colorée de près de 130 px, dont le bord supérieur était net
+          puisque l'image opaque le coupait. C'était la « ligne de séparation ».
+
+          Le halo n'a de sens que sur une bannière ENCADRÉE — l'accueil — où la
+          lumière déborde des quatre côtés d'une carte qui n'a pas de raccord
+          opaque à assurer. */}
       <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
         <button
           type="button"

@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useLatestItems } from "@tentacle-tv/api-client";
-import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
 
@@ -45,12 +44,11 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
      * personne ne le voit.
      */
     <section className="relative w-full" aria-label={libraryName}>
-      <HeroAmbilight
-        item={featured ?? undefined}
-        opacity="var(--detail-ambilight-opacity)"
-        className="absolute inset-x-0 top-0 -bottom-[200px]"
-      />
-
+      {/* PAS de halo « ambilight » : le bas de cette bannière à fond perdu doit
+          se résoudre à la couleur de page pour raccorder sans couture, un halo
+          posé derrière n'y apparaît donc que SOUS elle, en bande floutée au bord
+          supérieur net — la « ligne de séparation ». Réservé aux bannières
+          encadrées (l'accueil). */}
       <div className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
         <div className="absolute inset-0 bg-surface-0" />
 

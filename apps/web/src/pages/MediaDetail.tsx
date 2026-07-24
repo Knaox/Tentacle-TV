@@ -155,7 +155,7 @@ export function MediaDetail() {
         personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
     <PageTransition skip={openedByTransition.current}>
       <div className="min-h-screen bg-surface-0">
-        <DetailHero backdropUrl={backdropUrl} item={item} />
+        <DetailHero backdropUrl={backdropUrl} />
 
         <motion.div
           className="-mt-48 relative z-10 px-4 md:px-12"

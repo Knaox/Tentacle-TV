@@ -31,7 +31,12 @@
    * qu'il faut pour raccorder sans couture avec la page. */
   --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.2) 34%, rgba(var(--scrim-media-rgb), 0.5) 62%, rgba(var(--scrim-media-rgb), 0.8) 85%, var(--surface-0) 100%);
   --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.72) 0%, rgba(var(--scrim-media-rgb), 0.35) 45%, transparent 100%);
-  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.22) 34%, rgba(var(--scrim-media-rgb), 0.54) 62%, rgba(var(--scrim-media-rgb), 0.82) 85%, var(--surface-0) 100%);
+  /* Cinq paliers, extinction plus PROGRESSIVE vers le bas : le fondu vers la
+   * page démarre plus tôt (20 %) et n'atteint l'opacité qu'au tout dernier
+   * pourcent. Une rampe qui arrive à `--surface-0` dès 85 % laissait un aplat
+   * de couleur pleine sur les 15 % restants, dont le haut se lisait comme une
+   * arête. Étalée jusqu'à 100 %, la transition n'a plus de bord franc. */
+  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.14) 20%, rgba(var(--scrim-media-rgb), 0.36) 44%, rgba(var(--scrim-media-rgb), 0.64) 68%, rgba(var(--scrim-media-rgb), 0.88) 88%, var(--surface-0) 100%);
   --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.55) 0%, transparent 100%);
 
   /* Raccord bas de bannière vers la page : inutile en sombre, le scrim bas y
@@ -48,9 +53,13 @@
    * alphas sombres ×0.7) : l'affiche garde ses couleurs, le texte on-media
    * (blanc) reste lisible même sur backdrop blanc — blanc sur noir 49-70 %
    * tient le contraste AA quel que soit le pixel dessous. */
-  --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.18) 35%, rgba(var(--scrim-media-rgb), 0.49) 70%, rgba(var(--scrim-media-rgb), 0.70) 100%);
+  /* Extinction étalée (quatre paliers) plutôt que trois arrêts espacés : le
+   * texte on-media garde son assise, mais la montée du voile n'a plus de
+   * ressaut. En clair c'est `--*-page-fade` qui finit le raccord vers la page,
+   * ce scrim s'arrête donc à 0,70, il ne va pas jusqu'à `--surface-0`. */
+  --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.12) 26%, rgba(var(--scrim-media-rgb), 0.32) 50%, rgba(var(--scrim-media-rgb), 0.54) 76%, rgba(var(--scrim-media-rgb), 0.70) 100%);
   --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.85) 0%, rgba(var(--scrim-page-rgb), 0.40) 45%, rgba(var(--scrim-page-rgb), 0.10) 80%, transparent 100%);
-  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.18) 35%, rgba(var(--scrim-media-rgb), 0.49) 70%, rgba(var(--scrim-media-rgb), 0.70) 100%);
+  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.12) 26%, rgba(var(--scrim-media-rgb), 0.32) 50%, rgba(var(--scrim-media-rgb), 0.54) 76%, rgba(var(--scrim-media-rgb), 0.70) 100%);
   --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.45) 0%, transparent 100%);
 
   /* Raccord bas : fondu vers la page claire, confiné au bord inférieur
