@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
-import { captureBackdropOrigin } from "../detail/detailTransition";
+import { captureDetailOrigin } from "../detail/detailTransition";
 import { PlayIcon, InfoIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
 import { CardQuickActions } from "../cards/CardQuickActions";
@@ -37,6 +37,12 @@ export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActions
    * entre les deux, alors que toutes les autres cartes de l'accueil ouvrent la
    * fiche par une transition d'élément partagé.
    *
+   * C'est exactement le même trajet que celui d'une carte : le visuel rejoint
+   * la place que la fiche lui réserve. Une première version faisait plutôt
+   * s'ouvrir la bannière jusqu'au plein écran, au motif qu'elle EST déjà le
+   * décor de la page d'arrivée — mais le visuel finissait alors nulle part,
+   * c'est-à-dire le défaut même qu'une transition doit corriger.
+   *
    * Le cadre de la bannière est mesuré ICI, au clic — c'est le dernier instant
    * où il existe. Son rayon est LU sur l'élément plutôt qu'écrit en dur : il
    * suit ainsi le token `--hero-frame-radius` sans dépendance croisée.
@@ -46,7 +52,7 @@ export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActions
     const url = heroBackdropUrl(client, item);
     if (frame && url) {
       const radius = parseFloat(getComputedStyle(frame).borderTopLeftRadius) || 0;
-      captureBackdropOrigin(frame, item.Id, url, radius);
+      captureDetailOrigin(frame, item.Id, url, radius);
     }
     navigate(`/media/${item.Id}`);
   };
