@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CardBloom } from "./CardBloom";
 import { useCardSpotlight } from "./useCardSpotlight";
 
 interface CardFrameProps {
@@ -34,6 +35,11 @@ interface CardFrameProps {
    * est ce qui referme le panneau.
    */
   concealed?: boolean;
+  /**
+   * Image affichée par la carte — source du halo de ciblage. Absente, la carte
+   * n'a pas de halo : c'est l'affiche qui l'éclaire, pas une couleur choisie.
+   */
+  imageUrl?: string;
   children: ReactNode;
 }
 
@@ -55,6 +61,7 @@ export function CardFrame({
   lift = { scale: 1.04, y: -6 },
   suppressLift = false,
   concealed = false,
+  imageUrl,
   children,
 }: CardFrameProps) {
   const spot = useCardSpotlight();
@@ -74,6 +81,11 @@ export function CardFrame({
         opacity: concealed ? 0 : 1,
       }}
     >
+      {/* Halo de ciblage — l'affiche elle-même, floutée, derrière la carte : il
+          n'en dépasse que le pourtour. Il éclot au survol puis dérive, cf.
+          `.card-bloom` dans surfaces.css. */}
+      {imageUrl && <CardBloom on={hovered} imageUrl={imageUrl} />}
+
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-[2px] rounded-[14px] transition-opacity duration-300 motion-reduce:transition-none"

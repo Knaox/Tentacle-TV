@@ -86,10 +86,12 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
           onScroll={scrollByAmount}
         />
 
-        {/* pt/pb : marge de débordement pour le lift hover des cartes (scale +
-            liseré + ombre) — overflow-x:auto clippe au padding edge. pb-4
-            suffit : l'ombre basse de l'image est absorbée par le bloc titre de
-            la carte (un pb-12 creusait un vide disgracieux entre les rangées).
+        {/* pt/pb : marge de débordement pour le survol des cartes — `overflow-x:
+            auto` force un `overflow-y` calculé, qui rogne au bord de la boîte de
+            rembourrage. Portés de 12/16 à 24 px pour laisser passer le HALO de
+            ciblage (24 px de débord) : en deçà, il se coupait net en haut et en
+            bas et redevenait un rectangle. On reste loin du pb-12 essayé
+            autrefois, qui creusait un vide disgracieux entre les rangées.
             Le panneau d'aperçu, lui, est portalisé : il ne déborde pas d'ici.
 
             `row-dim` porté par le SCROLLER et non par la <section> : sur la
@@ -107,7 +109,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-4 pt-3 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
+          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-6 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
           {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
               un carrousel (ex. doublon de bibliothèque) — un Id seul provoque

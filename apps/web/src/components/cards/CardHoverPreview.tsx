@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { CardBloom } from "./CardBloom";
 import { HoverPreviewBody } from "./HoverPreviewBody";
 import {
   computePreviewRect,
@@ -100,6 +101,11 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
             willChange: "transform",
           }}
         >
+          {/* Halo de ciblage repris de la carte, qui s'efface au même instant :
+              `settled` évite de rejouer l'éclosion, le geste doit se lire comme
+              une seule lumière qui change de porteur. */}
+          <CardBloom on settled imageUrl={cardImageUrl} />
+
           {/* Liseré dégradé IDENTIQUE à celui de la carte (`CardFrame`), au
               même débord de 2 px. Le panneau reprend ainsi la signature exacte
               de ce qu'il remplace : rien ne change de main à l'ouverture. Il
