@@ -21,12 +21,27 @@ interface DetailOpenOverlayProps {
 }
 
 /**
- * Course du visuel. Descendue de 720 à 440 ms : au-delà d'environ 400 ms une
- * transition n'accompagne plus le clic, elle le fait attendre — et celle-ci se
- * joue à CHAQUE ouverture de fiche. La courbe fait tout le travail : très
- * amortie, elle donne encore l'impression d'un objet qui se pose, sans traîner.
+ * Course du visuel — CALÉE SUR L'ATTENTE RÉELLE.
+ *
+ * Une transition d'ouverture sert à couvrir un délai. Quand la fiche est déjà en
+ * cache, il n'y a aucun délai à couvrir : le mouvement n'est plus que de la
+ * cérémonie, et 440 ms de cérémonie à chaque clic finissent par se ressentir
+ * comme de la lenteur. Quand la requête traîne, en revanche, le mouvement a un
+ * rôle — il occupe l'attente au lieu de la laisser vide — et il peut respirer.
+ *
+ * D'où une course qui part du minimum et n'emprunte qu'une FRACTION de
+ * l'attente mesurée, plafonnée : une requête interminable ne doit pas produire
+ * un vol interminable par-dessus, ce qui reviendrait à faire payer deux fois.
+ *
+ * Les couches de DÉCOR gardent, elles, des durées fixes : elles se jouent
+ * pendant l'attente, avant que celle-ci ne soit connue.
  */
-const TRAVEL_S = 0.44;
+const TRAVEL_MIN_S = 0.24;
+const TRAVEL_MAX_S = 0.5;
+/** Part de l'attente reportée sur la course. */
+const TRAVEL_WAIT_RATIO = 0.4;
+/** Durée de référence des couches de décor (indépendante de l'attente). */
+const DECOR_S = 0.44;
 /** Décélération franche puis arrivée qui se pose, sans le moindre rebond. */
 const SETTLE = [0.16, 1, 0.3, 1] as const;
 /**
@@ -74,6 +89,26 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
    */
   const startedFor = useRef<DetailOrigin | null>(null);
   const guardRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /** Instant du départ du calque, pour mesurer l'attente réelle. */
+  const startedAt = useRef(0);
+  /**
+   * Course figée à la PREMIÈRE cible, et calculée PENDANT LE RENDU.
+   *
+   * Un effet l'aurait posée un rendu trop tard : la cible arrive au rendu N et
+   * lance le vol, l'effet ne s'exécute qu'après — la durée changerait alors en
+   * plein vol, et framer ferait accélérer ou ralentir un objet déjà en
+   * mouvement. Une ref calculée à la volée est ici le bon outil : la valeur doit
+   * exister dans le même rendu que ce qu'elle décrit, et ne plus jamais bouger.
+   */
+  const travelRef = useRef(TRAVEL_MIN_S);
+  const travelLocked = useRef(false);
+
+  if (target && !travelLocked.current && startedAt.current > 0) {
+    travelLocked.current = true;
+    const waitedS = (performance.now() - startedAt.current) / 1000;
+    travelRef.current = Math.min(TRAVEL_MAX_S, TRAVEL_MIN_S + waitedS * TRAVEL_WAIT_RATIO);
+  }
+  const travelS = travelRef.current;
 
   useEffect(() => {
     if (!origin || startedFor.current === origin) return;
@@ -81,12 +116,15 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
     // Sous `prefers-reduced-motion`, la fiche apparaît directement : pas de
     // vol, pas de zoom, aucune surface géante qui traverse l'écran.
     if (reduced) { onDone(); return; }
+    startedAt.current = performance.now();
+    travelLocked.current = false;
+    travelRef.current = TRAVEL_MIN_S;
     setPlaying(true);
   }, [origin, reduced, onDone]);
 
-  // Garde-fou armé à la première cible reçue — c'est de là que part le vol.
-  // Armé au montage, il expirait pendant l'attente de la requête sur les fiches
-  // lentes, exactement là où la transition a le plus de raisons d'exister.
+  // Garde-fou armé à la première cible — c'est de là que part le vol. Armé au
+  // montage, il expirait pendant l'attente de la requête sur les fiches lentes,
+  // exactement là où la transition a le plus de raisons d'exister.
   useEffect(() => {
     if (!playing || !target) return;
     clearTimeout(guardRef.current);
@@ -121,7 +159,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-            transition={{ duration: TRAVEL_S * 0.45, ease: "easeOut" }}
+            transition={{ duration: DECOR_S * 0.45, ease: "easeOut" }}
           />
           {/* Décor monté à l'avance, dans la MÊME boîte que `DetailHero` : à
               l'effacement du calque, les pixels dessous sont déjà identiques,
@@ -144,7 +182,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
                 initial={{ opacity: 0, scale: 1.08, filter: "blur(12px)" }}
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-                transition={{ duration: TRAVEL_S * 1.05, ease: SETTLE }}
+                transition={{ duration: DECOR_S * 1.05, ease: SETTLE }}
               />
             )}
             {[
@@ -160,7 +198,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-                transition={{ duration: TRAVEL_S * 0.7, delay: TRAVEL_S * 0.25, ease: "easeOut" }}
+                transition={{ duration: DECOR_S * 0.7, delay: DECOR_S * 0.25, ease: "easeOut" }}
               />
             ))}
           </div>
@@ -186,7 +224,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             // Sortie légèrement retardée : le visuel réel de la fiche est déjà
             // dessous, on laisse l'œil s'y poser avant de retirer le calque.
             exit={{ opacity: 0, transition: { duration: 0.18, delay: 0.04, ease: "easeOut" } }}
-            transition={{ duration: TRAVEL_S, ease: SETTLE }}
+            transition={{ duration: travelS, ease: SETTLE }}
             onAnimationComplete={() => { if (target) setPlaying(false); }}
             style={{ boxShadow: "var(--elev-3)" }}
           >
