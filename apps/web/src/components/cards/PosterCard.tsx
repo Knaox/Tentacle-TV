@@ -53,9 +53,15 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
 
   const handleClick = () => {
     if (ctx.ctxMenu) return;
-    // Le rectangle de la carte n'existe plus une fois la route changée :
-    // on le capture ici, la fiche s'en sert pour s'ouvrir depuis cette place.
-    captureDetailOrigin(rootRef.current, item.Id, imageUrl);
+    // Le rectangle de l'AFFICHE n'existe plus une fois la route changée : on le
+    // capture ici, la fiche s'en sert pour s'ouvrir depuis cette place. La
+    // racine embarquerait le bloc titre — un rectangle plus haut que l'image,
+    // donc un visuel recadré pendant tout le trajet.
+    captureDetailOrigin(
+      rootRef.current?.querySelector<HTMLElement>("[data-card-visual]") ?? null,
+      item.Id,
+      imageUrl,
+    );
     navigate(`/media/${item.Id}`);
   };
 

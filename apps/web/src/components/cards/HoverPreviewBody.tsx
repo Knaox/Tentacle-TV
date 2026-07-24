@@ -56,9 +56,13 @@ export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: 
 
   const go = (path: string) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    // La fiche s'ouvre depuis le PANNEAU : c'est lui que l'utilisateur regarde.
+    // La fiche s'ouvre depuis la VIGNETTE du panneau, pas depuis le panneau
+    // entier. Le rectangle capturé sert de cadre à une image en `object-cover` :
+    // en prenant le panneau, on lui donnait la hauteur du tiroir DÉPLIÉ (≈ 300 ×
+    // 313 pour une image 16:9), et le visuel partait donc violemment recadré,
+    // pour ne retrouver ses proportions qu'à l'atterrissage.
     const panel = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-preview-panel]");
-    captureDetailOrigin(panel, item.Id, imageUrl, 16);
+    captureDetailOrigin(panel?.querySelector<HTMLElement>("[data-preview-visual]") ?? null, item.Id, imageUrl, 12);
     onNavigate();
     navigate(path);
   };
@@ -68,6 +72,7 @@ export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: 
   // Vignette cliquable = LECTURE (le tiroir, lui, mène à la fiche).
   const visual = (
     <div
+      data-preview-visual
       className="relative aspect-video w-full cursor-pointer overflow-hidden"
       role="button"
       aria-label={`${t("common:play")} — ${title}`}

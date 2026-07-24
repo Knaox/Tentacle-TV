@@ -40,7 +40,13 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
       ref={rootRef}
       onClick={() => {
         if (ctx.ctxMenu) return;
-        captureDetailOrigin(rootRef.current, item.Id, poster);
+        // L'AFFICHE seule, pas la racine : celle-ci embarque le bloc titre, et
+        // le visuel partait donc recadré (cf. `captureDetailOrigin`).
+        captureDetailOrigin(
+          rootRef.current?.querySelector<HTMLElement>("[data-card-visual]") ?? null,
+          item.Id,
+          poster,
+        );
         onNavigate(item.Id);
       }}
       onMouseEnter={() => setHovered(true)}

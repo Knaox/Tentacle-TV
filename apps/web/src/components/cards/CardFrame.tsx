@@ -62,6 +62,12 @@ export function CardFrame({
 
   return (
     <div
+      // Repère de la transition d'ouverture : c'est CETTE boîte — l'affiche
+      // seule, sans le bloc titre qui la suit — que le calque fait voyager
+      // jusqu'à la fiche. Capturer la racine de la carte embarquait le titre et
+      // l'année, soit un rectangle plus haut que l'image : `object-cover`
+      // recadrait alors le visuel pendant tout le trajet.
+      data-card-visual
       className="media-tile relative motion-reduce:!transform-none"
       style={{
         transform: moved ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
