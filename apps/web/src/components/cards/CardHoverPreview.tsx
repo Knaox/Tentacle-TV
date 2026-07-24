@@ -120,31 +120,19 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
               une seule lumière qui change de porteur. */}
           <CardBloom on settled imageUrl={cardImageUrl} />
 
-          {/* Liseré dégradé IDENTIQUE à celui de la carte (`CardFrame`), au
-              même débord de 2 px. Le panneau reprend ainsi la signature exacte
-              de ce qu'il remplace : rien ne change de main à l'ouverture. Il
-              vit hors de la boîte `overflow-hidden`, sinon il serait rogné. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-[2px] rounded-[14px]"
-            style={{ background: "var(--card-ring-gradient)" }}
-          />
-
-          {/* Rayon `--radius-lg` (12 px) et non `--radius-xl` : c'est celui de
-              la carte. Les 4 px d'écart se voyaient aux coins pendant toute la
-              superposition.
-              PAS de `backdrop-filter` : la vignette est opaque et le tiroir
-              repose sur un fond opaque, il n'y avait donc rien à flouter — mais
-              le flou d'arrière-plan forçait une passe de compositing sur une
-              surface fixe de la taille du panneau, à l'image près de son
-              ouverture. C'est le pire moment pour en demander une. */}
+          {/* Rayon `--radius-lg` (12 px), celui de la carte. Signature de bord
+              IDENTIQUE à `CardFrame` : biseau de relief (`--card-edge-bevel`),
+              plus l'anneau de marque du panneau — rien ne change de main à
+              l'ouverture. Plus de liseré dégradé violet (retiré partout).
+              PAS de `backdrop-filter` : rien à flouter derrière un fond opaque,
+              et le flou coûtait une passe de compositing à l'ouverture. */}
           <div
             className={`relative overflow-hidden rounded-[var(--radius-lg)] ${
               placement.rect.direction === "overlay" ? "h-full" : ""
             }`}
             style={{
               background: "var(--preview-panel-bg)",
-              boxShadow: "var(--elev-card-hover), var(--card-ring-glow), var(--preview-panel-ring)",
+              boxShadow: "var(--elev-card-hover), var(--card-edge-bevel), var(--preview-panel-ring)",
             }}
           >
             <HoverPreviewBody
@@ -153,6 +141,7 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
               direction={placement.rect.direction}
               onNavigate={onClose}
             />
+            <div aria-hidden data-on className="card-grain" />
           </div>
         </motion.div>
       )}

@@ -92,15 +92,18 @@
     radial-gradient(66% 58% at 97% 3%, rgba(var(--brand-accent-rgb), 0.1) 0%, transparent 64%);
 
   /* ── Cartes ──────────────────────────────────────────────────────────
-   * Liseré dégradé violet → rose : un vrai calque sous l'image, là où un
-   * `box-shadow: 0 0 0 2px` ne sait produire qu'une couleur unie. */
-  --card-ring-gradient: linear-gradient(
-    135deg,
-    var(--brand-light) 0%,
-    var(--brand) 42%,
-    var(--brand-accent) 100%
-  );
-  --card-ring-glow: 0 0 34px rgba(var(--brand-rgb), 0.28);
+   * RELIEF de bord au survol, à la place de l'ancien liseré dégradé violet →
+   * rose (retiré). Un vrai relief par la LUMIÈRE, pas un contour coloré : un
+   * filet clair en haut (la carte prend la lumière), une ombre en bas (elle la
+   * perd), et un fin trait neutre pour détacher l'affiche du fond. Aucune
+   * couleur de marque — la couleur, au survol, vient déjà du halo `CardBloom`
+   * (l'affiche floutée). Inset, donc à poser sur la boîte image elle-même. */
+  --card-edge-bevel:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  /* Grain du pourtour — opacité du calque `.card-grain` au survol. */
+  --card-grain-opacity: 0.5;
 
   /* Halo de ciblage — la lumière qui éclot autour de la carte visée.
    *
@@ -229,14 +232,22 @@
     transparent 74%
   );
 
-  --card-ring-glow: 0 0 28px rgba(var(--brand-rgb), 0.18);
-
   /* Halo de ciblage nettement plus discret : une lumière se lit par CONTRASTE
    * avec ce qu'elle éclaire, et un fond nacré n'a presque rien à éclairer. Au
    * réglage du thème sombre, elle ne rayonnait pas — elle salissait le pourtour
    * de la carte. Même arbitrage que pour le halo de bannière. */
   --card-bloom-strength: 0.45;
   --card-bloom-sat: 1.2;
+
+  /* Relief de bord en clair : le filet blanc du haut est presque invisible sur
+   * nacré, l'ombre du bas doit rester douce (pas de trait noir sur du clair).
+   * Le trait de contour se fait sombre plutôt que clair — c'est l'ombre qui
+   * détache une carte sur fond clair, pas la lumière. */
+  --card-edge-bevel:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --card-grain-opacity: 0.32;
 
   /* Halo de bannière : nettement plus discret sur fond nacré. Une lumière
    * colorée se lit par CONTRASTE avec ce qu'elle éclaire — sur un fond clair il
@@ -270,6 +281,36 @@
 
 .card-spotlight[data-lit="true"]::after {
   opacity: 1;
+}
+
+/* ── Grain de bord des cartes ────────────────────────────────────────────
+ * Texture RÉELLE (le même `feTurbulence` que `.noise-texture`), pas un dégradé
+ * plaqué : c'est la « texture sans tricher ». Masquée en ANNEAU par la technique
+ * `mask-composite: exclude` — deux masques, l'un limité à la boîte de contenu
+ * (l'intérieur, retiré), l'autre plein ; leur exclusion ne garde que la bande de
+ * `padding`, soit le pourtour. Le grain n'apparaît donc qu'au bord, jamais au
+ * centre de l'affiche.
+ *
+ * Dupliqué et non `.noise-texture` réutilisée : celle-ci est masquée en thème
+ * clair (`scrims.css`), or le relief doit vivre dans les DEUX thèmes. */
+.card-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 4px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.card-grain[data-on="true"] {
+  opacity: var(--card-grain-opacity);
 }
 
 /* ── Lueur de raccord des bannières à fond perdu ────────────────────────

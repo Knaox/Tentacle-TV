@@ -47,13 +47,16 @@ interface CardFrameProps {
  * Cadre de survol commun à toutes les cartes média — la signature visuelle du
  * catalogue, définie à UN seul endroit :
  *
- *  1. un liseré DÉGRADÉ violet → rose, calque débordant de 2 px sous l'image
- *     (un `box-shadow: 0 0 0 2px` ne sait produire qu'une couleur unie) ;
- *  2. un halo qui suit le curseur (`useCardSpotlight`, purement CSS) ;
- *  3. un lift à ressort et une élévation qui passe à `--elev-card-hover`.
+ *  1. un RELIEF de bord au survol : un biseau lumineux (`--card-edge-bevel`,
+ *     filet clair en haut, ombre en bas) plus un grain de pourtour
+ *     (`.card-grain`). Il a remplacé le liseré dégradé violet → rose : la
+ *     couleur, au survol, vient désormais du seul halo `CardBloom` (l'affiche
+ *     floutée), et le bord donne du RELIEF plutôt qu'un contour de marque ;
+ *  2. le halo de ciblage `CardBloom` (couleurs de l'affiche) ;
+ *  3. un halo qui suit le curseur (`useCardSpotlight`, purement CSS) ;
+ *  4. un lift à ressort et une élévation qui passe à `--elev-card-hover`.
  *
- * Le `transform` vit sur le conteneur EXTÉRIEUR pour que le liseré et l'image
- * bougent ensemble ; le placer sur l'image seule les désynchroniserait.
+ * Le `transform` vit sur le conteneur EXTÉRIEUR pour que tout bouge ensemble.
  */
 export function CardFrame({
   hovered,
@@ -87,21 +90,21 @@ export function CardFrame({
       {imageUrl && <CardBloom on={hovered} imageUrl={imageUrl} />}
 
       <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-[2px] rounded-[14px] transition-opacity duration-300 motion-reduce:transition-none"
-        style={{ background: "var(--card-ring-gradient)", opacity: hovered ? 1 : 0 }}
-      />
-
-      <div
         ref={spot.ref}
         data-lit={spot.lit}
         {...spot.handlers}
         className={`card-spotlight relative ${aspect} overflow-hidden rounded-[var(--radius-lg)] transition-[box-shadow] duration-300 motion-reduce:transition-none`}
+        // Au survol : élévation neutre PLUS le biseau de relief (inset). Plus de
+        // `--card-ring-glow` violet — la couleur vient du halo `CardBloom`.
         style={{
-          boxShadow: hovered ? "var(--elev-card-hover), var(--card-ring-glow)" : "var(--elev-1)",
+          boxShadow: hovered ? "var(--elev-card-hover), var(--card-edge-bevel)" : "var(--elev-1)",
         }}
       >
         {children}
+        {/* Grain de pourtour, révélé au survol — la « texture » du relief. En
+            dernier enfant, au-dessus de l'image ; masqué en anneau, il ne
+            couvre que le bord. */}
+        <div aria-hidden data-on={hovered} className="card-grain" />
       </div>
     </div>
   );
