@@ -64,13 +64,18 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
           // Il ne reste que le lift, identique à l'ancien survol de carte.
           initial={{ opacity: 1, scale: 1, y: 0 }}
           animate={{ opacity: 1, scale: 1.03, y: -5 }}
-          exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
+          // Sortie qui REPOSE le panneau sur la carte (échelle 1, y 0) avant de
+          // l'effacer. La version précédente le faisait disparaître là où il
+          // était — 5 px plus haut et 3 % plus grand — pendant que la carte
+          // réapparaissait à sa taille normale dessous : un dédoublement d'un
+          // cinquième de seconde à chaque sortie de curseur.
+          exit={{ opacity: 0, scale: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } }}
           // Ressort volontairement plus lent et plus amorti que `springSoft` :
           // le lift doit accompagner le regard, pas claquer. Aucun rebond
           // (damping élevé) — un dépassement, même léger, se lit comme de
           // l'agitation quand il se répète à chaque carte survolée.
           transition={{ type: "spring", stiffness: 190, damping: 26, mass: 1 }}
-          className="fixed z-40 overflow-hidden rounded-[var(--radius-xl)]"
+          className="fixed z-40"
           style={{
             top: placement.rect.top,
             left: placement.rect.left,
@@ -80,13 +85,36 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
             // bloc d'infos se déroule sous elle, un centre géométrique ferait
             // dériver l'image vers le haut au fur et à mesure du déroulé.
             transformOrigin: "50% 25%",
-            background: "var(--preview-panel-bg)",
-            boxShadow: "var(--shadow-modal), var(--preview-panel-ring)",
-            backdropFilter: "blur(var(--blur-dropdown))",
-            WebkitBackdropFilter: "blur(var(--blur-dropdown))",
+            willChange: "transform",
           }}
         >
-          <HoverPreviewBody item={item} cardImageUrl={cardImageUrl} onNavigate={onClose} />
+          {/* Liseré dégradé IDENTIQUE à celui de la carte (`CardFrame`), au
+              même débord de 2 px. Le panneau reprend ainsi la signature exacte
+              de ce qu'il remplace : rien ne change de main à l'ouverture. Il
+              vit hors de la boîte `overflow-hidden`, sinon il serait rogné. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-[2px] rounded-[14px]"
+            style={{ background: "var(--card-ring-gradient)" }}
+          />
+
+          {/* Rayon `--radius-lg` (12 px) et non `--radius-xl` : c'est celui de
+              la carte. Les 4 px d'écart se voyaient aux coins pendant toute la
+              superposition.
+              PAS de `backdrop-filter` : la vignette est opaque et le tiroir
+              repose sur un fond opaque, il n'y avait donc rien à flouter — mais
+              le flou d'arrière-plan forçait une passe de compositing sur une
+              surface fixe de la taille du panneau, à l'image près de son
+              ouverture. C'est le pire moment pour en demander une. */}
+          <div
+            className="relative overflow-hidden rounded-[var(--radius-lg)]"
+            style={{
+              background: "var(--preview-panel-bg)",
+              boxShadow: "var(--elev-card-hover), var(--card-ring-glow), var(--preview-panel-ring)",
+            }}
+          >
+            <HoverPreviewBody item={item} cardImageUrl={cardImageUrl} onNavigate={onClose} />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>,

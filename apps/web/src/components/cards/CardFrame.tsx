@@ -19,6 +19,21 @@ interface CardFrameProps {
    * déplacement visible est celui du panneau.
    */
   suppressLift?: boolean;
+  /**
+   * La carte s'efface : un panneau d'aperçu occupe EXACTEMENT sa place et
+   * porte la même image.
+   *
+   * Sans cet effacement, les deux calques restent superposés pendant toute la
+   * durée du survol, et le panneau — qui monte de 5 px et grandit de 3 % —
+   * laisse dépasser le liseré, l'ombre et les coins de la carte restée en
+   * dessous. C'est la seconde moitié de la saccade (la première étant le zoom
+   * interne, cf. `CardImage.zoom`) : deux cartes visibles au lieu d'une.
+   *
+   * `opacity` et non `visibility` / démontage : la boîte doit garder sa place
+   * dans la rangée (sinon reflow) ET continuer de recevoir `mouseleave`, qui
+   * est ce qui referme le panneau.
+   */
+  concealed?: boolean;
   children: ReactNode;
 }
 
@@ -39,6 +54,7 @@ export function CardFrame({
   aspect,
   lift = { scale: 1.04, y: -6 },
   suppressLift = false,
+  concealed = false,
   children,
 }: CardFrameProps) {
   const spot = useCardSpotlight();
@@ -47,7 +63,10 @@ export function CardFrame({
   return (
     <div
       className="media-tile relative motion-reduce:!transform-none"
-      style={{ transform: moved ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)" }}
+      style={{
+        transform: moved ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
+        opacity: concealed ? 0 : 1,
+      }}
     >
       <div
         aria-hidden
