@@ -120,53 +120,38 @@ export function HoverPreviewInfo({
     );
   }
 
-  // ── Tiroir du panneau (disposition `down`) — HAUTEUR FIXE ─────────────────
-  // `h-full` : le tiroir parent (`HoverPreviewBody`) impose `DRAWER_HEIGHT`, ce
-  // bloc le remplit. La zone haute est fixe ; le synopsis prend le reste et
-  // défile, si bien que la hauteur TOTALE ne bouge ni avec ni sans synopsis.
+  // ── Tiroir du panneau (disposition `down`) ────────────────────────────────
   return (
     <div
-      className="flex h-full cursor-pointer flex-col px-3 pb-3 pt-2.5"
+      className="flex cursor-pointer flex-col gap-2 px-3 pb-3 pt-2.5"
       data-preview-info
       role="link"
       aria-label={t("common:moreInfo")}
       onClick={onOpenDetail}
     >
-      <div className="flex flex-shrink-0 flex-col gap-2">
-        {/* Le CTA de lecture n'est pas ici : la vignette lance déjà la lecture,
-            et le bouton « Plus d'infos » vit dans son coin haut-gauche. */}
-        <div className="flex items-center gap-1.5">
-          <CardQuickActions item={item} variant="bar" />
-        </div>
-
-        {epLabel && (
-          <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${labelClass}`}>
-            {epLabel}
-          </p>
-        )}
-
-        {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on
-            annonce alors le nombre d'épisodes plutôt qu'une ligne vide. */}
-        {metaLine}
+      {/* Le CTA de lecture n'est pas ici : la vignette lance déjà la lecture,
+          et le bouton « Plus d'infos » vit dans son coin haut-gauche. */}
+      <div className="flex items-center gap-1.5">
+        <CardQuickActions item={item} variant="bar" />
       </div>
 
-      {/* Synopsis : UNE ligne visible, le reste DÉFILE (`overflow-y-auto`), sans
-          barre (`scrollbar-hide`) et avec un fondu bas (`mask-image`) qui signale
-          la suite. `max-h` le borne à ~1,5 ligne — une ligne pleine plus l'amorce
-          fondue de la suivante. Le panneau reste court. Absent, la zone
-          disparaît ; la hauteur totale, imposée par le parent, ne bouge pas. */}
+      {epLabel && (
+        <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${labelClass}`}>
+          {epLabel}
+        </p>
+      )}
+
+      {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on annonce
+          alors le nombre d'épisodes plutôt qu'une ligne vide. */}
+      {metaLine}
+
+      {/* Synopsis : UNE ligne, tronquée par « … » (`line-clamp-1`) — pas de
+          défilement. Un aperçu doit rester court ; la phrase entière est sur la
+          fiche, à un clic. */}
       {item.Overview && (
-        <div
-          className="scrollbar-hide mt-1.5 max-h-[24px] min-h-0 flex-1 overflow-y-auto overscroll-contain"
-          style={{
-            maskImage: "linear-gradient(180deg, #000 calc(100% - 9px), transparent 100%)",
-            WebkitMaskImage: "linear-gradient(180deg, #000 calc(100% - 9px), transparent 100%)",
-          }}
-        >
-          <p className="text-[11px] leading-relaxed text-content-secondary">
-            <RichOverview text={item.Overview} />
-          </p>
-        </div>
+        <p className="line-clamp-1 text-[11px] leading-relaxed text-content-secondary">
+          <RichOverview text={item.Overview} />
+        </p>
       )}
     </div>
   );
