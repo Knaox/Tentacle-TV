@@ -83,6 +83,9 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   // (qui font un pause éphémère 100ms pour absorber le clic).
   return (
     <section
+      // Repère de la transition d'ouverture : c'est ce cadre que « Plus
+      // d'infos » fait s'ouvrir jusqu'au plein écran de la fiche.
+      data-hero-frame
       className="group/billboard relative w-full overflow-hidden h-[80vh] md:h-[88vh] lg:h-[92vh]"
       aria-label="Featured content"
     >
