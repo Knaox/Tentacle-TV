@@ -8,9 +8,9 @@ import { CardProgressBar } from "./CardProgressBar";
 import { CardQuickActions } from "./CardQuickActions";
 import { HoverPreviewInfo } from "./HoverPreviewInfo";
 import { playTargetPath } from "./playTarget";
-import type { PreviewDirection } from "./hoverPreviewGeometry";
+import { DRAWER_HEIGHT, type PreviewDirection } from "./hoverPreviewGeometry";
 import { captureDetailOrigin } from "../detail/detailTransition";
-import { PlayIcon } from "../icons/HeroIcons";
+import { InfoIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
 
 interface HoverPreviewBodyProps {
@@ -185,16 +185,21 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
         draggable={false}
         className="absolute inset-0 h-full w-full object-cover"
       />
-      {/* Icône de lecture seule, en haut à gauche : repère d'intention posé
-          hors du champ du titre, qui occupe le bas de la vignette. */}
+      {/* Bouton « Plus d'infos », en haut à gauche : il ouvre la FICHE, avec la
+          même transition que partout (`go` capture l'origine sur la vignette).
+          Il a remplacé le bouton Lecture — la vignette entière lance déjà la
+          lecture au clic, l'y répéter par un bouton faisait doublon, alors que
+          rien ne signalait l'accès à la fiche. Les deux intentions ont chacune
+          leur cible : l'image pour lire, ce bouton (et le tiroir) pour la fiche.
+          `stopPropagation` empêche le clic de retomber sur la vignette-lecture. */}
       <PressableScale
-        onClick={go(playPath)}
-        aria-label={t("common:play")}
-        title={t("common:play")}
-        className="absolute left-2.5 top-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg"
+        onClick={go(`/media/${item.Id}`)}
+        aria-label={t("common:moreInfo")}
+        title={t("common:moreInfo")}
+        className="absolute left-2.5 top-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.5)] text-on-media-primary backdrop-blur-sm transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.7)]"
         style={{ boxShadow: "var(--elev-2)" }}
       >
-        <PlayIcon />
+        <InfoIcon className="h-5 w-5" />
       </PressableScale>
 
       {/* Scrim + titre du bas : uniquement en `down`. En `overlay` c'est le
@@ -220,16 +225,16 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
     </div>
   );
 
-  // Déroulé du bloc d'informations. `height: 0 → auto` plutôt qu'un simple
-  // fondu : le panneau POUSSE sa hauteur, comme un tiroir qui s'ouvre. Le fondu
-  // seul faisait apparaître un bloc déjà à sa taille finale, ce qui se lisait
-  // comme un saut. En déploiement `up`, la même animation fait grandir le
-  // panneau vers le haut — il est alors ancré par son bord bas.
+  // Déroulé du bloc d'informations vers une hauteur FIXE (`DRAWER_HEIGHT`),
+  // jamais `auto` : c'est ce qui rend le panneau identique avec ou sans synopsis
+  // — sa taille ne dépend plus du contenu. Le tiroir POUSSE quand même sa
+  // hauteur (0 → fixe), comme un tiroir qui s'ouvre ; un simple fondu ferait
+  // apparaître un bloc déjà à sa taille finale, ce qui se lit comme un saut.
   const drawer = (
     <motion.div
       key="drawer"
       initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
+      animate={{ height: DRAWER_HEIGHT, opacity: 1 }}
       // 300 ms, légèrement décalé après le lift. À 440 ms le tiroir donnait le
       // tempo du survol, et ce tempo était trop lent : on avait fini de lire la
       // vignette avant qu'il ne soit ouvert. Le décalage subsiste — sans lui les

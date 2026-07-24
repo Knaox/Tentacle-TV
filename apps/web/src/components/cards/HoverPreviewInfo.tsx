@@ -65,68 +65,107 @@ export function HoverPreviewInfo({
   const onMedia = tone === "media";
   const metaClass = onMedia ? "text-on-media-secondary" : "text-content-tertiary";
   const labelClass = onMedia ? "text-on-media-secondary" : "text-content-quaternary";
-  const highlightClass = onMedia ? "text-on-media-primary" : "text-[var(--brand-light)]";
+  // Mise en avant (% visionné, nombre d'épisodes ajoutés) en ROSE, pas en violet
+  // — même teinte que les barres de progression. Blanc quand le bloc est posé
+  // sur l'image (mode `media`).
+  const highlightClass = onMedia ? "text-on-media-primary" : "text-[var(--brand-accent-light)]";
 
+  const metaLine = (
+    <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${metaClass}`}>
+      {/* En version resserrée le code d'épisode rejoint cette ligne au lieu
+          d'occuper la sienne — une rangée gagnée sur quatre. */}
+      {epLabel && compact && (
+        <span className={`font-bold uppercase tracking-[0.12em] ${labelClass}`}>{epLabel}</span>
+      )}
+      {addedCount > 1 ? (
+        <span className={`font-medium ${highlightClass}`}>
+          {t("common:addedEpisodes", { count: addedCount })}
+        </span>
+      ) : (
+        <>
+          {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
+          {item.CommunityRating != null && (
+            <span className="flex items-center gap-0.5 font-medium">
+              <StarIcon /> {item.CommunityRating.toFixed(1)}
+            </span>
+          )}
+          {runtime && <span>{runtime}</span>}
+          {hasProgress && (
+            <span className={`font-medium ${highlightClass}`}>
+              {t("common:percentWatched", { percent: Math.round(progress) })}
+            </span>
+          )}
+        </>
+      )}
+      <span className="flex items-center gap-1">
+        <QualityChips quality={quality} density="compact" />
+        <LanguagePill labels={quality.audioLabels} max={2} />
+      </span>
+    </div>
+  );
+
+  // ── Version resserrée (voile sur l'image, disposition `overlay`) ──────────
+  // Hauteur libre, pas de synopsis ni d'actions : comportement d'origine.
+  if (compact) {
+    return (
+      <div
+        className="flex cursor-pointer flex-col gap-2 px-3 pb-3 pt-2"
+        data-preview-info
+        role="link"
+        aria-label={t("common:moreInfo")}
+        onClick={onOpenDetail}
+      >
+        {metaLine}
+      </div>
+    );
+  }
+
+  // ── Tiroir du panneau (disposition `down`) — HAUTEUR FIXE ─────────────────
+  // `h-full` : le tiroir parent (`HoverPreviewBody`) impose `DRAWER_HEIGHT`, ce
+  // bloc le remplit. La zone haute est fixe ; le synopsis prend le reste et
+  // défile, si bien que la hauteur TOTALE ne bouge ni avec ni sans synopsis.
   return (
     <div
-      className={`flex cursor-pointer flex-col gap-2 px-3 pb-3 ${compact ? "pt-2" : "pt-2.5"}`}
+      className="flex h-full cursor-pointer flex-col px-3 pb-3 pt-2.5"
       data-preview-info
       role="link"
       aria-label={t("common:moreInfo")}
       onClick={onOpenDetail}
     >
-      {/* Le CTA de lecture n'est pas ici : c'est l'icône posée en haut à gauche
-          de la vignette, qui sert de repère au survol sans masquer l'image. */}
-      {!compact && (
+      <div className="flex flex-shrink-0 flex-col gap-2">
+        {/* Le CTA de lecture n'est pas ici : la vignette lance déjà la lecture,
+            et le bouton « Plus d'infos » vit dans son coin haut-gauche. */}
         <div className="flex items-center gap-1.5">
           <CardQuickActions item={item} variant="bar" />
         </div>
-      )}
 
-      {epLabel && !compact && (
-        <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${labelClass}`}>
-          {epLabel}
-        </p>
-      )}
+        {epLabel && (
+          <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${labelClass}`}>
+            {epLabel}
+          </p>
+        )}
 
-      {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on annonce
-          alors le nombre d'épisodes, plutôt que de laisser la ligne vide. */}
-      <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${metaClass}`}>
-        {/* En version resserrée le code d'épisode rejoint cette ligne au lieu
-            d'occuper la sienne — une rangée gagnée sur quatre. */}
-        {epLabel && compact && (
-          <span className={`font-bold uppercase tracking-[0.12em] ${labelClass}`}>{epLabel}</span>
-        )}
-        {addedCount > 1 ? (
-          <span className={`font-medium ${highlightClass}`}>
-            {t("common:addedEpisodes", { count: addedCount })}
-          </span>
-        ) : (
-          <>
-            {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
-            {item.CommunityRating != null && (
-              <span className="flex items-center gap-0.5 font-medium">
-                <StarIcon /> {item.CommunityRating.toFixed(1)}
-              </span>
-            )}
-            {runtime && <span>{runtime}</span>}
-            {hasProgress && (
-              <span className={`font-medium ${highlightClass}`}>
-                {t("common:percentWatched", { percent: Math.round(progress) })}
-              </span>
-            )}
-          </>
-        )}
-        <span className="flex items-center gap-1">
-          <QualityChips quality={quality} density="compact" />
-          <LanguagePill labels={quality.audioLabels} max={2} />
-        </span>
+        {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on
+            annonce alors le nombre d'épisodes plutôt qu'une ligne vide. */}
+        {metaLine}
       </div>
 
-      {!compact && item.Overview && (
-        <p className="line-clamp-2 text-[11px] leading-relaxed text-content-secondary">
-          <RichOverview text={item.Overview} />
-        </p>
+      {/* Synopsis : occupe la hauteur restante et DÉFILE si trop long, sans
+          barre visible (`scrollbar-hide`) et avec un fondu bas (`mask-image`)
+          qui signale qu'il y a une suite. Absent, la zone reste vide — mais la
+          hauteur totale, imposée par le parent, ne change pas. */}
+      {item.Overview && (
+        <div
+          className="scrollbar-hide mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          style={{
+            maskImage: "linear-gradient(180deg, #000 calc(100% - 14px), transparent 100%)",
+            WebkitMaskImage: "linear-gradient(180deg, #000 calc(100% - 14px), transparent 100%)",
+          }}
+        >
+          <p className="text-[11px] leading-relaxed text-content-secondary">
+            <RichOverview text={item.Overview} />
+          </p>
+        </div>
       )}
     </div>
   );
