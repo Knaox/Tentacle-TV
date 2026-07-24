@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useLatestItems } from "@tentacle-tv/api-client";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
-import { fadeUp, textStagger } from "../../theme/motion";
+import { fadeUp, textCascade } from "../../theme/motion";
 
 interface LibraryHeroProps {
   libraryId: string;
@@ -96,7 +96,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
           titre d'autant. */}
       <motion.div
         className="absolute inset-x-0 bottom-[18%] z-10 px-4 sm:px-8 md:px-14"
-        variants={reduced ? undefined : textStagger()}
+        variants={reduced ? undefined : textCascade}
         initial="hidden"
         animate="show"
       >

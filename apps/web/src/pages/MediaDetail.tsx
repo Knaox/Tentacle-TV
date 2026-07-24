@@ -19,9 +19,12 @@ import { consumeDetailOrigin, type DetailOrigin } from "../components/detail/det
 import { ExtrasSection } from "../components/detail/ExtrasSection";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { ChevronRightIcon } from "../components/media/MediaDetailIcons";
+import { fadeIn, fadeUp, textCascadeDelayed } from "../theme/motion";
 
-const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
-const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
+// `fadeUp` / `fadeIn` viennent de `theme/motion` — la fiche avait ses propres
+// copies, restées à 24 px de course quand la référence est passée à 10. La
+// révélation du texte doit être la même d'une page à l'autre, sinon l'écart se
+// remarque précisément là où l'on navigue le plus.
 
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
@@ -127,11 +130,11 @@ export function MediaDetail() {
           className="-mt-48 relative z-10 px-4 md:px-12"
           initial="hidden"
           animate="show"
-          // Cascade resserrée (40 ms par bloc, amorce à 140 ms) : l'amorce
-          // attendait la fin du vol du visuel, qui a été raccourci de 720 à
-          // 440 ms, et le décalage de 80 ms faisait arriver la dernière ligne
-          // une demi-seconde après la première.
-          variants={{ show: { transition: { staggerChildren: 0.04, delayChildren: 0.14 } } }}
+          // Constante de module (cf. `theme/motion`), jamais un littéral en
+          // ligne : un objet neuf à chaque rendu fait rejouer toute la cascade
+          // par framer, et cette page se rend plusieurs fois — mesure du visuel,
+          // arrivée des requêtes.
+          variants={textCascadeDelayed}
         >
           <div className="flex flex-col gap-4 md:flex-row md:gap-8">
             <DetailPoster item={item} onMeasure={handleMeasure} />
