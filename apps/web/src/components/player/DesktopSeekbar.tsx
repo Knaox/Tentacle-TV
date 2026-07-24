@@ -33,8 +33,9 @@ export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSee
       onMouseLeave={() => { if (!(isDragging as MutableRefObject<boolean>).current) setHoverTime(null); }}>
       {/* Buffer bar */}
       <div className="absolute h-full rounded-full bg-white/10" style={{ width: `${bufProg * 100}%` }} />
-      {/* Progress bar */}
-      <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${displayProgress * 100}%` }}>
+      {/* Progress bar — rose de la bannière (`--progress-fill`), même couleur
+          que la barre des cartes et du lecteur web. */}
+      <div className="relative h-full rounded-full" style={{ width: `${displayProgress * 100}%`, background: "var(--progress-fill)" }}>
         <div className={`absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow transition-opacity ${dragProgress != null ? "opacity-100" : "opacity-0 group-hover/bar:opacity-100"}`} />
       </div>
       <TrickplayPreview

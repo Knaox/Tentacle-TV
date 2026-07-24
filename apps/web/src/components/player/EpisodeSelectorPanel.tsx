@@ -120,7 +120,7 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
         )}
         {!watched && progress != null && progress > 0 && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-white/25">
-            <div className="h-full bg-tentacle-accent" style={{ width: `${progress}%` }} />
+            <div className="h-full" style={{ width: `${progress}%`, background: "var(--progress-fill)" }} />
           </div>
         )}
       </div>

@@ -243,11 +243,13 @@ export function PlayerControls({
             {/* Volume : icône seule sur mobile (slider trop encombrant), slider horizontal sur ≥sm au hover */}
             <div className="group/vol flex items-center gap-2">
               <button onClick={onToggleMute} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={volume === 0 ? t("player:unmute", "Unmute") : t("player:mute", "Mute")}>
-                {volume === 0 ? <MuteIcon /> : <VolumeIcon />}
+                {/* Quatre états qui suivent le volume (0–1 ici) : coupé, bas,
+                    moyen, fort. Même icône que le lecteur desktop. */}
+                {volume === 0 ? <MuteIcon /> : <VolumeIcon bars={volume <= 0.33 ? 1 : volume <= 0.66 ? 2 : 3} />}
               </button>
               <input type="range" min={0} max={1} step={0.05} value={volume}
                 onChange={(e) => onVolumeChange(Number(e.target.value))}
-                className="hidden w-20 accent-tentacle-accent sm:group-hover/vol:block"
+                className="hidden w-20 accent-[color:var(--brand-accent)] sm:group-hover/vol:block"
                 aria-label={t("player:volume", "Volume")}
                 role="slider" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(volume * 100)} />
             </div>
