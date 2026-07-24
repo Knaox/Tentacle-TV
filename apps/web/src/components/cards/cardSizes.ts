@@ -19,3 +19,23 @@ export const EPISODE_WIDTH: Record<CardSize, { base: number; md: number; lg: num
   lg: { base: 320, md: 400, lg: 480 },
 };
 
+/**
+ * Part de la largeur de fenêtre visée par une carte, en pourcent — le terme
+ * central du `clamp(base, Xvw, lg)` posé sur chaque carte.
+ */
+export const POSTER_VW = 14;
+export const EPISODE_VW = 24;
+
+/**
+ * Largeur « idéale » d'une carte, c'est-à-dire ce que le `clamp` CSS produirait.
+ * Sert de point de départ au calage exact des rangées (`useRowCardWidth`), qui
+ * arrondit ensuite à un nombre entier de cartes.
+ */
+export function idealCardWidth(
+  widths: { base: number; lg: number },
+  vw: number,
+  viewportWidth: number,
+): number {
+  return Math.min(Math.max(widths.base, (viewportWidth * vw) / 100), widths.lg);
+}
+

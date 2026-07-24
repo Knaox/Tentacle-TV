@@ -18,6 +18,12 @@ interface PosterCardProps {
   size?: CardSize;
   /** `series` force le poster de la série pour un épisode (« Derniers ajouts »). */
   posterImageMode?: PosterImageMode;
+  /**
+   * Largeur imposée par la rangée, en pixels, pour qu'un nombre entier de
+   * cartes la remplisse exactement (`useRowCardWidth`). Absente hors rangée :
+   * on retombe alors sur le `clamp` responsive.
+   */
+  width?: number | null;
 }
 
 /**
@@ -33,7 +39,13 @@ interface PosterCardProps {
  * latéralement, alors que la carte, elle, ne bouge pas. Le survol des affiches
  * reste donc INTERNE (`PosterTile`), là où le désalignement est impossible.
  */
-export function PosterCard({ item, index, size = "md", posterImageMode = "auto" }: PosterCardProps) {
+export function PosterCard({
+  item,
+  index,
+  size = "md",
+  posterImageMode = "auto",
+  width,
+}: PosterCardProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const { t } = useTranslation("common");
@@ -71,7 +83,7 @@ export function PosterCard({ item, index, size = "md", posterImageMode = "auto" 
       // `snap-start` : point d'accroche de la rangée (cf. `MediaRow`).
       className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
-        width: `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
+        width: width != null ? `${width}px` : `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
         animation: "fadeSlideUp 0.45s ease both",
         animationDelay: `${Math.min(index * 40, 400)}ms`,
       }}

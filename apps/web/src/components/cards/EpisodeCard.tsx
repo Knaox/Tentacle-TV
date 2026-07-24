@@ -21,6 +21,12 @@ interface EpisodeCardProps {
   item: MediaItem;
   index: number;
   size?: CardSize;
+  /**
+   * Largeur imposée par la rangée, en pixels, pour qu'un nombre entier de
+   * cartes la remplisse exactement (`useRowCardWidth`). Absente hors rangée :
+   * on retombe alors sur le `clamp` responsive.
+   */
+  width?: number | null;
 }
 
 /**
@@ -29,7 +35,7 @@ interface EpisodeCardProps {
  * de curseur, lift — avec une amplitude réduite, la carte étant plus large.
  * Le clic lance la lecture ; la fiche détail passe par « Plus d'infos ».
  */
-export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
+export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
@@ -69,7 +75,7 @@ export function EpisodeCard({ item, index, size = "md" }: EpisodeCardProps) {
       // milieu de l'une d'elles.
       className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
       style={{
-        width: `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
+        width: width != null ? `${width}px` : `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
         animation: "fadeSlideUp 0.45s ease both",
         animationDelay: `${Math.min(index * 40, 400)}ms`,
       }}

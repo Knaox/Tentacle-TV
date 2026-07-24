@@ -7,6 +7,7 @@ import type { PosterImageMode } from "../cards/resolveCardImage";
 import { RowHeader } from "./RowHeader";
 import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
+import { useRowCardWidth } from "./useRowCardWidth";
 
 export type CardVariant = "poster" | "episode";
 
@@ -32,6 +33,9 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   const rowRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
+  // Largeur calée sur la rangée : un nombre entier de cartes la remplit
+  // exactement, plus aucune n'est tronquée au bord droit.
+  const cardWidth = useRowCardWidth(scrollRef, variant);
 
   useEffect(() => {
     const el = rowRef.current;
@@ -110,9 +114,15 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
               des clés dupliquées React (enfants omis/dupliqués). */}
           {visible && items.map((item, i) =>
             variant === "episode" ? (
-              <EpisodeCard key={`${item.Id}-${i}`} item={item} index={i} />
+              <EpisodeCard key={`${item.Id}-${i}`} item={item} index={i} width={cardWidth} />
             ) : (
-              <PosterCard key={`${item.Id}-${i}`} item={item} index={i} posterImageMode={posterImageMode} />
+              <PosterCard
+                key={`${item.Id}-${i}`}
+                item={item}
+                index={i}
+                posterImageMode={posterImageMode}
+                width={cardWidth}
+              />
             ),
           )}
         </div>
