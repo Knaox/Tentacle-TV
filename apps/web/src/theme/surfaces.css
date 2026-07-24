@@ -1,0 +1,179 @@
+/* Surfaces « Prisme » — la lumière de marque comme élément STRUCTUREL.
+ *
+ * Trois gestes, tous construits sur des tokens existants (`--brand-rgb`,
+ * `--brand-accent-rgb`, `--scrim-media-rgb`, `--scrim-page-rgb`) : une surcharge
+ * de thème depuis l'éditeur admin les emporte donc sans une ligne de code.
+ *  1. l'ombre des bannières est TEINTÉE (violet-noir), jamais un noir neutre ;
+ *  2. une hairline dégradée referme le bas de chaque bannière ;
+ *  3. les cartes gagnent un liseré dégradé + un halo de curseur.
+ *
+ * Déclarées ICI et non dans tokens.css, pour la même raison que scrims.css :
+ * le test de parité (packages/theme/src/css/cssVars.test.ts) exige que TOUTE
+ * variable de tokens.css existe dans `CSS_VAR_NAMES` et soit redéclarée en
+ * clair. Ce sont des variables de PRÉSENTATION (géométrie de dégradés), pas des
+ * tokens de design surchargeables un par un. */
+:root {
+  /* ── Bannières ───────────────────────────────────────────────────────
+   * 72deg : la direction pointe vers le HAUT-DROITE, donc le coin sombre
+   * tombe en BAS-GAUCHE, pile sous la colonne de texte. Inclinaison légère
+   * (le 90deg d'origine était plat, une diagonale franche coupait l'affiche
+   * en deux). L'assise reste NOIRE (`--scrim-media-rgb`) : règle « posé sur
+   * média » — le texte on-media est blanc dans les deux schémas. */
+  --hero-scrim-diagonal: linear-gradient(
+    72deg,
+    rgba(var(--scrim-media-rgb), 0.9) 0%,
+    rgba(var(--scrim-media-rgb), 0.62) 26%,
+    rgba(var(--scrim-media-rgb), 0.26) 48%,
+    rgba(var(--scrim-media-rgb), 0.05) 66%,
+    transparent 78%
+  );
+
+  /* Voile de marque : c'est LUI qui fait le violet-noir. Alphas très bas —
+   * au-delà de ~0.28 l'affiche vire au monochrome violet. */
+  --hero-brand-wash:
+    radial-gradient(118% 88% at 2% 98%, rgba(var(--brand-rgb), 0.26) 0%, rgba(var(--brand-rgb), 0.09) 38%, transparent 66%),
+    radial-gradient(72% 62% at 98% 2%, rgba(var(--brand-accent-rgb), 0.13) 0%, transparent 62%);
+
+  /* Il n'y a PAS de hairline de couture basse (`--hero-edge-light`, supprimée).
+   * Elle supposait une couture visible entre bannière et page. En réalité les
+   * trois surfaces font remonter leur contenu par-dessus — rangées de
+   * l'accueil, bloc titre de la fiche média, barre de recherche de la
+   * bibliothèque — et ce contenu est transparent : le trait se retrouvait
+   * dessiné EN TRAVERS des affiches et du synopsis. Un liseré n'a de sens que
+   * sur un bord réellement libre. */
+
+  /* Fiche média : même grammaire, voiles un cran plus légers (la colonne de
+   * texte y est plus courte, l'affiche doit respirer davantage). */
+  --detail-scrim-diagonal: linear-gradient(
+    72deg,
+    rgba(var(--scrim-media-rgb), 0.86) 0%,
+    rgba(var(--scrim-media-rgb), 0.5) 30%,
+    rgba(var(--scrim-media-rgb), 0.18) 52%,
+    transparent 74%
+  );
+  --detail-brand-wash:
+    radial-gradient(110% 82% at 3% 97%, rgba(var(--brand-rgb), 0.2) 0%, rgba(var(--brand-rgb), 0.06) 40%, transparent 68%),
+    radial-gradient(66% 58% at 97% 3%, rgba(var(--brand-accent-rgb), 0.1) 0%, transparent 64%);
+
+  /* ── Cartes ──────────────────────────────────────────────────────────
+   * Liseré dégradé violet → rose : un vrai calque sous l'image, là où un
+   * `box-shadow: 0 0 0 2px` ne sait produire qu'une couleur unie. */
+  --card-ring-gradient: linear-gradient(
+    135deg,
+    var(--brand-light) 0%,
+    var(--brand) 42%,
+    var(--brand-accent) 100%
+  );
+  --card-ring-glow: 0 0 34px rgba(var(--brand-rgb), 0.28);
+
+  /* Halo qui suit le curseur (`--mx`/`--my` posées par useCardSpotlight).
+   * Blanc CONSTANT dans les deux schémas : il est posé sur l'affiche. */
+  --card-spotlight: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 38%,
+    transparent 62%
+  );
+
+  /* Assise de la barre d'actions révélée en bas de l'affiche — noire dans les
+   * deux schémas (posée sur média). */
+  --card-reveal-scrim: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(var(--scrim-media-rgb), 0.32) 34%,
+    rgba(var(--scrim-media-rgb), 0.88) 100%
+  );
+
+  /* ── Rangées ─────────────────────────────────────────────────────────
+   * Dégradés des flèches de défilement. Ils partaient d'un `rgba(0,0,0,.65)`
+   * EN DUR : en thème clair, une bavure noire sur un fond nacré. Ils suivent
+   * désormais `--scrim-page-rgb` (= `--surface-0` dans les deux schémas).
+   * Alpha 0 sur la MÊME couleur, jamais `transparent` : WebKit interpole
+   * `transparent` comme un noir transparent et laisse un liseré gris. */
+  --row-fade-left: linear-gradient(
+    90deg,
+    rgba(var(--scrim-page-rgb), 0.92) 0%,
+    rgba(var(--scrim-page-rgb), 0.55) 45%,
+    rgba(var(--scrim-page-rgb), 0) 100%
+  );
+  --row-fade-right: linear-gradient(
+    270deg,
+    rgba(var(--scrim-page-rgb), 0.92) 0%,
+    rgba(var(--scrim-page-rgb), 0.55) 45%,
+    rgba(var(--scrim-page-rgb), 0) 100%
+  );
+
+  /* ── Panneau d'aperçu au survol (portalisé) ──────────────────────────── */
+  --preview-panel-bg: var(--surface-dropdown);
+  --preview-panel-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.3);
+}
+
+:root[data-theme="light"] {
+  /* Le voile de marque doit être BEAUCOUP plus discret sur fond nacré : les
+   * mêmes alphas y produisaient un halo mauve sale autour du texte. */
+  --hero-brand-wash:
+    radial-gradient(118% 88% at 2% 98%, rgba(var(--brand-rgb), 0.12) 0%, rgba(var(--brand-rgb), 0.04) 40%, transparent 68%),
+    radial-gradient(72% 62% at 98% 2%, rgba(var(--brand-accent-rgb), 0.06) 0%, transparent 64%);
+  --detail-brand-wash:
+    radial-gradient(110% 82% at 3% 97%, rgba(var(--brand-rgb), 0.09) 0%, transparent 66%),
+    radial-gradient(66% 58% at 97% 3%, rgba(var(--brand-accent-rgb), 0.05) 0%, transparent 64%);
+
+  /* Scrims de bannière : restent NOIRS, alphas ×0.7 (recette mobile — le texte
+   * on-media est blanc, l'affiche garde ses couleurs). */
+  --hero-scrim-diagonal: linear-gradient(
+    72deg,
+    rgba(var(--scrim-media-rgb), 0.66) 0%,
+    rgba(var(--scrim-media-rgb), 0.44) 26%,
+    rgba(var(--scrim-media-rgb), 0.18) 48%,
+    transparent 72%
+  );
+  --detail-scrim-diagonal: linear-gradient(
+    72deg,
+    rgba(var(--scrim-media-rgb), 0.6) 0%,
+    rgba(var(--scrim-media-rgb), 0.34) 30%,
+    rgba(var(--scrim-media-rgb), 0.12) 52%,
+    transparent 74%
+  );
+
+  --card-ring-glow: 0 0 28px rgba(var(--brand-rgb), 0.18);
+}
+
+/* ── Halo de curseur ────────────────────────────────────────────────────
+ * Calque `::after` plutôt qu'un <div> : une carte de rangée en rend déjà
+ * six ou sept, et ce calque-ci n'a aucun contenu. `data-lit` est posé par
+ * useCardSpotlight (jamais sous prefers-reduced-motion). */
+.card-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--card-spotlight);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.card-spotlight[data-lit="true"]::after {
+  opacity: 1;
+}
+
+/* ── Géométrie du survol des affiches ───────────────────────────────────
+ * `transform` ET `opacity` sont déclarés ICI, en une seule `transition`.
+ * Les répartir entre une classe Tailwind (`transition-transform`) et cette
+ * feuille produirait deux `transition-property` concurrentes : la dernière
+ * dans l'ordre source gagne et l'autre est purement perdue. */
+.media-tile {
+  transition:
+    transform var(--duration-base) var(--ease-spring),
+    opacity var(--duration-base) var(--ease-out);
+}
+
+/* PAS de mise en retrait des voisins au survol d'une rangée (règle
+ * `.row-dim` retirée). L'effet « salle obscure » était joli à l'arrêt, mais
+ * il ne peut pas cohabiter avec le panneau d'aperçu : celui-ci est portalisé
+ * sur `document.body`, donc dès qu'il s'ouvre sous le curseur la rangée perd
+ * son `:hover`. Les affiches repassaient à pleine opacité, puis se
+ * ré-éteignaient au moindre déplacement — un clignotement gris permanent
+ * pendant la lecture des aperçus. Les classes `row-dim` / `row-dim-card`
+ * restent posées dans le JSX : elles servent d'ancres de test et de point de
+ * reprise si l'effet revient un jour sans panneau flottant. */

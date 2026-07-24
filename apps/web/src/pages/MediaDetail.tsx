@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -12,9 +13,12 @@ import { DetailHero } from "../components/detail/DetailHero";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
 import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
+import { DetailPoster } from "../components/detail/DetailPoster";
+import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
+import { consumeDetailOrigin, type DetailOrigin } from "../components/detail/detailTransition";
 import { ExtrasSection } from "../components/detail/ExtrasSection";
+import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { ChevronRightIcon } from "../components/media/MediaDetailIcons";
-import { CardMetaOverlay } from "../components/media/CardMetaOverlay";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
 const fadeIn = { hidden: { opacity: 0 }, show: { opacity: 1 } };
@@ -36,11 +40,41 @@ export function MediaDetail() {
   // Collection (BoxSet) : contenu navigable de la collection
   const { data: collectionItems } = useCollectionItems(item?.Type === "BoxSet" ? item.Id : undefined);
 
+  // Origine de l'ouverture, lue UNE fois au montage (initialiseur paresseux) :
+  // le rectangle de la carte cliquée, capturé juste avant la navigation.
+  const [origin, setOrigin] = useState<DetailOrigin | null>(() => consumeDetailOrigin(itemId));
+  // Place finale du visuel, remontée par `DetailPoster` une fois la mise en
+  // page faite : c'est la cible du vol. `useCallback` pour ne pas relancer la
+  // mesure à chaque rendu de la page.
+  const [target, setTarget] = useState<TargetRect | null>(null);
+  const handleMeasure = useCallback((rect: TargetRect) => setTarget(rect), []);
+
+  // Calculé AVANT le retour anticipé : le calque d'ouverture en a besoin, et il
+  // doit rester au même index de fragment dans les deux branches (React
+  // réconcilie par position — le déplacer le remonterait, coupant l'animation).
+  const overlayBackdropId = item ? resolveBackdropId(item) : null;
+  const backdropUrl = overlayBackdropId
+    ? client.getImageUrl(overlayBackdropId, "Backdrop", { width: 1920, quality: 85 })
+    : null;
+  const openOverlay = (
+    <DetailOpenOverlay
+      origin={origin}
+      backdropUrl={backdropUrl}
+      target={target}
+      onDone={() => setOrigin(null)}
+    />
+  );
+
   if (isLoading || !item) {
     return (
-      <div className="flex h-screen items-center justify-center bg-surface-0">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
-      </div>
+      <>
+        <div className="flex h-screen items-center justify-center bg-surface-0">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
+        </div>
+        {/* Le calque d'ouverture couvre l'écran pendant le chargement : sans
+            lui ici, un aller-retour spinner → fiche crevait l'animation. */}
+        {openOverlay}
+      </>
     );
   }
 
@@ -55,18 +89,10 @@ export function MediaDetail() {
     : undefined;
   const highlightEpisodeId = isEpisode ? item.Id : seriesResumeEp?.Id;
   const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
-  const hasParentBackdrop = (item.ParentBackdropImageTags?.length ?? 0) > 0;
-  const hasOwnBackdrop = (item.BackdropImageTags?.length ?? 0) > 0;
-  const backdropId = hasParentBackdrop ? (item.ParentBackdropItemId ?? item.Id) : item.Id;
-  const backdropUrl = (hasParentBackdrop || hasOwnBackdrop)
-    ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 85 })
-    : null;
-  const posterUrl = item.ImageTags?.Primary
-    ? client.getImageUrl(item.Id, "Primary", { height: 500, quality: 90 })
-    : null;
   const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
 
   return (
+    <>
     <PageTransition>
       <div className="min-h-screen bg-surface-0">
         <DetailHero backdropUrl={backdropUrl} />
@@ -77,25 +103,8 @@ export function MediaDetail() {
           animate="show"
           variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.25 } } }}
         >
-          <div className="flex gap-4 md:gap-8">
-            {posterUrl && (
-              <motion.div
-                className="relative flex-shrink-0 overflow-hidden rounded-md"
-                initial={{ opacity: 0, x: -32 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-              >
-                <img
-                  src={posterUrl}
-                  alt={item.Name}
-                  className="w-24 shadow-2xl ring-1 ring-line-subtle md:w-56"
-                  draggable={false}
-                />
-                {/* Overlay qualité + drapeaux directement sur le poster, comme
-                    sur les miniatures — cohérence visuelle d'un bout à l'autre. */}
-                <CardMetaOverlay item={item} />
-              </motion.div>
-            )}
+          <div className="flex flex-col gap-4 md:flex-row md:gap-8">
+            <DetailPoster item={item} onMeasure={handleMeasure} />
 
             <div className="flex-1 pt-4">
               <motion.h1
@@ -209,5 +218,7 @@ export function MediaDetail() {
         )}
       </div>
     </PageTransition>
+    {openOverlay}
+    </>
   );
 }

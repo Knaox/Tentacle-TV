@@ -14,7 +14,7 @@ interface HorizontalScrollRowProps {
 }
 
 /**
- * Horizontally scrollable strip with Netflix-style chevron controls that fade
+ * Horizontally scrollable strip with chevron controls that fade
  * in on hover. Multi-input: wheel, drag, touch, click-the-chevron, keyboard
  * focus + arrow keys. Chevrons appear only when the content actually overflows.
  */

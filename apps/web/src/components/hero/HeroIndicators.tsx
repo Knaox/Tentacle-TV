@@ -13,10 +13,13 @@ interface HeroIndicatorsProps {
 }
 
 /**
- * Slide indicators (pills bottom-right) + prev/next arrows (visible on hover).
- * Pure presentation — all timer logic lives in HeroBillboard. La pastille
- * active se remplit sur la durée du slide (façon stories), calée sur le timer
- * de rotation du billboard.
+ * Flèches (au survol) et rail d'indicateurs de la bannière. Présentation pure :
+ * toute la logique de minuterie vit dans `HeroBillboard`. Le segment actif se
+ * remplit sur la durée du slide, façon stories, calé sur ce même timer.
+ *
+ * Ces contrôles flottent directement sur l'affiche : verre sombre et icônes
+ * blanches sont donc CONSTANTS dans les deux thèmes (règle « posé sur média »),
+ * mais le liseré et le halo suivent la marque.
  */
 export function HeroIndicators({ count, activeIndex, durationMs = 0, onSelect, onPrev, onNext }: HeroIndicatorsProps) {
   const reduced = useReducedMotion();
@@ -24,35 +27,31 @@ export function HeroIndicators({ count, activeIndex, durationMs = 0, onSelect, o
 
   const animateFill = durationMs > 0 && !reduced;
 
-  // Flèches et pastilles flottent directement sur le backdrop image du hero :
-  // fond noir translucide + icônes blanches volontairement constants dans les
-  // deux thèmes (contrôles superposés à l'image, cf. règle « posé sur média »).
+  // Le CENTRAGE vertical vit sur un conteneur, jamais sur le bouton lui-même.
+  // `PressableScale` est un `motion.button` : au survol, Framer écrit un
+  // `transform` inline qui ÉCRASE le `-translate-y-1/2` de Tailwind — la flèche
+  // retombait alors d'une demi-hauteur, de façon intermittente (seulement une
+  // fois le transform posé). Deux calques, deux responsabilités : le conteneur
+  // positionne, le bouton met à l'échelle.
+  const zoneClass = "absolute top-1/2 z-10 -translate-y-1/2";
   const arrowClass =
-    "absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-[opacity,background-color] duration-300 hover:bg-black/60 group-hover/billboard:opacity-100";
+    "flex h-12 w-12 items-center justify-center rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.42)] text-on-media-primary opacity-0 backdrop-blur-md transition-[opacity,background-color,border-color] duration-300 hover:border-[rgba(var(--brand-rgb),0.75)] hover:bg-[rgba(var(--scrim-media-rgb),0.62)] group-hover/billboard:opacity-100";
 
   return (
     <>
-      <PressableScale
-        hoverScale={1.05}
-        tapScale={0.92}
-        onClick={onPrev}
-        aria-label="Précédent"
-        className={`${arrowClass} left-3 md:left-6`}
-      >
-        <ChevronLeftIcon />
-      </PressableScale>
+      <div className={`${zoneClass} left-3 md:left-6`}>
+        <PressableScale hoverScale={1.06} tapScale={0.92} onClick={onPrev} aria-label="Précédent" className={arrowClass}>
+          <ChevronLeftIcon />
+        </PressableScale>
+      </div>
 
-      <PressableScale
-        hoverScale={1.05}
-        tapScale={0.92}
-        onClick={onNext}
-        aria-label="Suivant"
-        className={`${arrowClass} right-3 md:right-6`}
-      >
-        <ChevronRightIcon />
-      </PressableScale>
+      <div className={`${zoneClass} right-3 md:right-6`}>
+        <PressableScale hoverScale={1.06} tapScale={0.92} onClick={onNext} aria-label="Suivant" className={arrowClass}>
+          <ChevronRightIcon />
+        </PressableScale>
+      </div>
 
-      <div className="absolute bottom-6 right-6 z-10 flex items-center gap-1.5 md:bottom-10 md:right-10">
+      <div className="absolute bottom-6 right-6 z-10 flex items-center gap-2 md:bottom-10 md:right-10">
         {Array.from({ length: count }).map((_, i) => {
           const active = i === activeIndex;
           return (
@@ -61,11 +60,12 @@ export function HeroIndicators({ count, activeIndex, durationMs = 0, onSelect, o
               type="button"
               onClick={() => onSelect(i)}
               aria-label={`Slide ${i + 1}`}
-              className="relative h-[3px] overflow-hidden rounded-full transition-all duration-500"
+              aria-current={active}
+              className="relative h-1 overflow-hidden rounded-full transition-all duration-500 motion-reduce:transition-none"
               style={{
-                width: active ? 36 : 12,
+                width: active ? 44 : 14,
                 background: "var(--on-media-muted)",
-                boxShadow: active ? "0 0 12px rgba(var(--brand-rgb), 0.55)" : "none",
+                boxShadow: active ? "0 0 14px rgba(var(--brand-rgb), 0.6)" : "none",
               }}
             >
               {active && (
@@ -75,7 +75,7 @@ export function HeroIndicators({ count, activeIndex, durationMs = 0, onSelect, o
                   animate={{ scaleX: 1 }}
                   transition={animateFill ? { duration: durationMs / 1000, ease: "linear" } : { duration: 0 }}
                   className="absolute inset-0 origin-left rounded-full"
-                  style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-light))" }}
+                  style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
                   aria-hidden
                 />
               )}
