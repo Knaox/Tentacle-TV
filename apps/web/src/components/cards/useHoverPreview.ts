@@ -164,6 +164,15 @@ export function useHoverPreview(disabled = false): HoverPreview {
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const [bounds, setBounds] = useState<PreviewBounds | undefined>(undefined);
   const [placeable, setPlaceable] = useState(true);
+  /**
+   * Le curseur est-il TOUJOURS sur la carte ou sur le panneau ?
+   *
+   * Sert au suivi du défilement : tant que oui, le panneau suit sa carte ; dès
+   * que non, il se referme. On ne peut pas s'en remettre à `:hover` — après un
+   * défilement au clavier ou à la molette, l'état de survol du navigateur n'est
+   * réévalué qu'au prochain mouvement de souris.
+   */
+  const pointerInside = useRef(false);
 
   const close = useCallback(() => {
     clearTimeout(openTimer.current);
@@ -173,6 +182,7 @@ export function useHoverPreview(disabled = false): HoverPreview {
   }, []);
 
   const scheduleOpen = useCallback(() => {
+    pointerInside.current = true;
     if (!eligible || disabled) return;
     // Verdict IMMÉDIAT, dès l'entrée du curseur : la carte doit savoir sans
     // délai si elle prend le relais avec son propre survol.
@@ -194,25 +204,65 @@ export function useHoverPreview(disabled = false): HoverPreview {
   }, [eligible, disabled, close]);
 
   const scheduleClose = useCallback(() => {
+    pointerInside.current = false;
     clearTimeout(openTimer.current);
     clearTimeout(closeTimer.current);
     closeTimer.current = setTimeout(close, CLOSE_GRACE_MS);
   }, [close]);
 
-  // Le panneau est ancré en coordonnées de fenêtre figées à l'ouverture :
-  // au moindre défilement il se décrocherait de sa carte, donc on ferme.
+  /**
+   * Suivi du défilement.
+   *
+   * Le panneau est ancré en coordonnées de FENÊTRE : sans rien faire, il se
+   * décrocherait de sa carte au premier pixel de défilement. La version
+   * précédente le refermait donc — mais dérouler la page en gardant la souris
+   * sur une carte est exactement ce qu'on fait pour lire un aperçu, et
+   * l'aperçu disparaissait sous le curseur.
+   *
+   * Il suit désormais sa carte tant que le curseur y reste, et se replace à
+   * chaque image : le sens de déploiement est recalculé au passage, si bien
+   * qu'un panneau ouvert vers le haut redescend de lui-même dès que la carte
+   * remonte et libère la place. Il ne se referme que si le curseur est parti,
+   * ou si la carte est sortie de la zone où le panneau peut se poser.
+   */
+  const open = anchor !== null;
   useEffect(() => {
-    if (!anchor) return;
+    if (!open) return;
+    let frame = 0;
+    const reflow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const el = anchorRef.current;
+        if (!el || !pointerInside.current || !canPlacePanel(el)) { close(); return; }
+        // Comparaison avant écriture : un défilement vertical ne change pas les
+        // bornes de la rangée, et une frame sans changement ne doit pas coûter
+        // un rendu du panneau.
+        const next = visualRect(el);
+        setAnchor((prev) =>
+          prev && prev.top === next.top && prev.left === next.left
+            && prev.width === next.width && prev.height === next.height
+            ? prev
+            : next,
+        );
+        const nextBounds = boundsFor(el);
+        setBounds((prev) =>
+          prev && nextBounds && prev.left === nextBounds.left && prev.right === nextBounds.right
+            ? prev
+            : nextBounds,
+        );
+      });
+    };
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
+    window.addEventListener("scroll", reflow, true);
+    window.addEventListener("resize", reflow);
     document.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", reflow, true);
+      window.removeEventListener("resize", reflow);
       document.removeEventListener("keydown", onKey);
     };
-  }, [anchor, close]);
+  }, [open, close]);
 
   useEffect(() => { close(); }, [location.key, close]);
   useEffect(() => { if (disabled) close(); }, [disabled, close]);
@@ -227,6 +277,9 @@ export function useHoverPreview(disabled = false): HoverPreview {
     bounds,
     close,
     handlers: { onMouseEnter: scheduleOpen, onMouseLeave: scheduleClose },
-    panelHandlers: { onMouseEnter: () => clearTimeout(closeTimer.current), onMouseLeave: scheduleClose },
+    panelHandlers: {
+      onMouseEnter: () => { pointerInside.current = true; clearTimeout(closeTimer.current); },
+      onMouseLeave: scheduleClose,
+    },
   };
 }

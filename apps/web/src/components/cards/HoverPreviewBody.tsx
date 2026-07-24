@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -34,8 +35,18 @@ interface HoverPreviewBodyProps {
  *
  * Règle de couleurs : ce qui est posé SUR l'image reste blanc/noir constant ;
  * ce qui repose sur `--preview-panel-bg` suit les tokens thémés.
+ *
+ * `memo` : le panneau suit sa carte au défilement, donc son conteneur se
+ * repositionne à chaque image. Sans cette barrière, tout ce contenu — vignette,
+ * logo, tiroir, chips de qualité — serait reconstruit soixante fois par seconde
+ * pour un déplacement qui ne concerne que deux propriétés de style du parent.
  */
-export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: HoverPreviewBodyProps) {
+export const HoverPreviewBody = memo(function HoverPreviewBody({
+  item,
+  cardImageUrl,
+  direction,
+  onNavigate,
+}: HoverPreviewBodyProps) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
@@ -72,6 +83,7 @@ export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: 
   // Vignette cliquable = LECTURE (le tiroir, lui, mène à la fiche).
   const visual = (
     <div
+      key="visual"
       data-preview-visual
       className="relative aspect-video w-full cursor-pointer overflow-hidden"
       role="button"
@@ -135,6 +147,7 @@ export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: 
   // panneau vers le haut — il est alors ancré par son bord bas.
   const drawer = (
     <motion.div
+      key="drawer"
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: "auto", opacity: 1 }}
       // Tiroir volontairement lent (440 ms) et décalé après le lift : c'est
@@ -151,6 +164,11 @@ export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: 
     </motion.div>
   );
 
+  // Clés explicites : le sens de déploiement peut s'inverser EN COURS de survol
+  // (la page défile, la carte remonte et libère la place en bas). Sans clés,
+  // React réconcilierait par position — la vignette et le tiroir échangeant leur
+  // rang, il démonterait les deux et les remonterait, ce qui rejouerait le
+  // dépliement du tiroir et referait clignoter l'image.
   return direction === "down" ? (
     <>
       {visual}
@@ -162,4 +180,4 @@ export function HoverPreviewBody({ item, cardImageUrl, direction, onNavigate }: 
       {visual}
     </>
   );
-}
+});
