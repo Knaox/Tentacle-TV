@@ -67,9 +67,10 @@ export interface PreviewBounds {
  * zone haute (actions, code S/E, méta) est fixe ; le synopsis occupe le reste,
  * défilant si besoin, sans jamais changer la hauteur totale.
  *
- * 176 px logent la zone haute plus ~3-4 lignes de synopsis.
+ * 128 px : la zone haute (actions, code S/E, méta) plus UNE ligne de synopsis,
+ * défilante. Le panneau doit rester court — un aperçu, pas une fiche.
  */
-export const DRAWER_HEIGHT = 176;
+export const DRAWER_HEIGHT = 128;
 /** Alias interne — la géométrie raisonne en « hauteur du corps ». */
 const BODY_HEIGHT = DRAWER_HEIGHT;
 

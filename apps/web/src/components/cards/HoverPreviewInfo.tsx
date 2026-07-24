@@ -150,16 +150,17 @@ export function HoverPreviewInfo({
         {metaLine}
       </div>
 
-      {/* Synopsis : occupe la hauteur restante et DÉFILE si trop long, sans
-          barre visible (`scrollbar-hide`) et avec un fondu bas (`mask-image`)
-          qui signale qu'il y a une suite. Absent, la zone reste vide — mais la
-          hauteur totale, imposée par le parent, ne change pas. */}
+      {/* Synopsis : UNE ligne visible, le reste DÉFILE (`overflow-y-auto`), sans
+          barre (`scrollbar-hide`) et avec un fondu bas (`mask-image`) qui signale
+          la suite. `max-h` le borne à ~1,5 ligne — une ligne pleine plus l'amorce
+          fondue de la suivante. Le panneau reste court. Absent, la zone
+          disparaît ; la hauteur totale, imposée par le parent, ne bouge pas. */}
       {item.Overview && (
         <div
-          className="scrollbar-hide mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          className="scrollbar-hide mt-1.5 max-h-[24px] min-h-0 flex-1 overflow-y-auto overscroll-contain"
           style={{
-            maskImage: "linear-gradient(180deg, #000 calc(100% - 14px), transparent 100%)",
-            WebkitMaskImage: "linear-gradient(180deg, #000 calc(100% - 14px), transparent 100%)",
+            maskImage: "linear-gradient(180deg, #000 calc(100% - 9px), transparent 100%)",
+            WebkitMaskImage: "linear-gradient(180deg, #000 calc(100% - 9px), transparent 100%)",
           }}
         >
           <p className="text-[11px] leading-relaxed text-content-secondary">
