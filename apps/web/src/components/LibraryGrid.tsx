@@ -122,14 +122,27 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
 
   return (
     <div>
-      {/* Search bar */}
+      {/* Recherche — en verre, car elle chevauche le bas de la bannière : un
+          aplat opaque y ferait une marche visible. */}
       <div className="mb-4 px-4 md:px-8">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t("common:searchInLibrary", { name: libraryName })}
-          className="w-full max-w-md rounded-xl bg-fill-subtle px-5 py-3 text-content-primary placeholder-content-quaternary outline-none ring-1 ring-line-subtle transition-all focus:ring-[rgba(var(--brand-rgb),0.5)]"
-        />
+        <div className="relative w-full max-w-md">
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-content-quaternary"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+          </svg>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t("common:searchInLibrary", { name: libraryName })}
+            className="w-full rounded-full bg-glass-tint py-3 pl-11 pr-5 text-content-primary placeholder-content-quaternary shadow-[var(--elev-1)] outline-none ring-1 ring-line-subtle backdrop-blur-md transition-all focus:ring-[rgba(var(--brand-rgb),0.6)]"
+          />
+        </div>
       </div>
 
       {/* Filtres rapides + avancés */}
@@ -160,7 +173,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
             {Array.from({ length: 24 }).map((_, i) => (
-              <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-fill-subtle" />
+              <div key={i} className="skeleton-shimmer aspect-[2/3] rounded-[var(--radius-lg)]" />
             ))}
           </div>
         ) : items.length === 0 ? (
@@ -169,7 +182,10 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           </p>
         ) : (
           <div>
+            {/* `row-dim` : survoler la grille éteint les affiches voisines,
+                comme sur les rangées de l'accueil. */}
             <div
+              className="row-dim"
               style={{
                 height: virtualizer.getTotalSize(),
                 width: "100%",
