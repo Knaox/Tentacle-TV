@@ -15,6 +15,7 @@
 //! base via son `AppHandle` — ouverture SQLite courte, coût négligeable pour
 //! les opérations de session/paramètres.
 
+pub mod avatar;
 pub mod commands;
 pub mod db;
 pub mod engine;

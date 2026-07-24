@@ -28,6 +28,10 @@ ureq = "2"
 tiny_http = "0.12"
 # Jeton aléatoire du serveur loopback (déjà dans l'arbre via ring).
 getrandom = "0.2"
+# Photo de profil mise en cache (`downloads/avatar.rs`) : elle traverse l'IPC en
+# base64 plutôt qu'en tableau d'octets, que serde_json gonflerait d'un facteur
+# cinq. Déjà présent dans l'arbre de dépendances, donc gratuit à la compilation.
+base64 = "0.22"
 
 [dev-dependencies]
 # Tests du store de téléchargements (suppression physique, refcount).

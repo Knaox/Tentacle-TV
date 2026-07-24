@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { cacheAvatarFrom, getCachedAvatar } from "../offline/avatarCache";
+import { useConnectivity } from "../offline/useConnectivity";
 
 /**
  * Avatar Jellyfin de l'utilisateur courant : URL (cache-bustée après upload)
  * + envoi d'une nouvelle photo (POST Users/{id}/Images/Primary en base64 —
  * l'avatar change donc aussi dans les autres clients Jellyfin).
  * Partagé par ProfileHero (page Profil) et UserAvatarMenu (dropdown desktop).
+ *
+ * Une COPIE LOCALE est entretenue sur desktop (`avatarCache`, fichier dans
+ * `app_data_dir`). Sans elle, l'`<img>` pointait vers Jellyfin et échouait dès
+ * la connexion perdue : l'utilisateur retombait sur l'initiale de son nom, dans
+ * une app qui reste pourtant utilisable sur son contenu téléchargé. La copie est
+ * rafraîchie à chaque passage en ligne, donc elle suit les changements de photo
+ * faits depuis n'importe quel client.
  */
 
 // Version module-level : bump après upload → tous les composants abonnés
@@ -28,7 +37,9 @@ async function fileToJellyfinBase64(file: File): Promise<{ base64: string; mime:
 export function useAvatarUpload() {
   const client = useJellyfinClient();
   const userId = useUserId();
+  const connectivity = useConnectivity();
   const [uploading, setUploading] = useState(false);
+  const [cachedUrl, setCachedUrl] = useState<string | null>(null);
   const [, forceRender] = useState(0);
 
   useEffect(() => {
@@ -37,9 +48,46 @@ export function useAvatarUpload() {
     return () => { versionListeners.delete(listener); };
   }, []);
 
-  const avatarUrl = userId
+  const remoteUrl = userId
     ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=160&quality=90${avatarVersion ? `&v=${avatarVersion}` : ""}`
     : null;
+
+  // Copie locale relue au montage : elle doit être prête AVANT une éventuelle
+  // coupure, pas récupérée au moment où le réseau tombe.
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    void getCachedAvatar(userId).then((url) => { if (alive) setCachedUrl(url); });
+    return () => { alive = false; };
+  }, [userId]);
+
+  // Rafraîchissement de la copie à chaque passage en ligne. `avatarVersion` est
+  // dans les dépendances : un envoi de photo doit remplacer la copie locale, pas
+  // laisser l'ancienne s'afficher au prochain démarrage hors ligne.
+  useEffect(() => {
+    if (!userId || !remoteUrl || connectivity.state !== "online") return;
+    void cacheAvatarFrom(userId, remoteUrl).then(() => getCachedAvatar(userId)).then(setCachedUrl);
+  }, [userId, remoteUrl, connectivity.state]);
+
+  // Hors ligne, on ne DEMANDE même pas l'URL réseau : la requête échouerait,
+  // l'`<img>` déclencherait son `onError` et le composant basculerait sur son
+  // initiale le temps du repli. Autant servir la copie locale d'emblée.
+  const avatarUrl = connectivity.state === "online" ? remoteUrl : (cachedUrl ?? remoteUrl);
+
+  /**
+   * Repli en CHAÎNE : URL du moment, puis copie locale, puis rien (les
+   * composants affichent alors l'initiale).
+   *
+   * Un simple booléen « l'image a échoué » ne suffit pas : il faut se souvenir
+   * de QUELLE source a échoué, sinon le repli sur la copie locale ramène la
+   * première dans la liste au rendu suivant, et les deux se relancent en boucle.
+   */
+  const [dead, setDead] = useState<ReadonlySet<string>>(() => new Set());
+  const avatarSrc =
+    [avatarUrl, cachedUrl].find((url): url is string => !!url && !dead.has(url)) ?? null;
+  const onAvatarError = useCallback(() => {
+    if (avatarSrc) setDead((prev) => new Set(prev).add(avatarSrc));
+  }, [avatarSrc]);
 
   /** Envoie la photo à Jellyfin. Renvoie true si l'upload a réussi. */
   const upload = useCallback(async (file: File): Promise<boolean> => {
@@ -68,5 +116,5 @@ export function useAvatarUpload() {
     }
   }, [client, userId]);
 
-  return { avatarUrl, avatarVersion, uploading, upload, userId };
+  return { avatarUrl, avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId };
 }

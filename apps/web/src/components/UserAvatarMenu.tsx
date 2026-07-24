@@ -26,8 +26,7 @@ export function UserAvatarMenu() {
   const { logout } = useAuth();
   const { name, initial, isAdmin } = getUserInfo();
   const connectivity = useConnectivity();
-  const { avatarUrl, avatarVersion, uploading, upload } = useAvatarUpload();
-  const [imageFailed, setImageFailed] = useState(false);
+  const { avatarSrc, onAvatarError, avatarVersion, uploading, upload } = useAvatarUpload();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
@@ -44,7 +43,6 @@ export function UserAvatarMenu() {
 
   const handleFile = useCallback(async (file: File) => {
     const ok = await upload(file);
-    if (ok) setImageFailed(false);
     show(ok ? "success" : "error", tProfile(ok ? "avatarUpdated" : "avatarUpdateFailed"));
     if (fileRef.current) fileRef.current.value = "";
   }, [upload, show, tProfile]);
@@ -67,14 +65,15 @@ export function UserAvatarMenu() {
     goOffline,
   });
 
-  const showImage = !!avatarUrl && !imageFailed;
-  const avatarContent = showImage ? (
+  // `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis sur
+  // l'initiale s'il n'y en a aucune (cf. `useAvatarUpload`).
+  const avatarContent = avatarSrc ? (
     <img
-      key={avatarVersion}
-      src={avatarUrl}
+      key={`${avatarVersion}-${avatarSrc}`}
+      src={avatarSrc}
       alt=""
       className="h-full w-full object-cover"
-      onError={() => setImageFailed(true)}
+      onError={onAvatarError}
     />
   ) : (
     initial
