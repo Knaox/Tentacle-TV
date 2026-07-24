@@ -55,8 +55,11 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
         style={{ background: "var(--hero-brand-wash)" }}
         aria-hidden
       />
+      {/* 62 % et non 55 % : la rampe de `--hero-scrim-bottom` a été adoucie
+          (quatre paliers) et a besoin de plus de course pour atteindre
+          l'opacité sans marche visible. */}
       <div
-        className="absolute inset-x-0 bottom-0 h-[55%]"
+        className="absolute inset-x-0 bottom-0 h-[62%]"
         style={{ background: "var(--hero-scrim-bottom)" }}
       />
       {/* PAS de raccord bas vers la page (`--hero-page-fade`, retiré). Il

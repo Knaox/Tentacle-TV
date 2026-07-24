@@ -13,6 +13,12 @@ interface HeroAmbilightProps {
    * où la lumière ne tombe que sur du fond de page, il mangeait le contraste.
    */
   opacity?: string;
+  /**
+   * Boîte du halo. Par défaut celle du cadre (`absolute inset-0`) ; les
+   * bannières à FOND PERDU la débordent vers le bas, seul côté par lequel leur
+   * lumière peut sortir.
+   */
+  className?: string;
 }
 
 /**
@@ -54,6 +60,7 @@ const TARGET_SCALE = 1.12;
 export function HeroAmbilight({
   item,
   opacity = "var(--hero-ambilight-opacity)",
+  className = "absolute inset-0",
 }: HeroAmbilightProps) {
   const reduced = useReducedMotion();
   const client = useJellyfinClient();
@@ -72,7 +79,7 @@ export function HeroAmbilight({
     // l'autre, et les deux valeurs se seraient écrasées l'une l'autre.
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0"
+      className={`pointer-events-none ${className}`}
       style={{ opacity }}
     >
       <AnimatePresence>

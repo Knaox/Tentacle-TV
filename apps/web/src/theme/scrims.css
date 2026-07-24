@@ -19,9 +19,19 @@
   /* Les voiles LATÉRAUX (ex-`--hero-scrim-left` / `--detail-scrim-left`) ont
    * été remplacés par leurs équivalents diagonaux, `--hero-scrim-diagonal` et
    * `--detail-scrim-diagonal`, déclarés dans theme/surfaces.css. */
-  --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.55) 55%, var(--surface-0) 100%);
+  /* Rampe en QUATRE paliers, et non deux.
+   *
+   * Avec « transparent → 0.6 à 55 % → opaque à 100 % », l'interpolation atteint
+   * 0,9 dès 89 % du calque : le dernier tiers était un aplat noir, et le voile
+   * valait déjà 0,6 là où commence le bloc titre. L'image disparaissait donc
+   * complètement derrière le texte — la « bande noire » signalée. Les paliers
+   * intermédiaires retardent la montée : le voile reste sous 0,55 sur les deux
+   * tiers du calque (le texte y garde son assise, blanc sur noir à 0,5 plus son
+   * ombre portée) et l'opacité n'arrive qu'au tout dernier dixième, juste ce
+   * qu'il faut pour raccorder sans couture avec la page. */
+  --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.2) 34%, rgba(var(--scrim-media-rgb), 0.5) 62%, rgba(var(--scrim-media-rgb), 0.8) 85%, var(--surface-0) 100%);
   --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.72) 0%, rgba(var(--scrim-media-rgb), 0.35) 45%, transparent 100%);
-  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.6) 55%, var(--surface-0) 100%);
+  --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.22) 34%, rgba(var(--scrim-media-rgb), 0.54) 62%, rgba(var(--scrim-media-rgb), 0.82) 85%, var(--surface-0) 100%);
   --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.55) 0%, transparent 100%);
 
   /* Raccord bas de bannière vers la page : inutile en sombre, le scrim bas y

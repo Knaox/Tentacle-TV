@@ -35,8 +35,20 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
     // la veut, et c'est aussi pourquoi son intensité est réduite : elle passe
     // sous du texte, pas sur un fond nu.
     <div className="relative w-full">
-      <HeroAmbilight item={item} opacity="var(--detail-ambilight-opacity)" />
+      {/* Boîte du halo débordée VERS LE BAS (`-bottom-24`) : c'est le seul côté
+          par lequel la lumière d'une bannière à fond perdu peut sortir, et c'est
+          aussi là que se joue la « bande noire ». Le raccord vers la page se
+          faisait sur un aplat mort — même noir de part et d'autre, donc une
+          frontière franche. Le halo le teinte, et la frontière disparaît. */}
+      <HeroAmbilight
+        item={item}
+        opacity="var(--detail-ambilight-opacity)"
+        className="absolute inset-x-0 top-0 -bottom-24"
+      />
 
+      {/* Scrim bas porté à 64 % de la hauteur (au lieu de 55 %) : la rampe
+          adoucie de `--detail-scrim-bottom` a besoin de plus de course pour
+          arriver à l'opacité sans marche. */}
       <div className="relative h-[70vh] w-full overflow-hidden md:h-[78vh]">
         <button
           type="button"
@@ -74,7 +86,7 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
           aria-hidden
         />
         <div
-          className="absolute inset-x-0 bottom-0 h-[55%]"
+          className="absolute inset-x-0 bottom-0 h-[64%]"
           style={{ background: "var(--detail-scrim-bottom)" }}
         />
         {/* Raccord bas vers la page — `none` en sombre, fondu opaque a 55 % du
