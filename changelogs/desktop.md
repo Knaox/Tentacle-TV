@@ -24,11 +24,15 @@ les notes Apple doivent rester génériques.
 - Filtres de bibliothèque en menus déroulants (tri, genres cherchables, année, note, plateformes) : la grille reste visible pendant le filtrage
 - Bannière encadrée : ses couleurs débordent du cadre en un halo qui suit l'image et son zoom, sur l'accueil comme sur la fiche média
 - Survol des épisodes : plus de à-coup à l'ouverture de l'aperçu, qui prolonge désormais la vignette au lieu de s'y superposer
-- L'aperçu s'ouvre sur toutes les cartes : celles du bord de la rangée s'y calent, celles du bas de l'écran déplient leur volet vers le haut
-- L'aperçu suit sa carte quand vous faites défiler la page au lieu de disparaître, et change de sens tout seul dès qu'il retrouve la place
+- L'aperçu s'ouvre sur toutes les cartes : quand la place manque en bas, ou quand la carte touche le bord de la rangée, les informations se posent sur la carte elle-même en voile translucide plutôt que de déborder
+- L'aperçu suit sa carte quand vous faites défiler la page au lieu de disparaître, et retrouve son déroulé complet dès qu'il y a de nouveau la place
 - Les rangées se calent sur des cartes entières : plus de carte coupée en deux au bord du carrousel
 - Ouverture d'une fiche : le visuel garde son format pendant tout le trajet, et la bannière d'accueil ouvre la fiche avec la même animation que les cartes
-- La fiche média s'ouvre toujours en haut, sur sa bannière
+- Transitions raccourcies dans toute l'application : l'ouverture d'une fiche passe de 0,7 à 0,45 s, et les textes apparaissent d'une même cascade sur toutes les pages
+- La fiche média s'ouvre toujours en haut, sur sa bannière, et la bande noire qui masquait l'affiche sous le titre a disparu
+- Halo lumineux également sur la bannière des bibliothèques
+- Tri « Derniers ajouts » : il listait en fait les plus anciens ajouts — chaque tri part désormais dans son sens naturel
+- Photo de profil sans liseré : sur un si petit disque, il rognait l'image
 - Votre photo de profil reste affichée hors ligne : elle est conservée sur l'appareil et mise à jour à chaque retour en ligne
 - Thème clair : dégradés de défilement des carrousels corrigés, ils viraient au noir
 ### EN
@@ -40,11 +44,15 @@ les notes Apple doivent rester génériques.
 - Library filters as dropdown menus (sort, searchable genres, year, rating, platforms): the grid stays visible while filtering
 - Framed banner: its colours spill out of the frame as a glow that follows the artwork and its zoom, on the home page and the media page alike
 - Episode hover: no more jolt when the preview opens — it now continues the thumbnail instead of stacking on top of it
-- The preview opens on every card: those at the edge of a row line up against it, those near the bottom of the screen unfold their panel upwards
-- The preview follows its card as you scroll instead of vanishing, and flips direction on its own as soon as there is room again
+- The preview opens on every card: when there is no room below, or when the card touches the edge of the row, the information settles onto the card itself as a translucent veil rather than spilling out
+- The preview follows its card as you scroll instead of vanishing, and regains its full unfold as soon as there is room again
 - Rows settle on whole cards: no more card cut in half at the edge of the carousel
 - Opening a media page: the artwork keeps its shape for the whole journey, and the home banner opens the page with the same animation as the cards
-- The media page always opens at the top, on its banner
+- Shorter transitions throughout: opening a media page goes from 0.7 s to 0.45 s, and text now appears with the same cascade on every page
+- The media page always opens at the top, on its banner, and the black band that hid the artwork under the title is gone
+- Glow effect on the library banner too
+- "Recently added" sort: it actually listed the oldest additions — every sort now starts in its natural direction
+- Profile picture without its outline: on such a small disc it was cropping the image
 - Your profile picture stays visible offline: it is kept on the device and refreshed every time you come back online
 - Light theme: carousel scroll gradients fixed, they turned black
 
