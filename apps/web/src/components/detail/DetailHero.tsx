@@ -65,9 +65,13 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
             src={backdropUrl}
             alt=""
             draggable={false}
-            initial={{ opacity: 0, scale: 1.12 }}
+            // 700 ms au lieu de 1400 : le backdrop est la première chose que
+            // l'œil cherche en arrivant, le faire attendre une seconde et demie
+            // pour finir de se poser n'ajoutait rien. Le ken burns, lui, garde
+            // ses 32 s — c'est une respiration, pas une entrée.
+            initial={{ opacity: 0, scale: 1.08 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 h-full w-full object-cover animate-ken-burns motion-reduce:animate-none"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />

@@ -201,13 +201,13 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
       key="drawer"
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: "auto", opacity: 1 }}
-      // Tiroir volontairement lent (440 ms) et décalé après le lift : c'est
-      // lui qui donne le tempo du survol. À 300 ms il se dépliait en même
-      // temps que la carte montait, les deux mouvements se télescopaient et
-      // l'ensemble paraissait pressé.
+      // 300 ms, légèrement décalé après le lift. À 440 ms le tiroir donnait le
+      // tempo du survol, et ce tempo était trop lent : on avait fini de lire la
+      // vignette avant qu'il ne soit ouvert. Le décalage subsiste — sans lui les
+      // deux mouvements se télescopent — mais il est resserré d'autant.
       transition={{
-        height: { duration: 0.44, ease: [0.22, 1, 0.36, 1], delay: 0.05 },
-        opacity: { duration: 0.34, delay: 0.14 },
+        height: { duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.03 },
+        opacity: { duration: 0.24, delay: 0.09 },
       }}
       className="overflow-hidden"
     >

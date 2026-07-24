@@ -11,7 +11,7 @@ import { HeroActions } from "./HeroActions";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { RichOverview } from "../../lib/overviewHtml";
 import { soberMetaText } from "../media/MetaChips";
-import { fadeUp, stagger } from "../../theme/motion";
+import { fadeUp, textStagger } from "../../theme/motion";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -81,7 +81,10 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
     }
   };
 
-  const groupVariants = reduced ? undefined : stagger(0.05, 0.04);
+  // Cascade et amplitude viennent de `theme/motion` : la bannière, la fiche
+  // média et l'en-tête de bibliothèque révélaient leur texte chacune avec ses
+  // propres valeurs, ce qui se remarquait en passant d'une page à l'autre.
+  const groupVariants = reduced ? undefined : textStagger();
   const itemVariants = reduced ? undefined : fadeUp;
 
   return (

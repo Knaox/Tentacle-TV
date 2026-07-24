@@ -76,7 +76,7 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
       className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
       style={{
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
-        animation: "fadeSlideUp 0.45s ease both",
+        animation: "fadeSlideUp 0.34s ease both",
         animationDelay: `${Math.min(index * 40, 400)}ms`,
       }}
       onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); preview.handlers.onMouseEnter(); }}
