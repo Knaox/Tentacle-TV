@@ -14,6 +14,24 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.17.0]
+### FR
+- Nouvelle interface : bannière d'accueil retravaillée, affiches au liseré lumineux et halo qui suit le curseur
+- Aperçu au survol des épisodes : la vignette déplie sous elle un volet avec lecture, résumé, note, durée, qualité et progression
+- Le bouton Lecture d'une série lance directement l'épisode à reprendre, ou le premier si vous la commencez
+- Ouverture d'une fiche animée : l'affiche cliquée rejoint sa place sur la fiche, qui se charge par anticipation dès le survol
+- Fiche média revue : le visuel d'un épisode s'affiche enfin au bon format, actions plus lisibles, et la page s'ouvre sur la bannière au lieu de sauter à la liste des épisodes
+- Filtres de bibliothèque en menus déroulants (tri, genres cherchables, année, note, plateformes) : la grille reste visible pendant le filtrage
+- Thème clair : dégradés de défilement des carrousels corrigés, ils viraient au noir
+### EN
+- New interface: reworked home banner, posters with a glowing edge and a highlight that follows the cursor
+- Episode hover preview: the thumbnail unfolds a panel with playback, synopsis, rating, runtime, quality and progress
+- A series' Play button now starts the episode to resume, or the first one if you are beginning it
+- Animated detail opening: the poster you clicked travels to its place on the page, which preloads on hover
+- Revised media page: an episode's artwork finally uses the right format, clearer actions, and the page opens on the banner instead of jumping to the episode list
+- Library filters as dropdown menus (sort, searchable genres, year, rating, platforms): the grid stays visible while filtering
+- Light theme: carousel scroll gradients fixed, they turned black
+
 ## [1.16.2]
 ### FR
 - Chat de groupe (Watch Together) : les contrôles du lecteur ne restent plus bloqués à l'écran après avoir écrit un message ou cliqué dans le chat — ils s'estompent dès que vous ne touchez plus à rien et reviennent en tapant ou en bougeant la souris
