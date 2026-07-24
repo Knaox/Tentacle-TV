@@ -61,17 +61,16 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
   if (!origin || reduced) return null;
 
   const from = origin.rect;
-  // Bannière d'accueil : le visuel ne voyage pas vers l'affiche de la fiche, il
-  // s'OUVRE jusqu'au plein écran — c'est déjà le décor de la page d'arrivée, et
-  // la même image, déjà décodée. D'où aussi l'absence du calque backdrop en
-  // dessous : ce serait la même image en double, l'une nette et l'autre encore
-  // floue, avec la bascule visible entre les deux.
-  const fullBleed = origin.mode === "backdrop";
   // Tant que la fiche n'a pas rendu son visuel, l'image reste à sa place de
   // départ : mieux vaut attendre que partir vers une cible devinée.
-  const to = fullBleed
-    ? { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight }
-    : (target ?? from);
+  //
+  // La bannière d'accueil suit exactement le même trajet que les cartes, et
+  // c'est délibéré. Une première version la faisait s'ouvrir jusqu'au plein
+  // écran, au motif qu'elle EST déjà le décor de la page d'arrivée. Mais le
+  // visuel finissait alors nulle part : la fiche affiche son affiche à un
+  // endroit précis, et ne pas s'y poser laissait l'arrivée sans point de
+  // chute — le défaut même que la transition doit corriger.
+  const to = target ?? from;
 
   return createPortal(
     <AnimatePresence onExitComplete={onDone}>
@@ -85,7 +84,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
             transition={{ duration: TRAVEL_S * 0.45, ease: "easeOut" }}
           />
-          {backdropUrl && !fullBleed && (
+          {backdropUrl && (
             <motion.img
               src={backdropUrl}
               alt=""
@@ -131,21 +130,14 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
               left: to.left,
               width: to.width,
               height: to.height,
-              // Plein écran : plus de coins du tout, la bannière a fini de
-              // s'ouvrir et le décor de la fiche n'en a pas.
-              borderRadius: fullBleed ? 0 : 12,
+              borderRadius: 12,
             }}
             // Sortie légèrement retardée : le visuel réel de la fiche est déjà
             // dessous, on laisse l'œil s'y poser avant de retirer le calque.
             exit={{ opacity: 0, transition: { duration: 0.26, delay: 0.06, ease: "easeOut" } }}
             transition={{ duration: TRAVEL_S, ease: SETTLE }}
-            // En plein écran la cible ne vient pas d'une mesure de la fiche :
-            // elle est connue d'emblée, on n'attend donc pas `target`.
-            onAnimationComplete={() => { if (fullBleed || target) setPlaying(false); }}
-            // Pas d'ombre portée sur un visuel qui occupe tout l'écran — elle
-            // n'aurait rien sur quoi se projeter, et trahirait un « objet » posé
-            // sur la page alors qu'il EST la page.
-            style={{ boxShadow: fullBleed ? undefined : "var(--elev-3)" }}
+            onAnimationComplete={() => { if (target) setPlaying(false); }}
+            style={{ boxShadow: "var(--elev-3)" }}
           >
             <img
               src={origin.imageUrl}
