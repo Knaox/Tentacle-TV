@@ -98,7 +98,7 @@ export default {
   libraryTitles_one: "{{count}} title",
   libraryTitles_other: "{{count}} titles",
   allGenres: "All",
-  sortDateDesc: "Recent",
+  sortDateDesc: "Recently added",
   sortDateAsc: "Oldest",
   sortTitleAsc: "Title A→Z",
   sortTitleDesc: "Title Z→A",

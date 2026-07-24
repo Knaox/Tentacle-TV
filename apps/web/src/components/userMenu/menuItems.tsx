@@ -74,8 +74,14 @@ export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
 
 /** CSS gradient utilisé pour l'avatar — réutilisé par TopNavMobile, MobileTabBar et MobileUserSheet. */
 export const AVATAR_GRADIENT_BG = "linear-gradient(135deg, var(--brand-dark), var(--brand))";
+/**
+ * Habillage de la photo de profil. PLUS de bordure : le liseré de 2 px rognait
+ * la photo d'autant sur un disque de 36 px, et se lisait comme un cadre posé
+ * dessus plutôt que comme une mise en valeur. Le dégradé de marque subsiste — il
+ * sert de fond quand il n'y a pas de photo, sous l'initiale — et le halo aussi,
+ * qui détache le disque sans mordre sur l'image.
+ */
 export const AVATAR_RING_STYLE = {
   background: AVATAR_GRADIENT_BG,
-  border: "2px solid rgba(var(--brand-rgb), 0.32)",
   boxShadow: "0 2px 12px rgba(var(--brand-rgb), 0.35)",
 } as const;
