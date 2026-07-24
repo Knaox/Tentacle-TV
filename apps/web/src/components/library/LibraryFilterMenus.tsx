@@ -5,11 +5,22 @@ import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../LibraryFilters";
 
+/**
+ * Chaque critère porte son sens NATUREL.
+ *
+ * L'ordre était jusqu'ici indépendant du critère et restait sur sa valeur
+ * précédente — croissant par défaut. Choisir « derniers ajouts » listait donc
+ * les plus ANCIENS, exactement l'inverse de ce que le libellé annonce ; même
+ * chose pour la note, qui commençait par les plus mauvaises. Personne ne trie
+ * par date d'ajout pour voir ce qui est là depuis le plus longtemps. Le bouton
+ * d'inversion reste disponible juste en dessous pour les cas où l'on veut
+ * précisément cela.
+ */
 const SORT_OPTIONS = [
-  { value: "DateCreated", key: "sortDateDesc" },
-  { value: "SortName", key: "sortTitleAsc" },
-  { value: "ProductionYear", key: "sortYear" },
-  { value: "CommunityRating", key: "sortRatingDesc" },
+  { value: "DateCreated", key: "sortDateDesc", order: "Descending" },
+  { value: "SortName", key: "sortTitleAsc", order: "Ascending" },
+  { value: "ProductionYear", key: "sortYear", order: "Descending" },
+  { value: "CommunityRating", key: "sortRatingDesc", order: "Descending" },
 ] as const;
 
 /** Ligne cochable — même gabarit dans tous les menus, d'où la factorisation. */
@@ -59,7 +70,7 @@ export function SortMenu({
             key={opt.value}
             label={t(`common:${opt.key}`)}
             checked={filters.sortBy === opt.value}
-            onClick={() => onSortByChange(opt.value)}
+            onClick={() => { onSortByChange(opt.value); onSortOrderChange(opt.order); }}
           />
         ))}
         <div className="my-1 border-t border-line-subtle" />
