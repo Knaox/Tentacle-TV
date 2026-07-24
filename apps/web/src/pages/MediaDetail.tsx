@@ -101,7 +101,11 @@ export function MediaDetail() {
           className="-mt-48 relative z-10 px-4 md:px-12"
           initial="hidden"
           animate="show"
-          variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.25 } } }}
+          // Cascade resserrée (40 ms par bloc, amorce à 140 ms) : l'amorce
+          // attendait la fin du vol du visuel, qui a été raccourci de 720 à
+          // 440 ms, et le décalage de 80 ms faisait arriver la dernière ligne
+          // une demi-seconde après la première.
+          variants={{ show: { transition: { staggerChildren: 0.04, delayChildren: 0.14 } } }}
         >
           <div className="flex flex-col gap-4 md:flex-row md:gap-8">
             <DetailPoster item={item} onMeasure={handleMeasure} />

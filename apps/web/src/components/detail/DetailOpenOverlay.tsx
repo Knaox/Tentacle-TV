@@ -19,12 +19,17 @@ interface DetailOpenOverlayProps {
   onDone: () => void;
 }
 
-/** Course du visuel : lente et très amortie, elle donne le tempo de la page. */
-const TRAVEL_S = 0.72;
+/**
+ * Course du visuel. Descendue de 720 à 440 ms : au-delà d'environ 400 ms une
+ * transition n'accompagne plus le clic, elle le fait attendre — et celle-ci se
+ * joue à CHAQUE ouverture de fiche. La courbe fait tout le travail : très
+ * amortie, elle donne encore l'impression d'un objet qui se pose, sans traîner.
+ */
+const TRAVEL_S = 0.44;
 /** Décélération franche puis arrivée qui se pose, sans le moindre rebond. */
 const SETTLE = [0.16, 1, 0.3, 1] as const;
 /** Sécurité : si la fiche ne se mesure jamais, on n'immobilise pas l'écran. */
-const FALLBACK_MS = 1400;
+const FALLBACK_MS = 1000;
 
 /**
  * Ouverture de la fiche média — transition d'élément partagé (FLIP).
@@ -81,7 +86,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             className="absolute inset-0 bg-surface-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
+            exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
             transition={{ duration: TRAVEL_S * 0.45, ease: "easeOut" }}
           />
           {backdropUrl && (
@@ -90,17 +95,24 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
               alt=""
               draggable={false}
               className="absolute inset-0 h-full w-full object-cover"
-              initial={{ opacity: 0, scale: 1.14, filter: "blur(18px)" }}
+              // Zoom et flou de départ réduits (1.08 / 12 px au lieu de 1.14 /
+              // 18 px) : sur la course raccourcie, l'ancien réglage devenait une
+              // mise au point précipitée — et un flou plein écran animé est la
+              // plus coûteuse des opérations de cette transition.
+              initial={{ opacity: 0, scale: 1.08, filter: "blur(12px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
+              exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
               transition={{ duration: TRAVEL_S * 1.05, ease: SETTLE }}
             />
           )}
           {/* Scrims de la fiche montés à l'avance : à l'effacement du calque,
-              les pixels dessous sont déjà identiques, donc pas de ressaut. */}
+              les pixels dessous sont déjà identiques, donc pas de ressaut.
+              La hauteur du scrim bas doit suivre celle de `DetailHero` (64 %) :
+              un écart de neuf points, c'est exactement le ressaut que ces
+              calques existent pour éviter. */}
           {[
             { style: "var(--detail-scrim-diagonal)", cls: "absolute inset-0" },
-            { style: "var(--detail-scrim-bottom)", cls: "absolute inset-x-0 bottom-0 h-[55%]" },
+            { style: "var(--detail-scrim-bottom)", cls: "absolute inset-x-0 bottom-0 h-[64%]" },
             { style: "var(--detail-brand-wash)", cls: "absolute inset-0" },
           ].map((layer) => (
             <motion.div
@@ -109,7 +121,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
               style={{ background: layer.style }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
+              exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
               transition={{ duration: TRAVEL_S * 0.7, delay: TRAVEL_S * 0.25, ease: "easeOut" }}
             />
           ))}
@@ -134,7 +146,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             }}
             // Sortie légèrement retardée : le visuel réel de la fiche est déjà
             // dessous, on laisse l'œil s'y poser avant de retirer le calque.
-            exit={{ opacity: 0, transition: { duration: 0.26, delay: 0.06, ease: "easeOut" } }}
+            exit={{ opacity: 0, transition: { duration: 0.18, delay: 0.04, ease: "easeOut" } }}
             transition={{ duration: TRAVEL_S, ease: SETTLE }}
             onAnimationComplete={() => { if (target) setPlaying(false); }}
             style={{ boxShadow: "var(--elev-3)" }}

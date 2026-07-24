@@ -69,12 +69,13 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
           // était — 5 px plus haut et 3 % plus grand — pendant que la carte
           // réapparaissait à sa taille normale dessous : un dédoublement d'un
           // cinquième de seconde à chaque sortie de curseur.
-          exit={{ opacity: 0, scale: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-          // Ressort volontairement plus lent et plus amorti que `springSoft` :
-          // le lift doit accompagner le regard, pas claquer. Aucun rebond
-          // (damping élevé) — un dépassement, même léger, se lit comme de
-          // l'agitation quand il se répète à chaque carte survolée.
-          transition={{ type: "spring", stiffness: 190, damping: 26, mass: 1 }}
+          exit={{ opacity: 0, scale: 1, y: 0, transition: { duration: 0.14, ease: "easeOut" } }}
+          // Ressort resserré (190 → 300) : le lift arrive maintenant en ~180 ms
+          // au lieu de ~350, ce qui le remet dans la fourchette d'une
+          // micro-interaction. Toujours aucun rebond — un dépassement, même
+          // léger, se lit comme de l'agitation quand il se répète à chaque carte
+          // survolée — d'où un amortissement conservé haut.
+          transition={{ type: "spring", stiffness: 300, damping: 28, mass: 0.8 }}
           className="fixed z-40"
           style={{
             // Toujours le bord HAUT de la carte : le panneau part d'elle et n'en

@@ -84,7 +84,7 @@ export function PosterCard({
       className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
-        animation: "fadeSlideUp 0.45s ease both",
+        animation: "fadeSlideUp 0.34s ease both",
         animationDelay: `${Math.min(index * 40, 400)}ms`,
       }}
       onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); }}

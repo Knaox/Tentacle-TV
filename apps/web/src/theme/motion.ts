@@ -13,17 +13,47 @@ export const springPress: Transition = { type: "spring", stiffness: 420, damping
 /** Ressort doux — éléments partagés (pastille de nav), sans rebond marqué. */
 export const springSoft: Transition = { type: "spring", stiffness: 320, damping: 32 };
 
+/**
+ * Échelle de durées, en secondes.
+ *
+ * Bornes tenues : 150–300 ms pour une micro-interaction, 400 ms au maximum pour
+ * une transition composée, jamais au-delà de 500 ms — passé ce seuil le
+ * mouvement n'accompagne plus le geste, il le fait attendre. `page` est descendu
+ * de 600 à 400 ms pour cette raison.
+ */
 export const duration = {
   fast: 0.15,
-  base: 0.24,
-  slow: 0.4,
-  page: 0.6,
+  base: 0.22,
+  slow: 0.32,
+  page: 0.4,
 } as const;
 
+/**
+ * Sortie plus courte que l'entrée (≈65 %) : une surface qui s'efface n'a plus
+ * rien à raconter, la traîner donne l'impression que l'interface met du temps à
+ * répondre.
+ */
+export const exitDuration = (enter: number): number => enter * 0.65;
+
+/**
+ * Révélation de texte. `y: 10` et non 20 : au-delà d'une dizaine de pixels le
+ * texte ne « se pose » plus, il glisse — et sur une cascade de cinq lignes les
+ * glissements se voient les uns après les autres. C'est aussi une ligne de base
+ * commune à la bannière, à la fiche média et à l'en-tête de bibliothèque, qui
+ * avaient chacune leur amplitude.
+ */
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 10 },
   show: { opacity: 1, y: 0, transition: { duration: duration.base, ease: easeOut } },
 };
+
+/**
+ * Cascade de texte : décalage de 40 ms par ligne, dans la fourchette 30–50 ms
+ * qui laisse percevoir l'ordre sans donner l'impression d'attendre la dernière.
+ */
+export const textStagger = (delayChildren = 0.04): Variants => ({
+  show: { transition: { delayChildren, staggerChildren: 0.04 } },
+});
 
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
@@ -41,8 +71,8 @@ export const stagger = (delayChildren = 0.1, staggerChildren = 0.06): Variants =
 
 export const pageTransition = {
   initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: duration.slow, ease: easeOut } },
-  exit: { opacity: 0, transition: { duration: duration.fast, ease: easeOut } },
+  animate: { opacity: 1, transition: { duration: duration.base, ease: easeOut } },
+  exit: { opacity: 0, transition: { duration: exitDuration(duration.base), ease: easeOut } },
 };
 
 export const respectReducedMotion = <T extends Transition>(t: T): T | { duration: 0 } => {

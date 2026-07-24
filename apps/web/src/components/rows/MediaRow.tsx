@@ -74,7 +74,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 0.5s ease ${animDelay}ms, transform 0.5s ease ${animDelay}ms`,
+        transition: `opacity 0.35s ease ${animDelay}ms, transform 0.35s ease ${animDelay}ms`,
       }}
     >
       <RowHeader title={title} href={href} />
