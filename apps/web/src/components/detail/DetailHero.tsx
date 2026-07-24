@@ -19,8 +19,17 @@ interface DetailHeroProps {
  * changer la hauteur d'un scrim d'un côté pour que le décor saute à
  * l'atterrissage de CHAQUE ouverture de fiche.
  */
-/** Réserve de mise en page : la seule qui occupe de la place dans le flux. */
-export const DETAIL_HERO_HEIGHT = "h-[70vh] md:h-[78vh]";
+/**
+ * Réserve de mise en page : la seule qui occupe de la place dans le flux, et qui
+ * fixe donc la hauteur de la bannière.
+ *
+ * Descendue de 70/78 vh à 58/64 vh : à 78 vh le bloc titre, la méta et les
+ * boutons de lecture (qui remontent de `-mt-48` sur cette réserve) se
+ * retrouvaient tout en bas de l'écran — il fallait presque défiler pour
+ * atteindre « Reprendre ». Une bannière plus courte remonte tout le bloc à
+ * portée de clic, sans rien retirer à l'image (elle reste immersive).
+ */
+export const DETAIL_HERO_HEIGHT = "h-[58vh] md:h-[64vh]";
 /**
  * Boîte IMAGE = réserve + 260 px de débord vers le bas, hors flux.
  *
@@ -30,7 +39,7 @@ export const DETAIL_HERO_HEIGHT = "h-[70vh] md:h-[78vh]";
  * lumineuse. Avec du rab, le fondu se déroule sous le bloc titre puis se termine
  * dans le vide, là où personne ne le voit.
  */
-export const DETAIL_HERO_BOX = "h-[calc(70vh+260px)] md:h-[calc(78vh+260px)]";
+export const DETAIL_HERO_BOX = "h-[calc(58vh+260px)] md:h-[calc(64vh+260px)]";
 /** Part de la boîte IMAGE occupée par le fondu bas. */
 export const DETAIL_SCRIM_BOTTOM = "h-[74%]";
 /**
@@ -42,7 +51,7 @@ export const DETAIL_SCRIM_BOTTOM = "h-[74%]";
  * page. Changer l'un des deux (débord ou bornes du masque) sans l'autre
  * déplacerait la lumière hors de la couture.
  */
-export const DETAIL_GLOW_BOX = "h-[calc(70vh+410px)] md:h-[calc(78vh+410px)]";
+export const DETAIL_GLOW_BOX = "h-[calc(58vh+410px)] md:h-[calc(64vh+410px)]";
 
 /**
  * Cinematic backdrop hero for the media detail page.
