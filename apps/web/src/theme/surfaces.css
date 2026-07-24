@@ -143,6 +143,13 @@
     transparent 62%
   );
 
+  /* Remplissage des barres de PROGRESSION — carte, lecteur — repris de la
+   * bannière d'accueil (`HeroContent`) : dégradé violet → rose, à dominante
+   * rose, avec un halo rose (`--brand-accent-rgb`) plutôt que violet. Un seul
+   * token, une seule couleur partout où l'on marque une progression. */
+  --progress-fill: linear-gradient(90deg, var(--brand), var(--brand-accent));
+  --progress-glow: 0 0 8px rgba(var(--brand-accent-rgb), 0.55);
+
   /* Assise de la barre d'actions révélée en bas de l'affiche — noire dans les
    * deux schémas (posée sur média). */
   --card-reveal-scrim: linear-gradient(
