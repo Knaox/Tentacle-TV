@@ -205,7 +205,12 @@ export function PlayerControls({
           onMouseLeave={() => { if (!isScrubbing.current) setHoverTime(null); }}
           role="slider" aria-label={t("player:seekbar", "Seek")} aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(currentTime)}>
           <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${buffered * 100}%` }} />
-          <div className="relative h-full rounded-full bg-tentacle-accent" style={{ width: `${progress * 100}%` }}>
+          {/* Remplissage rose, repris de la bannière et des cartes
+              (`--progress-fill`) — le violet plein d'avant est unifié. */}
+          <div
+            className="relative h-full rounded-full"
+            style={{ width: `${progress * 100}%`, background: "var(--progress-fill)" }}
+          >
             <div ref={thumbRef} className="absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100" />
           </div>
           <TrickplayPreview

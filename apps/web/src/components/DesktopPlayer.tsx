@@ -230,7 +230,10 @@ export function DesktopPlayer({
     <div className="relative flex h-screen w-screen items-center justify-center bg-black">
       {posterUrl && <img src={posterUrl} className="absolute inset-0 h-full w-full object-cover" alt="" />}
       <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+        {/* Blanc et non violet : posé sur l'affiche assombrie du média, il doit
+            rester neutre et lisible quelle que soit la couleur derrière — même
+            recette que les spinners de buffering des overlays. */}
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white" />
       </div>
     </div>
   );

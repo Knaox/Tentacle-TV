@@ -6,8 +6,9 @@ interface CardProgressBarProps {
 }
 
 /**
- * Bottom progress bar overlaid on cards.
- * Uses brand purple to stay consistent with hero progress bars.
+ * Barre de progression posée en bas des cartes.
+ * Remplissage rose repris de la bannière d'accueil (`--progress-fill`), même
+ * couleur que la barre du lecteur — une progression a une seule teinte.
  */
 export function CardProgressBar({ percent, border = false }: CardProgressBarProps) {
   if (percent == null || percent < 1) return null;
@@ -22,10 +23,11 @@ export function CardProgressBar({ percent, border = false }: CardProgressBarProp
       aria-label={`Visionnage à ${Math.round(percent)}%`}
     >
       <div
-        className="h-full bg-brand"
+        className="h-full"
         style={{
           width: `${Math.min(100, Math.max(0, percent))}%`,
-          boxShadow: "0 0 8px rgba(var(--brand-rgb), 0.45)",
+          background: "var(--progress-fill)",
+          boxShadow: "var(--progress-glow)",
         }}
       />
     </div>
