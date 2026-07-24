@@ -74,7 +74,11 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
         {/* 76 % de la boîte IMAGE (qui déborde de 200 px) : le fondu court
             au-delà du bas visible de la bannière. */}
         <div className="absolute inset-x-0 bottom-0 h-[76%]" style={{ background: "var(--hero-scrim-bottom)" }} />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[22%]" style={{ background: "var(--hero-page-fade)" }} aria-hidden />
+        {/* Même rôle que sur la fiche média : en thème clair, la barre de
+            recherche et les filtres qui remontent sur la bannière reposent sur
+            du texte thémé — ce calque leur rend une assise de page. Porté de
+            22 % à 44 % depuis que l'image se prolonge sous eux. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%]" style={{ background: "var(--hero-page-fade)" }} aria-hidden />
         <div className="absolute inset-x-0 top-0 h-40" style={{ background: "var(--hero-scrim-top)" }} />
         <div className="noise-texture absolute inset-0 opacity-[0.06]" aria-hidden />
         {/* Pas de ligne de lumière : la grille remonte de 40-56 px, la couture

@@ -46,10 +46,14 @@ export function FilterMenu({ label, value, onClear, width = 260, children }: Fil
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="true"
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-colors ${
+        // Mêmes valeurs que `chipCls` (LibraryFilters) : la barre mélange les
+        // deux composants, une seule pastille au style différent se voit
+        // immédiatement. Fond opaque pour la même raison — ces contrôles
+        // reposent sur la bannière et se perdaient sur une affiche claire.
+        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
           active
-            ? "bg-[rgba(var(--brand-rgb),0.18)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)]"
-            : "bg-fill-subtle text-content-secondary ring-1 ring-line-subtle hover:bg-fill-soft hover:text-content-primary"
+            ? "bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.24),rgba(var(--brand-rgb),0.24))] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.6)]"
+            : "bg-[color:var(--surface-2)] text-content-secondary ring-1 ring-line-strong shadow-[var(--elev-1)] hover:bg-fill-medium hover:text-content-primary"
         }`}
       >
         {active && (

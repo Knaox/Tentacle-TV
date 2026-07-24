@@ -12,6 +12,29 @@ interface DetailHeroProps {
 }
 
 /**
+ * Géométrie de la bannière, PARTAGÉE avec le calque d'ouverture
+ * (`DetailOpenOverlay`), qui monte les mêmes couches à l'avance pour que son
+ * effacement soit invisible. C'est toute la raison d'être de ces constantes :
+ * tant que les valeurs étaient recopiées de part et d'autre, il a suffi de
+ * changer la hauteur d'un scrim d'un côté pour que le décor saute à
+ * l'atterrissage de CHAQUE ouverture de fiche.
+ */
+/** Réserve de mise en page : la seule qui occupe de la place dans le flux. */
+export const DETAIL_HERO_HEIGHT = "h-[70vh] md:h-[78vh]";
+/**
+ * Boîte IMAGE = réserve + 260 px de débord vers le bas, hors flux.
+ *
+ * Tant que les deux se confondaient, l'image devait finir de s'éteindre avant
+ * son propre bord : le dégradé passait de visible à opaque en une centaine de
+ * pixels, ce qui se lit comme une bande — d'autant plus nette que l'affiche est
+ * lumineuse. Avec du rab, le fondu se déroule sous le bloc titre puis se termine
+ * dans le vide, là où personne ne le voit.
+ */
+export const DETAIL_HERO_BOX = "h-[calc(70vh+260px)] md:h-[calc(78vh+260px)]";
+/** Part de la boîte IMAGE occupée par le fondu bas. */
+export const DETAIL_SCRIM_BOTTOM = "h-[74%]";
+
+/**
  * Cinematic backdrop hero for the media detail page.
  * Includes a translucent back button + ken-burns zoom (32s ease-out alternate).
  * La qualité (4K / HDR / Dolby) n'est PAS affichée ici : elle vit à côté du
@@ -25,30 +48,17 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
   // blanc/noir dans les deux thèmes (cf. règle « posé sur média »), mais via
   // les tokens `on-media-*` / `--scrim-media-rgb` plutôt qu'en littéraux.
   return (
-    /**
-     * Deux boîtes distinctes, et c'est tout l'enjeu.
-     *
-     * La boîte de MISE EN PAGE (la seule qui occupe de la place dans le flux)
-     * mesure 70/78 vh. La boîte IMAGE, elle, déborde de 260 px en dessous.
-     *
-     * Tant que les deux se confondaient, l'image devait finir de s'éteindre
-     * avant son propre bord : le dégradé passait de visible à noir opaque en une
-     * centaine de pixels, ce qui se lit comme une bande — d'autant plus nette
-     * que l'affiche est lumineuse. Avec 260 px de rab, le fondu se déroule sous
-     * le bloc titre puis se termine dans le vide, là où personne ne le voit. Le
-     * bloc titre repose alors sur une image qui s'estompe, jamais sur un aplat.
-     *
-     * Aucun `overflow-hidden` sur le conteneur : le halo et le débord de la
-     * boîte image en dépendent.
-     */
+    // Deux boîtes distinctes (cf. `DETAIL_HERO_HEIGHT` / `DETAIL_HERO_BOX`), et
+    // aucun `overflow-hidden` sur le conteneur : le halo et le débord de la
+    // boîte image en dépendent.
     <div className="relative w-full">
       <HeroAmbilight
         item={item}
         opacity="var(--detail-ambilight-opacity)"
-        className="absolute inset-x-0 top-0 -bottom-[260px]"
+        className={`absolute inset-x-0 top-0 ${DETAIL_HERO_BOX}`}
       />
 
-      <div className="absolute inset-x-0 top-0 -bottom-[260px] overflow-hidden">
+      <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -88,17 +98,18 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
           style={{ background: "var(--detail-brand-wash)" }}
           aria-hidden
         />
-        {/* 74 % de la boîte IMAGE (qui déborde de 260 px) : le fondu court donc
-            bien au-delà du bas visible de la bannière et n'a plus à se terminer
-            dans un mouchoir de poche. */}
         <div
-          className="absolute inset-x-0 bottom-0 h-[74%]"
+          className={`absolute inset-x-0 bottom-0 ${DETAIL_SCRIM_BOTTOM}`}
           style={{ background: "var(--detail-scrim-bottom)" }}
         />
-        {/* Raccord bas vers la page — `none` en sombre, fondu opaque a 55 % du
-            calque en clair (la meta themee sous le titre repose sur la page). */}
+        {/* Raccord vers la page — `none` en sombre, fondu vers la couleur de
+            page en clair. Il est passé de 16 % à 46 % de la boîte : en thème
+            clair, la méta, le synopsis et les genres sous le titre sont en
+            texte THÉMÉ, donc sombre, et depuis que l'image se prolonge sous eux
+            ils se retrouvaient posés dessus — illisibles sur une affiche vive.
+            C'est ce calque qui leur rend leur assise de page. */}
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[16%]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%]"
           style={{ background: "var(--detail-page-fade)" }}
           aria-hidden
         />
@@ -116,7 +127,7 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
       {/* Réserve de mise en page : c'est ELLE qui occupe la place dans le flux,
           la boîte image étant hors flux. Le bloc titre de `MediaDetail` remonte
           par rapport à ce bord-ci, pas par rapport au bas de l'image. */}
-      <div className="h-[70vh] w-full md:h-[78vh]" aria-hidden />
+      <div className={`w-full ${DETAIL_HERO_HEIGHT}`} aria-hidden />
     </div>
   );
 }

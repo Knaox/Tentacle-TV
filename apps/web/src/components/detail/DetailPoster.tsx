@@ -29,13 +29,34 @@ export function DetailPoster({ item, onMeasure }: DetailPosterProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const hasImage = Boolean(item.ImageTags?.Primary);
 
-  // `useLayoutEffect` : la mesure doit être prise AVANT la peinture, sinon le
-  // calque d'ouverture afficherait une frame à l'ancienne position puis
-  // sauterait. Mesuré une fois l'image en place, la cible est définitive.
+  /**
+   * `useLayoutEffect` : la première mesure doit être prise AVANT la peinture,
+   * sinon le calque d'ouverture afficherait une frame à l'ancienne position
+   * puis sauterait.
+   *
+   * Mais une seule mesure ne suffit pas, et c'est ce qui a cassé la transition
+   * des épisodes. Tant que la boîte s'étirait sur la hauteur de la rangée flex,
+   * sa taille ne dépendait que de ses voisins, connus dès le premier calcul.
+   * Depuis qu'elle épouse son image (`self-start`), sa hauteur est celle du
+   * visuel — et le visuel n'a pas fini de se placer au moment du premier
+   * passage. La cible mesurée était donc périmée, et le vol atterrissait à côté.
+   *
+   * Un `ResizeObserver` suit la boîte : chaque changement de taille remonte une
+   * cible fraîche. Le calque n'utilise que la dernière, il rattrape donc en vol.
+   */
   useLayoutEffect(() => {
-    if (!hasImage || !onMeasure || !boxRef.current) return;
-    const r = boxRef.current.getBoundingClientRect();
-    onMeasure({ top: r.top, left: r.left, width: r.width, height: r.height });
+    const el = boxRef.current;
+    if (!hasImage || !onMeasure || !el) return;
+    const publish = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        onMeasure({ top: r.top, left: r.left, width: r.width, height: r.height });
+      }
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [hasImage, onMeasure]);
 
   if (!hasImage) return null;

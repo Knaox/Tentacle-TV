@@ -89,21 +89,33 @@ export function useLibraryFilters() {
 }
 
 /**
- * Style commun à tous les chips de la barre de filtre (status, favoris,
- * filtres avancés, genres). Pill rounded-full glass — état actif violet
- * brand semi-transparent + ring, aligné sur PremiumChip et QualityBadge.
- * Variante "rose" pour le filtre Favoris (sémantique cœur rouge).
+ * Style commun à tous les chips de la barre de filtre (statut, favoris, filtres
+ * avancés, genres), partagé avec `FilterMenu` — cf. `CHIP_BASE` exporté.
+ *
+ * Fond OPAQUE (`--surface-2`), et c'est un changement de fond, pas de goût.
+ * Ces pastilles reposent SUR la bannière de la bibliothèque : un `bg-fill-subtle`
+ * translucide et un `ring-line-subtle` s'y perdaient entièrement dès que
+ * l'affiche est claire — en thème clair, sur une image d'animé pastel,
+ * « Non vus » et « En cours » devenaient carrément illisibles. Un contrôle doit
+ * se lire avant d'être survolé, quelle que soit l'image derrière.
+ *
+ * L'état actif garde sa teinte de marque, posée en dégradé PAR-DESSUS l'aplat
+ * opaque : superposer les deux préserve le repère colorimétrique sans revenir à
+ * une transparence qui dépend de l'affiche.
+ *
+ * `backdrop-blur` retiré : il n'y a plus rien à voir au travers, et il coûtait
+ * une passe de compositing par pastille, huit fois par barre.
  */
+export const CHIP_BASE = "rounded-full px-3 py-1.5 text-xs font-medium transition-colors";
+const CHIP_IDLE =
+  "bg-[color:var(--surface-2)] text-content-secondary ring-1 ring-line-strong shadow-[var(--elev-1)] hover:bg-fill-medium hover:text-content-primary";
+
 function chipCls(active: boolean, accent: "violet" | "rose" = "violet"): string {
-  const base =
-    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors backdrop-blur-md";
-  if (!active) {
-    return `${base} bg-fill-subtle text-content-secondary ring-1 ring-line-subtle hover:bg-fill-soft hover:text-content-primary`;
-  }
+  if (!active) return `${CHIP_BASE} ${CHIP_IDLE}`;
   if (accent === "rose") {
-    return `${base} bg-[rgba(var(--brand-accent-rgb),0.18)] text-[var(--brand-accent-light)] ring-1 ring-[rgba(var(--brand-accent-rgb),0.45)]`;
+    return `${CHIP_BASE} bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-accent-rgb),0.22),rgba(var(--brand-accent-rgb),0.22))] text-[var(--brand-accent-light)] ring-1 ring-[rgba(var(--brand-accent-rgb),0.55)]`;
   }
-  return `${base} bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)]`;
+  return `${CHIP_BASE} bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.24),rgba(var(--brand-rgb),0.24))] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.6)]`;
 }
 
 function HeartIcon({ filled }: { filled: boolean }) {

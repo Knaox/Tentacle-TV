@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSearchItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { SearchSuggestions } from "./SearchSuggestions";
+import { pushRecentSearch, readRecentSearches } from "./recentSearches";
 
 interface SearchOverlayProps {
   open: boolean;
@@ -41,7 +43,19 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   const { data: results, isLoading } = useSearchItems(debounced);
   const visibleResults = results?.slice(0, 24) ?? [];
 
+  // Relues à chaque ouverture : l'utilisateur a pu chercher depuis un autre
+  // onglet entre-temps, et la liste est de toute façon lue depuis le disque.
+  const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    if (open) setRecent(readRecentSearches());
+  }, [open]);
+
   const handleSelect = (it: MediaItem) => {
+    // Mémorisée à la SÉLECTION, pas à la frappe : une requête abandonnée en
+    // cours de route n'a rien donné, la ressortir en suggestion serait un
+    // mauvais conseil. Ce qui a mené à un média, en revanche, a fait ses
+    // preuves.
+    pushRecentSearch(debounced);
     onClose();
     navigate(`/media/${it.Id}`);
   };
@@ -93,10 +107,16 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         className="row-gutter flex-1 overflow-y-auto pb-12 pt-8"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Écran d'attente : recherches récentes, reprise, prochains épisodes.
+            Il n'y avait qu'un « Rechercher... » centré — un plein écran vide,
+            ouvert par un raccourci clavier, qui ne proposait rien. */}
         {debounced.length < 2 && (
-          <p className="pt-4 text-center text-sm text-content-quaternary">
-            {t("common:searchPlaceholder")}
-          </p>
+          <SearchSuggestions
+            recent={recent}
+            onRecentChange={setRecent}
+            onPickQuery={(q) => { setInput(q); setDebounced(q); }}
+            renderItems={(items) => <ResultsGrid items={items} onSelect={handleSelect} />}
+          />
         )}
 
         {debounced.length >= 2 && isLoading && (
