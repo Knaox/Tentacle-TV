@@ -57,11 +57,18 @@ const BODY_HEIGHT = 150;
  * parfaitement survolables.
  *
  * Le panneau vient désormais BUTER contre la borne de rangée. Il n'est refusé
- * que si l'écart qui en résulte dépasse un quart de la carte : en deçà il
- * recouvre encore l'essentiel de son affiche et désigne sans ambiguïté le bon
- * média ; au-delà il commence à empiéter sur la voisine.
+ * que si l'écart qui en résulte dépasse un TIERS de la carte : en deçà, le
+ * panneau recouvre les deux tiers de son affiche et n'en mord qu'un tiers sur
+ * la voisine — il désigne sans ambiguïté le bon média ; à la moitié il serait
+ * centré entre les deux et ne désignerait plus rien.
+ *
+ * Le seuil n'est pas arbitraire : sur une rangée de 1320 px de contenu et des
+ * cartes de 346 px au pas de 358, la dernière carte visible est rognée de 98 px
+ * — 28 % — et le reste à toute largeur de fenêtre, puisque c'est le reste d'une
+ * division. Un quart de carte laissait donc dehors précisément le cas que cette
+ * règle doit couvrir.
  */
-const MAX_SHIFT_RATIO = 0.25;
+const MAX_SHIFT_RATIO = 0.34;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(value, max));
