@@ -11,7 +11,7 @@ import { HeroActions } from "./HeroActions";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { RichOverview } from "../../lib/overviewHtml";
 import { soberMetaText } from "../media/MetaChips";
-import { fadeUp, textStagger } from "../../theme/motion";
+import { fadeUp, textCascade } from "../../theme/motion";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -84,7 +84,9 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
   // Cascade et amplitude viennent de `theme/motion` : la bannière, la fiche
   // média et l'en-tête de bibliothèque révélaient leur texte chacune avec ses
   // propres valeurs, ce qui se remarquait en passant d'une page à l'autre.
-  const groupVariants = reduced ? undefined : textStagger();
+  // CONSTANTE de module, jamais un appel de fabrique ici : un objet neuf à
+  // chaque rendu fait rejouer toute la cascade par framer.
+  const groupVariants = reduced ? undefined : textCascade;
   const itemVariants = reduced ? undefined : fadeUp;
 
   return (

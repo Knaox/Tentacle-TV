@@ -50,10 +50,26 @@ export const fadeUp: Variants = {
 /**
  * Cascade de texte : décalage de 40 ms par ligne, dans la fourchette 30–50 ms
  * qui laisse percevoir l'ordre sans donner l'impression d'attendre la dernière.
+ *
+ * ⚠️ Ces objets sont des CONSTANTES de module, et ce n'est pas un détail de
+ * style. Framer ré-résout tout l'arbre de variantes quand l'identité de la prop
+ * `variants` change — un littéral écrit dans le JSX, ou un appel de fabrique
+ * dans le corps du composant, en produit un neuf à CHAQUE rendu et rejoue donc
+ * la cascade entière. Tant que la page ne se rendait qu'une fois, cela ne se
+ * voyait pas ; dès qu'un rendu supplémentaire survient (une mesure qui remonte,
+ * une requête qui arrive), tout le texte se remet à clignoter.
+ *
+ * Si un appelant a besoin d'un autre délai, qu'il crée SA constante de module —
+ * pas un objet en ligne.
  */
-export const textStagger = (delayChildren = 0.04): Variants => ({
-  show: { transition: { delayChildren, staggerChildren: 0.04 } },
-});
+export const textCascade: Variants = {
+  show: { transition: { delayChildren: 0.04, staggerChildren: 0.04 } },
+};
+
+/** Amorce plus tardive : le texte attend qu'une transition d'ouverture se pose. */
+export const textCascadeDelayed: Variants = {
+  show: { transition: { delayChildren: 0.14, staggerChildren: 0.04 } },
+};
 
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
