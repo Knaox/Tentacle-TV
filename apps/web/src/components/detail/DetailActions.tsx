@@ -55,7 +55,11 @@ export function DetailActions({ item }: DetailActionsProps) {
   const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
   const isWatched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
-  const hasResume = progress != null && progress > 0 && progress < 100;
+  // Seuil à 99 et non à 100 : Jellyfin renvoie couramment 99.4 % sur un média
+  // vu jusqu'au générique. Le bouton affichait alors « Reprendre » juste à côté
+  // d'un « 100 % visionné » — deux affirmations contradictoires sur la même
+  // ligne. Au-delà de 99 %, il ne reste rien à reprendre.
+  const hasResume = progress != null && progress > 0 && progress < 99;
 
   const handlePlay = () => {
     if (isSeries) {
@@ -77,17 +81,20 @@ export function DetailActions({ item }: DetailActionsProps) {
       if (watchState.type === "next") return `${t("common:play")} ${epLabel}`;
       return t("common:play");
     }
-    return hasResume ? t("common:resume") : t("common:play");
+    if (hasResume) return t("common:resume");
+    // Déjà vu : « Lecture » suffit et reste juste — c'est bien une relecture.
+    return t("common:play");
   })();
 
   return (
-    <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center gap-3">
+    <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center gap-2.5">
       {playLabel && (
         <PressableScale
           hoverScale={1.04}
           tapScale={0.97}
           onClick={handlePlay}
-          className="flex items-center gap-2.5 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+          className="flex items-center gap-2.5 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+          style={{ boxShadow: "var(--elev-2)" }}
         >
           <PlayIcon /> {playLabel}
         </PressableScale>
@@ -138,9 +145,22 @@ export function DetailActions({ item }: DetailActionsProps) {
         />
       )}
 
+      {/* Progression en barre plutôt qu'en pourcentage nu : sur une rangée de
+          boutons, un chiffre isolé se lit comme une étiquette orpheline. */}
       {hasResume && !isSeries && (
-        <span className="text-sm text-content-tertiary">
-          {t("common:percentWatched", { percent: Math.round(progress!) })}
+        <span className="ml-1 flex items-center gap-2.5">
+          <span className="h-1 w-20 overflow-hidden rounded-full bg-fill-medium">
+            <span
+              className="block h-full rounded-full"
+              style={{
+                width: `${progress}%`,
+                background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
+              }}
+            />
+          </span>
+          <span className="text-sm text-content-tertiary">
+            {t("common:percentWatched", { percent: Math.round(progress!) })}
+          </span>
         </span>
       )}
 
@@ -172,6 +192,8 @@ function CircleAction({
   label: string;
   icon: React.ReactNode;
 }) {
+  // Actif = liseré et halo de MARQUE, pas un simple gris renforcé : au repos
+  // les cinq pastilles étaient quasi indiscernables de leur état actif.
   return (
     <PressableScale
       hoverScale={1.06}
@@ -179,11 +201,13 @@ function CircleAction({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors hover:bg-fill-medium ${
+      aria-pressed={active}
+      className={`flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
         active
-          ? "border-content-primary bg-fill-medium text-content-primary"
-          : "border-line-strong text-content-secondary"
+          ? "border-[rgba(var(--brand-rgb),0.6)] bg-[rgba(var(--brand-rgb),0.18)] text-[var(--brand-light)]"
+          : "border-line-strong bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
       }`}
+      style={active ? { boxShadow: "0 0 18px rgba(var(--brand-rgb), 0.25)" } : undefined}
     >
       {icon}
     </PressableScale>

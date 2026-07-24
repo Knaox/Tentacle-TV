@@ -83,13 +83,17 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
         />
 
         {/* pt/pb : marge de débordement pour le lift hover des cartes (scale +
-            ring + ombre) — overflow-x:auto clippe au padding edge. pb-4 suffit :
-            l'ombre basse de l'image est absorbée par le bloc titre de la carte
-            (un pb-12 creusait un vide disgracieux entre les rangées). */}
+            liseré + ombre) — overflow-x:auto clippe au padding edge. pb-4
+            suffit : l'ombre basse de l'image est absorbée par le bloc titre de
+            la carte (un pb-12 creusait un vide disgracieux entre les rangées).
+            Le panneau d'aperçu, lui, est portalisé : il ne déborde pas d'ici.
+
+            `row-dim` porté par le SCROLLER et non par la <section> : sur la
+            section, survoler une flèche ou le titre éteindrait toute la rangée. */}
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-4 pt-3 scrollbar-hide"
+          className="row-dim row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-4 pt-3 scrollbar-hide"
         >
           {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
               un carrousel (ex. doublon de bibliothèque) — un Id seul provoque

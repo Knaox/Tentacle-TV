@@ -38,7 +38,7 @@ export function Home() {
   return (
     <PageTransition>
       {/* Hero billboard — escapes AppLayout top padding so the transparent
-          TopNav floats over the backdrop (Netflix pattern). */}
+          TopNav floats over the backdrop. */}
       <div className="-mt-[56px] md:-mt-[68px]">
         {heroLoading ? (
           <div className="skeleton-shimmer h-[80vh] w-full md:h-[88vh] lg:h-[92vh]" />

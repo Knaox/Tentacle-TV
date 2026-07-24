@@ -10,10 +10,14 @@ interface CardMoreInfoButtonProps {
 }
 
 /**
- * « Plus d'infos » discret sur la carte 16/9 : au survol, le bas de la carte
- * s'assombrit légèrement et une grande flèche (sans cercle) apparaît en bas à
- * droite — dans la zone réservée (pr-28 du titre), donc sans jamais chevaucher
- * le titre. Clic → fiche détaillée (stoppe la propagation, pas de lecture).
+ * « Plus d'infos » discret sur la carte 16/9 : au survol, une grande flèche
+ * (sans cercle) apparaît en bas à droite — dans la zone réservée (pr-28 du
+ * titre), donc sans jamais chevaucher le titre. Clic → fiche détaillée
+ * (stoppe la propagation, pas de lecture).
+ *
+ * Ce bouton n'assombrit plus le bas de la carte : `EpisodeCard` pose désormais
+ * son propre scrim (`--card-reveal-scrim`), et les deux cumulés viraient au
+ * noir plein au survol.
  */
 export function CardMoreInfoButton({ detailId, visible }: CardMoreInfoButtonProps) {
   const navigate = useNavigate();
@@ -33,8 +37,6 @@ export function CardMoreInfoButton({ detailId, visible }: CardMoreInfoButtonProp
       className="pointer-events-none absolute inset-x-0 bottom-0 z-10 transition-opacity duration-200"
       style={{ opacity: visible ? 1 : 0 }}
     >
-      {/* Assombrissement du bas au hover (renforce le dégradé de base). */}
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
       {/* Grande flèche sans cercle, bas-droite (zone réservée pr-28 du titre). */}
       <button
         type="button"

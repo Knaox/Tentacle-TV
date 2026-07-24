@@ -4,7 +4,7 @@
  * bouton de téléchargement compact (desktop, droit requis), méta qualité.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -28,16 +28,15 @@ export interface EpisodeRowProps {
 
 export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay }: EpisodeRowProps) {
   const { t } = useTranslation("common");
-  const rowRef = useRef<HTMLDivElement>(null);
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const quality = useMemo(() => extractMediaQuality(ep), [ep]);
 
-  // Épisode courant : on le ramène au centre du viewport au montage.
-  useEffect(() => {
-    if (!isCurrent || !rowRef.current) return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    rowRef.current.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
-  }, [isCurrent]);
+  // PAS de `scrollIntoView` sur l'épisode courant. Il ramenait la page au
+  // centre de la liste d'épisodes DÈS l'arrivée sur la fiche : on atterrissait
+  // sur « Saisons & Épisodes » sans jamais voir la bannière, le titre ni les
+  // actions — et l'animation d'ouverture jouait dans le vide, hors écran.
+  // Le surlignage `isCurrent` suffit à situer l'épisode une fois qu'on
+  // descend jusqu'à la liste de son plein gré.
   const thumbUrl = ep.ImageTags?.Primary
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
@@ -64,7 +63,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
   };
 
   return (
-    <div ref={rowRef} onClick={handleClick}
+    <div onClick={handleClick}
       className={`group flex cursor-pointer gap-4 rounded-xl p-3 transition-colors ${
         isSelecting && isSelected
           ? "bg-tentacle-accent/10 ring-1 ring-tentacle-accent/40"
