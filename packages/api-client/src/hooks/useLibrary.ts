@@ -84,6 +84,36 @@ export function useLibraryItems(
   });
 }
 
+/**
+ * Un item ALÉATOIRE de la bibliothèque possédant un backdrop — pour l'image de
+ * la bannière de bibliothèque, qui doit changer à chaque visite.
+ *
+ * `SortBy=Random` + `HasBackdrop=true` + `Limit=1` : le serveur tire l'item, on
+ * n'a pas à filtrer côté client. `staleTime: 0` + `refetchOnMount: "always"` :
+ * un NOUVEAU tirage à chaque montage (chaque ouverture de la page), stable tant
+ * qu'on y reste. Renvoie `MediaItem | undefined`.
+ */
+export function useRandomLibraryBackdrop(libraryId: string | undefined) {
+  const client = useJellyfinClient();
+  const userId = useUserId();
+
+  return useQuery({
+    queryKey: ["library", libraryId, "random-backdrop"],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Users/${userId}/Items?ParentId=${libraryId}` +
+            `&IncludeItemTypes=Movie,Series&Recursive=true&ExcludeLocationTypes=Virtual&IsMissing=false` +
+            `&HasBackdrop=true&SortBy=Random&Limit=1` +
+            `&Fields=Overview,PrimaryImageAspectRatio&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
+        )
+        .then((r) => r.Items[0]),
+    enabled: !!userId && !!libraryId,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+}
+
 export function useSeasons(seriesId: string | undefined) {
   const client = useJellyfinClient();
   const userId = useUserId();
