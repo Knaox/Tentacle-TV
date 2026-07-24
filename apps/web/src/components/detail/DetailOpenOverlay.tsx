@@ -29,7 +29,14 @@ interface DetailOpenOverlayProps {
 const TRAVEL_S = 0.44;
 /** Décélération franche puis arrivée qui se pose, sans le moindre rebond. */
 const SETTLE = [0.16, 1, 0.3, 1] as const;
-/** Sécurité : si la fiche ne se mesure jamais, on n'immobilise pas l'écran. */
+/**
+ * Sécurité : si la fiche ne se mesure jamais, on n'immobilise pas l'écran.
+ *
+ * Le compte à rebours part de la première MESURE reçue, pas du montage. Le vol
+ * ne peut démarrer qu'une fois la requête revenue et le visuel de la fiche
+ * placé : sur une requête lente, un garde-fou lancé au montage coupait le calque
+ * avant même que le vol ait commencé.
+ */
 const FALLBACK_MS = 1000;
 
 /**
@@ -75,9 +82,16 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
     // vol, pas de zoom, aucune surface géante qui traverse l'écran.
     if (reduced) { onDone(); return; }
     setPlaying(true);
+  }, [origin, reduced, onDone]);
+
+  // Garde-fou armé à la première cible reçue — c'est de là que part le vol.
+  // Armé au montage, il expirait pendant l'attente de la requête sur les fiches
+  // lentes, exactement là où la transition a le plus de raisons d'exister.
+  useEffect(() => {
+    if (!playing || !target) return;
     clearTimeout(guardRef.current);
     guardRef.current = setTimeout(() => setPlaying(false), FALLBACK_MS);
-  }, [origin, reduced, onDone]);
+  }, [playing, target]);
 
   // Nettoyage au démontage SEULEMENT : purger le garde-fou à chaque passage de
   // l'effet le supprimerait dès le premier rendu suivant l'ouverture.

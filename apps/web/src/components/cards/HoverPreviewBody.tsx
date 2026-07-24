@@ -83,17 +83,30 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
 
   const overlay = direction === "overlay";
 
-  const titleBlock = logoUrl ? (
-    <img
-      src={logoUrl}
-      alt={title}
-      draggable={false}
-      className="h-8 max-w-[62%] object-contain object-left drop-shadow-[0_2px_10px_var(--on-media-shadow)]"
-    />
-  ) : (
-    <p className="line-clamp-2 text-sm font-bold leading-tight text-on-media-primary drop-shadow-[0_2px_8px_var(--on-media-shadow)]">
-      {title}
-    </p>
+  const titleBlock = (
+    <>
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={title}
+          draggable={false}
+          className="h-8 max-w-[62%] object-contain object-left drop-shadow-[0_2px_10px_var(--on-media-shadow)]"
+        />
+      ) : (
+        <p className="line-clamp-2 text-sm font-bold leading-tight text-on-media-primary drop-shadow-[0_2px_8px_var(--on-media-shadow)]">
+          {title}
+        </p>
+      )}
+      {/* Titre de l'ÉPISODE. `title` porte le nom de la série — c'est lui qui
+          situe le média —, mais l'aperçu d'un épisode ne disait nulle part
+          duquel il s'agissait : le code S/E figure dans la ligne méta, le titre
+          n'apparaissait pas du tout. Une ligne de plus, la place existe. */}
+      {isEpisode && item.Name && item.Name !== title && (
+        <p className="line-clamp-1 text-xs font-medium text-on-media-secondary drop-shadow-[0_1px_6px_var(--on-media-shadow)]">
+          {item.Name}
+        </p>
+      )}
+    </>
   );
 
   /**

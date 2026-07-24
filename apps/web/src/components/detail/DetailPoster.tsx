@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -12,6 +12,14 @@ interface DetailPosterProps {
    * jusqu'à cette place exacte, au lieu de la faire grossir au hasard.
    */
   onMeasure?: (rect: { top: number; left: number; width: number; height: number }) => void;
+  /**
+   * Le visuel arrive par le calque d'ouverture : pas de fondu propre.
+   *
+   * Les deux se superposaient — le calque déposait l'image à cet endroit
+   * pendant que la boîte, dessous, montait encore son opacité. Quand le calque
+   * s'effaçait avant la fin, on voyait l'affiche à mi-opacité sur le backdrop.
+   */
+  instant?: boolean;
 }
 
 /**
@@ -24,40 +32,37 @@ interface DetailPosterProps {
  *    haut de la case et flottait, minuscule, à côté d'un titre en display-2.
  *    Elle prend désormais toute la largeur de la colonne, en 16:9.
  */
-export function DetailPoster({ item, onMeasure }: DetailPosterProps) {
+export function DetailPoster({ item, onMeasure, instant = false }: DetailPosterProps) {
   const client = useJellyfinClient();
   const boxRef = useRef<HTMLDivElement>(null);
   const hasImage = Boolean(item.ImageTags?.Primary);
 
+  const publish = useCallback(() => {
+    const el = boxRef.current;
+    if (!onMeasure || !el) return;
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      onMeasure({ top: r.top, left: r.left, width: r.width, height: r.height });
+    }
+  }, [onMeasure]);
+
   /**
-   * `useLayoutEffect` : la première mesure doit être prise AVANT la peinture,
-   * sinon le calque d'ouverture afficherait une frame à l'ancienne position
-   * puis sauterait.
+   * DEUX mesures au plus, et pas une de plus.
    *
-   * Mais une seule mesure ne suffit pas, et c'est ce qui a cassé la transition
-   * des épisodes. Tant que la boîte s'étirait sur la hauteur de la rangée flex,
-   * sa taille ne dépendait que de ses voisins, connus dès le premier calcul.
-   * Depuis qu'elle épouse son image (`self-start`), sa hauteur est celle du
-   * visuel — et le visuel n'a pas fini de se placer au moment du premier
-   * passage. La cible mesurée était donc périmée, et le vol atterrissait à côté.
+   * La première en `useLayoutEffect`, avant la peinture : sinon le calque
+   * d'ouverture afficherait une frame à l'ancienne position puis sauterait. La
+   * seconde au `load` de l'image (cf. `onLoad` plus bas), parce qu'une seule ne
+   * suffit pas — depuis que la boîte épouse son image (`self-start`), sa hauteur
+   * dépend du visuel, qui n'est pas encore placé au premier passage.
    *
-   * Un `ResizeObserver` suit la boîte : chaque changement de taille remonte une
-   * cible fraîche. Le calque n'utilise que la dernière, il rattrape donc en vol.
+   * Un `ResizeObserver` a été essayé pour couvrir tous les cas ; il publiait en
+   * flux continu, donc re-rendait l'arbre pendant que la page jouait son entrée.
+   * Deux publications bornées suffisent, et `handleMeasure` (MediaDetail) ignore
+   * de toute façon les rectangles identiques.
    */
   useLayoutEffect(() => {
-    const el = boxRef.current;
-    if (!hasImage || !onMeasure || !el) return;
-    const publish = () => {
-      const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) {
-        onMeasure({ top: r.top, left: r.left, width: r.width, height: r.height });
-      }
-    };
-    publish();
-    const observer = new ResizeObserver(publish);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasImage, onMeasure]);
+    if (hasImage) publish();
+  }, [hasImage, publish]);
 
   if (!hasImage) return null;
 
@@ -75,7 +80,10 @@ export function DetailPoster({ item, onMeasure }: DetailPosterProps) {
     // déjà l'arrivée de ce visuel.
     <motion.div
       ref={boxRef}
-      initial={{ opacity: 0 }}
+      // `initial={false}` quand le calque dépose déjà l'image ici : les deux
+      // fondus se superposaient, et si le calque s'effaçait avant la fin du
+      // second on voyait l'affiche à mi-opacité sur le backdrop.
+      initial={instant ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
       // `self-start` : sans lui la boîte s'ÉTIRE sur toute la hauteur de la
@@ -89,10 +97,13 @@ export function DetailPoster({ item, onMeasure }: DetailPosterProps) {
       }`}
       style={{ boxShadow: "var(--elev-3)" }}
     >
+      {/* Seconde et dernière mesure : la boîte épouse son image, sa hauteur
+          n'est donc définitive qu'une fois celle-ci placée. */}
       <img
         src={url}
         alt={item.Name}
         draggable={false}
+        onLoad={publish}
         className={`w-full object-cover ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
       />
       {/* Qualité + langues directement sur le visuel, comme sur les vignettes —
