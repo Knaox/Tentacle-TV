@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { resolveBackdropId } from "./resolveBackdrop";
 
 interface HeroBackdropProps {
   items: MediaItem[];
@@ -36,11 +37,24 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   const overlays = (
     <>
       {/* Pile de degrades cinema. Les chaines COMPLETES vivent dans
-          theme/scrims.css (`--hero-scrim-*`) : assise NOIRE constante
+          theme/scrims.css et theme/surfaces.css : assise NOIRE constante
           (`--scrim-media-rgb`) sous le texte on-media dans les DEUX schemas —
           recette mobile, l'affiche reste vive, aucun voile clair ni flou.
-          Seul le voile haut suit le theme (assise de la TopNav). */}
-      <div className="absolute inset-0" style={{ background: "var(--hero-scrim-left)" }} />
+          Seul le voile haut suit le theme (assise de la TopNav).
+
+          Le scrim principal est DIAGONAL (72deg) : son coin sombre tombe en
+          bas-gauche, pile sous la colonne de texte, la ou le 90deg d'origine
+          assombrissait tout le flanc gauche a hauteur egale. */}
+      <div className="absolute inset-0" style={{ background: "var(--hero-scrim-diagonal)" }} />
+      {/* Voile de marque : c'est lui qui rend l'ombre VIOLETTE plutot que
+          neutre. Alphas volontairement bas — au-dela l'affiche vire au
+          monochrome. Construit sur `--brand-rgb`, donc une surcharge de theme
+          depuis l'admin le suit sans une ligne de code. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "var(--hero-brand-wash)" }}
+        aria-hidden
+      />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{ background: "var(--hero-scrim-bottom)" }}
@@ -63,6 +77,12 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
       {/* Tiny grain to avoid banding on solid color zones — pas de mix-blend-mode
        * pour éviter le rectangle blanc fantôme dans Tauri WKWebView. */}
       <div className="noise-texture absolute inset-0 opacity-[0.06]" aria-hidden />
+      {/* PAS de ligne de lumière en couture basse. L'idée supposait une couture
+          VISIBLE ; or les rangées remontent de 48-64 px (`-mt-12/-mt-16` dans
+          Home.tsx) et sont transparentes : la hairline se retrouvait tracée en
+          travers de la première rangée d'affiches, à 63 px sous son titre. Même
+          cause que sur la fiche média et l'en-tête de bibliothèque — le geste
+          ne tient sur aucune des trois surfaces, il est abandonné partout. */}
     </>
   );
 
@@ -75,15 +95,8 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
     );
   }
 
-  const isEp = item.Type === "Episode";
-  const hasParentBackdrop = (item.ParentBackdropImageTags?.length ?? 0) > 0;
-  const hasOwnBackdrop = (item.BackdropImageTags?.length ?? 0) > 0;
-  const backdropId = isEp
-    ? hasParentBackdrop
-      ? (item.ParentBackdropItemId ?? item.SeriesId ?? item.Id)
-      : item.Id
-    : item.Id;
-  const url = hasParentBackdrop || hasOwnBackdrop
+  const backdropId = resolveBackdropId(item);
+  const url = backdropId
     ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 85 })
     : null;
 

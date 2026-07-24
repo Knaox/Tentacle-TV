@@ -18,14 +18,15 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
   const { t } = useTranslation("common");
 
   // Bouton retour + dégradés posés directement SUR le backdrop : restent en
-  // blanc/noir dans les deux thèmes (cf. règle « posé sur média »).
+  // blanc/noir dans les deux thèmes (cf. règle « posé sur média »), mais via
+  // les tokens `on-media-*` / `--scrim-media-rgb` plutôt qu'en littéraux.
   return (
     <div className="relative h-[70vh] w-full overflow-hidden md:h-[78vh]">
       <button
         type="button"
         onClick={() => navigate(-1)}
         aria-label={t("common:back")}
-        className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-white/15 bg-black/45 px-4 py-2 text-sm text-white/85 backdrop-blur-md transition-all hover:bg-black/65 hover:text-white md:left-8 md:top-8"
+        className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-4 py-2 text-sm text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary md:left-8 md:top-8"
       >
         <ArrowLeftIcon />
         {t("common:back")}
@@ -44,11 +45,18 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
         />
       )}
 
-      {/* Pile de degrades — chaines completes dans theme/scrims.css
-          (`--detail-scrim-*`) : assise NOIRE constante sous le bloc titre
+      {/* Pile de degrades — chaines completes dans theme/scrims.css et
+          theme/surfaces.css : assise NOIRE constante sous le bloc titre
           on-media dans les DEUX schemas (recette mobile, image vive — plus de
-          flou ni de voile clair). Seul le voile haut suit le theme. */}
-      <div className="absolute inset-0" style={{ background: "var(--detail-scrim-left)" }} />
+          flou ni de voile clair). Seul le voile haut suit le theme.
+          Meme grammaire que la banniere d'accueil : scrim diagonal 72deg,
+          voile de marque, ligne de lumiere en couture basse. */}
+      <div className="absolute inset-0" style={{ background: "var(--detail-scrim-diagonal)" }} />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "var(--detail-brand-wash)" }}
+        aria-hidden
+      />
       <div
         className="absolute inset-x-0 bottom-0 h-[55%]"
         style={{ background: "var(--detail-scrim-bottom)" }}
@@ -64,6 +72,11 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
         className="absolute inset-x-0 top-0 h-32"
         style={{ background: "var(--detail-scrim-top)" }}
       />
+      {/* PAS de ligne de lumière ici, contrairement à la bannière d'accueil.
+          Sur cette page le bloc titre remonte de 192 px (`-mt-48` dans
+          MediaDetail) : la couture du hero passe donc EN PLEIN MILIEU du
+          contenu, et la hairline y traçait un trait violet en travers du
+          synopsis. Le raccord n'a rien à souligner quand il est recouvert. */}
     </div>
   );
 }

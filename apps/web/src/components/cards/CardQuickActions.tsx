@@ -7,11 +7,22 @@ import {
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
+/**
+ * • `compact` — colonne d'angle sur l'affiche (la plus discrète).
+ * • `bar`     — rangée horizontale de la barre d'actions révélée au survol.
+ * • `inline`  — rangée pleine taille du panneau d'aperçu et de la bannière.
+ */
+type QuickActionsVariant = "compact" | "bar" | "inline";
+
+const VARIANT_STYLE: Record<QuickActionsVariant, { box: string; icon: string; dir: string }> = {
+  compact: { box: "h-7 w-7", icon: "h-3.5 w-3.5", dir: "flex-col" },
+  bar: { box: "h-8 w-8", icon: "h-4 w-4", dir: "flex-row" },
+  inline: { box: "h-9 w-9", icon: "h-4 w-4", dir: "flex-row" },
+};
+
 interface CardQuickActionsProps {
   item: MediaItem;
-  /** Visual variant — `compact` is the always-on top-right cluster on the card image,
-   *  `inline` is the bigger row inside the hover preview panel. */
-  variant?: "compact" | "inline";
+  variant?: QuickActionsVariant;
 }
 
 /**
@@ -56,9 +67,7 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
     if (watched) markUnwatched.mutate(); else markWatched.mutate();
   };
 
-  const sizeClass = variant === "compact" ? "h-7 w-7" : "h-9 w-9";
-  const iconSize = variant === "compact" ? "h-3.5 w-3.5" : "h-4 w-4";
-  const dir = variant === "compact" ? "flex-col" : "flex-row";
+  const { box: sizeClass, icon: iconSize, dir } = VARIANT_STYLE[variant];
 
   // Cluster de boutons posé directement sur l'affiche/la vignette (badges
   // d'angle) : fond noir translucide + icônes blanches volontairement

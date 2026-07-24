@@ -1,8 +1,13 @@
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useGenres } from "@tentacle-tv/api-client";
-import { LibraryFilterPanel } from "./LibraryFilterPanel";
 import { LibraryActiveFilterPills } from "./LibraryActiveFilterPills";
+import {
+  GenreMenu,
+  PlatformMenu,
+  RatingMenu,
+  SortMenu,
+  YearMenu,
+} from "./library/LibraryFilterMenus";
 
 export interface LibraryFilterState {
   genreIds: string[];
@@ -141,16 +146,22 @@ interface LibraryFilterBarProps {
   onClearRating: () => void;
 }
 
+/**
+ * Barre de filtres : statuts en pastilles, puis un menu ancré par critère.
+ *
+ * Remplace le duo « mur de pastilles de genres + panneau latéral plein
+ * écran » : sur une bibliothèque d'animés, la bande de genres comptait plus de
+ * cent pastilles à faire défiler horizontalement, et le panneau avancé
+ * masquait la grille pendant tout le réglage. Ici chaque menu se referme sur
+ * la grille — on voit l'effet du filtre au moment où on le pose.
+ */
 export function LibraryFilterBar(props: LibraryFilterBarProps) {
   const { t } = useTranslation("common");
-  const { data: genres } = useGenres(props.libraryId);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const clearGenres = () => props.filters.genreIds.forEach(props.onToggleGenre);
+  const clearPlatforms = () => props.filters.platformIds.forEach(props.onTogglePlatform);
 
   return (
     <>
-      {/* Quick filters — même langage visuel que les genres : pill (rounded-full)
-          + état actif glass violet (jamais de fond plein qui crashe avec le
-          reste du design system Tentacle). */}
       <div className="flex flex-wrap items-center gap-2">
         {STATUS_QUICK.map((opt) => (
           <button
@@ -173,45 +184,47 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
 
         <div className="mx-1 h-5 w-px bg-fill-soft" />
 
-        {/* Bouton "Filtres avancés" — même pill que le reste, juste avec icône. */}
-        <button
-          onClick={() => setPanelOpen(true)}
-          className={`${chipCls(props.activeCount > 0)} inline-flex items-center gap-1.5`}
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-          </svg>
-          {t("common:advancedFilters")}
-          {props.activeCount > 0 && (
-            <span className="ml-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(var(--brand-rgb),0.4)] px-1 text-[10px] font-bold text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)]">
-              {props.activeCount}
-            </span>
-          )}
-        </button>
+        <SortMenu
+          filters={props.filters}
+          onSortByChange={props.onSortByChange}
+          onSortOrderChange={props.onSortOrderChange}
+        />
+        <GenreMenu
+          libraryId={props.libraryId}
+          filters={props.filters}
+          onToggleGenre={props.onToggleGenre}
+          onClear={clearGenres}
+        />
+        <YearMenu
+          filters={props.filters}
+          onYearFromChange={props.onYearFromChange}
+          onYearToChange={props.onYearToChange}
+          onClear={props.onClearYears}
+        />
+        <RatingMenu
+          filters={props.filters}
+          onRatingMinChange={props.onRatingMinChange}
+          onClear={props.onClearRating}
+        />
+        <PlatformMenu
+          filters={props.filters}
+          onTogglePlatform={props.onTogglePlatform}
+          onClear={clearPlatforms}
+        />
+
+        {props.hasActiveFilters && (
+          <button
+            onClick={props.onReset}
+            className="ml-1 text-xs font-medium text-content-tertiary underline-offset-4 transition-colors hover:text-content-primary hover:underline"
+          >
+            {t("common:resetFilters")}
+          </button>
+        )}
       </div>
 
-      {/* Genre chips — exactement le même chipCls que les quick filters. */}
-      {genres && genres.length > 0 && (
-        <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-          <button
-            onClick={() => props.filters.genreIds.forEach(props.onToggleGenre)}
-            className={`${chipCls(props.filters.genreIds.length === 0)} flex-shrink-0`}
-          >
-            {t("common:allGenres")}
-          </button>
-          {genres.map((g) => (
-            <button
-              key={g.Id}
-              onClick={() => props.onToggleGenre(g.Id)}
-              className={`${chipCls(props.filters.genreIds.includes(g.Id))} flex-shrink-0 whitespace-nowrap`}
-            >
-              {g.Name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Active filter pills — exact Seer style */}
+      {/* Rappel des filtres posés + compte de résultats. Les pastilles de menu
+          portent déjà leur propre valeur : cette ligne ne sert plus qu'au
+          total, et disparaît quand rien n'est filtré. */}
       <LibraryActiveFilterPills
         libraryId={props.libraryId}
         filters={props.filters}
@@ -222,23 +235,6 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
         onClearYears={props.onClearYears}
         onClearRating={props.onClearRating}
         onReset={props.onReset}
-      />
-
-      {/* Advanced filter panel — exact Seer slide-over */}
-      <LibraryFilterPanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        libraryId={props.libraryId}
-        filters={props.filters}
-        onToggleGenre={props.onToggleGenre}
-        onTogglePlatform={props.onTogglePlatform}
-        onYearFromChange={props.onYearFromChange}
-        onYearToChange={props.onYearToChange}
-        onRatingMinChange={props.onRatingMinChange}
-        onSortByChange={props.onSortByChange}
-        onSortOrderChange={props.onSortOrderChange}
-        onReset={props.onReset}
-        activeFilterCount={props.activeCount}
       />
     </>
   );

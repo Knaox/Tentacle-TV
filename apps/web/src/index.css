@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "./theme/tokens.css";
 @import "./theme/scrims.css";
+@import "./theme/surfaces.css";
 @import "./theme/motion-reduce.css";
 
 @tailwind base;
