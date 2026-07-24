@@ -11,6 +11,28 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.10.0]
+### FR
+- Refonte de l'interface web : bannière d'accueil retravaillée (dégradé diagonal teinté, rail de marque, bouton « Plus d'infos »), affiches au liseré dégradé et halo qui suit le curseur
+- Aperçu au survol des vignettes d'épisode : un volet se déplie sous la vignette avec lecture, résumé, note, durée, qualité et progression. L'image reste à sa place et à sa taille, seul le volet s'ouvre
+- Le bouton Lecture d'une affiche de série lance l'épisode à reprendre, ou le premier épisode si la série n'a pas été commencée
+- Ouverture animée d'une fiche média : le visuel cliqué rejoint la place exacte qu'il occupera sur la fiche, dont le code est préchargé au survol
+- Fiche média : le visuel suit le format du média (image large pour un épisode, affiche verticale sinon), actions en pilules avec état de marque, barre de progression. La page s'ouvre sur la bannière — elle sautait jusqu'ici directement à la liste des épisodes
+- « Reprendre » ne s'affiche plus à côté de « 100 % visionné » : le seuil passe à 99 %, un média vu jusqu'au générique est considéré comme terminé
+- Filtres de bibliothèque : le mur de pastilles de genres et le panneau latéral plein écran laissent place à des menus ancrés (tri, genres cherchables, année, note, plateformes). La grille reste visible pendant qu'on filtre
+- Page bibliothèque : en-tête illustré reprenant la grammaire de la bannière d'accueil
+- Thème clair : les dégradés des flèches de carrousel viraient au noir sur fond clair, avec un chevron blanc illisible
+### EN
+- Web interface redesign: reworked home banner (tinted diagonal gradient, brand rail, "More info" button), posters with a gradient edge and a highlight that follows the cursor
+- Episode thumbnail hover preview: a panel unfolds below the thumbnail with playback, synopsis, rating, runtime, quality and progress. The image stays in place and at its size — only the panel opens
+- A series poster's Play button starts the episode to resume, or the first episode if the series has not been started
+- Animated media page opening: the artwork you clicked travels to the exact place it will occupy on the page, whose code preloads on hover
+- Media page: the artwork follows the media format (wide image for an episode, portrait poster otherwise), pill-shaped actions with brand state, progress bar. The page now opens on the banner — it used to jump straight to the episode list
+- "Resume" no longer appears next to "100% watched": the threshold moves to 99%, so a media watched through the credits counts as finished
+- Library filters: the wall of genre chips and the full-screen side panel give way to anchored menus (sort, searchable genres, year, rating, platforms). The grid stays visible while filtering
+- Library page: illustrated header matching the home banner's design language
+- Light theme: carousel arrow gradients turned black on light backgrounds, with an unreadable white chevron
+
 ## [1.9.0]
 ### FR
 - Mode économie de données : l'application mesure la latence de ses sondes et détecte les connexions lentes. Elle allège alors les images, ne charge l'accueil qu'au fil du défilement et réduit les quotas des carrousels. Réglable dans Réglages › Données (automatique / toujours / jamais), avec une pastille dans la barre du haut quand il est actif
