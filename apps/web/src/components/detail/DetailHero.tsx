@@ -1,10 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 
 interface DetailHeroProps {
   backdropUrl: string | null;
+  /** Item dont l'affiche alimente la lueur de raccord. */
+  item?: MediaItem;
 }
 
 /**
@@ -29,6 +33,16 @@ export const DETAIL_HERO_HEIGHT = "h-[70vh] md:h-[78vh]";
 export const DETAIL_HERO_BOX = "h-[calc(70vh+260px)] md:h-[calc(78vh+260px)]";
 /** Part de la boîte IMAGE occupée par le fondu bas. */
 export const DETAIL_SCRIM_BOTTOM = "h-[74%]";
+/**
+ * Boîte de la LUEUR de raccord — la boîte image plus 150 px de débord.
+ *
+ * Le masque de `.hero-glow` est plein entre 74 % et 92 % de sa boîte : avec
+ * 150 px de rab, la couture (à la fin de `DETAIL_HERO_BOX`) tombe vers 87 %,
+ * pile dans cette plage, et les derniers pixels s'éteignent doucement dans la
+ * page. Changer l'un des deux (débord ou bornes du masque) sans l'autre
+ * déplacerait la lumière hors de la couture.
+ */
+export const DETAIL_GLOW_BOX = "h-[calc(70vh+410px)] md:h-[calc(78vh+410px)]";
 
 /**
  * Cinematic backdrop hero for the media detail page.
@@ -36,7 +50,7 @@ export const DETAIL_SCRIM_BOTTOM = "h-[74%]";
  * La qualité (4K / HDR / Dolby) n'est PAS affichée ici : elle vit à côté du
  * titre (DetailMetadata) pour ne pas surcharger la bannière.
  */
-export function DetailHero({ backdropUrl }: DetailHeroProps) {
+export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
 
@@ -48,20 +62,6 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
     // aucun `overflow-hidden` sur le conteneur : le halo et le débord de la
     // boîte image en dépendent.
     <div className="relative w-full">
-      {/* PAS de halo « ambilight » ici, contrairement à la bannière d'accueil,
-          et c'est structurel — pas un réglage.
-
-          Le bas de cette bannière DOIT se résoudre à la couleur de page pour
-          raccorder sans couture : le dégradé y devient opaque. Un halo posé
-          derrière ne peut donc jamais apparaître DANS la bannière — il est
-          masqué de bout en bout. Le seul endroit où il ressortait était SOUS
-          elle, par le débord de son flou (72 px) et de son zoom (57 px) : une
-          bande colorée de près de 130 px, dont le bord supérieur était net
-          puisque l'image opaque le coupait. C'était la « ligne de séparation ».
-
-          Le halo n'a de sens que sur une bannière ENCADRÉE — l'accueil — où la
-          lumière déborde des quatre côtés d'une carte qui n'a pas de raccord
-          opaque à assurer. */}
       <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
         <button
           type="button"
@@ -127,6 +127,19 @@ export function DetailHero({ backdropUrl }: DetailHeroProps) {
             contenu, et la hairline y traçait un trait violet en travers du
             synopsis. Le raccord n'a rien à souligner quand il est recouvert. */}
       </div>
+
+      {/* Lueur de raccord — l'affiche floutée, posée PAR-DESSUS le bas de la
+          bannière en fusion `screen` (cf. `.hero-glow`). La boîte est calée pour
+          que la couture (bas de la boîte image = fin de `DETAIL_HERO_BOX`) tombe
+          dans la zone PLEINE du masque vertical, et pour déborder d'environ
+          150 px sous la bannière — la lumière s'y échappe dans la page. Frère de
+          la boîte image donc peinte AVANT le bloc titre : le texte n'est jamais
+          touché par la fusion. */}
+      <HeroAmbilight
+        item={item}
+        opacity="var(--detail-ambilight-opacity)"
+        className={`hero-glow absolute inset-x-0 top-0 ${DETAIL_GLOW_BOX}`}
+      />
 
       {/* Réserve de mise en page : c'est ELLE qui occupe la place dans le flux,
           la boîte image étant hors flux. Le bloc titre de `MediaDetail` remonte

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useLatestItems } from "@tentacle-tv/api-client";
+import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
 
@@ -44,11 +45,6 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
      * personne ne le voit.
      */
     <section className="relative w-full" aria-label={libraryName}>
-      {/* PAS de halo « ambilight » : le bas de cette bannière à fond perdu doit
-          se résoudre à la couleur de page pour raccorder sans couture, un halo
-          posé derrière n'y apparaît donc que SOUS elle, en bande floutée au bord
-          supérieur net — la « ligne de séparation ». Réservé aux bannières
-          encadrées (l'accueil). */}
       <div className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
         <div className="absolute inset-0 bg-surface-0" />
 
@@ -84,6 +80,16 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             fiche média — une hairline sous du contenu se lit comme une rayure. */}
 
       </div>
+
+      {/* Lueur de raccord — l'affiche floutée en fusion `screen` par-dessus le
+          bas de la bannière (cf. `.hero-glow`). Boîte calée pour que la couture
+          (bas de la boîte image, +200 px) tombe dans la zone pleine du masque,
+          avec 150 px de débord dans la page. */}
+      <HeroAmbilight
+        item={featured ?? undefined}
+        opacity="var(--detail-ambilight-opacity)"
+        className="hero-glow absolute inset-x-0 top-0 h-[calc(44vh+350px)] md:h-[calc(48vh+350px)]"
+      />
 
       {/* Réserve de mise en page : la boîte image étant hors flux, c'est elle
           qui occupe la place et sur laquelle la barre de filtres s'appuie. */}
