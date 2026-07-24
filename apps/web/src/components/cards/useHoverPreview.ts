@@ -32,6 +32,21 @@ function boundsFor(card: HTMLElement | null): PreviewBounds | undefined {
 }
 
 /**
+ * Boîte que le panneau recouvre : le VISUEL de la carte, pas la carte entière.
+ *
+ * La racine porte aussi le bloc titre, une cinquantaine de pixels sous l'image.
+ * Tant que le panneau se déroulait vers le bas, l'écart ne se voyait pas — il
+ * s'aligne alors sur le HAUT, commun aux deux boîtes. Dès qu'il se déroule vers
+ * le haut, c'est le BAS qui sert d'ancre, et la vignette du panneau atterrissait
+ * une cinquantaine de pixels trop bas.
+ */
+function visualRect(card: HTMLElement): AnchorRect {
+  const el = card.querySelector<HTMLElement>("[data-card-visual]") ?? card;
+  const r = el.getBoundingClientRect();
+  return { top: r.top, left: r.left, width: r.width, height: r.height };
+}
+
+/**
  * Le panneau peut-il se poser SUR cette carte ?
  *
  * Toute la règle vit dans `canAnchorPreview` (géométrie pure, testable) : le
@@ -44,9 +59,8 @@ function boundsFor(card: HTMLElement | null): PreviewBounds | undefined {
  */
 function canPlacePanel(card: HTMLElement | null): boolean {
   if (!card) return false;
-  const r = card.getBoundingClientRect();
   return canAnchorPreview(
-    { top: r.top, left: r.left, width: r.width, height: r.height },
+    visualRect(card),
     { width: window.innerWidth, height: window.innerHeight },
     boundsFor(card),
   );
@@ -172,11 +186,10 @@ export function useHoverPreview(disabled = false): HoverPreview {
       const el = anchorRef.current;
       // Re-vérifié à l'échéance : la rangée a pu défiler entre-temps.
       if (!el || !canPlacePanel(el)) return;
-      const r = el.getBoundingClientRect();
       if (activeCloser && activeCloser !== close) activeCloser();
       activeCloser = close;
       setBounds(boundsFor(el));
-      setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
+      setAnchor(visualRect(el));
     }, OPEN_DELAY_MS);
   }, [eligible, disabled, close]);
 
