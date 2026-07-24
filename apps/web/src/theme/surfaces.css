@@ -58,6 +58,12 @@
   --hero-ambilight-sat: 1.7;
   --hero-ambilight-opacity: 0.55;
 
+  /* Fiche média : même halo, plus discret. Sa bannière est à fond perdu, sa
+   * lumière ne s'échappe donc que par le BAS — c'est-à-dire derrière le bloc
+   * titre, en texte blanc. Au réglage de l'accueil, où la lumière ne tombe que
+   * sur du fond de page, elle y mangeait le contraste. */
+  --detail-ambilight-opacity: 0.4;
+
   /* Il n'y a PAS de hairline de couture basse (`--hero-edge-light`, supprimée).
    * Elle supposait une couture visible entre bannière et page. En réalité les
    * trois surfaces font remonter leur contenu par-dessus — rangées de
@@ -174,6 +180,7 @@
    * `--hero-brand-wash`, dont les alphas sont divisés par deux en clair. */
   --hero-ambilight-sat: 1.25;
   --hero-ambilight-opacity: 0.3;
+  --detail-ambilight-opacity: 0.2;
   --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.14);
 }
 

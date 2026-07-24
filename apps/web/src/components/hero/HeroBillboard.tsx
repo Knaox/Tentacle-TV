@@ -106,7 +106,7 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
       <div className="relative">
         {/* Halo, DERRIÈRE la carte : il occupe exactement sa surface et sa
             lumière s'échappe tout autour. */}
-        <HeroAmbilight items={items} activeIndex={index} />
+        <HeroAmbilight item={items[index]} />
 
         {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
             « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche. */}
