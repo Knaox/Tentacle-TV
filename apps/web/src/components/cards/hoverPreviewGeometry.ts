@@ -57,22 +57,15 @@ export interface PreviewBounds {
   right: number;
 }
 /**
- * Hauteur FIXE du tiroir d'informations déroulé, en pixels.
+ * Hauteur ESTIMÉE du tiroir d'informations déroulé, en pixels — pour le choix
+ * du sens (`down`/`overlay`) et l'origine du zoom.
  *
- * Constante et non plus estimée : le rendu (`HoverPreviewBody` anime la hauteur
- * du tiroir vers cette valeur exacte, `HoverPreviewInfo` la remplit) et la
- * géométrie (choix du sens, origine du zoom) lisent désormais la MÊME valeur. Le
- * tiroir avait jusqu'ici une hauteur `auto` qui dépendait de la présence et de
- * la longueur du synopsis — trois hauteurs possibles pour une même carte. La
- * zone haute (actions, code S/E, méta) est fixe ; le synopsis occupe le reste,
- * défilant si besoin, sans jamais changer la hauteur totale.
- *
- * 128 px : la zone haute (actions, code S/E, méta) plus UNE ligne de synopsis,
- * défilante. Le panneau doit rester court — un aperçu, pas une fiche.
+ * Le rendu réel est en `height: auto`, mais il est désormais STABLE : le
+ * synopsis est tronqué à une seule ligne (`HoverPreviewInfo`, `line-clamp-1`),
+ * si bien que la hauteur ne peut plus varier de plusieurs lignes selon sa
+ * longueur. 124 px collent au rendu (zone haute + une ligne).
  */
-export const DRAWER_HEIGHT = 128;
-/** Alias interne — la géométrie raisonne en « hauteur du corps ». */
-const BODY_HEIGHT = DRAWER_HEIGHT;
+const BODY_HEIGHT = 124;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(value, max));

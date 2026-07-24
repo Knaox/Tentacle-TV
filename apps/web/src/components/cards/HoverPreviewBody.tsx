@@ -8,7 +8,7 @@ import { CardProgressBar } from "./CardProgressBar";
 import { CardQuickActions } from "./CardQuickActions";
 import { HoverPreviewInfo } from "./HoverPreviewInfo";
 import { playTargetPath } from "./playTarget";
-import { DRAWER_HEIGHT, type PreviewDirection } from "./hoverPreviewGeometry";
+import type { PreviewDirection } from "./hoverPreviewGeometry";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { InfoIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
@@ -225,16 +225,15 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
     </div>
   );
 
-  // Déroulé du bloc d'informations vers une hauteur FIXE (`DRAWER_HEIGHT`),
-  // jamais `auto` : c'est ce qui rend le panneau identique avec ou sans synopsis
-  // — sa taille ne dépend plus du contenu. Le tiroir POUSSE quand même sa
-  // hauteur (0 → fixe), comme un tiroir qui s'ouvre ; un simple fondu ferait
-  // apparaître un bloc déjà à sa taille finale, ce qui se lit comme un saut.
+  // Déroulé du bloc d'informations. `height: 0 → auto` : le tiroir POUSSE sa
+  // hauteur, comme un tiroir qui s'ouvre. Sa taille est désormais stable — le
+  // synopsis est tronqué à UNE ligne (`line-clamp-1`), il ne peut plus la faire
+  // varier de plusieurs lignes.
   const drawer = (
     <motion.div
       key="drawer"
       initial={{ height: 0, opacity: 0 }}
-      animate={{ height: DRAWER_HEIGHT, opacity: 1 }}
+      animate={{ height: "auto", opacity: 1 }}
       // 300 ms, légèrement décalé après le lift. À 440 ms le tiroir donnait le
       // tempo du survol, et ce tempo était trop lent : on avait fini de lire la
       // vignette avant qu'il ne soit ouvert. Le décalage subsiste — sans lui les
