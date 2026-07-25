@@ -3,6 +3,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { resolveBackdropId } from "./resolveBackdrop";
 import { HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
+import { AMBIENT_HZ, cadence } from "../../theme/motion";
 
 interface HeroAmbilightProps {
   /** Item dont l'affiche éclaire le cadre. `undefined` = pas de halo. */
@@ -40,6 +41,13 @@ const FADE_DURATION_S = 1.4;
  * couleurs qui atteignent le bord du cadre changent donc au fil du zoom.
  */
 const TARGET_SCALE = 1.12;
+/**
+ * Même bridage que le backdrop, et le halo s'y prête encore mieux : ce qu'il
+ * affiche est une tache de couleurs floutée à quarante-huit pixels. Aucun pas de
+ * quantification ne peut s'y voir — le flou les efface par construction, bien
+ * avant que l'œil n'ait à trancher.
+ */
+const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
 /**
  * Facteur de sous-échelle du rendu — le vrai levier de coût de ce composant.
  *
@@ -133,7 +141,7 @@ export function HeroAmbilight({
             exit={{ opacity: 0 }}
             transition={{
               opacity: { duration: FADE_DURATION_S, ease: "easeOut" },
-              scale: { duration: HERO_ZOOM_DURATION_S, ease: "linear" },
+              scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
             }}
             // `will-change: transform` : le flou est alors rastérisé UNE fois dans
             // sa propre couche, et le zoom devient une simple transformation de
