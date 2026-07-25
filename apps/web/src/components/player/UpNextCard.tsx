@@ -2,7 +2,14 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 
 interface UpNextCardProps {
-  countdown: number;
+  /**
+   * Secondes restantes avant l'enchaînement automatique, ou `null` quand il n'y
+   * en a pas — la carte est alors une simple PROPOSITION, affichée dès le
+   * générique : ni compte à rebours, ni barre de progression, puisqu'il n'y
+   * aurait rien à mesurer. Elle prend la place du bouton « Épisode suivant »
+   * qu'on affichait jusque-là.
+   */
+  countdown: number | null;
   /** Episode title (e.g. "Le piège du Major"). */
   episodeTitle?: string;
   /** Optional sub-label like "S03E08". */
@@ -41,7 +48,8 @@ export function UpNextCard({
   totalSeconds = DEFAULT_TOTAL,
 }: UpNextCardProps) {
   const { t } = useTranslation("player");
-  const progress = ((totalSeconds - countdown) / totalSeconds) * 100;
+  const counting = countdown !== null;
+  const progress = counting ? ((totalSeconds - countdown) / totalSeconds) * 100 : 0;
 
   return (
     <motion.div
@@ -65,18 +73,21 @@ export function UpNextCard({
         boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb), 0.18), 0 0 32px rgba(var(--brand-rgb), 0.18)",
       }}
     >
-      {/* Top progress bar — gradient violet with glow. Posée sur le fond
-          `surface-modal` de la carte (pas sur l'image) → tokenisée. */}
-      <div className="h-[3px] w-full overflow-hidden bg-fill-soft">
-        <div
-          className="h-full transition-[width] duration-1000 ease-linear"
-          style={{
-            width: `${progress}%`,
-            background: "linear-gradient(90deg, var(--brand-light), var(--brand))",
-            boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
-          }}
-        />
-      </div>
+      {/* Barre de progression — seulement quand un décompte court. Sans lui
+          elle resterait vide en haut de la carte, à suggérer une attente qui
+          n'existe pas. */}
+      {counting && (
+        <div className="h-[3px] w-full overflow-hidden bg-fill-soft">
+          <div
+            className="h-full transition-[width] duration-1000 ease-linear"
+            style={{
+              width: `${progress}%`,
+              background: "linear-gradient(90deg, var(--brand-light), var(--brand))",
+              boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
+            }}
+          />
+        </div>
+      )}
 
       {/* Backdrop image strip — fades into surface for text legibility.
           Badges/bouton fermer sont posés sur l'image : restent en dur
@@ -121,18 +132,24 @@ export function UpNextCard({
             />
             {t("player:upNext")}
           </span>
-          <span
-            className="rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white"
-            style={{
-              background: "rgba(0, 0, 0, 0.55)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
-            }}
-          >
-            {countdown}
-            {t("player:secondsShort")}
-          </span>
+          {/* Compte à rebours — uniquement quand l'enchaînement automatique
+              court. Proposée pendant le générique, la carte n'annonce aucune
+              échéance : elle attend un clic, elle ne prévient pas d'un
+              départ. */}
+          {counting && (
+            <span
+              className="rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white"
+              style={{
+                background: "rgba(0, 0, 0, 0.55)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                textShadow: "0 1px 3px rgba(0,0,0,0.85)",
+              }}
+            >
+              {countdown}
+              {t("player:secondsShort")}
+            </span>
+          )}
         </div>
         {/* Top-right close */}
         <button

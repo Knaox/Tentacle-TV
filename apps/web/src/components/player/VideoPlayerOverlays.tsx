@@ -19,11 +19,9 @@ interface VideoPlayerOverlaysProps {
   sourceChangingRef: MutableRefObject<boolean>;
   hasStartedRef: MutableRefObject<boolean>;
   userInteractedRef: MutableRefObject<boolean>;
-  creditsAutoPlayTriggered: MutableRefObject<boolean>;
   setShowPlayButton: (v: boolean) => void;
   setPolicyMuted: (v: boolean) => void;
   handleSeek: (seconds: number) => void;
-  startAutoPlay: () => void;
 }
 
 /**
@@ -38,8 +36,8 @@ export function VideoPlayerOverlays({
   loading, playing, showPlayButton, policyMuted, posterUrl,
   showSkipIntro, showSkipCredits, introSegment, creditsSegment,
   autoPlayCountdown, hasNextEpisode,
-  videoRef, sourceChangingRef, hasStartedRef, userInteractedRef, creditsAutoPlayTriggered,
-  setShowPlayButton, setPolicyMuted, handleSeek, startAutoPlay,
+  videoRef, sourceChangingRef, hasStartedRef, userInteractedRef,
+  setShowPlayButton, setPolicyMuted, handleSeek,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
 
@@ -93,10 +91,13 @@ export function VideoPlayerOverlays({
           {t("player:skipIntro")}
         </button>
       )}
-      {showSkipCredits && creditsSegment && !autoPlayCountdown && (
-        <button onClick={(e) => { e.stopPropagation(); if (hasNextEpisode) { creditsAutoPlayTriggered.current = true; startAutoPlay(); } else handleSeek(creditsSegment.end); }}
+      {/* Bouton réservé au cas où il n'y a RIEN après : quand un épisode suit,
+          c'est la carte « à suivre » qui prend sa place — avec la vignette et le
+          titre, de quoi décider plutôt qu'un simple libellé. */}
+      {showSkipCredits && creditsSegment && !autoPlayCountdown && !hasNextEpisode && (
+        <button onClick={(e) => { e.stopPropagation(); handleSeek(creditsSegment.end); }}
           className="absolute bottom-28 right-6 z-50 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {hasNextEpisode ? t("player:nextEpisodeLabel") : t("player:skipCredits")}
+          {t("player:skipCredits")}
         </button>
       )}
     </>

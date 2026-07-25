@@ -262,7 +262,7 @@ export function DesktopPlayer({
         showSkipIntro={showSkipIntro} showSkipCredits={showSkipCredits}
         introSegment={introSegment} creditsSegment={creditsSegment}
         isDirectPlay={isDirectPlay} effectiveMpvOffset={effectiveMpvOffset}
-        hasNextEpisode={hasNextEpisode}
+        hasNextEpisode={hasNextEpisode} itemId={itemId}
         autoPlayCountdown={autoPlayCountdown} autoPlaySource={autoPlaySource}
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}

@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { LoadingBar } from "./PlayerLoadingScreen";
 import { NextEpisodeOverlay } from "../NextEpisodeOverlay";
 import { NextEpisodeFullscreen } from "./NextEpisodeFullscreen";
+import { useUpNextCard } from "./useUpNextCard";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 interface DesktopPlayerOverlaysProps {
@@ -17,6 +18,8 @@ interface DesktopPlayerOverlaysProps {
   isDirectPlay: boolean;
   effectiveMpvOffset: MutableRefObject<number>;
   hasNextEpisode?: boolean;
+  /** Épisode en cours — réarme la carte « à suivre » au changement de vidéo. */
+  itemId?: string;
   autoPlayCountdown: number | null;
   autoPlaySource: "credits" | "eof" | null;
   nextEpisodeTitle?: string;
@@ -41,13 +44,22 @@ interface DesktopPlayerOverlaysProps {
 export function DesktopPlayerOverlays({
   showLoadingOverlay, buffering, posterUrl,
   showSkipIntro, showSkipCredits, introSegment, creditsSegment,
-  isDirectPlay, effectiveMpvOffset, hasNextEpisode,
+  isDirectPlay, effectiveMpvOffset, hasNextEpisode, itemId,
   autoPlayCountdown, autoPlaySource,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   seek, onNextEpisode, cancelAutoPlay, onAutoNextDismiss,
 }: DesktopPlayerOverlaysProps) {
   const { t } = useTranslation("player");
+  // Carte « à suivre » : proposée dès le générique quand un épisode suivant
+  // existe (elle remplace alors le bouton texte), puis dotée d'un décompte si
+  // l'enchaînement automatique démarre. Partagé avec le lecteur web.
+  const upNext = useUpNextCard({
+    itemId,
+    hasNextEpisode,
+    duringCredits: showSkipCredits && Boolean(creditsSegment),
+    autoPlayCountdown,
+  });
 
   return (
     <>
@@ -78,19 +90,26 @@ export function DesktopPlayerOverlays({
           {t("player:skipIntro")}
         </button>
       )}
-      {showSkipCredits && creditsSegment && !autoPlayCountdown && (
-        <button onClick={() => { if (hasNextEpisode) onNextEpisode?.(); else seek(isDirectPlay ? creditsSegment.end : Math.max(0, creditsSegment.end - effectiveMpvOffset.current)); }}
+      {/* Bouton réservé au cas où il n'y a RIEN après : quand un épisode suit,
+          c'est la carte « à suivre » qui prend sa place — avec la vignette et le
+          titre, de quoi décider plutôt qu'un simple libellé. */}
+      {showSkipCredits && creditsSegment && !autoPlayCountdown && !hasNextEpisode && (
+        <button onClick={() => seek(isDirectPlay ? creditsSegment.end : Math.max(0, creditsSegment.end - effectiveMpvOffset.current))}
           className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {hasNextEpisode ? t("player:nextEpisodeLabel") : t("player:skipCredits")}
+          {t("player:skipCredits")}
         </button>
       )}
 
       <AnimatePresence>
-        {autoPlayCountdown !== null && autoPlaySource === "credits" && (
-          <NextEpisodeOverlay countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
+        {/* `eof` a son propre plein écran, la carte ne doit pas s'y superposer. */}
+        {upNext.visible && autoPlaySource !== "eof" && (
+          <NextEpisodeOverlay countdown={upNext.countdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
             onPlayNow={() => onNextEpisode?.()}
-            onDismiss={() => { cancelAutoPlay(); onAutoNextDismiss?.(); }} />
+            onDismiss={() => {
+              if (upNext.countdown !== null) { cancelAutoPlay(); onAutoNextDismiss?.(); }
+              upNext.dismiss();
+            }} />
         )}
         {autoPlayCountdown !== null && autoPlaySource === "eof" && (
           <NextEpisodeFullscreen countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
