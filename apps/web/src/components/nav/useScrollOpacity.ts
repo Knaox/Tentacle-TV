@@ -1,23 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Returns a 0→1 scroll-driven progress value used to fade the top nav
- * from transparent (over the hero) to opaque (over content).
+ * Progression 0→1 pilotée par le défilement : elle fait passer la barre de
+ * navigation de transparente (au-dessus de la bannière) à opaque (au-dessus du
+ * contenu).
  *
- * Why a hook: lets the nav stay client-only and doesn't pollute layout effects.
+ * Coalescé en `requestAnimationFrame`. Sans ça, un `setState` partait à CHAQUE
+ * évènement de défilement — et un trackpad en émet volontiers plusieurs par
+ * image. Chacun re-rendait toute la barre : recherche, notifications, avatar,
+ * liens, chips de connectivité, le tout au-dessus d'un `backdrop-filter` sur
+ * une barre fixe pleine largeur. Sur toutes les pages.
+ *
+ * Le hook reste un hook pour que la barre demeure côté client et n'ajoute
+ * aucun effet de mise en page.
  */
 export function useScrollOpacity(threshold = 80): number {
   const [progress, setProgress] = useState(0);
+  const frame = useRef(0);
 
   useEffect(() => {
-    const compute = () => {
+    const apply = () => {
+      frame.current = 0;
       const y = window.scrollY;
-      const p = Math.min(1, Math.max(0, y / threshold));
-      setProgress(p);
+      setProgress(Math.min(1, Math.max(0, y / threshold)));
     };
-    compute();
-    window.addEventListener("scroll", compute, { passive: true });
-    return () => window.removeEventListener("scroll", compute);
+    // Une seule mesure par image, quelle que soit la cadence des évènements.
+    const onScroll = () => {
+      if (frame.current) return;
+      frame.current = requestAnimationFrame(apply);
+    };
+
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame.current) cancelAnimationFrame(frame.current);
+    };
   }, [threshold]);
 
   return progress;

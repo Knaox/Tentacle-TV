@@ -141,16 +141,39 @@ video::cue {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-/* Skeleton shimmer — neutralized to gray (no purple) */
+/* Skeleton shimmer — gris neutre, jamais violet.
+ *
+ * Le reflet est porté par un pseudo-élément TRANSLATÉ, et non plus par une
+ * animation de `background-position`. Animer la position d'un fond repeint
+ * l'élément entier à chaque image ; or ce squelette est instancié une fois par
+ * carte pendant le chargement — une centaine sur l'accueil, exactement au
+ * moment où le réseau et le décodage des affiches saturent déjà. Un `transform`
+ * se compose, lui, sans repeindre.
+ *
+ * Le fond de base reste posé sur l'élément ; le pseudo-élément fait deux fois
+ * sa largeur et le traverse, ce qui reproduit le balayage d'origine. */
 .skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease infinite;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmerSweep 1.5s ease infinite;
+}
+
+@keyframes shimmerSweep {
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(100%, 0, 0); }
 }
 
 /* Crying tentacle animations (kept) */
