@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useHorizontalScroll } from "../hooks/useHorizontalScroll";
+import { useHoverMount } from "../hooks/useHoverMount";
 
 interface HorizontalScrollRowProps {
   children: ReactNode;
@@ -26,9 +27,20 @@ export function HorizontalScrollRow({
   ariaLabel,
 }: HorizontalScrollRowProps) {
   const { ref, canLeft, canRight, scrollBy } = useHorizontalScroll();
+  // Les chevrons portent un `backdrop-filter` : montés à la demande plutôt que
+  // laissés à `opacity: 0`, où leur flou continue d'être recalculé. Le cas le
+  // plus coûteux n'est pas la fiche média mais les panneaux du LECTEUR
+  // (sélecteur d'épisodes), où l'arrière-plan est une vidéo en cours de
+  // lecture : le flou y serait refait à chaque image décodée.
+  // 150 ms = le tempo de la classe Tailwind remplacée.
+  const chevrons = useHoverMount(150);
 
   return (
-    <div className={`group/scroll relative ${wrapperClassName}`}>
+    <div
+      className={`group/scroll relative ${wrapperClassName}`}
+      onMouseEnter={chevrons.onMouseEnter}
+      onMouseLeave={chevrons.onMouseLeave}
+    >
       <div
         ref={ref}
         role="group"
@@ -44,39 +56,53 @@ export function HorizontalScrollRow({
         {children}
       </div>
 
-      <ChevronEdge side="left" visible={canLeft} onClick={() => scrollBy("left")} />
-      <ChevronEdge side="right" visible={canRight} onClick={() => scrollBy("right")} />
+      {chevrons.mounted && (
+        <>
+          <ChevronEdge side="left" visible={canLeft} shown={chevrons.hovered} onClick={() => scrollBy("left")} />
+          <ChevronEdge side="right" visible={canRight} shown={chevrons.hovered} onClick={() => scrollBy("right")} />
+        </>
+      )}
     </div>
   );
 }
 
+/**
+ * Un chevron n'existe QUE quand il sert : la piste déborde de ce côté (`visible`)
+ * ET le curseur est sur la rangée. Il est `aria-hidden` et hors du parcours de
+ * tabulation — la navigation clavier passe par les flèches sur le conteneur —,
+ * son démontage ne retire donc rien à personne.
+ */
 function ChevronEdge({
   side,
   visible,
+  shown,
   onClick,
 }: {
   side: "left" | "right";
   visible: boolean;
+  shown: boolean;
   onClick: () => void;
 }) {
+  if (!visible) return null;
+
   return (
     <button
       type="button"
       onClick={onClick}
       tabIndex={-1}
       aria-hidden="true"
+      data-shown={shown}
       className={[
-        "pointer-events-auto absolute top-0 bottom-0 z-20 flex w-10 items-center",
+        "hover-reveal pointer-events-auto absolute top-0 bottom-0 z-20 flex w-10 items-center",
         side === "left" ? "left-0 justify-start pl-1" : "right-0 justify-end pr-1",
-        "opacity-0 transition-opacity duration-150 ease-out",
-        visible ? "group-hover/scroll:opacity-100 focus-visible:opacity-100" : "pointer-events-none",
       ].join(" ")}
       style={{
+        "--reveal-ms": "150ms",
         background:
           side === "left"
             ? "linear-gradient(to right, rgba(8,8,18,0.85), rgba(8,8,18,0))"
             : "linear-gradient(to left, rgba(8,8,18,0.85), rgba(8,8,18,0))",
-      }}
+      } as CSSProperties}
     >
       <span
         className="flex h-7 w-7 items-center justify-center rounded-full bg-fill-soft text-content-primary ring-1 ring-line-strong backdrop-blur-sm transition-transform duration-150 hover:bg-fill-medium hover:scale-105"

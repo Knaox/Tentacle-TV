@@ -8,6 +8,7 @@ import { RowHeader } from "./RowHeader";
 import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
 import { useRowCardWidth } from "./useRowCardWidth";
+import { useHoverMount } from "../../hooks/useHoverMount";
 
 export type CardVariant = "poster" | "episode";
 
@@ -36,6 +37,12 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   // Largeur calée sur la rangée : un nombre entier de cartes la remplit
   // exactement, plus aucune n'est tronquée au bord droit.
   const cardWidth = useRowCardWidth(scrollRef, variant);
+  // Survol de la rangée — ne sert qu'à MONTER les zones de défilement. Elles
+  // portent un `backdrop-filter` et il y en a jusqu'à deux par rangée : les
+  // laisser à `opacity: 0` sur une dizaine de rangées revenait à entretenir
+  // une vingtaine de couches floutées invisibles. 200 ms = le tempo de la
+  // classe Tailwind remplacée.
+  const controls = useHoverMount(200);
 
   useEffect(() => {
     const el = rowRef.current;
@@ -76,6 +83,8 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
       role="region"
       aria-label={title}
       onKeyDown={handleKeyDown}
+      onMouseEnter={controls.onMouseEnter}
+      onMouseLeave={controls.onMouseLeave}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(16px)",
@@ -88,6 +97,8 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
         <RowScrollControls
           canLeft={canScrollLeft}
           canRight={canScrollRight}
+          mounted={controls.mounted}
+          shown={controls.hovered}
           onScroll={scrollByAmount}
         />
 
