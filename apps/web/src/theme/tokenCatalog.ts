@@ -185,8 +185,12 @@ export const TOKEN_CATALOG: readonly TokenDescriptor[] = [
   { category: "motion", path: "motion.duration.page", cssVar: "--duration-page", defaultValue: t.motion.duration.page, type: "duration-ms", label: "Duration page" },
 
   // ── MOTION : Hover ──
+  // `motion.hoverScale` retiré de l'éditeur : le token existe toujours dans le
+  // thème, mais AUCUN composant ne le lit. Les amplitudes de survol sont
+  // écrites en dur là où elles s'appliquent (`CardFrame`, `EpisodeCard`,
+  // `PressableScale`). Le curseur ne produisait donc aucun effet — mieux vaut
+  // ne rien proposer que proposer un réglage qui ment.
   { category: "motion", path: "motion.hoverDelay", cssVar: "--hover-delay", defaultValue: t.motion.hoverDelay, type: "duration-ms", label: "Hover delay" },
-  { category: "motion", path: "motion.hoverScale", cssVar: "--hover-scale", defaultValue: t.motion.hoverScale, type: "scale", label: "Hover scale" },
 
   // ── LAYOUT ──
   { category: "layout", path: "layout.topnavHeight", cssVar: "--topnav-height", defaultValue: t.layout.topnavHeight, type: "dimension-px", label: "Topnav height (desktop)" },
