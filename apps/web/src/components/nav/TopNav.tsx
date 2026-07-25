@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { TopNavLinks } from "./TopNavLinks";
-import { useScrollOpacity } from "./useScrollOpacity";
+import { useScrollScrim } from "./useScrollScrim";
 import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
@@ -22,42 +22,42 @@ interface TopNavProps {
  * bottom border once content scrolls underneath. Mirrors the Netflix pattern.
  */
 export function TopNav({ showSearch = true }: TopNavProps) {
-  const scrollProgress = useScrollOpacity(120);
   // Hors ligne (desktop) : la navigation serveur n'est PAS rendue — restent
   // le logo, la pastille d'état, les téléchargements et le menu utilisateur.
   const offline = useOfflineMode();
 
-  // Baseline opacity 0.28 even at scroll=0 garantit la lisibilité du nav par-dessus
-  // n'importe quel backdrop hero ; ramp jusqu'à 0.92 au scroll pour rester
-  // cohérent avec le pattern Netflix « transparent en haut, opaque sur les rows ».
-  const bgOpacity = Math.min(0.92, 0.28 + scrollProgress * 0.85);
-  const borderOpacity = scrollProgress > 0.95 ? 0.08 : 0;
+  // Assise 0.28 dès le haut de page : elle garantit la lisibilité de la barre
+  // par-dessus n'importe quelle bannière. Montée jusqu'à 0.92 au défilement,
+  // pour rester cohérent avec le motif « transparent en haut, opaque sur les
+  // rangées ». L'opacité est écrite sur la SEULE couche d'assise, jamais sur la
+  // barre : celle-ci porte un `backdrop-filter` et la repeindre à chaque image
+  // de défilement redemandait une passe de flou pleine largeur.
+  const scrim = useScrollScrim<HTMLDivElement>({
+    threshold: 120,
+    opacityAt: (p) => Math.min(0.92, 0.28 + p * 0.85),
+    crossAt: 0.95,
+  });
 
   return (
     <header
       data-host-chrome="topbar"
       className="fixed inset-x-0 top-0 z-40 h-[68px]"
       style={{
-        // Transition sur la SEULE bordure. `transition-colors` couvrait aussi
-        // le fond — or celui-ci est déjà piloté image par image par le
-        // défilement : la transition redémarrait à chaque valeur et n'arrivait
-        // jamais à destination. Elle ne lissait rien, elle ne faisait que
-        // repeindre une barre fixe pleine largeur portant un `backdrop-filter`.
-        // La bordure, elle, apparaît sur un seuil : son fondu est réel.
+        // Transition sur la SEULE bordure, qui apparaît sur un seuil : son
+        // fondu est réel. Elle suit le token `--border-subtle` — un blanc en
+        // dur dessinait un liseré incongru sur fond clair.
         transition: "border-color 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-        // Opacité pilotée en JS au scroll. `color-mix` plutot qu'un
-        // `rgba(0,0,0,X)` fige : la barre doit se fondre dans le fond de page,
-        // qui devient nacre en theme clair. La bordure basse suit le token
-        // `--border-subtle` (un blanc en dur dessinait un liseré incongru sur
-        // fond clair) et n'apparait qu'une fois la barre opaque.
-        background: `color-mix(in srgb, var(--surface-0) ${bgOpacity * 100}%, transparent)`,
-        borderBottom: borderOpacity > 0 ? "1px solid var(--border-subtle)" : "1px solid transparent",
+        borderBottom: scrim.crossed ? "1px solid var(--border-subtle)" : "1px solid transparent",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}
     >
-      <div className="flex h-full items-center gap-6 px-4 md:px-12">
+      {/* Assise colorée. `--surface-0` et non un noir figé : la barre doit se
+          fondre dans le fond de page, qui devient nacré en thème clair. */}
+      <div ref={scrim.ref} aria-hidden className="nav-scrim" />
+
+      <div className="nav-content flex h-full items-center gap-6 px-4 md:px-12">
         <Link
           to="/"
           className="flex flex-shrink-0 items-center gap-2.5 transition-opacity duration-200 hover:opacity-80"

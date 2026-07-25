@@ -1,0 +1,32 @@
+/* ── Chrome permanent : barres de navigation ─────────────────────────────
+ *
+ * Les barres fixes sont les seules surfaces de l'application affichées sur
+ * TOUTES les pages, en permanence, par-dessus du contenu qui défile. Le moindre
+ * repaint y est donc payé sur toute la largeur de l'écran, à chaque image, et
+ * elles portent un `backdrop-filter` : repeindre la barre, c'est aussi
+ * redemander une copie de son arrière-plan et une passe de flou.
+ *
+ * D'où la séparation en deux : la barre porte le flou et ne change JAMAIS ;
+ * une couche vide porte l'assise colorée et ne fait varier que son opacité,
+ * ce que le compositeur applique sans repeindre quoi que ce soit.
+ * Cf. `components/nav/useScrollScrim.ts` pour le pilotage. */
+
+.nav-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-0);
+  pointer-events: none;
+  /* Valeur de départ du serveur de rendu ; `useScrollScrim` la remplace dès
+   * son premier passage, avant la première peinture. */
+  opacity: 0;
+}
+
+/* Le contenu de la barre DOIT passer au-dessus de l'assise.
+ *
+ * Sans cela il disparaîtrait : l'assise est positionnée, le contenu ne l'était
+ * pas, et un élément positionné se peint après ceux qui ne le sont pas — quel
+ * que soit l'ordre du DOM. */
+.nav-content {
+  position: relative;
+  z-index: 1;
+}

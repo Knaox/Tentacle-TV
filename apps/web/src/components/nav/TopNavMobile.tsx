@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useScrollOpacity } from "./useScrollOpacity";
+import { useScrollScrim } from "./useScrollScrim";
 import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
 import { TentacleLogo } from "../ui/TentacleLogo";
@@ -21,8 +21,14 @@ interface TopNavMobileProps {
  */
 export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
   const { t } = useTranslation("nav");
-  const scrollProgress = useScrollOpacity(80);
-  const bgOpacity = Math.min(0.9, scrollProgress * 1.2);
+  // Même partage que `TopNav` : l'assise vit sur une couche dédiée dont seule
+  // l'opacité varie, la barre elle-même ne change plus. Le seuil sert ici à
+  // basculer le flou, qui n'a rien à flouter tant que la barre est claire.
+  const scrim = useScrollScrim<HTMLDivElement>({
+    threshold: 80,
+    opacityAt: (p) => Math.min(0.9, p * 1.2),
+    crossAt: 0.3,
+  });
   const [sheetOpen, setSheetOpen] = useState(false);
   const { initial } = getUserInfo();
 
@@ -30,22 +36,18 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
     <>
       <header
         data-host-chrome="topbar-mobile"
-        // Pas de `transition-colors` : le fond est piloté image par image par
-        // le défilement, la transition redémarrait à chaque valeur sans jamais
-        // aboutir — elle ne lissait rien et repeignait la barre (cf. TopNav).
         className="fixed inset-x-0 top-0 z-40 h-[56px]"
         style={{
-          // Fond : même logique JS d'opacité au scroll que TopNav — non migrée.
-          // Voir TopNav : suit `--surface-0` pour rester coherent en theme clair.
-          background: `color-mix(in srgb, var(--surface-0) ${bgOpacity * 100}%, transparent)`,
-          backdropFilter: scrollProgress > 0.3 ? "blur(10px)" : "none",
-          WebkitBackdropFilter: scrollProgress > 0.3 ? "blur(10px)" : "none",
+          backdropFilter: scrim.crossed ? "blur(10px)" : "none",
+          WebkitBackdropFilter: scrim.crossed ? "blur(10px)" : "none",
           paddingTop: "env(safe-area-inset-top, 0px)",
           paddingLeft: "env(safe-area-inset-left, 0px)",
           paddingRight: "env(safe-area-inset-right, 0px)",
         }}
       >
-        <div className="flex h-full items-center justify-between px-3">
+        <div ref={scrim.ref} aria-hidden className="nav-scrim" />
+
+        <div className="nav-content flex h-full items-center justify-between px-3">
           <Link
             to="/"
             className="flex flex-shrink-0 items-center"
