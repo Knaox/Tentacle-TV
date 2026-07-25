@@ -39,6 +39,21 @@
   opacity: var(--card-grain-opacity);
 }
 
+/* Le calque n'est MONTÉ que pendant le survol — il porte une texture et un
+ * double masque composé en `exclude`, qui impose au moteur une rastérisation
+ * hors écran. Le laisser sur les cent cartes de l'accueil à `opacity: 0`
+ * revenait à entretenir cent de ces passes pour rien.
+ *
+ * Le montage supprime l'état précédent d'où une transition pourrait partir :
+ * sans cette règle, le grain apparaîtrait d'un coup au lieu de se fondre.
+ * `@starting-style` rend ce départ au moteur (Safari 17.5+, Chrome 117+,
+ * Firefox 129+) ; ailleurs il apparaît net, sans rien casser. */
+@starting-style {
+  .card-grain[data-on="true"] {
+    opacity: 0;
+  }
+}
+
 /* ── Géométrie du survol des affiches ───────────────────────────────────
  * `transform` ET `opacity` sont déclarés ICI, en une seule `transition`.
  * Les répartir entre une classe Tailwind (`transition-transform`) et cette

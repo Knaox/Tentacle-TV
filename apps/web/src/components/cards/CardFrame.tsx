@@ -94,8 +94,14 @@ export function CardFrame({
         {children}
         {/* Grain de pourtour, révélé au survol — la « texture » du relief. En
             dernier enfant, au-dessus de l'image ; masqué en anneau, il ne
-            couvre que le bord. */}
-        <div aria-hidden data-on={hovered} className="card-grain" />
+            couvre que le bord.
+            MONTÉ au survol, jamais laissé à `opacity: 0` : ce calque porte une
+            texture SVG et surtout un DOUBLE masque composé en `exclude`, ce qui
+            impose au moteur une rastérisation hors écran. La garder sur chacune
+            des cent cartes de l'accueil, en permanence et pour rien, revenait à
+            entretenir cent de ces passes. Même raison que les pastilles méta
+            (cf. components/media/CardMetaOverlay.tsx). */}
+        {hovered && <div aria-hidden data-on className="card-grain" />}
       </div>
     </div>
   );
