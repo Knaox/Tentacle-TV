@@ -58,7 +58,8 @@ les notes Apple doivent rester génériques.
 
 ## [mac-1.17.0]
 ### FR
-- Application plus fluide : défilement, survol des affiches et animations nettement plus réactifs sur tout l'écran d'accueil
+- Application nettement plus fluide : survol des affiches, défilement des rangées, barre de navigation et ouverture d'une fiche ont tous été allégés — même rendu, beaucoup moins de calcul
+- Chargement plus léger : les affiches hors écran ne sont plus dessinées, et la bannière d'accueil se met en pause dès qu'elle sort de vue ou que la fenêtre passe en arrière-plan
 - Le plein écran est respecté : quitter une vidéo ne fait plus sortir l'application du plein écran, sauf si c'est le lecteur qui l'y avait mise
 - Le bouton plein écran du lecteur suit désormais celui de macOS : bouton vert, Ctrl+Cmd+F et Mission Control sont pris en compte, et Échap quitte d'abord le plein écran
 - Nouvelle interface : bannière encadrée dont les couleurs débordent en un halo qui suit l'image, affiches au liseré lumineux, halo qui suit le curseur
@@ -76,7 +77,8 @@ les notes Apple doivent rester génériques.
 - Chat de groupe (Watch Together) : les contrôles du lecteur ne restent plus bloqués à l'écran après avoir écrit un message
 - Thème clair : dégradés de défilement des carrousels corrigés, ils viraient au noir
 ### EN
-- Smoother app: scrolling, poster hovering and animations are noticeably more responsive across the whole home screen
+- Noticeably smoother app: poster hovering, row scrolling, the navigation bar and opening a media page have all been lightened — same look, far less computation
+- Lighter loading: posters off screen are no longer drawn, and the home banner pauses as soon as it scrolls out of view or the window goes to the background
 - Full screen is respected: leaving a video no longer takes the app out of full screen, unless the player is what put it there
 - The player's full-screen button now follows the macOS one: green button, Ctrl+Cmd+F and Mission Control are picked up, and Esc leaves full screen first
 - New interface: framed banner whose colours spill out as a glow that follows the artwork, posters with a glowing edge and a highlight that follows the cursor
