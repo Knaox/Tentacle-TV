@@ -137,9 +137,28 @@ const STORAGE_KEY = "tentacle_fps";
 export function frameMeterEnabled(): boolean {
   if (import.meta.env.DEV) return true;
   try {
-    if (new URLSearchParams(window.location.search).has("fps")) return true;
+    // `?fps` ARME le compteur de façon persistante. Sans ça, il disparaissait
+    // à la première navigation : React Router réécrit l'URL, le paramètre est
+    // perdu, et l'app native ne permet pas de le retaper. On ne pouvait donc
+    // mesurer que l'écran de connexion — inutile.
+    if (new URLSearchParams(window.location.search).has("fps")) {
+      localStorage.setItem(STORAGE_KEY, "1");
+      return true;
+    }
     return localStorage.getItem(STORAGE_KEY) === "1";
   } catch {
     return false;
   }
+}
+
+/** Désarme le compteur : `window.tentacleFpsOff()` depuis la console. */
+if (typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>).tentacleFpsOff = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      window.location.reload();
+    } catch {
+      /* stockage indisponible */
+    }
+  };
 }
