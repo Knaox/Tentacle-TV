@@ -110,7 +110,6 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         suppressLift={preview.panelActive}
         concealed={preview.open}
         aspect="aspect-video"
-        imageUrl={imageUrl}
         lift={{ scale: 1.03, y: -5 }}
       >
         {/* Pas de zoom interne quand le panneau prend le relais : il peindrait

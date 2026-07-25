@@ -28,10 +28,12 @@
  * ⚠️ NE PAS poser ces classes sur un élément dont un ENFANT déborde volontairement.
  * `content-visibility` implique `contain: paint`, qui interdit aux descendants
  * de peindre hors de la boîte. C'est précisément le cas de la racine d'une carte
- * de rangée : le halo de ciblage (`.card-bloom`) déborde de 24 px et serait
- * rogné net — on retrouverait le rectangle que ce halo sert justement à éviter.
+ * de rangée : au survol, l'ombre d'élévation (`--elev-card-hover`, décalée de
+ * 20 px et diffusée sur 50) déborde largement sous la carte, et le lift la
+ * soulève encore de six pixels. Tout cela serait rogné net au bord de l'affiche
+ * — la carte visée se retrouverait posée à plat, sans l'ombre qui la détache.
  * D'où la granularité retenue : la RANGÉE entière, dont le scroller réserve
- * déjà ces 24 px, et jamais la carte. */
+ * déjà de quoi laisser passer ce débord, et jamais la carte. */
 
 /* Une rangée de l'accueil : en-tête + piste de cartes.
  * 420 px couvre une rangée d'affiches 2:3 ; les rangées d'épisodes 16:9 sont

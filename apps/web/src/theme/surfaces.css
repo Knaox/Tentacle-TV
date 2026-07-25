@@ -102,8 +102,8 @@
    * rose (retiré). Un vrai relief par la LUMIÈRE, pas un contour coloré : un
    * filet clair en haut (la carte prend la lumière), une ombre en bas (elle la
    * perd), et un fin trait neutre pour détacher l'affiche du fond. Aucune
-   * couleur de marque — la couleur, au survol, vient déjà du halo `CardBloom`
-   * (l'affiche floutée). Inset, donc à poser sur la boîte image elle-même. */
+   * couleur de marque : c'est le RELIEF qui désigne la carte visée, avec
+   * l'élévation. Inset, donc à poser sur la boîte image elle-même. */
   --card-edge-bevel:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 -1px 0 rgba(0, 0, 0, 0.45),
@@ -111,61 +111,19 @@
   /* Grain du pourtour — opacité du calque `.card-grain` au survol. */
   --card-grain-opacity: 0.5;
 
-  /* Halo de ciblage — la lumière qui éclot autour de la carte visée.
+  /* Il n'y a plus de HALO au survol des cartes, et c'est le seul geste retiré
+   * de cette signature. Ils étaient deux : un halo de ciblage qui reprenait
+   * l'affiche floutée derrière la carte pour l'entourer de ses propres
+   * couleurs, et une tache de lumière blanche qui suivait le curseur.
    *
-   * La lumière est l'AFFICHE ELLE-MÊME, floutée et posée derrière la carte :
-   * ses couleurs sont donc celles du média, par construction, sans
-   * échantillonnage ni canvas — même recette que le halo des bannières
-   * (`HeroAmbilight`), et pour les mêmes raisons : une image servie par Jellyfin
-   * est cross-origin et salit un canvas, ce qui interdit d'en relire les pixels.
-   * L'image est déjà chargée par la carte, le halo ne coûte donc pas un octet.
+   * Le premier était le poste le plus cher de l'interface. Sa recette imposait
+   * de monter, sur CHAQUE carte, une seconde image portant `filter: blur()` et
+   * un masque radial — une centaine de surfaces filtrées entretenues en
+   * permanence sur l'accueil, plus une dérive en boucle infinie sur la carte
+   * visée. Le second était modeste, mais il n'avait plus de sens seul.
    *
-   * Posé DERRIÈRE l'affiche : seule la part qui déborde est visible, l'image
-   * opaque masque le reste. C'est ce qui en fait une lumière et non un voile —
-   * elle entoure la carte au lieu de la teinter.
-   *
-   * Le masque est ce qui transforme un rectangle flouté en halo : sans lui, le
-   * débord se terminerait par une arête franche. Il reste opaque jusqu'à 62 %
-   * puis s'éteint au bord de la boîte, si bien que la zone RÉELLEMENT visible —
-   * l'anneau entre le bord de la carte et celui de la boîte — est traversée en
-   * plein dégradé. */
-  --card-bloom-mask: radial-gradient(
-    ellipse closest-side at center,
-    #000 0%,
-    #000 62%,
-    transparent 100%
-  );
-  --card-bloom-blur: 26px;
-  /* Sous-échelle de rendu du halo — cf. `.card-bloom-render`. 2 divise par
-   * quatre la surface floutée pour un résultat indistinguable : le flou
-   * détruit précisément le détail qu'une sous-échelle pourrait coûter. */
-  --card-bloom-downscale: 2;
-  --card-bloom-sat: 1.7;
-  --card-bloom-strength: 1;
-  /* Débord du halo autour de la carte. Négatif : la boîte est plus grande.
-   * Accordé au rembourrage vertical des rangées (`pt-6 pb-6`), qui rogne au
-   * bord de sa boîte de rembourrage — un halo plus large y serait coupé net. */
-  --card-bloom-spread: -24px;
-
-  /* Halo qui suit le curseur (`--mx`/`--my` posées par useCardSpotlight).
-   * Blanc CONSTANT dans les deux schémas : il est posé sur l'affiche. */
-  /* Halo de curseur — dégradé STATIQUE, déplacé par `transform`.
-   *
-   * Il était auparavant centré par `at var(--mx) var(--my)` : écrire ces deux
-   * variables à chaque mouvement de souris obligeait le moteur à REGÉNÉRER le
-   * dégradé, donc à repeindre la carte, jusqu'à soixante fois par seconde. Ici
-   * le dégradé est rastérisé une seule fois et chaque mouvement n'est plus
-   * qu'une translation de compositeur. Rendu identique.
-   *
-   * `closest-side` sur la boîte carrée de `--card-spotlight-size` redonne
-   * exactement le rayon de 260 px d'origine, avec les mêmes arrêts. */
-  --card-spotlight-size: 520px;
-  --card-spotlight: radial-gradient(
-    circle closest-side,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.05) 38%,
-    transparent 62%
-  );
+   * Ce qui désigne la carte visée : le RELIEF de bord (`--card-edge-bevel` et
+   * `.card-grain`), l'élévation (`--elev-card-hover`) et le lift. */
 
   /* Remplissage des barres de PROGRESSION — carte, lecteur — repris de la
    * bannière d'accueil (`HeroContent`) : dégradé violet → rose, à dominante
@@ -253,13 +211,6 @@
     transparent 74%
   );
 
-  /* Halo de ciblage nettement plus discret : une lumière se lit par CONTRASTE
-   * avec ce qu'elle éclaire, et un fond nacré n'a presque rien à éclairer. Au
-   * réglage du thème sombre, elle ne rayonnait pas — elle salissait le pourtour
-   * de la carte. Même arbitrage que pour le halo de bannière. */
-  --card-bloom-strength: 0.45;
-  --card-bloom-sat: 1.2;
-
   /* Relief de bord en clair : le filet blanc du haut est presque invisible sur
    * nacré, l'ombre du bas doit rester douce (pas de trait noir sur du clair).
    * Le trait de contour se fait sombre plutôt que clair — c'est l'ombre qui
@@ -283,36 +234,6 @@
    * salissait. */
   --detail-ambilight-opacity: 0.5;
   --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.14);
-}
-
-/* ── Halo de curseur ────────────────────────────────────────────────────
- * Élément réel (`.card-glow`) et non pseudo-élément : son `transform` est
- * écrit directement par useCardSpotlight. Le pseudo imposait de passer par des
- * variables CSS, or celles-ci sont HÉRITÉES — les écrire invalidait le style
- * calculé de toute la carte à chaque mouvement de souris. Un calque sans
- * descendant n'a rien à réinvalider.
- *
- * `data-lit` est posé sur la boîte image (jamais sous prefers-reduced-motion). */
-.card-glow {
-  position: absolute;
-  z-index: 1;
-  pointer-events: none;
-  /* Boîte carrée du diamètre du halo, ancrée sur le curseur : les marges
-   * négatives d'une demi-boîte recentrent le dégradé sur le point translaté.
-   * Le débord est rogné par l'`overflow-hidden` de la boîte image. */
-  left: 0;
-  top: 0;
-  width: var(--card-spotlight-size);
-  height: var(--card-spotlight-size);
-  margin-left: calc(var(--card-spotlight-size) / -2);
-  margin-top: calc(var(--card-spotlight-size) / -2);
-  background: var(--card-spotlight);
-  opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-out);
-}
-
-.card-spotlight[data-lit="true"] .card-glow {
-  opacity: 1;
 }
 
 /* ── Grain de bord des cartes ────────────────────────────────────────────
@@ -362,104 +283,6 @@
   mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);
 }
 
-/* ── Halo de ciblage ────────────────────────────────────────────────────
- * Deux temps, et c'est le point : une ÉCLOSION brève qui répond au geste, puis
- * une DÉRIVE lente qui entretient l'état.
- *
- * L'éclosion tient en 260 ms — la fourchette d'une micro-interaction. Elle
- * dépasse volontairement sa taille de repos (1.05) avant d'y revenir : sans ce
- * léger débordement, une lumière qui grandit jusqu'à sa valeur finale n'éclot
- * pas, elle s'allume. Le dépassement est ce qui fait la différence entre les
- * deux.
- *
- * La dérive, elle, est presque imperceptible — 5 % d'échelle et 1,5 % de
- * déplacement sur six secondes. Elle ne raconte rien de nouveau, elle empêche
- * seulement l'image de se figer : une lumière parfaitement immobile cesse
- * d'être lue comme de la lumière. Aller plus loin donnerait une carte qui
- * respire, ce qui attirerait l'œil au lieu de le laisser lire.
- *
- * `transform` et `opacity` uniquement : tout se joue sur le compositeur.
- * `prefers-reduced-motion` est couvert par la neutralisation globale de
- * theme/motion-reduce.css — la lumière reste, seul le mouvement s'arrête. */
-@keyframes cardBloomIn {
-  0%   { opacity: 0; transform: scale(0.86); }
-  60%  { opacity: 1; transform: scale(1.05); }
-  100% { opacity: 0.82; transform: scale(1); }
-}
-
-@keyframes cardBloomDrift {
-  from { transform: scale(1) translate3d(0, 0, 0); }
-  to   { transform: scale(1.05) translate3d(1.5%, -1.5%, 0); }
-}
-
-.card-bloom {
-  position: absolute;
-  inset: var(--card-bloom-spread);
-  pointer-events: none;
-  opacity: 0;
-}
-
-/* PAS de `z-index: -1`, et c'est délibéré.
- *
- * Un z-index négatif place l'élément derrière son parent dans l'ordre de
- * peinture, mais aussi derrière le FOND de tout ancêtre qui en porte un : le
- * halo disparaissait alors purement et simplement dès qu'une surface opaque se
- * trouvait entre lui et la page.
- *
- * L'empilement est obtenu par l'ORDRE DU DOM : entre éléments positionnés sans
- * z-index, le dernier peint par-dessus. Le halo est donc le PREMIER enfant, le
- * liseré vient ensuite, l'affiche en dernier — elle le recouvre, il n'en reste
- * que le pourtour. Rien à empiler, rien à casser. */
-
-/* Boîte de rendu SOUS-ÉCHELLE — le flou est calculé petit, puis agrandi.
- *
- * Un flou gaussien se paie par pixel ET par rayon. Le calculer à la taille
- * réelle de la carte, sur un écran Retina, revenait à traiter quatre fois plus
- * de pixels que nécessaire pour une tache qui, par définition, n'a aucun
- * détail. On rend donc dans une boîte réduite avec un rayon divisé d'autant,
- * et le compositeur agrandit une texture DÉJÀ floutée — quasi gratuit.
- *
- * Une boîte de 1/n agrandie n fois depuis le coin supérieur gauche recouvre
- * exactement la boîte d'origine. Le `transform` de `cardBloomDrift` vit sur le
- * parent `.card-bloom` : les deux se composent au lieu de s'écraser. */
-.card-bloom-render {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(100% / var(--card-bloom-downscale));
-  height: calc(100% / var(--card-bloom-downscale));
-  transform: scale(var(--card-bloom-downscale));
-  transform-origin: top left;
-}
-
-.card-bloom img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: var(--card-bloom-strength);
-  filter: blur(calc(var(--card-bloom-blur) / var(--card-bloom-downscale)))
-    saturate(var(--card-bloom-sat));
-  -webkit-mask-image: var(--card-bloom-mask);
-  mask-image: var(--card-bloom-mask);
-}
-
-.card-bloom[data-on="true"] {
-  animation:
-    cardBloomIn 260ms var(--ease-out) forwards,
-    cardBloomDrift 6s ease-in-out 260ms infinite alternate;
-  /* Promotion en couche UNIQUEMENT pendant l'animation : la poser sur toutes
-   * les cartes d'une rangée coûterait autant de couches composées pour rien. */
-  will-change: transform, opacity;
-}
-
-/* Halo repris en cours de route (panneau d'aperçu) : il démarre à sa valeur de
- * repos et ne garde que la dérive. La carte qu'il remplace vient d'allumer le
- * sien ; une seconde éclosion se lirait comme une deuxième détonation. */
-.card-bloom[data-on="true"][data-settled="true"] {
-  opacity: 0.82;
-  animation: cardBloomDrift 6s ease-in-out infinite alternate;
-}
-
 /* ── Géométrie du survol des affiches ───────────────────────────────────
  * `transform` ET `opacity` sont déclarés ICI, en une seule `transition`.
  * Les répartir entre une classe Tailwind (`transition-transform`) et cette
@@ -490,8 +313,7 @@
  * Répartition imposée par l'ordre de peinture, pour rester fidèle au rendu
  * d'origine où l'ombre était portée par `.card-spotlight` :
  *   ::before → ombre de repos, peinte avant les enfants ;
- *   ::after  → ombre de survol, peinte APRÈS eux, donc au-dessus du halo
- *              `.card-bloom` exactement comme avant.
+ *   ::after  → ombre de survol, peinte APRÈS eux.
  *
  * Durée et courbe reprises telles quelles de l'ancienne classe Tailwind
  * (`duration-300` + `ease` par défaut), pour que le tempo ne bouge pas. */
