@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, cubicBezier, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
@@ -43,6 +43,23 @@ const TARGET_SCALE = 1.06;
  * et la durée sont inchangées.
  */
 const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
+/**
+ * Le fondu enchaîné d'une diapositive à l'autre est bridé lui aussi.
+ *
+ * Il l'avait d'abord été épargné — c'est un mouvement qu'on REGARDE, et deux
+ * images plein cadre s'y superposent. Mais trente-six paliers d'opacité sur
+ * 1,2 s restent au-dessus de la cadence du cinéma, et c'est précisément le
+ * moment le plus cher de toute l'application : pendant ces 1,2 s, DEUX images
+ * plein écran coexistent, chacune avec son propre halo flouté, toutes composées
+ * à chaque image d'affichage. Diviser cette cadence par deux à quatre selon
+ * l'écran porte donc sur le pic, pas sur le régime de croisière.
+ *
+ * La courbe est passée EXPLICITEMENT : `cadence` quantifie le temps puis
+ * applique l'easing reçu, donc sans elle le fondu deviendrait linéaire — ce qui
+ * se verrait. `cubicBezier(0, 0, 0.58, 1)` est la définition exacte du mot-clé
+ * `easeOut` qu'utilisait cette transition.
+ */
+const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
 
 export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   const client = useJellyfinClient();
@@ -131,9 +148,10 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
             animate={{ opacity: 1, scale: TARGET_SCALE }}
             exit={{ opacity: 0 }}
             transition={{
-              // Le fondu garde sa pleine cadence : 1,2 s d'opacité sur une
-              // image plein cadre, c'est un mouvement qu'on regarde.
-              opacity: { duration: FADE_DURATION_S, ease: "easeOut" },
+              // `easeOut` est PRÉSERVÉE : `cadence` quantifie le temps avant
+              // d'appliquer la courbe, jamais la valeur après. Le fondu garde
+              // donc exactement sa trajectoire et sa durée.
+              opacity: { duration: FADE_DURATION_S, ease: FADE_EASE },
               scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
             }}
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"

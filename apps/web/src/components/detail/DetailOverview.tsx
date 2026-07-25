@@ -12,7 +12,8 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
 
 /**
  * Tagline + overview with progressive disclosure (Show more / less).
- * Default clamp at 3 lines; toggle expands the full text.
+ * Replié sur CINQ lignes, au-delà desquelles le texte est coupé par une
+ * ellipse ; le bouton déplie le synopsis complet.
  */
 export function DetailOverview({ item }: DetailOverviewProps) {
   const { t } = useTranslation("common");
@@ -40,7 +41,7 @@ export function DetailOverview({ item }: DetailOverviewProps) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`text-sm leading-relaxed text-content-secondary ${!expanded ? "line-clamp-3" : ""}`}
+                className={`text-sm leading-relaxed text-content-secondary ${!expanded ? "line-clamp-5" : ""}`}
               >
                 <RichOverview text={overview} />
               </motion.p>

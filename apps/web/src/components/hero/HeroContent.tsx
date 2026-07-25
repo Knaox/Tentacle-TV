@@ -127,9 +127,13 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         </motion.div>
 
         {item.Overview && (
+          /* CINQ lignes au plus, au-delà desquelles `line-clamp` coupe le texte
+             sur une ellipse. La bannière ne prétend pas donner le synopsis
+             complet — elle en donne assez pour décider, la fiche fait le
+             reste. */
           <motion.p
             variants={itemVariants}
-            className="mb-6 hidden text-base leading-relaxed text-on-media-secondary line-clamp-2 drop-shadow-[0_1px_4px_var(--on-media-shadow)] sm:block"
+            className="mb-6 hidden text-base leading-relaxed text-on-media-secondary line-clamp-5 drop-shadow-[0_1px_4px_var(--on-media-shadow)] sm:block"
           >
             <RichOverview text={item.Overview} />
           </motion.p>
