@@ -69,6 +69,19 @@ pub async fn mpv_init(
     let ns_window_addr = window.ns_window()
         .map_err(|e| format!("Failed to get NSWindow: {e}"))? as usize;
 
+    // La webview cesse de peindre son fond — sans quoi la vue GL, insérée
+    // dessous, resterait invisible. C'est le SEUL moment où on la veut
+    // transparente : hors lecture elle est opaque, et la fenêtre avec elle
+    // (`tauri.macos.conf.json` → `transparent: false`), ce qui évite une
+    // recomposition alpha permanente de toute la fenêtre — cf. window_opacity.
+    //
+    // Chemin critique : on passe par l'API PUBLIQUE de Tauri, dont
+    // l'implémentation wry est éprouvée, plutôt que par notre propre code.
+    // Alpha nul, la couleur n'a donc aucune importance.
+    window
+        .set_background_color(Some(tauri::webview::Color(0, 0, 0, 0)))
+        .map_err(|e| format!("Failed to make webview transparent: {e}"))?;
+
     // Create GL surface — MUST run on the main thread (Cocoa UI calls)
     let surface = super::util::run_on_main_thread(move || unsafe {
         super::gl_surface::create_gl_surface(ns_window_addr as *mut c_void)
@@ -257,8 +270,25 @@ pub async fn mpv_get_property(
 
 #[command]
 pub async fn mpv_destroy(
+    window: tauri::WebviewWindow,
     state: State<'_, Arc<RenderState>>,
 ) -> Result<(), String> {
     super::render::destroy(&state);
+
+    // La vue GL vient d'être retirée (étape 8 de `destroy`) : plus rien à
+    // laisser transparaître, la webview reprend son fond et la fenêtre son
+    // chemin de composition rapide. Tauri ne sait pas faire ce sens-là —
+    // `set_background_color` pose toujours `drawsBackground = NO`.
+    //
+    // Un échec ici ne casse rien de visible : on garderait simplement le coût
+    // de composition d'avant, jusqu'au prochain démarrage.
+    let addr = window
+        .ns_window()
+        .map_err(|e| format!("Failed to get NSWindow: {e}"))? as usize;
+    super::util::run_on_main_thread(move || unsafe {
+        super::window_opacity::restore_webview_background(addr as *mut c_void);
+    })
+    .map_err(|e| format!("Main thread dispatch failed: {e}"))?;
+
     Ok(())
 }
