@@ -286,18 +286,20 @@
 }
 
 /* ── Halo de curseur ────────────────────────────────────────────────────
- * Calque `::after` plutôt qu'un <div> : une carte de rangée en rend déjà
- * six ou sept, et ce calque-ci n'a aucun contenu. `data-lit` est posé par
- * useCardSpotlight (jamais sous prefers-reduced-motion). */
-.card-spotlight::after {
-  content: "";
+ * Élément réel (`.card-glow`) et non pseudo-élément : son `transform` est
+ * écrit directement par useCardSpotlight. Le pseudo imposait de passer par des
+ * variables CSS, or celles-ci sont HÉRITÉES — les écrire invalidait le style
+ * calculé de toute la carte à chaque mouvement de souris. Un calque sans
+ * descendant n'a rien à réinvalider.
+ *
+ * `data-lit` est posé sur la boîte image (jamais sous prefers-reduced-motion). */
+.card-glow {
   position: absolute;
   z-index: 1;
   pointer-events: none;
   /* Boîte carrée du diamètre du halo, ancrée sur le curseur : les marges
    * négatives d'une demi-boîte recentrent le dégradé sur le point translaté.
-   * `--mx` / `--my` sont écrites en PIXELS par useCardSpotlight, relatives à
-   * la boîte image ; le débord est rogné par son `overflow-hidden`. */
+   * Le débord est rogné par l'`overflow-hidden` de la boîte image. */
   left: 0;
   top: 0;
   width: var(--card-spotlight-size);
@@ -305,12 +307,11 @@
   margin-left: calc(var(--card-spotlight-size) / -2);
   margin-top: calc(var(--card-spotlight-size) / -2);
   background: var(--card-spotlight);
-  transform: translate3d(var(--mx, 50%), var(--my, 50%), 0);
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-out);
 }
 
-.card-spotlight[data-lit="true"]::after {
+.card-spotlight[data-lit="true"] .card-glow {
   opacity: 1;
 }
 
@@ -465,9 +466,84 @@
  * feuille produirait deux `transition-property` concurrentes : la dernière
  * dans l'ordre source gagne et l'autre est purement perdue. */
 .media-tile {
+  /* Rayon sans `overflow` : rien n'est rogné, mais les ombres des deux calques
+   * d'élévation ci-dessous épousent les coins de l'affiche. */
+  border-radius: var(--radius-lg);
   transition:
     transform var(--duration-base) var(--ease-spring),
     opacity var(--duration-base) var(--ease-out);
+}
+
+/* ── Élévation des cartes : deux calques en fondu, jamais une ombre animée ──
+ *
+ * `box-shadow` ne se compose PAS : l'animer repeint, image par image, une
+ * boîte qui déborde d'environ soixante-dix pixels sous la carte — plus de deux
+ * fois la surface de l'affiche, dix-huit fois sur trois cents millisecondes.
+ * Et comme la même boîte se met à l'échelle au même moment (le lift), le
+ * compositeur ne peut pas réutiliser sa texture : il re-rastérise à chaque
+ * échelle intermédiaire. C'était le poste dominant du survol, dans WebKit
+ * comme dans Chromium.
+ *
+ * Ici les deux ombres existent en permanence sur des calques distincts, et
+ * seule leur OPACITÉ change — ce que le compositeur sait faire sans repeindre.
+ *
+ * Répartition imposée par l'ordre de peinture, pour rester fidèle au rendu
+ * d'origine où l'ombre était portée par `.card-spotlight` :
+ *   ::before → ombre de repos, peinte avant les enfants ;
+ *   ::after  → ombre de survol, peinte APRÈS eux, donc au-dessus du halo
+ *              `.card-bloom` exactement comme avant.
+ *
+ * Durée et courbe reprises telles quelles de l'ancienne classe Tailwind
+ * (`duration-300` + `ease` par défaut), pour que le tempo ne bouge pas. */
+.media-tile::before,
+.media-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.media-tile::before {
+  box-shadow: var(--elev-1);
+  opacity: 1;
+}
+
+.media-tile::after {
+  box-shadow: var(--elev-card-hover);
+  opacity: 0;
+}
+
+.media-tile[data-hovered="true"]::before {
+  opacity: 0;
+}
+
+.media-tile[data-hovered="true"]::after {
+  opacity: 1;
+}
+
+/* Biseau de relief — inset, donc il DOIT rester sous l'affiche.
+ *
+ * Une ombre `inset` se peint après le fond mais avant les descendants ; or
+ * l'image couvre toute la boîte, sur exactement la même géométrie. Le biseau
+ * n'est donc visible que par la frange sub-pixel des quatre coins arrondis.
+ * Le porter au-dessus de l'image ferait apparaître un liseré aujourd'hui
+ * masqué : `::before` est le seul emplacement neutre, peint avant le
+ * conteneur de `CardImage` par simple ordre d'arbre. */
+.card-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--card-edge-bevel);
+  opacity: 0;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.media-tile[data-hovered="true"] .card-spotlight::before {
+  opacity: 1;
 }
 
 /* PAS de mise en retrait des voisins au survol d'une rangée (règle

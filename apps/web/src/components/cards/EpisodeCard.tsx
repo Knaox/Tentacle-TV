@@ -90,7 +90,23 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
           s'efface : il occupe sa place au pixel près, deux calques n'ont plus
           rien à faire l'un sur l'autre. */}
       <CardFrame
-        hovered={hovered}
+        // `&& !preview.open` : sans lui, la carte gardait TOUTE sa pile
+        // d'effets vivante sous le panneau — halo flouté en dérive infinie,
+        // grain masqué, élévation — alors qu'elle est à `opacity: 0` et que le
+        // panneau en monte déjà une seconde. Trois images coexistaient par
+        // carte survolée.
+        //
+        // La cause est subtile : le panneau est portalisé sur `document.body`
+        // mais reste enfant REACT de la carte, et React calcule l'ancêtre
+        // commun des `mouseleave` dans l'arbre des fibres, en traversant les
+        // portails. Le `onMouseLeave` de la racine n'est donc jamais appelé
+        // quand le curseur passe de la carte au panneau.
+        //
+        // Valeur dérivée, surtout pas un `setState` : `hovered` doit continuer
+        // de dire « le curseur est là ». Sinon, à la fermeture par Échap, par
+        // défilement ou par clic ailleurs, la carte réapparaîtrait non
+        // survolée sous le curseur.
+        hovered={hovered && !preview.open}
         suppressLift={preview.panelActive}
         concealed={preview.open}
         aspect="aspect-video"
