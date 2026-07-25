@@ -121,6 +121,23 @@ fn main() {
         builder = builder
             .manage(render_state)
             .manage(sleep_assertion)
+            .setup(|app| {
+                use tauri::Manager;
+                // Fenêtre opaque dès le démarrage. `transparent: true` reste
+                // requis pour que la webview soit sans fond (la vidéo mpv est
+                // dessinée dessous), mais Tauri l'applique AUSSI à la fenêtre,
+                // qui n'en a aucun besoin et le paie à chaque image — cf.
+                // macos::window_opacity pour le détail.
+                //
+                // `setup` tourne sur le thread de la boucle d'évènements, donc
+                // sur le thread principal : les appels Cocoa y sont légaux.
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Ok(ns_window) = window.ns_window() {
+                        unsafe { macos::make_window_opaque(ns_window) };
+                    }
+                }
+                Ok(())
+            })
             .invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
                 video_surface::player_fullscreen_enter,
