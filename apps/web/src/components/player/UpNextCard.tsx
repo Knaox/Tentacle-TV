@@ -51,13 +51,18 @@ export function UpNextCard({
       transition={{ type: "spring", damping: 22, stiffness: 280 }}
       className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
       onClick={(e) => e.stopPropagation()}
+      // PAS de `backdrop-filter` sur la carte. `--surface-modal` est à 0,96
+      // d'alpha : quatre pour cent de l'image passent au travers, flouter ou
+      // non n'y change rien à l'œil. Le coût, lui, est bien réel — la carte
+      // flotte au-dessus d'une vidéo EN LECTURE, dont l'arrière-plan change
+      // vingt-quatre à soixante fois par seconde, et chaque changement force
+      // une recopie de la région et une passe de flou de 20 px.
+      // Même arbitrage que le panneau d'aperçu (cf. theme/surfaces.css).
       style={{
         background: "var(--surface-modal)",
         border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-xl)",
         boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb), 0.18), 0 0 32px rgba(var(--brand-rgb), 0.18)",
-        backdropFilter: "blur(var(--blur-modal))",
-        WebkitBackdropFilter: "blur(var(--blur-modal))",
       }}
     >
       {/* Top progress bar — gradient violet with glow. Posée sur le fond

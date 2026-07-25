@@ -36,12 +36,16 @@ export function TrackSelector({
   // Panneau de réglages DÉTACHÉ (fond quasi-opaque `surface-dropdown`, pas la
   // vidéo en transparence) : contrairement aux contrôles du lecteur, il suit
   // le thème clair/sombre — d'où la tokenisation du texte/bordures ici.
+  //
+  // Et donc PAS de `backdrop-filter` : à 0,95 d'alpha il ne reste rien à
+  // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture dont
+  // l'arrière-plan change à chaque image décodée.
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 w-80 rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4 backdrop-blur-xl"
+      className="absolute bottom-20 right-6 z-50 w-80 rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-3 flex items-center justify-between">
