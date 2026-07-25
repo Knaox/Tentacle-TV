@@ -136,6 +136,10 @@
     transparent 100%
   );
   --card-bloom-blur: 26px;
+  /* Sous-échelle de rendu du halo — cf. `.card-bloom-render`. 2 divise par
+   * quatre la surface floutée pour un résultat indistinguable : le flou
+   * détruit précisément le détail qu'une sous-échelle pourrait coûter. */
+  --card-bloom-downscale: 2;
   --card-bloom-sat: 1.7;
   --card-bloom-strength: 1;
   /* Débord du halo autour de la carte. Négatif : la boîte est plus grande.
@@ -145,8 +149,19 @@
 
   /* Halo qui suit le curseur (`--mx`/`--my` posées par useCardSpotlight).
    * Blanc CONSTANT dans les deux schémas : il est posé sur l'affiche. */
+  /* Halo de curseur — dégradé STATIQUE, déplacé par `transform`.
+   *
+   * Il était auparavant centré par `at var(--mx) var(--my)` : écrire ces deux
+   * variables à chaque mouvement de souris obligeait le moteur à REGÉNÉRER le
+   * dégradé, donc à repeindre la carte, jusqu'à soixante fois par seconde. Ici
+   * le dégradé est rastérisé une seule fois et chaque mouvement n'est plus
+   * qu'une translation de compositeur. Rendu identique.
+   *
+   * `closest-side` sur la boîte carrée de `--card-spotlight-size` redonne
+   * exactement le rayon de 260 px d'origine, avec les mêmes arrêts. */
+  --card-spotlight-size: 520px;
   --card-spotlight: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
+    circle closest-side,
     rgba(255, 255, 255, 0.18) 0%,
     rgba(255, 255, 255, 0.05) 38%,
     transparent 62%
@@ -277,10 +292,20 @@
 .card-spotlight::after {
   content: "";
   position: absolute;
-  inset: 0;
   z-index: 1;
   pointer-events: none;
+  /* Boîte carrée du diamètre du halo, ancrée sur le curseur : les marges
+   * négatives d'une demi-boîte recentrent le dégradé sur le point translaté.
+   * `--mx` / `--my` sont écrites en PIXELS par useCardSpotlight, relatives à
+   * la boîte image ; le débord est rogné par son `overflow-hidden`. */
+  left: 0;
+  top: 0;
+  width: var(--card-spotlight-size);
+  height: var(--card-spotlight-size);
+  margin-left: calc(var(--card-spotlight-size) / -2);
+  margin-top: calc(var(--card-spotlight-size) / -2);
   background: var(--card-spotlight);
+  transform: translate3d(var(--mx, 50%), var(--my, 50%), 0);
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-out);
 }
@@ -385,12 +410,34 @@
  * liseré vient ensuite, l'affiche en dernier — elle le recouvre, il n'en reste
  * que le pourtour. Rien à empiler, rien à casser. */
 
-.card-bloom > img {
+/* Boîte de rendu SOUS-ÉCHELLE — le flou est calculé petit, puis agrandi.
+ *
+ * Un flou gaussien se paie par pixel ET par rayon. Le calculer à la taille
+ * réelle de la carte, sur un écran Retina, revenait à traiter quatre fois plus
+ * de pixels que nécessaire pour une tache qui, par définition, n'a aucun
+ * détail. On rend donc dans une boîte réduite avec un rayon divisé d'autant,
+ * et le compositeur agrandit une texture DÉJÀ floutée — quasi gratuit.
+ *
+ * Une boîte de 1/n agrandie n fois depuis le coin supérieur gauche recouvre
+ * exactement la boîte d'origine. Le `transform` de `cardBloomDrift` vit sur le
+ * parent `.card-bloom` : les deux se composent au lieu de s'écraser. */
+.card-bloom-render {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% / var(--card-bloom-downscale));
+  height: calc(100% / var(--card-bloom-downscale));
+  transform: scale(var(--card-bloom-downscale));
+  transform-origin: top left;
+}
+
+.card-bloom img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   opacity: var(--card-bloom-strength);
-  filter: blur(var(--card-bloom-blur)) saturate(var(--card-bloom-sat));
+  filter: blur(calc(var(--card-bloom-blur) / var(--card-bloom-downscale)))
+    saturate(var(--card-bloom-sat));
   -webkit-mask-image: var(--card-bloom-mask);
   mask-image: var(--card-bloom-mask);
 }
