@@ -4,6 +4,7 @@ import { useJellyfinClient, useLatestItems, useRandomLibraryBackdrop } from "@te
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
+import { useInViewport } from "../../hooks/useInViewport";
 
 interface LibraryHeroProps {
   libraryId: string;
@@ -28,6 +29,9 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
   const reduced = useReducedMotion();
   const { data: randomItem } = useRandomLibraryBackdrop(libraryId);
   const { data: latest } = useLatestItems(libraryId, { collectionType });
+  // Bannière réellement à l'écran ET fenêtre au premier plan — sert à démonter
+  // le halo flouté dès qu'on défile dans la grille (cf. plus bas).
+  const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
 
   const featured = randomItem ?? firstBackdropItem(latest);
   const backdropId = featured ? resolveBackdropId(featured) : null;
@@ -46,7 +50,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
      * personne ne le voit.
      */
     <section className="relative w-full" aria-label={libraryName}>
-      <div className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
+      <div ref={boxRef} className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
         <div className="absolute inset-0 bg-surface-0" />
 
         {url && (
@@ -86,11 +90,21 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
           bas de la bannière (cf. `.hero-glow`). Boîte calée pour que la couture
           (bas de la boîte image, +200 px) tombe dans la zone pleine du masque,
           avec 150 px de débord dans la page. */}
-      <HeroAmbilight
-        item={featured ?? undefined}
-        opacity="var(--detail-ambilight-opacity)"
-        className="hero-glow absolute inset-x-0 top-0 h-[calc(44vh+350px)] md:h-[calc(48vh+350px)]"
-      />
+      {/* Démontée hors écran, comme sur l'accueil et la fiche média — c'est la
+          dernière des trois bannières où elle restait montée en toutes
+          circonstances. Une image floutée à 48 px étalée sur toute la largeur,
+          doublée d'un `mix-blend-mode`, reste composée à chaque image tant
+          qu'elle est dans l'arbre, même parfaitement immobile ; or on passe
+          l'essentiel de son temps sur cette page à parcourir la grille, très
+          en dessous. La marge de 200 px du hook la remonte AVANT l'entrée dans
+          le champ, pour qu'on ne surprenne jamais son fondu d'apparition. */}
+      {visible && (
+        <HeroAmbilight
+          item={featured ?? undefined}
+          opacity="var(--detail-ambilight-opacity)"
+          className="hero-glow absolute inset-x-0 top-0 h-[calc(44vh+350px)] md:h-[calc(48vh+350px)]"
+        />
+      )}
 
       {/* Réserve de mise en page : la boîte image étant hors flux, c'est elle
           qui occupe la place et sur laquelle la barre de filtres s'appuie. */}
