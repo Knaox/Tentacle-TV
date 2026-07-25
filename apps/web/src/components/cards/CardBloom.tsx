@@ -45,7 +45,11 @@ interface CardBloomProps {
 export function CardBloom({ on, imageUrl, settled = false }: CardBloomProps) {
   return (
     <div aria-hidden data-on={on} data-settled={settled} className="card-bloom">
-      <img src={imageUrl} alt="" draggable={false} loading="lazy" decoding="async" />
+      {/* Boîte de rendu sous-échelle : le flou est calculé sur le quart de la
+          surface, puis agrandi par le compositeur (cf. `.card-bloom-render`). */}
+      <div className="card-bloom-render">
+        <img src={imageUrl} alt="" draggable={false} loading="lazy" decoding="async" />
+      </div>
     </div>
   );
 }

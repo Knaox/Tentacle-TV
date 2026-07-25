@@ -60,8 +60,12 @@ export function useCardSpotlight(): CardSpotlight {
         }
         const r = rect.current;
         if (r.width === 0 || r.height === 0) return;
-        el.style.setProperty("--mx", `${((clientX - r.left) / r.width) * 100}%`);
-        el.style.setProperty("--my", `${((clientY - r.top) / r.height) * 100}%`);
+        // En PIXELS, plus en pourcentage : le calque est désormais une boîte de
+        // taille fixe déplacée par `transform`, et non un dégradé recentré à
+        // chaque image (cf. `--card-spotlight` dans surfaces.css). Un
+        // pourcentage s'y rapporterait à la boîte du halo, pas à la carte.
+        el.style.setProperty("--mx", `${clientX - r.left}px`);
+        el.style.setProperty("--my", `${clientY - r.top}px`);
       });
     },
     [reduced],
