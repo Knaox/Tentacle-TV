@@ -120,45 +120,18 @@ export function FrameMeter() {
   );
 }
 
-/** Clé d'activation persistante — le seul levier utilisable dans l'app native. */
-const STORAGE_KEY = "tentacle_fps";
-
 /**
- * Vrai si le compteur doit être monté. Jamais par défaut sur un build livré.
+ * Vrai si le compteur doit être monté — **en développement uniquement**.
  *
- * Trois portes d'entrée, dans l'ordre :
- *  • le mode développement ;
- *  • `?fps` dans l'URL — utile dans un navigateur, inaccessible dans l'app
- *    native où l'on ne peut pas taper d'adresse ;
- *  • `localStorage.tentacle_fps = "1"` — la porte de l'app empaquetée. À poser
- *    depuis l'inspecteur Web de Safari (Développement → Tentacle TV), qui est
- *    attaché sur les builds de debug, puis recharger avec Cmd+R.
+ * Le montage se fait derrière `import.meta.env.DEV` côté appelant (`App.tsx`),
+ * comme les autres harnais de `dev/` : le composant est alors éliminé du build
+ * de production, il ne part donc jamais dans une release.
+ *
+ * Il a existé une porte d'entrée par URL et par `localStorage`, pour pouvoir
+ * mesurer un build livré. Retirée : aucun outil de diagnostic n'a sa place
+ * dans un binaire d'App Store, même inerte par défaut. Pour mesurer une
+ * production, passer par le prototype hors dépôt, qui sert le même build.
  */
 export function frameMeterEnabled(): boolean {
-  if (import.meta.env.DEV) return true;
-  try {
-    // `?fps` ARME le compteur de façon persistante. Sans ça, il disparaissait
-    // à la première navigation : React Router réécrit l'URL, le paramètre est
-    // perdu, et l'app native ne permet pas de le retaper. On ne pouvait donc
-    // mesurer que l'écran de connexion — inutile.
-    if (new URLSearchParams(window.location.search).has("fps")) {
-      localStorage.setItem(STORAGE_KEY, "1");
-      return true;
-    }
-    return localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-/** Désarme le compteur : `window.tentacleFpsOff()` depuis la console. */
-if (typeof window !== "undefined") {
-  (window as unknown as Record<string, unknown>).tentacleFpsOff = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      window.location.reload();
-    } catch {
-      /* stockage indisponible */
-    }
-  };
+  return import.meta.env.DEV;
 }

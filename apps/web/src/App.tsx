@@ -181,8 +181,8 @@ export function App() {
       {import.meta.env.DEV && <SoakHarness />}
       {/* Reprise auto de la dernière lecture (dev only, URL ?autowatch=1) */}
       {import.meta.env.DEV && <AutoWatchHarness />}
-      {/* Compteur d'images — dev, ou build livré avec ?fps. Jamais par défaut. */}
-      {frameMeterEnabled() && <FrameMeter />}
+      {/* Compteur d'images (dev only) — éliminé du build de production. */}
+      {import.meta.env.DEV && frameMeterEnabled() && <FrameMeter />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}
