@@ -1,29 +1,16 @@
 import { useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useLibraries } from "@tentacle-tv/api-client";
 import { PlusMenu } from "../PlusMenu";
-import { usePinnedNav } from "../../hooks/usePinnedNav";
 
 /**
  * Desktop entry-point for the pinning panel. Renders a single button in the
  * TopNav that opens the existing PlusMenu as a dropdown anchored under it.
- *
- * When the user has nothing pinned (first run), a subtle pulse dot draws the
- * eye to this button — without altering the visual rhythm of the nav.
  */
 export function BrowseButton() {
   const { t } = useTranslation("nav");
-  const { data: libraries } = useLibraries();
-  const pinned = usePinnedNav();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-
-  // Nothing pinned at all → highlight the entry point so new users find it.
-  const hasNothingPinned =
-    !pinned.watchlist &&
-    !pinned.favorites &&
-    (!libraries || libraries.every((l) => !pinned.isLibraryPinned(l.Id)));
 
   // Keep anchorRect in sync while open (handles resize / scroll).
   useEffect(() => {
@@ -68,20 +55,15 @@ export function BrowseButton() {
         <span className="hidden lg:inline">{t("libraries")}</span>
         <ChevronIcon open={open} />
 
-        {/* Onboarding hint: pulse dot when user has zero pins */}
-        {hasNothingPinned && !open && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -right-0.5 -top-0.5 h-2 w-2"
-          >
-            <span className="absolute inset-0 animate-ping rounded-full bg-[rgba(var(--brand-rgb),0.7)]" />
-            {/* Pastille de marque sans halo. L'ombre portait un violet HEX en
-                dur (167,139,250) qui ne suivait donc PAS une surcharge de
-                couleur de marque par l'admin — la pastille changeait de teinte,
-                sa lueur non. */}
-            <span className="absolute inset-0 rounded-full bg-tentacle-accent" />
-          </span>
-        )}
+        {/* Il n'y a PLUS de pastille d'onboarding ici, et la raison est
+            entièrement énergétique.
+            Elle battait en boucle (`animate-ping`) tant qu'aucune bibliothèque
+            n'était épinglée — c'est-à-dire, pour un nouvel utilisateur,
+            indéfiniment — dans une barre affichée sur TOUTES les pages. Or il
+            suffit d'une seule animation infinie pour que le compositeur ne se
+            rendorme jamais et que le GPU ne redescende pas en veille : à elle
+            seule, elle tenait le plancher de consommation de l'application.
+            Le bouton reste parfaitement trouvable, il est libellé. */}
       </button>
 
       {open && (

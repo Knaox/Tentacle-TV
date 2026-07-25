@@ -36,6 +36,7 @@ import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/p
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
 import { getBackendBase } from "./lib/backendBase";
+import { installAnimationAudit } from "./dev/animationAudit";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -189,6 +190,10 @@ void hydrateQueryClient(queryClient, persistStorage, {
 attachQueryPersister(queryClient, persistStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
 });
+
+// `__animations()` en console — développement uniquement. Dit POURQUOI le
+// compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.
+installAnimationAudit();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

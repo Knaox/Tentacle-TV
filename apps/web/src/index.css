@@ -171,7 +171,23 @@ video::cue {
     rgba(255, 255, 255, 0.06) 50%,
     rgba(255, 255, 255, 0) 100%
   );
-  animation: shimmerSweep 1.5s ease infinite;
+  /* Balayage BORNÉ, jamais infini. Une animation en cours force le navigateur à
+   * produire une image à chaque rafraîchissement de l'écran, qu'elle dessine
+   * quelque chose ou non : le compositeur ne se rendort pas, et le GPU ne
+   * redescend jamais en veille. Un squelette qui brille depuis quinze secondes
+   * n'informe plus personne — il entretient seulement cet éveil.
+   *
+   * Le cas qui rendait la borne indispensable : les cartes d'une rangée
+   * horizontale placées HORS du champ visible. Leur image est en `loading:
+   * lazy`, elle ne sera donc jamais demandée tant qu'on n'a pas fait défiler la
+   * rangée — leur squelette brillait littéralement pour toujours. Sur sept
+   * rangées, cela faisait une quarantaine d'animations infinies permanentes,
+   * invisibles, pour un GPU qui ne dormait plus jamais.
+   *
+   * Dix passages couvrent quinze secondes : très au-delà du temps de chargement
+   * d'une affiche, y compris sur un réseau lent. Passé ce délai le fond gris
+   * demeure — le squelette reste un squelette, seul le reflet s'arrête. */
+  animation: shimmerSweep 1.5s ease 10;
 }
 
 @keyframes shimmerSweep {

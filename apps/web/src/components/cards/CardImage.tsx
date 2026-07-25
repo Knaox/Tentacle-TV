@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useInViewport } from "../../hooks/useInViewport";
 
 interface CardImageProps {
   src: string;
@@ -28,10 +29,24 @@ interface CardImageProps {
 export function CardImage({ src, alt, className, fallback, zoom = true }: CardImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+  // Le squelette n'est monté que si la carte est REGARDÉE.
+  //
+  // Sans cette garde, les cartes situées hors du champ horizontal d'une rangée
+  // gardaient un squelette animé pour toujours : leur image est en
+  // `loading="lazy"`, elle n'est donc jamais demandée tant qu'on n'a pas fait
+  // défiler la rangée, et `loaded` restait faux indéfiniment. Sur sept rangées,
+  // cela faisait une quarantaine d'animations infinies invisibles — de quoi
+  // empêcher le compositeur de se rendormir et le GPU de redescendre en veille,
+  // en permanence, sur une page où rien ne bouge.
+  //
+  // `useInViewport` répond VRAI par défaut : avant le premier passage de
+  // l'observateur, on préfère afficher un squelette pour rien que risquer un
+  // trou blanc là où une image se charge.
+  const { ref: boxRef, visible } = useInViewport<HTMLDivElement>();
 
   return (
-    <div className={`relative h-full w-full overflow-hidden ${className ?? ""}`}>
-      {!loaded && !errored && (
+    <div ref={boxRef} className={`relative h-full w-full overflow-hidden ${className ?? ""}`}>
+      {!loaded && !errored && visible && (
         <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
       )}
       {!errored && (
