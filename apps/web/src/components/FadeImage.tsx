@@ -12,6 +12,12 @@ export function FadeImage({ duration = 0.3, style, onLoad, onError, ...props }: 
 
   return (
     <img
+      // Décodage hors du fil principal par défaut. Ce composant ne sert que
+      // dans des listes — épisodes, casting — parcourues au défilement : c'est
+      // exactement le cas où transformer les octets en pixels sur le fil qui
+      // gère aussi le défilement se ressent. Placé AVANT le spread, un
+      // appelant garde la main s'il a besoin d'un décodage synchrone.
+      decoding="async"
       {...props}
       onLoad={(e) => {
         setLoaded(true);

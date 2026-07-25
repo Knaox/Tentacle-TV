@@ -116,7 +116,7 @@ function ExtraTile({
           <img
             src={src}
             alt={label}
-            loading="lazy"
+            loading="lazy" decoding="async"
             className="h-full w-full object-cover"
             onLoad={
               youtubeId

@@ -58,7 +58,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProp
           <img
             src={posterUrl}
             alt=""
-            loading="lazy"
+            loading="lazy" decoding="async"
             className="h-full w-full object-cover"
             onError={() => setPosterFailed(true)}
           />

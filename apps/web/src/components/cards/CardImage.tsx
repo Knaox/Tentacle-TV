@@ -39,6 +39,13 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
           src={src}
           alt={alt}
           loading="lazy"
+          // Décodage HORS du fil principal. Sans cet attribut, transformer les
+          // octets d'une affiche en pixels se fait sur le fil qui gère aussi le
+          // défilement — et l'accueil en aligne une centaine, décodées au fil
+          // de l'arrivée des réponses réseau, c'est-à-dire exactement pendant
+          // qu'on parcourt les rangées. Aucun effet visuel : l'image apparaît
+          // quand elle est prête, comme avant.
+          decoding="async"
           draggable={false}
           onLoad={() => setLoaded(true)}
           onError={() => setErrored(true)}

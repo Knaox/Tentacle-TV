@@ -46,7 +46,7 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
           <img
             src={url}
             alt=""
-            loading="lazy"
+            loading="lazy" decoding="async"
             className="h-full w-full object-cover"
             onError={() => setFailed(true)}
           />

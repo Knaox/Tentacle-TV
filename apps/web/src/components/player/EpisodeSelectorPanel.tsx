@@ -112,7 +112,7 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
       {/* Vignette = image média : badge « vu » et barre de progression restent
           en dur (posés sur une miniature, comme les cartes média ailleurs). */}
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
-        <img src={thumb} alt={ep.Name} loading="lazy" className="h-full w-full object-cover" />
+        <img src={thumb} alt={ep.Name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
         {watched && (
           <div className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-black">
             <svg className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>

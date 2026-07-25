@@ -175,10 +175,17 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
       // des cellules hors écran. Sans risque ici : la carte est déjà
       // `overflow-hidden`, rien n'en déborde que `contain: paint` pourrait
       // rogner (cf. theme/rendering.css).
-      className={`render-tile group group/card relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
+      // `transition-all` énumérait TOUTES les propriétés animables, que le
+      // moteur devait alors surveiller sur chaque cellule. Seules deux
+      // changent : l'échelle au survol et l'anneau de sélection.
+      className={`render-tile group group/card relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-[transform,box-shadow] duration-300 hover:scale-[1.03] ${
         isSelected ? "ring-2 ring-[var(--brand)]" : ""
       }`}
-      style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${index * 40}ms` }}
+      // Décalage d'entrée PLAFONNÉ, comme sur les cartes de rangée. Sans
+      // plafond, une liste de trois cents titres faisait démarrer la dernière
+      // carte douze secondes après la première — la cascade cesse d'être une
+      // cascade et devient une attente.
+      style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${Math.min(index * 40, 400)}ms` }}
     >
       {isSelecting && (
         <SelectionCheckbox checked={isSelected} onClick={() => selectionMode?.toggle(item.Id)} />
@@ -187,7 +194,7 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
         <img
           src={poster} alt={item.Name}
           className="h-full w-full object-cover"
-          loading="lazy"
+          loading="lazy" decoding="async"
           onLoad={() => setImgLoaded(true)}
           style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}
         />
