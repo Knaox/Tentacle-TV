@@ -73,11 +73,31 @@ body::after {
   to   { opacity: 1; }
 }
 
-/* Chute de neige notable — 6 nappes décalées */
+/* Chute de neige notable — 6 nappes décalées.
+ *
+ * La chute est une TRANSLATION, jamais un défilement de \`background-position\`.
+ * Animer la position d'un fond n'est pas composable : le moteur repeint le
+ * viewport ENTIER à chaque image, ici six nappes de dégradés radiaux à
+ * recalculer, sans fin, par-dessus toute l'application. Un \`transform\` se
+ * compose — la nappe est rastérisée une fois puis simplement déplacée.
+ *
+ * D'où la boîte de DEUX hauteurs d'écran, remontée d'autant : elle peut
+ * descendre d'une pleine hauteur sans jamais découvrir le haut de la page. Le
+ * motif se répète (\`background-repeat\` par défaut), la position de départ n'a
+ * donc plus à être décalée vers le haut comme elle l'était.
+ *
+ * La dérive latérale, autrefois propre à chaque nappe (de -30 à +50 px), est
+ * devenue commune — un \`transform\` ne peut pas en porter six différentes. Sur
+ * des flocons d'un pixel et demi répartis au hasard, aucun œil ne suit une
+ * nappe en particulier : c'est le mouvement d'ensemble qui se lit, et il est
+ * conservé. */
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: -100vh;
+  left: 0;
+  right: 0;
+  height: 200vh;
   pointer-events: none;
   z-index: 9999;
   background-image:
@@ -92,8 +112,8 @@ body::before {
   opacity: 0.72;
 }
 @keyframes tt-snow-fall {
-  from { background-position: 0 -120px, 0 -120px, 0 -120px, 0 -120px, 0 -120px, 0 -120px; }
-  to   { background-position: 0 100vh, 40px 100vh, -30px 100vh, 50px 100vh, -20px 100vh, 30px 100vh; }
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(12px, 100vh, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

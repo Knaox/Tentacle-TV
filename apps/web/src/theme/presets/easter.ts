@@ -64,11 +64,20 @@ body::after {
   background-repeat: no-repeat;
 }
 
-/* Confettis pastels qui flottent doucement, bien visibles */
+/* Confettis pastels qui flottent doucement, bien visibles.
+ *
+ * Même partage que la neige de Noël, et pour la même raison : la descente est
+ * une TRANSLATION et non un défilement de \`background-position\`, qui n'est pas
+ * composable et repeindrait le viewport entier à chaque image, sans fin.
+ * La boîte fait deux hauteurs d'écran et remonte d'autant, pour pouvoir
+ * descendre d'une pleine hauteur sans découvrir le haut de la page. */
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: -100vh;
+  left: 0;
+  right: 0;
+  height: 200vh;
   pointer-events: none;
   z-index: 9999;
   background-image:
@@ -82,8 +91,8 @@ body::before {
   opacity: 0.65;
 }
 @keyframes tt-pastel-float {
-  from { background-position: 0 -150px, 0 -150px, 0 -150px, 0 -150px, 0 -150px; }
-  to   { background-position: 0 100vh, 40px 100vh, -20px 100vh, 30px 100vh, -10px 100vh; }
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(8px, 100vh, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
