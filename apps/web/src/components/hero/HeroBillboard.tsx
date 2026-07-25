@@ -6,6 +6,7 @@ import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 import { useDataSaverActive } from "../../offline/useDataSaver";
 import { useInViewport } from "../../hooks/useInViewport";
+import { useHoverMount } from "../../hooks/useHoverMount";
 
 /**
  * Hauteur de la carte. Réduite depuis le passage au cadre : à fond perdu elle
@@ -41,6 +42,14 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   // Marge de 200 px : le halo est remonté AVANT d'entrer réellement dans le
   // champ, pour qu'on ne surprenne jamais son fondu d'apparition en remontant.
   const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
+  // Survol de la carte — il ne sert QU'À monter les flèches, jamais à
+  // suspendre la rotation (cf. la note plus bas : la bannière couvre ~76 vh,
+  // le curseur la survole quasi en permanence, mettre le timer en pause ici
+  // figeait le carrousel sur sa première diapositive). Les flèches portent un
+  // `backdrop-filter` posé sur une image qui zoome sans fin : les laisser
+  // montées à `opacity: 0` faisait recalculer leur flou à chaque image.
+  // `duration-300` était le tempo de la classe Tailwind remplacée.
+  const arrows = useHoverMount(300);
   const [index, setIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -133,6 +142,8 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
             borderRadius: "var(--hero-frame-radius)",
             boxShadow: "var(--hero-frame-ring)",
           }}
+          onMouseEnter={arrows.onMouseEnter}
+          onMouseLeave={arrows.onMouseLeave}
         >
           <HeroBackdrop items={items} activeIndex={index} />
           <HeroContent item={items[index]} animationKey={animKey} />
@@ -140,6 +151,8 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
             count={items.length}
             activeIndex={index}
             durationMs={rotateMs}
+            arrowsMounted={arrows.mounted}
+            arrowsShown={arrows.hovered}
             onSelect={(i) => { goTo(i); pause(); setTimeout(resume, 100); }}
             onPrev={() => { advance(-1); pause(); setTimeout(resume, 100); }}
             onNext={() => { advance(1); pause(); setTimeout(resume, 100); }}

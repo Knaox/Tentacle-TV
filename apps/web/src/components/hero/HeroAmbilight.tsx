@@ -51,13 +51,20 @@ const TARGET_SCALE = 1.12;
  * On rend donc le halo dans une boîte réduite d'autant, avec un rayon divisé
  * d'autant, puis on agrandit par `transform`. Le compositeur agrandit une
  * texture DÉJÀ floutée, ce qui est quasi gratuit — la surface effectivement
- * floutée est divisée par seize.
+ * floutée est divisée par le CARRÉ du facteur, soit soixante-quatre fois ici.
  *
  * Aucune perte : la source fait déjà 128 px de large (cf. SOURCE_WIDTH) et le
- * flou détruit précisément le détail qu'une sous-échelle pourrait coûter. Même
- * réduite, la boîte de rendu reste plus large que la source.
+ * flou détruit précisément le détail qu'une sous-échelle pourrait coûter.
+ *
+ * Le facteur est passé de quatre à huit. Au-delà de ~1024 px de large, la boîte
+ * de rendu reste plus large que la source — la sous-échelle ne coûte alors
+ * rigoureusement rien. En deçà (mobile, tablette) la source est bien réduite,
+ * mais elle est ensuite floutée à six pixels puis agrandie huit fois : ce qui
+ * atteint l'écran est un champ de couleurs de quarante-huit pixels de rayon,
+ * indiscernable du précédent. C'est la nature de l'effet qui l'autorise — un
+ * halo n'a, par construction, aucun détail à perdre.
  */
-const RENDER_DOWNSCALE = 4;
+const RENDER_DOWNSCALE = 8;
 
 /**
  * Halo de couleurs débordant du cadre de la bannière — « ambilight ».
