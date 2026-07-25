@@ -1,13 +1,18 @@
 /* Surfaces « Prisme » — la lumière de marque comme élément STRUCTUREL.
  *
- * Trois gestes, tous construits sur des tokens existants (`--brand-rgb`,
- * `--brand-accent-rgb`, `--scrim-media-rgb`, `--scrim-page-rgb`) : une surcharge
- * de thème depuis l'éditeur admin les emporte donc sans une ligne de code.
- *  1. l'ombre des bannières est TEINTÉE (violet-noir), jamais un noir neutre ;
- *  2. une hairline dégradée referme le bas de chaque bannière ;
- *  3. les cartes gagnent un liseré dégradé + un halo de curseur.
+ * Les TOKENS des bannières, des cartes et des rangées, tous construits sur des
+ * tokens existants (`--brand-rgb`, `--brand-accent-rgb`, `--scrim-media-rgb`,
+ * `--scrim-page-rgb`) : une surcharge de thème depuis l'éditeur admin les
+ * emporte donc sans une ligne de code. Ils sont réunis ici, avec leur variante
+ * de thème clair juste en dessous — c'est ce voisinage qui fait l'intérêt du
+ * fichier, on lit les deux schémas d'un seul coup d'œil.
  *
- * Déclarées ICI et non dans tokens.css, pour la même raison que scrims.css :
+ * Les RÈGLES qui les consomment vivent à côté : theme/cards.css pour les
+ * cartes, les composants eux-mêmes pour les bannières. Seule exception gardée
+ * ici, la lueur de raccord en bas de page : une règle de trois lignes qui
+ * n'aurait pas justifié un fichier.
+ *
+ * Déclarés ICI et non dans tokens.css, pour la même raison que scrims.css :
  * le test de parité (packages/theme/src/css/cssVars.test.ts) exige que TOUTE
  * variable de tokens.css existe dans `CSS_VAR_NAMES` et soit redéclarée en
  * clair. Ce sont des variables de PRÉSENTATION (géométrie de dégradés), pas des
@@ -236,36 +241,6 @@
   --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.14);
 }
 
-/* ── Grain de bord des cartes ────────────────────────────────────────────
- * Texture RÉELLE (le même `feTurbulence` que `.noise-texture`), pas un dégradé
- * plaqué : c'est la « texture sans tricher ». Masquée en ANNEAU par la technique
- * `mask-composite: exclude` — deux masques, l'un limité à la boîte de contenu
- * (l'intérieur, retiré), l'autre plein ; leur exclusion ne garde que la bande de
- * `padding`, soit le pourtour. Le grain n'apparaît donc qu'au bord, jamais au
- * centre de l'affiche.
- *
- * Dupliqué et non `.noise-texture` réutilisée : celle-ci est masquée en thème
- * clair (`scrims.css`), or le relief doit vivre dans les DEUX thèmes. */
-.card-grain {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  border-radius: inherit;
-  padding: 4px;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-out);
-}
-
-.card-grain[data-on="true"] {
-  opacity: var(--card-grain-opacity);
-}
-
 /* ── Lueur de raccord des bannières à fond perdu ────────────────────────
  * `screen` : la lumière ne peut qu'ÉCLAIRCIR le raccord, donc aucune bande
  * sombre. Le masque vertical s'éteint aux DEUX bouts — nul en haut (l'image
@@ -282,98 +257,3 @@
   -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);
   mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);
 }
-
-/* ── Géométrie du survol des affiches ───────────────────────────────────
- * `transform` ET `opacity` sont déclarés ICI, en une seule `transition`.
- * Les répartir entre une classe Tailwind (`transition-transform`) et cette
- * feuille produirait deux `transition-property` concurrentes : la dernière
- * dans l'ordre source gagne et l'autre est purement perdue. */
-.media-tile {
-  /* Rayon sans `overflow` : rien n'est rogné, mais les ombres des deux calques
-   * d'élévation ci-dessous épousent les coins de l'affiche. */
-  border-radius: var(--radius-lg);
-  transition:
-    transform var(--duration-base) var(--ease-spring),
-    opacity var(--duration-base) var(--ease-out);
-}
-
-/* ── Élévation des cartes : deux calques en fondu, jamais une ombre animée ──
- *
- * `box-shadow` ne se compose PAS : l'animer repeint, image par image, une
- * boîte qui déborde d'environ soixante-dix pixels sous la carte — plus de deux
- * fois la surface de l'affiche, dix-huit fois sur trois cents millisecondes.
- * Et comme la même boîte se met à l'échelle au même moment (le lift), le
- * compositeur ne peut pas réutiliser sa texture : il re-rastérise à chaque
- * échelle intermédiaire. C'était le poste dominant du survol, dans WebKit
- * comme dans Chromium.
- *
- * Ici les deux ombres existent en permanence sur des calques distincts, et
- * seule leur OPACITÉ change — ce que le compositeur sait faire sans repeindre.
- *
- * Répartition imposée par l'ordre de peinture, pour rester fidèle au rendu
- * d'origine où l'ombre était portée par `.card-spotlight` :
- *   ::before → ombre de repos, peinte avant les enfants ;
- *   ::after  → ombre de survol, peinte APRÈS eux.
- *
- * Durée et courbe reprises telles quelles de l'ancienne classe Tailwind
- * (`duration-300` + `ease` par défaut), pour que le tempo ne bouge pas. */
-.media-tile::before,
-.media-tile::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.media-tile::before {
-  box-shadow: var(--elev-1);
-  opacity: 1;
-}
-
-.media-tile::after {
-  box-shadow: var(--elev-card-hover);
-  opacity: 0;
-}
-
-.media-tile[data-hovered="true"]::before {
-  opacity: 0;
-}
-
-.media-tile[data-hovered="true"]::after {
-  opacity: 1;
-}
-
-/* Biseau de relief — inset, donc il DOIT rester sous l'affiche.
- *
- * Une ombre `inset` se peint après le fond mais avant les descendants ; or
- * l'image couvre toute la boîte, sur exactement la même géométrie. Le biseau
- * n'est donc visible que par la frange sub-pixel des quatre coins arrondis.
- * Le porter au-dessus de l'image ferait apparaître un liseré aujourd'hui
- * masqué : `::before` est le seul emplacement neutre, peint avant le
- * conteneur de `CardImage` par simple ordre d'arbre. */
-.card-spotlight::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: var(--card-edge-bevel);
-  opacity: 0;
-  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.media-tile[data-hovered="true"] .card-spotlight::before {
-  opacity: 1;
-}
-
-/* PAS de mise en retrait des voisins au survol d'une rangée (règle
- * `.row-dim` retirée). L'effet « salle obscure » était joli à l'arrêt, mais
- * il ne peut pas cohabiter avec le panneau d'aperçu : celui-ci est portalisé
- * sur `document.body`, donc dès qu'il s'ouvre sous le curseur la rangée perd
- * son `:hover`. Les affiches repassaient à pleine opacité, puis se
- * ré-éteignaient au moindre déplacement — un clignotement gris permanent
- * pendant la lecture des aperçus. Les classes `row-dim` / `row-dim-card`
- * restent posées dans le JSX : elles servent d'ancres de test et de point de
- * reprise si l'effet revient un jour sans panneau flottant. */

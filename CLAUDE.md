@@ -116,6 +116,34 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
 - **Performance**: use `memo`, `useCallback`, `useMemo` to prevent re-renders; lazy load images with shimmer skeletons
 - **Video**: direct play first, 30s pre-buffer, automatic transcode fallback on codec errors
+
+### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
+
+Trois règles, chacune payée par une régression mesurée à `powermetrics`. Elles
+tiennent surtout sur le web (WebKit et Chromium), pas sur les clients natifs.
+
+1. **Un `backdrop-filter` masqué par `opacity: 0` n'est pas gratuit.** La couche
+   composée subsiste, son arrière-plan est recopié et son flou recalculé — à
+   chaque image si ce qui est derrière bouge. Un contrôle en verre révélé au
+   survol se **monte** à la demande (`useHoverMount` + `.hover-reveal`, qui
+   rendent les deux fondus), il ne se masque pas.
+2. **Une animation infinie se garde par `useInViewport`** — `animation-play-state:
+   paused` pour reprendre où l'on s'est arrêté, démontage quand l'élément est
+   coûteux à garder (image floutée, `mix-blend-mode`). Le hook couvre aussi la
+   fenêtre passée en arrière-plan.
+3. **N'animer que `transform` et `opacity`.** `background-position`,
+   `box-shadow`, `background-color` et `filter` déclenchent une peinture par
+   image ; sur un calque plein écran, c'est tout le viewport qui est repeint.
+   Pour une ombre au survol : deux calques en fondu d'opacité, jamais un
+   `box-shadow` animé (cf. `theme/cards.css`).
+
+Corollaire de la première règle : un `backdrop-filter` derrière un fond à plus de
+~0,9 d'alpha ne floute rien de visible — le retirer ne change pas le rendu et
+supprime une passe de compositing. Vérifier avant d'en poser un.
+
+Mesure de référence : `sudo powermetrics --samplers gpu_power -i 1000 -n 10` sur
+un **build de production** (le compteur d'images de `dev/` tient une boucle
+`requestAnimationFrame` permanente qui fausse toute mesure au repos).
 - **Functional components only**, strict TypeScript everywhere
 - **Jellyfin admin API key stays in backend `.env` only**, never exposed to frontend
 - **UI theme**: dark glassmorphism, gradient accents (purple → pink)
