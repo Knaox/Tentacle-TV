@@ -80,6 +80,11 @@ fn main() {
         .manage(downloads::fsops::RootCache::default())
         .manage(downloads::engine::Engine::new());
 
+    // Plein écran : mémoire d'entrée du lecteur (pour ne défaire que ce que le
+    // lecteur a lui-même posé) + diffusion des transitions déclenchées HORS de
+    // l'application — bouton vert, Ctrl+Cmd+F, Mission Control.
+    builder = video_surface::install(builder);
+
     // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : depuis un thread dédié, mesure
     // séparément la réactivité du thread UI et du thread fenêtre de mpv pendant un gel.
     #[cfg(target_os = "windows")]
@@ -118,8 +123,8 @@ fn main() {
             .manage(sleep_assertion)
             .invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
@@ -164,8 +169,8 @@ fn main() {
         {
             builder = builder.invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
@@ -205,8 +210,8 @@ fn main() {
         {
             builder = builder.invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
@@ -287,8 +292,8 @@ fn main() {
             })
             .invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,

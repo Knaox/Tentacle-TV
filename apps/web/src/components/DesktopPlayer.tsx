@@ -153,7 +153,7 @@ export function DesktopPlayer({
   // Auto-next (bannière crédits / affiche EOF) + navigations de sortie
   const { autoPlayCountdown, autoPlaySource, cancelAutoPlay, goBack } = useDesktopAutoNext({
     state, fileLoaded, itemId, jellyfinDuration, autoplayNextEnabled, maxResumePct,
-    hasNextEpisode, onNextEpisode, hasStartedRef, effectiveMpvOffset, fullscreenRef,
+    hasNextEpisode, onNextEpisode, hasStartedRef, effectiveMpvOffset,
   });
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause
