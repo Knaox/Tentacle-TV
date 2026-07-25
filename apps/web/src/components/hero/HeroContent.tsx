@@ -127,16 +127,20 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         </motion.div>
 
         {item.Overview && (
-          /* CINQ lignes au plus, au-delà desquelles `line-clamp` coupe le texte
-             sur une ellipse. La bannière ne prétend pas donner le synopsis
-             complet — elle en donne assez pour décider, la fiche fait le
-             reste. */
-          <motion.p
-            variants={itemVariants}
-            className="mb-6 hidden text-base leading-relaxed text-on-media-secondary line-clamp-5 drop-shadow-[0_1px_4px_var(--on-media-shadow)] sm:block"
-          >
-            <RichOverview text={item.Overview} />
-          </motion.p>
+          /* DEUX éléments, et c'est indispensable : `line-clamp` impose
+             `display: -webkit-box`, que le `sm:block` du même élément écrasait
+             dès 640 px de large — le synopsis se déroulait alors en entier,
+             jusqu'à recouvrir la bannière. Le conteneur décide donc de
+             l'affichage (masqué sur mobile, faute de place), le paragraphe du
+             seul découpage.
+             CINQ lignes au plus, au-delà desquelles le texte est coupé sur une
+             ellipse : la bannière ne prétend pas donner le synopsis complet,
+             elle en donne assez pour décider — la fiche fait le reste. */
+          <motion.div variants={itemVariants} className="mb-6 hidden sm:block">
+            <p className="line-clamp-5 text-base leading-relaxed text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
+              <RichOverview text={item.Overview} />
+            </p>
+          </motion.div>
         )}
 
         {hasProgress && (
