@@ -37,12 +37,18 @@
         var root = document.documentElement;
         root.setAttribute("data-theme", dark ? "dark" : "light");
 
-        // Peint un fond opaque DES MAINTENANT. La fenetre Tauri est
-        // `transparent: true` sur macOS ET Windows — c'est requis : les
-        // controles HTML du lecteur sont dessines par-dessus la video a
-        // travers la webview. Tant que la feuille de style n'est pas
-        // appliquee, rien ne peint et on voit le BUREAU. En dev c'est tres
-        // visible, Vite injectant le CSS via le graphe JS.
+        // Peint un fond opaque DES MAINTENANT. Tant que la feuille de style
+        // n'est pas appliquee, rien ne peint : sur une fenetre Tauri sans
+        // fond, on verrait le BUREAU. En dev c'est tres visible, Vite
+        // injectant le CSS via le graphe JS.
+        //
+        // Sur macOS la fenetre est desormais OPAQUE hors lecture — une fenetre
+        // `transparent: true` y coute environ huit fois plus de GPU en
+        // permanence, page immobile comprise (bug Tauri #15471), et la
+        // transparence n'est demandee que le temps d'une lecture, quand mpv
+        // dessine sous la webview. Windows, lui, la garde en permanence : les
+        // controles HTML du lecteur y sont dessines par-dessus la video a
+        // travers la webview. Ce repli sert donc les deux cas.
         //
         // Style inline, donc prioritaire : `ThemeProvider` le retire au montage
         // (`releaseBootBackground`) pour rendre la main a `--surface-0` et ne
