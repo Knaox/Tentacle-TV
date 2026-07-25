@@ -19,18 +19,17 @@ interface UseDesktopAutoNextArgs {
   onNextEpisode?: () => void;
   hasStartedRef: MutableRefObject<boolean>;
   effectiveMpvOffset: MutableRefObject<number>;
-  fullscreenRef: MutableRefObject<boolean>;
 }
 
 /**
  * Auto-next du player desktop : compte à rebours « épisode suivant » déclenché
  * au seuil MaxResumePct (bannière crédits) ou à l'EOF (affiche pleine), plus
- * goBack/goToDetail (sortie de fullscreen native avant navigation) et le
- * cleanup fullscreen au démontage. Extraction mécanique de DesktopPlayer.
+ * goBack/goToDetail (fermeture de la session plein écran avant navigation) et
+ * le cleanup au démontage. Extraction mécanique de DesktopPlayer.
  */
 export function useDesktopAutoNext({
   state, fileLoaded, itemId, jellyfinDuration, autoplayNextEnabled, maxResumePct,
-  hasNextEpisode, onNextEpisode, hasStartedRef, effectiveMpvOffset, fullscreenRef,
+  hasNextEpisode, onNextEpisode, hasStartedRef, effectiveMpvOffset,
 }: UseDesktopAutoNextArgs) {
   const navigate = useNavigate();
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -48,18 +47,27 @@ export function useDesktopAutoNext({
     setAutoPlayCountdown(null);
   }, []);
 
-  // Navigate back with fullscreen exit — awaits exit_fullscreen before navigating
+  /**
+   * Ferme la session plein écran côté natif. Le Rust ne défait le plein écran
+   * QUE s'il l'avait lui-même posé : si l'utilisateur avait mis l'application
+   * en plein écran avant de lancer la vidéo, elle y reste (cf. video_surface.rs).
+   *
+   * Appelé sans condition — c'est ce qui garantit que la session est bien
+   * refermée. Un `entry` laissé en place fausserait la lecture suivante.
+   *
+   * Plus de `setTimeout(50)` d'attente : `toggleFullScreen:` est asynchrone sur
+   * macOS (animation d'espace ~0,5 à 1 s) et tao met son état à jour AVANT de
+   * l'appeler — aucun sondage ne peut donc observer la fin de la transition.
+   * Ces 50 ms n'attendaient rien, elles ne faisaient que figer l'interface.
+   */
+  const leaveFullscreenScope = useCallback(async () => {
+    try { await cachedInvoke?.("player_fullscreen_leave"); } catch { /* on navigue quand même */ }
+  }, []);
+
   const goBack = useCallback(async () => {
-    if (fullscreenRef.current && cachedInvoke) {
-      try {
-        await cachedInvoke("exit_fullscreen");
-        // Brief delay for OS window manager to process the transition
-        await new Promise((r) => setTimeout(r, 50));
-      } catch { /* proceed anyway */ }
-    }
+    await leaveFullscreenScope();
     navigate(-1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]);
+  }, [navigate, leaveFullscreenScope]);
 
   const startAutoPlayCountdown = useCallback((source: "credits" | "eof") => {
     if (!hasNextEpisode || !onNextEpisode) return;
@@ -78,17 +86,11 @@ export function useDesktopAutoNext({
     }, 1000);
   }, [hasNextEpisode, onNextEpisode]);
 
-  // Navigate to detail page for movies — awaits exit_fullscreen before navigating
+  // Retour à la fiche (films) — même fermeture de session que goBack.
   const goToDetail = useCallback(async () => {
-    if (fullscreenRef.current && cachedInvoke) {
-      try {
-        await cachedInvoke("exit_fullscreen");
-        await new Promise((r) => setTimeout(r, 50));
-      } catch { /* proceed anyway */ }
-    }
+    await leaveFullscreenScope();
     navigate(`/media/${itemId}`, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, itemId]);
+  }, [navigate, itemId, leaveFullscreenScope]);
 
   // Bannière « épisode suivant » au MaxResumePct de Jellyfin (ex. 92 % → à
   // 92 % de lecture). Relu à chaque tick → une mise à jour du % dans Jellyfin
@@ -125,14 +127,16 @@ export function useDesktopAutoNext({
   useEffect(() => {
     return () => {
       clearInterval(autoPlayTimerRef.current);
-      // On ne sort du plein écran QUE si l'on quitte réellement le lecteur. Au
+      // On ne ferme la session QUE si l'on quitte réellement le lecteur. Au
       // changement d'épisode, on navigue vers une autre route /watch/:itemId : le
       // composant est démonté+remonté (key={itemId}) mais on RESTE dans le
-      // lecteur → il faut conserver le plein écran natif de la fenêtre. Au moment
-      // du cleanup, window.location.pathname reflète déjà la destination.
-      // (goBack/goToDetail gèrent déjà l'exit explicite pour les vraies sorties.)
+      // lecteur → la session doit survivre, sinon le nouveau montage relirait
+      // l'état de la fenêtre et conclurait à tort que le plein écran appartient
+      // à l'utilisateur. Au moment du cleanup, window.location.pathname reflète
+      // déjà la destination.
+      // (goBack/goToDetail ferment déjà la session pour les vraies sorties.)
       if (!window.location.pathname.startsWith("/watch/")) {
-        cachedInvoke?.("exit_fullscreen")?.catch(() => {});
+        cachedInvoke?.("player_fullscreen_leave")?.catch(() => {});
       }
       // NOTE: do NOT call stop() here — useDesktopPlayer's own cleanup effect
       // handles mpv destruction and feeds the pendingDestroy gate so the next

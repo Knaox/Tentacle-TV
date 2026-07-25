@@ -16,23 +16,22 @@ export default {
   ],
   theme: {
     extend: {
+      // `shimmer` et `breathe` ont été retirés : aucun `animate-shimmer` ni
+      // `animate-breathe` dans le code. Le premier faisait doublon avec la
+      // classe `.skeleton-shimmer` d'index.css, le second animait `box-shadow`
+      // en boucle — exactement l'anti-pattern qu'on vient de corriger sur les
+      // cartes. Les laisser en config, c'était inviter à les réutiliser.
       animation: {
-        shimmer: "shimmer 1.5s ease infinite",
         "fade-slide-up": "fadeSlideUp 0.5s ease both",
         "fade-slide-down": "fadeSlideDown 0.3s ease both",
         "scale-in": "scaleIn 0.2s ease both",
         "slide-in-right": "slideInRight 0.25s ease both",
         "pulse-glow": "pulseGlow 2s ease infinite",
-        breathe: "breathe 2s ease infinite",
         "ken-burns": "kenBurns 32s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate",
         "fade-out": "fadeOut 0.3s ease forwards",
         "loading-bar": "loadingBar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite",
       },
       keyframes: {
-        shimmer: {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
-        },
         fadeSlideUp: {
           from: { opacity: "0", transform: "translateY(20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -52,10 +51,6 @@ export default {
         pulseGlow: {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "0.8" },
-        },
-        breathe: {
-          "0%, 100%": { boxShadow: "0 0 15px rgba(var(--brand-rgb), 0.3)" },
-          "50%": { boxShadow: "0 0 25px rgba(var(--brand-rgb), 0.5)" },
         },
         kenBurns: {
           "0%":   { transform: "scale(1) translate3d(0, 0, 0)" },

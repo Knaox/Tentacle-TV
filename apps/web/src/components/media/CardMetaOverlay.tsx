@@ -15,10 +15,14 @@ interface Props {
   /**
    * • "always" (défaut) — méta visible en permanence (grilles, listes, fiche
    *   Detail). Le nouveau style étant discret, ça ne dénature plus l'affiche.
-   * • "hover" — révélé en fondu au survol via `group-hover/card` (cartes du
-   *   Home : EpisodeCard / PosterCard, qui portent la classe `group/card`).
+   * • "hover" — le composant reste MONTÉ et c'est `group-hover/card` qui le
+   *   révèle en fondu. Pour les appelants qui n'ont pas d'état de survol en
+   *   React (CollectionGrid, qui s'en remet entièrement au CSS).
+   * • "mount" — le composant n'est monté QUE pendant le survol, et joue son
+   *   fondu d'entrée lui-même. À préférer partout où l'appelant connaît déjà
+   *   l'état de survol (PosterTile, EpisodeCard) : voir plus bas pourquoi.
    */
-  reveal?: "always" | "hover";
+  reveal?: "always" | "hover" | "mount";
 }
 
 /**
@@ -44,10 +48,21 @@ export function CardMetaOverlay({ item, density = "full", reveal = "always" }: P
 
   if (!showQuality && labels.length === 0) return null;
 
+  // Mode « mount » : l'appelant ne nous monte que pendant le survol, parce que
+  // chaque pastille porte un `backdrop-filter` (MetaChips) — deux à quatre par
+  // carte, plus d'une centaine de cartes sur l'accueil. Rester monté à
+  // `opacity: 0` ne libère RIEN sous WebKit : la couche composée subsiste et
+  // son flou d'arrière-plan est recalculé, pour un voile que personne ne voit.
+  //
+  // Le fondu d'entrée est alors joué par `@starting-style` (theme/rendering.css)
+  // et non par un aller-retour en `requestAnimationFrame`, qui imposait un
+  // second rendu React et une seconde peinture à l'image suivante.
   const revealClass =
     reveal === "hover"
-      ? "opacity-0 transition-opacity duration-200 ease-out group-hover/card:opacity-100 motion-reduce:transition-none"
-      : "";
+      ? "transition-opacity duration-200 ease-out motion-reduce:transition-none opacity-0 group-hover/card:opacity-100"
+      : reveal === "mount"
+        ? "fade-in-on-mount"
+        : "";
 
   return (
     <div

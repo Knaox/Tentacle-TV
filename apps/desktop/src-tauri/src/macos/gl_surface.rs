@@ -15,6 +15,40 @@ pub struct GlSurface {
 // and are never accessed concurrently without synchronization.
 unsafe impl Send for GlSurface {}
 
+/// Retrouve la WKWebView parmi les sous-vues de la contentView.
+///
+/// On cible la CLASSE, jamais `subviews[0]`. L'ancien code supposait que la
+/// premiere sous-vue EST la WKWebView : l'hypothese tient tant que la
+/// contentView n'a qu'une sous-vue, mais elle s'inverse des qu'une couche de
+/// fond est ajoutee (materiau verre, vibrancy) — cette couche devient
+/// `subviews[0]` et la vue GL se retrouve inseree SOUS elle, donc la video
+/// passe DERRIERE le materiau. Comme le lecteur est remonte a chaque changement
+/// d'episode (`key={itemId}`), le defaut se rejouerait a chaque episode.
+///
+/// Renvoie un pointeur nul si aucune WKWebView n'est trouvee.
+///
+/// SAFETY: appels Cocoa — doit s'executer sur le thread principal.
+pub unsafe fn find_webview(content_view: *mut AnyObject) -> *mut AnyObject {
+    if content_view.is_null() {
+        return std::ptr::null_mut();
+    }
+    let subviews: *mut AnyObject = msg_send![content_view, subviews];
+    let count: usize = msg_send![subviews, count];
+    let Some(cls) = objc2::runtime::AnyClass::get(
+        CStr::from_bytes_with_nul(b"WKWebView\0").unwrap()
+    ) else {
+        return std::ptr::null_mut();
+    };
+    for i in 0..count {
+        let view: *mut AnyObject = msg_send![subviews, objectAtIndex: i];
+        let is_webview: Bool = msg_send![view, isKindOfClass: cls];
+        if is_webview.as_bool() {
+            return view;
+        }
+    }
+    std::ptr::null_mut()
+}
+
 /// Create an NSOpenGLView under the WKWebView's content view.
 /// The GL view is positioned behind the web content (z-order below)
 /// and does not intercept mouse events (hitTest passthrough).
@@ -85,36 +119,7 @@ pub unsafe fn create_gl_surface(ns_window: *mut c_void) -> Result<GlSurface, Str
     let _: () = msg_send![gl_view, setAutoresizingMask: mask];
 
     // Inserer SOUS la WKWebView (NSWindowBelow = -1).
-    //
-    // L'ancien code visait `subviews[0]`, en supposant que la premiere sous-vue
-    // EST la WKWebView. L'hypothese tient tant que la contentView n'a qu'une
-    // sous-vue, mais elle s'inverse des qu'une couche de fond est ajoutee
-    // (materiau verre, vibrancy) : cette couche devient `subviews[0]` et la vue
-    // GL se retrouve inseree SOUS elle, donc la video passe DERRIERE le
-    // materiau. Et comme le lecteur est remonte a chaque changement d'episode
-    // (`key={itemId}`), le defaut se rejouerait a chaque episode.
-    //
-    // On cible donc explicitement la WKWebView par sa classe, ce qui reste
-    // correct quel que soit le nombre de sous-vues et leur ordre.
-    let webview: *mut AnyObject = {
-        let subviews: *mut AnyObject = msg_send![content_view, subviews];
-        let count: usize = msg_send![subviews, count];
-        let wk_class = objc2::runtime::AnyClass::get(
-            CStr::from_bytes_with_nul(b"WKWebView\0").unwrap()
-        );
-        let mut found: *mut AnyObject = std::ptr::null_mut();
-        if let Some(cls) = wk_class {
-            for i in 0..count {
-                let view: *mut AnyObject = msg_send![subviews, objectAtIndex: i];
-                let is_webview: Bool = msg_send![view, isKindOfClass: cls];
-                if is_webview.as_bool() {
-                    found = view;
-                    break;
-                }
-            }
-        }
-        found
-    };
+    let webview = find_webview(content_view);
 
     if !webview.is_null() {
         let _: () = msg_send![content_view, addSubview: gl_view, positioned: -1i64, relativeTo: webview];

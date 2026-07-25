@@ -155,7 +155,12 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
       onTouchStart={isSelecting ? undefined : handleTouchStart}
       onTouchEnd={isSelecting ? undefined : clearLongPress}
       onTouchMove={isSelecting ? undefined : clearLongPress}
-      className={`group group/card relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
+      // `render-tile` : cette grille n'est PAS virtualisée (contrairement à
+      // LibraryGrid) et monte tout d'un coup — le moteur saute donc le rendu
+      // des cellules hors écran. Sans risque ici : la carte est déjà
+      // `overflow-hidden`, rien n'en déborde que `contain: paint` pourrait
+      // rogner (cf. theme/rendering.css).
+      className={`render-tile group group/card relative cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-all duration-300 hover:scale-[1.03] ${
         isSelected ? "ring-2 ring-[var(--brand)]" : ""
       }`}
       style={{ animation: `fadeSlideUp 0.5s ease both`, animationDelay: `${index * 40}ms` }}

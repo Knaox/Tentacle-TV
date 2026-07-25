@@ -36,8 +36,15 @@ export function TopNav({ showSearch = true }: TopNavProps) {
   return (
     <header
       data-host-chrome="topbar"
-      className="fixed inset-x-0 top-0 z-40 h-[68px] transition-colors duration-300"
+      className="fixed inset-x-0 top-0 z-40 h-[68px]"
       style={{
+        // Transition sur la SEULE bordure. `transition-colors` couvrait aussi
+        // le fond — or celui-ci est déjà piloté image par image par le
+        // défilement : la transition redémarrait à chaque valeur et n'arrivait
+        // jamais à destination. Elle ne lissait rien, elle ne faisait que
+        // repeindre une barre fixe pleine largeur portant un `backdrop-filter`.
+        // La bordure, elle, apparaît sur un seuil : son fondu est réel.
+        transition: "border-color 300ms cubic-bezier(0.4, 0, 0.2, 1)",
         // Opacité pilotée en JS au scroll. `color-mix` plutot qu'un
         // `rgba(0,0,0,X)` fige : la barre doit se fondre dans le fond de page,
         // qui devient nacre en theme clair. La bordure basse suit le token
