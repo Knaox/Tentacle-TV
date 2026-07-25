@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { CSSProperties } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { LanguagePill, QualityChips, hasQualityChips } from "./MetaChips";
@@ -15,14 +16,20 @@ interface Props {
   /**
    * • "always" (défaut) — méta visible en permanence (grilles, listes, fiche
    *   Detail). Le nouveau style étant discret, ça ne dénature plus l'affiche.
-   * • "hover" — le composant reste MONTÉ et c'est `group-hover/card` qui le
-   *   révèle en fondu. Pour les appelants qui n'ont pas d'état de survol en
-   *   React (CollectionGrid, qui s'en remet entièrement au CSS).
    * • "mount" — le composant n'est monté QUE pendant le survol, et joue son
-   *   fondu d'entrée lui-même. À préférer partout où l'appelant connaît déjà
-   *   l'état de survol (PosterTile, EpisodeCard) : voir plus bas pourquoi.
+   *   fondu d'entrée lui-même. Seul mode retenu pour le survol : voir plus bas
+   *   pourquoi. Un mode "hover" a existé, qui gardait le composant monté et
+   *   s'en remettait à `group-hover/card` ; il n'avait de raison d'être que
+   *   pour les appelants sans état de survol en React, et il n'en reste aucun.
    */
-  reveal?: "always" | "hover" | "mount";
+  reveal?: "always" | "mount";
+  /**
+   * Cible du fondu en mode "mount", quand l'appelant sait aussi RETARDER le
+   * démontage (`useHoverMount`). Fournie, elle rend à l'overlay son fondu de
+   * SORTIE — sans elle il disparaît d'un coup, l'élément quittant le DOM avant
+   * qu'une transition puisse se jouer.
+   */
+  shown?: boolean;
 }
 
 /**
@@ -33,7 +40,7 @@ interface Props {
  * Qualité + langues partagent le même système de chips monochromes
  * (cf. MetaChips), seule source de vérité du style. Le 4K est le seul accent.
  */
-export function CardMetaOverlay({ item, density = "full", reveal = "always" }: Props) {
+export function CardMetaOverlay({ item, density = "full", reveal = "always", shown }: Props) {
   const quality = useMemo(() => extractMediaQuality(item), [item]);
   const compact = density === "compact";
 
@@ -57,16 +64,19 @@ export function CardMetaOverlay({ item, density = "full", reveal = "always" }: P
   // Le fondu d'entrée est alors joué par `@starting-style` (theme/rendering.css)
   // et non par un aller-retour en `requestAnimationFrame`, qui imposait un
   // second rendu React et une seconde peinture à l'image suivante.
+  //
+  // `hover-reveal` plutôt que `fade-in-on-mount` quand l'appelant fournit
+  // `shown` : les deux reposent sur `@starting-style` pour l'entrée, mais la
+  // première rend AUSSI le fondu de sortie, l'appelant retardant alors le
+  // démontage le temps qu'il se joue (`useHoverMount`).
   const revealClass =
-    reveal === "hover"
-      ? "transition-opacity duration-200 ease-out motion-reduce:transition-none opacity-0 group-hover/card:opacity-100"
-      : reveal === "mount"
-        ? "fade-in-on-mount"
-        : "";
+    reveal === "mount" ? (shown === undefined ? "fade-in-on-mount" : "hover-reveal") : "";
 
   return (
     <div
       className={`pointer-events-none absolute left-1.5 top-1.5 z-10 flex flex-wrap items-center gap-1 ${revealClass}`}
+      data-shown={shown}
+      style={shown === undefined ? undefined : ({ "--reveal-ms": "200ms" } as CSSProperties)}
     >
       {showQuality && <QualityChips quality={quality} density={density} />}
       <LanguagePill labels={labels} max={compact ? 2 : 3} />

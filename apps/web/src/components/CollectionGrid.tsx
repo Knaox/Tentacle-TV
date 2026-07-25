@@ -6,6 +6,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "./MediaContextMenu";
 import { SelectionCheckbox } from "./SelectionCheckbox";
 import { CardMetaOverlay } from "./media/CardMetaOverlay";
+import { CollectionCardBadges } from "./collection/CollectionCardBadges";
+import { useHoverMount } from "../hooks/useHoverMount";
 
 type FilterTab = "all" | "Movie" | "Series";
 
@@ -121,6 +123,17 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
   const isSelecting = selectionMode?.isSelecting ?? false;
   const isSelected = selectionMode?.isSelected(item.Id) ?? false;
 
+  // Survol en React, et non plus par `group-hover` seul. Chaque carte portait
+  // en permanence CINQ couches floutées invisibles — deux badges d'angle en
+  // `blur(4px)` et les pastilles méta en `backdrop-blur-md` — masquées par
+  // `opacity: 0`, ce qui ne libère rien : la couche composée subsiste et son
+  // arrière-plan est recopié puis refloué. Sur une liste de cent titres, avec
+  // une quinzaine de cellules à l'écran, cela faisait près de quatre-vingts
+  // flous entretenus pour des contrôles que personne ne voit.
+  // 200 ms couvre les deux fondus (badges 150 ms, méta 200 ms) : le démontage
+  // attend le plus lent, aucun des deux n'est coupé.
+  const hover = useHoverMount(200);
+
   const [localFavorite, setLocalFavorite] = useState(item.UserData?.IsFavorite === true);
   const [localWatchlist, setLocalWatchlist] = useState(item.UserData?.Likes === true);
   useEffect(() => { setLocalFavorite(item.UserData?.IsFavorite === true); }, [item.UserData?.IsFavorite]);
@@ -155,6 +168,8 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
       onTouchStart={isSelecting ? undefined : handleTouchStart}
       onTouchEnd={isSelecting ? undefined : clearLongPress}
       onTouchMove={isSelecting ? undefined : clearLongPress}
+      onMouseEnter={hover.onMouseEnter}
+      onMouseLeave={hover.onMouseLeave}
       // `render-tile` : cette grille n'est PAS virtualisée (contrairement à
       // LibraryGrid) et monte tout d'un coup — le moteur saute donc le rendu
       // des cellules hors écran. Sans risque ici : la carte est déjà
@@ -177,48 +192,29 @@ function CollectionGridCard({ item, index, selectionMode }: { item: MediaItem; i
           style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}
         />
         {/* Même comportement que Home : méta révélée au hover (Watchlist +
-            Favoris partagent CollectionGrid → une seule édition les couvre). */}
-        <CardMetaOverlay item={item} density="compact" reveal="hover" />
+            Favoris partagent CollectionGrid → une seule édition les couvre).
+            Montée à la demande comme sur l'accueil — ses pastilles portent un
+            `backdrop-filter`. `shown` lui rend son fondu de sortie. */}
+        {hover.mounted && (
+          <CardMetaOverlay item={item} density="compact" reveal="mount" shown={hover.hovered} />
+        )}
       </div>
 
-      {/* Hover action buttons — badges d'angle posés SUR le poster : fond noir
-          translucide + icônes blanches constants dans les deux thèmes
-          (cf. règle « posé sur média »). */}
-      <div className={`absolute right-1.5 top-1.5 z-10 flex flex-col gap-1 transition-opacity ${isSelecting ? "hidden" : "opacity-0 group-hover:opacity-100"}`}
-        style={{ pointerEvents: "none" }}>
-        <div style={{ pointerEvents: "auto" }} className="flex flex-col gap-1">
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setLocalFavorite(!localFavorite);
-              if (localFavorite) removeFav.mutate(); else addFav.mutate();
-            }}
-          >
-            {localFavorite ? (
-              <svg className="h-3.5 w-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
-            ) : (
-              <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-            )}
-          </button>
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setLocalWatchlist(!localWatchlist);
-              if (localWatchlist) removeWatchlist.mutate(); else addWatchlist.mutate();
-            }}
-          >
-            {localWatchlist ? (
-              <svg className="h-3.5 w-3.5 text-[var(--brand)]" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.537A.5.5 0 014 22.143V3a1 1 0 011-1z" /></svg>
-            ) : (
-              <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
-            )}
-          </button>
-        </div>
-      </div>
+      {!isSelecting && hover.mounted && (
+        <CollectionCardBadges
+          shown={hover.hovered}
+          favorite={localFavorite}
+          watchlisted={localWatchlist}
+          onToggleFavorite={() => {
+            setLocalFavorite(!localFavorite);
+            if (localFavorite) removeFav.mutate(); else addFav.mutate();
+          }}
+          onToggleWatchlist={() => {
+            setLocalWatchlist(!localWatchlist);
+            if (localWatchlist) removeWatchlist.mutate(); else addWatchlist.mutate();
+          }}
+        />
+      )}
 
       <div className="p-2.5">
         <p className="text-sm font-medium text-content-primary line-clamp-1">{item.Name}</p>
