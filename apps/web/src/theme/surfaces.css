@@ -136,6 +136,10 @@
     transparent 100%
   );
   --card-bloom-blur: 26px;
+  /* Sous-échelle de rendu du halo — cf. `.card-bloom-render`. 2 divise par
+   * quatre la surface floutée pour un résultat indistinguable : le flou
+   * détruit précisément le détail qu'une sous-échelle pourrait coûter. */
+  --card-bloom-downscale: 2;
   --card-bloom-sat: 1.7;
   --card-bloom-strength: 1;
   /* Débord du halo autour de la carte. Négatif : la boîte est plus grande.
@@ -145,8 +149,19 @@
 
   /* Halo qui suit le curseur (`--mx`/`--my` posées par useCardSpotlight).
    * Blanc CONSTANT dans les deux schémas : il est posé sur l'affiche. */
+  /* Halo de curseur — dégradé STATIQUE, déplacé par `transform`.
+   *
+   * Il était auparavant centré par `at var(--mx) var(--my)` : écrire ces deux
+   * variables à chaque mouvement de souris obligeait le moteur à REGÉNÉRER le
+   * dégradé, donc à repeindre la carte, jusqu'à soixante fois par seconde. Ici
+   * le dégradé est rastérisé une seule fois et chaque mouvement n'est plus
+   * qu'une translation de compositeur. Rendu identique.
+   *
+   * `closest-side` sur la boîte carrée de `--card-spotlight-size` redonne
+   * exactement le rayon de 260 px d'origine, avec les mêmes arrêts. */
+  --card-spotlight-size: 520px;
   --card-spotlight: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
+    circle closest-side,
     rgba(255, 255, 255, 0.18) 0%,
     rgba(255, 255, 255, 0.05) 38%,
     transparent 62%
@@ -271,21 +286,32 @@
 }
 
 /* ── Halo de curseur ────────────────────────────────────────────────────
- * Calque `::after` plutôt qu'un <div> : une carte de rangée en rend déjà
- * six ou sept, et ce calque-ci n'a aucun contenu. `data-lit` est posé par
- * useCardSpotlight (jamais sous prefers-reduced-motion). */
-.card-spotlight::after {
-  content: "";
+ * Élément réel (`.card-glow`) et non pseudo-élément : son `transform` est
+ * écrit directement par useCardSpotlight. Le pseudo imposait de passer par des
+ * variables CSS, or celles-ci sont HÉRITÉES — les écrire invalidait le style
+ * calculé de toute la carte à chaque mouvement de souris. Un calque sans
+ * descendant n'a rien à réinvalider.
+ *
+ * `data-lit` est posé sur la boîte image (jamais sous prefers-reduced-motion). */
+.card-glow {
   position: absolute;
-  inset: 0;
   z-index: 1;
   pointer-events: none;
+  /* Boîte carrée du diamètre du halo, ancrée sur le curseur : les marges
+   * négatives d'une demi-boîte recentrent le dégradé sur le point translaté.
+   * Le débord est rogné par l'`overflow-hidden` de la boîte image. */
+  left: 0;
+  top: 0;
+  width: var(--card-spotlight-size);
+  height: var(--card-spotlight-size);
+  margin-left: calc(var(--card-spotlight-size) / -2);
+  margin-top: calc(var(--card-spotlight-size) / -2);
   background: var(--card-spotlight);
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-out);
 }
 
-.card-spotlight[data-lit="true"]::after {
+.card-spotlight[data-lit="true"] .card-glow {
   opacity: 1;
 }
 
@@ -385,12 +411,34 @@
  * liseré vient ensuite, l'affiche en dernier — elle le recouvre, il n'en reste
  * que le pourtour. Rien à empiler, rien à casser. */
 
-.card-bloom > img {
+/* Boîte de rendu SOUS-ÉCHELLE — le flou est calculé petit, puis agrandi.
+ *
+ * Un flou gaussien se paie par pixel ET par rayon. Le calculer à la taille
+ * réelle de la carte, sur un écran Retina, revenait à traiter quatre fois plus
+ * de pixels que nécessaire pour une tache qui, par définition, n'a aucun
+ * détail. On rend donc dans une boîte réduite avec un rayon divisé d'autant,
+ * et le compositeur agrandit une texture DÉJÀ floutée — quasi gratuit.
+ *
+ * Une boîte de 1/n agrandie n fois depuis le coin supérieur gauche recouvre
+ * exactement la boîte d'origine. Le `transform` de `cardBloomDrift` vit sur le
+ * parent `.card-bloom` : les deux se composent au lieu de s'écraser. */
+.card-bloom-render {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% / var(--card-bloom-downscale));
+  height: calc(100% / var(--card-bloom-downscale));
+  transform: scale(var(--card-bloom-downscale));
+  transform-origin: top left;
+}
+
+.card-bloom img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   opacity: var(--card-bloom-strength);
-  filter: blur(var(--card-bloom-blur)) saturate(var(--card-bloom-sat));
+  filter: blur(calc(var(--card-bloom-blur) / var(--card-bloom-downscale)))
+    saturate(var(--card-bloom-sat));
   -webkit-mask-image: var(--card-bloom-mask);
   mask-image: var(--card-bloom-mask);
 }
@@ -418,9 +466,84 @@
  * feuille produirait deux `transition-property` concurrentes : la dernière
  * dans l'ordre source gagne et l'autre est purement perdue. */
 .media-tile {
+  /* Rayon sans `overflow` : rien n'est rogné, mais les ombres des deux calques
+   * d'élévation ci-dessous épousent les coins de l'affiche. */
+  border-radius: var(--radius-lg);
   transition:
     transform var(--duration-base) var(--ease-spring),
     opacity var(--duration-base) var(--ease-out);
+}
+
+/* ── Élévation des cartes : deux calques en fondu, jamais une ombre animée ──
+ *
+ * `box-shadow` ne se compose PAS : l'animer repeint, image par image, une
+ * boîte qui déborde d'environ soixante-dix pixels sous la carte — plus de deux
+ * fois la surface de l'affiche, dix-huit fois sur trois cents millisecondes.
+ * Et comme la même boîte se met à l'échelle au même moment (le lift), le
+ * compositeur ne peut pas réutiliser sa texture : il re-rastérise à chaque
+ * échelle intermédiaire. C'était le poste dominant du survol, dans WebKit
+ * comme dans Chromium.
+ *
+ * Ici les deux ombres existent en permanence sur des calques distincts, et
+ * seule leur OPACITÉ change — ce que le compositeur sait faire sans repeindre.
+ *
+ * Répartition imposée par l'ordre de peinture, pour rester fidèle au rendu
+ * d'origine où l'ombre était portée par `.card-spotlight` :
+ *   ::before → ombre de repos, peinte avant les enfants ;
+ *   ::after  → ombre de survol, peinte APRÈS eux, donc au-dessus du halo
+ *              `.card-bloom` exactement comme avant.
+ *
+ * Durée et courbe reprises telles quelles de l'ancienne classe Tailwind
+ * (`duration-300` + `ease` par défaut), pour que le tempo ne bouge pas. */
+.media-tile::before,
+.media-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.media-tile::before {
+  box-shadow: var(--elev-1);
+  opacity: 1;
+}
+
+.media-tile::after {
+  box-shadow: var(--elev-card-hover);
+  opacity: 0;
+}
+
+.media-tile[data-hovered="true"]::before {
+  opacity: 0;
+}
+
+.media-tile[data-hovered="true"]::after {
+  opacity: 1;
+}
+
+/* Biseau de relief — inset, donc il DOIT rester sous l'affiche.
+ *
+ * Une ombre `inset` se peint après le fond mais avant les descendants ; or
+ * l'image couvre toute la boîte, sur exactement la même géométrie. Le biseau
+ * n'est donc visible que par la frange sub-pixel des quatre coins arrondis.
+ * Le porter au-dessus de l'image ferait apparaître un liseré aujourd'hui
+ * masqué : `::before` est le seul emplacement neutre, peint avant le
+ * conteneur de `CardImage` par simple ordre d'arbre. */
+.card-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--card-edge-bevel);
+  opacity: 0;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.media-tile[data-hovered="true"] .card-spotlight::before {
+  opacity: 1;
 }
 
 /* PAS de mise en retrait des voisins au survol d'une rangée (règle

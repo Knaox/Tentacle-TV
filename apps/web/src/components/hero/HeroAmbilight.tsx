@@ -40,6 +40,24 @@ const FADE_DURATION_S = 1.4;
  * couleurs qui atteignent le bord du cadre changent donc au fil du zoom.
  */
 const TARGET_SCALE = 1.12;
+/**
+ * Facteur de sous-échelle du rendu — le vrai levier de coût de ce composant.
+ *
+ * Un flou gaussien se paie par pixel ET par rayon. Le calculer à pleine
+ * résolution sur une bannière de 76 vh était un gaspillage franc : sur un écran
+ * Retina, cela représente plusieurs millions de pixels, retraités à chaque image
+ * de l'animation.
+ *
+ * On rend donc le halo dans une boîte réduite d'autant, avec un rayon divisé
+ * d'autant, puis on agrandit par `transform`. Le compositeur agrandit une
+ * texture DÉJÀ floutée, ce qui est quasi gratuit — la surface effectivement
+ * floutée est divisée par seize.
+ *
+ * Aucune perte : la source fait déjà 128 px de large (cf. SOURCE_WIDTH) et le
+ * flou détruit précisément le détail qu'une sous-échelle pourrait coûter. Même
+ * réduite, la boîte de rendu reste plus large que la source.
+ */
+const RENDER_DOWNSCALE = 4;
 
 /**
  * Halo de couleurs débordant du cadre de la bannière — « ambilight ».
@@ -82,29 +100,49 @@ export function HeroAmbilight({
       className={`pointer-events-none ${className}`}
       style={{ opacity }}
     >
-      <AnimatePresence>
-        <motion.img
-          key={item.Id}
-          src={url}
-          alt=""
-          draggable={false}
-          initial={{ opacity: 0, scale: 1 }}
-          animate={{ opacity: 1, scale: TARGET_SCALE }}
-          exit={{ opacity: 0 }}
-          transition={{
-            opacity: { duration: FADE_DURATION_S, ease: "easeOut" },
-            scale: { duration: HERO_ZOOM_DURATION_S, ease: "linear" },
-          }}
-          // `will-change: transform` : le flou est alors rastérisé UNE fois dans
-          // sa propre couche, et le zoom devient une simple transformation de
-          // compositeur. Sans lui, un flou de cette taille serait recalculé à
-          // chaque image de l'animation.
-          className="absolute inset-0 h-full w-full object-cover will-change-transform"
-          style={{
-            filter: "blur(var(--hero-ambilight-blur)) saturate(var(--hero-ambilight-sat))",
-          }}
-        />
-      </AnimatePresence>
+      {/* Boîte de rendu SOUS-ÉCHELLE, agrandie par le compositeur.
+          Le flou est calculé sur 1/16 de la surface, puis la texture floutée
+          est agrandie — cf. RENDER_DOWNSCALE. `top/left: 0` + origine au coin
+          supérieur gauche : une boîte de 1/n agrandie n fois recouvre
+          exactement la boîte d'origine. Le zoom de Framer se compose avec
+          cette échelle au lieu de la remplacer. */}
+      <div
+        className="absolute left-0 top-0"
+        style={{
+          width: `${100 / RENDER_DOWNSCALE}%`,
+          height: `${100 / RENDER_DOWNSCALE}%`,
+          transform: `scale(${RENDER_DOWNSCALE})`,
+          transformOrigin: "top left",
+        }}
+      >
+        <AnimatePresence>
+          <motion.img
+            key={item.Id}
+            src={url}
+            alt=""
+            draggable={false}
+            initial={{ opacity: 0, scale: 1 }}
+            animate={{ opacity: 1, scale: TARGET_SCALE }}
+            exit={{ opacity: 0 }}
+            transition={{
+              opacity: { duration: FADE_DURATION_S, ease: "easeOut" },
+              scale: { duration: HERO_ZOOM_DURATION_S, ease: "linear" },
+            }}
+            // `will-change: transform` : le flou est alors rastérisé UNE fois dans
+            // sa propre couche, et le zoom devient une simple transformation de
+            // compositeur. Sans lui, un flou de cette taille serait recalculé à
+            // chaque image de l'animation.
+            className="absolute inset-0 h-full w-full object-cover will-change-transform"
+            style={{
+              // Rayon divisé par la sous-échelle : agrandi d'autant ensuite, il
+              // redonne exactement le flou d'origine.
+              filter:
+                `blur(calc(var(--hero-ambilight-blur) / ${RENDER_DOWNSCALE}))` +
+                " saturate(var(--hero-ambilight-sat))",
+            }}
+          />
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

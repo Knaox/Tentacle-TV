@@ -4,10 +4,16 @@ version = "1.15.0"
 edition = "2021"
 
 [dependencies]
-# macos-private-api est requise par la config DMG/dev (transparence de fenêtre).
-# Le build Mac App Store la NEUTRALISE via la config (`macOSPrivateApi: false`
-# dans tauri.appstore.conf.json) → le code privé reste dormant (approche
-# recommandée par Tauri pour le MAS).
+# macos-private-api : requise pour que wry pose `drawsBackground = NO` sur la
+# WKWebView — sans quoi la vue OpenGL de mpv, dessinée SOUS elle, resterait
+# invisible (cf. src/macos/gl_surface.rs).
+#
+# ⚠️ Le commentaire précédent affirmait que le build Mac App Store la neutralise
+# via `macOSPrivateApi: false` dans tauri.appstore.conf.json : c'est FAUX, ce
+# fichier n'a aucune section `app` et hérite donc de `macOSPrivateApi: true`.
+# L'API privée est bien active sur TOUS les builds macOS, y compris le MAS.
+# Le fond de FENÊTRE, lui, est remis en opaque au démarrage — la transparence de
+# fenêtre n'a jamais servi à rien ici et coûtait cher (src/macos/window_opacity.rs).
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-process = "2"
 tauri-plugin-opener = "2"

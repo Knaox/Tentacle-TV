@@ -170,20 +170,44 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
               viennent désormais des mêmes constantes. */}
           <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
             {backdropUrl && (
-              <motion.img
-                src={backdropUrl}
-                alt=""
-                draggable={false}
-                className="absolute inset-0 h-full w-full object-cover"
-                // Zoom et flou de départ réduits (1.08 / 12 px au lieu de 1.14 /
-                // 18 px) : sur la course raccourcie, l'ancien réglage devenait
-                // une mise au point précipitée — et un flou plein écran animé
-                // est la plus coûteuse des opérations de cette transition.
-                initial={{ opacity: 0, scale: 1.08, filter: "blur(12px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              // Le zoom et l'opacité d'ensemble vivent sur le CONTENEUR, la
+              // mise au point sur deux calques superposés.
+              //
+              // Le flou n'est plus animé : `filter` ne se compose pas, et
+              // interpoler son rayon obligeait à reconstruire un flou gaussien
+              // sur toute la bannière — plein écran sur 260 px de débord — à
+              // chaque image, pendant qu'un vol en propriétés de layout tournait
+              // en parallèle. C'était l'opération la plus chère de l'ouverture
+              // d'une fiche, c'est-à-dire du geste le plus fréquent de l'app.
+              //
+              // Ici la copie floutée est rastérisée UNE fois puis s'efface sur
+              // l'image nette. Même point de départ, même point d'arrivée ;
+              // seule la façon de passer de l'un à l'autre change.
+              <motion.div
+                className="absolute inset-0"
+                initial={{ opacity: 0, scale: 1.08 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
                 transition={{ duration: DECOR_S * 1.05, ease: SETTLE }}
-              />
+              >
+                <img
+                  src={backdropUrl}
+                  alt=""
+                  draggable={false}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <motion.img
+                  src={backdropUrl}
+                  alt=""
+                  draggable={false}
+                  aria-hidden
+                  className="absolute inset-0 h-full w-full object-cover"
+                  style={{ filter: "blur(12px)" }}
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: DECOR_S * 1.05, ease: SETTLE }}
+                />
+              </motion.div>
             )}
             {[
               { style: "var(--detail-scrim-diagonal)", cls: "absolute inset-0" },

@@ -30,7 +30,10 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
     <>
       <header
         data-host-chrome="topbar-mobile"
-        className="fixed inset-x-0 top-0 z-40 h-[56px] transition-colors duration-300"
+        // Pas de `transition-colors` : le fond est piloté image par image par
+        // le défilement, la transition redémarrait à chaque valeur sans jamais
+        // aboutir — elle ne lissait rien et repeignait la barre (cf. TopNav).
+        className="fixed inset-x-0 top-0 z-40 h-[56px]"
         style={{
           // Fond : même logique JS d'opacité au scroll que TopNav — non migrée.
           // Voir TopNav : suit `--surface-0` pour rester coherent en theme clair.

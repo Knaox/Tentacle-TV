@@ -107,33 +107,47 @@ export function useMpvCommands({
       const { invoke } = await import("@tauri-apps/api/core");
       const isFs = await invoke<boolean>("toggle_fullscreen");
       setState((prev) => ({ ...prev, fullscreen: isFs }));
-    } catch {
-      try {
-        const { getCurrentWindow } = await import("@tauri-apps/api/window");
-        const win = getCurrentWindow();
-        const current = await win.isFullscreen();
-        await win.setFullscreen(!current);
-        setState((prev) => ({ ...prev, fullscreen: !current }));
-      } catch { /* ignore */ }
+    } catch (e) {
+      // Plus de repli `getCurrentWindow().setFullscreen()` : la permission
+      // `core:window:allow-set-fullscreen` n'est PAS dans `core:default`
+      // (seule `allow-is-fullscreen` l'est), donc ce repli échouait TOUJOURS —
+      // et son `catch` vide avalait l'échec. Élargir l'ACL n'en vaut pas la
+      // peine pour un chemin mort : la commande Rust est la seule vraie voie.
+      console.warn("[mpv] toggle_fullscreen a échoué :", e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Au montage, resynchronise l'état React du plein écran avec l'état RÉEL de la
-  // fenêtre native Tauri. Nécessaire car un changement d'épisode remonte le
-  // lecteur (key={itemId}) : la fenêtre reste en plein écran alors que le state
-  // React repart à false → sans cette resync, l'icône du bouton plein écran
-  // serait incohérente jusqu'au prochain toggle.
+  // Ouvre la session plein écran du lecteur — le Rust y mémorise si la fenêtre
+  // était DÉJÀ en plein écran, pour ne défaire à la sortie que ce que le
+  // lecteur a lui-même posé (cf. video_surface.rs) — et renvoie l'état courant,
+  // qui amorce le state React. Indispensable au changement d'épisode : le
+  // lecteur est remonté (key={itemId}) alors que la fenêtre, elle, reste en
+  // plein écran.
+  //
+  // Puis RESTE à l'écoute : un plein écran déclenché hors de l'application
+  // (bouton vert, Ctrl+Cmd+F, Mission Control) n'était jusqu'ici jamais
+  // détecté, ce qui laissait l'icône du bouton, la touche Échap et les gardes
+  // de sortie en désaccord avec la fenêtre réelle.
   useEffect(() => {
     let cancelled = false;
+    let unlisten: (() => void) | undefined;
     (async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        const fs = await invoke<boolean>("is_fullscreen");
+        const fs = await invoke<boolean>("player_fullscreen_enter");
         if (!cancelled) setState((prev) => ({ ...prev, fullscreen: fs }));
-      } catch { /* ignore — hors Tauri ou commande indisponible */ }
+      } catch { /* hors Tauri ou commande indisponible */ }
+      try {
+        const { listen } = await import("@tauri-apps/api/event");
+        const un = await listen<boolean>("window://fullscreen", (e) => {
+          if (!cancelled) setState((prev) => ({ ...prev, fullscreen: e.payload }));
+        });
+        if (cancelled) un();
+        else unlisten = un;
+      } catch { /* évènement indisponible */ }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; unlisten?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

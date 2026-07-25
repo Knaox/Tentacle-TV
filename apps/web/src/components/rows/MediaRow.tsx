@@ -66,7 +66,12 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   return (
     <section
       ref={rowRef}
-      className="group/row relative mb-10"
+      // `render-row` : le moteur saute entièrement le rendu de la rangée tant
+      // qu'elle est hors écran (cf. theme/rendering.css). Complémentaire du
+      // montage différé ci-dessous, qui ne joue qu'UNE fois — une rangée déjà
+      // traversée restait rendue et composée pour rien pendant tout le reste
+      // du défilement.
+      className="render-row group/row relative mb-10"
       tabIndex={0}
       role="region"
       aria-label={title}

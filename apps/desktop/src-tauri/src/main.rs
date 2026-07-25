@@ -80,6 +80,11 @@ fn main() {
         .manage(downloads::fsops::RootCache::default())
         .manage(downloads::engine::Engine::new());
 
+    // Plein écran : mémoire d'entrée du lecteur (pour ne défaire que ce que le
+    // lecteur a lui-même posé) + diffusion des transitions déclenchées HORS de
+    // l'application — bouton vert, Ctrl+Cmd+F, Mission Control.
+    builder = video_surface::install(builder);
+
     // Diagnostic opt-in (TENTACLE_FREEZE_PROBE=1) : depuis un thread dédié, mesure
     // séparément la réactivité du thread UI et du thread fenêtre de mpv pendant un gel.
     #[cfg(target_os = "windows")]
@@ -116,10 +121,28 @@ fn main() {
         builder = builder
             .manage(render_state)
             .manage(sleep_assertion)
+            .setup(|app| {
+                use tauri::Manager;
+                // Fond de fenêtre noir. La fenêtre est déjà opaque
+                // (`tauri.macos.conf.json` → `transparent: false`, le chemin
+                // rapide) ; on ne fixe ici que sa couleur, celle qu'on aperçoit
+                // avant le premier rendu et pendant un redimensionnement à la
+                // souris — cf. macos::window_opacity pour le raisonnement
+                // complet sur le coût de la transparence.
+                //
+                // `setup` tourne sur le thread de la boucle d'évènements, donc
+                // sur le thread principal : les appels Cocoa y sont légaux.
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Ok(ns_window) = window.ns_window() {
+                        unsafe { macos::set_window_backdrop(ns_window) };
+                    }
+                }
+                Ok(())
+            })
             .invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
@@ -164,8 +187,8 @@ fn main() {
         {
             builder = builder.invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
@@ -205,8 +228,8 @@ fn main() {
         {
             builder = builder.invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
@@ -287,8 +310,8 @@ fn main() {
             })
             .invoke_handler(tauri::generate_handler![
                 video_surface::toggle_fullscreen,
-                video_surface::is_fullscreen,
-                video_surface::exit_fullscreen,
+                video_surface::player_fullscreen_enter,
+                video_surface::player_fullscreen_leave,
                 downloads::commands::session_cache_get,
                 downloads::commands::session_cache_set,
                 downloads::commands::session_cache_clear,
