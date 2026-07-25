@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronLeftIcon, ChevronRightIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
+import { AMBIENT_HZ, cadence } from "../../theme/motion";
 
 interface HeroIndicatorsProps {
   count: number;
@@ -39,6 +41,14 @@ export function HeroIndicators({
   onNext,
 }: HeroIndicatorsProps) {
   const reduced = useReducedMotion();
+  // Remplissage bridé comme les autres mouvements d'ambiance : quarante-quatre
+  // pixels parcourus en huit secondes, soit moins de deux dixièmes de pixel par
+  // pas à trente images par seconde. Mémoïsé parce qu'une nouvelle identité de
+  // fonction d'easing relancerait l'animation à chaque rendu du composant.
+  const fillEase = useMemo(
+    () => cadence(AMBIENT_HZ, durationMs / 1000),
+    [durationMs],
+  );
   if (count <= 1) return null;
 
   const animateFill = durationMs > 0 && !reduced;
@@ -112,7 +122,7 @@ export function HeroIndicators({
                   key={activeIndex}
                   initial={animateFill ? { scaleX: 0 } : false}
                   animate={{ scaleX: 1 }}
-                  transition={animateFill ? { duration: durationMs / 1000, ease: "linear" } : { duration: 0 }}
+                  transition={animateFill ? { duration: durationMs / 1000, ease: fillEase } : { duration: 0 }}
                   className="absolute inset-0 origin-left rounded-full"
                   style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
                   aria-hidden

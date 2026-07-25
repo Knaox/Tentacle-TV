@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
+import { AMBIENT_HZ, cadence } from "../../theme/motion";
 
 interface HeroBackdropProps {
   items: MediaItem[];
@@ -28,6 +29,20 @@ const FADE_DURATION_S = 1.2;
 // premières secondes, donnant l'illusion d'un zoom court — le reste de la
 // durée l'image paraissait figée. Linear étale uniformément la motion.
 const TARGET_SCALE = 1.06;
+/**
+ * Le zoom ne met son échelle à jour que trente fois par seconde, au lieu d'une
+ * fois par image d'affichage.
+ *
+ * Six pour cent étalés sur huit secondes, c'est un dixième de pixel de
+ * progression entre deux images à 120 Hz — et une recomposition d'image plein
+ * écran à chaque fois. À trente, la progression passe à quatre dixièmes de
+ * pixel : toujours sous le pixel, donc toujours lisse, pour deux à huit fois
+ * moins de recompositions selon la fréquence de l'écran (cf. `cadence`).
+ *
+ * `linear` reste `linear` : la quantification porte sur le TEMPS, la trajectoire
+ * et la durée sont inchangées.
+ */
+const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
 
 export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   const client = useJellyfinClient();
@@ -116,8 +131,10 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
             animate={{ opacity: 1, scale: TARGET_SCALE }}
             exit={{ opacity: 0 }}
             transition={{
+              // Le fondu garde sa pleine cadence : 1,2 s d'opacité sur une
+              // image plein cadre, c'est un mouvement qu'on regarde.
               opacity: { duration: FADE_DURATION_S, ease: "easeOut" },
-              scale: { duration: HERO_ZOOM_DURATION_S, ease: "linear" },
+              scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
             }}
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
