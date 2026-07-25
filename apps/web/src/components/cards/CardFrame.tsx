@@ -78,6 +78,13 @@ export function CardFrame({
       // l'année, soit un rectangle plus haut que l'image : `object-cover`
       // recadrait alors le visuel pendant tout le trajet.
       data-card-visual
+      // `data-hovered` pilote les DEUX calques d'élévation, portés par les
+      // pseudo-éléments de `.media-tile` (cf. surfaces.css). L'ombre n'est plus
+      // transitionnée : `box-shadow` est la seule propriété non composable de
+      // tout le survol, et l'animer repeignait ~470 000 pixels dix-huit fois de
+      // suite, sur une boîte qui se met à l'échelle en même temps — le
+      // compositeur ne pouvait donc même pas réutiliser sa texture.
+      data-hovered={hovered}
       className="media-tile relative motion-reduce:!transform-none"
       style={{
         transform: moved ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
@@ -88,30 +95,28 @@ export function CardFrame({
           n'en dépasse que le pourtour. Il éclot au survol puis dérive, cf.
           `.card-bloom` dans surfaces.css.
 
-          Monté AU SURVOL seulement. Le garder en place coûtait une <img> en
-          `blur(26px) saturate(1.7)` + masque radial PAR CARTE — une centaine
-          sur l'accueil, soit autant de surfaces floutées que WebKit rasterise
-          et garde en mémoire graphique, pour un effet qui ne concerne jamais
-          qu'une carte à la fois.
-
-          Iso-rendu : `.card-bloom` n'a AUCUNE transition d'opacité, seulement
-          des animations déclenchées par `data-on` (surfaces.css). Le halo
-          disparaissait donc déjà d'un coup au départ du curseur, et l'éclosion
-          `cardBloomIn` joue au montage exactement comme elle jouait sur la
-          bascule de l'attribut. */}
-      {imageUrl && hovered && <CardBloom on imageUrl={imageUrl} />}
+          Monté EN PERMANENCE, éteint par `data-on`. Le monter au survol
+          paraissait plus économe, mais chaque entrée et chaque sortie de
+          curseur allouait puis libérait une surface filtrée avec son
+          `will-change` — cinq à sept fois par seconde en balayant une rangée.
+          L'allocation de backing store est l'une des opérations les plus
+          chères du pipeline, et elle n'apparaît dans aucun profil JS. Le coût
+          au repos, lui, est divisé par quatre depuis que le flou est calculé
+          en sous-échelle. */}
+      {imageUrl && <CardBloom on={hovered} imageUrl={imageUrl} />}
 
       <div
         ref={spot.ref}
         data-lit={spot.lit}
         {...spot.handlers}
-        className={`card-spotlight relative ${aspect} overflow-hidden rounded-[var(--radius-lg)] transition-[box-shadow] duration-300 motion-reduce:transition-none`}
-        // Au survol : élévation neutre PLUS le biseau de relief (inset). Plus de
-        // `--card-ring-glow` violet — la couleur vient du halo `CardBloom`.
-        style={{
-          boxShadow: hovered ? "var(--elev-card-hover), var(--card-edge-bevel)" : "var(--elev-1)",
-        }}
+        className={`card-spotlight relative ${aspect} overflow-hidden rounded-[var(--radius-lg)]`}
       >
+        {/* Halo de curseur. Élément réel et non pseudo : on lui écrit son
+            `transform` directement, et comme il n'a aucun descendant,
+            l'invalidation de style ne se propage nulle part (cf.
+            useCardSpotlight). Premier enfant, `z-index: 1` : au-dessus de
+            l'affiche, sous le grain — l'empilement d'origine. */}
+        <div ref={spot.glowRef} aria-hidden className="card-glow" />
         {children}
         {/* Grain de pourtour, révélé au survol — la « texture » du relief. En
             dernier enfant, au-dessus de l'image ; masqué en anneau, il ne
