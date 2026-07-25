@@ -7,6 +7,16 @@ import { HeroIndicators } from "./HeroIndicators";
 import { useDataSaverActive } from "../../offline/useDataSaver";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useHoverMount } from "../../hooks/useHoverMount";
+import { useIdle } from "../../hooks/useIdle";
+
+/**
+ * Silence au bout duquel le carrousel cesse de se relancer.
+ *
+ * Vingt secondes sans le moindre geste — ni souris, ni clavier, ni défilement,
+ * ni toucher. En usage normal on n'y arrive jamais : le seuil se franchit quand
+ * on a quitté l'écran des yeux, pas quand on hésite devant une affiche.
+ */
+const IDLE_MS = 20_000;
 
 /**
  * Hauteur de la carte. Réduite depuis le passage au cadre : à fond perdu elle
@@ -42,6 +52,8 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   // Marge de 200 px : le halo est remonté AVANT d'entrer réellement dans le
   // champ, pour qu'on ne surprenne jamais son fondu d'apparition en remontant.
   const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
+  // Personne devant l'écran depuis vingt secondes : on cesse de relancer.
+  const idle = useIdle(IDLE_MS);
   // Survol de la carte — il ne sert QU'À monter les flèches, jamais à
   // suspendre la rotation (cf. la note plus bas : la bannière couvre ~76 vh,
   // le curseur la survole quasi en permanence, mettre le timer en pause ici
@@ -86,10 +98,25 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
     // pendant que l'utilisateur fait défiler les rangées plus bas. On suspend
     // sans réinitialiser : l'index est conservé, la reprise est invisible.
     if (!visible) return;
+    // Inactivité : on ne relance PAS de diapositive, et c'est le seul geste qui
+    // fasse vraiment redescendre le GPU sur cette page.
+    //
+    // Brider la cadence d'une animation allège le travail par image, mais
+    // n'endort pas le compositeur : tant qu'une animation est en cours, le
+    // navigateur produit une image à chaque rafraîchissement de l'écran, que la
+    // valeur ait changé ou non. Or le carrousel relançait une animation toutes
+    // les huit secondes, sans fin — il y avait donc TOUJOURS une animation
+    // active, et le GPU ne se rendormait jamais.
+    //
+    // Rien n'est figé brutalement : le zoom en cours va au bout de ses huit
+    // secondes, puis plus rien ne repart. Aucun saut, aucune coupure — la
+    // bannière s'immobilise simplement sur son image, et le moindre geste la
+    // remet en marche (cet effet se rejoue quand `idle` repasse à faux).
+    if (idle) return;
     if (rotateMs > 0 && items.length > 1 && !pausedRef.current) {
       timerRef.current = setInterval(() => advance(1), rotateMs);
     }
-  }, [rotateMs, items.length, advance, dataSaver, visible]);
+  }, [rotateMs, items.length, advance, dataSaver, visible, idle]);
 
   useEffect(() => {
     startTimer();

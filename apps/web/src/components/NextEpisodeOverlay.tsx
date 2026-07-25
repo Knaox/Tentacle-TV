@@ -1,7 +1,8 @@
 import { UpNextCard } from "./player/UpNextCard";
 
 interface NextEpisodeOverlayProps {
-  countdown: number;
+  /** `null` = carte proposée pendant le générique, sans enchaînement en cours. */
+  countdown: number | null;
   episodeTitle?: string;
   episodeDescription?: string;
   episodeImageUrl?: string;

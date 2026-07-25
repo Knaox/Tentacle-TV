@@ -11,6 +11,7 @@ import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
 import { AutoPlayOverlay } from "./AutoPlayOverlay";
+import { useUpNextCard } from "./player/useUpNextCard";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
@@ -191,6 +192,10 @@ export function VideoPlayer({
 
   const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
+  // Carte « à suivre » : proposée dès le générique quand un épisode suivant
+  // existe (elle remplace alors le bouton texte), puis dotée d'un décompte si
+  // l'enchaînement automatique démarre.
+  const upNext = useUpNextCard({ itemId, hasNextEpisode, duringCredits: showSkipCredits, autoPlayCountdown });
 
   return (
     <div ref={containerRef} onMouseMove={scheduleHide}
@@ -242,9 +247,9 @@ export function VideoPlayer({
         introSegment={introSegment} creditsSegment={creditsSegment}
         autoPlayCountdown={autoPlayCountdown} hasNextEpisode={hasNextEpisode}
         videoRef={videoRef} sourceChangingRef={sourceChangingRef} hasStartedRef={hasStartedRef}
-        userInteractedRef={userInteractedRef} creditsAutoPlayTriggered={creditsAutoPlayTriggered}
+        userInteractedRef={userInteractedRef}
         setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
-        handleSeek={handleSeek} startAutoPlay={startAutoPlay}
+        handleSeek={handleSeek}
       />
 
       <SkipBadge flash={skipFlash} />
@@ -268,11 +273,17 @@ export function VideoPlayer({
       </div>
 
       <AnimatePresence>
-        {autoPlayCountdown !== null && (
+        {upNext.visible && (
           <AutoPlayOverlay
-            countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
+            countdown={upNext.countdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
-            onPlay={() => onNextEpisode?.()} onCancel={() => { cancelAutoNextLocal(); onAutoNextDismiss?.(); }}
+            onPlay={() => onNextEpisode?.()}
+            onCancel={() => {
+              // Fermer la carte vaut aussi annulation quand un enchaînement
+              // court : c'est le seul moyen offert de l'interrompre.
+              if (upNext.countdown !== null) { cancelAutoNextLocal(); onAutoNextDismiss?.(); }
+              upNext.dismiss();
+            }}
           />
         )}
       </AnimatePresence>
