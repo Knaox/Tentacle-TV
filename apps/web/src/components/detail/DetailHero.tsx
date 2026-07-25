@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
+import { useInViewport } from "../../hooks/useInViewport";
 
 interface DetailHeroProps {
   backdropUrl: string | null;
@@ -62,6 +63,15 @@ export const DETAIL_GLOW_BOX = "h-[calc(58vh+410px)] md:h-[calc(64vh+410px)]";
 export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
+  // Le ken burns dure 32 s et tourne SANS FIN. Rien ne l'arrêtait : une fiche
+  // ouverte, on défile vers les épisodes ou le casting, et une image plein
+  // cadre continuait d'être mise à l'échelle image par image, hors du champ,
+  // pendant tout le temps passé sur la page — et jusque dans une fenêtre
+  // passée en arrière-plan.
+  // Marge de 200 px : elle ne sert pas au ken burns (une pause ne laisse aucune
+  // trace) mais au halo ci-dessous, qui est démonté et doit être remonté avant
+  // d'entrer réellement dans le champ.
+  const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
 
   // Bouton retour + dégradés posés directement SUR le backdrop : restent en
   // blanc/noir dans les deux thèmes (cf. règle « posé sur média »), mais via
@@ -71,7 +81,7 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
     // aucun `overflow-hidden` sur le conteneur : le halo et le débord de la
     // boîte image en dépendent.
     <div className="relative w-full">
-      <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
+      <div ref={boxRef} className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -95,6 +105,12 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 h-full w-full object-cover animate-ken-burns motion-reduce:animate-none"
+            // `animation-play-state` plutôt que retirer la classe : l'animation
+            // REPREND où elle s'était arrêtée. Retirer puis remettre
+            // `animate-ken-burns` la relancerait de zéro, et un retour dans le
+            // champ ferait sauter l'image d'un cran d'échelle. Tant que la
+            // bannière est à l'écran, rien ne change.
+            style={{ animationPlayState: visible ? "running" : "paused" }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
@@ -144,11 +160,19 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
           150 px sous la bannière — la lumière s'y échappe dans la page. Frère de
           la boîte image donc peinte AVANT le bloc titre : le texte n'est jamais
           touché par la fusion. */}
-      <HeroAmbilight
-        item={item}
-        opacity="var(--detail-ambilight-opacity)"
-        className={`hero-glow absolute inset-x-0 top-0 ${DETAIL_GLOW_BOX}`}
-      />
+      {/* Démontée hors écran, comme sur la bannière d'accueil : c'est une image
+          floutée à 48 px et étalée sur toute la largeur, doublée d'un
+          `mix-blend-mode` — une surface qui reste composée à chaque image tant
+          qu'elle est dans l'arbre, même immobile. La marge de 200 px du hook la
+          remonte AVANT l'entrée dans le champ, pour qu'on ne surprenne jamais
+          son fondu d'apparition en revenant en haut. */}
+      {visible && (
+        <HeroAmbilight
+          item={item}
+          opacity="var(--detail-ambilight-opacity)"
+          className={`hero-glow absolute inset-x-0 top-0 ${DETAIL_GLOW_BOX}`}
+        />
+      )}
 
       {/* Réserve de mise en page : c'est ELLE qui occupe la place dans le flux,
           la boîte image étant hors flux. Le bloc titre de `MediaDetail` remonte
