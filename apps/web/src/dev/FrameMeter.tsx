@@ -21,6 +21,20 @@ import { useEffect, useRef } from "react";
  * Il n'appelle jamais `setState` : il écrit directement dans le nœud via une
  * ref. Un compteur qui déclenche un rendu React par image mesurerait surtout
  * lui-même.
+ *
+ * ⚠️ EFFET OBSERVATEUR, à connaître avant d'interpréter quoi que ce soit :
+ *
+ * 1. Sa boucle `requestAnimationFrame` ne s'arrête jamais. Elle force donc un
+ *    cycle de rendu à chaque image, y compris sur une page parfaitement
+ *    immobile qui, sans lui, ne demanderait rien. Il fausse par construction
+ *    toute mesure de consommation au repos : pour `powermetrics`, le
+ *    DÉSACTIVER.
+ * 2. En développement il ne mesure PAS l'application réelle. React y double
+ *    chaque rendu (StrictMode, cf. main.tsx), le code n'est ni minifié ni
+ *    optimisé, et Vite sert les modules un par un. Comptez un facteur deux à
+ *    cinq sur tout ce qui touche au rendu React — un survol de carte y coûte
+ *    plusieurs fois son prix réel. Les seuls chiffres qui comptent viennent
+ *    d'un build de production.
  */
 
 /** Fenêtre glissante — environ deux secondes à 120 Hz. */
@@ -106,14 +120,25 @@ export function FrameMeter() {
   );
 }
 
+/** Clé d'activation persistante — le seul levier utilisable dans l'app native. */
+const STORAGE_KEY = "tentacle_fps";
+
 /**
- * Vrai si le compteur doit être monté : toujours en dev, et sur un build livré
- * uniquement si l'URL porte `?fps` — jamais par défaut.
+ * Vrai si le compteur doit être monté. Jamais par défaut sur un build livré.
+ *
+ * Trois portes d'entrée, dans l'ordre :
+ *  • le mode développement ;
+ *  • `?fps` dans l'URL — utile dans un navigateur, inaccessible dans l'app
+ *    native où l'on ne peut pas taper d'adresse ;
+ *  • `localStorage.tentacle_fps = "1"` — la porte de l'app empaquetée. À poser
+ *    depuis l'inspecteur Web de Safari (Développement → Tentacle TV), qui est
+ *    attaché sur les builds de debug, puis recharger avec Cmd+R.
  */
 export function frameMeterEnabled(): boolean {
   if (import.meta.env.DEV) return true;
   try {
-    return new URLSearchParams(window.location.search).has("fps");
+    if (new URLSearchParams(window.location.search).has("fps")) return true;
+    return localStorage.getItem(STORAGE_KEY) === "1";
   } catch {
     return false;
   }
