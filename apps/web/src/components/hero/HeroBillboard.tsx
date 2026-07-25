@@ -5,6 +5,7 @@ import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 import { useDataSaverActive } from "../../offline/useDataSaver";
+import { useInViewport } from "../../hooks/useInViewport";
 
 /**
  * Hauteur de la carte. Réduite depuis le passage au cadre : à fond perdu elle
@@ -35,6 +36,11 @@ const DEFAULT_ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
  */
 export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillboardProps) {
   const dataSaver = useDataSaverActive();
+  // Bannière réellement à l'écran ET fenêtre au premier plan. Tout ce qui suit
+  // — rotation, zoom du fond, halo flouté — ne tourne QUE dans ce cas.
+  // Marge de 200 px : le halo est remonté AVANT d'entrer réellement dans le
+  // champ, pour qu'on ne surprenne jamais son fondu d'apparition en remontant.
+  const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
   const [index, setIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -65,10 +71,16 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
     // 5 min passées sur l'accueil coûtent jusqu'à ~10 Mo en pure perte.
     // La navigation manuelle (flèches, indicateurs) reste disponible.
     if (dataSaver) return;
+    // Hors écran ou fenêtre en arrière-plan : on suspend. Chaque rotation
+    // recrée un fond 1920 px ET un halo flouté plein cadre — les deux
+    // coexistant pendant le fondu — pour une bannière que personne ne regarde,
+    // pendant que l'utilisateur fait défiler les rangées plus bas. On suspend
+    // sans réinitialiser : l'index est conservé, la reprise est invisible.
+    if (!visible) return;
     if (rotateMs > 0 && items.length > 1 && !pausedRef.current) {
       timerRef.current = setInterval(() => advance(1), rotateMs);
     }
-  }, [rotateMs, items.length, advance, dataSaver]);
+  }, [rotateMs, items.length, advance, dataSaver, visible]);
 
   useEffect(() => {
     startTimer();
@@ -103,10 +115,14 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
       className={`relative w-full bg-surface-0 pb-6 md:pb-10 ${FRAME_GUTTER}`}
       aria-label="Featured content"
     >
-      <div className="relative">
+      <div ref={frameRef} className="relative">
         {/* Halo, DERRIÈRE la carte : il occupe exactement sa surface et sa
-            lumière s'échappe tout autour. */}
-        <HeroAmbilight item={items[index]} />
+            lumière s'échappe tout autour.
+
+            Démonté hors écran : c'est une image floutée à 48 px sur toute la
+            largeur, animée en boucle infinie. Suspendre la rotation ne suffit
+            pas, le zoom continuerait de la faire re-rastériser. */}
+        {visible && <HeroAmbilight item={items[index]} />}
 
         {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
             « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche. */}

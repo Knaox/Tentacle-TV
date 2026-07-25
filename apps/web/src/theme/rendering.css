@@ -1,0 +1,51 @@
+/* ── Ne rendre que ce qui est à l'écran ──────────────────────────────────
+ *
+ * `content-visibility: auto` fait sauter au moteur TOUT le travail de rendu
+ * d'un sous-arbre hors écran : mise en page, peinture, compositing. Le contenu
+ * reste dans le DOM et réapparaît à l'identique en entrant dans le champ — rien
+ * ne change visuellement, seul le calcul disparaît.
+ *
+ * Pourquoi c'est décisif ici : l'accueil monte une centaine de cartes réparties
+ * sur une dizaine de rangées, dont deux ou trois seulement sont visibles. WebKit
+ * les rendait toutes, tout le temps. Chromium élide bien plus agressivement —
+ * c'est une bonne part de l'écart de fluidité entre l'app macOS et Windows, à
+ * code strictement identique. Sur un écran Retina XDR (~6000×3900 pixels
+ * réels), chaque surface inutile coûte quatre fois ce qu'elle coûterait en
+ * 1080p.
+ *
+ * Support : WebKit depuis Safari 18, Chromium et Firefox 125. Ailleurs, la
+ * propriété est simplement ignorée — dégradation gracieuse, jamais de casse.
+ *
+ * `contain-intrinsic-size` n'est PAS optionnel. Hors écran, l'élément n'a plus
+ * de taille propre : sans réserve d'espace, la barre de défilement saute à
+ * chaque rangée traversée. Le mot-clé `auto` fait mémoriser au moteur la taille
+ * réellement rendue ; la longueur qui suit ne sert qu'au tout premier passage,
+ * avant que quoi que ce soit n'ait été mesuré.
+ *
+ * Note : Safari n'indexe pas le contenu sauté pour la recherche dans la page
+ * (WebKit bug 283846). Sans conséquence ici, l'application n'a pas de Cmd+F.
+ *
+ * ⚠️ NE PAS poser ces classes sur un élément dont un ENFANT déborde volontairement.
+ * `content-visibility` implique `contain: paint`, qui interdit aux descendants
+ * de peindre hors de la boîte. C'est précisément le cas de la racine d'une carte
+ * de rangée : le halo de ciblage (`.card-bloom`) déborde de 24 px et serait
+ * rogné net — on retrouverait le rectangle que ce halo sert justement à éviter.
+ * D'où la granularité retenue : la RANGÉE entière, dont le scroller réserve
+ * déjà ces 24 px, et jamais la carte. */
+
+/* Une rangée de l'accueil : en-tête + piste de cartes.
+ * 420 px couvre une rangée d'affiches 2:3 ; les rangées d'épisodes 16:9 sont
+ * plus basses, mais la valeur n'est utilisée qu'avant le premier rendu. */
+.render-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+
+/* Une cellule de grille (bibliothèque, collections, listes).
+ * Ces grilles montent parfois plusieurs centaines d'éléments d'un coup, dont
+ * une douzaine à l'écran : c'est le cas où le gain est le plus net. La largeur
+ * est imposée par la grille, seule la hauteur a besoin d'une réserve. */
+.render-tile {
+  content-visibility: auto;
+  contain-intrinsic-height: auto 320px;
+}

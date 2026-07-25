@@ -13,6 +13,7 @@ import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-ap
 import { PluginIframe } from "./components/PluginIframe";
 import { SoakHarness } from "./dev/soakPlayer";
 import { AutoWatchHarness } from "./dev/autoWatch";
+import { FrameMeter, frameMeterEnabled } from "./dev/FrameMeter";
 import { backendUrl } from "./main";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
@@ -180,6 +181,8 @@ export function App() {
       {import.meta.env.DEV && <SoakHarness />}
       {/* Reprise auto de la dernière lecture (dev only, URL ?autowatch=1) */}
       {import.meta.env.DEV && <AutoWatchHarness />}
+      {/* Compteur d'images — dev, ou build livré avec ?fps. Jamais par défaut. */}
+      {frameMeterEnabled() && <FrameMeter />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}

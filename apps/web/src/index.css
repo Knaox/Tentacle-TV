@@ -2,6 +2,7 @@
 @import "./theme/tokens.css";
 @import "./theme/scrims.css";
 @import "./theme/surfaces.css";
+@import "./theme/rendering.css";
 @import "./theme/motion-reduce.css";
 
 @tailwind base;
