@@ -3,6 +3,7 @@
 @import "./theme/scrims.css";
 @import "./theme/surfaces.css";
 @import "./theme/rendering.css";
+@import "./theme/reveal.css";
 @import "./theme/motion-reduce.css";
 
 @tailwind base;
