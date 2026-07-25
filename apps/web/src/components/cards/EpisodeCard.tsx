@@ -105,7 +105,7 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         {/* Qualité/langues au survol UNIQUEMENT là où il n'y a pas de panneau
             (toucher, petit écran) : sinon elles s'affichaient sur la vignette
             en même temps que le panneau les répétait juste à côté. */}
-        {!preview.panelActive && <CardMetaOverlay item={item} reveal="hover" />}
+        {!preview.panelActive && hovered && <CardMetaOverlay item={item} reveal="mount" />}
 
         {/* Scrim + libellé d'épisode posés SUR la vignette : blanc/noir
             constants dans les deux thèmes (règle « posé sur média »). */}
