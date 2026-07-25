@@ -41,11 +41,18 @@ export function EpisodeSelectorPanel({
   return (
     // Panneau DÉTACHÉ (même traitement que TrackSelector) : fond quasi-opaque
     // `surface-dropdown`, suit le thème clair/sombre — pas posé sur la vidéo.
+    //
+    // Et donc PAS de `backdrop-filter` : à 0,95 d'alpha il ne reste rien à
+    // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture —
+    // son arrière-plan change vingt-quatre à soixante fois par seconde, et
+    // chaque changement forçait une recopie de la région et une passe de flou
+    // de 24 px sur 26 rem par 65 vh. Même arbitrage que le panneau d'aperçu
+    // des cartes (cf. theme/surfaces.css).
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] backdrop-blur-xl"
+      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)]"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
