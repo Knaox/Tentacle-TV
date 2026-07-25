@@ -85,8 +85,9 @@ export function PosterTile({
       )}
 
       {/* Méta discrète révélée au survol. Masquée sur un lot d'épisodes : la
-          qualité d'un seul épisode ne dit rien du groupe. */}
-      {!grouped && <CardMetaOverlay item={item} density="compact" reveal="hover" />}
+          qualité d'un seul épisode ne dit rien du groupe.
+          Montée au survol seulement — cf. CardMetaOverlay. */}
+      {!grouped && hovered && <CardMetaOverlay item={item} density="compact" reveal="mount" />}
 
       {/* Actions rapides — colonne d'angle, au survol uniquement. */}
       {showActions && (

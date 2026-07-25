@@ -86,8 +86,20 @@ export function CardFrame({
     >
       {/* Halo de ciblage — l'affiche elle-même, floutée, derrière la carte : il
           n'en dépasse que le pourtour. Il éclot au survol puis dérive, cf.
-          `.card-bloom` dans surfaces.css. */}
-      {imageUrl && <CardBloom on={hovered} imageUrl={imageUrl} />}
+          `.card-bloom` dans surfaces.css.
+
+          Monté AU SURVOL seulement. Le garder en place coûtait une <img> en
+          `blur(26px) saturate(1.7)` + masque radial PAR CARTE — une centaine
+          sur l'accueil, soit autant de surfaces floutées que WebKit rasterise
+          et garde en mémoire graphique, pour un effet qui ne concerne jamais
+          qu'une carte à la fois.
+
+          Iso-rendu : `.card-bloom` n'a AUCUNE transition d'opacité, seulement
+          des animations déclenchées par `data-on` (surfaces.css). Le halo
+          disparaissait donc déjà d'un coup au départ du curseur, et l'éclosion
+          `cardBloomIn` joue au montage exactement comme elle jouait sur la
+          bascule de l'attribut. */}
+      {imageUrl && hovered && <CardBloom on imageUrl={imageUrl} />}
 
       <div
         ref={spot.ref}

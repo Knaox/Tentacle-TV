@@ -26,10 +26,15 @@ export interface CardSpotlight {
  * Neutralisé sous `prefers-reduced-motion` : `lit` reste faux, aucun listener
  * n'écrit quoi que ce soit, le calque garde son opacité 0.
  */
+/** Au-delà, on relit la géométrie : filet contre un défilement pendant le survol. */
+const RECT_TTL_MS = 250;
+
 export function useCardSpotlight(): CardSpotlight {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
+  const rect = useRef<DOMRect | null>(null);
+  const rectAt = useRef(0);
   const [lit, setLit] = useState(false);
 
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
@@ -44,7 +49,16 @@ export function useCardSpotlight(): CardSpotlight {
       frame.current = requestAnimationFrame(() => {
         const el = ref.current;
         if (!el) return;
-        const r = el.getBoundingClientRect();
+        // Géométrie mise en cache. La relire à chaque image forçait un calcul
+        // de mise en page SYNCHRONE, et au pire moment : dans la rAF, donc
+        // après que le rendu React du survol a invalidé le style. Or une carte
+        // ne bouge pas sous le curseur pendant qu'on la survole.
+        const now = performance.now();
+        if (!rect.current || now - rectAt.current > RECT_TTL_MS) {
+          rect.current = el.getBoundingClientRect();
+          rectAt.current = now;
+        }
+        const r = rect.current;
         if (r.width === 0 || r.height === 0) return;
         el.style.setProperty("--mx", `${((clientX - r.left) / r.width) * 100}%`);
         el.style.setProperty("--my", `${((clientY - r.top) / r.height) * 100}%`);
@@ -54,11 +68,13 @@ export function useCardSpotlight(): CardSpotlight {
   );
 
   const onMouseEnter = useCallback(() => {
+    rect.current = null; // la carte a pu bouger depuis le dernier survol
     if (!reduced) setLit(true);
   }, [reduced]);
 
   const onMouseLeave = useCallback(() => {
     cancelAnimationFrame(frame.current);
+    rect.current = null;
     setLit(false);
   }, []);
 

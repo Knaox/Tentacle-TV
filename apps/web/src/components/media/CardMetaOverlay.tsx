@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { LanguagePill, QualityChips, hasQualityChips } from "./MetaChips";
@@ -15,10 +15,14 @@ interface Props {
   /**
    * • "always" (défaut) — méta visible en permanence (grilles, listes, fiche
    *   Detail). Le nouveau style étant discret, ça ne dénature plus l'affiche.
-   * • "hover" — révélé en fondu au survol via `group-hover/card` (cartes du
-   *   Home : EpisodeCard / PosterCard, qui portent la classe `group/card`).
+   * • "hover" — le composant reste MONTÉ et c'est `group-hover/card` qui le
+   *   révèle en fondu. Pour les appelants qui n'ont pas d'état de survol en
+   *   React (CollectionGrid, qui s'en remet entièrement au CSS).
+   * • "mount" — le composant n'est monté QUE pendant le survol, et joue son
+   *   fondu d'entrée lui-même. À préférer partout où l'appelant connaît déjà
+   *   l'état de survol (PosterTile, EpisodeCard) : voir plus bas pourquoi.
    */
-  reveal?: "always" | "hover";
+  reveal?: "always" | "hover" | "mount";
 }
 
 /**
@@ -33,6 +37,26 @@ export function CardMetaOverlay({ item, density = "full", reveal = "always" }: P
   const quality = useMemo(() => extractMediaQuality(item), [item]);
   const compact = density === "compact";
 
+  // Mode « mount » : l'appelant ne nous monte que pendant le survol.
+  //
+  // Pourquoi : chaque pastille porte un `backdrop-filter` (MetaChips) — deux à
+  // quatre par carte, plus d'une centaine de cartes sur l'accueil. Rester monté
+  // à `opacity: 0` ne libère RIEN sous WebKit : la couche composée subsiste et
+  // son flou d'arrière-plan est recalculé, pour un voile que personne ne voit
+  // au repos. Chromium les élide bien plus agressivement — c'est une bonne part
+  // de l'écart de fluidité constaté entre macOS et Windows.
+  //
+  // La classe `group-hover/card:opacity-100` ne peut plus produire le fondu
+  // dans ce mode, puisque le nœud naît déjà survolé : on le rejoue nous-mêmes,
+  // une image après le montage, pour que l'état à opacité nulle soit bien peint
+  // avant la bascule. Même durée, même courbe qu'avant.
+  const [shown, setShown] = useState(reveal !== "mount");
+  useEffect(() => {
+    if (reveal !== "mount") return;
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, [reveal]);
+
   const showQuality = compact
     ? quality.resolution === "4K" ||
       quality.isDolbyVision ||
@@ -44,10 +68,13 @@ export function CardMetaOverlay({ item, density = "full", reveal = "always" }: P
 
   if (!showQuality && labels.length === 0) return null;
 
+  const fade = "transition-opacity duration-200 ease-out motion-reduce:transition-none";
   const revealClass =
     reveal === "hover"
-      ? "opacity-0 transition-opacity duration-200 ease-out group-hover/card:opacity-100 motion-reduce:transition-none"
-      : "";
+      ? `${fade} opacity-0 group-hover/card:opacity-100`
+      : reveal === "mount"
+        ? `${fade} ${shown ? "opacity-100" : "opacity-0"}`
+        : "";
 
   return (
     <div
