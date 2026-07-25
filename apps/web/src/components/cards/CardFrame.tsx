@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import { CardBloom } from "./CardBloom";
-import { useCardSpotlight } from "./useCardSpotlight";
 
 interface CardFrameProps {
   hovered: boolean;
@@ -35,11 +33,6 @@ interface CardFrameProps {
    * est ce qui referme le panneau.
    */
   concealed?: boolean;
-  /**
-   * Image affichée par la carte — source du halo de ciblage. Absente, la carte
-   * n'a pas de halo : c'est l'affiche qui l'éclaire, pas une couleur choisie.
-   */
-  imageUrl?: string;
   children: ReactNode;
 }
 
@@ -49,14 +42,19 @@ interface CardFrameProps {
  *
  *  1. un RELIEF de bord au survol : un biseau lumineux (`--card-edge-bevel`,
  *     filet clair en haut, ombre en bas) plus un grain de pourtour
- *     (`.card-grain`). Il a remplacé le liseré dégradé violet → rose : la
- *     couleur, au survol, vient désormais du seul halo `CardBloom` (l'affiche
- *     floutée), et le bord donne du RELIEF plutôt qu'un contour de marque ;
- *  2. le halo de ciblage `CardBloom` (couleurs de l'affiche) ;
- *  3. un halo qui suit le curseur (`useCardSpotlight`, purement CSS) ;
- *  4. un lift à ressort et une élévation qui passe à `--elev-card-hover`.
+ *     (`.card-grain`) ;
+ *  2. un lift à ressort et une élévation qui passe à `--elev-card-hover`.
  *
  * Le `transform` vit sur le conteneur EXTÉRIEUR pour que tout bouge ensemble.
+ *
+ * Il a existé DEUX halos de lumière, retirés ensemble : un halo de ciblage qui
+ * reprenait l'affiche floutée derrière la carte, et une tache blanche qui
+ * suivait le curseur. Le premier obligeait à monter, sur CHACUNE des ~108
+ * cartes de l'accueil, une seconde image portant `filter: blur()` et un masque
+ * — une surface filtrée par carte, en permanence, plus une dérive en boucle
+ * infinie sur la carte visée. À eux deux, ils faisaient du simple survol d'une
+ * carte le poste le plus cher de l'interface. Le relief de bord et l'élévation
+ * suffisent à désigner la carte visée.
  */
 export function CardFrame({
   hovered,
@@ -64,10 +62,8 @@ export function CardFrame({
   lift = { scale: 1.04, y: -6 },
   suppressLift = false,
   concealed = false,
-  imageUrl,
   children,
 }: CardFrameProps) {
-  const spot = useCardSpotlight();
   const moved = hovered && !suppressLift;
 
   return (
@@ -91,32 +87,10 @@ export function CardFrame({
         opacity: concealed ? 0 : 1,
       }}
     >
-      {/* Halo de ciblage — l'affiche elle-même, floutée, derrière la carte : il
-          n'en dépasse que le pourtour. Il éclot au survol puis dérive, cf.
-          `.card-bloom` dans surfaces.css.
-
-          Monté EN PERMANENCE, éteint par `data-on`. Le monter au survol
-          paraissait plus économe, mais chaque entrée et chaque sortie de
-          curseur allouait puis libérait une surface filtrée avec son
-          `will-change` — cinq à sept fois par seconde en balayant une rangée.
-          L'allocation de backing store est l'une des opérations les plus
-          chères du pipeline, et elle n'apparaît dans aucun profil JS. Le coût
-          au repos, lui, est divisé par quatre depuis que le flou est calculé
-          en sous-échelle. */}
-      {imageUrl && <CardBloom on={hovered} imageUrl={imageUrl} />}
-
-      <div
-        ref={spot.ref}
-        data-lit={spot.lit}
-        {...spot.handlers}
-        className={`card-spotlight relative ${aspect} overflow-hidden rounded-[var(--radius-lg)]`}
-      >
-        {/* Halo de curseur. Élément réel et non pseudo : on lui écrit son
-            `transform` directement, et comme il n'a aucun descendant,
-            l'invalidation de style ne se propage nulle part (cf.
-            useCardSpotlight). Premier enfant, `z-index: 1` : au-dessus de
-            l'affiche, sous le grain — l'empilement d'origine. */}
-        <div ref={spot.glowRef} aria-hidden className="card-glow" />
+      {/* `card-spotlight` ne porte plus de halo — le nom lui reste parce que
+          c'est elle qui porte le BISEAU de relief, via son `::before`
+          (surfaces.css). */}
+      <div className={`card-spotlight relative ${aspect} overflow-hidden rounded-[var(--radius-lg)]`}>
         {children}
         {/* Grain de pourtour, révélé au survol — la « texture » du relief. En
             dernier enfant, au-dessus de l'image ; masqué en anneau, il ne

@@ -73,7 +73,7 @@ export function PosterTile({
   };
 
   return (
-    <CardFrame hovered={hovered} aspect="aspect-[2/3]" imageUrl={imageUrl}>
+    <CardFrame hovered={hovered} aspect="aspect-[2/3]">
       <CardImage src={imageUrl} alt={item.Name} />
 
       {/* Compteur d'épisodes récemment ajoutés : posé sur un aplat de MARQUE
