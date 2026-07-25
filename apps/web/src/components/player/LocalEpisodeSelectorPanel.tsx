@@ -128,7 +128,7 @@ function LocalEpisodeItem({ ep, active, onClick }: { ep: DownloadEntry; active: 
       }`}
     >
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
-        {thumb && <img src={thumb} alt={ep.title ?? ""} loading="lazy" className="h-full w-full object-cover" />}
+        {thumb && <img src={thumb} alt={ep.title ?? ""} loading="lazy" decoding="async" className="h-full w-full object-cover" />}
       </div>
       <div className="min-w-0 flex-1">
         <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-quaternary"}`}>

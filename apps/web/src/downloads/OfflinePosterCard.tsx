@@ -43,7 +43,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
           <img
             src={url}
             alt=""
-            loading="lazy"
+            loading="lazy" decoding="async"
             className="h-full w-full object-cover"
             onError={() => setAttempt((n) => n + 1)}
           />

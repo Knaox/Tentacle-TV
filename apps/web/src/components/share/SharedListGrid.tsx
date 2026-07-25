@@ -40,7 +40,7 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
               className="block w-full text-left transition-transform hover:scale-[1.02]"
             >
               <div className="relative aspect-[2/3]">
-                <img src={posterUrl(item)} alt={item.Name} loading="lazy" className="h-full w-full object-cover" />
+                <img src={posterUrl(item)} alt={item.Name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </div>
               <div className="p-2">
                 <p className="line-clamp-1 text-sm font-medium text-content-primary">{item.Name}</p>

@@ -23,7 +23,7 @@ export function SearchLibrary({ items }: { items: MediaItem[] }) {
             className="group cursor-pointer overflow-hidden rounded-xl bg-tentacle-surface transition-transform hover:scale-[1.03]"
           >
             <div className="aspect-[2/3] bg-tentacle-surface">
-              <img src={poster} alt={item.Name} className="h-full w-full object-cover" loading="lazy" />
+              <img src={poster} alt={item.Name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
             </div>
             <div className="p-2.5">
               <p className="text-sm font-medium text-content-primary line-clamp-1">{item.Name}</p>

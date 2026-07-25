@@ -192,7 +192,7 @@ function ResultCard({
           <img
             src={imageUrl}
             alt={item.Name}
-            loading="lazy"
+            loading="lazy" decoding="async"
             draggable={false}
             className="h-full w-full object-cover transition-transform duration-300 group-hover/r:scale-105"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
