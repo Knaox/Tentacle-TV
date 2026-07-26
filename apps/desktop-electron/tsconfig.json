@@ -20,5 +20,8 @@
     "sourceMap": false,
     "declaration": false
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  // Les tests sont typés, mais ils ne partent pas dans `dist/` — donc pas non
+  // plus dans le paquet livré. C'est `tsconfig.typecheck.json` qui les regarde.
+  "exclude": ["src/**/*.test.ts"]
 }

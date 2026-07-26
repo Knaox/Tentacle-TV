@@ -12,7 +12,8 @@
     "build:web:debug": "cross-env TENTACLE_SHELL=electron TENTACLE_DEBUG=1 pnpm --filter @tentacle-tv/web build",
     "build": "pnpm build:web && pnpm build:ts",
     "dev": "pnpm build:web:debug && pnpm build:ts && electron .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {
     "@tentacle-tv/web": "workspace:*",
@@ -24,6 +25,7 @@
     "cross-env": "^10.1.0",
     "electron": "^43.2.0",
     "esbuild": "^0.25.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
   }
 }

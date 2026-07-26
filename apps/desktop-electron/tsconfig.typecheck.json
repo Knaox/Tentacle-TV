@@ -1,0 +1,14 @@
+// Contrôle de types SEUL, tests compris.
+//
+// `tsconfig.json` sert à l'émission et exclut les tests, pour qu'ils ne partent
+// pas dans `dist/` ni dans le paquet livré. Ils doivent pourtant être typés
+// aussi strictement que le reste — sinon un test qui compile mal passerait pour
+// un test qui échoue.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
