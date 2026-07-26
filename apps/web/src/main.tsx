@@ -36,6 +36,7 @@ import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/p
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
 import { getBackendBase } from "./lib/backendBase";
+import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
 import "./index.css";
 
@@ -98,6 +99,12 @@ configureBackendUrls(backendUrl);
 // Desktop : le catalogue local existe — un fetch qui pend doit échouer vite
 // (12 s) pour nourrir la bascule hors ligne. Web : 30 s historiques conservés.
 if (isTauriApp) setRequestTimeoutMs(12_000);
+
+// Desktop : copie du stockage local dans la base SQLite de l'app, en vue de la
+// migration vers Electron. `localStorage` appartient au moteur web et est rangé
+// par origine ; sans cette copie, la première version Electron déconnecterait
+// TOUS les utilisateurs. Silencieux, sans effet sur le web.
+if (isTauriApp) startLocalStorageExport();
 
 // Plugin registration (legacy — plugins now run in sandboxed iframes on web)
 // Mobile/desktop still use inline registration.
