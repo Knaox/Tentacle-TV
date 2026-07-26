@@ -195,11 +195,29 @@ const persistStorage = {
   setItem: (k: string, v: string) => localStorage.setItem(k, v),
   removeItem: (k: string) => localStorage.removeItem(k),
 };
+// Le cache est étiqueté au nom du compte qui l'a produit, et n'est rendu qu'à
+// lui. Sans cette étiquette, un admin sorti du mode impersonation retrouvait
+// les reprises de lecture de l'autre : la sauvegarde sur `pagehide` réécrivait
+// le cache en mémoire — celui de l'usurpé — juste après l'effacement, pendant
+// la navigation de sortie.
+const cacheOwner = ((): string | null => {
+  try {
+    const raw = localStorage.getItem("tentacle_user");
+    if (!raw) return null;
+    const id = (JSON.parse(raw) as { Id?: unknown }).Id;
+    return typeof id === "string" ? id : null;
+  } catch {
+    return null;
+  }
+})();
+
 void hydrateQueryClient(queryClient, persistStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
+  owner: cacheOwner,
 });
 attachQueryPersister(queryClient, persistStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
+  owner: cacheOwner,
 });
 
 // `__animations()` en console — développement uniquement. Dit POURQUOI le
