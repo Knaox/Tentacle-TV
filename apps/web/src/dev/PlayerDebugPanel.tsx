@@ -11,9 +11,12 @@
  * disparaissent alors du bundle. Les libellés restent donc en clair, sans
  * passer par i18n — ils ne seront jamais vus par un utilisateur.
  *
- * Opacité et non flou : `backdrop-filter` ne peut PAS échantillonner la vidéo
- * de mpv, qui n'est pas composée par Chromium mais dessinée dans une fenêtre
- * native placée dessous. Un panneau en verre dépoli serait resté vide.
+ * Fond OPAQUE, et pas seulement sombre : posé sur une vidéo claire, un panneau
+ * translucide devient illisible au pire moment — celui où l'on cherche à lire
+ * une valeur. Et pas de `backdrop-filter` non plus : il ne peut PAS
+ * échantillonner l'image de mpv, qui n'est pas composée par Chromium mais
+ * dessinée dans une fenêtre native placée dessous. Un panneau en verre dépoli
+ * serait resté vide.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -81,8 +84,14 @@ export function PlayerDebugPanel() {
     <div
       ref={element}
       onPointerDown={onPointerDown}
-      style={{ left: position.x, top: position.y }}
-      className="fixed z-[9999] max-h-[88vh] w-[430px] cursor-move select-none overflow-y-auto rounded-lg bg-black/92 p-3 font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/15"
+      style={{
+        left: position.x,
+        top: position.y,
+        // Opaque, franchement : voir l'en-tête du fichier.
+        background: "#0a0a10",
+        boxShadow: "0 24px 64px -12px rgba(0,0,0,0.9)",
+      }}
+      className="fixed z-[9999] max-h-[88vh] w-[480px] cursor-move select-none overflow-y-auto rounded-lg p-3.5 font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/20"
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[11px] font-bold tracking-wider text-emerald-400">
@@ -98,18 +107,30 @@ export function PlayerDebugPanel() {
       </div>
 
       {sections.map((section) => (
-        <div key={section.titre} className="mb-2.5">
+        <div
+          key={section.titre}
+          className={section.emphase ? "mb-3 rounded-md bg-white/[0.06] p-2.5" : "mb-2.5"}
+        >
           <div className="mb-1 border-b border-white/10 pb-0.5 text-[10px] uppercase tracking-wider text-fuchsia-400">
             {section.titre}
           </div>
-          {section.lignes.map(([cle, valeur, etat]) => (
-            <div key={cle} className="flex justify-between gap-3">
-              <span className="shrink-0 text-white/45">{cle}</span>
-              <span className={`truncate text-right ${couleur(etat)}`} title={valeur}>
-                {valeur}
-              </span>
-            </div>
-          ))}
+          {section.lignes.map(([cle, valeur, etat]) =>
+            // Les verdicts se lisent en ligne, valeur à GAUCHE et sur toute la
+            // largeur : ce sont des phrases, pas des valeurs à aligner.
+            section.emphase ? (
+              <div key={cle} className="mt-1 flex gap-2 text-[12px] leading-snug">
+                <span className="w-[68px] shrink-0 text-white/45">{cle}</span>
+                <span className={`flex-1 font-semibold ${couleur(etat)}`}>{valeur}</span>
+              </div>
+            ) : (
+              <div key={cle} className="flex justify-between gap-3">
+                <span className="shrink-0 text-white/45">{cle}</span>
+                <span className={`truncate text-right ${couleur(etat)}`} title={valeur}>
+                  {valeur}
+                </span>
+              </div>
+            ),
+          )}
         </div>
       ))}
 
