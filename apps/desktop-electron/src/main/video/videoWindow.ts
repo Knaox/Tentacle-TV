@@ -10,7 +10,7 @@
  * Vérifié en phase 4 sur du 4K Dolby Vision : `bt.2020`/`pq` transmis à l'écran,
  * décodage `d3d11va`, zéro image perdue.
  *
- * # Les deux pièges, tous deux payés
+ * # Les trois pièges, tous payés
  *
  * 1. **La fenêtre transparente d'Electron n'est pas « layered ».** Windows ne
  *    dessine pas les filles d'une fenêtre `WS_EX_LAYERED` ; si Chromium en
@@ -20,9 +20,14 @@
  *    des physiques.** Sur l'écran 4K à 200 % du poste de test, 1920x1080
  *    logiques valent 3840x2160 physiques : la vidéo débordait du cadre.
  *    `GetClientRect` donne directement la bonne unité, sans deviner l'échelle.
+ * 3. **Cette fenêtre appartient à un AUTRE thread.** Deux conséquences, traitées
+ *    plus bas : la toucher en synchrone bloque le nôtre (`SWP_FLAGS`), et il
+ *    faut la désarmer dès qu'elle existe, pas quand la page le demande
+ *    (`attach`). Les deux étaient déjà connus côté Tauri.
  */
 
 import koffi from "koffi";
+import { app } from "electron";
 import type { BrowserWindow } from "electron";
 
 // Enregistre le type auprès de koffi ; il est ensuite désigné par son NOM dans
@@ -53,10 +58,33 @@ const SetWindowLongPtrW = user32.func(
 
 const HWND_BOTTOM = 1;
 const SWP_NOACTIVATE = 0x0010;
+/**
+ * ⚠️ Les deux drapeaux qui empêchent notre thread d'attendre celui de mpv.
+ *
+ * La fenêtre visée appartient au `gui_thread` de mpv. Sans `SWP_ASYNCWINDOWPOS`,
+ * `SetWindowPos` lui poste `WM_WINDOWPOSCHANGING`/`CHANGED` en **synchrone** et
+ * notre thread reste bloqué tant qu'il n'a pas répondu — exactement le couplage
+ * que le durcissement ci-dessous existe pour supprimer. `SWP_NOSENDCHANGING`
+ * retire même le premier des deux messages.
+ *
+ * Ce n'est pas théorique : `align()` est appelé sur chaque `resize`, et
+ * attraper un bord de fenêtre à la souris en tire des dizaines par seconde.
+ * Même partage que l'app Tauri (`mpv_window.rs:66`) — ne pas les retirer en
+ * croyant simplifier.
+ */
+const SWP_NOSENDCHANGING = 0x0400;
+const SWP_ASYNCWINDOWPOS = 0x4000;
+const SWP_FLAGS = SWP_NOACTIVATE | SWP_NOSENDCHANGING | SWP_ASYNCWINDOWPOS;
 const GWL_STYLE = -16;
 const GWL_EXSTYLE = -20;
 const WS_DISABLED = 0x08000000;
 const WS_EX_TRANSPARENT = 0x00000020;
+const WS_EX_NOACTIVATE = 0x08000000;
+
+/** Journal de la surface vidéo, hors build empaqueté. */
+function trace(message: string): void {
+  if (!app.isPackaged) console.log(`[video] ${message}`);
+}
 
 /** Descripteur natif de la fenêtre principale, en valeur. */
 export function nativeHandle(win: BrowserWindow): bigint {
@@ -82,8 +110,22 @@ export class VideoWindow {
 
   constructor(private readonly parent: bigint) {}
 
-  /** Cherche la fenêtre de mpv jusqu'à la trouver, puis la cale. */
-  attach(onFound?: () => void): void {
+  /**
+   * Cherche la fenêtre de mpv jusqu'à la trouver, puis la cale et la désarme.
+   *
+   * ⚠️ Le durcissement se fait ICI, et nulle part ailleurs.
+   *
+   * La page appelle `mpv_harden_child_window` juste après `mpv_init` — soit
+   * deux allers-retours IPC, quelques millisecondes. Le premier sondage
+   * ci-dessous n'a alors pas encore eu lieu : `harden()` ne connaissait aucun
+   * descripteur, rendait `false`, et la page ignorait ce refus. La fenêtre de
+   * mpv n'était donc JAMAIS désarmée, alors que tout le mécanisme existe pour
+   * ça. Le rappel `onFound` était prévu pour cet usage et n'était pas câblé.
+   *
+   * Côté Tauri le problème ne se pose pas : la commande fait elle-même la
+   * recherche avant de durcir (`mpv_window.rs:35`).
+   */
+  attach(): void {
     if (this.recherche !== null) return;
     let essais = 0;
     this.recherche = setInterval(() => {
@@ -92,9 +134,12 @@ export class VideoWindow {
         this.stopSearch();
         this.mpvHwnd = found;
         this.align();
-        onFound?.();
+        trace(`fenetre mpv trouvee, durcissement ${this.harden() ? "ok" : "REFUSE"}`);
       } else if (++essais > 100) {
         this.stopSearch();
+        // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme
+        // le plus coûteux à diagnostiquer — c'est ce qui a masqué ce défaut.
+        trace("fenetre mpv introuvable apres 10 s, durcissement ignore");
       }
     }, 100);
   }
@@ -108,7 +153,7 @@ export class VideoWindow {
     if (!this.mpvHwnd) return;
     const size = clientSize(this.parent);
     if (!size) return;
-    SetWindowPos(this.mpvHwnd, HWND_BOTTOM, 0, 0, size.width, size.height, SWP_NOACTIVATE);
+    SetWindowPos(this.mpvHwnd, HWND_BOTTOM, 0, 0, size.width, size.height, SWP_FLAGS);
   }
 
   /**
@@ -117,18 +162,23 @@ export class VideoWindow {
    * mpv crée sa fenêtre sur SON propre thread, dont la file d'entrée est
    * attachée à celle du thread de l'interface. Toute boucle modale du côté de
    * mpv gèle alors l'application entière — le son et l'image continuent, plus
-   * rien n'est cliquable. `WS_DISABLED` lui retire les entrées et
-   * `WS_EX_TRANSPARENT` la rend traversante au test de survol, de sorte que
-   * clics et survols atteignent les contrôles HTML au-dessus.
+   * rien n'est cliquable. `WS_DISABLED` lui retire les entrées,
+   * `WS_EX_TRANSPARENT` la rend traversante au test de survol, et
+   * `WS_EX_NOACTIVATE` l'empêche de prendre le focus au clic — sans quoi
+   * cliquer sur la vidéo le retirait aux contrôles HTML.
    *
-   * Diagnostic et correctif hérités de l'app Tauri (`mpv_window.rs`).
+   * Idempotente : appelée à la découverte de la fenêtre, et de nouveau si la
+   * page le demande.
+   *
+   * Diagnostic et correctif hérités de l'app Tauri (`mpv_window.rs:48`).
    */
   harden(): boolean {
     if (!this.mpvHwnd) return false;
     const style = GetWindowLongPtrW(this.mpvHwnd, GWL_STYLE) as bigint;
     SetWindowLongPtrW(this.mpvHwnd, GWL_STYLE, style | BigInt(WS_DISABLED));
     const exStyle = GetWindowLongPtrW(this.mpvHwnd, GWL_EXSTYLE) as bigint;
-    SetWindowLongPtrW(this.mpvHwnd, GWL_EXSTYLE, exStyle | BigInt(WS_EX_TRANSPARENT));
+    const durci = exStyle | BigInt(WS_EX_TRANSPARENT) | BigInt(WS_EX_NOACTIVATE);
+    if (durci !== exStyle) SetWindowLongPtrW(this.mpvHwnd, GWL_EXSTYLE, durci);
     return true;
   }
 

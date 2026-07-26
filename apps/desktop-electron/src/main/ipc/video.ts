@@ -217,6 +217,12 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     })
     .add("mpv_harden_child_window", {
       schema: NO_ARGS,
+      // Le durcissement RÉEL a lieu dans `VideoWindow.attach`, dès que la
+      // fenêtre de mpv existe. Cette commande n'est plus qu'un rappel : la page
+      // l'appelle immédiatement après `mpv_init`, quelques millisecondes avant
+      // que mpv n'ait créé sa fenêtre — elle rendait donc `false` en silence, et
+      // rien n'était jamais désarmé. Conservée parce que le contrat avec la page
+      // est partagé avec l'app Tauri, et qu'elle ne coûte rien.
       run: () => video?.harden() ?? false,
     })
     .add("display_hdr_state", {
