@@ -124,24 +124,26 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 
     // DEUX plein-écrans coexistent et ne se recouvrent pas toujours : celui de
     // la FENÊTRE (`setFullScreen`, ce que déclenche notre commande
-    // `toggle_fullscreen`) et celui du DOCUMENT (`requestFullscreen`, déclenché
-    // par la page). Sortir de l'un en laissant l'autre donne exactement le
-    // symptôme observé : une fenêtre dont on ne peut plus sortir.
-    const avantFenetre = win.isFullScreen();
-    win.setFullScreen(false);
+    // `toggle_fullscreen`) et celui du DOCUMENT (`requestFullscreen`, posé par
+    // la page). N'en quitter qu'un donne exactement le symptôme observé : une
+    // fenêtre dont on ne sort plus. F11 sort donc des DEUX, et n'entre que si
+    // aucun des deux n'est actif — sans quoi la touche cesserait de basculer.
+    const fenetre = win.isFullScreen();
     void win.webContents
       .executeJavaScript(
         "(() => { const e = !!document.fullscreenElement; if (e) document.exitFullscreen(); return e; })()",
         true,
       )
-      .then((avantDocument: unknown) => {
+      .catch(() => false)
+      .then((document: unknown) => {
+        const etait = fenetre || document === true;
+        win.setFullScreen(!etait);
         if (app.isPackaged) return;
         console.log(
-          `[fenetre] F11 — plein ecran fenetre=${avantFenetre} document=${String(avantDocument)}` +
+          `[fenetre] F11 — avant : fenetre=${fenetre} document=${String(document)}` +
             ` → fenetre=${win.isFullScreen()}`,
         );
-      })
-      .catch(() => undefined);
+      });
   });
 
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
