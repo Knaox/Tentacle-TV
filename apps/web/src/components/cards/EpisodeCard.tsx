@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
@@ -16,6 +16,7 @@ import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { resolveBannerImage } from "./resolveCardImage";
 import { EPISODE_WIDTH, type CardSize } from "./cardSizes";
+import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 interface EpisodeCardProps {
   item: MediaItem;
@@ -41,6 +42,11 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
   const [hovered, setHovered] = useState(false);
   const ctx = useCardContextMenu();
   const preview = useHoverPreview(ctx.ctxMenu !== null);
+  // Survol coupé dès que la carte glisse hors du curseur pendant un défilement
+  // (cf. `useHoverGuard`). Le panneau, lui, se referme tout seul : il tient déjà
+  // sa propre boucle de suivi.
+  const unhover = useCallback(() => setHovered(false), []);
+  useHoverGuard(preview.anchorRef, hovered, unhover);
 
   const isEpisode = item.Type === "Episode";
   const { id: imageId, type: imageType } = resolveBannerImage(item);
@@ -168,6 +174,7 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         anchor={preview.anchor}
         bounds={preview.bounds}
         cardImageUrl={imageUrl}
+        cut={preview.cut}
         onClose={preview.close}
         panelHandlers={preview.panelHandlers}
       />

@@ -1,4 +1,4 @@
-import { useRef, useState, memo } from "react";
+import { useCallback, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -6,6 +6,7 @@ import { MediaContextMenu } from "./MediaContextMenu";
 import { PosterTile } from "./cards/PosterTile";
 import { useCardContextMenu } from "./cards/useCardContextMenu";
 import { captureDetailOrigin } from "./detail/detailTransition";
+import { useHoverGuard } from "../hooks/useHoverGuard";
 
 interface Props {
   item: MediaItem;
@@ -32,6 +33,11 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
   const [hovered, setHovered] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const ctx = useCardContextMenu();
+  // La grille est la surface où l'on défile le plus vite : sans ce garde, la
+  // carte quittée gardait son survol jusqu'au prochain mouvement de souris
+  // (cf. `useHoverGuard`).
+  const unhover = useCallback(() => setHovered(false), []);
+  useHoverGuard(rootRef, hovered, unhover);
 
   const poster = client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
 

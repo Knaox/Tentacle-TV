@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
@@ -11,6 +11,7 @@ import { captureDetailOrigin } from "../detail/detailTransition";
 import { prefetchDetailRoute } from "./prefetchDetail";
 import { resolvePosterImage, type PosterImageMode } from "./resolveCardImage";
 import { POSTER_WIDTH, type CardSize } from "./cardSizes";
+import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 interface PosterCardProps {
   item: MediaItem;
@@ -52,6 +53,11 @@ export function PosterCard({
   const [hovered, setHovered] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const ctx = useCardContextMenu();
+  // Le survol se coupe aussi quand la carte glisse hors du curseur pendant un
+  // défilement, sans quoi il resterait allumé jusqu'au prochain mouvement de
+  // souris (cf. `useHoverGuard`).
+  const unhover = useCallback(() => setHovered(false), []);
+  useHoverGuard(rootRef, hovered, unhover);
 
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
