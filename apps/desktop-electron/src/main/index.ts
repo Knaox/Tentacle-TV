@@ -85,12 +85,12 @@ function main(): void {
     const capabilities = registry.implemented();
 
     const win = createMainWindow(capabilities);
-    void win.loadURL(`${APP_ORIGIN}/index.html`);
+    void win.loadURL(`${APP_ORIGIN}/`);
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         const next = createMainWindow(capabilities);
-        void next.loadURL(`${APP_ORIGIN}/index.html`);
+        void next.loadURL(`${APP_ORIGIN}/`);
       }
     });
   });
