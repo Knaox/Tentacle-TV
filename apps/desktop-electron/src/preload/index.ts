@@ -19,7 +19,12 @@
  */
 
 import { contextBridge, ipcRenderer } from "electron";
-import { isAllowedCommand, isAllowedEvent } from "../main/channels";
+import {
+  CANAL_MIGRATION_PRISE,
+  CANAL_MIGRATION_RAPPORT,
+  isAllowedCommand,
+  isAllowedEvent,
+} from "../main/channels";
 
 /** Injectés à la fabrication par le processus principal via `additionalArguments`. */
 function argValue(prefix: string): string {
@@ -46,6 +51,47 @@ const capabilities: readonly string[] = Object.freeze(
 function assertPlatform(value: string): "win32" | "darwin" | "linux" {
   return value === "darwin" || value === "linux" ? value : "win32";
 }
+
+/**
+ * Rejoue le stockage local sauvé par l'app Tauri, une fois pour toutes.
+ *
+ * C'est ICI et nulle part ailleurs : le preload s'exécute avant le premier
+ * script de la page, et `localStorage` y est accessible même en bac à sable.
+ * Le faire depuis `main.tsx` ferait démarrer l'application DÉCONNECTÉE avant de
+ * se raviser. Le processus principal ne rend le dump qu'une fois — voir
+ * `main/ipc/migration.ts` pour le reste du raisonnement.
+ *
+ * **On n'écrase JAMAIS une clé déjà là.** Sur une machine où l'application a
+ * déjà servi, la session courante est la bonne ; la sauvegarde, elle, peut
+ * dater. Sur une installation neuve — le cas de tous les utilisateurs qui
+ * migrent — le stockage est vide et les deux comportements coïncident.
+ */
+function restaurerStockageLocal(): void {
+  let dump: unknown;
+  try {
+    dump = ipcRenderer.sendSync(CANAL_MIGRATION_PRISE);
+  } catch {
+    return;
+  }
+  if (dump === null || typeof dump !== "object") return;
+
+  let ecrites = 0;
+  for (const [key, value] of Object.entries(dump as Record<string, unknown>)) {
+    if (typeof value !== "string") continue;
+    try {
+      if (localStorage.getItem(key) !== null) continue;
+      localStorage.setItem(key, value);
+      ecrites += 1;
+    } catch {
+      // Quota atteint ou stockage inaccessible : ce qui est passé reste, et le
+      // rapport dira que le compte ne tombe pas juste.
+      break;
+    }
+  }
+  ipcRenderer.send(CANAL_MIGRATION_RAPPORT, ecrites);
+}
+
+restaurerStockageLocal();
 
 contextBridge.exposeInMainWorld("tentacle", {
   invoke(command: string, args?: Record<string, unknown>): Promise<unknown> {

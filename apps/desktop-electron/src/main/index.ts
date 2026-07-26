@@ -13,6 +13,8 @@ import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
+import { closeLocalDb } from "./localDb";
+import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
@@ -77,6 +79,11 @@ function main(): void {
     });
     serveApp();
 
+    // Branché AVANT la fenêtre : le preload de la première page réclame le
+    // dump de migration dès sa création, en synchrone. Un canal absent à cet
+    // instant, et l'utilisateur démarre déconnecté.
+    registerMigrationBridge();
+
     const registry = new CommandRegistry();
     registerShellCommands(registry);
     registerPluginCommands(registry);
@@ -108,8 +115,13 @@ function main(): void {
   });
 
   // Filet de sécurité : l'écran est rendu à son état d'origine même si la
-  // fermeture court-circuite `mpv_destroy`.
-  app.on("will-quit", () => restaurerEcran());
+  // fermeture court-circuite `mpv_destroy`. La base est refermée dans la
+  // foulée — WAL laisse sinon un journal à rejouer au prochain lecteur du
+  // fichier, qui peut être l'app Tauri sur une machine de développement.
+  app.on("will-quit", () => {
+    restaurerEcran();
+    closeLocalDb();
+  });
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();

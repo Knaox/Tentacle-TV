@@ -94,6 +94,18 @@ export const EVENTS = [
   "msix-update-progress",
 ] as const;
 
+/**
+ * Canaux BRUTS, hors table des commandes.
+ *
+ * La restauration du stockage local ne peut pas passer par `invoke` : elle doit
+ * répondre AVANT le premier script de la page, donc en synchrone, donc par
+ * `sendSync`. Les noms vivent ici parce que ce fichier est le seul que le
+ * preload puisse importer sans traîner tout le processus principal dans son
+ * bundle — voir l'avertissement en tête de `preload/index.ts`.
+ */
+export const CANAL_MIGRATION_PRISE = "tentacle:migration-take";
+export const CANAL_MIGRATION_RAPPORT = "tentacle:migration-report";
+
 export type Command = (typeof COMMANDS)[number];
 export type EventName = (typeof EVENTS)[number];
 
