@@ -79,6 +79,14 @@ export function serveApp(): void {
       return new Response("introuvable", { status: 404 });
     }
 
-    return net.fetch(pathToFileURL(target).toString());
+    const response = await net.fetch(pathToFileURL(target).toString());
+
+    // Le schéma est déclaré `corsEnabled`, et Vite marque ses modules
+    // `crossorigin` : la requête part donc en mode CORS même pour une même
+    // origine. Sans cet en-tête, le module principal peut être rejeté sans
+    // le moindre message — écran noir et console muette.
+    const headers = new Headers(response.headers);
+    headers.set("Access-Control-Allow-Origin", APP_ORIGIN);
+    return new Response(response.body, { status: response.status, headers });
   });
 }
