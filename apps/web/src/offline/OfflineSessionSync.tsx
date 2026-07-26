@@ -9,7 +9,8 @@
 
 import { useEffect } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
-import { backendUrl, isTauriApp } from "../main";
+import { backendUrl } from "../main";
+import { supportsOfflineSession } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { saveCachedSession } from "./offlineSession";
 import { refreshLibrariesCache, refreshLibraryPrefsCache } from "./localTrackPrefs";
@@ -19,7 +20,7 @@ export function OfflineSessionSync() {
   const { state } = useConnectivity();
 
   useEffect(() => {
-    if (!isTauriApp || !userId || state !== "online") return;
+    if (!supportsOfflineSession() || !userId || state !== "online") return;
     try {
       const raw = localStorage.getItem("tentacle_user");
       if (raw) void saveCachedSession(userId, raw);

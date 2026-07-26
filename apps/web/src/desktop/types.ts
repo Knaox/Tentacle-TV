@@ -38,6 +38,15 @@ export interface ElectronBridge {
   readonly version: string;
   /** Plateforme réelle, sans passer par l'analyse du user agent. */
   readonly platform: "win32" | "darwin" | "linux";
+  /**
+   * Commandes que ce shell sait réellement exécuter.
+   *
+   * Pendant la migration, la coquille Electron n'implémente qu'une partie de
+   * l'inventaire. L'interface interroge cette liste pour masquer proprement ce
+   * qui manque, plutôt que d'offrir un bouton dont l'appel sera rejeté. Passer
+   * par `desktop/capabilities.ts` plutôt que de la lire directement.
+   */
+  readonly capabilities: readonly string[];
   /** Ouvre une URL dans le navigateur du système. */
   openExternal(url: string): Promise<void>;
   /** Sélecteur de dossier natif. `null` si l'utilisateur annule. */

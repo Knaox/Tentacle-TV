@@ -7,14 +7,14 @@
  */
 
 import { invoke, listen } from "../desktop/bridge";
-import { isTauri } from "../hooks/mpvRuntime";
+import { supportsDownloads } from "../desktop/bridge";
 
 export type SetRootResult =
   | { ok: true; path: string }
   | { ok: false; code: "root-not-empty" | "root-not-writable" | "unknown" };
 
 export async function getDownloadsRoot(): Promise<string | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<string>("downloads_get_root");
   } catch {
@@ -23,7 +23,7 @@ export async function getDownloadsRoot(): Promise<string | null> {
 }
 
 export async function setDownloadsRoot(path: string): Promise<SetRootResult> {
-  if (!isTauri()) return { ok: false, code: "unknown" };
+  if (!supportsDownloads()) return { ok: false, code: "unknown" };
   try {
     const normalized = await invoke<string>("downloads_set_root", { path });
     return { ok: true, path: normalized };
@@ -38,7 +38,7 @@ export async function setDownloadsRoot(path: string): Promise<SetRootResult> {
 
 /** Octets libres sur le volume de la racine de téléchargements. */
 export async function getDiskFree(): Promise<number | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<number>("downloads_disk_free");
   } catch {
@@ -48,7 +48,7 @@ export async function getDiskFree(): Promise<number | null> {
 
 /** Octets occupés par les téléchargements (partiels compris). */
 export async function getDiskUsage(): Promise<number | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<number>("downloads_disk_usage");
   } catch {
@@ -134,7 +134,7 @@ export interface EnqueueOutcome {
 
 /** Démarre/rafraîchit le moteur (credentials en mémoire côté Rust, jamais persistés). */
 export async function engineStart(serverUrl: string, token: string): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_engine_start", { serverUrl, token });
   } catch {
@@ -148,7 +148,7 @@ export async function enqueueDownloads(
   token: string,
   items: EnqueueItemInput[],
 ): Promise<EnqueueOutcome | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<EnqueueOutcome>("downloads_enqueue", { userId, serverUrl, token, items });
   } catch {
@@ -157,21 +157,21 @@ export async function enqueueDownloads(
 }
 
 export async function pauseDownload(fileId: number): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_pause", { fileId });
   } catch { /* no-op */ }
 }
 
 export async function resumeDownload(fileId: number): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_resume", { fileId });
   } catch { /* no-op */ }
 }
 
 export async function cancelDownload(fileId: number): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_cancel", { fileId });
   } catch { /* no-op */ }
@@ -183,7 +183,7 @@ export interface DeleteOutcome {
 }
 
 export async function deleteDownload(userId: string, fileId: number): Promise<DeleteOutcome | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<DeleteOutcome>("downloads_delete", { userId, fileId });
   } catch {
@@ -192,7 +192,7 @@ export async function deleteDownload(userId: string, fileId: number): Promise<De
 }
 
 export async function listDownloads(userId: string): Promise<DownloadEntry[]> {
-  if (!isTauri()) return [];
+  if (!supportsDownloads()) return [];
   try {
     return await invoke<DownloadEntry[]>("downloads_list", { userId });
   } catch {
@@ -204,7 +204,7 @@ export async function downloadStateForItem(
   userId: string,
   itemId: string,
 ): Promise<DownloadEntry | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<DownloadEntry | null>("downloads_state_for_item", { userId, itemId });
   } catch {
@@ -218,7 +218,7 @@ export async function setAutoDeleteAfterWatch(
   enabled: boolean,
   delayMinutes: number,
 ): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_set_auto_delete", { userId, fileId, enabled, delayMinutes });
   } catch { /* no-op */ }
@@ -228,7 +228,7 @@ export async function setAutoDeleteAfterWatch(
  *  de se terminer (exempté de la garde « lecture active » — couvre le délai
  *  0 « immédiatement » au démontage du lecteur). */
 export async function purgeDueDownloads(itemId?: string): Promise<number> {
-  if (!isTauri()) return 0;
+  if (!supportsDownloads()) return 0;
   try {
     return await invoke<number>("downloads_purge_due", { itemId: itemId ?? null });
   } catch {
@@ -244,7 +244,7 @@ export interface DownloadProgressEvent {
 
 /** Abonnement aux changements d'état (invalider les listes). */
 export async function onDownloadsChanged(callback: () => void): Promise<() => void> {
-  if (!isTauri()) return () => undefined;
+  if (!supportsDownloads()) return () => undefined;
   return listen("downloads://changed", callback);
 }
 
@@ -252,6 +252,6 @@ export async function onDownloadsChanged(callback: () => void): Promise<() => vo
 export async function onDownloadsProgress(
   callback: (event: DownloadProgressEvent) => void,
 ): Promise<() => void> {
-  if (!isTauri()) return () => undefined;
+  if (!supportsDownloads()) return () => undefined;
   return listen<DownloadProgressEvent>("downloads://progress", (event) => callback(event.payload));
 }

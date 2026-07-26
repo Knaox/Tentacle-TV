@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { invoke, listen } from "../desktop/bridge";
+import { desktopPlatform, invoke, listen, supportsSmtc } from "../desktop/bridge";
 
 interface SmtcHandlers {
   onToggle: () => void;
@@ -21,13 +21,15 @@ interface UseSmtcOptions extends SmtcHandlers {
   paused: boolean;
 }
 
-/** SMTC n'existe que sur le desktop Windows (commandes Rust gardées par cfg). */
+/**
+ * SMTC n'existe que sur le bureau Windows.
+ *
+ * La plateforme vient du pont : sous Electron elle est annoncée par le
+ * processus principal, donc exacte, là où l'analyse du user agent restait une
+ * approximation.
+ */
 function smtcEnabled(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    "__TAURI_INTERNALS__" in window &&
-    /windows/i.test(navigator.userAgent)
-  );
+  return desktopPlatform() === "windows" && supportsSmtc();
 }
 
 async function invokeSmtc(cmd: string, args?: Record<string, unknown>): Promise<void> {

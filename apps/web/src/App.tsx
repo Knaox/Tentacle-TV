@@ -26,7 +26,7 @@ import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { DownloadsEvents } from "./downloads/DownloadsEvents";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
-import { isTauriApp } from "./main";
+import { isDesktopApp } from "./desktop/bridge";
 import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -104,7 +104,7 @@ export function App() {
   );
   // Desktop app: need server URL before anything else
   const [needsServerUrl, setNeedsServerUrl] = useState(
-    isTauriApp && !localStorage.getItem("tentacle_server_url")
+    isDesktopApp() && !localStorage.getItem("tentacle_server_url")
   );
   // Statut du setup + démarrage optimiste desktop (cf. useSetupStatus).
   const { setupRequired, backendDown, setSetupRequired } = useSetupStatus(needsServerUrl);
@@ -295,7 +295,7 @@ export function App() {
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
           remplace le blocage — l'app reste utilisable sur le contenu local. */}
-      {!isTauriApp && <OfflineBanner />}
+      {!isDesktopApp() && <OfflineBanner />}
       </WatchTogetherProvider>
     </ToastProvider>
   );

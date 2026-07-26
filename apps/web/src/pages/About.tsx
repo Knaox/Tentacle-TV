@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { isTauriApp } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 import { getVersion } from "../desktop/bridge";
 import { PageTransition } from "../components/PageTransition";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 
 export function About() {
   const { t } = useTranslation("about");
-  const platform = isTauriApp ? "Desktop" : "Web";
+  const platform = isDesktopApp() ? "Desktop" : "Web";
   // Sur desktop, lire la VRAIE version du bundle (ex. 1.0.0 pour le build Mac App
   // Store) plutôt que la constante de build (apps/desktop/package.json).
   const [desktopVersion, setDesktopVersion] = useState<string>(__APP_VERSION_DESKTOP__);
   useEffect(() => {
-    if (!isTauriApp) return;
+    if (!isDesktopApp()) return;
     getVersion()
       .then((v) => { if (v) setDesktopVersion(v); })
       .catch(() => {});
   }, []);
-  const rawVersion = isTauriApp ? desktopVersion : __APP_VERSION_WEB__;
+  const rawVersion = isDesktopApp() ? desktopVersion : __APP_VERSION_WEB__;
   // Detect pre-release with optional iteration: "1.0.0-beta" → "BETA",
   // "1.0.0-beta.2" → "BETA 2", "2.0.0-rc.1" → "RC 1".
   const preReleaseMatch = rawVersion.match(/-([a-z]+)(?:\.(\d+))?/i);

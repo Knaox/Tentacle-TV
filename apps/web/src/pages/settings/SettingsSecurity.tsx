@@ -1,7 +1,7 @@
 import { ChangePasswordSection } from "../../components/preferences/ChangePasswordSection";
 import { MyDevicesSection } from "../../components/settings/MyDevicesSection";
 import { ChangeServerSection } from "../../components/settings/ChangeServerSection";
-import { isTauriApp } from "../../main";
+import { isDesktopApp } from "../../desktop/bridge";
 
 /**
  * Sécurité — regroupe ce qui était dispersé sur quatre écrans.
@@ -21,7 +21,7 @@ export function SettingsSecurity() {
     <div className="max-w-2xl">
       <ChangePasswordSection />
       <MyDevicesSection />
-      {isTauriApp && <ChangeServerSection />}
+      {isDesktopApp() && <ChangeServerSection />}
     </div>
   );
 }

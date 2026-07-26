@@ -11,7 +11,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useUserId } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { isTauriApp } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { deleteDownload, type DownloadEntry } from "./api";
 import { DownloadRow } from "./DownloadRow";
 import { DownloadsSpaceBar } from "./DownloadsSpaceBar";
@@ -45,7 +45,7 @@ export function DownloadsPage() {
     return { active, movies, series: [...seriesMap.entries()].sort((a, b) => a[0].localeCompare(b[0])) };
   }, [entries]);
 
-  if (!isTauriApp || !visible) return <Navigate to="/" replace />;
+  if (!supportsDownloads() || !visible) return <Navigate to="/" replace />;
 
   const handleDeleteConfirm = async () => {
     if (!toDelete || !userId) return;

@@ -2,7 +2,7 @@
  * Capacités de téléchargement de l'utilisateur courant — LE commutateur
  * d'invisibilité : `downloads: false` ⇒ aucun composant lié n'est rendu.
  *
- * Desktop uniquement (`isTauriApp`) — sur le web, toujours tout à false.
+ * Desktop uniquement (`supportsDownloads()`) — sur le web, toujours tout à false.
  * En ligne : lecture live du backend (qui relit la policy Jellyfin), et la
  * réponse est photographiée dans le cache de session hors ligne (SQLite).
  * Hors ligne : repli sur cette photo (si la session locale n'a pas expiré).
@@ -10,7 +10,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useUserId } from "@tentacle-tv/api-client";
-import { backendUrl, isTauriApp } from "../main";
+import { backendUrl } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { getCachedSession, saveCachedSession } from "../offline/offlineSession";
 
@@ -75,7 +76,7 @@ export function useDownloadCapabilities(): {
   const liveQuery = useQuery({
     queryKey: [DOWNLOAD_CAPABILITIES_QUERY_KEY, userId],
     queryFn: () => fetchCapabilities(userId as string),
-    enabled: isTauriApp && !!userId && online,
+    enabled: supportsDownloads() && !!userId && online,
     staleTime: 60_000,
     gcTime: 30 * 60_000,
     refetchOnWindowFocus: true,
@@ -85,11 +86,11 @@ export function useDownloadCapabilities(): {
   const cachedQuery = useQuery({
     queryKey: [DOWNLOAD_CAPABILITIES_QUERY_KEY, "offline-cache", userId],
     queryFn: () => readCachedCapabilities(userId as string),
-    enabled: isTauriApp && !!userId && !online,
+    enabled: supportsDownloads() && !!userId && !online,
     staleTime: 15_000,
   });
 
-  if (!isTauriApp || !userId) return { capabilities: NONE, fromOfflineCache: false };
+  if (!supportsDownloads() || !userId) return { capabilities: NONE, fromOfflineCache: false };
   if (!online) return { capabilities: cachedQuery.data ?? NONE, fromOfflineCache: true };
   return { capabilities: liveQuery.data ?? NONE, fromOfflineCache: false };
 }

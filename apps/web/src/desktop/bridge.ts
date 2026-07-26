@@ -19,6 +19,13 @@ import { desktopKind } from "./detect";
 import type { DesktopEventHandler, Unlisten } from "./types";
 
 export { desktopKind, desktopPlatform, isDesktopApp, isElectronShell, isTauriShell } from "./detect";
+export {
+  supportsAppUpdates,
+  supportsDownloads,
+  supportsMpv,
+  supportsOfflineSession,
+  supportsSmtc,
+} from "./capabilities";
 export type { DesktopEvent, DesktopEventHandler, DesktopKind, Unlisten } from "./types";
 
 const NOT_DESKTOP = "commande native appelée hors application de bureau";

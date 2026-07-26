@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isTauri, isWindows, isLinux, isAppStoreBuild } from "./useDesktopPlayer";
 import { openExternal } from "../lib/openExternal";
-import { invoke, listen, relaunch } from "../desktop/bridge";
+import { invoke, listen, relaunch, supportsAppUpdates } from "../desktop/bridge";
 import { APP_STORE_ID, checkAppStoreUpdate, checkMsixUpdate } from "../lib/updateCheckers";
 import { checkLinuxUpdate, downloadLinuxUpdate, applyLinuxUpdate, type LinuxUpdateFound } from "../lib/linuxUpdate";
 
@@ -73,6 +73,10 @@ export function useAutoUpdate() {
     }
 
     if (!isTauri()) return;
+    // Le shell doit savoir vérifier les mises à jour. Sous Electron, tant que
+    // la phase dédiée n'a pas livré, la commande n'existe pas : sans cette
+    // porte, le contrôle partait quand même et échouait à chaque démarrage.
+    if (!supportsAppUpdates()) return;
     if (!isAppStoreBuild() && !isWindows() && !isLinux()) return;
 
     let cancelled = false;
@@ -147,7 +151,7 @@ export function useAutoUpdate() {
   }, []);
 
   const installUpdate = useCallback(async () => {
-    if (!isTauri()) return;
+    if (!isTauri() || !supportsAppUpdates()) return;
 
     // Mode simulation : flow factice 5s, pas de relaunch réel.
     if (import.meta.env.DEV && __testMode) {

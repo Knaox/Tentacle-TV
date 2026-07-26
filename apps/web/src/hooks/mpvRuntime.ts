@@ -1,4 +1,5 @@
 import type { MpvObservableProperty } from "tauri-plugin-libmpv-api";
+import { desktopPlatform, isDesktopApp, isElectronShell } from "../desktop/bridge";
 import type { MpvTrack } from "./mpvTrackList";
 
 /**
@@ -28,16 +29,14 @@ export interface PlayOptions {
   subtitleTrack?: number;
 }
 
-/** Detect if running inside Tauri (desktop app).
- *  Aligné sur `isTauriApp` (main.tsx) : sur certaines webviews Linux/webkit2gtk,
- *  `__TAURI_INTERNALS__` peut n'être pas encore visible au moment du routage
- *  (Watch.tsx) → sans les 2 autres signaux, l'app basculait à tort sur le lecteur
- *  web (hls.js) au lieu de mpv. « Linux doit utiliser mpv. » */
+/** Application de bureau, quel que soit le shell (Tauri ou Electron).
+ *  La détection vit dans `desktop/detect.ts` : elle était dupliquée ici, ne
+ *  connaissait que Tauri, et faisait basculer l'app Electron sur le lecteur web
+ *  alors qu'elle a mpv. Les trois signaux Tauri y sont conservés à l'identique
+ *  — sur certaines webviews Linux/webkit2gtk, `__TAURI_INTERNALS__` peut n'être
+ *  pas encore visible au moment du routage (Watch.tsx). « Linux doit utiliser mpv. » */
 export function isTauri(): boolean {
-  if (typeof window === "undefined") return false;
-  return "__TAURI_INTERNALS__" in window
-    || "__TAURI__" in window
-    || (typeof navigator !== "undefined" && navigator.userAgent.includes("Tauri"));
+  return isDesktopApp();
 }
 
 /** Detect macOS — used to route to native HLS player (AVFoundation) instead of MPV.
@@ -57,10 +56,10 @@ export function isWindows(): boolean {
   return /Windows NT/i.test(navigator.userAgent);
 }
 
-/** Detect Linux (desktop Tauri hors macOS/Windows) — cible de l'auto-updater
- *  intégré universel (aucun store : AppImage/deb/rpm/pacman via GitHub Releases). */
+/** Detect Linux (bureau hors macOS/Windows) — cible de l'auto-updater intégré
+ *  universel (aucun store : AppImage/deb/rpm/pacman via GitHub Releases). */
 export function isLinux(): boolean {
-  return isTauri() && !isMacOS() && !isWindows();
+  return desktopPlatform() === "linux";
 }
 
 /** Build distribué via le Mac App Store (canal injecté à la compilation).
@@ -82,6 +81,11 @@ export function getMpvApi(): PluginApi | null {
 
 export const loadMpvApi = async (): Promise<boolean> => {
   try {
+    // Electron n'a pas encore son adaptateur (`mpvElectronApi`, phase 5). Le
+    // dire ICI plutôt que de laisser tomber l'import du plugin Tauri : ce
+    // dernier échouerait de toute façon, mais après avoir tiré un module qui
+    // n'a rien à faire dans ce shell.
+    if (isElectronShell()) return false;
     if (isMacOS()) {
       api = await import("../lib/mpvMacosApi") as unknown as PluginApi;
     } else if (isLinux()) {

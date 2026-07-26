@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { isTauriApp } from "../../main";
+import { isDesktopApp } from "../../desktop/bridge";
 import { LogoutIcon } from "../userMenu/icons";
 
 /**
@@ -61,7 +61,7 @@ export function AccountActions() {
       aria-label={t("title")}
     >
       <ul className="divide-y divide-line-subtle">
-        {isTauriApp && (
+        {isDesktopApp() && (
           <li>
             <button
               type="button"

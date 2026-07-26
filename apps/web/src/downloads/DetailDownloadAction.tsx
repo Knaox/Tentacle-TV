@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { isTauriApp } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { DownloadDialog } from "./DownloadDialog";
 import { useDownloadsVisibility, useItemDownloadState } from "./useDownloadState";
 
@@ -20,10 +20,10 @@ export function DetailDownloadAction({ item }: { item: MediaItem }) {
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
   const { canDownload } = useDownloadsVisibility();
-  const state = useItemDownloadState(isTauriApp ? item.Id : undefined);
+  const state = useItemDownloadState(supportsDownloads() ? item.Id : undefined);
   const [open, setOpen] = useState(false);
 
-  if (!isTauriApp) return null;
+  if (!supportsDownloads()) return null;
   if (item.Type !== "Movie" && item.Type !== "Episode") return null;
 
   const isActive = state !== null && ACTIVE_STATUSES.has(state.status);

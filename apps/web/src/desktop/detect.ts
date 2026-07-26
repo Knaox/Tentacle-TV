@@ -57,6 +57,12 @@ export function isElectronShell(): boolean {
 export type DesktopPlatform = "windows" | "macos" | "linux" | "web";
 
 export function desktopPlatform(): DesktopPlatform {
+  // Hors application de bureau, la réponse est « web » et rien d'autre. Le
+  // système d'exploitation sous le navigateur ne regarde personne ici : un
+  // Chrome sous Windows n'a pas les capacités natives de Windows, et laisser
+  // filtrer « windows » ferait croire à ses appelants qu'il les a.
+  if (kind === null) return "web";
+
   if (kind === "electron") {
     const p = window.tentacle?.platform;
     if (p === "win32") return "windows";
@@ -70,5 +76,5 @@ export function desktopPlatform(): DesktopPlatform {
   if (navigator.platform?.startsWith("Win") || /Windows NT/i.test(navigator.userAgent)) {
     return "windows";
   }
-  return kind !== null ? "linux" : "web";
+  return "linux";
 }

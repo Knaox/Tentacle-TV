@@ -2,13 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Le module dépend de deux choses qui n'existent pas sous vitest : la commande
- * Tauri et la détection de plateforme. On les remplace AVANT l'import, sinon
- * `isTauri()` renverrait false et tout serait court-circuité.
+ * native et la détection du shell. On les remplace AVANT l'import, sinon
+ * `isTauriShell()` renverrait false et tout serait court-circuité.
+ *
+ * La garde est bien `isTauriShell` et non « suis-je sur le bureau » : cette
+ * sauvegarde est le côté ÉCRITURE de la migration, réservé à l'app Tauri.
+ * Electron relit le dépôt, il ne le réécrit jamais.
  */
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 
-vi.mock("../desktop/bridge", () => ({ invoke: (c: string, a?: unknown) => invoke(c, a) }));
-vi.mock("../hooks/mpvRuntime", () => ({ isTauri: () => true }));
+vi.mock("../desktop/bridge", () => ({
+  invoke: (c: string, a?: unknown) => invoke(c, a),
+  isTauriShell: () => true,
+}));
 
 /**
  * Les tests du projet tournent en environnement `node` : ni `localStorage`,

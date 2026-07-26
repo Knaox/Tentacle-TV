@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { isTauriApp } from "../../main";
+import { isDesktopApp } from "../../desktop/bridge";
 import { pickFolder } from "../../desktop/bridge";
 import { isAppStoreBuild } from "../../hooks/mpvRuntime";
 import { getDownloadsRoot, setDownloadsRoot } from "../../downloads/api";
@@ -27,11 +27,11 @@ export function SettingsDownloads() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!isTauriApp) return;
+    if (!isDesktopApp()) return;
     void getDownloadsRoot().then(setRoot);
   }, []);
 
-  if (!isTauriApp || !visible) return <Navigate to="/settings" replace />;
+  if (!isDesktopApp() || !visible) return <Navigate to="/settings" replace />;
 
   const canPickFolder = !isAppStoreBuild();
 

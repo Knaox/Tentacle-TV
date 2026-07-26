@@ -14,7 +14,7 @@
 
 import { useSyncExternalStore } from "react";
 import { invoke } from "../desktop/bridge";
-import { isTauri } from "../hooks/mpvRuntime";
+import { supportsDownloads } from "../desktop/bridge";
 
 interface AssetBase {
   base: string;
@@ -33,7 +33,7 @@ const RETRY_COOLDOWN_MS = 15_000;
 const listeners = new Set<() => void>();
 
 export function primeDownloadsRoot(): void {
-  if (!isTauri() || cachedBase !== null || loading) return;
+  if (!supportsDownloads() || cachedBase !== null || loading) return;
   if (Date.now() - lastFailureAt < RETRY_COOLDOWN_MS) return;
   loading = true;
   void invoke<AssetBase>("downloads_asset_base")
@@ -74,7 +74,7 @@ export function useDownloadsRootReady(): boolean {
  * hors Tauri) — les composants abonnés re-rendent à l'arrivée.
  */
 export function localResourceUrl(relPath: string): string | null {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   if (cachedBase === null) {
     primeDownloadsRoot();
     return null;

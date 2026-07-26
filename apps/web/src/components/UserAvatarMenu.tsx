@@ -6,7 +6,7 @@ import { Dropdown } from "./ui/Dropdown";
 import { AVATAR_RING_STYLE, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
 import { useToast } from "../contexts/ToastContext";
-import { isTauriApp } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
 
@@ -50,7 +50,7 @@ export function UserAvatarMenu() {
   // Bascule manuelle hors ligne : desktop uniquement, et seulement quand tout
   // va bien (hors ligne, la pastille du TopNav porte déjà l'action inverse).
   const goOffline =
-    isTauriApp && connectivity.state === "online"
+    isDesktopApp() && connectivity.state === "online"
       ? () => {
           close();
           setManualOffline(true);

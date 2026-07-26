@@ -35,6 +35,7 @@ import * as PluginsAPI from "@tentacle-tv/plugins-api";
 import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
+import { isDesktopApp, isTauriShell } from "./desktop/bridge";
 import { getBackendBase } from "./lib/backendBase";
 import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
@@ -66,15 +67,12 @@ if (_hasUser && !_pendingLang) {
   }).catch(() => {});
 }
 
-// Detect Tauri (desktop app) vs web deployment
-// Check multiple signals: __TAURI_INTERNALS__ (v2 IPC bridge, always injected),
-// __TAURI__ (withGlobalTauri or @tauri-apps/api), and User-Agent fallback.
-export const isTauriApp = typeof window !== "undefined" && (
-  "__TAURI_INTERNALS__" in window ||
-  "__TAURI__" in window ||
-  navigator.userAgent.includes("Tauri")
-);
-const deviceName = isTauriApp ? "Desktop" : "Web";
+// Application de bureau (Tauri sur macOS et Linux, Electron sur Windows) par
+// opposition au déploiement web. La détection vit dans `desktop/detect.ts` et
+// nulle part ailleurs — elle était dupliquée ici, ne connaissait que Tauri, et
+// faisait passer l'app Electron pour un navigateur.
+const isDesktop = isDesktopApp();
+const deviceName = isDesktop ? "Desktop" : "Web";
 
 // Web: same-origin (or VITE_BACKEND_URL for dev).
 // Desktop: saved Tentacle server URL from localStorage.
@@ -98,13 +96,18 @@ configureBackendUrls(backendUrl);
 
 // Desktop : le catalogue local existe — un fetch qui pend doit échouer vite
 // (12 s) pour nourrir la bascule hors ligne. Web : 30 s historiques conservés.
-if (isTauriApp) setRequestTimeoutMs(12_000);
+if (isDesktop) setRequestTimeoutMs(12_000);
 
-// Desktop : copie du stockage local dans la base SQLite de l'app, en vue de la
-// migration vers Electron. `localStorage` appartient au moteur web et est rangé
-// par origine ; sans cette copie, la première version Electron déconnecterait
-// TOUS les utilisateurs. Silencieux, sans effet sur le web.
-if (isTauriApp) startLocalStorageExport();
+// Copie du stockage local dans la base SQLite de l'app, en vue de la migration
+// vers Electron. `localStorage` appartient au moteur web et est rangé par
+// origine ; sans cette copie, la première version Electron déconnecterait TOUS
+// les utilisateurs. Silencieux, sans effet sur le web.
+//
+// Gardé sur `isTauriShell()` et NON sur `isDesktopApp()` : c'est le côté
+// ÉCRITURE de la migration. Electron lit ce dépôt au premier démarrage, il ne
+// le réécrit pas — le relancer depuis Electron écraserait la sauvegarde par le
+// contenu d'une origine encore vide.
+if (isTauriShell()) startLocalStorageExport();
 
 // Plugin registration (legacy — plugins now run in sandboxed iframes on web)
 // Mobile/desktop still use inline registration.
@@ -115,8 +118,8 @@ const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
 
 // JellyfinClient routes through the Tentacle proxy at /api/jellyfin/*
-const clientName = isTauriApp ? "Tentacle TV - Desktop" : "Tentacle TV - Web";
-const clientVersion = isTauriApp ? __APP_VERSION_DESKTOP__ : __APP_VERSION_WEB__;
+const clientName = isDesktop ? "Tentacle TV - Desktop" : "Tentacle TV - Web";
+const clientVersion = isDesktop ? __APP_VERSION_DESKTOP__ : __APP_VERSION_WEB__;
 
 const jellyfinClient = new JellyfinClient(
   backendUrl ? `${backendUrl}/api/jellyfin` : "/api/jellyfin",
@@ -128,7 +131,7 @@ const jellyfinClient = new JellyfinClient(
 );
 
 // Web: use httpOnly cookies for auth (XSS-proof token storage)
-if (!isTauriApp) {
+if (!isDesktop) {
   jellyfinClient.useCredentials = true;
 }
 

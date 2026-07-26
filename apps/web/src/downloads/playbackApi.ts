@@ -4,7 +4,7 @@
  */
 
 import { invoke } from "../desktop/bridge";
-import { isTauri } from "../hooks/mpvRuntime";
+import { supportsDownloads } from "../desktop/bridge";
 
 export interface LocalSubtitleFile {
   absolutePath: string;
@@ -37,7 +37,7 @@ export async function localSourceForItem(
   userId: string,
   itemId: string,
 ): Promise<LocalSource | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<LocalSource | null>("downloads_local_source", { userId, itemId });
   } catch {
@@ -52,7 +52,7 @@ export async function saveLocalPlaybackState(
   played: boolean,
   queueForSync: boolean,
 ): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_playback_set", { userId, itemId, positionTicks, played, queueForSync });
   } catch {
@@ -70,7 +70,7 @@ export interface PendingReport {
 
 /** File de resynchronisation, dédupliquée (dernier état par item). */
 export async function pendingReports(userId: string): Promise<PendingReport[]> {
-  if (!isTauri()) return [];
+  if (!supportsDownloads()) return [];
   try {
     return await invoke<PendingReport[]>("downloads_reports_pending", { userId });
   } catch {
@@ -83,7 +83,7 @@ export async function markReportSynced(
   itemId: string,
   upToId: number,
 ): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_reports_mark_synced", { userId, itemId, upToId });
   } catch {
@@ -99,7 +99,7 @@ export async function markReportSynced(
  * appareil.
  */
 export async function clearReportQueueForItem(userId: string, itemId: string): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   const pending = await pendingReports(userId);
   const entry = pending.find((r) => r.itemId === itemId);
   if (entry) await markReportSynced(userId, itemId, entry.id);
