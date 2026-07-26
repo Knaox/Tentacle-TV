@@ -1,4 +1,5 @@
-//! Durcissement de la fenêtre vidéo enfant créée par libmpv (Windows, mode `--wid`).
+//! Surface vidéo Windows : fenêtre enfant de libmpv (mode `--wid`) et opacité
+//! de la webview qui la recouvre.
 //!
 //! `tauri-plugin-libmpv` passe le HWND top-level de Tauri à mpv via l'option `wid`.
 //! mpv crée alors une fenêtre `WS_CHILD | WS_VISIBLE` sous ce HWND, mais depuis son
@@ -73,6 +74,61 @@ fn harden(child: HWND) {
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_NOSENDCHANGING,
         );
     }
+}
+
+/// Transparence de la webview — demandée le temps d'une lecture, rendue après.
+///
+/// # Pourquoi la fenêtre n'est plus `transparent: true`
+///
+/// C'était le dernier OS à la garder en permanence, et ça se voyait : chaque
+/// transition un peu large — ouverture d'une fiche depuis la recherche, sortie
+/// du lecteur — scintillait, alors que le MÊME moteur Chromium dans un
+/// navigateur ordinaire, sur la même machine, ne scintillait pas. La différence
+/// n'était donc pas le moteur mais la fenêtre.
+///
+/// `transparent: true` fait deux choses distinctes sur Windows, et une seule
+/// nous sert :
+///
+/// - **tao** appelle `DwmEnableBlurBehindWindow` sur une région vide. La fenêtre
+///   quitte le chemin de présentation opaque : DWM doit désormais la composer en
+///   alpha par-dessus le bureau à chaque image, et la présentation n'est plus
+///   une simple chaîne d'échange vsyncée. C'est de là que vient la déchirure,
+///   et ça ne sert **à rien** ici : mpv dessine DANS la fenêtre, rien n'a jamais
+///   eu à transparaître vers le bureau.
+/// - **wry** pose le fond de la WebView2 à alpha nul. Ça, c'est indispensable —
+///   c'est ce qui laisse voir la fenêtre enfant de mpv, placée en dessous.
+///
+/// D'où le partage retenu, le même que macOS (`macos/window_opacity.rs`) et que
+/// Linux (`linux/overlay.rs`) : la fenêtre reste opaque (`tauri.windows.conf.json`),
+/// et seule la webview devient transparente, le temps d'une lecture.
+///
+/// # Pourquoi une seule commande suffit ici
+///
+/// Sur macOS il a fallu écrire le sens OPAQUE à la main, wry y forçant
+/// `drawsBackground = NO` quelle que soit la couleur. Rien de tel sur Windows :
+/// `set_background_color` y ramène l'alpha à 255 dès qu'il est non nul
+/// (cf. wry `webview2/mod.rs`), donc l'aller-retour tient dans l'API publique
+/// de Tauri, dont l'implémentation est éprouvée.
+///
+/// # Ordre d'appel
+///
+/// L'invariant est celui du lecteur : jamais d'instant où la webview ET la page
+/// sont transparentes en même temps, sinon on voit le bureau. À l'entrée, la
+/// webview passe transparente AVANT que la page ne le devienne (`ready`) ; à la
+/// sortie, la page redevient opaque d'abord, la webview ensuite. Les deux
+/// opaques en même temps est en revanche sans danger : au pire un fond noir.
+#[command]
+pub fn player_surface_transparent(window: tauri::WebviewWindow, on: bool) -> Result<(), String> {
+    // Alpha nul : la couleur n'a aucune importance. Alpha 255 : opaque, et le
+    // noir est `--surface-0`, comme le fond d'amorçage de `index.html`.
+    let color = if on {
+        tauri::webview::Color(0, 0, 0, 0)
+    } else {
+        tauri::webview::Color(0, 0, 0, 255)
+    };
+    window
+        .set_background_color(Some(color))
+        .map_err(|e| format!("webview background: {e}"))
 }
 
 /// Désarme la fenêtre vidéo de mpv. Appelée depuis le frontend juste après `api.init()`.

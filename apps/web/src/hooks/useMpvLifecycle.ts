@@ -63,10 +63,23 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
         if (cancelled) return;
-        // Windows : mpv vient de créer sa fenêtre vidéo enfant sur son propre
-        // thread. On la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle
-        // ne puisse jamais geler la file d'entrée partagée avec le thread UI.
-        if (isWindows()) invoke("mpv_harden_child_window").catch(() => {});
+        if (isWindows()) {
+          // La webview cesse de peindre son fond — sans quoi la fenêtre enfant
+          // de mpv, placée dessous, resterait invisible. Hors lecture elle est
+          // OPAQUE, et la fenêtre avec elle : une fenêtre transparente en
+          // permanence sortait Windows du chemin de présentation opaque et
+          // faisait scintiller chaque transition (cf. `mpv_window.rs`).
+          //
+          // Attendu, et posé AVANT `ready` : c'est `ready` qui rend la page
+          // transparente à son tour, et l'ordre inverse laisserait voir le fond
+          // de la webview le temps d'une image ou deux.
+          await invoke("player_surface_transparent", { on: true })
+            .catch((e) => console.warn("[mpv] surface transparente refusée", e));
+          // mpv vient de créer sa fenêtre vidéo enfant sur son propre thread. On
+          // la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
+          // puisse jamais geler la file d'entrée partagée avec le thread UI.
+          invoke("mpv_harden_child_window").catch(() => {});
+        }
         setReady(true);
         // Restore persisted volume + mute (le mute doit survivre aux
         // changements d'épisode/média — remount du player).
@@ -308,6 +321,19 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         wakeupRef.current = null;
       }
       for (const unlisten of unlisteners) unlisten();
+      // La webview reprend son fond opaque. Sur Windows c'est ce qui met fin au
+      // scintillement du retour au média : la fenêtre enfant de mpv SURVIT à ce
+      // démontage — `destroy()` part sans être attendu, et c'est le `gui_thread`
+      // de mpv qui détruira la fenêtre, plus tard. Jusque-là une webview sans
+      // fond la laissait transparaître par-dessous la page en cours de repeint.
+      //
+      // Ce nettoyage-ci passe en premier — l'effet est déclaré avant celui qui
+      // rend son fond à la page (`DesktopPlayer`) — mais l'`invoke` est
+      // asynchrone : la commande atterrit après le tick de démontage, donc après
+      // que la page soit redevenue opaque. C'est le bon sens. L'inverse ne
+      // coûterait de toute façon qu'un fond noir ; ce sont les deux
+      // TRANSPARENTS en même temps qui laisseraient voir le bureau.
+      if (isWindows()) invoke("player_surface_transparent", { on: false }).catch(() => {});
       const api = getMpvApi();
       setPendingDestroy(api ? api.destroy().catch(() => {}) : Promise.resolve());
     };

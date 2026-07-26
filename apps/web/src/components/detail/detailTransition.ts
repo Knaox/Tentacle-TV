@@ -6,6 +6,18 @@ export interface DetailOrigin {
   imageUrl: string;
   /** Rayon du visuel de départ, pour que le coin s'ouvre au lieu de sauter. */
   radius: number;
+  /**
+   * L'écran de départ couvrait DÉJÀ tout — la recherche plein écran.
+   *
+   * Le calque d'ouverture fait normalement fondre sa base opaque depuis rien,
+   * par-dessus la page d'où l'on part, qui reste visible dessous : le fondu
+   * est un enchaînement. Depuis un takeover, ce n'est plus vrai. Le takeover
+   * disparaît d'un coup à la navigation, et le temps du fondu on voit
+   * ressurgir la page qu'il masquait — pendant que le visuel, lui, vole depuis
+   * une grille de résultats qui n'existe plus. La base démarre donc visible :
+   * le takeover passe le relais à un écran déjà couvert.
+   */
+  covered: boolean;
   stamp: number;
 }
 
@@ -38,6 +50,7 @@ export function captureDetailOrigin(
   itemId: string,
   imageUrl: string,
   radius = 12,
+  covered = false,
 ): void {
   if (!element) {
     pending = null;
@@ -53,6 +66,7 @@ export function captureDetailOrigin(
     rect: { top: r.top, left: r.left, width: r.width, height: r.height },
     imageUrl,
     radius,
+    covered,
     stamp: Date.now(),
   };
 }
