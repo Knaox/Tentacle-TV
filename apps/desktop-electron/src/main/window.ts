@@ -9,6 +9,11 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { lockNavigation } from "./security";
+import {
+  basculer as basculerPleinEcran,
+  estEnPleinEcran,
+  quitter as quitterPleinEcran,
+} from "./fullscreen";
 
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
@@ -33,6 +38,20 @@ let fullscreenOnEntry: boolean | null = null;
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
+
+/**
+ * Rend la surface de Chromium transparente, ou opaque.
+ *
+ * C'est ICI que se joue la visibilité de la vidéo, et nulle part ailleurs : la
+ * fenêtre reste une fenêtre Windows ordinaire, seule la surface de Chromium
+ * passe à alpha nul, le temps d'une lecture. Voir `createMainWindow` pour
+ * pourquoi le drapeau `transparent` de fabrication est banni.
+ */
+export function setPlayerSurfaceTransparent(on: boolean): void {
+  mainWindow?.setBackgroundColor(on ? "#00000000" : "#000000");
+}
+
+
 
 /**
  * @param commands Commandes réellement branchées, annoncées à la page.
@@ -111,6 +130,14 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     win.webContents.openDevTools({ mode: "detach" });
   }
 
+  // Diffuse tout changement de plein écran, QUELLE QUE SOIT SA SOURCE — notre
+  // bascule, F11, ou la sortie automatique du lecteur. Sans cette diffusion,
+  // l'icône du bouton et la touche Échap partaient en désaccord avec la
+  // fenêtre réelle.
+  const broadcast = (value: boolean): void => {
+    if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", value);
+  };
+
   // F11 sort du plein écran, quoi qu'il arrive.
   //
   // C'est le raccourci que tout le monde connaît sous Windows, et le menu
@@ -123,12 +150,12 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     event.preventDefault();
 
     // DEUX plein-écrans coexistent et ne se recouvrent pas toujours : celui de
-    // la FENÊTRE (`setFullScreen`, ce que déclenche notre commande
-    // `toggle_fullscreen`) et celui du DOCUMENT (`requestFullscreen`, posé par
-    // la page). N'en quitter qu'un donne exactement le symptôme observé : une
-    // fenêtre dont on ne sort plus. F11 sort donc des DEUX, et n'entre que si
-    // aucun des deux n'est actif — sans quoi la touche cesserait de basculer.
-    const fenetre = win.isFullScreen();
+    // la FENÊTRE (le nôtre, cf. `fullscreen.ts`) et celui du DOCUMENT
+    // (`requestFullscreen`, posé par la page). N'en quitter qu'un donne
+    // exactement le symptôme observé : une fenêtre dont on ne sort plus. F11
+    // sort donc des DEUX, et n'entre que si aucun des deux n'est actif — sans
+    // quoi la touche cesserait de basculer.
+    const fenetre = estEnPleinEcran();
     void win.webContents
       .executeJavaScript(
         "(() => { const e = !!document.fullscreenElement; if (e) document.exitFullscreen(); return e; })()",
@@ -137,11 +164,13 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
       .catch(() => false)
       .then((document: unknown) => {
         const etait = fenetre || document === true;
-        win.setFullScreen(!etait);
+        if (etait) quitterPleinEcran(win);
+        else basculerPleinEcran(win);
+        broadcast(estEnPleinEcran());
         if (app.isPackaged) return;
         console.log(
           `[fenetre] F11 — avant : fenetre=${fenetre} document=${String(document)}` +
-            ` → fenetre=${win.isFullScreen()}`,
+            ` → fenetre=${estEnPleinEcran()}`,
         );
       });
   });
@@ -149,16 +178,6 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
   // rectangle vide le temps du premier rendu.
   win.once("ready-to-show", () => win.show());
-
-  // Diffuse tout changement de plein écran, QUELLE QUE SOIT SA SOURCE —
-  // bouton de la fenêtre, raccourci système, ou notre propre bascule. Sans
-  // cette diffusion, l'icône du bouton et la touche Échap partaient en
-  // désaccord avec la fenêtre réelle.
-  const broadcast = (value: boolean): void => {
-    if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", value);
-  };
-  win.on("enter-full-screen", () => broadcast(true));
-  win.on("leave-full-screen", () => broadcast(false));
 
   win.on("closed", () => {
     mainWindow = null;
@@ -172,9 +191,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 export function toggleFullscreen(): boolean {
   const win = mainWindow;
   if (!win) return false;
-  const next = !win.isFullScreen();
-  win.setFullScreen(next);
-  return next;
+  return basculerPleinEcran(win);
 }
 
 /**
@@ -183,9 +200,8 @@ export function toggleFullscreen(): boolean {
  * session, la mémoire d'entrée n'est donc pas réécrite.
  */
 export function enterPlayerFullscreenScope(): boolean {
-  const win = mainWindow;
-  if (!win) return false;
-  const now = win.isFullScreen();
+  if (!mainWindow) return false;
+  const now = estEnPleinEcran();
   if (fullscreenOnEntry === null) fullscreenOnEntry = now;
   return now;
 }
@@ -199,5 +215,5 @@ export function leavePlayerFullscreenScope(): void {
   const win = mainWindow;
   const entry = fullscreenOnEntry;
   fullscreenOnEntry = null;
-  if (win && entry === false && win.isFullScreen()) win.setFullScreen(false);
+  if (win && entry === false && estEnPleinEcran()) quitterPleinEcran(win);
 }

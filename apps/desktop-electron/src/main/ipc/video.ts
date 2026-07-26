@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { getMainWindow } from "../window";
+import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { activerHdr, basculeEnCours, hdrSupporte, restaurerHdr, hdrActif } from "../video/hdr";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
 import { nativeHandle, VideoWindow } from "../video/videoWindow";
@@ -201,16 +201,15 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     .add("player_surface_transparent", {
       schema: SURFACE,
       run: ({ on }) => {
-        // C'est ICI que se joue la visibilité de la vidéo, et nulle part
-        // ailleurs : la fenêtre reste une fenêtre Windows ordinaire, seule la
-        // surface de Chromium passe à alpha nul, le temps d'une lecture.
-        //
         // Contre-intuitif au regard de la documentation d'Electron, qui lie
         // l'alpha au drapeau `transparent` de la fabrication — mais mesuré sur
         // maquette : appliqué à l'exécution, il fonctionne sans ce drapeau, et
         // la fenêtre garde alors son cadre, son redimensionnement et son plein
         // écran. Même partage que l'app Tauri (`mpv_window.rs:78`).
-        getMainWindow()?.setBackgroundColor(on ? "#00000000" : "#000000");
+        //
+        // La fenêtre garde la mémoire de cet état : elle en a besoin pour
+        // relancer sa composition à la sortie du plein écran.
+        setPlayerSurfaceTransparent(on);
       },
     })
     .add("mpv_harden_child_window", {
