@@ -48,18 +48,24 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     minWidth: MIN_WIDTH,
     minHeight: MIN_HEIGHT,
     title: "Tentacle",
-    // Fenêtre APTE à la transparence, mais OPAQUE tant qu'on ne lit rien.
+    // Fenêtre ORDINAIRE : cadre natif, redimensionnable, plein écran.
     //
-    // `transparent` ne se change pas après coup dans Electron ; la couleur de
-    // fond, si. On construit donc la fenêtre transparente et on la garde noire
-    // opaque, `player_surface_transparent` basculant la couleur à l'entrée et
-    // à la sortie du lecteur.
+    // ⚠️ NE PAS y remettre `transparent: true`. Sous Windows, ce drapeau retire
+    // le cadre, empêche le redimensionnement ET casse `setFullScreen` — on s'y
+    // retrouve enfermé en plein écran, constaté. Il n'est de toute façon PAS
+    // nécessaire : `setBackgroundColor` avec un alpha nul, appliqué à
+    // l'EXÉCUTION, rend la surface de Chromium transparente et laisse voir la
+    // fenêtre vidéo de mpv placée dessous. Mesuré sur maquette : cadre présent,
+    // redimensionnement et agrandissement disponibles, vidéo visible.
     //
-    // Ce n'est pas de la prudence : l'app Tauri a mesuré qu'une fenêtre
-    // transparente EN PERMANENCE sort Windows du chemin de présentation opaque
-    // et fait scintiller chaque transition (cf. `mpv_window.rs`, et le
-    // commentaire de `useMpvLifecycle`).
-    transparent: process.platform === "win32",
+    // C'est le même partage que l'app Tauri, qui a abandonné `transparent`
+    // pour la même raison : il fait deux choses, et une seule sert. Voir
+    // `apps/desktop/src-tauri/src/mpv_window.rs:78` — la fenêtre transparente
+    // en permanence sort Windows du chemin de présentation opaque et fait
+    // scintiller chaque transition.
+    //
+    // La bascule se fait par `player_surface_transparent`, à l'entrée et à la
+    // sortie du lecteur.
     backgroundColor: "#000000",
     show: false,
     webPreferences: {
@@ -115,7 +121,27 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
   win.webContents.on("before-input-event", (event, input) => {
     if (input.type !== "keyDown" || input.key !== "F11") return;
     event.preventDefault();
-    win.setFullScreen(!win.isFullScreen());
+
+    // DEUX plein-écrans coexistent et ne se recouvrent pas toujours : celui de
+    // la FENÊTRE (`setFullScreen`, ce que déclenche notre commande
+    // `toggle_fullscreen`) et celui du DOCUMENT (`requestFullscreen`, déclenché
+    // par la page). Sortir de l'un en laissant l'autre donne exactement le
+    // symptôme observé : une fenêtre dont on ne peut plus sortir.
+    const avantFenetre = win.isFullScreen();
+    win.setFullScreen(false);
+    void win.webContents
+      .executeJavaScript(
+        "(() => { const e = !!document.fullscreenElement; if (e) document.exitFullscreen(); return e; })()",
+        true,
+      )
+      .then((avantDocument: unknown) => {
+        if (app.isPackaged) return;
+        console.log(
+          `[fenetre] F11 — plein ecran fenetre=${avantFenetre} document=${String(avantDocument)}` +
+            ` → fenetre=${win.isFullScreen()}`,
+        );
+      })
+      .catch(() => undefined);
   });
 
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un

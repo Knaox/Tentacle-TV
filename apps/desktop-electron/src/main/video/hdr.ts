@@ -198,22 +198,30 @@ export function hdrSupporte(): boolean {
 
 /**
  * Active le HDR sur les écrans qui le savent faire, en retenant leur état.
- * Sans effet — et sans mémoire écrasée — si c'est déjà fait.
+ *
+ * ⚠️ La mémoire de l'état d'origine n'est écrite qu'à la PREMIÈRE bascule, mais
+ * l'activation, elle, est retentée à chaque appel. Une version antérieure
+ * sortait immédiatement dès que la mémoire existait : si une lecture
+ * précédente ne l'avait pas rendue — sortie sans `mpv_destroy`, application
+ * tuée — la fonction répondait « ok » sans jamais rien basculer, et le HDR ne
+ * revenait plus jamais de la session.
  */
 export function activerHdr(): boolean {
-  if (avant !== null) return true;
   const cibles = ciblesActives();
   if (cibles.length === 0) return false;
 
-  const memoire: Array<{ cible: Cible; actif: boolean }> = [];
+  const premiere = avant === null;
+  const memoire = avant ?? [];
   let uneAuMoins = false;
+
   for (const cible of cibles) {
     const etat = lireEtat(cible);
     if (!etat?.supporte) continue;
-    memoire.push({ cible, actif: etat.actif });
-    if (!etat.actif && ecrireEtat(cible, true)) uneAuMoins = true;
-    else if (etat.actif) uneAuMoins = true;
+    if (premiere) memoire.push({ cible, actif: etat.actif });
+    if (etat.actif) uneAuMoins = true;
+    else if (ecrireEtat(cible, true)) uneAuMoins = true;
   }
+
   if (memoire.length === 0) return false;
   avant = memoire;
   return uneAuMoins;

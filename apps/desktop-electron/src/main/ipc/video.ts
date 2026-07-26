@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { getMainWindow } from "../window";
-import { activerHdr, basculeEnCours, hdrActif, hdrSupporte, restaurerHdr } from "../video/hdr";
+import { activerHdr, basculeEnCours, hdrSupporte, restaurerHdr, hdrActif } from "../video/hdr";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
 import { nativeHandle, VideoWindow } from "../video/videoWindow";
 import { CommandRegistry } from "./registry";
@@ -54,6 +54,9 @@ let video: VideoWindow | null = null;
  */
 let hdrAutoAutorise = false;
 
+/** Dernier gamma constaté, pour ne journaliser qu'au changement. */
+let dernierGamma: string | null = null;
+
 /** Diffuse vers la page, si elle est encore là. */
 function send(channel: string, payload: unknown): void {
   const win = getMainWindow();
@@ -69,11 +72,37 @@ function send(channel: string, payload: unknown): void {
  */
 function basculerSiHdr(): void {
   if (!hdrAutoAutorise) return;
+
   const gamma = getProperty("video-params/gamma");
-  if (gamma !== "pq" && gamma !== "hlg") return;
-  if (hdrActif()) return;
+
+  // ⚠️ `video-params/*` n'est PAS renseigné à `file-loaded` : mpv a ouvert le
+  // fichier mais n'a pas encore configuré sa sortie vidéo. On sortait donc sur
+  // « contenu ? » et la bascule n'avait jamais lieu — sauf coup de chance de
+  // calendrier. D'où l'appel aussi sur `video-reconfig`, où les paramètres sont
+  // valides : ici on se contente d'attendre, sans rien journaliser.
+  if (gamma === null) return;
+
+  if (gamma !== "pq" && gamma !== "hlg") {
+    if (dernierGamma !== gamma) {
+      console.info(`[tentacle] HDR : contenu ${gamma}, pas de bascule a faire`);
+      dernierGamma = gamma;
+    }
+    return;
+  }
+  // `video-reconfig` se répète (changement de piste, de résolution) : on ne
+  // journalise qu'au changement, l'action restant idempotente.
+  if (dernierGamma === gamma) {
+    activerHdr();
+    return;
+  }
+  dernierGamma = gamma;
+
+  // Pas de garde « un ecran est deja en HDR » : sur un poste a plusieurs
+  // ecrans, un seul deja allume suffisait a tout annuler — et la memoire de
+  // l'etat d'origine n'etait alors jamais posee, donc rien n'etait rendu.
+  // `activerHdr` traite chaque cible separement et est idempotente.
   const ok = activerHdr();
-  console.info(`[tentacle] contenu ${gamma} — bascule HDR de l'ecran : ${ok ? "ok" : "refusee"}`);
+  console.info(`[tentacle] HDR : contenu ${gamma} — bascule ${ok ? "ok" : "REFUSEE"}`);
 }
 
 export function registerVideoCommands(registry: CommandRegistry): void {
@@ -98,7 +127,10 @@ export function registerVideoCommands(registry: CommandRegistry): void {
               // lecture — changer le mode d'un écran coûte une à deux secondes
               // de noir pendant la resynchronisation, hors de question de le
               // refaire en cours de route.
-              if (p.event === "file-loaded") basculerSiHdr();
+              // `file-loaded` d'abord — au cas où les paramètres seraient déjà
+              // là — puis `video-reconfig`, où ils le sont à coup sûr : c'est
+              // l'évènement que mpv émet quand il a configuré sa sortie vidéo.
+              if (p.event === "file-loaded" || p.event === "video-reconfig") basculerSiHdr();
               send("mpv://event", p);
             },
             property: (p) => send("mpv://property-change", p),
@@ -126,6 +158,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         video?.detach();
         video = null;
         destroy();
+        dernierGamma = null;
         // L'écran est rendu tel qu'on l'a trouvé, systématiquement. Un écran
         // laissé en HDR délave tout le reste de Windows.
         restaurerHdr();
@@ -134,8 +167,12 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     .add("mpv_command", {
       schema: COMMAND,
       run: ({ name, args }) => {
-        const err = command([name, ...(args ?? []).map(String)]);
-        if (err) throw new Error(`${name} : ${err}`);
+        const liste = (args ?? []).map(String);
+        const err = command([name, ...liste]);
+        // Les ARGUMENTS dans le message, sans quoi « set : erreur » ne désigne
+        // rien : `set` sert à écrire n'importe quelle propriété, et l'erreur
+        // vient précisément de laquelle.
+        if (err) throw new Error(`${name} ${liste.join(" ")} : ${err}`);
       },
     })
     .add("mpv_set_property", {
@@ -166,12 +203,15 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     .add("player_surface_transparent", {
       schema: SURFACE,
       run: ({ on }) => {
-        // `transparent` est figé à la fabrication de la fenêtre ; la COULEUR de
-        // fond, non. Passer en `#00000000` laisse voir la fenêtre vidéo placée
-        // dessous, revenir au noir opaque la masque. C'est l'équivalent Electron
-        // de la bascule que l'app Tauri fait sur la webview — et il faut la
-        // faire, une transparence permanente sort Windows du chemin de
-        // présentation opaque et fait scintiller chaque transition.
+        // C'est ICI que se joue la visibilité de la vidéo, et nulle part
+        // ailleurs : la fenêtre reste une fenêtre Windows ordinaire, seule la
+        // surface de Chromium passe à alpha nul, le temps d'une lecture.
+        //
+        // Contre-intuitif au regard de la documentation d'Electron, qui lie
+        // l'alpha au drapeau `transparent` de la fabrication — mais mesuré sur
+        // maquette : appliqué à l'exécution, il fonctionne sans ce drapeau, et
+        // la fenêtre garde alors son cadre, son redimensionnement et son plein
+        // écran. Même partage que l'app Tauri (`mpv_window.rs:78`).
         getMainWindow()?.setBackgroundColor(on ? "#00000000" : "#000000");
       },
     })
@@ -192,6 +232,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
       schema: SURFACE,
       run: ({ on }) => {
         hdrAutoAutorise = on;
+        console.info(`[tentacle] HDR : bascule automatique ${on ? "autorisee" : "refusee"}`);
         // Désactivée en cours de lecture, la préférence rend l'écran tout de
         // suite : l'utilisateur qui décoche s'attend à voir l'effet, pas à
         // devoir arrêter le film.
