@@ -72,6 +72,68 @@ export function captureDetailOrigin(
 }
 
 /**
+ * Instant de la dernière SORTIE de lecteur. Zéro : jamais joué.
+ *
+ * L'autre façon d'arriver sur une fiche sans l'ouvrir. Une origine dit « voilà
+ * d'où part le vol » ; ceci dit « il n'y a rien à ouvrir, la fiche était déjà
+ * là ». Les deux mènent au même endroit — une page qui rend son état final
+ * d'emblée (cf. `skipEntrance` dans `MediaDetail`) — et vivent donc ensemble.
+ */
+let playerExitAt = 0;
+
+/**
+ * À appeler juste AVANT la navigation de sortie du lecteur, comme
+ * `captureDetailOrigin` l'est avant celle d'une carte.
+ *
+ * Toutes les sorties, pas seulement le bouton retour : raccourci Échap, fin de
+ * média sans épisode suivant, arrêt depuis les contrôles système. Ce qui compte
+ * n'est pas le geste mais la page qu'on retrouve.
+ */
+export function markPlayerExit(): void {
+  playerExitAt = Date.now();
+}
+
+/** Vrai si la navigation en cours sort du lecteur. Lecture non destructive. */
+export function arrivesFromPlayer(): boolean {
+  return playerExitAt > 0 && Date.now() - playerExitAt <= MAX_AGE_MS;
+}
+
+/**
+ * Chemin d'atterrissage du DOCUMENT — figé à l'import, donc une fois par
+ * chargement de page. `BrowserRouter` (cf. `main.tsx`) : le chemin de la route
+ * EST celui de l'URL.
+ */
+const landingPath = typeof window === "undefined" ? "" : window.location.pathname;
+
+/**
+ * La fiche rend-elle son état FINAL d'emblée, sans jouer son entrée ?
+ *
+ * Trois façons d'arriver sur une fiche sans l'ouvrir, une seule règle : cette
+ * page ne s'OUVRE pas, donc elle ne joue rien.
+ *
+ * 1. **Le calque s'en charge** (`origin`). Il recouvre l'écran pendant que la
+ *    page, dessous, jouerait sa PROPRE entrée — voile de page, cascade de texte,
+ *    fondu de l'affiche, fondu du backdrop. Les deux ne peuvent pas être
+ *    synchronisées : le calque ne part qu'une fois la requête revenue ET
+ *    l'affiche mesurée, donc s'efface tantôt avant, tantôt après la fin de la
+ *    cascade. Quand c'est avant, on découvre le titre et l'affiche à mi-opacité,
+ *    puis l'entrée se termine sous nos yeux.
+ * 2. **On sort du lecteur** (`arrivesFromPlayer`) : la fiche était là avant la
+ *    lecture, on ne l'ouvre pas, on la retrouve.
+ * 3. **Le document vient d'être chargé sur cette fiche** (`landingPath`) :
+ *    rechargement, lien direct, onglet restauré. Personne n'a cliqué sur rien.
+ *
+ * Dans les cas 2 et 3, l'entrée se jouait en entier par-dessus un écran encore
+ * noir — dont le fondu plein cadre du backdrop, le geste MÊME du calque. Ça se
+ * lit comme une transition qui rate son départ, pas comme une arrivée.
+ */
+export function skipsEntrance(origin: DetailOrigin | null): boolean {
+  return origin !== null
+    || arrivesFromPlayer()
+    || (typeof window !== "undefined" && window.location.pathname === landingPath);
+}
+
+/**
  * Relit l'origine si elle concerne bien cet item et vient d'être posée. Toute
  * autre entrée sur la fiche (lien partagé, rechargement, retour navigateur)
  * retombe sur un simple fondu.
