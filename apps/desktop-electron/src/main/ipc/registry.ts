@@ -15,7 +15,7 @@
 import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import type { ZodType } from "zod";
 import { isAllowedCommand, type Command } from "../channels";
-import { APP_ORIGIN } from "../appProtocol";
+import { isAppOrigin } from "../appProtocol";
 
 /** Poignée d'une commande : son schéma d'entrée et son exécution. */
 export interface Handler<T> {
@@ -59,6 +59,18 @@ export class CommandRegistry {
     return all.filter((c) => !this.handlers.has(c));
   }
 
+  /**
+   * Commandes réellement branchées, annoncées à la page.
+   *
+   * C'est ce qui permet à l'interface de masquer proprement ce que ce shell ne
+   * sait pas encore faire, au lieu d'afficher un bouton qui rejette. La liste
+   * s'allonge d'elle-même à mesure que les phases livrent : rien à tenir à jour
+   * à la main, et rien à retirer une fois la migration finie.
+   */
+  implemented(): Command[] {
+    return [...this.handlers.keys()];
+  }
+
   install(): void {
     for (const [command, handler] of this.handlers) {
       ipcMain.handle(`tentacle:${command}`, async (event, raw: unknown) => {
@@ -75,14 +87,11 @@ export class CommandRegistry {
  * L'émetteur est-il notre propre page ?
  *
  * On compare l'ORIGINE, pas l'URL : le routeur change de chemin en
- * permanence, mais jamais d'origine.
+ * permanence, mais jamais d'origine. Le comment de la comparaison est dans
+ * `isAppOrigin` — passer par `URL.origin` refuserait tout.
  */
 export function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   const frame = event.senderFrame;
   if (!frame) return false;
-  try {
-    return new URL(frame.url).origin === APP_ORIGIN;
-  } catch {
-    return false;
-  }
+  return isAppOrigin(frame.url);
 }

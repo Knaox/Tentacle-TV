@@ -67,12 +67,17 @@ function main(): void {
       console.info(`[tentacle] ${missing.length} commandes restent a implementer`);
     }
 
-    const win = createMainWindow();
+    // La page reçoit la liste de ce qui EST branché, pas de ce qui manque :
+    // elle n'a ainsi rien à savoir de la migration, seulement à demander
+    // « sais-tu télécharger ? » avant d'afficher le bouton.
+    const capabilities = registry.implemented();
+
+    const win = createMainWindow(capabilities);
     void win.loadURL(`${APP_ORIGIN}/index.html`);
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        const next = createMainWindow();
+        const next = createMainWindow(capabilities);
         void next.loadURL(`${APP_ORIGIN}/index.html`);
       }
     });

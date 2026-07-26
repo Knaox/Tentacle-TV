@@ -7,6 +7,7 @@
  */
 
 import { app, session, shell, type WebContents } from "electron";
+import { isAppOrigin } from "./appProtocol";
 
 /**
  * Schémas que l'application accepte d'ouvrir dans le navigateur du système.
@@ -55,12 +56,17 @@ export function denyAllPermissions(): void {
 /**
  * Verrouille la navigation d'un `WebContents`.
  *
- * `appOrigin` est la seule origine où la page a le droit d'aller. Toute autre
- * destination part dans le navigateur du système, jamais dans l'application.
+ * L'origine applicative est la seule où la page a le droit d'aller. Toute
+ * autre destination part dans le navigateur du système, jamais dans
+ * l'application.
  */
-export function lockNavigation(contents: WebContents, appOrigin: string): void {
+export function lockNavigation(contents: WebContents): void {
   contents.on("will-navigate", (event, url) => {
-    if (new URL(url).origin !== appOrigin) {
+    // `isAppOrigin`, jamais `URL.origin` : ce dernier vaut `"null"` sous Node
+    // pour notre schéma, ce qui faisait passer CHAQUE navigation interne pour
+    // un lien externe — et `openExternalSafely` la jetait ensuite, le schéma
+    // `tentacle:` n'étant pas dans la liste. Cul-de-sac silencieux.
+    if (!isAppOrigin(url)) {
       event.preventDefault();
       void openExternalSafely(url);
     }

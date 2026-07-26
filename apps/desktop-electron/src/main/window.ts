@@ -8,7 +8,6 @@
 
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
-import { APP_ORIGIN } from "./appProtocol";
 import { lockNavigation } from "./security";
 
 const DEFAULT_WIDTH = 1280;
@@ -35,7 +34,14 @@ export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
 
-export function createMainWindow(): BrowserWindow {
+/**
+ * @param commands Commandes réellement branchées, annoncées à la page.
+ *   L'interface s'en sert pour masquer ce que ce shell ne sait pas encore
+ *   faire, au lieu d'afficher un bouton qui rejette. Passées par argument de
+ *   fabrication plutôt que par un canal : c'est disponible dès le preload,
+ *   sans IPC synchrone et sans course au démarrage.
+ */
+export function createMainWindow(commands: readonly string[]): BrowserWindow {
   const win = new BrowserWindow({
     width: DEFAULT_WIDTH,
     height: DEFAULT_HEIGHT,
@@ -56,15 +62,21 @@ export function createMainWindow(): BrowserWindow {
       additionalArguments: [
         `--tentacle-version=${app.getVersion()}`,
         `--tentacle-platform=${process.platform}`,
+        `--tentacle-commands=${commands.join(",")}`,
       ],
     },
   });
 
-  lockNavigation(win.webContents, APP_ORIGIN);
+  lockNavigation(win.webContents);
 
   // Hors build empaqueté, on relaie la console du rendu et les échecs de
   // chargement dans le terminal. Sans ça, une violation de CSP ou un module
   // introuvable ne laisse qu'un écran noir, sans le moindre indice.
+  //
+  // Ce relais ne suffit PAS à lui seul : le build de production de `apps/web`
+  // supprime `console.log`, `console.debug` et `console.info` (`pure` dans
+  // `vite.config.ts`), et un échec au niveau du réseau n'écrit rien dans la
+  // console du rendu. D'où les outils de développement, ouverts d'office.
   if (!app.isPackaged) {
     win.webContents.on("console-message", (event) => {
       console.log(`[rendu:${event.level}] ${event.message} (${event.lineNumber})`);
@@ -72,9 +84,13 @@ export function createMainWindow(): BrowserWindow {
     win.webContents.on("did-fail-load", (_e, code, description, url) => {
       console.error(`[rendu] chargement echoue ${code} ${description} — ${url}`);
     });
+    win.webContents.on("did-finish-load", () => {
+      console.log("[rendu] chargement termine");
+    });
     win.webContents.on("render-process-gone", (_e, details) => {
       console.error(`[rendu] processus perdu: ${JSON.stringify(details)}`);
     });
+    win.webContents.openDevTools({ mode: "detach" });
   }
 
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un

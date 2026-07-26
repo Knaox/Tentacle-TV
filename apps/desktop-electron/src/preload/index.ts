@@ -30,6 +30,19 @@ function argValue(prefix: string): string {
 const version = argValue("--tentacle-version=");
 const platform = argValue("--tentacle-platform=");
 
+/**
+ * Commandes réellement branchées côté principal.
+ *
+ * Gelées ici : la page ne doit pas pouvoir y ajouter un nom pour débloquer une
+ * fonctionnalité absente. Le filtre écarte la chaîne vide que produirait un
+ * `"".split(",")` quand aucune commande n'est encore livrée.
+ */
+const capabilities: readonly string[] = Object.freeze(
+  argValue("--tentacle-commands=")
+    .split(",")
+    .filter((c) => c !== ""),
+);
+
 function assertPlatform(value: string): "win32" | "darwin" | "linux" {
   return value === "darwin" || value === "linux" ? value : "win32";
 }
@@ -53,6 +66,7 @@ contextBridge.exposeInMainWorld("tentacle", {
 
   version,
   platform: assertPlatform(platform),
+  capabilities,
 
   openExternal(url: string): Promise<void> {
     // Le filtrage des schémas est fait côté principal, jamais ici : une liste

@@ -66,8 +66,13 @@ export function buildCsp(appOrigin: string, scriptHashes: readonly string[]): st
     "img-src 'self' data: blob: https: http:",
     "media-src 'self' blob: data: https: http:",
     "connect-src 'self' https: http: ws: wss:",
-    // Bandes-annonces YouTube, comme dans la CSP Tauri.
-    "frame-src 'self' blob: https://www.youtube-nocookie.com https://www.youtube.com",
+    // Bandes-annonces YouTube. `http:` et `https:` sont nécessaires en plus des
+    // domaines YouTube : sur une origine applicative, l'embed direct n'a pas de
+    // referrer HTTP valide et YouTube répond 153. L'app passe donc par une page
+    // relais servie par le serveur Tentacle de l'utilisateur — dont l'adresse
+    // est quelconque, souvent une IP privée en HTTP simple. Même raison que
+    // pour `img-src` et `media-src` : c'est inhérent au produit.
+    "frame-src 'self' blob: https: http:",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
