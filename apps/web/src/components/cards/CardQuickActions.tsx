@@ -4,6 +4,7 @@ import {
   useWatchedToggle,
   useWatchlistSeriesIds,
   useFavoriteSeriesIds,
+  seriesStateId,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -45,9 +46,12 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   const watchlistSeries = useWatchlistSeriesIds();
   const favoriteSeries = useFavoriteSeriesIds();
 
-  const isEpisode = item.Type === "Episode";
-  const list = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
-  const fav = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
+  // Épisode ET série lisent le Set (cf. `seriesStateId`) : une vignette « +N »
+  // des derniers ajouts est fabriquée côté client et ne porte pas le `UserData`
+  // de sa série — Ma liste n'y devenait jamais visible.
+  const seriesId = seriesStateId(item);
+  const list = seriesId ? watchlistSeries.has(seriesId) : item.UserData?.Likes === true;
+  const fav = seriesId ? favoriteSeries.has(seriesId) : item.UserData?.IsFavorite === true;
   const watched = item.UserData?.Played === true;
 
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); };

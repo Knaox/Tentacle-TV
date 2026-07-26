@@ -22,6 +22,9 @@ const LIST_QUERY_PREFIXES = [
   "series-watch-state",
 ] as const;
 
+/** Clé de la rangée « Reprendre la lecture » (cf. `useResumeItems`). */
+const RESUME_KEY = ["resume-items"] as const;
+
 interface InvalidateOptions {
   itemId?: string;
   seriesContext?: { seriesId: string; seasonId?: string };
@@ -236,6 +239,38 @@ export function removeItemFromLists(
     if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
     qc.setQueryData<MediaItem[]>(key, data.filter((i) => i.Id !== id));
   }
+}
+
+/**
+ * Remonte en TÊTE de « Reprendre la lecture » l'item qu'on vient de quitter.
+ *
+ * Jellyfin trie cette liste par `DatePlayed` décroissant — le dernier média lu
+ * en premier, ce qu'on veut. Mais sa vérité arrive EN RETARD : le refetch qui
+ * suit l'arrêt part dès que `/Sessions/Playing/Stopped` a répondu, et cette
+ * réponse peut encore porter l'ancien ordre. Le résultat est alors écrit dans le
+ * cache et marqué frais pour 30 s (180 s en mode économie) : revenir sur
+ * l'accueil dans cette fenêtre n'y change rien, et le film qu'on vient de
+ * regarder reste en deuxième position. Un rechargement non plus, le cache étant
+ * persisté (`queryPersister`) — d'où le « il faut vider le cache » observé.
+ *
+ * Or cet ordre-là, on le connaît sans demander à personne : l'utilisateur vient
+ * de lire cet item, donc c'est le plus récent. On l'écrit, et le serveur
+ * confirmera. Appelé AVANT le refetch — le carrousel est réordonné à l'instant,
+ * sans réseau — et APRÈS, pour qu'une réponse en retard ne le défasse pas.
+ *
+ * Ne fabrique PAS d'entrée absente : un média jamais entré dans la liste (lu de
+ * bout en bout la première fois) n'y a rien à faire, et un item qui vient d'être
+ * terminé en SORT. C'est au serveur de trancher ces deux cas.
+ */
+export function hoistResumeItem(qc: QueryClient, itemId: string | undefined): void {
+  if (!itemId) return;
+  const data = qc.getQueryData<MediaItem[]>(RESUME_KEY);
+  if (!Array.isArray(data)) return;
+  const idx = data.findIndex((i) => i.Id === itemId);
+  if (idx <= 0) return; // absent, ou déjà premier
+  const next = [...data];
+  const [item] = next.splice(idx, 1);
+  qc.setQueryData<MediaItem[]>(RESUME_KEY, [item, ...next]);
 }
 
 /**

@@ -8,7 +8,7 @@ export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeatured
 export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
 export { useFavorite, useFavoriteForItem } from "./hooks/useFavorite";
 export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
-export { useWatchlistSeriesIds, useFavoriteSeriesIds } from "./hooks/useSeriesListMembership";
+export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./hooks/useSeriesListMembership";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream } from "./hooks/useStream";
