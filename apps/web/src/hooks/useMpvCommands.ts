@@ -1,6 +1,7 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
+import { invoke, listen } from "../desktop/bridge";
 
 /**
  * Commandes de contrôle mpv (pause/seek/pistes/volume/vitesse/plein écran) +
@@ -32,11 +33,10 @@ export function useMpvCommands({
     if (!needsKeepAwake()) return;
     const shouldKeepAwake = state.playing && !state.paused;
     let cancelled = false;
-    import("@tauri-apps/api/core").then(({ invoke }) => {
-      if (cancelled) return;
-      const cmd = shouldKeepAwake ? "prevent_display_sleep_start" : "prevent_display_sleep_stop";
-      invoke(cmd).catch((e) => console.warn(`[mpv] ${cmd} failed:`, e));
-    }).catch(() => {});
+    const cmd = shouldKeepAwake ? "prevent_display_sleep_start" : "prevent_display_sleep_stop";
+    void invoke(cmd).catch((e) => {
+      if (!cancelled) console.warn(`[mpv] ${cmd} failed:`, e);
+    });
     return () => { cancelled = true; };
   }, [state.playing, state.paused]);
 
@@ -45,9 +45,7 @@ export function useMpvCommands({
   useEffect(() => {
     return () => {
       if (!needsKeepAwake()) return;
-      import("@tauri-apps/api/core").then(({ invoke }) => {
-        invoke("prevent_display_sleep_stop").catch(() => {});
-      }).catch(() => {});
+      void invoke("prevent_display_sleep_stop").catch(() => {});
     };
   }, []);
 
@@ -104,7 +102,6 @@ export function useMpvCommands({
 
   const toggleFullscreen = useCallback(async () => {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
       const isFs = await invoke<boolean>("toggle_fullscreen");
       setState((prev) => ({ ...prev, fullscreen: isFs }));
     } catch (e) {
@@ -134,12 +131,10 @@ export function useMpvCommands({
     let unlisten: (() => void) | undefined;
     (async () => {
       try {
-        const { invoke } = await import("@tauri-apps/api/core");
         const fs = await invoke<boolean>("player_fullscreen_enter");
         if (!cancelled) setState((prev) => ({ ...prev, fullscreen: fs }));
       } catch { /* hors Tauri ou commande indisponible */ }
       try {
-        const { listen } = await import("@tauri-apps/api/event");
         const un = await listen<boolean>("window://fullscreen", (e) => {
           if (!cancelled) setState((prev) => ({ ...prev, fullscreen: e.payload }));
         });

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../desktop/bridge";
 
 /**
  * Banc de torture du lecteur desktop — **dev uniquement**.

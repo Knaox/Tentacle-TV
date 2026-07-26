@@ -5,7 +5,7 @@
  * critique — un échec ne doit rien casser.
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../desktop/bridge";
 import { isTauri } from "../hooks/mpvRuntime";
 
 /** Data URL réutilisable directement en `src`, ou null. */

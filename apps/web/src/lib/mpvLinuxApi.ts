@@ -4,8 +4,7 @@
  * the plugin. Strictement identique à `mpvMacosApi.ts` : les commandes Rust
  * `mpv_*` et les évènements `mpv://*` sont partagés entre macOS et Linux.
  */
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { invoke, listen, type Unlisten as UnlistenFn } from "../desktop/bridge";
 
 // Re-export compatible types so useDesktopPlayer works unchanged
 export type MpvObservableProperty = readonly [string, string, ...unknown[]];

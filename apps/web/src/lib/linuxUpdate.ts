@@ -9,6 +9,7 @@
  *                             AppImage, Rust) puis relance l'app.
  */
 import { fetchStoreVersions, pickManifestNotes } from "./storeVersions";
+import { getVersion, invoke, listen, relaunch } from "../desktop/bridge";
 
 const REPO = "Knaox/Tentacle-TV";
 
@@ -41,14 +42,12 @@ function isNewer(a: string, b: string): boolean {
  */
 export async function checkLinuxUpdate(): Promise<LinuxUpdateFound | null> {
   // Version réelle du bundle en cours (pas la constante de build).
-  const { getVersion } = await import("@tauri-apps/api/app");
   const current = await getVersion();
 
   const lin = (await fetchStoreVersions())?.linux;
   if (!lin?.version || !lin.tag || !isNewer(lin.version, current)) return null;
 
-  // Format installé (AppImage/deb/rpm/pacman) — commande Rust dédiée.
-  const { invoke } = await import("@tauri-apps/api/core");
+  // Format installé (AppImage/deb/rpm/pacman) — commande native dédiée.
   const format = await invoke<LinuxFormat>("detect_linux_install_format").catch(() => "unknown" as LinuxFormat);
   if (format === "unknown") return null; // installé hors d'un gestionnaire connu → on ne touche à rien
 
@@ -73,8 +72,6 @@ export async function downloadLinuxUpdate(
   found: LinuxUpdateFound,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const { invoke } = await import("@tauri-apps/api/core");
-  const { listen } = await import("@tauri-apps/api/event");
   const unlisten = await listen<number>("linux-update-progress", (e) =>
     onProgress(Math.round((e.payload ?? 0) * 100)),
   );
@@ -95,8 +92,6 @@ export async function downloadLinuxUpdate(
  * fonction NE REND PAS la main (relaunch). Throw sinon (pkexec absent, refus…).
  */
 export async function applyLinuxUpdate(path: string, format: LinuxFormat): Promise<void> {
-  const { invoke } = await import("@tauri-apps/api/core");
   await invoke("install_linux_update", { path, format });
-  const { relaunch } = await import("@tauri-apps/plugin-process");
   await relaunch();
 }

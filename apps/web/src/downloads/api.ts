@@ -6,7 +6,7 @@
  * `tentacle-local` (voir `localResourceUrl`).
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, listen } from "../desktop/bridge";
 import { isTauri } from "../hooks/mpvRuntime";
 
 export type SetRootResult =
@@ -245,7 +245,6 @@ export interface DownloadProgressEvent {
 /** Abonnement aux changements d'état (invalider les listes). */
 export async function onDownloadsChanged(callback: () => void): Promise<() => void> {
   if (!isTauri()) return () => undefined;
-  const { listen } = await import("@tauri-apps/api/event");
   return listen("downloads://changed", callback);
 }
 
@@ -254,6 +253,5 @@ export async function onDownloadsProgress(
   callback: (event: DownloadProgressEvent) => void,
 ): Promise<() => void> {
   if (!isTauri()) return () => undefined;
-  const { listen } = await import("@tauri-apps/api/event");
   return listen<DownloadProgressEvent>("downloads://progress", (event) => callback(event.payload));
 }

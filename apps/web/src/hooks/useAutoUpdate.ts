@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isTauri, isWindows, isLinux, isAppStoreBuild } from "./useDesktopPlayer";
 import { openExternal } from "../lib/openExternal";
+import { invoke, listen, relaunch } from "../desktop/bridge";
 import { APP_STORE_ID, checkAppStoreUpdate, checkMsixUpdate } from "../lib/updateCheckers";
 import { checkLinuxUpdate, downloadLinuxUpdate, applyLinuxUpdate, type LinuxUpdateFound } from "../lib/linuxUpdate";
 
@@ -184,9 +185,6 @@ export function useAutoUpdate() {
       setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
       let unlistenProgress: (() => void) | null = null;
       try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const { listen } = await import("@tauri-apps/api/event");
-
         unlistenProgress = await listen<MsixProgress>("msix-update-progress", (event) => {
           const pct = Math.round((event.payload.progress ?? 0) * 100);
           setInfo((prev) => ({ ...prev, progress: pct }));
@@ -197,7 +195,6 @@ export function useAutoUpdate() {
 
         // L'install MSIX s'applique au prochain démarrage — on relance.
         setInfo((prev) => ({ ...prev, phase: "restarting" }));
-        const { relaunch } = await import("@tauri-apps/plugin-process");
         await relaunch();
       } catch (err) {
         setInfo((prev) => ({ ...prev, downloading: false, phase: "available", error: String(err) }));

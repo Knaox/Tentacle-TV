@@ -10,6 +10,7 @@ import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { isTauriApp } from "../../main";
+import { pickFolder } from "../../desktop/bridge";
 import { isAppStoreBuild } from "../../hooks/mpvRuntime";
 import { getDownloadsRoot, setDownloadsRoot } from "../../downloads/api";
 import { formatBytes } from "../../downloads/presets";
@@ -38,9 +39,8 @@ export function SettingsDownloads() {
     if (busy) return;
     setBusy(true);
     try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const picked = await open({ directory: true, multiple: false });
-      if (typeof picked === "string" && picked) {
+      const picked = await pickFolder();
+      if (picked) {
         const result = await setDownloadsRoot(picked);
         if (result.ok) {
           setRoot(result.path);

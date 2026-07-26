@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { invoke, listen } from "../desktop/bridge";
 
 interface SmtcHandlers {
   onToggle: () => void;
@@ -31,10 +32,9 @@ function smtcEnabled(): boolean {
 
 async function invokeSmtc(cmd: string, args?: Record<string, unknown>): Promise<void> {
   try {
-    const { invoke } = await import("@tauri-apps/api/core");
     await invoke(cmd, args);
   } catch {
-    /* hors Tauri / commande absente : no-op */
+    /* hors application de bureau / commande absente : no-op */
   }
 }
 
@@ -56,7 +56,6 @@ export function useSmtc(opts: UseSmtcOptions) {
     (async () => {
       await invokeSmtc("smtc_init");
       try {
-        const { listen } = await import("@tauri-apps/api/event");
         const un = await listen<string>("smtc-button", (e) => {
           const h = handlers.current;
           switch (e.payload) {

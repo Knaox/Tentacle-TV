@@ -3,7 +3,7 @@
  * et progression locale par utilisateur (+ file de resynchro hors ligne).
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../desktop/bridge";
 import { isTauri } from "../hooks/mpvRuntime";
 
 export interface LocalSubtitleFile {

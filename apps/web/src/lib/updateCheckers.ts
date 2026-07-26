@@ -1,4 +1,5 @@
 import { fetchStoreVersions, pickManifestNotes } from "./storeVersions";
+import { getVersion, invoke } from "../desktop/bridge";
 
 /**
  * Détection des mises à jour par canal store (macOS App Store / Microsoft
@@ -29,7 +30,6 @@ export function isNewerVersion(a: string, b: string): boolean {
  *  automatiquement par la CI à chaque tag desktop-v*. */
 export async function checkAppStoreUpdate(): Promise<{ version: string; notes?: string; storeUrl: string } | null> {
   // Version réelle du bundle en cours (1.0.0+), pas la constante de build web.
-  const { getVersion } = await import("@tauri-apps/api/app");
   const current = await getVersion();
 
   const manifest = await fetchStoreVersions();
@@ -59,13 +59,11 @@ export interface MsixCheckResult {
  *  (c'était la « version actuelle » affichée à tort). → détection par WinRT,
  *  version et notes par le manifest du repo. Retourne null si aucune MAJ. */
 export async function checkMsixUpdate(): Promise<MsixCheckResult | null> {
-  const { invoke } = await import("@tauri-apps/api/core");
   const update = await invoke<MsixUpdateInfo | null>("check_msix_update");
   if (!update) return null;
   let displayVersion: string | undefined;
   let notes: string | undefined;
   try {
-    const { getVersion } = await import("@tauri-apps/api/app");
     const current = await getVersion();
     const ms = (await fetchStoreVersions())?.microsoftStore;
     // Notes TOUJOURS affichées si présentes : la détection (WinRT) et le

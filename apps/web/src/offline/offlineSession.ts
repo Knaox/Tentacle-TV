@@ -4,7 +4,7 @@
  * côté Rust — ici, de simples wrappers typés et silencieux hors Tauri.
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../desktop/bridge";
 import { isTauri } from "../hooks/mpvRuntime";
 
 export interface CachedSession {

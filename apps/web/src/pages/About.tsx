@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { isTauriApp } from "../main";
+import { getVersion } from "../desktop/bridge";
 import { PageTransition } from "../components/PageTransition";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 
@@ -13,9 +14,8 @@ export function About() {
   const [desktopVersion, setDesktopVersion] = useState<string>(__APP_VERSION_DESKTOP__);
   useEffect(() => {
     if (!isTauriApp) return;
-    import("@tauri-apps/api/app")
-      .then(({ getVersion }) => getVersion())
-      .then(setDesktopVersion)
+    getVersion()
+      .then((v) => { if (v) setDesktopVersion(v); })
       .catch(() => {});
   }, []);
   const rawVersion = isTauriApp ? desktopVersion : __APP_VERSION_WEB__;

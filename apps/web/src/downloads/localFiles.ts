@@ -13,7 +13,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../desktop/bridge";
 import { isTauri } from "../hooks/mpvRuntime";
 
 interface AssetBase {

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: (c: string, a?: unknown) => invoke(c, a) }));
+vi.mock("../desktop/bridge", () => ({ invoke: (c: string, a?: unknown) => invoke(c, a) }));
 vi.mock("../hooks/mpvRuntime", () => ({ isTauri: () => true }));
 
 /**
