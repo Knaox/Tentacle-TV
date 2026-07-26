@@ -138,16 +138,14 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         );
         if (err) throw new Error(err);
 
-        // La fenêtre de mpv naît de façon asynchrone : on la cherche, puis on
-        // la maintient calée à chaque changement de géométrie. Sans ce suivi,
-        // la vidéo garde la taille qu'elle avait au démarrage.
+        // La fenêtre de mpv naît de façon asynchrone : `attach` la cherche,
+        // puis la désarme et la maintient calée à chaque changement de
+        // géométrie. Les écouteurs de la fenêtre principale appartiennent à
+        // `VideoWindow` et partent avec elle — posés ici, rien ne les retirait,
+        // et le lecteur est remonté à chaque épisode.
         video?.detach();
-        video = new VideoWindow(parent);
+        video = new VideoWindow(win);
         video.attach();
-        const suivre = (): void => video?.align();
-        win.on("resize", suivre);
-        win.on("enter-full-screen", suivre);
-        win.on("leave-full-screen", suivre);
 
         return "ok";
       },

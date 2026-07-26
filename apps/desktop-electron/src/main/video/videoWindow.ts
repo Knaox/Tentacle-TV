@@ -103,12 +103,27 @@ function clientSize(hwnd: bigint): { width: number; height: number } | null {
  *
  * La fenêtre de mpv n'existe qu'APRÈS `mpv_initialize`, et de façon
  * asynchrone : il faut la chercher à plusieurs reprises. Constaté en phase 0.
+ *
+ * ⚠️ **C'est cette classe qui possède les écouteurs de géométrie**, et pas
+ * l'appelant. Ils vivaient dans `mpv_init`, où rien ne les retirait : le
+ * lecteur étant remonté à chaque épisode (`key={itemId}`), ils s'accumulaient
+ * sans fin — `MaxListenersExceededWarning` après une douzaine, et autant de
+ * `SetWindowPos` redondants à chaque redimensionnement. Un seul propriétaire
+ * du calage, qui s'abonne à `attach` et se désabonne à `detach`.
  */
 export class VideoWindow {
+  private readonly parent: bigint;
   private mpvHwnd = 0n;
   private recherche: ReturnType<typeof setInterval> | null = null;
+  private attache = false;
+  private calage: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private readonly parent: bigint) {}
+  /** Référence stable — sans elle, `off()` ne retirerait rien. */
+  private readonly suivre = (): void => this.planifierCalage();
+
+  constructor(private readonly host: BrowserWindow) {
+    this.parent = nativeHandle(host);
+  }
 
   /**
    * Cherche la fenêtre de mpv jusqu'à la trouver, puis la cale et la désarme.
@@ -126,7 +141,12 @@ export class VideoWindow {
    * recherche avant de durcir (`mpv_window.rs:35`).
    */
   attach(): void {
-    if (this.recherche !== null) return;
+    if (this.attache) return;
+    this.attache = true;
+    this.host.on("resize", this.suivre);
+    this.host.on("enter-full-screen", this.suivre);
+    this.host.on("leave-full-screen", this.suivre);
+
     let essais = 0;
     this.recherche = setInterval(() => {
       const found = FindWindowExW(this.parent, 0, "mpv", null) as bigint;
@@ -184,7 +204,31 @@ export class VideoWindow {
 
   detach(): void {
     this.stopSearch();
+    if (this.calage !== null) clearTimeout(this.calage);
+    this.calage = null;
+    if (this.attache) {
+      this.host.off("resize", this.suivre);
+      this.host.off("enter-full-screen", this.suivre);
+      this.host.off("leave-full-screen", this.suivre);
+      this.attache = false;
+    }
     this.mpvHwnd = 0n;
+  }
+
+  /**
+   * Un repositionnement par image, pas un par message de Windows.
+   *
+   * Attraper un bord de fenêtre à la souris tire des dizaines de `resize` par
+   * seconde ; la fenêtre vidéo n'a besoin d'être recalée qu'une fois par image.
+   * Front descendant : le premier évènement arme le minuteur, les suivants sont
+   * absorbés, et le calage a lieu 16 ms après le dernier.
+   */
+  private planifierCalage(): void {
+    if (this.calage !== null) return;
+    this.calage = setTimeout(() => {
+      this.calage = null;
+      this.align();
+    }, 16);
   }
 
   private stopSearch(): void {
