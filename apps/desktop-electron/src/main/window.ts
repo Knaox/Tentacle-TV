@@ -48,6 +48,18 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     minWidth: MIN_WIDTH,
     minHeight: MIN_HEIGHT,
     title: "Tentacle",
+    // Fenêtre APTE à la transparence, mais OPAQUE tant qu'on ne lit rien.
+    //
+    // `transparent` ne se change pas après coup dans Electron ; la couleur de
+    // fond, si. On construit donc la fenêtre transparente et on la garde noire
+    // opaque, `player_surface_transparent` basculant la couleur à l'entrée et
+    // à la sortie du lecteur.
+    //
+    // Ce n'est pas de la prudence : l'app Tauri a mesuré qu'une fenêtre
+    // transparente EN PERMANENCE sort Windows du chemin de présentation opaque
+    // et fait scintiller chaque transition (cf. `mpv_window.rs`, et le
+    // commentaire de `useMpvLifecycle`).
+    transparent: process.platform === "win32",
     backgroundColor: "#000000",
     show: false,
     webPreferences: {

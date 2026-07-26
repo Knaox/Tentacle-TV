@@ -15,6 +15,7 @@ import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
+import { registerVideoCommands } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { createMainWindow, getMainWindow } from "./window";
 
@@ -69,6 +70,7 @@ function main(): void {
     const registry = new CommandRegistry();
     registerShellCommands(registry);
     registerPluginCommands(registry);
+    registerVideoCommands(registry);
     registry.install();
     registerShellCapabilities();
 

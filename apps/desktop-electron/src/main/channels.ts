@@ -54,6 +54,11 @@ export const COMMANDS = [
   "mpv_set_property",
   "mpv_get_property",
   "mpv_destroy",
+  // Windows : la surface cesse de peindre son fond le temps de la lecture, et
+  // la fenêtre enfant de mpv est désarmée pour ne jamais geler la file
+  // d'entrée qu'elle partage avec le thread de l'interface.
+  "player_surface_transparent",
+  "mpv_harden_child_window",
 
   // Veille et contrôles média
   "prevent_display_sleep_start",

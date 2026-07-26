@@ -81,11 +81,13 @@ export function getMpvApi(): PluginApi | null {
 
 export const loadMpvApi = async (): Promise<boolean> => {
   try {
-    // Electron n'a pas encore son adaptateur (`mpvElectronApi`, phase 5). Le
-    // dire ICI plutôt que de laisser tomber l'import du plugin Tauri : ce
-    // dernier échouerait de toute façon, mais après avoir tiré un module qui
-    // n'a rien à faire dans ce shell.
-    if (isElectronShell()) return false;
+    // Electron pilote libmpv depuis son processus principal, par koffi. Les
+    // commandes et les évènements sont les mêmes que côté Rust : l'adaptateur
+    // est donc le même, seul le nom du module dit lequel des deux répond.
+    if (isElectronShell()) {
+      api = await import("../lib/mpvElectronApi") as unknown as PluginApi;
+      return true;
+    }
     if (isMacOS()) {
       api = await import("../lib/mpvMacosApi") as unknown as PluginApi;
     } else if (isLinux()) {
