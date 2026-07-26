@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { SearchSuggestions } from "./SearchSuggestions";
+import { captureDetailOrigin } from "../detail/detailTransition";
 import { pushRecentSearch, readRecentSearches } from "./recentSearches";
 
 interface SearchOverlayProps {
@@ -169,6 +170,7 @@ function ResultCard({
 }) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
+  const visualRef = useRef<HTMLDivElement>(null);
   const isEpisode = item.Type === "Episode";
   const imageId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const imageUrl = client.getImageUrl(imageId, "Primary", { height: 360, quality: 85 });
@@ -177,18 +179,32 @@ function ResultCard({
     item.Type === "Series" ? t("common:series") :
     item.Type;
 
+  const handleClick = () => {
+    // La recherche était le SEUL chemin vers une fiche à ne rien capturer :
+    // toutes les cartes de l'app le font (cf. `PosterCard`, `LibraryGridCard`),
+    // la grille de résultats non. La fiche s'ouvrait donc sans son calque, et
+    // il ne restait que le fondu de page par-dessus une fiche encore en
+    // chargement — le « rien ne se passe, puis ça apparaît » observé ici.
+    //
+    // Le visuel seul, pas le bouton : celui-ci embarque les deux lignes de
+    // texte sous l'affiche. Rayon 6 px = le `rounded-md` ci-dessous ; le défaut
+    // de 12 ferait sauter le coin au départ.
+    captureDetailOrigin(visualRef.current, item.Id, imageUrl, 6, true);
+    onSelect(item);
+  };
+
   return (
     <li>
       <button
         type="button"
-        onClick={() => onSelect(item)}
+        onClick={handleClick}
         className="group/r block w-full text-left"
         style={{
           animation: "fadeSlideUp 0.4s ease both",
           animationDelay: `${Math.min(index * 30, 300)}ms`,
         }}
       >
-        <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-surface-1">
+        <div ref={visualRef} className="relative aspect-[2/3] overflow-hidden rounded-md bg-surface-1">
           <img
             src={imageUrl}
             alt={item.Name}

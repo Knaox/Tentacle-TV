@@ -221,6 +221,7 @@ fn main() {
                 smtc::smtc_clear,
                 audio_session::set_audio_session_name,
                 mpv_window::mpv_harden_child_window,
+                mpv_window::player_surface_transparent,
             ]);
         }
 
@@ -262,6 +263,7 @@ fn main() {
                 smtc::smtc_clear,
                 audio_session::set_audio_session_name,
                 mpv_window::mpv_harden_child_window,
+                mpv_window::player_surface_transparent,
                 debug_com::debug_com_check,
                 debug_com::debug_com_fixed,
                 debug_com::debug_com_break,

@@ -153,10 +153,15 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
     <AnimatePresence onExitComplete={onDone}>
       {playing && (
         <div className="pointer-events-none fixed inset-0 z-[60]" aria-hidden>
-          {/* ── Décor : s'installe pendant que le visuel vole ────────────── */}
+          {/* ── Décor : s'installe pendant que le visuel vole ──────────────
+              Le fondu de la base suppose une page visible dessous, à laquelle
+              s'enchaîner. Depuis un takeover plein écran (`origin.covered`) il
+              n'y en a plus : le takeover s'est retiré d'un bloc, et fondre
+              depuis rien rouvrirait pour deux dixièmes de seconde la page
+              qu'il masquait. On reprend alors l'écran déjà couvert. */}
           <motion.div
             className="absolute inset-0 bg-surface-0"
-            initial={{ opacity: 0 }}
+            initial={{ opacity: origin.covered ? 1 : 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
             transition={{ duration: DECOR_S * 0.45, ease: "easeOut" }}
