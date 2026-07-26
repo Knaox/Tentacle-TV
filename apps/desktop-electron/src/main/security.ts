@@ -89,9 +89,30 @@ export function lockNavigation(contents: WebContents): void {
   });
 }
 
-/** Applique la CSP à toutes les réponses servies à l'application. */
-export function installContentSecurityPolicy(csp: string): void {
+/**
+ * Applique une CSP aux réponses, choisie d'après l'URL.
+ *
+ * Le choix par URL n'est pas un raffinement : l'application et les greffons
+ * vivent sous deux origines du même schéma et n'ont pas les mêmes besoins. La
+ * page garde une politique par empreintes, sans `'unsafe-inline'` ; le document
+ * d'un greffon, fait entièrement de scripts inline, reçoit la sienne. Une
+ * politique unique aurait forcé à desserrer les deux pour satisfaire le plus
+ * exigeant.
+ *
+ * `resolve` renvoie `null` pour laisser une réponse intacte — c'est le cas du
+ * serveur Jellyfin de l'utilisateur, qui n'est pas à nous et dont on n'a pas à
+ * réécrire les en-têtes.
+ */
+export function installContentSecurityPolicy(resolve: (url: string) => string | null): void {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const csp = resolve(details.url);
+    // Rappel SANS `responseHeaders` : Electron laisse alors la réponse telle
+    // quelle. Repasser `details.responseHeaders` reviendrait au même, mais le
+    // champ est facultatif et vaut `undefined` sur certaines réponses.
+    if (csp === null) {
+      callback({});
+      return;
+    }
     callback({
       responseHeaders: {
         ...details.responseHeaders,

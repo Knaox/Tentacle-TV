@@ -8,10 +8,12 @@
 
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
-import { APP_ORIGIN, registerAppScheme, serveApp, webRoot } from "./appProtocol";
-import { buildCsp, hashesFromFile } from "./csp";
+import { APP_ORIGIN, APP_SCHEME, registerAppScheme, serveApp, webRoot } from "./appProtocol";
+import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
+import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
+import { registerPluginCommands } from "./ipc/plugins";
 import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { createMainWindow, getMainWindow } from "./window";
@@ -52,11 +54,21 @@ function main(): void {
     // qui pose le thème avant le premier paint reste autorisé, sans ouvrir
     // `unsafe-inline` à tout le reste.
     const hashes = hashesFromFile(path.join(webRoot(), "index.html"));
-    installContentSecurityPolicy(buildCsp(APP_ORIGIN, hashes));
+    const pluginOrigin = `${APP_SCHEME}://${PLUGIN_HOST}`;
+    const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, hashes);
+    const pluginCsp = buildPluginCsp(APP_ORIGIN);
+
+    // Une politique par origine. Le serveur Jellyfin de l'utilisateur n'est pas
+    // à nous : on ne réécrit pas ses en-têtes.
+    installContentSecurityPolicy((url) => {
+      if (!url.startsWith(`${APP_SCHEME}://`)) return null;
+      return url.startsWith(`${pluginOrigin}/`) ? pluginCsp : appCsp;
+    });
     serveApp();
 
     const registry = new CommandRegistry();
     registerShellCommands(registry);
+    registerPluginCommands(registry);
     registry.install();
     registerShellCapabilities();
 

@@ -54,7 +54,11 @@ export function hashesFromFile(indexHtmlPath: string): string[] {
  *  - `script-src` perd `unsafe-inline` et `cdn.tailwindcss.com`
  *  - `object-src`, `base-uri`, `form-action`, `frame-ancestors` sont fermés
  */
-export function buildCsp(appOrigin: string, scriptHashes: readonly string[]): string {
+export function buildCsp(
+  appOrigin: string,
+  pluginOrigin: string,
+  scriptHashes: readonly string[],
+): string {
   const scriptSrc = ["'self'", appOrigin, ...scriptHashes].join(" ");
   return [
     `default-src 'self' ${appOrigin}`,
@@ -72,11 +76,55 @@ export function buildCsp(appOrigin: string, scriptHashes: readonly string[]): st
     // relais servie par le serveur Tentacle de l'utilisateur — dont l'adresse
     // est quelconque, souvent une IP privée en HTTP simple. Même raison que
     // pour `img-src` et `media-src` : c'est inhérent au produit.
-    "frame-src 'self' blob: https: http:",
+    //
+    // L'origine des greffons doit y figurer NOMMÉMENT : `'self'` ne désigne
+    // que l'application, et une origine voisine du même schéma n'en fait pas
+    // partie. Sans elle, l'iframe d'un greffon est refusée en ERR_BLOCKED_BY_CSP.
+    `frame-src 'self' ${pluginOrigin} blob: https: http:`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+  ].join("; ");
+}
+
+/**
+ * Politique du document d'un greffon, servi sous son origine à lui.
+ *
+ * Un greffon est fait entièrement de scripts inline — runtime Tailwind,
+ * dépendances partagées, pont `postMessage` — et le runtime Tailwind construit
+ * ses fonctions à l'exécution. Il lui faut donc `'unsafe-inline'` et
+ * `'unsafe-eval'`, ce que la politique de l'application refuse et doit
+ * continuer à refuser. C'est TOUTE la raison d'être de l'origine séparée : ce
+ * qui est desserré ici ne l'est que pour le greffon.
+ *
+ * Le reste est fermé au maximum, plus étroitement que sous Tauri où le greffon
+ * héritait de la politique de la page :
+ *
+ *  - `default-src 'none'` : rien n'est permis par défaut
+ *  - aucune iframe, aucun objet, aucune base, aucun formulaire
+ *  - `frame-ancestors` limité à l'application : personne d'autre ne l'encadre
+ *
+ * `connect-src` reste large, à la parité de ce dont les greffons disposent
+ * aujourd'hui. Le resserrer casserait des greffons publiés, qui appellent leurs
+ * propres services — et ce serait une décision produit, pas un détail de
+ * migration. Le greffon n'a de toute façon aucun jeton : les appels à l'API
+ * Tentacle passent par le pont `postMessage`, jamais par lui.
+ */
+export function buildPluginCsp(appOrigin: string): string {
+  return [
+    "default-src 'none'",
+    "script-src 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'unsafe-inline'",
+    "img-src data: blob: https: http:",
+    "font-src data: https: http:",
+    "media-src blob: data: https: http:",
+    "connect-src https: http: ws: wss:",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    `frame-ancestors ${appOrigin}`,
   ].join("; ");
 }

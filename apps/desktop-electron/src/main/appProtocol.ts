@@ -11,6 +11,7 @@ import { app, net, protocol } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { getPluginDocument, PLUGIN_HOST } from "./pluginDocuments";
 
 export const APP_SCHEME = "tentacle";
 export const APP_HOST = "app";
@@ -95,12 +96,39 @@ function trace(requestPath: string, target: string, status: number): void {
   console.log(`[protocole] ${status} ${requestPath} -> ${path.basename(target)}`);
 }
 
+/**
+ * Sert le document d'un greffon, ou 404.
+ *
+ * Le document est déposé par la page (`plugin_document_set`) et rendu ici sous
+ * une origine distincte de celle de l'application, pour qu'il reçoive sa propre
+ * politique de sécurité. Voir `pluginDocuments.ts`.
+ */
+function servePluginDocument(pathname: string): Response {
+  const id = decodeURIComponent(pathname).replace(/^\/+/, "");
+  const html = getPluginDocument(id);
+  if (html === undefined) {
+    trace(pathname, "", 404);
+    return new Response("greffon inconnu", { status: 404 });
+  }
+  trace(pathname, `greffon:${id}`, 200);
+  return new Response(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
 /** Branche le service des fichiers. À appeler après `app.whenReady()`. */
 export function serveApp(): void {
   const root = webRoot();
 
   protocol.handle(APP_SCHEME, async (request) => {
     const url = new URL(request.url);
+
+    // Le schéma porte DEUX origines : celle de l'application et celle des
+    // greffons. On aiguille sur l'hôte, sinon un document de greffon serait
+    // cherché dans le build web et l'origine perdrait tout son sens.
+    if (url.host === PLUGIN_HOST) return servePluginDocument(url.pathname);
+
     const resolved = resolveWithinRoot(root, url.pathname);
 
     if (resolved === null) {

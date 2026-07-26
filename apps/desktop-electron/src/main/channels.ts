@@ -67,6 +67,11 @@ export const COMMANDS = [
   // Mises à jour (Microsoft Store)
   "check_msix_update",
   "download_and_install_msix_update",
+
+  // Greffons — dépôt du document à servir sous son origine dédiée.
+  // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de
+  // l'origine ne s'y pose pas de la même façon.
+  "plugin_document_set",
 ] as const;
 
 /** Évènements que le processus principal peut pousser vers la page. */
