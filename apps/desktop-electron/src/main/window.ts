@@ -8,6 +8,7 @@
 
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
+import { windowIconPath } from "./appIcon";
 import { lockNavigation } from "./security";
 import {
   basculer as basculerPleinEcran,
@@ -61,12 +62,18 @@ export function setPlayerSurfaceTransparent(on: boolean): void {
  *   sans IPC synchrone et sans course au démarrage.
  */
 export function createMainWindow(commands: readonly string[]): BrowserWindow {
+  // Étalé plutôt que posé à `undefined` : sous `exactOptionalPropertyTypes`,
+  // une propriété facultative absente et une propriété valant `undefined` ne
+  // sont pas la même chose.
+  const icon = windowIconPath();
+
   const win = new BrowserWindow({
     width: DEFAULT_WIDTH,
     height: DEFAULT_HEIGHT,
     minWidth: MIN_WIDTH,
     minHeight: MIN_HEIGHT,
     title: "Tentacle",
+    ...(icon === null ? {} : { icon }),
     // Fenêtre ORDINAIRE : cadre natif, redimensionnable, plein écran.
     //
     // ⚠️ NE PAS y remettre `transparent: true`. Sous Windows, ce drapeau retire
