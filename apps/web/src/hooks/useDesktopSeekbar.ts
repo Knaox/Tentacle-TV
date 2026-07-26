@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useTrickplay } from "./useTrickplay";
+import { useHoverEscape } from "./useHoverGuard";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 interface UseDesktopSeekbarArgs {
@@ -103,10 +104,24 @@ export function useDesktopSeekbar({
     });
   }, [dur]);
 
+  /**
+   * Éteint la vignette de survol. Pas pendant un glissement : la barre ne fait
+   * que six pixels, et le curseur en sort constamment quand on scrube.
+   */
+  const endHover = useCallback(() => {
+    if (!isDragging.current) setHoverTime(null);
+  }, []);
+
+  // Le `onMouseLeave` de la barre était la SEULE porte de sortie du survol, sur
+  // une cible de six pixels de haut : qu'il soit manqué une fois — curseur
+  // sorti par le bas de la fenêtre, passé sur un autre écran, application
+  // défocalisée — et la vignette restait allumée. Constaté à l'écran.
+  useHoverEscape(seekBarRef, hoverTime !== null, endHover);
+
   return {
     seekBarRef, dragProgress, isDragging,
     hoverTime, hoverX, barWidth, setHoverTime, setBarWidth,
-    onScrubStart, onBarMouseMove,
+    onScrubStart, onBarMouseMove, endHover,
     trickplay, trickplayFrame,
   };
 }

@@ -1,4 +1,4 @@
-import type { MutableRefObject, RefObject } from "react";
+import type { RefObject } from "react";
 import { TrickplayPreview } from "../TrickplayPreview";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
 
@@ -19,9 +19,9 @@ interface DesktopSeekbarProps {
  */
 export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSeekbarProps) {
   const {
-    seekBarRef, dragProgress, isDragging,
-    hoverTime, hoverX, barWidth, setHoverTime, setBarWidth,
-    onScrubStart, onBarMouseMove, trickplay, trickplayFrame,
+    seekBarRef, dragProgress,
+    hoverTime, hoverX, barWidth, setBarWidth,
+    onScrubStart, onBarMouseMove, endHover, trickplay, trickplayFrame,
   } = seekbar;
 
   return (
@@ -30,7 +30,7 @@ export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSee
       onMouseDown={onScrubStart}
       onMouseMove={onBarMouseMove}
       onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}
-      onMouseLeave={() => { if (!(isDragging as MutableRefObject<boolean>).current) setHoverTime(null); }}>
+      onMouseLeave={endHover}>
       {/* Buffer bar */}
       <div className="absolute h-full rounded-full bg-white/10" style={{ width: `${bufProg * 100}%` }} />
       {/* Progress bar — rose de la bannière (`--progress-fill`), même couleur
