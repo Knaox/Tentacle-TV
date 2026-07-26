@@ -6,6 +6,7 @@ import {
   useToggleWatchlistForItem,
   useWatchlistSeriesIds,
   useFavoriteSeriesIds,
+  seriesStateId,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -26,10 +27,12 @@ export function MediaContextMenu({ item, x, y, onClose, onToggleFavorite, onTogg
   const watchlistSeries = useWatchlistSeriesIds();
   const favoriteSeries = useFavoriteSeriesIds();
 
-  // Un épisode reflète l'état de sa SÉRIE ; Movie/Series lisent UserData.
-  const isEpisode = item.Type === "Episode";
-  const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
-  const isFavorite = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
+  // Épisode ET série reflètent l'état de la SÉRIE, lu dans le Set ; un film
+  // répond de lui-même (cf. `seriesStateId`). Même règle que `CardQuickActions`,
+  // sinon les deux surfaces se contrediraient sur la même carte.
+  const seriesId = seriesStateId(item);
+  const isInWatchlist = seriesId ? watchlistSeries.has(seriesId) : item.UserData?.Likes === true;
+  const isFavorite = seriesId ? favoriteSeries.has(seriesId) : item.UserData?.IsFavorite === true;
 
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {

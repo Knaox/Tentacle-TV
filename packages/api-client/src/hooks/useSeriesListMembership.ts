@@ -41,6 +41,24 @@ function useSeriesIdSet(
   return { has: (seriesId?: string) => !!seriesId && set.has(seriesId) };
 }
 
+/**
+ * Id de la SÉRIE dont l'appartenance pilote l'état affiché pour cet item, ou
+ * `undefined` quand l'item répond de lui-même (film).
+ *
+ * Un épisode reflète sa série parente — c'est la règle produit : Ma liste et
+ * Favoris agissent au niveau série. Une SÉRIE reflète... elle-même, et ce
+ * détour n'est pas une coquetterie : la vignette « +N nouveaux épisodes » des
+ * derniers ajouts est fabriquée côté client (`groupLatestByRuns`) à partir
+ * d'épisodes, sans le `UserData` de la série. Lire `item.UserData.Likes` sur
+ * cette tuile ne renvoyait donc jamais rien, et l'ajout à Ma liste n'y était
+ * jamais visible. Le Set, lui, est complet et patché à la mutation.
+ */
+export function seriesStateId(item: MediaItem): string | undefined {
+  if (item.Type === "Episode") return item.SeriesId;
+  if (item.Type === "Series") return item.Id;
+  return undefined;
+}
+
 /** Séries présentes dans « Ma liste » (Likes). */
 export function useWatchlistSeriesIds() {
   return useSeriesIdSet(WATCHLIST_SERIES_IDS_KEY, "Likes");

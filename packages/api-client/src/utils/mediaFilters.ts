@@ -106,11 +106,34 @@ export function groupLatestByRuns(items: MediaItem[], limit = 16): MediaItem[] {
       }
       const runLength = j - i;
       if (runLength > 1) {
+        const run = items.slice(i, j);
         const grouped: MediaItem = {
           Id: it.SeriesId,
           Name: it.SeriesName ?? it.Name,
           Type: "Series",
           RecentlyAddedCount: runLength,
+          /**
+           * `UserData` SYNTHÉTIQUE — sans lui la vignette n'a aucun état à
+           * montrer. Ses boutons (vu / Ma liste / Favoris) lisent l'item, et une
+           * tuile fabriquée ici n'en portait pas : ils restaient éteints quoi
+           * qu'on fasse, y compris après un rechargement, puisque le
+           * regroupement les refabriquait vides à chaque fois.
+           *
+           * Seul `Played` est déduit, et il l'est des épisodes du run : « ces N
+           * nouveaux épisodes sont vus ». C'est tout ce que cette réponse sache.
+           *
+           * `IsFavorite` et `Likes` sont des drapeaux de SÉRIE, qu'un épisode ne
+           * porte pas — les recopier d'un épisode serait faux. Personne ne les
+           * lit ici : l'appartenance d'une série à Ma liste / Favoris se lit
+           * dans les Sets `watchlist-series-ids` / `favorite-series-ids`
+           * (cf. `seriesStateId`). Les compteurs sont là pour le type.
+           */
+          UserData: {
+            PlaybackPositionTicks: 0,
+            PlayCount: 0,
+            IsFavorite: false,
+            Played: run.every((ep) => ep.UserData?.Played === true),
+          },
         };
         out.push(grouped);
       } else {

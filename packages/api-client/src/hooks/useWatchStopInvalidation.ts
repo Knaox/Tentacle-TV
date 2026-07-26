@@ -3,10 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
-import { updateItemUserDataInCache, patchSeriesIdSet } from "./cacheUtils";
+import { updateItemUserDataInCache, patchSeriesIdSet, hoistResumeItem } from "./cacheUtils";
 import { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY } from "./watchlistEffects";
 
-const STOP_INVALIDATE_KEYS = ["resume-items", "next-up", "watched-items", "watchlist"] as const;
+/**
+ * Hubs de la home à rafraîchir à l'arrêt. « resume-items » est traité à part :
+ * on n'attend QUE lui pour remettre l'ordre local par-dessus sa réponse, sans
+ * dépendre du plus lent des quatre.
+ */
+const STOP_INVALIDATE_KEYS = ["next-up", "watched-items", "watchlist"] as const;
+const RESUME_HUB = ["resume-items"] as const;
 
 interface StopArgs {
   itemId?: string;
@@ -33,6 +39,11 @@ export function useWatchStopInvalidation() {
     async ({ itemId, seriesId, itemType }: StopArgs) => {
       if (!itemId || !userId) return;
 
+      // AVANT tout réseau : « Reprendre la lecture » se réordonne à l'instant.
+      // Ce qu'on vient de lire est le plus récent, on n'a personne à qui le
+      // demander (cf. `hoistResumeItem`).
+      hoistResumeItem(qc, itemId);
+
       if (itemType === "Episode" && seriesId) {
         await qc.refetchQueries({ queryKey: ["series-watch-state", seriesId] });
         await retireSeriesFromWatchlistIfFullyWatched(qc, client, userId, seriesId);
@@ -50,8 +61,20 @@ export function useWatchStopInvalidation() {
       }
 
       qc.invalidateQueries({ queryKey: ["item", itemId] });
-      for (const k of STOP_INVALIDATE_KEYS) qc.invalidateQueries({ queryKey: [k] });
+      // `refetchType: "all"` et non le défaut « active » : ces hubs ne sont
+      // MONTÉS NULLE PART à l'instant où l'on sort du lecteur — la page qui les
+      // affiche n'est pas encore arrivée. Une invalidation les marquait alors
+      // seulement périmés, et la fraîcheur retombait sur le `refetchOnMount` de
+      // la query qui remonte. La requête part maintenant, pendant la navigation.
+      const resumeRefetched = qc.invalidateQueries({ queryKey: RESUME_HUB, refetchType: "all" });
+      for (const k of STOP_INVALIDATE_KEYS) qc.invalidateQueries({ queryKey: [k], refetchType: "all" });
       qc.invalidateQueries({ queryKey: WATCHLIST_SERIES_IDS_KEY });
+
+      // Une fois la réponse écrite : on remet notre ordre par-dessus. Une réponse
+      // partie trop tôt pour voir le `DatePlayed` mis à jour ne doit pas défaire
+      // ce qu'on sait de source sûre. Sans effet si elle était juste.
+      await resumeRefetched.catch(() => {});
+      hoistResumeItem(qc, itemId);
     },
     [qc, client, userId],
   );

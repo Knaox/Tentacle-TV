@@ -8,6 +8,7 @@ import {
   restoreFromSnapshot,
   patchSeriesIdSet,
   removeItemFromLists,
+  type CacheTarget,
 } from "./cacheUtils";
 import {
   retireSeriesFromWatchlistIfFullyWatched,
@@ -43,6 +44,16 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
       ? itemId
       : undefined;
 
+  /**
+   * Cible du patch optimiste. Sur une SÉRIE, elle englobe ses épisodes : c'est
+   * ce que fait le serveur (`/PlayedItems/{seriesId}` marque toute la série), et
+   * le cache doit dire la même chose. Sans ça, la vignette « +N nouveaux
+   * épisodes » des derniers ajouts — dont l'état se déduit des épisodes groupés
+   * (cf. `groupLatestByRuns`) — restait sur l'ancienne valeur jusqu'au refetch.
+   */
+  const target: CacheTarget =
+    context?.itemType === "Series" && itemId ? { matchId: itemId, matchSeriesId: itemId } : itemId!;
+
   const markWatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "POST" }),
     onMutate: async () => {
@@ -50,7 +61,7 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
       const patch: Partial<UserItemData> = clearLike
         ? { Played: true, PlayedPercentage: 100, Likes: false }
         : { Played: true, PlayedPercentage: 100 };
-      const snapshot = updateItemUserDataInCache(qc, itemId!, () => patch);
+      const snapshot = updateItemUserDataInCache(qc, target, () => patch);
       if (clearLike) {
         patchSeriesIdSet(qc, WATCHLIST_SERIES_IDS_KEY, itemId, false, snapshot);
         removeItemFromLists(qc, WATCHLIST_LIST_KEYS, itemId, snapshot);
@@ -85,7 +96,7 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "DELETE" }),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
-      const snapshot = updateItemUserDataInCache(qc, itemId!, () => ({
+      const snapshot = updateItemUserDataInCache(qc, target, () => ({
         Played: false,
         PlayedPercentage: 0,
       }));
