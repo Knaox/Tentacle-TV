@@ -14,6 +14,24 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.17.1]
+### FR
+- Windows : plus de scintillement à l'ouverture d'une fiche depuis la recherche, ni au retour d'une vidéo vers sa fiche — la fenêtre reste opaque en dehors de la lecture, et ne devient transparente que le temps du film
+- Ouvrir une fiche depuis la recherche l'anime désormais comme partout ailleurs : l'affiche cliquée rejoint sa place sur la fiche, au lieu d'apparaître sans transition
+- En quittant le lecteur, la fiche est là telle qu'on l'a laissée : elle ne rejoue plus son ouverture par-dessus un écran noir. Idem après un simple rafraîchissement
+- « Reprendre la lecture » se réordonne tout de suite : le titre qu'on vient de regarder repasse en tête, sans attendre
+- Vu, Ma liste et Favoris se voient immédiatement sur les vignettes « nouveaux épisodes » des derniers ajouts, sans recharger la page
+- L'accueil revient en haut de page quand on y retourne
+- Le survol d'une affiche ne reste plus accroché derrière le curseur quand on fait défiler rapidement
+### EN
+- Windows: no more flickering when opening a title from search, or when coming back from a video to its details — the window now stays opaque outside playback, and only turns transparent for the length of the film
+- Opening a title from search is now animated like everywhere else: the poster you clicked flies to its place on the details page, instead of appearing with no transition
+- Leaving the player drops you back on the details page exactly as you left it — it no longer replays its opening over a black screen. Same after a plain refresh
+- "Continue watching" reorders right away: the title you just watched moves back to the front, no waiting
+- Watched, My list and Favourites now show up instantly on the "new episodes" tiles of recent additions, with no page reload
+- Home scrolls back to the top when you return to it
+- A poster's hover no longer lingers behind the cursor when you scroll quickly
+
 ## [1.17.0]
 ### FR
 - Nouvelle interface : bannière d'accueil retravaillée, affiches au liseré lumineux et halo qui suit le curseur
