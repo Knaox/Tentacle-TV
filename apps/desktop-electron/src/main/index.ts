@@ -6,7 +6,7 @@
  * puis seulement la fenêtre.
  */
 
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import path from "node:path";
 import { APP_ORIGIN, APP_SCHEME, registerAppScheme, serveApp, webRoot } from "./appProtocol";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
@@ -15,7 +15,7 @@ import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
-import { registerVideoCommands } from "./ipc/video";
+import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { createMainWindow, getMainWindow } from "./window";
 
@@ -50,6 +50,16 @@ function main(): void {
   registerAppScheme();
 
   void app.whenReady().then(() => {
+    // Electron pose un menu applicatif par défaut — Fichier, Édition,
+    // Affichage, Fenêtre. L'app Tauri n'en a aucun, et il se voyait en haut de
+    // la fenêtre pendant la lecture. L'interface est intégralement en HTML :
+    // ce menu n'apporte rien et abîme le plein écran.
+    //
+    // Sous Windows, les raccourcis d'édition (copier, coller) restent traités
+    // nativement par le moteur de rendu dans les champs de saisie ; sur macOS
+    // ils dépendent du menu, il faudra donc en fournir un le jour venu.
+    if (process.platform !== "darwin") Menu.setApplicationMenu(null);
+
     denyAllPermissions();
     // Empreintes calculées sur le HTML réellement servi : le script inline
     // qui pose le thème avant le premier paint reste autorisé, sans ouvrir
@@ -96,6 +106,10 @@ function main(): void {
       }
     });
   });
+
+  // Filet de sécurité : l'écran est rendu à son état d'origine même si la
+  // fermeture court-circuite `mpv_destroy`.
+  app.on("will-quit", () => restaurerEcran());
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();

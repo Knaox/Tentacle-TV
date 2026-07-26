@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { getMainWindow } from "../window";
+import { activerHdr, basculeEnCours, hdrActif, restaurerHdr } from "../video/hdr";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
 import { nativeHandle, VideoWindow } from "../video/videoWindow";
 import { CommandRegistry } from "./registry";
@@ -40,10 +41,39 @@ const NO_ARGS = z.object({}).passthrough();
 
 let video: VideoWindow | null = null;
 
+/**
+ * La bascule automatique de l'écran en HDR est-elle autorisée ?
+ *
+ * La POLITIQUE appartient à la page — c'est elle qui connaît la préférence de
+ * l'utilisateur ; le MÉCANISME appartient au processus principal, seul à
+ * pouvoir lire le gamma du média dès son ouverture et à parler à Windows.
+ *
+ * Éteinte par défaut : changer le mode d'un écran coûte une à deux secondes de
+ * noir, et tous les lecteurs qui le proposent le laissent au choix. La page
+ * l'allume à l'initialisation du lecteur si l'utilisateur l'a demandé.
+ */
+let hdrAutoAutorise = false;
+
 /** Diffuse vers la page, si elle est encore là. */
 function send(channel: string, payload: unknown): void {
   const win = getMainWindow();
   if (win && !win.isDestroyed()) win.webContents.send(`tentacle:${channel}`, payload);
+}
+
+/**
+ * Bascule l'écran en HDR si, et seulement si, le contenu en a besoin.
+ *
+ * `pq` désigne HDR10 et Dolby Vision, `hlg` la diffusion. Tout le reste est du
+ * SDR et n'a rien à gagner à ce que l'écran change de mode — il y perdrait
+ * même, Windows délavant alors tout le contenu SDR.
+ */
+function basculerSiHdr(): void {
+  if (!hdrAutoAutorise) return;
+  const gamma = getProperty("video-params/gamma");
+  if (gamma !== "pq" && gamma !== "hlg") return;
+  if (hdrActif()) return;
+  const ok = activerHdr();
+  console.info(`[tentacle] contenu ${gamma} — bascule HDR de l'ecran : ${ok ? "ok" : "refusee"}`);
 }
 
 export function registerVideoCommands(registry: CommandRegistry): void {
@@ -61,7 +91,16 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         const err = init(
           { options: options?.initialOptions ?? {}, observed, wid: parent },
           {
-            event: (p) => send("mpv://event", p),
+            event: (p) => {
+              // Le contenu ne se déclare qu'une fois le fichier ouvert : c'est
+              // le seul moment où l'on sait s'il faut basculer l'écran. Comme
+              // tous les bons lecteurs, on le fait UNE fois au démarrage de la
+              // lecture — changer le mode d'un écran coûte une à deux secondes
+              // de noir pendant la resynchronisation, hors de question de le
+              // refaire en cours de route.
+              if (p.event === "file-loaded") basculerSiHdr();
+              send("mpv://event", p);
+            },
             property: (p) => send("mpv://property-change", p),
           },
         );
@@ -87,6 +126,9 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         video?.detach();
         video = null;
         destroy();
+        // L'écran est rendu tel qu'on l'a trouvé, systématiquement. Un écran
+        // laissé en HDR délave tout le reste de Windows.
+        restaurerHdr();
       },
     })
     .add("mpv_command", {
@@ -136,5 +178,34 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     .add("mpv_harden_child_window", {
       schema: NO_ARGS,
       run: () => video?.harden() ?? false,
+    })
+    .add("display_hdr_state", {
+      schema: NO_ARGS,
+      run: () => ({
+        actif: hdrActif(),
+        bascule: basculeEnCours(),
+        autoAutorise: hdrAutoAutorise,
+      }),
+    })
+    .add("display_hdr_auto", {
+      schema: SURFACE,
+      run: ({ on }) => {
+        hdrAutoAutorise = on;
+        // Désactivée en cours de lecture, la préférence rend l'écran tout de
+        // suite : l'utilisateur qui décoche s'attend à voir l'effet, pas à
+        // devoir arrêter le film.
+        if (!on) restaurerHdr();
+      },
     });
+}
+
+/**
+ * Rend l'écran à son état d'origine, quoi qu'il arrive.
+ *
+ * Filet de sécurité pour la fermeture, y compris brutale : un écran laissé en
+ * HDR délave tout Windows, et l'utilisateur n'aurait aucune raison de faire le
+ * lien avec une application fermée.
+ */
+export function restaurerEcran(): void {
+  restaurerHdr();
 }

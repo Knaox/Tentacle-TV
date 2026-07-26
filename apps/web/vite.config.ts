@@ -53,6 +53,12 @@ export default defineConfig({
     // Version serveur MINIMALE requise par ce client (bannière de compat admin).
     __MIN_SERVER_VERSION__: JSON.stringify(versions.minServer ?? "1.3.0"),
     __DIST_CHANNEL__: JSON.stringify(distChannel),
+    // Panneau de diagnostic du lecteur. L'app Electron sert un build de
+    // PRODUCTION même en développement — `import.meta.env.DEV` y vaut donc
+    // faux et ne peut pas servir de garde. On passe par un drapeau explicite,
+    // posé par `build:web:debug` et par lui seul : aucun build livré ne
+    // l'active, et le panneau disparaît alors du bundle.
+    __PLAYER_DEBUG__: JSON.stringify(process.env.TENTACLE_DEBUG === "1"),
   },
   // Load .env files from monorepo root (where .env and .env.production live)
   envDir: resolve(__dirname, "../.."),

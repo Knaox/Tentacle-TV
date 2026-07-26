@@ -39,6 +39,7 @@ import { isDesktopApp, isTauriShell } from "./desktop/bridge";
 import { getBackendBase } from "./lib/backendBase";
 import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
+import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -205,8 +206,16 @@ attachQueryPersister(queryClient, persistStorage, {
 // compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.
 installAnimationAudit();
 
+// Diagnostic du lecteur — DÉVELOPPEMENT UNIQUEMENT. Monté à la racine et non
+// dans le lecteur : le panneau est en position fixe et lit l'état de mpv par
+// le singleton de l'adaptateur, il n'a besoin d'aucun contexte.
+// `__PLAYER_DEBUG__` est faux dans tout build livré — la branche et son import
+// disparaissent alors du bundle.
+const debugLecteur = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    {debugLecteur}
     <QueryClientProvider client={queryClient}>
       <ThemeProvider backendUrl={backendUrl}>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>

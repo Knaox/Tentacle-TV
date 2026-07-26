@@ -105,6 +105,19 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     win.webContents.openDevTools({ mode: "detach" });
   }
 
+  // F11 sort du plein écran, quoi qu'il arrive.
+  //
+  // C'est le raccourci que tout le monde connaît sous Windows, et le menu
+  // applicatif — retiré parce qu'il se voyait pendant la lecture — était le
+  // seul à le fournir. Sans lui, un plein écran dont les contrôles ne se
+  // révèlent pas devient une souricière. Traité AVANT la page, pour rester
+  // valable même si l'interface est occupée.
+  win.webContents.on("before-input-event", (event, input) => {
+    if (input.type !== "keyDown" || input.key !== "F11") return;
+    event.preventDefault();
+    win.setFullScreen(!win.isFullScreen());
+  });
+
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
   // rectangle vide le temps du premier rendu.
   win.once("ready-to-show", () => win.show());

@@ -59,6 +59,10 @@ export const COMMANDS = [
   // d'entrée qu'elle partage avec le thread de l'interface.
   "player_surface_transparent",
   "mpv_harden_child_window",
+  // Bascule du mode HDR de l'écran : son état pour le diagnostic, et
+  // l'autorisation donnée par la préférence de l'utilisateur.
+  "display_hdr_state",
+  "display_hdr_auto",
 
   // Veille et contrôles média
   "prevent_display_sleep_start",
