@@ -1,0 +1,27 @@
+{
+  "name": "@tentacle-tv/desktop-electron",
+  "version": "1.20.0",
+  "private": true,
+  "description": "Tentacle TV desktop (Electron) — Windows",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build:main": "tsc -p tsconfig.json",
+    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --target=node22 --external:electron --outfile=dist/preload/index.js",
+    "build:ts": "pnpm build:main && pnpm build:preload",
+    "build:web": "pnpm --filter @tentacle-tv/web build",
+    "build": "pnpm build:web && pnpm build:ts",
+    "dev": "pnpm build:ts && electron .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@tentacle-tv/web": "workspace:*",
+    "koffi": "^3.1.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "electron": "^43.2.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  }
+}
