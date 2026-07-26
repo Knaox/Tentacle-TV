@@ -16,6 +16,7 @@ import { CommandRegistry } from "./ipc/registry";
 import { closeLocalDb } from "./localDb";
 import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
+import { registerSessionCommands } from "./ipc/session";
 import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
@@ -87,6 +88,7 @@ function main(): void {
     const registry = new CommandRegistry();
     registerShellCommands(registry);
     registerPluginCommands(registry);
+    registerSessionCommands(registry);
     registerVideoCommands(registry);
     registry.install();
     registerShellCapabilities();
