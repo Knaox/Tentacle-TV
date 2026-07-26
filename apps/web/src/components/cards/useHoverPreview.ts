@@ -1,64 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
-import { canAnchorPreview } from "./hoverPreviewGeometry";
+import { boundsFor, canPlacePanel, visualRect } from "./cardAnchor";
 import type { AnchorRect, PreviewBounds } from "./hoverPreviewGeometry";
-
-/**
- * Bornes horizontales du panneau : la zone de CONTENU de la rangée, c'est-à-dire
- * son rectangle amputé de sa propre gouttière (`row-gutter`, lue en CSS donc
- * juste à tous les points de rupture — 16 px en mobile, 56 px au-delà).
- *
- * C'est la borne exacte, ni plus ni moins, et la mesure le montre : sur une
- * rangée de 1432 px, le disque de la flèche droite occupe 1380→1420, soit
- * entièrement dans les 56 px de gouttière, tandis que la première carte
- * commence pile à 56. Borner sur la gouttière garde donc les flèches
- * cliquables ET aligne le panneau sur sa carte.
- *
- * Deux réglages plus larges ont échoué avant celui-ci : la fenêtre entière
- * (le panneau débordait dans la gouttière, mal cadré) puis une réserve fixe de
- * 72 px (plus large que la gouttière, elle poussait le panneau de la première
- * carte vers la droite — le décalage visible à l'écran).
- */
-function boundsFor(card: HTMLElement | null): PreviewBounds | undefined {
-  const row = card?.closest<HTMLElement>(".row-dim");
-  if (!row) return undefined;
-  const r = row.getBoundingClientRect();
-  const cs = getComputedStyle(row);
-  return {
-    left: r.left + (parseFloat(cs.paddingLeft) || 0),
-    right: r.right - (parseFloat(cs.paddingRight) || 0),
-  };
-}
-
-/**
- * Boîte que le panneau recouvre : le VISUEL de la carte, pas la carte entière.
- *
- * La racine porte aussi le bloc titre, une cinquantaine de pixels sous l'image.
- * Tant que le panneau se déroulait vers le bas, l'écart ne se voyait pas — il
- * s'aligne alors sur le HAUT, commun aux deux boîtes. Dès qu'il se déroule vers
- * le haut, c'est le BAS qui sert d'ancre, et la vignette du panneau atterrissait
- * une cinquantaine de pixels trop bas.
- */
-function visualRect(card: HTMLElement): AnchorRect {
-  const el = card.querySelector<HTMLElement>("[data-card-visual]") ?? card;
-  const r = el.getBoundingClientRect();
-  return { top: r.top, left: r.left, width: r.width, height: r.height };
-}
-
-/**
- * Le panneau peut-il se poser SUR cette carte ? Oui, dès qu'elle a une largeur.
- *
- * Cette fonction ne refuse plus rien, et c'est le résultat de trois itérations.
- * Elle exigeait d'abord que la carte tienne entièrement dans la rangée, puis que
- * le décalage de butée reste sous un tiers de sa largeur — chaque règle privait
- * d'aperçu des cartes parfaitement survolables. La disposition superposée
- * (`overlay`) supprime la cause : un panneau qui ne quitte jamais sa carte n'a
- * besoin ni de place libre ni de tolérance.
- */
-function canPlacePanel(card: HTMLElement | null): boolean {
-  return card ? canAnchorPreview(visualRect(card)) : false;
-}
+import { pointerStillOn } from "../../hooks/useHoverGuard";
 
 /**
  * Délai d'ouverture : assez long pour que traverser une rangée n'ouvre pas dix
@@ -102,6 +47,20 @@ export interface HoverPreview {
    */
   panelActive: boolean;
   open: boolean;
+  /**
+   * La dernière fermeture était-elle SÈCHE — sans sortie animée ?
+   *
+   * La sortie du panneau (140 ms de fondu qui le repose sur sa carte) suppose un
+   * curseur qui s'en va : elle rend la main à la carte, dessous, au même
+   * endroit. Quand c'est un DÉFILEMENT qui invalide le survol, cette hypothèse
+   * tombe. Le panneau exposant ses coordonnées de fenêtre à l'ouverture, framer
+   * le fait sortir avec les props de son dernier rendu : il reste donc CLOUÉ à
+   * l'écran pendant que la page glisse dessous, et on voit un panneau à
+   * mi-opacité suspendu au-dessus d'un contenu qui n'est plus le sien. C'est le
+   * survol fantôme. Personne n'ayant bougé le curseur, il n'y a pas d'adieu à
+   * faire : le panneau disparaît net.
+   */
+  cut: boolean;
   /** Position de la carte au moment de l'ouverture (null si fermé). */
   anchor: AnchorRect | null;
   /** Bornes de la rangée, figées avec l'ancre. */
@@ -168,6 +127,14 @@ export function useHoverPreview(disabled = false): HoverPreview {
    */
   const pointerInside = useRef(false);
 
+  /**
+   * Sortie animée ou fermeture sèche (cf. `cut`). Un ref et non un état : la
+   * valeur est POSÉE avant le `setAnchor(null)` qui provoque le rendu où elle
+   * est lue, donc elle y est déjà juste — et un état de plus ferait un rendu de
+   * plus sur le chemin le plus fréquent de l'app.
+   */
+  const dryRef = useRef(false);
+
   const close = useCallback(() => {
     clearTimeout(openTimer.current);
     clearTimeout(closeTimer.current);
@@ -175,8 +142,17 @@ export function useHoverPreview(disabled = false): HoverPreview {
     setAnchor(null);
   }, []);
 
+  /** Fermeture sans sortie animée — le survol n'a pas été quitté, il a été invalidé. */
+  const closeDry = useCallback(() => {
+    dryRef.current = true;
+    close();
+  }, [close]);
+
   const scheduleOpen = useCallback(() => {
     pointerInside.current = true;
+    // Toute ouverture repart d'une sortie animée : seule une invalidation
+    // géométrique la rend sèche.
+    dryRef.current = false;
     if (!eligible || disabled) return;
     // Verdict IMMÉDIAT, dès l'entrée du curseur : la carte doit savoir sans
     // délai si elle prend le relais avec son propre survol.
@@ -188,8 +164,12 @@ export function useHoverPreview(disabled = false): HoverPreview {
     clearTimeout(openTimer.current);
     openTimer.current = setTimeout(() => {
       const el = anchorRef.current;
-      // Re-vérifié à l'échéance : la rangée a pu défiler entre-temps.
-      if (!el || !canPlacePanel(el)) return;
+      // Re-vérifié à l'échéance : la rangée a pu défiler entre-temps — et
+      // `pointerStillOn` parce qu'elle a pu défiler SOUS un curseur immobile,
+      // auquel cas aucun `mouseleave` n'est venu annuler cette ouverture. Un
+      // panneau qui s'ouvre 110 ms plus tard sur une carte que le curseur a
+      // quittée, c'est le fantôme dans sa version la plus visible.
+      if (!el || !canPlacePanel(el) || !pointerStillOn(el)) return;
       if (activeCloser && activeCloser !== close) activeCloser();
       activeCloser = close;
       setBounds(boundsFor(el));
@@ -227,7 +207,12 @@ export function useHoverPreview(disabled = false): HoverPreview {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const el = anchorRef.current;
-        if (!el || !pointerInside.current || !canPlacePanel(el)) { close(); return; }
+        // `pointerInside` dit où le curseur ÉTAIT au dernier événement souris, et
+        // il n'y en a pas quand la page défile sous une main immobile : c'est la
+        // géométrie qui tranche alors (cf. `useHoverGuard`). Fermeture SÈCHE —
+        // on est en plein défilement, une sortie animée resterait clouée à
+        // l'écran (cf. `cut`).
+        if (!el || !pointerInside.current || !canPlacePanel(el) || !pointerStillOn(el)) { closeDry(); return; }
         // Comparaison avant écriture : un défilement vertical ne change pas les
         // bornes de la rangée, et une frame sans changement ne doit pas coûter
         // un rendu du panneau.
@@ -283,7 +268,7 @@ export function useHoverPreview(disabled = false): HoverPreview {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointerDown, true);
     };
-  }, [open, close]);
+  }, [open, close, closeDry]);
 
   useEffect(() => { close(); }, [location.key, close]);
   useEffect(() => { if (disabled) close(); }, [disabled, close]);
@@ -294,6 +279,7 @@ export function useHoverPreview(disabled = false): HoverPreview {
     eligible: eligible && !disabled,
     panelActive: eligible && !disabled && placeable,
     open: anchor !== null,
+    cut: dryRef.current,
     anchor,
     bounds,
     close,

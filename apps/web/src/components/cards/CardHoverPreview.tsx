@@ -22,6 +22,15 @@ interface CardHoverPreviewProps {
    * pixel pour pixel à celle de la carte, sans le moindre saut.
    */
   cardImageUrl: string;
+  /**
+   * La fermeture est SÈCHE : pas de sortie animée (cf. `cut` dans
+   * `useHoverPreview`). Le composant se retire alors ENTIÈREMENT de l'arbre —
+   * `AnimatePresence` avec lui, et une `AnimatePresence` démontée ne peut plus
+   * animer la sortie de personne. C'est le seul moyen sûr d'y arriver : framer
+   * fige les props du dernier rendu de l'enfant qui sort, si bien qu'un `exit`
+   * conditionnel serait toujours lu dans son état d'AVANT la fermeture.
+   */
+  cut?: boolean;
   onClose: () => void;
   panelHandlers: { onMouseEnter: () => void; onMouseLeave: () => void };
 }
@@ -39,7 +48,7 @@ interface CardHoverPreviewProps {
  * ferme donc au moindre défilement ou redimensionnement, plutôt que de suivre
  * l'ancre frame par frame.
  */
-export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, panelHandlers }: CardHoverPreviewProps) {
+export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, cut = false, onClose, panelHandlers }: CardHoverPreviewProps) {
   const placement = useMemo(() => {
     if (!anchor) return null;
     const rect = computePreviewRect(
@@ -49,6 +58,8 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, onClose, 
     );
     return { rect, origin: previewOrigin(anchor, rect) };
   }, [anchor, bounds]);
+
+  if (cut && !anchor) return null;
 
   return createPortal(
     <AnimatePresence>

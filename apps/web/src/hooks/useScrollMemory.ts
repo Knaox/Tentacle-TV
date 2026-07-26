@@ -6,16 +6,21 @@ const scrollPositions = new Map<string, number>();
 /**
  * Pages qui s'ouvrent TOUJOURS en haut, quelle que soit la position mémorisée.
  *
- * La mémoire de défilement a du sens sur une surface de PARCOURS — accueil,
- * bibliothèque, favoris : on y revient pour reprendre là où on butinait, et
- * retomber en haut fait perdre le fil. Elle n'en a aucun sur une FICHE : on y
+ * La mémoire de défilement a du sens sur une surface qu'on PARCOURT en largeur —
+ * une bibliothèque, les favoris : on y revient pour reprendre là où on butinait,
+ * et retomber en haut fait perdre le fil. Elle n'en a aucun sur une FICHE : on y
  * arrive pour un titre précis, et toute la page est construite autour de sa
  * bannière et de son affiche. Y revenir à mi-hauteur, sur la liste d'épisodes,
  * oblige à remonter pour comprendre où l'on est — d'autant plus déroutant que
  * l'ouverture est désormais animée depuis le visuel cliqué : l'animation se
  * jouait hors écran, au-dessus de la position restaurée.
+ *
+ * L'ACCUEIL en fait désormais partie. Ce n'est pas une surface de parcours mais
+ * la page d'où l'on part : sa bannière et « Reprendre la lecture » sont tout en
+ * haut, et c'est ce qu'on vient y chercher. Y revenir au milieu des rangées, sous
+ * une bannière qui tourne hors écran, donne l'impression d'avoir raté la page.
  */
-const ALWAYS_TOP = [/^\/media\//, /^\/shared\//];
+const ALWAYS_TOP = [/^\/$/, /^\/media\//, /^\/shared\//];
 
 const opensAtTop = (pathname: string): boolean =>
   ALWAYS_TOP.some((pattern) => pattern.test(pathname));
