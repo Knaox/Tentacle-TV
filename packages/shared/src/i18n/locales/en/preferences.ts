@@ -106,4 +106,6 @@ export default {
   hdrAutoTitle: "Switch the display to HDR during playback",
   hdrAutoHint:
     "HDR films then show their full range of colour. Changing mode blacks the screen out for a second or two, and the original state is restored when playback ends. Left off, the film is adapted to your display without changing its mode.",
+  hdrAutoUnsupported:
+    "No HDR-capable display was detected. HDR films are still adapted to your display, with nothing lost.",
 } as const;

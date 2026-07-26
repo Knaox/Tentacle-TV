@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { desktopPlatform, supportsMpv } from "../../desktop/bridge";
+import { desktopPlatform, invoke, supportsMpv } from "../../desktop/bridge";
 import { hdrAutoActive, setHdrAuto } from "../../lib/hdrPreference";
 import { ToggleSwitch } from "./ToggleSwitch";
 
@@ -24,8 +24,30 @@ import { ToggleSwitch } from "./ToggleSwitch";
 export function HdrAutoToggle() {
   const { t } = useTranslation("preferences");
   const [actif, setActif] = useState(hdrAutoActive);
+  /** `null` tant que le natif n'a pas répondu — on n'affiche rien entre-temps. */
+  const [supporte, setSupporte] = useState<boolean | null>(null);
 
-  if (desktopPlatform() !== "windows" || !supportsMpv()) return null;
+  const disponible = desktopPlatform() === "windows" && supportsMpv();
+
+  // Le natif interroge la configuration d'affichage de Windows, seule source
+  // qui dise si un écran SAIT faire du HDR — indépendamment du fait qu'il soit
+  // allumé en HDR à cet instant.
+  useEffect(() => {
+    if (!disponible) return;
+    let annule = false;
+    void invoke<{ supporte: boolean }>("display_hdr_state")
+      .then((e) => {
+        if (!annule) setSupporte(e.supporte);
+      })
+      .catch(() => {
+        if (!annule) setSupporte(false);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [disponible]);
+
+  if (!disponible || supporte === null) return null;
 
   const changer = (suivant: boolean): void => {
     setHdrAuto(suivant);
@@ -37,10 +59,18 @@ export function HdrAutoToggle() {
       <div>
         <p className="text-sm font-medium text-content-primary">{t("preferences:hdrAutoTitle")}</p>
         <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
-          {t("preferences:hdrAutoHint")}
+          {supporte ? t("preferences:hdrAutoHint") : t("preferences:hdrAutoUnsupported")}
         </p>
       </div>
-      <ToggleSwitch checked={actif} onChange={changer} label={t("preferences:hdrAutoTitle")} />
+      {/* Désactivé plutôt que masqué quand aucun écran ne sait faire du HDR :
+          l'utilisateur voit que la fonction existe, et pourquoi elle ne lui est
+          pas offerte — un réglage qui disparaît sans explication inquiète. */}
+      <ToggleSwitch
+        checked={supporte && actif}
+        onChange={changer}
+        disabled={!supporte}
+        label={t("preferences:hdrAutoTitle")}
+      />
     </div>
   );
 }

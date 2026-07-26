@@ -186,6 +186,17 @@ export function hdrActif(): boolean {
 }
 
 /**
+ * Au moins un écran sait-il faire du HDR ?
+ *
+ * Sert à n'offrir la préférence que là où elle change quelque chose : proposer
+ * une bascule à qui n'a pas d'écran compatible, c'est promettre un effet qui
+ * n'arrivera jamais.
+ */
+export function hdrSupporte(): boolean {
+  return ciblesActives().some((c) => lireEtat(c)?.supporte === true);
+}
+
+/**
  * Active le HDR sur les écrans qui le savent faire, en retenant leur état.
  * Sans effet — et sans mémoire écrasée — si c'est déjà fait.
  */

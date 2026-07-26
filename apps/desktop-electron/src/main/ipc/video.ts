@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { getMainWindow } from "../window";
-import { activerHdr, basculeEnCours, hdrActif, restaurerHdr } from "../video/hdr";
+import { activerHdr, basculeEnCours, hdrActif, hdrSupporte, restaurerHdr } from "../video/hdr";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
 import { nativeHandle, VideoWindow } from "../video/videoWindow";
 import { CommandRegistry } from "./registry";
@@ -182,6 +182,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     .add("display_hdr_state", {
       schema: NO_ARGS,
       run: () => ({
+        supporte: hdrSupporte(),
         actif: hdrActif(),
         bascule: basculeEnCours(),
         autoAutorise: hdrAutoAutorise,
