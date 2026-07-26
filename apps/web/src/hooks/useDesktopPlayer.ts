@@ -133,7 +133,16 @@ export function useDesktopPlayer() {
       } else {
         // Reset start property so the stream starts from its natural beginning
         // (important for transcoded streams where position is baked into the URL)
-        await api.command("set", ["start", "no"]).catch((e) => console.warn("[mpv] reset start:", e));
+        //
+        // ⚠️ `none`, et surtout PAS `no`. `--start` attend un temps relatif, dont
+        // la valeur « aucune » s'écrit `none` ; `no` ne s'analyse pas, la
+        // commande rend MPV_ERROR_COMMAND (-12), et le `.catch` ci-dessous
+        // avalait l'échec. La remise à zéro n'avait donc JAMAIS lieu : après une
+        // reprise à 30:00, le média suivant lancé depuis le début repartait à
+        // 30:00. Mesuré sur le libmpv du dépôt :
+        //   set start no   -> -12, start vaut toujours "+1800"
+        //   set start none ->   0, start vaut "none"
+        await api.command("set", ["start", "none"]).catch((e) => console.warn("[mpv] reset start:", e));
       }
       const tracks: { aid?: number; sid?: number } = {};
       if (options.audioTrack != null && options.audioTrack > 0) {
