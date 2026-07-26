@@ -77,13 +77,55 @@ const SWP_ASYNCWINDOWPOS = 0x4000;
 const SWP_FLAGS = SWP_NOACTIVATE | SWP_NOSENDCHANGING | SWP_ASYNCWINDOWPOS;
 const GWL_STYLE = -16;
 const GWL_EXSTYLE = -20;
-const WS_DISABLED = 0x08000000;
-const WS_EX_TRANSPARENT = 0x00000020;
-const WS_EX_NOACTIVATE = 0x08000000;
+// En BigInt, comme tout ce qui touche aux bits de style : voir `bits()`.
+const WS_DISABLED = 0x08000000n;
+const WS_EX_TRANSPARENT = 0x00000020n;
+const WS_EX_NOACTIVATE = 0x08000000n;
+
+/**
+ * Normalise un entier 64 bits rendu par koffi.
+ *
+ * ⚠️ koffi rend un `int64`/`uint64` en **Number** tant que la valeur tient dans
+ * la plage sûre, et en BigInt seulement au-delà. Un descripteur de fenêtre ou
+ * un mot de style est petit : c'est donc TOUJOURS un Number qui arrive, et les
+ * `as bigint` d'origine étaient faux. Ils ne se voyaient pas parce que le seul
+ * code qui combinait ces valeurs — `harden()` — ne s'exécutait jamais ; dès
+ * qu'il l'a fait, `Number | BigInt` a levé un TypeError et tué le processus
+ * principal au démarrage de la lecture.
+ *
+ * Mesuré : `GetWindowLongPtrW` rend `number 0x96000000`, `FindWindowExW` rend
+ * `number 0` quand elle ne trouve rien.
+ */
+function bits(valeur: unknown): bigint {
+  return typeof valeur === "bigint" ? valeur : BigInt(valeur as number);
+}
 
 /** Journal de la surface vidéo, hors build empaqueté. */
 function trace(message: string): void {
   if (!app.isPackaged) console.log(`[video] ${message}`);
+}
+
+/**
+ * Exécute une opération Win32 sans jamais emporter le processus principal.
+ *
+ * ⚠️ Tout ce qui suit tourne dans des rappels de MINUTEUR du processus
+ * principal. Une exception y est fatale : Electron ferme l'application sur une
+ * boîte « A JavaScript error occurred in the main process », en pleine lecture.
+ * C'est exactement ce qui est arrivé au premier durcissement réellement exécuté
+ * — un mélange Number/BigInt, une ligne, et toute l'application par terre.
+ *
+ * Le contrat est celui de l'app Tauri (`mpv_window.rs:137`) : le durcissement
+ * et le calage sont des CONFORTS. Leur échec dégrade l'expérience — clics qui
+ * n'atteignent pas les contrôles, vidéo mal cadrée — mais ne doit jamais
+ * empêcher de regarder un film. Le message part en `warn` et non par `trace` :
+ * il doit rester visible dans un build empaqueté lancé depuis un terminal.
+ */
+function sansFaillir(quoi: string, action: () => void): void {
+  try {
+    action();
+  } catch (e) {
+    console.warn(`[video] ${quoi} en echec, lecture poursuivie : ${String(e)}`);
+  }
 }
 
 /** Descripteur natif de la fenêtre principale, en valeur. */
@@ -149,18 +191,20 @@ export class VideoWindow {
 
     let essais = 0;
     this.recherche = setInterval(() => {
-      const found = FindWindowExW(this.parent, 0, "mpv", null) as bigint;
-      if (found) {
-        this.stopSearch();
-        this.mpvHwnd = found;
-        this.align();
-        trace(`fenetre mpv trouvee, durcissement ${this.harden() ? "ok" : "REFUSE"}`);
-      } else if (++essais > 100) {
-        this.stopSearch();
-        // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme
-        // le plus coûteux à diagnostiquer — c'est ce qui a masqué ce défaut.
-        trace("fenetre mpv introuvable apres 10 s, durcissement ignore");
-      }
+      sansFaillir("recherche de la fenetre mpv", () => {
+        const found = bits(FindWindowExW(this.parent, 0, "mpv", null));
+        if (found) {
+          this.stopSearch();
+          this.mpvHwnd = found;
+          this.align();
+          trace(`fenetre mpv trouvee, durcissement ${this.harden() ? "ok" : "REFUSE"}`);
+        } else if (++essais > 100) {
+          this.stopSearch();
+          // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme
+          // le plus coûteux à diagnostiquer — c'est ce qui a masqué ce défaut.
+          trace("fenetre mpv introuvable apres 10 s, durcissement ignore");
+        }
+      });
     }, 100);
   }
 
@@ -171,9 +215,13 @@ export class VideoWindow {
    */
   align(): void {
     if (!this.mpvHwnd) return;
-    const size = clientSize(this.parent);
-    if (!size) return;
-    SetWindowPos(this.mpvHwnd, HWND_BOTTOM, 0, 0, size.width, size.height, SWP_FLAGS);
+    // Le calage part aussi d'un minuteur (`planifierCalage`) : la garde vaut
+    // pour les deux chemins d'appel.
+    sansFaillir("calage de la fenetre video", () => {
+      const size = clientSize(this.parent);
+      if (!size) return;
+      SetWindowPos(this.mpvHwnd, HWND_BOTTOM, 0, 0, size.width, size.height, SWP_FLAGS);
+    });
   }
 
   /**
@@ -194,10 +242,10 @@ export class VideoWindow {
    */
   harden(): boolean {
     if (!this.mpvHwnd) return false;
-    const style = GetWindowLongPtrW(this.mpvHwnd, GWL_STYLE) as bigint;
-    SetWindowLongPtrW(this.mpvHwnd, GWL_STYLE, style | BigInt(WS_DISABLED));
-    const exStyle = GetWindowLongPtrW(this.mpvHwnd, GWL_EXSTYLE) as bigint;
-    const durci = exStyle | BigInt(WS_EX_TRANSPARENT) | BigInt(WS_EX_NOACTIVATE);
+    const style = bits(GetWindowLongPtrW(this.mpvHwnd, GWL_STYLE));
+    SetWindowLongPtrW(this.mpvHwnd, GWL_STYLE, style | WS_DISABLED);
+    const exStyle = bits(GetWindowLongPtrW(this.mpvHwnd, GWL_EXSTYLE));
+    const durci = exStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
     if (durci !== exStyle) SetWindowLongPtrW(this.mpvHwnd, GWL_EXSTYLE, durci);
     return true;
   }

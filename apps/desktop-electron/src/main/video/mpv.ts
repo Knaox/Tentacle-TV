@@ -77,7 +77,11 @@ export function command(args: readonly string[]): string | null {
 function decodeProperty(format: number, data: unknown): unknown {
   if (!data || format === FORMAT.NONE) return null;
   if (format === FORMAT.FLAG) return (koffi.decode(data, "int") as number) !== 0;
-  if (format === FORMAT.INT64) return Number(koffi.decode(data, "int64") as bigint);
+  // Pas de `as bigint` ici : koffi rend un Number tant que la valeur tient dans
+  // la plage sûre. `Number()` accepte les deux, donc c'était sans conséquence —
+  // mais l'assertion était fausse, et la même a coûté un crash dans
+  // `videoWindow.ts` (voir `bits()`).
+  if (format === FORMAT.INT64) return Number(koffi.decode(data, "int64"));
   if (format === FORMAT.DOUBLE) return koffi.decode(data, "double") as number;
   if (format === FORMAT.STRING) {
     const ptr = koffi.decode(data, "void*") as unknown;
