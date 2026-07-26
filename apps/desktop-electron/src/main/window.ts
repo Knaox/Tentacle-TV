@@ -6,7 +6,7 @@
  * La parité visuelle se joue aussi là.
  */
 
-import { app, BrowserWindow, screen } from "electron";
+import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { lockNavigation } from "./security";
 
@@ -200,19 +200,4 @@ export function leavePlayerFullscreenScope(): void {
   const entry = fullscreenOnEntry;
   fullscreenOnEntry = null;
   if (win && entry === false && win.isFullScreen()) win.setFullScreen(false);
-}
-
-/**
- * Fréquence de rafraîchissement de l'écran qui porte la fenêtre.
- *
- * Sert à cadencer le rendu hors écran de l'interface. Mesuré en phase 0 :
- * figer ce plafond à 60 braderait les écrans 120, 144 ou 240 Hz, alors que le
- * rendu hors écran suit fidèlement la cadence demandée sans surcoût.
- */
-export function displayRefreshRate(): number {
-  const win = mainWindow;
-  const point = win ? win.getBounds() : { x: 0, y: 0 };
-  const display = screen.getDisplayNearestPoint({ x: point.x, y: point.y });
-  const rate = display.displayFrequency;
-  return Number.isFinite(rate) && rate >= 30 ? Math.round(rate) : 60;
 }
