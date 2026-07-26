@@ -39,6 +39,12 @@ const ENTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
  *
  * Vignette posée sur la vidéo → bg-black/text-white volontairement en dur
  * dans les deux thèmes clair/sombre.
+ *
+ * Et donc PAS de `backdrop-filter` sur la pilule d'horodatage. Sur les trois
+ * bureaux, mpv dessine hors du moteur web — fenêtre native sous la surface de
+ * Chromium sur Windows, couche GL sous la webview sur macOS et Linux. Le moteur
+ * ne voit jamais l'image du film et ne peut donc pas la flouter : le flou ne
+ * floutait rien et coûtait quand même une couche composée. Ne pas le remettre.
  */
 function TrickplayPreviewImpl({
   visible,
@@ -140,7 +146,7 @@ function TrickplayPreviewImpl({
       ) : (
         // No trickplay: standalone timestamp pill
         <div
-          className="flex items-center justify-center rounded-md bg-black/85 px-2.5 backdrop-blur-sm"
+          className="flex items-center justify-center rounded-md bg-black/85 px-2.5"
           style={{
             height: TIMESTAMP_PILL_HEIGHT,
             boxShadow:

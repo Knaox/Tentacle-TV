@@ -40,6 +40,15 @@ interface DesktopPlayerOverlaysProps {
  *
  * Tout est posé sur la vidéo → text-white/bg-black volontairement en dur,
  * identiques dans les deux thèmes clair/sombre.
+ *
+ * Et donc PAS de `backdrop-filter` sur les boutons de saut. mpv dessine hors du
+ * moteur web — fenêtre native sous la surface de Chromium sur Windows, couche
+ * GL sous la webview sur macOS et Linux : le moteur ne voit jamais l'image du
+ * film et ne peut pas la flouter. Le flou ne floutait rien et coûtait quand
+ * même une couche composée par image. Ne pas le remettre.
+ *
+ * `NextEpisodeFullscreen`, en revanche, garde le sien : il est posé sur la
+ * bannière de la série, donc sur du HTML, où le flou fonctionne vraiment.
  */
 export function DesktopPlayerOverlays({
   showLoadingOverlay, buffering, posterUrl,
@@ -86,7 +95,7 @@ export function DesktopPlayerOverlays({
       {/* Skip intro / credits buttons */}
       {showSkipIntro && introSegment && (
         <button onClick={() => seek(isDirectPlay ? introSegment.end : Math.max(0, introSegment.end - effectiveMpvOffset.current))}
-          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
+          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20">
           {t("player:skipIntro")}
         </button>
       )}
@@ -95,7 +104,7 @@ export function DesktopPlayerOverlays({
           titre, de quoi décider plutôt qu'un simple libellé. */}
       {showSkipCredits && creditsSegment && !autoPlayCountdown && !hasNextEpisode && (
         <button onClick={() => seek(isDirectPlay ? creditsSegment.end : Math.max(0, creditsSegment.end - effectiveMpvOffset.current))}
-          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
+          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20">
           {t("player:skipCredits")}
         </button>
       )}
