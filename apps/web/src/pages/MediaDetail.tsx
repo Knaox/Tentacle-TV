@@ -15,7 +15,7 @@ import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
-import { consumeDetailOrigin, type DetailOrigin } from "../components/detail/detailTransition";
+import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
 import { ExtrasSection } from "../components/detail/ExtrasSection";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { ChevronRightIcon } from "../components/media/MediaDetailIcons";
@@ -48,26 +48,14 @@ export function MediaDetail() {
   const [origin, setOrigin] = useState<DetailOrigin | null>(() => consumeDetailOrigin(itemId));
 
   /**
-   * La page a-t-elle été ouverte PAR une transition ?
-   *
-   * C'est la clé du défaut d'ouverture. Le calque recouvre l'écran pendant que
-   * cette page, dessous, joue sa PROPRE entrée — voile de page, cascade de
-   * texte, fondu de l'affiche. Les deux ne peuvent pas être synchronisées : le
-   * calque ne démarre son vol qu'une fois la requête revenue ET l'affiche
-   * mesurée. Selon que l'item est en cache ou non, il s'efface avant ou après la
-   * fin de la cascade — et quand c'est avant, on découvre le titre et l'affiche
-   * à mi-opacité, invisibles sur un backdrop lumineux, puis l'entrée se termine
-   * sous nos yeux. D'où un défaut intermittent, qui dépend du contenu.
-   *
-   * Une seule chorégraphie à la fois : quand le calque prend en charge
-   * l'ouverture, le contenu qu'il découvre doit être PRÊT, pas en train de se
-   * monter. Sans origine (rechargement, lien direct, retour), la cascade joue
-   * normalement — c'est là qu'elle a du sens.
+   * La page rend son état FINAL d'emblée quand elle ne s'OUVRE pas : calque en
+   * charge, sortie du lecteur, ou document chargé directement sur cette fiche.
+   * Les trois cas et leur pourquoi sont dans `skipsEntrance`.
    *
    * `useRef` et non l'état : `origin` retombe à null dès que le calque a fini,
    * et l'entrée ne doit surtout pas se déclencher à ce moment-là.
    */
-  const openedByTransition = useRef(origin !== null);
+  const skipEntrance = useRef(skipsEntrance(origin));
 
   // Relue à CHAQUE changement d'item, et pas seulement au montage. React Router
   // réutilise ce composant d'une fiche à l'autre — un initialiseur `useState` ne
@@ -81,7 +69,7 @@ export function MediaDetail() {
     // Le composant étant réutilisé d'une fiche à l'autre, le régime d'entrée
     // doit suivre l'item courant : la fiche suivante peut très bien s'ouvrir
     // sans transition (lien direct) après une qui en avait une.
-    openedByTransition.current = next !== null;
+    skipEntrance.current = skipsEntrance(next);
   }, [itemId]);
   // Place finale du visuel, remontée par `DetailPoster` une fois la mise en
   // page faite : c'est la cible du vol. `useCallback` pour ne pas relancer la
@@ -150,20 +138,20 @@ export function MediaDetail() {
 
   return (
     <>
-    {/* Voile de page neutralisé quand le calque ouvre la fiche : il déplace la
+    {/* Voile de page neutralisé quand la fiche ne s'ouvre pas : il déplace la
         page de 12 px et l'échelonne à 99,5 % SOUS le calque, mouvement que
         personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
-    <PageTransition skip={openedByTransition.current}>
+    <PageTransition skip={skipEntrance.current}>
       <div className="min-h-screen bg-surface-0">
-        <DetailHero backdropUrl={backdropUrl} item={item} />
+        <DetailHero backdropUrl={backdropUrl} item={item} instant={skipEntrance.current} />
 
         <motion.div
           className="-mt-48 relative z-10 px-4 md:px-12"
-          // `initial={false}` quand le calque a ouvert la page : le contenu rend
-          // son état FINAL d'emblée. Sinon la cascade se joue sous le calque,
+          // `initial={false}` quand la page ne s'ouvre pas : le contenu rend son
+          // état FINAL d'emblée. Sinon la cascade se joue sous le calque,
           // invisible, et il ne lui reste plus qu'à se terminer au mauvais
           // moment — c'est le défaut d'ouverture.
-          initial={openedByTransition.current ? false : "hidden"}
+          initial={skipEntrance.current ? false : "hidden"}
           animate="show"
           // Constante de module (cf. `theme/motion`), jamais un littéral en
           // ligne : un objet neuf à chaque rendu fait rejouer toute la cascade
@@ -175,7 +163,7 @@ export function MediaDetail() {
             <DetailPoster
               item={item}
               onMeasure={handleMeasure}
-              instant={openedByTransition.current}
+              instant={skipEntrance.current}
             />
 
             <div className="flex-1 pt-4">

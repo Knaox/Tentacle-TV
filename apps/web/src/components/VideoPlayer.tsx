@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { SkipBadge } from "./SkipBadge";
+import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
 import { useVideoEvents } from "../hooks/useVideoEvents";
@@ -265,7 +266,7 @@ export function VideoPlayer({
           hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
           onTogglePlay={togglePlay} onSeek={handleSeek} onSkip={skipBy}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}
-          onToggleFullscreen={toggleFullscreen} onBack={() => navigate(-1)}
+          onToggleFullscreen={toggleFullscreen} onBack={() => { markPlayerExit(); navigate(-1); }}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
           applyToSeries={applyToSeries}

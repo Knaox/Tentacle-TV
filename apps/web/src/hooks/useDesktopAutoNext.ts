@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useNavigate } from "react-router-dom";
+import { markPlayerExit } from "../components/detail/detailTransition";
 import type { MpvState } from "./useDesktopPlayer";
 
 const DBG = "[DesktopPlayer]";
@@ -66,6 +67,10 @@ export function useDesktopAutoNext({
 
   const goBack = useCallback(async () => {
     await leaveFullscreenScope();
+    // La fiche qu'on retrouve ne doit pas rejouer son entrée (cf.
+    // `markPlayerExit`). Posé APRÈS l'attente du plein écran, juste avant la
+    // navigation : la marque est bornée dans le temps, elle doit être fraîche.
+    markPlayerExit();
     navigate(-1);
   }, [navigate, leaveFullscreenScope]);
 
@@ -89,6 +94,7 @@ export function useDesktopAutoNext({
   // Retour à la fiche (films) — même fermeture de session que goBack.
   const goToDetail = useCallback(async () => {
     await leaveFullscreenScope();
+    markPlayerExit();
     navigate(`/media/${itemId}`, { replace: true });
   }, [navigate, itemId, leaveFullscreenScope]);
 

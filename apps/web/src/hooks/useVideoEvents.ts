@@ -1,5 +1,6 @@
 import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { markPlayerExit } from "../components/detail/detailTransition";
 import { wtLog } from "../watchTogether/wtLog";
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -146,7 +147,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     },
     onEnded: () => {
       if (a.autoplayNextEnabled && a.hasNextEpisode && a.autoPlayCountdown === null) a.startAutoPlay();
-      else if (!a.hasNextEpisode || !a.autoplayNextEnabled) navigate(`/media/${a.itemId}`, { replace: true });
+      else if (!a.hasNextEpisode || !a.autoplayNextEnabled) { markPlayerExit(); navigate(`/media/${a.itemId}`, { replace: true }); }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [a.src, a.itemId, a.startPositionSeconds, a.jellyfinDuration, a.autoplayNextEnabled, a.hasNextEpisode, a.autoPlayCountdown, a.startAutoPlay, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError, navigate]);

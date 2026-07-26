@@ -10,6 +10,21 @@ interface DetailHeroProps {
   backdropUrl: string | null;
   /** Item dont l'affiche alimente la lueur de raccord. */
   item?: MediaItem;
+  /**
+   * Le backdrop est là d'emblée, sans son fondu d'entrée.
+   *
+   * C'est la plus large des entrées de la fiche : une image plein cadre qui monte
+   * de rien en 700 ms, exactement ce que fait le calque d'ouverture de sa propre
+   * copie. Le rejouer quand la page ne s'ouvre pas le fait passer pour une
+   * transition qui rate son départ : sous le calque, il est encore à mi-opacité
+   * au moment où celui-ci se lève ; en sortant du lecteur, il repart de rien
+   * par-dessus un écran noir. Les deux cas se décident au même endroit —
+   * `skipEntrance` dans `MediaDetail`.
+   *
+   * Le dézoom qui l'accompagne (1,08 → 1) ne compte pas ici : le ken burns anime
+   * le même `transform`, et une animation CSS l'emporte sur un style en ligne.
+   */
+  instant?: boolean;
 }
 
 /**
@@ -60,7 +75,7 @@ export const DETAIL_GLOW_BOX = "h-[calc(58vh+410px)] md:h-[calc(64vh+410px)]";
  * La qualité (4K / HDR / Dolby) n'est PAS affichée ici : elle vit à côté du
  * titre (DetailMetadata) pour ne pas surcharger la bannière.
  */
-export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
+export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   // Le ken burns dure 32 s et tourne SANS FIN. Rien ne l'arrêtait : une fiche
@@ -101,7 +116,7 @@ export function DetailHero({ backdropUrl, item }: DetailHeroProps) {
             // l'œil cherche en arrivant, le faire attendre une seconde et demie
             // pour finir de se poser n'ajoutait rien. Le ken burns, lui, garde
             // ses 32 s — c'est une respiration, pas une entrée.
-            initial={{ opacity: 0, scale: 1.08 }}
+            initial={instant ? false : { opacity: 0, scale: 1.08 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 h-full w-full object-cover animate-ken-burns motion-reduce:animate-none"

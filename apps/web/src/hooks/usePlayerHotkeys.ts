@@ -1,5 +1,6 @@
 import { useEffect, type MutableRefObject } from "react";
 import type { NavigateFunction } from "react-router-dom";
+import { markPlayerExit } from "../components/detail/detailTransition";
 import type { SubtitleTrack } from "../components/player/videoPlayer.types";
 
 interface UsePlayerHotkeysOptions {
@@ -30,7 +31,7 @@ export function usePlayerHotkeys({
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
       if (e.code === "KeyF") toggleFullscreen();
-      if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else navigate(-1); }
+      if (e.code === "Escape") { if (document.fullscreenElement) document.exitFullscreen(); else { markPlayerExit(); navigate(-1); } }
       if (e.code === "ArrowRight") skipBy(30);
       if (e.code === "ArrowLeft") skipBy(-10);
       if (e.code === "ArrowUp") { e.preventDefault(); handleVolumeChange(Math.min(1, volume + 0.1)); }
