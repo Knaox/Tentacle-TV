@@ -10,6 +10,7 @@ import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 import { ConnectivityChip } from "../../offline/ConnectivityChip";
 import { DataSaverChip } from "../../offline/DataSaverChip";
 import { DownloadsNavButton } from "../../downloads/DownloadsNavButton";
+import { OfflineNavLinks } from "../../offline/OfflineNavLinks";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 
 interface TopNavProps {
@@ -75,9 +76,12 @@ export function TopNav({ showSearch = true }: TopNavProps) {
         {/* Browse menu (libraries pin manager) */}
         {!offline && <BrowseButton />}
 
-        {/* Primary nav (horizontal) — only shows pinned items */}
+        {/* Primary nav (horizontal) — only shows pinned items.
+            Hors ligne, les bibliothèques du serveur sont injoignables : la
+            barre reste sinon VIDE, et depuis « Gérer les téléchargements » plus
+            rien ne ramenait au catalogue. */}
         <div className="min-w-0 flex-1">
-          {!offline && <TopNavLinks />}
+          {offline ? <OfflineNavLinks /> : <TopNavLinks />}
         </div>
 
         {/* Right cluster: offline chip (desktop) + search + watch-together + notif + avatar */}

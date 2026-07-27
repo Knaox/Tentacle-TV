@@ -9,6 +9,7 @@ import { useToast } from "../contexts/ToastContext";
 import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
+import { useOfflineMode } from "../offline/useOfflineMode";
 
 /**
  * Bouton avatar + dropdown menu pour le desktop (TopNav).
@@ -26,6 +27,7 @@ export function UserAvatarMenu() {
   const { logout } = useAuth();
   const { name, initial, isAdmin } = getUserInfo();
   const connectivity = useConnectivity();
+  const offline = useOfflineMode();
   const { avatarSrc, onAvatarError, avatarVersion, uploading, upload } = useAvatarUpload();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +65,7 @@ export function UserAvatarMenu() {
     navigate: navigateTo,
     handleLogout,
     goOffline,
+    offline,
   });
 
   // `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis sur
