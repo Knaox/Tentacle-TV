@@ -20,8 +20,10 @@ import { OfflinePosterCard } from "./OfflinePosterCard";
 import {
   groupOfflineEntries,
   groupSeasonsBySeries,
+  groupWatchState,
   seasonLabel,
   seriesGroupMatches,
+  watchStateOf,
   type OfflineSeriesGroup,
 } from "./offlineGroups";
 
@@ -106,12 +108,7 @@ export function OfflineCatalog() {
           {shownMovies.length > 0 && (
             <Section title={t("downloads:sectionMovies")}>
               {shownMovies.map((movie) => (
-                <OfflinePosterCard
-                  key={movie.id}
-                  title={movie.title ?? movie.itemId}
-                  imageCandidates={[`meta/${movie.itemId}/primary.jpg`]}
-                  onClick={() => setSelected(movie)}
-                />
+                <MovieCard key={movie.id} entry={movie} onOpen={() => setSelected(movie)} />
               ))}
             </Section>
           )}
@@ -143,6 +140,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function MovieCard({ entry, onOpen }: { entry: DownloadEntry; onOpen: () => void }) {
+  const { watched, percent } = watchStateOf(entry);
+  return (
+    <OfflinePosterCard
+      title={entry.title ?? entry.itemId}
+      imageCandidates={[`meta/${entry.itemId}/primary.jpg`]}
+      watched={watched}
+      percent={percent}
+      onClick={onOpen}
+    />
+  );
+}
+
 function SeriesCard({ group, onOpen }: { group: OfflineSeriesGroup; onOpen: () => void }) {
   const { t } = useTranslation("downloads");
   // Une seule saison : son numéro est plus parlant que « 1 saison ».
@@ -150,10 +160,13 @@ function SeriesCard({ group, onOpen }: { group: OfflineSeriesGroup; onOpen: () =
     group.seasons.length === 1
       ? seasonLabel(t, group.seasons[0].seasonNumber)
       : t("downloads:seasonsCount", { count: group.seasons.length });
+  // Série vue = TOUS ses épisodes téléchargés le sont.
+  const { watched } = groupWatchState(group.seasons.flatMap((s) => s.episodes));
   return (
     <OfflinePosterCard
       title={group.seriesName}
       subtitle={`${label} · ${t("downloads:episodesCount", { count: group.episodeCount })}`}
+      watched={watched}
       // Affiche verticale de la série ; à défaut (téléchargement hérité non
       // encore réparé), la vignette de l'épisode plutôt que rien.
       imageCandidates={[

@@ -24,6 +24,8 @@ function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry
     autoDeleteAfterWatch: false,
     autoDeleteDelayMinutes: 0,
     deleteScheduledAt: null,
+    played: false,
+    positionTicks: 0,
     ...over,
   };
 }

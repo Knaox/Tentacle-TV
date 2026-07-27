@@ -90,6 +90,38 @@ export function groupOfflineEntries(entries: DownloadEntry[]): OfflineGroups {
   return { movies, seasons };
 }
 
+/**
+ * Ce qu'une vignette doit montrer de la progression.
+ *
+ * Même convention qu'en ligne (`PosterTile`) : une coche quand c'est vu, une
+ * barre sinon — jamais les deux. La barre reste muette sous 1 %, `CardProgressBar`
+ * s'en charge.
+ */
+export interface OfflineWatchState {
+  watched: boolean;
+  /** Pourcentage, ou `null` quand la durée est inconnue. */
+  percent: number | null;
+}
+
+export function watchStateOf(entry: DownloadEntry): OfflineWatchState {
+  if (entry.played) return { watched: true, percent: null };
+  const runtime = entry.runtimeTicks ?? 0;
+  if (runtime <= 0 || entry.positionTicks <= 0) return { watched: false, percent: null };
+  return { watched: false, percent: Math.min(100, (entry.positionTicks / runtime) * 100) };
+}
+
+/**
+ * État d'un GROUPE (saison, série) : vu quand tout l'est.
+ *
+ * Un groupe partiellement vu ne porte pas de barre : la fraction d'épisodes
+ * regardés et l'avancement dans un épisode ne sont pas la même grandeur, les
+ * mélanger dans une seule barre mentirait. C'est aussi ce que fait Jellyfin.
+ */
+export function groupWatchState(entries: DownloadEntry[]): OfflineWatchState {
+  const watched = entries.length > 0 && entries.every((entry) => entry.played);
+  return { watched, percent: null };
+}
+
 /** Le groupe correspond-il à la recherche (titre de série, de saison ou d'épisode) ? */
 export function seasonGroupMatches(group: OfflineSeasonGroup, needle: string): boolean {
   if (!needle) return true;

@@ -92,6 +92,9 @@ export interface DownloadEntry {
   autoDeleteDelayMinutes: number;
   /** Échéance de suppression (epoch secondes) — posée quand l'item est vu. */
   deleteScheduledAt: number | null;
+  /** Progression locale de ce compte : coche « vu » et barre des vignettes. */
+  played: boolean;
+  positionTicks: number;
 }
 
 export interface SubtitleSideCarInput {

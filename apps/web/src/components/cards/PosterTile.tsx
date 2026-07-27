@@ -6,6 +6,7 @@ import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
 import { CardQuickActions } from "./CardQuickActions";
+import { CardWatchedBadge } from "./CardWatchedBadge";
 import { playTargetPath } from "./playTarget";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { PlayIcon } from "../icons/HeroIcons";
@@ -100,13 +101,7 @@ export function PosterTile({
       )}
 
       {/* Coche « vu » — cède la place aux actions rapides pendant le survol. */}
-      {watched && !actionsVisible && (
-        <div className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow">
-          <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-      )}
+      {watched && !actionsVisible && <CardWatchedBadge label={t("common:watched")} />}
 
       {/* Barre d'actions qui remonte du bas. Le scrim n'apparaît QU'AU survol :
           au repos, l'affiche reste entièrement propre. */}

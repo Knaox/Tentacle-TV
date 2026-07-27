@@ -3,9 +3,11 @@ import type { DownloadEntry } from "./api";
 import {
   groupOfflineEntries,
   groupSeasonsBySeries,
+  groupWatchState,
   seasonGroupMatches,
   seasonLabel,
   seriesGroupMatches,
+  watchStateOf,
 } from "./offlineGroups";
 
 let nextId = 1;
@@ -33,6 +35,8 @@ function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
     autoDeleteAfterWatch: false,
     autoDeleteDelayMinutes: 0,
     deleteScheduledAt: null,
+    played: false,
+    positionTicks: 0,
     ...over,
   };
 }
@@ -182,6 +186,50 @@ describe("groupSeasonsBySeries", () => {
     expect(seriesGroupMatches(rick, "rick")).toBe(true);
     expect(seriesGroupMatches(rick, "breaking bad")).toBe(false);
     expect(seriesGroupMatches(rick, "")).toBe(true);
+  });
+});
+
+// Hors ligne, la vignette n'a AUCUN DTO serveur : ce que dit `watchStateOf` est
+// la seule chose que l'utilisateur verra de sa progression.
+describe("watchStateOf", () => {
+  it("coche un item vu, sans barre", () => {
+    expect(watchStateOf(entry({ played: true, positionTicks: 500, runtimeTicks: 1000 })))
+      .toEqual({ watched: true, percent: null });
+  });
+
+  it("rend le pourcentage d'un item entame", () => {
+    expect(watchStateOf(entry({ played: false, positionTicks: 250, runtimeTicks: 1000 })))
+      .toEqual({ watched: false, percent: 25 });
+  });
+
+  it("ne rend rien sans progression", () => {
+    expect(watchStateOf(entry({ positionTicks: 0, runtimeTicks: 1000 })))
+      .toEqual({ watched: false, percent: null });
+  });
+
+  // Duree absente (telechargement herite, media non analyse cote Jellyfin) :
+  // aucun pourcentage n'est calculable, et on n'en invente pas.
+  it("ne rend rien sans duree connue", () => {
+    expect(watchStateOf(entry({ positionTicks: 250, runtimeTicks: null })))
+      .toEqual({ watched: false, percent: null });
+  });
+
+  it("borne a cent pour cent", () => {
+    expect(watchStateOf(entry({ positionTicks: 1200, runtimeTicks: 1000 })).percent).toBe(100);
+  });
+});
+
+describe("groupWatchState", () => {
+  it("coche un groupe dont tout est vu", () => {
+    expect(groupWatchState([entry({ played: true }), entry({ played: true })]).watched).toBe(true);
+  });
+
+  it("ne coche pas un groupe partiellement vu", () => {
+    expect(groupWatchState([entry({ played: true }), entry({ played: false })]).watched).toBe(false);
+  });
+
+  it("ne coche pas un groupe vide", () => {
+    expect(groupWatchState([]).watched).toBe(false);
   });
 });
 

@@ -49,6 +49,43 @@ describe("listes", () => {
     expect(Object.keys(entree ?? {})).not.toContain("subtitlesJson");
   });
 
+  // Hors ligne il n'y a AUCUN DTO serveur : cette liste est la seule voie par
+  // laquelle la coche « vu » d'une vignette peut arriver.
+  it("portent la progression du compte", () => {
+    const db = openInMemory();
+    unClaim(db);
+    marquerVu(db, "u", "item1");
+
+    const entree = listForUser(db, "u")[0];
+
+    expect(entree?.played).toBe(true);
+    expect(stateForItem(db, "u", "item1")?.played).toBe(true);
+  });
+
+  it("rendent une progression NEUTRE pour un item jamais ouvert", () => {
+    // Jointure externe : sans ligne de progression, SQLite rend NULL — et une
+    // lecture stricte y leverait au lieu de rendre « pas encore vu ».
+    const db = openInMemory();
+    unClaim(db);
+
+    const entree = listForUser(db, "u")[0];
+
+    expect(entree?.played).toBe(false);
+    expect(entree?.positionTicks).toBe(0);
+  });
+
+  it("ne montrent pas la progression d'un AUTRE compte", () => {
+    // Deux personnes partagent le meme fichier et n'en sont pas au meme
+    // endroit : la vignette de l'une ne doit rien dire de l'autre.
+    const db = openInMemory();
+    claimOrCreateFile(db, spec({ userId: "userA" }));
+    claimOrCreateFile(db, spec({ userId: "userB" }));
+    marquerVu(db, "userA", "item1");
+
+    expect(listForUser(db, "userA")[0]?.played).toBe(true);
+    expect(listForUser(db, "userB")[0]?.played).toBe(false);
+  });
+
   it("l'etat par item prefere le complet", () => {
     const db = openInMemory();
     claimOrCreateFile(

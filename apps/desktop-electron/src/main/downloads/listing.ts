@@ -28,12 +28,31 @@ export interface DownloadListEntry extends PublicFile {
   autoDeleteDelayMinutes: number;
   /** Échéance de suppression (epoch SECONDES), posée quand l'item est vu. */
   deleteScheduledAt: number | null;
+  /**
+   * Progression locale de CE compte, pour la coche « vu » et la barre des
+   * vignettes du catalogue hors ligne.
+   *
+   * Elle ne venait de nulle part : hors ligne, il n'y a aucun DTO serveur à
+   * interroger, et cette liste était la seule voie. Un film regardé restait donc
+   * affiché comme neuf alors que la base disait le contraire.
+   */
+  played: boolean;
+  positionTicks: number;
 }
 
 const EXTRA_COLS = `item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id,
    item_meta.season_id, item_meta.index_number, item_meta.parent_index_number,
    item_meta.runtime_ticks, claims.auto_delete_after_watch,
-   claims.auto_delete_delay_minutes, claims.delete_scheduled_at`;
+   claims.auto_delete_delay_minutes, claims.delete_scheduled_at,
+   playback_state.played, playback_state.position_ticks`;
+
+/**
+ * Progression du PROPRIÉTAIRE DU CLAIM, jamais d'un autre compte : deux
+ * personnes partagent le même fichier et n'en sont pas au même endroit.
+ */
+const PLAYBACK_JOIN = `LEFT JOIN playback_state
+     ON playback_state.item_id = files.item_id
+    AND playback_state.jellyfin_user_id = claims.jellyfin_user_id`;
 
 function mapEntry(row: Row): DownloadListEntry {
   return {
@@ -49,6 +68,10 @@ function mapEntry(row: Row): DownloadListEntry {
     autoDeleteAfterWatch: flag(row, "auto_delete_after_watch"),
     autoDeleteDelayMinutes: integer(row, "auto_delete_delay_minutes"),
     deleteScheduledAt: integerOrNull(row, "delete_scheduled_at"),
+    // Jointure EXTERNE : un item jamais ouvert n'a pas de ligne de progression,
+    // et `flag` lèverait sur le NULL que rend alors SQLite.
+    played: (integerOrNull(row, "played") ?? 0) !== 0,
+    positionTicks: integerOrNull(row, "position_ticks") ?? 0,
   };
 }
 
@@ -58,6 +81,7 @@ export function listForUser(db: DatabaseSync, userId: string): DownloadListEntry
       `SELECT ${FILE_COLS}, ${EXTRA_COLS} FROM files
        JOIN claims ON claims.file_id = files.id
        LEFT JOIN item_meta ON item_meta.item_id = files.item_id
+       ${PLAYBACK_JOIN}
        WHERE claims.jellyfin_user_id = ?
        ORDER BY files.created_at DESC, files.id DESC`,
     )
@@ -79,6 +103,7 @@ export function stateForItem(
       `SELECT ${FILE_COLS}, ${EXTRA_COLS} FROM files
        JOIN claims ON claims.file_id = files.id
        LEFT JOIN item_meta ON item_meta.item_id = files.item_id
+       ${PLAYBACK_JOIN}
        WHERE claims.jellyfin_user_id = ? AND files.item_id = ?
        ORDER BY CASE files.status WHEN 'complete' THEN 0 ELSE 1 END,
                 CASE files.variant WHEN 'original' THEN 0 ELSE 1 END,
