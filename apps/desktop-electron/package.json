@@ -22,7 +22,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@electron/packager": "^18.3.6",
+    "@electron/packager": "^20.0.4",
     "@types/node": "^22.10.0",
     "cross-env": "^10.1.0",
     "electron": "^43.2.0",
