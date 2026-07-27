@@ -12,6 +12,7 @@ import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { basculeEnCours, hdrActif, hdrSupporte } from "../video/hdr";
 import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
+import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
 import { nativeHandle, VideoWindow } from "../video/videoWindow";
 import { CommandRegistry } from "./registry";
 
@@ -54,9 +55,17 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         const observed = (options?.observedProperties ?? []).map(
           ([name, format]) => [name, format] as const,
         );
+        // Les options d'init sont passées VERBATIM à mpv. Parmi les 959
+        // propriétés de la libmpv du dépôt figurent `scripts` (chargement de
+        // code Lua), `input-ipc-server` (tuyau nommé donnant le contrôle total
+        // de mpv) et `input-conf` — relevé par sonde. On ne retient donc que ce
+        // que `buildMpvInitOptions` produit. Une option écartée est IGNORÉE et
+        // non rejetée : mpv lui-même tolère les options inconnues, et faire
+        // échouer `mpv_init` empêcherait toute lecture.
+        const { retenues } = filtrerOptionsInit(options?.initialOptions ?? {});
         const parent = nativeHandle(win);
         const err = init(
-          { options: options?.initialOptions ?? {}, observed, wid: parent },
+          { options: retenues, observed, wid: parent },
           {
             event: (p) => {
               // Le contenu ne se déclare qu'une fois le fichier ouvert : c'est
@@ -104,19 +113,29 @@ export function registerVideoCommands(registry: CommandRegistry): void {
       schema: COMMAND,
       run: async ({ name, args }) => {
         const liste = (args ?? []).map(String);
+        // Liste blanche AVANT tout : la libmpv du dépôt expose `run`,
+        // `subprocess` et `load-script` — vérifié par sonde. Sans ce garde, la
+        // page pouvait lancer un programme hors du bac à sable.
+        const refus = refuserCommande(name, liste);
+        if (refus !== null) throw new Error(refus);
         // `await` : la commande ne bloque plus le processus principal, elle
         // attend sa réponse dans la file d'évènements. Un `sub-add` vers une
         // source injoignable prend donc son temps sans geler l'application.
         const err = await command([name, ...liste]);
-        // Les ARGUMENTS dans le message, sans quoi « set : erreur » ne désigne
-        // rien : `set` sert à écrire n'importe quelle propriété, et l'erreur
-        // vient précisément de laquelle.
-        if (err) throw new Error(`${name} ${liste.join(" ")} : ${err}`);
+        // Les ARGUMENTS ne sont PAS dans le message. Ils y étaient, pour que
+        // « set : erreur » désigne quelque chose — mais l'URL d'un `sub-add` ou
+        // d'un `loadfile` porte le jeton Jellyfin, et ce message part dans le
+        // journal du processus principal (`ipc/registry.ts`). Le nom de la
+        // commande et, pour `set`, celui de la propriété refusée suffisent à
+        // situer l'erreur ; ni l'un ni l'autre n'est un secret.
+        if (err) throw new Error(`${name} : ${err}`);
       },
     })
     .add("mpv_set_property", {
       schema: SET_PROPERTY,
       run: ({ name, value }) => {
+        const refus = refuserEcriture(name);
+        if (refus !== null) throw new Error(refus);
         const err = setProperty(
           name,
           typeof value === "boolean" ? (value ? "yes" : "no") : String(value),
