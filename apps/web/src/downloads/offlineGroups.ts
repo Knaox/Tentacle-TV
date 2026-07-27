@@ -1,6 +1,11 @@
 /**
- * Regroupement du catalogue hors ligne : films d'un côté, épisodes réunis par
- * SAISON de l'autre (« Rick et Morty · Saison 1 »), triés par numéro.
+ * Regroupement du catalogue hors ligne, sur deux niveaux : films d'un côté ;
+ * de l'autre les épisodes réunis par SAISON, puis les saisons réunies par
+ * SÉRIE.
+ *
+ * Le second niveau existe parce qu'une série de six saisons occupait six
+ * cartes côte à côte dans le catalogue, à côté des films : c'est la série
+ * qu'on cherche, la saison ne vient qu'après.
  *
  * Les numéros viennent de `item_meta` (schéma v5). Un téléchargement hérité
  * peut les avoir NULL le temps du rattrapage : ces épisodes sont placés en fin
@@ -93,4 +98,75 @@ export function seasonGroupMatches(group: OfflineSeasonGroup, needle: string): b
     group.seriesName.toLowerCase().includes(lower) ||
     group.episodes.some((e) => (e.title ?? "").toLowerCase().includes(lower))
   );
+}
+
+/** Une série et ses saisons téléchargées. */
+export interface OfflineSeriesGroup {
+  /** Clé d'URL stable. */
+  key: string;
+  seriesId: string | null;
+  seriesName: string;
+  /** Saisons triées par numéro, celles sans numéro à la fin. */
+  seasons: OfflineSeasonGroup[];
+  episodeCount: number;
+  /** Item dont les images illustrent la série (affiche verticale, bannière). */
+  posterItemId: string;
+}
+
+function seriesKey(group: OfflineSeasonGroup): string {
+  // L'identifiant de série est l'identité la plus fiable ; à défaut le nom,
+  // qui regroupe au moins ce qui s'affiche pareil.
+  if (group.seriesId) return group.seriesId;
+  return `name:${group.seriesName}`;
+}
+
+/**
+ * Réunit les saisons par série. L'entrée est la sortie de
+ * `groupOfflineEntries`, donc déjà triée — l'ordre des saisons en découle.
+ */
+export function groupSeasonsBySeries(seasons: OfflineSeasonGroup[]): OfflineSeriesGroup[] {
+  const byKey = new Map<string, OfflineSeasonGroup[]>();
+  for (const season of seasons) {
+    const key = seriesKey(season);
+    const bucket = byKey.get(key);
+    if (bucket) bucket.push(season);
+    else byKey.set(key, [season]);
+  }
+
+  const series: OfflineSeriesGroup[] = [...byKey.entries()].map(([key, list]) => {
+    const ordonnees = [...list].sort((a, b) => (a.seasonNumber ?? LAST) - (b.seasonNumber ?? LAST));
+    const first = ordonnees[0];
+    return {
+      key,
+      seriesId: first.seriesId,
+      seriesName: first.seriesName,
+      seasons: ordonnees,
+      episodeCount: ordonnees.reduce((total, s) => total + s.episodes.length, 0),
+      posterItemId: first.posterItemId,
+    };
+  });
+
+  series.sort((a, b) => a.seriesName.localeCompare(b.seriesName));
+  return series;
+}
+
+/** La série correspond-elle à la recherche (son titre, ou celui d'un épisode) ? */
+export function seriesGroupMatches(group: OfflineSeriesGroup, needle: string): boolean {
+  if (!needle) return true;
+  return group.seasons.some((season) => seasonGroupMatches(season, needle));
+}
+
+/**
+ * « Saison 2 », ou le repli quand le numéro manque encore.
+ *
+ * Ici plutôt que dans un composant : les deux écrans du catalogue hors ligne en
+ * ont besoin, et les faire dépendre l'un de l'autre lierait leurs deux chunks.
+ */
+export function seasonLabel(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  seasonNumber: number | null,
+): string {
+  return seasonNumber != null
+    ? t("downloads:seasonLabel", { num: seasonNumber })
+    : t("downloads:seasonUnknown");
 }

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { DownloadEntry } from "./api";
-import { groupOfflineEntries, seasonGroupMatches } from "./offlineGroups";
+import {
+  groupOfflineEntries,
+  groupSeasonsBySeries,
+  seasonGroupMatches,
+  seasonLabel,
+  seriesGroupMatches,
+} from "./offlineGroups";
 
 let nextId = 1;
 function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
@@ -122,5 +128,69 @@ describe("seasonGroupMatches", () => {
     expect(seasonGroupMatches(seasons[0], "lawnmower")).toBe(true);
     expect(seasonGroupMatches(seasons[0], "breaking bad")).toBe(false);
     expect(seasonGroupMatches(seasons[0], "")).toBe(true);
+  });
+});
+
+describe("groupSeasonsBySeries", () => {
+  it("réunit les saisons d'une même série sous une seule carte", () => {
+    const { seasons } = groupOfflineEntries([
+      episode("Rick et Morty", 1, 1, "Pilote"),
+      episode("Rick et Morty", 2, 1, "A Rickle in Time"),
+      episode("Rick et Morty", 2, 2, "Mortynight Run"),
+      episode("Breaking Bad", 1, 1, "Pilot"),
+    ]);
+
+    const series = groupSeasonsBySeries(seasons);
+
+    // Quatre épisodes, trois saisons — mais deux cartes seulement.
+    expect(series).toHaveLength(2);
+    expect(series.map((s) => s.seriesName)).toEqual(["Breaking Bad", "Rick et Morty"]);
+    const rick = series[1];
+    expect(rick.seasons).toHaveLength(2);
+    expect(rick.episodeCount).toBe(3);
+  });
+
+  it("ordonne les saisons par numéro, celles sans numéro à la fin", () => {
+    const { seasons } = groupOfflineEntries([
+      episode("Rick et Morty", 3, 1, "C"),
+      episode("Rick et Morty", null, null, "Inconnue"),
+      episode("Rick et Morty", 1, 1, "A"),
+    ]);
+
+    const rick = groupSeasonsBySeries(seasons)[0];
+
+    expect(rick.seasons.map((s) => s.seasonNumber)).toEqual([1, 3, null]);
+  });
+
+  it("regroupe par nom quand l'identifiant de série manque", () => {
+    const { seasons } = groupOfflineEntries([
+      entry({ kind: "episode", seriesName: "Sans id", seriesId: null, seasonId: "a", parentIndexNumber: 1 }),
+      entry({ kind: "episode", seriesName: "Sans id", seriesId: null, seasonId: "b", parentIndexNumber: 2 }),
+    ]);
+
+    expect(groupSeasonsBySeries(seasons)).toHaveLength(1);
+  });
+
+  it("la recherche traverse les saisons", () => {
+    const { seasons } = groupOfflineEntries([
+      episode("Rick et Morty", 1, 1, "Pilote"),
+      episode("Rick et Morty", 2, 3, "Lawnmower Dog"),
+    ]);
+    const rick = groupSeasonsBySeries(seasons)[0];
+
+    expect(seriesGroupMatches(rick, "lawnmower")).toBe(true);
+    expect(seriesGroupMatches(rick, "rick")).toBe(true);
+    expect(seriesGroupMatches(rick, "breaking bad")).toBe(false);
+    expect(seriesGroupMatches(rick, "")).toBe(true);
+  });
+});
+
+describe("seasonLabel", () => {
+  it("nomme la saison, ou retombe sur le libellé générique", () => {
+    const t = (key: string, options?: Record<string, unknown>): string =>
+      key === "downloads:seasonLabel" ? `Saison ${String(options?.num)}` : "Épisodes";
+
+    expect(seasonLabel(t, 2)).toBe("Saison 2");
+    expect(seasonLabel(t, null)).toBe("Épisodes");
   });
 });

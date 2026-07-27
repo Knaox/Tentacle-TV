@@ -1,10 +1,12 @@
 /**
- * Vue d'une SAISON téléchargée : bannière de série, métadonnées lues dans les
- * snapshots locaux (`season.json`, repli `series.json`) et liste des épisodes
- * en vignettes 16:9, triés par numéro.
+ * Vue d'une SÉRIE téléchargée : bannière, métadonnées lues dans les snapshots
+ * locaux, sélecteur de saison, et les épisodes de la saison choisie.
  *
- * Tout vient du disque via le serveur loopback — la page fonctionne à
- * l'identique en ligne et hors ligne, sans aucune requête serveur.
+ * Le sélecteur disparaît quand il n'y a qu'une saison : un choix entre une
+ * seule option n'est pas un choix, c'est un clic de plus.
+ *
+ * Tout vient du disque — la page fonctionne à l'identique en ligne et hors
+ * ligne, sans aucune requête serveur.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -13,57 +15,65 @@ import { useTranslation } from "react-i18next";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { useDownloadsList } from "./useDownloadState";
-import { groupOfflineEntries } from "./offlineGroups";
+import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "./offlineGroups";
 import { OfflineEpisodeCard } from "./OfflineEpisodeCard";
 import { OfflineItemSheet } from "./OfflineItemSheet";
+import { SeasonPicker } from "./SeasonPicker";
 import { useLocalSnapshot } from "./useLocalSnapshot";
 
-export function OfflineSeasonView() {
+export function OfflineSeriesView() {
   const { t } = useTranslation(["downloads", "common"]);
   const navigate = useNavigate();
-  const { groupKey } = useParams<{ groupKey: string }>();
+  const { seriesKey } = useParams<{ seriesKey: string }>();
   const entries = useDownloadsList();
   const rootReady = useDownloadsRootReady();
   const [selected, setSelected] = useState<DownloadEntry | null>(null);
+  const [seasonKey, setSeasonKey] = useState<string | null>(null);
   const [backdropFailed, setBackdropFailed] = useState(false);
 
-  const group = useMemo(() => {
+  const series = useMemo(() => {
     const complete = entries.filter((e) => e.status === "complete");
-    return groupOfflineEntries(complete).seasons.find((s) => s.key === groupKey) ?? null;
-  }, [entries, groupKey]);
+    const { seasons } = groupOfflineEntries(complete);
+    return groupSeasonsBySeries(seasons).find((s) => s.key === seriesKey) ?? null;
+  }, [entries, seriesKey]);
 
-  const posterItemId = group?.posterItemId;
+  // La saison choisie peut disparaître (dernier épisode supprimé) : on retombe
+  // sur la première plutôt que sur une page vide.
+  const season =
+    series?.seasons.find((s) => s.key === seasonKey) ?? series?.seasons[0] ?? null;
+
+  const seriesPoster = series?.posterItemId;
+  const seasonPoster = season?.posterItemId;
   // La saison porte le synopsis le plus pertinent ; la série prend le relais.
-  const season = useLocalSnapshot(posterItemId, "season.json", rootReady);
-  const series = useLocalSnapshot(posterItemId, "series.json", rootReady);
+  const seasonSnapshot = useLocalSnapshot(seasonPoster, "season.json", rootReady);
+  const seriesSnapshot = useLocalSnapshot(seriesPoster, "series.json", rootReady);
 
-  // Le dernier épisode supprimé fait disparaître la saison : ne pas rester sur
+  // Le dernier épisode supprimé fait disparaître la série : ne pas rester sur
   // une page vide.
   useEffect(() => {
-    if (entries.length > 0 && !group) navigate("/", { replace: true });
-  }, [entries.length, group, navigate]);
+    if (entries.length > 0 && !series) navigate("/", { replace: true });
+  }, [entries.length, series, navigate]);
 
-  if (!group) {
+  if (!series || !season) {
     // Liste encore vide = chargement en cours : ne pas annoncer une absence
     // qui n'en est pas une (l'effet ci-dessus redirige si elle se confirme).
     return (
       <div className="mx-auto min-h-screen w-full max-w-5xl px-4 pt-24 md:px-8">
         {entries.length > 0 && (
-          <p className="text-sm text-content-quaternary">{t("downloads:seasonNotFound")}</p>
+          <p className="text-sm text-content-quaternary">{t("downloads:seriesNotFound")}</p>
         )}
       </div>
     );
   }
 
-  const backdropUrl = rootReady ? localResourceUrl(`meta/${group.posterItemId}/backdrop.jpg`) : null;
-  const seasonLabel = group.seasonNumber != null
-    ? t("downloads:seasonLabel", { num: group.seasonNumber })
-    : t("downloads:seasonUnknown");
-  const overview = (season?.Overview ?? series?.Overview ?? "").replace(/<[^>]+>/g, "");
+  const backdropUrl = rootReady ? localResourceUrl(`meta/${series.posterItemId}/backdrop.jpg`) : null;
+  const overview = (seasonSnapshot?.Overview ?? seriesSnapshot?.Overview ?? "").replace(/<[^>]+>/g, "");
   const metaBits = [
-    seasonLabel,
-    t("downloads:episodesCount", { count: group.episodes.length }),
-    series?.ProductionYear ? String(series.ProductionYear) : null,
+    series.seasons.length > 1
+      ? t("downloads:seasonsCount", { count: series.seasons.length })
+      : seasonLabel(t, season.seasonNumber),
+    t("downloads:episodesCount", { count: series.episodeCount }),
+    seriesSnapshot?.ProductionYear ? String(seriesSnapshot.ProductionYear) : null,
   ].filter(Boolean);
 
   return (
@@ -96,7 +106,7 @@ export function OfflineSeasonView() {
             {t("common:back")}
           </Link>
 
-          <h1 className="mt-4 text-3xl font-bold text-content-primary">{group.seriesName}</h1>
+          <h1 className="mt-4 text-3xl font-bold text-content-primary">{series.seriesName}</h1>
           <p className="mt-1 text-sm text-content-tertiary">{metaBits.join(" · ")}</p>
           {overview && (
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-content-tertiary line-clamp-3">
@@ -107,8 +117,10 @@ export function OfflineSeasonView() {
       </div>
 
       <div className="mx-auto mt-8 w-full max-w-5xl px-4 md:px-8">
+        <SeasonPicker seasons={series.seasons} activeKey={season.key} onSelect={setSeasonKey} />
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {group.episodes.map((episode) => (
+          {season.episodes.map((episode) => (
             <OfflineEpisodeCard
               key={episode.id}
               entry={episode}

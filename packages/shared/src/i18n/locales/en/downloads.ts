@@ -115,4 +115,7 @@ export default {
   episodesCount_other: "{{count}} episodes",
   episodePlay: "Play episode",
   seasonNotFound: "This season is no longer downloaded.",
+  seasonsCount_one: "{{count}} season",
+  seasonsCount_other: "{{count}} seasons",
+  seriesNotFound: "This series is no longer downloaded.",
 } as const;

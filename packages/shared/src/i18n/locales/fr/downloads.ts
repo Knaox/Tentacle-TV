@@ -115,4 +115,7 @@ export default {
   episodesCount_other: "{{count}} épisodes",
   episodePlay: "Lire l'épisode",
   seasonNotFound: "Cette saison n'est plus téléchargée.",
+  seasonsCount_one: "{{count}} saison",
+  seasonsCount_other: "{{count}} saisons",
+  seriesNotFound: "Cette série n'est plus téléchargée.",
 } as const;

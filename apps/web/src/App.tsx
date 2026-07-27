@@ -31,7 +31,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, OfflineCatalog, OfflineSeasonView, AdminDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 
@@ -205,9 +205,10 @@ export function App() {
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
-            {/* Saison téléchargée : contenu 100 % local, donc accessible aussi
-                en ligne (le retour navigateur fonctionne normalement). */}
-            <Route path="offline/season/:groupKey" element={<OfflineSeasonView />} />
+            {/* Série téléchargée : contenu 100 % local, donc accessible aussi
+                en ligne (le retour navigateur fonctionne normalement). Le
+                choix de la saison se fait dans la page. */}
+            <Route path="offline/series/:seriesKey" element={<OfflineSeriesView />} />
 
             <Route path="support" element={onlineOnly(<Support />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
