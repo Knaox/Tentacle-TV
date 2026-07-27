@@ -11,6 +11,26 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.11.0]
+### FR
+- La clé d'administration Jellyfin ne quitte plus le serveur. Elle était recopiée par Jellyfin dans les adresses de lecture — adresse de transcodage et adresses de sous-titres — et repartait telle quelle vers le navigateur de chaque utilisateur qui lançait un transcodage. Le serveur y substitue désormais le jeton de la personne connectée
+- Un appareil jumelé ne peut plus voir ni modifier les données d'un autre compte. Il suffisait de changer l'identifiant dans l'adresse pour lire la bibliothèque, l'historique, et modifier les favoris et l'état « vu » de quelqu'un d'autre
+- Le jeton de session n'est plus ajouté aux adresses externes d'un manifeste de lecture : un serveur Jellyfin hostile ou compromis pouvait se le faire livrer par le lecteur lui-même
+- Un greffon ne peut plus détourner le pont d'API vers un serveur tiers. Ses appels partent avec les identifiants de l'utilisateur : leur destination est maintenant vérifiée
+- L'empreinte SHA-256 d'un greffon devient obligatoire. Une source qui n'en publie pas voit son greffon refusé, avec un message qui le dit. Les archives sont aussi inspectées avant extraction : aucun fichier ne peut être écrit hors de son dossier
+- Le cookie de session porte enfin le drapeau `Secure` en HTTPS. Il suit désormais le protocole réel de la connexion, sans dépendre d'une variable d'environnement qui n'était posée nulle part — les installations en HTTP simple continuent de fonctionner
+- L'application de bureau Windows est admise par la politique CORS du serveur
+- L'outil de diagnostic des notifications n'est plus joignable en production, et les fichiers de test ne partent plus dans l'image Docker
+### EN
+- The Jellyfin admin key no longer leaves the server. Jellyfin copied it into playback URLs — transcoding and subtitle delivery — and it was passed straight through to the browser of every user who started a transcode. The server now substitutes the signed-in user's own token
+- A paired device can no longer read or modify another account's data. Changing the identifier in the URL was enough to read someone else's library and history, and to change their favourites and watched state
+- The session token is no longer appended to external URLs in a playback manifest: a hostile or compromised Jellyfin server could have had the player hand it over
+- A plugin can no longer redirect the API bridge to a third-party host. Its calls carry the user's credentials, so their destination is now checked
+- A plugin's SHA-256 checksum is now mandatory. A source that publishes none has its plugin refused, with a message saying so. Archives are also inspected before extraction: no file can be written outside its folder
+- The session cookie finally carries the `Secure` flag over HTTPS. It now follows the connection's actual protocol instead of an environment variable that was never set — plain-HTTP installations keep working
+- The Windows desktop app is accepted by the server's CORS policy
+- The notification diagnostic tool is no longer reachable in production, and test files no longer ship in the Docker image
+
 ## [1.10.0]
 ### FR
 - Refonte de l'interface web : bannière d'accueil retravaillée (dégradé diagonal teinté, rail de marque, bouton « Plus d'infos »), affiches au liseré dégradé et halo qui suit le curseur
