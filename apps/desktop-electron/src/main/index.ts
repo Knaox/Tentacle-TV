@@ -30,6 +30,7 @@ import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerSessionCommands } from "./ipc/session";
 import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
+import { registerUpdateCommands } from "./ipc/updates";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { createMainWindow, getMainWindow } from "./window";
@@ -102,6 +103,7 @@ function main(): void {
     registerMediaKeyCommands(registry);
     registerPluginCommands(registry);
     registerSessionCommands(registry);
+    registerUpdateCommands(registry);
     registerVideoCommands(registry);
     // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
     // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
