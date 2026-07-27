@@ -20,6 +20,10 @@ import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
+import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
+import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
+import { registerDownloadsStorageCommands } from "./ipc/downloadsStorage";
+import { stopDownloadsRuntime } from "./downloadsRuntime";
 import { closeLocalDb } from "./localDb";
 import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
 import { registerMigrationBridge } from "./ipc/migration";
@@ -99,6 +103,12 @@ function main(): void {
     registerPluginCommands(registry);
     registerSessionCommands(registry);
     registerVideoCommands(registry);
+    // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
+    // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
+    // qu'elle répond, toute la section réapparaît et appelle les autres.
+    registerDownloadsStorageCommands(registry);
+    registerDownloadsPlaybackCommands(registry);
+    registerDownloadsEngineCommands(registry);
     registry.install();
     registerShellCapabilities();
 
@@ -135,6 +145,7 @@ function main(): void {
     // devoir, pas un nettoyage. Une fermeture qui court-circuite `smtc_clear`
     // les laisserait prises jusqu'au redémarrage de la session.
     releaseMediaKeys();
+    stopDownloadsRuntime();
     closeLocalDb();
   });
 
