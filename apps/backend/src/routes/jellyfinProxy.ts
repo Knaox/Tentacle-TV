@@ -310,7 +310,23 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       const isM3u8 = wildcardPath.endsWith(".m3u8") || /mpegurl/i.test(ct);
       if (isM3u8 && incomingToken && response.status < 400) {
         const text = await response.text();
-        const rewritten = rewriteHlsManifest(text, incomingToken);
+        // Le manifeste porte LUI AUSSI la clé admin — constaté : Jellyfin la
+        // recopie dans les URI qu'il fabrique, notamment celle des tuiles de
+        // trickplay (`Trickplay/320/tiles.m3u8?…&ApiKey=…`). Nettoyer une
+        // réponse `PlaybackInfo` ne suffisait donc pas : la clé repartait par
+        // cette porte-ci.
+        //
+        // AVANT la décoration, et l'ordre compte : les URL ainsi corrigées
+        // portent alors le jeton du client, et `rewriteHlsManifest` les laisse
+        // tranquilles au lieu d'en ajouter un second.
+        const { corps, remplacements } = scrubAdminKey(text, getJellyfinApiKey(), incomingToken);
+        if (remplacements > 0) {
+          request.log.warn(
+            { path: wildcardPath, remplacements },
+            "cle admin retiree d'un manifeste HLS",
+          );
+        }
+        const rewritten = rewriteHlsManifest(corps, incomingToken);
         reply.removeHeader("content-encoding");
         reply.removeHeader("content-length");
         reply.header("content-length", Buffer.byteLength(rewritten));
