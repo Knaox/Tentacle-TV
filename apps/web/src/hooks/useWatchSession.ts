@@ -12,7 +12,7 @@ import { useLocalFirstMedia } from "./useLocalFirstMedia";
 import { useAutoplayConfigLocalFirst } from "./useAutoplayConfigLocalFirst";
 import { useWebPlaybackInfoFetch } from "./useWebPlaybackInfoFetch";
 import { useSkipSegmentsLocalFirst } from "./useSkipSegmentsLocalFirst";
-import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId } from "./watchSessionMedia";
+import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId, resumeStartSeconds } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
 import { useServerTrackPrefs } from "./useServerTrackPrefs";
 import { useOfflineMode } from "../offline/useOfflineMode";
@@ -239,14 +239,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const localPosterUrl = useLocalPosterUrl(itemId, isLocalPlayback);
   const remotePosterUrl = useMemo(() => buildPosterUrl(client, item), [client, item]);
   const posterUrl = localPosterUrl ?? remotePosterUrl;
-  const startPositionSeconds = useMemo(() => {
-    // Reprise = max(position serveur, position locale) — une lecture faite
-    // hors ligne (non encore resynchronisée) doit gagner sur le serveur.
-    const server = item?.UserData?.PlaybackPositionTicks ?? 0;
-    const local = localSource?.positionTicks ?? 0;
-    const ticks = Math.max(server, local);
-    return ticks > 0 ? ticks / TICKS_PER_SECOND : undefined;
-  }, [item, localSource]);
+  const startPositionSeconds = useMemo(
+    () => resumeStartSeconds(item?.UserData?.PlaybackPositionTicks, localSource),
+    [item, localSource]);
 
   const handleNextEpisode = useCallback(() => {
     if (nextEpisode) navigate(`/watch/${nextEpisode.Id}`, { replace: true });
