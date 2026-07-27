@@ -8,8 +8,8 @@
 
 - Node.js >= 20
 - pnpm >= 10
-- Rust stable
-- Tauri CLI (`pnpm add -Dg @tauri-apps/cli`)
+- Rust stable + Tauri CLI (`pnpm add -Dg @tauri-apps/cli`) — macOS et Linux
+  uniquement. Windows sort d’Electron et n’en a plus besoin.
 
 ## 1. Préparer une release
 
@@ -24,7 +24,9 @@
 - Les numéros de build (CFBundleVersion / versionCode) sont **auto-incrémentés**
   par la CI — plus rien à gérer.
 - Optionnel (builds desktop locaux) : garder `apps/desktop/src-tauri/tauri.conf.json`,
-  `Cargo.toml` et `apps/desktop/package.json` alignés sur `versions.json → desktop`.
+  `Cargo.toml`, `apps/desktop/package.json` et
+  `apps/desktop-electron/package.json` alignés sur `versions.json → desktop`.
+  La CI, elle, injecte la version dans le paquet Electron avant l’empaquetage.
 - Remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`).
 
 ### Commit et tag
@@ -97,9 +99,13 @@ cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
 
 ### Windows (Microsoft Store)
 
+- Construit par **Electron** depuis la 1.20.0 (`apps/desktop-electron`), plus par
+  Tauri : pas de chaîne Rust dans ce job. Même libmpv, piloté par koffi.
 - MSIX **non signé** (`makeappx`) — le Store signe. Identité
   `DamienROUGE.Tentacle` (`apps/desktop/msix/Package.appxmanifest`, patché
   `Version="X.Y.Z.0"` par la CI).
+- Essai local du paquet : `pnpm --filter @tentacle-tv/desktop-electron package`,
+  puis lancer `apps/desktop-electron/release/Tentacle TV-win32-x64/Tentacle TV.exe`.
 - Soumission API automatique (`msstore-submit.mjs`) : clone de la dernière
   soumission publiée, notes FR/EN depuis `changelogs/desktop.md`, publication
   immédiate. ⚠️ version strictement supérieure à la publiée.
