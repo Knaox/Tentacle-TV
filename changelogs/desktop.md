@@ -21,7 +21,7 @@ les notes Apple doivent rester génériques.
 - Mode hors ligne : films et épisodes se gardent sur l'appareil pour être regardés sans connexion, avec pause, reprise après une coupure et sous-titres
 - Sélection multiple dans votre bibliothèque hors ligne : retirer ou relancer plusieurs titres d'un coup
 - Navigation hors ligne repensée : ses propres menus, un catalogue rangé par série, et seuls les titres disponibles vous sont proposés
-- Ce que vous regardez hors ligne remonte dans Jellyfin au retour du réseau : position et épisodes vus
+- Ce que vous regardez hors ligne remonte sur votre serveur au retour du réseau : position et épisodes vus
 - Un épisode regardé hors ligne est marqué vu au même moment qu'en ligne, et « effacer après visionnage » s'applique en quittant le lecteur
 - Le catalogue hors ligne montre où vous en êtes : coche sur ce qui est vu, barre sur ce qui est en cours. Un titre déjà vu se relance depuis le début
 - Les sous-titres s'affichent hors ligne, sans rien demander au serveur
@@ -35,7 +35,7 @@ les notes Apple doivent rester génériques.
 - Offline mode: films and episodes are kept on the device to be watched with no connection, with pause, resume after a drop and subtitles
 - Multiple selection in your offline library: remove or restart several titles at once
 - Reworked offline navigation: its own menus, a catalogue grouped by series, and only the titles actually available are offered
-- What you watch offline syncs back to Jellyfin when the network returns: position and watched episodes
+- What you watch offline syncs back to your server when the network returns: position and watched episodes
 - An episode watched offline is marked watched at the same point as online, and "erase after watching" applies when you leave the player
 - The offline catalogue shows where you stand: a tick on what is watched, a bar on what is in progress. A title already watched restarts from the beginning
 - Subtitles show up offline, without asking the server for anything
