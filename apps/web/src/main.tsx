@@ -51,23 +51,6 @@ import "./index.css";
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: savedLang });
 
-// If authenticated (user info persisted), fetch the authoritative language from backend
-const _hasUser = !!localStorage.getItem("tentacle_user");
-// Langue changée HORS LIGNE et pas encore poussée : le pull backend (valeur
-// périmée) ne doit PAS l'écraser — elle sera poussée au retour en ligne
-// (flushPendingInterfaceLanguage, ConnectivityBinding).
-const _pendingLang = localStorage.getItem("tentacle_language_pending");
-if (_hasUser && !_pendingLang) {
-  // For web: credentials cookie is sent automatically; token param is only for mobile/desktop
-  const _token = localStorage.getItem("tentacle_token");
-  fetchInterfaceLanguage(_token || "__cookie__").then((lang) => {
-    if (lang && lang !== i18n.language) {
-      i18n.changeLanguage(lang);
-      localStorage.setItem("tentacle_language", lang);
-    }
-  }).catch(() => {});
-}
-
 // Application de bureau (Tauri sur macOS et Linux, Electron sur Windows) par
 // opposition au déploiement web. La détection vit dans `desktop/detect.ts` et
 // nulle part ailleurs — elle était dupliquée ici, ne connaissait que Tauri, et
@@ -94,6 +77,30 @@ export function configureBackendUrls(url: string) {
 }
 
 configureBackendUrls(backendUrl);
+
+// If authenticated (user info persisted), fetch the authoritative language from backend.
+//
+// APRÈS `configureBackendUrls`, et c'est tout l'intérêt de l'endroit : le
+// module des préférences garde son adresse de backend dans une variable posée
+// là. Appelé avant, il partait en RELATIF — sur le web ça passait par hasard
+// (même origine), mais dans l'application de bureau l'adresse relative désigne
+// l'origine applicative, qui n'a pas d'API : un 404 à chaque démarrage, et la
+// langue du serveur jamais lue.
+const _hasUser = !!localStorage.getItem("tentacle_user");
+// Langue changée HORS LIGNE et pas encore poussée : le pull backend (valeur
+// périmée) ne doit PAS l'écraser — elle sera poussée au retour en ligne
+// (flushPendingInterfaceLanguage, ConnectivityBinding).
+const _pendingLang = localStorage.getItem("tentacle_language_pending");
+if (_hasUser && !_pendingLang) {
+  // For web: credentials cookie is sent automatically; token param is only for mobile/desktop
+  const _token = localStorage.getItem("tentacle_token");
+  fetchInterfaceLanguage(_token || "__cookie__").then((lang) => {
+    if (lang && lang !== i18n.language) {
+      i18n.changeLanguage(lang);
+      localStorage.setItem("tentacle_language", lang);
+    }
+  }).catch(() => {});
+}
 
 // Desktop : le catalogue local existe — un fetch qui pend doit échouer vite
 // (12 s) pour nourrir la bascule hors ligne. Web : 30 s historiques conservés.
