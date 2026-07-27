@@ -1,0 +1,21 @@
+// Contrôle de types SEUL, tests compris.
+//
+// `tsconfig.json` sert à l'émission et exclut les tests, pour qu'ils ne partent
+// ni dans `dist/` ni dans l'image Docker livrée. Ils doivent pourtant être
+// typés aussi strictement que le reste — sinon un test qui compile mal
+// passerait pour un test qui échoue.
+//
+// Même partage que `apps/desktop-electron`. `test/` y est ajouté : ce dossier
+// vit hors de `src` et n'était donc typé par personne jusqu'ici.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // `rootDir` vaut `./src` pour l'émission ; `test/` vit à côté et TypeScript
+    // refuserait de le regarder. Rien n'étant émis ici, la racine n'a aucune
+    // conséquence — elle sert seulement à ne pas exclure ce qu'on veut typer.
+    "rootDir": "."
+  },
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "dist"]
+}
