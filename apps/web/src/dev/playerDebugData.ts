@@ -68,6 +68,8 @@ const PROPS_LECTURE = [
   "display-fps",
   "frame-drop-count",
   "demuxer-cache-duration",
+  "demuxer-via-network",
+  "cache-speed",
   "paused-for-cache",
   "time-pos",
   "duration",

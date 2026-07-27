@@ -4,11 +4,12 @@
  * DÉVELOPPEMENT UNIQUEMENT — `__PLAYER_DEBUG__` est faux dans tout build livré,
  * ce module disparaît alors du bundle. D'où les libellés en clair, sans i18n.
  *
- * Le reste du panneau montre des propriétés brutes ; ici on répond aux quatre
+ * Le reste du panneau montre des propriétés brutes ; ici on répond aux cinq
  * questions qu'on se pose réellement devant l'écran, et auxquelles aucune
  * propriété ne répond seule :
  *
  *  - est-ce que le flux est direct, ou transcodé ?
+ *  - les octets viennent-ils du DISQUE ou du RÉSEAU, et à quel débit ?
  *  - est-ce du VRAI HDR, ou du tone-mapping qui en a l'air ?
  *  - le décodage est-il matériel ?
  *  - est-ce que ça tient la cadence ?
@@ -41,6 +42,9 @@ export const PROPS_VERDICT = [
   "video-target-params/sig-peak",
   "target-peak",
   "tone-mapping",
+  // D'où viennent les octets, et à quelle vitesse ils entrent.
+  "demuxer-via-network",
+  "cache-speed",
   "hwdec-current",
   "video-codec",
   "video-bitrate",
@@ -122,6 +126,71 @@ function verdictSource(p: Lues): Verdict {
     cle: "Source",
     valeur: transcode ? "TRANSCODE (HLS) — la chaine HDR est perdue" : "lecture directe",
     bon: !transcode,
+  };
+}
+
+/** Dernier segment d'un chemin, séparateur Windows compris. */
+function nomDeFichier(chemin: string): string {
+  const morceaux = chemin.split(/[\\/]/);
+  return morceaux[morceaux.length - 1] ?? "";
+}
+
+function hote(chemin: string): string {
+  try {
+    return new URL(chemin).host;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Débit d'entrée, quelle que soit la forme rendue par mpv.
+ *
+ * ⚠️ `cache-speed` est un entier d'octets par seconde, mais mpv lui donne une
+ * représentation TEXTE déjà lisible (« 5.3 MiB/s ») — et c'est ce qu'on reçoit,
+ * `mpv_get_property_string` rendant la forme d'affichage quand la propriété en
+ * définit une. On formate donc nous-mêmes si c'est un nombre, et on relaie tel
+ * quel sinon. Les deux builds de libmpv sont ainsi couverts.
+ */
+function debitLisible(brut: string | null | undefined): string {
+  if (brut === null || brut === undefined || brut === "") return "debit inconnu";
+  const octets = Number(brut);
+  if (!Number.isFinite(octets)) return brut;
+  if (octets <= 0) return "0 o/s";
+  return octets >= 1_000_000
+    ? `${(octets / 1_000_000).toFixed(1)} Mo/s`
+    : `${Math.round(octets / 1000)} ko/s`;
+}
+
+/**
+ * D'où viennent réellement les octets : le disque, ou le réseau ?
+ *
+ * C'est LA question du mode hors ligne, et aucune autre ligne n'y répond :
+ * « lecture directe » distingue le direct du transcodage, pas le local du
+ * distant. Un film téléchargé qui se lirait quand même depuis le serveur
+ * passerait donc totalement inaperçu — et c'est précisément le bug qu'on ne
+ * verrait jamais, puisque l'image serait parfaite.
+ *
+ * `demuxer-via-network` fait autorité : mpv sait ce qu'il a ouvert. Le schéma
+ * du chemin ne sert que de repli, pour un libmpv qui ne rendrait pas la
+ * propriété.
+ */
+function verdictFlux(p: Lues): Verdict {
+  const chemin = p["path"] ?? "";
+  const via = p["demuxer-via-network"];
+  const reseau =
+    via === null || via === undefined || via === ""
+      ? /^[a-z][a-z0-9+.-]*:\/\//i.test(chemin)
+      : via === "yes";
+
+  const ou = reseau ? hote(chemin) : nomDeFichier(chemin);
+  const debit = debitLisible(p["cache-speed"]);
+  return {
+    cle: "Flux",
+    valeur: `${reseau ? "RESEAU" : "LOCAL"}${ou === "" ? "" : ` — ${ou}`} · ${debit}`,
+    // Ni l'un ni l'autre n'est un défaut : en ligne on lit le serveur, hors
+    // ligne le disque. C'est à la lecture de dire si c'est celui qu'on attend.
+    bon: null,
   };
 }
 
@@ -214,6 +283,7 @@ function verdictCadence(p: Lues): Verdict {
 export function verdicts(p: Lues, ecranEnHdr: boolean): Verdict[] {
   return [
     verdictSource(p),
+    verdictFlux(p),
     verdictHdr(p, ecranEnHdr),
     verdictImage(p),
     verdictSurface(p),
