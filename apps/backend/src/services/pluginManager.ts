@@ -1,7 +1,5 @@
-import { createHash } from "crypto";
-import { existsSync, readFileSync, mkdirSync, rmSync, writeFileSync, createWriteStream } from "fs";
-import { dirname, join, relative, resolve, sep } from "path";
-import { pipeline } from "stream/promises";
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs";
+import { resolve, sep } from "path";
 
 // ── Types ──
 
@@ -224,71 +222,4 @@ export function enrichPlugins(
       updateAvailable: !!inst && inst.version !== p.version,
     };
   });
-}
-
-// ── Download & Extract ──
-
-export async function downloadPlugin(
-  pluginId: string,
-  downloadUrl: string,
-  expectedChecksum?: string,
-): Promise<string> {
-  if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
-  const tmpDir = resolve(DATA_DIR, ".tmp");
-  if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
-
-  const tmpFile = join(tmpDir, `${pluginId}-${Date.now()}.tgz`);
-  const res = await fetch(downloadUrl, { signal: AbortSignal.timeout(60_000) });
-  if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
-  if (!res.body) throw new Error("Download failed: empty response body");
-
-  const fileStream = createWriteStream(tmpFile);
-  // @ts-expect-error Node.js ReadableStream compatibility
-  await pipeline(res.body, fileStream);
-
-  if (expectedChecksum) {
-    const valid = await verifyChecksum(tmpFile, expectedChecksum);
-    if (!valid) {
-      rmSync(tmpFile, { force: true });
-      throw new Error("Checksum verification failed: file may be corrupted or tampered");
-    }
-  }
-
-  return tmpFile;
-}
-
-async function verifyChecksum(filePath: string, expected: string): Promise<boolean> {
-  const { readFile } = await import("fs/promises");
-  const data = await readFile(filePath);
-  const hash = createHash("sha256").update(data).digest("hex");
-  return hash === expected.replace(/^sha256:/i, "").toLowerCase();
-}
-
-export async function extractPlugin(archivePath: string, pluginId: string): Promise<string> {
-  if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
-  const destDir = resolve(DATA_DIR, pluginId);
-  assertPathUnderDataDir(destDir);
-  if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true });
-  mkdirSync(destDir, { recursive: true });
-
-  const { execSync } = await import("child_process");
-  // Chemins RELATIFS + cwd : aucun « C: » dans les arguments, donc compatible
-  // avec les DEUX saveurs de tar sans aucune option — GNU tar (Linux/Docker),
-  // qui prendrait « C: » pour un hôte distant, ET bsdtar (Windows/System32),
-  // qui ne connaît pas « --force-local » (l'ancienne option GNU passée sous
-  // Windows faisait échouer TOUTE installation de plugin sur ce système).
-  const cwd = dirname(archivePath);
-  const rel = (p: string): string => relative(cwd, p).split(sep).join("/");
-  execSync(`tar -xzf "${rel(archivePath)}" -C "${rel(destDir)}"`, {
-    cwd, stdio: "pipe", timeout: 30_000,
-  });
-  rmSync(archivePath, { force: true });
-  return destDir;
-}
-
-export function removePluginFiles(pluginId: string): void {
-  if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
-  const dir = resolve(DATA_DIR, pluginId);
-  assertPathUnderDataDir(dir);
-  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
 }
