@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { activerHdr, basculeEnCours, hdrSupporte, restaurerHdr, hdrActif } from "../video/hdr";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
@@ -56,12 +57,6 @@ let hdrAutoAutorise = false;
 
 /** Dernier gamma constaté, pour ne journaliser qu'au changement. */
 let dernierGamma: string | null = null;
-
-/** Diffuse vers la page, si elle est encore là. */
-function send(channel: string, payload: unknown): void {
-  const win = getMainWindow();
-  if (win && !win.isDestroyed()) win.webContents.send(`tentacle:${channel}`, payload);
-}
 
 /**
  * Bascule l'écran en HDR si, et seulement si, le contenu en a besoin.
@@ -131,9 +126,9 @@ export function registerVideoCommands(registry: CommandRegistry): void {
               // là — puis `video-reconfig`, où ils le sont à coup sûr : c'est
               // l'évènement que mpv émet quand il a configuré sa sortie vidéo.
               if (p.event === "file-loaded" || p.event === "video-reconfig") basculerSiHdr();
-              send("mpv://event", p);
+              sendToPage("mpv://event", p);
             },
-            property: (p) => send("mpv://property-change", p),
+            property: (p) => sendToPage("mpv://property-change", p),
           },
         );
         if (err) throw new Error(err);

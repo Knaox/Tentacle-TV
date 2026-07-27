@@ -14,6 +14,7 @@ import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
 import { closeLocalDb } from "./localDb";
+import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
 import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerSessionCommands } from "./ipc/session";
@@ -87,6 +88,7 @@ function main(): void {
 
     const registry = new CommandRegistry();
     registerShellCommands(registry);
+    registerMediaKeyCommands(registry);
     registerPluginCommands(registry);
     registerSessionCommands(registry);
     registerVideoCommands(registry);
@@ -122,6 +124,10 @@ function main(): void {
   // fichier, qui peut être l'app Tauri sur une machine de développement.
   app.on("will-quit", () => {
     restaurerEcran();
+    // Les touches média sont captées pour TOUT le système : les rendre est un
+    // devoir, pas un nettoyage. Une fermeture qui court-circuite `smtc_clear`
+    // les laisserait prises jusqu'au redémarrage de la session.
+    releaseMediaKeys();
     closeLocalDb();
   });
 
