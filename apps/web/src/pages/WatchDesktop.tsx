@@ -53,6 +53,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     localSource,
     positionRef,
     durationSeconds: jellyfinDuration,
+    // Le même seuil que la bannière « épisode suivant » : hors ligne, un
+    // épisode passe « vu » à l'instant précis où il passerait vu en ligne.
+    maxResumePct,
     stopPromiseRef: lastStopPromiseRef,
   });
 
