@@ -83,7 +83,15 @@ export async function heal(
     }
 
     // Trickplay manquant : récupérer le manifeste puis les planches.
-    if (!trickplay.exists(root, item.itemId)) {
+    //
+    // Le marqueur `trickplay.none` est ce qui empêche cette requête de
+    // repartir à CHAQUE démarrage pour chaque item que le serveur ne sait pas
+    // illustrer. Sans lui, un catalogue de cinquante films sans planches
+    // faisait cinquante appels au lancement, en série, à chaque fois.
+    if (
+      !trickplay.exists(root, item.itemId) &&
+      !trickplay.noneRecently(root, item.itemId, nowMs)
+    ) {
       const itemJson = await fetchBytes(
         `${serverUrl}/api/jellyfin/Items/${item.itemId}?fields=Trickplay`,
         MAX_JSON_BYTES,
@@ -97,6 +105,7 @@ export async function heal(
           item.itemId,
           msrc,
           parseJson(itemJson),
+          nowMs,
         );
         touche = touche || planches > 0;
       }

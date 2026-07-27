@@ -12,7 +12,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/trickplay.rs`.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { MAX_TILE_BYTES, type FetchBytes } from "./fetcher";
 import { asInteger, asRecord, field } from "./json";
@@ -42,6 +42,23 @@ const LARGEUR_CIBLE = 320;
 
 /** Garde-fou : au-delà, le manifeste ment ou l'item est aberrant. */
 const PLANCHES_MAX = 10_000;
+
+/**
+ * Marqueur « le serveur n'a pas de trickplay pour cet item ».
+ *
+ * Sans lui, la réparation redemandait `Items/<id>?fields=Trickplay` pour CHAQUE
+ * item complet, à CHAQUE démarrage : un film dont la bibliothèque ne génère pas
+ * de planches n'en aura jamais, et la requête repartait à vie. Une bibliothèque
+ * peut cependant se mettre à en produire — le marqueur périme donc.
+ *
+ * Un fichier plutôt qu'une colonne : la base est PARTAGÉE avec l'app Tauri, et
+ * monter `PRAGMA user_version` la rendrait illisible pour elle. Ce fichier-ci
+ * lui est simplement invisible : elle ne lit que des noms précis.
+ */
+const MARQUEUR = "trickplay.none";
+
+/** Au-delà, on redemande au serveur. */
+export const RECONTROLE_APRES_MS = 30 * 24 * 60 * 60 * 1000;
 
 function infoFromValue(value: unknown): TrickplayInfo | null {
   const positif = (key: string): number | null => {
@@ -116,6 +133,10 @@ export function tileCount(info: TrickplayInfo): number {
  * `itemJson` = octets de l'`item.json` déjà récupéré, avec `fields=Trickplay`.
  * Retourne le nombre de planches disponibles à la fin. Best-effort et
  * idempotent : ce qui est déjà là est compté sans être retéléchargé.
+ *
+ * Les trois sorties précoces posent le marqueur `trickplay.none` : à ce
+ * stade la source a répondu, et sa réponse dit qu'il n'y a rien à prendre.
+ * Un échec de planche, lui, ne le pose pas — c'est du réseau.
  */
 export async function download(
   fetchBytes: FetchBytes,
@@ -124,14 +145,24 @@ export async function download(
   itemId: string,
   mediaSourceId: string,
   itemJson: unknown,
+  nowMs: number,
 ): Promise<number> {
   const manifest = field(itemJson, "Trickplay");
-  if (manifest === null || manifest === undefined) return 0;
+  if (manifest === null || manifest === undefined) {
+    markNone(root, itemId, nowMs);
+    return 0;
+  }
 
   const choix = pickWidth(manifest, mediaSourceId);
-  if (choix === null) return 0;
+  if (choix === null) {
+    markNone(root, itemId, nowMs);
+    return 0;
+  }
   const planches = tileCount(choix.info);
-  if (planches <= 0 || planches > PLANCHES_MAX) return 0;
+  if (planches <= 0 || planches > PLANCHES_MAX) {
+    markNone(root, itemId, nowMs);
+    return 0;
+  }
 
   const dossier = `meta/${itemId}/trickplay/${choix.width}`;
   let obtenues = 0;
@@ -163,6 +194,9 @@ export async function download(
   }
 
   if (obtenues > 0) {
+    // Un marqueur d'un passage précédent n'a plus lieu d'être : la
+    // bibliothèque s'est mise à générer des planches depuis.
+    oublierMarqueur(root, itemId);
     const resume: LocalTrickplay = {
       mediaSourceId: choix.mediaSourceId,
       width: choix.width,
@@ -180,4 +214,53 @@ export async function download(
 /** Le manifeste trickplay local est-il déjà là ? */
 export function exists(root: string, itemId: string): boolean {
   return mediaFileExists(root, `meta/${itemId}/trickplay.json`);
+}
+
+function marqueurPath(root: string, itemId: string): string | null {
+  try {
+    return safeJoin(root, `meta/${itemId}/${MARQUEUR}`);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Note que le serveur ne propose PAS de trickplay pour cet item.
+ *
+ * Posé uniquement quand la source a répondu et n'a rien à offrir — jamais sur
+ * un échec réseau, sans quoi une coupure passagère priverait l'item d'aperçu
+ * pour un mois.
+ */
+export function markNone(root: string, itemId: string, nowMs: number): void {
+  const cible = marqueurPath(root, itemId);
+  if (cible === null) return;
+  try {
+    mkdirSync(path.dirname(cible), { recursive: true });
+    writeFileSync(cible, String(nowMs));
+  } catch {
+    // Sans marqueur, on redemandera : c'est le comportement d'avant, pas une panne.
+  }
+}
+
+/** Item constaté sans trickplay, et depuis moins d'un mois ? */
+export function noneRecently(root: string, itemId: string, nowMs: number): boolean {
+  const cible = marqueurPath(root, itemId);
+  if (cible === null) return false;
+  try {
+    const pose = Number.parseInt(readFileSync(cible, "utf8"), 10);
+    return Number.isFinite(pose) && nowMs - pose < RECONTROLE_APRES_MS;
+  } catch {
+    return false;
+  }
+}
+
+function oublierMarqueur(root: string, itemId: string): void {
+  const cible = marqueurPath(root, itemId);
+  if (cible === null) return;
+  try {
+    rmSync(cible, { force: true });
+  } catch {
+    // Un marqueur qui traîne à côté d'un trickplay.json présent est inerte :
+    // `exists()` est consulté en premier.
+  }
 }

@@ -80,6 +80,7 @@ export async function snapshot(
       spec.itemId,
       mediaSourceId,
       parseJson(itemJson),
+      nowMs,
     );
     if (planches > 0) reussis.push("trickplay");
   }
