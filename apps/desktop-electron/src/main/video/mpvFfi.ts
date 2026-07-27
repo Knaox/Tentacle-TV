@@ -41,6 +41,8 @@ export const EVENT = {
   NONE: 0,
   SHUTDOWN: 1,
   LOG_MESSAGE: 2,
+  /** Réponse à `mpv_command_async` — porte le code d'erreur et l'identifiant. */
+  COMMAND_REPLY: 5,
   START_FILE: 6,
   END_FILE: 7,
   FILE_LOADED: 8,
@@ -104,7 +106,22 @@ export const mpv = {
   // perdrait le pointeur, donc la possibilité d'appeler `mpv_free` — une fuite
   // à chaque lecture de propriété.
   getPropertyString: lib.func("void* mpv_get_property_string(void* ctx, const char* name)"),
+  /**
+   * ⚠️ BLOQUANTE, et pas qu'un peu : `mpv_command` ne rend la main qu'une fois
+   * la commande TERMINÉE. `sub-add` sur une URL injoignable y reste le temps du
+   * `network-timeout` (30 s) multiplié par les reconnexions — et comme l'appel
+   * est un FFI synchrone sur le thread du processus principal, c'est TOUTE
+   * l'application qui gèle : plus d'IPC, plus une fenêtre qui répond, pendant
+   * que mpv continue de jouer sur ses propres threads.
+   *
+   * Conservée parce que `mpv_command_async` peut échouer à l'envoi et qu'on
+   * garde le même décodage d'erreur, mais on ne l'appelle plus.
+   */
   command: lib.func("int mpv_command(void* ctx, const char** args)"),
+  /** Rend la main IMMÉDIATEMENT ; le résultat arrive en `COMMAND_REPLY`. */
+  commandAsync: lib.func(
+    "int mpv_command_async(void* ctx, uint64 userdata, const char** args)",
+  ),
   observeProperty: lib.func(
     "int mpv_observe_property(void* ctx, uint64 userdata, const char* name, int format)",
   ),

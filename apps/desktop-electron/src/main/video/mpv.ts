@@ -68,9 +68,58 @@ export function setProperty(name: string, value: string): string | null {
 
 /** Exécute une commande mpv. Les arguments passent en tableau, jamais
  *  concaténés : un chemin de fichier contient des espaces et des guillemets. */
-export function command(args: readonly string[]): string | null {
-  if (!ctx) return "mpv n'est pas demarre";
-  return mpvError(mpv.command(ctx, [...args, null]) as number);
+/**
+ * Commandes en vol : identifiant de réponse → résolution de la promesse.
+ *
+ * Base haute et volontairement distincte des identifiants de propriétés
+ * observées (`index + 1`, donc quelques unités) : les deux familles partagent
+ * le champ `reply_userdata` des évènements, et les confondre à la lecture d'un
+ * journal coûterait cher.
+ */
+const COMMANDE_ID_BASE = 1_000_000;
+const enVol = new Map<number, (err: string | null) => void>();
+let prochaineCommande = COMMANDE_ID_BASE;
+
+/**
+ * Exécute une commande mpv SANS bloquer le processus principal.
+ *
+ * ⚠️ C'est la raison d'être de cette fonction. `mpv_command` ne rend la main
+ * qu'une fois la commande terminée, et l'appel FFI est synchrone sur le thread
+ * du processus principal : un `sub-add` vers une URL injoignable y restait le
+ * temps du `network-timeout` — trente secondes, multipliées par les
+ * reconnexions. Pendant tout ce temps l'application entière était gelée, plus
+ * un clic ne passait, et la lecture continuait imperturbablement puisque mpv
+ * vit sur ses propres threads. Symptôme constaté, journal à l'appui.
+ *
+ * `mpv_command_async` part et rend la main ; le résultat arrive en
+ * `COMMAND_REPLY`, que la boucle d'évènements récupère déjà.
+ *
+ * Les arguments passent en tableau, jamais concaténés : un chemin de fichier
+ * contient des espaces et des guillemets.
+ */
+export function command(args: readonly string[]): Promise<string | null> {
+  if (!ctx) return Promise.resolve("mpv n'est pas demarre");
+
+  const id = prochaineCommande;
+  prochaineCommande += 1;
+  return new Promise<string | null>((resolve) => {
+    enVol.set(id, resolve);
+    const envoi = mpvError(mpv.commandAsync(ctx, id, [...args, null]) as number);
+    // Refus à l'ENVOI (arguments invalides, file pleine) : aucune réponse ne
+    // viendra jamais, la promesse ne doit pas rester en suspens.
+    if (envoi !== null) {
+      enVol.delete(id);
+      resolve(envoi);
+    }
+  });
+}
+
+/** Règle une commande en vol. Un identifiant inconnu est ignoré sans bruit. */
+function repondre(id: number, code: number): void {
+  const resolve = enVol.get(id);
+  if (resolve === undefined) return;
+  enVol.delete(id);
+  resolve(mpvError(code));
 }
 
 /** Décode la valeur d'une propriété selon son format. */
@@ -98,11 +147,19 @@ function drain(sink: Sink): void {
     if (!ptr) return;
     const ev = koffi.decode(ptr, MpvEvent) as {
       event_id: number;
+      error: number;
       reply_userdata: bigint;
       data: unknown;
     };
     const id = ev.event_id;
     if (id === EVENT.NONE) return;
+
+    // Une commande asynchrone vient d'aboutir : on règle sa promesse et on
+    // n'en dit rien à la page — c'est l'appelant qui saura quoi en faire.
+    if (id === EVENT.COMMAND_REPLY) {
+      repondre(Number(ev.reply_userdata), ev.error);
+      continue;
+    }
 
     if (id === EVENT.PROPERTY_CHANGE) {
       if (!ev.data) continue;
@@ -194,4 +251,11 @@ export function destroy(): void {
   ctx = null;
   observedIds = new Map();
   lastTimePos = 0;
+
+  // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
+  // commande laissée en suspens retiendrait pour toujours l'appelant — et donc
+  // la poignée IPC qui l'attend, ce qui vaut une commande native perdue à
+  // chaque changement d'épisode.
+  for (const resolve of enVol.values()) resolve("instance mpv detruite");
+  enVol.clear();
 }

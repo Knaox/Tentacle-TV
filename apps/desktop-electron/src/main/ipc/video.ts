@@ -102,9 +102,12 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     })
     .add("mpv_command", {
       schema: COMMAND,
-      run: ({ name, args }) => {
+      run: async ({ name, args }) => {
         const liste = (args ?? []).map(String);
-        const err = command([name, ...liste]);
+        // `await` : la commande ne bloque plus le processus principal, elle
+        // attend sa réponse dans la file d'évènements. Un `sub-add` vers une
+        // source injoignable prend donc son temps sans geler l'application.
+        const err = await command([name, ...liste]);
         // Les ARGUMENTS dans le message, sans quoi « set : erreur » ne désigne
         // rien : `set` sert à écrire n'importe quelle propriété, et l'erreur
         // vient précisément de laquelle.
