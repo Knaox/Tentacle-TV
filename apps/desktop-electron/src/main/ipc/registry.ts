@@ -77,7 +77,23 @@ export class CommandRegistry {
         if (!isTrustedSender(event)) {
           throw new Error(`emetteur refuse pour ${command}`);
         }
-        return await handler.parseAndRun(raw);
+        try {
+          return await handler.parseAndRun(raw);
+        } catch (error) {
+          // Le motif du refus n'allait NULLE PART.
+          //
+          // Côté page, chaque appel natif est enveloppé dans un `catch` qui rend
+          // `null` — c'est délibéré, l'interface ne doit pas se briser parce que
+          // le shell ne sait pas faire quelque chose. Mais le message, lui,
+          // mourait là : « Impossible de lancer le téléchargement » et rien
+          // d'autre, alors que le processus principal savait exactement si
+          // c'était le schéma, la validation du lot ou le disque.
+          //
+          // Journalisé ici et pas dans chaque commande : c'est le seul point de
+          // passage des vingt et quelques, et il ne peut pas être oublié.
+          console.error(`[ipc] ${command} a echoue : ${String(error)}`);
+          throw error;
+        }
       });
     }
   }

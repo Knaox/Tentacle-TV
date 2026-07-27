@@ -151,7 +151,12 @@ export async function enqueueDownloads(
   if (!supportsDownloads()) return null;
   try {
     return await invoke<EnqueueOutcome>("downloads_enqueue", { userId, serverUrl, token, items });
-  } catch {
+  } catch (error) {
+    // `console.error` et non `log` : le build de production supprime `log`,
+    // `debug` et `info` (`pure` dans `vite.config.ts`). C'est le SEUL appel
+    // natif dont l'échec est visible par l'utilisateur — « Impossible de lancer
+    // le téléchargement » — et il ne disait pas pourquoi.
+    console.error("[downloads] mise en file refusee :", error);
     return null;
   }
 }
