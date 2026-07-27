@@ -17,6 +17,7 @@ import {
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { buildPlaystateRewrite, type PlaystateRewrite } from "./jellyfinProxy/playstate";
 import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
+import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 
 /** Resolve how to forward a request to Jellyfin :
  *  - Anonymous / native token → no override, pass-through whatever client sent.
@@ -88,35 +89,6 @@ async function resolveSessionRouting(
     if (rewrite) return { apiKey: adminKey, rewrite };
   }
   return { apiKey: adminKey ?? undefined };
-}
-
-/**
- * Réécrit un manifeste HLS (.m3u8) pour injecter le token du client (`api_key`)
- * dans TOUTES les URLs relatives (sous-playlists `main.m3u8`, segments
- * `hls1/main/N.ts`, et `URI="…"` des renditions audio/sous-titres in-manifest).
- *
- * Indispensable pour Apple TV : AVPlayer (AVURLAsset) ne propage PAS de façon
- * fiable les headers d'auth aux sous-requêtes HLS → la variante/les segments
- * partaient SANS auth → 401 → lecture bloquée à l'infini. Avec l'api_key dans
- * les URLs, AVPlayer le renvoie et le proxy l'honore. Sans effet pour Android
- * (ExoPlayer propage les headers) ni le web (cookie same-origin) : param ignoré.
- */
-function rewriteHlsManifest(body: string, token: string): string {
-  const hasKey = (u: string) => /[?&](api_key|ApiKey)=/i.test(u);
-  const addKey = (u: string) =>
-    hasKey(u) ? u : `${u}${u.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(token)}`;
-  return body
-    .split("\n")
-    .map((line) => {
-      const t = line.trim();
-      if (!t) return line;
-      if (t.startsWith("#")) {
-        // URI="…" dans les tags (#EXT-X-MEDIA, #EXT-X-IMAGE-STREAM-INF, I-frames…)
-        return line.replace(/URI="([^"]+)"/gi, (_m, u: string) => `URI="${addKey(u)}"`);
-      }
-      return addKey(line); // ligne d'URL (playlist/segment relatif)
-    })
-    .join("\n");
 }
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
