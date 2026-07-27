@@ -11,11 +11,16 @@ import { app, net, protocol } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { resolveRoot } from "./downloads/paths";
+import { localDb } from "./localDb";
+import { LOCAL_HOST, serveLocalAsset } from "./localAssets";
 import { getPluginDocument, PLUGIN_HOST } from "./pluginDocuments";
 
 export const APP_SCHEME = "tentacle";
 export const APP_HOST = "app";
 export const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
+/** Origine des ressources locales. À nommer dans la CSP — `'self'` ne la couvre pas. */
+export const LOCAL_ORIGIN = `${APP_SCHEME}://${LOCAL_HOST}`;
 
 /**
  * À appeler AVANT `app.whenReady()` — Electron l'exige pour les schémas
@@ -117,6 +122,24 @@ function servePluginDocument(pathname: string): Response {
   });
 }
 
+/**
+ * Sert une ressource téléchargée, en résolvant la racine ici.
+ *
+ * La résolution est faite par l'appelant et non par `localAssets` : ce dernier
+ * n'importe alors ni `electron` ni la base, et se teste. Elle peut échouer —
+ * racine pointée sur un disque externe débranché — et ça ne doit pas remonter
+ * plus haut qu'un 404.
+ */
+async function serveLocalAssetFrom(request: Request, pathname: string): Promise<Response> {
+  let root: string;
+  try {
+    root = resolveRoot(localDb(), app.getPath("userData"));
+  } catch {
+    return new Response("racine indisponible", { status: 404 });
+  }
+  return await serveLocalAsset(request, pathname, root, APP_ORIGIN);
+}
+
 /** Branche le service des fichiers. À appeler après `app.whenReady()`. */
 export function serveApp(): void {
   const root = webRoot();
@@ -124,10 +147,16 @@ export function serveApp(): void {
   protocol.handle(APP_SCHEME, async (request) => {
     const url = new URL(request.url);
 
-    // Le schéma porte DEUX origines : celle de l'application et celle des
-    // greffons. On aiguille sur l'hôte, sinon un document de greffon serait
-    // cherché dans le build web et l'origine perdrait tout son sens.
+    // Le schéma porte TROIS origines : l'application, les greffons, et les
+    // ressources téléchargées. On aiguille sur l'hôte, sinon un document de
+    // greffon serait cherché dans le build web et l'origine perdrait tout son
+    // sens. Chacune a sa politique de sécurité et son confinement.
     if (url.host === PLUGIN_HOST) return servePluginDocument(url.pathname);
+    if (url.host === LOCAL_HOST) {
+      const response = await serveLocalAssetFrom(request, url.pathname);
+      trace(`//${LOCAL_HOST}${url.pathname}`, url.pathname, response.status);
+      return response;
+    }
 
     const resolved = resolveWithinRoot(root, url.pathname);
 

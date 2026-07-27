@@ -57,6 +57,7 @@ export function hashesFromFile(indexHtmlPath: string): string[] {
 export function buildCsp(
   appOrigin: string,
   pluginOrigin: string,
+  localOrigin: string,
   scriptHashes: readonly string[],
 ): string {
   const scriptSrc = ["'self'", appOrigin, ...scriptHashes].join(" ");
@@ -67,9 +68,13 @@ export function buildCsp(
     // écrivent dans l'attribut `style`, qu'aucune empreinte ne couvre.
     `style-src 'self' 'unsafe-inline' ${appOrigin} https://fonts.googleapis.com`,
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https: http:",
+    // `localOrigin` doit être NOMMÉE : `'self'` désigne l'origine de la page,
+    // et une origine voisine du même schéma n'en fait pas partie. Sans elle,
+    // les affiches téléchargées sont refusées et `trickplay.json` échoue — sans
+    // le moindre message dans la console du rendu.
+    `img-src 'self' ${localOrigin} data: blob: https: http:`,
     "media-src 'self' blob: data: https: http:",
-    "connect-src 'self' https: http: ws: wss:",
+    `connect-src 'self' ${localOrigin} https: http: ws: wss:`,
     // Bandes-annonces YouTube. `http:` et `https:` sont nécessaires en plus des
     // domaines YouTube : sur une origine applicative, l'embed direct n'a pas de
     // referrer HTTP valide et YouTube répond 153. L'app passe donc par une page

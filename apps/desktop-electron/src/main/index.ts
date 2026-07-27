@@ -8,7 +8,14 @@
 
 import { app, BrowserWindow, Menu } from "electron";
 import path from "node:path";
-import { APP_ORIGIN, APP_SCHEME, registerAppScheme, serveApp, webRoot } from "./appProtocol";
+import {
+  APP_ORIGIN,
+  APP_SCHEME,
+  LOCAL_ORIGIN,
+  registerAppScheme,
+  serveApp,
+  webRoot,
+} from "./appProtocol";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -70,7 +77,7 @@ function main(): void {
     // `unsafe-inline` à tout le reste.
     const hashes = hashesFromFile(path.join(webRoot(), "index.html"));
     const pluginOrigin = `${APP_SCHEME}://${PLUGIN_HOST}`;
-    const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, hashes);
+    const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, LOCAL_ORIGIN, hashes);
     const pluginCsp = buildPluginCsp(APP_ORIGIN);
 
     // Une politique par origine. Le serveur Jellyfin de l'utilisateur n'est pas
