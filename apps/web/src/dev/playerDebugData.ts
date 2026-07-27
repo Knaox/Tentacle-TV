@@ -59,6 +59,11 @@ const PROPS_HDR = [
 
 const PROPS_LECTURE = [
   "current-vo",
+  // Laissés à `auto` : mpv choisit d3d11 sous Windows, et c'est CE backend qui
+  // implémente `target-colorspace-hint`. On les lit plutôt que de les figer —
+  // pinner priverait de repli les machines où d3d11 n'est pas disponible.
+  "gpu-api",
+  "gpu-context",
   "hwdec-current",
   "video-codec",
   "audio-codec",
