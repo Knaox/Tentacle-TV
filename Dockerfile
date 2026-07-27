@@ -46,6 +46,22 @@ RUN node scripts/build-shared-deps.js
 # Production image
 FROM node:20-alpine AS production
 
+# NODE_ENV n'était posé NULLE PART — ni ici, ni dans docker-compose, ni dans
+# l'entrypoint. Trois conséquences, toutes silencieuses :
+#
+#  - six `setCookie` posaient `secure: NODE_ENV === "production"`, donc `false` :
+#    le cookie de session partait sans le drapeau Secure. (Corrigé à la source
+#    par `secure: "auto"`, qui suit le protocole réel — ceci n'en est plus la
+#    condition, tant mieux.)
+#  - `/api/push/test` se voulait « introuvable en prod, même admin » : son garde
+#    est `if (NODE_ENV === "production") return 404`, qui ne se déclenchait
+#    jamais. L'outil de diagnostic était donc joignable en production.
+#  - `shared-deps.js` était servi en `no-cache` au lieu d'un cache d'un jour.
+#
+# Posé dans l'étage de PRODUCTION uniquement : dans l'étage de build, il ferait
+# sauter les devDependencies dont `tsc` et `vite` ont besoin.
+ENV NODE_ENV=production
+
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # yt-dlp : résolution des bandes-annonces YouTube → flux MP4 jouable (Apple TV
