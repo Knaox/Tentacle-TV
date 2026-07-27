@@ -299,6 +299,21 @@ jobs:
           if (-not (Test-Path (Join-Path $paquet "Tentacle TV.exe"))) {
             throw "Sortie d'empaquetage introuvable : $paquet"
           }
+
+          # Ce qui part au Store est de la PRODUCTION, et rien d'autre.
+          #
+          # `scripts/package.mjs --debug` dépose un fichier `resources/DEBUG` qui
+          # rallume outils de développement, relais de console et journal du
+          # protocole (cf. `src/main/debugBuild.ts`). Ce job ne passe jamais le
+          # drapeau — mais un paquet de diagnostic laissé dans `release/` par un
+          # essai local, ou un `pnpm package:debug` glissé ici un jour de
+          # fatigue, livrerait une application bavarde à tous les utilisateurs
+          # du Store. Un fichier de zéro octet est la seule différence visible :
+          # on la vérifie plutôt que de la supposer.
+          if (Test-Path (Join-Path $paquet "resources\DEBUG")) {
+            throw "Marqueur de diagnostic present dans le paquet : ce build ne doit pas partir au Store."
+          }
+
           Copy-Item (Join-Path $paquet "*") $stage -Recurse -Force
 
           # Tuiles du Store : inchangées, elles appartiennent au manifeste.
