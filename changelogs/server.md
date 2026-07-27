@@ -11,6 +11,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.11.0]
+### FR
+- Correctifs de sécurité
+### EN
+- Security fixes
+
 ## [1.10.0]
 ### FR
 - Refonte de l'interface web : bannière d'accueil retravaillée (dégradé diagonal teinté, rail de marque, bouton « Plus d'infos »), affiches au liseré dégradé et halo qui suit le curseur

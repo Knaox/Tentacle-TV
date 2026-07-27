@@ -106,16 +106,30 @@ async function main() {
 
   // CORS: restrictive in production, permissive in dev
   const corsOrigins = process.env.CORS_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean);
-  // Origines des webviews de l'app desktop (Tauri) — toujours autorisées car
-  // émises uniquement par l'app native, jamais par un navigateur tiers.
-  // macOS (WKWebView) → tauri://localhost ; Windows (WebView2) → https://tauri.localhost.
-  const TAURI_ORIGINS = ["tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"];
+  // Origines des webviews des apps de bureau — toujours autorisées car émises
+  // uniquement par l'app native, jamais par un navigateur tiers.
+  //
+  //  - Tauri (macOS, Linux)  : tauri://localhost, http(s)://tauri.localhost
+  //  - Electron (Windows)    : tentacle://app — schéma privilégié déclaré par
+  //    la coquille (`apps/desktop-electron/src/main/appProtocol.ts`).
+  //
+  // ⚠️ L'origine Electron manquait. Dès que `CORS_ORIGINS` est défini — donc en
+  // production —, la coquille se faisait refuser CHAQUE appel au préambule
+  // (« Response to preflight request doesn't pass access control check »), y
+  // compris la connexion. Elle ne s'en apercevait pas en développement tant que
+  // la variable restait vide, la politique étant alors permissive.
+  const APP_ORIGINS = [
+    "tauri://localhost",
+    "https://tauri.localhost",
+    "http://tauri.localhost",
+    "tentacle://app",
+  ];
   await app.register(cors, {
     origin: corsOrigins?.length
       ? (origin, cb) => {
           // Allow requests with no origin (mobile apps, curl, server-to-server)
           if (!origin) return cb(null, true);
-          if (corsOrigins.includes(origin) || TAURI_ORIGINS.includes(origin)) return cb(null, true);
+          if (corsOrigins.includes(origin) || APP_ORIGINS.includes(origin)) return cb(null, true);
           cb(new Error("CORS origin not allowed"), false);
         }
       : true,

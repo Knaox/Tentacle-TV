@@ -11,5 +11,12 @@
     "declarationMap": false,
     "jsx": "preserve"
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Les tests sont typés comme le reste, mais ils ne partent PAS dans `dist/` —
+  // donc pas non plus dans l'image Docker livrée. Ils y allaient : `tsc`
+  // compilait `src/**/*.test.ts` en `dist/**/*.test.js`, et du code de test
+  // dans une image de production est du code qu'on n'a pas voulu y mettre.
+  // C'est aussi ce qui faisait ramasser à vitest une copie compilée de chaque
+  // test en plus de sa source.
+  "exclude": ["src/**/*.test.ts"]
 }

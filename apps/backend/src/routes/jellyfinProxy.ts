@@ -16,6 +16,9 @@ import {
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { buildPlaystateRewrite, type PlaystateRewrite } from "./jellyfinProxy/playstate";
+import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
+import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
+import { horsDuPerimetre, userIdDuChemin } from "./jellyfinProxy/userScope";
 
 /** Resolve how to forward a request to Jellyfin :
  *  - Anonymous / native token → no override, pass-through whatever client sent.
@@ -89,35 +92,6 @@ async function resolveSessionRouting(
   return { apiKey: adminKey ?? undefined };
 }
 
-/**
- * Réécrit un manifeste HLS (.m3u8) pour injecter le token du client (`api_key`)
- * dans TOUTES les URLs relatives (sous-playlists `main.m3u8`, segments
- * `hls1/main/N.ts`, et `URI="…"` des renditions audio/sous-titres in-manifest).
- *
- * Indispensable pour Apple TV : AVPlayer (AVURLAsset) ne propage PAS de façon
- * fiable les headers d'auth aux sous-requêtes HLS → la variante/les segments
- * partaient SANS auth → 401 → lecture bloquée à l'infini. Avec l'api_key dans
- * les URLs, AVPlayer le renvoie et le proxy l'honore. Sans effet pour Android
- * (ExoPlayer propage les headers) ni le web (cookie same-origin) : param ignoré.
- */
-function rewriteHlsManifest(body: string, token: string): string {
-  const hasKey = (u: string) => /[?&](api_key|ApiKey)=/i.test(u);
-  const addKey = (u: string) =>
-    hasKey(u) ? u : `${u}${u.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(token)}`;
-  return body
-    .split("\n")
-    .map((line) => {
-      const t = line.trim();
-      if (!t) return line;
-      if (t.startsWith("#")) {
-        // URI="…" dans les tags (#EXT-X-MEDIA, #EXT-X-IMAGE-STREAM-INF, I-frames…)
-        return line.replace(/URI="([^"]+)"/gi, (_m, u: string) => `URI="${addKey(u)}"`);
-      }
-      return addKey(line); // ligne d'URL (playlist/segment relatif)
-    })
-    .join("\n");
-}
-
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();
@@ -170,16 +144,26 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const queryToken = q?.api_key || q?.ApiKey;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
 
-    // Mutation d'image utilisateur (upload d'avatar) avec un JWT d'appareil :
-    // la clé admin serait substituée en aval — verrouiller la cible sur le
-    // compte du token (un token Jellyfin natif est autorisé par Jellyfin même).
-    if (request.method !== "GET" && request.method !== "HEAD" && incomingToken) {
-      const imgTarget = wildcardPath.match(/^Users\/([^/]+)\/Images\//i);
-      if (imgTarget) {
-        const devicePayload = await verifyDeviceToken(incomingToken);
-        if (devicePayload && devicePayload.userId !== imgTarget[1]) {
-          return reply.status(403).send({ error: "Forbidden" });
-        }
+    // Un appareil jumelé ne parle que pour SON compte.
+    //
+    // La clé admin est substituée en aval pour un JWT d'appareil : sans ce
+    // garde, changer l'identifiant dans l'URL donnait accès aux données d'un
+    // autre compte, avec les pleins pouvoirs derrière. La liste blanche
+    // autorise `Users/{id}/Items`, `/Views`, `/FavoriteItems/…`,
+    // `/PlayedItems/…` — donc la lecture ET la modification.
+    //
+    // Ce garde remplace celui qui ne couvrait que l'upload d'avatar : il porte
+    // sur TOUTES les méthodes et toutes les routes qui nomment un utilisateur.
+    // Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni
+    // un jeton d'usurpation, dont c'est justement la raison d'être.
+    if (incomingToken && userIdDuChemin(wildcardPath) !== null) {
+      const devicePayload = await verifyDeviceToken(incomingToken);
+      if (devicePayload && horsDuPerimetre(wildcardPath, devicePayload.userId)) {
+        request.log.warn(
+          { path: wildcardPath, method: request.method },
+          "acces refuse : appareil hors de son perimetre utilisateur",
+        );
+        return reply.status(403).send({ error: "Forbidden" });
       }
     }
 
@@ -298,7 +282,21 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // future hits can reply from cache. Media/error routes: stream as-is.
       if (cacheTtl !== null && !isMediaResponse && response.status < 400) {
         const arrayBuf = await response.arrayBuffer();
-        const buf = Buffer.from(arrayBuf);
+        // FILET. Ces corps sont déjà en mémoire : les relire ne coûte rien, et
+        // aucune route de catalogue n'est censée porter la clé admin. Si l'une
+        // s'y met un jour, elle est nettoyée ici et la trace le dit — plutôt que
+        // de fuir en silence jusqu'au prochain audit. Le cache est clé PAR
+        // JETON, donc y ranger un corps portant le jeton du demandeur est
+        // cohérent : personne d'autre ne le relira.
+        const brut = Buffer.from(arrayBuf).toString("utf8");
+        const { corps, remplacements } = scrubAdminKey(brut, getJellyfinApiKey(), incomingToken);
+        if (remplacements > 0) {
+          request.log.warn(
+            { path: wildcardPath, remplacements },
+            "cle admin retiree d'une reponse mise en cache",
+          );
+        }
+        const buf = remplacements > 0 ? Buffer.from(corps, "utf8") : Buffer.from(arrayBuf);
         const contentType = response.headers.get("content-type") ?? "application/json";
         setCached(wildcardPath, queryString, incomingToken, buf, contentType, response.status, cacheTtl);
         reply.header("x-tentacle-cache", "MISS");
@@ -312,11 +310,54 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       const isM3u8 = wildcardPath.endsWith(".m3u8") || /mpegurl/i.test(ct);
       if (isM3u8 && incomingToken && response.status < 400) {
         const text = await response.text();
-        const rewritten = rewriteHlsManifest(text, incomingToken);
+        // Le manifeste porte LUI AUSSI la clé admin — constaté : Jellyfin la
+        // recopie dans les URI qu'il fabrique, notamment celle des tuiles de
+        // trickplay (`Trickplay/320/tiles.m3u8?…&ApiKey=…`). Nettoyer une
+        // réponse `PlaybackInfo` ne suffisait donc pas : la clé repartait par
+        // cette porte-ci.
+        //
+        // AVANT la décoration, et l'ordre compte : les URL ainsi corrigées
+        // portent alors le jeton du client, et `rewriteHlsManifest` les laisse
+        // tranquilles au lieu d'en ajouter un second.
+        const { corps, remplacements } = scrubAdminKey(text, getJellyfinApiKey(), incomingToken);
+        if (remplacements > 0) {
+          request.log.warn(
+            { path: wildcardPath, remplacements },
+            "cle admin retiree d'un manifeste HLS",
+          );
+        }
+        const rewritten = rewriteHlsManifest(corps, incomingToken);
         reply.removeHeader("content-encoding");
         reply.removeHeader("content-length");
         reply.header("content-length", Buffer.byteLength(rewritten));
         return reply.send(rewritten);
+      }
+
+      // PlaybackInfo : la SEULE réponse qui fabrique une URL de lecture, et donc
+      // la seule où Jellyfin recopie la clé d'administration qu'on vient de lui
+      // présenter. Bufferisée (quelques kilo-octets) et nettoyée avant d'être
+      // rendue — sans quoi la clé admin arrive dans le navigateur de chaque
+      // utilisateur, en clair dans l'URL de la vidéo. cf. scrubAdminKey.ts.
+      if (porteUneUrlDeLecture(wildcardPath) && response.status < 400) {
+        const text = await response.text();
+        const { corps, remplacements } = scrubAdminKey(
+          text,
+          getJellyfinApiKey(),
+          incomingToken,
+        );
+        if (remplacements > 0) {
+          // Le NOMBRE, jamais la valeur. Cette trace dit si un autre chemin se
+          // met un jour à recopier la clé — c'est le seul moyen de l'apprendre
+          // autrement que par un utilisateur.
+          request.log.warn(
+            { path: wildcardPath, remplacements },
+            "cle admin retiree d'une reponse",
+          );
+        }
+        reply.removeHeader("content-encoding");
+        reply.removeHeader("content-length");
+        reply.header("content-length", Buffer.byteLength(corps));
+        return reply.send(corps);
       }
 
       const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);

@@ -15,7 +15,12 @@ export const demoRoutes: FastifyPluginAsync = async (app) => {
 
     reply.setCookie("tentacle_token", demoUser.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // `auto` plutôt que `NODE_ENV` : le drapeau Secure suit alors le PROTOCOLE
+        // réel de la requête (Fastify tourne en `trustProxy`, donc
+        // `X-Forwarded-Proto` est honoré). `NODE_ENV` n'était posé nulle part —
+        // ni Dockerfile, ni docker-compose, ni entrypoint — ce cookie de session
+        // partait donc SANS Secure en production.
+        secure: "auto",
       sameSite: "strict",
       path: "/",
       maxAge: 90 * 24 * 60 * 60,

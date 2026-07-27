@@ -13,9 +13,6 @@ import {
   fetchRegistryCached,
   clearCache,
   enrichPlugins,
-  downloadPlugin,
-  extractPlugin,
-  removePluginFiles,
   isValidPluginId,
   assertPathUnderDataDir,
   DATA_DIR,
@@ -23,6 +20,9 @@ import {
   type InstalledPlugin,
   type EnrichedEntry,
 } from "../services/pluginManager";
+// Télécharger, vérifier, extraire : le seul endroit où du code venu d'ailleurs
+// est écrit sur le disque du serveur. Séparé pour être lu d'un seul tenant.
+import { downloadPlugin, extractPlugin, removePluginFiles } from "../services/pluginInstall";
 import { isPrivateIp } from "../services/networkUtils";
 import { lookup } from "dns/promises";
 

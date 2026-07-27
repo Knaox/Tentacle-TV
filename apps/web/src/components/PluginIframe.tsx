@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
+import { resolveBridgeUrl } from "./pluginIframe/resolveBridgeUrl";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
 
@@ -182,11 +183,22 @@ export function PluginIframe({
 
         case "API_REQUEST": {
           const { id, method, path, body } = data;
+          // Cette requête part avec les identifiants de l'utilisateur (Bearer
+          // + cookies) et son chemin vient du greffon. Une CONCATÉNATION n'est
+          // pas une résolution : `@pirate/x` accolé à la base donne une URL
+          // valide dont l'hôte est `pirate`. Voir `resolveBridgeUrl.ts`.
+          const cible = resolveBridgeUrl(backendUrl || "", path, window.location.origin);
+          if (cible === null) {
+            iframe.contentWindow?.postMessage(
+              { type: "API_RESPONSE", id, error: "chemin refuse" },
+              "*",
+            );
+            break;
+          }
           try {
-            const base = backendUrl || "";
             const headers: Record<string, string> = { ...getAuthHeaders() };
             if (body) headers["Content-Type"] = "application/json";
-            const res = await fetch(`${base}${path}`, {
+            const res = await fetch(cible, {
               method: method || "GET",
               headers,
               credentials: "include",
