@@ -15,6 +15,9 @@ export function Credits() {
     { name: "TanStack Query", url: "https://tanstack.com/query", desc: t("about:techTanStackQuery") },
     { name: "React Router", url: "https://reactrouter.com", desc: t("about:techReactRouter") },
     { name: "Fastify", url: "https://fastify.dev", desc: t("about:techFastify") },
+    // Deux coquilles de bureau : Windows est passé à Electron, macOS et Linux
+    // restent sur Tauri. Les deux sont donc créditées, chacune avec sa portée.
+    { name: "Electron", url: "https://electronjs.org", desc: t("about:techElectron") },
     { name: "Tauri", url: "https://tauri.app", desc: t("about:techTauri") },
     { name: "Expo", url: "https://expo.dev", desc: t("about:techExpo") },
     { name: "React Native", url: "https://reactnative.dev", desc: t("about:techReactNative") },

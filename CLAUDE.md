@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, Tauri desktop app, Expo mobile app, Android TV app, and a Fastify backend with MariaDB. The project is written primarily in French (comments, context docs, commit messages).
+Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (Electron on Windows, Tauri on macOS and Linux — both driving the same native mpv), an Expo mobile app, an Android TV app, and a Fastify backend with MariaDB. The project is written primarily in French (comments, context docs, commit messages).
 
 ## Commands
 
@@ -12,7 +12,8 @@ Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It 
 # Development (run web + backend together for full stack)
 pnpm dev:web          # Web client on port 5173 (proxies /api to :3001)
 pnpm dev:backend      # Backend API on port 3001
-pnpm dev:desktop      # Tauri desktop app
+pnpm dev:desktop      # Tauri desktop app (macOS, Linux)
+pnpm dev:electron     # Electron desktop app (Windows)
 pnpm dev:mobile       # Expo mobile app
 pnpm dev:tv           # Android TV app
 
@@ -67,7 +68,8 @@ git push production main  # Triggers post-receive hook on server
 
 ```
 apps/web/        → React 19 + Vite 6 + Tailwind CSS (main web client)
-apps/desktop/    → Tauri v2 (wraps web build for native desktop)
+apps/desktop/    → Tauri v2 (macOS, Linux — wraps web build for native desktop)
+apps/desktop-electron/ → Electron (Windows — same web build, same libmpv)
 apps/mobile/     → Expo 52 + React Native 0.76 (iOS/Android)
 apps/tv/         → React Native for Android TV
 apps/backend/    → Fastify 5 + Prisma 6 + MariaDB
@@ -81,7 +83,8 @@ packages/plugins-api/ → Plugin system interfaces
 ### Dependency Graph
 
 - `web` → `ui`, `api-client`, `shared`, `plugins-api`
-- `desktop` → wraps `web` build via Tauri
+- `desktop` → wraps `web` build via Tauri (macOS, Linux)
+- `desktop-electron` → wraps the same `web` build via Electron (Windows)
 - `mobile` → `api-client`, `shared` (own UI with NativeWind)
 - `backend` → `shared` only
 
@@ -153,7 +156,7 @@ un **build de production** (le compteur d'images de `dev/` tient une boucle
 | Layer | Technology |
 |-------|-----------|
 | Web | React 19, Vite 6, Tailwind 3, Framer Motion 11 |
-| Desktop | Tauri v2 (Rust) |
+| Desktop | Electron 43 (Windows), Tauri v2 / Rust (macOS, Linux) |
 | Mobile | React Native 0.76, Expo 52, NativeWind 4 |
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | Data | TanStack Query v5 |
