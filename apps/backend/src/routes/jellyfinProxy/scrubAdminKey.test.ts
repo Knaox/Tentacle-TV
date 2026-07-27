@@ -106,6 +106,32 @@ describe("nettoyage de la cle admin", () => {
   });
 });
 
+describe("manifeste HLS", () => {
+  // CONSTATÉ sur le serveur réel : le master.m3u8 rendu par Jellyfin porte la
+  // clé admin dans l'URI des tuiles de trickplay. Nettoyer `PlaybackInfo` ne
+  // suffisait donc pas — la clé repartait par cette porte-ci.
+  const manifeste = [
+    "#EXTM3U",
+    "#EXT-X-STREAM-INF:BANDWIDTH=4000000",
+    "main.m3u8?&DeviceId=dev1&MediaSourceId=ms1",
+    `#EXT-X-IMAGE-STREAM-INF:URI="Trickplay/320/tiles.m3u8?MediaSourceId=ms1&ApiKey=${CLE_ADMIN}"`,
+  ].join("\n");
+
+  it("retire la cle admin d'un manifeste", () => {
+    const { corps, remplacements } = scrubAdminKey(manifeste, CLE_ADMIN, JETON_CLIENT);
+    expect(remplacements).toBe(1);
+    expect(corps).not.toContain(CLE_ADMIN);
+    expect(corps).toContain(`ApiKey=${JETON_CLIENT}`);
+  });
+
+  it("laisse le reste du manifeste intact", () => {
+    const { corps } = scrubAdminKey(manifeste, CLE_ADMIN, JETON_CLIENT);
+    expect(corps.split("\n").length).toBe(manifeste.split("\n").length);
+    expect(corps).toContain("#EXT-X-STREAM-INF:BANDWIDTH=4000000");
+    expect(corps).toContain("main.m3u8?&DeviceId=dev1&MediaSourceId=ms1");
+  });
+});
+
 describe("garde-fous du remplacement", () => {
   it("ne fait rien si aucune cle admin n'est configuree", () => {
     const brut = playbackInfo(CLE_ADMIN);
