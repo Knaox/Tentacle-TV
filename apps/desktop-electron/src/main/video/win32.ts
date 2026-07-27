@@ -6,8 +6,8 @@
  */
 
 import koffi from "koffi";
-import { app } from "electron";
 import type { BrowserWindow } from "electron";
+import { estBuildDebug } from "../debugBuild";
 
 // Enregistre le type auprès de koffi ; il est ensuite désigné par son NOM dans
 // les signatures ci-dessous, d'où l'absence de variable.
@@ -79,9 +79,9 @@ function bits(valeur: unknown): bigint {
   return typeof valeur === "bigint" ? valeur : BigInt(valeur as number);
 }
 
-/** Journal de la surface vidéo, hors build empaqueté. */
+/** Journal de la surface vidéo, sur un build de diagnostic. */
 export function trace(message: string): void {
-  if (!app.isPackaged) console.log(`[video] ${message}`);
+  if (estBuildDebug()) console.log(`[video] ${message}`);
 }
 
 /**

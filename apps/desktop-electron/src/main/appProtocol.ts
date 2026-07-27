@@ -11,6 +11,7 @@ import { app, net, protocol } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { estBuildDebug } from "./debugBuild";
 import { resolveRoot } from "./downloads/paths";
 import { localDb } from "./localDb";
 import { LOCAL_HOST, serveLocalAsset } from "./localAssets";
@@ -88,7 +89,7 @@ export function resolveWithinRoot(root: string, requestPath: string): string | n
 }
 
 /**
- * Journal des requêtes servies, développement uniquement.
+ * Journal des requêtes servies, builds de diagnostic uniquement.
  *
  * Une ressource refusée au niveau du RÉSEAU (CORS, protocole en échec) ne
  * produit aucun message dans la console du rendu : l'écran reste noir sans le
@@ -97,7 +98,7 @@ export function resolveWithinRoot(root: string, requestPath: string): string | n
  * trompe d'environnement ».
  */
 function trace(requestPath: string, target: string, status: number): void {
-  if (app.isPackaged) return;
+  if (!estBuildDebug()) return;
   console.log(`[protocole] ${status} ${requestPath} -> ${path.basename(target)}`);
 }
 

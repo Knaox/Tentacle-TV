@@ -17,7 +17,8 @@
  * l'émetteur et la trace.
  */
 
-import { app, ipcMain, type IpcMainEvent } from "electron";
+import { ipcMain, type IpcMainEvent } from "electron";
+import { estBuildDebug } from "../debugBuild";
 import { isAppOrigin } from "../appProtocol";
 import { CANAL_MIGRATION_PRISE, CANAL_MIGRATION_RAPPORT } from "../channels";
 import { takeMigrationDump } from "../downloads/migrationDump";
@@ -56,10 +57,10 @@ function consommer(event: IpcMainEvent): Record<string, string> | null {
     case "aucune":
     case "deja-faite":
       // Silencieux en production — c'est le cas de tous les lancements après
-      // le premier. Hors build empaqueté on le dit quand même : sans cette
-      // ligne, « aucune sauvegarde » et « le canal n'a jamais répondu » se
-      // ressemblent trait pour trait dans le terminal.
-      if (!app.isPackaged) console.info(`[migration] rien a rejouer (${prise.etat})`);
+      // le premier. Sur un build de diagnostic on le dit quand même : sans
+      // cette ligne, « aucune sauvegarde » et « le canal n'a jamais répondu »
+      // se ressemblent trait pour trait dans le terminal.
+      if (estBuildDebug()) console.info(`[migration] rien a rejouer (${prise.etat})`);
       return null;
     case "illisible":
       // Ni suppression ni trace côté base : un analyseur corrigé plus tard doit

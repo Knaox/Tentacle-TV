@@ -9,6 +9,7 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { windowIconPath } from "./appIcon";
+import { estBuildDebug } from "./debugBuild";
 import { lockNavigation } from "./security";
 import {
   basculer as basculerPleinEcran,
@@ -113,7 +114,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 
   lockNavigation(win.webContents);
 
-  // Hors build empaqueté, on relaie la console du rendu et les échecs de
+  // Sur un build de diagnostic, on relaie la console du rendu et les échecs de
   // chargement dans le terminal. Sans ça, une violation de CSP ou un module
   // introuvable ne laisse qu'un écran noir, sans le moindre indice.
   //
@@ -121,7 +122,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
   // supprime `console.log`, `console.debug` et `console.info` (`pure` dans
   // `vite.config.ts`), et un échec au niveau du réseau n'écrit rien dans la
   // console du rendu. D'où les outils de développement, ouverts d'office.
-  if (!app.isPackaged) {
+  if (estBuildDebug()) {
     win.webContents.on("console-message", (event) => {
       console.log(`[rendu:${event.level}] ${event.message} (${event.lineNumber})`);
     });
@@ -174,7 +175,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         if (etait) quitterPleinEcran(win);
         else basculerPleinEcran(win);
         broadcast(estEnPleinEcran());
-        if (app.isPackaged) return;
+        if (!estBuildDebug()) return;
         console.log(
           `[fenetre] F11 — avant : fenetre=${fenetre} document=${String(document)}` +
             ` → fenetre=${estEnPleinEcran()}`,
