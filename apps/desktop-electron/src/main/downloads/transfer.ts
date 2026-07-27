@@ -18,7 +18,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { open, rename, unlink } from "node:fs/promises";
+import { mkdir, open, rename, unlink } from "node:fs/promises";
+import path from "node:path";
 import type { TransferNet } from "./transferNet";
 
 /** Cadence de persistance de la progression : au plus tôt des deux. */
@@ -94,6 +95,20 @@ export async function run(
   onProgress: (bytes: number) => void,
 ): Promise<TransferEnd> {
   const part = `${job.finalPath}.part`;
+
+  // Le dossier de l'item n'existe pas au premier transfert, et RIEN d'autre ne
+  // le crée : `ensureLayout` ne pose que `media/` et `meta/` à la racine, et
+  // `meta`, `subs` et `trickplay` créent chacun LEUR dossier, jamais celui du
+  // média. Sans cette ligne, `open(part, "w")` échoue en ENOENT et TOUT
+  // téléchargement se solde par un `io` à zéro octet.
+  //
+  // Même geste que `transfer.rs:85`, que le portage avait perdu — et que les
+  // tests ne pouvaient pas voir : leur fixture créait le dossier elle-même.
+  try {
+    await mkdir(path.dirname(job.finalPath), { recursive: true });
+  } catch {
+    return { kind: "failed", code: "io", bytesDone: 0 };
+  }
 
   // Reprise : Original uniquement. Un transcodage n'est pas rejouable, et
   // reprendre son flux à mi-course donnerait un fichier incohérent.

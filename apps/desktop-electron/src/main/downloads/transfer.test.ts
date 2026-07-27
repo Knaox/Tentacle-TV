@@ -76,13 +76,45 @@ function job(root: string, partial: Partial<TransferJob> = {}): TransferJob {
   };
 }
 
+/**
+ * Une racine NUE — `media/` et `meta/` seulement, comme `ensureLayout` la
+ * laisse.
+ *
+ * ⚠️ Ne PAS y créer `media/item1/`. Cette fixture le faisait, et c'est ce qui a
+ * masqué pendant tout le portage l'absence de `mkdir` dans `run` : les treize
+ * tests passaient sur un monde que la production ne construit jamais, et le
+ * premier vrai téléchargement échouait en `io` à zéro octet. Créer le dossier
+ * de l'item est le travail du code testé.
+ */
 function preparer(): string {
-  const root = racinePreparee("tentacle-transfer-");
-  mkdirSync(path.join(root, "media", "item1"), { recursive: true });
-  return root;
+  return racinePreparee("tentacle-transfer-");
+}
+
+/**
+ * Sème un `.part`, comme l'aurait laissé un transfert interrompu.
+ *
+ * Crée le dossier au passage, parce que c'est LE décor de ces cas-là : un
+ * transfert précédent est passé, donc le dossier existe. Ce qu'on ne veut pas,
+ * c'est qu'un test du chemin NEUF hérite de ce décor.
+ */
+function semerPart(finalPath: string, contenu: string): void {
+  mkdirSync(path.dirname(finalPath), { recursive: true });
+  writeFileSync(`${finalPath}.part`, contenu);
 }
 
 describe("transfert nominal", () => {
+  it("cree le dossier de l'item : il n'existe a personne d'autre", async () => {
+    const root = preparer();
+    const cible = job(root);
+    // L'etat REEL d'un premier telechargement : la racine est nue.
+    expect(existsSync(path.dirname(cible.finalPath))).toBe(false);
+
+    const fin = await run(reseau({ blocs: ["abc"] }).net, cible, new TransferFlags(), () => undefined);
+
+    expect(fin).toEqual({ kind: "complete", finalSize: 3 });
+    expect(readFileSync(cible.finalPath, "utf8")).toBe("abc");
+  });
+
   it("ecrit, synchronise et renomme", async () => {
     const root = preparer();
     const simule = reseau({ blocs: ["abc", "def"] });
@@ -112,7 +144,7 @@ describe("reprise", () => {
   it("l'Original demande un Range et repart d'ou il en etait", async () => {
     const root = preparer();
     const cible = job(root);
-    writeFileSync(`${cible.finalPath}.part`, "abc");
+    semerPart(cible.finalPath, "abc");
     const simule = reseau({ status: 206, blocs: ["def"] });
 
     const fin = await run(simule.net, cible, new TransferFlags(), () => undefined);
@@ -125,7 +157,7 @@ describe("reprise", () => {
   it("un 200 malgre le Range fait repartir de zero", async () => {
     const root = preparer();
     const cible = job(root);
-    writeFileSync(`${cible.finalPath}.part`, "vieux");
+    semerPart(cible.finalPath, "vieux");
     // Le serveur a ignore le Range : ecrire a l'offset donnerait un fichier
     // incoherent.
     const simule = reseau({ status: 200, blocs: ["neuf"] });
@@ -142,7 +174,7 @@ describe("reprise", () => {
       variant: "light",
       finalPath: path.join(root, "media", "item1", "light-ms1-p720.mp4"),
     });
-    writeFileSync(`${cible.finalPath}.part`, "partiel");
+    semerPart(cible.finalPath, "partiel");
     const simule = reseau({ blocs: ["neuf"] });
 
     await run(simule.net, cible, new TransferFlags(), () => undefined);
