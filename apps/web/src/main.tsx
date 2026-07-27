@@ -36,6 +36,7 @@ import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/p
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
 import { isDesktopApp, isTauriShell } from "./desktop/bridge";
+import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { getBackendBase } from "./lib/backendBase";
 import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
@@ -149,6 +150,23 @@ const jellyfinClient = new JellyfinClient(
 // Web: use httpOnly cookies for auth (XSS-proof token storage)
 if (!isDesktop) {
   jellyfinClient.useCredentials = true;
+}
+
+// La télémétrie de lecture part par le NATIF quand la coquille sait le faire.
+//
+// Elle vise Jellyfin EN DIRECT, délibérément : le proxy remplace le jeton de
+// l'utilisateur par la clé admin, et sans contexte utilisateur Jellyfin 10.11
+// ne sait plus à qui attribuer le playstate — la position de reprise est
+// perdue. Or un `fetch` du moteur web depuis l'origine applicative n'obtiendra
+// jamais de CORS d'un serveur Jellyfin quelconque : le préflight échoue, et
+// toute la session bascule sur le proxy en silence.
+//
+// Le processus principal n'est pas soumis au CORS. Rien à configurer sur les
+// serveurs des utilisateurs, et le modèle de sécurité de la page ne bouge pas.
+// Absent sous Tauri, dont l'origine HTTP passe déjà : `supportsNativeSessionPost`
+// répond non et le `fetch` d'origine reste en place.
+if (supportsNativeSessionPost()) {
+  jellyfinClient.nativeSessionPost = nativeSessionPost;
 }
 
 // Restore token from storage (mobile/desktop only — web uses httpOnly cookies)

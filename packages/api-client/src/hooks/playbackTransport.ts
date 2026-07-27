@@ -37,6 +37,22 @@ export type JfClient = {
   getDirectStreaming?: () => { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null;
   setDirectStreaming?: (config: { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null) => void;
   reportDirectStreamingError?: () => void;
+  /**
+   * Poste la télémétrie depuis la couche NATIVE, hors du moteur web.
+   *
+   * Injecté par l'hôte quand il en a une — c'est le cas de la coquille
+   * Electron, dont l'origine `tentacle://app` n'obtiendra jamais de CORS d'un
+   * serveur Jellyfin quelconque. Le processus principal, lui, n'y est pas
+   * soumis. Absent sur le web, sur mobile et sur TV : ce module ne connaît
+   * aucune plateforme, il se contente d'utiliser la voie qu'on lui donne.
+   */
+  nativeSessionPost?: (
+    baseUrl: string,
+    path: string,
+    token: string,
+    authHeader: string,
+    body: string,
+  ) => Promise<number>;
 };
 
 /** La route DIRECTE de télémétrie a échoué (CORS WebView typiquement) : on
@@ -92,14 +108,26 @@ export async function sessionPost(
   const ds = client.getDirectStreaming?.();
   if (!directTelemetryBroken && ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
     try {
-      const res = await fetch(`${ds.mediaBaseUrl}${path}`, {
-        method: "POST", body: bodyStr,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Emby-Token": ds.jellyfinToken,
-          "X-Emby-Authorization": client.getAuthHeader(ds.jellyfinToken),
-        },
-      });
+      // Voie NATIVE quand l'hôte en fournit une : le `fetch` du moteur web est
+      // soumis au CORS, et une origine de schéma applicatif ne l'obtiendra
+      // jamais d'un Jellyfin quelconque. Sans elle, `directTelemetryBroken`
+      // passait à vrai au premier report et TOUTE la session basculait sur le
+      // proxy — donc plus aucune position de reprise, en silence.
+      const authHeader = client.getAuthHeader(ds.jellyfinToken);
+      const status = client.nativeSessionPost
+        ? await client.nativeSessionPost(ds.mediaBaseUrl, path, ds.jellyfinToken, authHeader, bodyStr)
+        : null;
+      const res =
+        status !== null
+          ? { ok: status >= 200 && status < 300, status }
+          : await fetch(`${ds.mediaBaseUrl}${path}`, {
+              method: "POST", body: bodyStr,
+              headers: {
+                "Content-Type": "application/json",
+                "X-Emby-Token": ds.jellyfinToken,
+                "X-Emby-Authorization": authHeader,
+              },
+            });
       if (res.ok || res.status === 204) return;
       if (res.status === 401 || res.status === 403) {
         // Token appareil mort : refresh (bridé) — la route directe RESTE active,

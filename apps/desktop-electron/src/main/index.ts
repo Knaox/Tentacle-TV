@@ -23,6 +23,7 @@ import { CommandRegistry } from "./ipc/registry";
 import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
 import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
 import { registerDownloadsStorageCommands } from "./ipc/downloadsStorage";
+import { registerJellyfinCommands } from "./ipc/jellyfin";
 import { stopDownloadsRuntime } from "./downloadsRuntime";
 import { closeLocalDb } from "./localDb";
 import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
@@ -100,6 +101,7 @@ function main(): void {
 
     const registry = new CommandRegistry();
     registerShellCommands(registry);
+    registerJellyfinCommands(registry);
     registerMediaKeyCommands(registry);
     registerPluginCommands(registry);
     registerSessionCommands(registry);

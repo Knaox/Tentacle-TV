@@ -77,6 +77,11 @@ export const COMMANDS = [
   "check_msix_update",
   "download_and_install_msix_update",
 
+  // Télémétrie de lecture postée DEPUIS LE PROCESSUS PRINCIPAL.
+  // Propre à Electron : l'origine `tentacle://app` n'obtiendra jamais de CORS
+  // d'un Jellyfin quelconque. Voir `ipc/jellyfin.ts`.
+  "jellyfin_session_post",
+
   // Greffons — dépôt du document à servir sous son origine dédiée.
   // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de
   // l'origine ne s'y pose pas de la même façon.
