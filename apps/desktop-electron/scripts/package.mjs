@@ -21,15 +21,14 @@
  * assemble le dossier nous-mêmes — même geste que l'assemblage MSIX, et pour
  * la même raison : c'est déterministe.
  *
- * # Le marqueur de diagnostic
+ * # Ce script ne sait produire QUE de la production
  *
- * `--debug` dépose un fichier `DEBUG` dans les ressources. À l'exécution,
- * `main/debugBuild.ts` y voit un build de diagnostic et rallume les outils de
- * développement, le relais de console et le journal du protocole — muets dans
- * tout paquet sinon. Le chemin de RELEASE ne passe jamais le drapeau : sans
- * lui, la sortie est identique à ce qu'elle était.
+ * Il n'existe aucun drapeau de diagnostic, et c'est délibéré : outils de
+ * développement, relais de console et journal du protocole sont gardés par
+ * `app.isPackaged`, donc absents de tout paquet, sans moyen de les y rallumer.
+ * Le diagnostic se fait en `pnpm dev:electron`.
  *
- *   node scripts/package.mjs [--out <dossier>] [--debug]
+ *   node scripts/package.mjs [--out <dossier>]
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -53,20 +52,10 @@ const NOM = "Tentacle TV";
  */
 const MODULES = ["koffi", "@koromix/koffi-win32-x64", "zod"];
 
-/**
- * Nom du marqueur de diagnostic.
- *
- * ⚠️ Doit rester identique à `MARQUEUR` de `src/main/debugBuild.ts` — c'est le
- * seul lien entre les deux, et il n'est vérifié par aucun compilateur.
- */
-const MARQUEUR_DEBUG = "DEBUG";
-
 function argument(nom, defaut) {
   const index = process.argv.indexOf(nom);
   return index >= 0 && process.argv[index + 1] !== undefined ? process.argv[index + 1] : defaut;
 }
-
-const debug = process.argv.includes("--debug");
 
 function copier(source, cible, quoi) {
   if (!existsSync(source)) throw new Error(`${quoi} introuvable : ${source}`);
@@ -125,21 +114,11 @@ function preparerRessources(stage) {
     path.join(ressources, "icon.ico"),
     "icone",
   );
-  const extra = [
+  return [
     path.join(ressources, "web"),
     path.join(ressources, "lib"),
     path.join(ressources, "icon.ico"),
   ];
-
-  if (debug) {
-    // Le contenu ne sert à rien, seule la PRÉSENCE compte. On y écrit tout de
-    // même de quoi reconnaître le paquet des mois plus tard, sur une machine
-    // où personne ne se souvient d'où il vient.
-    const marqueur = path.join(ressources, MARQUEUR_DEBUG);
-    writeFileSync(marqueur, "build de diagnostic : outils de developpement, console, journal du protocole\n");
-    extra.push(marqueur);
-  }
-  return extra;
 }
 
 const sortie = path.resolve(APP, argument("--out", "release"));
@@ -172,6 +151,3 @@ const chemins = await packager({
 });
 
 console.log(`Paquet assemble : ${chemins.join(", ")}`);
-// En clair et en majuscules : ce paquet ne doit jamais partir au Store, et la
-// seule chose qui l'en distingue est un fichier de zero octet.
-if (debug) console.log("BUILD DE DIAGNOSTIC - ne pas soumettre au Store.");

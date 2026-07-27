@@ -9,7 +9,6 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { windowIconPath } from "./appIcon";
-import { estBuildDebug } from "./debugBuild";
 import { lockNavigation } from "./security";
 import {
   basculer as basculerPleinEcran,
@@ -114,15 +113,19 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 
   lockNavigation(win.webContents);
 
-  // Sur un build de diagnostic, on relaie la console du rendu et les échecs de
+  // En DÉVELOPPEMENT seulement, on relaie la console du rendu et les échecs de
   // chargement dans le terminal. Sans ça, une violation de CSP ou un module
   // introuvable ne laisse qu'un écran noir, sans le moindre indice.
+  //
+  // Rien de tout ceci n'existe dans un paquet livré, et aucun drapeau ne peut
+  // l'y rallumer : les outils de développement ouverts chez un utilisateur
+  // seraient une surface d'attaque, pas un service.
   //
   // Ce relais ne suffit PAS à lui seul : le build de production de `apps/web`
   // supprime `console.log`, `console.debug` et `console.info` (`pure` dans
   // `vite.config.ts`), et un échec au niveau du réseau n'écrit rien dans la
   // console du rendu. D'où les outils de développement, ouverts d'office.
-  if (estBuildDebug()) {
+  if (!app.isPackaged) {
     win.webContents.on("console-message", (event) => {
       console.log(`[rendu:${event.level}] ${event.message} (${event.lineNumber})`);
     });
@@ -175,7 +178,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         if (etait) quitterPleinEcran(win);
         else basculerPleinEcran(win);
         broadcast(estEnPleinEcran());
-        if (!estBuildDebug()) return;
+        if (app.isPackaged) return;
         console.log(
           `[fenetre] F11 — avant : fenetre=${fenetre} document=${String(document)}` +
             ` → fenetre=${estEnPleinEcran()}`,
