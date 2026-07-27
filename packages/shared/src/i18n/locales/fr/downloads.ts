@@ -87,6 +87,18 @@ export default {
   offlineEmptyTitle: "Aucun contenu hors ligne",
   offlineEmptyMessage:
     "Aucun téléchargement lisible sur cet appareil pour ce compte. Le catalogue complet reviendra dès que le serveur répondra.",
+  selectMode: "Sélectionner",
+  selectCancel: "Annuler la sélection",
+  selectAll: "Tout sélectionner",
+  selectNone: "Tout désélectionner",
+  selectedCount_one: "{{count}} sélectionné",
+  selectedCount_other: "{{count}} sélectionnés",
+  bulkAutoDelete: "Auto-suppression de la sélection",
+  bulkDelete: "Supprimer la sélection",
+  bulkDeleteConfirmTitle_one: "Supprimer {{count}} téléchargement ?",
+  bulkDeleteConfirmTitle_other: "Supprimer {{count}} téléchargements ?",
+  bulkDeleteConfirmMessage:
+    "Les fichiers seront retirés de cet appareil. Les autres comptes qui les ont téléchargés les conservent.",
   emptyTitle: "Aucun téléchargement",
   emptyMessage:
     "Les films et les épisodes téléchargés depuis leurs fiches apparaîtront ici, prêts à être regardés hors ligne.",

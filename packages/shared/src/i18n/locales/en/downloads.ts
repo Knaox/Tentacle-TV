@@ -87,6 +87,18 @@ export default {
   offlineEmptyTitle: "No offline content",
   offlineEmptyMessage:
     "No playable download on this device for this account. The full catalog will come back as soon as the server responds.",
+  selectMode: "Select",
+  selectCancel: "Cancel selection",
+  selectAll: "Select all",
+  selectNone: "Deselect all",
+  selectedCount_one: "{{count}} selected",
+  selectedCount_other: "{{count}} selected",
+  bulkAutoDelete: "Auto-delete for selection",
+  bulkDelete: "Delete selection",
+  bulkDeleteConfirmTitle_one: "Delete {{count}} download?",
+  bulkDeleteConfirmTitle_other: "Delete {{count}} downloads?",
+  bulkDeleteConfirmMessage:
+    "The files will be removed from this device. Other accounts that downloaded them keep their copy.",
   emptyTitle: "No downloads",
   emptyMessage:
     "Movies and episodes downloaded from their pages will appear here, ready to watch offline.",

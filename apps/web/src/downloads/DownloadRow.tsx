@@ -25,9 +25,11 @@ interface DownloadRowProps {
   userId: string;
   onDelete: (entry: DownloadEntry) => void;
   onPlay?: (entry: DownloadEntry) => void;
+  /** Mode sélection actif : la ligne porte une case et devient cliquable. */
+  selection?: { selected: boolean; onToggle: (id: number) => void };
 }
 
-export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProps) {
+export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: DownloadRowProps) {
   const { t } = useTranslation("downloads");
   const [posterFailed, setPosterFailed] = useState(false);
   useDownloadsRootReady(); // re-rend quand la racine locale est résolue
@@ -52,7 +54,26 @@ export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProp
   ].filter(Boolean);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-fill-faint p-3 transition-colors hover:bg-fill-subtle">
+    <div
+      className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
+        selection?.selected ? "bg-fill-soft" : "bg-fill-faint hover:bg-fill-subtle"
+      } ${selection ? "cursor-pointer" : ""}`}
+      // Toute la ligne bascule la case : viser un carré de 16 px sur une liste
+      // de vingt-quatre épisodes est un supplice.
+      onClick={selection ? () => selection.onToggle(entry.id) : undefined}
+    >
+      {selection && (
+        <input
+          type="checkbox"
+          checked={selection.selected}
+          onChange={() => selection.onToggle(entry.id)}
+          // La ligne porte déjà le clic : sans ceci il compterait DEUX fois et
+          // la case reviendrait aussitôt à son état d'avant.
+          onClick={(e) => e.stopPropagation()}
+          aria-label={displayTitle}
+          className="h-4 w-4 flex-shrink-0 accent-[var(--brand)]"
+        />
+      )}
       <div className="h-16 w-11 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
         {posterUrl && !posterFailed && (
           <img
@@ -70,7 +91,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProp
           <button
             type="button"
             onClick={() => onPlay?.(entry)}
-            disabled={entry.status !== "complete" || !onPlay}
+            disabled={entry.status !== "complete" || !onPlay || !!selection}
             className="truncate text-left text-sm font-semibold text-content-primary disabled:cursor-default"
           >
             {displayTitle}
@@ -94,7 +115,12 @@ export function DownloadRow({ entry, userId, onDelete, onPlay }: DownloadRowProp
         )}
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-1.5">
+      {/*
+        Actions par ligne RETIRÉES en mode sélection : la ligne entière bascule
+        la case, et une corbeille posée là-dessus se cliquerait par accident.
+        La barre groupée porte les mêmes gestes pendant ce temps.
+      */}
+      <div className={`flex flex-shrink-0 items-center gap-1.5 ${selection ? "hidden" : ""}`}>
         {entry.status === "downloading" || entry.status === "queued" ? (
           <SmallAction label={t("pause")} onClick={() => void pauseDownload(entry.id)} glyph="pause" />
         ) : null}
