@@ -12,6 +12,7 @@
 
 import { invoke } from "../desktop/bridge";
 import { getMpvApi } from "../hooks/mpvRuntime";
+import { requetesSortantes, viderSondeReseau } from "./networkProbe";
 
 /** Une bascule offerte par le panneau. */
 export interface DebugAction {
@@ -52,6 +53,18 @@ async function alterner(nom: string, a: string, b: string): Promise<string | nul
 }
 
 export const ACTIONS: readonly DebugAction[] = [
+  {
+    touche: "r",
+    libelle: "R · vider le journal réseau",
+    // Le geste qui rend la section utile : on vide, on lance la lecture, et ce
+    // qui apparaît est EXACTEMENT ce que cette lecture a provoqué. Sans remise
+    // à zéro, le trafic du catalogue noie celui du lecteur.
+    executer: async () => {
+      const avant = requetesSortantes().length;
+      viderSondeReseau();
+      return `journal vidé — ${avant} requête${avant > 1 ? "s" : ""} effacée${avant > 1 ? "s" : ""}`;
+    },
+  },
   {
     touche: "p",
     libelle: "P · passthrough HDR",

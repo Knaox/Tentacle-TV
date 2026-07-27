@@ -39,6 +39,7 @@ import { isDesktopApp, isTauriShell } from "./desktop/bridge";
 import { getBackendBase } from "./lib/backendBase";
 import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
+import { installerSondeReseau } from "./dev/networkProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import "./index.css";
 
@@ -46,6 +47,13 @@ import "./index.css";
 (window as unknown as Record<string, unknown>).TentacleShared = {
   React, ReactJSXRuntime, ReactRouterDOM, TanStackQuery, ReactI18next, PluginsAPI, i18n,
 };
+
+// Journal des requêtes sortantes, pour le panneau de diagnostic. Posé ICI, tout
+// en haut : il doit envelopper `fetch` AVANT le premier appel, sans quoi les
+// requêtes du démarrage — celles qui décident de ce qu'on voit — lui échappent.
+// `__PLAYER_DEBUG__` est faux dans tout build livré : le module disparaît alors
+// du bundle, et `window.fetch` n'est jamais touché.
+if (import.meta.env.DEV || __PLAYER_DEBUG__) installerSondeReseau();
 
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
