@@ -9,7 +9,8 @@
 import { z } from "zod";
 import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
-import { activerHdr, basculeEnCours, hdrSupporte, restaurerHdr, hdrActif } from "../video/hdr";
+import { basculeEnCours, hdrActif, hdrSupporte } from "../video/hdr";
+import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
 import { nativeHandle, VideoWindow } from "../video/videoWindow";
 import { CommandRegistry } from "./registry";
@@ -42,104 +43,6 @@ const NO_ARGS = z.object({}).passthrough();
 
 let video: VideoWindow | null = null;
 
-/**
- * La bascule automatique de l'écran en HDR est-elle autorisée ?
- *
- * La POLITIQUE appartient à la page — c'est elle qui connaît la préférence de
- * l'utilisateur ; le MÉCANISME appartient au processus principal, seul à
- * pouvoir lire le gamma du média dès son ouverture et à parler à Windows.
- *
- * Éteinte par défaut : changer le mode d'un écran coûte une à deux secondes de
- * noir, et tous les lecteurs qui le proposent le laissent au choix. La page
- * l'allume à l'initialisation du lecteur si l'utilisateur l'a demandé.
- */
-let hdrAutoAutorise = false;
-
-/** Dernier gamma constaté, pour ne journaliser qu'au changement. */
-let dernierGamma: string | null = null;
-
-/**
- * Laisse mpv transmettre le signal HDR tel quel, ou le lui interdit.
- *
- * # Pourquoi ça ne peut pas se décider séparément de l'écran
- *
- * `target-colorspace-hint` vaut `no` par défaut chez mpv, et c'est un choix
- * assumé de leur part : pousser du PQ vers un compositeur qui ne l'attend pas
- * donne n'importe quoi, donc la transmission est un opt-in.
- *
- * Conséquence, et c'est le défaut qu'on corrige ici : basculer l'écran en HDR
- * SANS lever ce drapeau donne le pire des deux mondes. mpv continue de
- * tone-mapper le PQ vers du SDR — c'est son comportement par défaut — pendant
- * que Windows, lui, croit recevoir du HDR et applique son propre remappage
- * SDR → HDR par-dessus. L'image ressort **délavée**, précisément le symptôme
- * que `hdr.ts` décrit pour un écran laissé en HDR en permanence.
- *
- * Les deux réglages ne valent donc que JOINTS :
- *
- *  - écran SDR + drapeau levé  → signal PQ vers un écran qui ne sait pas le
- *    lire : image quasi noire (mesuré, cf. `hdr.ts`) ;
- *  - écran HDR + drapeau baissé → tone-mapping remappé par Windows : délavé ;
- *  - écran HDR + drapeau levé  → transmission réelle. C'est le seul bon état.
- *
- * D'où l'appel systématiquement collé à `activerHdr()`, et jamais ailleurs.
- *
- * Sans effet si mpv n'est pas démarré : `setProperty` rend une erreur, il ne
- * lève pas.
- */
-function transmettreHdr(actif: boolean): void {
-  const err = setProperty("target-colorspace-hint", actif ? "yes" : "no");
-  if (err) console.info(`[tentacle] HDR : transmission ${actif ? "on" : "off"} — ${err}`);
-}
-
-/**
- * Bascule l'écran en HDR si, et seulement si, le contenu en a besoin.
- *
- * `pq` désigne HDR10 et Dolby Vision, `hlg` la diffusion. Tout le reste est du
- * SDR et n'a rien à gagner à ce que l'écran change de mode — il y perdrait
- * même, Windows délavant alors tout le contenu SDR.
- */
-function basculerSiHdr(): void {
-  if (!hdrAutoAutorise) return;
-
-  const gamma = getProperty("video-params/gamma");
-
-  // ⚠️ `video-params/*` n'est PAS renseigné à `file-loaded` : mpv a ouvert le
-  // fichier mais n'a pas encore configuré sa sortie vidéo. On sortait donc sur
-  // « contenu ? » et la bascule n'avait jamais lieu — sauf coup de chance de
-  // calendrier. D'où l'appel aussi sur `video-reconfig`, où les paramètres sont
-  // valides : ici on se contente d'attendre, sans rien journaliser.
-  if (gamma === null) return;
-
-  if (gamma !== "pq" && gamma !== "hlg") {
-    if (dernierGamma !== gamma) {
-      console.info(`[tentacle] HDR : contenu ${gamma}, pas de bascule a faire`);
-      dernierGamma = gamma;
-    }
-    return;
-  }
-  // `video-reconfig` se répète (changement de piste, de résolution) : on ne
-  // journalise qu'au changement, l'action restant idempotente.
-  //
-  // La transmission est réaffirmée à chaque passage, et pas seulement à la
-  // première : mpv reconfigure sa sortie sur cet évènement, et un drapeau posé
-  // avant que la sortie n'existe ne survit pas toujours à sa reconstruction.
-  if (dernierGamma === gamma) {
-    if (activerHdr()) transmettreHdr(true);
-    return;
-  }
-  dernierGamma = gamma;
-
-  // Pas de garde « un ecran est deja en HDR » : sur un poste a plusieurs
-  // ecrans, un seul deja allume suffisait a tout annuler — et la memoire de
-  // l'etat d'origine n'etait alors jamais posee, donc rien n'etait rendu.
-  // `activerHdr` traite chaque cible separement et est idempotente.
-  const ok = activerHdr();
-  // STRICTEMENT conditionnée à la réussite : transmettre du PQ à un écran
-  // resté en SDR donne une image quasi noire, bien pire que le tone-mapping.
-  if (ok) transmettreHdr(true);
-  console.info(`[tentacle] HDR : contenu ${gamma} — bascule ${ok ? "ok" : "REFUSEE"}`);
-}
-
 export function registerVideoCommands(registry: CommandRegistry): void {
   registry
     .add("mpv_init", {
@@ -165,7 +68,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
               // `file-loaded` d'abord — au cas où les paramètres seraient déjà
               // là — puis `video-reconfig`, où ils le sont à coup sûr : c'est
               // l'évènement que mpv émet quand il a configuré sa sortie vidéo.
-              if (p.event === "file-loaded" || p.event === "video-reconfig") basculerSiHdr();
+              if (p.event === "file-loaded" || p.event === "video-reconfig") accorder();
               sendToPage("mpv://event", p);
             },
             property: (p) => sendToPage("mpv://property-change", p),
@@ -190,16 +93,11 @@ export function registerVideoCommands(registry: CommandRegistry): void {
       run: () => {
         video?.detach();
         video = null;
-        // La transmission est coupée AVANT `destroy()` — après, mpv n'est plus
-        // là pour l'entendre. Elle ne survit pas à l'instance de toute façon ;
-        // la couper ici garde l'invariant lisible : écran et drapeau bougent
-        // toujours ensemble.
-        transmettreHdr(false);
+        // AVANT `destroy()` : après, mpv n'est plus là pour entendre qu'on
+        // coupe la transmission. L'écran est rendu dans la foulée — un écran
+        // qu'on a basculé et laissé en HDR délave tout le reste de Windows.
+        terminer();
         destroy();
-        dernierGamma = null;
-        // L'écran est rendu tel qu'on l'a trouvé, systématiquement. Un écran
-        // laissé en HDR délave tout le reste de Windows.
-        restaurerHdr();
       },
     })
     .add("mpv_command", {
@@ -268,25 +166,12 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         supporte: hdrSupporte(),
         actif: hdrActif(),
         bascule: basculeEnCours(),
-        autoAutorise: hdrAutoAutorise,
+        autoAutorise: basculeAutorisee(),
       }),
     })
     .add("display_hdr_auto", {
       schema: SURFACE,
-      run: ({ on }) => {
-        hdrAutoAutorise = on;
-        console.info(`[tentacle] HDR : bascule automatique ${on ? "autorisee" : "refusee"}`);
-        // Désactivée en cours de lecture, la préférence rend l'écran tout de
-        // suite : l'utilisateur qui décoche s'attend à voir l'effet, pas à
-        // devoir arrêter le film. La transmission tombe AVANT l'écran — sinon
-        // le signal PQ arrive une fraction de seconde sur un écran redevenu
-        // SDR, et l'image passe par le noir.
-        if (!on) {
-          transmettreHdr(false);
-          restaurerHdr();
-          dernierGamma = null;
-        }
-      },
+      run: ({ on }) => autoriserBascule(on),
     });
 }
 
@@ -298,6 +183,5 @@ export function registerVideoCommands(registry: CommandRegistry): void {
  * lien avec une application fermée.
  */
 export function restaurerEcran(): void {
-  transmettreHdr(false);
-  restaurerHdr();
+  terminer();
 }
