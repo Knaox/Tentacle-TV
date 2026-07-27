@@ -40,7 +40,22 @@ import { IID, IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE, parameterizedIid } from 
 
 const CLASSE = "Windows.Services.Store.StoreContext";
 
-/* Fentes de vtable, relevées dans les en-têtes du SDK Windows — jamais devinées. */
+/*
+ * Fentes de vtable, relevées dans les en-têtes du SDK Windows — jamais devinées.
+ *
+ * ⚠️ DEUX FAMILLES, et c'est tout le piège. Une interface WinRT dérive
+ * d'`IInspectable`, dont la vtable commence par les trois entrées d'`IUnknown`
+ * PUIS trois entrées à elle (`GetIids`, `GetRuntimeClassName`, `GetTrustLevel`) :
+ * ses méthodes propres commencent donc à la fente 6. Une interface d'interop
+ * Win32, elle, dérive directement d'`IUnknown` : ses méthodes commencent à 3.
+ *
+ * `IInitializeWithWindow` est la seule de la seconde famille ici — vérifié dans
+ * `um/shobjidl_core.h` : « IInitializeWithWindow : public IUnknown ». Sa fente
+ * a longtemps valu 6, par alignement machinal sur ses voisines : on appelait
+ * alors trois entrées AU-DELÀ de la fin de la table, c'est-à-dire un pointeur
+ * de fonction pris dans la mémoire qui suit. Jamais vu en développement, parce
+ * que `StoreContext` n'existe que dans un paquet installé.
+ */
 /** `IStoreContextStatics::GetDefault`. */
 const SLOT_GET_DEFAULT = 6;
 /** `IStoreContext::GetAppAndOptionalStorePackageUpdatesAsync`. */
@@ -53,8 +68,13 @@ const SLOT_MANDATORY = 7;
 const SLOT_OVERALL_STATE = 6;
 /** `IVectorView<T>::get_Size`. */
 const SLOT_SIZE = 7;
-/** `IInitializeWithWindow::Initialize`. */
-const SLOT_INITIALIZE = 6;
+/**
+ * `IInitializeWithWindow::Initialize`.
+ *
+ * TROIS, et non six : cette interface dérive d'`IUnknown` et non
+ * d'`IInspectable`. Voir l'avertissement en tête de ce bloc.
+ */
+const SLOT_INITIALIZE = 3;
 /** `IAsyncOperation<T>::GetResults`, puis celui de la variante à progression. */
 const SLOT_RESULTS = 8;
 const SLOT_RESULTS_WITH_PROGRESS = 10;
