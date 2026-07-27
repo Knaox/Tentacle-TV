@@ -18,6 +18,7 @@ import { emitProxyEvents } from "./jellyfinProxy/events";
 import { buildPlaystateRewrite, type PlaystateRewrite } from "./jellyfinProxy/playstate";
 import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
+import { horsDuPerimetre, userIdDuChemin } from "./jellyfinProxy/userScope";
 
 /** Resolve how to forward a request to Jellyfin :
  *  - Anonymous / native token → no override, pass-through whatever client sent.
@@ -143,16 +144,26 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const queryToken = q?.api_key || q?.ApiKey;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
 
-    // Mutation d'image utilisateur (upload d'avatar) avec un JWT d'appareil :
-    // la clé admin serait substituée en aval — verrouiller la cible sur le
-    // compte du token (un token Jellyfin natif est autorisé par Jellyfin même).
-    if (request.method !== "GET" && request.method !== "HEAD" && incomingToken) {
-      const imgTarget = wildcardPath.match(/^Users\/([^/]+)\/Images\//i);
-      if (imgTarget) {
-        const devicePayload = await verifyDeviceToken(incomingToken);
-        if (devicePayload && devicePayload.userId !== imgTarget[1]) {
-          return reply.status(403).send({ error: "Forbidden" });
-        }
+    // Un appareil jumelé ne parle que pour SON compte.
+    //
+    // La clé admin est substituée en aval pour un JWT d'appareil : sans ce
+    // garde, changer l'identifiant dans l'URL donnait accès aux données d'un
+    // autre compte, avec les pleins pouvoirs derrière. La liste blanche
+    // autorise `Users/{id}/Items`, `/Views`, `/FavoriteItems/…`,
+    // `/PlayedItems/…` — donc la lecture ET la modification.
+    //
+    // Ce garde remplace celui qui ne couvrait que l'upload d'avatar : il porte
+    // sur TOUTES les méthodes et toutes les routes qui nomment un utilisateur.
+    // Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni
+    // un jeton d'usurpation, dont c'est justement la raison d'être.
+    if (incomingToken && userIdDuChemin(wildcardPath) !== null) {
+      const devicePayload = await verifyDeviceToken(incomingToken);
+      if (devicePayload && horsDuPerimetre(wildcardPath, devicePayload.userId)) {
+        request.log.warn(
+          { path: wildcardPath, method: request.method },
+          "acces refuse : appareil hors de son perimetre utilisateur",
+        );
+        return reply.status(403).send({ error: "Forbidden" });
       }
     }
 
