@@ -244,6 +244,11 @@ jobs:
         run: node .github/scripts/asc-attach-build.mjs
 
   # ── Microsoft Store (MSIX) ───────────────────────────────────────────────
+  # Windows sort d'ELECTRON depuis la 1.20.0 — macOS et Linux restent sur Tauri.
+  # Ce job n'a donc plus de chaîne Rust : le lecteur reste le même libmpv,
+  # piloté par koffi. Le MSIX, lui, ne change pas d'identité (Name + Publisher
+  # inchangés), ce qui préserve la mise à jour et le conteneur de données de
+  # l'utilisateur — donc sa session et ses films téléchargés.
   windows-store:
     needs: version
     if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'windows'
@@ -255,56 +260,57 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 24 et non 20 : la coquille Electron s'appuie sur `node:sqlite`, et
+          # le script d'empaquetage tourne sous ce Node-là.
+          node-version: 24
 
       - uses: pnpm/action-setup@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            apps/desktop/src-tauri/target
-          key: cargo-store-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
-          restore-keys: cargo-store-
 
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      - name: Injecter la version (versions.json) dans tauri.conf.json
-        # PAS de JSON inline en --config ici : pwsh→pnpm→cmd mange les guillemets
-        # internes sous Windows (tauri reçoit `{version:x}` invalide — vécu au
-        # run 1.12.2). On patche le fichier, comme le job Linux ; sans quoi l'exe
-        # embarque la version stale et « À propos » (getVersion) l'affiche.
+      - name: Injecter la version (versions.json) dans le paquet Electron
+        # « À propos » lit `app.getVersion()`, c'est-à-dire la version du
+        # package.json EMBARQUÉ. Sans ce patch, l'exe livré annonce la version
+        # du dépôt au lieu de celle du tag. Même geste que côté Tauri, où la
+        # version vivait dans `tauri.conf.json`.
         shell: pwsh
-        run: node -e "const f='apps/desktop/src-tauri/tauri.conf.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
+        run: node -e "const f='apps/desktop-electron/package.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
 
-      - name: Build app (exe dans target/release)
-        working-directory: apps/desktop
-        run: pnpm tauri build --bundles nsis
+      - name: Build + empaquetage Electron
+        # `pnpm package` enchaîne le build web, la compilation de la coquille et
+        # `@electron/packager`. Sortie : un dossier `Tentacle TV.exe` +
+        # `resources/`, exactement ce que `makeappx` attend.
+        working-directory: apps/desktop-electron
+        run: pnpm package
 
       - name: Assemble MSIX payload + manifest versionné
         shell: pwsh
         run: |
           $ver = "${{ needs.version.outputs.version }}"
           $stage = Join-Path $env:RUNNER_TEMP "msixstage"
+          Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          $rel = "apps\desktop\src-tauri\target\release"
-          Copy-Item "$rel\tentacle-desktop.exe" (Join-Path $stage "Tentacle TV.exe")
-          if (Test-Path "$rel\WebView2Loader.dll") { Copy-Item "$rel\WebView2Loader.dll" $stage }
-          New-Item -ItemType Directory -Force -Path (Join-Path $stage "lib") | Out-Null
-          Copy-Item "apps\desktop\src-tauri\lib\*.dll" (Join-Path $stage "lib") -ErrorAction SilentlyContinue
+
+          # Le paquet Electron est repris EN ENTIER : l'exe, mais aussi les
+          # locales, les .pak et les DLL de Chromium. En oublier une donne un
+          # paquet qui s'installe et ne démarre pas.
+          $paquet = "apps\desktop-electron\release\Tentacle TV-win32-x64"
+          if (-not (Test-Path (Join-Path $paquet "Tentacle TV.exe"))) {
+            throw "Sortie d'empaquetage introuvable : $paquet"
+          }
+          Copy-Item (Join-Path $paquet "*") $stage -Recurse -Force
+
+          # Tuiles du Store : inchangées, elles appartiennent au manifeste.
           Copy-Item "apps\desktop\msix\Assets" (Join-Path $stage "Assets") -Recurse
           $m = Get-Content "apps\desktop\msix\Package.appxmanifest" -Raw
           $m = $m -creplace '\bVersion="[\d\.]+"', ('Version="' + $ver + '.0"')
           Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
+
           "STAGE=$stage" >> $env:GITHUB_ENV
           "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
           Write-Host "Payload assemblé pour version $ver.0"
-          Get-ChildItem $stage -Recurse | Select-Object FullName, Length
+          Get-ChildItem $stage | Select-Object Name, Length
 
       - name: Pack MSIX (makeappx, non signé)
         shell: pwsh
