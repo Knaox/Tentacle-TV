@@ -30,7 +30,7 @@ import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
 import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerSessionCommands } from "./ipc/session";
-import { registerShellCapabilities, registerShellCommands } from "./ipc/shell";
+import { registerShellCapabilities, registerShellCommands, rendreVeilleEcran } from "./ipc/shell";
 import { registerUpdateCommands } from "./ipc/updates";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
@@ -149,6 +149,9 @@ function main(): void {
     // devoir, pas un nettoyage. Une fermeture qui court-circuite `smtc_clear`
     // les laisserait prises jusqu'au redémarrage de la session.
     releaseMediaKeys();
+    // Même devoir pour l'anti-veille : un blocage laissé actif empêcherait
+    // l'écran de s'éteindre longtemps après la fermeture de l'application.
+    rendreVeilleEcran();
     stopDownloadsRuntime();
     closeLocalDb();
   });

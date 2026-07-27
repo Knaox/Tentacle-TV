@@ -1,7 +1,7 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
-import { invoke, listen } from "../desktop/bridge";
+import { invoke, isElectronShell, listen } from "../desktop/bridge";
 
 /**
  * Commandes de contrôle mpv (pause/seek/pistes/volume/vitesse/plein écran) +
@@ -9,14 +9,19 @@ import { invoke, listen } from "../desktop/bridge";
  * Extraction mécanique de useDesktopPlayer — logique inchangée.
  */
 
+// Aucun de nos shells ne peut compter sur le `stop-screensaver` de mpv.
+//
 // macOS et Linux : Render API (vo=libmpv) → mpv n'a AUCUNE fenêtre native, son
-// `stop-screensaver` est inopérant. On gère l'anti-veille nous-mêmes côté Rust :
-// IOPMAssertion sur macOS (macos/sleep_assertion.rs), inhibiteurs D-Bus
-// ScreenSaver/SessionManager/PowerManagement + logind sur Linux
-// (linux/sleep_inhibit.rs). Windows n'en a pas besoin : mpv y possède sa propre
-// fenêtre (--wid) et applique stop-screensaver (SetThreadExecutionState).
+// `stop-screensaver` n'a rien à quoi s'accrocher. On gère l'anti-veille
+// nous-mêmes côté Rust : IOPMAssertion sur macOS (macos/sleep_assertion.rs),
+// inhibiteurs D-Bus ScreenSaver/SessionManager/PowerManagement + logind sur
+// Linux (linux/sleep_inhibit.rs).
+//
+// Windows : mpv a bien sa fenêtre (--wid), mais c'est une fenêtre ENFANT, et le
+// système n'envoie SC_SCREENSAVE/SC_MONITORPOWER qu'à la fenêtre de premier
+// plan. La coquille Electron pose donc un powerSaveBlocker (main/displaySleep.ts).
 function needsKeepAwake(): boolean {
-  return isTauri() && (isMacOS() || isLinux());
+  return isElectronShell() || (isTauri() && (isMacOS() || isLinux()));
 }
 
 export function useMpvCommands({

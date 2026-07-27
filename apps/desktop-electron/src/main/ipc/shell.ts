@@ -1,14 +1,15 @@
 /**
- * Commandes de coquille : plein écran, liens externes, sélecteur de dossier,
- * redémarrage.
+ * Commandes de coquille : plein écran, veille de l'écran, liens externes,
+ * sélecteur de dossier, redémarrage.
  *
  * Les trois dernières ne passent pas par la table des commandes : ce sont des
  * capacités du shell, pas des commandes métier, et le preload les expose
  * nommément.
  */
 
-import { app, dialog, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { app, dialog, ipcMain, powerSaveBlocker, type IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
+import { creerVeilleEcran } from "../displaySleep";
 import { openExternalSafely } from "../security";
 import {
   enterPlayerFullscreenScope,
@@ -20,6 +21,20 @@ import { CommandRegistry, isTrustedSender } from "./registry";
 
 const NO_ARGS = z.object({}).passthrough();
 
+/** Instance unique : c'est elle qui garde l'identifiant du blocage en cours. */
+const veilleEcran = creerVeilleEcran(powerSaveBlocker);
+
+/**
+ * Rend l'écran à sa veille normale, quoi qu'il arrive.
+ *
+ * Exporté pour la fermeture (`will-quit`), comme `releaseMediaKeys` : une sortie
+ * qui court-circuite `prevent_display_sleep_stop` laisserait l'écran de
+ * l'utilisateur allumé jusqu'à la fin de sa session.
+ */
+export function rendreVeilleEcran(): void {
+  veilleEcran.rendre();
+}
+
 export function registerShellCommands(registry: CommandRegistry): void {
   registry
     .add("toggle_fullscreen", { schema: NO_ARGS, run: () => toggleFullscreen() })
@@ -28,6 +43,18 @@ export function registerShellCommands(registry: CommandRegistry): void {
       schema: NO_ARGS,
       run: () => {
         leavePlayerFullscreenScope();
+      },
+    })
+    .add("prevent_display_sleep_start", {
+      schema: NO_ARGS,
+      run: () => {
+        veilleEcran.empecher();
+      },
+    })
+    .add("prevent_display_sleep_stop", {
+      schema: NO_ARGS,
+      run: () => {
+        veilleEcran.rendre();
       },
     });
 }
