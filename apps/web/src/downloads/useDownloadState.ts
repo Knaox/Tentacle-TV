@@ -11,6 +11,7 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { supportsDownloads } from "../desktop/bridge";
 import { getDiskFree, getDiskUsage, listDownloads, downloadStateForItem, type DownloadEntry } from "./api";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
+import { REQUETE_LOCALE } from "../offline/localQuery";
 
 export const DOWNLOADS_LIST_QUERY_KEY = "downloads-list";
 export const DOWNLOAD_STATE_QUERY_KEY = "download-state";
@@ -23,6 +24,7 @@ export function useDownloadsList(): DownloadEntry[] {
     queryFn: () => listDownloads(userId as string),
     enabled: supportsDownloads() && !!userId,
     staleTime: 5_000,
+    ...REQUETE_LOCALE,
   });
   return query.data ?? [];
 }
@@ -34,6 +36,7 @@ export function useItemDownloadState(itemId: string | undefined): DownloadEntry 
     queryFn: () => downloadStateForItem(userId as string, itemId as string),
     enabled: supportsDownloads() && !!userId && !!itemId,
     staleTime: 5_000,
+    ...REQUETE_LOCALE,
   });
   return query.data ?? null;
 }
@@ -52,6 +55,7 @@ export function useDiskInfo(): DiskInfo {
     }),
     enabled: supportsDownloads(),
     staleTime: 10_000,
+    ...REQUETE_LOCALE,
   });
   return query.data ?? { freeBytes: null, usedBytes: null };
 }

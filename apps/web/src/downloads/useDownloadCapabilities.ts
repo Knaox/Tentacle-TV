@@ -14,6 +14,7 @@ import { backendUrl } from "../main";
 import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { getCachedSession, saveCachedSession } from "../offline/offlineSession";
+import { REQUETE_LOCALE } from "../offline/localQuery";
 
 export interface DownloadCapabilities {
   downloads: boolean;
@@ -88,6 +89,10 @@ export function useDownloadCapabilities(): {
     queryFn: () => readCachedCapabilities(userId as string),
     enabled: supportsDownloads() && !!userId && !online,
     staleTime: 15_000,
+    // Lit SQLite par IPC : sans ceci, la requete est mise en PAUSE hors
+    // ligne, les droits restent a `false`, et toute la section disparait —
+    // y compris l'entree du header — au moment precis ou elle sert.
+    ...REQUETE_LOCALE,
   });
 
   if (!supportsDownloads() || !userId) return { capabilities: NONE, fromOfflineCache: false };

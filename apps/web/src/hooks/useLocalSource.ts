@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useUserId } from "@tentacle-tv/api-client";
 import { localSourceForItem, type LocalSource } from "../downloads/playbackApi";
+import { REQUETE_LOCALE } from "../offline/localQuery";
 
 /**
  * Résolution de la source locale (téléchargement complet vérifié côté Rust) —
@@ -28,6 +29,7 @@ export function useLocalSource({
     enabled: isDesktop && !!userId && !!itemId,
     staleTime: 0,
     gcTime: 5_000,
+    ...REQUETE_LOCALE,
   });
   const waitingLocal = isDesktop && !!userId && !!itemId && !query.isFetched;
   const localSource = (isDesktop && !waitingLocal ? query.data : null) ?? null;
