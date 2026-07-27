@@ -11,6 +11,7 @@
     "build:web": "cross-env TENTACLE_SHELL=electron pnpm --filter @tentacle-tv/web build",
     "build:web:debug": "cross-env TENTACLE_SHELL=electron TENTACLE_DEBUG=1 pnpm --filter @tentacle-tv/web build",
     "build": "pnpm build:web && pnpm build:ts",
+    "package": "pnpm build && node scripts/package.mjs",
     "dev": "pnpm build:web:debug && pnpm build:ts && electron .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
@@ -21,6 +22,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@electron/packager": "^18.3.6",
     "@types/node": "^22.10.0",
     "cross-env": "^10.1.0",
     "electron": "^43.2.0",
