@@ -81,6 +81,25 @@ function apply(db: DatabaseSync, sql: string, target: number): void {
   db.exec(`PRAGMA user_version = ${target}`);
 }
 
+/**
+ * Exécute `body` dans une transaction, et annule tout s'il lève.
+ *
+ * ⚠️ Ne s'imbrique PAS : SQLite n'a qu'une transaction par connexion, et nous
+ * n'en avons qu'une. Aucun appelant n'en imbrique aujourd'hui — la purge, qui
+ * boucle sur des suppressions, en ouvre une par tour.
+ */
+export function transaction<T>(db: DatabaseSync, body: () => T): T {
+  db.exec("BEGIN");
+  try {
+    const result = body();
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 /** Version de schéma de la base ouverte. */
 export function userVersion(db: DatabaseSync): number {
   const row = db.prepare("PRAGMA user_version").get();
