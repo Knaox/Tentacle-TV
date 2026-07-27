@@ -60,6 +60,23 @@ export async function saveLocalPlaybackState(
   }
 }
 
+/**
+ * Recommence un item DÉJÀ VU : progression à zéro, échéance de suppression
+ * annulée côté natif.
+ *
+ * Appelé à l'ouverture du lecteur, pas à la fin : sans cela, `played` restant
+ * vrai, la reprise repartirait du début à CHAQUE ouverture et l'on ne pourrait
+ * jamais revoir un épisode en deux fois.
+ */
+export async function restartLocalPlayback(userId: string, itemId: string): Promise<void> {
+  if (!supportsDownloads()) return;
+  try {
+    await invoke("downloads_playback_restart", { userId, itemId });
+  } catch {
+    /* best-effort : au pire la reprise repart du début */
+  }
+}
+
 export interface PendingReport {
   id: number;
   itemId: string;

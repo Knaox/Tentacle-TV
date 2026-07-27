@@ -11,7 +11,13 @@ import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "./db";
-import { localSource, markItemSynced, pendingReports, setPlaybackState } from "./playback";
+import {
+  localSource,
+  markItemSynced,
+  pendingReports,
+  restartPlayback,
+  setPlaybackState,
+} from "./playback";
 import { getFile } from "./queue";
 import { claimOrCreateFile } from "./store";
 import { ecrireMedia, racinePreparee, spec } from "./testkit";
@@ -159,5 +165,71 @@ describe("progression et resynchronisation", () => {
     const db = openInMemory();
     setPlaybackState(db, "u", "item1", 1_000, false, false, 2_000);
     expect(pendingReports(db, "u")).toEqual([]);
+  });
+});
+
+/**
+ * Sans cette voie explicite, revoir un episode en deux fois serait impossible :
+ * `played` ne redescend jamais par `setPlaybackState`, et la reprise ignore la
+ * position d'un item vu -- on repartirait de zero a CHAQUE ouverture.
+ */
+describe("recommencer un item vu", () => {
+  it("remet la progression a neuf", () => {
+    const db = openInMemory();
+    setPlaybackState(db, "u", "item1", 9_000, true, false, 2_000);
+
+    restartPlayback(db, "u", "item1", 5_000);
+
+    const etat = db
+      .prepare("SELECT position_ticks, played, updated_at FROM playback_state WHERE item_id = ?")
+      .get("item1");
+    expect(etat?.position_ticks).toBe(0);
+    expect(etat?.played).toBe(0);
+    expect(etat?.updated_at).toBe(5_000);
+  });
+
+  it("leve l'echeance de suppression", () => {
+    // Elle avait ete posee parce que l'item etait vu : la laisser ferait
+    // disparaitre le fichier au milieu du re-visionnage.
+    const db = openInMemory();
+    const fileId = claimOrCreateFile(db, spec({ autoDeleteAfterWatch: true })).fileId;
+    db.prepare("UPDATE claims SET delete_scheduled_at = 42 WHERE file_id = ?").run(fileId);
+    setPlaybackState(db, "u", "item1", 9_000, true, false, 2_000);
+
+    restartPlayback(db, "u", "item1", 5_000);
+
+    const claim = db.prepare("SELECT delete_scheduled_at FROM claims WHERE file_id = ?").get(fileId);
+    expect(claim?.delete_scheduled_at).toBeNull();
+  });
+
+  it("n'alimente PAS la file de resynchronisation", () => {
+    // Jellyfin ne de-marque pas un episode parce qu'on le relance.
+    const db = openInMemory();
+    setPlaybackState(db, "u", "item1", 9_000, true, true, 2_000);
+    const avant = pendingReports(db, "u");
+
+    restartPlayback(db, "u", "item1", 5_000);
+
+    expect(pendingReports(db, "u")).toEqual(avant);
+  });
+
+  it("ne touche pas au meme item d'un AUTRE compte", () => {
+    const db = openInMemory();
+    setPlaybackState(db, "u", "item1", 9_000, true, false, 2_000);
+    setPlaybackState(db, "autre", "item1", 8_000, true, false, 2_000);
+
+    restartPlayback(db, "u", "item1", 5_000);
+
+    const autre = db
+      .prepare("SELECT position_ticks, played FROM playback_state WHERE jellyfin_user_id = ?")
+      .get("autre");
+    expect(autre?.position_ticks).toBe(8_000);
+    expect(autre?.played).toBe(1);
+  });
+
+  it("ne cree rien pour un item jamais lu", () => {
+    const db = openInMemory();
+    restartPlayback(db, "u", "item1", 5_000);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM playback_state").get()?.n).toBe(0);
   });
 });

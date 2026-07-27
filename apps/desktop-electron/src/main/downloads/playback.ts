@@ -177,6 +177,44 @@ export function setPlaybackState(
   }
 }
 
+/**
+ * Recommence un item DÉJÀ VU : progression remise à zéro, échéance de
+ * suppression annulée.
+ *
+ * # Pourquoi une commande à part
+ *
+ * `setPlaybackState` ne fait JAMAIS redescendre `played` — son `MAX` est
+ * délibéré, une position rejouée ne doit pas effacer le fait qu'on a vu la fin.
+ * Mais la reprise ignore la position d'un item vu (il repart du début, comme
+ * chez Jellyfin) : sans une voie explicite pour repartir à neuf, un
+ * re-visionnage recommencerait de zéro à CHAQUE ouverture, et les vingt minutes
+ * qu'on vient de revoir seraient perdues à chaque fois.
+ *
+ * L'échéance part avec : elle avait été posée parce que l'item était vu. La
+ * laisser ferait disparaître le fichier au beau milieu du re-visionnage.
+ *
+ * Rien n'est mis en file de resynchronisation : c'est un état LOCAL, qui sert à
+ * la reprise. Jellyfin ne dé-marque pas un épisode parce qu'on le relance, et
+ * le prochain franchissement du seuil lui enverra `played` de toute façon.
+ */
+export function restartPlayback(
+  db: DatabaseSync,
+  userId: string,
+  itemId: string,
+  nowMs: number,
+): void {
+  db.prepare(
+    `UPDATE playback_state SET position_ticks = 0, played = 0, updated_at = ?
+     WHERE jellyfin_user_id = ? AND item_id = ?`,
+  ).run(nowMs, userId, itemId);
+
+  db.prepare(
+    `UPDATE claims SET delete_scheduled_at = NULL
+     WHERE jellyfin_user_id = ?
+       AND file_id IN (SELECT id FROM files WHERE item_id = ?)`,
+  ).run(userId, itemId);
+}
+
 export interface PendingReport {
   id: number;
   itemId: string;

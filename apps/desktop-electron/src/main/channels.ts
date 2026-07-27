@@ -44,6 +44,7 @@ export const COMMANDS = [
   // Lecture locale
   "downloads_local_source",
   "downloads_playback_set",
+  "downloads_playback_restart",
   "downloads_reports_pending",
   "downloads_reports_mark_synced",
   "downloads_purge_due",

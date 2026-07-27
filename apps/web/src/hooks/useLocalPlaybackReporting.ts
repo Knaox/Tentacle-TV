@@ -16,7 +16,11 @@
 import { useEffect, useRef } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
 import { purgeDueDownloads } from "../downloads/api";
-import { saveLocalPlaybackState, type LocalSource } from "../downloads/playbackApi";
+import {
+  restartLocalPlayback,
+  saveLocalPlaybackState,
+  type LocalSource,
+} from "../downloads/playbackApi";
 import { drainReportQueue } from "../offline/resync";
 import { useConnectivity } from "../offline/useConnectivity";
 import { etatLectureLocale } from "./localPlaybackProgress";
@@ -58,6 +62,19 @@ export function useLocalPlaybackReporting({
   durationRef.current = durationSeconds;
   const seuilRef = useRef(maxResumePct);
   seuilRef.current = maxResumePct;
+
+  // On relance un item DÉJÀ VU : il repasse « non vu » localement, et son
+  // échéance de suppression est levée.
+  //
+  // La reprise repart du début pour un item vu — c'est ce que fait Jellyfin.
+  // Mais `played` ne redescend jamais tout seul : sans cette remise à neuf, on
+  // repartirait de zéro à CHAQUE ouverture, et revoir un épisode en deux fois
+  // serait impossible. `localSource` a déjà été lu à ce stade : la position de
+  // départ (0) est décidée, on peut nettoyer derrière.
+  useEffect(() => {
+    if (!enabled || !userId || !itemId || !localSource?.played) return;
+    void restartLocalPlayback(userId, itemId);
+  }, [enabled, userId, itemId, localSource]);
 
   useEffect(() => {
     if (!enabled || !userId || !itemId || !localSource) return;

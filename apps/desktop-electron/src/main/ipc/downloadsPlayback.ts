@@ -9,6 +9,7 @@ import {
   localSource,
   markItemSynced,
   pendingReports,
+  restartPlayback,
   setPlaybackState,
 } from "../downloads/playback";
 import { purgeDueClaims, scheduleOnPlayed } from "../downloads/purge";
@@ -54,6 +55,12 @@ export function registerDownloadsPlaybackCommands(registry: CommandRegistry): vo
         // L'échéance est posée ICI et non côté page : le lecteur peut être
         // démonté brutalement, la progression, elle, passe toujours.
         scheduleOnPlayed(db, userId, itemId, now);
+      },
+    })
+    .add("downloads_playback_restart", {
+      schema: USER_ITEM,
+      run: ({ userId, itemId }) => {
+        restartPlayback(localDb(), userId, itemId, Date.now());
       },
     })
     .add("downloads_reports_pending", {
