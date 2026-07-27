@@ -16,27 +16,29 @@ les notes Apple doivent rester génériques.
 
 ## [1.20.0]
 ### FR
-- La version Windows repose désormais sur Electron : le lecteur vidéo, vos téléchargements et vos réglages sont inchangés, rien à réinstaller ni à reconfigurer
+- La version Windows repose désormais sur Electron : le lecteur, vos données et vos réglages sont inchangés, rien à réinstaller
 - HDR véritable : sur un écran compatible, l'image est transmise telle quelle au lieu d'être ramenée en couleurs standard, et l'écran passe en HDR le temps du film
-- Téléchargements : films et épisodes se téléchargent, se mettent en pause, reprennent après une coupure et se regardent hors ligne, sous-titres compris
-- Sélection multiple dans vos téléchargements : supprimer ou relancer plusieurs titres d'un coup
-- Mode hors ligne repensé : navigation dédiée, catalogue rangé par série, et seuls les titres réellement disponibles vous sont proposés
+- Mode hors ligne : films et épisodes se gardent sur l'appareil pour être regardés sans connexion, avec pause, reprise après une coupure et sous-titres
+- Sélection multiple dans votre bibliothèque hors ligne : retirer ou relancer plusieurs titres d'un coup
+- Navigation hors ligne repensée : ses propres menus, un catalogue rangé par série, et seuls les titres disponibles vous sont proposés
 - Ce que vous regardez hors ligne remonte dans Jellyfin au retour du réseau : position et épisodes vus
-- Un épisode téléchargé est marqué vu au même moment qu'en ligne ; « supprimer après visionnage » s'applique en quittant le lecteur, et un épisode déjà vu se relance depuis le début
-- Les sous-titres d'un titre téléchargé s'affichent hors ligne, sans rien demander au serveur
+- Un épisode regardé hors ligne est marqué vu au même moment qu'en ligne, et « effacer après visionnage » s'applique en quittant le lecteur
+- Le catalogue hors ligne montre où vous en êtes : coche sur ce qui est vu, barre sur ce qui est en cours. Un titre déjà vu se relance depuis le début
+- Les sous-titres s'affichent hors ligne, sans rien demander au serveur
 - L'écran ne s'éteint plus pendant un film
 - Les touches Lecture, Pause et piste suivante du clavier pilotent l'application
 - L'application ne se fige plus quand un sous-titre est injoignable
 - Mise à jour automatique depuis le Microsoft Store, plein écran par F11, et l'application porte enfin son icône
 ### EN
-- The Windows version now runs on Electron: the video player, your downloads and your settings are unchanged — nothing to reinstall, nothing to set up again
+- The Windows version now runs on Electron: the video player, your data and your settings are unchanged — nothing to reinstall, nothing to set up again
 - True HDR: on a compatible display the picture is passed through as-is instead of being flattened to standard colours, and the screen switches to HDR for the length of the film
-- Downloads: films and episodes download, pause, resume after a drop and play offline, subtitles included
-- Multiple selection in your downloads: delete or restart several titles at once
-- Reworked offline mode: its own navigation, a catalogue grouped by series, and only the titles actually available are offered
+- Offline mode: films and episodes are kept on the device to be watched with no connection, with pause, resume after a drop and subtitles
+- Multiple selection in your offline library: remove or restart several titles at once
+- Reworked offline navigation: its own menus, a catalogue grouped by series, and only the titles actually available are offered
 - What you watch offline syncs back to Jellyfin when the network returns: position and watched episodes
-- A downloaded episode is marked watched at the same point as online; "delete after watching" applies when you leave the player, and an episode you have already watched restarts from the beginning
-- Subtitles of a downloaded title show up offline, without asking the server for anything
+- An episode watched offline is marked watched at the same point as online, and "erase after watching" applies when you leave the player
+- The offline catalogue shows where you stand: a tick on what is watched, a bar on what is in progress. A title already watched restarts from the beginning
+- Subtitles show up offline, without asking the server for anything
 - The screen no longer switches off during a film
 - The keyboard's Play, Pause and next track keys control the app
 - The app no longer freezes when a subtitle is unreachable
