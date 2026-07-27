@@ -59,6 +59,39 @@ let hdrAutoAutorise = false;
 let dernierGamma: string | null = null;
 
 /**
+ * Laisse mpv transmettre le signal HDR tel quel, ou le lui interdit.
+ *
+ * # Pourquoi ça ne peut pas se décider séparément de l'écran
+ *
+ * `target-colorspace-hint` vaut `no` par défaut chez mpv, et c'est un choix
+ * assumé de leur part : pousser du PQ vers un compositeur qui ne l'attend pas
+ * donne n'importe quoi, donc la transmission est un opt-in.
+ *
+ * Conséquence, et c'est le défaut qu'on corrige ici : basculer l'écran en HDR
+ * SANS lever ce drapeau donne le pire des deux mondes. mpv continue de
+ * tone-mapper le PQ vers du SDR — c'est son comportement par défaut — pendant
+ * que Windows, lui, croit recevoir du HDR et applique son propre remappage
+ * SDR → HDR par-dessus. L'image ressort **délavée**, précisément le symptôme
+ * que `hdr.ts` décrit pour un écran laissé en HDR en permanence.
+ *
+ * Les deux réglages ne valent donc que JOINTS :
+ *
+ *  - écran SDR + drapeau levé  → signal PQ vers un écran qui ne sait pas le
+ *    lire : image quasi noire (mesuré, cf. `hdr.ts`) ;
+ *  - écran HDR + drapeau baissé → tone-mapping remappé par Windows : délavé ;
+ *  - écran HDR + drapeau levé  → transmission réelle. C'est le seul bon état.
+ *
+ * D'où l'appel systématiquement collé à `activerHdr()`, et jamais ailleurs.
+ *
+ * Sans effet si mpv n'est pas démarré : `setProperty` rend une erreur, il ne
+ * lève pas.
+ */
+function transmettreHdr(actif: boolean): void {
+  const err = setProperty("target-colorspace-hint", actif ? "yes" : "no");
+  if (err) console.info(`[tentacle] HDR : transmission ${actif ? "on" : "off"} — ${err}`);
+}
+
+/**
  * Bascule l'écran en HDR si, et seulement si, le contenu en a besoin.
  *
  * `pq` désigne HDR10 et Dolby Vision, `hlg` la diffusion. Tout le reste est du
@@ -86,8 +119,12 @@ function basculerSiHdr(): void {
   }
   // `video-reconfig` se répète (changement de piste, de résolution) : on ne
   // journalise qu'au changement, l'action restant idempotente.
+  //
+  // La transmission est réaffirmée à chaque passage, et pas seulement à la
+  // première : mpv reconfigure sa sortie sur cet évènement, et un drapeau posé
+  // avant que la sortie n'existe ne survit pas toujours à sa reconstruction.
   if (dernierGamma === gamma) {
-    activerHdr();
+    if (activerHdr()) transmettreHdr(true);
     return;
   }
   dernierGamma = gamma;
@@ -97,6 +134,9 @@ function basculerSiHdr(): void {
   // l'etat d'origine n'etait alors jamais posee, donc rien n'etait rendu.
   // `activerHdr` traite chaque cible separement et est idempotente.
   const ok = activerHdr();
+  // STRICTEMENT conditionnée à la réussite : transmettre du PQ à un écran
+  // resté en SDR donne une image quasi noire, bien pire que le tone-mapping.
+  if (ok) transmettreHdr(true);
   console.info(`[tentacle] HDR : contenu ${gamma} — bascule ${ok ? "ok" : "REFUSEE"}`);
 }
 
@@ -150,6 +190,11 @@ export function registerVideoCommands(registry: CommandRegistry): void {
       run: () => {
         video?.detach();
         video = null;
+        // La transmission est coupée AVANT `destroy()` — après, mpv n'est plus
+        // là pour l'entendre. Elle ne survit pas à l'instance de toute façon ;
+        // la couper ici garde l'invariant lisible : écran et drapeau bougent
+        // toujours ensemble.
+        transmettreHdr(false);
         destroy();
         dernierGamma = null;
         // L'écran est rendu tel qu'on l'a trouvé, systématiquement. Un écran
@@ -233,8 +278,14 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         console.info(`[tentacle] HDR : bascule automatique ${on ? "autorisee" : "refusee"}`);
         // Désactivée en cours de lecture, la préférence rend l'écran tout de
         // suite : l'utilisateur qui décoche s'attend à voir l'effet, pas à
-        // devoir arrêter le film.
-        if (!on) restaurerHdr();
+        // devoir arrêter le film. La transmission tombe AVANT l'écran — sinon
+        // le signal PQ arrive une fraction de seconde sur un écran redevenu
+        // SDR, et l'image passe par le noir.
+        if (!on) {
+          transmettreHdr(false);
+          restaurerHdr();
+          dernierGamma = null;
+        }
       },
     });
 }
@@ -247,5 +298,6 @@ export function registerVideoCommands(registry: CommandRegistry): void {
  * lien avec une application fermée.
  */
 export function restaurerEcran(): void {
+  transmettreHdr(false);
   restaurerHdr();
 }
