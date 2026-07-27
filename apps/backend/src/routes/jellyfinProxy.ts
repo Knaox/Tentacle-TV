@@ -16,6 +16,7 @@ import {
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { buildPlaystateRewrite, type PlaystateRewrite } from "./jellyfinProxy/playstate";
+import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 
 /** Resolve how to forward a request to Jellyfin :
  *  - Anonymous / native token → no override, pass-through whatever client sent.
@@ -298,7 +299,21 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // future hits can reply from cache. Media/error routes: stream as-is.
       if (cacheTtl !== null && !isMediaResponse && response.status < 400) {
         const arrayBuf = await response.arrayBuffer();
-        const buf = Buffer.from(arrayBuf);
+        // FILET. Ces corps sont déjà en mémoire : les relire ne coûte rien, et
+        // aucune route de catalogue n'est censée porter la clé admin. Si l'une
+        // s'y met un jour, elle est nettoyée ici et la trace le dit — plutôt que
+        // de fuir en silence jusqu'au prochain audit. Le cache est clé PAR
+        // JETON, donc y ranger un corps portant le jeton du demandeur est
+        // cohérent : personne d'autre ne le relira.
+        const brut = Buffer.from(arrayBuf).toString("utf8");
+        const { corps, remplacements } = scrubAdminKey(brut, getJellyfinApiKey(), incomingToken);
+        if (remplacements > 0) {
+          request.log.warn(
+            { path: wildcardPath, remplacements },
+            "cle admin retiree d'une reponse mise en cache",
+          );
+        }
+        const buf = remplacements > 0 ? Buffer.from(corps, "utf8") : Buffer.from(arrayBuf);
         const contentType = response.headers.get("content-type") ?? "application/json";
         setCached(wildcardPath, queryString, incomingToken, buf, contentType, response.status, cacheTtl);
         reply.header("x-tentacle-cache", "MISS");
@@ -317,6 +332,33 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         reply.removeHeader("content-length");
         reply.header("content-length", Buffer.byteLength(rewritten));
         return reply.send(rewritten);
+      }
+
+      // PlaybackInfo : la SEULE réponse qui fabrique une URL de lecture, et donc
+      // la seule où Jellyfin recopie la clé d'administration qu'on vient de lui
+      // présenter. Bufferisée (quelques kilo-octets) et nettoyée avant d'être
+      // rendue — sans quoi la clé admin arrive dans le navigateur de chaque
+      // utilisateur, en clair dans l'URL de la vidéo. cf. scrubAdminKey.ts.
+      if (porteUneUrlDeLecture(wildcardPath) && response.status < 400) {
+        const text = await response.text();
+        const { corps, remplacements } = scrubAdminKey(
+          text,
+          getJellyfinApiKey(),
+          incomingToken,
+        );
+        if (remplacements > 0) {
+          // Le NOMBRE, jamais la valeur. Cette trace dit si un autre chemin se
+          // met un jour à recopier la clé — c'est le seul moyen de l'apprendre
+          // autrement que par un utilisateur.
+          request.log.warn(
+            { path: wildcardPath, remplacements },
+            "cle admin retiree d'une reponse",
+          );
+        }
+        reply.removeHeader("content-encoding");
+        reply.removeHeader("content-length");
+        reply.header("content-length", Buffer.byteLength(corps));
+        return reply.send(corps);
       }
 
       const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
