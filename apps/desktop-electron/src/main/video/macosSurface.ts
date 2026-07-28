@@ -24,16 +24,13 @@
 
 import type { BrowserWindow } from "electron";
 import { sansFaillir, trace } from "./native";
+import { NSWindowBelow, depuisHandle, msg, type Rect } from "./objc";
 import {
-  NSWindowBelow,
-  depuisHandle,
   fenetresApp,
-  msg,
   numeroFenetre,
   numerosFenetres,
   trouverFenetreNeuve,
-  type Rect,
-} from "./objc";
+} from "./objcFenetres";
 import type { VideoSurface } from "./surface";
 
 /** Cadence du sondage, et nombre maximal de tentatives (10 s en tout). */

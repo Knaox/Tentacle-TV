@@ -50,6 +50,10 @@ const send1u = objc.func("objc_msgSend", "void*", ["void*", "void*", "unsigned l
 const send1flag = objc.func("objc_msgSend", "void", ["void*", "void*", "bool"]);
 /** `[parent addChildWindow: enfant ordered: mode]`. */
 const send2io = objc.func("objc_msgSend", "void", ["void*", "void*", "void*", "long"]);
+/** `[vue addSubview: sous-vue positioned: ordre relativeTo: autre]`. */
+const send3 = objc.func("objc_msgSend", "void", ["void*", "void*", "void*", "long", "void*"]);
+/** `[cible sélecteur: entier non signé]` — un masque de redimensionnement. */
+const send1ul = objc.func("objc_msgSend", "void", ["void*", "void*", "unsigned long"]);
 
 /**
  * `NSRect` — quatre CGFloat.
@@ -76,6 +80,8 @@ export interface Rect {
 const send0r = objc.func("objc_msgSend", "NSRect", ["void*", "void*"]);
 /** `[cible sélecteur: rect]` — argument NSRect, retour NSRect. */
 const send1r = objc.func("objc_msgSend", "NSRect", ["void*", "void*", "NSRect"]);
+/** `[vue setFrame: rect]` — une VUE, qui n'a pas le `display:` d'une fenêtre. */
+const send1rv = objc.func("objc_msgSend", "void", ["void*", "void*", "NSRect"]);
 /** `[cible setFrame: rect display: drapeau]`. */
 const sendFrame = objc.func("objc_msgSend", "void", ["void*", "void*", "NSRect", "bool"]);
 
@@ -99,6 +105,26 @@ export function sel(nom: string): unknown {
 
 /** Ordre d'empilement de `addChildWindow:ordered:` — sous le parent. */
 export const NSWindowBelow = -1;
+
+/**
+ * Déclare une forme d'appel d'`objc_msgSend` que ce module ne connaît pas.
+ *
+ * ⚠️ L'ABI variadique de C n'étant pas devinable, il faut UNE signature par
+ * forme d'appel. Les formes courantes vivent ici ; celles qui ne servent qu'à un
+ * seul appelant — créer un format de pixels, initialiser une vue OpenGL — se
+ * déclarent chez lui, plutôt que d'allonger ce fichier d'un cas par usage.
+ *
+ * L'appelant est responsable de la justesse des types : une erreur ici ne
+ * produit pas une exception mais un plantage du processus.
+ */
+export function signature(
+  retour: string,
+  args: readonly string[],
+): (...appel: readonly unknown[]) => unknown {
+  return objc.func("objc_msgSend", retour, [...args]) as (
+    ...appel: readonly unknown[]
+  ) => unknown;
+}
 
 export const msg = {
   /** `[cible nom]` — objet. */
@@ -151,6 +177,38 @@ export const msg = {
     if (!parent || !enfant) return;
     send1(parent, sel("removeChildWindow:"), enfant);
   },
+  /**
+   * `[hôte addSubview: vue positioned: ordre relativeTo: nil]`.
+   *
+   * C'est ce qui fait vivre la vue vidéo DANS la fenêtre d'Electron plutôt
+   * qu'en travers d'une seconde fenêtre — voir `macosVueGl.ts`.
+   */
+  addSubview(hote: unknown, vue: unknown, ordre: number, relatif: unknown = null): void {
+    if (!hote || !vue) return;
+    // `relativeTo: nil` avec `NSWindowBelow` signifie « sous TOUTES les
+    // sous-vues » — le repli sûr quand on ne reconnaît pas celle qu'on vise.
+    send3(hote, sel("addSubview:positioned:relativeTo:"), vue, ordre, relatif ?? null);
+  },
+  /** `[vue removeFromSuperview]`. */
+  removeFromSuperview(vue: unknown): void {
+    if (!vue) return;
+    send0(vue, sel("removeFromSuperview"));
+  },
+  /** `[vue setFrame: rect]` — sans le `display:` d'une fenêtre. */
+  setFrameVue(vue: unknown, cadre: Rect): void {
+    if (!vue) return;
+    send1rv(vue, sel("setFrame:"), cadre);
+  },
+  /** `[vue setAutoresizingMask: masque]`. */
+  setAutoresizingMask(vue: unknown, masque: number): void {
+    if (!vue) return;
+    send1ul(vue, sel("setAutoresizingMask:"), masque);
+  },
+  /** `[fenêtre orderOut: nil]` — la retire de l'écran sans la détruire. */
+  orderOut(fenetre: unknown): void {
+    if (!fenetre) return;
+    send1(fenetre, sel("orderOut:"), null);
+  },
   /** `[cible nom]` — NSRect. */
   rect(cible: unknown, nom: string): Rect {
     if (!cible) return { x: 0, y: 0, width: 0, height: 0 };
@@ -161,107 +219,25 @@ export const msg = {
     if (!fenetre) return cadre;
     return send1r(fenetre, sel("contentRectForFrameRect:"), cadre) as Rect;
   },
+  /**
+   * `[fenêtre convertRectToScreen: rect]` — d'un rectangle de la fenêtre vers
+   * les coordonnées de l'écran.
+   *
+   * C'est ce qui permet de viser la VUE DE CONTENU plutôt que de déduire sa
+   * position d'un style de fenêtre : la vue sait exactement ce qu'elle occupe,
+   * `contentRectForFrameRect:` ne fait que le calculer d'après la décoration
+   * déclarée — et les deux DIVERGENT sur une fenêtre transparente.
+   */
+  rectVersEcran(fenetre: unknown, local: Rect): Rect {
+    if (!fenetre) return local;
+    return send1r(fenetre, sel("convertRectToScreen:"), local) as Rect;
+  },
   /** `[fenêtre setFrame: cadre display: YES]`. */
   setFrame(fenetre: unknown, cadre: Rect): void {
     if (!fenetre) return;
     sendFrame(fenetre, sel("setFrame:display:"), cadre, true);
   },
 };
-
-/** Les fenêtres de l'application, avec leur nom de classe. */
-export function listerFenetres(): Array<[unknown, string]> {
-  const nsApp = cls("NSApplication");
-  if (!nsApp) return [];
-  const application = msg.get(nsApp, "sharedApplication");
-  const fenetres = msg.get(application, "windows");
-  const n = msg.count(fenetres, "count");
-  const sortie: Array<[unknown, string]> = [];
-  for (let i = 0; i < n; i += 1) {
-    const f = msg.index(fenetres, "objectAtIndex:", i);
-    sortie.push([f, nomDeClasse(f)]);
-  }
-  return sortie;
-}
-
-/**
- * Les fenêtres de l'application, en une ligne de journal.
- *
- * Tranche une question qu'aucune propriété mpv ne résout : mpv a-t-il créé une
- * fenêtre dans NOTRE processus, ou pas du tout ? Les deux cas se corrigent de
- * façons opposées, et rien ne les distingue après coup.
- */
-export function fenetresApp(): string {
-  const noms = listerFenetres().map(([, nom]) => nom);
-  return `${noms.length} fenetre(s) : ${noms.join(", ")}`;
-}
-
-/**
- * La première fenêtre de l'application dont la classe porte `motif`.
- *
- * # Pourquoi on ne demande PAS à mpv
- *
- * mpv expose sa fenêtre dans la propriété `window-id`, et c'est la voie
- * naturelle. Elle est pourtant piégée : lire cette propriété interroge la sortie
- * vidéo, qui doit toucher sa `NSWindow` — donc passer par le thread principal.
- * Appelée DEPUIS ce même thread, la lecture attend un thread qui l'attend :
- * blocage parfait, sans un pourcent de processeur, sans message d'erreur, et
- * l'application paraît simplement inerte. Constaté deux fois en phase 1.
- *
- * AppKit, lui, répond sans rien demander à mpv.
- */
-export function trouverFenetre(motif: string): unknown {
-  for (const [fenetre, nom] of listerFenetres()) {
-    if (nom.includes(motif)) return fenetre;
-  }
-  return null;
-}
-
-/**
- * Numéro de fenêtre — l'identité stable d'une NSWindow.
- *
- * Deux pointeurs rendus par koffi pour la même fenêtre ne sont pas forcément le
- * même objet JavaScript : les comparer avec `===` ne prouve rien. `windowNumber`
- * est un entier attribué par le serveur de fenêtres, unique et comparable.
- */
-export function numeroFenetre(fenetre: unknown): number {
-  return msg.count(fenetre, "windowNumber");
-}
-
-/**
- * Les numéros des fenêtres dont la classe porte `motif`.
- *
- * ⚠️ Sert à distinguer une fenêtre NEUVE d'un vestige. Le cœur de mpv se
- * termine sur ses propres threads, APRÈS que la commande d'arrêt a rendu la
- * main : sa NSWindow survit donc quelques instants à la lecture. Au changement
- * d'épisode — le chemin le plus sollicité, le lecteur étant remonté à chaque
- * fois — une recherche naïve retrouve alors la fenêtre MORTE et lui cale la
- * vidéo dessus. Constaté au banc : trois `swift.Window` à la seconde lecture.
- */
-export function numerosFenetres(motif: string): Set<number> {
-  const vus = new Set<number>();
-  for (const [fenetre, nom] of listerFenetres()) {
-    if (nom.includes(motif)) vus.add(numeroFenetre(fenetre));
-  }
-  return vus;
-}
-
-/** La première fenêtre portant `motif` dont le numéro n'est PAS dans `exclus`. */
-export function trouverFenetreNeuve(motif: string, exclus: ReadonlySet<number>): unknown {
-  for (const [fenetre, nom] of listerFenetres()) {
-    if (nom.includes(motif) && !exclus.has(numeroFenetre(fenetre))) return fenetre;
-  }
-  return null;
-}
-
-/** Nom de classe d'un objet, pour le diagnostic. */
-export function nomDeClasse(objet: unknown): string {
-  if (!objet) return "(null)";
-  const nsstring = msg.get(objet, "className");
-  if (!nsstring) return "(inconnu)";
-  const utf8 = msg.get(nsstring, "UTF8String");
-  if (!utf8) return "(inconnu)";
-  return koffi.decode(utf8, "char", -1) as string;
-}
 
 /**
  * Convertit le tampon rendu par `getNativeWindowHandle()` en pointeur.
