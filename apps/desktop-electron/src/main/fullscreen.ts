@@ -32,7 +32,24 @@
  */
 
 import { screen, type BrowserWindow, type Rectangle } from "electron";
-import { nativeHandle, rendreLeCadre, retirerLeCadre } from "./video/win32";
+import { nativeHandle } from "./video/native";
+
+/**
+ * Tout ce qui précède décrit un contournement STRICTEMENT Windows.
+ *
+ * Sur macOS il n'a pas lieu d'être, et l'appliquer serait même nuisible. La
+ * vidéo n'y est pas posée sous la surface de Chromium mais portée par une
+ * NSWindow ENFANT (voir `macosSurface.ts`) : le plein écran natif n'a donc
+ * aucune transparence à préserver, et macOS déplace l'enfant avec son parent.
+ * On retrouve ainsi ce qu'un utilisateur Mac attend — espace dédié, animation
+ * système, Mission Control — que la parade Windows lui retirerait.
+ */
+const PARADE_WINDOWS = process.platform === "win32";
+
+/** Les appels Win32 de la parade, réclamés seulement là où ils existent. */
+function win32(): typeof import("./video/win32") {
+  return require("./video/win32") as typeof import("./video/win32");
+}
 
 /**
  * État d'avant le plein écran, à rendre tel quel. `null` = fenêtré.
@@ -51,7 +68,18 @@ import { nativeHandle, rendreLeCadre, retirerLeCadre } from "./video/win32";
  */
 let avant: { normales: Rectangle; style: bigint; maximisee: boolean } | null = null;
 
+/**
+ * La fenêtre servie en dernier, pour interroger macOS à la source.
+ *
+ * Sur macOS l'état n'est pas à nous : l'utilisateur peut entrer et sortir du
+ * plein écran par le bouton vert ou par Ctrl+Cmd+F, sans passer par nous. Une
+ * mémoire locale mentirait dès le premier de ces gestes ; on lit donc la
+ * fenêtre à chaque question.
+ */
+let hote: BrowserWindow | null = null;
+
 export function estEnPleinEcran(): boolean {
+  if (!PARADE_WINDOWS) return hote !== null && !hote.isDestroyed() && hote.isFullScreen();
   return avant !== null;
 }
 
@@ -80,6 +108,15 @@ export function estEnPleinEcran(): boolean {
  */
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
+
+  // macOS : le plein écran natif, sans détour. `avant` reste `null` — c'est la
+  // fenêtre elle-même qui porte l'état, et `estEnPleinEcran` le lui demande.
+  if (!PARADE_WINDOWS) {
+    hote = win;
+    win.setFullScreen(true);
+    return;
+  }
+
   const maximisee = win.isMaximized();
   // Capturés AVANT `unmaximize`, et pour deux usages distincts : `bounds` dit
   // où la fenêtre se trouve pour l'utilisateur, donc sur quel écran ouvrir ;
@@ -94,7 +131,7 @@ function entrer(win: BrowserWindow): void {
   if (maximisee) win.unmaximize();
 
   // 2. Retirer le cadre ensuite : posé avant, `unmaximize` le défait.
-  const style = retirerLeCadre(nativeHandle(win));
+  const style = win32().retirerLeCadre(nativeHandle(win));
   avant = { normales, style, maximisee };
 
   // 3. `setBounds` et NON `setContentBounds` : voir l'en-tête de la fonction.
@@ -113,10 +150,16 @@ function entrer(win: BrowserWindow): void {
 }
 
 function sortir(win: BrowserWindow): void {
+  if (!PARADE_WINDOWS) {
+    hote = win;
+    if (win.isFullScreen()) win.setFullScreen(false);
+    return;
+  }
+
   const memoire = avant;
   if (memoire === null) return;
   avant = null;
-  rendreLeCadre(nativeHandle(win), memoire.style);
+  win32().rendreLeCadre(nativeHandle(win), memoire.style);
   // La géométrie normale D'ABORD, agrandissement ensuite. C'est elle que
   // Windows retiendra comme taille de restauration ; la reposer seulement
   // quand la fenêtre était fenêtrée laisserait une fenêtre agrandie rendre la
@@ -127,6 +170,19 @@ function sortir(win: BrowserWindow): void {
 
 /** Bascule, et renvoie le nouvel état. */
 export function basculer(win: BrowserWindow): boolean {
+  // macOS : c'est la fenêtre qui sait où elle en est, `avant` restant toujours
+  // `null`. S'en remettre à lui ferait entrer en plein écran une fenêtre qui y
+  // est déjà, donc ne jamais en sortir.
+  if (!PARADE_WINDOWS) {
+    hote = win;
+    if (win.isFullScreen()) {
+      sortir(win);
+      return false;
+    }
+    entrer(win);
+    return true;
+  }
+
   if (avant === null) {
     entrer(win);
     return true;

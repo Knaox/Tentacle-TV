@@ -6,7 +6,7 @@
  * puis seulement la fenêtre.
  */
 
-import { app, BrowserWindow, Menu } from "electron";
+import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import {
   APP_ORIGIN,
@@ -35,6 +35,7 @@ import { registerShellCapabilities, registerShellCommands, rendreVeilleEcran } f
 import { registerUpdateCommands } from "./ipc/updates";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
+import { installerMenu } from "./menu";
 import { createMainWindow, getMainWindow } from "./window";
 
 /**
@@ -68,15 +69,9 @@ function main(): void {
   registerAppScheme();
 
   void app.whenReady().then(() => {
-    // Electron pose un menu applicatif par défaut — Fichier, Édition,
-    // Affichage, Fenêtre. L'app Tauri n'en a aucun, et il se voyait en haut de
-    // la fenêtre pendant la lecture. L'interface est intégralement en HTML :
-    // ce menu n'apporte rien et abîme le plein écran.
-    //
-    // Sous Windows, les raccourcis d'édition (copier, coller) restent traités
-    // nativement par le moteur de rendu dans les champs de saisie ; sur macOS
-    // ils dépendent du menu, il faudra donc en fournir un le jour venu.
-    if (process.platform !== "darwin") Menu.setApplicationMenu(null);
+    // Retiré sous Windows, fourni sur macOS — où l'absence de menu prive les
+    // champs de saisie de Cmd+C, Cmd+V et Cmd+A. Voir `menu.ts`.
+    installerMenu();
 
     denyAllPermissions();
     // Empreintes calculées sur le HTML réellement servi : le script inline

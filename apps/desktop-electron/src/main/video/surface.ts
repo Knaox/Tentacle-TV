@@ -34,12 +34,13 @@ export interface VideoSurface {
 }
 
 /**
- * Surface qui ne fait rien, pour les systèmes où mpv n'est pas encore embarqué.
+ * Surface qui ne fait rien, pour les systèmes sans embarquement.
  *
  * Elle existe pour que l'application DÉMARRE et se diagnostique là où la vidéo
  * n'est pas prête, plutôt que de tomber à la première commande. Le panneau de
  * diagnostic reste donc lisible sur un système en cours de portage — c'est
- * précisément là qu'on en a le plus besoin.
+ * précisément là qu'on en a le plus besoin. Linux tient encore sur Tauri ; le
+ * jour où il passera ici, c'est cette classe qu'il remplacera.
  */
 class SurfaceInerte implements VideoSurface {
   attach(): void {}
@@ -55,6 +56,10 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
   if (process.platform === "win32") {
     const { VideoWindow } = require("./videoWindow") as typeof import("./videoWindow");
     return new VideoWindow(host);
+  }
+  if (process.platform === "darwin") {
+    const { MacosSurface } = require("./macosSurface") as typeof import("./macosSurface");
+    return new MacosSurface(host);
   }
   return new SurfaceInerte();
 }

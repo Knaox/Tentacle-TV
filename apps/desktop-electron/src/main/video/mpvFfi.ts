@@ -18,10 +18,37 @@ import { app } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-/** Emplacement de la DLL, empaquetée ou en développement. */
+/** Nom du fichier de bibliothèque, selon le système. */
+const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib";
+
+/**
+ * Emplacement de la bibliothèque mpv, empaquetée ou en développement.
+ *
+ * # Le cas macOS, et pourquoi il ne peut pas viser le dépôt
+ *
+ * ⚠️ `src-tauri/lib/libmpv.2.dylib` est une **mpv 0.40**, et elle ne sait pas
+ * faire de HDR sur macOS : le contexte `macvk` s'y initialise bien, mais la
+ * plage étendue reste à 1.00 — le support n'est pas dans le binaire. Mesuré en
+ * phase 1. La 0.41 déposée à côté (`libmpv.dylib`) est orpheline : ses
+ * dépendances (FFmpeg 62.x, rubberband, libarchive) ne sont pas dans `lib/`,
+ * elle ne se charge pas.
+ *
+ * On vise donc Homebrew en développement — c'est ce que le proto a validé, et
+ * c'est déjà relié au chargeur Vulkan et à MoltenVK du système. **Assembler une
+ * chaîne 0.41 vendorée et signée est un chantier de packaging à part entière**,
+ * qui reste à faire avant toute livraison.
+ *
+ * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code.
+ */
 export function libmpvPath(): string {
-  const packaged = path.join(process.resourcesPath, "lib", "libmpv-2.dll");
+  const choisi = process.env["TENTACLE_MPV_LIB"];
+  if (choisi !== undefined && choisi !== "") return choisi;
+
+  const packaged = path.join(process.resourcesPath, "lib", NOM_LIB);
   if (app.isPackaged && existsSync(packaged)) return packaged;
+
+  if (process.platform !== "win32") return "/opt/homebrew/lib/libmpv.2.dylib";
+
   // En développement on emprunte la DLL déjà vendorée par l'app Tauri plutôt
   // que d'en dupliquer 95 Mo dans le dépôt.
   return path.resolve(__dirname, "../../../../desktop/src-tauri/lib/libmpv-2.dll");
@@ -90,9 +117,54 @@ export const MpvEventEndFile = koffi.struct("mpv_event_end_file", {
   error: "int",
 });
 
-const lib = koffi.load(libmpvPath());
+/**
+ * `mpv_event_log_message` : { const char* prefix; const char* level;
+ *                             const char* text; int log_level; }
+ *
+ * C'est par ce canal que passe la preuve du HDR sur macOS. mpv trace lui-même
+ * l'état de sa couche Metal — « Metal layer colorspace changed: ITUR_2100_PQ »
+ * puis « Metal layer HDR active ». Aucune sonde extérieure ne dit la même chose
+ * avec autant d'autorité : c'est le rendu qui parle, pas un tiers qui devine.
+ */
+export const MpvEventLogMessage = koffi.struct("mpv_event_log_message", {
+  prefix: "const char*",
+  level: "const char*",
+  text: "const char*",
+  log_level: "int",
+});
 
-export const mpv = {
+/** L'ensemble des fonctions de libmpv dont l'application se sert. */
+export type MpvApi = ReturnType<typeof lier>;
+
+/**
+ * Chargement PARESSEUX, et c'est délibéré.
+ *
+ * Charger la bibliothèque à l'import ferait tomber le processus principal quand
+ * elle manque — or c'est précisément la situation où l'on a besoin que
+ * l'application démarre : pour que le panneau de diagnostic puisse DIRE qu'elle
+ * manque. Une application muette qui refuse de s'ouvrir n'apprend rien à
+ * personne.
+ */
+let cache: MpvApi | null = null;
+
+/** La libmpv chargée. Lève si elle est introuvable — l'appelant décide. */
+export function mpvApi(): MpvApi {
+  if (cache === null) cache = lier(koffi.load(libmpvPath()));
+  return cache;
+}
+
+/** La bibliothèque est-elle chargeable ? Ne lève jamais. */
+export function libmpvDisponible(): boolean {
+  try {
+    mpvApi();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function lier(lib: ReturnType<typeof koffi.load>) {
+  return {
   create: lib.func("void* mpv_create()"),
   initialize: lib.func("int mpv_initialize(void* ctx)"),
   terminateDestroy: lib.func("void mpv_terminate_destroy(void* ctx)"),
@@ -125,14 +197,27 @@ export const mpv = {
   observeProperty: lib.func(
     "int mpv_observe_property(void* ctx, uint64 userdata, const char* name, int format)",
   ),
+  /**
+   * Libère NOTRE poignée, sans attendre l'arrêt du cœur.
+   *
+   * ⚠️ Indispensable sur macOS, où `terminateDestroy` fige l'application : elle
+   * n'y rend la main qu'une fois la sortie vidéo démontée, or ce démontage exige
+   * le thread principal — celui-là même qui appelle. Chacun attend l'autre.
+   * Ici le cœur se termine seul, sur ses propres threads, une fois son dernier
+   * client parti. Voir `mpvArret.ts`.
+   */
+  destroyClient: lib.func("void mpv_destroy(void* ctx)"),
+  /** Abonne le client aux messages de journal de mpv, par niveau. */
+  requestLogMessages: lib.func("int mpv_request_log_messages(void* ctx, const char* level)"),
   waitEvent: lib.func("void* mpv_wait_event(void* ctx, double timeout)"),
   free: lib.func("void mpv_free(void* data)"),
   errorString: lib.func("const char* mpv_error_string(int error)"),
   clientApiVersion: lib.func("unsigned long mpv_client_api_version()"),
-};
+  };
+}
 
 /** Message d'erreur mpv lisible, ou `null` si le code vaut succès. */
 export function mpvError(code: number): string | null {
   if (code >= 0) return null;
-  return `${code} (${mpv.errorString(code) as string})`;
+  return `${code} (${mpvApi().errorString(code) as string})`;
 }

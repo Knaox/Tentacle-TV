@@ -14,7 +14,7 @@ import {
   MpvEvent,
   MpvEventEndFile,
   MpvEventProperty,
-  mpv,
+  mpvApi,
   mpvError,
 } from "./mpvFfi";
 
@@ -54,16 +54,16 @@ export function isRunning(): boolean {
 /** Lit une propriété sous forme de chaîne. `null` si absente. */
 export function getProperty(name: string): string | null {
   if (!ctx) return null;
-  const ptr = mpv.getPropertyString(ctx, name) as unknown;
+  const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
   if (!ptr) return null;
   const value = koffi.decode(ptr, "char", -1) as string;
-  mpv.free(ptr);
+  mpvApi().free(ptr);
   return value;
 }
 
 export function setProperty(name: string, value: string): string | null {
   if (!ctx) return "mpv n'est pas demarre";
-  return mpvError(mpv.setPropertyString(ctx, name, value) as number);
+  return mpvError(mpvApi().setPropertyString(ctx, name, value) as number);
 }
 
 /** Exécute une commande mpv. Les arguments passent en tableau, jamais
@@ -104,7 +104,7 @@ export function command(args: readonly string[]): Promise<string | null> {
   prochaineCommande += 1;
   return new Promise<string | null>((resolve) => {
     enVol.set(id, resolve);
-    const envoi = mpvError(mpv.commandAsync(ctx, id, [...args, null]) as number);
+    const envoi = mpvError(mpvApi().commandAsync(ctx, id, [...args, null]) as number);
     // Refus à l'ENVOI (arguments invalides, file pleine) : aucune réponse ne
     // viendra jamais, la promesse ne doit pas rester en suspens.
     if (envoi !== null) {
@@ -143,7 +143,7 @@ function decodeProperty(format: number, data: unknown): unknown {
 function drain(sink: Sink): void {
   if (!ctx) return;
   for (;;) {
-    const ptr = mpv.waitEvent(ctx, 0) as unknown;
+    const ptr = mpvApi().waitEvent(ctx, 0) as unknown;
     if (!ptr) return;
     const ev = koffi.decode(ptr, MpvEvent) as {
       event_id: number;
@@ -214,18 +214,18 @@ const FORMAT_BY_NAME: Readonly<Record<string, number>> = {
 export function init(opts: InitOptions, sink: Sink): string | null {
   destroy();
 
-  const handle = mpv.create() as unknown;
+  const handle = mpvApi().create() as unknown;
   if (!handle) return "mpv_create a echoue";
   ctx = handle;
 
   for (const [k, v] of Object.entries(opts.options)) {
     // Une option inconnue du libmpv embarqué n'est jamais fatale : mpv la
     // signale et continue. On ne remonte donc pas ces erreurs.
-    mpv.setOptionString(ctx, k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
+    mpvApi().setOptionString(ctx, k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
   }
-  mpv.setOptionString(ctx, "wid", String(opts.wid));
+  mpvApi().setOptionString(ctx, "wid", String(opts.wid));
 
-  const err = mpvError(mpv.initialize(ctx) as number);
+  const err = mpvError(mpvApi().initialize(ctx) as number);
   if (err) {
     destroy();
     return `mpv_initialize : ${err}`;
@@ -235,7 +235,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
   opts.observed.forEach(([name, format], index) => {
     const id = index + 1;
     observedIds.set(id, name);
-    mpv.observeProperty(ctx, id, name, FORMAT_BY_NAME[format] ?? FORMAT.STRING);
+    mpvApi().observeProperty(ctx, id, name, FORMAT_BY_NAME[format] ?? FORMAT.STRING);
   });
 
   // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
@@ -247,7 +247,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 export function destroy(): void {
   if (pump !== null) clearInterval(pump);
   pump = null;
-  if (ctx) mpv.terminateDestroy(ctx);
+  if (ctx) mpvApi().terminateDestroy(ctx);
   ctx = null;
   observedIds = new Map();
   lastTimePos = 0;
