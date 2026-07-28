@@ -12,9 +12,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach } from "vitest";
+import type { EventName } from "../channels";
+import { DownloadEngine } from "./engine";
+import type { FetchBytes } from "./fetcher";
 import { ensureLayout, forgetRoot } from "./paths";
 import { integer } from "./rows";
-import type { ClaimSpec } from "./store";
+import { claimOrCreateFile, type ClaimSpec } from "./store";
+import type { TransferNet, TransferStream } from "./transferNet";
 
 const dossiers: string[] = [];
 
@@ -64,6 +68,108 @@ export function marquerVu(db: DatabaseSync, userId: string, itemId: string): voi
     `INSERT INTO playback_state (jellyfin_user_id, item_id, position_ticks, played, updated_at)
      VALUES (?, ?, 0, 1, 1)`,
   ).run(userId, itemId);
+}
+
+// ————————————————————————————————————————————————————————————————————————
+// Banc du moteur. Partagé par `engine.test.ts` et `engineActivity.test.ts` :
+// aucun des deux ne tient sous 300 lignes avec le banc en double.
+// ————————————————————————————————————————————————————————————————————————
+
+export const CREDS = { serverUrl: "https://tv.exemple", token: "jeton" };
+
+/** Le moteur ne demande jamais rien au vrai réseau dans ces tests. */
+const SANS_RESEAU: FetchBytes = async () => null;
+
+/** Réseau qui ne rend la main que quand on le lui dit. */
+export function reseauRetenu(): { net: TransferNet; ouverts: number; liberer: () => void } {
+  let debloquer: (() => void) | null = null;
+  const attente = new Promise<void>((resolve) => {
+    debloquer = resolve;
+  });
+  const etat = {
+    ouverts: 0,
+    net: {
+      async open(): Promise<TransferStream> {
+        etat.ouverts += 1;
+        return {
+          status: 200,
+          header: () => null,
+          chunks: (async function* () {
+            await attente;
+            yield new Uint8Array([1, 2, 3]);
+          })(),
+        };
+      },
+      async killTranscode() {
+        /* rien */
+      },
+    },
+    liberer: () => debloquer?.(),
+  };
+  return etat;
+}
+
+/** Réseau qui termine tout de suite avec le statut demandé. */
+export function reseauImmediat(status: number): TransferNet {
+  return {
+    async open(): Promise<TransferStream> {
+      return {
+        status,
+        header: () => null,
+        chunks: (async function* () {
+          if (status < 400) yield new Uint8Array([1, 2, 3]);
+        })(),
+      };
+    },
+    async killTranscode() {
+      /* rien */
+    },
+  };
+}
+
+/** Un moteur instrumenté : ses évènements et ses bascules d'activité. */
+export function moteur(
+  db: DatabaseSync,
+  root: string,
+  net: TransferNet,
+): { engine: DownloadEngine; evenements: EventName[]; bascules: boolean[] } {
+  const evenements: EventName[] = [];
+  const bascules: boolean[] = [];
+  const engine = new DownloadEngine({
+    db,
+    root: () => root,
+    net,
+    makeFetcher: () => SANS_RESEAU,
+    emit: (event) => evenements.push(event),
+    now: () => 1_000,
+    onBusy: (busy) => bascules.push(busy),
+  });
+  return { engine, evenements, bascules };
+}
+
+/** Racine jetable, avec les dossiers de `item1`, `item2` et `item3`. */
+export function racineTroisItems(): string {
+  const root = racinePreparee("tentacle-engine-");
+  for (const item of ["item1", "item2", "item3"]) {
+    mkdirSync(path.join(root, "media", item), { recursive: true });
+  }
+  return root;
+}
+
+/** Met un fichier en file, daté — l'ordre FIFO se joue sur `created_at`. */
+export function semer(db: DatabaseSync, itemId: string, at: number): number {
+  return claimOrCreateFile(
+    db,
+    spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv`, expectedSize: null, nowMs: at }),
+  ).fileId;
+}
+
+/** Pose un statut de pause directement, sans jouer de transfert. */
+export function poserPause(db: DatabaseSync, fileId: number, parUtilisateur: boolean): void {
+  db.prepare("UPDATE files SET status = 'paused', paused_by_user = ? WHERE id = ?").run(
+    parUtilisateur ? 1 : 0,
+    fileId,
+  );
 }
 
 // Les racines jetables partent à la fin de chaque test, et la racine mémorisée
