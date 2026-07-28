@@ -63,8 +63,16 @@ const TAURI_IDENTIFIER = "com.tentacle.media";
  */
 function routeDeDepart(): string {
   if (app.isPackaged) return "";
+  const parametres: string[] = [];
   const cible = process.env["TENTACLE_AUTOWATCH"];
-  return cible === undefined || cible === "" ? "" : `?autowatch=${encodeURIComponent(cible)}`;
+  if (cible !== undefined && cible !== "") {
+    parametres.push(`autowatch=${encodeURIComponent(cible)}`);
+  }
+  // `TENTACLE_DEBUG_PANEL=1` ouvre le panneau de diagnostic d'office : juger le
+  // rendu demande de relancer sans cesse, et le rouvrir à la main à chaque fois
+  // finit par décider de ce qu'on observe.
+  if (process.env["TENTACLE_DEBUG_PANEL"] === "1") parametres.push("debugpanel=1");
+  return parametres.length === 0 ? "" : `?${parametres.join("&")}`;
 }
 
 function useExistingUserData(): void {

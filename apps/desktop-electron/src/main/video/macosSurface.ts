@@ -73,6 +73,23 @@ export class MacosSurface implements VideoSurface {
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly suivre = (): void => this.planifierCalage();
 
+  /**
+   * Le plein écran ne se contente PAS d'un recalage.
+   *
+   * ⚠️ macOS déplace une fenêtre en plein écran dans un espace dédié, et la
+   * relation parent-enfant n'en sort pas indemne : la fenêtre de mpv y repasse
+   * DEVANT la nôtre. La vidéo reste visible — et l'overlay du lecteur disparaît
+   * entièrement, barre de progression comprise. Symptôme constaté.
+   *
+   * On réaffirme donc l'empilement à chaque transition, dans les deux sens.
+   */
+  private readonly transitionPleinEcran = (): void => {
+    this.reattacher();
+    // Et un recalage APRÈS, pour la géométrie : `enter-full-screen` peut
+    // précéder le dernier ajustement de macOS de quelques images.
+    this.planifierCalage();
+  };
+
   constructor(private readonly host: BrowserWindow) {
     this.parent = msg.get(depuisHandle(host.getNativeWindowHandle()), "window");
   }
@@ -93,8 +110,8 @@ export class MacosSurface implements VideoSurface {
     this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
-    this.host.on("enter-full-screen", this.suivre);
-    this.host.on("leave-full-screen", this.suivre);
+    this.host.on("enter-full-screen", this.transitionPleinEcran);
+    this.host.on("leave-full-screen", this.transitionPleinEcran);
 
     let essais = 0;
     this.recherche = setInterval(() => {
@@ -140,6 +157,21 @@ export class MacosSurface implements VideoSurface {
     msg.setFlag(this.mpvWindow, "setHasShadow:", false);
     msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
     this.align();
+  }
+
+  /**
+   * Réaffirme l'empilement : la vidéo sous la page, et rien d'autre entre.
+   *
+   * `addChildWindow:ordered:` est idempotent sur une fenêtre déjà fille du même
+   * parent — il se contente alors de la réordonner, ce qui est exactement ce
+   * qu'on veut. Sans effet tant que mpv n'a pas créé sa fenêtre.
+   */
+  private reattacher(): void {
+    if (this.mpvWindow === null) return;
+    sansFaillir("reattachement de la fenetre video", () => {
+      msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
+      this.align();
+    });
   }
 
   /**
@@ -233,8 +265,8 @@ export class MacosSurface implements VideoSurface {
     if (this.attache) {
       this.host.off("resize", this.suivre);
       this.host.off("move", this.suivre);
-      this.host.off("enter-full-screen", this.suivre);
-      this.host.off("leave-full-screen", this.suivre);
+      this.host.off("enter-full-screen", this.transitionPleinEcran);
+      this.host.off("leave-full-screen", this.transitionPleinEcran);
       this.attache = false;
     }
   }

@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { ombreSurVideo } from "../lib/ombreSurVideo";
 import { collecterDebug } from "./playerDebugData";
 import type { DebugSection } from "./playerDebugTypes";
 import { ACTIONS } from "./playerDebugActions";
@@ -32,8 +33,21 @@ function couleur(etat: boolean | null): string {
   return etat ? "text-emerald-400" : "text-rose-400";
 }
 
+/**
+ * Le panneau s'ouvre-t-il d'office ?
+ *
+ * `?debugpanel` dans l'adresse de départ — que la coquille Electron pose depuis
+ * `TENTACLE_DEBUG_PANEL`. Une session de mise au point du rendu demande de
+ * relancer l'application des dizaines de fois, et rouvrir le panneau à la main
+ * à chaque fois finit par décider de ce qu'on observe.
+ */
+function ouvertAuDemarrage(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).has("debugpanel");
+}
+
 export function PlayerDebugPanel() {
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert] = useState(ouvertAuDemarrage);
   const [sections, setSections] = useState<DebugSection[]>([]);
   const [retour, setRetour] = useState<string | null>(null);
   const { position, element, onPointerDown } = usePanelDrag({ x: 16, y: 16 });
@@ -90,7 +104,9 @@ export function PlayerDebugPanel() {
         top: position.y,
         // Opaque, franchement : voir l'en-tête du fichier.
         background: "#0a0a10",
-        boxShadow: "0 24px 64px -12px rgba(0,0,0,0.9)",
+        // Et pas d'ombre floue là où la surface a un canal alpha : elle y sort
+        // en aplat noir bien plus grand que le panneau. Voir `ombreSurVideo`.
+        boxShadow: ombreSurVideo("0 24px 64px -12px rgba(0,0,0,0.9)", "none"),
       }}
       className="fixed z-[9999] max-h-[88vh] w-[480px] cursor-move select-none overflow-y-auto rounded-lg p-3.5 font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/20"
     >

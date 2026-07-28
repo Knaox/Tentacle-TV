@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import { ombreSurVideo } from "../../lib/ombreSurVideo";
 
 interface UpNextCardProps {
   /**
@@ -70,7 +71,12 @@ export function UpNextCard({
         background: "var(--surface-modal)",
         border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-xl)",
-        boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb), 0.18), 0 0 32px rgba(var(--brand-rgb), 0.18)",
+        // Les deux flous partent là où la surface a un canal alpha : ils y
+        // sortent en aplat et masquent la vidéo. Voir `lib/ombreSurVideo.ts`.
+        boxShadow: ombreSurVideo(
+          "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb), 0.18), 0 0 32px rgba(var(--brand-rgb), 0.18)",
+          "0 0 0 1px rgba(var(--brand-rgb), 0.18)",
+        ),
       }}
     >
       {/* Barre de progression — seulement quand un décompte court. Sans lui

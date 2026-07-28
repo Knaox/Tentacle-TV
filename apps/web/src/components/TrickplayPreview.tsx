@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 import type { TrickplayInfo } from "@tentacle-tv/shared";
 import { formatDuration } from "./playerControls/utils";
+import { ombreSurVideo } from "../lib/ombreSurVideo";
 import type { TrickplayFrame } from "../hooks/useTrickplay";
 
 interface TrickplayPreviewProps {
@@ -108,8 +109,12 @@ function TrickplayPreviewImpl({
           style={{
             width: cardWidth,
             height: cardHeight,
-            boxShadow:
+            // Le flou disparaît là où la surface a un canal alpha : il y sort
+            // en aplat quasi opaque et masque la vidéo. Voir `ombreSurVideo`.
+            boxShadow: ombreSurVideo(
               "0 0 0 1px var(--text-disabled), 0 14px 40px -10px rgba(0,0,0,0.85), 0 4px 12px -2px rgba(0,0,0,0.6)",
+              "0 0 0 1px var(--text-disabled)",
+            ),
             backgroundImage: `url(${frame.url})`,
             backgroundRepeat: "no-repeat",
             backgroundSize: `${Math.round(info.Width * info.TileWidth * scale)}px ${Math.round(info.Height * info.TileHeight * scale)}px`,
@@ -149,8 +154,10 @@ function TrickplayPreviewImpl({
           className="flex items-center justify-center rounded-md bg-black/85 px-2.5"
           style={{
             height: TIMESTAMP_PILL_HEIGHT,
-            boxShadow:
+            boxShadow: ombreSurVideo(
               "0 0 0 1px rgba(255,255,255,0.18), 0 6px 16px -4px var(--surface-overlay)",
+              "0 0 0 1px rgba(255,255,255,0.18)",
+            ),
           }}
         >
           <span
@@ -178,6 +185,9 @@ function TrickplayPreviewImpl({
           style={{
             background: hasFrame ? "rgba(0,0,0,0.95)" : "rgba(0,0,0,0.85)",
             clipPath: "polygon(50% 100%, 0 0, 100% 0)",
+            // `drop-shadow` d'un pixel, sans flou : il se compose correctement
+            // même sur une surface à canal alpha, contrairement aux ombres
+            // floues ci-dessus.
             filter: "drop-shadow(0 1px 0 rgba(255,255,255,0.12))",
           }}
         />

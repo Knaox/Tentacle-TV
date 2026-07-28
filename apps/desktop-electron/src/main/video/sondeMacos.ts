@@ -25,6 +25,7 @@
 import { trace } from "./native";
 import { lireEdr } from "./macosEdr";
 import { capturerFenetre, type StatistiquesImage } from "./macosCapture";
+import { getProperty } from "./mpv";
 import type { VideoSurface } from "./surface";
 
 export interface SondeSurface {
@@ -93,6 +94,31 @@ export async function sonder(surface: VideoSurface | null): Promise<SondeSurface
 }
 
 /**
+ * La chaîne couleur, en une ligne — ce qui explique un EDR resté à 1,00.
+ *
+ * Trois causes, et elles se corrigent de trois façons opposées : le contenu
+ * n'est pas HDR (Jellyfin transcode, et la chaîne est détruite avant que mpv ne
+ * la voie), mpv tone-mappe vers du SDR, ou tout est bon et c'est le compositeur
+ * qui n'accorde rien. Sans ces valeurs, un EDR à 1,00 ne désigne rien.
+ */
+async function chaineCouleur(): Promise<string> {
+  const [gamma, prim, sortieGamma, sortiePrim, hwdec, vo, perdues] = await Promise.all([
+    getProperty("video-params/gamma"),
+    getProperty("video-params/primaries"),
+    getProperty("video-target-params/gamma"),
+    getProperty("video-target-params/primaries"),
+    getProperty("hwdec-current"),
+    getProperty("current-vo"),
+    getProperty("frame-drop-count"),
+  ]);
+  const ou = (v: string | null): string => v ?? "?";
+  return (
+    `contenu ${ou(gamma)}/${ou(prim)} → sortie ${ou(sortieGamma)}/${ou(sortiePrim)}` +
+    ` · ${ou(hwdec)} · ${ou(vo)} · ${ou(perdues)} perdue(s)`
+  );
+}
+
+/**
  * Le rapport tracé une fois par lecture, en développement.
  *
  * Sans lui, la sonde n'existerait que derrière un raccourci du panneau — donc
@@ -101,9 +127,10 @@ export async function sonder(surface: VideoSurface | null): Promise<SondeSurface
  * deuxième lecture calée sur une fenêtre morte. Le journal, lui, garde tout.
  */
 export async function tracerRapport(surface: VideoSurface | null): Promise<void> {
-  const s = await sonder(surface);
+  const [s, couleur] = await Promise.all([sonder(surface), chaineCouleur()]);
   const edr = `${s.edr.courant.toFixed(2)} / ${s.edr.potentiel.toFixed(2)}`;
   trace(`RAPPORT — ${s.verdict}`);
   trace(`RAPPORT — EDR ${edr}${s.edr.courant > 1.01 ? " (plage etendue ACCORDEE)" : ""}`);
+  trace(`RAPPORT — ${couleur}`);
   trace(`RAPPORT — fenetre ${String(s.numeroFenetre)} · ${s.geometrie}`);
 }

@@ -86,6 +86,16 @@ export const EVENT = {
   NONE: 0,
   SHUTDOWN: 1,
   LOG_MESSAGE: 2,
+  /**
+   * Réponse à `mpv_get_property_async` — même charge qu'un changement observé.
+   *
+   * ⚠️ TROIS, et pas vingt-six. Les identifiants d'évènement de `client.h` ne
+   * suivent pas l'ordre de la documentation, et se tromper ici ne casse rien
+   * visiblement : la réponse n'est simplement jamais reconnue, chaque lecture
+   * attend son échéance puis sert le souvenir. Le panneau de diagnostic
+   * affichait donc « décodage LOGICIEL » sur une lecture `videotoolbox`.
+   */
+  GET_PROPERTY_REPLY: 3,
   /** Réponse à `mpv_command_async` — porte le code d'erreur et l'identifiant. */
   COMMAND_REPLY: 5,
   START_FILE: 6,
@@ -99,8 +109,6 @@ export const EVENT = {
   PLAYBACK_RESTART: 21,
   PROPERTY_CHANGE: 22,
   QUEUE_OVERFLOW: 24,
-  /** Réponse à `mpv_get_property_async` — même charge qu'un changement. */
-  GET_PROPERTY_REPLY: 26,
 } as const;
 
 /** Nom d'évènement transmis à la page, aligné sur celui de l'app Tauri. */
