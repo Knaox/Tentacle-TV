@@ -53,19 +53,17 @@ export function setPlayerSurfaceTransparent(on: boolean): void {
   if (!win) return;
   win.setBackgroundColor(on ? "#00000000" : "#000000");
 
-  // ⚠️ macOS demande un geste de PLUS, et sans lui rien ne s'affiche.
+  // ⚠️ Sur macOS, ON NE TOUCHE PLUS à l'opacité de la NSWindow, et surtout pas
+  // avec `setOpaque:`.
   //
-  // Une `NSWindow` reste opaque tant que `setOpaque:` n'a pas été posé à `NO`,
-  // quoi que Chromium fasse de son fond. Or la vidéo y est portée par une
-  // fenêtre SŒUR placée en dessous : une fenêtre hôte opaque la masque
-  // entièrement, et l'on obtient le symptôme trompeur du son sans image.
+  // La fenêtre y naît `transparent: true` (voir `createMainWindow`) : Chromium
+  // possède alors sa propre notion de l'opacité de cette NSWindow et la pilote
+  // au fil de la composition. La lui changer sous les pieds en pleine lecture
+  // faisait TOMBER le processus de rendu — la fenêtre se figeait, le processus
+  // principal restant parfaitement vivant. Diagnostic : pile du thread principal
+  // dans sa boucle d'évènements normale, et plus un seul processus de rendu.
   //
-  // Chargé à la demande : `macosOpacite` remonte au runtime Objective-C, qui
-  // n'existe pas ailleurs.
-  if (process.platform === "darwin") {
-    const { rendreTransparent } = require("./video/macosOpacite") as typeof import("./video/macosOpacite");
-    rendreTransparent(win, on);
-  }
+  // `setBackgroundColor` seul suffit, et c'est la même ligne que sous Windows.
 }
 
 
