@@ -34,8 +34,15 @@
 import { screen, type BrowserWindow, type Rectangle } from "electron";
 import { nativeHandle, rendreLeCadre, retirerLeCadre } from "./video/win32";
 
-/** État d'avant le plein écran, à rendre tel quel. `null` = fenêtré. */
-let avant: { bounds: Rectangle; style: bigint } | null = null;
+/**
+ * État d'avant le plein écran, à rendre tel quel. `null` = fenêtré.
+ *
+ * `maximisee` est mémorisé à part : une fenêtre maximisée doit être rendue à
+ * son ÉTAT, pas à sa géométrie. Reposer ses seuls `bounds` donnerait une
+ * fenêtre qui a l'air maximisée sans l'être — bouton « restaurer » inversé,
+ * double-clic sur la barre de titre incohérent.
+ */
+let avant: { bounds: Rectangle; style: bigint; maximisee: boolean } | null = null;
 
 export function estEnPleinEcran(): boolean {
   return avant !== null;
@@ -48,11 +55,34 @@ export function estEnPleinEcran(): boolean {
  */
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
+  const maximisee = win.isMaximized();
   const bounds = win.getBounds();
   const style = retirerLeCadre(nativeHandle(win));
-  avant = { bounds, style };
+  avant = { bounds, style, maximisee };
+
+  // Une fenêtre MAXIMISÉE refuse d'être déplacée : Windows contraint
+  // `setBounds` à la zone de travail tant qu'elle est dans cet état, et la
+  // barre des tâches restait donc visible en plein écran. Mesuré : maximisée
+  // puis `setBounds(1920x1080)` rend `1920x1032` ; après `unmaximize`, `1080`.
+  //
+  // L'état est rendu en sortant — c'est `maximisee` qui le porte.
+  if (maximisee) win.unmaximize();
+
+  // `getDisplayMatching` et NON `getDisplayNearestPoint` : le second attend un
+  // POINT et ne lit donc que le coin supérieur gauche — or Windows fait
+  // déborder une fenêtre maximisée de quelques pixels, et ce coin tombe alors
+  // dans l'écran VOISIN. Mesuré sur un poste à trois écrans : fenêtre maximisée
+  // sur l'écran principal (0,0), `getBounds()` rend `x=-7 y=-7`, et l'écran
+  // placé à gauche commence à `x=-1152`. Le plein écran partait chez lui.
+  //
+  // `getDisplayMatching` prend le RECTANGLE et rend l'écran qui en couvre le
+  // plus — juste pour une fenêtre débordante comme pour une fenêtre à cheval.
+  //
+  // Calculé sur les bounds d'AVANT `unmaximize` : ce sont eux qui disent où la
+  // fenêtre se trouvait pour l'utilisateur.
+  //
   // `bounds` et non `workArea` : la barre des tâches doit être recouverte.
-  win.setBounds(screen.getDisplayNearestPoint(bounds).bounds);
+  win.setBounds(screen.getDisplayMatching(bounds).bounds);
 }
 
 function sortir(win: BrowserWindow): void {
@@ -60,7 +90,10 @@ function sortir(win: BrowserWindow): void {
   if (memoire === null) return;
   avant = null;
   rendreLeCadre(nativeHandle(win), memoire.style);
-  win.setBounds(memoire.bounds);
+  // Re-maximiser plutôt que reposer la géométrie : Windows connaît lui-même
+  // les bounds fenêtrés à rendre le jour où l'utilisateur restaurera.
+  if (memoire.maximisee) win.maximize();
+  else win.setBounds(memoire.bounds);
 }
 
 /** Bascule, et renvoie le nouvel état. */
