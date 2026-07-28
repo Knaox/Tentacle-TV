@@ -53,36 +53,48 @@ export function estEnPleinEcran(): boolean {
  * poserait la fenêtre à la taille de l'écran AVEC son cadre, et la zone client
  * serait alors trop petite — un liseré de bureau le temps d'une image.
  */
+/**
+ * L'ordre des trois gestes n'est pas négociable — chacun a été mesuré sur la
+ * ZONE CLIENT, la seule qui compte : c'est elle que `calerSous` donne à mpv
+ * (`GetClientRect`), donc elle qui décide si la vidéo a des bords noirs.
+ *
+ * Sur un écran 1920x1080 DIP, en partant d'une fenêtre agrandie :
+ *
+ *   cadre → unmaximize → setBounds          client 1908x1042  (manque 12x38)
+ *   unmaximize → cadre → setBounds          client 1920x1054  (manque  0x26)
+ *   unmaximize → cadre → setContentBounds   client 1920x1080  PLEINE
+ */
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
   const maximisee = win.isMaximized();
+  // Capturé AVANT `unmaximize` : c'est ce rectangle qui dit où la fenêtre se
+  // trouvait pour l'utilisateur, donc sur quel écran ouvrir.
   const bounds = win.getBounds();
+
+  // 1. Lever l'état maximisé D'ABORD. Windows contraint la géométrie tant
+  //    qu'il dure, et Chromium recalcule sa zone non-cliente avec les marges
+  //    de maximisation — d'où les 12 DIP de largeur perdus quand on le laisse.
+  //    L'état est rendu en sortant, c'est `maximisee` qui le porte.
+  if (maximisee) win.unmaximize();
+
+  // 2. Retirer le cadre ensuite : posé avant, `unmaximize` le défait.
   const style = retirerLeCadre(nativeHandle(win));
   avant = { bounds, style, maximisee };
 
-  // Une fenêtre MAXIMISÉE refuse d'être déplacée : Windows contraint
-  // `setBounds` à la zone de travail tant qu'elle est dans cet état, et la
-  // barre des tâches restait donc visible en plein écran. Mesuré : maximisée
-  // puis `setBounds(1920x1080)` rend `1920x1032` ; après `unmaximize`, `1080`.
+  // 3. `setContentBounds` et NON `setBounds` : le second dimensionne la FENÊTRE,
+  //    cadre compris, et Chromium garde une zone non-cliente résiduelle même
+  //    sans `WS_CAPTION` — 26 DIP de hauteur qui manquaient à la vidéo. Le
+  //    premier dimensionne la zone CLIENT, exactement ce que mpv reçoit.
   //
-  // L'état est rendu en sortant — c'est `maximisee` qui le porte.
-  if (maximisee) win.unmaximize();
-
   // `getDisplayMatching` et NON `getDisplayNearestPoint` : le second attend un
-  // POINT et ne lit donc que le coin supérieur gauche — or Windows fait
-  // déborder une fenêtre maximisée de quelques pixels, et ce coin tombe alors
-  // dans l'écran VOISIN. Mesuré sur un poste à trois écrans : fenêtre maximisée
-  // sur l'écran principal (0,0), `getBounds()` rend `x=-7 y=-7`, et l'écran
-  // placé à gauche commence à `x=-1152`. Le plein écran partait chez lui.
-  //
-  // `getDisplayMatching` prend le RECTANGLE et rend l'écran qui en couvre le
-  // plus — juste pour une fenêtre débordante comme pour une fenêtre à cheval.
-  //
-  // Calculé sur les bounds d'AVANT `unmaximize` : ce sont eux qui disent où la
-  // fenêtre se trouvait pour l'utilisateur.
+  // POINT et ne lit que le coin supérieur gauche — or Windows fait déborder une
+  // fenêtre agrandie de quelques pixels, et ce coin tombe alors dans l'écran
+  // VOISIN. Mesuré sur un poste à trois écrans : agrandie sur l'écran principal
+  // (0,0), `getBounds()` rend `x=-7 y=-7`, et l'écran de gauche commence à
+  // `x=-1152`. Le plein écran partait chez lui.
   //
   // `bounds` et non `workArea` : la barre des tâches doit être recouverte.
-  win.setBounds(screen.getDisplayMatching(bounds).bounds);
+  win.setContentBounds(screen.getDisplayMatching(bounds).bounds);
 }
 
 function sortir(win: BrowserWindow): void {
