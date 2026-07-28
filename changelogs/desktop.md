@@ -18,9 +18,13 @@ les notes Apple doivent rester génériques.
 ### FR
 - La vidéo en plein écran occupe enfin tout l'écran : plus de bandes noires sur les bords, ni de barre des tâches qui reste visible quand on part d'une fenêtre agrandie
 - Sur plusieurs écrans, le plein écran reste sur l'écran où se trouve la fenêtre au lieu de partir chez le voisin
+- Vos téléchargements continuent quand vous passez sur autre chose, et l'ordinateur ne s'endort plus au milieu d'un transfert. S'il s'endort quand même, ils repartent tout seuls au réveil
+- Fermer l'application pendant un téléchargement demande confirmation, au lieu de l'interrompre sans un mot
 ### EN
 - A video in fullscreen finally fills the whole screen: no more black bars around the edges, and no taskbar left showing when starting from a maximised window
 - With several displays, fullscreen stays on the screen the window is on instead of jumping to the neighbour
+- Your downloads keep going when you switch to something else, and the computer no longer falls asleep in the middle of a transfer. Should it sleep anyway, they resume on their own when it wakes
+- Closing the app during a download now asks for confirmation instead of cutting it off without a word
 
 ## [1.20.0]
 ### FR
