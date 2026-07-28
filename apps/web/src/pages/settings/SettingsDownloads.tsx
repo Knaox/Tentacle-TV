@@ -1,7 +1,7 @@
 /**
  * Réglages > Téléchargements (desktop uniquement, invisible sans droit ni
- * contenu). Emplacement de stockage : affiché partout, MODIFIABLE hors build
- * Mac App Store (sandbox sans entitlement fichiers — décision v1) et
+ * contenu). Emplacement de stockage : affiché partout, MODIFIABLE hors macOS
+ * (bac à sable Mac App Store, sans entitlement fichiers — décision v1) et
  * uniquement quand aucun téléchargement n'existe (pas de migration auto).
  */
 
@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { isDesktopApp } from "../../desktop/bridge";
+import { desktopPlatform, isDesktopApp } from "../../desktop/bridge";
 import { pickFolder } from "../../desktop/bridge";
 import { isAppStoreBuild } from "../../hooks/mpvRuntime";
 import { getDownloadsRoot, setDownloadsRoot } from "../../downloads/api";
@@ -33,7 +33,13 @@ export function SettingsDownloads() {
 
   if (!isDesktopApp() || !visible) return <Navigate to="/settings" replace />;
 
-  const canPickFolder = !isAppStoreBuild();
+  // ⚠️ macOS n'offre PAS le choix, quelle que soit la coquille : l'application
+  // y est distribuée par le Mac App Store, donc en bac à sable, et le dossier
+  // de téléchargement est celui que le système lui accorde. `isAppStoreBuild()`
+  // ne suffit pas — il est faux en développement, où le bouton apparaissait
+  // alors qu'il ne peut rien donner. L'emplacement reste AFFICHÉ, en lecture
+  // seule : le masquer laisserait l'utilisateur sans savoir où vont ses films.
+  const canPickFolder = !isAppStoreBuild() && desktopPlatform() !== "macos";
 
   const handleChange = async () => {
     if (busy) return;
@@ -62,7 +68,7 @@ export function SettingsDownloads() {
       <section className="rounded-xl border border-line-subtle bg-surface-1 p-4">
         <h3 className="text-sm font-semibold text-content-primary">{t("storageLocation")}</h3>
         <p className="mt-1 break-all text-xs text-content-tertiary">{root ?? "…"}</p>
-        {canPickFolder && (
+        {canPickFolder ? (
           <div className="mt-3">
             <button
               type="button"
@@ -76,6 +82,12 @@ export function SettingsDownloads() {
               {t("locationHint")}
             </p>
           </div>
+        ) : (
+          desktopPlatform() === "macos" && (
+            <p className="mt-2 text-[11px] leading-relaxed text-content-quaternary">
+              {t("locationFixedBySystem")}
+            </p>
+          )
         )}
       </section>
 

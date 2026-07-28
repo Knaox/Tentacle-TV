@@ -115,6 +115,8 @@ export default {
   changeLocation: "Change location…",
   locationHint:
     "Only changeable while no downloads are present. New downloads will go to the chosen folder.",
+  locationFixedBySystem:
+    "On macOS the location is set by the system and cannot be changed.",
   locationChanged: "Location updated.",
   locationLocked: "Not possible: downloads already exist. Delete them first.",
   locationNotWritable: "This folder is not writable.",

@@ -37,14 +37,42 @@ import { nativeHandle } from "./video/native";
 /**
  * Tout ce qui précède décrit un contournement STRICTEMENT Windows.
  *
- * Sur macOS il n'a pas lieu d'être, et l'appliquer serait même nuisible. La
- * vidéo n'y est pas posée sous la surface de Chromium mais portée par une
- * NSWindow ENFANT (voir `macosSurface.ts`) : le plein écran natif n'a donc
- * aucune transparence à préserver, et macOS déplace l'enfant avec son parent.
- * On retrouve ainsi ce qu'un utilisateur Mac attend — espace dédié, animation
- * système, Mission Control — que la parade Windows lui retirerait.
+ * macOS a le sien, pour une raison différente — voir `PLEIN_ECRAN_SIMPLE`.
  */
 const PARADE_WINDOWS = process.platform === "win32";
+
+/**
+ * Sur macOS : plein écran SIMPLE, jamais l'espace dédié.
+ *
+ * # Ce que le plein écran natif coûte ici
+ *
+ * ⚠️ `setFullScreen(true)` déplace la fenêtre dans un ESPACE dédié. La fenêtre
+ * vidéo de mpv l'y suit — elle est sa fille — mais l'ORDRE d'empilement n'y
+ * survit pas : elle repasse DEVANT et masque l'intégralité de l'overlay du
+ * lecteur. Plus de barre de progression, plus de contrôles, plus de bouton pour
+ * en sortir.
+ *
+ * Le diagnostic ne laisse aucune place au doute, relevé en plein écran :
+ *
+ *   cible=0,0 1512x949  video=0,0 1512x949  calee=oui  enfant=oui
+ *   visible=oui  niveaux=0/0  pleinEcran=oui
+ *
+ * Tout est en ordre — même niveau, même rectangle, relation intacte — et
+ * l'overlay est invisible. Réaffirmer `NSWindowBelow` n'y change rien, avant
+ * comme après l'animation : ce n'est pas la relation qui casse, c'est le
+ * changement d'espace qui réordonne.
+ *
+ * # Ce qu'on fait à la place
+ *
+ * `setSimpleFullScreen` est le plein écran d'avant Lion : la fenêtre couvre
+ * l'écran, la barre de menu et le Dock s'effacent, et il n'y a PAS de nouvel
+ * espace. Le montage reste donc exactement celui qui fonctionne en fenêtré.
+ *
+ * On perd l'animation système et Mission Control ; on garde un lecteur dont on
+ * peut sortir. Beaucoup de lecteurs font ce choix, et `entrer`/`sortir` sous
+ * Windows le font déjà pour une raison voisine.
+ */
+const PLEIN_ECRAN_SIMPLE = process.platform === "darwin";
 
 /** Les appels Win32 de la parade, réclamés seulement là où ils existent. */
 function win32(): typeof import("./video/win32") {
@@ -79,8 +107,13 @@ let avant: { normales: Rectangle; style: bigint; maximisee: boolean } | null = n
 let hote: BrowserWindow | null = null;
 
 export function estEnPleinEcran(): boolean {
-  if (!PARADE_WINDOWS) return hote !== null && !hote.isDestroyed() && hote.isFullScreen();
-  return avant !== null;
+  if (PARADE_WINDOWS) return avant !== null;
+  if (hote === null || hote.isDestroyed()) return false;
+  // Les DEUX sont interrogés sur macOS : `setSimpleFullScreen` est le nôtre,
+  // mais l'utilisateur peut encore entrer en plein écran natif par le bouton
+  // vert ou par Ctrl+Cmd+F, sans passer par nous. Ne lire que le premier
+  // laisserait l'interface en désaccord avec la fenêtre réelle.
+  return (PLEIN_ECRAN_SIMPLE && hote.isSimpleFullScreen()) || hote.isFullScreen();
 }
 
 /**
@@ -109,11 +142,12 @@ export function estEnPleinEcran(): boolean {
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
 
-  // macOS : le plein écran natif, sans détour. `avant` reste `null` — c'est la
-  // fenêtre elle-même qui porte l'état, et `estEnPleinEcran` le lui demande.
+  // macOS : plein écran SIMPLE, pour ne pas changer d'espace — voir
+  // `PLEIN_ECRAN_SIMPLE`. `avant` reste `null` : c'est la fenêtre elle-même qui
+  // porte l'état, et `estEnPleinEcran` le lui demande.
   if (!PARADE_WINDOWS) {
     hote = win;
-    win.setFullScreen(true);
+    win.setSimpleFullScreen(true);
     return;
   }
 
@@ -152,6 +186,10 @@ function entrer(win: BrowserWindow): void {
 function sortir(win: BrowserWindow): void {
   if (!PARADE_WINDOWS) {
     hote = win;
+    // Les deux, dans cet ordre : l'utilisateur a pu entrer en plein écran natif
+    // par le bouton vert. En sortir aussi, sinon la touche Échap du lecteur ne
+    // rendrait pas la main.
+    if (win.isSimpleFullScreen()) win.setSimpleFullScreen(false);
     if (win.isFullScreen()) win.setFullScreen(false);
     return;
   }
@@ -175,7 +213,7 @@ export function basculer(win: BrowserWindow): boolean {
   // est déjà, donc ne jamais en sortir.
   if (!PARADE_WINDOWS) {
     hote = win;
-    if (win.isFullScreen()) {
+    if (estEnPleinEcran()) {
       sortir(win);
       return false;
     }

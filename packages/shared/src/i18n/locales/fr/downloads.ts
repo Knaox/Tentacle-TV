@@ -115,6 +115,8 @@ export default {
   changeLocation: "Changer d'emplacement…",
   locationHint:
     "Modifiable uniquement quand aucun téléchargement n'est présent. Les nouveaux téléchargements iront dans le dossier choisi.",
+  locationFixedBySystem:
+    "Sur macOS, l'emplacement est fixé par le système et ne peut pas être modifié.",
   locationChanged: "Emplacement mis à jour.",
   locationLocked: "Impossible : des téléchargements existent déjà. Supprime-les d'abord.",
   locationNotWritable: "Ce dossier n'est pas accessible en écriture.",

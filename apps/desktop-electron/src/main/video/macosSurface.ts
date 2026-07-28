@@ -122,6 +122,9 @@ export class MacosSurface implements VideoSurface {
     this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
+    // Le lecteur emprunte le plein écran SIMPLE, qui n'émet aucun de ces deux
+    // évènements — il passe par `resize`. On les garde pour le plein écran
+    // NATIF, que l'utilisateur peut encore déclencher par le bouton vert.
     this.host.on("enter-full-screen", this.transitionPleinEcran);
     this.host.on("leave-full-screen", this.transitionPleinEcran);
 
@@ -282,7 +285,11 @@ export class MacosSurface implements VideoSurface {
       `cible=${fmt(cible)} video=${fmt(video)} calee=${colle ? "oui" : "NON"} ` +
       `electron fenetre=${b.width}x${b.height} page=${c.width}x${c.height} ` +
       `enfant=${enfant ? "oui" : "NON"} visible=${visible ? "oui" : "NON"} ` +
-      `niveaux=${niveaux} pleinEcran=${this.host.isFullScreen() ? "oui" : "non"}`
+      // Les deux formes : le lecteur emprunte le plein écran SIMPLE sur macOS
+      // (voir `fullscreen.ts`), que `isFullScreen()` ne rapporte pas.
+      `niveaux=${niveaux} pleinEcran=${
+        this.host.isFullScreen() ? "natif" : this.host.isSimpleFullScreen() ? "simple" : "non"
+      }`
     );
   }
 
