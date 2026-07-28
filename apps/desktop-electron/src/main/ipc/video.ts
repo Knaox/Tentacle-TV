@@ -180,10 +180,14 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     })
     .add("mpv_set_property", {
       schema: SET_PROPERTY,
-      run: ({ name, value }) => {
+      run: async ({ name, value }) => {
         const refus = refuserEcriture(name);
         if (refus !== null) throw new Error(refus);
-        const err = setProperty(
+        // `await` : sur macOS l'écriture passe par la file de commandes et
+        // attend sa réponse dans la file d'évènements, faute de quoi elle
+        // figerait le thread principal (voir `mpv.ts`). Sous Windows la
+        // promesse est déjà résolue.
+        const err = await setProperty(
           name,
           typeof value === "boolean" ? (value ? "yes" : "no") : String(value),
         );

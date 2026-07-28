@@ -93,9 +93,38 @@ export function getProperty(name: string): string | null {
   return value;
 }
 
-export function setProperty(name: string, value: string): string | null {
-  if (!ctx) return "mpv n'est pas demarre";
-  return mpvError(mpvApi().setPropertyString(ctx, name, value) as number);
+/**
+ * Écrit une propriété. Rend le motif de l'échec, ou `null`.
+ *
+ * # Sur macOS, on n'écrit pas non plus depuis ce thread
+ *
+ * ⚠️ `mpv_set_property_string` est le JUMEAU de la lecture ci-dessus, et il a
+ * coûté exactement aussi cher : elle prend `mp_dispatch_lock`, donc attend le
+ * cœur de mpv — lequel attend le thread principal pour créer sa `NSWindow`.
+ * Chacun attend l'autre, à zéro pourcent de processeur et sans une erreur.
+ *
+ * Le défaut se déclenchait à COUP SÛR, et avant même la première image : la page
+ * restaure le volume dès que le lecteur est prêt (`useMpvLifecycle`), puis pose
+ * `pause=false` en tête de `play()` — les deux partent avant `loadfile`. D'où le
+ * symptôme constaté pendant toute la phase 2 : chargement perpétuel, aucun
+ * évènement mpv, aucun rapport de plantage. Pile du thread principal relevée au
+ * `sample`, sans ambiguïté possible :
+ *
+ *   com.apple.main-thread → mpv_set_property_string → mpv_set_property
+ *                         → mp_dispatch_lock → _pthread_cond_wait
+ *
+ * `set` par la file de commandes fait rigoureusement la même chose — c'est la
+ * porte que `mpv_set_property_string` emprunte elle-même — mais sans attendre.
+ *
+ * Windows garde l'appel direct : sa fenêtre vidéo est une fenêtre enfant Win32
+ * sans couplage au thread principal, et rien n'y a jamais bloqué.
+ */
+export function setProperty(name: string, value: string): Promise<string | null> {
+  if (!ctx) return Promise.resolve("mpv n'est pas demarre");
+  if (process.platform !== "darwin") {
+    return Promise.resolve(mpvError(mpvApi().setPropertyString(ctx, name, value) as number));
+  }
+  return command(["set", name, value]);
 }
 
 /** Exécute une commande mpv. Les arguments passent en tableau, jamais

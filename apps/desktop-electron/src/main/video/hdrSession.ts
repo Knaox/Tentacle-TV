@@ -74,8 +74,12 @@ const NEGOCIE_AVEC_L_ECRAN = process.platform === "win32";
 
 function transmettre(actif: boolean): void {
   if (!NEGOCIE_AVEC_L_ECRAN) return;
-  const err = setProperty("target-colorspace-hint", actif ? "yes" : "no");
-  if (err) console.info(`[tentacle] HDR : transmission ${actif ? "on" : "off"} — ${err}`);
+  // L'écriture reste SYNCHRONE sous Windows — la promesse y est déjà réglée
+  // quand `setProperty` rend la main, seule la ligne de journal passe par un
+  // microtask. Rien de ce qui suit ne dépend de son issue.
+  void setProperty("target-colorspace-hint", actif ? "yes" : "no").then((err) => {
+    if (err) console.info(`[tentacle] HDR : transmission ${actif ? "on" : "off"} — ${err}`);
+  });
 }
 
 /**

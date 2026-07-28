@@ -73,7 +73,14 @@ export function arreter(videoPartie?: () => boolean): Promise<void> {
 
   // Étape 1 : démonter la sortie vidéo. `quit` n'est PAS envoyé ici — il
   // doublerait `stop` et ne laisserait pas au démontage le temps d'aboutir.
-  mpvApi().setPropertyString(ctx, "force-window", "no");
+  //
+  // ⚠️ `set` par la file de commandes, JAMAIS `mpv_set_property_string` : cette
+  // dernière prend `mp_dispatch_lock` et attend le cœur de mpv, qui attend le
+  // thread principal — celui qui appelle (voir `mpv.ts`). Et l'instant est le
+  // pire de tous : la sortie vidéo est encore debout, donc mpv a précisément
+  // besoin de ce thread. Les deux commandes partent dans l'ordre d'envoi, mpv
+  // les traite dans le même.
+  mpvApi().commandAsync(ctx, 0, ["set", "force-window", "no", null]);
   mpvApi().commandAsync(ctx, 0, ["stop", null]);
 
   return new Promise<void>((resolve) => {

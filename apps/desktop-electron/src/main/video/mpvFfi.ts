@@ -11,6 +11,24 @@
  *
  * Ce fichier ne contient QUE les signatures et les constantes. La logique vit
  * dans `mpv.ts`, pour que la surface C reste lisible d'un coup d'œil.
+ *
+ * # La règle macOS, en une phrase
+ *
+ * ⚠️ **Toute fonction de libmpv qui prend `mp_dispatch_lock` est INTERDITE au
+ * thread principal sur macOS.** Elle y attend le cœur de mpv, lequel attend ce
+ * même thread pour toucher sa `NSWindow` : chacun attend l'autre, à zéro
+ * pourcent de processeur, sans erreur et sans rapport de plantage. Le défaut a
+ * été rencontré quatre fois sous quatre visages différents.
+ *
+ * Interdites : `mpv_command`, `mpv_get_property_string`, `mpv_set_property_string`,
+ * `mpv_terminate_destroy`.
+ *
+ * Autorisées : `mpv_create`, `mpv_set_option_string` (avant `mpv_initialize`,
+ * où aucun cœur ne tourne encore), `mpv_wait_event` à échéance nulle, toutes les
+ * `*_async`, et `mpv_destroy` au seul instant du `shutdown`.
+ *
+ * Windows n'est concerné par rien de tout cela : sa fenêtre vidéo est une
+ * fenêtre enfant Win32 sans couplage au thread principal.
  */
 
 import koffi from "koffi";
@@ -171,6 +189,11 @@ function lier(lib: ReturnType<typeof koffi.load>) {
   setOptionString: lib.func(
     "int mpv_set_option_string(void* ctx, const char* name, const char* data)",
   ),
+  /**
+   * ⚠️ BLOQUANTE : elle prend `mp_dispatch_lock` et ne rend la main qu'une fois
+   * la propriété appliquée par le cœur. Réservée à Windows — sur macOS
+   * `mpv.ts` passe par `set` dans la file de commandes.
+   */
   setPropertyString: lib.func(
     "int mpv_set_property_string(void* ctx, const char* name, const char* data)",
   ),
