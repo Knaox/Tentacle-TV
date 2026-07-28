@@ -68,76 +68,91 @@ function main(): void {
   useExistingUserData();
   registerAppScheme();
 
-  void app.whenReady().then(() => {
-    // Retiré sous Windows, fourni sur macOS — où l'absence de menu prive les
-    // champs de saisie de Cmd+C, Cmd+V et Cmd+A. Voir `menu.ts`.
-    installerMenu();
+  // ⚠️ Le `.catch` n'est pas une précaution de style.
+  //
+  // Sans lui, une exception levée dans ce bloc part en rejet non traité que
+  // rien n'affiche : l'application reste vivante, sa boucle d'évènements tourne
+  // normalement — et elle n'a AUCUNE fenêtre. Pas de message, pas de plantage,
+  // rien à quoi se raccrocher. Constaté sur macOS : trois processus debout, zéro
+  // processus de rendu, un journal vide. Le diagnostic a demandé un
+  // échantillonnage de pile pour établir ce qu'une ligne aurait dit.
+  void app
+    .whenReady()
+    .then(() => {
+      // Retiré sous Windows, fourni sur macOS — où l'absence de menu prive les
+      // champs de saisie de Cmd+C, Cmd+V et Cmd+A. Voir `menu.ts`.
+      installerMenu();
 
-    denyAllPermissions();
-    // Empreintes calculées sur le HTML réellement servi : le script inline
-    // qui pose le thème avant le premier paint reste autorisé, sans ouvrir
-    // `unsafe-inline` à tout le reste.
-    const hashes = hashesFromFile(path.join(webRoot(), "index.html"));
-    const pluginOrigin = `${APP_SCHEME}://${PLUGIN_HOST}`;
-    const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, LOCAL_ORIGIN, hashes);
-    const pluginCsp = buildPluginCsp(APP_ORIGIN);
+      denyAllPermissions();
+      // Empreintes calculées sur le HTML réellement servi : le script inline
+      // qui pose le thème avant le premier paint reste autorisé, sans ouvrir
+      // `unsafe-inline` à tout le reste.
+      const hashes = hashesFromFile(path.join(webRoot(), "index.html"));
+      const pluginOrigin = `${APP_SCHEME}://${PLUGIN_HOST}`;
+      const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, LOCAL_ORIGIN, hashes);
+      const pluginCsp = buildPluginCsp(APP_ORIGIN);
 
-    // Une politique par origine. Le serveur Jellyfin de l'utilisateur n'est pas
-    // à nous : on ne réécrit pas ses en-têtes.
-    installContentSecurityPolicy((url) => {
-      if (!url.startsWith(`${APP_SCHEME}://`)) return null;
-      return url.startsWith(`${pluginOrigin}/`) ? pluginCsp : appCsp;
+      // Une politique par origine. Le serveur Jellyfin de l'utilisateur n'est pas
+      // à nous : on ne réécrit pas ses en-têtes.
+      installContentSecurityPolicy((url) => {
+        if (!url.startsWith(`${APP_SCHEME}://`)) return null;
+        return url.startsWith(`${pluginOrigin}/`) ? pluginCsp : appCsp;
+      });
+      serveApp();
+
+      // Branché AVANT la fenêtre : le preload de la première page réclame le
+      // dump de migration dès sa création, en synchrone. Un canal absent à cet
+      // instant, et l'utilisateur démarre déconnecté.
+      registerMigrationBridge();
+
+      const registry = new CommandRegistry();
+      registerShellCommands(registry);
+      registerJellyfinCommands(registry);
+      registerMediaKeyCommands(registry);
+      registerPluginCommands(registry);
+      registerSessionCommands(registry);
+      registerUpdateCommands(registry);
+      registerVideoCommands(registry);
+      // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
+      // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
+      // qu'elle répond, toute la section réapparaît et appelle les autres.
+      registerDownloadsStorageCommands(registry);
+      registerDownloadsPlaybackCommands(registry);
+      registerDownloadsEngineCommands(registry);
+      registry.install();
+      registerShellCapabilities();
+
+      // Trace de migration : les commandes encore absentes seront livrées par
+      // les phases suivantes (lecteur, telechargements, mises a jour).
+      const missing = registry.missing(COMMANDS);
+      if (missing.length > 0) {
+        console.info(`[tentacle] ${missing.length} commandes restent a implementer`);
+      }
+
+      // La page reçoit la liste de ce qui EST branché, pas de ce qui manque :
+      // elle n'a ainsi rien à savoir de la migration, seulement à demander
+      // « sais-tu télécharger ? » avant d'afficher le bouton.
+      const capabilities = registry.implemented();
+
+      // La garde de sortie est posée à la fabrication, jamais après : entre les
+      // deux, un Alt+F4 emporterait un téléchargement sans un mot.
+      const ouvrir = (): void => {
+        const fenetre = createMainWindow(capabilities);
+        installerGardeSortie(fenetre, transfertsEnCours, demanderNatif(fenetre));
+        void fenetre.loadURL(`${APP_ORIGIN}/`);
+      };
+
+      ouvrir();
+
+      app.on("activate", () => {
+        if (BrowserWindow.getAllWindows().length === 0) ouvrir();
+      });
+    })
+    .catch((erreur: unknown) => {
+      console.error(`[tentacle] demarrage impossible : ${String(erreur)}`);
+      if (erreur instanceof Error && erreur.stack !== undefined) console.error(erreur.stack);
+      app.quit();
     });
-    serveApp();
-
-    // Branché AVANT la fenêtre : le preload de la première page réclame le
-    // dump de migration dès sa création, en synchrone. Un canal absent à cet
-    // instant, et l'utilisateur démarre déconnecté.
-    registerMigrationBridge();
-
-    const registry = new CommandRegistry();
-    registerShellCommands(registry);
-    registerJellyfinCommands(registry);
-    registerMediaKeyCommands(registry);
-    registerPluginCommands(registry);
-    registerSessionCommands(registry);
-    registerUpdateCommands(registry);
-    registerVideoCommands(registry);
-    // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
-    // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
-    // qu'elle répond, toute la section réapparaît et appelle les autres.
-    registerDownloadsStorageCommands(registry);
-    registerDownloadsPlaybackCommands(registry);
-    registerDownloadsEngineCommands(registry);
-    registry.install();
-    registerShellCapabilities();
-
-    // Trace de migration : les commandes encore absentes seront livrées par
-    // les phases suivantes (lecteur, telechargements, mises a jour).
-    const missing = registry.missing(COMMANDS);
-    if (missing.length > 0) {
-      console.info(`[tentacle] ${missing.length} commandes restent a implementer`);
-    }
-
-    // La page reçoit la liste de ce qui EST branché, pas de ce qui manque :
-    // elle n'a ainsi rien à savoir de la migration, seulement à demander
-    // « sais-tu télécharger ? » avant d'afficher le bouton.
-    const capabilities = registry.implemented();
-
-    // La garde de sortie est posée à la fabrication, jamais après : entre les
-    // deux, un Alt+F4 emporterait un téléchargement sans un mot.
-    const ouvrir = (): void => {
-      const fenetre = createMainWindow(capabilities);
-      installerGardeSortie(fenetre, transfertsEnCours, demanderNatif(fenetre));
-      void fenetre.loadURL(`${APP_ORIGIN}/`);
-    };
-
-    ouvrir();
-
-    app.on("activate", () => {
-      if (BrowserWindow.getAllWindows().length === 0) ouvrir();
-    });
-  });
 
   // Filet de sécurité : l'écran est rendu à son état d'origine même si la
   // fermeture court-circuite `mpv_destroy`. La base est refermée dans la
