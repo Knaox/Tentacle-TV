@@ -179,8 +179,12 @@ export function App() {
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}
-      {/* Reprise auto de la dernière lecture (dev only, URL ?autowatch=1) */}
-      {import.meta.env.DEV && <AutoWatchHarness />}
+      {/* Reprise auto d'une lecture (dev only, URL ?autowatch=<itemId>).
+          `__PLAYER_DEBUG__` aussi : la coquille Electron sert un build Vite de
+          PRODUCTION même en développement, où `import.meta.env.DEV` est faux —
+          sans cette porte, l'outil n'existait sur aucune des deux coquilles de
+          bureau, celles-là mêmes pour lesquelles il a été écrit. */}
+      {(import.meta.env.DEV || __PLAYER_DEBUG__) && <AutoWatchHarness />}
       {/* Compteur d'images (dev only) — éliminé du build de production. */}
       {import.meta.env.DEV && frameMeterEnabled() && <FrameMeter />}
       <Suspense fallback={<PageSpinner />}>

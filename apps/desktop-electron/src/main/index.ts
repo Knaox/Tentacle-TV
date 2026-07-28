@@ -47,6 +47,25 @@ import { createMainWindow, getMainWindow } from "./window";
  */
 const TAURI_IDENTIFIER = "com.tentacle.media";
 
+/**
+ * Ce qu'on ajoute à l'adresse de départ. Vide, sauf en mise au point.
+ *
+ * `TENTACLE_AUTOWATCH=<itemId>` fait démarrer l'application directement sur la
+ * lecture de ce média. C'est l'outil qui rend une session de debug du lecteur
+ * reproductible : juger le HDR ou le calage de la fenêtre demande de relancer
+ * l'application des dizaines de fois, et refaire le parcours à la souris à
+ * chaque essai finissait par décider de ce qu'on testait.
+ *
+ * ⚠️ Jamais dans un paquet livré : la reprise vit dans `dev/autoWatch.tsx`, que
+ * le build de production n'embarque pas — le paramètre n'y serait qu'une
+ * curiosité dans la barre d'adresse.
+ */
+function routeDeDepart(): string {
+  if (app.isPackaged) return "";
+  const cible = process.env["TENTACLE_AUTOWATCH"];
+  return cible === undefined || cible === "" ? "" : `?autowatch=${encodeURIComponent(cible)}`;
+}
+
 function useExistingUserData(): void {
   // Sous MSIX, %APPDATA% est redirigé de façon transparente vers le conteneur
   // du paquet — le même dossier que celui de l'app Tauri. Rien à migrer.
@@ -139,7 +158,7 @@ function main(): void {
       const ouvrir = (): void => {
         const fenetre = createMainWindow(capabilities);
         installerGardeSortie(fenetre, transfertsEnCours, demanderNatif(fenetre));
-        void fenetre.loadURL(`${APP_ORIGIN}/`);
+        void fenetre.loadURL(`${APP_ORIGIN}/${routeDeDepart()}`);
       };
 
       ouvrir();
