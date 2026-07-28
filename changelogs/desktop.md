@@ -16,10 +16,10 @@ les notes Apple doivent rester génériques.
 
 ## [1.20.1]
 ### FR
-- Le plein écran d'une vidéo couvre de nouveau tout l'écran quand on l'ouvre depuis une fenêtre agrandie : la barre des tâches ne reste plus visible
+- La vidéo en plein écran occupe enfin tout l'écran : plus de bandes noires sur les bords, ni de barre des tâches qui reste visible quand on part d'une fenêtre agrandie
 - Sur plusieurs écrans, le plein écran reste sur l'écran où se trouve la fenêtre au lieu de partir chez le voisin
 ### EN
-- A video's fullscreen covers the whole screen again when started from a maximised window: the taskbar no longer stays visible
+- A video in fullscreen finally fills the whole screen: no more black bars around the edges, and no taskbar left showing when starting from a maximised window
 - With several displays, fullscreen stays on the screen the window is on instead of jumping to the neighbour
 
 ## [1.20.0]
