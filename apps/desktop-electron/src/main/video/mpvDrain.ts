@@ -20,6 +20,7 @@ import {
   mpvApi,
 } from "./mpvFfi";
 import { retenir } from "./mpvEtat";
+import { repondreLecture } from "./mpvLecture";
 import type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
 /** Ce que la vidange doit pouvoir faire remonter à `mpv.ts`. */
@@ -103,6 +104,21 @@ export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
     // n'en dit rien à la page — c'est l'appelant qui saura quoi en faire.
     if (id === EVENT.COMMAND_REPLY) {
       attaches.repondre(Number(ev.reply_userdata), ev.error);
+      continue;
+    }
+
+    // Réponse à une lecture asynchrone. Même charge utile qu'un changement de
+    // propriété, mais elle ne concerne QUE celui qui l'a demandée : rien n'en
+    // est retenu ni diffusé à la page.
+    if (id === EVENT.GET_PROPERTY_REPLY) {
+      const p = ev.data
+        ? (koffi.decode(ev.data, MpvEventProperty) as { format: number; data: unknown })
+        : null;
+      repondreLecture(
+        Number(ev.reply_userdata),
+        ev.error,
+        p === null ? null : decodeProperty(p.format, p.data),
+      );
       continue;
     }
 

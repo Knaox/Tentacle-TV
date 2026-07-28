@@ -8,7 +8,8 @@
 
 import koffi from "koffi";
 import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
-import { oublierEtat, valeurConnue } from "./mpvEtat";
+import { oublierEtat } from "./mpvEtat";
+import { lireAsync, oublierLectures } from "./mpvLecture";
 import { drain, oublierCadence, type Sink } from "./mpvDrain";
 export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
@@ -44,6 +45,7 @@ export function nettoyerEtat(): void {
   observedIds = new Map();
   oublierCadence();
   oublierEtat();
+  oublierLectures();
   for (const resolve of enVol.values()) resolve("instance mpv detruite");
   enVol.clear();
 }
@@ -64,7 +66,7 @@ export function poserAuShutdown(rappel: (() => void) | null): void {
 /**
  * Lit une propriété sous forme de chaîne. `null` si absente.
  *
- * # Sur macOS, on n'interroge PAS mpv — on se souvient
+ * # Sur macOS, on DEMANDE — mais on n'attend pas
  *
  * ⚠️ `mpv_get_property_string` est synchrone et prend le verrou du cœur de mpv.
  * Pour une propriété qui dépend de la sortie vidéo — `video-params/*`,
@@ -78,19 +80,18 @@ export function poserAuShutdown(rappel: (() => void) | null): void {
  * reconfigure sa sortie pendant qu'on l'interroge. C'est le défaut le plus cher
  * de la phase 1, rencontré deux fois.
  *
- * `mpv_observe_property` n'en souffre pas : les changements arrivent par la file
- * d'évènements, qu'on vide déjà. Sur macOS on sert donc ce qu'on a entendu, et
- * une propriété non observée rend `null` — mieux vaut un champ vide dans un
- * panneau qu'une application figée.
+ * `mpv_get_property_async` répond par la file d'évènements, qu'on vide déjà :
+ * on peut donc tout lire sans rien attendre. Voir `mpvLecture.ts`, qui garde le
+ * souvenir des propriétés observées en REPLI quand mpv ne répond pas.
  */
-export function getProperty(name: string): string | null {
-  if (!ctx) return null;
-  if (process.platform === "darwin") return valeurConnue(name);
+export function getProperty(name: string): Promise<string | null> {
+  if (!ctx) return Promise.resolve(null);
+  if (process.platform === "darwin") return lireAsync(ctx, name);
   const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
-  if (!ptr) return null;
+  if (!ptr) return Promise.resolve(null);
   const value = koffi.decode(ptr, "char", -1) as string;
   mpvApi().free(ptr);
-  return value;
+  return Promise.resolve(value);
 }
 
 /**
@@ -274,6 +275,7 @@ export function destroy(): void {
   observedIds = new Map();
   oublierCadence();
   oublierEtat();
+  oublierLectures();
 
   // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
   // commande laissée en suspens retiendrait pour toujours l'appelant — et donc

@@ -99,6 +99,8 @@ export const EVENT = {
   PLAYBACK_RESTART: 21,
   PROPERTY_CHANGE: 22,
   QUEUE_OVERFLOW: 24,
+  /** Réponse à `mpv_get_property_async` — même charge qu'un changement. */
+  GET_PROPERTY_REPLY: 26,
 } as const;
 
 /** Nom d'évènement transmis à la page, aligné sur celui de l'app Tauri. */
@@ -197,10 +199,26 @@ function lier(lib: ReturnType<typeof koffi.load>) {
   setPropertyString: lib.func(
     "int mpv_set_property_string(void* ctx, const char* name, const char* data)",
   ),
-  // `void*` et non `char*` : koffi décoderait sinon la chaîne tout seul et on
-  // perdrait le pointeur, donc la possibilité d'appeler `mpv_free` — une fuite
-  // à chaque lecture de propriété.
+  /**
+   * ⚠️ BLOQUANTE, comme sa jumelle en écriture. Réservée à Windows.
+   *
+   * `void*` et non `char*` : koffi décoderait sinon la chaîne tout seul et on
+   * perdrait le pointeur, donc la possibilité d'appeler `mpv_free` — une fuite
+   * à chaque lecture de propriété.
+   */
   getPropertyString: lib.func("void* mpv_get_property_string(void* ctx, const char* name)"),
+  /**
+   * Demande une propriété SANS attendre ; la valeur arrive en
+   * `GET_PROPERTY_REPLY`, avec la même charge utile qu'un changement observé.
+   *
+   * C'est la seule façon de lire une propriété sur macOS. Elle ouvre au passage
+   * ce que le souvenir ne pouvait pas donner : `track-list/*` — donc les pistes
+   * audio et les sous-titres —, qu'on n'observe pas et qu'on ne peut donc pas
+   * avoir entendu passer.
+   */
+  getPropertyAsync: lib.func(
+    "int mpv_get_property_async(void* ctx, uint64 userdata, const char* name, int format)",
+  ),
   /**
    * ⚠️ BLOQUANTE, et pas qu'un peu : `mpv_command` ne rend la main qu'une fois
    * la commande TERMINÉE. `sub-add` sur une URL injoignable y reste le temps du

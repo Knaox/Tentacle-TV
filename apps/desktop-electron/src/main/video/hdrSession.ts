@@ -107,30 +107,35 @@ function transmettre(actif: boolean): void {
  * À appeler sur `file-loaded` ET `video-reconfig`.
  */
 export function accorder(): void {
-  // ⚠️ SORTIE IMMÉDIATE SUR macOS, ET C'EST VITAL.
-  //
-  // Pas seulement parce qu'il n'y a rien à accorder — la ligne suivante est un
-  // `mpv_get_property_string` sur une propriété qui dépend de la SORTIE VIDÉO.
-  // Cet appel est synchrone et prend le verrou du cœur de mpv ; pour y répondre,
-  // mpv doit toucher sa NSWindow, donc passer par le thread principal — celui
-  // qui appelle. Blocage parfait : zéro pourcent de processeur, aucune erreur,
-  // application inerte.
-  //
-  // Et le moment est le pire possible : `accorder` est appelée sur
-  // `video-reconfig`, c'est-à-dire précisément pendant que mpv reconfigure sa
-  // sortie. C'est le gel constaté dans l'application, dont le journal s'arrête
-  // net après la ligne « bascule automatique refusee ».
+  // ⚠️ SORTIE IMMÉDIATE SUR macOS : il n'y a rien à accorder, l'EDR y étant
+  // alloué par le compositeur fenêtre par fenêtre (voir `displayHdr.ts`).
   if (!NEGOCIE_AVEC_L_ECRAN) return;
 
-  const gamma = getProperty("video-params/gamma");
+  // Une seule évaluation à la fois. `accorder` est appelée sur `file-loaded`
+  // ET sur `video-reconfig`, qui se suivent parfois de très près ; la lecture
+  // étant devenue asynchrone, deux évaluations pourraient sinon s'entrelacer et
+  // basculer l'écran deux fois.
+  if (enCours) return;
+  enCours = true;
+  void getProperty("video-params/gamma")
+    // ⚠️ `video-params/*` n'est PAS renseigné à `file-loaded` : mpv a ouvert le
+    // fichier mais n'a pas encore configuré sa sortie vidéo. On sortait alors
+    // sur « contenu ? » et la bascule n'avait jamais lieu — sauf coup de chance
+    // de calendrier. D'où l'appel aussi sur `video-reconfig`, où les paramètres
+    // sont valides : ici on attend, sans rien journaliser.
+    .then((gamma) => {
+      if (gamma !== null) evaluer(gamma);
+    })
+    .finally(() => {
+      enCours = false;
+    });
+}
 
-  // ⚠️ `video-params/*` n'est PAS renseigné à `file-loaded` : mpv a ouvert le
-  // fichier mais n'a pas encore configuré sa sortie vidéo. On sortait donc sur
-  // « contenu ? » et la bascule n'avait jamais lieu — sauf coup de chance de
-  // calendrier. D'où l'appel aussi sur `video-reconfig`, où les paramètres sont
-  // valides : ici on se contente d'attendre, sans rien journaliser.
-  if (gamma === null) return;
+/** Évaluation en cours ? Voir `accorder`. */
+let enCours = false;
 
+/** Ce que le gamma du contenu implique pour l'écran et pour la transmission. */
+function evaluer(gamma: string): void {
   if (gamma !== "pq" && gamma !== "hlg") {
     if (dernierGamma !== gamma) {
       console.info(`[tentacle] HDR : contenu ${gamma}, rien a transmettre`);

@@ -196,8 +196,10 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     })
     .add("mpv_get_property", {
       schema: GET_PROPERTY,
-      run: ({ name, format }) => {
-        const raw = getProperty(name);
+      run: async ({ name, format }) => {
+        // `await` : sur macOS la valeur arrive par la file d'évènements, seule
+        // façon de lire sans figer le thread principal (voir `mpvLecture.ts`).
+        const raw = await getProperty(name);
         if (raw === null) return null;
         // mpv ne rend que des chaînes par cette porte ; on retype selon ce que
         // la page a demandé, comme le fait déjà le côté Rust.

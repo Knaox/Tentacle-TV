@@ -99,19 +99,30 @@ function attendu(cle: string, valeur: string): boolean | null {
   return null;
 }
 
-/** Lit un lot de propriétés mpv. Valeur `null` si absente ou refusée. */
+/**
+ * Lit un lot de propriétés mpv. Valeur `null` si absente ou refusée.
+ *
+ * ⚠️ EN PARALLÈLE, et ce n'est pas un raffinement. Sur la coquille Electron
+ * macOS, chaque lecture est un aller-retour par la file d'évènements de mpv,
+ * vidée toutes les vingt millisecondes. En série, les quarante propriétés du
+ * panneau prenaient près d'une seconde — soit plus que l'intervalle de
+ * rafraîchissement, et les passes s'empilaient.
+ */
 async function lireBrut(noms: readonly string[]): Promise<Record<string, string | null>> {
   const api = getMpvApi();
   const sortie: Record<string, string | null> = {};
   if (!api) return sortie;
-  for (const nom of noms) {
-    try {
-      const brut = await api.getProperty(nom, "string");
-      sortie[nom] = brut === null || brut === undefined ? null : String(brut);
-    } catch {
-      sortie[nom] = null;
-    }
-  }
+  const valeurs = await Promise.all(
+    noms.map((nom) =>
+      api
+        .getProperty(nom, "string")
+        .then((brut) => (brut === null || brut === undefined ? null : String(brut)))
+        .catch(() => null),
+    ),
+  );
+  noms.forEach((nom, i) => {
+    sortie[nom] = valeurs[i] ?? null;
+  });
   return sortie;
 }
 

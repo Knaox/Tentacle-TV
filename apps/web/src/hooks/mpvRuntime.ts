@@ -151,39 +151,6 @@ export const OBSERVED_PROPERTIES = [
   ["eof-reached", "flag"],
 ] as const satisfies readonly MpvObservableProperty[];
 
-/**
- * Ce que le panneau de diagnostic doit ENTENDRE, faute de pouvoir demander.
- *
- * ⚠️ Sur macOS, lire une propriété qui dépend de la sortie vidéo depuis le
- * processus principal fige l'application — mpv doit toucher sa NSWindow pour
- * répondre, donc passer par le thread qui l'interroge. Le processus principal
- * y sert donc les lectures depuis ce qu'il a entendu passer, et une propriété
- * non observée rend `null`.
- *
- * Or ce sont exactement les propriétés du HDR que le panneau affiche : sans
- * cette liste, il resterait vide là où on en a le plus besoin. Elles ne sont
- * observées QUE sur macOS — ailleurs la lecture directe fonctionne, et
- * observer treize propriétés de plus coûterait des évènements pour rien.
- */
-export const PROPRIETES_DIAGNOSTIC_MACOS = [
-  ["video-params/primaries", "string"],
-  ["video-params/gamma", "string"],
-  ["video-params/sig-peak", "double"],
-  ["video-params/pixelformat", "string"],
-  ["video-params/colormatrix", "string"],
-  ["video-target-params/primaries", "string"],
-  ["video-target-params/gamma", "string"],
-  ["video-target-params/sig-peak", "double"],
-  ["video-out-params/primaries", "string"],
-  ["video-out-params/gamma", "string"],
-  ["target-colorspace-hint", "flag"],
-  ["target-peak", "string"],
-  ["tone-mapping", "string"],
-  ["hwdec-current", "string"],
-  ["current-vo", "string"],
-  ["frame-drop-count", "int64"],
-] as const satisfies readonly MpvObservableProperty[];
-
 /** Options d'init mpv. `renderApi` = macOS/Linux SOUS TAURI (Render API custom :
  *  mpv dessine dans notre surface GL, aucune fenêtre native) ; sinon une fenêtre
  *  mpv existe — enfant `--wid` sous Windows, NSWindow attachée sous macOS. */
