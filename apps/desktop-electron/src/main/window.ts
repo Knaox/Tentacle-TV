@@ -92,22 +92,33 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     ...(icon === null ? {} : { icon }),
     // Fenêtre ORDINAIRE : cadre natif, redimensionnable, plein écran.
     //
-    // ⚠️ NE PAS y remettre `transparent: true`. Sous Windows, ce drapeau retire
-    // le cadre, empêche le redimensionnement ET casse `setFullScreen` — on s'y
-    // retrouve enfermé en plein écran, constaté. Il n'est de toute façon PAS
-    // nécessaire : `setBackgroundColor` avec un alpha nul, appliqué à
+    // ⚠️ SOUS WINDOWS, NE PAS y remettre `transparent: true`. Ce drapeau y
+    // retire le cadre, empêche le redimensionnement ET casse `setFullScreen` —
+    // on s'y retrouve enfermé en plein écran, constaté. Il n'y est de toute
+    // façon PAS nécessaire : `setBackgroundColor` avec un alpha nul, appliqué à
     // l'EXÉCUTION, rend la surface de Chromium transparente et laisse voir la
     // fenêtre vidéo de mpv placée dessous. Mesuré sur maquette : cadre présent,
-    // redimensionnement et agrandissement disponibles, vidéo visible.
-    //
-    // C'est le même partage que l'app Tauri, qui a abandonné `transparent`
-    // pour la même raison : il fait deux choses, et une seule sert. Voir
-    // `apps/desktop/src-tauri/src/mpv_window.rs:78` — la fenêtre transparente
+    // redimensionnement et agrandissement disponibles, vidéo visible. Même
+    // partage que l'app Tauri (`mpv_window.rs:78`), où une fenêtre transparente
     // en permanence sort Windows du chemin de présentation opaque et fait
     // scintiller chaque transition.
     //
-    // La bascule se fait par `player_surface_transparent`, à l'entrée et à la
-    // sortie du lecteur.
+    // ⚠️ SUR macOS, C'EST L'INVERSE : ce drapeau est INDISPENSABLE, et rien ne
+    // le remplace. Chromium n'alloue une surface avec canal alpha que si la
+    // fenêtre est fabriquée transparente ; sans lui, la vue Chromium reste
+    // opaque et peint du noir PAR-DESSUS la fenêtre de mpv, quoi qu'on demande
+    // ensuite à `setBackgroundColor` ou à `setOpaque:`. Le symptôme est celui
+    // que décrit `macosSurface.ts` — le son sort, l'image reste noire.
+    //
+    // Mesuré au proto, toutes choses égales par ailleurs, en comptant les
+    // PIXELS de la fenêtre capturée pendant une lecture :
+    //
+    //   sans le drapeau : 13 % de pixels non noirs, 80 teintes   → rien à voir
+    //   avec le drapeau : 92 % de pixels non noirs, 1588 teintes → la vidéo
+    //
+    // Et il ne coûte ici aucun des trois défauts qu'il cause sous Windows :
+    // cadre, redimensionnement et plein écran restent tous fonctionnels.
+    ...(process.platform === "darwin" ? { transparent: true } : {}),
     backgroundColor: "#000000",
     show: false,
     webPreferences: {
