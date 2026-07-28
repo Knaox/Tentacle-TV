@@ -11,7 +11,8 @@ import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { basculeEnCours, hdrActif, hdrSupporte } from "../video/displayHdr";
 import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
-import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
+import { arreter } from "../video/mpvArret";
+import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
 import { nativeHandle } from "../video/native";
 import { creerSurfaceVideo, type VideoSurface } from "../video/surface";
@@ -45,13 +46,44 @@ const NO_ARGS = z.object({}).passthrough();
 
 let video: VideoSurface | null = null;
 
+/**
+ * Arrête le lecteur, par le chemin que la plateforme supporte.
+ *
+ * ⚠️ macOS ne peut PAS détruire d'un bloc : `mpv_terminate_destroy` y attend le
+ * démontage de la sortie vidéo, lequel réclame le thread principal — celui qui
+ * appelle. On démonte donc la vidéo d'abord et on guette sa disparition (voir
+ * `mpvArret.ts`). Windows détruit comme il l'a toujours fait.
+ *
+ * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
+ * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à l'écran.
+ */
+async function arreterLecteur(): Promise<void> {
+  const surface = video;
+  video = null;
+  if (process.platform === "darwin") {
+    const temoin = surface?.videoDisparue?.bind(surface);
+    await arreter(temoin);
+  } else {
+    destroy();
+  }
+  surface?.detach();
+}
+
 export function registerVideoCommands(registry: CommandRegistry): void {
   registry
     .add("mpv_init", {
       schema: INIT,
-      run: ({ options }) => {
+      run: async ({ options }) => {
         const win = getMainWindow();
         if (!win) throw new Error("aucune fenetre pour accueillir la video");
+
+        // Une instance encore vivante doit partir par la porte que la
+        // plateforme supporte. `init` fait bien un `destroy()` de son côté,
+        // mais celui-ci est l'arrêt de SECOURS : sur macOS il ne convient
+        // qu'en l'absence de sortie vidéo. La page appelle normalement
+        // `mpv_destroy` avant de remonter le lecteur ; ceci couvre le cas où
+        // elle ne l'a pas fait — un changement d'épisode qui se chevauche.
+        if (isRunning()) await arreterLecteur();
 
         const observed = (options?.observedProperties ?? []).map(
           ([name, format]) => [name, format] as const,
@@ -100,14 +132,12 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     })
     .add("mpv_destroy", {
       schema: NO_ARGS,
-      run: () => {
-        video?.detach();
-        video = null;
-        // AVANT `destroy()` : après, mpv n'est plus là pour entendre qu'on
-        // coupe la transmission. L'écran est rendu dans la foulée — un écran
-        // qu'on a basculé et laissé en HDR délave tout le reste de Windows.
+      run: async () => {
+        // AVANT l'arrêt : après, mpv n'est plus là pour entendre qu'on coupe la
+        // transmission. L'écran est rendu dans la foulée — un écran qu'on a
+        // basculé et laissé en HDR délave tout le reste de Windows.
         terminer();
-        destroy();
+        await arreterLecteur();
       },
     })
     .add("mpv_command", {

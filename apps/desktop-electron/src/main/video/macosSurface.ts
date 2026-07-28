@@ -30,7 +30,9 @@ import {
   fenetresApp,
   msg,
   nomDeClasse,
-  trouverFenetre,
+  numeroFenetre,
+  numerosFenetres,
+  trouverFenetreNeuve,
   type Rect,
 } from "./objc";
 import type { VideoSurface } from "./surface";
@@ -57,6 +59,18 @@ export class MacosSurface implements VideoSurface {
   private calage: ReturnType<typeof setTimeout> | null = null;
   private attache = false;
 
+  /**
+   * Les fenêtres mpv déjà présentes quand cette surface a commencé à chercher.
+   *
+   * Tout ce qui est là-dedans est un VESTIGE de la lecture précédente : le cœur
+   * de mpv se termine sur ses propres threads, après que la commande d'arrêt a
+   * rendu la main, et sa fenêtre survit quelques instants. Sans cette mémoire,
+   * le changement d'épisode cale la vidéo sur une fenêtre morte.
+   */
+  private vestiges: ReadonlySet<number> = new Set();
+  /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
+  private numero = 0;
+
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly suivre = (): void => this.planifierCalage();
 
@@ -77,6 +91,12 @@ export class MacosSurface implements VideoSurface {
   attach(): void {
     if (this.attache) return;
     this.attache = true;
+    // Relevé AVANT toute recherche : à cet instant, la fenêtre de la lecture
+    // qui commence n'existe pas encore. Tout ce qu'on voit est donc un vestige.
+    this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
+    if (this.vestiges.size > 0) {
+      trace(`${this.vestiges.size} fenetre(s) mpv encore la, ignorees`);
+    }
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
     this.host.on("enter-full-screen", this.suivre);
@@ -85,10 +105,11 @@ export class MacosSurface implements VideoSurface {
     let essais = 0;
     this.recherche = setInterval(() => {
       sansFaillir("recherche de la fenetre mpv", () => {
-        const trouvee = trouverFenetre(CLASSE_FENETRE_MPV);
+        const trouvee = trouverFenetreNeuve(CLASSE_FENETRE_MPV, this.vestiges);
         if (trouvee !== null) {
           this.stopSearch();
           this.mpvWindow = trouvee;
+          this.numero = numeroFenetre(trouvee);
           this.brancher();
           return;
         }
@@ -181,6 +202,19 @@ export class MacosSurface implements VideoSurface {
   /** La fenêtre de mpv, pour la sonde EDR — l'écran qui la porte est celui qui compte. */
   fenetreVideo(): unknown {
     return this.mpvWindow;
+  }
+
+  /**
+   * La fenêtre vidéo a-t-elle disparu de l'application ?
+   *
+   * C'est le témoin qu'attend la séquence d'arrêt : tant qu'elle est là, la
+   * sortie vidéo vit, et demander `quit` figerait le thread principal. On
+   * interroge AppKit, jamais mpv — lire une propriété de la sortie vidéo depuis
+   * ce thread est précisément ce qui bloque (voir `objc.ts`).
+   */
+  videoDisparue(): boolean {
+    if (this.numero === 0) return true;
+    return !numerosFenetres(CLASSE_FENETRE_MPV).has(this.numero);
   }
 
   detach(): void {

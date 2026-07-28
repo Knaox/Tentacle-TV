@@ -203,6 +203,43 @@ export function trouverFenetre(motif: string): unknown {
   return null;
 }
 
+/**
+ * Numéro de fenêtre — l'identité stable d'une NSWindow.
+ *
+ * Deux pointeurs rendus par koffi pour la même fenêtre ne sont pas forcément le
+ * même objet JavaScript : les comparer avec `===` ne prouve rien. `windowNumber`
+ * est un entier attribué par le serveur de fenêtres, unique et comparable.
+ */
+export function numeroFenetre(fenetre: unknown): number {
+  return msg.count(fenetre, "windowNumber");
+}
+
+/**
+ * Les numéros des fenêtres dont la classe porte `motif`.
+ *
+ * ⚠️ Sert à distinguer une fenêtre NEUVE d'un vestige. Le cœur de mpv se
+ * termine sur ses propres threads, APRÈS que la commande d'arrêt a rendu la
+ * main : sa NSWindow survit donc quelques instants à la lecture. Au changement
+ * d'épisode — le chemin le plus sollicité, le lecteur étant remonté à chaque
+ * fois — une recherche naïve retrouve alors la fenêtre MORTE et lui cale la
+ * vidéo dessus. Constaté au banc : trois `swift.Window` à la seconde lecture.
+ */
+export function numerosFenetres(motif: string): Set<number> {
+  const vus = new Set<number>();
+  for (const [fenetre, nom] of listerFenetres()) {
+    if (nom.includes(motif)) vus.add(numeroFenetre(fenetre));
+  }
+  return vus;
+}
+
+/** La première fenêtre portant `motif` dont le numéro n'est PAS dans `exclus`. */
+export function trouverFenetreNeuve(motif: string, exclus: ReadonlySet<number>): unknown {
+  for (const [fenetre, nom] of listerFenetres()) {
+    if (nom.includes(motif) && !exclus.has(numeroFenetre(fenetre))) return fenetre;
+  }
+  return null;
+}
+
 /** Nom de classe d'un objet, pour le diagnostic. */
 export function nomDeClasse(objet: unknown): string {
   if (!objet) return "(null)";

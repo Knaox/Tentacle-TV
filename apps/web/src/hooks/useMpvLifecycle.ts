@@ -3,7 +3,7 @@ import { invoke, isElectronShell } from "../desktop/bridge";
 import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
 import { queryTrackList } from "./mpvTrackList";
 import {
-  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri, isWindows,
+  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
@@ -69,21 +69,28 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
         if (cancelled) return;
-        if (isWindows()) {
-          // La webview cesse de peindre son fond — sans quoi la fenêtre enfant
-          // de mpv, placée dessous, resterait invisible. Hors lecture elle est
-          // OPAQUE, et la fenêtre avec elle : une fenêtre transparente en
-          // permanence sortait Windows du chemin de présentation opaque et
-          // faisait scintiller chaque transition (cf. `mpv_window.rs`).
+        if (isElectronShell()) {
+          // La webview cesse de peindre son fond — sans quoi la fenêtre de mpv,
+          // placée dessous, resterait invisible. Hors lecture elle est OPAQUE,
+          // et la fenêtre avec elle : une fenêtre transparente en permanence
+          // sortait Windows du chemin de présentation opaque et faisait
+          // scintiller chaque transition (cf. `mpv_window.rs`).
+          //
+          // ⚠️ Sur macOS l'enjeu est DOUBLE, et le second ne se voit pas : une
+          // couche en plage étendue que rien ne laisse voir ne reçoit AUCUN
+          // headroom du compositeur. Mesuré au banc, même fichier, même code —
+          // fond de page opaque : EDR accordé 1,00 ; fond transparent : 16,00.
+          // Sans cette ligne, macOS n'a donc ni image ni HDR.
           //
           // Attendu, et posé AVANT `ready` : c'est `ready` qui rend la page
           // transparente à son tour, et l'ordre inverse laisserait voir le fond
           // de la webview le temps d'une image ou deux.
           await invoke("player_surface_transparent", { on: true })
             .catch((e) => console.warn("[mpv] surface transparente refusée", e));
-          // mpv vient de créer sa fenêtre vidéo enfant sur son propre thread. On
-          // la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
+          // mpv vient de créer sa fenêtre vidéo sur son propre thread. Windows :
+          // on la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
           // puisse jamais geler la file d'entrée partagée avec le thread UI.
+          // macOS : déjà fait à l'attachement, l'appel n'est qu'un rappel.
           invoke("mpv_harden_child_window").catch(() => {});
         }
         setReady(true);
@@ -339,7 +346,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       // que la page soit redevenue opaque. C'est le bon sens. L'inverse ne
       // coûterait de toute façon qu'un fond noir ; ce sont les deux
       // TRANSPARENTS en même temps qui laisseraient voir le bureau.
-      if (isWindows()) invoke("player_surface_transparent", { on: false }).catch(() => {});
+      if (isElectronShell()) invoke("player_surface_transparent", { on: false }).catch(() => {});
       const api = getMpvApi();
       setPendingDestroy(api ? api.destroy().catch(() => {}) : Promise.resolve());
     };

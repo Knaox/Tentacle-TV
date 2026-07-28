@@ -51,6 +51,45 @@ export function isRunning(): boolean {
   return ctx !== null;
 }
 
+/** La poignée courante, pour `mpvArret.ts`. `null` si mpv ne tourne pas. */
+export function poignee(): unknown {
+  return ctx;
+}
+
+/** Abandonne la poignée sans rien détruire. Réservé à l'arrêt asynchrone. */
+export function poserPoignee(valeur: unknown): void {
+  ctx = valeur;
+}
+
+/**
+ * Coupe la pompe et règle les commandes en vol, sans toucher à la poignée.
+ *
+ * La file d'évènements ne rendra plus rien : une commande laissée en suspens
+ * retiendrait pour toujours l'appelant — et donc la poignée IPC qui l'attend,
+ * ce qui vaut une commande native perdue à chaque changement d'épisode.
+ */
+export function nettoyerEtat(): void {
+  if (pump !== null) clearInterval(pump);
+  pump = null;
+  observedIds = new Map();
+  lastTimePos = 0;
+  for (const resolve of enVol.values()) resolve("instance mpv detruite");
+  enVol.clear();
+}
+
+/**
+ * Prévenu quand mpv annonce son arrêt.
+ *
+ * ⚠️ C'est le seul instant où libérer la poignée ne bloque pas — d'où ce
+ * détour plutôt qu'un import direct, qui serait circulaire (`mpvArret` a besoin
+ * de la poignée que ce module tient).
+ */
+let auShutdown: (() => void) | null = null;
+
+export function poserAuShutdown(rappel: (() => void) | null): void {
+  auShutdown = rappel;
+}
+
 /** Lit une propriété sous forme de chaîne. `null` si absente. */
 export function getProperty(name: string): string | null {
   if (!ctx) return null;
@@ -139,10 +178,28 @@ function decodeProperty(format: number, data: unknown): unknown {
   return null;
 }
 
+/**
+ * Nombre maximal d'évènements traités par passage.
+ *
+ * ⚠️ Ce n'est pas une optimisation, c'est ce qui empêche le gel.
+ *
+ * Une boucle « vider jusqu'au bout » suppose que la file finit par se taire.
+ * Elle ne se tait pas : avec les messages de journal actifs, mpv en produit plus
+ * vite qu'on ne les consomme, et la boucle ne rend JAMAIS la main. Le thread
+ * principal d'Electron est alors monopolisé — plus un minuteur, plus un
+ * évènement de fenêtre. Symptôme : l'application semble vivante, mpv joue, et
+ * le processus principal est mort. Constaté en phase 1.
+ *
+ * Ce qui reste sera pris au passage suivant, vingt millisecondes plus tard. mpv
+ * tolère le retard : quand sa file déborde il émet `QUEUE_OVERFLOW` et jette
+ * des messages de journal — jamais des évènements.
+ */
+const MAX_PAR_PASSAGE = 128;
+
 /** Vide la file d'évènements et diffuse. */
 function drain(sink: Sink): void {
   if (!ctx) return;
-  for (;;) {
+  for (let n = 0; n < MAX_PAR_PASSAGE; n += 1) {
     const ptr = mpvApi().waitEvent(ctx, 0) as unknown;
     if (!ptr) return;
     const ev = koffi.decode(ptr, MpvEvent) as {
@@ -190,6 +247,13 @@ function drain(sink: Sink): void {
 
     const nom = EVENT_NAMES[id];
     if (nom) sink.event({ event: nom });
+
+    // mpv annonce son arrêt : c'est le seul instant où libérer la poignée ne
+    // bloque pas. On rend la main immédiatement, la file n'a plus rien à dire.
+    if (id === EVENT.SHUTDOWN) {
+      if (auShutdown !== null) auShutdown();
+      return;
+    }
   }
 }
 
@@ -244,10 +308,23 @@ export function init(opts: InitOptions, sink: Sink): string | null {
   return null;
 }
 
+/**
+ * Arrêt de secours, immédiat.
+ *
+ * ⚠️ Sur macOS, `terminateDestroy` FIGE le processus : elle attend le démontage
+ * de la sortie vidéo, qui réclame le thread principal — celui-là même qui
+ * appelle. Le chemin normal y passe donc par `mpvArret.ts`, qui démonte la
+ * vidéo d'abord. Cette fonction reste la sortie de secours : elle sert quand
+ * `mpv_initialize` a échoué, cas où aucune sortie vidéo n'existe encore et où
+ * `mpv_destroy` rend donc la main sans attendre personne.
+ */
 export function destroy(): void {
   if (pump !== null) clearInterval(pump);
   pump = null;
-  if (ctx) mpvApi().terminateDestroy(ctx);
+  if (ctx) {
+    if (process.platform === "darwin") mpvApi().destroyClient(ctx);
+    else mpvApi().terminateDestroy(ctx);
+  }
   ctx = null;
   observedIds = new Map();
   lastTimePos = 0;

@@ -31,6 +31,14 @@ export interface VideoSurface {
   align(): void;
   harden(): boolean;
   detach(): void;
+  /**
+   * La fenêtre vidéo a-t-elle disparu ?
+   *
+   * Facultatif : seule une plateforme dont l'arrêt doit ATTENDRE le démontage
+   * de la sortie vidéo en a besoin — macOS, où demander `quit` trop tôt fige le
+   * thread principal. Windows détruit d'un bloc et n'a rien à guetter.
+   */
+  videoDisparue?(): boolean;
 }
 
 /**
