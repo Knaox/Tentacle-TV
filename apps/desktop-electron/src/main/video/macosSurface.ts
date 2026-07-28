@@ -29,7 +29,6 @@ import {
   depuisHandle,
   fenetresApp,
   msg,
-  nomDeClasse,
   numeroFenetre,
   numerosFenetres,
   trouverFenetreNeuve,
@@ -75,9 +74,7 @@ export class MacosSurface implements VideoSurface {
   private readonly suivre = (): void => this.planifierCalage();
 
   constructor(private readonly host: BrowserWindow) {
-    const vue = depuisHandle(host.getNativeWindowHandle());
-    this.parent = msg.get(vue, "window");
-    trace(`vue racine = ${nomDeClasse(vue)}, fenetre = ${nomDeClasse(this.parent)}`);
+    this.parent = msg.get(depuisHandle(host.getNativeWindowHandle()), "window");
   }
 
   /**
@@ -94,9 +91,6 @@ export class MacosSurface implements VideoSurface {
     // Relevé AVANT toute recherche : à cet instant, la fenêtre de la lecture
     // qui commence n'existe pas encore. Tout ce qu'on voit est donc un vestige.
     this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
-    if (this.vestiges.size > 0) {
-      trace(`${this.vestiges.size} fenetre(s) mpv encore la, ignorees`);
-    }
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
     this.host.on("enter-full-screen", this.suivre);
@@ -114,11 +108,12 @@ export class MacosSurface implements VideoSurface {
           return;
         }
         essais += 1;
-        // Un point de situation régulier plutôt qu'un silence de dix secondes :
-        // « mpv n'a créé aucune fenêtre » et « la fenêtre existe mais nous
-        // échappe » demandent des corrections opposées, et rien ne les
+        // Rien n'est tracé pendant la recherche : elle aboutit en une poignée
+        // de sondages, et un point de situation toutes les deux secondes noyait
+        // le journal pour ne rien dire. L'ÉCHEC, lui, est tracé avec la liste
+        // des fenêtres — « mpv n'a créé aucune fenêtre » et « elle existe mais
+        // nous échappe » demandent des corrections opposées, et rien ne les
         // distingue après coup.
-        if (essais % 20 === 0) trace(`recherche… ${fenetresApp()}`);
         if (essais > SONDAGES_MAX) {
           this.stopSearch();
           trace(`fenetre mpv introuvable apres 10 s — ${fenetresApp()}`);
@@ -137,7 +132,6 @@ export class MacosSurface implements VideoSurface {
    * fenêtre enfant exactement superposée en dessinerait une au ras du cadre.
    */
   private brancher(): void {
-    trace(`fenetre mpv trouvee : ${nomDeClasse(this.mpvWindow)}`);
     msg.setFlag(this.mpvWindow, "setIgnoresMouseEvents:", true);
     msg.setFlag(this.mpvWindow, "setHasShadow:", false);
     msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
