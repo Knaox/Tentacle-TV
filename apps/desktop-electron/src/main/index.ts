@@ -24,8 +24,9 @@ import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
 import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
 import { registerDownloadsStorageCommands } from "./ipc/downloadsStorage";
 import { registerJellyfinCommands } from "./ipc/jellyfin";
-import { stopDownloadsRuntime } from "./downloadsRuntime";
+import { stopDownloadsRuntime, transfertsEnCours } from "./downloadsRuntime";
 import { closeLocalDb } from "./localDb";
+import { demanderNatif, installerGardeSortie } from "./quitGuard";
 import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
 import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
@@ -128,14 +129,18 @@ function main(): void {
     // « sais-tu télécharger ? » avant d'afficher le bouton.
     const capabilities = registry.implemented();
 
-    const win = createMainWindow(capabilities);
-    void win.loadURL(`${APP_ORIGIN}/`);
+    // La garde de sortie est posée à la fabrication, jamais après : entre les
+    // deux, un Alt+F4 emporterait un téléchargement sans un mot.
+    const ouvrir = (): void => {
+      const fenetre = createMainWindow(capabilities);
+      installerGardeSortie(fenetre, transfertsEnCours, demanderNatif(fenetre));
+      void fenetre.loadURL(`${APP_ORIGIN}/`);
+    };
+
+    ouvrir();
 
     app.on("activate", () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        const next = createMainWindow(capabilities);
-        void next.loadURL(`${APP_ORIGIN}/`);
-      }
+      if (BrowserWindow.getAllWindows().length === 0) ouvrir();
     });
   });
 
