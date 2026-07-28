@@ -16,6 +16,7 @@ import {
   serveApp,
   webRoot,
 } from "./appProtocol";
+import { demarrerBattement } from "./battement";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -101,6 +102,10 @@ function main(): void {
       // Retiré sous Windows, fourni sur macOS — où l'absence de menu prive les
       // champs de saisie de Cmd+C, Cmd+V et Cmd+A. Voir `menu.ts`.
       installerMenu();
+
+      // Le pouls du thread principal : il ne dit rien tant que tout va bien, et
+      // date le gel à la milliseconde le jour où il y en a un.
+      demarrerBattement();
 
       denyAllPermissions();
       // Empreintes calculées sur le HTML réellement servi : le script inline

@@ -59,3 +59,16 @@ export function supportsAppUpdates(): boolean {
 export function supportsOfflineSession(): boolean {
   return hasNativeCommand("session_cache_get");
 }
+
+/**
+ * Sonde de la surface vidéo : géométrie, plage étendue, COMPTAGE DES PIXELS.
+ *
+ * ⚠️ Tauri répond « oui » à tout (voir `hasNativeCommand`) : elle n'y existe
+ * pourtant pas. Le garde `isElectronShell` est donc indispensable ici, là où il
+ * ne l'est pas pour les autres capacités — celles-ci sont bien servies par les
+ * deux coquilles. Branchée par la coquille Electron sur macOS, en développement
+ * seulement : elle lance `screencapture`.
+ */
+export function supportsSurfaceProbe(): boolean {
+  return desktopKind() === "electron" && hasNativeCommand("video_surface_probe");
+}

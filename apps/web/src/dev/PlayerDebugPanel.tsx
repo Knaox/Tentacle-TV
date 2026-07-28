@@ -20,7 +20,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { collecterDebug, type DebugSection } from "./playerDebugData";
+import { collecterDebug } from "./playerDebugData";
+import type { DebugSection } from "./playerDebugTypes";
 import { ACTIONS } from "./playerDebugActions";
 import { usePanelDrag } from "./usePanelDrag";
 

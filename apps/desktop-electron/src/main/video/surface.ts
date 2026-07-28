@@ -47,6 +47,15 @@ export interface VideoSurface {
    * c'est celui qui affiche la vidéo qui compte.
    */
   fenetreVideo?(): unknown;
+  /**
+   * Numéro de la fenêtre vidéo, ou `0` tant qu'elle n'existe pas.
+   *
+   * C'est par lui que la sonde CAPTURE l'image — la seule preuve qui vaille
+   * qu'on affiche quelque chose (voir `macosCapture.ts`).
+   */
+  numeroFenetre?(): number;
+  /** L'état géométrique des deux fenêtres, en une ligne lisible. */
+  geometrie?(): string;
 }
 
 /**

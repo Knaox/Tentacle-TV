@@ -11,8 +11,10 @@
  */
 
 import { invoke } from "../desktop/bridge";
+import { supportsSurfaceProbe } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
 import { requetesSortantes, viderSondeReseau } from "./networkProbe";
+import { sonder, verdictSonde } from "./surfaceProbe";
 
 /** Une bascule offerte par le panneau. */
 export interface DebugAction {
@@ -104,6 +106,19 @@ export const ACTIONS: readonly DebugAction[] = [
       return `affiché : ${prim ?? "?"} / ${trc ?? "?"} / pic ${peak ?? "?"} · passthrough ${hint ?? "?"}`;
     },
   },
+  ...(supportsSurfaceProbe()
+    ? [
+        {
+          touche: "c",
+          libelle: "C · capturer la surface",
+          // LA question à laquelle aucune propriété ne répond : voit-on quelque
+          // chose ? Sur macOS l'image vit dans une fenêtre native placée sous
+          // la page ; le natif la capture et compte ses pixels. Une vidéo et un
+          // aplat noir ne se ressemblent sur aucun des trois chiffres rendus.
+          executer: async (): Promise<string | null> => verdictSonde(await sonder()),
+        },
+      ]
+    : []),
   {
     touche: "h",
     libelle: "H · bascule HDR de l'écran",

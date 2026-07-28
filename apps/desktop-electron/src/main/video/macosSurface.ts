@@ -202,6 +202,11 @@ export class MacosSurface implements VideoSurface {
     return this.mpvWindow;
   }
 
+  /** Numéro de la fenêtre vidéo, `0` tant qu'elle n'existe pas. */
+  numeroFenetre(): number {
+    return this.numero;
+  }
+
   /**
    * La fenêtre vidéo a-t-elle disparu de l'application ?
    *

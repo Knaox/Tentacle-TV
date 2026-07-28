@@ -18,23 +18,13 @@ import {
   supportsSmtc,
 } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
-import { requetesSortantes, type RequeteSortante } from "./networkProbe";
+import { sectionReseau } from "./playerDebugReseau";
+import type { DebugSection } from "./playerDebugTypes";
 import { PROPS_VERDICT, verdicts } from "./playerDebugVerdict";
-
-/** Une section du panneau. */
-export interface DebugSection {
-  titre: string;
-  lignes: Array<readonly [string, string, boolean | null]>;
-  /** Section de tête : rendue plus grande, c'est ce qu'on lit en premier. */
-  emphase?: boolean;
-}
+import { derniereSonde, sonder, type SondeSurface } from "./surfaceProbe";
 
 /**
- * Propriétés mpv relevées, groupées par thème.
- * `null` en troisième position = pas de jugement bon/mauvais à porter.
- */
-/**
- * Deux familles à ne PAS confondre.
+ * Propriétés mpv relevées, groupées par thème. Deux familles à ne PAS confondre.
  *
  * `video-params/*` décrit la SOURCE, `video-target-params/*` ce qui part
  * réellement vers l'écran après conversion. Les `target-*` nus, eux, ne sont
@@ -171,116 +161,86 @@ function sectionShell(): DebugSection {
   };
 }
 
+/** Ce que le natif sait de l'écran. `edrCapable` n'existe que sur macOS. */
+interface EtatHdrNatif {
+  actif: boolean;
+  bascule: boolean;
+  edrCapable?: boolean;
+}
+
 /** État HDR vu par le NATIF, plus fiable que la requête média du navigateur. */
-async function etatHdrNatif(): Promise<{ actif: boolean; bascule: boolean } | null> {
+async function etatHdrNatif(): Promise<EtatHdrNatif | null> {
   try {
-    return await invoke<{ actif: boolean; bascule: boolean }>("display_hdr_state");
+    return await invoke<EtatHdrNatif>("display_hdr_state");
   } catch {
     return null;
   }
 }
 
-function sectionHdrNatif(etat: { actif: boolean; bascule: boolean } | null): DebugSection {
+function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
   if (etat === null) {
     return { titre: "HDR — état natif", lignes: [["commande", "indisponible", false]] };
   }
-  return {
-    titre: "HDR — état natif",
-    lignes: [
-      ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
-      ["basculé par l'app", etat.bascule ? "oui" : "non", null],
-    ],
-  };
-}
-
-function heure(at: number): string {
-  const d = new Date(at);
-  const deuxChiffres = (n: number): string => String(n).padStart(2, "0");
-  return `${deuxChiffres(d.getHours())}:${deuxChiffres(d.getMinutes())}:${deuxChiffres(d.getSeconds())}`;
-}
-
-/**
- * Chemin lisible : l'origine tombe, le jeton aussi.
- *
- * ⚠️ Les URL de sous-titres de Jellyfin portent la clé d'API EN QUERY. Ce
- * panneau se photographie et se colle dans une conversation — la masquer ici
- * évite qu'elle voyage avec la capture.
- */
-function chemin(url: string): string {
-  let court = url;
-  try {
-    const u = new URL(url);
-    court = u.pathname + u.search;
-  } catch {
-    /* URL relative : déjà un chemin */
-  }
-  court = court.replace(/([?&](api_key|token|X-Emby-Token)=)[^&]*/gi, "$1***");
-  return court.length > 88 ? `${court.slice(0, 87)}…` : court;
-}
-
-function fautif(r: RequeteSortante): boolean {
-  return r.echec || (r.status !== null && r.status >= 400);
-}
-
-function etat(r: RequeteSortante): string {
-  if (r.echec) return `ECHEC RESEAU (${r.dureeMs ?? "?"} ms)`;
-  if (r.status === null) return "en vol…";
-  return `${r.status} · ${r.dureeMs ?? "?"} ms`;
-}
-
-/**
- * Ce qui est SORTI de la page vers le serveur.
- *
- * Le vide est une information, et c'est même LA réponse qu'on cherche pendant
- * une lecture locale : la touche R remet le journal à zéro juste avant de
- * lancer le film, et ce qui apparaît ensuite est exactement ce que la lecture
- * a provoqué — segments d'intro et d'outro compris.
- */
-function sectionReseau(): DebugSection {
-  const requetes = requetesSortantes();
-  if (requetes.length === 0) {
-    return {
-      titre: "Réseau sortant (R pour vider)",
-      lignes: [["depuis la remise à zéro", "rien n'est sorti", true]],
-    };
-  }
-  const echecs = requetes.filter(fautif).length;
-  const entete: DebugSection["lignes"][number] = [
-    "depuis la remise à zéro",
-    `${requetes.length} requête${requetes.length > 1 ? "s" : ""}${echecs > 0 ? `, ${echecs} en échec` : ""}`,
-    echecs === 0,
+  const lignes: DebugSection["lignes"] = [
+    ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
+    ["basculé par l'app", etat.bascule ? "oui" : "non", null],
   ];
-  // Les plus récentes en tête : c'est ce qu'on vient de provoquer qu'on lit.
-  const recentes = requetes
-    .slice(-12)
-    .reverse()
-    .map(
-      (r) =>
-        [`${heure(r.at)} ${r.methode}`, `${chemin(r.url)} → ${etat(r)}`, fautif(r) ? false : null] as const,
-    );
-  return { titre: "Réseau sortant (R pour vider)", lignes: [entete, ...recentes] };
+  // macOS seulement, et à ne PAS confondre avec la ligne du dessus : « l'écran
+  // SAIT faire de la plage étendue » n'est pas « il en reçoit en ce moment ».
+  // Le natif le renvoyait déjà, le panneau n'en faisait rien.
+  if (etat.edrCapable !== undefined) {
+    lignes.push(["écran capable EDR", etat.edrCapable ? "oui" : "non", etat.edrCapable]);
+  }
+  return { titre: "HDR — état natif", lignes };
+}
+
+/**
+ * Ce que l'écran montre vraiment — la seule section qui ne croit pas mpv.
+ *
+ * Absente hors coquille Electron macOS en développement : la sonde y est la
+ * seule à pouvoir compter les pixels d'une fenêtre qui n'appartient pas à
+ * Chromium. Voir `surfaceProbe.ts`.
+ */
+function sectionSurface(s: SondeSurface | null): DebugSection | null {
+  if (s === null) return null;
+  const lignes: DebugSection["lignes"] = [
+    ["verdict", s.verdict, s.image !== null && s.erreur === null ? s.verdict.startsWith("IMAGE") : null],
+    ["EDR accordé", s.edr.courant.toFixed(2), s.edr.courant > 1.01],
+    ["EDR potentiel", s.edr.potentiel.toFixed(2), null],
+    ["fenêtre vidéo", s.numeroFenetre === 0 ? "aucune" : String(s.numeroFenetre), s.numeroFenetre !== 0],
+    ["géométrie", s.geometrie, null],
+  ];
+  if (s.image !== null) {
+    lignes.push(["capture", `${String(s.image.largeur)}x${String(s.image.hauteur)}`, null]);
+  }
+  return { titre: "Surface macOS (C pour recapturer)", lignes };
 }
 
 /** Instantané complet. Une seule passe, appelée par le panneau. */
 export async function collecterDebug(): Promise<DebugSection[]> {
-  const [pourVerdict, hdr, lecture, natif] = await Promise.all([
+  const [pourVerdict, hdr, lecture, natif, surface] = await Promise.all([
     lireBrut(PROPS_VERDICT),
     lire(PROPS_HDR),
     lire(PROPS_LECTURE),
     etatHdrNatif(),
+    // La première ouverture capture, les suivantes servent le dernier relevé :
+    // une capture par rafraîchissement volerait à la lecture ce qu'on mesure.
+    derniereSonde() === null ? sonder() : Promise.resolve(derniereSonde()),
   ]);
   const lignesVerdict = verdicts(pourVerdict, natif?.actif ?? false).map(
     (v) => [v.cle, v.valeur, v.bon] as const,
   );
-  return [
+  const sections: Array<DebugSection | null> = [
     { titre: "Ce que tu regardes vraiment", lignes: lignesVerdict, emphase: true },
     // Juste sous les verdicts : pendant une lecture locale, c'est la deuxième
     // chose qu'on veut lire, avant l'inventaire de la coquille.
     sectionReseau(),
+    sectionSurface(surface),
     sectionShell(),
     sectionEcran(),
     sectionHdrNatif(natif),
     { titre: "mpv — couleur", lignes: hdr },
     { titre: "mpv — lecture", lignes: lecture },
   ];
+  return sections.filter((s): s is DebugSection => s !== null);
 }

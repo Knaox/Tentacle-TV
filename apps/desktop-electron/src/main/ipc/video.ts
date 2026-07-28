@@ -16,6 +16,7 @@ import { command, destroy, getProperty, init, isRunning, setProperty } from "../
 import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
 import { nativeHandle } from "../video/native";
 import { creerSurfaceVideo, type VideoSurface } from "../video/surface";
+import { planifierRapport, registerVideoProbe, reinitialiserRapport } from "./videoSonde";
 import { CommandRegistry } from "./registry";
 
 /** Valeur scalaire acceptée par mpv. */
@@ -119,6 +120,10 @@ export function registerVideoCommands(registry: CommandRegistry): void {
                   p.event === "video-reconfig" || p.event === "end-file") {
                 console.info(`[video] mpv → ${p.event}${p.event === "end-file" ? ` (raison ${String(p["reason"])})` : ""}`);
               }
+              // La lecture a vraiment commencé : c'est le moment de regarder ce
+              // que l'écran montre, plutôt que ce que mpv en dit. Sans effet
+              // hors développement, et une seule fois par lecture.
+              if (p.event === "playback-restart") planifierRapport(() => video);
               sendToPage("mpv://event", p);
             },
             property: (p) => sendToPage("mpv://property-change", p),
@@ -142,6 +147,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         video?.detach();
         video = creerSurfaceVideo(win);
         video.attach();
+        reinitialiserRapport();
 
         return "ok";
       },
@@ -257,6 +263,10 @@ export function registerVideoCommands(registry: CommandRegistry): void {
       schema: SURFACE,
       run: ({ on }) => autoriserBascule(on),
     });
+
+  // Sans effet hors macOS et hors développement — la commande n'est alors même
+  // pas déclarée, et la page cesse d'elle-même de proposer la sonde.
+  registerVideoProbe(registry, () => video);
 }
 
 /**

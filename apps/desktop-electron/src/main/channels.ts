@@ -64,6 +64,11 @@ export const COMMANDS = [
   // l'autorisation donnée par la préférence de l'utilisateur.
   "display_hdr_state",
   "display_hdr_auto",
+  // Sonde de la surface vidéo — géométrie, plage étendue et COMPTAGE DES
+  // PIXELS de la fenêtre de mpv. ⚠️ macOS et développement seulement : elle
+  // lance `screencapture`, elle n'est donc jamais branchée dans un paquet
+  // livré, et la page la masque d'elle-même (`supportsSurfaceProbe`).
+  "video_surface_probe",
 
   // Veille et contrôles média
   "prevent_display_sleep_start",
