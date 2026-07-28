@@ -79,6 +79,30 @@ export function normalizeOnEngineStart(db: DatabaseSync, nowMs: number): void {
 }
 
 /**
+ * Remet en file les seules pauses SYSTÈME. Renvoie le nombre de reprises.
+ *
+ * C'est `normalizeOnEngineStart` MOINS le rattrapage des `downloading`, et
+ * cette soustraction est tout l'intérêt : appelée au réveil de veille, moteur
+ * vivant, elle ne doit surtout pas remettre en file un transfert qui est en
+ * train d'écrire. Il se retrouverait lancé deux fois sur le même `.part`.
+ */
+export function requeueSystemPauses(db: DatabaseSync, nowMs: number): number {
+  const done = db
+    .prepare(
+      `UPDATE files SET status = 'queued', updated_at = ?
+       WHERE status = 'paused' AND paused_by_user = 0`,
+    )
+    .run(nowMs);
+  return Number(done.changes);
+}
+
+/** Transferts en attente d'une place. */
+export function countQueued(db: DatabaseSync): number {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM files WHERE status = 'queued'").get();
+  return row === undefined ? 0 : integer(row, "n");
+}
+
+/**
  * Octets restants estimés des transferts actifs ou en attente — ils entrent
  * dans le contrôle d'espace disque d'une nouvelle mise en file, sans quoi on
  * promettrait deux fois la même place.

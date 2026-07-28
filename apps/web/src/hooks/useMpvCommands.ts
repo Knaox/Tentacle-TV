@@ -19,7 +19,7 @@ import { invoke, isElectronShell, listen } from "../desktop/bridge";
 //
 // Windows : mpv a bien sa fenêtre (--wid), mais c'est une fenêtre ENFANT, et le
 // système n'envoie SC_SCREENSAVE/SC_MONITORPOWER qu'à la fenêtre de premier
-// plan. La coquille Electron pose donc un powerSaveBlocker (main/displaySleep.ts).
+// plan. La coquille Electron pose donc un powerSaveBlocker (main/powerSave.ts).
 function needsKeepAwake(): boolean {
   return isElectronShell() || (isTauri() && (isMacOS() || isLinux()));
 }

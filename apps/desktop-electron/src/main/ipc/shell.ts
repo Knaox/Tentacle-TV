@@ -9,7 +9,7 @@
 
 import { app, dialog, ipcMain, powerSaveBlocker, type IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
-import { creerVeilleEcran } from "../displaySleep";
+import { creerVeilleEcran } from "../powerSave";
 import { openExternalSafely } from "../security";
 import {
   enterPlayerFullscreenScope,

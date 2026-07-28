@@ -5,16 +5,29 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { creerVeilleEcran, type BloqueurVeille } from "./displaySleep";
+import {
+  creerVeilleEcran,
+  creerVeilleSysteme,
+  type BloqueurVeille,
+  type TypeBlocage,
+} from "./powerSave";
+
+interface Factice extends BloqueurVeille {
+  actifs: () => number[];
+  demarrages: () => number;
+  types: () => TypeBlocage[];
+}
 
 /** `powerSaveBlocker` de bureau, en mémoire. */
-function bloqueurFactice(): BloqueurVeille & { actifs: () => number[]; demarrages: () => number } {
+function bloqueurFactice(): Factice {
   const actifs = new Set<number>();
+  const types: TypeBlocage[] = [];
   let suivant = 1;
   let demarrages = 0;
   return {
-    start() {
+    start(type) {
       demarrages += 1;
+      types.push(type);
       const id = suivant;
       suivant += 1;
       actifs.add(id);
@@ -28,6 +41,7 @@ function bloqueurFactice(): BloqueurVeille & { actifs: () => number[]; demarrage
     },
     actifs: () => [...actifs],
     demarrages: () => demarrages,
+    types: () => [...types],
   };
 }
 
@@ -42,6 +56,7 @@ describe("veille de l'ecran", () => {
 
     expect(bloqueur.demarrages()).toBe(1);
     expect(bloqueur.actifs()).toHaveLength(1);
+    expect(bloqueur.types()).toEqual(["prevent-display-sleep"]);
   });
 
   it("rend le blocage", () => {
@@ -91,5 +106,59 @@ describe("veille de l'ecran", () => {
 
     expect(bloqueur.demarrages()).toBe(2);
     expect(bloqueur.actifs()).toHaveLength(1);
+  });
+});
+
+describe("veille du systeme", () => {
+  // C'est CE type qui repousse la mise en veille du PC sans allumer l'ecran.
+  // Se tromper de type et le telechargement s'arreterait quand meme, ou bien
+  // l'ecran resterait allume toute la nuit pour un transfert.
+  it("demande l'anti-suspension, pas l'anti-veille de l'ecran", () => {
+    const bloqueur = bloqueurFactice();
+
+    creerVeilleSysteme(bloqueur).empecher();
+
+    expect(bloqueur.types()).toEqual(["prevent-app-suspension"]);
+  });
+
+  it("pose un blocage, et un seul", () => {
+    const bloqueur = bloqueurFactice();
+    const veille = creerVeilleSysteme(bloqueur);
+
+    veille.empecher();
+    veille.empecher();
+
+    expect(bloqueur.demarrages()).toBe(1);
+  });
+
+  it("rend le blocage", () => {
+    const bloqueur = bloqueurFactice();
+    const veille = creerVeilleSysteme(bloqueur);
+
+    veille.empecher();
+    veille.rendre();
+
+    expect(bloqueur.actifs()).toHaveLength(0);
+  });
+});
+
+// Les deux blocages partagent le meme `powerSaveBlocker` : un etat commun
+// ferait rendre l'anti-veille de l'ecran par la fin d'un telechargement, en
+// pleine lecture.
+describe("les deux blocages cohabitent", () => {
+  it("rendre l'un laisse l'autre pose", () => {
+    const bloqueur = bloqueurFactice();
+    const ecran = creerVeilleEcran(bloqueur);
+    const systeme = creerVeilleSysteme(bloqueur);
+
+    ecran.empecher();
+    systeme.empecher();
+    systeme.rendre();
+
+    expect(bloqueur.actifs()).toHaveLength(1);
+
+    ecran.rendre();
+
+    expect(bloqueur.actifs()).toHaveLength(0);
   });
 });

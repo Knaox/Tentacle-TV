@@ -19,9 +19,11 @@ import type { DatabaseSync } from "node:sqlite";
 import type { EventName } from "../channels";
 import type { FetchBytes } from "./fetcher";
 import {
+  countQueued,
   getFile,
   nextQueued,
   normalizeOnEngineStart,
+  requeueSystemPauses,
   setBytesDone,
   setPausedByUser,
   setStatus,
@@ -44,16 +46,35 @@ export interface EngineDeps {
   now: () => number;
   /** Lancé au démarrage du moteur — réparation et purge (branchés plus tard). */
   onStarted?: (creds: Creds) => void;
+  /**
+   * Bascule « au moins un transfert en cours ». Notifiée AUX SEULES
+   * TRANSITIONS, jamais à chaque bloc reçu : c'est elle qui pose et rend
+   * l'anti-suspension du système (`downloadsRuntime.ts`).
+   */
+  onBusy?: (busy: boolean) => void;
 }
 
 export class DownloadEngine {
   private creds: Creds | null = null;
   private readonly actifs = new Map<number, TransferFlags>();
+  private busy = false;
 
   constructor(private readonly deps: EngineDeps) {}
 
   isActive(fileId: number): boolean {
     return this.actifs.has(fileId);
+  }
+
+  /**
+   * Transferts en cours ET en attente — ce qu'une fermeture interromprait.
+   *
+   * Sans identifiants, le moteur ne peut rien tirer : une file qui attend une
+   * reconnexion n'est pas « en cours », et le dire ferait poser une question à
+   * l'utilisateur pour un transfert qui, de toute façon, ne bouge pas.
+   */
+  pending(): number {
+    if (this.creds === null) return 0;
+    return this.actifs.size + countQueued(this.deps.db);
   }
 
   /** « Quelque chose a changé » : l'interface invalide ses listes. */
@@ -78,8 +99,20 @@ export class DownloadEngine {
     this.creds = creds;
   }
 
-  /** Lance des transferts tant qu'il y a des places ET des fichiers en file. */
+  /**
+   * Lance des transferts tant qu'il y a des places ET des fichiers en file.
+   *
+   * PASSAGE OBLIGÉ de toute variation d'activité : `start`, la mise en file,
+   * `resume` et la fin d'un transfert (`terminer`) appellent tous `pump`. La
+   * bascule occupé/inoccupé est donc calculée ici, une fois, plutôt que
+   * dispersée dans quatre appelants qui finiraient par en oublier un.
+   */
   pump(): void {
+    this.demarrerCeQuiPeut();
+    this.majActivite();
+  }
+
+  private demarrerCeQuiPeut(): void {
     const creds = this.creds;
     if (creds === null) return;
     while (this.actifs.size < MAX_PARALLEL) {
@@ -92,6 +125,14 @@ export class DownloadEngine {
       this.actifs.set(file.id, flags);
       void this.travailler(creds, file.id, flags);
     }
+  }
+
+  /** Ne notifie qu'aux transitions — voir `EngineDeps.onBusy`. */
+  private majActivite(): void {
+    const busy = this.actifs.size > 0;
+    if (busy === this.busy) return;
+    this.busy = busy;
+    this.deps.onBusy?.(busy);
   }
 
   private async travailler(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
@@ -185,6 +226,21 @@ export class DownloadEngine {
       setPausedByUser(this.deps.db, fileId, false);
       setStatus(this.deps.db, fileId, "queued", null, this.deps.now());
     }
+    this.notifyChanged();
+    this.pump();
+  }
+
+  /**
+   * Relance les pauses SYSTÈME. Les pauses explicites ne bougent pas.
+   *
+   * Jusqu'ici, seul `start` les rattrapait — donc au prochain lancement de
+   * l'application. Une machine endormie pendant la nuit rendait la main sur un
+   * téléchargement à l'arrêt, sans que rien ne le reprenne. Branchée sur le
+   * réveil de veille (`downloadsRuntime.ts`), cette méthode ferme ce trou.
+   */
+  resumeSystemPauses(): void {
+    if (this.creds === null) return;
+    if (requeueSystemPauses(this.deps.db, this.deps.now()) === 0) return;
     this.notifyChanged();
     this.pump();
   }

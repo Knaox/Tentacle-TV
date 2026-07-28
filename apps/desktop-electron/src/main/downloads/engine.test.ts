@@ -74,8 +74,9 @@ function moteur(
   db: DatabaseSync,
   root: string,
   net: TransferNet,
-): { engine: DownloadEngine; evenements: EventName[] } {
+): { engine: DownloadEngine; evenements: EventName[]; bascules: boolean[] } {
   const evenements: EventName[] = [];
+  const bascules: boolean[] = [];
   const engine = new DownloadEngine({
     db,
     root: () => root,
@@ -83,8 +84,17 @@ function moteur(
     makeFetcher: () => SANS_RESEAU,
     emit: (event) => evenements.push(event),
     now: () => 1_000,
+    onBusy: (busy) => bascules.push(busy),
   });
-  return { engine, evenements };
+  return { engine, evenements, bascules };
+}
+
+/** Pose un statut de pause directement, sans jouer de transfert. */
+function poserPause(db: DatabaseSync, fileId: number, parUtilisateur: boolean): void {
+  db.prepare("UPDATE files SET status = 'paused', paused_by_user = ? WHERE id = ?").run(
+    parUtilisateur ? 1 : 0,
+    fileId,
+  );
 }
 
 function semer(db: DatabaseSync, itemId: string, at: number): number {
@@ -234,5 +244,100 @@ describe("gestes de l'utilisateur", () => {
     engine.pump();
 
     expect(getFile(db, fileId)?.status).toBe("queued");
+  });
+});
+
+// C'est cette bascule qui pose et rend l'anti-suspension du systeme. Une
+// notification par bloc recu reposerait un blocage des milliers de fois par
+// film ; une notification manquante a la fin laisserait le PC eveille pour
+// toujours.
+describe("bascule occupe / inoccupe", () => {
+  it("ne signale qu'aux transitions, une fois a l'entree et une a la sortie", async () => {
+    const db = openInMemory();
+    const root = preparer();
+    semer(db, "item1", 1_000);
+    semer(db, "item2", 2_000);
+    const { engine, bascules } = moteur(db, root, reseauImmediat(200));
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    // Deux transferts, deux fins : et pourtant une seule montee, une seule
+    // descente.
+    expect(bascules).toEqual([true, false]);
+  });
+
+  it("ne signale rien quand il n'y a rien a telecharger", () => {
+    const db = openInMemory();
+    const root = preparer();
+    const { engine, bascules } = moteur(db, root, reseauImmediat(200));
+
+    engine.start(CREDS);
+
+    expect(bascules).toEqual([]);
+  });
+});
+
+describe("reprise des pauses systeme", () => {
+  it("relance une pause systeme et laisse la pause explicite", () => {
+    const db = openInMemory();
+    const root = preparer();
+    const systeme = semer(db, "item1", 1_000);
+    const explicite = semer(db, "item2", 2_000);
+    poserPause(db, systeme, false);
+    poserPause(db, explicite, true);
+    const retenu = reseauRetenu();
+    const { engine } = moteur(db, root, retenu.net);
+    // `setCreds` plutot que `start` : `start` normalise la file et rattraperait
+    // la pause systeme de lui-meme, ce qui ne prouverait rien.
+    engine.setCreds(CREDS);
+
+    engine.resumeSystemPauses();
+
+    expect(getFile(db, systeme)?.status).toBe("downloading");
+    expect(getFile(db, explicite)?.status).toBe("paused");
+    retenu.liberer();
+  });
+
+  it("sans identifiants, ne touche a rien", () => {
+    const db = openInMemory();
+    const root = preparer();
+    const fileId = semer(db, "item1", 1_000);
+    poserPause(db, fileId, false);
+    const { engine } = moteur(db, root, reseauImmediat(200));
+
+    engine.resumeSystemPauses();
+
+    expect(getFile(db, fileId)?.status).toBe("paused");
+  });
+});
+
+// Ce compte est ce que la garde de sortie montre a l'utilisateur : le gonfler
+// poserait une question pour rien, le sous-estimer laisserait partir un
+// transfert sans un mot.
+describe("transferts en cours", () => {
+  it("compte les actifs ET la file", async () => {
+    const db = openInMemory();
+    const root = preparer();
+    semer(db, "item1", 1_000);
+    semer(db, "item2", 2_000);
+    semer(db, "item3", 3_000);
+    const retenu = reseauRetenu();
+    const { engine } = moteur(db, root, retenu.net);
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(engine.pending()).toBe(3);
+    retenu.liberer();
+  });
+
+  it("ne compte rien sans identifiants", () => {
+    const db = openInMemory();
+    const root = preparer();
+    semer(db, "item1", 1_000);
+    const { engine } = moteur(db, root, reseauImmediat(200));
+
+    expect(engine.pending()).toBe(0);
   });
 });
