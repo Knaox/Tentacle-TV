@@ -166,6 +166,9 @@ interface EtatHdrNatif {
   actif: boolean;
   bascule: boolean;
   edrCapable?: boolean;
+  /** La couche Metal de mpv, telle que mpv la rapporte. `null` = il n'a rien dit. */
+  coucheHdr?: boolean | null;
+  espaceCouche?: string | null;
 }
 
 /** État HDR vu par le NATIF, plus fiable que la requête média du navigateur. */
@@ -190,6 +193,12 @@ function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
   // Le natif le renvoyait déjà, le panneau n'en faisait rien.
   if (etat.edrCapable !== undefined) {
     lignes.push(["écran capable EDR", etat.edrCapable ? "oui" : "non", etat.edrCapable]);
+  }
+  // Ce que mpv dit de SA couche — la seule mesure qui ne dépende pas de la
+  // scène affichée, contrairement à « écran en HDR » juste au-dessus.
+  if (etat.coucheHdr !== undefined) {
+    const dit = etat.coucheHdr === null ? "inconnue" : etat.coucheHdr ? "plage etendue" : "SDR";
+    lignes.push(["couche Metal", `${dit}${etat.espaceCouche ? ` (${etat.espaceCouche})` : ""}`, etat.coucheHdr]);
   }
   return { titre: "HDR — état natif", lignes };
 }
@@ -227,7 +236,7 @@ export async function collecterDebug(): Promise<DebugSection[]> {
     // une capture par rafraîchissement volerait à la lecture ce qu'on mesure.
     derniereSonde() === null ? sonder() : Promise.resolve(derniereSonde()),
   ]);
-  const lignesVerdict = verdicts(pourVerdict, natif?.actif ?? false).map(
+  const lignesVerdict = verdicts(pourVerdict, natif?.actif ?? false, natif?.coucheHdr).map(
     (v) => [v.cle, v.valeur, v.bon] as const,
   );
   const sections: Array<DebugSection | null> = [

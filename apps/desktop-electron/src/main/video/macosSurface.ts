@@ -88,6 +88,18 @@ export class MacosSurface implements VideoSurface {
     // Et un recalage APRÈS, pour la géométrie : `enter-full-screen` peut
     // précéder le dernier ajustement de macOS de quelques images.
     this.planifierCalage();
+    // Puis une seconde fois APRÈS l'animation. `enter-full-screen` arrive quand
+    // Electron considère la transition finie, mais macOS déplace encore la
+    // fenêtre dans son espace dédié après coup — et c'est ce déplacement-là qui
+    // défait l'empilement. Réaffirmer avant ne suffit donc pas.
+    //
+    // La transition est aussi le moment le plus instructif du montage, et le
+    // seul qu'aucun rapport ne couvrait : celui de la lecture est tracé une
+    // fois, bien avant.
+    setTimeout(() => {
+      this.reattacher();
+      trace(`plein ecran — ${this.geometrie()}`);
+    }, 500);
   };
 
   constructor(private readonly host: BrowserWindow) {
@@ -169,6 +181,14 @@ export class MacosSurface implements VideoSurface {
   private reattacher(): void {
     if (this.mpvWindow === null) return;
     sansFaillir("reattachement de la fenetre video", () => {
+      // ⚠️ RETIRER D'ABORD. `addChildWindow:ordered:` appelé sur une fenêtre
+      // qui est DÉJÀ fille du même parent ne réordonne rien — c'est mesuré :
+      // après un passage en plein écran, la géométrie restait parfaite
+      // (`calee=oui enfant=oui visible=oui`) et la vidéo passait pourtant
+      // DEVANT, emportant tout l'overlay du lecteur. La relation était intacte,
+      // seul l'ordre ne l'était plus, et le réaffirmer sans rompre le lien ne
+      // le rétablissait pas.
+      msg.removeChildWindow(this.parent, this.mpvWindow);
       msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
       this.align();
     });
@@ -185,10 +205,35 @@ export class MacosSurface implements VideoSurface {
   align(): void {
     if (this.mpvWindow === null) return;
     sansFaillir("calage de la fenetre video", () => {
-      const cadre: Rect = msg.rect(this.parent, "frame");
-      const contenu: Rect = msg.contentRect(this.parent, cadre);
-      msg.setFrame(this.mpvWindow, contenu);
+      msg.setFrame(this.mpvWindow, this.cible());
     });
+  }
+
+  /**
+   * Le rectangle que la vidéo doit occuper — et ce n'est PAS toujours le
+   * rectangle de contenu.
+   *
+   * ⚠️ `transparent: true` retire la barre de titre de la fenêtre, et Chromium
+   * peint alors sur la totalité du cadre. AppKit, lui, continue de la déduire :
+   * `contentRectForFrameRect:` rend 32 points de moins. Caler la vidéo là-dessus
+   * laissait donc une bande de 32 points en haut de la fenêtre que PERSONNE ne
+   * peignait — ni la vidéo, qui s'arrêtait avant, ni la page, transparente. On y
+   * voyait le bureau à travers : le liseré parasite constaté au bord de
+   * l'overlay, et mesuré ici même (`ecart=32`).
+   *
+   * On demande donc à Electron, seul à savoir ce que la webview couvre
+   * réellement : quand sa zone de contenu fait la hauteur de la fenêtre, c'est
+   * le cadre entier qu'il faut viser. Aucune supposition sur la décoration —
+   * une fenêtre qui retrouverait sa barre de titre serait servie correctement
+   * sans qu'une ligne change.
+   */
+  private cible(): Rect {
+    const cadre: Rect = msg.rect(this.parent, "frame");
+    return this.pageCouvreLeCadre() ? cadre : msg.contentRect(this.parent, cadre);
+  }
+
+  private pageCouvreLeCadre(): boolean {
+    return this.host.getBounds().height === this.host.getContentBounds().height;
   }
 
   /**
@@ -213,19 +258,31 @@ export class MacosSurface implements VideoSurface {
    */
   geometrie(): string {
     if (this.mpvWindow === null) return "surface non attachee";
-    const parent: Rect = msg.contentRect(this.parent, msg.rect(this.parent, "frame"));
+    const cible = this.cible();
     const video: Rect = msg.rect(this.mpvWindow, "frame");
     const colle =
-      Math.abs(parent.x - video.x) < 1 &&
-      Math.abs(parent.y - video.y) < 1 &&
-      Math.abs(parent.width - video.width) < 1 &&
-      Math.abs(parent.height - video.height) < 1;
+      Math.abs(cible.x - video.x) < 1 &&
+      Math.abs(cible.y - video.y) < 1 &&
+      Math.abs(cible.width - video.width) < 1 &&
+      Math.abs(cible.height - video.height) < 1;
     const enfant = msg.get(this.mpvWindow, "parentWindow") !== null;
     const visible = msg.bool(this.mpvWindow, "isVisible");
+    // La cible ET ce qu'Electron pense couvrir : quand les deux divergent, il
+    // reste une bande de fenêtre que personne ne peint — on y voit le bureau à
+    // travers, puisque la surface de la page est transparente. C'est le seul
+    // moyen de distinguer ce liseré-là d'une bande noire de format scope, qui
+    // lui ressemble à s'y méprendre.
+    const b = this.host.getBounds();
+    const c = this.host.getContentBounds();
+    // Les NIVEAUX des deux fenêtres : c'est ce qui décide de l'empilement quand
+    // la relation parent-enfant, elle, est intacte. Un niveau vidéo supérieur à
+    // celui de la page veut dire que l'overlay est passé dessous.
+    const niveaux = `${msg.entier(this.parent, "level")}/${msg.entier(this.mpvWindow, "level")}`;
     return (
-      `contenu=${fmt(parent)} video=${fmt(video)} ` +
-      `calee=${colle ? "oui" : "NON"} enfant=${enfant ? "oui" : "NON"} ` +
-      `visible=${visible ? "oui" : "NON"}`
+      `cible=${fmt(cible)} video=${fmt(video)} calee=${colle ? "oui" : "NON"} ` +
+      `electron fenetre=${b.width}x${b.height} page=${c.width}x${c.height} ` +
+      `enfant=${enfant ? "oui" : "NON"} visible=${visible ? "oui" : "NON"} ` +
+      `niveaux=${niveaux} pleinEcran=${this.host.isFullScreen() ? "oui" : "non"}`
     );
   }
 

@@ -87,7 +87,7 @@ function nombre(v: string | null | undefined): number | null {
  * détruite avant que mpv ne la voie et le contenu arrive en `bt.1886`. Le
  * lecteur se comporte bien, il n'y a simplement plus de HDR à transmettre.
  */
-function verdictHdr(p: Lues, ecranEnHdr: boolean): Verdict {
+function verdictHdr(p: Lues, ecranEnHdr: boolean, coucheHdr?: boolean | null): Verdict {
   const gamma = p["video-params/gamma"];
   const sortie = p["video-target-params/gamma"];
   const contenuHdr = gamma !== null && gamma !== undefined && HDR.has(gamma);
@@ -106,16 +106,31 @@ function verdictHdr(p: Lues, ecranEnHdr: boolean): Verdict {
   if (!HDR.has(sortie)) {
     return { cle: "HDR", valeur: `contenu ${gamma} → sortie ${sortie} — TONE-MAPPE`, bon: false };
   }
-  if (!ecranEnHdr) {
-    return { cle: "HDR", valeur: `signal ${sortie} vers un ecran SDR — image sombre`, bon: false };
-  }
   const primaires = p["video-target-params/primaries"] ?? "?";
   const pic = nombre(p["video-target-params/sig-peak"]) ?? nombre(p["target-peak"]);
-  return {
-    cle: "HDR",
-    valeur: `REEL — ${sortie} / ${primaires} vers un ecran en HDR${pic ? `, pic ${pic}` : ""}`,
-    bon: true,
-  };
+  const detail = `${sortie} / ${primaires}${pic ? `, pic ${pic}` : ""}`;
+
+  // ⚠️ Sur macOS, `ecranEnHdr` est un EDR INSTANTANÉ qui dépend de l'image :
+  // une scène de nuit ne réclame aucune haute lumière et le fait retomber à
+  // 1,00 sur une lecture parfaitement HDR. Mesuré sur le même film, à quelques
+  // minutes d'intervalle : 1,00 puis 12,82. S'y fier seul faisait annoncer
+  // « vers un ecran SDR » pendant qu'une couche ITUR_2100_PQ était active — le
+  // diagnostic accusait alors l'écran d'un défaut qui n'existait pas.
+  //
+  // `coucheHdr` vient de mpv lui-même, qui trace l'état de sa couche Metal.
+  // C'est le RENDU qui parle, et il ne dépend pas de la scène.
+  if (coucheHdr === true) {
+    return { cle: "HDR", valeur: `REEL — ${detail}, couche en plage etendue`, bon: true };
+  }
+  if (!ecranEnHdr) {
+    // `coucheHdr` à `null` veut dire « on ne sait pas », jamais « non » : la
+    // coquille qui répond ne suit pas forcément l'état de la couche.
+    const cause = coucheHdr === false
+      ? "couche en SDR"
+      : "aucune plage etendue accordee EN CE MOMENT — scene sombre ?";
+    return { cle: "HDR", valeur: `signal ${sortie} — ${cause}`, bon: false };
+  }
+  return { cle: "HDR", valeur: `REEL — ${detail} vers un ecran en HDR`, bon: true };
 }
 
 /** Direct play ou transcodage : le `.m3u8` trahit le second. */
@@ -279,12 +294,18 @@ function verdictCadence(p: Lues): Verdict {
   };
 }
 
-/** Les verdicts, dans l'ordre où ils comptent. */
-export function verdicts(p: Lues, ecranEnHdr: boolean): Verdict[] {
+/**
+ * Les verdicts, dans l'ordre où ils comptent.
+ *
+ * `coucheHdr` n'existe que sur la coquille Electron macOS, où l'EDR seul ne
+ * suffit pas à juger — voir `verdictHdr`. Absent ailleurs, et absent ne veut
+ * pas dire « non ».
+ */
+export function verdicts(p: Lues, ecranEnHdr: boolean, coucheHdr?: boolean | null): Verdict[] {
   return [
     verdictSource(p),
     verdictFlux(p),
-    verdictHdr(p, ecranEnHdr),
+    verdictHdr(p, ecranEnHdr, coucheHdr),
     verdictImage(p),
     verdictSurface(p),
     verdictDecodage(p),

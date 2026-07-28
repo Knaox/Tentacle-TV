@@ -116,7 +116,17 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     //
     // Et il ne coûte ici aucun des trois défauts qu'il cause sous Windows :
     // cadre, redimensionnement et plein écran restent tous fonctionnels.
-    ...(process.platform === "darwin" ? { transparent: true } : {}),
+    //
+    // ⚠️ `titleBarStyle: "hidden"` L'ACCOMPAGNE, et ce n'est pas cosmétique.
+    // `transparent: true` retire déjà toute décoration visible, mais AppKit
+    // continue de RÉSERVER la barre de titre : mesuré, la fenêtre fait 800
+    // points de haut et la page n'en couvre que 768. Les 32 points du haut ne
+    // sont alors peints par personne — ni par la page, ni par la vidéo calée
+    // sur le rectangle de contenu — et comme la surface est transparente, on y
+    // voit le BUREAU à travers. C'est le liseré parasite constaté au bord de
+    // l'overlay. Avec ce style, page et cadre coïncident : 1280x800 des deux
+    // côtés, et `MacosSurface` cale la vidéo sur le cadre entier.
+    ...(process.platform === "darwin" ? { transparent: true, titleBarStyle: "hidden" } : {}),
     backgroundColor: "#000000",
     show: false,
     webPreferences: {

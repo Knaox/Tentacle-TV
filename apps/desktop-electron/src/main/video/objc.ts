@@ -39,6 +39,9 @@ const send1 = objc.func("objc_msgSend", "void*", ["void*", "void*", "void*"]);
 const send0d = objc.func("objc_msgSend", "double", ["void*", "void*"]);
 /** `[cible sélecteur]` — retour NSUInteger. */
 const send0u = objc.func("objc_msgSend", "unsigned long", ["void*", "void*"]);
+/** `[cible sélecteur]` — retour NSInteger, qui peut être NÉGATIF (un niveau de
+ *  fenêtre en dessous du niveau normal, par exemple). */
+const send0l = objc.func("objc_msgSend", "long", ["void*", "void*"]);
 /** `[cible sélecteur]` — retour booléen. */
 const send0b = objc.func("objc_msgSend", "bool", ["void*", "void*"]);
 /** `[cible sélecteur: index]` — index entier, retour objet. */
@@ -112,6 +115,11 @@ export const msg = {
   count(cible: unknown, nom: string): number {
     if (!cible) return 0;
     return Number(send0u(cible, sel(nom)));
+  },
+  /** `[cible nom]` — NSInteger signé, pour un niveau de fenêtre. */
+  entier(cible: unknown, nom: string): number {
+    if (!cible) return 0;
+    return Number(send0l(cible, sel(nom)));
   },
   /** `[cible nom: index]` — élément d'un tableau. */
   index(cible: unknown, nom: string, i: number): unknown {

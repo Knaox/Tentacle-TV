@@ -16,10 +16,12 @@ import {
   FORMAT,
   MpvEvent,
   MpvEventEndFile,
+  MpvEventLogMessage,
   MpvEventProperty,
   mpvApi,
 } from "./mpvFfi";
 import { retenir } from "./mpvEtat";
+import { retenirJournal } from "./coucheMetal";
 import { repondreLecture } from "./mpvLecture";
 import type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
@@ -85,6 +87,31 @@ function decodeProperty(format: number, data: unknown): unknown {
  */
 const MAX_PAR_PASSAGE = 128;
 
+/**
+ * Ce qu'on retient des messages de journal de mpv.
+ *
+ * ⚠️ La preuve du HDR sur macOS passe par LÀ, et par nulle part ailleurs : mpv
+ * trace lui-même l'état de sa couche Metal — « Metal layer colorspace changed:
+ * ITUR_2100_PQ », puis « Metal layer HDR active ». C'est le rendu qui parle, pas
+ * une sonde extérieure qui devine. Aucune propriété ne dit la même chose : mpv
+ * annonce une sortie `pq` dès qu'il la CALCULE, bien avant de savoir si l'écran
+ * l'a acceptée.
+ *
+ * Filtré, parce que le niveau verbeux de mpv produit des centaines de lignes par
+ * seconde et noierait tout le reste du journal.
+ */
+const JOURNAL_RETENU = /colorspace|hdr|edr|metal layer|dolby|dovi/i;
+
+/** Relaie ce que mpv dit de sa couche Metal. Développement seulement. */
+function journaliser(data: unknown): void {
+  const m = koffi.decode(data, MpvEventLogMessage) as { prefix: string; text: string };
+  if (!JOURNAL_RETENU.test(m.text)) return;
+  // Retenu AVANT d'être tracé : c'est de là que vient la seule réponse fiable à
+  // « la couche est-elle en plage étendue ? » — voir `coucheMetal.ts`.
+  retenirJournal(m.text);
+  console.info(`[mpv:${m.prefix}] ${m.text.trimEnd()}`);
+}
+
 /** Vide la file d'évènements et diffuse. */
 export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
   if (!ctx) return;
@@ -99,6 +126,11 @@ export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
     };
     const id = ev.event_id;
     if (id === EVENT.NONE) return;
+
+    if (id === EVENT.LOG_MESSAGE) {
+      if (ev.data) journaliser(ev.data);
+      continue;
+    }
 
     // Une commande asynchrone vient d'aboutir : on règle sa promesse et on
     // n'en dit rien à la page — c'est l'appelant qui saura quoi en faire.

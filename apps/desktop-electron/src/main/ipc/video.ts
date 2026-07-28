@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
+import { coucheEnHdr, espaceCouche } from "../video/coucheMetal";
 import { basculeEnCours, edrCapable, hdrActif, hdrSupporte } from "../video/displayHdr";
 import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { arreter } from "../video/mpvArret";
@@ -256,6 +257,14 @@ export function registerVideoCommands(registry: CommandRegistry): void {
           // Diagnostic seul : dit que l'écran SAIT faire de la plage étendue,
           // sans rien promettre d'une bascule qui n'existe pas sur macOS.
           edrCapable: edrCapable(fenetre),
+          // ⚠️ À NE PAS confondre avec `actif`. Celui-ci est instantané et
+          // dépend de l'IMAGE affichée : une scène de nuit ne réclame aucune
+          // haute lumière et retombe à 1,00 sur une lecture parfaitement HDR
+          // (mesuré, même film : 1,00 puis 12,82). `coucheHdr` dit ce que mpv
+          // rapporte de sa couche Metal, ce qui ne dépend pas de la scène.
+          // `null` = mpv n'a rien dit, et surtout pas « non ».
+          coucheHdr: coucheEnHdr(),
+          espaceCouche: espaceCouche(),
         };
       },
     })

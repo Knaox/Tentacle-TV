@@ -7,8 +7,10 @@
  */
 
 import koffi from "koffi";
+import { app } from "electron";
 import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
 import { oublierEtat } from "./mpvEtat";
+import { oublierCouche } from "./coucheMetal";
 import { lireAsync, oublierLectures } from "./mpvLecture";
 import { drain, oublierCadence, type Sink } from "./mpvDrain";
 export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
@@ -45,6 +47,7 @@ export function nettoyerEtat(): void {
   observedIds = new Map();
   oublierCadence();
   oublierEtat();
+  oublierCouche();
   oublierLectures();
   for (const resolve of enVol.values()) resolve("instance mpv detruite");
   enVol.clear();
@@ -239,6 +242,17 @@ export function init(opts: InitOptions, sink: Sink): string | null {
     return `mpv_initialize : ${err}`;
   }
 
+  // ⚠️ La preuve du HDR sur macOS passe par le journal de mpv, et par nulle
+  // part ailleurs : c'est lui qui dit si sa couche Metal est réellement passée
+  // en PQ. Une propriété ne dit que ce que mpv CALCULE. Verbeux, mais `drain`
+  // ne retient que ce qui parle de couleur — voir `JOURNAL_RETENU`.
+  //
+  // Développement seulement : dans un paquet livré, ces messages ne servent
+  // personne et le décodage de chacun coûte un aller-retour FFI.
+  if (process.platform === "darwin" && !app.isPackaged) {
+    mpvApi().requestLogMessages(ctx, "v");
+  }
+
   observedIds = new Map();
   opts.observed.forEach(([name, format], index) => {
     const id = index + 1;
@@ -275,6 +289,7 @@ export function destroy(): void {
   observedIds = new Map();
   oublierCadence();
   oublierEtat();
+  oublierCouche();
   oublierLectures();
 
   // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
