@@ -5,13 +5,17 @@
  * côté page : la bannière et le bouton « Mettre à jour » réapparaissent.
  * Aucune modification d'`apps/web` — `useAutoUpdate` et `updateCheckers` sont
  * déjà écrits pour ce contrat.
+ *
+ * **Windows uniquement, et c'est voulu.** Sur macOS les mises à jour
+ * appartiennent à l'App Store : ne rien enregistrer laisse `supportsAppUpdates()`
+ * à faux, donc la bannière absente — le comportement juste, obtenu sans une
+ * ligne de conditionnel côté page.
  */
 
 import { shell } from "electron";
 import { z } from "zod";
-import { checkMsixUpdate, downloadAndInstallMsixUpdate } from "../msixUpdate";
 import { sendToPage } from "../pageEvents";
-import { nativeHandle } from "../video/win32";
+import { nativeHandle } from "../video/native";
 import { getMainWindow } from "../window";
 import { CommandRegistry } from "./registry";
 
@@ -20,13 +24,26 @@ const NO_ARGS = z.object({}).passthrough();
 /** Page de mises à jour du Store — le repli qui fonctionne toujours. */
 const PAGE_MISES_A_JOUR = "ms-windows-store://downloadsandupdates";
 
+/**
+ * WinRT à la demande.
+ *
+ * ⚠️ `msixUpdate` remonte à `winrt/com.ts`, qui charge `combase.dll` à l'import.
+ * Un `import` en tête de fichier ferait donc tomber le processus principal sur
+ * macOS — alors même que la garde ci-dessous n'aurait rien enregistré.
+ */
+function msix(): typeof import("../msixUpdate") {
+  return require("../msixUpdate") as typeof import("../msixUpdate");
+}
+
 export function registerUpdateCommands(registry: CommandRegistry): void {
+  if (process.platform !== "win32") return;
+
   registry
     .add("check_msix_update", {
       schema: NO_ARGS,
       run: async () => {
         try {
-          return await checkMsixUpdate();
+          return await msix().checkMsixUpdate();
         } catch (error) {
           // Une recherche qui échoue n'est pas une mise à jour absente, mais la
           // page ne peut rien en faire d'autre : elle n'affiche rien.
@@ -47,7 +64,7 @@ export function registerUpdateCommands(registry: CommandRegistry): void {
         // suffit à la barre de la page.
         sendToPage("msix-update-progress", { progress: 0 });
         try {
-          await downloadAndInstallMsixUpdate(nativeHandle(win));
+          await msix().downloadAndInstallMsixUpdate(nativeHandle(win));
           sendToPage("msix-update-progress", { progress: 1 });
         } catch (error) {
           // Repli : la page de mises à jour du Store. L'utilisateur obtient sa

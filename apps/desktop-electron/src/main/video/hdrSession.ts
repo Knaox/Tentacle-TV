@@ -7,7 +7,7 @@
  * qui manquait quand ils vivaient chacun de leur côté.
  */
 
-import { activerHdr, hdrActif, restaurerHdr } from "./hdr";
+import { activerHdr, hdrActif, restaurerHdr } from "./displayHdr";
 import { getProperty, setProperty } from "./mpv";
 
 /**

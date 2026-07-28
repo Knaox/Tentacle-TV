@@ -3,11 +3,18 @@
  *
  * Séparée pour que `videoWindow.ts` et `fullscreen.ts` ne gardent que
  * l'orchestration, et qu'aucun appel FFI ne traîne ailleurs.
+ *
+ * ⚠️ **Ce module ne doit être chargé que sous Windows** : `koffi.load` s'exécute
+ * à l'import et fait tomber le processus principal partout ailleurs. Les
+ * appelants passent par `surface.ts`, qui ne le réclame qu'à bon escient.
  */
 
 import koffi from "koffi";
-import { app } from "electron";
-import type { BrowserWindow } from "electron";
+
+// Réexportées, et non redéfinies : elles n'ont rien de Windows et vivent
+// désormais dans `native.ts`, que macOS peut importer sans réclamer
+// `user32.dll`. Les appelants historiques gardent leur import d'origine.
+export { nativeHandle, sansFaillir, trace } from "./native";
 
 // Enregistre le type auprès de koffi ; il est ensuite désigné par son NOM dans
 // les signatures ci-dessous, d'où l'absence de variable.
@@ -77,32 +84,6 @@ const WS_EX_NOACTIVATE = 0x08000000n;
  */
 function bits(valeur: unknown): bigint {
   return typeof valeur === "bigint" ? valeur : BigInt(valeur as number);
-}
-
-/** Journal de la surface vidéo, sur un build de diagnostic. */
-export function trace(message: string): void {
-  if (!app.isPackaged) console.log(`[video] ${message}`);
-}
-
-/**
- * Exécute une opération Win32 sans jamais emporter le processus principal.
- *
- * ⚠️ Ces opérations tournent dans des rappels de minuteur : une exception y est
- * fatale, Electron ferme l'application en pleine lecture. Le désarmement et le
- * calage sont des CONFORTS — leur échec dégrade, il ne doit jamais empêcher de
- * regarder un film. Même contrat que l'app Tauri (`mpv_window.rs:137`).
- */
-export function sansFaillir(quoi: string, action: () => void): void {
-  try {
-    action();
-  } catch (e) {
-    console.warn(`[video] ${quoi} en echec, lecture poursuivie : ${String(e)}`);
-  }
-}
-
-/** Descripteur natif d'une fenêtre Electron, en valeur. */
-export function nativeHandle(win: BrowserWindow): bigint {
-  return win.getNativeWindowHandle().readBigUInt64LE(0);
 }
 
 /** La fenêtre « mpv » fille de `parent`, ou `0n` si elle n'existe pas encore. */

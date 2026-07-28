@@ -9,11 +9,12 @@
 import { z } from "zod";
 import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
-import { basculeEnCours, hdrActif, hdrSupporte } from "../video/hdr";
+import { basculeEnCours, hdrActif, hdrSupporte } from "../video/displayHdr";
 import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { command, destroy, getProperty, init, setProperty } from "../video/mpv";
 import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
-import { nativeHandle, VideoWindow } from "../video/videoWindow";
+import { nativeHandle } from "../video/native";
+import { creerSurfaceVideo, type VideoSurface } from "../video/surface";
 import { CommandRegistry } from "./registry";
 
 /** Valeur scalaire acceptée par mpv. */
@@ -42,7 +43,7 @@ const SET_PROPERTY = z.object({ name: z.string(), value: SCALAR });
 const GET_PROPERTY = z.object({ name: z.string(), format: z.string().optional() });
 const NO_ARGS = z.object({}).passthrough();
 
-let video: VideoWindow | null = null;
+let video: VideoSurface | null = null;
 
 export function registerVideoCommands(registry: CommandRegistry): void {
   registry
@@ -91,7 +92,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         // `VideoWindow` et partent avec elle — posés ici, rien ne les retirait,
         // et le lecteur est remonté à chaque épisode.
         video?.detach();
-        video = new VideoWindow(win);
+        video = creerSurfaceVideo(win);
         video.attach();
 
         return "ok";
