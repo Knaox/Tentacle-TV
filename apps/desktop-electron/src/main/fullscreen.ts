@@ -61,15 +61,22 @@ export function estEnPleinEcran(): boolean {
  * serait alors trop petite — un liseré de bureau le temps d'une image.
  */
 /**
- * L'ordre des trois gestes n'est pas négociable — chacun a été mesuré sur la
- * ZONE CLIENT, la seule qui compte : c'est elle que `calerSous` donne à mpv
- * (`GetClientRect`), donc elle qui décide si la vidéo a des bords noirs.
+ * Deux mesures existent, et une seule compte.
  *
- * Sur un écran 1920x1080 DIP, en partant d'une fenêtre agrandie :
+ * `GetClientRect` (Win32) est ce que `calerSous` donne à mpv, donc ce qui
+ * décide des bandes noires. `getContentBounds()` d'Electron est la vision de
+ * Chromium, qui réserve une hauteur de barre de titre même quand le style
+ * Win32 n'en a plus — les deux DIVERGENT, et se fier à la seconde conduit à
+ * corriger un écart qui n'existe pas.
  *
- *   cadre → unmaximize → setBounds          client 1908x1042  (manque 12x38)
- *   unmaximize → cadre → setBounds          client 1920x1054  (manque  0x26)
- *   unmaximize → cadre → setContentBounds   client 1920x1080  PLEINE
+ * Mesuré sur un écran 3840x2160 px, après `unmaximize` puis retrait du cadre :
+ *
+ *   setBounds         GetClientRect 3840x2160  fenêtre 3840x2160 @ 0,0
+ *   setContentBounds  GetClientRect 3840x2212  fenêtre 3840x2212 @ 0,-52
+ *
+ * `setBounds` donne donc déjà une zone client pleine. `setContentBounds`, lui,
+ * fait déborder la fenêtre de 52 px vers le haut — et Windows ne masque la
+ * barre des tâches que pour une fenêtre couvrant EXACTEMENT le moniteur.
  */
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
@@ -90,10 +97,9 @@ function entrer(win: BrowserWindow): void {
   const style = retirerLeCadre(nativeHandle(win));
   avant = { normales, style, maximisee };
 
-  // 3. `setContentBounds` et NON `setBounds` : le second dimensionne la FENÊTRE,
-  //    cadre compris, et Chromium garde une zone non-cliente résiduelle même
-  //    sans `WS_CAPTION` — 26 DIP de hauteur qui manquaient à la vidéo. Le
-  //    premier dimensionne la zone CLIENT, exactement ce que mpv reçoit.
+  // 3. `setBounds` et NON `setContentBounds` : voir l'en-tête de la fonction.
+  //    La fenêtre doit couvrir exactement le moniteur — c'est à cette
+  //    condition, et à elle seule, que Windows masque la barre des tâches.
   //
   // `getDisplayMatching` et NON `getDisplayNearestPoint` : le second attend un
   // POINT et ne lit que le coin supérieur gauche — or Windows fait déborder une
@@ -103,7 +109,7 @@ function entrer(win: BrowserWindow): void {
   // `x=-1152`. Le plein écran partait chez lui.
   //
   // `bounds` et non `workArea` : la barre des tâches doit être recouverte.
-  win.setContentBounds(screen.getDisplayMatching(bounds).bounds);
+  win.setBounds(screen.getDisplayMatching(bounds).bounds);
 }
 
 function sortir(win: BrowserWindow): void {
