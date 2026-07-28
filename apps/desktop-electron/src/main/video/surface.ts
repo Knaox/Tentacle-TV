@@ -39,6 +39,14 @@ export interface VideoSurface {
    * thread principal. Windows détruit d'un bloc et n'a rien à guetter.
    */
   videoDisparue?(): boolean;
+  /**
+   * La fenêtre native qui porte la vidéo, quand il y en a une.
+   *
+   * Sert à interroger le BON écran : sur un poste à plusieurs moniteurs, la
+   * plage étendue accordée n'est pas la même sur un XDR et sur un écran SDR, et
+   * c'est celui qui affiche la vidéo qui compte.
+   */
+  fenetreVideo?(): unknown;
 }
 
 /**

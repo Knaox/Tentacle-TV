@@ -20,10 +20,38 @@
  * l'import et ferait tomber le processus principal sur macOS.
  */
 
-/** L'écran est-il en HDR ? Sur macOS : l'EDR est-il à notre disposition ? */
-export function hdrActif(): boolean {
-  if (process.platform !== "win32") return false;
-  return (require("./hdr") as typeof import("./hdr")).hdrActif();
+/**
+ * L'écran est-il en HDR ?
+ *
+ * Sur macOS la question n'a de sens que posée à l'écran qui PORTE la vidéo, et
+ * la réponse n'est pas « l'écran est en mode HDR » — ce mode n'existe pas — mais
+ * « la plage étendue est-elle accordée en ce moment ». C'est la seule mesure qui
+ * distingue demander d'obtenir, et c'est ce que le panneau de diagnostic doit
+ * montrer. Voir `macosEdr.ts`.
+ *
+ * `fenetreVideo` est la NSWindow de mpv, quand elle existe : sur un poste à
+ * plusieurs moniteurs, c'est l'écran qui l'affiche qui compte, pas le principal.
+ */
+export function hdrActif(fenetreVideo?: unknown): boolean {
+  if (process.platform === "win32") {
+    return (require("./hdr") as typeof import("./hdr")).hdrActif();
+  }
+  if (process.platform !== "darwin") return false;
+  const { lireEdr } = require("./macosEdr") as typeof import("./macosEdr");
+  return lireEdr(fenetreVideo ?? null).obtenue;
+}
+
+/**
+ * L'écran sait-il faire de la plage étendue ? macOS seulement.
+ *
+ * ⚠️ À ne PAS confondre avec `hdrSupporte`, qui commande l'affichage de la
+ * préférence de bascule et doit rester faux ici : il n'y a rien à basculer sur
+ * macOS. Celle-ci ne sert qu'au diagnostic.
+ */
+export function edrCapable(fenetreVideo?: unknown): boolean {
+  if (process.platform !== "darwin") return false;
+  const { lireEdr } = require("./macosEdr") as typeof import("./macosEdr");
+  return lireEdr(fenetreVideo ?? null).capable;
 }
 
 /**

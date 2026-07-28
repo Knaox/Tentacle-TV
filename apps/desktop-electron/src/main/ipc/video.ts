@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
-import { basculeEnCours, hdrActif, hdrSupporte } from "../video/displayHdr";
+import { basculeEnCours, edrCapable, hdrActif, hdrSupporte } from "../video/displayHdr";
 import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
@@ -215,12 +215,21 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     })
     .add("display_hdr_state", {
       schema: NO_ARGS,
-      run: () => ({
-        supporte: hdrSupporte(),
-        actif: hdrActif(),
-        bascule: basculeEnCours(),
-        autoAutorise: basculeAutorisee(),
-      }),
+      run: () => {
+        // La fenêtre vidéo désigne l'écran à interroger sur macOS. Absente
+        // ailleurs, et absente aussi hors lecture — la sonde retombe alors sur
+        // l'écran principal, ce qui reste la bonne réponse.
+        const fenetre = video?.fenetreVideo?.();
+        return {
+          supporte: hdrSupporte(),
+          actif: hdrActif(fenetre),
+          bascule: basculeEnCours(),
+          autoAutorise: basculeAutorisee(),
+          // Diagnostic seul : dit que l'écran SAIT faire de la plage étendue,
+          // sans rien promettre d'une bascule qui n'existe pas sur macOS.
+          edrCapable: edrCapable(fenetre),
+        };
+      },
     })
     .add("display_hdr_auto", {
       schema: SURFACE,

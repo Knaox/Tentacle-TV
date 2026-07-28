@@ -49,7 +49,23 @@ export function getMainWindow(): BrowserWindow | null {
  * pourquoi le drapeau `transparent` de fabrication est banni.
  */
 export function setPlayerSurfaceTransparent(on: boolean): void {
-  mainWindow?.setBackgroundColor(on ? "#00000000" : "#000000");
+  const win = mainWindow;
+  if (!win) return;
+  win.setBackgroundColor(on ? "#00000000" : "#000000");
+
+  // ⚠️ macOS demande un geste de PLUS, et sans lui rien ne s'affiche.
+  //
+  // Une `NSWindow` reste opaque tant que `setOpaque:` n'a pas été posé à `NO`,
+  // quoi que Chromium fasse de son fond. Or la vidéo y est portée par une
+  // fenêtre SŒUR placée en dessous : une fenêtre hôte opaque la masque
+  // entièrement, et l'on obtient le symptôme trompeur du son sans image.
+  //
+  // Chargé à la demande : `macosOpacite` remonte au runtime Objective-C, qui
+  // n'existe pas ailleurs.
+  if (process.platform === "darwin") {
+    const { rendreTransparent } = require("./video/macosOpacite") as typeof import("./video/macosOpacite");
+    rendreTransparent(win, on);
+  }
 }
 
 

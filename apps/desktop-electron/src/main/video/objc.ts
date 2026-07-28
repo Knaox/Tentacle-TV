@@ -128,6 +128,11 @@ export const msg = {
     if (!cible) return;
     send1flag(cible, sel(nom), valeur);
   },
+  /** `[cible nom: objet]`, sans retour utile — poser une couleur, une vue. */
+  setObjet(cible: unknown, nom: string, objet: unknown): void {
+    if (!cible || !objet) return;
+    send1(cible, sel(nom), objet);
+  },
   /** `[parent addChildWindow: enfant ordered: ordre]`. */
   addChildWindow(parent: unknown, enfant: unknown, ordre: number): void {
     if (!parent || !enfant) return;
