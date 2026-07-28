@@ -56,7 +56,24 @@ export function basculeAutorisee(): boolean {
  * Sans effet si mpv n'est pas démarré : `setProperty` rend une erreur, il ne
  * lève pas.
  */
+/**
+ * ⚠️ macOS ne joue PAS à ce jeu, et y jouer casserait le HDR.
+ *
+ * Tout ce qui précède décrit une négociation Windows : un écran qu'on bascule,
+ * un drapeau qu'on lève ensuite, et qu'on rabaisse en sortant. Sur macOS il n'y
+ * a pas d'écran à basculer — l'EDR est accordé par le compositeur, fenêtre par
+ * fenêtre — et `target-colorspace-hint` est posé UNE FOIS pour toutes dans les
+ * options d'initialisation, où il conditionne la création de la couche Metal.
+ *
+ * Le rabaisser en vol n'aurait donc aucun bénéfice et un coût certain : il
+ * suffit que la page décoche la préférence — ce qui appelle `terminer()` — pour
+ * que la transmission tombe à `no` en pleine lecture et que l'image reparte en
+ * sRGB. La politique Windows est ici sans objet, pas seulement inutile.
+ */
+const NEGOCIE_AVEC_L_ECRAN = process.platform === "win32";
+
 function transmettre(actif: boolean): void {
+  if (!NEGOCIE_AVEC_L_ECRAN) return;
   const err = setProperty("target-colorspace-hint", actif ? "yes" : "no");
   if (err) console.info(`[tentacle] HDR : transmission ${actif ? "on" : "off"} — ${err}`);
 }
@@ -86,6 +103,21 @@ function transmettre(actif: boolean): void {
  * À appeler sur `file-loaded` ET `video-reconfig`.
  */
 export function accorder(): void {
+  // ⚠️ SORTIE IMMÉDIATE SUR macOS, ET C'EST VITAL.
+  //
+  // Pas seulement parce qu'il n'y a rien à accorder — la ligne suivante est un
+  // `mpv_get_property_string` sur une propriété qui dépend de la SORTIE VIDÉO.
+  // Cet appel est synchrone et prend le verrou du cœur de mpv ; pour y répondre,
+  // mpv doit toucher sa NSWindow, donc passer par le thread principal — celui
+  // qui appelle. Blocage parfait : zéro pourcent de processeur, aucune erreur,
+  // application inerte.
+  //
+  // Et le moment est le pire possible : `accorder` est appelée sur
+  // `video-reconfig`, c'est-à-dire précisément pendant que mpv reconfigure sa
+  // sortie. C'est le gel constaté dans l'application, dont le journal s'arrête
+  // net après la ligne « bascule automatique refusee ».
+  if (!NEGOCIE_AVEC_L_ECRAN) return;
+
   const gamma = getProperty("video-params/gamma");
 
   // ⚠️ `video-params/*` n'est PAS renseigné à `file-loaded` : mpv a ouvert le

@@ -73,6 +73,7 @@ export function nettoyerEtat(): void {
   pump = null;
   observedIds = new Map();
   lastTimePos = 0;
+  dernieresValeurs.clear();
   for (const resolve of enVol.values()) resolve("instance mpv detruite");
   enVol.clear();
 }
@@ -90,9 +91,51 @@ export function poserAuShutdown(rappel: (() => void) | null): void {
   auShutdown = rappel;
 }
 
-/** Lit une propriété sous forme de chaîne. `null` si absente. */
+/**
+ * Ce que mpv NOUS a dit, retenu au passage.
+ *
+ * ⚠️ Sur macOS c'est la SEULE source de lecture possible — voir `getProperty`.
+ */
+const dernieresValeurs = new Map<string, string>();
+
+/** Retient une valeur observée, sous la forme qu'une lecture rendrait. */
+function retenir(nom: string, valeur: unknown): void {
+  if (valeur === null || valeur === undefined) {
+    dernieresValeurs.delete(nom);
+    return;
+  }
+  if (typeof valeur === "boolean") {
+    dernieresValeurs.set(nom, valeur ? "yes" : "no");
+    return;
+  }
+  dernieresValeurs.set(nom, String(valeur));
+}
+
+/**
+ * Lit une propriété sous forme de chaîne. `null` si absente.
+ *
+ * # Sur macOS, on n'interroge PAS mpv — on se souvient
+ *
+ * ⚠️ `mpv_get_property_string` est synchrone et prend le verrou du cœur de mpv.
+ * Pour une propriété qui dépend de la sortie vidéo — `video-params/*`,
+ * `video-target-params/*`, tout ce que le panneau de diagnostic affiche — mpv
+ * doit toucher sa NSWindow, donc passer par le thread principal. Appelée DEPUIS
+ * ce thread, la lecture attend un thread qui l'attend : l'application se fige,
+ * sans un pourcent de processeur ni un message d'erreur.
+ *
+ * Le piège est qu'il ne se referme pas tout de suite : tout fonctionne pendant
+ * plusieurs minutes, et l'application meurt au générique — au moment où mpv
+ * reconfigure sa sortie pendant qu'on l'interroge. C'est le défaut le plus cher
+ * de la phase 1, rencontré deux fois.
+ *
+ * `mpv_observe_property` n'en souffre pas : les changements arrivent par la file
+ * d'évènements, qu'on vide déjà. Sur macOS on sert donc ce qu'on a entendu, et
+ * une propriété non observée rend `null` — mieux vaut un champ vide dans un
+ * panneau qu'une application figée.
+ */
 export function getProperty(name: string): string | null {
   if (!ctx) return null;
+  if (process.platform === "darwin") return dernieresValeurs.get(name) ?? null;
   const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
   if (!ptr) return null;
   const value = koffi.decode(ptr, "char", -1) as string;
@@ -231,9 +274,13 @@ function drain(sink: Sink): void {
         if (now - lastTimePos < TIME_POS_INTERVAL_MS) continue;
         lastTimePos = now;
       }
+      const valeur = decodeProperty(p.format, p.data);
+      // Retenu AVANT diffusion : c'est ce souvenir que `getProperty` sert sur
+      // macOS, où interroger mpv depuis ce thread fige l'application.
+      retenir(p.name, valeur);
       sink.property({
         name: p.name,
-        data: decodeProperty(p.format, p.data),
+        data: valeur,
         id: Number(ev.reply_userdata),
       });
       continue;
@@ -328,6 +375,7 @@ export function destroy(): void {
   ctx = null;
   observedIds = new Map();
   lastTimePos = 0;
+  dernieresValeurs.clear();
 
   // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
   // commande laissée en suspens retiendrait pour toujours l'appelant — et donc

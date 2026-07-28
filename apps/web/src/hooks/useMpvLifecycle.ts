@@ -4,6 +4,7 @@ import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
 import { queryTrackList } from "./mpvTrackList";
 import {
   awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
+  PROPRIETES_DIAGNOSTIC_MACOS,
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
@@ -64,9 +65,15 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         // fenêtre qui porte la couche Metal, donc tout le HDR. La distinction
         // porte sur la COQUILLE, pas sur la plateforme.
         const renderApi = !isElectronShell() && (isMacOS() || isLinux());
+        // Sur macOS le processus principal ne peut plus interroger mpv sans
+        // risquer de figer l'application : il sert les lectures depuis ce qu'il
+        // a entendu. Le panneau de diagnostic n'a donc que ce qui est observé.
+        const observees = isElectronShell() && isMacOS()
+          ? [...OBSERVED_PROPERTIES, ...PROPRIETES_DIAGNOSTIC_MACOS]
+          : OBSERVED_PROPERTIES;
         await withTimeout(api.init({
           initialOptions: buildMpvInitOptions(renderApi),
-          observedProperties: OBSERVED_PROPERTIES,
+          observedProperties: observees,
         }), 8000, "mpv-init");
         if (cancelled) return;
         if (isElectronShell()) {
