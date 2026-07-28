@@ -7,44 +7,14 @@
  */
 
 import koffi from "koffi";
-import {
-  EVENT,
-  EVENT_NAMES,
-  FORMAT,
-  MpvEvent,
-  MpvEventEndFile,
-  MpvEventProperty,
-  mpvApi,
-  mpvError,
-} from "./mpvFfi";
+import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
+import { oublierEtat, valeurConnue } from "./mpvEtat";
+import { drain, oublierCadence, type Sink } from "./mpvDrain";
+export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
-/** Charge utile poussée vers la page. */
-export interface PropertyChange {
-  name: string;
-  data: unknown;
-  id: number;
-}
-export interface MpvEventPayload {
-  event: string;
-  [key: string]: unknown;
-}
-
-type Sink = {
-  event: (payload: MpvEventPayload) => void;
-  property: (payload: PropertyChange) => void;
-};
-
-/**
- * `time-pos` est émis à la cadence des images — 24 fois par seconde sur un
- * film, davantage sur un flux à 60. Le traverser tel quel noierait le pont IPC
- * et ferait rendre React à chaque image pour déplacer une barre de progression
- * de moins d'un pixel. On l'étrangle à 8 Hz, ce qui reste fluide à l'œil.
- */
-const TIME_POS_INTERVAL_MS = 125;
 
 let ctx: unknown = null;
 let pump: ReturnType<typeof setInterval> | null = null;
-let lastTimePos = 0;
 let observedIds = new Map<number, string>();
 
 export function isRunning(): boolean {
@@ -72,8 +42,8 @@ export function nettoyerEtat(): void {
   if (pump !== null) clearInterval(pump);
   pump = null;
   observedIds = new Map();
-  lastTimePos = 0;
-  dernieresValeurs.clear();
+  oublierCadence();
+  oublierEtat();
   for (const resolve of enVol.values()) resolve("instance mpv detruite");
   enVol.clear();
 }
@@ -89,26 +59,6 @@ let auShutdown: (() => void) | null = null;
 
 export function poserAuShutdown(rappel: (() => void) | null): void {
   auShutdown = rappel;
-}
-
-/**
- * Ce que mpv NOUS a dit, retenu au passage.
- *
- * ⚠️ Sur macOS c'est la SEULE source de lecture possible — voir `getProperty`.
- */
-const dernieresValeurs = new Map<string, string>();
-
-/** Retient une valeur observée, sous la forme qu'une lecture rendrait. */
-function retenir(nom: string, valeur: unknown): void {
-  if (valeur === null || valeur === undefined) {
-    dernieresValeurs.delete(nom);
-    return;
-  }
-  if (typeof valeur === "boolean") {
-    dernieresValeurs.set(nom, valeur ? "yes" : "no");
-    return;
-  }
-  dernieresValeurs.set(nom, String(valeur));
 }
 
 /**
@@ -135,7 +85,7 @@ function retenir(nom: string, valeur: unknown): void {
  */
 export function getProperty(name: string): string | null {
   if (!ctx) return null;
-  if (process.platform === "darwin") return dernieresValeurs.get(name) ?? null;
+  if (process.platform === "darwin") return valeurConnue(name);
   const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
   if (!ptr) return null;
   const value = koffi.decode(ptr, "char", -1) as string;
@@ -204,105 +154,7 @@ function repondre(id: number, code: number): void {
   resolve(mpvError(code));
 }
 
-/** Décode la valeur d'une propriété selon son format. */
-function decodeProperty(format: number, data: unknown): unknown {
-  if (!data || format === FORMAT.NONE) return null;
-  if (format === FORMAT.FLAG) return (koffi.decode(data, "int") as number) !== 0;
-  // Pas de `as bigint` ici : koffi rend un Number tant que la valeur tient dans
-  // la plage sûre. `Number()` accepte les deux, donc c'était sans conséquence —
-  // mais l'assertion était fausse, et la même a coûté un crash dans
-  // `videoWindow.ts` (voir `bits()`).
-  if (format === FORMAT.INT64) return Number(koffi.decode(data, "int64"));
-  if (format === FORMAT.DOUBLE) return koffi.decode(data, "double") as number;
-  if (format === FORMAT.STRING) {
-    const ptr = koffi.decode(data, "void*") as unknown;
-    return ptr ? (koffi.decode(ptr, "char", -1) as string) : null;
-  }
-  return null;
-}
 
-/**
- * Nombre maximal d'évènements traités par passage.
- *
- * ⚠️ Ce n'est pas une optimisation, c'est ce qui empêche le gel.
- *
- * Une boucle « vider jusqu'au bout » suppose que la file finit par se taire.
- * Elle ne se tait pas : avec les messages de journal actifs, mpv en produit plus
- * vite qu'on ne les consomme, et la boucle ne rend JAMAIS la main. Le thread
- * principal d'Electron est alors monopolisé — plus un minuteur, plus un
- * évènement de fenêtre. Symptôme : l'application semble vivante, mpv joue, et
- * le processus principal est mort. Constaté en phase 1.
- *
- * Ce qui reste sera pris au passage suivant, vingt millisecondes plus tard. mpv
- * tolère le retard : quand sa file déborde il émet `QUEUE_OVERFLOW` et jette
- * des messages de journal — jamais des évènements.
- */
-const MAX_PAR_PASSAGE = 128;
-
-/** Vide la file d'évènements et diffuse. */
-function drain(sink: Sink): void {
-  if (!ctx) return;
-  for (let n = 0; n < MAX_PAR_PASSAGE; n += 1) {
-    const ptr = mpvApi().waitEvent(ctx, 0) as unknown;
-    if (!ptr) return;
-    const ev = koffi.decode(ptr, MpvEvent) as {
-      event_id: number;
-      error: number;
-      reply_userdata: bigint;
-      data: unknown;
-    };
-    const id = ev.event_id;
-    if (id === EVENT.NONE) return;
-
-    // Une commande asynchrone vient d'aboutir : on règle sa promesse et on
-    // n'en dit rien à la page — c'est l'appelant qui saura quoi en faire.
-    if (id === EVENT.COMMAND_REPLY) {
-      repondre(Number(ev.reply_userdata), ev.error);
-      continue;
-    }
-
-    if (id === EVENT.PROPERTY_CHANGE) {
-      if (!ev.data) continue;
-      const p = koffi.decode(ev.data, MpvEventProperty) as {
-        name: string;
-        format: number;
-        data: unknown;
-      };
-      // Étranglement : voir TIME_POS_INTERVAL_MS.
-      if (p.name === "time-pos") {
-        const now = Date.now();
-        if (now - lastTimePos < TIME_POS_INTERVAL_MS) continue;
-        lastTimePos = now;
-      }
-      const valeur = decodeProperty(p.format, p.data);
-      // Retenu AVANT diffusion : c'est ce souvenir que `getProperty` sert sur
-      // macOS, où interroger mpv depuis ce thread fige l'application.
-      retenir(p.name, valeur);
-      sink.property({
-        name: p.name,
-        data: valeur,
-        id: Number(ev.reply_userdata),
-      });
-      continue;
-    }
-
-    if (id === EVENT.END_FILE && ev.data) {
-      const end = koffi.decode(ev.data, MpvEventEndFile) as { reason: number; error: number };
-      sink.event({ event: "end-file", reason: end.reason, error: end.error });
-      continue;
-    }
-
-    const nom = EVENT_NAMES[id];
-    if (nom) sink.event({ event: nom });
-
-    // mpv annonce son arrêt : c'est le seul instant où libérer la poignée ne
-    // bloque pas. On rend la main immédiatement, la file n'a plus rien à dire.
-    if (id === EVENT.SHUTDOWN) {
-      if (auShutdown !== null) auShutdown();
-      return;
-    }
-  }
-}
 
 export interface InitOptions {
   /** Options passées à mpv AVANT `mpv_initialize`, verbatim. */
@@ -351,7 +203,9 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 
   // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
   // quand elle est pleine, c'est documenté et ça gèlerait la lecture.
-  pump = setInterval(() => drain(sink), 20);
+  pump = setInterval(() => drain(ctx, sink, { repondre, auShutdown: () => {
+    if (auShutdown !== null) auShutdown();
+  } }), 20);
   return null;
 }
 
@@ -374,8 +228,8 @@ export function destroy(): void {
   }
   ctx = null;
   observedIds = new Map();
-  lastTimePos = 0;
-  dernieresValeurs.clear();
+  oublierCadence();
+  oublierEtat();
 
   // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
   // commande laissée en suspens retiendrait pour toujours l'appelant — et donc
