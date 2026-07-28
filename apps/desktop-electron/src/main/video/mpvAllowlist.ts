@@ -122,6 +122,16 @@ const OPTIONS_INIT: ReadonlySet<string> = new Set([
   "keep-open",
   "force-window",
   "hr-seek",
+  // Chaîne de rendu macOS. `gpu-api`/`gpu-context` désignent un backend, pas un
+  // fichier ni un programme : une valeur inconnue fait au pire échouer la
+  // sortie vidéo. `target-colorspace-hint` est le drapeau dont dépend tout le
+  // HDR — sans lui dans cette liste, il serait écarté EN SILENCE et l'image
+  // sortirait en sRGB sans que rien ne le signale.
+  "gpu-api",
+  "gpu-context",
+  "target-colorspace-hint",
+  "border",
+  "auto-window-resize",
   // Entrées de la fenêtre enfant — toutes désarmées, cf. mpvRuntime.ts
   "window-dragging",
   "input-cursor",

@@ -151,10 +151,16 @@ export const OBSERVED_PROPERTIES = [
   ["eof-reached", "flag"],
 ] as const satisfies readonly MpvObservableProperty[];
 
-/** Options d'init mpv. `renderApi` = macOS/Linux (Render API custom : mpv dessine
- *  dans notre surface GL, aucune fenêtre native) ; sinon Windows (embarquement
- *  `--wid`, fenêtre enfant qui exige le durcissement des entrées ci-dessous). */
+/** Options d'init mpv. `renderApi` = macOS/Linux SOUS TAURI (Render API custom :
+ *  mpv dessine dans notre surface GL, aucune fenêtre native) ; sinon une fenêtre
+ *  mpv existe — enfant `--wid` sous Windows, NSWindow attachée sous macOS. */
 export function buildMpvInitOptions(renderApi: boolean): Record<string, string | number | boolean> {
+  // Trois mondes, pas deux. Le durcissement ci-dessous vise la fenêtre ENFANT
+  // Win32 et ses messages ; macOS n'a ni `window-dragging` ni `native-touch`,
+  // et sa fenêtre est désarmée côté natif (`setIgnoresMouseEvents:`).
+  const fenetreWin32 = !renderApi && isWindows();
+  const fenetreMacos = !renderApi && isMacOS();
+
   return {
     vo: "gpu-next",
     hwdec: "auto-safe",
@@ -166,13 +172,53 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     // du thread UI. Toute boucle modale côté mpv gèle l'app entière (son et
     // image continuent, plus rien n'est cliquable). On lui retire donc tout
     // traitement d'entrée — l'UI est intégralement en HTML (DesktopPlayer).
-    ...(!renderApi && {
+    ...(fenetreWin32 && {
       "force-window": "yes",
       "window-dragging": "no",   // supprime SendMessage(WM_NCLBUTTONDOWN, HTCAPTION)
       "input-cursor": "no",      // supprime SetCapture() sur WM_LBUTTONDOWN
       "input-builtin-bindings": "no",
       "input-media-keys": "no",  // les touches média passent par SMTC (smtc.rs)
       "native-touch": "no",
+      "cursor-autohide": "no",
+    }),
+    // ── macOS : les cinq lignes dont dépend tout le HDR ──────────────────────
+    //
+    // Établies en phase 1, chacune mesurée. Aucune n'est un réglage de confort.
+    ...(fenetreMacos && {
+      "force-window": "yes",
+      // Vulkan est la SEULE API disponible sur macOS (`--gpu-api=help` ne liste
+      // qu'elle) : libplacebo n'a pas de backend Metal, et le contexte OpenGL
+      // cocoa a été retiré de mpv en 0.37. `macvk` traduit Vulkan vers Metal
+      // par MoltenVK et crée une CAMetalLayer — la seule surface macOS capable
+      // de plage étendue.
+      "gpu-api": "vulkan",
+      "gpu-context": "macvk",
+      // ⚠️ LA ligne qui décide de tout, et elle ne peut PAS rester sur `auto`.
+      //
+      // En `auto`, mpv n'envoie le signal que s'il peut interroger l'espace
+      // colorimétrique de l'écran — ce que le swapchain Vulkan de libplacebo
+      // n'implémente pas. Le drapeau retombe donc à « non » et la couche Metal
+      // reste en sRGB. Mesuré, les deux cas côte à côte :
+      //
+      //   auto → « Metal layer colorspace changed: SRGB »       (pas de HDR)
+      //   yes  → « colorspace changed: ITUR_2100_PQ » + « HDR active »
+      //
+      // Le piège est qu'en `auto` mpv annonce quand même une sortie `pq` dans
+      // ses propriétés : c'est le gamma qu'il CALCULE, pas ce qu'il POSE sur
+      // l'écran. S'y fier ferait conclure à tort que le HDR passe.
+      "target-colorspace-hint": "yes",
+      // Zéro-copie jusqu'à Vulkan par `VK_EXT_metal_objects`, 10 bits compris.
+      hwdec: "videotoolbox",
+      // La fenêtre est attachée sous la nôtre : ni cadre, ni ombre, ni titre.
+      border: "no",
+      // ⚠️ Sans cela, mpv REDIMENSIONNE sa fenêtre à la taille de chaque
+      // nouveau fichier et la recentre. Aucun évènement d'Electron n'accompagne
+      // ce changement, donc notre calage n'est pas rejoué et la vidéo se
+      // retrouve décalée dans un rectangle plus petit. Constaté au changement
+      // d'épisode — et le lecteur est remonté à CHAQUE épisode (`key={itemId}`).
+      "auto-window-resize": "no",
+      "input-cursor": "no",
+      "input-media-keys": "no",
       "cursor-autohide": "no",
     }),
     // Use keyframe seeking by default (hr-seek breaks HLS segment boundaries)

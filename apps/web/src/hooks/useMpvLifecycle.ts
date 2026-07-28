@@ -1,5 +1,5 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { invoke } from "../desktop/bridge";
+import { invoke, isElectronShell } from "../desktop/bridge";
 import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
 import { queryTrackList } from "./mpvTrackList";
 import {
@@ -55,9 +55,15 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       if (!loaded || cancelled || !api) return;
 
       try {
-        // Render API custom sur macOS ET Linux (mpv dessine dans notre surface
-        // GL, pas de fenêtre native → pas d'options d'embarquement `--wid`).
-        const renderApi = isMacOS() || isLinux();
+        // Render API custom sur macOS ET Linux SOUS TAURI (mpv dessine dans
+        // notre surface GL, pas de fenêtre native).
+        //
+        // ⚠️ La coquille Electron macOS est le cas contraire, et il ne se
+        // devine pas depuis le système seul : mpv y crée SA fenêtre, qu'on
+        // attache sous la nôtre. C'est même ce qu'on veut — c'est cette
+        // fenêtre qui porte la couche Metal, donc tout le HDR. La distinction
+        // porte sur la COQUILLE, pas sur la plateforme.
+        const renderApi = !isElectronShell() && (isMacOS() || isLinux());
         await withTimeout(api.init({
           initialOptions: buildMpvInitOptions(renderApi),
           observedProperties: OBSERVED_PROPERTIES,
