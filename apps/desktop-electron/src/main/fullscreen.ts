@@ -37,12 +37,19 @@ import { nativeHandle, rendreLeCadre, retirerLeCadre } from "./video/win32";
 /**
  * État d'avant le plein écran, à rendre tel quel. `null` = fenêtré.
  *
- * `maximisee` est mémorisé à part : une fenêtre maximisée doit être rendue à
- * son ÉTAT, pas à sa géométrie. Reposer ses seuls `bounds` donnerait une
- * fenêtre qui a l'air maximisée sans l'être — bouton « restaurer » inversé,
- * double-clic sur la barre de titre incohérent.
+ * `maximisee` est mémorisé à part : une fenêtre agrandie doit être rendue à son
+ * ÉTAT, pas à sa géométrie. Reposer ses seuls bounds donnerait une fenêtre qui
+ * a l'air agrandie sans l'être — bouton « restaurer » inversé, double-clic sur
+ * la barre de titre incohérent.
+ *
+ * `normales` est la géométrie que Windows rendra le jour où l'utilisateur
+ * restaurera la fenêtre. Le plein écran l'ÉCRASE — `unmaximize` puis un
+ * redimensionnement à la taille de l'écran la remplacent par cette taille-là —
+ * et sans elle, sortir du plein écran d'une fenêtre agrandie puis la restaurer
+ * donnait une fenêtre grande comme l'écran. Mesuré : `460x241` devenait
+ * `1920x1106`.
  */
-let avant: { bounds: Rectangle; style: bigint; maximisee: boolean } | null = null;
+let avant: { normales: Rectangle; style: bigint; maximisee: boolean } | null = null;
 
 export function estEnPleinEcran(): boolean {
   return avant !== null;
@@ -67,19 +74,21 @@ export function estEnPleinEcran(): boolean {
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
   const maximisee = win.isMaximized();
-  // Capturé AVANT `unmaximize` : c'est ce rectangle qui dit où la fenêtre se
-  // trouvait pour l'utilisateur, donc sur quel écran ouvrir.
+  // Capturés AVANT `unmaximize`, et pour deux usages distincts : `bounds` dit
+  // où la fenêtre se trouve pour l'utilisateur, donc sur quel écran ouvrir ;
+  // `normales` est la géométrie de restauration, que la suite va écraser.
   const bounds = win.getBounds();
+  const normales = win.getNormalBounds();
 
-  // 1. Lever l'état maximisé D'ABORD. Windows contraint la géométrie tant
-  //    qu'il dure, et Chromium recalcule sa zone non-cliente avec les marges
-  //    de maximisation — d'où les 12 DIP de largeur perdus quand on le laisse.
+  // 1. Lever l'état agrandi D'ABORD. Windows contraint la géométrie tant qu'il
+  //    dure, et Chromium recalcule sa zone non-cliente avec les marges
+  //    d'agrandissement — d'où les 12 DIP de largeur perdus quand on le laisse.
   //    L'état est rendu en sortant, c'est `maximisee` qui le porte.
   if (maximisee) win.unmaximize();
 
   // 2. Retirer le cadre ensuite : posé avant, `unmaximize` le défait.
   const style = retirerLeCadre(nativeHandle(win));
-  avant = { bounds, style, maximisee };
+  avant = { normales, style, maximisee };
 
   // 3. `setContentBounds` et NON `setBounds` : le second dimensionne la FENÊTRE,
   //    cadre compris, et Chromium garde une zone non-cliente résiduelle même
@@ -102,10 +111,12 @@ function sortir(win: BrowserWindow): void {
   if (memoire === null) return;
   avant = null;
   rendreLeCadre(nativeHandle(win), memoire.style);
-  // Re-maximiser plutôt que reposer la géométrie : Windows connaît lui-même
-  // les bounds fenêtrés à rendre le jour où l'utilisateur restaurera.
+  // La géométrie normale D'ABORD, agrandissement ensuite. C'est elle que
+  // Windows retiendra comme taille de restauration ; la reposer seulement
+  // quand la fenêtre était fenêtrée laisserait une fenêtre agrandie rendre la
+  // taille de l'écran au premier clic sur « restaurer ».
+  win.setBounds(memoire.normales);
   if (memoire.maximisee) win.maximize();
-  else win.setBounds(memoire.bounds);
 }
 
 /** Bascule, et renvoie le nouvel état. */
