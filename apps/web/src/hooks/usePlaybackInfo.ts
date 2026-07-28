@@ -3,7 +3,8 @@ import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaSource } from "@tentacle-tv/shared";
 import { buildBrowserDeviceProfile } from "../lib/browserDeviceProfile";
 import { buildMacOSDeviceProfile } from "../lib/macosDeviceProfile";
-import { isTauri, isMacOS } from "./useDesktopPlayer";
+import { isMacOS } from "./useDesktopPlayer";
+import { isTauriShell } from "../desktop/bridge";
 
 const DBG = "[Tentacle:PlaybackInfo]";
 
@@ -39,7 +40,16 @@ export function usePlaybackInfo() {
     isLoading: false,
   });
 
-  const isMacOSTauri = isTauri() && isMacOS();
+  // ⚠️ `isTauri()` est en réalité `isDesktopApp()` : il répond OUI sous Electron
+  // aussi. Sans `isTauriShell()`, la coquille Electron macOS réclamait donc à
+  // Jellyfin un PlaybackInfo taillé pour AVFoundation — ce que la WKWebView de
+  // Tauri sait lire — alors que c'est **mpv** qui lit. Le serveur renvoyait une
+  // source inexploitable par le lecteur, `loadfile` n'était jamais appelé, et
+  // l'écran de chargement tournait indéfiniment.
+  //
+  // Le défaut ne pouvait pas se voir sous Windows : `isMacOS()` y est faux, donc
+  // c'est le profil navigateur — le bon pour mpv — qui servait déjà.
+  const isMacOSTauri = isTauriShell() && isMacOS();
   const deviceProfile = useMemo(
     () => isMacOSTauri ? buildMacOSDeviceProfile() : buildBrowserDeviceProfile(),
     [isMacOSTauri],

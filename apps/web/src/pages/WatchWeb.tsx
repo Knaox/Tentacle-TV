@@ -7,7 +7,8 @@ import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
-import { isTauri, isMacOS } from "../hooks/useDesktopPlayer";
+import { isMacOS } from "../hooks/useDesktopPlayer";
+import { isTauriShell } from "../desktop/bridge";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
@@ -33,7 +34,11 @@ export function WatchWeb() {
     skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
 
-  const useNativeHls = isTauri() && isMacOS();
+  // Le HLS natif est celui de WEBKIT. `isTauri()` répondant OUI sous Electron
+  // aussi, la coquille Electron macOS l'activait — alors que son moteur est
+  // Chromium, qui n'a pas de HLS natif et a besoin de hls.js. Même piège que
+  // dans `usePlaybackInfo`, et invisible sous Windows où `isMacOS()` est faux.
+  const useNativeHls = isTauriShell() && isMacOS();
 
   const { reportStart, updatePosition, reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,

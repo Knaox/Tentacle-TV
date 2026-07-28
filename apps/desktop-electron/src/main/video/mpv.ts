@@ -186,7 +186,22 @@ export function init(opts: InitOptions, sink: Sink): string | null {
     // signale et continue. On ne remonte donc pas ces erreurs.
     mpvApi().setOptionString(ctx, k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
   }
-  mpvApi().setOptionString(ctx, "wid", String(opts.wid));
+  // ⚠️ `wid` est POSÉ SOUS WINDOWS UNIQUEMENT, et l'omettre ailleurs n'est pas
+  // un détail : c'est la différence entre une lecture et une application figée.
+  //
+  // Sur macOS, le backend qui lisait `--wid` était le backend OpenGL cocoa,
+  // déprécié en mpv 0.29 et RETIRÉ en 0.37. Le backend actuel ne consulte plus
+  // cet identifiant — mais le lui fournir le fait tout de même tenter de
+  // s'accrocher à la NSView qu'on lui désigne, sur le thread principal, celui-là
+  // même dont il a besoin pour finir. L'application se fige alors au lancement
+  // d'une vidéo : chargement perpétuel, plus une interaction.
+  //
+  // mpv crée donc sa PROPRE fenêtre, qu'on attache ensuite sous la nôtre — voir
+  // `macosSurface.ts`. C'est même ce qu'on veut : c'est cette fenêtre qui porte
+  // la couche Metal, donc tout le HDR.
+  if (process.platform === "win32") {
+    mpvApi().setOptionString(ctx, "wid", String(opts.wid));
+  }
 
   const err = mpvError(mpvApi().initialize(ctx) as number);
   if (err) {

@@ -132,6 +132,10 @@ export class MacosSurface implements VideoSurface {
    * fenêtre enfant exactement superposée en dessinerait une au ras du cadre.
    */
   private brancher(): void {
+    // Trace conservée : c'est la SEULE façon de distinguer « mpv n'a pas créé
+    // de fenêtre » de « elle existe et nous l'avons attachée ». Sans elle, un
+    // écran noir ne se diagnostique plus qu'en instrumentant à la main.
+    trace(`fenetre mpv attachee (${this.numero})`);
     msg.setFlag(this.mpvWindow, "setIgnoresMouseEvents:", true);
     msg.setFlag(this.mpvWindow, "setHasShadow:", false);
     msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);

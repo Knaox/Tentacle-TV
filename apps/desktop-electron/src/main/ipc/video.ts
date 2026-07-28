@@ -111,12 +111,28 @@ export function registerVideoCommands(registry: CommandRegistry): void {
               // là — puis `video-reconfig`, où ils le sont à coup sûr : c'est
               // l'évènement que mpv émet quand il a configuré sa sortie vidéo.
               if (p.event === "file-loaded" || p.event === "video-reconfig") accorder();
+              // Un ecran de chargement infini veut dire que `file-loaded`
+              // n'arrive jamais. Ces trois evenements disent ou la chaine
+              // s'arrete : ouverture du fichier, configuration de la sortie
+              // video, premiere image.
+              if (p.event === "start-file" || p.event === "file-loaded" ||
+                  p.event === "video-reconfig" || p.event === "end-file") {
+                console.info(`[video] mpv → ${p.event}${p.event === "end-file" ? ` (raison ${String(p["reason"])})` : ""}`);
+              }
               sendToPage("mpv://event", p);
             },
             property: (p) => sendToPage("mpv://property-change", p),
           },
         );
         if (err) throw new Error(err);
+
+        // Le journal doit dire ce que mpv a REELLEMENT recu : une option
+        // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
+        // voit alors qu'a l'image — un ecran noir sans un mot.
+        console.info(
+          `[video] mpv demarre — ${Object.keys(retenues).length} options retenues` +
+            ` (vo=${String(retenues["vo"] ?? "?")}, gpu-context=${String(retenues["gpu-context"] ?? "-")})`,
+        );
 
         // La fenêtre de mpv naît de façon asynchrone : `attach` la cherche,
         // puis la désarme et la maintient calée à chaque changement de
