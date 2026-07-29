@@ -185,7 +185,35 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     //
     // Établies en phase 1, chacune mesurée. Aucune n'est un réglage de confort.
     ...(fenetreMacos && {
-      "force-window": "yes",
+      // ⚠️ `no`, et c'est TOUT le HDR qui en dépend — pas un réglage de confort.
+      //
+      // En `yes`, mpv ouvre sa fenêtre dès l'initialisation et y affiche son
+      // écran d'attente : la couche Metal naît alors en **SRGB**
+      // (`reconfig to 960x540 rgba rgb/bt.709/srgb`). Le compositeur de macOS
+      // tranche à cet instant-là, lui refuse tout headroom, et **ne revient
+      // jamais sur sa décision** quand la couche passe en PQ au chargement du
+      // film. Le signal est parfait — `ITUR_2100_PQ`, `Metal layer HDR active`,
+      // métadonnées de mastering, aucun tone-mapping — et l'image sort plate.
+      //
+      // Le défaut a été signalé par l'utilisateur, tous nos témoins au vert :
+      // « au lancement, y'a clairement pas de HDR ». Ce qui l'a trahi : une
+      // transition de fenêtre, dans un sens comme dans l'autre, recrée la couche
+      // et force le compositeur à réévaluer — « la lumière fut ». Mesuré au
+      // journal, headroom figé à 1,00 depuis l'attache, puis à la bascule :
+      // 3,18 → 3,65 → 4,19 → 4,82 → 5,51.
+      //
+      // En `no`, la fenêtre n'est créée qu'au premier `loadfile`, donc
+      // directement avec la vidéo : la couche naît en PQ, et le headroom est
+      // accordé DÈS LA PREMIÈRE IMAGE, sans aucune transition. Mesuré : 5,51.
+      //
+      // Rien à combler pendant ce temps : l'écran de chargement du lecteur est
+      // opaque et plein cadre (`PlayerLoadingScreen`), et la recherche de la
+      // fenêtre côté natif sonde dix secondes (`macosSurface.ts`) — elle la
+      // trouve au `loadfile` comme elle la trouvait à l'init.
+      //
+      // Windows garde `yes` : sa fenêtre vidéo est une fenêtre ENFANT créée par
+      // `--wid`, et tout son durcissement d'entrées la suppose présente.
+      "force-window": "no",
       // Vulkan est la SEULE API disponible sur macOS (`--gpu-api=help` ne liste
       // qu'elle) : libplacebo n'a pas de backend Metal, et le contexte OpenGL
       // cocoa a été retiré de mpv en 0.37. `macvk` traduit Vulkan vers Metal
