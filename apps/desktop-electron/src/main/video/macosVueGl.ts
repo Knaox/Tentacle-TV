@@ -85,31 +85,25 @@ export function tailleEnPixels(vue: unknown, echelle: number): { l: number; h: n
 }
 
 /**
- * La sous-vue devant laquelle la vidéo doit se placer.
+ * L'arbre des vues de la fenêtre, en une ligne de journal.
  *
- * ⚠️ On vise la CLASSE, jamais `subviews[0]`. L'hypothèse « la première
- * sous-vue est celle du web » tient tant que la vue de contenu n'en a qu'une,
- * et s'inverse dès qu'une couche de fond est ajoutée : cette couche devient
- * `subviews[0]` et la vidéo se retrouverait insérée SOUS elle, donc invisible.
- * Le piège est documenté côté Tauri (`gl_surface.rs`), où il s'était refermé.
- *
- * `null` si on ne la trouve pas — l'appelant place alors la vidéo sous TOUTES
- * les sous-vues, ce qui reste le comportement sûr.
+ * ⚠️ Sans lui, l'empilement se DEVINE — et deviner a coûté une séance : une
+ * sous-vue ajoutée à la vue de contenu se dessine par-dessus ce que cette vue
+ * peint elle-même. Selon qu'Electron confie le rendu web à la vue de contenu ou
+ * à une sous-vue, la vidéo se retrouve donc dessous ou dessus, et rien ne le
+ * dit à l'avance.
  */
-function vueDuWeb(contenu: unknown): unknown {
+function arbreDesVues(contenu: unknown): string {
   const sousVues = msg.get(contenu, "subviews");
   const n = msg.count(sousVues, "count");
+  const noms: string[] = [];
   for (let i = 0; i < n; i += 1) {
     const v = msg.index(sousVues, "objectAtIndex:", i);
-    const nom = nomDeClasse(v);
-    // Chromium n'expose pas `WKWebView` : sa vue racine porte un nom qui varie
-    // selon la version. On reconnaît donc ce qui ressemble à du rendu web, et
-    // on retombe sur le cas sûr si rien ne correspond.
-    if (nom.includes("WebContents") || nom.includes("RenderWidget") || nom.includes("WebView")) {
-      return v;
-    }
+    const couche = msg.get(v, "layer") ? "+couche" : "-couche";
+    noms.push(`${nomDeClasse(v)}(${couche})`);
   }
-  return null;
+  const coucheContenu = msg.get(contenu, "layer") ? "+couche" : "-couche";
+  return `contentView=${nomDeClasse(contenu)}(${coucheContenu}) → [${noms.join(", ")}]`;
 }
 
 /** Le format de pixels flottant 64 bits, ou `null` s'il est refusé. */
@@ -147,6 +141,8 @@ export function creerVueGl(host: BrowserWindow): VueGl | null {
     trace("vue GL : fenetre ou contentView introuvable");
     return null;
   }
+
+  trace(`vue GL : ${arbreDesVues(contenu)}`);
 
   const format = formatDePixels();
   if (!format) {
@@ -187,8 +183,22 @@ export function creerVueGl(host: BrowserWindow): VueGl | null {
   msg.setFlag(vue, "setWantsExtendedDynamicRangeOpenGLSurface:", true);
   msg.setAutoresizingMask(vue, SUIT_LA_FENETRE);
 
-  // Sous la vue du web, ou sous tout le reste si on ne la reconnaît pas.
-  msg.addSubview(contenu, vue, NSWindowBelow, vueDuWeb(contenu));
+  // ⚠️ SOUS TOUTES LES SOUS-VUES — `relativeTo: nil`, ce qu'AppKit garantit.
+  //
+  // Viser une sous-vue précise s'est retourné contre nous. L'arbre d'Electron
+  // relevé à l'exécution est :
+  //
+  //   BridgedContentView → [ViewsCompositorSuperview, WebContentsViewCocoa]
+  //
+  // Le nom parlant n'est PAS celui qui dessine : c'est
+  // `ViewsCompositorSuperview`, en position ZÉRO, qui compose toute la page.
+  // Se placer sous `WebContentsViewCocoa` mettait donc la vidéo AU-DESSUS du
+  // compositeur, et l'overlay disparaissait entièrement — la vidéo par-dessus
+  // les contrôles.
+  //
+  // Aucune classe à reconnaître, donc, et rien qui casse le jour où Chromium
+  // renomme ses vues : on demande le fond, et AppKit s'en charge.
+  msg.addSubview(contenu, vue, NSWindowBelow, null);
 
   const contexteNs = msg.get(vue, "openGLContext");
   if (!contexteNs) {
