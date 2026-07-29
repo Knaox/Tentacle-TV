@@ -48,8 +48,27 @@ export function decrireMontage(
     `cible=${fmt(cible)} video=${fmt(video)} calee=${colle ? "oui" : "NON"} ` +
     `electron fenetre=${b.width}x${b.height} page=${c.width}x${c.height} ` +
     `enfant=${enfant ? "oui" : "NON"} visible=${visible ? "oui" : "NON"} ` +
-    `niveaux=${niveaux} pleinEcran=${pleinEcran} ${ecran(parent)}`
+    `niveaux=${niveaux} pleinEcran=${pleinEcran} ${etatVideo(mpvWindow)} ${ecran(parent)}`
   );
+}
+
+/** `NSWindowStyleMaskFullScreen` — le bit que macOS pose sur une fenêtre à qui
+ *  il a donné son propre espace. */
+const MASQUE_PLEIN_ECRAN = 1 << 14;
+
+/**
+ * Ce que la fenêtre VIDÉO croit être : son masque de style et son comportement.
+ *
+ * ⚠️ C'est le seul témoin d'un second espace de plein écran. Si macOS a promu la
+ * fenêtre de mpv — elle naît `FullScreenPrimary` — il lui pose ce bit et lui
+ * ouvre un bureau à elle, noir, à côté du nôtre. Rien d'autre ne le dit : la
+ * géométrie reste parfaite et le montage paraît intact.
+ */
+function etatVideo(fenetre: unknown): string {
+  const masque = msg.count(fenetre, "styleMask");
+  const comportement = msg.count(fenetre, "collectionBehavior");
+  const promue = (masque & MASQUE_PLEIN_ECRAN) !== 0;
+  return `videoPromue=${promue ? "OUI" : "non"} masque=${masque} comportement=${comportement}`;
 }
 
 /**

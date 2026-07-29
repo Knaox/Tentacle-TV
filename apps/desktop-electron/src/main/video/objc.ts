@@ -206,6 +206,11 @@ export const msg = {
     if (!vue) return;
     send1ul(vue, sel("setAutoresizingMask:"), masque);
   },
+  /** `[cible nom: nil]` — un sélecteur d'action, qui attend un émetteur. */
+  avecNil(cible: unknown, nom: string): void {
+    if (!cible) return;
+    send1(cible, sel(nom), null);
+  },
   /** `[fenêtre setCollectionBehavior: masque]`. */
   setComportement(fenetre: unknown, masque: number): void {
     if (!fenetre) return;

@@ -100,8 +100,15 @@ export function DesktopPlayerControls({
           dégradés séparés y laissent chacun un trait noir net sur la surface à
           alpha de la coquille macOS. Hors de cette surface, VOILE vaut `null` et
           les deux barres gardent leur dégradé, au pixel près. */}
+      {/* ⚠️ `z-index: -1` — un élément POSITIONNÉ se peint APRÈS les éléments en
+          flux, quel que soit l'ordre du DOM. Sans lui, le voile passait par-dessus
+          le titre et les contrôles et les assombrissait : le texte n'était plus
+          blanc, il était grisé. */}
       {VOILE !== null && (
-        <div className="pointer-events-none absolute inset-0" style={{ background: VOILE }} />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: VOILE, zIndex: -1 }}
+        />
       )}
       {/* Top bar */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>

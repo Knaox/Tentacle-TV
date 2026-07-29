@@ -30,9 +30,16 @@ import { cibleVideo, poserCadre } from "./macosFrame";
 import { decrireMontage } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
-/** Cadence du sondage, et nombre maximal de tentatives (10 s en tout). */
-const SONDAGE_MS = 100;
-const SONDAGES_MAX = 100;
+/**
+ * Cadence du sondage, et nombre maximal de tentatives (10 s en tout).
+ *
+ * ⚠️ 10 ms, et non 100 : c'est une COURSE. mpv crée sa fenêtre en
+ * `FullScreenPrimary`, et si l'application est déjà en plein écran, macOS lui
+ * donne son propre bureau avant qu'on ait pu la déclarer auxiliaire. Plus on la
+ * trouve tôt, moins elle a le temps d'être promue.
+ */
+const SONDAGE_MS = 10;
+const SONDAGES_MAX = 1000;
 /** Un recalage par image suffit — voir `planifierCalage`. */
 const CALAGE_MS = 16;
 /**
