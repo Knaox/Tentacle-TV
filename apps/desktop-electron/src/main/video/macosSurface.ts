@@ -26,6 +26,7 @@ import {
   trouverFenetreNeuve,
 } from "./objcFenetres";
 import { attacherSousLaPage, reordonnerSousLaPage } from "./macosChildWindow";
+import { guetterEdr, oublierEdr } from "./macosEdr";
 import { cibleVideo, poserCadre } from "./macosFrame";
 import { decrireMontage, etatALaDecouverte } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
@@ -161,6 +162,7 @@ export class MacosSurface implements VideoSurface {
     // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
     if (this.veille === null) this.veille = setInterval(() => this.align(), VEILLE_MS);
     attacherSousLaPage(this.parent, this.mpvWindow);
+    guetterEdr(this.mpvWindow, "fenetre video attachee");
     this.align();
   }
 
@@ -206,6 +208,9 @@ export class MacosSurface implements VideoSurface {
    */
   align(): void {
     if (this.mpvWindow === null) return;
+    // La veille passe ici dix fois par seconde : c'est notre horloge pour dater
+    // la décision du compositeur — voir `guetterEdr`.
+    guetterEdr(this.mpvWindow, "veille");
     sansFaillir("calage de la fenetre video", () => {
       poserCadre(this.mpvWindow, this.cible(), this.niveauVideo());
     });
@@ -257,6 +262,7 @@ export class MacosSurface implements VideoSurface {
     this.calage = null;
     if (this.veille !== null) clearInterval(this.veille);
     this.veille = null;
+    oublierEdr();
     if (this.mpvWindow !== null) {
       sansFaillir("detachement de la fenetre video", () => {
         msg.removeChildWindow(this.parent, this.mpvWindow);

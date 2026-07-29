@@ -27,6 +27,8 @@
  * Objective-C à l'import.
  */
 
+import { app } from "electron";
+import { trace } from "./native";
 import { cls, msg } from "./objc";
 
 export interface EtatEdr {
@@ -71,4 +73,38 @@ export function lireEdr(fenetreVideo: unknown): EtatEdr {
   // flottant calculé par le compositeur, et un `> 1` nu ferait passer pour un
   // succès une valeur de 1.0000001 sans aucune signification visuelle.
   return { courant, potentiel, obtenue: courant > 1.01, capable: potentiel > 1.01 };
+}
+
+/** Dernier headroom tracé, pour n'écrire que les CHANGEMENTS. */
+let dernierVu = -1;
+
+/**
+ * Trace le headroom quand il change, avec ce qui vient de se passer.
+ *
+ * ⚠️ C'est la seule façon de DATER la décision du compositeur, et c'est tout
+ * l'enjeu : le headroom n'est pas une capacité, c'est un arbitrage rendu à un
+ * instant précis. Signalé par l'utilisateur, et personne ne l'avait vu : au
+ * lancement d'une vidéo il n'y a pas de HDR, et une transition de fenêtre — dans
+ * un sens comme dans l'autre — le fait apparaître. Une valeur relevée après coup
+ * ne dit rien de cela ; seule la chronologie le montre.
+ *
+ * Appelée depuis la veille de `macosSurface.ts`, donc dix fois par seconde :
+ * elle sort AVANT le moindre appel ObjC dans un paquet livré.
+ */
+export function guetterEdr(fenetreVideo: unknown, quand: string): void {
+  if (app.isPackaged) return;
+  const { courant } = lireEdr(fenetreVideo);
+  // Au centième : le compositeur fait varier la valeur de quelques millièmes
+  // sans que cela signifie quoi que ce soit, et le journal serait illisible.
+  const arrondi = Math.round(courant * 100) / 100;
+  if (arrondi === dernierVu) return;
+  const avant = dernierVu;
+  dernierVu = arrondi;
+  if (avant >= 0) trace(`headroom EDR ${avant.toFixed(2)} → ${arrondi.toFixed(2)} (${quand})`);
+  else trace(`headroom EDR ${arrondi.toFixed(2)} (${quand})`);
+}
+
+/** Oublie le dernier headroom vu — entre deux lectures, tout est à refaire. */
+export function oublierEdr(): void {
+  dernierVu = -1;
 }
