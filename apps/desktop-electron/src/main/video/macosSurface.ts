@@ -25,7 +25,7 @@ import {
   numerosFenetres,
   trouverFenetreNeuve,
 } from "./objcFenetres";
-import { attacherSousLaPage, reordonnerSousLaPage } from "./macosChildWindow";
+import { attacherSousLaPage, cadreSelonPleinEcran, reordonnerSousLaPage } from "./macosChildWindow";
 import { guetterEdr, oublierEdr } from "./macosEdr";
 import { cibleVideo, poserCadre } from "./macosFrame";
 import { decrireMontage, etatALaDecouverte } from "./macosSurfaceDiag";
@@ -211,6 +211,7 @@ export class MacosSurface implements VideoSurface {
     // La veille passe ici dix fois par seconde : c'est notre horloge pour dater
     // la décision du compositeur — voir `guetterEdr`.
     guetterEdr(this.mpvWindow, "veille");
+    cadreSelonPleinEcran(this.mpvWindow, this.host.isFullScreen());
     sansFaillir("calage de la fenetre video", () => {
       poserCadre(this.mpvWindow, this.cible(), this.niveauVideo());
     });

@@ -45,24 +45,53 @@ function pleinEcranAuxiliaire(courant: number): number {
   return (courant & ~PRIMARY & ~AUCUN & ~TOUS_LES_BUREAUX) | AUXILIARY;
 }
 
+/** `NSWindowStyleMaskBorderless` — aucun style, donc aucune décoration. */
+const SANS_DECORATION = 0;
+
+/** Le style que mpv a donné à sa fenêtre, pour le lui rendre en sortant. */
+let styleDorigine = 0;
+
 /**
- * ⚠️ NE PAS rendre la fenêtre de mpv `borderless` (`setStyleMask: 0`).
+ * Retire son cadre à la fenêtre de mpv EN PLEIN ÉCRAN, et le lui rend ensuite.
  *
- * C'est tentant : `--border=no` masque la barre de titre de mpv mais laisse
- * `NSWindowStyleMaskTitled` posé (mesuré, `styleMask` = 32783), et macOS dessine
- * alors une bordure claire sur le bord supérieur — visible à travers notre page
- * transparente, un liseré gris neutre (50, 50, 50) de deux pixels à la frontière
- * du `visibleFrame`. Le passer en `borderless` le fait bien disparaître (mesuré,
- * y=66 tombe à (0, 0, 0)).
+ * # Le liseré, et d'où il vient
  *
- * Mais il emporte deux choses avec lui, l'une et l'autre pires que le liseré :
- * une fenêtre `borderless` a les coins CARRÉS, qui dépassent des coins arrondis
- * de la nôtre pendant toute la lecture ; et la fenêtre principale n'est plus
- * déplaçable à la souris en fenêtré. Les deux signalés, essai retiré.
+ * `--border=no` ne suffit pas : côté mpv il se contente de MASQUER la barre de
+ * titre (`didSet { if !border { common.titleBar?.hide() } }`), en laissant
+ * `NSWindowStyleMaskTitled` posé — mesuré, `styleMask` = 32783. macOS dessine
+ * alors sa bordure claire sur le bord supérieur, et notre page transparente la
+ * laisse voir : un liseré gris neutre d'un point, à la frontière du
+ * `visibleFrame`. C'est un défaut connu du côté d'Electron aussi, dont la
+ * fenêtre est `titled` et non opaque (electron#17944, electron#15008, tous deux
+ * sans correctif).
  *
- * Le liseré reste donc à corriger autrement — en gardant les coins arrondis,
- * donc sans toucher au `styleMask`.
+ * # Pourquoi seulement en plein écran
+ *
+ * ⚠️ `borderless` supprime le liseré (mesuré : y=66 passe de (50,50,50) à
+ * (0,0,0)) mais emporte deux choses avec lui — les coins ARRONDIS, qui laissent
+ * dépasser un rectangle pendant la lecture, et le déplacement de la fenêtre à la
+ * souris. Les deux ont été signalés quand on l'appliquait en permanence.
+ *
+ * Or aucun des deux n'a de sens en plein écran : l'écran est rectangulaire, et
+ * une fenêtre en plein écran ne se déplace pas. On ne paie donc rien là où le
+ * liseré gêne, et on ne touche à rien là où le cadre sert.
+ *
+ * ⚠️ Écartés, mesurés : `title-bar=no` côté mpv l'ATTÉNUE seulement (50 → 14,6)
+ * sans le supprimer ; retirer l'ombre de la fenêtre principale l'AGGRAVE
+ * (14,6 → 50).
  */
+export function cadreSelonPleinEcran(fenetre: unknown, pleinEcran: boolean): void {
+  if (!fenetre) return;
+  const courant = msg.count(fenetre, "styleMask");
+  if (pleinEcran) {
+    if (courant === SANS_DECORATION) return;
+    styleDorigine = courant;
+    msg.setMasqueStyle(fenetre, SANS_DECORATION);
+    return;
+  }
+  if (courant !== SANS_DECORATION || styleDorigine === 0) return;
+  msg.setMasqueStyle(fenetre, styleDorigine);
+}
 
 /**
  * Attache la fenêtre de mpv sous la nôtre, et la désarme.

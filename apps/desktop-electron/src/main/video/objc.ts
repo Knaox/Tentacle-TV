@@ -216,6 +216,12 @@ export const msg = {
     if (!fenetre) return;
     send1ul(fenetre, sel("setCollectionBehavior:"), masque);
   },
+  /** `[fenêtre setStyleMask: masque]` — voir `cadreSelonPleinEcran`, qui dit ce
+   *  qu'on a le droit d'y retirer, et quand. */
+  setMasqueStyle(fenetre: unknown, masque: number): void {
+    if (!fenetre) return;
+    send1ul(fenetre, sel("setStyleMask:"), masque);
+  },
   /** `[fenêtre setLevel: niveau]` — NSInteger, qui peut être très négatif. */
   setNiveau(fenetre: unknown, niveau: number): void {
     if (!fenetre) return;

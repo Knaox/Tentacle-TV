@@ -131,6 +131,10 @@ const OPTIONS_INIT: ReadonlySet<string> = new Set([
   "gpu-context",
   "target-colorspace-hint",
   "border",
+  // Distincte de `border`, et c'est elle qui retire la barre de titre plutôt que
+  // de la masquer — voir `mpvRuntime.ts`. Un nom de style de fenêtre, rien qui
+  // désigne un fichier ni un programme.
+  "title-bar",
   "auto-window-resize",
   // Entrées de la fenêtre enfant — toutes désarmées, cf. mpvRuntime.ts
   "window-dragging",
