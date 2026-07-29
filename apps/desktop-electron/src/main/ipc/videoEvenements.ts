@@ -7,6 +7,7 @@
  */
 
 import { sendToPage } from "../pageEvents";
+import { trace } from "../video/native";
 import { accorder } from "../video/hdrSession";
 import type { MpvEventPayload, PropertyChange } from "../video/mpv";
 import type { VideoSurface } from "../video/surface";
@@ -42,7 +43,10 @@ export function relaisEvenements(surface: () => VideoSurface | null): {
       if (p.event === "file-loaded" || p.event === "video-reconfig") accorder();
       if (TRACES.has(p.event)) {
         const raison = p.event === "end-file" ? ` (raison ${String(p["reason"])})` : "";
-        console.info(`[video] mpv → ${p.event}${raison}`);
+        // `trace` et non `console.info` : ces lignes servent à diagnostiquer une
+        // lecture qui ne démarre pas, ce qui se fait en développement. Un paquet
+        // livré n'a personne pour les lire.
+        trace(`mpv → ${p.event}${raison}`);
       }
       // La lecture a vraiment commencé : c'est le moment de regarder ce que
       // l'écran montre, plutôt que ce que mpv en dit. Sans effet hors

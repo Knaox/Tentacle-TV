@@ -14,7 +14,7 @@ import { autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSessio
 import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
-import { nativeHandle } from "../video/native";
+import { nativeHandle, trace } from "../video/native";
 import { adapterPourRenderApi } from "../video/macosOptionsRender";
 import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
 import { relaisEvenements } from "./videoEvenements";
@@ -118,8 +118,8 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         // Le journal doit dire ce que mpv a REELLEMENT recu : une option
         // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
         // voit alors qu'a l'image — un ecran noir sans un mot.
-        console.info(
-          `[video] mpv demarre — montage ${montageVideo()}, ` +
+        trace(
+          `mpv demarre — montage ${montageVideo()}, ` +
             `${Object.keys(optionsMpv).length} options retenues (vo=${String(optionsMpv["vo"] ?? "?")}` +
             `, target-trc=${String(optionsMpv["target-trc"] ?? "-")}` +
             `, target-peak=${String(optionsMpv["target-peak"] ?? "-")}` +

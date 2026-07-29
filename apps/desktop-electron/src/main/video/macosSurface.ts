@@ -1,25 +1,18 @@
 /**
  * La surface vidéo sur macOS : la fenêtre de mpv, calée sous la nôtre.
  *
- * # Pourquoi ce montage, et pas celui de Windows
+ * ⚠️ `--wid` est « currently X11 and Windows only » : le backend qui le lisait
+ * sur macOS a été retiré en mpv 0.37. mpv y crée donc TOUJOURS sa propre
+ * `NSWindow`, quoi qu'on lui demande, et l'ignorer donne un symptôme connu et
+ * trompeur — le son sort, l'image reste noire.
  *
- * Sous Windows, mpv reçoit `--wid` — le HWND de la fenêtre Electron — et crée
- * une fenêtre ENFANT à l'intérieur ; il suffit de la pousser au fond et de
- * rendre la surface de Chromium transparente (voir `videoWindow.ts`).
+ * On fait l'inverse : on le laisse créer sa fenêtre — c'est même ce qu'on veut,
+ * puisqu'elle porte la couche Metal, donc tout le HDR — et on l'attache à la
+ * nôtre comme fenêtre enfant, ordonnée EN DESSOUS. macOS la déplace alors avec
+ * son parent, et la page se compose par-dessus.
  *
- * ⚠️ **Sur macOS ce chemin n'existe plus.** Le backend qui lisait `--wid` était
- * le backend OpenGL cocoa, déprécié en mpv 0.29 et RETIRÉ en 0.37 ; le backend
- * actuel (`video/out/mac/`) ne consulte jamais l'identifiant fourni. mpv crée
- * donc toujours sa propre `NSWindow`, quoi qu'on lui demande. Le symptôme, quand
- * on l'ignore, est connu et trompeur : **le son sort, l'image reste noire**.
- *
- * On fait donc l'inverse : on laisse mpv créer sa fenêtre — c'est même ce qu'on
- * VEUT, puisque c'est elle qui porte la couche Metal capable de plage étendue,
- * donc tout le HDR — et on l'attache à la nôtre comme fenêtre enfant, ordonnée
- * EN DESSOUS. macOS la déplace alors avec son parent, et la vue HTML se compose
- * par-dessus.
- *
- * Établi en phase 1, sur proto isolé.
+ * Voir `surface.ts` pour ce que ce montage coûte, et pourquoi il reste le
+ * défaut malgré tout.
  */
 
 import type { BrowserWindow } from "electron";
@@ -31,6 +24,7 @@ import {
   numerosFenetres,
   trouverFenetreNeuve,
 } from "./objcFenetres";
+import { decrireMontage } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
 /** Cadence du sondage, et nombre maximal de tentatives (10 s en tout). */
@@ -39,12 +33,8 @@ const SONDAGES_MAX = 100;
 /** Un recalage par image suffit — voir `planifierCalage`. */
 const CALAGE_MS = 16;
 
-/**
- * Classe de la fenêtre créée par mpv.
- *
- * `Window` de `video/out/mac/window.swift` ; le préfixe de module la fait
- * apparaître comme `swift.Window` à l'exécution. Vérifié sur mpv 0.41.0.
- */
+/** Classe de la fenêtre de mpv : `Window` de `video/out/mac/window.swift`, que
+ *  le préfixe de module fait apparaître ainsi. Vérifié sur mpv 0.41.0. */
 const CLASSE_FENETRE_MPV = "swift.Window";
 
 export class MacosSurface implements VideoSurface {
@@ -56,12 +46,11 @@ export class MacosSurface implements VideoSurface {
   private attache = false;
 
   /**
-   * Les fenêtres mpv déjà présentes quand cette surface a commencé à chercher.
-   *
-   * Tout ce qui est là-dedans est un VESTIGE de la lecture précédente : le cœur
-   * de mpv se termine sur ses propres threads, après que la commande d'arrêt a
-   * rendu la main, et sa fenêtre survit quelques instants. Sans cette mémoire,
-   * le changement d'épisode cale la vidéo sur une fenêtre morte.
+   * Les fenêtres mpv déjà là quand cette surface a commencé à chercher : des
+   * VESTIGES. Le cœur de mpv se termine sur ses propres threads, après que la
+   * commande d'arrêt a rendu la main, et sa fenêtre lui survit quelques
+   * instants. Sans cette mémoire, le changement d'épisode cale la vidéo sur une
+   * fenêtre morte.
    */
   private vestiges: ReadonlySet<number> = new Set();
   /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
@@ -71,28 +60,20 @@ export class MacosSurface implements VideoSurface {
   private readonly suivre = (): void => this.planifierCalage();
 
   /**
-   * Le plein écran ne se contente PAS d'un recalage.
-   *
-   * ⚠️ macOS déplace une fenêtre en plein écran dans un espace dédié, et la
-   * relation parent-enfant n'en sort pas indemne : la fenêtre de mpv y repasse
-   * DEVANT la nôtre. La vidéo reste visible — et l'overlay du lecteur disparaît
-   * entièrement, barre de progression comprise. Symptôme constaté.
-   *
-   * On réaffirme donc l'empilement à chaque transition, dans les deux sens.
+   * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS déplace la
+   * fenêtre dans un espace dédié et l'ordre n'y survit pas — la vidéo repasse
+   * DEVANT et emporte tout l'overlay. On réaffirme donc l'empilement à chaque
+   * transition, avant ET après l'animation (voir `fullscreen.ts`, qui évite
+   * l'espace dédié pour cette raison).
    */
   private readonly transitionPleinEcran = (): void => {
     this.reattacher();
-    // Et un recalage APRÈS, pour la géométrie : `enter-full-screen` peut
-    // précéder le dernier ajustement de macOS de quelques images.
     this.planifierCalage();
-    // Puis une seconde fois APRÈS l'animation. `enter-full-screen` arrive quand
-    // Electron considère la transition finie, mais macOS déplace encore la
-    // fenêtre dans son espace dédié après coup — et c'est ce déplacement-là qui
-    // défait l'empilement. Réaffirmer avant ne suffit donc pas.
-    //
-    // La transition est aussi le moment le plus instructif du montage, et le
-    // seul qu'aucun rapport ne couvrait : celui de la lecture est tracé une
-    // fois, bien avant.
+    // Une seconde fois APRÈS l'animation : `enter-full-screen` arrive quand
+    // Electron croit la transition finie, mais macOS bouge encore la fenêtre —
+    // et c'est ce déplacement-là qui défait l'empilement. La transition est
+    // aussi le moment le plus instructif du montage, et le seul qu'aucun
+    // rapport ne couvrait.
     setTimeout(() => {
       this.reattacher();
       trace(`plein ecran — ${this.geometrie()}`);
@@ -106,10 +87,9 @@ export class MacosSurface implements VideoSurface {
   /**
    * Cherche la fenêtre de mpv jusqu'à la trouver, puis l'attache et la cale.
    *
-   * Elle n'existe qu'APRÈS `mpv_initialize`, et de façon asynchrone : il faut la
-   * chercher à plusieurs reprises. `move` est écouté en plus de `resize` — une
-   * fenêtre enfant suit son parent, mais le recalage garde la vidéo sur le
-   * rectangle de contenu quand l'utilisateur change d'écran.
+   * Elle n'existe qu'APRÈS `mpv_initialize`, et de façon asynchrone. `move` est
+   * écouté en plus de `resize` : une fenêtre enfant suit son parent, mais le
+   * recalage garde la vidéo en place quand on change d'écran.
    */
   attach(): void {
     if (this.attache) return;
@@ -137,12 +117,9 @@ export class MacosSurface implements VideoSurface {
           return;
         }
         essais += 1;
-        // Rien n'est tracé pendant la recherche : elle aboutit en une poignée
-        // de sondages, et un point de situation toutes les deux secondes noyait
-        // le journal pour ne rien dire. L'ÉCHEC, lui, est tracé avec la liste
-        // des fenêtres — « mpv n'a créé aucune fenêtre » et « elle existe mais
-        // nous échappe » demandent des corrections opposées, et rien ne les
-        // distingue après coup.
+        // Seul l'ÉCHEC est tracé, avec la liste des fenêtres : « mpv n'a créé
+        // aucune fenêtre » et « elle existe mais nous échappe » demandent des
+        // corrections opposées, et rien ne les distingue après coup.
         if (essais > SONDAGES_MAX) {
           this.stopSearch();
           trace(`fenetre mpv introuvable apres 10 s — ${fenetresApp()}`);
@@ -154,11 +131,10 @@ export class MacosSurface implements VideoSurface {
   /**
    * Attache la fenêtre de mpv sous la nôtre, et la désarme.
    *
-   * `NSWindowBelow` est le cœur du montage : sans lui la fenêtre de mpv passe
-   * DEVANT et masque toute l'interface. `ignoresMouseEvents` est une ceinture de
-   * sécurité — déjà couverte par celle du dessus, mais un décalage d'un pixel
-   * suffirait à lui faire attraper un clic. L'ombre portée est retirée : une
-   * fenêtre enfant exactement superposée en dessinerait une au ras du cadre.
+   * `NSWindowBelow` est le cœur du montage : sans lui la fenêtre passe DEVANT
+   * et masque toute l'interface. `ignoresMouseEvents` est une ceinture de plus,
+   * et l'ombre portée est retirée — superposée au pixel près, elle en
+   * dessinerait une au ras du cadre.
    */
   private brancher(): void {
     // Trace conservée : c'est la SEULE façon de distinguer « mpv n'a pas créé
@@ -257,47 +233,10 @@ export class MacosSurface implements VideoSurface {
     return this.mpvWindow !== null;
   }
 
-  /**
-   * L'état géométrique des deux fenêtres, pour juger le montage sans le voir.
-   *
-   * Une capture d'écran demande une autorisation système qu'on n'a pas toujours ;
-   * ces quatre nombres, eux, disent objectivement si la vidéo occupe la bonne
-   * surface. Un écart en `y` trahit une confusion entre le cadre de la fenêtre
-   * et son rectangle de contenu — la barre de titre fait vingt-huit points, et
-   * la vidéo sortirait par le bas.
-   */
+  /** L'état du montage, pour le rapport — voir `macosSurfaceDiag.ts`. */
   geometrie(): string {
     if (this.mpvWindow === null) return "surface non attachee";
-    const cible = this.cible();
-    const video: Rect = msg.rect(this.mpvWindow, "frame");
-    const colle =
-      Math.abs(cible.x - video.x) < 1 &&
-      Math.abs(cible.y - video.y) < 1 &&
-      Math.abs(cible.width - video.width) < 1 &&
-      Math.abs(cible.height - video.height) < 1;
-    const enfant = msg.get(this.mpvWindow, "parentWindow") !== null;
-    const visible = msg.bool(this.mpvWindow, "isVisible");
-    // La cible ET ce qu'Electron pense couvrir : quand les deux divergent, il
-    // reste une bande de fenêtre que personne ne peint — on y voit le bureau à
-    // travers, puisque la surface de la page est transparente. C'est le seul
-    // moyen de distinguer ce liseré-là d'une bande noire de format scope, qui
-    // lui ressemble à s'y méprendre.
-    const b = this.host.getBounds();
-    const c = this.host.getContentBounds();
-    // Les NIVEAUX des deux fenêtres : c'est ce qui décide de l'empilement quand
-    // la relation parent-enfant, elle, est intacte. Un niveau vidéo supérieur à
-    // celui de la page veut dire que l'overlay est passé dessous.
-    const niveaux = `${msg.entier(this.parent, "level")}/${msg.entier(this.mpvWindow, "level")}`;
-    return (
-      `cible=${fmt(cible)} video=${fmt(video)} calee=${colle ? "oui" : "NON"} ` +
-      `electron fenetre=${b.width}x${b.height} page=${c.width}x${c.height} ` +
-      `enfant=${enfant ? "oui" : "NON"} visible=${visible ? "oui" : "NON"} ` +
-      // Les deux formes : le lecteur emprunte le plein écran SIMPLE sur macOS
-      // (voir `fullscreen.ts`), que `isFullScreen()` ne rapporte pas.
-      `niveaux=${niveaux} pleinEcran=${
-        this.host.isFullScreen() ? "natif" : this.host.isSimpleFullScreen() ? "simple" : "non"
-      }`
-    );
+    return decrireMontage(this.host, this.parent, this.mpvWindow, this.cible());
   }
 
   /** La fenêtre de mpv, pour la sonde EDR — l'écran qui la porte est celui qui compte. */
@@ -311,12 +250,9 @@ export class MacosSurface implements VideoSurface {
   }
 
   /**
-   * La fenêtre vidéo a-t-elle disparu de l'application ?
-   *
-   * C'est le témoin qu'attend la séquence d'arrêt : tant qu'elle est là, la
-   * sortie vidéo vit, et demander `quit` figerait le thread principal. On
-   * interroge AppKit, jamais mpv — lire une propriété de la sortie vidéo depuis
-   * ce thread est précisément ce qui bloque (voir `objc.ts`).
+   * La fenêtre vidéo a-t-elle disparu ? C'est le témoin qu'attend l'arrêt :
+   * tant qu'elle est là, la sortie vidéo vit et demander `quit` figerait le
+   * thread principal. On interroge AppKit, jamais mpv.
    */
   videoDisparue(): boolean {
     if (this.numero === 0) return true;
@@ -361,9 +297,4 @@ export class MacosSurface implements VideoSurface {
     if (this.recherche !== null) clearInterval(this.recherche);
     this.recherche = null;
   }
-}
-
-/** Un rectangle, en une lecture. */
-function fmt(r: Rect): string {
-  return `${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}`;
 }

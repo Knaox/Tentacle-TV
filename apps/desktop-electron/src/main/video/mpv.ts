@@ -131,8 +131,6 @@ export function setProperty(name: string, value: string): Promise<string | null>
   return command(["set", name, value]);
 }
 
-/** Exécute une commande mpv. Les arguments passent en tableau, jamais
- *  concaténés : un chemin de fichier contient des espaces et des guillemets. */
 /**
  * Commandes en vol : identifiant de réponse → résolution de la promesse.
  *
