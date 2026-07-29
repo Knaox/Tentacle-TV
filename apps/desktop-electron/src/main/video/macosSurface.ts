@@ -12,7 +12,7 @@
  * son parent, et la page se compose par-dessus.
  *
  * Voir `surface.ts` pour ce que ce montage coûte et pourquoi il reste le défaut,
- * `macosCadre.ts` et `macosPleinEcran.ts` pour ce qu'il faut à mpv pour accepter
+ * `macosFrame.ts` et `macosFullscreen.ts` pour ce qu'il faut à mpv pour accepter
  * la géométrie qu'on lui donne.
  */
 
@@ -25,8 +25,8 @@ import {
   numerosFenetres,
   trouverFenetreNeuve,
 } from "./objcFenetres";
-import { cibleVideo, poserCadre } from "./macosCadre";
-import { PleinEcranMpv } from "./macosPleinEcran";
+import { cibleVideo, poserCadre } from "./macosFrame";
+import { PleinEcranMpv } from "./macosFullscreen";
 import { decrireMontage } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
@@ -58,7 +58,7 @@ export class MacosSurface implements VideoSurface {
   private calage: ReturnType<typeof setTimeout> | null = null;
   private veille: ReturnType<typeof setInterval> | null = null;
   private attache = false;
-  /** Le plein écran de mpv, tenu d'accord avec le nôtre — `macosPleinEcran.ts`. */
+  /** Le plein écran de mpv, tenu d'accord avec le nôtre — `macosFullscreen.ts`. */
   private readonly pleinEcran = new PleinEcranMpv(() => this.align());
 
   /**
@@ -205,7 +205,7 @@ export class MacosSurface implements VideoSurface {
    *
    * ⚠️ Le calage passe par `poserCadre`, JAMAIS par `setFrame:` : mpv redéfinit
    * `constrainFrameRect:toScreen:` et corrige ce qu'on demande. Toute l'histoire
-   * est dans `macosCadre.ts`, et le plein écran dans `macosPleinEcran.ts`.
+   * est dans `macosFrame.ts`, et le plein écran dans `macosFullscreen.ts`.
    */
   align(): void {
     if (this.mpvWindow === null) return;

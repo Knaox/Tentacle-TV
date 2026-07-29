@@ -5,6 +5,7 @@ import { EpisodeSelectorPanel } from "./EpisodeSelectorPanel";
 import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
+import { videoScrim } from "../../lib/videoScrim";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
@@ -63,6 +64,14 @@ interface DesktopPlayerControlsProps {
 }
 
 /**
+ * Calculé UNE fois : la plateforme ne change pas en cours de session, et les
+ * deux hauteurs sont celles des barres (`pt-5 + contenu + pb-10` en haut,
+ * `pt-10 + barre + transport + pb-5` en bas). Un écart de quelques pixels ne se
+ * voit pas — le palier d'alpha est uniforme de part et d'autre.
+ */
+const VOILE = videoScrim(100, 120);
+
+/**
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
  * et bottom bar (seekbar, transport, volume mpv 0-100, sélecteurs de pistes et
  * d'épisodes, fullscreen). Extraction mécanique de DesktopPlayer.
@@ -87,9 +96,16 @@ export function DesktopPlayerControls({
 
   return (
     <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}>
+      {/* Voile de lisibilité en UN seul morceau — voir `videoScrim.ts`. Deux
+          dégradés séparés y laissent chacun un trait noir net sur la surface à
+          alpha de la coquille macOS. Hors de cette surface, VOILE vaut `null` et
+          les deux barres gardent leur dégradé, au pixel près. */}
+      {VOILE !== null && (
+        <div className="pointer-events-none absolute inset-0" style={{ background: VOILE }} />
+      )}
       {/* Top bar */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-gradient-to-b from-black/70 to-transparent px-6 pb-10 pt-5">
+        <div className={`${VOILE === null ? "bg-gradient-to-b from-black/70 to-transparent" : ""} px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
@@ -108,7 +124,7 @@ export function DesktopPlayerControls({
 
       {/* Bottom controls */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="relative bg-gradient-to-t from-black/70 to-transparent px-6 pb-5 pt-10">
+        <div className={`relative ${VOILE === null ? "bg-gradient-to-t from-black/70 to-transparent" : ""} px-6 pb-5 pt-10`}>
           <AnimatePresence>
             {showSettings && hasSettings && (
               <TrackSelector

@@ -44,7 +44,7 @@
  * ⚠️ Ce désarmement-là est PONCTUEL, et il ne suffit pas au plein écran : macOS
  * réapplique la contrainte de lui-même une fraction de seconde plus tard, et la
  * fenêtre se met à osciller. Le plein écran se règle ailleurs, en faisant cesser
- * la contrainte à la source — voir `macosPleinEcran.ts`.
+ * la contrainte à la source — voir `macosFullscreen.ts`.
  */
 
 import type { BrowserWindow } from "electron";

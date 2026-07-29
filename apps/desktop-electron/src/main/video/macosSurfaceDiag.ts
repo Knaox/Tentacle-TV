@@ -13,7 +13,7 @@
  */
 
 import type { BrowserWindow } from "electron";
-import { fmt, memeRect } from "./macosCadre";
+import { fmt, memeRect } from "./macosFrame";
 import { cls, msg, type Rect } from "./objc";
 
 export function decrireMontage(
@@ -56,7 +56,7 @@ export function decrireMontage(
  * L'écran qui porte la fenêtre : son cadre, et sa portion « visible ».
  *
  * ⚠️ Sans ces deux nombres, le plein écran ne se diagnostique pas. `visibleFrame`
- * est le plafond que mpv impose à toute fenêtre (`macosCadre.ts`), et sur un Mac
+ * est le plafond que mpv impose à toute fenêtre (`macosFrame.ts`), et sur un Mac
  * à encoche il s'arrête 33 points sous le haut de l'écran — que la barre de
  * menus soit masquée ou non. Un `cible` de 982 de haut pour un `visible` de 949
  * dit à lui seul pourquoi une bande de bureau apparaît.
