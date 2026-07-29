@@ -27,7 +27,7 @@ import {
 } from "./objcFenetres";
 import { attacherSousLaPage, reordonnerSousLaPage } from "./macosChildWindow";
 import { cibleVideo, poserCadre } from "./macosFrame";
-import { decrireMontage } from "./macosSurfaceDiag";
+import { decrireMontage, etatALaDecouverte } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
 /**
@@ -151,6 +151,10 @@ export class MacosSurface implements VideoSurface {
     // fenêtre » de « elle existe et nous l'avons attachée ». Sans elle, un écran
     // noir ne se diagnostique plus qu'en instrumentant à la main.
     trace(`fenetre mpv attachee (${this.numero})`);
+    // AVANT toute intervention : voir `etatALaDecouverte`. Cette ligne dit si
+    // macOS avait déjà donné son propre espace à la fenêtre quand nous l'avons
+    // trouvée — la seule question dont dépend le reste de la correction.
+    trace(`etat a la decouverte — ${etatALaDecouverte(this.mpvWindow)}`);
     // La veille ne démarre qu'ICI : tant que la fenêtre n'existe pas, il n'y a
     // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
     if (this.veille === null) this.veille = setInterval(() => this.align(), VEILLE_MS);

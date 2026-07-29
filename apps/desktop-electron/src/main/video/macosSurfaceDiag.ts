@@ -54,7 +54,35 @@ export function decrireMontage(
 
 /** `NSWindowStyleMaskFullScreen` — le bit que macOS pose sur une fenêtre à qui
  *  il a donné son propre espace. */
-const MASQUE_PLEIN_ECRAN = 1 << 14;
+export const MASQUE_PLEIN_ECRAN = 1 << 14;
+
+/**
+ * Ce que la fenêtre de mpv porte À L'INSTANT OÙ ON LA TROUVE, avant qu'on y
+ * touche.
+ *
+ * ⚠️ C'est la mesure qui a tranché, et elle manquait : `videoPromue=OUI` n'avait
+ * été relevé qu'en cours de lecture, longtemps après l'attache. Elle dit
+ * `promueDesLaNaissance=non comportement=128 miniaturisee=non`, et ces trois
+ * nombres ferment autant d'impasses : la fenêtre naît SANS le bit de plein
+ * écran (la promotion est donc une transition asynchrone, décidée à
+ * l'affichage), mpv la déclare bien `FullScreenPrimary`, et le
+ * `window-minimized=yes` qu'on lui passe alors ne la miniaturise pas vraiment —
+ * il ne fait que lui épargner l'`orderFront`.
+ *
+ * Le jour où l'un des trois changerait, tout le montage de
+ * `macosOptionsFenetre.ts` serait à revoir, et cette ligne serait le seul
+ * endroit où cela se verrait.
+ */
+export function etatALaDecouverte(fenetre: unknown): string {
+  const masque = msg.count(fenetre, "styleMask");
+  const promue = (masque & MASQUE_PLEIN_ECRAN) !== 0;
+  const comportement = msg.count(fenetre, "collectionBehavior");
+  const miniature = msg.bool(fenetre, "isMiniaturized");
+  return (
+    `promueDesLaNaissance=${promue ? "OUI" : "non"} masque=${masque} ` +
+    `comportement=${comportement} miniaturisee=${miniature ? "oui" : "non"}`
+  );
+}
 
 /**
  * Ce que la fenêtre VIDÉO croit être : son masque de style et son comportement.
