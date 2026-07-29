@@ -7,11 +7,15 @@
  *
  * ⚠️ macOS et développement seulement. La sonde lance `screencapture` — un
  * exécutable du système — ce qu'un paquet livré n'a aucune raison de faire.
+ *
+ * ⚠️ `sondeMacos.ts` est donc chargé PARESSEUSEMENT, derrière `sondeDisponible`.
+ * Il remonte à `objc.ts`, qui appelle `koffi.load("/usr/lib/libobjc.A.dylib")`
+ * dès l'import : un `import` en tête de fichier ferait tomber le processus
+ * principal sur Windows avant la première fenêtre.
  */
 
 import { app } from "electron";
 import { z } from "zod";
-import { sonder, tracerRapport } from "../video/sondeMacos";
 import type { VideoSurface } from "../video/surface";
 import type { CommandRegistry } from "./registry";
 
@@ -27,6 +31,7 @@ export function sondeDisponible(): boolean {
 
 export function registerVideoProbe(registry: CommandRegistry, surface: Surface): void {
   if (!sondeDisponible()) return;
+  const { sonder } = require("../video/sondeMacos") as typeof import("../video/sondeMacos");
   registry.add("video_surface_probe", { schema: NO_ARGS, run: () => sonder(surface()) });
 }
 
@@ -54,6 +59,8 @@ export function planifierRapport(surface: Surface): void {
   planifie = setTimeout(() => {
     planifie = null;
     deja = true;
+    const { tracerRapport } =
+      require("../video/sondeMacos") as typeof import("../video/sondeMacos");
     void tracerRapport(surface());
   }, DELAI_RAPPORT_MS);
 }

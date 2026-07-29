@@ -13,10 +13,14 @@ import { basculeEnCours, edrCapable, hdrActif, hdrSupporte } from "../video/disp
 import { autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
-import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
+import {
+  filtrerOptionsInit,
+  refuserCommande,
+  refuserEcriture,
+  type ValeurMpv,
+} from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
 import { adapterAuPleinEcran } from "../video/macosOptionsFenetre";
-import { adapterPourRenderApi } from "../video/macosOptionsRender";
 import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
 import { relaisEvenements } from "./videoEvenements";
 import { registerVideoProbe, reinitialiserRapport } from "./videoSonde";
@@ -78,6 +82,22 @@ async function arreterLecteur(): Promise<void> {
   surface?.detach();
 }
 
+/**
+ * La réécriture Render API des options, chargée À LA DEMANDE.
+ *
+ * ⚠️ L'`import` ne peut PAS être en tête de fichier : `macosOptionsRender.ts`
+ * remonte à `objc.ts`, qui appelle `koffi.load("/usr/lib/libobjc.A.dylib")` dès
+ * l'import — introuvable sur Windows, où le processus principal tombe alors
+ * avant la première fenêtre. Même précaution que `surface.ts`, en miroir.
+ */
+function optionsRenderApi(
+  retenues: Readonly<Record<string, ValeurMpv>>,
+): Record<string, ValeurMpv> {
+  const { adapterPourRenderApi } =
+    require("../video/macosOptionsRender") as typeof import("../video/macosOptionsRender");
+  return adapterPourRenderApi(retenues);
+}
+
 export function registerVideoCommands(registry: CommandRegistry): void {
   registry
     .add("mpv_init", {
@@ -113,7 +133,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         // pas laisser macOS ouvrir un second bureau. Voir `macosOptionsFenetre.ts`.
         const optionsMpv =
           montageVideo() === "gl"
-            ? adapterPourRenderApi(retenues)
+            ? optionsRenderApi(retenues)
             : adapterAuPleinEcran(retenues, win);
         const parent = nativeHandle(win);
         const err = init(

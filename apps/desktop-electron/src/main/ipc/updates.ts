@@ -58,14 +58,20 @@ export function registerUpdateCommands(registry: CommandRegistry): void {
         const win = getMainWindow();
         if (!win) throw new Error("aucune fenetre pour la boite de dialogue du Store");
 
-        // La progression réelle demanderait un délégué WinRT, c'est-à-dire un
-        // objet COM complet fabriqué à la main. Le Store affiche de toute façon
-        // sa propre progression : on annonce le départ et l'arrivée, ce qui
-        // suffit à la barre de la page.
-        sendToPage("msix-update-progress", { progress: 0 });
+        // La progression réelle demanderait un délégué WinRT : un objet COM
+        // fabriqué à la main, dont l'`Invoke` est appelé depuis un fil de la
+        // réserve — là où un pont FFI ne peut pas rappeler du JavaScript. Le
+        // Store affiche de toute façon sa propre progression.
+        //
+        // On l'ANNONCE désormais à la page (`indeterminate`) au lieu de la
+        // laisser déduire un avancement de deux valeurs. Elle affichait un 0 %
+        // figé pendant tout le téléchargement, ce qui se lit comme une panne ;
+        // elle fait maintenant balayer sa barre, ce qui est la vérité : il se
+        // passe quelque chose, on ne sait pas où ça en est.
+        sendToPage("msix-update-progress", { progress: 0, indeterminate: true });
         try {
           await msix().downloadAndInstallMsixUpdate(nativeHandle(win));
-          sendToPage("msix-update-progress", { progress: 1 });
+          sendToPage("msix-update-progress", { progress: 1, indeterminate: false });
         } catch (error) {
           // Repli : la page de mises à jour du Store. L'utilisateur obtient sa
           // mise à jour dans tous les cas — seul le chemin change.

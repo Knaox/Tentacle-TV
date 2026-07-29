@@ -63,10 +63,10 @@ export function isLinux(): boolean {
 }
 
 /** Build distribué via le Mac App Store (canal injecté à la compilation).
- *  → MAJ détectées via l'App Store (pas d'auto-update intégré). */
-export function isAppStoreBuild(): boolean {
-  return typeof __DIST_CHANNEL__ !== "undefined" && __DIST_CHANNEL__ === "appstore";
-}
+ *  → MAJ détectées via l'App Store (pas d'auto-update intégré).
+ *  Défini dans `desktop/channel.ts`, sans dépendance : `desktop/capabilities.ts`
+ *  en a besoin et ne peut pas importer ce fichier-ci sans créer un cycle. */
+export { isAppStoreBuild } from "../desktop/channel";
 
 // Lazy-loaded plugin API — only available in Tauri context
 // On macOS & Linux: uses our custom mpv Render API adapter (mêmes commandes Rust

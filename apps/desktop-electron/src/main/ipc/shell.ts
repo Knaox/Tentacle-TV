@@ -61,6 +61,17 @@ export function registerShellCommands(registry: CommandRegistry): void {
 
 /** Capacités exposées nommément par le preload, hors table des commandes. */
 export function registerShellCapabilities(): void {
+  /**
+   * ⚠️ `z.string().url()` ne filtre PAS les schémas : il accepte tout ce que
+   * `new URL()` sait analyser, `javascript:`, `file:` et `smb:` compris. Ce n'est
+   * donc pas un contrôle de sécurité, seulement un contrôle de forme.
+   *
+   * Le seul portier est `openExternalSafely` et sa liste blanche de schémas.
+   * Corollaire : ne jamais appeler `shell.openExternal` directement ailleurs, et
+   * n'ajouter un schéma à cette liste qu'avec une raison forte — les trois
+   * schémas de store (`macappstore:`, `itms-apps:`, `ms-windows-store:`) y sont
+   * déjà, ouvrir une fiche d'App Store ne demande rien de plus.
+   */
   ipcMain.handle("tentacle:open-external", async (event: IpcMainInvokeEvent, raw: unknown) => {
     if (!isTrustedSender(event)) return;
     const url = z.string().url().safeParse(raw);

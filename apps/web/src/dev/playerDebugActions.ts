@@ -120,6 +120,31 @@ export const ACTIONS: readonly DebugAction[] = [
       ]
     : []),
   {
+    touche: "u",
+    libelle: "U · pop-up de mise à jour",
+    /**
+     * Affiche la VRAIE pop-up de mise à jour, avec son vrai bouton.
+     *
+     * Elle ne s'affiche autrement que lorsqu'une mise à jour existe réellement —
+     * autant dire jamais au moment où l'on travaille dessus, et jamais du tout
+     * hors d'un paquet installé (le `StoreContext` de Windows n'existe pas en
+     * développement, et le manifeste macOS ne se déclenche que sur une version
+     * plus ancienne que celle publiée).
+     *
+     * Le bouton n'est PAS neutralisé : sur macOS il ouvre pour de bon la fiche
+     * de l'App Store — c'est le seul moyen de vérifier que le lien aboutit sur
+     * la bonne fiche, dans l'application App Store et non dans un navigateur.
+     * Sur Windows il joue le déroulé complet, barre indéterminée comprise, sans
+     * rien installer ni redémarrer (cf. `lib/updateSimulation.ts`).
+     */
+    executer: async () => {
+      const w = window as unknown as { __tentacleSimulateUpdate?: () => void };
+      if (!w.__tentacleSimulateUpdate) return "pop-up de mise à jour indisponible";
+      w.__tentacleSimulateUpdate();
+      return "pop-up de mise à jour affichée — le bouton agit pour de vrai";
+    },
+  },
+  {
     touche: "h",
     libelle: "H · bascule HDR de l'écran",
     executer: async () => {

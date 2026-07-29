@@ -19,6 +19,7 @@
  */
 
 import { desktopKind } from "./detect";
+import { isAppStoreBuild } from "./channel";
 
 /**
  * Le shell expose-t-il cette commande ?
@@ -50,8 +51,20 @@ export function supportsSmtc(): boolean {
   return hasNativeCommand("smtc_init");
 }
 
-/** Mise à jour de l'application pilotée par le shell (MSIX, Linux, App Store). */
+/**
+ * L'application peut-elle proposer sa propre mise à jour ?
+ *
+ * Deux cas, et le premier ne demande RIEN au shell : sur un build App Store, la
+ * détection est un manifeste HTTP et l'action une ouverture d'URL. Sans cette
+ * porte, la coquille Electron de macOS répondait « non » — elle n'enregistre pas
+ * `check_msix_update`, et c'est justifié, cette commande est Windows —, si bien
+ * que la pop-up ne s'affichait jamais alors que tout ce qu'il lui faut existe.
+ *
+ * Le second cas reste l'inventaire des commandes : sous Windows, c'est WinRT qui
+ * découvre la mise à jour en attente et la déclenche depuis l'application.
+ */
 export function supportsAppUpdates(): boolean {
+  if (isAppStoreBuild()) return true;
   return hasNativeCommand("check_msix_update");
 }
 

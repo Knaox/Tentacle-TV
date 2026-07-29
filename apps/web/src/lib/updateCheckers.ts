@@ -10,6 +10,22 @@ import { getVersion, invoke } from "../desktop/bridge";
 /** Fiche App Store (achat universel iOS+macOS) — repli si absent du manifest. */
 export const APP_STORE_ID = "6760205634";
 
+/**
+ * Lien vers la fiche de l'app dans l'application App Store.
+ *
+ * L'identifiant est VALIDÉ avant d'être interpolé, et ce n'est pas de la
+ * paranoïa : il vient d'un manifeste distant (`updates/store-versions.json`, lu
+ * sur raw.githubusercontent.com) où il n'est ni typé ni contrôlé. Le schéma et
+ * l'hôte sont figés dans le gabarit, donc une valeur inattendue ne peut pas
+ * changer de destination — mais elle pourrait fabriquer un chemin absurde, et
+ * une chaîne venue du réseau n'a pas à entrer telle quelle dans une URL qu'on
+ * demande au système d'ouvrir. Hors format, on retombe sur la constante.
+ */
+export function appStoreUrlFor(appId: string | undefined): string {
+  const id = appId && /^\d{5,12}$/.test(appId) ? appId : APP_STORE_ID;
+  return `macappstore://apps.apple.com/app/id${id}?mt=12`;
+}
+
 /** Compare deux versions semver simples ("1.2.3"). true si `a` > `b`. */
 export function isNewerVersion(a: string, b: string): boolean {
   const pa = a.replace(/^v/, "").split(".").map((n) => parseInt(n, 10) || 0);
@@ -39,7 +55,7 @@ export async function checkAppStoreUpdate(): Promise<{ version: string; notes?: 
   return {
     version: mac.version,
     notes: pickManifestNotes(mac.notes),
-    storeUrl: `macappstore://apps.apple.com/app/id${mac.appId ?? APP_STORE_ID}?mt=12`,
+    storeUrl: appStoreUrlFor(mac.appId),
   };
 }
 

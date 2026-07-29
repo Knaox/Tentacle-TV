@@ -2,44 +2,20 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { isTauri, isWindows, isLinux, isAppStoreBuild } from "./useDesktopPlayer";
 import { openExternal } from "../lib/openExternal";
 import { invoke, listen, relaunch, supportsAppUpdates } from "../desktop/bridge";
-import { APP_STORE_ID, checkAppStoreUpdate, checkMsixUpdate } from "../lib/updateCheckers";
+import { APP_STORE_ID, appStoreUrlFor, checkAppStoreUpdate, checkMsixUpdate } from "../lib/updateCheckers";
 import { checkLinuxUpdate, downloadLinuxUpdate, applyLinuxUpdate, type LinuxUpdateFound } from "../lib/linuxUpdate";
+import { defaultUpdateInfo, type UpdateInfo, type UpdatePhase } from "../lib/updateTypes";
+import {
+  isSimulatingUpdate, runSimulatedInstall, simulatedUpdate, stopSimulatingUpdate, updateDebugEnabled,
+} from "../lib/updateSimulation";
 
-export type UpdatePhase = "idle" | "available" | "downloading" | "installing" | "restarting";
-
-export interface UpdateInfo {
-  available: boolean;
-  phase: UpdatePhase;
-  version?: string;
-  notes?: string;
-  downloading: boolean;
-  progress: number;
-  error: string | null;
-  /** Build Mac App Store : le bouton ouvre l'App Store au lieu d'installer. */
-  isStoreUpdate: boolean;
-  /** L'App Store a été ouvert (hint « cliquez sur Mettre à jour » affiché). */
-  storeOpened: boolean;
-  storeUrl?: string;
-}
-
-const defaultInfo: UpdateInfo = {
-  available: false,
-  phase: "idle",
-  downloading: false,
-  progress: 0,
-  error: null,
-  isStoreUpdate: false,
-  storeOpened: false,
-};
+export type { UpdateInfo, UpdatePhase } from "../lib/updateTypes";
 
 interface MsixProgress {
   progress: number; // 0.0 .. 1.0
+  /** La coquille annonce ne pas connaître l'avancement (Microsoft Store). */
+  indeterminate?: boolean;
 }
-
-// Flag de simulation activé par __tentacleSimulateUpdate() depuis la console.
-// En mémoire (pas localStorage) — WebView2 peut ne pas persister localStorage
-// dans certaines configs dev.
-let __testMode = false;
 
 // Re-check périodique : l'app reste souvent ouverte des jours (usage salon) —
 // un check unique au démarrage ratait toute MAJ publiée ensuite. 6 h : assez
@@ -47,7 +23,7 @@ let __testMode = false;
 const UPDATE_RECHECK_MS = 6 * 60 * 60 * 1000;
 
 export function useAutoUpdate() {
-  const [info, setInfo] = useState<UpdateInfo>(defaultInfo);
+  const [info, setInfo] = useState<UpdateInfo>(defaultUpdateInfo);
   // URL App Store mémorisée hors state pour rester dispo dans installUpdate ([]).
   const storeUrlRef = useRef<string | undefined>(undefined);
   // MAJ Linux détectée (asset + format), mémorisée hors state pour installUpdate.
@@ -56,26 +32,25 @@ export function useAutoUpdate() {
   const phaseRef = useRef<UpdatePhase>("idle");
   useEffect(() => { phaseRef.current = info.phase; }, [info.phase]);
 
+  const patch = useCallback((next: Partial<UpdateInfo>) => {
+    setInfo((prev) => ({ ...prev, ...next }));
+  }, []);
+
   useEffect(() => {
-    // Dev only — exposé sur window pour valider l'UX depuis la console.
-    // Vite tree-shake `import.meta.env.DEV === false` en prod build → code retiré.
-    if (import.meta.env.DEV) {
+    // Crochet du panneau de diagnostic (touche U) — et de la console. La garde
+    // couvre le développement ET la coquille Electron de développement, qui sert
+    // un build de production : `import.meta.env.DEV` y est FAUX, et ce crochet
+    // n'existait donc pas là où il sert le plus.
+    if (updateDebugEnabled()) {
       (window as unknown as { __tentacleSimulateUpdate?: () => void }).__tentacleSimulateUpdate = () => {
-        __testMode = true;
-        setInfo({
-          ...defaultInfo,
-          available: true,
-          phase: "available",
-          version: "9.9.9",
-          notes: "Mode test — aucune mise à jour réelle ne sera installée.\n• Validation de la pop-up\n• Progress factice 5s\n• Pas de redémarrage",
-        });
+        setInfo(simulatedUpdate(defaultUpdateInfo));
       };
     }
 
     if (!isTauri()) return;
-    // Le shell doit savoir vérifier les mises à jour. Sous Electron, tant que
-    // la phase dédiée n'a pas livré, la commande n'existe pas : sans cette
-    // porte, le contrôle partait quand même et échouait à chaque démarrage.
+    // Le shell doit savoir vérifier les mises à jour. Sur un build App Store la
+    // réponse est oui d'office : la détection est un manifeste HTTP et l'action
+    // une ouverture d'URL (cf. `supportsAppUpdates`).
     if (!supportsAppUpdates()) return;
     if (!isAppStoreBuild() && !isWindows() && !isLinux()) return;
 
@@ -88,15 +63,14 @@ export function useAutoUpdate() {
           const update = await checkAppStoreUpdate();
           if (cancelled || !update) return;
           storeUrlRef.current = update.storeUrl;
-          setInfo((prev) => ({
-            ...prev,
+          patch({
             available: true,
             phase: "available",
             version: update.version,
             notes: update.notes,
             isStoreUpdate: true,
             storeUrl: update.storeUrl,
-          }));
+          });
           return;
         }
 
@@ -106,13 +80,12 @@ export function useAutoUpdate() {
         if (isWindows()) {
           const update = await checkMsixUpdate();
           if (cancelled || !update) return;
-          setInfo((prev) => ({
-            ...prev,
+          patch({
             available: true,
             phase: "available",
             version: update.displayVersion,
             notes: update.notes,
-          }));
+          });
           return;
         }
 
@@ -123,20 +96,11 @@ export function useAutoUpdate() {
           const found = await checkLinuxUpdate();
           if (cancelled || !found) return;
           linuxFoundRef.current = found;
-          setInfo((prev) => ({
-            ...prev,
-            available: true,
-            phase: "available",
-            version: found.version,
-            notes: found.notes,
-          }));
-          return;
+          patch({ available: true, phase: "available", version: found.version, notes: found.notes });
         }
       } catch (err) {
         console.error("[updater] check échoué:", err);
-        if (!cancelled) {
-          setInfo((prev) => ({ ...prev, error: String(err) }));
-        }
+        if (!cancelled) patch({ error: String(err) });
       }
     };
 
@@ -148,60 +112,69 @@ export function useAutoUpdate() {
     }, UPDATE_RECHECK_MS);
 
     return () => { cancelled = true; clearInterval(recheckId); };
-  }, []);
+  }, [patch]);
 
   const installUpdate = useCallback(async () => {
-    if (!isTauri() || !supportsAppUpdates()) return;
-
-    // Mode simulation : flow factice 5s, pas de relaunch réel.
-    if (import.meta.env.DEV && __testMode) {
-      setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
-      for (let i = 1; i <= 100; i++) {
-        await new Promise((r) => setTimeout(r, 50));
-        setInfo((prev) => ({ ...prev, progress: i }));
+    // AVANT les gardes de shell : sur un build de développement, ni le canal
+    // App Store ni la commande MSIX n'existent, et le bouton de la pop-up de
+    // démonstration serait resté inerte — c'est-à-dire indémontrable.
+    if (isSimulatingUpdate()) {
+      // macOS : on ouvre POUR DE BON la fiche de l'App Store. C'est tout l'objet
+      // de la démonstration — vérifier que le lien aboutit sur la bonne fiche,
+      // dans l'application App Store et pas dans un navigateur.
+      const url = storeUrlRef.current ?? appStoreUrlFor(APP_STORE_ID);
+      if (isAppStoreBuild() || !isWindows()) {
+        try {
+          await openExternal(url);
+          patch({ storeOpened: true, error: null });
+        } catch (err) {
+          patch({ error: String(err) });
+        }
+        return;
       }
-      setInfo((prev) => ({ ...prev, phase: "installing" }));
-      await new Promise((r) => setTimeout(r, 1500));
-      setInfo((prev) => ({ ...prev, phase: "restarting" }));
-      await new Promise((r) => setTimeout(r, 2000));
-      __testMode = false;
-      setInfo(defaultInfo);
+      await runSimulatedInstall(patch, () => setInfo(defaultUpdateInfo));
       return;
     }
+
+    if (!isTauri() || !supportsAppUpdates()) return;
 
     // macOS App Store — ouvre la fiche de l'app SANS quitter ni redémarrer :
     // la mise à jour se déclenche dans l'App Store (bouton « Mettre à jour »
     // sur la fiche), qui ferme l'app lui-même au moment d'installer. L'ancien
     // exit(0) fermait l'app sans MAJ — perçu comme un simple redémarrage.
     if (isAppStoreBuild()) {
-      const url = storeUrlRef.current || `macappstore://apps.apple.com/app/id${APP_STORE_ID}?mt=12`;
+      const url = storeUrlRef.current ?? appStoreUrlFor(APP_STORE_ID);
       try {
         await openExternal(url);
-        setInfo((prev) => ({ ...prev, storeOpened: true, error: null }));
+        patch({ storeOpened: true, error: null });
       } catch (err) {
         console.error("[updater] ouverture App Store échouée:", err);
-        setInfo((prev) => ({ ...prev, error: String(err) }));
+        patch({ error: String(err) });
       }
       return;
     }
 
     if (isWindows()) {
-      setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
+      // Barre indéterminée par défaut : la coquille Electron ne sait pas où en
+      // est le Store (cf. `UpdateInfo.indeterminate`). Le natif Tauri, lui, émet
+      // de vraies valeurs et la remet à faux dès la première.
+      patch({ downloading: true, phase: "downloading", progress: 0, indeterminate: true, error: null });
       let unlistenProgress: (() => void) | null = null;
       try {
         unlistenProgress = await listen<MsixProgress>("msix-update-progress", (event) => {
-          const pct = Math.round((event.payload.progress ?? 0) * 100);
-          setInfo((prev) => ({ ...prev, progress: pct }));
+          const brut = event.payload.progress ?? 0;
+          const inconnu = event.payload.indeterminate === true;
+          patch({ progress: Math.round(brut * 100), indeterminate: inconnu });
         });
 
         await invoke("download_and_install_msix_update");
-        setInfo((prev) => ({ ...prev, progress: 100, phase: "installing" }));
+        patch({ progress: 100, indeterminate: false, phase: "installing" });
 
         // L'install MSIX s'applique au prochain démarrage — on relance.
-        setInfo((prev) => ({ ...prev, phase: "restarting" }));
+        patch({ phase: "restarting" });
         await relaunch();
       } catch (err) {
-        setInfo((prev) => ({ ...prev, downloading: false, phase: "available", error: String(err) }));
+        patch({ downloading: false, indeterminate: false, phase: "available", error: updateErrorLabel(err) });
       } finally {
         unlistenProgress?.();
       }
@@ -213,23 +186,46 @@ export function useAutoUpdate() {
     // relance. applyLinuxUpdate ne rend pas la main en cas de succès (relaunch).
     if (isLinux() && linuxFoundRef.current) {
       const found = linuxFoundRef.current;
-      setInfo((prev) => ({ ...prev, downloading: true, phase: "downloading", progress: 0, error: null }));
+      patch({ downloading: true, phase: "downloading", progress: 0, indeterminate: false, error: null });
       try {
-        const path = await downloadLinuxUpdate(found, (pct) =>
-          setInfo((prev) => ({ ...prev, progress: pct })),
-        );
-        setInfo((prev) => ({ ...prev, progress: 100, phase: "installing" }));
+        const path = await downloadLinuxUpdate(found, (pct) => patch({ progress: pct }));
+        patch({ progress: 100, phase: "installing" });
         await applyLinuxUpdate(path, found.format);
       } catch (err) {
-        setInfo((prev) => ({ ...prev, downloading: false, phase: "available", error: String(err) }));
+        patch({ downloading: false, phase: "available", error: updateErrorLabel(err) });
       }
-      return;
     }
-  }, []);
+  }, [patch]);
 
   const dismiss = useCallback(() => {
-    setInfo(defaultInfo);
+    stopSimulatingUpdate();
+    setInfo(defaultUpdateInfo);
   }, []);
 
   return { ...info, installUpdate, dismiss };
 }
+
+/**
+ * Codes d'erreur de la coquille → clé i18n, ou message brut en dernier recours.
+ *
+ * La coquille lève des codes techniques (`store-page-opened`,
+ * `install-state-3`…) et la modale les affichait TELS QUELS : l'utilisateur
+ * lisait « Error: store-page-opened » dans sa langue de personne.
+ */
+function updateErrorLabel(err: unknown): string {
+  const brut = err instanceof Error ? err.message : String(err);
+  const code = brut.replace(/^Error:\s*/, "");
+  return UPDATE_ERROR_KEYS[code] ?? (UPDATE_ERROR_KEYS[code.replace(/-\d+$/, "-*")] ?? brut);
+}
+
+/** Codes connus. La modale traduit ce qui commence par `notifications:`. */
+const UPDATE_ERROR_KEYS: Record<string, string> = {
+  "store-page-opened": "notifications:updateStorePageOpened",
+  "store-unavailable": "notifications:updateStoreUnavailable",
+  "no-update": "notifications:updateNoLongerAvailable",
+  "iterable-unavailable": "notifications:updateStoreUnavailable",
+  "install-refused": "notifications:updateInstallRefused",
+  "install-failed": "notifications:updateInstallRefused",
+  "install-state-*": "notifications:updateInstallRefused",
+  "aucune fenetre pour la boite de dialogue du Store": "notifications:updateStoreUnavailable",
+};
