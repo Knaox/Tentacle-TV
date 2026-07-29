@@ -24,7 +24,7 @@
 
 import type { BrowserWindow } from "electron";
 import { sansFaillir, trace } from "./native";
-import { NSWindowBelow, depuisHandle, msg, type Rect } from "./objc";
+import { NSWindowBelow, cls, depuisHandle, msg, type Rect } from "./objc";
 import {
   fenetresApp,
   numeroFenetre,
@@ -167,6 +167,16 @@ export class MacosSurface implements VideoSurface {
     trace(`fenetre mpv attachee (${this.numero})`);
     msg.setFlag(this.mpvWindow, "setIgnoresMouseEvents:", true);
     msg.setFlag(this.mpvWindow, "setHasShadow:", false);
+    // ⚠️ OPAQUE, ET AVEC UN FOND NOIR. C'est elle qui doit garantir le noir
+    // sous la page : celle-ci est transparente en permanence, et tout ce que
+    // la vidéo ne couvre pas laisserait autrement voir le BUREAU. Le symptôme
+    // ne ressemble pas à sa cause — un fond « pas tout à fait noir », des
+    // bordures étranges autour de l'overlay et des dégradés qui semblent se
+    // composer avec autre chose que du noir. C'est le cas : ils se composent
+    // avec ce qui se trouve derrière la fenêtre.
+    msg.setFlag(this.mpvWindow, "setOpaque:", true);
+    const noir = msg.get(cls("NSColor"), "blackColor");
+    if (noir) msg.setObjet(this.mpvWindow, "setBackgroundColor:", noir);
     msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
     this.align();
   }
