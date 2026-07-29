@@ -206,6 +206,11 @@ export const msg = {
     if (!vue) return;
     send1ul(vue, sel("setAutoresizingMask:"), masque);
   },
+  /** `[fenêtre setCollectionBehavior: masque]`. */
+  setComportement(fenetre: unknown, masque: number): void {
+    if (!fenetre) return;
+    send1ul(fenetre, sel("setCollectionBehavior:"), masque);
+  },
   /** `[fenêtre setLevel: niveau]` — NSInteger, qui peut être très négatif. */
   setNiveau(fenetre: unknown, niveau: number): void {
     if (!fenetre) return;

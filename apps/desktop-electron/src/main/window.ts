@@ -23,19 +23,6 @@ const MIN_HEIGHT = 600;
 
 let mainWindow: BrowserWindow | null = null;
 
-/**
- * Mémoire du plein écran À L'ENTRÉE du lecteur.
- *
- * Le lecteur ne rend la fenêtre à l'état fenêtré que s'il l'a lui-même mise en
- * plein écran. Si l'utilisateur y était DÉJÀ avant de lancer la vidéo, quitter
- * le lecteur ne doit rien défaire : ce plein écran est le sien.
- *
- * L'état vit ici et non dans un ref React : le lecteur est démonté puis
- * remonté à chaque épisode (`key={itemId}`), et un ref repartirait à zéro
- * alors que la fenêtre, elle, est toujours en plein écran.
- */
-let fullscreenOnEntry: boolean | null = null;
-
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
@@ -241,25 +228,26 @@ export function toggleFullscreen(): boolean {
 }
 
 /**
- * Ouvre la session plein écran du lecteur et renvoie l'état COURANT.
- * Idempotente : un changement d'épisode remonte le lecteur sans fermer la
- * session, la mémoire d'entrée n'est donc pas réécrite.
+ * Ouvre la session plein écran du lecteur et renvoie l'état COURANT — c'est lui
+ * qui amorce l'état React du lecteur, remonté à chaque épisode.
  */
 export function enterPlayerFullscreenScope(): boolean {
   if (!mainWindow) return false;
-  const now = estEnPleinEcran();
-  if (fullscreenOnEntry === null) fullscreenOnEntry = now;
-  return now;
+  return estEnPleinEcran();
 }
 
 /**
- * Ferme la session : ne sort du plein écran QUE si c'est le lecteur qui l'a
- * activé. Ne le ré-active jamais — si l'utilisateur en est sorti pendant la
- * lecture, on respecte son geste.
+ * Ferme la session, et ne touche PLUS au plein écran.
+ *
+ * ⚠️ Le lecteur rendait la fenêtre à l'état fenêtré quand c'était lui qui
+ * l'avait mise en plein écran. C'est une erreur : le plein écran appartient à la
+ * FENÊTRE, pas à la vidéo. Quitter un film ramenait donc brutalement l'application
+ * dans son cadre, alors que l'utilisateur venait justement de demander l'inverse
+ * — et il fallait le redemander à chaque film. Même règle sous Windows.
+ *
+ * La fonction reste : c'est une commande de la page, et la session a d'autres
+ * usages à venir. Elle ne fait simplement plus rien au cadre.
  */
 export function leavePlayerFullscreenScope(): void {
-  const win = mainWindow;
-  const entry = fullscreenOnEntry;
-  fullscreenOnEntry = null;
-  if (win && entry === false && estEnPleinEcran()) quitterPleinEcran(win);
+  /* Le plein écran survit à la vidéo — voir l'en-tête. */
 }

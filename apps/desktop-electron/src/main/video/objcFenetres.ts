@@ -97,6 +97,34 @@ export function trouverFenetreNeuve(motif: string, exclus: ReadonlySet<number>):
   return null;
 }
 
+/**
+ * La fenêtre `a` est-elle DEVANT la fenêtre `b` à l'écran ?
+ *
+ * ⚠️ `[NSApp windows]` ne dit rien de l'empilement : c'est un inventaire, pas un
+ * ordre. `orderedWindows` rend les fenêtres de l'AVANT vers l'ARRIÈRE, et c'est
+ * la seule façon, depuis le processus, de constater qu'une fenêtre fille est
+ * passée devant son parent — ce que macOS fait en entrant dans un espace de
+ * plein écran, sans que la relation de filiation en paraisse altérée.
+ *
+ * Rend `false` si l'une des deux ne figure pas dans la liste : on ne répare que
+ * ce qu'on a constaté.
+ */
+export function estDevant(a: unknown, b: unknown): boolean {
+  const application = msg.get(cls("NSApplication"), "sharedApplication");
+  const ordonnees = msg.get(application, "orderedWindows");
+  const n = msg.count(ordonnees, "count");
+  const na = numeroFenetre(a);
+  const nb = numeroFenetre(b);
+  let rangA = -1;
+  let rangB = -1;
+  for (let i = 0; i < n; i += 1) {
+    const numero = numeroFenetre(msg.index(ordonnees, "objectAtIndex:", i));
+    if (numero === na && rangA < 0) rangA = i;
+    if (numero === nb && rangB < 0) rangB = i;
+  }
+  return rangA >= 0 && rangB >= 0 && rangA < rangB;
+}
+
 /** Nom de classe d'un objet, pour le diagnostic. */
 export function nomDeClasse(objet: unknown): string {
   if (!objet) return "(null)";

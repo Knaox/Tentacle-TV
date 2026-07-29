@@ -18,13 +18,14 @@
 
 import type { BrowserWindow } from "electron";
 import { sansFaillir, trace } from "./native";
-import { NSWindowBelow, cls, depuisHandle, msg, type Rect } from "./objc";
+import { depuisHandle, msg, type Rect } from "./objc";
 import {
   fenetresApp,
   numeroFenetre,
   numerosFenetres,
   trouverFenetreNeuve,
 } from "./objcFenetres";
+import { attacherSousLaPage, reordonnerSousLaPage } from "./macosChildWindow";
 import { cibleVideo, poserCadre } from "./macosFrame";
 import { PleinEcranMpv } from "./macosFullscreen";
 import { decrireMontage } from "./macosSurfaceDiag";
@@ -76,11 +77,11 @@ export class MacosSurface implements VideoSurface {
   private readonly suivre = (): void => this.planifierCalage();
 
   /**
-   * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS déplace la
-   * fenêtre dans un espace dédié et l'ordre n'y survit pas — la vidéo repasse
-   * DEVANT et emporte tout l'overlay. On réaffirme donc l'empilement à chaque
-   * transition, avant ET après l'animation (voir `fullscreen.ts`, qui évite
-   * l'espace dédié pour cette raison).
+   * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS emmène la fenêtre
+   * dans un espace dédié et l'ordre n'y survit pas — la vidéo repasse DEVANT et
+   * emporte tout l'overlay. On réaffirme donc l'empilement à chaque transition,
+   * avant ET après l'animation. La veille couvre le reste, et notamment le cas
+   * qu'aucune transition ne signale : une lecture lancée en plein écran.
    */
   private readonly transitionPleinEcran = (): void => {
     this.reattacher();
@@ -112,9 +113,8 @@ export class MacosSurface implements VideoSurface {
     this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
-    // Le lecteur emprunte le plein écran SIMPLE, qui n'émet aucun de ces deux
-    // évènements — il passe par `resize`. On les garde pour le plein écran
-    // NATIF, que l'utilisateur peut encore déclencher par le bouton vert.
+    // Le plein écran est celui du système : ces deux évènements arrivent, qu'il
+    // vienne de nous, du bouton vert ou de Ctrl+Cmd+F.
     this.host.on("enter-full-screen", this.transitionPleinEcran);
     this.host.on("leave-full-screen", this.transitionPleinEcran);
 
@@ -141,14 +141,7 @@ export class MacosSurface implements VideoSurface {
     }, SONDAGE_MS);
   }
 
-  /**
-   * Attache la fenêtre de mpv sous la nôtre, et la désarme.
-   *
-   * `NSWindowBelow` est le cœur du montage : sans lui la fenêtre passe DEVANT
-   * et masque toute l'interface. `ignoresMouseEvents` est une ceinture de plus,
-   * et l'ombre portée est retirée — superposée au pixel près, elle en
-   * dessinerait une au ras du cadre.
-   */
+  /** Pose la fenêtre trouvée sous la page — voir `macosChildWindow.ts`. */
   private brancher(): void {
     // Trace conservée : c'est la SEULE façon de distinguer « mpv n'a pas créé de
     // fenêtre » de « elle existe et nous l'avons attachée ». Sans elle, un écran
@@ -157,41 +150,18 @@ export class MacosSurface implements VideoSurface {
     // La veille ne démarre qu'ICI : tant que la fenêtre n'existe pas, il n'y a
     // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
     if (this.veille === null) this.veille = setInterval(() => this.align(), VEILLE_MS);
-    msg.setFlag(this.mpvWindow, "setIgnoresMouseEvents:", true);
-    msg.setFlag(this.mpvWindow, "setHasShadow:", false);
-    // ⚠️ OPAQUE, ET AVEC UN FOND NOIR. C'est elle qui doit garantir le noir
-    // sous la page : celle-ci est transparente en permanence, et tout ce que
-    // la vidéo ne couvre pas laisserait autrement voir le BUREAU. Le symptôme
-    // ne ressemble pas à sa cause — un fond « pas tout à fait noir », des
-    // bordures étranges autour de l'overlay et des dégradés qui semblent se
-    // composer avec autre chose que du noir. C'est le cas : ils se composent
-    // avec ce qui se trouve derrière la fenêtre.
-    msg.setFlag(this.mpvWindow, "setOpaque:", true);
-    const noir = msg.get(cls("NSColor"), "blackColor");
-    if (noir) msg.setObjet(this.mpvWindow, "setBackgroundColor:", noir);
-    msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
+    attacherSousLaPage(this.parent, this.mpvWindow);
     this.align();
   }
 
-  /**
-   * Réaffirme l'empilement : la vidéo sous la page, et rien d'autre entre.
-   *
-   * `addChildWindow:ordered:` est idempotent sur une fenêtre déjà fille du même
-   * parent — il se contente alors de la réordonner, ce qui est exactement ce
-   * qu'on veut. Sans effet tant que mpv n'a pas créé sa fenêtre.
-   */
+  /** Remet la vidéo sous la page — voir `macosChildWindow.ts`. */
   private reattacher(): void {
     if (this.mpvWindow === null) return;
     sansFaillir("reattachement de la fenetre video", () => {
-      // ⚠️ RETIRER D'ABORD. `addChildWindow:ordered:` appelé sur une fenêtre qui
-      // est DÉJÀ fille du même parent ne réordonne rien — c'est mesuré : après
-      // un passage en plein écran, la géométrie restait parfaite (`calee=oui
-      // enfant=oui visible=oui`) et la vidéo passait pourtant DEVANT, emportant
-      // tout l'overlay. La relation était intacte, seul l'ordre ne l'était plus,
-      // et le réaffirmer sans rompre le lien ne le rétablissait pas.
-      msg.removeChildWindow(this.parent, this.mpvWindow);
-      msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
-      this.align();
+      reordonnerSousLaPage(this.parent, this.mpvWindow);
+      // `poserCadre` et NON `align` : `align` vérifie l'ordre et rappellerait
+      // cette fonction — la boucle serait sans fin si l'ordre résistait.
+      poserCadre(this.mpvWindow, this.cible(), msg.entier(this.parent, "level"));
     });
   }
 

@@ -44,33 +44,41 @@ const PARADE_WINDOWS = process.platform === "win32";
 /**
  * Sur macOS : plein écran SIMPLE, jamais l'espace dédié.
  *
- * # Ce que le plein écran natif coûte ici
+ * ⚠️ Ce n'est PAS le plein écran que macOS a appris à ses utilisateurs, et on
+ * le sait : la fenêtre reste sur le bureau courant, posée par-dessus les autres
+ * applications, au lieu de partir dans son propre espace. Le natif a été
+ * ré-essayé, et il ne tient pas — pour une raison qui n'est pas de notre côté.
  *
- * ⚠️ `setFullScreen(true)` déplace la fenêtre dans un ESPACE dédié. La fenêtre
- * vidéo de mpv l'y suit — elle est sa fille — mais l'ORDRE d'empilement n'y
- * survit pas : elle repasse DEVANT et masque l'intégralité de l'overlay du
- * lecteur. Plus de barre de progression, plus de contrôles, plus de bouton pour
- * en sortir.
+ * # Ce que le natif coûte ici, remesuré
  *
- * Le diagnostic ne laisse aucune place au doute, relevé en plein écran :
+ * `setFullScreen(true)` emmène la fenêtre dans un espace dédié. La fenêtre vidéo
+ * de mpv l'y suit — elle est sa fille — mais le SERVEUR DE FENÊTRES l'y place
+ * DEVANT, et tout l'overlay disparaît : plus de titre, plus de contrôles, plus
+ * de bouton pour en sortir. Capture d'écran à l'appui, et relevé de l'extérieur
+ * par CoreGraphics, lecture en cours :
  *
- *   cible=0,0 1512x949  video=0,0 1512x949  calee=oui  enfant=oui
- *   visible=oui  niveaux=0/0  pleinEcran=oui
+ *   rang 6  fenetre 84169 (mpv)     0,33 1512x949
+ *   rang 7  fenetre 83892 (la page) 0,33 1512x949
  *
- * Tout est en ordre — même niveau, même rectangle, relation intacte — et
- * l'overlay est invisible. Réaffirmer `NSWindowBelow` n'y change rien, avant
- * comme après l'animation : ce n'est pas la relation qui casse, c'est le
- * changement d'espace qui réordonne.
+ * ⚠️ Et le pire : **AppKit ne le sait pas**. Interrogé au même instant,
+ * `[NSApp orderedWindows]` place la vidéo DERRIÈRE la page. Les deux modèles
+ * divergent — on ne peut donc ni constater l'inversion depuis le processus, ni
+ * la corriger : `removeChildWindow` suivi de `addChildWindow:ordered:NSWindowBelow`
+ * n'y change rien, `NSWindowCollectionBehaviorFullScreenAuxiliary` non plus.
+ *
+ * Essayés et sans effet, tous vérifiés à l'écran : mettre mpv en plein écran lui
+ * aussi (`video/macosFullscreen.ts`), réaffirmer l'empilement de part et d'autre
+ * de la transition, et une veille qui le réaffirme dix fois par seconde.
  *
  * # Ce qu'on fait à la place
  *
  * `setSimpleFullScreen` est le plein écran d'avant Lion : la fenêtre couvre
- * l'écran, la barre de menu et le Dock s'effacent, et il n'y a PAS de nouvel
+ * l'écran, la barre de menus et le Dock s'effacent, et il n'y a PAS de nouvel
  * espace. Le montage reste donc exactement celui qui fonctionne en fenêtré.
  *
- * On perd l'animation système et Mission Control ; on garde un lecteur dont on
- * peut sortir. Beaucoup de lecteurs font ce choix, et `entrer`/`sortir` sous
- * Windows le font déjà pour une raison voisine.
+ * L'espace dédié ne reviendra pas par un réglage : il demande que la vidéo cesse
+ * d'être une fenêtre à part, donc que la couche Metal de mpv soit hébergée DANS
+ * la fenêtre d'Electron. C'est un autre chantier.
  */
 const PLEIN_ECRAN_SIMPLE = process.platform === "darwin";
 
@@ -109,11 +117,10 @@ let hote: BrowserWindow | null = null;
 export function estEnPleinEcran(): boolean {
   if (PARADE_WINDOWS) return avant !== null;
   if (hote === null || hote.isDestroyed()) return false;
-  // Les DEUX sont interrogés sur macOS : `setSimpleFullScreen` est le nôtre,
-  // mais l'utilisateur peut encore entrer en plein écran natif par le bouton
-  // vert ou par Ctrl+Cmd+F, sans passer par nous. Ne lire que le premier
-  // laisserait l'interface en désaccord avec la fenêtre réelle.
-  return (PLEIN_ECRAN_SIMPLE && hote.isSimpleFullScreen()) || hote.isFullScreen();
+  // Le SIMPLE est encore interrogé : il n'est plus posé par nous, mais une
+  // session ouverte avant une mise à jour peut encore s'y trouver, et une
+  // fenêtre dont on ne sait pas qu'elle est en plein écran est une souricière.
+  return hote.isFullScreen() || hote.isSimpleFullScreen();
 }
 
 /**
@@ -142,12 +149,21 @@ export function estEnPleinEcran(): boolean {
 function entrer(win: BrowserWindow): void {
   if (avant !== null) return;
 
-  // macOS : plein écran SIMPLE, pour ne pas changer d'espace — voir
-  // `PLEIN_ECRAN_SIMPLE`. `avant` reste `null` : c'est la fenêtre elle-même qui
+  // macOS : le plein écran du système, avec son espace dédié — voir
+  // `PLEIN_ECRAN_NATIF`. `avant` reste `null` : c'est la fenêtre elle-même qui
   // porte l'état, et `estEnPleinEcran` le lui demande.
   if (!PARADE_WINDOWS) {
     hote = win;
-    win.setSimpleFullScreen(true);
+    if (PLEIN_ECRAN_SIMPLE) win.setSimpleFullScreen(true);
+    // ⚠️ NON VÉRIFIÉ, et assumé comme tel. `setSimpleFullScreen` change le masque
+    // de style de la fenêtre, ce qui peut lui faire perdre le statut de fenêtre
+    // CLÉ — et AppKit ne livre pas `mouseMoved:` à une fenêtre qui ne l'est pas.
+    // C'est la cause la plus probable du symptôme signalé : en plein écran, il
+    // faut CLIQUER pour réveiller les contrôles au lieu de bouger la souris.
+    // Reproduire le défaut demanderait de poster de vrais évènements de souris,
+    // donc l'accès d'assistance : la correction est posée sur un raisonnement,
+    // pas sur une mesure. Elle ne coûte rien et ne change rien d'autre.
+    win.focus();
     return;
   }
 
@@ -186,9 +202,9 @@ function entrer(win: BrowserWindow): void {
 function sortir(win: BrowserWindow): void {
   if (!PARADE_WINDOWS) {
     hote = win;
-    // Les deux, dans cet ordre : l'utilisateur a pu entrer en plein écran natif
-    // par le bouton vert. En sortir aussi, sinon la touche Échap du lecteur ne
-    // rendrait pas la main.
+    // Les deux, dans cet ordre : une session ouverte avant la bascule vers le
+    // natif peut encore être en plein écran simple, et la touche Échap doit
+    // rendre la main dans les deux cas.
     if (win.isSimpleFullScreen()) win.setSimpleFullScreen(false);
     if (win.isFullScreen()) win.setFullScreen(false);
     return;
