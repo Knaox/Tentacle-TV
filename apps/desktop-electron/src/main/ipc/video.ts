@@ -62,6 +62,11 @@ let video: VideoSurface | null = null;
 async function arreterLecteur(): Promise<void> {
   const surface = video;
   video = null;
+  // ⚠️ AVANT l'arrêt, et seule la Render API s'en sert : son contexte de rendu
+  // doit être libéré pendant que mpv est encore debout. L'inverse fait
+  // s'attendre les deux — `mpv_render_context_free` attend la fin du rendu en
+  // cours, et mpv démonte sa sortie vidéo à l'arrêt.
+  surface?.prearret?.();
   if (process.platform === "darwin") {
     const temoin = surface?.videoDisparue?.bind(surface);
     await arreter(temoin);

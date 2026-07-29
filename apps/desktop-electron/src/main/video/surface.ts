@@ -56,6 +56,15 @@ export interface VideoSurface {
   numeroFenetre?(): number;
   /** L'état géométrique des deux fenêtres, en une ligne lisible. */
   geometrie?(): string;
+  /**
+   * Ce qu'il faut défaire AVANT que mpv ne s'arrête.
+   *
+   * Facultatif, et seule la Render API en a besoin : le contexte de rendu doit
+   * être libéré pendant que mpv est encore debout, faute de quoi les deux
+   * s'attendent — `mpv_render_context_free` attend la fin du rendu en cours, et
+   * mpv démonte sa sortie vidéo à l'arrêt.
+   */
+  prearret?(): void;
 }
 
 /**
@@ -76,6 +85,26 @@ class SurfaceInerte implements VideoSurface {
   detach(): void {}
 }
 
+/**
+ * Le montage vidéo retenu sur macOS.
+ *
+ * Deux existent, et ils ne se valent pas de la même façon :
+ *
+ *  - `gl` (défaut) — Render API dans une vue à nous. UNE fenêtre : ni calage
+ *    manuel, ni ordre d'empilement à réaffirmer, ni liseré transparent. La
+ *    plage étendue vient de `wantsExtendedDynamicRangeOpenGLSurface`, sans les
+ *    métadonnées de mastering, réservées à Metal ;
+ *  - `fenetre` — la fenêtre de mpv calée sous la nôtre. Couche Metal, donc PQ
+ *    transmis tel quel et `edrMetadata` — le meilleur HDR possible —, au prix
+ *    des trois défauts ci-dessus.
+ *
+ * `TENTACLE_VIDEO_MONTAGE` permet de passer de l'un à l'autre sans rebâtir, le
+ * temps de les comparer sur les mêmes images.
+ */
+function montageMacos(): "gl" | "fenetre" {
+  return process.env["TENTACLE_VIDEO_MONTAGE"] === "fenetre" ? "fenetre" : "gl";
+}
+
 /** La surface adaptée au système, pour la fenêtre donnée. */
 export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
   if (process.platform === "win32") {
@@ -83,8 +112,18 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
     return new VideoWindow(host);
   }
   if (process.platform === "darwin") {
-    const { MacosSurface } = require("./macosSurface") as typeof import("./macosSurface");
-    return new MacosSurface(host);
+    if (montageMacos() === "fenetre") {
+      const { MacosSurface } = require("./macosSurface") as typeof import("./macosSurface");
+      return new MacosSurface(host);
+    }
+    const { MacosSurfaceGl } = require("./macosSurfaceGl") as typeof import("./macosSurfaceGl");
+    return new MacosSurfaceGl(host);
   }
   return new SurfaceInerte();
+}
+
+/** Le montage en vigueur, pour le journal et le diagnostic. */
+export function montageVideo(): string {
+  if (process.platform !== "darwin") return process.platform;
+  return montageMacos();
 }
