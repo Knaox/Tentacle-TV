@@ -1,7 +1,7 @@
 # Plan de test — 1.20.2
 
-Sept commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
-sur les 11 paquets, 395 tests verts, build de production OK.
+Dix commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
+sur les 11 paquets, 487 tests verts, build de production OK.
 
 ## 0. Avant de lancer quoi que ce soit
 
@@ -84,6 +84,26 @@ Rangées « Reprendre la lecture » et « Prochains épisodes ».
 - [ ] Cliquer le cœur sur une affiche de l'accueil : l'état se met à jour
       **instantanément** sur les autres cartes du même titre.
 
+### Les autres pages à cartes
+
+Même principe, mécanisme différent : la mise en page ne change pas d'un pixel,
+seul le contenu des cellules hors du champ est démonté. À vérifier surtout qu'il
+n'y a **aucun saut de page** et **aucune case vide** en défilant.
+
+- [ ] **Fiche d'une série, liste d'épisodes** — prendre une saison longue (un
+      anime de 100+ épisodes si vous en avez). Défiler de haut en bas puis
+      remonter : les lignes apparaissent sans à-coup, la barre de défilement ne
+      change pas de course, et **la sélection multiple d'épisodes survit** au
+      défilement (« Sélectionner », cocher en haut, défiler tout en bas, cocher,
+      remonter : les deux sont toujours cochés).
+- [ ] **Catalogue hors ligne** (desktop, mode Hors ligne) : films et séries,
+      défilement fluide, pas de case vide.
+- [ ] **Une série hors ligne** : ses épisodes, même vérification.
+- [ ] **Une liste partagée** (`/share/<jeton>`) : défilement, et la sélection
+      pour ajouter à sa liste survit au défilement.
+- [ ] La recherche globale n'a pas été touchée (plafonnée à 24 résultats) —
+      vérifier juste qu'elle fonctionne toujours.
+
 **Mesure**, sur un **build de production** (pas `dev:web` — son compteur
 d'images tient une boucle permanente qui fausse tout) :
 
@@ -149,6 +169,34 @@ Le vérifier dans l'inspecteur : compter les `.media-tile` du DOM.
 - [ ] En développement Windows, la touche **U** doit jouer le déroulé complet
       (barre indéterminée → installation → redémarrage) **sans** rien installer ni
       redémarrer.
+
+## 5 bis. Le diagnostic sur macOS
+
+Panneau **F9**, pendant une lecture HDR sur un écran capable (XDR, ou un écran
+externe HDR). Aucun comportement du HDR n'a été touché — uniquement ce que le
+panneau affiche.
+
+- [ ] La section s'appelle désormais **« Fenêtre Chromium (ne décrit PAS la
+      vidéo) »** et ses lignes `dynamic-range` / `color-gamut` n'ont **plus de
+      croix rouge**. Elles disaient `standard` en permanence pendant une lecture
+      HDR parfaite, parce qu'elles décrivent la fenêtre de la page et non la
+      NSWindow de la vidéo.
+- [ ] **« HDR — état natif » remonte au-dessus** d'elle, et comporte quatre lignes
+      au lieu de deux :
+      « plage étendue accordée (instantané) », « écran capable EDR »,
+      « bascule d'écran : sans objet (macOS) », « transmission HDR autorisée ».
+- [ ] La ligne « plage étendue accordée » **peut dire non sur une scène sombre**
+      sans que ce soit un défaut : elle est instantanée et dépend de l'image. Elle
+      ne porte plus de verdict. C'est « couche Metal » et le verdict HDR du haut
+      qui font foi.
+- [ ] La ligne « écran » donne les **deux** résolutions : points CSS et pixels
+      réels (1512x982 pts · 3024x1964 px sur un 14 pouces, par exemple).
+- [ ] Touche **H** : le retour annonce « transmission HDR autorisée / interdite »
+      et « aucun interrupteur d'écran sur ce système ». Il annonçait avant un état
+      d'écran qui n'existe pas sur macOS.
+- [ ] ⚠️ **Et surtout : le HDR se comporte exactement comme avant.** Relancer la
+      même lecture qu'avant cette version et comparer — le verdict du haut, la
+      couche Metal et l'EDR de la sonde doivent donner les mêmes valeurs.
 
 ## 6. Publication
 
