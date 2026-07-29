@@ -11,6 +11,10 @@ import { SeasonDownloadAction } from "../downloads/SeasonDownloadAction";
 import { DownloadDialog } from "../downloads/DownloadDialog";
 import { EpisodeRow } from "./EpisodeRow";
 import { useDownloadsVisibility } from "../downloads/useDownloadState";
+import { RevealCell, RevealScope } from "./grid/RevealCell";
+
+/** Hauteur d'une ligne d'épisode, réservée avant son premier passage. */
+const EPISODE_ROW_HEIGHT = 100;
 
 interface EpisodeListProps {
   seriesId: string;
@@ -124,27 +128,35 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
         </div>
       ) : null}
 
-      {/* Episodes */}
-      <div className="space-y-3">
-        {episodesLoading ? (
-          Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} height="100px" />)
-        ) : (
-          episodes?.map((ep) => (
-            <EpisodeRow
-              key={ep.Id}
-              episode={ep}
-              client={client}
-              seriesId={seriesId}
-              seasonId={selectedSeasonId}
-              isSelecting={ms.isSelecting}
-              isSelected={ms.isSelected(ep.Id)}
-              isCurrent={ep.Id === currentEpisodeId}
-              onToggleSelect={() => ms.toggle(ep.Id)}
-              onPlay={() => navigate(`/watch/${ep.Id}`)}
-            />
-          ))
-        )}
-      </div>
+      {/* Episodes.
+          Une saison d'anime dépasse couramment la centaine d'épisodes, et chaque
+          ligne porte sa vignette (≈ 200 Ko décodés) plus ses propres abonnements
+          au cache. Le contenu des lignes hors du champ est démonté, leur place
+          est gardée (cf. `RevealCell`) : la mise en page ne bouge pas d'un pixel,
+          et la sélection multiple survit puisqu'elle porte sur des identifiants. */}
+      <RevealScope>
+        <div className="space-y-3">
+          {episodesLoading ? (
+            Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} height="100px" />)
+          ) : (
+            episodes?.map((ep, i) => (
+              <RevealCell key={ep.Id} minHeight={EPISODE_ROW_HEIGHT} eager={i < 8}>
+                <EpisodeRow
+                  episode={ep}
+                  client={client}
+                  seriesId={seriesId}
+                  seasonId={selectedSeasonId}
+                  isSelecting={ms.isSelecting}
+                  isSelected={ms.isSelected(ep.Id)}
+                  isCurrent={ep.Id === currentEpisodeId}
+                  onToggleSelect={() => ms.toggle(ep.Id)}
+                  onPlay={() => navigate(`/watch/${ep.Id}`)}
+                />
+              </RevealCell>
+            ))
+          )}
+        </div>
+      </RevealScope>
 
       {/* Selection toolbar */}
       {ms.isSelecting && (

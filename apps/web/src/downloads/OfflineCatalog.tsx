@@ -17,6 +17,7 @@ import type { DownloadEntry } from "./api";
 import { useDownloadsList } from "./useDownloadState";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
+import { RevealCell, RevealScope } from "../components/grid/RevealCell";
 import {
   groupOfflineEntries,
   groupSeasonsBySeries,
@@ -28,6 +29,18 @@ import {
 } from "./offlineGroups";
 
 type Filter = "all" | "movies" | "series";
+
+/**
+ * Hauteur réservée à une cellule d'affiche avant son premier passage — affiche
+ * 2:3 plus son bloc titre, pour la colonne la plus étroite du catalogue. Elle ne
+ * décide que du premier positionnement de la barre de défilement : dès qu'une
+ * cellule a été montée, c'est sa hauteur réelle qui est retenue.
+ */
+const POSTER_CELL_HEIGHT = 260;
+/** Bloc titre sous l'affiche — deux lignes plus la marge. */
+const POSTER_TEXT_HEIGHT = 48;
+/** Cellules montées d'emblée, pour qu'aucune case ne soit vide au premier rendu. */
+const EAGER_CELLS = 12;
 
 export function OfflineCatalog() {
   const { t } = useTranslation(["downloads", "nav", "common"]);
@@ -104,26 +117,35 @@ export function OfflineCatalog() {
           <p className="mt-1 text-xs text-content-quaternary">{t("common:noResultsHint")}</p>
         </div>
       ) : (
-        <div className="mt-8 space-y-10">
-          {shownMovies.length > 0 && (
-            <Section title={t("downloads:sectionMovies")}>
-              {shownMovies.map((movie) => (
-                <MovieCard key={movie.id} entry={movie} onOpen={() => setSelected(movie)} />
-              ))}
-            </Section>
-          )}
-          {shownSeries.length > 0 && (
-            <Section title={t("downloads:sectionSeries")}>
-              {shownSeries.map((group) => (
-                <SeriesCard
-                  key={group.key}
-                  group={group}
-                  onOpen={() => navigate(`/offline/series/${encodeURIComponent(group.key)}`)}
-                />
-              ))}
-            </Section>
-          )}
-        </div>
+        // Un seul observateur pour les deux sections : le catalogue local n'est
+        // pas borné (il grandit avec le disque), et chaque affiche pèse une
+        // image décodée de ~540 Ko. Les cellules gardent leur place, seul leur
+        // contenu est démonté hors du champ.
+        <RevealScope>
+          <div className="mt-8 space-y-10">
+            {shownMovies.length > 0 && (
+              <Section title={t("downloads:sectionMovies")}>
+                {shownMovies.map((movie, i) => (
+                  <RevealCell key={movie.id} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
+                    <MovieCard entry={movie} onOpen={() => setSelected(movie)} />
+                  </RevealCell>
+                ))}
+              </Section>
+            )}
+            {shownSeries.length > 0 && (
+              <Section title={t("downloads:sectionSeries")}>
+                {shownSeries.map((group, i) => (
+                  <RevealCell key={group.key} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
+                    <SeriesCard
+                      group={group}
+                      onOpen={() => navigate(`/offline/series/${encodeURIComponent(group.key)}`)}
+                    />
+                  </RevealCell>
+                ))}
+              </Section>
+            )}
+          </div>
+        </RevealScope>
       )}
 
       {selected && <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} />}

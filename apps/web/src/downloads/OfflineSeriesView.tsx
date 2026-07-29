@@ -20,6 +20,10 @@ import { OfflineEpisodeCard } from "./OfflineEpisodeCard";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { SeasonPicker } from "./SeasonPicker";
 import { useLocalSnapshot } from "./useLocalSnapshot";
+import { RevealCell, RevealScope } from "../components/grid/RevealCell";
+
+/** Vignette 16:9 plus son bloc titre — hauteur réservée avant premier passage. */
+const EPISODE_CELL_HEIGHT = 230;
 
 export function OfflineSeriesView() {
   const { t } = useTranslation(["downloads", "common"]);
@@ -119,16 +123,22 @@ export function OfflineSeriesView() {
       <div className="mx-auto mt-8 w-full max-w-5xl px-4 md:px-8">
         <SeasonPicker seasons={series.seasons} activeKey={season.key} onSelect={setSeasonKey} />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {season.episodes.map((episode) => (
-            <OfflineEpisodeCard
-              key={episode.id}
-              entry={episode}
-              onSelect={setSelected}
-              onPlay={(e) => navigate(`/watch/${e.itemId}`)}
-            />
-          ))}
-        </div>
+        {/* Une saison entière peut compter plus de cent épisodes, chacun avec sa
+            vignette 16:9 (≈ 200 Ko décodés). Les cellules gardent leur place,
+            seul leur contenu est démonté hors du champ. */}
+        <RevealScope>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {season.episodes.map((episode, i) => (
+              <RevealCell key={episode.id} minHeight={EPISODE_CELL_HEIGHT} aspect={16 / 9} textHeight={72} eager={i < 9}>
+                <OfflineEpisodeCard
+                  entry={episode}
+                  onSelect={setSelected}
+                  onPlay={(e) => navigate(`/watch/${e.itemId}`)}
+                />
+              </RevealCell>
+            ))}
+          </div>
+        </RevealScope>
       </div>
 
       {selected && <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} />}

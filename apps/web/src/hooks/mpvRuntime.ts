@@ -239,6 +239,15 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
       hwdec: "videotoolbox",
       // La fenêtre est attachée sous la nôtre : ni cadre, ni ombre, ni titre.
       border: "no",
+      // ⚠️ `border=no` ne suffit pas, et les deux options ne font PAS la même
+      // chose : côté mpv, `border` se contente de MASQUER la barre de titre
+      // (`didSet { if !border { common.titleBar?.hide() } }`), en laissant
+      // `NSWindowStyleMaskTitled` posé. macOS dessine alors sa bordure claire sur
+      // le bord supérieur de la fenêtre — un liseré gris neutre de un point,
+      // mesuré à (50, 50, 50) sur toute la largeur, que notre page transparente
+      // laisse voir en plein écran. `title-bar=no` s'attaque à la barre
+      // elle-même, par le chemin que mpv prévoit pour cela.
+      "title-bar": "no",
       // ⚠️ Sans cela, mpv REDIMENSIONNE sa fenêtre à la taille de chaque
       // nouveau fichier et la recentre. Aucun évènement d'Electron n'accompagne
       // ce changement, donc notre calage n'est pas rejoué et la vidéo se
