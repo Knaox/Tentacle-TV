@@ -105,7 +105,8 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, cut = fal
           style={{
             // Toujours le bord HAUT de la carte : le panneau part d'elle et n'en
             // bouge plus. En `down` il grandit vers le bas au fil du déroulé du
-            // tiroir ; en `overlay` sa hauteur est celle de la carte, au pixel.
+            // tiroir ; en `overlay` sa hauteur est celle de la carte ENTIÈRE, au
+            // pixel — image ET bloc titre, que le voile d'informations recouvre.
             top: placement.rect.top,
             left: placement.rect.left,
             width: placement.rect.width,
@@ -146,6 +147,9 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, cut = fal
               item={item}
               cardImageUrl={cardImageUrl}
               direction={placement.rect.direction}
+              // Hauteur de l'IMAGE de la carte, pas celle du panneau : en
+              // superposition le panneau couvre aussi le bloc titre.
+              visualHeight={anchor?.height}
               onNavigate={onClose}
             />
           </div>

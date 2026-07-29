@@ -171,7 +171,19 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         {!watched && <CardProgressBar percent={progress} border />}
       </CardFrame>
 
-      <div className="mt-2.5 px-0.5">
+      {/* Le bloc titre s'efface sous le panneau, comme la vignette (cf.
+          `concealed` dans `CardFrame`) : le panneau couvre TOUTE la carte et
+          porte déjà ce titre. Les laisser tous deux visibles donnait le même
+          texte à quelques pixels d'écart, et c'est ce qui faisait lire le survol
+          comme mal cadré. `opacity` et non un démontage : la boîte garde sa
+          place, donc aucun reflow de la rangée. */}
+      <div
+        className="mt-2.5 px-0.5"
+        style={{
+          opacity: preview.open ? 0 : 1,
+          transition: "opacity var(--duration-base) var(--ease-out)",
+        }}
+      >
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{seriesName}</h3>
         {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
       </div>
