@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SkipBadge } from "./SkipBadge";
+import { PlaybackBadge } from "./PlaybackBadge";
+import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
@@ -92,6 +94,7 @@ export function DesktopPlayer({
   const { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
+  const playbackFlash = usePlaybackFlash(state.paused);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [showSettings, setShowSettings] = useState(false);
@@ -273,6 +276,10 @@ export function DesktopPlayer({
 
       {/* Badge « +30s / −10s » après un saut */}
       <SkipBadge flash={skipFlash} />
+
+      {/* Et son pendant à chaque bascule lecture/pause, d'où qu'elle vienne —
+          barre d'espace, bouton, télécommande média. */}
+      <PlaybackBadge flash={playbackFlash} />
 
       <DesktopPlayerControls
         visible={showControls} state={state} title={title} subtitle={subtitle}

@@ -205,6 +205,16 @@ video::cue {
 @keyframes tentacle-tremble { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(1px); } 75% { transform: translateY(-1px); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* Bascule lecture/pause du lecteur — voir `PlaybackBadge`. `transform` et
+   `opacity` UNIQUEMENT : l'élément est centré et plein écran, et tout autre
+   propriété animée y ferait repeindre le viewport entier à chaque image. */
+@keyframes playbackFlash {
+  0%   { opacity: 0; transform: scale(0.82); }
+  22%  { opacity: 1; transform: scale(1); }
+  62%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
 /* Reflet diagonal pour le badge 4K — utilisé par PremiumQualityBadges. */
 @keyframes qualityShine {
   0%   { transform: translateX(0%); }

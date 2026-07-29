@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { SkipBadge } from "./SkipBadge";
+import { PlaybackBadge } from "./PlaybackBadge";
+import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
@@ -53,6 +55,7 @@ export function VideoPlayer({
 
   const [videoDuration, setVideoDuration] = useState(0);
   const { showControls, scheduleHide } = useControlsAutoHide(playing);
+  const playbackFlash = usePlaybackFlash(!playing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [volume, setVolume] = useState(() => {
@@ -254,6 +257,10 @@ export function VideoPlayer({
       />
 
       <SkipBadge flash={skipFlash} />
+
+      {/* Bascule lecture/pause, d'où qu'elle vienne — barre d'espace, clic,
+          tap sur mobile. */}
+      <PlaybackBadge flash={playbackFlash} />
 
       <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
         <PlayerControls
