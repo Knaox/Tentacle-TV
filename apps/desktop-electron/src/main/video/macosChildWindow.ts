@@ -45,6 +45,41 @@ function pleinEcranAuxiliaire(courant: number): number {
   return (courant & ~PRIMARY & ~AUCUN & ~TOUS_LES_BUREAUX) | AUXILIARY;
 }
 
+/** `NSWindowStyleMaskBorderless` — aucun style, donc aucune décoration. */
+const SANS_DECORATION = 0;
+
+/**
+ * Retire tout style à la fenêtre de mpv — c'est ce qui fait disparaître le
+ * liseré gris en haut du plein écran.
+ *
+ * ⚠️ `--border=no` ne suffit PAS : mpv masque sa propre barre de titre mais
+ * laisse `NSWindowStyleMaskTitled` posé — mesuré, `styleMask` vaut 32783, soit
+ * `titled|closable|miniaturizable|resizable|fullSizeContentView`. Or macOS
+ * dessine une bordure claire sur le bord supérieur d'une fenêtre `titled`, et
+ * comme la page au-dessus est transparente, elle se voit.
+ *
+ * Signalé par l'utilisateur — « on voit un micro bout de fin de fenêtre, comme
+ * si le plein écran n'en était pas un vrai » — capture à l'appui. Mesuré à la
+ * ligne, plein écran, écran 3024x1964 px :
+ *
+ *   y=66  gris NEUTRE (50, 50, 49.9) sur toute la largeur
+ *   y=67  25.7
+ *   y=68  0.2
+ *
+ *   après passage en `borderless`   y=66  (0, 0, 0)
+ *
+ * Deux pixels, soit UN point : exactement la frontière du `visibleFrame` sur un
+ * Mac à encoche (949 de haut pour un écran de 982).
+ *
+ * La fenêtre ne perd rien qui serve : elle est fille, sans souris, jamais clé,
+ * et son cadre est posé par `setFrame:` (`macosFrame.ts`), qui n'a que faire du
+ * style. Vérifié après coup : `calee=oui`, image visible à 59,7 %.
+ */
+function sansCadre(fenetre: unknown): void {
+  if (msg.count(fenetre, "styleMask") === SANS_DECORATION) return;
+  msg.setMasqueStyle(fenetre, SANS_DECORATION);
+}
+
 /**
  * Attache la fenêtre de mpv sous la nôtre, et la désarme.
  *
@@ -77,6 +112,7 @@ function pleinEcranAuxiliaire(courant: number): number {
 export function attacherSousLaPage(parent: unknown, fenetre: unknown): void {
   msg.setFlag(fenetre, "setIgnoresMouseEvents:", true);
   msg.setFlag(fenetre, "setHasShadow:", false);
+  sansCadre(fenetre);
   const avant = msg.count(fenetre, "collectionBehavior");
   msg.setComportement(fenetre, pleinEcranAuxiliaire(avant));
   // Tracé : c'est le seul témoin si mpv change un jour ce qu'il déclare, et le
