@@ -216,12 +216,6 @@ export const msg = {
     if (!fenetre) return;
     send1ul(fenetre, sel("setCollectionBehavior:"), masque);
   },
-  /** `[fenêtre setStyleMask: masque]` — voir `macosChildWindow.ts` pour ce qui
-   *  peut y être retiré, et ce qui tue le processus. */
-  setMasqueStyle(fenetre: unknown, masque: number): void {
-    if (!fenetre) return;
-    send1ul(fenetre, sel("setStyleMask:"), masque);
-  },
   /** `[fenêtre setLevel: niveau]` — NSInteger, qui peut être très négatif. */
   setNiveau(fenetre: unknown, niveau: number): void {
     if (!fenetre) return;

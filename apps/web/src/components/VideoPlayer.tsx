@@ -55,7 +55,6 @@ export function VideoPlayer({
 
   const [videoDuration, setVideoDuration] = useState(0);
   const { showControls, scheduleHide } = useControlsAutoHide(playing);
-  const playbackFlash = usePlaybackFlash(!playing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [volume, setVolume] = useState(() => {
@@ -63,6 +62,9 @@ export function VideoPlayer({
     if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
     return 1;
   });
+  // `volume` vaut 0 dès que le son est coupé — `handleToggleMute` le pose
+  // lui-même, il n'y a donc pas d'état muet séparé à tenir.
+  const playbackFlash = usePlaybackFlash(!playing, volume === 0);
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;

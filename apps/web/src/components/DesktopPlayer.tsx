@@ -94,7 +94,7 @@ export function DesktopPlayer({
   const { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
-  const playbackFlash = usePlaybackFlash(state.paused);
+  const playbackFlash = usePlaybackFlash(state.paused, state.muted || state.volume === 0);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [showSettings, setShowSettings] = useState(false);
