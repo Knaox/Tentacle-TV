@@ -14,6 +14,7 @@ import { supportsOfflineSession } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { saveCachedSession } from "./offlineSession";
 import { refreshLibrariesCache, refreshLibraryPrefsCache } from "./localTrackPrefs";
+import { refreshItemTracksCache } from "./localItemTracks";
 import { refreshAutoplayConfigCache } from "../hooks/useAutoplayConfigLocalFirst";
 
 export function OfflineSessionSync() {
@@ -33,6 +34,10 @@ export function OfflineSessionSync() {
     // bibliothèques (page Préférences utilisable hors ligne).
     void refreshLibraryPrefsCache(userId, backendUrl);
     void refreshLibrariesCache(userId, backendUrl);
+    // Langues retenues par CONTENU : la lecture d'un fichier téléchargé
+    // n'interroge jamais le serveur, même en ligne — sans cette photo, un choix
+    // fait sur un autre appareil resterait invisible ici.
+    void refreshItemTracksCache(userId, backendUrl);
     // Seuil MaxResumePct de Jellyfin : c'est lui qui décide qu'un épisode est
     // vu, hors ligne comme en ligne. Le lecteur ne le demande jamais en lecture
     // locale (zéro réseau) — sans cette photo, un poste qui ne lit que des

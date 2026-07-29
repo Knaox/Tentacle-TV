@@ -16,6 +16,7 @@ import { useConnectivity } from "./useConnectivity";
 import { reportPossibleOutage } from "./connectivityStore";
 import { drainReportQueue } from "./resync";
 import { refreshLibraryPrefsCache } from "./localTrackPrefs";
+import { refreshItemTracksCache } from "./localItemTracks";
 import { flushPendingInterfaceLanguage, flushPendingPrefs } from "./pendingPrefs";
 
 const RECONNECT_DEBOUNCE_MS = 5_000;
@@ -114,6 +115,7 @@ export function ConnectivityBinding() {
         await flushPendingPrefs(uid, backendUrl);
         await flushPendingInterfaceLanguage(backendUrl);
         void refreshLibraryPrefsCache(uid, backendUrl);
+        void refreshItemTracksCache(uid, backendUrl);
       }
       if (cancelled) return;
       queryClient.invalidateQueries({ queryKey: ["resume-items"] });

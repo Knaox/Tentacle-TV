@@ -120,6 +120,35 @@ model LibraryPreference {
   @@map("library_preferences")
 }
 
+// Langues retenues pour UN contenu précis — un film, un épisode.
+//
+// Écrite automatiquement dès que l'utilisateur change de piste depuis les
+// réglages du lecteur, et relue en priorité au visionnage suivant du MÊME
+// contenu : elle bat la préférence de saison, de série et de bibliothèque.
+//
+// Table à part et non une ligne de plus dans `LibraryPreference`, dont le
+// `libraryId` accepterait pourtant n'importe quelle chaîne : `GET
+// /api/preferences` rend TOUTES les lignes de l'utilisateur — la page
+// Préférences et le cache hors ligne les lisent — et une ligne par épisode
+// regardé y aurait fait grossir sans bornes une réponse qui doit rester la
+// liste des bibliothèques.
+model ItemTrackPreference {
+  id              String   @id @default(cuid())
+  jellyfinUserId  String   @db.VarChar(255)
+  itemId          String   @db.VarChar(255)
+  // Des LANGUES, jamais des index de piste : ceux des pistes externes sont
+  // décalés de +1000 côté lecture locale, et ceux de Jellyfin changent entre
+  // lecture directe et transcodage.
+  audioLang       String?  @db.VarChar(10)
+  subtitleLang    String?  @db.VarChar(10)
+  subtitleMode    String   @default("none") @db.VarChar(20) // "none" | "always" | "forced" | "signs"
+  updatedAt       DateTime @updatedAt
+
+  @@unique([jellyfinUserId, itemId])
+  @@index([jellyfinUserId])
+  @@map("item_track_preferences")
+}
+
 model ServerConfig {
   key   String @id @db.VarChar(100)
   value String @db.Text

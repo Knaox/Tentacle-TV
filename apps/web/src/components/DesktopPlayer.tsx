@@ -124,7 +124,7 @@ export function DesktopPlayer({
   const { displayAudio, displaySubs } = useLocalPlaybackTracks({
     isLocalPlayback, fileLoaded, ready,
     audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
-    localLibraryId, onAudioChange, onSubtitleChange, sourceKey: src,
+    localLibraryId, itemId: item?.Id, onAudioChange, onSubtitleChange, sourceKey: src,
   });
 
   // Handlers + application des préférences de pistes audio/sous-titres.
