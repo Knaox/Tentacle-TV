@@ -7,10 +7,31 @@
  * tient en deux gestes.
  */
 
+import { trace } from "./native";
 import { NSWindowBelow, cls, msg } from "./objc";
 
-/** `NSWindowCollectionBehaviorFullScreenAuxiliary` — voir `attacherSousLaPage`. */
-const NSWindowFullScreenAuxiliary = 1 << 8;
+/**
+ * Les trois bits de plein écran d'un `collectionBehavior` — voir `pleinEcranAuxiliaire`.
+ *
+ * ⚠️ Ils s'EXCLUENT. « You may specify only one of
+ * NSWindowCollectionBehaviorFullScreenPrimary, …Auxiliary, or …None », dit la
+ * documentation, et une fenêtre qui en porte deux se comporte de façon indéfinie.
+ */
+const PRIMARY = 1 << 7;
+const AUXILIARY = 1 << 8;
+const AUCUN = 1 << 9;
+
+/**
+ * Rend le comportement demandé : auxiliaire de plein écran, et lui seul.
+ *
+ * ⚠️ mpv déclare sa fenêtre `FullScreenPrimary` — il sait faire son propre plein
+ * écran. Ajouter `Auxiliary` PAR-DESSUS laissait les deux bits posés, et macOS
+ * ouvrait alors un SECOND espace de plein écran, noir, à côté du nôtre. Il faut
+ * donc retirer les autres, pas seulement poser le sien.
+ */
+function pleinEcranAuxiliaire(courant: number): number {
+  return (courant & ~PRIMARY & ~AUCUN) | AUXILIARY;
+}
 
 /**
  * Attache la fenêtre de mpv sous la nôtre, et la désarme.
@@ -20,10 +41,12 @@ const NSWindowFullScreenAuxiliary = 1 << 8;
  * l'ombre portée est retirée — superposée au pixel près, elle en dessinerait une
  * au ras du cadre.
  *
- * ⚠️ AUXILIAIRE DE PLEIN ÉCRAN. Sans ce comportement, une fenêtre qui n'est pas
- * elle-même en plein écran n'a pas sa place dans l'espace dédié où macOS emmène
- * la nôtre. C'est l'API prévue pour les fenêtres qui accompagnent une fenêtre
- * plein écran, et celle-ci n'est rien d'autre.
+ * ⚠️ AUXILIAIRE DE PLEIN ÉCRAN, ET RIEN D'AUTRE. Sans ce comportement, une
+ * fenêtre qui n'est pas elle-même en plein écran n'a pas sa place dans l'espace
+ * dédié où macOS emmène la nôtre. Mais mpv déclare la sienne `FullScreenPrimary`
+ * — mesuré, `collectionBehavior` vaut 128 à la naissance — et les deux bits
+ * ensemble ouvraient un SECOND espace de plein écran, noir, à côté du nôtre.
+ * D'où `pleinEcranAuxiliaire`, qui remplace au lieu d'ajouter : 128 → 256.
  *
  * ⚠️ OPAQUE, ET AVEC UN FOND NOIR. C'est elle qui doit garantir le noir sous la
  * page : celle-ci est transparente en permanence, et tout ce que la vidéo ne
@@ -35,10 +58,11 @@ const NSWindowFullScreenAuxiliary = 1 << 8;
 export function attacherSousLaPage(parent: unknown, fenetre: unknown): void {
   msg.setFlag(fenetre, "setIgnoresMouseEvents:", true);
   msg.setFlag(fenetre, "setHasShadow:", false);
-  msg.setComportement(
-    fenetre,
-    msg.count(fenetre, "collectionBehavior") | NSWindowFullScreenAuxiliary,
-  );
+  const avant = msg.count(fenetre, "collectionBehavior");
+  msg.setComportement(fenetre, pleinEcranAuxiliaire(avant));
+  // Tracé : c'est le seul témoin si mpv change un jour ce qu'il déclare, et le
+  // symptôme — un second bureau noir apparu à côté du nôtre — ne désigne rien.
+  trace(`comportement fenetre video ${avant} → ${msg.count(fenetre, "collectionBehavior")}`);
   msg.setFlag(fenetre, "setOpaque:", true);
   const noir = msg.get(cls("NSColor"), "blackColor");
   if (noir) msg.setObjet(fenetre, "setBackgroundColor:", noir);
