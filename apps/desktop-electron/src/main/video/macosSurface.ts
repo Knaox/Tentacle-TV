@@ -33,10 +33,12 @@ import type { VideoSurface } from "./surface";
 /**
  * Cadence du sondage, et nombre maximal de tentatives (10 s en tout).
  *
- * ⚠️ 10 ms, et non 100 : c'est une COURSE. mpv crée sa fenêtre en
- * `FullScreenPrimary`, et si l'application est déjà en plein écran, macOS lui
- * donne son propre bureau avant qu'on ait pu la déclarer auxiliaire. Plus on la
- * trouve tôt, moins elle a le temps d'être promue.
+ * ⚠️ 10 ms, et non 100, mais pas pour gagner une course — celle-là était perdue
+ * d'avance, mpv créant ET affichant sa fenêtre dans un unique bloc sur le
+ * thread principal, où aucun minuteur ne peut s'intercaler. La raison est
+ * ailleurs : quand la lecture démarre en plein écran, mpv n'affiche PAS sa
+ * fenêtre (`macosOptionsFenetre.ts`), et c'est nous qui le faisons en
+ * l'attachant. Ce délai est donc celui de la PREMIÈRE IMAGE, pas un pari.
  */
 const SONDAGE_MS = 10;
 const SONDAGES_MAX = 1000;

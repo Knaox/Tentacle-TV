@@ -15,6 +15,7 @@ import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
+import { adapterAuPleinEcran } from "../video/macosOptionsFenetre";
 import { adapterPourRenderApi } from "../video/macosOptionsRender";
 import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
 import { relaisEvenements } from "./videoEvenements";
@@ -107,7 +108,13 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         // Le montage Render API réécrit ce que la page a demandé : elle décrit
         // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
         // Voir `macosOptionsRender.ts`.
-        const optionsMpv = montageVideo() === "gl" ? adapterPourRenderApi(retenues) : retenues;
+        // Et le montage à deux fenêtres a sa propre réécriture : une lecture qui
+        // démarre alors que l'app est DÉJÀ en plein écran doit dire à mpv de ne
+        // pas laisser macOS ouvrir un second bureau. Voir `macosOptionsFenetre.ts`.
+        const optionsMpv =
+          montageVideo() === "gl"
+            ? adapterPourRenderApi(retenues)
+            : adapterAuPleinEcran(retenues, win);
         const parent = nativeHandle(win);
         const err = init(
           { options: optionsMpv, observed, wid: parent },

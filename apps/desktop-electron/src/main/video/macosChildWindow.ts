@@ -22,6 +22,18 @@ const AUXILIARY = 1 << 8;
 const AUCUN = 1 << 9;
 
 /**
+ * `NSWindowCollectionBehaviorCanJoinAllSpaces` — la fenêtre est dans TOUS les
+ * bureaux à la fois.
+ *
+ * ⚠️ C'est nous qui le faisons poser, par l'option `on-all-workspaces`, et
+ * uniquement le temps que mpv affiche sa fenêtre sans que macOS lui ouvre un
+ * bureau (voir `macosOptionsFenetre.ts`). Passé cet instant il n'a plus lieu
+ * d'être, et le GARDER serait un défaut à lui seul : la vidéo suivrait
+ * l'utilisateur d'un bureau à l'autre, seule, sans sa page.
+ */
+const TOUS_LES_BUREAUX = 1 << 0;
+
+/**
  * Rend le comportement demandé : auxiliaire de plein écran, et lui seul.
  *
  * ⚠️ mpv déclare sa fenêtre `FullScreenPrimary` — il sait faire son propre plein
@@ -30,7 +42,7 @@ const AUCUN = 1 << 9;
  * donc retirer les autres, pas seulement poser le sien.
  */
 function pleinEcranAuxiliaire(courant: number): number {
-  return (courant & ~PRIMARY & ~AUCUN) | AUXILIARY;
+  return (courant & ~PRIMARY & ~AUCUN & ~TOUS_LES_BUREAUX) | AUXILIARY;
 }
 
 /**
@@ -44,9 +56,16 @@ function pleinEcranAuxiliaire(courant: number): number {
  * ⚠️ AUXILIAIRE DE PLEIN ÉCRAN, ET RIEN D'AUTRE. Sans ce comportement, une
  * fenêtre qui n'est pas elle-même en plein écran n'a pas sa place dans l'espace
  * dédié où macOS emmène la nôtre. Mais mpv déclare la sienne `FullScreenPrimary`
- * — mesuré, `collectionBehavior` vaut 128 à la naissance — et les deux bits
- * ensemble ouvraient un SECOND espace de plein écran, noir, à côté du nôtre.
- * D'où `pleinEcranAuxiliaire`, qui remplace au lieu d'ajouter : 128 → 256.
+ * — mesuré, `collectionBehavior` vaut 128 à la naissance — et les trois bits de
+ * plein écran s'EXCLUENT : d'où `pleinEcranAuxiliaire`, qui remplace au lieu
+ * d'ajouter, 128 → 256.
+ *
+ * ⚠️ Et le poser ICI ne suffit à rien tant que mpv a déjà affiché sa fenêtre :
+ * AppKit ne consulte ce comportement qu'à l'AFFICHAGE INITIAL, et il vaut
+ * encore 128 à cet instant-là. C'est pourquoi une lecture qui démarre en plein
+ * écran demande à mpv de ne pas afficher du tout — voir `deminiaturiser` et
+ * `macosOptionsFenetre.ts`. L'ordre des gestes de cette fonction n'est donc pas
+ * indifférent : le comportement AVANT `addChildWindow:`, jamais après.
  *
  * ⚠️ OPAQUE, ET AVEC UN FOND NOIR. C'est elle qui doit garantir le noir sous la
  * page : celle-ci est transparente en permanence, et tout ce que la vidéo ne
@@ -67,6 +86,32 @@ export function attacherSousLaPage(parent: unknown, fenetre: unknown): void {
   const noir = msg.get(cls("NSColor"), "blackColor");
   if (noir) msg.setObjet(fenetre, "setBackgroundColor:", noir);
   msg.addChildWindow(parent, fenetre, NSWindowBelow);
+  deminiaturiser(fenetre);
+}
+
+/**
+ * Affiche la fenêtre que mpv n'a PAS affichée — c'est ici, et seulement ici,
+ * que l'affichage initial a lieu.
+ *
+ * ⚠️ Une lecture qui démarre en plein écran passe `window-minimized=yes` à mpv
+ * (`macosOptionsFenetre.ts`) : il crée sa fenêtre sans jamais appeler
+ * `orderFront`. C'est alors `addChildWindow:`, juste au-dessus, qui l'affiche —
+ * après `FullScreenAuxiliary`, donc avec le bon comportement sous les yeux
+ * d'AppKit.
+ *
+ * En pratique cette fonction ne fait RIEN, et c'est la mesure qui le dit :
+ * `miniaturisee=non` à la découverte. `performMiniaturize:` sur une fenêtre qui
+ * n'a jamais été à l'écran ne prend pas effet — rien à ranger dans le Dock, pas
+ * d'animation, pas d'icône. Seul le `if !minimized` qui garde `orderFront` a
+ * compté.
+ *
+ * Elle reste comme FILET : le jour où une version de macOS miniaturiserait
+ * vraiment, l'image manquerait entièrement, et rien d'autre ne le dirait.
+ */
+function deminiaturiser(fenetre: unknown): void {
+  if (!msg.bool(fenetre, "isMiniaturized")) return;
+  msg.avecNil(fenetre, "deminiaturize:");
+  trace(`fenetre video sortie du Dock, miniaturisee=${msg.bool(fenetre, "isMiniaturized")}`);
 }
 
 /**
