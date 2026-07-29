@@ -26,6 +26,19 @@
      * devient invalide et la fenetre laisse voir le BUREAU. Le repli garantit
      * qu'on retombe au pire sur du noir, jamais sur du vide. */
     background: var(--surface-0, #000000);
+
+    /* La PAGE ne défile jamais horizontalement. Signalé sur Windows et macOS :
+     * dans une bibliothèque, un geste latéral au trackpad désaxait tout le
+     * contenu vers la gauche — barre de navigation comprise — et rien ne le
+     * ramenait. Ce n'est pas un défilement voulu : les rangées de médias ont
+     * chacune le leur, à l'intérieur (`overflow-x-auto`), et elles ne sont pas
+     * affectées.
+     *
+     * `clip` et NON `hidden` : `hidden` ferait de `body` un conteneur de
+     * défilement, ce qui casse `position: sticky` chez ses descendants — la
+     * barre de navigation et les en-têtes de section en dépendent. `clip`
+     * rogne sans rien rendre défilable. */
+    overflow-x: clip;
   }
 
   body {
