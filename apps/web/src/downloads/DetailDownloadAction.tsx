@@ -68,11 +68,27 @@ export function DetailDownloadAction({ item }: { item: MediaItem }) {
   );
 }
 
+/**
+ * ⚠️ Terminé ne se dessine PAS par une coche dans un cercle : c'est déjà, au
+ * caractère près, le tracé de `CheckCircleIcon` — le marqueur « vu » de
+ * `DetailActions`. Les deux boutons voisinent dans la même rangée d'actions, et
+ * un film téléchargé y paraissait donc marqué comme vu.
+ *
+ * On garde la métaphore du téléchargement — le plateau du glyphe « à
+ * télécharger », inchangé — et l'on remplace la seule flèche par une coche.
+ * L'état se lit sans ambiguïté, et les deux glyphes du bouton restent de la même
+ * famille.
+ */
 function DownloadGlyph({ done }: { done: boolean }) {
   if (done) {
     return (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 8.75L11 11.75 16.5 5.5" />
       </svg>
     );
   }
