@@ -27,7 +27,6 @@ import {
 } from "./objcFenetres";
 import { attacherSousLaPage, reordonnerSousLaPage } from "./macosChildWindow";
 import { cibleVideo, poserCadre } from "./macosFrame";
-import { PleinEcranMpv } from "./macosFullscreen";
 import { decrireMontage } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
@@ -59,8 +58,6 @@ export class MacosSurface implements VideoSurface {
   private calage: ReturnType<typeof setTimeout> | null = null;
   private veille: ReturnType<typeof setInterval> | null = null;
   private attache = false;
-  /** Le plein écran de mpv, tenu d'accord avec le nôtre — `macosFullscreen.ts`. */
-  private readonly pleinEcran = new PleinEcranMpv(() => this.align());
 
   /**
    * Les fenêtres mpv déjà là quand cette surface a commencé à chercher : des
@@ -161,8 +158,25 @@ export class MacosSurface implements VideoSurface {
       reordonnerSousLaPage(this.parent, this.mpvWindow);
       // `poserCadre` et NON `align` : `align` vérifie l'ordre et rappellerait
       // cette fonction — la boucle serait sans fin si l'ordre résistait.
-      poserCadre(this.mpvWindow, this.cible(), msg.entier(this.parent, "level"));
+      poserCadre(this.mpvWindow, this.cible(), this.niveauVideo());
     });
+  }
+
+  /**
+   * Le niveau où poser la vidéo : celui de la page, ou UN DE MOINS en plein écran.
+   *
+   * ⚠️ Dans un espace de plein écran, le serveur de fenêtres place la fenêtre
+   * fille DEVANT son parent quoi que dise `addChildWindow:ordered:NSWindowBelow`
+   * — relevé par CoreGraphics, mpv au rang 6 et la page au rang 7, tout l'overlay
+   * masqué. Les NIVEAUX, eux, sont respectés partout : un cran en dessous suffit,
+   * et c'est la seule chose qui tienne dans un espace dédié.
+   *
+   * Un seul cran, et seulement là : plus bas, ou en fenêtré, la vidéo passerait
+   * aussi sous les fenêtres des AUTRES applications.
+   */
+  private niveauVideo(): number {
+    const page = msg.entier(this.parent, "level");
+    return this.host.isFullScreen() || this.host.isSimpleFullScreen() ? page - 1 : page;
   }
 
   /**
@@ -179,11 +193,8 @@ export class MacosSurface implements VideoSurface {
    */
   align(): void {
     if (this.mpvWindow === null) return;
-    // AVANT le calage : c'est ce qui désarme la contrainte de mpv, sans quoi le
-    // cadre posé juste en dessous serait rabattu sous l'encoche.
-    this.pleinEcran.synchroniser(this.host.isSimpleFullScreen() || this.host.isFullScreen());
     sansFaillir("calage de la fenetre video", () => {
-      poserCadre(this.mpvWindow, this.cible(), msg.entier(this.parent, "level"));
+      poserCadre(this.mpvWindow, this.cible(), this.niveauVideo());
     });
   }
 
@@ -233,7 +244,6 @@ export class MacosSurface implements VideoSurface {
     this.calage = null;
     if (this.veille !== null) clearInterval(this.veille);
     this.veille = null;
-    this.pleinEcran.oublier();
     if (this.mpvWindow !== null) {
       sansFaillir("detachement de la fenetre video", () => {
         msg.removeChildWindow(this.parent, this.mpvWindow);

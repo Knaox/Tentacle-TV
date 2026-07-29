@@ -37,50 +37,37 @@ import { nativeHandle } from "./video/native";
 /**
  * Tout ce qui précède décrit un contournement STRICTEMENT Windows.
  *
- * macOS a le sien, pour une raison différente — voir `PLEIN_ECRAN_SIMPLE`.
+ * macOS a le sien, pour une raison différente — voir `PLEIN_ECRAN_NATIF`.
  */
 const PARADE_WINDOWS = process.platform === "win32";
 
 /**
- * Sur macOS : plein écran SIMPLE, jamais l'espace dédié.
+ * Sur macOS : le plein écran du SYSTÈME, avec son espace dédié.
  *
- * ⚠️ Ce n'est PAS le plein écran que macOS a appris à ses utilisateurs, et on
- * le sait : la fenêtre reste sur le bureau courant, posée par-dessus les autres
- * applications, au lieu de partir dans son propre espace. Le natif a été
- * ré-essayé, et il ne tient pas — pour une raison qui n'est pas de notre côté.
+ * C'est le seul que les utilisateurs de Mac reconnaissent, et le plein écran
+ * simple — celui d'avant Lion, qui pose la fenêtre par-dessus le bureau courant
+ * — a été écarté pour cette raison.
  *
- * # Ce que le natif coûte ici, remesuré
+ * # Ce qu'il a fallu pour que l'espace dédié tienne
  *
- * `setFullScreen(true)` emmène la fenêtre dans un espace dédié. La fenêtre vidéo
- * de mpv l'y suit — elle est sa fille — mais le SERVEUR DE FENÊTRES l'y place
- * DEVANT, et tout l'overlay disparaît : plus de titre, plus de contrôles, plus
- * de bouton pour en sortir. Capture d'écran à l'appui, et relevé de l'extérieur
- * par CoreGraphics, lecture en cours :
+ * ⚠️ Le serveur de fenêtres y place la fenêtre fille DEVANT son parent, quoi que
+ * dise `addChildWindow:ordered:NSWindowBelow`. Relevé par CoreGraphics, lecture
+ * en cours, avant correction : mpv au rang 6, la page au rang 7 — et tout
+ * l'overlay disparaissait. Pire, AppKit l'ignorait : `[NSApp orderedWindows]`
+ * plaçait la vidéo DERRIÈRE au même instant. Les deux modèles divergent.
  *
- *   rang 6  fenetre 84169 (mpv)     0,33 1512x949
- *   rang 7  fenetre 83892 (la page) 0,33 1512x949
+ * Ce qui le règle est le NIVEAU, pas l'ordre de filiation : la fenêtre vidéo est
+ * posée un niveau SOUS la nôtre le temps du plein écran (`video/macosSurface.ts`).
+ * Le serveur de fenêtres respecte les niveaux, lui, et dans tous les espaces.
  *
- * ⚠️ Et le pire : **AppKit ne le sait pas**. Interrogé au même instant,
- * `[NSApp orderedWindows]` place la vidéo DERRIÈRE la page. Les deux modèles
- * divergent — on ne peut donc ni constater l'inversion depuis le processus, ni
- * la corriger : `removeChildWindow` suivi de `addChildWindow:ordered:NSWindowBelow`
- * n'y change rien, `NSWindowCollectionBehaviorFullScreenAuxiliary` non plus.
+ * # Et ce que l'espace dédié fait gagner au passage
  *
- * Essayés et sans effet, tous vérifiés à l'écran : mettre mpv en plein écran lui
- * aussi (`video/macosFullscreen.ts`), réaffirmer l'empilement de part et d'autre
- * de la transition, et une veille qui le réaffirme dix fois par seconde.
- *
- * # Ce qu'on fait à la place
- *
- * `setSimpleFullScreen` est le plein écran d'avant Lion : la fenêtre couvre
- * l'écran, la barre de menus et le Dock s'effacent, et il n'y a PAS de nouvel
- * espace. Le montage reste donc exactement celui qui fonctionne en fenêtré.
- *
- * L'espace dédié ne reviendra pas par un réglage : il demande que la vidéo cesse
- * d'être une fenêtre à part, donc que la couche Metal de mpv soit hébergée DANS
- * la fenêtre d'Electron. C'est un autre chantier.
+ * La fenêtre y mesure exactement le `visibleFrame` — 1512x949 sur un Mac à
+ * encoche — au lieu de déborder sur les 33 points de la barre de menus. La
+ * contrainte que mpv impose au cadre de sa fenêtre ne mord donc plus, et tout le
+ * détour qui la désarmait a pu être retiré.
  */
-const PLEIN_ECRAN_SIMPLE = process.platform === "darwin";
+const PLEIN_ECRAN_NATIF = process.platform === "darwin";
 
 /** Les appels Win32 de la parade, réclamés seulement là où ils existent. */
 function win32(): typeof import("./video/win32") {
@@ -154,15 +141,14 @@ function entrer(win: BrowserWindow): void {
   // porte l'état, et `estEnPleinEcran` le lui demande.
   if (!PARADE_WINDOWS) {
     hote = win;
-    if (PLEIN_ECRAN_SIMPLE) win.setSimpleFullScreen(true);
-    // ⚠️ NON VÉRIFIÉ, et assumé comme tel. `setSimpleFullScreen` change le masque
-    // de style de la fenêtre, ce qui peut lui faire perdre le statut de fenêtre
-    // CLÉ — et AppKit ne livre pas `mouseMoved:` à une fenêtre qui ne l'est pas.
-    // C'est la cause la plus probable du symptôme signalé : en plein écran, il
-    // faut CLIQUER pour réveiller les contrôles au lieu de bouger la souris.
-    // Reproduire le défaut demanderait de poster de vrais évènements de souris,
-    // donc l'accès d'assistance : la correction est posée sur un raisonnement,
-    // pas sur une mesure. Elle ne coûte rien et ne change rien d'autre.
+    if (PLEIN_ECRAN_NATIF) win.setFullScreen(true);
+    // ⚠️ NON VÉRIFIÉ, et assumé comme tel. Une fenêtre qui vient de changer
+    // d'espace peut ne plus être la fenêtre CLÉ, et AppKit ne livre pas
+    // `mouseMoved:` à une fenêtre qui ne l'est pas — c'est la cause la plus
+    // probable du symptôme signalé, où il fallait CLIQUER pour réveiller les
+    // contrôles au lieu de bouger la souris. Le reproduire demanderait de poster
+    // de vrais évènements de souris, donc l'accès d'assistance : la correction
+    // repose sur un raisonnement, pas sur une mesure. Elle ne coûte rien.
     win.focus();
     return;
   }

@@ -109,6 +109,10 @@ export function memeRect(a: Rect, b: Rect): boolean {
  */
 export function poserCadre(fenetre: unknown, cible: Rect, niveauNormal: number): void {
   if (!fenetre) return;
+  // Le niveau est réaffirmé à CHAQUE passe, même quand le cadre est déjà bon :
+  // `addChildWindow:` recale le niveau d'une fille sur celui de son parent, et
+  // l'empilement du plein écran repartirait avec lui.
+  if (msg.entier(fenetre, "level") !== niveauNormal) msg.setNiveau(fenetre, niveauNormal);
   if (memeRect(msg.rect(fenetre, "frame"), cible)) return;
   msg.setNiveau(fenetre, NIVEAU_BUREAU);
   try {
