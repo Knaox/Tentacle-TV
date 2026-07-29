@@ -54,6 +54,33 @@
     letter-spacing: -0.018em;
   }
 
+  /* La barre de navigation tient lieu de barre de titre.
+   *
+   * ⚠️ Sur la coquille Electron macOS, la fenêtre est fabriquée
+   * `titleBarStyle: "hidden"` et `transparent: true` : aucune décoration, donc
+   * rien à saisir. Et comme rien dans la page ne déclarait de zone de
+   * déplacement, la fenêtre ne pouvait pas être bougée tant qu'elle était
+   * ACTIVE — il fallait passer à une autre application pour que macOS accepte
+   * de la déplacer par un clic-glisser. Signalé, et vrai depuis le début de la
+   * coquille.
+   *
+   * `[data-hote-sans-cadre]` est posé par `main.tsx`, et uniquement là où c'est
+   * le cas : `app-region` CONSOMME les clics, et Windows garde son cadre natif.
+   *
+   * La règle `no-drag` n'est pas un détail : sans elle, la zone de déplacement
+   * avalerait les liens, la recherche et les boutons de la barre. Elle vise ce
+   * qui se clique, pas une liste de composants — un bouton ajouté demain sera
+   * couvert sans qu'on y pense. */
+  [data-hote-sans-cadre] header[data-host-chrome^="topbar"] {
+    -webkit-app-region: drag;
+  }
+
+  [data-hote-sans-cadre]
+    header[data-host-chrome^="topbar"]
+    :is(a, button, input, select, textarea, label, [role="button"], [tabindex]) {
+    -webkit-app-region: no-drag;
+  }
+
   /* Scrollbar custom — track + corner OBLIGATOIREMENT opaques.
    * Sur macOS, la window Tauri est `transparent: true` (requis pour l'overlay
    * MPV du player). Un track `background: transparent` laisse alors voir le
