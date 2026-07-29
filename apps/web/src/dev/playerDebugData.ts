@@ -9,7 +9,7 @@
  * que la liste des propriétés est de la donnée, pas de l'affichage.
  */
 
-import { desktopKind, desktopPlatform, invoke } from "../desktop/bridge";
+import { desktopKind, desktopPlatform } from "../desktop/bridge";
 import {
   supportsAppUpdates,
   supportsDownloads,
@@ -21,7 +21,10 @@ import { getMpvApi } from "../hooks/mpvRuntime";
 import { sectionReseau } from "./playerDebugReseau";
 import type { DebugSection } from "./playerDebugTypes";
 import { PROPS_VERDICT, verdicts } from "./playerDebugVerdict";
-import { derniereSonde, sonder, type SondeSurface } from "./surfaceProbe";
+import {
+  etatHdrNatif, sectionFenetreChromium, sectionHdrNatif, sectionSurface,
+} from "./playerDebugAffichage";
+import { derniereSonde, sonder } from "./surfaceProbe";
 
 /**
  * Propriétés mpv relevées, groupées par thème. Deux familles à ne PAS confondre.
@@ -125,26 +128,6 @@ async function lire(noms: readonly string[]): Promise<DebugSection["lignes"]> {
   });
 }
 
-/** Ce que le navigateur sait de l'écran — c'est le capteur de la bascule HDR. */
-function sectionEcran(): DebugSection {
-  const hdr = matchMedia("(dynamic-range: high)").matches;
-  const videoHdr = matchMedia("(video-dynamic-range: high)").matches;
-  const rec2020 = matchMedia("(color-gamut: rec2020)").matches;
-  const p3 = matchMedia("(color-gamut: p3)").matches;
-  return {
-    titre: "Écran",
-    lignes: [
-      ["dynamic-range", hdr ? "high" : "standard", hdr],
-      ["video-dynamic-range", videoHdr ? "high" : "standard", videoHdr],
-      ["color-gamut", rec2020 ? "rec2020" : p3 ? "p3" : "srgb", rec2020 || p3],
-      ["colorDepth", `${screen.colorDepth} bits`, null],
-      ["devicePixelRatio", String(devicePixelRatio), null],
-      ["fenêtre", `${innerWidth}x${innerHeight}`, null],
-      ["écran", `${screen.width}x${screen.height}`, null],
-    ],
-  };
-}
-
 function sectionShell(): DebugSection {
   return {
     titre: "Coquille",
@@ -159,70 +142,6 @@ function sectionShell(): DebugSection {
       ["adaptateur mpv", getMpvApi() ? "chargé" : "non chargé", getMpvApi() !== null],
     ],
   };
-}
-
-/** Ce que le natif sait de l'écran. `edrCapable` n'existe que sur macOS. */
-interface EtatHdrNatif {
-  actif: boolean;
-  bascule: boolean;
-  edrCapable?: boolean;
-  /** La couche Metal de mpv, telle que mpv la rapporte. `null` = il n'a rien dit. */
-  coucheHdr?: boolean | null;
-  espaceCouche?: string | null;
-}
-
-/** État HDR vu par le NATIF, plus fiable que la requête média du navigateur. */
-async function etatHdrNatif(): Promise<EtatHdrNatif | null> {
-  try {
-    return await invoke<EtatHdrNatif>("display_hdr_state");
-  } catch {
-    return null;
-  }
-}
-
-function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
-  if (etat === null) {
-    return { titre: "HDR — état natif", lignes: [["commande", "indisponible", false]] };
-  }
-  const lignes: DebugSection["lignes"] = [
-    ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
-    ["basculé par l'app", etat.bascule ? "oui" : "non", null],
-  ];
-  // macOS seulement, et à ne PAS confondre avec la ligne du dessus : « l'écran
-  // SAIT faire de la plage étendue » n'est pas « il en reçoit en ce moment ».
-  // Le natif le renvoyait déjà, le panneau n'en faisait rien.
-  if (etat.edrCapable !== undefined) {
-    lignes.push(["écran capable EDR", etat.edrCapable ? "oui" : "non", etat.edrCapable]);
-  }
-  // Ce que mpv dit de SA couche — la seule mesure qui ne dépende pas de la
-  // scène affichée, contrairement à « écran en HDR » juste au-dessus.
-  if (etat.coucheHdr !== undefined) {
-    const dit = etat.coucheHdr === null ? "inconnue" : etat.coucheHdr ? "plage etendue" : "SDR";
-    lignes.push(["couche Metal", `${dit}${etat.espaceCouche ? ` (${etat.espaceCouche})` : ""}`, etat.coucheHdr]);
-  }
-  return { titre: "HDR — état natif", lignes };
-}
-
-/**
- * Ce que l'écran montre vraiment — la seule section qui ne croit pas mpv.
- *
- * Absente hors coquille Electron macOS en développement : la sonde y est la
- * seule à pouvoir compter les pixels d'une fenêtre qui n'appartient pas à
- * Chromium. Voir `surfaceProbe.ts`.
- */
-function sectionSurface(s: SondeSurface | null): DebugSection | null {
-  if (s === null) return null;
-  const lignes: DebugSection["lignes"] = [
-    ["verdict", s.verdict, s.image !== null && s.erreur === null ? s.verdict.startsWith("IMAGE") : null],
-    ["EDR accordé", s.edr.courant.toFixed(2), s.edr.courant > 1.01],
-    ["EDR potentiel", s.edr.potentiel.toFixed(2), null],
-    ["fenêtre vidéo", s.numeroFenetre === 0 ? "aucune" : String(s.numeroFenetre), s.numeroFenetre !== 0],
-    ["géométrie", s.geometrie, null],
-  ];
-  if (s.image !== null) {
-    lignes.push(["capture", `${String(s.image.largeur)}x${String(s.image.hauteur)}`, null]);
-  }
-  return { titre: "Surface macOS (C pour recapturer)", lignes };
 }
 
 /** Instantané complet. Une seule passe, appelée par le panneau. */
@@ -246,8 +165,10 @@ export async function collecterDebug(): Promise<DebugSection[]> {
     sectionReseau(),
     sectionSurface(surface),
     sectionShell(),
-    sectionEcran(),
+    // L'état natif AVANT les requêtes média : sur macOS c'est lui qui fait
+    // autorité, et le lire en second faisait conclure sur les mauvaises valeurs.
     sectionHdrNatif(natif),
+    sectionFenetreChromium(),
     { titre: "mpv — couleur", lignes: hdr },
     { titre: "mpv — lecture", lignes: lecture },
   ];

@@ -146,12 +146,32 @@ export const ACTIONS: readonly DebugAction[] = [
   },
   {
     touche: "h",
-    libelle: "H · bascule HDR de l'écran",
+    libelle: "H · autoriser / interdire la transmission HDR",
+    /**
+     * Ce que cette bascule fait vraiment, et ce qu'elle ne fait pas.
+     *
+     * Elle autorise ou interdit à mpv de transmettre le signal HDR
+     * (`target-colorspace-hint`). Sur WINDOWS elle entraîne en plus la bascule du
+     * mode HDR de l'écran, qui est un interrupteur global du bureau. Sur macOS il
+     * n'y a aucun interrupteur : le compositeur accorde la plage étendue fenêtre
+     * par fenêtre, à celle qui déclare en avoir l'usage.
+     *
+     * Le message annonçait « écran en HDR / en SDR » d'après `actif`, ce qui sur
+     * macOS est un EDR INSTANTANÉ dépendant de l'image affichée : une scène de nuit
+     * le fait retomber sur une lecture parfaitement HDR. On rapporte donc ce qu'on
+     * a changé, et l'état de l'écran seulement là où il en a un.
+     */
     executer: async () => {
       try {
-        const etat = await invoke<{ actif: boolean; autoAutorise: boolean }>("display_hdr_state");
+        const etat = await invoke<{ actif: boolean; autoAutorise: boolean; supporte?: boolean }>(
+          "display_hdr_state",
+        );
         await invoke("display_hdr_auto", { on: !etat.autoAutorise });
-        return `bascule automatique ${etat.autoAutorise ? "désactivée" : "activée"} — écran ${etat.actif ? "en HDR" : "en SDR"}`;
+        const desormais = etat.autoAutorise ? "interdite" : "autorisée";
+        const ecran = etat.supporte === false
+          ? "aucun interrupteur d'écran sur ce système"
+          : `écran ${etat.actif ? "en HDR" : "en SDR"}`;
+        return `transmission HDR ${desormais} — ${ecran}`;
       } catch {
         return "commande HDR indisponible";
       }
