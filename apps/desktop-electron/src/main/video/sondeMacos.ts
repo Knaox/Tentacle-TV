@@ -130,7 +130,11 @@ export async function tracerRapport(surface: VideoSurface | null): Promise<void>
   const [s, couleur] = await Promise.all([sonder(surface), chaineCouleur()]);
   const edr = `${s.edr.courant.toFixed(2)} / ${s.edr.potentiel.toFixed(2)}`;
   trace(`RAPPORT — ${s.verdict}`);
-  trace(`RAPPORT — EDR ${edr}${s.edr.courant > 1.01 ? " (plage etendue ACCORDEE)" : ""}`);
+  // ⚠️ « accordé » n'est PAS « utilisé ». Le système accorde le headroom à qui
+  // le DEMANDE — une vue qui a posé `wantsExtendedDynamicRangeOpenGLSurface`
+  // obtient le maximum même si elle ne dessine que du SDR. Seule la couche
+  // Metal, qui négocie son espace colorimétrique, en fait une preuve.
+  trace(`RAPPORT — EDR ${edr}${s.edr.courant > 1.01 ? " (headroom accorde — pas une preuve)" : ""}`);
   trace(`RAPPORT — ${couleur}`);
   trace(`RAPPORT — fenetre ${String(s.numeroFenetre)} · ${s.geometrie}`);
 }

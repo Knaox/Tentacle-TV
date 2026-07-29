@@ -86,23 +86,41 @@ class SurfaceInerte implements VideoSurface {
 }
 
 /**
- * Le montage vidéo retenu sur macOS.
+ * Le montage vidéo retenu sur macOS. Deux existent, et un seul fait du HDR.
  *
- * Deux existent, et ils ne se valent pas de la même façon :
+ * # `fenetre` — la fenêtre de mpv calée sous la nôtre (DÉFAUT)
  *
- *  - `gl` (défaut) — Render API dans une vue à nous. UNE fenêtre : ni calage
- *    manuel, ni ordre d'empilement à réaffirmer, ni liseré transparent. La
- *    plage étendue vient de `wantsExtendedDynamicRangeOpenGLSurface`, sans les
- *    métadonnées de mastering, réservées à Metal ;
- *  - `fenetre` — la fenêtre de mpv calée sous la nôtre. Couche Metal, donc PQ
- *    transmis tel quel et `edrMetadata` — le meilleur HDR possible —, au prix
- *    des trois défauts ci-dessus.
+ * mpv y dessine sur SA couche Metal. C'est le seul chemin qui donne du vrai
+ * HDR sur macOS, et le rendu lui-même l'écrit dans le journal :
+ * `Metal layer colorspace changed: ITUR_2100_PQ`, `Metal layer HDR active`,
+ * `edrMetadata … max 3999 nits`. Le PQ est transmis tel quel.
  *
- * `TENTACLE_VIDEO_MONTAGE` permet de passer de l'un à l'autre sans rebâtir, le
- * temps de les comparer sur les mêmes images.
+ * # `gl` — Render API dans une vue à nous
+ *
+ * Architecturalement supérieur : une seule fenêtre, donc ni calage manuel, ni
+ * ordre d'empilement à réaffirmer, ni liseré transparent. Il a été construit,
+ * mesuré, et il ne tient pas — pour deux raisons qui ne se corrigent pas ici :
+ *
+ * ⚠️ **mpv ne sait pas produire de valeurs au-delà de 1.0.** L'EDR de macOS
+ * demande exactement cela : des hautes lumières qui dépassent le blanc SDR.
+ * Les deux tentatives amont — mpv#8387, mpv#8485 — ont dû PATCHER les shaders
+ * (multiplier par 3.0, retirer le `clamp` à 1.0) faute d'option, et les deux
+ * ont été abandonnées sans être fusionnées. Aucune combinaison de `target-trc`,
+ * `target-prim` et `target-peak` n'y supplée.
+ *
+ * ⚠️ **Et la mesure d'EDR y ment.** `wantsExtendedDynamicRangeOpenGLSurface`
+ * fait accorder le headroom PAR LE SYSTÈME, à la demande, sans regarder ce
+ * qu'on dessine : la sonde rapportait 16,00 sur 16,00 — mieux que les 12,82 du
+ * montage Metal — pour une image qui n'avait rien de HDR. C'est exactement le
+ * piège que ce projet paie depuis le début : une mesure qui ne mesure pas ce
+ * qu'on croit. Le journal de la couche Metal, lui, est écrit par le rendu.
+ *
+ * Il reste accessible par `TENTACLE_VIDEO_MONTAGE=gl` : le jour où `gpu-next`
+ * arrivera dans la Render API (mpv#16818, en draft), c'est par là qu'il faudra
+ * repasser.
  */
 function montageMacos(): "gl" | "fenetre" {
-  return process.env["TENTACLE_VIDEO_MONTAGE"] === "fenetre" ? "fenetre" : "gl";
+  return process.env["TENTACLE_VIDEO_MONTAGE"] === "gl" ? "gl" : "fenetre";
 }
 
 /** La surface adaptée au système, pour la fenêtre donnée. */
