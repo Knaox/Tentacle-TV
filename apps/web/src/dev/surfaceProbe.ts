@@ -62,6 +62,30 @@ export async function sonder(): Promise<SondeSurface | null> {
   }
 }
 
+/**
+ * Rafraîchit le SEUL headroom EDR, sans rien capturer.
+ *
+ * ⚠️ Le headroom n'est pas une capacité mais un arbitrage RÉVISABLE : le
+ * compositeur le monte par une rampe de plusieurs secondes après le début de la
+ * lecture, et le retire dès que la fenêtre cesse d'être visible. Le panneau
+ * servait la valeur figée au moment de la dernière capture — il annonçait donc
+ * « EDR accordé 1,00 » pendant toute une lecture parfaitement HDR, et il était
+ * impossible de prouver le contraire depuis l'interface.
+ *
+ * Deux lectures de `NSScreen` côté natif, sans capture : appelable à chaque
+ * passe du panneau. Rend le relevé complet, EDR à jour, ou `null` s'il n'y a
+ * encore rien à mettre à jour.
+ */
+export async function rafraichirEdr(): Promise<SondeSurface | null> {
+  if (derniere === null || !supportsSurfaceProbe()) return derniere;
+  try {
+    derniere = { ...derniere, edr: await invoke<SondeSurface["edr"]>("video_edr_probe") };
+  } catch {
+    // Une sonde qui tombe n'apprend rien : on garde le dernier relevé connu.
+  }
+  return derniere;
+}
+
 /** Le verdict en une ligne, pour le retour d'une action du panneau. */
 export function verdictSonde(s: SondeSurface | null): string {
   if (s === null) return "sonde de surface indisponible sur cette coquille";

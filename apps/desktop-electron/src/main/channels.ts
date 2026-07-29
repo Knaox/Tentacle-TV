@@ -69,6 +69,12 @@ export const COMMANDS = [
   // lance `screencapture`, elle n'est donc jamais branchée dans un paquet
   // livré, et la page la masque d'elle-même (`supportsSurfaceProbe`).
   "video_surface_probe",
+  // Le headroom EDR SEUL, sans capture — deux lectures de `NSScreen`. Rafraîchi
+  // à chaque passe du panneau, là où la sonde complète reste sur demande : le
+  // compositeur n'accorde le headroom qu'au bout d'une rampe de plusieurs
+  // secondes, et une valeur figée annonçait « 1,00 » pendant toute une lecture
+  // HDR. Branchée avec la précédente, donc mêmes conditions.
+  "video_edr_probe",
 
   // Veille et contrôles média
   "prevent_display_sleep_start",

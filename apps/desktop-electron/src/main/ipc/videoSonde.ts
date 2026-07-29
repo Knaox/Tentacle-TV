@@ -33,6 +33,25 @@ export function registerVideoProbe(registry: CommandRegistry, surface: Surface):
   if (!sondeDisponible()) return;
   const { sonder } = require("../video/sondeMacos") as typeof import("../video/sondeMacos");
   registry.add("video_surface_probe", { schema: NO_ARGS, run: () => sonder(surface()) });
+
+  // ⚠️ Le headroom EDR à part, et sans rien capturer. Il n'est pas une capacité
+  // mais un arbitrage RÉVISABLE : le compositeur le monte par une rampe qui dure
+  // plusieurs secondes (mesuré 5,23 → 6,00 → 6,98 → 7,02), et il retombe dès que
+  // la fenêtre cesse d'être visible. Le panneau servait la valeur figée au
+  // moment de la dernière capture, et affichait donc « 1,00 » pendant toute une
+  // lecture parfaitement HDR — on ne pouvait pas prouver le contraire.
+  //
+  // Deux lectures de `NSScreen` : à ce prix-là, on peut rafraîchir à chaque
+  // passe du panneau, là où la sonde complète coûte seize méga-octets de
+  // capture et reste sur demande.
+  const { lireEdr } = require("../video/macosEdr") as typeof import("../video/macosEdr");
+  registry.add("video_edr_probe", {
+    schema: NO_ARGS,
+    run: () => {
+      const etat = lireEdr(surface()?.fenetreVideo?.() ?? null);
+      return { courant: etat.courant, potentiel: etat.potentiel };
+    },
+  });
 }
 
 /**

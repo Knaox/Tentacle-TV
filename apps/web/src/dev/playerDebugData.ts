@@ -24,7 +24,7 @@ import { PROPS_VERDICT, verdicts } from "./playerDebugVerdict";
 import {
   etatHdrNatif, sectionFenetreChromium, sectionHdrNatif, sectionSurface,
 } from "./playerDebugAffichage";
-import { derniereSonde, sonder } from "./surfaceProbe";
+import { derniereSonde, rafraichirEdr, sonder } from "./surfaceProbe";
 
 /**
  * Propriétés mpv relevées, groupées par thème. Deux familles à ne PAS confondre.
@@ -151,9 +151,13 @@ export async function collecterDebug(): Promise<DebugSection[]> {
     lire(PROPS_HDR),
     lire(PROPS_LECTURE),
     etatHdrNatif(),
-    // La première ouverture capture, les suivantes servent le dernier relevé :
-    // une capture par rafraîchissement volerait à la lecture ce qu'on mesure.
-    derniereSonde() === null ? sonder() : Promise.resolve(derniereSonde()),
+    // La première ouverture capture ; les suivantes ne rafraîchissent que le
+    // headroom EDR. Une capture par passe volerait à la lecture ce qu'on mesure
+    // (seize méga-octets), mais l'EDR ne coûte que deux lectures de `NSScreen` —
+    // et le laisser figé faisait annoncer « EDR accordé 1,00 » pendant toute une
+    // lecture HDR, le compositeur ne l'accordant qu'au bout d'une rampe de
+    // plusieurs secondes. Voir `rafraichirEdr`.
+    derniereSonde() === null ? sonder() : rafraichirEdr(),
   ]);
   const lignesVerdict = verdicts(pourVerdict, natif?.actif ?? false, natif?.coucheHdr).map(
     (v) => [v.cle, v.valeur, v.bon] as const,
