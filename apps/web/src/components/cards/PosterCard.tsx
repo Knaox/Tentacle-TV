@@ -92,6 +92,14 @@ export function PosterCard({
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
         animation: "fadeSlideUp 0.34s ease both",
         animationDelay: `${Math.min(index * 40, 400)}ms`,
+        // La carte survolée passe AU-DESSUS de ses voisines. Sans cela son ombre
+        // d'élévation est recouverte du côté droit par la carte suivante — un
+        // frère plus tardif, donc peint après elle : le relief se lisait à plat
+        // de trois côtés sur quatre, et c'est ce qui a longtemps obligé à
+        // compenser par un liseré de 1 px. `2` et pas plus : les flèches de
+        // défilement de la rangée sont en `z-30` et doivent rester cliquables.
+        // Aucun reflow — `z-index` n'entre pas dans la mise en page.
+        zIndex: hovered ? 2 : undefined,
       }}
       onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); }}
       onMouseLeave={() => setHovered(false)}

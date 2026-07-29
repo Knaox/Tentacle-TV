@@ -104,10 +104,16 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
 
         {/* pt/pb : marge de débordement pour le survol des cartes — `overflow-x:
             auto` force un `overflow-y` calculé, qui rogne au bord de la boîte de
-            rembourrage. Portés de 12/16 à 24 px pour laisser passer le HALO de
-            ciblage (24 px de débord) : en deçà, il se coupait net en haut et en
-            bas et redevenait un rectangle. On reste loin du pb-12 essayé
-            autrefois, qui creusait un vide disgracieux entre les rangées.
+            rembourrage. Le budget vers le HAUT se calcule : croissance d'échelle
+            (317 px d'affiche × 0,06 / 2 = 9,5 px) + lift (8 px) + portée haute
+            du débord de lumière de l'élévation (8 px) = 25,5 px. `pt-6` (24 px)
+            coupait donc net les derniers pixels de la lueur, ce qui produisait
+            exactement ce qu'on cherche à éviter : un trait horizontal. `pt-8`
+            (32 px) laisse 6,5 px de marge ; `pt-7` n'en laisserait que 2,5, et
+            la moindre retouche d'amplitude repasserait dessous. Compensé par le
+            `mb-1` de `RowHeader` : l'écart titre → cartes ne bouge pas.
+            Vers le BAS il n'y a rien à réserver : la portée basse (30 px) tombe
+            sur le bloc titre, à l'intérieur de la racine de la carte.
             Le panneau d'aperçu, lui, est portalisé : il ne déborde pas d'ici.
 
             `row-dim` porté par le SCROLLER et non par la <section> : sur la
@@ -125,7 +131,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-6 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
+          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
           {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
               un carrousel (ex. doublon de bibliothèque) — un Id seul provoque

@@ -84,6 +84,9 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
         animation: "fadeSlideUp 0.34s ease both",
         animationDelay: `${Math.min(index * 40, 400)}ms`,
+        // Au-dessus des voisines pendant le survol : sans cela l'ombre
+        // d'élévation est recouverte par la carte suivante (cf. `PosterCard`).
+        zIndex: hovered ? 2 : undefined,
       }}
       onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); preview.handlers.onMouseEnter(); }}
       onMouseLeave={() => { setHovered(false); preview.handlers.onMouseLeave(); }}
@@ -116,7 +119,11 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         suppressLift={preview.panelActive}
         concealed={preview.open}
         aspect="aspect-video"
-        lift={{ scale: 1.03, y: -5 }}
+        // Amplitude plus faible que l'affiche : la vignette est bien plus large,
+        // et le débord latéral vaut `largeur × (échelle − 1) / 2`. À 1920 px elle
+        // fait ~443 px, donc 8,9 px de débord par côté — il reste 3,1 px dans la
+        // gouttière de 12 px. `1.045` n'en laisserait que 2 : c'est le plafond.
+        lift={{ scale: 1.04, y: -7 }}
       >
         {/* Pas de zoom interne quand le panneau prend le relais : il peindrait
             la même image à un autre cadrage, d'où le recul brutal ressenti à

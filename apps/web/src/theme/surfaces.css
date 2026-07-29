@@ -103,32 +103,29 @@
     radial-gradient(66% 58% at 97% 3%, rgba(var(--brand-accent-rgb), 0.1) 0%, transparent 64%);
 
   /* ── Cartes ──────────────────────────────────────────────────────────
-   * RELIEF de bord au survol, à la place de l'ancien liseré dégradé violet →
-   * rose (retiré). Un vrai relief par la LUMIÈRE, pas un contour coloré : un
-   * filet clair en haut (la carte prend la lumière), une ombre en bas (elle la
-   * perd), et un fin trait neutre pour détacher l'affiche du fond. Aucune
-   * couleur de marque : c'est le RELIEF qui désigne la carte visée, avec
-   * l'élévation. Inset, donc à poser sur la boîte image elle-même. */
-  --card-edge-bevel:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-  /* Grain du pourtour — opacité du calque `.card-grain` au survol. */
-  --card-grain-opacity: 0.5;
-
-  /* Il n'y a plus de HALO au survol des cartes, et c'est le seul geste retiré
-   * de cette signature. Ils étaient deux : un halo de ciblage qui reprenait
-   * l'affiche floutée derrière la carte pour l'entourer de ses propres
-   * couleurs, et une tache de lumière blanche qui suivait le curseur.
    *
-   * Le premier était le poste le plus cher de l'interface. Sa recette imposait
-   * de monter, sur CHAQUE carte, une seconde image portant `filter: blur()` et
-   * un masque radial — une centaine de surfaces filtrées entretenues en
-   * permanence sur l'accueil, plus une dérive en boucle infinie sur la carte
-   * visée. Le second était modeste, mais il n'avait plus de sens seul.
+   * Ce qui désigne la carte visée : l'ÉLÉVATION (`--elev-card-hover`, deux
+   * couches d'ombre en fondu croisé — la recette est commentée dans
+   * theme/cards.css), le lift, et le passage de la carte au-dessus de ses
+   * voisines. Rien d'autre.
    *
-   * Ce qui désigne la carte visée : le RELIEF de bord (`--card-edge-bevel` et
-   * `.card-grain`), l'élévation (`--elev-card-hover`) et le lift. */
+   * Ont été retirés d'ici, tous pour la même raison — chacun produisait un
+   * CONTOUR là où il fallait de la profondeur :
+   *   • `--card-edge-bevel`, un biseau `inset` dont seul le troisième terme
+   *     (un trait de 1 px) était réellement visible, les deux autres n'étant
+   *     perceptibles que par la frange sub-pixel des coins arrondis ;
+   *   • `--card-grain-opacity`, l'opacité d'un cadre de bruit fractal de 4 px
+   *     posé en anneau, qui imposait de surcroît une rastérisation hors écran
+   *     (double masque composé en `exclude`) sur chaque carte survolée ;
+   *   • `--preview-panel-ring`, un anneau de MARQUE violet sur le panneau
+   *     d'aperçu — le plus voyant des trois, et le moins justifiable : un
+   *     aperçu n'est pas un contrôle actif.
+   *
+   * Avant eux, deux HALOS avaient déjà disparu : un halo de ciblage qui
+   * reprenait l'affiche floutée derrière la carte, et une tache de lumière qui
+   * suivait le curseur. Le premier imposait de monter sur CHAQUE carte une
+   * seconde image portant `filter: blur()` et un masque radial — une centaine
+   * de surfaces filtrées entretenues en permanence sur l'accueil. */
 
   /* Remplissage des barres de PROGRESSION — carte, lecteur — repris de la
    * bannière d'accueil (`HeroContent`) : dégradé violet → rose, à dominante
@@ -173,7 +170,6 @@
    * n'y a rien à voir au travers : la vignette est opaque et le tiroir ne
    * laissait transparaître qu'une rangée déjà masquée. */
   --preview-panel-bg: var(--surface-2);
-  --preview-panel-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.3);
 
   /* Voile d'informations POSÉ SUR la vignette (disposition superposée, quand le
    * panneau doit rester dans les limites de la carte). Noir constant dans les
@@ -215,16 +211,6 @@
     rgba(var(--scrim-media-rgb), 0.12) 52%,
     transparent 74%
   );
-
-  /* Relief de bord en clair : le filet blanc du haut est presque invisible sur
-   * nacré, l'ombre du bas doit rester douce (pas de trait noir sur du clair).
-   * Le trait de contour se fait sombre plutôt que clair — c'est l'ombre qui
-   * détache une carte sur fond clair, pas la lumière. */
-  --card-edge-bevel:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  --card-grain-opacity: 0.32;
 
   /* Halo de bannière : nettement plus discret sur fond nacré. Une lumière
    * colorée se lit par CONTRASTE avec ce qu'elle éclaire — sur un fond clair il

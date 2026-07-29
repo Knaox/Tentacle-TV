@@ -29,8 +29,8 @@
  * `content-visibility` implique `contain: paint`, qui interdit aux descendants
  * de peindre hors de la boîte. C'est précisément le cas de la racine d'une carte
  * de rangée : au survol, l'ombre d'élévation (`--elev-card-hover`, décalée de
- * 20 px et diffusée sur 50) déborde largement sous la carte, et le lift la
- * soulève encore de six pixels. Tout cela serait rogné net au bord de l'affiche
+ * 22 px et diffusée sur 44) déborde largement sous la carte, et le lift la
+ * soulève encore de huit pixels. Tout cela serait rogné net au bord de l'affiche
  * — la carte visée se retrouverait posée à plat, sans l'ombre qui la détache.
  * D'où la granularité retenue : la RANGÉE entière, dont le scroller réserve
  * déjà de quoi laisser passer ce débord, et jamais la carte. */

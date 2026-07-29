@@ -125,10 +125,12 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, cut = fal
             willChange: "transform",
           }}
         >
-          {/* Rayon `--radius-lg` (12 px), celui de la carte. Signature de bord
-              IDENTIQUE à `CardFrame` : biseau de relief (`--card-edge-bevel`),
-              plus l'anneau de marque du panneau — rien ne change de main à
-              l'ouverture. Plus de liseré dégradé violet (retiré partout).
+          {/* Rayon `--radius-lg` (12 px), celui de la carte. Élévation
+              IDENTIQUE à `CardFrame` (`--elev-card-hover` seule) : rien ne
+              change de main à l'ouverture. Ont disparu avec le contour des
+              cartes le biseau de relief, le grain de pourtour et l'anneau de
+              marque violet — un aperçu n'est pas un contrôle actif, son
+              élévation suffit à le désigner.
               PAS de `backdrop-filter` : rien à flouter derrière un fond opaque,
               et le flou coûtait une passe de compositing à l'ouverture. */}
           <div
@@ -137,7 +139,7 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, cut = fal
             }`}
             style={{
               background: "var(--preview-panel-bg)",
-              boxShadow: "var(--elev-card-hover), var(--card-edge-bevel), var(--preview-panel-ring)",
+              boxShadow: "var(--elev-card-hover)",
             }}
           >
             <HoverPreviewBody
@@ -146,7 +148,6 @@ export function CardHoverPreview({ item, anchor, bounds, cardImageUrl, cut = fal
               direction={placement.rect.direction}
               onNavigate={onClose}
             />
-            <div aria-hidden data-on className="card-grain" />
           </div>
         </motion.div>
       )}
