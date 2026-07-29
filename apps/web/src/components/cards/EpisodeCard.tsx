@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
@@ -28,15 +28,32 @@ interface EpisodeCardProps {
    * on retombe alors sur le `clamp` responsive.
    */
   width?: number | null;
+  /**
+   * Décalage de la cascade d'entrée, en ms. `null` = pas d'animation.
+   * Accordé par la rangée à sa PREMIÈRE fenêtre seulement (cf. `PosterCard`).
+   */
+  entranceDelay?: number | null;
+  /** Signale à la rangée quelle carte est survolée, pour l'épingler dans sa fenêtre. */
+  onHoverIndex?: (index: number | null) => void;
 }
 
 /**
  * Vignette 16:9 des rangées « Reprendre » et « Prochains épisodes ».
- * Même cadre de survol que l'affiche 2:3 (`CardFrame`) : liseré dégradé, halo
- * de curseur, lift — avec une amplitude réduite, la carte étant plus large.
+ * Même cadre de survol que l'affiche 2:3 (`CardFrame`) : élévation et lift, avec
+ * une amplitude réduite, la carte étant plus large.
  * Le clic lance la lecture ; la fiche détail passe par « Plus d'infos ».
+ *
+ * `memo` pour la même raison que `PosterCard` : la rangée est fenêtrée et se
+ * re-rend à chaque carte franchie.
  */
-export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProps) {
+export const EpisodeCard = memo(function EpisodeCard({
+  item,
+  index,
+  size = "md",
+  width,
+  entranceDelay = null,
+  onHoverIndex,
+}: EpisodeCardProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
@@ -82,14 +99,19 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
       className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
       style={{
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
-        animation: "fadeSlideUp 0.34s ease both",
-        animationDelay: `${Math.min(index * 40, 400)}ms`,
+        animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
+        animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
         // Au-dessus des voisines pendant le survol : sans cela l'ombre
         // d'élévation est recouverte par la carte suivante (cf. `PosterCard`).
         zIndex: hovered ? 2 : undefined,
       }}
-      onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); preview.handlers.onMouseEnter(); }}
-      onMouseLeave={() => { setHovered(false); preview.handlers.onMouseLeave(); }}
+      onMouseEnter={() => {
+        setHovered(true);
+        onHoverIndex?.(index);
+        prefetchDetailRoute();
+        preview.handlers.onMouseEnter();
+      }}
+      onMouseLeave={() => { setHovered(false); onHoverIndex?.(null); preview.handlers.onMouseLeave(); }}
       onClick={handleClick}
       {...ctx.contextHandlers}
     >
@@ -210,4 +232,4 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
       )}
     </div>
   );
-}
+});
