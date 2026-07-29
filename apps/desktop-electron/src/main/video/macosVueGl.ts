@@ -172,6 +172,15 @@ export function creerVueGl(host: BrowserWindow): VueGl | null {
     return null;
   }
 
+  // ⚠️ SANS CETTE LIGNE, L'OVERLAY DISPARAÎT. Une `NSOpenGLView` ordinaire
+  // dessine directement dans la surface de la fenêtre, sans passer par
+  // CoreAnimation : elle se retrouve alors PAR-DESSUS toutes les vues
+  // layer-backed — celle de Chromium en premier lieu — quel que soit l'ordre des
+  // sous-vues. La vidéo s'affiche, et tous les contrôles du lecteur avec elle.
+  //
+  // `wantsLayer` lui donne sa propre couche : l'ordre des sous-vues redevient
+  // celui qu'on a demandé.
+  msg.setFlag(vue, "setWantsLayer:", true);
   msg.setFlag(vue, "setWantsBestResolutionOpenGLSurface:", true);
   // ⚠️ LA ligne de l'EDR. Sans elle, la surface reste en plage standard quoi
   // que mpv dessine, et les hautes lumières sont écrêtées à 1.0.

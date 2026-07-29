@@ -7,17 +7,18 @@
  */
 
 import { z } from "zod";
-import { sendToPage } from "../pageEvents";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { coucheEnHdr, espaceCouche } from "../video/coucheMetal";
 import { basculeEnCours, edrCapable, hdrActif, hdrSupporte } from "../video/displayHdr";
-import { accorder, autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
+import { autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { filtrerOptionsInit, refuserCommande, refuserEcriture } from "../video/mpvAllowlist";
 import { nativeHandle } from "../video/native";
-import { creerSurfaceVideo, type VideoSurface } from "../video/surface";
-import { planifierRapport, registerVideoProbe, reinitialiserRapport } from "./videoSonde";
+import { adapterPourRenderApi } from "../video/macosOptionsRender";
+import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
+import { relaisEvenements } from "./videoEvenements";
+import { registerVideoProbe, reinitialiserRapport } from "./videoSonde";
 import { CommandRegistry } from "./registry";
 
 /** Valeur scalaire acceptée par mpv. */
@@ -103,37 +104,14 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         // non rejetée : mpv lui-même tolère les options inconnues, et faire
         // échouer `mpv_init` empêcherait toute lecture.
         const { retenues } = filtrerOptionsInit(options?.initialOptions ?? {});
+        // Le montage Render API réécrit ce que la page a demandé : elle décrit
+        // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
+        // Voir `macosOptionsRender.ts`.
+        const optionsMpv = montageVideo() === "gl" ? adapterPourRenderApi(retenues) : retenues;
         const parent = nativeHandle(win);
         const err = init(
-          { options: retenues, observed, wid: parent },
-          {
-            event: (p) => {
-              // Le contenu ne se déclare qu'une fois le fichier ouvert : c'est
-              // le seul moment où l'on sait s'il faut basculer l'écran. Comme
-              // tous les bons lecteurs, on le fait UNE fois au démarrage de la
-              // lecture — changer le mode d'un écran coûte une à deux secondes
-              // de noir pendant la resynchronisation, hors de question de le
-              // refaire en cours de route.
-              // `file-loaded` d'abord — au cas où les paramètres seraient déjà
-              // là — puis `video-reconfig`, où ils le sont à coup sûr : c'est
-              // l'évènement que mpv émet quand il a configuré sa sortie vidéo.
-              if (p.event === "file-loaded" || p.event === "video-reconfig") accorder();
-              // Un ecran de chargement infini veut dire que `file-loaded`
-              // n'arrive jamais. Ces trois evenements disent ou la chaine
-              // s'arrete : ouverture du fichier, configuration de la sortie
-              // video, premiere image.
-              if (p.event === "start-file" || p.event === "file-loaded" ||
-                  p.event === "video-reconfig" || p.event === "end-file") {
-                console.info(`[video] mpv → ${p.event}${p.event === "end-file" ? ` (raison ${String(p["reason"])})` : ""}`);
-              }
-              // La lecture a vraiment commencé : c'est le moment de regarder ce
-              // que l'écran montre, plutôt que ce que mpv en dit. Sans effet
-              // hors développement, et une seule fois par lecture.
-              if (p.event === "playback-restart") planifierRapport(() => video);
-              sendToPage("mpv://event", p);
-            },
-            property: (p) => sendToPage("mpv://property-change", p),
-          },
+          { options: optionsMpv, observed, wid: parent },
+          relaisEvenements(() => video),
         );
         if (err) throw new Error(err);
 
@@ -141,8 +119,11 @@ export function registerVideoCommands(registry: CommandRegistry): void {
         // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
         // voit alors qu'a l'image — un ecran noir sans un mot.
         console.info(
-          `[video] mpv demarre — ${Object.keys(retenues).length} options retenues` +
-            ` (vo=${String(retenues["vo"] ?? "?")}, gpu-context=${String(retenues["gpu-context"] ?? "-")})`,
+          `[video] mpv demarre — montage ${montageVideo()}, ` +
+            `${Object.keys(optionsMpv).length} options retenues (vo=${String(optionsMpv["vo"] ?? "?")}` +
+            `, target-trc=${String(optionsMpv["target-trc"] ?? "-")}` +
+            `, target-peak=${String(optionsMpv["target-peak"] ?? "-")}` +
+            `, gpu-context=${String(optionsMpv["gpu-context"] ?? "-")})`,
         );
 
         // La fenêtre de mpv naît de façon asynchrone : `attach` la cherche,

@@ -99,8 +99,16 @@ function verdictHdr(p: Lues, ecranEnHdr: boolean, coucheHdr?: boolean | null): V
       bon: null,
     };
   }
-  // Sortie inconnue : mpv n'a pas encore configuré sa cible. On ne conclut pas.
+  // Sortie inconnue. Deux cas, et ils ne se concluent pas pareil.
   if (sortie === null || sortie === undefined) {
+    // ⚠️ Avec `vo=libmpv` — le rendu dans une vue à nous — mpv n'expose PAS
+    // `video-target-params` : il n'a pas de cible à décrire, c'est l'hôte qui
+    // présente. La plage étendue accordée par le compositeur est alors la seule
+    // preuve disponible, et elle en est une : rien ne l'obtient sans contenu
+    // au-delà du blanc SDR.
+    if (ecranEnHdr) {
+      return { cle: "HDR", valeur: `REEL — contenu ${gamma}, plage etendue accordee`, bon: true };
+    }
     return { cle: "HDR", valeur: `contenu ${gamma}, sortie pas encore etablie`, bon: null };
   }
   if (!HDR.has(sortie)) {

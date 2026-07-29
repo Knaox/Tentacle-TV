@@ -100,12 +100,21 @@ const MAX_PAR_PASSAGE = 128;
  * Filtré, parce que le niveau verbeux de mpv produit des centaines de lignes par
  * seconde et noierait tout le reste du journal.
  */
-const JOURNAL_RETENU = /colorspace|hdr|edr|metal layer|dolby|dovi/i;
+const JOURNAL_RETENU = /colorspace|hdr|edr|metal layer|dolby|dovi|reconfig to/i;
+
+/**
+ * Le bruit qui passe le filtre sans rien apprendre.
+ *
+ * ffmpeg répète « Multiple Dolby Vision RPUs found in one AU » à CHAQUE unité
+ * d'accès sur un flux profil 8.1 — des dizaines de lignes par seconde, qui
+ * noyaient les deux seules qui comptent (`ITUR_2100_PQ`, `HDR active`).
+ */
+const JOURNAL_BRUIT = /Multiple Dolby Vision RPUs/i;
 
 /** Relaie ce que mpv dit de sa couche Metal. Développement seulement. */
 function journaliser(data: unknown): void {
   const m = koffi.decode(data, MpvEventLogMessage) as { prefix: string; text: string };
-  if (!JOURNAL_RETENU.test(m.text)) return;
+  if (!JOURNAL_RETENU.test(m.text) || JOURNAL_BRUIT.test(m.text)) return;
   // Retenu AVANT d'être tracé : c'est de là que vient la seule réponse fiable à
   // « la couche est-elle en plage étendue ? » — voir `coucheMetal.ts`.
   retenirJournal(m.text);
