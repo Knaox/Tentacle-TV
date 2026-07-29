@@ -11,8 +11,9 @@
  * nôtre comme fenêtre enfant, ordonnée EN DESSOUS. macOS la déplace alors avec
  * son parent, et la page se compose par-dessus.
  *
- * Voir `surface.ts` pour ce que ce montage coûte, et pourquoi il reste le
- * défaut malgré tout.
+ * Voir `surface.ts` pour ce que ce montage coûte et pourquoi il reste le défaut,
+ * `macosCadre.ts` et `macosPleinEcran.ts` pour ce qu'il faut à mpv pour accepter
+ * la géométrie qu'on lui donne.
  */
 
 import type { BrowserWindow } from "electron";
@@ -24,6 +25,8 @@ import {
   numerosFenetres,
   trouverFenetreNeuve,
 } from "./objcFenetres";
+import { cibleVideo, poserCadre } from "./macosCadre";
+import { PleinEcranMpv } from "./macosPleinEcran";
 import { decrireMontage } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
@@ -32,6 +35,16 @@ const SONDAGE_MS = 100;
 const SONDAGES_MAX = 100;
 /** Un recalage par image suffit — voir `planifierCalage`. */
 const CALAGE_MS = 16;
+/**
+ * Et une VEILLE : les évènements d'Electron ne suffisent pas.
+ *
+ * ⚠️ macOS repositionne la fenêtre de mpv de son propre chef, sans qu'aucun
+ * `resize`, `move` ni `enter-full-screen` ne parvienne à Electron — mesuré de
+ * l'extérieur à 20 Hz, 110 ms après un calage parfait. Une réaction aux
+ * évènements ne peut PAS l'attraper. Le coût est de deux lectures de rectangle
+ * par tick, le temps d'une lecture seulement.
+ */
+const VEILLE_MS = 100;
 
 /** Classe de la fenêtre de mpv : `Window` de `video/out/mac/window.swift`, que
  *  le préfixe de module fait apparaître ainsi. Vérifié sur mpv 0.41.0. */
@@ -43,14 +56,17 @@ export class MacosSurface implements VideoSurface {
   private mpvWindow: unknown = null;
   private recherche: ReturnType<typeof setInterval> | null = null;
   private calage: ReturnType<typeof setTimeout> | null = null;
+  private veille: ReturnType<typeof setInterval> | null = null;
   private attache = false;
+  /** Le plein écran de mpv, tenu d'accord avec le nôtre — `macosPleinEcran.ts`. */
+  private readonly pleinEcran = new PleinEcranMpv(() => this.align());
 
   /**
    * Les fenêtres mpv déjà là quand cette surface a commencé à chercher : des
    * VESTIGES. Le cœur de mpv se termine sur ses propres threads, après que la
-   * commande d'arrêt a rendu la main, et sa fenêtre lui survit quelques
-   * instants. Sans cette mémoire, le changement d'épisode cale la vidéo sur une
-   * fenêtre morte.
+   * commande d'arrêt a rendu la main, et sa fenêtre lui survit quelques instants.
+   * Sans cette mémoire, un changement d'épisode cale la vidéo sur une fenêtre
+   * morte.
    */
   private vestiges: ReadonlySet<number> = new Set();
   /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
@@ -70,10 +86,8 @@ export class MacosSurface implements VideoSurface {
     this.reattacher();
     this.planifierCalage();
     // Une seconde fois APRÈS l'animation : `enter-full-screen` arrive quand
-    // Electron croit la transition finie, mais macOS bouge encore la fenêtre —
-    // et c'est ce déplacement-là qui défait l'empilement. La transition est
-    // aussi le moment le plus instructif du montage, et le seul qu'aucun
-    // rapport ne couvrait.
+    // Electron croit la transition finie, mais macOS bouge encore la fenêtre, et
+    // c'est ce déplacement-là qui défait l'empilement.
     setTimeout(() => {
       this.reattacher();
       trace(`plein ecran — ${this.geometrie()}`);
@@ -85,17 +99,16 @@ export class MacosSurface implements VideoSurface {
   }
 
   /**
-   * Cherche la fenêtre de mpv jusqu'à la trouver, puis l'attache et la cale.
-   *
-   * Elle n'existe qu'APRÈS `mpv_initialize`, et de façon asynchrone. `move` est
-   * écouté en plus de `resize` : une fenêtre enfant suit son parent, mais le
-   * recalage garde la vidéo en place quand on change d'écran.
+   * Cherche la fenêtre de mpv jusqu'à la trouver, puis l'attache et la cale. Elle
+   * n'existe qu'APRÈS `mpv_initialize`, et de façon asynchrone. `move` est écouté
+   * en plus de `resize` : une fenêtre enfant suit son parent, mais le recalage
+   * garde la vidéo en place quand on change d'écran.
    */
   attach(): void {
     if (this.attache) return;
     this.attache = true;
-    // Relevé AVANT toute recherche : à cet instant, la fenêtre de la lecture
-    // qui commence n'existe pas encore. Tout ce qu'on voit est donc un vestige.
+    // Relevé AVANT toute recherche : à cet instant, la fenêtre de la lecture qui
+    // commence n'existe pas encore, tout ce qu'on voit est donc un vestige.
     this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
@@ -137,10 +150,13 @@ export class MacosSurface implements VideoSurface {
    * dessinerait une au ras du cadre.
    */
   private brancher(): void {
-    // Trace conservée : c'est la SEULE façon de distinguer « mpv n'a pas créé
-    // de fenêtre » de « elle existe et nous l'avons attachée ». Sans elle, un
-    // écran noir ne se diagnostique plus qu'en instrumentant à la main.
+    // Trace conservée : c'est la SEULE façon de distinguer « mpv n'a pas créé de
+    // fenêtre » de « elle existe et nous l'avons attachée ». Sans elle, un écran
+    // noir ne se diagnostique plus qu'en instrumentant à la main.
     trace(`fenetre mpv attachee (${this.numero})`);
+    // La veille ne démarre qu'ICI : tant que la fenêtre n'existe pas, il n'y a
+    // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
+    if (this.veille === null) this.veille = setInterval(() => this.align(), VEILLE_MS);
     msg.setFlag(this.mpvWindow, "setIgnoresMouseEvents:", true);
     msg.setFlag(this.mpvWindow, "setHasShadow:", false);
     // ⚠️ OPAQUE, ET AVEC UN FOND NOIR. C'est elle qui doit garantir le noir
@@ -167,13 +183,12 @@ export class MacosSurface implements VideoSurface {
   private reattacher(): void {
     if (this.mpvWindow === null) return;
     sansFaillir("reattachement de la fenetre video", () => {
-      // ⚠️ RETIRER D'ABORD. `addChildWindow:ordered:` appelé sur une fenêtre
-      // qui est DÉJÀ fille du même parent ne réordonne rien — c'est mesuré :
-      // après un passage en plein écran, la géométrie restait parfaite
-      // (`calee=oui enfant=oui visible=oui`) et la vidéo passait pourtant
-      // DEVANT, emportant tout l'overlay du lecteur. La relation était intacte,
-      // seul l'ordre ne l'était plus, et le réaffirmer sans rompre le lien ne
-      // le rétablissait pas.
+      // ⚠️ RETIRER D'ABORD. `addChildWindow:ordered:` appelé sur une fenêtre qui
+      // est DÉJÀ fille du même parent ne réordonne rien — c'est mesuré : après
+      // un passage en plein écran, la géométrie restait parfaite (`calee=oui
+      // enfant=oui visible=oui`) et la vidéo passait pourtant DEVANT, emportant
+      // tout l'overlay. La relation était intacte, seul l'ordre ne l'était plus,
+      // et le réaffirmer sans rompre le lien ne le rétablissait pas.
       msg.removeChildWindow(this.parent, this.mpvWindow);
       msg.addChildWindow(this.parent, this.mpvWindow, NSWindowBelow);
       this.align();
@@ -181,50 +196,33 @@ export class MacosSurface implements VideoSurface {
   }
 
   /**
-   * Cale la fenêtre vidéo sur le rectangle de CONTENU de la nôtre.
+   * Cale la fenêtre vidéo sur le rectangle que couvre la page.
    *
    * On reste de bout en bout en coordonnées AppKit — origine en bas à gauche —
-   * en lisant le cadre du parent et en le convertissant sur place. Passer par
+   * en lisant le cadre du parent et en le convertissant sur place ; passer par
    * les coordonnées d'Electron obligerait à retourner l'axe vertical en devinant
    * la hauteur de l'écran, et se tromperait dès le second moniteur.
+   *
+   * ⚠️ Le calage passe par `poserCadre`, JAMAIS par `setFrame:` : mpv redéfinit
+   * `constrainFrameRect:toScreen:` et corrige ce qu'on demande. Toute l'histoire
+   * est dans `macosCadre.ts`, et le plein écran dans `macosPleinEcran.ts`.
    */
   align(): void {
     if (this.mpvWindow === null) return;
+    // AVANT le calage : c'est ce qui désarme la contrainte de mpv, sans quoi le
+    // cadre posé juste en dessous serait rabattu sous l'encoche.
+    this.pleinEcran.synchroniser(this.host.isSimpleFullScreen() || this.host.isFullScreen());
     sansFaillir("calage de la fenetre video", () => {
-      msg.setFrame(this.mpvWindow, this.cible());
+      poserCadre(this.mpvWindow, this.cible(), msg.entier(this.parent, "level"));
     });
   }
 
-  /**
-   * Le rectangle que la vidéo doit occuper — et ce n'est PAS toujours le
-   * rectangle de contenu.
-   *
-   * ⚠️ `transparent: true` retire la barre de titre de la fenêtre, et Chromium
-   * peint alors sur la totalité du cadre. AppKit, lui, continue de la déduire :
-   * `contentRectForFrameRect:` rend 32 points de moins. Caler la vidéo là-dessus
-   * laissait donc une bande de 32 points en haut de la fenêtre que PERSONNE ne
-   * peignait — ni la vidéo, qui s'arrêtait avant, ni la page, transparente. On y
-   * voyait le bureau à travers : le liseré parasite constaté au bord de
-   * l'overlay, et mesuré ici même (`ecart=32`).
-   *
-   * On demande donc à Electron, seul à savoir ce que la webview couvre
-   * réellement : quand sa zone de contenu fait la hauteur de la fenêtre, c'est
-   * le cadre entier qu'il faut viser. Aucune supposition sur la décoration —
-   * une fenêtre qui retrouverait sa barre de titre serait servie correctement
-   * sans qu'une ligne change.
-   */
   private cible(): Rect {
-    const cadre: Rect = msg.rect(this.parent, "frame");
-    return this.pageCouvreLeCadre() ? cadre : msg.contentRect(this.parent, cadre);
-  }
-
-  private pageCouvreLeCadre(): boolean {
-    return this.host.getBounds().height === this.host.getContentBounds().height;
+    return cibleVideo(this.host, this.parent);
   }
 
   /**
    * Le désarmement a déjà eu lieu dans `brancher`, dès que la fenêtre existe.
-   *
    * Rend donc simplement l'état : `false` tant que mpv n'a pas créé sa fenêtre.
    * La page appelle cette commande juste après `mpv_init`, quelques
    * millisecondes trop tôt — c'est un rappel, jamais une garantie.
@@ -250,9 +248,9 @@ export class MacosSurface implements VideoSurface {
   }
 
   /**
-   * La fenêtre vidéo a-t-elle disparu ? C'est le témoin qu'attend l'arrêt :
-   * tant qu'elle est là, la sortie vidéo vit et demander `quit` figerait le
-   * thread principal. On interroge AppKit, jamais mpv.
+   * La fenêtre vidéo a-t-elle disparu ? C'est le témoin qu'attend l'arrêt : tant
+   * qu'elle est là, la sortie vidéo vit et demander `quit` figerait le thread
+   * principal. On interroge AppKit, jamais mpv.
    */
   videoDisparue(): boolean {
     if (this.numero === 0) return true;
@@ -263,6 +261,9 @@ export class MacosSurface implements VideoSurface {
     this.stopSearch();
     if (this.calage !== null) clearTimeout(this.calage);
     this.calage = null;
+    if (this.veille !== null) clearInterval(this.veille);
+    this.veille = null;
+    this.pleinEcran.oublier();
     if (this.mpvWindow !== null) {
       sansFaillir("detachement de la fenetre video", () => {
         msg.removeChildWindow(this.parent, this.mpvWindow);
@@ -279,11 +280,10 @@ export class MacosSurface implements VideoSurface {
   }
 
   /**
-   * Un recalage par image, pas un par évènement.
-   *
-   * Attraper un bord de fenêtre à la souris tire des dizaines de `resize` par
-   * seconde. Front descendant : le premier évènement arme le minuteur, les
-   * suivants sont absorbés, et le calage a lieu juste après le dernier.
+   * Un recalage par image, pas un par évènement : attraper un bord de fenêtre à
+   * la souris tire des dizaines de `resize` par seconde. Front descendant — le
+   * premier évènement arme le minuteur, les suivants sont absorbés, et le calage
+   * a lieu juste après le dernier.
    */
   private planifierCalage(): void {
     if (this.calage !== null) return;

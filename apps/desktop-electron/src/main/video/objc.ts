@@ -54,6 +54,8 @@ const send2io = objc.func("objc_msgSend", "void", ["void*", "void*", "void*", "l
 const send3 = objc.func("objc_msgSend", "void", ["void*", "void*", "void*", "long", "void*"]);
 /** `[cible sélecteur: entier non signé]` — un masque de redimensionnement. */
 const send1ul = objc.func("objc_msgSend", "void", ["void*", "void*", "unsigned long"]);
+/** `[cible sélecteur: entier signé]` — un niveau de fenêtre, souvent NÉGATIF. */
+const send1l = objc.func("objc_msgSend", "void", ["void*", "void*", "long"]);
 
 /**
  * `NSRect` — quatre CGFloat.
@@ -203,6 +205,11 @@ export const msg = {
   setAutoresizingMask(vue: unknown, masque: number): void {
     if (!vue) return;
     send1ul(vue, sel("setAutoresizingMask:"), masque);
+  },
+  /** `[fenêtre setLevel: niveau]` — NSInteger, qui peut être très négatif. */
+  setNiveau(fenetre: unknown, niveau: number): void {
+    if (!fenetre) return;
+    send1l(fenetre, sel("setLevel:"), niveau);
   },
   /** `[fenêtre orderOut: nil]` — la retire de l'écran sans la détruire. */
   orderOut(fenetre: unknown): void {

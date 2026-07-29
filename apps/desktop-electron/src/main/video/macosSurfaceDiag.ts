@@ -13,12 +13,8 @@
  */
 
 import type { BrowserWindow } from "electron";
-import { msg, type Rect } from "./objc";
-
-/** Un rectangle, en une chaîne courte. */
-export function fmt(r: Rect): string {
-  return `${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}`;
-}
+import { fmt, memeRect } from "./macosCadre";
+import { cls, msg, type Rect } from "./objc";
 
 export function decrireMontage(
   host: BrowserWindow,
@@ -27,11 +23,7 @@ export function decrireMontage(
   cible: Rect,
 ): string {
   const video: Rect = msg.rect(mpvWindow, "frame");
-  const colle =
-    Math.abs(cible.x - video.x) < 1 &&
-    Math.abs(cible.y - video.y) < 1 &&
-    Math.abs(cible.width - video.width) < 1 &&
-    Math.abs(cible.height - video.height) < 1;
+  const colle = memeRect(cible, video);
   const enfant = msg.get(mpvWindow, "parentWindow") !== null;
   const visible = msg.bool(mpvWindow, "isVisible");
   // La cible ET ce qu'Electron pense couvrir : quand les deux divergent, il
@@ -56,6 +48,21 @@ export function decrireMontage(
     `cible=${fmt(cible)} video=${fmt(video)} calee=${colle ? "oui" : "NON"} ` +
     `electron fenetre=${b.width}x${b.height} page=${c.width}x${c.height} ` +
     `enfant=${enfant ? "oui" : "NON"} visible=${visible ? "oui" : "NON"} ` +
-    `niveaux=${niveaux} pleinEcran=${pleinEcran}`
+    `niveaux=${niveaux} pleinEcran=${pleinEcran} ${ecran(parent)}`
   );
+}
+
+/**
+ * L'écran qui porte la fenêtre : son cadre, et sa portion « visible ».
+ *
+ * ⚠️ Sans ces deux nombres, le plein écran ne se diagnostique pas. `visibleFrame`
+ * est le plafond que mpv impose à toute fenêtre (`macosCadre.ts`), et sur un Mac
+ * à encoche il s'arrête 33 points sous le haut de l'écran — que la barre de
+ * menus soit masquée ou non. Un `cible` de 982 de haut pour un `visible` de 949
+ * dit à lui seul pourquoi une bande de bureau apparaît.
+ */
+function ecran(parent: unknown): string {
+  const e = msg.get(parent, "screen") ?? msg.get(cls("NSScreen"), "mainScreen");
+  if (!e) return "ecran=?";
+  return `ecran=${fmt(msg.rect(e, "frame"))} visibleEcran=${fmt(msg.rect(e, "visibleFrame"))}`;
 }
