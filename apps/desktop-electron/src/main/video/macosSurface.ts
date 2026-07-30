@@ -17,6 +17,7 @@
  */
 
 import type { BrowserWindow } from "electron";
+import { setPlayerSurfaceTransparent } from "../window";
 import { sansFaillir, trace } from "./native";
 import { depuisHandle, msg, type Rect } from "./objc";
 import {
@@ -160,6 +161,22 @@ export class MacosSurface implements VideoSurface {
     attacherSousLaPage(this.parent, this.mpvWindow);
     guetterEdr(this.mpvWindow, "fenetre video attachee");
     this.align();
+    // ⚠️ La transparence se pose ICI, et pas une milliseconde plus tôt.
+    //
+    // La page la demandait dès que `mpv_initialize` avait rendu la main
+    // (`useMpvLifecycle.ts`). Or sur macOS mpv ne crée sa fenêtre qu'au premier
+    // `loadfile` — c'est `force-window=no`, et il n'est pas négociable : avec
+    // `yes`, la couche Metal naît en SRGB et le compositeur refuse le headroom
+    // pour toute la lecture. Il y avait donc un intervalle, celui de l'ouverture
+    // du flux, où la page ne peignait plus rien et où mpv n'avait rien à
+    // montrer : on voyait le BUREAU au travers. C'est le clignotement
+    // « image → transparent → image » constaté à chaque ouverture de film.
+    //
+    // Le processus principal est le seul à savoir quand la vidéo est réellement
+    // là, puisque c'est lui qui guette la fenêtre pour l'attacher. Et si elle
+    // n'arrive jamais, la surface reste opaque : l'utilisateur voit l'interface
+    // du lecteur plutôt que son bureau.
+    setPlayerSurfaceTransparent(true);
   }
 
   /** Remet la vidéo sous la page — voir `macosChildWindow.ts`. */

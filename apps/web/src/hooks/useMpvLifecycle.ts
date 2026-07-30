@@ -73,7 +73,14 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         if (isElectronShell()) {
           // La page cesse de peindre son fond — voir `surfaceLecteur.ts`, qui
           // dit aussi ce que ce geste ne fait PAS.
-          await surfaceTransparente();
+          //
+          // ⚠️ SAUF sur macOS, où c'est la coquille qui le fait, au moment où
+          // elle attache la fenêtre de mpv. mpv n'y crée sa fenêtre qu'au premier
+          // `loadfile` (`force-window=no`, sans quoi il n'y a pas de HDR) : le
+          // demander ici ouvrait un intervalle — celui de l'ouverture du flux —
+          // où la page ne peignait plus et où mpv n'avait rien à montrer. On
+          // voyait le bureau au travers, d'où le clignotement à chaque film.
+          if (!isMacOS()) await surfaceTransparente();
           // mpv vient de créer sa fenêtre vidéo sur son propre thread. Windows :
           // on la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
           // puisse jamais geler la file d'entrée partagée avec le thread UI.
