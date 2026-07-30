@@ -8,7 +8,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
  * DERNIER — une page qui renverrait `ytdl=yes` ne doit pas pouvoir les défaire.
  */
 
-const posees: Array<[string, string]> = [];
+// `vi.hoisted` : la fabrique de `vi.mock` est remontée AU-DESSUS des imports,
+// elle ne peut donc pas fermer sur une variable ordinaire de ce module.
+const { posees } = vi.hoisted(() => ({ posees: [] as Array<[string, string]> }));
 
 vi.mock("./mpvFfi", () => ({
   mpvApi: () => ({
@@ -19,7 +21,7 @@ vi.mock("./mpvFfi", () => ({
   }),
 }));
 
-const { poserOptions } = await import("./mpvOptions");
+import { poserOptions } from "./mpvOptions";
 
 beforeEach(() => {
   posees.length = 0;
@@ -46,7 +48,7 @@ describe("poserOptions", () => {
   });
 
   it("passe les options de la page, et garde le dernier mot", () => {
-    poserOptions(null, { "hwdec": "auto-safe", ytdl: "yes", osc: "yes" });
+    poserOptions(null, { hwdec: "auto-safe", ytdl: "yes", osc: "yes" });
 
     expect(posees).toContainEqual(["hwdec", "auto-safe"]);
     // La page a demandé les scripts ; c'est le socle qui parle en dernier, donc

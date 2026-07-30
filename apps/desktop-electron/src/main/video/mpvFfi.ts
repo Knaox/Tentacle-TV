@@ -65,11 +65,19 @@ const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib"
  * On vise donc Homebrew en développement — c'est ce que le proto a validé, et
  * c'est déjà relié au chargeur Vulkan et à MoltenVK du système.
  *
- * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code — c'est
- * la voie pour éprouver les dylibs LGPL avant de les livrer.
+ * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code : un
+ * chemin, ou le mot **`livree`** pour viser la chaîne LGPL vendorée — celle que
+ * le paquet embarque. C'est la seule façon d'éprouver en développement ce que
+ * l'utilisateur recevra vraiment, panneau de diagnostic compris (`pnpm dev:mpv-livree`).
  */
 export function libmpvPath(): string {
   const choisi = process.env["TENTACLE_MPV_LIB"];
+  // La chaîne LGPL du dépôt : exactement les dylibs que `package-macos.mjs`
+  // copie dans `Contents/Frameworks`, chargées depuis leur dossier d'origine —
+  // elles se retrouvent entre elles par `@loader_path`, où qu'elles soient.
+  if (choisi === "livree") {
+    return path.resolve(__dirname, "../../../../desktop/src-tauri/lib", NOM_LIB);
+  }
   if (choisi !== undefined && choisi !== "") return choisi;
 
   if (process.platform === "darwin") {

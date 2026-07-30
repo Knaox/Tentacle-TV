@@ -19,6 +19,8 @@
     "package:macos": "pnpm build:appstore && node scripts/package-macos.mjs",
     "nom:dev": "node scripts/nom-dev-macos.mjs",
     "dev": "pnpm nom:dev && pnpm build:web:debug && pnpm build:ts && electron .",
+    "//dev:mpv-livree": "Le dev, mais avec la chaine mpv LGPL du paquet livre (0.40) au lieu de celle de Homebrew (0.41) : c est la seule facon de juger en dev ce que l utilisateur recevra — HDR compris.",
+    "dev:mpv-livree": "cross-env TENTACLE_MPV_LIB=livree pnpm dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
