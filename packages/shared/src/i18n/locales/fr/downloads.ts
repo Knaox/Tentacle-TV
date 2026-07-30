@@ -120,6 +120,8 @@ export default {
   locationChanged: "Emplacement mis à jour.",
   locationLocked: "Impossible : des téléchargements existent déjà. Supprime-les d'abord.",
   locationNotWritable: "Ce dossier n'est pas accessible en écriture.",
+  locationNotWritableWhy: "Ce dossier n'est pas accessible en écriture ({{reason}}).",
+  locationFailed: "Le changement d'emplacement a échoué.",
   spaceTitle: "Espace disque",
 
   seasonLabel: "Saison {{num}}",

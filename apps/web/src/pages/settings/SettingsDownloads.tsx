@@ -54,8 +54,22 @@ export function SettingsDownloads() {
           show("success", t("locationChanged"));
         } else if (result.code === "root-not-empty") {
           show("error", t("locationLocked"));
+        } else if (result.code === "root-not-writable") {
+          // La cause système est AFFICHÉE quand le natif la donne. Sans elle,
+          // un refus dans un paquet livré se réduisait à « pas accessible en
+          // écriture », sans recours — alors que l'accès contrôlé aux dossiers
+          // de Windows, une ACL et un volume en lecture seule appellent trois
+          // gestes différents.
+          show(
+            "error",
+            result.detail
+              ? t("locationNotWritableWhy", { reason: result.detail })
+              : t("locationNotWritable"),
+          );
         } else {
-          show("error", t("locationNotWritable"));
+          // `unknown` n'est PAS un problème d'écriture : le dire l'était déjà
+          // trop souvent. Un canal absent ou un rejet inattendu se distingue.
+          show("error", t("locationFailed"));
         }
       }
     } finally {

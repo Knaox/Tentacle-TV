@@ -123,6 +123,31 @@ describe("racine de stockage", () => {
     expect(() => setRoot(db, dossierTemporaire())).toThrow("root-not-empty");
   });
 
+  it("un refus d'ecriture porte le code EN PREFIXE, suivi de la cause systeme", () => {
+    const db = openInMemory();
+    // Une racine SOUS un fichier : `mkdir` ne peut pas aboutir, quel que soit
+    // le systeme. C'est le seul moyen portable de provoquer l'echec sans
+    // dependre d'ACL, et le message qui en sort est celui que l'utilisateur
+    // lira dans un paquet livre.
+    const fichier = path.join(dossierTemporaire(), "pas-un-dossier");
+    writeFileSync(fichier, "x");
+
+    let capture: Error | null = null;
+    try {
+      setRoot(db, path.join(fichier, "films"));
+    } catch (error) {
+      capture = error as Error;
+    }
+
+    expect(capture).not.toBeNull();
+    // Le PREFIXE est le contrat lu par `apps/web/src/downloads/api.ts`.
+    expect(capture?.message.startsWith("root-not-writable")).toBe(true);
+    // Et la cause ne doit PAS avoir ete avalee : sans elle, un refus dans un
+    // paquet livre reste inexplicable — le journal du processus principal n'y
+    // va nulle part.
+    expect(capture?.message.length).toBeGreaterThan("root-not-writable".length);
+  });
+
   it("un changement accepte est memorise et relu", () => {
     const db = openInMemory();
     const ailleurs = path.join(dossierTemporaire(), "films");

@@ -9,9 +9,44 @@
 import { invoke, listen } from "../desktop/bridge";
 import { supportsDownloads } from "../desktop/bridge";
 
+export type SetRootCode = "root-not-empty" | "root-not-writable" | "unknown";
+
 export type SetRootResult =
   | { ok: true; path: string }
-  | { ok: false; code: "root-not-empty" | "root-not-writable" | "unknown" };
+  | { ok: false; code: SetRootCode; detail?: string };
+
+const ROOT_CODES = ["root-not-empty", "root-not-writable"] as const;
+
+/**
+ * Code d'erreur stable, quelle que soit la coquille.
+ *
+ * ⚠️ Les deux coquilles ne rejettent PAS la même chose. Tauri rend une chaîne
+ * nue (`Err("root-not-empty".into())`), Electron un objet `Error` dont le
+ * message est préfixé par le canal :
+ *
+ *   Error invoking remote method 'tentacle:downloads_set_root': Error: root-not-writable: EPERM D:\Films
+ *
+ * Ne tester que `typeof error === "string"` — ce que faisait ce fichier, écrit
+ * du temps où Tauri était seul — rendait donc TOUJOURS `unknown` sur Electron,
+ * et l'interface affichait « ce dossier n'est pas accessible en écriture »
+ * quelle que soit la vraie raison, y compris quand des téléchargements
+ * existaient. Un refus devenait indiagnosticable.
+ *
+ * On cherche donc le code PARTOUT dans le message, et on garde ce qui le suit :
+ * c'est la cause système (`EPERM`, `EACCES`, `EROFS`…), seule information utile
+ * quand le journal du processus principal ne va nulle part — un paquet MSIX ou
+ * une app du Mac App Store n'ont pas de console.
+ */
+export function readRootError(error: unknown): { code: SetRootCode; detail?: string } {
+  const raw = typeof error === "string" ? error : error instanceof Error ? error.message : "";
+  for (const code of ROOT_CODES) {
+    const at = raw.indexOf(code);
+    if (at < 0) continue;
+    const detail = raw.slice(at + code.length).replace(/^\s*:\s*/, "").trim();
+    return detail === "" ? { code } : { code, detail };
+  }
+  return { code: "unknown" };
+}
 
 export async function getDownloadsRoot(): Promise<string | null> {
   if (!supportsDownloads()) return null;
@@ -28,11 +63,7 @@ export async function setDownloadsRoot(path: string): Promise<SetRootResult> {
     const normalized = await invoke<string>("downloads_set_root", { path });
     return { ok: true, path: normalized };
   } catch (error) {
-    const message = typeof error === "string" ? error : "";
-    if (message === "root-not-empty" || message === "root-not-writable") {
-      return { ok: false, code: message };
-    }
-    return { ok: false, code: "unknown" };
+    return { ok: false, ...readRootError(error) };
   }
 }
 

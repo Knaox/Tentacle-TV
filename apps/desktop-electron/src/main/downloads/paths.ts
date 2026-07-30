@@ -78,13 +78,36 @@ export function setRoot(db: DatabaseSync, newRoot: string): string {
     const probe = path.join(newRoot, ".tentacle-write-probe");
     writeFileSync(probe, "ok");
     rmSync(probe, { force: true });
-  } catch {
-    throw new Error("root-not-writable");
+  } catch (error) {
+    // Le code reste le PRÉFIXE — `api.ts` le lit tel quel. Ce qui suit est la
+    // cause système, et elle n'est pas un luxe : dans un paquet livré (MSIX,
+    // Mac App Store) le `console.error` du processus principal ne va nulle
+    // part, si bien qu'un refus était impossible à expliquer. `EPERM` sur un
+    // dossier du profil désigne l'accès contrôlé aux dossiers de Windows,
+    // `EACCES` une ACL, `EROFS` un volume monté en lecture seule — trois
+    // conduites à tenir différentes, que « pas accessible en écriture »
+    // confondait en une seule.
+    throw new Error(`root-not-writable: ${causeSysteme(error)}`);
   }
 
   settingSet(db, STORAGE_ROOT_KEY, newRoot);
   cache = newRoot;
   return newRoot;
+}
+
+/**
+ * Cause système d'un échec d'écriture, en une ligne lisible.
+ *
+ * Le code errno ET le chemin fautif : `ensureLayout` crée deux sous-dossiers et
+ * la sonde en écrit un troisième, savoir LEQUEL a cédé oriente le diagnostic.
+ * Le message verbeux de Node est écarté — il répète le code et l'appel système.
+ */
+function causeSysteme(error: unknown): string {
+  const errno = error as NodeJS.ErrnoException;
+  const code = errno?.code ?? "";
+  if (code === "") return String(error);
+  const cible = errno?.path ?? "";
+  return cible === "" ? code : `${code} ${cible}`;
 }
 
 /** Espace libre du volume portant la racine, en octets. */

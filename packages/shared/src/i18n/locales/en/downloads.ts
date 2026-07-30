@@ -120,6 +120,8 @@ export default {
   locationChanged: "Location updated.",
   locationLocked: "Not possible: downloads already exist. Delete them first.",
   locationNotWritable: "This folder is not writable.",
+  locationNotWritableWhy: "This folder is not writable ({{reason}}).",
+  locationFailed: "Changing the location failed.",
   spaceTitle: "Disk space",
 
   seasonLabel: "Season {{num}}",
