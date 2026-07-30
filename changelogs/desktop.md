@@ -14,6 +14,12 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.20.3]
+### FR
+- Corrections d'anomalies mineures
+### EN
+- Minor issues fixed
+
 ## [1.20.2]
 ### FR
 - Interface améliorée : les affiches et les vignettes se détachent nettement de la page au survol, et leurs informations apparaissent sans attendre
