@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Droits des processus d'aide d'Electron (rendu, GPU, greffon).
+
+  Un processus d'aide ne redéclare rien : il HÉRITE du bac à sable du processus
+  principal. Lui recopier les droits du parent est une erreur classique — Apple
+  refuse alors le paquet, parce qu'un enfant sandboxé qui redéclare des droits ne
+  peut plus être relié au profil du parent.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <key>com.apple.security.inherit</key>
+  <true/>
+</dict>
+</plist>

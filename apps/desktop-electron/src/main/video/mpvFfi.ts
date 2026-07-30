@@ -42,30 +42,51 @@ const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib"
 /**
  * Emplacement de la bibliothèque mpv, empaquetée ou en développement.
  *
- * # Le cas macOS, et pourquoi il ne peut pas viser le dépôt
+ * # Le paquet macOS cherche dans `Frameworks`, et nulle part ailleurs
  *
- * ⚠️ `src-tauri/lib/libmpv.2.dylib` est une **mpv 0.40**, et elle ne sait pas
- * faire de HDR sur macOS : le contexte `macvk` s'y initialise bien, mais la
- * plage étendue reste à 1.00 — le support n'est pas dans le binaire. Mesuré en
- * phase 1. La 0.41 déposée à côté (`libmpv.dylib`) est orpheline : ses
- * dépendances (FFmpeg 62.x, rubberband, libarchive) ne sont pas dans `lib/`,
- * elle ne se charge pas.
+ * Les dylibs livrées sont celles que `build-mpv-lgpl-macos.sh` recompile en
+ * **LGPL** — mpv sans `gpl=true`, FFmpeg sans `--enable-gpl`, ni x264 ni x265.
+ * Apple refuse du code exécutable sous `Resources`, elles vivent donc dans
+ * `Contents/Frameworks` (`package-macos.mjs`), à côté de leurs dépendances qui
+ * se retrouvent par `@loader_path`.
+ *
+ * ⚠️ Le repli Homebrew ne vaut QUE pour le développement : cette mpv est **GPL**,
+ * et un paquet qui la chargerait serait indistribuable. Un paquet dont les
+ * dylibs manquent doit donc échouer bruyamment plutôt que se rattraper sur elle.
+ *
+ * # Le cas macOS en développement, et pourquoi il ne vise pas le dépôt
+ *
+ * `src-tauri/lib/libmpv.2.dylib` est une **mpv 0.40** qui ne sait pas faire de
+ * HDR sur macOS : le contexte `macvk` s'y initialise bien, mais la plage étendue
+ * reste à 1.00 — le support n'est pas dans le binaire. Mesuré en phase 1. La 0.41
+ * déposée à côté (`libmpv.dylib`) est orpheline : ses dépendances (FFmpeg 62.x,
+ * rubberband, libarchive) ne sont pas dans `lib/`, elle ne se charge pas.
  *
  * On vise donc Homebrew en développement — c'est ce que le proto a validé, et
- * c'est déjà relié au chargeur Vulkan et à MoltenVK du système. **Assembler une
- * chaîne 0.41 vendorée et signée est un chantier de packaging à part entière**,
- * qui reste à faire avant toute livraison.
+ * c'est déjà relié au chargeur Vulkan et à MoltenVK du système.
  *
- * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code.
+ * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code — c'est
+ * la voie pour éprouver les dylibs LGPL avant de les livrer.
  */
 export function libmpvPath(): string {
   const choisi = process.env["TENTACLE_MPV_LIB"];
   if (choisi !== undefined && choisi !== "") return choisi;
 
+  if (process.platform === "darwin") {
+    // `resourcesPath` = `Contents/Resources` ; les dylibs sont un cran plus haut.
+    const cadres = path.join(process.resourcesPath, "..", "Frameworks", NOM_LIB);
+    if (app.isPackaged) return cadres;
+    return "/opt/homebrew/lib/libmpv.2.dylib";
+  }
+
+  if (process.platform !== "win32") {
+    // Aucune autre plateforme ne sort d'Electron : Linux reste sur Tauri, et un
+    // chemin inventé ici ne serait jamais éprouvé.
+    throw new Error(`Aucune libmpv connue pour ${process.platform} — définir TENTACLE_MPV_LIB.`);
+  }
+
   const packaged = path.join(process.resourcesPath, "lib", NOM_LIB);
   if (app.isPackaged && existsSync(packaged)) return packaged;
-
-  if (process.platform !== "win32") return "/opt/homebrew/lib/libmpv.2.dylib";
 
   // En développement on emprunte la DLL déjà vendorée par l'app Tauri plutôt
   // que d'en dupliquer 95 Mo dans le dépôt.

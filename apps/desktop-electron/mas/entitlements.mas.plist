@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Droits de l'application livrée au Mac App Store (processus principal).
+
+  Ce sont EXACTEMENT ceux du paquet Tauri validé par Apple
+  (`apps/desktop/src-tauri/Entitlements.appstore.plist`) : le profil de
+  provisionnement `MAS_PROVISIONING_PROFILE_BASE64` a été émis pour cette liste,
+  et un droit demandé hors profil fait échouer la validation (ITMS-90886), pas la
+  signature — l'erreur n'arrive donc qu'après l'envoi.
+
+  ⚠️ Les processus d'aide d'Electron (rendu, GPU, greffon) NE prennent PAS ces
+  droits : ils héritent de ceux du principal, cf. `entitlements.mas.inherit.plist`.
+-->
+<plist version="1.0">
+<dict>
+  <!-- Identité de l'app : DOIT correspondre au profil, sinon inéligible
+       TestFlight. Xcode les injecte normalement ; on signe à la main, donc on
+       les déclare. application-identifier = <TeamID>.<bundleId>. -->
+  <key>com.apple.application-identifier</key>
+  <string>96K3M57W49.com.tentacle.mobile</string>
+  <key>com.apple.developer.team-identifier</key>
+  <string>96K3M57W49</string>
+  <!-- App Sandbox : OBLIGATOIRE pour le Mac App Store. -->
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <!-- Accès réseau sortant : streaming Jellyfin + jumelage. -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <!-- Serveur loopback (affiches, méta et trickplay des téléchargements) : en
+       App Sandbox, bind()/listen() exigent ce droit MÊME sur 127.0.0.1. -->
+  <key>com.apple.security.network.server</key>
+  <true/>
+</dict>
+</plist>

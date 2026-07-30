@@ -16,6 +16,7 @@
     "build": "pnpm build:web && pnpm build:ts",
     "build:appstore": "pnpm build:web:appstore && pnpm build:ts",
     "package": "pnpm build && node scripts/package.mjs",
+    "package:macos": "pnpm build:appstore && node scripts/package-macos.mjs",
     "nom:dev": "node scripts/nom-dev-macos.mjs",
     "dev": "pnpm nom:dev && pnpm build:web:debug && pnpm build:ts && electron .",
     "test": "vitest run",
