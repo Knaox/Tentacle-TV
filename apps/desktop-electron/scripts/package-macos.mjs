@@ -156,6 +156,57 @@ function poserDylibs(appPath) {
   console.log(`[macos] ${dylibs.length} dylibs LGPL posées dans Contents/Frameworks`);
 }
 
+/**
+ * Le profil de provisionnement couvre-t-il les droits demandés ?
+ *
+ * Certains droits sont « restricted » : Apple ne les accorde que s'ils figurent
+ * DANS le profil. Un droit demandé hors profil ne fait pas échouer la signature —
+ * il fait déclarer le build inéligible, une demi-heure plus tard, après l'envoi.
+ * Autant le dire tout de suite, et dire quoi faire.
+ *
+ * La lecture du profil peut échouer (format, outil absent) : on avertit alors sans
+ * bloquer, parce qu'un empaquetage refusé pour une raison de diagnostic serait
+ * pire que le risque qu'il couvre.
+ */
+function verifierProfil() {
+  const RESTREINTS = ["com.apple.security.application-groups", "com.apple.application-identifier"];
+  let duProfil;
+  try {
+    const plist = execFileSync("/usr/bin/security", ["cms", "-D", "-i", profil], { encoding: "utf8" });
+    duProfil = JSON.parse(
+      execFileSync("/usr/bin/plutil", ["-extract", "Entitlements", "json", "-o", "-", "-"], {
+        encoding: "utf8",
+        input: plist,
+      }),
+    );
+  } catch (e) {
+    console.warn(`[macos] profil illisible, vérification sautée : ${String(e).split("\n")[0]}`);
+    return;
+  }
+
+  const demandes = JSON.parse(
+    execFileSync("/usr/bin/plutil", ["-convert", "json", "-o", "-", parent], { encoding: "utf8" }),
+  );
+  const manquants = RESTREINTS.filter((cle) => cle in demandes && !(cle in duProfil));
+  if (manquants.length === 0) {
+    console.log(`[macos] profil : ${Object.keys(duProfil).length} droits, tous ceux demandés sont couverts`);
+    return;
+  }
+  throw new Error(
+    `Le profil de provisionnement ne porte pas ${manquants.join(", ")}.\n` +
+      "  → developer.apple.com → Identifiers : créer le groupe d'applications " +
+      `« ${(demandes["com.apple.security.application-groups"] ?? []).join(", ")} », ` +
+      "l'activer sur l'App ID com.tentacle.mobile (capability App Groups), régénérer " +
+      "le profil Mac App Store, puis remplacer le secret MAS_PROVISIONING_PROFILE_BASE64.\n" +
+      `  Droits du profil actuel : ${Object.keys(duProfil).join(", ")}`,
+  );
+}
+
+// Avant tout empaquetage : un profil incomplet ne se voit qu'après l'envoi.
+const parent = path.join(APP, "mas", "entitlements.mas.plist");
+const enfant = path.join(APP, "mas", "entitlements.mas.inherit.plist");
+if (profil !== "") verifierProfil();
+
 const stage = path.join(sortie, "stage", "app");
 preparer(stage);
 const extraResource = preparerRessources(stage);
@@ -216,10 +267,6 @@ if (identiteApp === "") {
   console.log(`[macos] paquet non distribuable (signature ad hoc) : ${appPath}`);
   process.exit(0);
 }
-
-// Dans `mas/`, et pas dans un `build/` — que le `.gitignore` de la racine avale.
-const parent = path.join(APP, "mas", "entitlements.mas.plist");
-const enfant = path.join(APP, "mas", "entitlements.mas.inherit.plist");
 
 await sign({
   app: appPath,

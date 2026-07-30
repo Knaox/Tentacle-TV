@@ -24,6 +24,33 @@
   <!-- App Sandbox : OBLIGATOIRE pour le Mac App Store. -->
   <key>com.apple.security.app-sandbox</key>
   <true/>
+  <!-- ⚠️ SANS CE DROIT, L'APPLICATION NE DÉMARRE PAS. Le build 1355134 mourait à
+       la première image sur « Fatal process out of memory: Failed to reserve
+       virtual memory for CodeRange » : V8 compile le JavaScript à l'exécution, et
+       le runtime durci (flag `runtime`, posé par notre signature et CONSERVÉ par
+       la re-signature TestFlight) interdit la mémoire exécutable à qui ne le
+       demande pas. Tauri n'en avait pas besoin : WKWebView exécute le JS dans des
+       processus système, avec leurs propres droits. Electron embarque le sien. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <!-- ⚠️ SANS CE GROUPE, L'APPLICATION S'OUVRE ET SES PROCESSUS MEURENT. Chromium
+       fait dialoguer ses processus par un service Mach nommé
+       `<TeamID>.<bundleId>.MachPortRendezvousServer.<pid>` ; en bac à sable, ce
+       nom n'est enregistrable que s'il commence par un groupe d'applications
+       déclaré. Mesuré : sans lui, `bootstrap_check_in … Permission denied (1100)`
+       et l'app meurt avant sa fenêtre ; avec lui seul, les processus GPU et réseau
+       redémarrent en boucle (`exit_code=5`).
+
+       ⚠️ Droit « restricted » : il DOIT figurer dans le profil de
+       provisionnement, sinon le build part et Apple le déclare inéligible.
+       `package-macos.mjs` vérifie le profil avant d'empaqueter.
+
+       ⚠️ Il ne se met PAS sur les processus d'aide : un enfant en héritage qui
+       redéclare un droit de bac à sable est refusé — voir le fichier voisin. -->
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>96K3M57W49.com.tentacle.mobile</string>
+  </array>
   <!-- Accès réseau sortant : streaming Jellyfin + jumelage. -->
   <key>com.apple.security.network.client</key>
   <true/>
