@@ -1,7 +1,7 @@
 # Plan de test — 1.20.2
 
-Treize commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
-sur les 11 paquets, 498 tests verts, build de production OK.
+Quinze commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
+sur les 11 paquets, 502 tests verts, build de production OK.
 
 ## 0. Avant de lancer quoi que ce soit
 
@@ -184,6 +184,30 @@ Le vérifier dans l'inspecteur : compter les `.media-tile` du DOM.
 - [ ] Couper puis rétablir le son : les badges son fonctionnent toujours.
 - [ ] Ouvrir un film : **aucun** badge « lecture » au démarrage.
 - [ ] Les boutons **−10 s / +30 s** montrent leur propre badge de saut, inchangé.
+
+## 4 ter. Le plein écran à la sortie du lecteur — **Windows uniquement**
+
+Le chemin d'entrée en plein écran sous Windows n'est pas couvert par les tests
+(un `require` paresseux de `video/win32`, non interceptable) : cette section est
+la vérification.
+
+- [ ] App dans une **petite fenêtre** → lancer un film → plein écran → **quitter
+      le lecteur** : l'application doit revenir **agrandie**, avec sa barre de
+      titre, ses boutons de fenêtre et la barre des tâches visible. Avant, elle
+      restait sans cadre, par-dessus la barre des tâches, sans aucun bouton.
+- [ ] Cliquer alors sur **« restaurer »** : la fenêtre doit reprendre sa **petite**
+      taille d'origine, pas la taille de l'écran.
+- [ ] App **déjà agrandie** → film → plein écran → quitter : elle reste agrandie
+      (comportement inchangé).
+- [ ] Lecteur en **fenêtré** (pas de plein écran) → quitter : la fenêtre ne doit
+      **pas** s'agrandir toute seule.
+- [ ] **Échap** et **F11** pendant la lecture : elles rendent l'état d'avant, comme
+      avant — une petite fenêtre redevient petite. C'est la différence à vérifier.
+- [ ] **Changement d'épisode** en plein écran (auto-next ou bouton suivant) : on
+      reste en plein écran, la fenêtre ne doit pas retrouver son cadre entre deux
+      épisodes.
+- [ ] ⚠️ **Sur macOS, rien ne doit changer** : plein écran d'un film, quitter le
+      lecteur → l'application reste dans son espace plein écran, comme avant.
 
 ## 5 bis. Le diagnostic sur macOS
 
