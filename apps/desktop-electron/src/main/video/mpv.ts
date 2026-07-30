@@ -13,6 +13,7 @@ import { oublierEtat } from "./mpvEtat";
 import { oublierCouche } from "./coucheMetal";
 import { lireAsync, oublierLectures } from "./mpvLecture";
 import { drain, oublierCadence, type Sink } from "./mpvDrain";
+import { poserOptions } from "./mpvOptions";
 export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
 
@@ -212,11 +213,10 @@ export function init(opts: InitOptions, sink: Sink): string | null {
   if (!handle) return "mpv_create a echoue";
   ctx = handle;
 
-  for (const [k, v] of Object.entries(opts.options)) {
-    // Une option inconnue du libmpv embarqué n'est jamais fatale : mpv la
-    // signale et continue. On ne remonte donc pas ces erreurs.
-    mpvApi().setOptionString(ctx, k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
-  }
+  // Les options de la page, puis un socle non négociable : sans lui, mpv charge
+  // sept scripts Lua, LuaJIT écrit du code machine, et la signature durcie du
+  // paquet Mac App Store fait TUER le processus — voir `mpvOptions.ts`.
+  poserOptions(ctx, opts.options);
   // ⚠️ `wid` est POSÉ SOUS WINDOWS UNIQUEMENT, et l'omettre ailleurs n'est pas
   // un détail : c'est la différence entre une lecture et une application figée.
   //
