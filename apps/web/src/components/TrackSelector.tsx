@@ -41,7 +41,7 @@ export function TrackSelector({
   // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture dont
   // l'arrière-plan change à chaque image décodée.
   return (
-    <motion.div
+    <motion.div data-panneau-detache
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}

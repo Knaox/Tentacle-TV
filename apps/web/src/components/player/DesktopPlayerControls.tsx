@@ -5,7 +5,7 @@ import { EpisodeSelectorPanel } from "./EpisodeSelectorPanel";
 import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
-import { videoScrim } from "../../lib/videoScrim";
+import { surfaceAvecAlpha } from "../../lib/ombreSurVideo";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
@@ -64,12 +64,13 @@ interface DesktopPlayerControlsProps {
 }
 
 /**
- * Calculé UNE fois : la plateforme ne change pas en cours de session, et les
- * deux hauteurs sont celles des barres (`pt-5 + contenu + pb-10` en haut,
- * `pt-10 + barre + transport + pb-5` en bas). Un écart de quelques pixels ne se
- * voit pas — le palier d'alpha est uniforme de part et d'autre.
+ * La surface de la page a-t-elle un alpha par pixel ?
+ *
+ * Elle décide de la façon d'assurer la lisibilité des barres : deux dégradés là
+ * où l'on peut les poser sans dommage (Windows, web), une ombre de texte là où
+ * toute couche posée sur l'image se paie — voir le commentaire du rendu.
  */
-const VOILE = videoScrim(100, 120);
+const SANS_ALPHA = !surfaceAvecAlpha();
 
 /**
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
@@ -96,23 +97,21 @@ export function DesktopPlayerControls({
 
   return (
     <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}>
-      {/* Voile de lisibilité en UN seul morceau — voir `videoScrim.ts`. Deux
-          dégradés séparés y laissent chacun un trait noir net sur la surface à
-          alpha de la coquille macOS. Hors de cette surface, VOILE vaut `null` et
-          les deux barres gardent leur dégradé, au pixel près. */}
-      {/* ⚠️ `z-index: -1` — un élément POSITIONNÉ se peint APRÈS les éléments en
-          flux, quel que soit l'ordre du DOM. Sans lui, le voile passait par-dessus
-          le titre et les contrôles et les assombrissait : le texte n'était plus
-          blanc, il était grisé. */}
-      {VOILE !== null && (
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: VOILE, zIndex: -1 }}
-        />
-      )}
+      {/* ⚠️ PLUS AUCUN VOILE sur la surface à alpha, et c'est une mesure qui l'a
+          décidé. Le voile plein cadre assombrissait 8 % de l'image ENTIÈRE :
+          sur une image strictement fixe, une bande de 631 lignes changeait de
+          10,2 niveaux en moyenne à l'instant où il s'en allait — un tiers de
+          l'écran qui saute, ce qui était vu comme un « ghosting » en fenêtré.
+          L'estomper plutôt que le démonter ne réglait rien non plus : l'opacité
+          du conteneur multiplie son alpha, qui passait sous le seuil où Chromium
+          rogne la couche, et le trait net que ce voile devait justement
+          supprimer revenait à chaque disparition des contrôles.
+          La lisibilité passe donc par une ombre de TEXTE (`.lisible-sur-video`,
+          `index.css`), qui se peint avec les glyphes et ne compose rien
+          par-dessus l'image. */}
       {/* Top bar */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`${VOILE === null ? "bg-gradient-to-b from-black/70 to-transparent" : ""} px-6 pb-10 pt-5`}>
+        <div className={`${SANS_ALPHA ? "bg-gradient-to-b from-black/70 to-transparent" : "lisible-sur-video"} px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
@@ -131,7 +130,7 @@ export function DesktopPlayerControls({
 
       {/* Bottom controls */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`relative ${VOILE === null ? "bg-gradient-to-t from-black/70 to-transparent" : ""} px-6 pb-5 pt-10`}>
+        <div className={`relative ${SANS_ALPHA ? "bg-gradient-to-t from-black/70 to-transparent" : "lisible-sur-video"} px-6 pb-5 pt-10`}>
           <AnimatePresence>
             {showSettings && hasSettings && (
               <TrackSelector
