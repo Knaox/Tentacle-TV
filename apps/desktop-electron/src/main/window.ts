@@ -13,8 +13,9 @@ import { lockNavigation } from "./security";
 import {
   basculer as basculerPleinEcran,
   estEnPleinEcran,
+  fermerSessionLecteur,
+  ouvrirSessionLecteur,
   quitter as quitterPleinEcran,
-  retomberEnFenetreAgrandie,
 } from "./fullscreen";
 
 const DEFAULT_WIDTH = 1280;
@@ -234,38 +235,21 @@ export function toggleFullscreen(): boolean {
  */
 export function enterPlayerFullscreenScope(): boolean {
   if (!mainWindow) return false;
-  return estEnPleinEcran();
+  return ouvrirSessionLecteur();
 }
 
 /**
  * Ferme la session plein écran du lecteur.
  *
- * # Sur macOS : ne rien faire, et c'est un choix
- *
- * ⚠️ Le lecteur rendait la fenêtre à l'état fenêtré quand c'était lui qui
- * l'avait mise en plein écran. C'est une erreur : le plein écran appartient à la
- * FENÊTRE, pas à la vidéo. Quitter un film ramenait donc brutalement
- * l'application dans son cadre, alors que l'utilisateur venait justement de
- * demander l'inverse — et il fallait le redemander à chaque film. Là-bas le
- * plein écran est celui du système, avec son espace dédié et ses commandes de
- * fenêtre intactes : rien à corriger.
- *
- * # Sur Windows : rendre le cadre, en gardant tout l'écran
- *
- * Le plein écran y est une PARADE — fenêtre sans cadre posée sur tout l'écran,
- * pour que Chromium ne se croie pas en plein écran et garde sa transparence (cf.
- * `fullscreen.ts`). Le laisser survivre à la vidéo faisait donc parcourir tout le
- * catalogue dans une fenêtre sans barre de titre, sans bouton de fermeture, et
- * par-dessus la barre des tâches.
- *
- * La fenêtre retombe donc AGRANDIE : elle occupe toujours l'écran — ce que
- * l'utilisateur a demandé — mais redevient une fenêtre.
+ * Sur Windows, la fenêtre retrouve EXACTEMENT le mode qui était le sien avant le
+ * film — fenêtrée, agrandie, ou en plein écran si elle y était déjà. Sur macOS,
+ * rien ne bouge. Le détail, et pourquoi les deux diffèrent, sont dans
+ * `fermerSessionLecteur`.
  */
 export function leavePlayerFullscreenScope(): void {
   const win = mainWindow;
   if (!win || win.isDestroyed()) return;
-  if (!estEnPleinEcran()) return;
-  retomberEnFenetreAgrandie(win);
+  fermerSessionLecteur(win);
   // L'état doit redescendre à la page : sans cela l'icône du bouton plein écran
   // et la touche Échap restaient en désaccord avec la fenêtre réelle.
   if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", estEnPleinEcran());

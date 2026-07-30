@@ -1,26 +1,26 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Sortie du plein écran : ce qui doit rester intact sur macOS.
+ * Sortie du plein écran, et la frontière entre les deux systèmes.
  *
- * Le plein écran de Windows est une PARADE — la fenêtre reste à l'état normal, on
- * lui retire son cadre et on la pose sur tout l'écran (cf. l'en-tête de
- * `fullscreen.ts`). Quitter le lecteur doit donc lui rendre son cadre en gardant
- * l'écran, c'est-à-dire l'agrandir : sans quoi on parcourt tout le catalogue dans
- * une fenêtre sans barre de titre, sans bouton de fermeture, par-dessus la barre
- * des tâches.
+ * Sur Windows, le plein écran de cette application est une PARADE : la fenêtre
+ * reste à l'état normal, on lui retire son cadre et on la pose sur tout l'écran
+ * (cf. l'en-tête de `fullscreen.ts`). Quitter un film doit donc lui rendre le mode
+ * qui était le sien — sans quoi on parcourt le catalogue dans une fenêtre sans
+ * barre de titre, sans bouton de fermeture, par-dessus la barre des tâches.
  *
- * Sur macOS, rien de tout cela ne doit s'appliquer : le plein écran y est celui du
+ * Sur macOS, rien de tout cela ne s'applique : le plein écran y est celui du
  * système, avec son espace dédié et ses commandes de fenêtre intactes. C'est la
  * contrainte que ce fichier garde.
  *
- * ⚠️ Le chemin d'ENTRÉE en plein écran sous Windows n'est pas couvert, et ce n'est
- * pas un oubli : il passe par `require("./video/win32")`, un chargement PARESSEUX
- * qui existe parce que ce module appelle `user32.dll` à l'import — un import
- * statique ferait tomber le processus principal sur macOS. Un `require` résolu à
- * l'exécution n'est pas interceptable par le banc d'essai, et tordre le code de
- * production pour le rendre testable coûterait plus que ce que le test rapporte.
- * Ce chemin se vérifie à la main, sur Windows (cf. docs/TEST-1.20.2.md).
+ * ⚠️ Ce qui n'est PAS couvert, et c'est assumé : le chemin où la sortie doit
+ * réellement défaire le plein écran de Windows. Il passe par `entrer()`, donc par
+ * `require("./video/win32")` — un chargement PARESSEUX qui existe parce que ce
+ * module appelle `user32.dll` à l'import, et qu'un import statique ferait tomber
+ * le processus principal sur macOS. Un `require` résolu à l'exécution n'est pas
+ * interceptable par le banc d'essai, et tordre le code de production pour le
+ * rendre testable coûterait plus que ce que le test rapporterait. Ce chemin se
+ * vérifie à la main, sur Windows (cf. docs/TEST-1.20.2.md).
  */
 
 const RECT = { x: 0, y: 0, width: 1920, height: 1080 };
@@ -62,11 +62,12 @@ afterEach(() => {
 });
 
 describe("macOS — on ne touche à rien", () => {
-  it("ignore la sortie du lecteur", async () => {
+  it("ferme la session du lecteur sans rien changer à la fenêtre", async () => {
     const fs = await chargerPour("darwin");
     const win = fenetre();
 
-    fs.retomberEnFenetreAgrandie(win as never);
+    fs.ouvrirSessionLecteur();
+    fs.fermerSessionLecteur(win as never);
 
     expect(win.maximize).not.toHaveBeenCalled();
     expect(win.setBounds).not.toHaveBeenCalled();
@@ -96,16 +97,48 @@ describe("macOS — on ne touche à rien", () => {
   });
 });
 
-describe("Windows — hors plein écran", () => {
-  it("quitter un lecteur FENÊTRÉ n'agrandit pas l'application", async () => {
+describe("Windows — session du lecteur", () => {
+  it("ne touche à rien quand aucune session n'a été ouverte", async () => {
     const fs = await chargerPour("win32");
     const win = fenetre();
 
-    // Rien n'a été mis en plein écran : la sortie ne doit rien changer.
-    expect(fs.estEnPleinEcran()).toBe(false);
-    fs.retomberEnFenetreAgrandie(win as never);
+    fs.fermerSessionLecteur(win as never);
 
+    expect(win.setBounds).not.toHaveBeenCalled();
     expect(win.maximize).not.toHaveBeenCalled();
+  });
+
+  it("ne touche à rien quand la fenêtre n'est pas en plein écran", async () => {
+    const fs = await chargerPour("win32");
+    const win = fenetre();
+
+    // Film lancé en fenêtré, quitté en fenêtré : il n'y a rien à rendre.
+    expect(fs.ouvrirSessionLecteur()).toBe(false);
+    fs.fermerSessionLecteur(win as never);
+
+    expect(win.setBounds).not.toHaveBeenCalled();
+    expect(win.maximize).not.toHaveBeenCalled();
+  });
+
+  it("rend l'état COURANT à l'ouverture, et le rend à chaque épisode", async () => {
+    const fs = await chargerPour("win32");
+
+    // C'est cette valeur qui amorce l'état React du lecteur, et elle est relue à
+    // chaque changement d'épisode (le lecteur est remonté sur `key={itemId}`).
+    expect(fs.ouvrirSessionLecteur()).toBe(false);
+    expect(fs.ouvrirSessionLecteur()).toBe(false);
+  });
+
+  it("referme la session, même quand il n'y a rien à défaire", async () => {
+    const fs = await chargerPour("win32");
+    const win = fenetre();
+
+    fs.ouvrirSessionLecteur();
+    fs.fermerSessionLecteur(win as never);
+    // La seconde fermeture ne doit pas retrouver de session ouverte : un `entry`
+    // laissé en place fausserait la lecture suivante.
+    fs.fermerSessionLecteur(win as never);
+
     expect(win.setBounds).not.toHaveBeenCalled();
   });
 });

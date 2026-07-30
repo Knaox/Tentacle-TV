@@ -185,14 +185,7 @@ function entrer(win: BrowserWindow): void {
   win.setBounds(screen.getDisplayMatching(bounds).bounds);
 }
 
-/**
- * `forcerAgrandie` : rendre la fenêtre AGRANDIE, quel qu'ait été son état avant.
- *
- * Sert à la sortie du lecteur — voir `retomberEnFenetreAgrandie`. Sans ce
- * paramètre, `sortir` rend fidèlement l'état d'avant, ce qui est le comportement
- * juste pour la touche Échap et pour F11.
- */
-function sortir(win: BrowserWindow, forcerAgrandie = false): void {
+function sortir(win: BrowserWindow): void {
   if (!PARADE_WINDOWS) {
     hote = win;
     // Les deux, dans cet ordre : une session ouverte avant la bascule vers le
@@ -212,30 +205,48 @@ function sortir(win: BrowserWindow, forcerAgrandie = false): void {
   // quand la fenêtre était fenêtrée laisserait une fenêtre agrandie rendre la
   // taille de l'écran au premier clic sur « restaurer ».
   win.setBounds(memoire.normales);
-  if (memoire.maximisee || forcerAgrandie) win.maximize();
+  if (memoire.maximisee) win.maximize();
 }
 
 /**
- * Sortie du plein écran vers une fenêtre AGRANDIE. Windows seulement.
+ * Session plein écran du lecteur : la fenêtre était-elle DÉJÀ en plein écran
+ * quand la vidéo a commencé ? `null` = aucune session ouverte.
  *
- * # Le problème que ça règle
+ * C'est toute la question à laquelle il faut répondre pour rendre la fenêtre au
+ * mode qui était le sien : le plein écran d'un film n'appartient pas au même que
+ * celui d'un utilisateur qui parcourt son catalogue en plein écran.
+ */
+let sessionLecteur: { dejaEnPleinEcran: boolean } | null = null;
+
+/**
+ * Ouvre la session, et rend l'état COURANT du plein écran.
  *
- * Le plein écran de cette application n'est pas celui de Windows : la fenêtre
- * reste à l'état normal, on lui retire son cadre et on la pose sur tout l'écran
- * (voir l'en-tête du module). Excellent pour la vidéo — Chromium ne se croit
- * jamais en plein écran, donc la transparence tient — mais mauvais pour tout le
- * reste : sans cadre, la fenêtre n'a plus ni barre de titre, ni bouton de
- * fermeture, ni bouton de réduction, et la barre des tâches est recouverte.
+ * ⚠️ Ouverte UNE SEULE FOIS, et c'est le point délicat. Un changement d'épisode
+ * remonte le lecteur (`key={itemId}`) alors que la fenêtre, elle, reste en plein
+ * écran : relire son état à ce moment-là ferait conclure que le plein écran était
+ * celui de l'utilisateur, et la fenêtre ne redescendrait plus jamais.
+ */
+export function ouvrirSessionLecteur(): boolean {
+  const enPleinEcran = estEnPleinEcran();
+  sessionLecteur ??= { dejaEnPleinEcran: enPleinEcran };
+  return enPleinEcran;
+}
+
+/**
+ * Ferme la session et rend la fenêtre au mode qui était le sien. Windows seul.
  *
- * Or le plein écran SURVIVAIT à la vidéo, délibérément : quitter un film
- * ramenait l'application dans son cadre alors que l'utilisateur venait de
- * demander l'inverse, et il fallait le redemander à chaque film. Le remède avait
- * un effet de bord : on parcourait ensuite tout le catalogue dans une fenêtre
- * sans commandes.
+ * # Ce que ça règle
  *
- * La sortie du lecteur rend donc le cadre ET agrandit : l'application occupe
- * toujours l'écran — c'est ce que l'utilisateur a demandé — mais redevient une
- * fenêtre, avec ses boutons et la barre des tâches.
+ * Le plein écran de Windows est ici une PARADE : la fenêtre reste à l'état
+ * normal, on lui retire son cadre et on la pose sur tout l'écran (voir l'en-tête
+ * du module). Il survivait à la vidéo, si bien qu'on parcourait ensuite tout le
+ * catalogue dans une fenêtre sans barre de titre, sans bouton de fermeture, et
+ * par-dessus la barre des tâches.
+ *
+ * La fenêtre retrouve donc EXACTEMENT le mode d'avant le film : fenêtrée si elle
+ * l'était, agrandie si elle l'était, et en plein écran si elle y était déjà —
+ * auquel cas on ne touche à rien, ce plein écran-là est celui de l'utilisateur et
+ * pas celui du film.
  *
  * # macOS n'est pas concerné, et ce n'est pas un oubli
  *
@@ -244,9 +255,14 @@ function sortir(win: BrowserWindow, forcerAgrandie = false): void {
  * et le geste appartient à l'utilisateur (bouton vert, Ctrl+Cmd+F). Rien à
  * corriger, et surtout rien à lui reprendre.
  */
-export function retomberEnFenetreAgrandie(win: BrowserWindow): void {
+export function fermerSessionLecteur(win: BrowserWindow): void {
+  const session = sessionLecteur;
+  sessionLecteur = null;
   if (!PARADE_WINDOWS) return;
-  sortir(win, true);
+  // Le plein écran était le sien avant le film : il lui appartient.
+  if (session === null || session.dejaEnPleinEcran) return;
+  if (!estEnPleinEcran()) return;
+  sortir(win);
 }
 
 /** Bascule, et renvoie le nouvel état. */
