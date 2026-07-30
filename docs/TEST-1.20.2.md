@@ -1,7 +1,7 @@
 # Plan de test — 1.20.2
 
-Quinze commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
-sur les 11 paquets, 502 tests verts, build de production OK.
+Dix-sept commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
+sur les 11 paquets, 505 tests verts, build de production OK.
 
 ## 0. Avant de lancer quoi que ce soit
 
@@ -187,25 +187,28 @@ Le vérifier dans l'inspecteur : compter les `.media-tile` du DOM.
 
 ## 4 ter. Le plein écran à la sortie du lecteur — **Windows uniquement**
 
-Le chemin d'entrée en plein écran sous Windows n'est pas couvert par les tests
-(un `require` paresseux de `video/win32`, non interceptable) : cette section est
-la vérification.
+La règle : quitter un film rend à la fenêtre **exactement** le mode qui était le
+sien avant de le lancer. Le chemin qui défait réellement le plein écran de Windows
+n'est pas couvert par les tests (un `require` paresseux de `video/win32`, non
+interceptable) : cette section est la vérification.
 
-- [ ] App dans une **petite fenêtre** → lancer un film → plein écran → **quitter
-      le lecteur** : l'application doit revenir **agrandie**, avec sa barre de
-      titre, ses boutons de fenêtre et la barre des tâches visible. Avant, elle
-      restait sans cadre, par-dessus la barre des tâches, sans aucun bouton.
-- [ ] Cliquer alors sur **« restaurer »** : la fenêtre doit reprendre sa **petite**
+- [ ] App dans une **petite fenêtre** → film → plein écran → **quitter le
+      lecteur** : la fenêtre revient **à sa petite taille**, avec sa barre de titre
+      et ses boutons. Avant, elle restait sans cadre, par-dessus la barre des
+      tâches, sans aucun bouton.
+- [ ] App **agrandie** → film → plein écran → quitter : elle revient **agrandie**.
+- [ ] Cliquer ensuite sur **« restaurer »** : la fenêtre doit reprendre sa petite
       taille d'origine, pas la taille de l'écran.
-- [ ] App **déjà agrandie** → film → plein écran → quitter : elle reste agrandie
-      (comportement inchangé).
-- [ ] Lecteur en **fenêtré** (pas de plein écran) → quitter : la fenêtre ne doit
-      **pas** s'agrandir toute seule.
-- [ ] **Échap** et **F11** pendant la lecture : elles rendent l'état d'avant, comme
-      avant — une petite fenêtre redevient petite. C'est la différence à vérifier.
+- [ ] ⚠️ **Le cas qui compte** : mettre l'app en plein écran **avant** de lancer le
+      film (F11 depuis l'accueil) → lancer le film → quitter le lecteur : elle doit
+      **rester en plein écran**. Ce plein écran-là est le vôtre, pas celui du film.
 - [ ] **Changement d'épisode** en plein écran (auto-next ou bouton suivant) : on
-      reste en plein écran, la fenêtre ne doit pas retrouver son cadre entre deux
-      épisodes.
+      reste en plein écran, et surtout — quitter APRÈS plusieurs épisodes doit
+      encore rendre le mode d'avant le premier. C'est le piège du correctif : la
+      session ne doit pas se réarmer à chaque épisode.
+- [ ] Lecteur en **fenêtré** (jamais de plein écran) → quitter : rien ne change.
+- [ ] **Échap** et **F11** pendant la lecture : elles rendent l'état d'avant, comme
+      avant (chemin inchangé).
 - [ ] ⚠️ **Sur macOS, rien ne doit changer** : plein écran d'un film, quitter le
       lecteur → l'application reste dans son espace plein écran, comme avant.
 
