@@ -24,6 +24,23 @@ Conformément à la LGPL v2.1+ :
 > Note : x264 et x265 (encodeurs, GPL) ne sont **pas** inclus. Un lecteur ne fait que **décoder** ;
 > le décodage H.264/HEVC/AV1/VP9 est assuré par les décodeurs LGPL de FFmpeg + VideoToolbox (Apple).
 
+## Pilote graphique embarqué (MoltenVK) — macOS
+
+Le paquet **Mac App Store** embarque également **MoltenVK**, sous licence
+**Apache 2.0**, dans `Tentacle TV.app/Contents/Frameworks/` (`libMoltenVK.dylib`,
+déclaré par `MoltenVK_icd.json`).
+
+- Source : https://github.com/KhronosGroup/MoltenVK — version livrée : celle de la
+  formule Homebrew `molten-vk` au moment du build (voir
+  `apps/desktop/scripts/build-mpv-lgpl-macos.sh`).
+- Rôle : mpv rend l'image par `gpu-context=macvk`, c'est-à-dire Vulkan traduit
+  vers Metal. `libvulkan.1.dylib` n'est que le chargeur ; sans ce pilote il
+  n'énumère aucun périphérique, et l'application n'affiche aucune image dans le
+  bac à sable — les chemins système où il le chercherait sinon y sont
+  inaccessibles.
+- La licence Apache 2.0 exige la conservation de l'avis de copyright et du fichier
+  `NOTICE` : tous deux accompagnent la distribution amont référencée ci-dessus.
+
 ## Autres dépendances
 
 Les bibliothèques liées par FFmpeg/mpv dans le build LGPL (dav1d, libass, FreeType,

@@ -37,6 +37,7 @@ export default {
   techExoPlayer: "Lecteur vidéo Android TV (Media3)",
   techMpv: "Lecteur vidéo desktop (LGPL v2.1+)",
   techFFmpeg: "Décodage audio/vidéo (LGPL v2.1+)",
+  techMoltenVK: "Rendu vidéo macOS — Vulkan sur Metal (Apache 2.0)",
   techVoidTV: "Inspiration architecture lecteur Android TV",
   serviceJellyfin: "Serveur multimédia open-source",
   privacyPolicy: "Politique de confidentialité",

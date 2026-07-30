@@ -37,6 +37,7 @@ export default {
   techExoPlayer: "Android TV video player (Media3)",
   techMpv: "Desktop video player (LGPL v2.1+)",
   techFFmpeg: "Audio/video decoding (LGPL v2.1+)",
+  techMoltenVK: "macOS video rendering — Vulkan on Metal (Apache 2.0)",
   techVoidTV: "Android TV player architecture inspiration",
   serviceJellyfin: "Open-source media server",
   privacyPolicy: "Privacy Policy",

@@ -24,6 +24,9 @@ export function Credits() {
     { name: "ExoPlayer / Media3", url: "https://developer.android.com/media/media3/exoplayer", desc: t("about:techExoPlayer") },
     { name: "mpv", url: "https://mpv.io", desc: t("about:techMpv") },
     { name: "FFmpeg", url: "https://ffmpeg.org", desc: t("about:techFFmpeg") },
+    // Livré dans le paquet macOS : mpv y rend par Vulkan, que MoltenVK traduit
+    // vers Metal. Sans lui, aucune image — voir `THIRD-PARTY-LICENSES.md`.
+    { name: "MoltenVK", url: "https://github.com/KhronosGroup/MoltenVK", desc: t("about:techMoltenVK") },
     { name: "VoidTV", url: "https://github.com/hritwikjohri/VoidTV-for-jellyfin", desc: t("about:techVoidTV") },
   ], [t]);
 
