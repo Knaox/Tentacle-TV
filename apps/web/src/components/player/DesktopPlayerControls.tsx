@@ -66,9 +66,9 @@ interface DesktopPlayerControlsProps {
 /**
  * La surface de la page a-t-elle un alpha par pixel ?
  *
- * Elle décide de la façon d'assurer la lisibilité des barres : deux dégradés là
- * où l'on peut les poser sans dommage (Windows, web), une ombre de texte là où
- * toute couche posée sur l'image se paie — voir le commentaire du rendu.
+ * Elle décide de ce qu'on a le droit de poser derrière les barres : les deux
+ * dégradés là où ils ne coûtent rien (Windows, web), et RIEN du tout là où toute
+ * couche composée sur la fenêtre de mpv se paie — voir le commentaire du rendu.
  */
 const SANS_ALPHA = !surfaceAvecAlpha();
 
@@ -97,21 +97,30 @@ export function DesktopPlayerControls({
 
   return (
     <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}>
-      {/* ⚠️ PLUS AUCUN VOILE sur la surface à alpha, et c'est une mesure qui l'a
-          décidé. Le voile plein cadre assombrissait 8 % de l'image ENTIÈRE :
-          sur une image strictement fixe, une bande de 631 lignes changeait de
-          10,2 niveaux en moyenne à l'instant où il s'en allait — un tiers de
-          l'écran qui saute, ce qui était vu comme un « ghosting » en fenêtré.
-          L'estomper plutôt que le démonter ne réglait rien non plus : l'opacité
-          du conteneur multiplie son alpha, qui passait sous le seuil où Chromium
-          rogne la couche, et le trait net que ce voile devait justement
-          supprimer revenait à chaque disparition des contrôles.
-          La lisibilité passe donc par une ombre de TEXTE (`.lisible-sur-video`,
-          `index.css`), qui se peint avec les glyphes et ne compose rien
-          par-dessus l'image. */}
+      {/* ⚠️ RIEN N'EST POSÉ SUR L'IMAGE sur la surface à alpha — ni voile, ni
+          dégradé, ni ombre de texte. Chaque tentative a produit le même défaut à
+          un endroit différent, et chacune a été mesurée :
+
+           - le voile plein cadre assombrissait 8 % de l'image ENTIÈRE. Sur une
+             image strictement fixe, une bande de 631 lignes changeait de 10,2
+             niveaux en moyenne à l'instant où il s'en allait — un tiers de
+             l'écran qui saute ;
+           - l'estomper au lieu de le démonter ne réglait rien : l'opacité du
+             conteneur multiplie son alpha, qui passait sous le seuil où Chromium
+             rogne la couche, et le trait net que ce voile devait supprimer
+             revenait à chaque extinction des contrôles ;
+           - une ombre de TEXTE, elle, dessinait un contour visible autour du
+             minutage et de la barre de progression, et le même artefact à
+             l'apparition comme à l'extinction.
+
+          Toute couche à alpha composée sur la fenêtre de mpv se paie donc, quelle
+          que soit sa forme. Le texte reste blanc, sans aide.
+
+          Windows et le web gardent leurs deux dégradés, au pixel près : leur
+          surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais apparu. */}
       {/* Top bar */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`${SANS_ALPHA ? "bg-gradient-to-b from-black/70 to-transparent" : "lisible-sur-video"} px-6 pb-10 pt-5`}>
+        <div className={`${SANS_ALPHA ? "bg-gradient-to-b from-black/70 to-transparent" : ""} px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
@@ -130,7 +139,7 @@ export function DesktopPlayerControls({
 
       {/* Bottom controls */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`relative ${SANS_ALPHA ? "bg-gradient-to-t from-black/70 to-transparent" : "lisible-sur-video"} px-6 pb-5 pt-10`}>
+        <div className={`relative ${SANS_ALPHA ? "bg-gradient-to-t from-black/70 to-transparent" : ""} px-6 pb-5 pt-10`}>
           <AnimatePresence>
             {showSettings && hasSettings && (
               <TrackSelector

@@ -54,33 +54,6 @@
     letter-spacing: -0.018em;
   }
 
-  /* Lisibilité des barres du lecteur SANS rien poser sur l'image.
-   *
-   * ⚠️ Remplace le voile plein cadre, et pour une raison mesurée. Ce voile
-   * assombrissait 8 % de l'image ENTIÈRE, et sa disparition se voyait : sur une
-   * image strictement fixe, une bande de 631 lignes changeait de 10,2 niveaux en
-   * moyenne (pire ligne 16,3) au moment où il s'en allait — un tiers de l'écran
-   * qui saute, ce que l'utilisateur voyait comme un « ghosting » en fenêtré.
-   * L'estomper au lieu de le démonter ne réglait rien : l'opacité du conteneur
-   * multiplie son alpha, qui passait alors sous le seuil où Chromium rogne la
-   * couche, et le trait net que le voile devait justement supprimer revenait.
-   *
-   * Une ombre de TEXTE ne compose aucune couche par-dessus l'image : elle se
-   * peint avec les glyphes. Rien à estomper, rien à rogner, rien à assombrir.
-   *
-   * Windows et le web gardent leurs deux dégradés : leur surface n'a pas d'alpha
-   * par pixel, le trait noir n'y est jamais apparu. */
-  .lisible-sur-video {
-    /* `text-shadow` s'HÉRITE : la poser sur la barre suffit, inutile de viser
-     * chaque descendant. Les panneaux détachés qu'elle ouvre (pistes, épisodes)
-     * ont leur propre fond et l'annulent. */
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.92), 0 0 12px rgba(0, 0, 0, 0.7);
-  }
-
-  .lisible-sur-video [data-panneau-detache] {
-    text-shadow: none;
-  }
-
   /* La barre de navigation tient lieu de barre de titre.
    *
    * ⚠️ Sur la coquille Electron macOS, la fenêtre est fabriquée
