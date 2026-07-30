@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
-import { useSmtc } from "../hooks/useSmtc";
+import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
 import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
@@ -15,6 +14,7 @@ import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
+import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
@@ -90,11 +90,9 @@ export function DesktopPlayer({
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
   onControlsVisibilityChange, applyToSeries,
 }: DesktopPlayerProps) {
-  const { t } = useTranslation("player");
   const { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
-  const playbackFlash = usePlaybackFlash(state.paused, state.muted || state.volume === 0);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [showSettings, setShowSettings] = useState(false);
@@ -166,6 +164,14 @@ export function DesktopPlayer({
     hasStartedRef, loadedExternalSubs,
   });
 
+  // Badge central, déclaré APRÈS `useMpvSource` : un rechargement de source fait
+  // repasser mpv par la pause, et `inerte` empêche d'en faire un badge.
+  const { flash: playbackFlash, ignorerProchaineBascule } = usePlaybackFlash(
+    state.paused,
+    state.muted || state.volume === 0,
+    sourceChanging,
+  );
+
   // Auto-next (bannière crédits / affiche EOF) + navigations de sortie
   const { autoPlayCountdown, autoPlaySource, cancelAutoPlay, goBack } = useDesktopAutoNext({
     state, fileLoaded, itemId, jellyfinDuration, autoplayNextEnabled, maxResumePct,
@@ -180,18 +186,12 @@ export function DesktopPlayer({
     onPlayStateChange, onBufferingChange,
   });
 
-  // Contrôles média système Windows (SMTC) : touches média + overlay + Stream Deck.
-  useSmtc({
-    title,
-    artist: subtitle,
-    cover: posterUrl,
-    paused: state.paused,
-    onToggle: togglePause,
-    onPlay: () => setPause(false),
-    onPause: () => setPause(true),
-    onStop: goBack,
-    onNext: hasNextEpisode ? onNextEpisode : undefined,
-    onPrevious: hasPreviousEpisode ? onPreviousEpisode : undefined,
+  // Touches média du système, incrustation de volume, Stream Deck (SMTC).
+  useDesktopMediaControls({
+    title, subtitle, posterUrl, paused: state.paused,
+    togglePause, setPause, goBack,
+    onNext: onNextEpisode, onPrevious: onPreviousEpisode,
+    hasNext: hasNextEpisode, hasPrevious: hasPreviousEpisode,
   });
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
@@ -207,18 +207,14 @@ export function DesktopPlayer({
     dur, paused: state.paused, isDirectPlay, item, mediaSourceId,
     localItemId: isLocalPlayback ? itemId : undefined,
     effectiveMpvOffset, seek, setPause,
+    // La pause du glissement n'est pas celle de l'utilisateur : aucun badge.
+    ignorerProchaineBascule,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;
   const displayProgress = seekbar.dragProgress ?? (dur > 0 ? actualPos / dur : 0);
   const bufProg = dur > 0 ? Math.min((actualPos + state.buffered) / dur, 1) : 0;
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
-
-  // Map MPV state back to Jellyfin indices for the selector highlight.
-  // Use React state (currentAudio/currentSubtitle) as source of truth — mpv state
-  // updates are async (Tauri IPC delay) and would show stale values briefly.
-  const curAudio = currentAudio;
-  const curSub = currentSubtitle;
 
   // Skip intro / credits segments
   const showSkipIntro = introSegment && actualPos >= introSegment.start && actualPos < introSegment.end - 1;
@@ -232,27 +228,10 @@ export function DesktopPlayer({
     ? false
     : sourceChanging || (!state.playing && !hasStartedRef.current);
 
-  // Toile plein écran du lecteur (erreur mpv / pas encore prêt) : même
-  // traitement que le canevas vidéo (letterboxing) → bg-black/text-white
-  // volontairement en dur dans les deux thèmes clair/sombre.
+  // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
   if (error && onFallbackToWeb) { onFallbackToWeb(); return null; }
-  if (error) return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
-      <p className="text-lg text-red-400">{t("player:mpvError", { error })}</p>
-      <button onClick={() => goBack()} className="rounded-lg h-11 px-5 bg-white text-black font-bold hover:bg-white/90">{t("common:back")}</button>
-    </div>
-  );
-  if (!ready) return (
-    <div className="relative flex h-screen w-screen items-center justify-center bg-black">
-      {posterUrl && <img src={posterUrl} className="absolute inset-0 h-full w-full object-cover" alt="" />}
-      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-        {/* Blanc et non violet : posé sur l'affiche assombrie du média, il doit
-            rester neutre et lisible quelle que soit la couleur derrière — même
-            recette que les spinners de buffering des overlays. */}
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-      </div>
-    </div>
-  );
+  if (error) return <DesktopPlayerError error={error} onBack={goBack} />;
+  if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} />;
 
   return (
     // cursor-none : souris immobile → l'OSD se cache ET le curseur disparaît (revient au moindre mouvement).
@@ -286,7 +265,10 @@ export function DesktopPlayer({
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item}
         useLocalEpisodes={offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
-        curAudio={curAudio} curSub={curSub}
+        // L'état REACT fait foi pour la surbrillance du sélecteur, pas celui de
+        // mpv : ses mises à jour passent par l'IPC, donc elles arrivent après —
+        // le menu montrait brièvement la piste précédente.
+        curAudio={currentAudio} curSub={currentSubtitle}
         currentQuality={currentQuality} sourceQuality={sourceQuality}
         hasSettings={hasSettings} hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
         dur={dur} actualPos={actualPos} displayProgress={displayProgress} bufProg={bufProg}

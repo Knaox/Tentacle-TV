@@ -64,7 +64,9 @@ export function VideoPlayer({
   });
   // `volume` vaut 0 dès que le son est coupé — `handleToggleMute` le pose
   // lui-même, il n'y a donc pas d'état muet séparé à tenir.
-  const playbackFlash = usePlaybackFlash(!playing, volume === 0);
+  // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
+  // `onSeek` sans toucher à la lecture), il n'a donc rien à faire taire.
+  const { flash: playbackFlash } = usePlaybackFlash(!playing, volume === 0);
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
