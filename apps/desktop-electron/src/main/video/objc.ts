@@ -56,6 +56,8 @@ const send3 = objc.func("objc_msgSend", "void", ["void*", "void*", "void*", "lon
 const send1ul = objc.func("objc_msgSend", "void", ["void*", "void*", "unsigned long"]);
 /** `[cible sélecteur: entier signé]` — un niveau de fenêtre, souvent NÉGATIF. */
 const send1l = objc.func("objc_msgSend", "void", ["void*", "void*", "long"]);
+/** `[cible sélecteur: CGFloat]` — un rayon de coin, par exemple. */
+const send1d = objc.func("objc_msgSend", "void", ["void*", "void*", "double"]);
 
 /**
  * `NSRect` — quatre CGFloat.
@@ -216,11 +218,16 @@ export const msg = {
     if (!fenetre) return;
     send1ul(fenetre, sel("setCollectionBehavior:"), masque);
   },
-  /** `[fenêtre setStyleMask: masque]` — voir `cadreSelonPleinEcran`, qui dit ce
-   *  qu'on a le droit d'y retirer, et quand. */
+  /** `[fenêtre setStyleMask: masque]` — voir `cadreSansLisere`, qui dit ce qu'on
+   *  a le droit d'y retirer, et ce qu'il faut rendre en échange. */
   setMasqueStyle(fenetre: unknown, masque: number): void {
     if (!fenetre) return;
     send1ul(fenetre, sel("setStyleMask:"), masque);
+  },
+  /** `[couche setCornerRadius: rayon]` — arrondir une `CALayer`. */
+  setDouble(cible: unknown, nom: string, valeur: number): void {
+    if (!cible) return;
+    send1d(cible, sel(nom), valeur);
   },
   /** `[fenêtre setLevel: niveau]` — NSInteger, qui peut être très négatif. */
   setNiveau(fenetre: unknown, niveau: number): void {
