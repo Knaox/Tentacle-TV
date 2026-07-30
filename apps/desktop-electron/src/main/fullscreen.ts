@@ -185,7 +185,14 @@ function entrer(win: BrowserWindow): void {
   win.setBounds(screen.getDisplayMatching(bounds).bounds);
 }
 
-function sortir(win: BrowserWindow): void {
+/**
+ * `forcerAgrandie` : rendre la fenêtre AGRANDIE, quel qu'ait été son état avant.
+ *
+ * Sert à la sortie du lecteur — voir `retomberEnFenetreAgrandie`. Sans ce
+ * paramètre, `sortir` rend fidèlement l'état d'avant, ce qui est le comportement
+ * juste pour la touche Échap et pour F11.
+ */
+function sortir(win: BrowserWindow, forcerAgrandie = false): void {
   if (!PARADE_WINDOWS) {
     hote = win;
     // Les deux, dans cet ordre : une session ouverte avant la bascule vers le
@@ -205,7 +212,41 @@ function sortir(win: BrowserWindow): void {
   // quand la fenêtre était fenêtrée laisserait une fenêtre agrandie rendre la
   // taille de l'écran au premier clic sur « restaurer ».
   win.setBounds(memoire.normales);
-  if (memoire.maximisee) win.maximize();
+  if (memoire.maximisee || forcerAgrandie) win.maximize();
+}
+
+/**
+ * Sortie du plein écran vers une fenêtre AGRANDIE. Windows seulement.
+ *
+ * # Le problème que ça règle
+ *
+ * Le plein écran de cette application n'est pas celui de Windows : la fenêtre
+ * reste à l'état normal, on lui retire son cadre et on la pose sur tout l'écran
+ * (voir l'en-tête du module). Excellent pour la vidéo — Chromium ne se croit
+ * jamais en plein écran, donc la transparence tient — mais mauvais pour tout le
+ * reste : sans cadre, la fenêtre n'a plus ni barre de titre, ni bouton de
+ * fermeture, ni bouton de réduction, et la barre des tâches est recouverte.
+ *
+ * Or le plein écran SURVIVAIT à la vidéo, délibérément : quitter un film
+ * ramenait l'application dans son cadre alors que l'utilisateur venait de
+ * demander l'inverse, et il fallait le redemander à chaque film. Le remède avait
+ * un effet de bord : on parcourait ensuite tout le catalogue dans une fenêtre
+ * sans commandes.
+ *
+ * La sortie du lecteur rend donc le cadre ET agrandit : l'application occupe
+ * toujours l'écran — c'est ce que l'utilisateur a demandé — mais redevient une
+ * fenêtre, avec ses boutons et la barre des tâches.
+ *
+ * # macOS n'est pas concerné, et ce n'est pas un oubli
+ *
+ * Là-bas le plein écran est celui du système, avec son espace dédié : la fenêtre
+ * garde ses commandes, le curseur en haut de l'écran rappelle la barre de menus,
+ * et le geste appartient à l'utilisateur (bouton vert, Ctrl+Cmd+F). Rien à
+ * corriger, et surtout rien à lui reprendre.
+ */
+export function retomberEnFenetreAgrandie(win: BrowserWindow): void {
+  if (!PARADE_WINDOWS) return;
+  sortir(win, true);
 }
 
 /** Bascule, et renvoie le nouvel état. */
