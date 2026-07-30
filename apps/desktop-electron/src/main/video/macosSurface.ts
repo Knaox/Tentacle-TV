@@ -34,12 +34,11 @@ import type { VideoSurface } from "./surface";
 /**
  * Cadence du sondage, et nombre maximal de tentatives (10 s en tout).
  *
- * ⚠️ 10 ms, et non 100, mais pas pour gagner une course — celle-là était perdue
- * d'avance, mpv créant ET affichant sa fenêtre dans un unique bloc sur le
- * thread principal, où aucun minuteur ne peut s'intercaler. La raison est
- * ailleurs : quand la lecture démarre en plein écran, mpv n'affiche PAS sa
- * fenêtre (`macosOptionsFenetre.ts`), et c'est nous qui le faisons en
- * l'attachant. Ce délai est donc celui de la PREMIÈRE IMAGE, pas un pari.
+ * ⚠️ 10 ms, et non 100, mais pas pour gagner une course : mpv crée ET affiche sa
+ * fenêtre dans un unique bloc sur le thread principal, où aucun minuteur ne peut
+ * s'intercaler. La raison est qu'une lecture démarrée en plein écran n'affiche
+ * PAS sa fenêtre (`macosOptionsFenetre.ts`) — c'est nous qui le faisons en
+ * l'attachant, et ce délai est donc celui de la PREMIÈRE IMAGE.
  */
 const SONDAGE_MS = 10;
 const SONDAGES_MAX = 1000;
@@ -50,9 +49,8 @@ const CALAGE_MS = 16;
  *
  * ⚠️ macOS repositionne la fenêtre de mpv de son propre chef, sans qu'aucun
  * `resize`, `move` ni `enter-full-screen` ne parvienne à Electron — mesuré de
- * l'extérieur à 20 Hz, 110 ms après un calage parfait. Une réaction aux
- * évènements ne peut PAS l'attraper. Le coût est de deux lectures de rectangle
- * par tick, le temps d'une lecture seulement.
+ * l'extérieur, 110 ms après un calage parfait. Une réaction aux évènements ne
+ * peut PAS l'attraper. Coût : deux lectures de rectangle par tick, en lecture.
  */
 const VEILLE_MS = 100;
 
@@ -87,16 +85,15 @@ export class MacosSurface implements VideoSurface {
    * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS emmène la fenêtre
    * dans un espace dédié et l'ordre n'y survit pas — la vidéo repasse DEVANT et
    * emporte tout l'overlay. On réaffirme donc l'empilement à chaque transition,
-   * avant ET après l'animation. La veille couvre le reste, et notamment le cas
-   * qu'aucune transition ne signale : une lecture lancée en plein écran.
+   * avant ET après l'animation. La veille couvre le reste.
    */
   private readonly transitionPleinEcran = (): void => {
     this.reattacher();
     this.planifierCalage();
     // Une seconde fois APRÈS l'animation : `enter-full-screen` arrive quand
-    // Electron croit la transition finie, mais macOS bouge encore la fenêtre, et
-    // c'est ce déplacement-là qui défait l'empilement.
+    // Electron croit la transition finie, mais macOS bouge encore la fenêtre.
     setTimeout(() => {
+      if (this.host.isDestroyed()) return;
       this.reattacher();
       trace(`plein ecran — ${this.geometrie()}`);
     }, 500);
@@ -150,13 +147,12 @@ export class MacosSurface implements VideoSurface {
 
   /** Pose la fenêtre trouvée sous la page — voir `macosChildWindow.ts`. */
   private brancher(): void {
-    // Trace conservée : c'est la SEULE façon de distinguer « mpv n'a pas créé de
-    // fenêtre » de « elle existe et nous l'avons attachée ». Sans elle, un écran
-    // noir ne se diagnostique plus qu'en instrumentant à la main.
+    // Trace conservée : seule façon de distinguer « mpv n'a pas créé de fenêtre »
+    // de « elle existe et nous l'avons attachée ». Sans elle, un écran noir ne se
+    // diagnostique plus qu'en instrumentant à la main.
     trace(`fenetre mpv attachee (${this.numero})`);
-    // AVANT toute intervention : voir `etatALaDecouverte`. Cette ligne dit si
-    // macOS avait déjà donné son propre espace à la fenêtre quand nous l'avons
-    // trouvée — la seule question dont dépend le reste de la correction.
+    // AVANT toute intervention — voir `etatALaDecouverte`, qui dit pourquoi cette
+    // ligne a tranché ce que rien d'autre ne distinguait.
     trace(`etat a la decouverte — ${etatALaDecouverte(this.mpvWindow)}`);
     // La veille ne démarre qu'ICI : tant que la fenêtre n'existe pas, il n'y a
     // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
@@ -180,14 +176,12 @@ export class MacosSurface implements VideoSurface {
   /**
    * Le niveau où poser la vidéo : celui de la page, ou UN DE MOINS en plein écran.
    *
-   * ⚠️ Dans un espace de plein écran, le serveur de fenêtres place la fenêtre
-   * fille DEVANT son parent quoi que dise `addChildWindow:ordered:NSWindowBelow`
-   * — relevé par CoreGraphics, mpv au rang 6 et la page au rang 7, tout l'overlay
-   * masqué. Les NIVEAUX, eux, sont respectés partout : un cran en dessous suffit,
-   * et c'est la seule chose qui tienne dans un espace dédié.
-   *
-   * Un seul cran, et seulement là : plus bas, ou en fenêtré, la vidéo passerait
-   * aussi sous les fenêtres des AUTRES applications.
+   * ⚠️ Dans un espace de plein écran, le serveur de fenêtres place la fille
+   * DEVANT son parent quoi que dise `addChildWindow:ordered:NSWindowBelow` —
+   * relevé par CoreGraphics, mpv au rang 6 et la page au rang 7, tout l'overlay
+   * masqué. Les NIVEAUX, eux, sont respectés partout. Un seul cran, et seulement
+   * là : plus bas, ou en fenêtré, la vidéo passerait aussi sous les fenêtres des
+   * AUTRES applications. Toute l'histoire est dans `fullscreen.ts`.
    */
   private niveauVideo(): number {
     const page = msg.entier(this.parent, "level");
@@ -197,10 +191,9 @@ export class MacosSurface implements VideoSurface {
   /**
    * Cale la fenêtre vidéo sur le rectangle que couvre la page.
    *
-   * On reste de bout en bout en coordonnées AppKit — origine en bas à gauche —
-   * en lisant le cadre du parent et en le convertissant sur place ; passer par
-   * les coordonnées d'Electron obligerait à retourner l'axe vertical en devinant
-   * la hauteur de l'écran, et se tromperait dès le second moniteur.
+   * On reste en coordonnées AppKit — origine en bas à gauche — en lisant le cadre
+   * du parent : passer par celles d'Electron obligerait à retourner l'axe vertical
+   * en devinant la hauteur de l'écran, et se tromperait au second moniteur.
    *
    * ⚠️ Le calage passe par `poserCadre`, JAMAIS par `setFrame:` : mpv redéfinit
    * `constrainFrameRect:toScreen:` et corrige ce qu'on demande. Toute l'histoire
@@ -208,6 +201,11 @@ export class MacosSurface implements VideoSurface {
    */
   align(): void {
     if (this.mpvWindow === null) return;
+    // ⚠️ La veille SURVIT à la fenêtre : quitter pendant une lecture détruit la
+    // `BrowserWindow` alors que le minuteur est armé, et tout accès à `this.host`
+    // lève « Object has been destroyed ». Dans un rappel de minuteur, l'exception
+    // est FATALE — Electron ouvre sa boîte « A JavaScript error occurred ».
+    if (this.host.isDestroyed()) return this.stopVeille();
     // La veille passe ici dix fois par seconde : c'est notre horloge pour dater
     // la décision du compositeur — voir `guetterEdr`.
     guetterEdr(this.mpvWindow, "veille");
@@ -261,9 +259,7 @@ export class MacosSurface implements VideoSurface {
     this.stopSearch();
     if (this.calage !== null) clearTimeout(this.calage);
     this.calage = null;
-    if (this.veille !== null) clearInterval(this.veille);
-    this.veille = null;
-    oublierEdr();
+    this.stopVeille();
     if (this.mpvWindow !== null) {
       sansFaillir("detachement de la fenetre video", () => {
         msg.removeChildWindow(this.parent, this.mpvWindow);
@@ -291,6 +287,13 @@ export class MacosSurface implements VideoSurface {
       this.calage = null;
       this.align();
     }, CALAGE_MS);
+  }
+
+  /** Désarme la veille et oublie le dernier headroom vu. Idempotent. */
+  private stopVeille(): void {
+    if (this.veille !== null) clearInterval(this.veille);
+    this.veille = null;
+    oublierEdr();
   }
 
   private stopSearch(): void {
