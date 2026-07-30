@@ -73,6 +73,30 @@ const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib"
  * le paquet embarque. C'est la seule façon d'éprouver en développement ce que
  * l'utilisateur recevra vraiment, panneau de diagnostic compris (`pnpm dev:mpv-livree`).
  */
+/**
+ * Dit au chargeur Vulkan où trouver son pilote, dans le paquet.
+ *
+ * ⚠️ Sans cela, un paquet livré ne montre AUCUNE image. `libvulkan.1.dylib` ne se
+ * lie pas à MoltenVK : elle le cherche à l'exécution dans un fichier ICD, dont
+ * les emplacements par défaut sont système (`/opt/homebrew/etc/vulkan/icd.d`,
+ * `/usr/local/share/vulkan/icd.d`) — tous hors du bac à sable. Le chargeur
+ * n'énumère alors aucun périphérique, `gpu-context=macvk` échoue, et mpv n'ouvre
+ * jamais sa fenêtre : le fichier se charge, le son sort, l'image jamais.
+ * Diagnostiqué le 2026-07-30, journal du paquet à l'appui — « fenetre mpv
+ * introuvable apres 10 s ».
+ *
+ * `VK_DRIVER_FILES` est le nom actuel, `VK_ICD_FILENAMES` celui que les chargeurs
+ * plus anciens lisent : on pose les deux, et jamais par-dessus un réglage venu de
+ * l'environnement, qui appartient à celui qui déboguait.
+ */
+function declarerPiloteVulkan(cadres: string): void {
+  const icd = path.join(cadres, "MoltenVK_icd.json");
+  if (!existsSync(icd)) return;
+  for (const cle of ["VK_DRIVER_FILES", "VK_ICD_FILENAMES"]) {
+    if (process.env[cle] === undefined || process.env[cle] === "") process.env[cle] = icd;
+  }
+}
+
 export function libmpvPath(): string {
   const choisi = process.env["TENTACLE_MPV_LIB"];
   // La chaîne LGPL du dépôt : exactement les dylibs que `package-macos.mjs`
@@ -85,8 +109,11 @@ export function libmpvPath(): string {
 
   if (process.platform === "darwin") {
     // `resourcesPath` = `Contents/Resources` ; les dylibs sont un cran plus haut.
-    const cadres = path.join(process.resourcesPath, "..", "Frameworks", NOM_LIB);
-    if (app.isPackaged) return cadres;
+    const cadres = path.join(process.resourcesPath, "..", "Frameworks");
+    if (app.isPackaged) {
+      declarerPiloteVulkan(cadres);
+      return path.join(cadres, NOM_LIB);
+    }
     return "/opt/homebrew/lib/libmpv.2.dylib";
   }
 

@@ -153,7 +153,30 @@ function poserDylibs(appPath) {
   mkdirSync(frameworks, { recursive: true });
   const dylibs = readdirSync(libDir).filter((f) => f.endsWith(".dylib"));
   for (const dylib of dylibs) copier(path.join(libDir, dylib), path.join(frameworks, dylib), dylib);
-  console.log(`[macos] ${dylibs.length} dylibs LGPL posées dans Contents/Frameworks`);
+  console.log(`[macos] ${dylibs.length} dylibs posées dans Contents/Frameworks`);
+
+  // ⚠️ Le chargeur Vulkan ne se lie pas à son pilote : il le cherche à
+  // l'exécution dans un fichier ICD, dont le chemin par défaut est sous
+  // `/opt/homebrew` — hors du bac à sable, donc introuvable. Sans lui,
+  // `gpu-context=macvk` n'obtient aucun périphérique et mpv n'ouvre jamais sa
+  // fenêtre : le son sort, l'image jamais. `libmpvPath()` pose
+  // `VK_DRIVER_FILES` sur ce fichier-ci. `library_path` est relatif au JSON,
+  // donc le paquet reste déplaçable.
+  if (!existsSync(path.join(frameworks, "libMoltenVK.dylib"))) {
+    throw new Error(
+      "libMoltenVK.dylib absente du jeu de dylibs : le paquet n'afficherait aucune image.\n" +
+        "  → relancer apps/desktop/scripts/build-mpv-lgpl-macos.sh, qui la copie désormais.",
+    );
+  }
+  writeFileSync(
+    path.join(frameworks, "MoltenVK_icd.json"),
+    `${JSON.stringify(
+      { file_format_version: "1.0.0", ICD: { library_path: "libMoltenVK.dylib", api_version: "1.2.0" } },
+      null,
+      2,
+    )}\n`,
+  );
+  console.log("[macos] pilote Vulkan déclaré (MoltenVK_icd.json)");
 }
 
 /**

@@ -37,7 +37,7 @@ echo "==> Build LGPL libmpv/FFmpeg ($ARCH) — prefix=$PREFIX"
 echo "==> Dépendances Homebrew (build tools + libs LGPL/BSD)"
 brew install -q meson ninja nasm pkg-config \
   libplacebo dav1d libass freetype fontconfig fribidi harfbuzz libpng little-cms2 \
-  libvorbis opus libogg 2>/dev/null || true
+  libvorbis opus libogg molten-vk 2>/dev/null || true
 
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$(brew --prefix)/lib/pkgconfig"
 export PATH="$(brew --prefix)/bin:$PATH"
@@ -101,6 +101,29 @@ bash "$ROOT/scripts/collect-dylibs.sh" "$SEED" "$OUT"
 if [ ! -f "$OUT/libmpv.dylib" ]; then
   real="$(ls "$OUT"/libmpv.*.dylib 2>/dev/null | head -1)"
   [ -n "$real" ] && cp "$real" "$OUT/libmpv.dylib" && codesign --force --sign - "$OUT/libmpv.dylib"
+fi
+
+# 4 bis. MoltenVK : le PILOTE Vulkan, sans lequel rien ne s'affiche en paquet.
+#
+# ⚠️ `collect-dylibs.sh` ne peut pas le trouver : le chargeur Vulkan
+# (`libvulkan.1.dylib`, bien collecté, lui) ne se lie pas à son pilote — il le
+# cherche à l'exécution dans un fichier ICD, sous `$(brew --prefix)/etc/vulkan`.
+# Hors du bac à sable, ce chemin est inaccessible : le chargeur ne trouve aucun
+# périphérique, `gpu-context=macvk` échoue et mpv n'ouvre JAMAIS sa fenêtre. Le
+# son sortirait, l'image jamais. Diagnostiqué sur le paquet du 2026-07-30
+# (« fenetre mpv introuvable apres 10 s »).
+#
+# Licence : MoltenVK est sous **Apache 2.0** — compatible App Store, à déclarer
+# dans `THIRD-PARTY-LICENSES.md`.
+echo "==> MoltenVK (pilote Vulkan) → $OUT"
+MOLTEN="$(brew --prefix)/lib/libMoltenVK.dylib"
+if [ -f "$MOLTEN" ]; then
+  cp -L "$MOLTEN" "$OUT/libMoltenVK.dylib"
+  codesign --force --sign - "$OUT/libMoltenVK.dylib" 2>/dev/null || true
+  echo "  ✓ libMoltenVK.dylib ($(du -h "$OUT/libMoltenVK.dylib" | cut -f1))"
+else
+  echo "  ✗ libMoltenVK.dylib introuvable ($MOLTEN) — le paquet n'afficherait aucune image" >&2
+  exit 1
 fi
 
 # 5. Garde-fou licence : ÉCHEC si une dylib GPL connue est présente.
