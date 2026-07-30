@@ -8,8 +8,10 @@
 
 - Node.js >= 20
 - pnpm >= 10
-- Rust stable + Tauri CLI (`pnpm add -Dg @tauri-apps/cli`) — macOS et Linux
-  uniquement. Windows sort d’Electron et n’en a plus besoin.
+- Rust stable + Tauri CLI (`pnpm add -Dg @tauri-apps/cli`) — **Linux** uniquement.
+  Windows et macOS sortent d’Electron et n’en ont plus besoin. (Le job macOS de la
+  CI empaquette encore l’App Store via Tauri — voir § 5 — mais il installe lui-même
+  la chaîne Rust : rien à préparer en local.)
 
 ## 1. Préparer une release
 
@@ -23,10 +25,11 @@
   dans tous les artefacts (tauri.conf, Info.plist, versionName…).
 - Les numéros de build (CFBundleVersion / versionCode) sont **auto-incrémentés**
   par la CI — plus rien à gérer.
-- Optionnel (builds desktop locaux) : garder `apps/desktop/src-tauri/tauri.conf.json`,
-  `Cargo.toml`, `apps/desktop/package.json` et
-  `apps/desktop-electron/package.json` alignés sur `versions.json → desktop`.
-  La CI, elle, injecte la version dans le paquet Electron avant l’empaquetage.
+- Optionnel (builds desktop locaux) : garder `apps/desktop-electron/package.json`
+  (Electron — Windows, macOS) et `apps/desktop/src-tauri/tauri.conf.json`,
+  `Cargo.toml`, `apps/desktop/package.json` (Tauri — Linux) alignés sur
+  `versions.json → desktop`. La CI, elle, injecte la version dans le paquet
+  Electron avant l’empaquetage.
 - Remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`).
 
 ### Commit et tag
@@ -84,6 +87,8 @@ raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
 
 ### macOS (App Store)
 
+- Coquille : **Electron** (`apps/desktop-electron`), comme Windows — même web build,
+  même libmpv piloté par koffi.
 - libmpv + FFmpeg recompilés **LGPL** (`build-mpv-lgpl-macos.sh`), sandbox,
   bundle `com.tentacle.mobile` (fiche partagée avec iOS/tvOS, app id `6760205634`).
 - Version injectée par `--config` depuis `versions.json` ; CFBundleVersion = build
@@ -91,10 +96,18 @@ raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
 - MAJ in-app = ouverture App Store (pas d'auto-update). Attributions LGPL :
   `apps/desktop/THIRD-PARTY-LICENSES.md` + À propos → Crédits.
 
-Test local LGPL sans certs :
+> ⚠️ **Bascule CI en attente** : le job `mac-build` de `desktop.yml` empaquette encore
+> l'app avec Tauri (`src-tauri/tauri.appstore.conf.json`). L'Electron macOS charge
+> aujourd'hui mpv depuis Homebrew — tant que les dylibs LGPL ne sont pas vendorées
+> dans le paquet, la livraison App Store reste sur Tauri. Le reste du projet (dev,
+> lecteur, fenêtre) est déjà sous Electron sur macOS ; Tauri ne subsiste que là et
+> pour Linux.
+
+Test local :
 ```bash
-bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
-cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
+pnpm dev:electron                                              # app macOS (Electron)
+bash apps/desktop/scripts/build-mpv-lgpl-macos.sh              # dylibs LGPL
+cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev   # paquet App Store actuel
 ```
 
 ### Windows (Microsoft Store)
@@ -112,6 +125,8 @@ cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
 
 ### Linux
 
+- Coquille : **Tauri v2** (`apps/desktop`) — seule plateforme encore sur Tauri
+  (chaîne Rust + WebKitGTK requises).
 - Runner ubuntu-22.04 (glibc/webkit anciens = compat large), `.deb`/`.rpm`/AppImage
   + repackage pacman (`.pkg.tar.zst`) dans un conteneur Arch.
 - libmpv chargé au runtime (dlopen) ; deps déclarées par les paquets
@@ -156,4 +171,5 @@ cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
 - [Microsoft Partner Center](https://partner.microsoft.com/dashboard)
 - [Google Play Console](https://play.google.com/console)
 - [App Store Connect](https://appstoreconnect.apple.com)
-- [Tauri v2 Documentation](https://v2.tauri.app)
+- [Tauri v2 Documentation](https://v2.tauri.app) (coquille Linux)
+- [Electron Documentation](https://www.electronjs.org/docs/latest) (coquilles Windows et macOS)

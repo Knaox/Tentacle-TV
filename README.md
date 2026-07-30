@@ -31,7 +31,7 @@
 | Platform | Status | Download | Technology |
 |----------|--------|----------|------------|
 | **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Self-hosted | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Tauri v2 + native mpv player |
+| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + native mpv player |
 | **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + native mpv player |
 | **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Tauri v2 + native mpv player |
 | **iOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
@@ -45,7 +45,7 @@
 | Plateforme | Statut | Téléchargement | Technologie |
 |------------|--------|----------------|-------------|
 | **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Auto-hébergé | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Tauri v2 + lecteur mpv natif |
+| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + lecteur mpv natif |
 | **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + lecteur mpv natif |
 | **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Tauri v2 + lecteur mpv natif |
 | **iOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
@@ -367,13 +367,13 @@ If your CORS config is broken or partially missing, the web client detects the f
 [Tentacle:Playback] { mode: "Transcode", transport: "proxy", directStreamingConfigured: true, … }
 ```
 
-The `directStreamingConfigured: true` confirms the admin toggle stays ON; `transport: "proxy"` confirms the per-session fallback engaged. Native apps (Tauri desktop, mobile, Android TV) are unaffected — they have no CORS and continue full-direct.
+The `directStreamingConfigured: true` confirms the admin toggle stays ON; `transport: "proxy"` confirms the per-session fallback engaged. Native apps (desktop, mobile, Android TV) are unaffected — they have no CORS and continue full-direct.
 
 ---
 
 ## Desktop App
 
-The desktop app wraps the web client and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos). Windows uses [Electron](https://electronjs.org/); macOS and Linux use [Tauri v2](https://v2.tauri.app/). Both drive the same libmpv and share the same interface.
+The desktop app wraps the web client and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos). Windows and macOS use [Electron](https://electronjs.org/); Linux uses [Tauri v2](https://v2.tauri.app/). Both drive the same libmpv and share the same interface.
 
 ### Installation
 
@@ -472,7 +472,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - [Node.js](https://nodejs.org/) >= 20
 - [pnpm](https://pnpm.io/) >= 9
 - [MariaDB](https://mariadb.org/) 11+ (or Docker)
-- [Rust](https://www.rust-lang.org/) (only needed for desktop builds)
+- [Rust](https://www.rust-lang.org/) (only needed for the Linux desktop build — Tauri)
 
 ### 1. Clone and Install
 
@@ -551,7 +551,10 @@ The web dev server automatically proxies `/api/*` requests to the backend on por
 ### Other Dev Commands
 
 ```bash
-# Desktop (requires Rust toolchain)
+# Desktop — Windows / macOS (Electron)
+pnpm dev:electron
+
+# Desktop — Linux (Tauri, requires Rust toolchain)
 pnpm dev:desktop
 
 # Code quality
@@ -578,8 +581,8 @@ pnpm docker:reset   # Full teardown + rebuild (deletes data!)
 apps/
   web/             React 19 + Vite 6 + Tailwind CSS (main web client)
   backend/         Fastify 5 + Prisma 6 + MariaDB (API server)
-  desktop/         Tauri v2 (macOS, Linux — wraps web build for native desktop)
-  desktop-electron/ Electron (Windows — same web build, same libmpv)
+  desktop/         Tauri v2 (Linux — wraps web build for native desktop)
+  desktop-electron/ Electron (Windows, macOS — same web build, same libmpv)
   mobile/          Expo 52 + React Native (coming soon)
   tv/              React Native for Android TV (ExoPlayer/Media3)
 
@@ -604,7 +607,7 @@ docs/              Plugin registry documentation
                            │
 ┌─────────────┐            │            ┌─────────────────┐
 │ Desktop App │────────────┘       ┌───▶│ Jellyfin Server │
-│  (Tauri v2) │                    │    └─────────────────┘
+│ (native mpv)│                    │    └─────────────────┘
 └─────────────┘            ▲───────┘
                            │
                      /api/jellyfin/*
@@ -664,7 +667,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | Layer | Technology |
 |-------|------------|
 | Web Frontend | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
-| Desktop | Electron (Windows), Tauri v2 (macOS, Linux), mpv native player |
+| Desktop | Electron (Windows, macOS), Tauri v2 (Linux), mpv native player |
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |

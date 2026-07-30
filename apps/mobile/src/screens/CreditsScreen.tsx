@@ -19,6 +19,8 @@ const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "TanStack Query", descKey: "techTanStackQuery" },
   { name: "i18next", descKey: "techReact" },
   { name: "Fastify", descKey: "techFastify" },
+  // Les deux coquilles de bureau : Electron (Windows, macOS) et Tauri (Linux).
+  { name: "Electron", descKey: "techElectron" },
   { name: "Tauri", descKey: "techTauri" },
 ];
 
