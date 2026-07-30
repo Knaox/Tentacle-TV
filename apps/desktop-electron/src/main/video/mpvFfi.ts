@@ -88,9 +88,13 @@ const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib"
  * `VK_DRIVER_FILES` est le nom actuel, `VK_ICD_FILENAMES` celui que les chargeurs
  * plus anciens lisent : on pose les deux, et jamais par-dessus un réglage venu de
  * l'environnement, qui appartient à celui qui déboguait.
+ *
+ * ⚠️ Le fichier vit dans `Resources`, et NON à côté de la dylib qu'il désigne :
+ * `Contents/Frameworks` est réservé au code signable, et un fichier de données y
+ * fait échouer la signature du paquet entier.
  */
-function declarerPiloteVulkan(cadres: string): void {
-  const icd = path.join(cadres, "MoltenVK_icd.json");
+function declarerPiloteVulkan(): void {
+  const icd = path.join(process.resourcesPath, "MoltenVK_icd.json");
   if (!existsSync(icd)) return;
   for (const cle of ["VK_DRIVER_FILES", "VK_ICD_FILENAMES"]) {
     if (process.env[cle] === undefined || process.env[cle] === "") process.env[cle] = icd;
@@ -111,7 +115,7 @@ export function libmpvPath(): string {
     // `resourcesPath` = `Contents/Resources` ; les dylibs sont un cran plus haut.
     const cadres = path.join(process.resourcesPath, "..", "Frameworks");
     if (app.isPackaged) {
-      declarerPiloteVulkan(cadres);
+      declarerPiloteVulkan();
       return path.join(cadres, NOM_LIB);
     }
     return "/opt/homebrew/lib/libmpv.2.dylib";

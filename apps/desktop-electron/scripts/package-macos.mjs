@@ -160,8 +160,13 @@ function poserDylibs(appPath) {
   // `/opt/homebrew` — hors du bac à sable, donc introuvable. Sans lui,
   // `gpu-context=macvk` n'obtient aucun périphérique et mpv n'ouvre jamais sa
   // fenêtre : le son sort, l'image jamais. `libmpvPath()` pose
-  // `VK_DRIVER_FILES` sur ce fichier-ci. `library_path` est relatif au JSON,
-  // donc le paquet reste déplaçable.
+  // `VK_DRIVER_FILES` sur ce fichier-ci.
+  //
+  // ⚠️ Et il va dans `Resources`, PAS à côté de la dylib qu'il désigne :
+  // `Contents/Frameworks` est réservé au code signable, et un fichier de données
+  // y fait échouer la signature du paquet ENTIER — « code object is not signed
+  // at all, in subcomponent MoltenVK_icd.json ». `library_path` reste relatif au
+  // JSON, donc le paquet demeure déplaçable.
   if (!existsSync(path.join(frameworks, "libMoltenVK.dylib"))) {
     throw new Error(
       "libMoltenVK.dylib absente du jeu de dylibs : le paquet n'afficherait aucune image.\n" +
@@ -169,14 +174,17 @@ function poserDylibs(appPath) {
     );
   }
   writeFileSync(
-    path.join(frameworks, "MoltenVK_icd.json"),
+    path.join(appPath, "Contents", "Resources", "MoltenVK_icd.json"),
     `${JSON.stringify(
-      { file_format_version: "1.0.0", ICD: { library_path: "libMoltenVK.dylib", api_version: "1.2.0" } },
+      {
+        file_format_version: "1.0.0",
+        ICD: { library_path: "../Frameworks/libMoltenVK.dylib", api_version: "1.2.0" },
+      },
       null,
       2,
     )}\n`,
   );
-  console.log("[macos] pilote Vulkan déclaré (MoltenVK_icd.json)");
+  console.log("[macos] pilote Vulkan déclaré (Resources/MoltenVK_icd.json)");
 }
 
 /**
