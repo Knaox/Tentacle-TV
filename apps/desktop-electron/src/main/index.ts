@@ -37,6 +37,7 @@ import { registerUpdateCommands } from "./ipc/updates";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { installerMenu } from "./menu";
+import { appliquerIdentiteSysteme } from "./appIdentity";
 import { createMainWindow, getMainWindow } from "./window";
 
 /**
@@ -107,6 +108,10 @@ function main(): void {
   void app
     .whenReady()
     .then(() => {
+      // AVANT le menu : celui-ci porte `app.getName()` comme libellé de son
+      // entrée d'application, et le panneau « À propos » qu'il ouvre lit les
+      // options posées ici.
+      appliquerIdentiteSysteme();
       // Retiré sous Windows, fourni sur macOS — où l'absence de menu prive les
       // champs de saisie de Cmd+C, Cmd+V et Cmd+A. Voir `menu.ts`.
       installerMenu();

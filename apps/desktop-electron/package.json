@@ -2,7 +2,9 @@
   "name": "@tentacle-tv/desktop-electron",
   "version": "1.20.2",
   "private": true,
-  "description": "Tentacle TV desktop (Electron) — Windows",
+  "//productName": "Nom lu par Electron pour app.getName() : barre de menus macOS, panneau A propos, nom du paquet.",
+  "productName": "Tentacle TV",
+  "description": "Tentacle TV desktop (Electron) — Windows et macOS",
   "main": "dist/main/index.js",
   "scripts": {
     "build:main": "tsc -p tsconfig.json",
@@ -14,7 +16,8 @@
     "build": "pnpm build:web && pnpm build:ts",
     "build:appstore": "pnpm build:web:appstore && pnpm build:ts",
     "package": "pnpm build && node scripts/package.mjs",
-    "dev": "pnpm build:web:debug && pnpm build:ts && electron .",
+    "nom:dev": "node scripts/nom-dev-macos.mjs",
+    "dev": "pnpm nom:dev && pnpm build:web:debug && pnpm build:ts && electron .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
