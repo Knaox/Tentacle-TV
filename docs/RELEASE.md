@@ -9,9 +9,7 @@
 - Node.js >= 20
 - pnpm >= 10
 - Rust stable + Tauri CLI (`pnpm add -Dg @tauri-apps/cli`) — **Linux** uniquement.
-  Windows et macOS sortent d’Electron et n’en ont plus besoin. (Le job macOS de la
-  CI empaquette encore l’App Store via Tauri — voir § 5 — mais il installe lui-même
-  la chaîne Rust : rien à préparer en local.)
+  Windows et macOS sortent d’Electron et n’en ont plus besoin.
 
 ## 1. Préparer une release
 
@@ -91,23 +89,29 @@ raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
   même libmpv piloté par koffi.
 - libmpv + FFmpeg recompilés **LGPL** (`build-mpv-lgpl-macos.sh`), sandbox,
   bundle `com.tentacle.mobile` (fiche partagée avec iOS/tvOS, app id `6760205634`).
-- Version injectée par `--config` depuis `versions.json` ; CFBundleVersion = build
-  auto (croissant global — exigence Apple 90061 réglée à vie).
-- MAJ in-app = ouverture App Store (pas d'auto-update). Attributions LGPL :
+- Version injectée par `--version` depuis `versions.json` (elle atterrit dans le
+  `package.json` embarqué, donc dans `app.getVersion()` — c'est elle que la
+  détection de MAJ compare au manifeste) ; CFBundleVersion = build auto (croissant
+  global — exigence Apple 90061 réglée à vie).
+- MAJ in-app = ouverture App Store (pas d'auto-update ; le paquet `mas` d'Electron
+  n'embarque pas Squirrel). Attributions LGPL :
   `apps/desktop/THIRD-PARTY-LICENSES.md` + À propos → Crédits.
+- Deux jobs : `mac-libs` compile mpv/FFmpeg LGPL **par architecture** (et récolte
+  le binaire natif koffi de son arch, indisponible ailleurs), `mac-package` fusionne
+  au `lipo`, empaquette en universel, signe et envoie.
 
-> ⚠️ **Bascule CI en attente** : le job `mac-build` de `desktop.yml` empaquette encore
-> l'app avec Tauri (`src-tauri/tauri.appstore.conf.json`). L'Electron macOS charge
-> aujourd'hui mpv depuis Homebrew — tant que les dylibs LGPL ne sont pas vendorées
-> dans le paquet, la livraison App Store reste sur Tauri. Le reste du projet (dev,
-> lecteur, fenêtre) est déjà sous Electron sur macOS ; Tauri ne subsiste que là et
-> pour Linux.
+> ⚠️ Deux réglages du packaging ont un coût s'ils sautent, et il ne se voit
+> qu'après l'envoi : `osxUniversal.x64ArchFiles` (sans quoi la fusion universelle
+> refuse les `koffi.node` mono-architecture) et `preAutoEntitlements: false` (sans
+> quoi osx-sign ajoute `application-groups`, absent du profil de provisionnement —
+> build inéligible). Voir les commentaires de `package-macos.mjs`.
 
-Test local :
+Test local (paquet universel non distribuable, signature ad hoc) :
 ```bash
-pnpm dev:electron                                              # app macOS (Electron)
-bash apps/desktop/scripts/build-mpv-lgpl-macos.sh              # dylibs LGPL
-cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev   # paquet App Store actuel
+bash apps/desktop/scripts/build-mpv-lgpl-macos.sh    # dylibs LGPL de l'arch hôte
+cd apps/desktop-electron
+pnpm build:appstore
+node scripts/package-macos.mjs --lib ../desktop/src-tauri/lib --arch arm64
 ```
 
 ### Windows (Microsoft Store)
