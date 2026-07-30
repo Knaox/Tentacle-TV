@@ -208,8 +208,25 @@ function main(): void {
     closeLocalDb();
   });
 
+  /**
+   * Fermer la fenêtre ferme l'application — sur macOS AUSSI, contre la coutume.
+   *
+   * La coutume veut qu'une application macOS survive à ses fenêtres. Elle a du
+   * sens pour un traitement de texte, qui en ouvre plusieurs ; elle n'en a aucun
+   * ici, où il n'y a qu'une fenêtre et où il n'y a rien à faire sans elle. Ce que
+   * l'utilisateur y gagnait, mesuré : une application qu'il croit fermée mais qui
+   * tient toujours la barre de menus, et dont la réouverture — par `activate`,
+   * qui refabrique une fenêtre dans le MÊME processus — hérite de tout l'état
+   * vidéo de la session d'avant. mpv est encore initialisé, sa surface pointe une
+   * fenêtre détruite : la lecture suivante donne un écran noir en plein écran, et
+   * une fenêtre transparente sinon. C'est le défaut du « second lancement ».
+   *
+   * Quitter pour de bon rend l'état neuf à chaque ouverture. La sortie emprunte
+   * le chemin de Cmd+Q, celui que la garde de sortie surveille : un
+   * téléchargement en cours fait toujours poser la question avant de partir.
+   */
   app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") app.quit();
+    app.quit();
   });
 }
 

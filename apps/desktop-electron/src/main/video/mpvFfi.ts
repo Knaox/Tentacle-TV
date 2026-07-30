@@ -54,16 +54,19 @@ const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib"
  * et un paquet qui la chargerait serait indistribuable. Un paquet dont les
  * dylibs manquent doit donc échouer bruyamment plutôt que se rattraper sur elle.
  *
- * # Le cas macOS en développement, et pourquoi il ne vise pas le dépôt
+ * # Le cas macOS en développement
  *
- * `src-tauri/lib/libmpv.2.dylib` est une **mpv 0.40** qui ne sait pas faire de
- * HDR sur macOS : le contexte `macvk` s'y initialise bien, mais la plage étendue
- * reste à 1.00 — le support n'est pas dans le binaire. Mesuré en phase 1. La 0.41
- * déposée à côté (`libmpv.dylib`) est orpheline : ses dépendances (FFmpeg 62.x,
- * rubberband, libarchive) ne sont pas dans `lib/`, elle ne se charge pas.
+ * On vise Homebrew par défaut : c'est ce que le proto a validé, et c'est déjà
+ * relié au chargeur Vulkan et à MoltenVK du système.
  *
- * On vise donc Homebrew en développement — c'est ce que le proto a validé, et
- * c'est déjà relié au chargeur Vulkan et à MoltenVK du système.
+ * ⚠️ Une note de la phase 1 disait que la **mpv 0.40** du dépôt — celle qui est
+ * LIVRÉE — ne savait pas faire de HDR sur macOS. C'est FAUX du chemin
+ * qu'emprunte la coquille : cette mesure portait sur le contexte `macvk`
+ * (Vulkan). Relevé le 2026-07-30 sur le paquet, une lecture HDR en cours :
+ * headroom EDR de l'écran à **8,48** pour un potentiel de 16 — la plage étendue
+ * est bien obtenue, et l'utilisateur la trouve meilleure qu'avec la 0.41 de
+ * Homebrew. La 0.41 déposée à côté (`libmpv.dylib`) reste orpheline : ses
+ * dépendances (FFmpeg 62.x, rubberband, libarchive) ne sont pas dans `lib/`.
  *
  * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code : un
  * chemin, ou le mot **`livree`** pour viser la chaîne LGPL vendorée — celle que
