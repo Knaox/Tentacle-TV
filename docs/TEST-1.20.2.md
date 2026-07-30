@@ -1,7 +1,7 @@
 # Plan de test — 1.20.2
 
-Dix commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
-sur les 11 paquets, 487 tests verts, build de production OK.
+Treize commits sur `feat/migration-electron`, rien poussé. `pnpm typecheck` passe
+sur les 11 paquets, 498 tests verts, build de production OK.
 
 ## 0. Avant de lancer quoi que ce soit
 
@@ -169,6 +169,21 @@ Le vérifier dans l'inspecteur : compter les `.media-tile` du DOM.
 - [ ] En développement Windows, la touche **U** doit jouer le déroulé complet
       (barre indéterminée → installation → redémarrage) **sans** rien installer ni
       redémarrer.
+
+## 4 bis. Le badge central du lecteur
+
+- [ ] **Faire glisser la barre de progression** pour chercher un passage :
+      **aucun badge** ne doit apparaître au milieu de l'image, ni au moment
+      d'attraper la barre, ni au moment de lâcher. C'était le défaut signalé.
+- [ ] Juste après avoir lâché la barre, appuyer sur **espace** : le badge pause
+      s'affiche normalement. (C'est le piège du correctif : l'armement ne doit pas
+      faire taire la pause suivante.)
+- [ ] **Sauter loin** dans un film qui bascule en transcodage : aucun badge non
+      plus pendant le rechargement.
+- [ ] Espace, clic sur la vidéo, bouton pause : le badge s'affiche **toujours**.
+- [ ] Couper puis rétablir le son : les badges son fonctionnent toujours.
+- [ ] Ouvrir un film : **aucun** badge « lecture » au démarrage.
+- [ ] Les boutons **−10 s / +30 s** montrent leur propre badge de saut, inchangé.
 
 ## 5 bis. Le diagnostic sur macOS
 
