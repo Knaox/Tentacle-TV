@@ -1,5 +1,6 @@
 import { useEffect, useState, type MutableRefObject } from "react";
 import type { MpvState, PlayOptions } from "./useDesktopPlayer";
+import { tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 interface UseMpvSourceOptions {
@@ -43,7 +44,13 @@ export function useMpvSource({
     prevSrcRef.current = src;
 
     // Show loading overlay during source changes (quality/audio switch)
-    if (isSourceChange) setSourceChanging(true);
+    if (isSourceChange) {
+      // Tracé : un rebuild d'URL juste après la première image se voit à
+      // l'écran comme un second chargement, sans qu'aucune coupure de cache
+      // n'ait eu lieu. Les deux sont indiscernables à l'œil.
+      tracerCommande("rebuild de source", src.substring(0, 60));
+      setSourceChanging(true);
+    }
 
     // mpv must seek to the correct position for both direct play and transcode.
     // StartTimeTicks is stripped from HLS URLs (Jellyfin 10.10+ rejects it on segments),

@@ -15,7 +15,7 @@ import { chronologieDemarrage } from "../hooks/startupTrace";
 import type { DebugSection } from "./playerDebugTypes";
 
 export function sectionDemarrage(): DebugSection {
-  const { entrees, rebuffers, contexte } = chronologieDemarrage();
+  const { entrees, rebuffers, chargements, contexte } = chronologieDemarrage();
   if (entrees.length === 0) {
     return {
       titre: "Démarrage",
@@ -26,9 +26,11 @@ export function sectionDemarrage(): DebugSection {
   const premiereImage = entrees.find((e) => e.label.startsWith("playback-restart"));
   const lignes: DebugSection["lignes"] = [
     ["source", contexte, null],
-    // Le verdict. Une coupure après la première image, c'est le second
-    // chargement qu'on traque ; avant, c'est le remplissage voulu.
+    // Les deux formes que peut prendre le second chargement, distinguées : une
+    // coupure de mpv (le cache s'est vidé) ou une source rechargée (l'app a
+    // refait un loadfile). Elles n'ont ni la même cause ni le même remède.
     ["coupures", String(rebuffers), rebuffers === 0],
+    ["chargements", String(chargements), chargements === 1],
     [
       "première image",
       premiereImage ? `${(premiereImage.ms / 1000).toFixed(2)} s` : "pas encore",

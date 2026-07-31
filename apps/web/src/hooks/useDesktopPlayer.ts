@@ -103,6 +103,7 @@ export function useDesktopPlayer() {
       playbackWatchdogRef.current = null;
       if (attempt === 1) {
         wtLog("mpv", `WATCHDOG: playback-restart absent après ${watchdogMs / 1000}s — retry loadfile`, { url: options.url.substring(0, 110) });
+        tracerCommande("WATCHDOG — retry loadfile", `${watchdogMs / 1000} s sans playback-restart`);
         void play(options, 2);
       } else {
         wtLog("mpv", "WATCHDOG: playback-restart absent après retry — flux en échec (setError → fallback web)");

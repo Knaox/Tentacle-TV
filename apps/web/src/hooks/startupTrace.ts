@@ -45,6 +45,7 @@ export interface EntreeDemarrage {
 let entrees: EntreeDemarrage[] = [];
 let debut = 0;
 let rebuffers = 0;
+let chargements = 0;
 let contexte = "";
 
 function actif(): boolean {
@@ -52,16 +53,26 @@ function actif(): boolean {
 }
 
 /**
- * Ouvre une chronologie : un `loadfile` remet tout à zéro.
- * `resume` décrit la source en une ligne (mode, position de départ).
+ * Ouvre une chronologie. `resume` décrit la source en une ligne (mode, position
+ * de départ).
+ *
+ * ⚠️ Un second `loadfile` RAPPROCHÉ n'ouvre pas une nouvelle chronologie, il
+ * s'ajoute à celle en cours. C'est précisément l'une des formes que peut
+ * prendre un double chargement — une source reconstruite juste après la
+ * première image — et repartir de zéro l'aurait rendue invisible : on n'aurait
+ * vu que la chronologie du second, impeccable.
  */
 export function ouvrirDemarrage(resume: string): void {
   if (!actif()) return;
-  entrees = [];
-  rebuffers = 0;
-  debut = Date.now();
+  if (debut === 0 || Date.now() - debut > FENETRE_MS) {
+    entrees = [];
+    rebuffers = 0;
+    chargements = 0;
+    debut = Date.now();
+  }
+  chargements += 1;
   contexte = resume;
-  entrees.push({ ms: 0, origine: "app", label: "loadfile", detail: resume });
+  pousser("app", chargements === 1 ? "loadfile" : `loadfile nº${chargements}`, resume);
 }
 
 /** Un évènement rapporté par mpv. */
@@ -88,10 +99,12 @@ export interface ChronologieDemarrage {
   entrees: readonly EntreeDemarrage[];
   /** Passages en attente de cache depuis le `loadfile`. Zéro est l'objectif. */
   rebuffers: number;
+  /** `loadfile` enchaînés dans la même fenêtre. Plus d'un est déjà un défaut. */
+  chargements: number;
   /** Résumé de la source, tel que passé à `ouvrirDemarrage`. */
   contexte: string;
 }
 
 export function chronologieDemarrage(): ChronologieDemarrage {
-  return { entrees, rebuffers, contexte };
+  return { entrees, rebuffers, chargements, contexte };
 }
