@@ -37,7 +37,6 @@ export function useDesktopPlayer() {
     fileLoadedRef.current = v;
     setFileLoadedState(v);
   }, []);
-  const pendingTracks = useRef<{ aid?: number; sid?: number } | null>(null);
   // Watchdog : si playback-restart n'est pas émis après un loadfile, UN retry
   // complet puis erreur visible (voir play()).
   const playbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,7 +58,7 @@ export function useDesktopPlayer() {
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setError, setFileLoaded, setMediaReady,
-    positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef, pendingTracks,
+    positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
   });
 
@@ -165,14 +164,21 @@ export function useDesktopPlayer() {
         //   set start none ->   0, start vaut "none"
         await api.command("set", ["start", "none"]).catch((e) => console.warn("[mpv] reset start:", e));
       }
-      const tracks: { aid?: number; sid?: number } = {};
+      // Pistes AVANT le loadfile, comme `start` et `pause` : `aid`/`sid`
+      // persistent d'un fichier à l'autre, donc mpv ouvre celui-ci déjà sur la
+      // bonne piste. Les appliquer APRÈS la première image — ce que faisait
+      // pendingTracks, sur playback-restart — réinitialisait la chaîne audio et
+      // resynchronisait par un seek interne : mpv jetait son cache et la barre
+      // de chargement retombait à zéro juste après le démarrage.
       if (options.audioTrack != null && options.audioTrack > 0) {
-        tracks.aid = options.audioTrack;
+        tracerCommande("set aid (avant ouverture)", String(options.audioTrack));
+        await api.command("set", ["aid", String(options.audioTrack)]).catch((e) => console.warn("[mpv] set aid:", e));
       }
       if (options.subtitleTrack != null) {
-        tracks.sid = options.subtitleTrack;
+        const sid = options.subtitleTrack === 0 ? "no" : String(options.subtitleTrack);
+        tracerCommande("set sid (avant ouverture)", sid);
+        await api.command("set", ["sid", sid]).catch((e) => console.warn("[mpv] set sid:", e));
       }
-      pendingTracks.current = Object.keys(tracks).length > 0 ? tracks : null;
       loadfileAtRef.current = Date.now();
       ouvrirDemarrage(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
         options.startPosition != null && options.startPosition > 0

@@ -23,7 +23,6 @@ export interface MpvLifecycleCtx {
   bufferingRef: MutableRefObject<boolean>;
   mutedRef: MutableRefObject<boolean>;
   fileLoadedRef: MutableRefObject<boolean>;
-  pendingTracks: MutableRefObject<{ aid?: number; sid?: number } | null>;
   playbackWatchdogRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   wakeupRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   loadfileAtRef: MutableRefObject<number>;
@@ -42,7 +41,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const unlisteners: (() => void)[] = [];
     const {
       setState, setReady, setError, setFileLoaded, setMediaReady,
-      positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef, pendingTracks,
+      positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
       playbackWatchdogRef, wakeupRef, loadfileAtRef,
     } = ctx;
 
@@ -288,21 +287,12 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               if (!cancelled && p !== null) setState((prev) => ({ ...prev, paused: p }));
             }).catch(() => {});
 
-            // Apply deferred audio/subtitle track selections NOW (mpv is ready)
-            const tracks = pendingTracks.current;
-            if (tracks) {
-              console.debug("[mpv] playback-restart: applying pending tracks", tracks);
-              pendingTracks.current = null;
-              if (tracks.aid != null) api.command("set", ["aid", String(tracks.aid)]).catch((e) => console.error("[mpv] set aid failed:", e));
-              if (tracks.sid != null) {
-                if (tracks.sid === 0) {
-                  api.command("set", ["sid", "no"]).catch((e) => console.error("[mpv] set sid=no failed:", e));
-                } else {
-                  api.command("set", ["sid", String(tracks.sid)]).catch((e) => console.error("[mpv] set sid failed:", e));
-                  api.command("set", ["sub-visibility", "yes"]).catch(() => {});
-                }
-              }
-            }
+            // Les pistes ne s'appliquent PLUS ici. Elles partent avant le
+            // loadfile (cf. play()) : `aid`/`sid` persistent d'un fichier à
+            // l'autre, donc mpv ouvre déjà sur la bonne. Les poser à cet
+            // instant — la première image vient de sortir — réinitialisait la
+            // chaîne audio et resynchronisait par un seek interne : le cache
+            // était jeté et un micro-chargement s'affichait aussitôt.
 
             // Signal that mpv is ready to accept property changes
             // (preference effects in DesktopPlayer depend on this)

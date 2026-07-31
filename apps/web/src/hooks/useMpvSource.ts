@@ -21,6 +21,9 @@ interface UseMpvSourceOptions {
   prevSrcRef: MutableRefObject<string>;
   hasStartedRef: MutableRefObject<boolean>;
   loadedExternalSubs: MutableRefObject<Map<number, number>>;
+  audioTracks: { index: number }[];
+  currentAudio: number;
+  currentSubtitle: number | null;
 }
 
 /**
@@ -32,6 +35,7 @@ export function useMpvSource({
   play, onStarted, onProgress, onSeekComplete,
   lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
   hasStartedRef, loadedExternalSubs,
+  audioTracks, currentAudio, currentSubtitle,
 }: UseMpvSourceOptions) {
   const [sourceChanging, setSourceChanging] = useState(false);
   // State (not ref!) — transitioning to true triggers preference effect re-runs
@@ -63,9 +67,35 @@ export function useMpvSource({
       src: src.substring(0, 110), startPosS: startPos?.toFixed(1) ?? "none",
       lastAbsolutePosS: lastAbsolutePosRef.current.toFixed(1), isDirectPlay,
     });
-    // Don't pass audioTrack/subtitleTrack here — the preference effects handle
-    // track selection AFTER file-loaded, avoiding races with pendingTracks.
-    play({ url: src, startPosition: startPos });
+    // ⚠️ Les pistes partent AVANT l'ouverture, avec `start` et `pause` — pas
+    // après. `aid`/`sid` persistent d'un loadfile à l'autre : posées ici, mpv
+    // ouvre le fichier déjà sur la bonne, et n'a plus rien à reprendre ensuite.
+    //
+    // Les poser après la première image — ce que faisaient seuls les effets de
+    // préférence, déclenchés par fileLoaded, donc sur playback-restart —
+    // réinitialise la chaîne audio et resynchronise par un seek interne. mpv
+    // JETTE alors son cache : la barre de chargement, qui venait de monter,
+    // retombe d'un coup à zéro et un micro-chargement s'affiche, une seconde
+    // après le démarrage. C'est un flush, pas une famine — d'où l'inutilité
+    // d'agrandir quoi que ce soit pour le corriger.
+    //
+    // Mapping POSITIONNEL : la track-list de mpv n'existe pas encore à cet
+    // instant. C'est le repli qu'utilise déjà useMpvTrackSync quand elle
+    // manque ; si l'ordre ne coïncide pas, l'effet de préférence corrige au
+    // retour de la liste — un reset au lieu de zéro, jamais plus qu'avant.
+    const aPos = audioTracks.findIndex((t) => t.index === currentAudio);
+    play({
+      url: src,
+      startPosition: startPos,
+      // Transcode : Jellyfin ne sort que la piste demandée, toujours aid=1. À
+      // poser explicitement, un aid=3 hérité d'un direct play laissant le flux
+      // HLS sans audio.
+      audioTrack: isDirectPlay ? (aPos >= 0 ? aPos + 1 : undefined) : 1,
+      // Seul le cas « aucun sous-titre » se décide sans la track-list, et c'est
+      // le plus fréquent. Une piste demandée reste à l'effet de préférence, qui
+      // sait la faire correspondre par la langue.
+      subtitleTrack: currentSubtitle == null ? 0 : undefined,
+    });
     loadedExternalSubs.current.clear();
     // State transition triggers preference effects in the NEXT render
     if (!initialLoaded) setInitialLoaded(true);
