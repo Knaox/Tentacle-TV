@@ -282,11 +282,19 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     // le chargement lui-même qui devient long. Le remplissage, lui, continue
     // jusqu'à `demuxer-readahead-secs` — on ne l'attend pas pour lancer l'image.
     //
-    // Le coût de cette réserve n'est PAS de huit secondes : c'est
-    // `8 × bitrate ÷ débit`. Sur un film léger servi par un réseau local, elle
+    // Le coût de cette réserve n'est PAS de quinze secondes : c'est
+    // `15 × bitrate ÷ débit`. Sur un film léger servi par un réseau local, elle
     // est remplie en une fraction de seconde et ne se voit pas ; c'est sur les
     // gros contenus qu'elle se paie, et c'est là qu'elle sert.
-    "cache-pause-wait": 8,
+    //
+    // Quinze et non huit parce que c'est le choix assumé : le chargement déjà
+    // à l'écran s'allonge un peu, et la lecture ne s'interrompt plus derrière.
+    // Le code de mpv le confirme (`handle_update_cache`, v0.40) : avant
+    // `restart_complete`, l'attente est exactement `ts_info.duration <
+    // cache_pause_wait` ; après, mpv exige un vrai assèchement des deux bouts
+    // (`demux_underrun && output_underrun`) pour s'interrompre — cette valeur
+    // ne rend donc pas les coupures en cours de lecture plus fréquentes.
+    "cache-pause-wait": 15,
     // ⚠️ mpv se REMPLIT avant de lancer l'image, au lieu de démarrer dès qu'il
     // en a une. C'est le défaut que son propre manuel décrit à cette option :
     //

@@ -10,6 +10,8 @@ import type { SegmentTimestamps } from "@tentacle-tv/shared";
 interface DesktopPlayerOverlaysProps {
   showLoadingOverlay: boolean;
   buffering: boolean;
+  /** Réserve mpv en secondes (`demuxer-cache-duration`) — affichée en debug. */
+  buffered: number;
   posterUrl?: string;
   showSkipIntro: boolean | null | undefined;
   showSkipCredits: boolean | null | undefined;
@@ -51,7 +53,7 @@ interface DesktopPlayerOverlaysProps {
  * bannière de la série, donc sur du HTML, où le flou fonctionne vraiment.
  */
 export function DesktopPlayerOverlays({
-  showLoadingOverlay, buffering, posterUrl,
+  showLoadingOverlay, buffering, buffered, posterUrl,
   showSkipIntro, showSkipCredits, introSegment, creditsSegment,
   isDirectPlay, effectiveMpvOffset, hasNextEpisode, itemId,
   autoPlayCountdown, autoPlaySource,
@@ -72,6 +74,17 @@ export function DesktopPlayerOverlays({
 
   return (
     <>
+      {/* Réserve mpv, paquet instrumenté seulement. Elle est illisible sur la
+          seekbar — 8 s de cache sur un film de 2 h 20, c'est 0,1 % de la barre,
+          quelques pixels — alors que c'est le seul chiffre qui dise si l'image
+          est partie avec de quoi tenir. Ici il se lit pendant le chargement ET
+          pendant la lecture. */}
+      {(import.meta.env.DEV || __PLAYER_DEBUG__) && (
+        <div className="pointer-events-none absolute left-4 top-4 z-30 rounded bg-black/70 px-2 py-1 font-mono text-[11px] text-white/90">
+          cache {buffered.toFixed(1)} s{buffering ? " · attente" : ""}
+        </div>
+      )}
+
       {/* Loading overlay — initial load + source changes (quality/audio) :
           bannière (backdrop) + barre de chargement, en continuité avec
           PlayerLoadingScreen affiché avant le montage du player. */}

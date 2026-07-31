@@ -248,7 +248,8 @@ export function DesktopPlayer({
       <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 
       <DesktopPlayerOverlays
-        showLoadingOverlay={showLoadingOverlay} buffering={state.buffering} posterUrl={posterUrl}
+        showLoadingOverlay={showLoadingOverlay} buffering={state.buffering}
+        buffered={state.buffered} posterUrl={posterUrl}
         showSkipIntro={showSkipIntro} showSkipCredits={showSkipCredits}
         introSegment={introSegment} creditsSegment={creditsSegment}
         isDirectPlay={isDirectPlay} effectiveMpvOffset={effectiveMpvOffset}
