@@ -5,6 +5,7 @@ import {
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
+import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 // Ré-exports de compatibilité — de nombreux modules importent la détection de
@@ -115,6 +116,7 @@ export function useDesktopPlayer() {
     if (!isHls) {
       wakeupRef.current = setTimeout(() => {
         wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
+        tracerCommande("seek de réveil", "+50 ms");
         getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
         wakeupRef.current = null;
       }, 600);
@@ -153,6 +155,9 @@ export function useDesktopPlayer() {
       }
       pendingTracks.current = Object.keys(tracks).length > 0 ? tracks : null;
       loadfileAtRef.current = Date.now();
+      ouvrirDemarrage(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
+        options.startPosition != null && options.startPosition > 0
+          ? `${options.startPosition.toFixed(0)} s` : "début"}`);
       await api.command("loadfile", [options.url]);
       setError(null);
     } catch (e) {

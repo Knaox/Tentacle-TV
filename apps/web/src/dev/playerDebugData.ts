@@ -18,6 +18,7 @@ import {
   supportsSmtc,
 } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
+import { sectionDemarrage } from "./playerDebugDemarrage";
 import { sectionReseau } from "./playerDebugReseau";
 import type { DebugSection } from "./playerDebugTypes";
 import { PROPS_VERDICT, verdicts } from "./playerDebugVerdict";
@@ -70,6 +71,12 @@ const PROPS_LECTURE = [
   "demuxer-via-network",
   "cache-speed",
   "paused-for-cache",
+  // Les deux réglages qui décident du démarrage. Lus, et pas supposés : la
+  // coquille Electron écarte EN SILENCE toute option d'init qu'elle ne connaît
+  // pas (`mpvAllowlist.ts`) — une option qu'on croit posée peut n'avoir jamais
+  // atteint mpv, et c'est indiscernable à l'œil.
+  "cache-pause-initial",
+  "cache-pause-wait",
   "time-pos",
   "duration",
   "pause",
@@ -82,6 +89,7 @@ const PROPS_LECTURE = [
 
 function attendu(cle: string, valeur: string): boolean | null {
   if (cle === "current-vo") return valeur === "gpu-next";
+  if (cle === "cache-pause-initial") return valeur === "yes";
   if (cle === "hwdec-current") return valeur !== "no" && valeur !== "";
   if (cle === "frame-drop-count") return valeur === "0";
   if (cle === "video-params/gamma") return valeur === "pq" || valeur === "hlg";
@@ -164,8 +172,12 @@ export async function collecterDebug(): Promise<DebugSection[]> {
   );
   const sections: Array<DebugSection | null> = [
     { titre: "Ce que tu regardes vraiment", lignes: lignesVerdict, emphase: true },
-    // Juste sous les verdicts : pendant une lecture locale, c'est la deuxième
-    // chose qu'on veut lire, avant l'inventaire de la coquille.
+    // Juste après les verdicts : une coupure au démarrage se juge sur sa
+    // chronologie, et elle est déjà passée quand on ouvre le panneau — la
+    // reléguer en bas obligeait à faire défiler pendant que le film tourne.
+    sectionDemarrage(),
+    // Puis le réseau : pendant une lecture locale, c'est la chose suivante
+    // qu'on veut lire, avant l'inventaire de la coquille.
     sectionReseau(),
     sectionSurface(surface),
     sectionShell(),

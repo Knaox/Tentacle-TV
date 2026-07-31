@@ -1,6 +1,7 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
+import { tracerCommande } from "./startupTrace";
 import { invoke, isElectronShell, listen } from "../desktop/bridge";
 
 /**
@@ -56,12 +57,19 @@ export function useMpvCommands({
 
   const togglePause = useCallback(async () => { getMpvApi()?.command("cycle", ["pause"]).catch(() => {}); }, []);
   const setPause = useCallback(async (paused: boolean) => { getMpvApi()?.setProperty("pause", paused).catch(() => {}); }, []);
-  const seek = useCallback(async (pos: number) => { getMpvApi()?.command("seek", [pos, "absolute"]).catch(() => {}); }, []);
-  const seekRelative = useCallback(async (off: number) => { getMpvApi()?.command("seek", [off, "relative"]).catch(() => {}); }, []);
+  const seek = useCallback(async (pos: number) => {
+    tracerCommande("seek absolu", `${pos.toFixed(1)} s`);
+    getMpvApi()?.command("seek", [pos, "absolute"]).catch(() => {});
+  }, []);
+  const seekRelative = useCallback(async (off: number) => {
+    tracerCommande("seek relatif", `${off > 0 ? "+" : ""}${off} s`);
+    getMpvApi()?.command("seek", [off, "relative"]).catch(() => {});
+  }, []);
   const setAudioTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
     console.debug("[mpv] setAudioTrack", id);
+    tracerCommande("set aid", String(id));
     // Use command("set") with string value — setProperty("aid", number)
     // fails because the plugin sends MPV_FORMAT_DOUBLE but mpv expects MPV_FORMAT_INT64.
     try { await api.command("set", ["aid", String(id)]); }
@@ -71,6 +79,7 @@ export function useMpvCommands({
     const api = getMpvApi();
     if (!api) return;
     console.debug("[mpv] setSubtitleTrack", id);
+    tracerCommande("set sid", id === 0 ? "no" : String(id));
     try {
       if (id === 0) {
         await api.command("set", ["sid", "no"]);

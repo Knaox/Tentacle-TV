@@ -8,6 +8,7 @@ import {
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
+import { LABEL_BUFFERING, tracerDemarrage } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 export interface MpvLifecycleCtx {
@@ -171,6 +172,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 const buffering = (event.data as boolean | null) ?? false;
                 if (prev.buffering !== buffering) {
                   wtLog("mpv", `paused-for-cache → ${buffering}`, { pos: positionRef.current.toFixed(1), cacheS: bufferedRef.current.toFixed(1) });
+                  tracerDemarrage(buffering ? LABEL_BUFFERING : "cache reconstitué",
+                    `cache ${bufferedRef.current.toFixed(1)} s`);
                 }
                 return { ...prev, buffering };
               }
@@ -178,6 +181,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 const seeking = (event.data as boolean | null) ?? false;
                 if (prev.seeking !== seeking) {
                   wtLog("mpv", `seeking → ${seeking}`, { pos: positionRef.current.toFixed(1) });
+                  tracerDemarrage(seeking ? "seeking" : "seek terminé",
+                    `pos ${positionRef.current.toFixed(1)} s`);
                 }
                 return { ...prev, seeking };
               }
@@ -207,6 +212,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         switch (event.event) {
           case "file-loaded": {
             wtLog("mpv", "file-loaded", { sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1 });
+            tracerDemarrage("file-loaded");
             // Réapplique le volume/mute persistés à CHAQUE média — filet de
             // sécurité si le restore post-init a été perdu (course à l'init,
             // vue sur Linux). Avant la 1re frame audio → transparent.
@@ -249,6 +255,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1,
               pos: positionRef.current.toFixed(1),
             });
+            tracerDemarrage("playback-restart (première image)",
+              `cache ${bufferedRef.current.toFixed(1)} s`);
             // playback-restart reçu : on annule les watchdogs
             if (playbackWatchdogRef.current) {
               clearTimeout(playbackWatchdogRef.current);
