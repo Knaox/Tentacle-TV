@@ -43,9 +43,34 @@ export function installerSyncPleinEcran(win: BrowserWindow): void {
   const diffuser = (valeur: boolean): void => diffuserPleinEcran(win, valeur);
 
   win.on("enter-full-screen", () => diffuser(true));
-  win.on("leave-full-screen", () => diffuser(false));
+  win.on("leave-full-screen", () => {
+    diffuser(false);
+    tracerFenetres();
+  });
 
   installerF11(win, diffuser);
+}
+
+/**
+ * Dit ce que l'application a à l'écran en sortant du plein écran.
+ *
+ * Une SECONDE barre de fenêtre, feux compris, apparaît à ce moment-là — la
+ * nôtre, ou celle de mpv ressuscitée, et rien dans une capture ne les distingue.
+ * Voir `macosDiagFenetres.ts`, qui porte les deux hypothèses.
+ *
+ * ⚠️ `require` et non `import` : le module remonte à `objc.ts`, qui charge le
+ * runtime Objective-C dès l'import et ferait tomber le processus principal sous
+ * Windows. Même parade que `fullscreen.ts` pour `win32.ts`.
+ */
+function tracerFenetres(): void {
+  if (process.platform !== "darwin") return;
+  if (app.isPackaged && process.env["TENTACLE_DEBUG_PANEL"] !== "1") return;
+  try {
+    const diag = require("./macosDiagFenetres") as typeof import("./macosDiagFenetres");
+    console.log(`[fenetre] sortie de plein ecran —\n${diag.decrireFenetres()}`);
+  } catch (erreur) {
+    console.warn(`[fenetre] diagnostic indisponible : ${String(erreur)}`);
+  }
 }
 
 /**
