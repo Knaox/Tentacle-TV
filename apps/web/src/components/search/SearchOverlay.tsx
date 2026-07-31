@@ -83,7 +83,14 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
       <div
         className="row-gutter flex items-center gap-4 border-b border-line-subtle py-5"
         onClick={(e) => e.stopPropagation()}
-        style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top, 0px))" }}
+        // `--hote-bandeau` : la bande de fenêtre que la page dessine elle-même
+        // sur la coquille Electron macOS. Le `padding-top` du `body` la
+        // compense pour le flux normal, mais cet en-tête vit dans un portail en
+        // `position: fixed` — il se repère sur la FENÊTRE et passait donc sous
+        // la bande, qui coupait le champ de saisie en deux. La bande garde son
+        // z-index au-dessus : c'est la seule prise pour déplacer la fenêtre
+        // pendant la recherche. Vaut `0px` partout ailleurs.
+        style={{ paddingTop: "calc(1.25rem + var(--hote-bandeau) + env(safe-area-inset-top, 0px))" }}
       >
         <SearchIcon className="h-6 w-6 flex-shrink-0 text-content-tertiary" />
         <input
