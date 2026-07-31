@@ -203,7 +203,22 @@ export function useMpvTrackSync({
       }
     }
 
-    // External subtitle fallback (dédupliqué par selectExternalSub)
+    // Repli externe — mais pas avant de savoir, ni pour rien. Les deux causes
+    // du `sub-add : -12` vu au démarrage d'une lecture directe :
+    //
+    // 1. La track-list de mpv n'arrive qu'~300 ms APRÈS file-loaded (le
+    //    `setTimeout(doQuery, 300)` de useMpvLifecycle), alors que cet effet
+    //    tire dès playback-restart. `state.tracks` vide veut donc dire « pas
+    //    encore interrogée », pas « aucune piste » — et on tombait ici en
+    //    court-circuitant le mapping interne qui allait réussir. Un
+    //    téléchargement pour rien, l'effet repassant de toute façon au retour
+    //    de la liste. `state.tracks` plutôt que `mpvSubs` : un fichier peut
+    //    n'avoir aucun sous-titre interne, il a toujours une piste vidéo.
+    // 2. Jellyfin ne sait pas rendre un sous-titre BITMAP (PGS, VOBSUB) en
+    //    .srt : la requête échoue et mpv rapporte -12. La branche transcode
+    //    ci-dessus écarte déjà ce cas, celle-ci l'avait oublié. Ces pistes-là,
+    //    mpv les lit de toute façon en interne.
+    if (state.tracks.length === 0 || isBitmapSub(currentSubtitle)) return;
     void selectExternalSub(currentSubtitle);
   }, [currentSubtitle, mpvSubs, fileLoaded, ready, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
