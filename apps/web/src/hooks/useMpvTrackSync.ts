@@ -122,6 +122,21 @@ export function useMpvTrackSync({
   // ── Apply audio preference from parent ──
   // Wait for fileLoaded — mpv cannot accept aid/sid before a file is loaded.
   // Also re-triggers when mpvAudio changes (queryTrackList completes).
+  //
+  // ⚠️ NE RIEN ENVOYER SI LA PISTE EST DÉJÀ LA BONNE. `fileLoaded` bascule sur
+  // playback-restart, donc cet effet tire JUSTE APRÈS la première image — et il
+  // tire deux fois, la track-list revenant 300 ms plus tard. Reposer `aid`
+  // réinitialise la chaîne audio et resynchronise par un seek interne : sur un
+  // flux réseau, le cache est vidé et mpv repart en attente. C'est le second
+  // chargement, à l'instant précis où on le voit.
+  //
+  // La comparaison porte sur l'état OBSERVÉ (property-change `aid`/`sid`, cf.
+  // OBSERVED_PROPERTIES), pas sur une lecture à la demande : c'est ce qui
+  // distingue cette garde de 7dd496ce, dont le `getProperty` asynchrone rendait
+  // volontiers `null` sur la coquille Electron — la garde ne s'activait alors
+  // jamais. Elle ne couvre que l'application AUTOMATIQUE de la préférence ;
+  // handleAudioChange et handleSubtitleChange, eux, envoient toujours : un
+  // choix explicite de l'utilisateur ne peut pas être avalé.
   useEffect(() => {
     if (!fileLoaded || !ready) return;
     // In transcode mode, Jellyfin outputs only the selected audio track via
@@ -129,7 +144,7 @@ export function useMpvTrackSync({
     // because mpv's aid persists across loadfile: if the previous direct play file
     // had aid=3 (e.g. Japanese), the new HLS stream has no track 3 → no audio.
     if (!isDirectPlay) {
-      setAudioTrack(1);
+      if (state.audioTrack !== 1) setAudioTrack(1);
       return;
     }
     let mpvId: number | null = null;
@@ -147,15 +162,19 @@ export function useMpvTrackSync({
     }
     console.debug(DBG, "pref apply audio", { currentAudio, mpvId, currentMpv: state.audioTrack,
       hasMpvTracks: mpvAudio.length > 0, jfLangs: audioTracks.map(t => t.lang), mpvLangs: mpvAudio.map(t => t.lang) });
-    if (mpvId != null) setAudioTrack(mpvId);
+    if (mpvId != null && mpvId !== state.audioTrack) setAudioTrack(mpvId);
   }, [currentAudio, mpvAudio, fileLoaded, ready, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Apply subtitle preference from parent ──
   useEffect(() => {
     if (!fileLoaded || !ready) return;
     if (currentSubtitle == null) {
-      console.debug(DBG, "pref apply subtitle: disable (null)");
-      setSubtitleTrack(0);
+      // Même garde que pour l'audio : sans sous-titres, cet effet posait
+      // `sid=no` après CHAQUE première image, alors que sid valait déjà `no`.
+      if (state.subtitleTrack !== 0) {
+        console.debug(DBG, "pref apply subtitle: disable (null)");
+        setSubtitleTrack(0);
+      }
       return;
     }
 
@@ -177,7 +196,9 @@ export function useMpvTrackSync({
       console.debug(DBG, "pref apply subtitle (embedded)", { currentSubtitle, mpvId, currentMpv: state.subtitleTrack,
         jfLangs: subtitleTracks.map(t => t.lang), mpvLangs: mpvSubs.map(t => t.lang), mpvIds: mpvSubs.map(t => t.id) });
       if (mpvId != null) {
-        setSubtitleTrack(mpvId);
+        // `sub-visibility` n'a pas à être reposé au passage : rien ne le met
+        // jamais à `no` dans l'app, et son défaut mpv est `yes`.
+        if (mpvId !== state.subtitleTrack) setSubtitleTrack(mpvId);
         return;
       }
     }
