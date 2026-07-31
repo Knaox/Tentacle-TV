@@ -221,10 +221,16 @@ export function DesktopPlayer({
   const showSkipCredits = creditsSegment && actualPos >= creditsSegment.start && actualPos < creditsSegment.end - 1;
 
   // Show loading overlay: initial load OR source change (quality/audio switch).
-  // Sécurité anti-spinner-éternel : dès que mpv a une position > 0 (donc lit
-  // réellement quelque chose), on masque l'overlay même si l'event "playing"
-  // a été perdu (cas observé sur certaines configs Windows + EAC3 5.1).
-  const showLoadingOverlay = state.position > 0
+  // Sécurité anti-spinner-éternel : mpv qui lit sans le dire (event "playing"
+  // perdu — configs Windows + EAC3 5.1). Le signe, c'est une position qui
+  // AVANCE : `position > 0` ne le prouvait pas, puisqu'en REPRISE time-pos vaut
+  // déjà la position de départ dès l'ouverture du fichier. L'overlay se retirait
+  // donc avant même la première image, et la coupure suivante s'affichait en
+  // spinner nu sur une image figée plutôt qu'en chargement.
+  const posDepartRef = useRef<number | null>(null);
+  if (posDepartRef.current === null && state.position > 0) posDepartRef.current = state.position;
+  const lectureAvance = posDepartRef.current !== null && state.position > posDepartRef.current + 0.25;
+  const showLoadingOverlay = lectureAvance
     ? false
     : sourceChanging || (!state.playing && !hasStartedRef.current);
 
