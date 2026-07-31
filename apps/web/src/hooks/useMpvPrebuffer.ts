@@ -58,36 +58,54 @@ interface UseMpvPrebufferOptions {
 export function useMpvPrebuffer({
   mediaReady, buffered, eof, setPause,
 }: UseMpvPrebufferOptions): boolean {
-  const [enAttente, setEnAttente] = useState(false);
   // Une seule fois par média — le hook vit dans un lecteur remonté à chaque
-  // épisode (`key={itemId}`), donc la ref repart naturellement à zéro.
+  // épisode (`key={itemId}`), donc les refs repartent naturellement à zéro.
   const decideRef = useRef(false);
+  const attenteRef = useRef(false);
+  const [, rerendre] = useState(0);
 
-  useEffect(() => {
-    if (!mediaReady || decideRef.current) return;
+  // ⚠️ DÉCISION PRISE PENDANT LE RENDU, pas dans un effet.
+  //
+  // `mediaReady` devient vrai au rendu N, mais un effet ne s'exécute qu'après —
+  // et son `setState` ne peint qu'au rendu N+1. Le rendu N sortait donc avec
+  // l'overlay retiré : l'image apparaissait une fraction de seconde, puis la
+  // bannière revenait par-dessus. Un clignotement, à l'endroit précis où l'on
+  // cherchait justement à ne montrer qu'un seul chargement continu.
+  //
+  // Décider ici rend l'état visible dès le rendu N : rien n'est peint entre les
+  // deux. La mutation reste sûre — elle est gardée, donc idempotente si React
+  // rejoue le rendu.
+  if (mediaReady && !decideRef.current) {
     decideRef.current = true;
-    if (buffered >= PREBUFFER_SECS) return;
+    attenteRef.current = buffered < PREBUFFER_SECS;
+  }
+
+  const relacher = (motif: string) => {
+    if (!attenteRef.current) return;
+    attenteRef.current = false;
+    tracerCommande("pré-remplissage terminé", motif);
+    void setPause(false);
+    rerendre((n) => n + 1);
+  };
+
+  // L'effet de bord suit la décision : c'est la pause qui attend le rendu, pas
+  // l'affichage.
+  useEffect(() => {
+    if (!attenteRef.current) return;
     tracerCommande("pré-remplissage", `${buffered.toFixed(1)} s en réserve, ${PREBUFFER_SECS} s visées`);
-    setEnAttente(true);
     void setPause(true);
-    const plafond = setTimeout(() => {
-      tracerCommande("pré-remplissage abandonné", `plafond ${PLAFOND_MS / 1000} s`);
-      setEnAttente(false);
-      void setPause(false);
-    }, PLAFOND_MS);
+    const plafond = setTimeout(() => relacher(`plafond ${PLAFOND_MS / 1000} s`), PLAFOND_MS);
     return () => clearTimeout(plafond);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaReady]);
 
   useEffect(() => {
-    if (!enAttente) return;
     // `eof` : un média plus court que la réserve visée ne l'atteindra jamais.
-    if (buffered < PREBUFFER_SECS && !eof) return;
-    tracerCommande("pré-remplissage terminé", `${buffered.toFixed(1)} s en réserve`);
-    setEnAttente(false);
-    void setPause(false);
+    if (attenteRef.current && (buffered >= PREBUFFER_SECS || eof)) {
+      relacher(`${buffered.toFixed(1)} s en réserve`);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enAttente, buffered, eof]);
+  }, [buffered, eof]);
 
-  return enAttente;
+  return attenteRef.current;
 }
