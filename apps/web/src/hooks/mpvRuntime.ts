@@ -263,7 +263,14 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     cache: "yes",
     "demuxer-max-bytes": "150MiB",
     "demuxer-max-back-bytes": "75MiB",
-    "cache-pause-wait": 3,
+    // Ce que mpv exige d'avoir en réserve pour (re)partir. Il sert deux fois :
+    // c'est le seuil du remplissage initial (via `cache-pause-initial`, plus
+    // bas) ET celui de la reprise après une coupure. Une marge, pas une
+    // attente : à 3 s, la moindre irrégularité du débit repassait sous le
+    // seuil et rendormait la lecture aussitôt repartie ; au-delà de 5 s, c'est
+    // le chargement lui-même qui devient long. Le remplissage, lui, continue
+    // jusqu'à `demuxer-readahead-secs` — on ne l'attend pas pour lancer l'image.
+    "cache-pause-wait": 5,
     // ⚠️ mpv se REMPLIT avant de lancer l'image, au lieu de démarrer dès qu'il
     // en a une. C'est le défaut que son propre manuel décrit à cette option :
     //
