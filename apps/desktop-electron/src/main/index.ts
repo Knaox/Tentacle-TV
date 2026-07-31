@@ -82,7 +82,44 @@ function useExistingUserData(): void {
   app.setPath("userData", path.join(app.getPath("appData"), TAURI_IDENTIFIER));
 }
 
+/**
+ * Dit à mpv qu'il tourne DANS un paquet — sinon il vole l'icône du Dock.
+ *
+ * ⚠️ mpv remplace l'icône de l'application ENTIÈRE, pas la sienne. Dans
+ * `video/out/mac/common.swift` :
+ *
+ *     func initApp() { NSApp.setActivationPolicy(policy); setAppIcon() }
+ *     func setAppIcon() {
+ *       if !AppHub.shared.isBundle { NSApp.applicationIconImage = AppHub.shared.getIcon() }
+ *     }
+ *
+ * et `isBundle` n'est rien d'autre que
+ * `ProcessInfo.processInfo.environment["MPVBUNDLE"] == "true"`
+ * (`osdep/mac/app_hub.swift`). Le garde-fou existe pour que la mpv de Homebrew,
+ * lancée au terminal, se donne quand même une icône ; nous, nous en avons une.
+ *
+ * `initApp()` tourne à la création de la SORTIE VIDÉO, donc au premier
+ * `loadfile` puisqu'on pose `force-window=no` : l'icône tenait jusqu'au premier
+ * film, et changeait ensuite. Elle rechange à chaque nouvelle sortie vidéo.
+ *
+ * ⚠️ AVANT tout chargement de libmpv, et c'est la seule contrainte — tenue de
+ * loin, `mpvFfi.ts` charge la bibliothèque à la première lecture. Vérifié au
+ * préalable : `ProcessInfo.processInfo.environment` relit `environ`, un
+ * `setenv()` postérieur au démarrage du processus est donc bien vu.
+ *
+ * Les autres effets d'`isBundle` ne nous concernent pas : le préfixe de `PATH`
+ * n'a lieu qu'avec `--macos-bundle-path`, qu'on ne pose pas ; la résolution
+ * « osxbundle » des chemins de configuration ne trouve rien dans nos
+ * `Resources` ; et la barre de menus de mpv n'en dépend pas.
+ */
+function declarerMpvEnPaquet(): void {
+  if (process.platform !== "darwin") return;
+  process.env["MPVBUNDLE"] = "true";
+}
+
 function main(): void {
+  declarerMpvEnPaquet();
+
   const solo = claimSingleInstance(() => {
     const win = getMainWindow();
     if (!win) return;
