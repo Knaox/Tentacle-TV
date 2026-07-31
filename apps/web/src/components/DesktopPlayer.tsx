@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
+import { useMpvPrebuffer } from "../hooks/useMpvPrebuffer";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
@@ -225,16 +226,17 @@ export function DesktopPlayer({
   // Show loading overlay: initial load OR source change (quality/audio switch).
   // Sécurité anti-spinner-éternel : mpv qui lit sans le dire (event "playing"
   // perdu — configs Windows + EAC3 5.1). Le signe, c'est une position qui
-  // AVANCE : `position > 0` ne le prouvait pas, puisqu'en REPRISE time-pos vaut
-  // déjà la position de départ dès l'ouverture du fichier. L'overlay se retirait
-  // donc avant même la première image, et la coupure suivante s'affichait en
-  // spinner nu sur une image figée plutôt qu'en chargement.
+  // AVANCE : `position > 0` ne le prouve pas, time-pos valant déjà la position
+  // de départ dès l'ouverture du fichier sur une REPRISE.
   const posDepartRef = useRef<number | null>(null);
   if (posDepartRef.current === null && state.position > 0) posDepartRef.current = state.position;
   const lectureAvance = posDepartRef.current !== null && state.position > posDepartRef.current + 0.25;
-  const showLoadingOverlay = lectureAvance
+  // Réserve constituée avant de lancer l'image, l'écran de chargement couvrant
+  // l'attente : un seul chargement, et il ne recommence pas derrière.
+  const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause });
+  const showLoadingOverlay = prebuffering || (lectureAvance
     ? false
-    : sourceChanging || (!state.playing && !hasStartedRef.current);
+    : sourceChanging || (!state.playing && !hasStartedRef.current));
 
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
   if (error && onFallbackToWeb) { onFallbackToWeb(); return null; }
