@@ -114,9 +114,21 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
             case "time-pos":
               positionRef.current = (event.data as number | null) ?? positionRef.current;
               return; // ref only — no setState
-            case "demuxer-cache-duration":
-              bufferedRef.current = (event.data as number | null) ?? 0;
+            case "demuxer-cache-duration": {
+              // ⚠️ `null` veut dire INDISPONIBLE, pas « cache vide ». mpv rend
+              // M_PROPERTY_UNAVAILABLE dès que sa fenêtre temporelle n'est pas
+              // exploitable (`ts_duration < 0`) — ce qui arrive à chaque
+              // transition de lecture, donc précisément quand l'image démarre.
+              // Le pont traduit fidèlement (FORMAT.NONE → null, mpvDrain.ts) ;
+              // c'est ici que la lacune devenait un zéro, et ce zéro se lisait
+              // comme un cache jeté : barre de chargement qui retombe, réserve
+              // apparemment perdue, et un pré-remplissage déclenché pour rien.
+              // Rien n'était jeté. `time-pos`, juste au-dessus, garde déjà sa
+              // dernière valeur pour la même raison.
+              const cache = event.data as number | null;
+              if (cache != null) bufferedRef.current = cache;
               return; // ref only — no setState
+            }
             default:
               break;
           }

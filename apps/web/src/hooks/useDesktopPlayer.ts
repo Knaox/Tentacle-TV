@@ -187,6 +187,9 @@ export function useDesktopPlayer() {
         tracerCommande("set sid (avant ouverture)", sid);
         await api.command("set", ["sid", sid]).catch((e) => console.warn("[mpv] set sid:", e));
       }
+      // Nouveau média : la réserve du précédent n'a plus cours. À remettre à
+      // zéro EXPLICITEMENT, maintenant qu'un `null` ne l'écrase plus.
+      bufferedRef.current = 0;
       loadfileAtRef.current = Date.now();
       ouvrirDemarrage(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
         options.startPosition != null && options.startPosition > 0
