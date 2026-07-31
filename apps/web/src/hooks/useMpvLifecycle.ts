@@ -19,6 +19,8 @@ export interface MpvLifecycleCtx {
   setMediaReady: (v: boolean) => void;
   positionRef: MutableRefObject<number>;
   bufferedRef: MutableRefObject<number>;
+  /** Miroir synchrone de `paused-for-cache` — lu par le nudge de réveil. */
+  bufferingRef: MutableRefObject<boolean>;
   mutedRef: MutableRefObject<boolean>;
   fileLoadedRef: MutableRefObject<boolean>;
   pendingTracks: MutableRefObject<{ aid?: number; sid?: number } | null>;
@@ -40,7 +42,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const unlisteners: (() => void)[] = [];
     const {
       setState, setReady, setError, setFileLoaded, setMediaReady,
-      positionRef, bufferedRef, mutedRef, fileLoadedRef, pendingTracks,
+      positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef, pendingTracks,
       playbackWatchdogRef, wakeupRef, loadfileAtRef,
     } = ctx;
 
@@ -170,6 +172,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               case "paused-for-cache": {
                 // data=null quand aucun média chargé (entre deux loadfile) → false.
                 const buffering = (event.data as boolean | null) ?? false;
+                bufferingRef.current = buffering;
                 if (prev.buffering !== buffering) {
                   wtLog("mpv", `paused-for-cache → ${buffering}`, { pos: positionRef.current.toFixed(1), cacheS: bufferedRef.current.toFixed(1) });
                   tracerDemarrage(buffering ? LABEL_BUFFERING : "cache reconstitué",

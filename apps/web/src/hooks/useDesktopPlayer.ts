@@ -50,13 +50,16 @@ export function useDesktopPlayer() {
   // High-frequency refs — synced to React state via throttle timer
   const positionRef = useRef(0);
   const bufferedRef = useRef(0);
+  // Miroir synchrone de `paused-for-cache` : le nudge s'exécute dans un timer,
+  // hors rendu React, et ne peut donc pas lire `state.buffering`.
+  const bufferingRef = useRef(false);
   // Diagnostic : horodatage du dernier loadfile — mesure loadfile→restart.
   const loadfileAtRef = useRef(0);
 
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setError, setFileLoaded, setMediaReady,
-    positionRef, bufferedRef, mutedRef, fileLoadedRef, pendingTracks,
+    positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef, pendingTracks,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
   });
 
@@ -112,14 +115,29 @@ export function useDesktopPlayer() {
     // transcodé encore en cours d'ouverture, ce seek forcé tombait PENDANT
     // le seek initial `start=+pos` et coinçait le demuxer → jamais de
     // playback-restart (écran noir, pas de son). Jamais de nudge sur .m3u8.
+    //
+    // ⚠️ Et jamais non plus PENDANT que mpv se remplit. Depuis
+    // `cache-pause-initial`, mpv attend délibérément d'avoir de quoi tenir
+    // avant de lancer l'image : `playback-restart` arrive donc plusieurs
+    // secondes après le loadfile, et ce délai d'annulation de 600 ms — calibré
+    // quand la première image sortait aussitôt — était devenu systématiquement
+    // trop court. Le seek tombait au milieu du remplissage et jetait ce que mpv
+    // venait d'accumuler : un chargement, l'image, puis un second chargement.
+    // On repousse tant que `paused-for-cache` est vrai. Le filet reste entier
+    // pour ce qu'il vise — un pipeline réellement FIGÉ, qui lui ne bufferise
+    // pas — et le watchdog ci-dessus borne l'attente dans tous les cas.
     if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
     if (!isHls) {
-      wakeupRef.current = setTimeout(() => {
-        wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
-        tracerCommande("seek de réveil", "+50 ms");
-        getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
-        wakeupRef.current = null;
-      }, 600);
+      const armerReveil = () => {
+        wakeupRef.current = setTimeout(() => {
+          wakeupRef.current = null;
+          if (bufferingRef.current) { armerReveil(); return; }
+          wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
+          tracerCommande("seek de réveil", "+50 ms");
+          getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
+        }, 600);
+      };
+      armerReveil();
     }
     try {
       // La propriété `pause` de mpv PERSISTE entre les loadfile : un rebuild
