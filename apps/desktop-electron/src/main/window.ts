@@ -9,6 +9,7 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { windowIconPath } from "./appIcon";
+import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
 import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
 import { lockNavigation } from "./security";
 import {
@@ -16,7 +17,6 @@ import {
   estEnPleinEcran,
   fermerSessionLecteur,
   ouvrirSessionLecteur,
-  quitter as quitterPleinEcran,
 } from "./fullscreen";
 
 const DEFAULT_WIDTH = 1280;
@@ -198,50 +198,10 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     win.webContents.openDevTools({ mode: "detach" });
   }
 
-  // Diffuse tout changement de plein écran, QUELLE QUE SOIT SA SOURCE — notre
-  // bascule, F11, ou la sortie automatique du lecteur. Sans cette diffusion,
-  // l'icône du bouton et la touche Échap partaient en désaccord avec la
-  // fenêtre réelle.
-  const broadcast = (value: boolean): void => {
-    if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", value);
-  };
-
-  // F11 sort du plein écran, quoi qu'il arrive.
-  //
-  // C'est le raccourci que tout le monde connaît sous Windows, et le menu
-  // applicatif — retiré parce qu'il se voyait pendant la lecture — était le
-  // seul à le fournir. Sans lui, un plein écran dont les contrôles ne se
-  // révèlent pas devient une souricière. Traité AVANT la page, pour rester
-  // valable même si l'interface est occupée.
-  win.webContents.on("before-input-event", (event, input) => {
-    if (input.type !== "keyDown" || input.key !== "F11") return;
-    event.preventDefault();
-
-    // DEUX plein-écrans coexistent et ne se recouvrent pas toujours : celui de
-    // la FENÊTRE (le nôtre, cf. `fullscreen.ts`) et celui du DOCUMENT
-    // (`requestFullscreen`, posé par la page). N'en quitter qu'un donne
-    // exactement le symptôme observé : une fenêtre dont on ne sort plus. F11
-    // sort donc des DEUX, et n'entre que si aucun des deux n'est actif — sans
-    // quoi la touche cesserait de basculer.
-    const fenetre = estEnPleinEcran();
-    void win.webContents
-      .executeJavaScript(
-        "(() => { const e = !!document.fullscreenElement; if (e) document.exitFullscreen(); return e; })()",
-        true,
-      )
-      .catch(() => false)
-      .then((document: unknown) => {
-        const etait = fenetre || document === true;
-        if (etait) quitterPleinEcran(win);
-        else basculerPleinEcran(win);
-        broadcast(estEnPleinEcran());
-        if (app.isPackaged) return;
-        console.log(
-          `[fenetre] F11 — avant : fenetre=${fenetre} document=${String(document)}` +
-            ` → fenetre=${estEnPleinEcran()}`,
-        );
-      });
-  });
+  // Plein écran : AppKit, F11, et la sortie de session du lecteur. Tout est dans
+  // `fullscreenSync.ts` — trois sources à réconcilier, ce n'est plus un détail
+  // de fabrication.
+  installerSyncPleinEcran(win);
 
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
   // rectangle vide le temps du premier rendu.
@@ -284,6 +244,7 @@ export function leavePlayerFullscreenScope(): void {
   if (!win || win.isDestroyed()) return;
   fermerSessionLecteur(win);
   // L'état doit redescendre à la page : sans cela l'icône du bouton plein écran
-  // et la touche Échap restaient en désaccord avec la fenêtre réelle.
-  if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", estEnPleinEcran());
+  // et la touche Échap restaient en désaccord avec la fenêtre réelle. Conservé
+  // pour Windows, où la parade ne fait naître aucun évènement d'AppKit.
+  diffuserPleinEcran(win, estEnPleinEcran());
 }
