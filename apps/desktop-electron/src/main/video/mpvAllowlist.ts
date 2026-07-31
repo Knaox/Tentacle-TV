@@ -149,6 +149,10 @@ const OPTIONS_INIT: ReadonlySet<string> = new Set([
   // Cache et réseau
   "cache",
   "cache-pause-wait",
+  // Sans elle, mpv lance l'image dès qu'il en a une, épuise son cache aussitôt
+  // et repasse en attente : un second chargement juste après le premier. Voir
+  // `mpvRuntime.ts`, qui cite le manuel de mpv sur ce défaut.
+  "cache-pause-initial",
   "demuxer-max-bytes",
   "demuxer-max-back-bytes",
   "demuxer-readahead-secs",

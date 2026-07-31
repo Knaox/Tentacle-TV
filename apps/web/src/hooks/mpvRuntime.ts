@@ -264,6 +264,27 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     "demuxer-max-bytes": "150MiB",
     "demuxer-max-back-bytes": "75MiB",
     "cache-pause-wait": 3,
+    // ⚠️ mpv se REMPLIT avant de lancer l'image, au lieu de démarrer dès qu'il
+    // en a une. C'est le défaut que son propre manuel décrit à cette option :
+    //
+    //   « some common behavior is that playback starts, but network caches
+    //     immediately underrun when trying to decode more data as playback
+    //     progresses »
+    //
+    // Mot pour mot ce qui était constaté — un chargement, l'image, puis un
+    // second chargement quelques instants après. Deux fausses pistes avant
+    // celle-ci (un seek de réveil, un changement de piste redondant) : le
+    // défaut n'était pas dans ce qu'on faisait EN PLUS, mais dans ce que mpv
+    // fait par défaut.
+    //
+    // Le temps total ne change pas. L'attente de `cache-pause-wait` est déjà
+    // subie aujourd'hui — après l'image, en pleine coupure ; elle passe avant,
+    // dans le chargement qui est déjà à l'écran. Sur un fichier local, le cache
+    // se remplit aussitôt et l'attente est nulle.
+    //
+    // ⚠️ À déclarer AUSSI dans `OPTIONS_INIT` (`mpvAllowlist.ts`) : la coquille
+    // Electron écarte en silence toute option qu'elle ne connaît pas.
+    "cache-pause-initial": "yes",
     "demuxer-readahead-secs": 30,
     // HLS/network resilience. `reconnect_max_retries` BORNE la boucle de
     // reconnexion ffmpeg : sans elle, un flux invalidé côté serveur (403/404
