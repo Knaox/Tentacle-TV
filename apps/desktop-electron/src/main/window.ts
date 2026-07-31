@@ -42,6 +42,30 @@ export function setPlayerSurfaceTransparent(on: boolean): void {
   if (!win) return;
   win.setBackgroundColor(on ? "#00000000" : "#000000");
 
+  // ⚠️ ET L'OMBRE DE LA FENÊTRE PART AVEC. C'est elle qui dessinait le halo
+  // autour du texte et de la seek bar, en FENÊTRÉ seulement.
+  //
+  // macOS calcule l'ombre d'une NSWindow transparente depuis son MASQUE ALPHA.
+  // Notre fenêtre est fabriquée `transparent: true` (voir `createMainWindow`) :
+  // chaque pixel opaque de la page — chaque glyphe du minutage, la barre de
+  // progression, les boutons — projette donc sa propre ombre sur ce qui est
+  // derrière, c'est-à-dire SUR LA FENÊTRE DE MPV. Une fenêtre en plein écran
+  // natif n'a pas d'ombre : d'où des contrôles nets en plein écran et haloés en
+  // fenêtré, à CSS strictement identique. Capture d'écran des deux à l'appui.
+  //
+  // Trois traces de ce mécanisme existaient déjà, sans qu'il soit nommé :
+  //  - `macosChildWindow.ts` a mesuré que retirer cette ombre AGGRAVE le liseré
+  //    de la fenêtre mpv (14,6 → 50). Elle tombe donc bien dessus, et elle
+  //    l'assombrissait — c'est la contrepartie assumée ici, couverte depuis la
+  //    page (voir `bordureVideo` côté web) ;
+  //  - le retrait du voile (« le ghosting en fenetre ») concluait qu'il restait
+  //    « plus que la zone des contrôles eux-mêmes ». C'était ce résidu ;
+  //  - `setHasShadow:NO` était déjà posé sur la fenêtre DE MPV, jamais la nôtre.
+  //
+  // Elle revient à la sortie de lecture : hors du lecteur la page est opaque,
+  // l'ombre est celle d'une fenêtre ordinaire et rien ne la reçoit.
+  if (process.platform === "darwin") win.setHasShadow(!on);
+
   // ⚠️ Sur macOS, ON NE TOUCHE PLUS à l'opacité de la NSWindow, et surtout pas
   // avec `setOpaque:`.
   //

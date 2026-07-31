@@ -16,6 +16,7 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
+import { bordureVideo } from "../lib/ombreSurVideo";
 import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
@@ -235,7 +236,7 @@ export function DesktopPlayer({
 
   return (
     // cursor-none : souris immobile → l'OSD se cache ET le curseur disparaît (revient au moindre mouvement).
-    <div onMouseMove={scheduleHide} className={`relative flex h-screen w-screen items-center justify-center ${showControls ? "" : "cursor-none"}`} style={{ background: "transparent" }}>
+    <div onMouseMove={scheduleHide} className={`relative flex h-screen w-screen items-center justify-center ${showControls ? "" : "cursor-none"}`} style={{ background: "transparent", boxShadow: bordureVideo(state.fullscreen) }}>
       {/* Click catcher — toggle pause / fullscreen on video area */}
       <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 

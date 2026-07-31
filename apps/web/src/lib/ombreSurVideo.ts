@@ -53,3 +53,25 @@ export function surfaceAvecAlpha(): boolean {
 export function ombreSurVideo(complete: string, liseré: string): string {
   return SURFACE_ALPHA ? liseré : complete;
 }
+
+/**
+ * Le liseré d'AppKit sur la fenêtre de mpv, couvert depuis la page.
+ *
+ * ⚠️ Contrepartie DIRECTE du retrait de l'ombre de la fenêtre principale
+ * (`window.ts`, `setPlayerSurfaceTransparent`). Cette ombre dessinait le halo
+ * autour du texte et de la barre, mais elle assombrissait aussi, par accident,
+ * la bordure claire qu'AppKit peint sur le bord supérieur de la fenêtre de mpv
+ * — laquelle garde son `styleMask` titré en fenêtré. Mesuré côté processus
+ * principal : 14,6 avec l'ombre, 50 sans. Retirer l'une révèle l'autre.
+ *
+ * On la couvre donc ici, par un trait NET d'un pixel : sans flou, il ne peut pas
+ * sortir en aplat comme le ferait une ombre portée sur cette surface (voir
+ * l'en-tête). Un pixel de vidéo au ras du bord, contre un liseré gris sur toute
+ * la largeur.
+ *
+ * Rien en plein écran : `cadreSansLisere` y passe la fenêtre de mpv en
+ * `borderless`, la bordure n'existe plus.
+ */
+export function bordureVideo(pleinEcran: boolean): string {
+  return SURFACE_ALPHA && !pleinEcran ? "inset 0 1px 0 #000" : "none";
+}
