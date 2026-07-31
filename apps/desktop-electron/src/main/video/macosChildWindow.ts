@@ -94,6 +94,41 @@ export function cadreSansLisere(fenetre: unknown, pleinEcran: boolean): void {
   }
   if (courant !== SANS_DECORATION || styleDorigine === 0) return;
   msg.setMasqueStyle(fenetre, styleDorigine);
+  remasquerBarreDeTitre(fenetre);
+}
+
+/** `NSWindowTitleHidden` — le titre existe, AppKit ne le dessine pas. */
+const TITRE_CACHE = 1;
+
+/** Les trois boutons de fenêtre : fermer, réduire, zoomer. */
+const BOUTONS_STANDARD = [0, 1, 2];
+
+/**
+ * Refait ce que mpv avait fait à sa barre de titre, et que nous lui avons défait.
+ *
+ * ⚠️ Rendre le `styleMask` titré RECONSTRUIT la barre de titre. mpv ne l'avait
+ * jamais supprimée — `title-bar=no` ne fait que la MASQUER
+ * (`common.titleBar?.hide()`) — et il ne la remasque pas quand on lui change son
+ * style sous les pieds. À la sortie du plein écran, la fenêtre vidéo réaffichait
+ * donc une barre complète : ses propres feux de circulation, et le titre
+ * « Tentacle TV » que mpv pose sur sa fenêtre. Vue à l'écran, sous notre bandeau,
+ * à la hauteur exacte où commence la fenêtre de mpv.
+ *
+ * Les trois gestes sont ceux de mpv lui-même, dans le même ordre. Aucun ne
+ * dépend d'un état antérieur : les rejouer sur une fenêtre déjà masquée est sans
+ * effet, ce qui rend la fonction sûre à appeler plus d'une fois.
+ *
+ * ⚠️ Écarté : ne plus restaurer le `styleMask` du tout. La fenêtre resterait
+ * `borderless`, donc à coins carrés — et si le recouvrement du bandeau cache
+ * désormais ceux du haut, ceux du BAS dépasseraient des coins arrondis de la
+ * nôtre.
+ */
+function remasquerBarreDeTitre(fenetre: unknown): void {
+  msg.setFlag(fenetre, "setTitlebarAppearsTransparent:", true);
+  msg.setEntier(fenetre, "setTitleVisibility:", TITRE_CACHE);
+  for (const bouton of BOUTONS_STANDARD) {
+    msg.setFlag(msg.index(fenetre, "standardWindowButton:", bouton), "setHidden:", true);
+  }
 }
 
 /**

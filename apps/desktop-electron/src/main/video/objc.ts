@@ -234,6 +234,16 @@ export const msg = {
     if (!fenetre) return;
     send1l(fenetre, sel("setLevel:"), niveau);
   },
+  /**
+   * `[cible nom: entier]` — un NSInteger quelconque.
+   *
+   * `setNiveau` code son sélecteur en dur ; celui-ci sert aux énumérations, dont
+   * `setTitleVisibility:`. Signé, comme tout `NSInteger` : plusieurs valent -1.
+   */
+  setEntier(cible: unknown, nom: string, valeur: number): void {
+    if (!cible) return;
+    send1l(cible, sel(nom), valeur);
+  },
   /** `[fenêtre orderOut: nil]` — la retire de l'écran sans la détruire. */
   orderOut(fenetre: unknown): void {
     if (!fenetre) return;
