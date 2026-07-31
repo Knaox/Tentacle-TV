@@ -61,22 +61,7 @@ export function useMpvCommands({
   const setAudioTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
-    // ⚠️ Reposer une piste que mpv joue DÉJÀ n'est pas gratuit : il réinitialise
-    // son décodeur et redemande des données à la source. Sur un flux réseau,
-    // c'est un rebuffer — `paused-for-cache` repasse à vrai, et l'utilisateur
-    // voit un second chargement quelques instants après l'image.
-    //
-    // Et ça arrivait à CHAQUE lecture : l'effet de préférence
-    // (`useMpvTrackSync`) applique la piste dès `fileLoaded`, puis se
-    // redéclenche quand `queryTrackList` revient 300 ms plus tard — deux fois,
-    // presque toujours pour la piste que mpv avait déjà choisie tout seul.
-    //
-    // On interroge mpv plutôt que l'état React : celui-ci suit `aid` par
-    // observation, mais rien ne garantit qu'il soit à jour à cet instant précis,
-    // et se tromper ici ferait SAUTER un changement légitime.
-    const courant = await api.getProperty("aid", "int64").catch(() => null);
-    if (courant === id) return;
-    console.debug("[mpv] setAudioTrack", id, "(courant", courant, ")");
+    console.debug("[mpv] setAudioTrack", id);
     // Use command("set") with string value — setProperty("aid", number)
     // fails because the plugin sends MPV_FORMAT_DOUBLE but mpv expects MPV_FORMAT_INT64.
     try { await api.command("set", ["aid", String(id)]); }
@@ -85,17 +70,7 @@ export function useMpvCommands({
   const setSubtitleTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
-    // Même raison que pour l'audio. `sid` désactivé ne se lit pas comme un
-    // entier — mpv rend alors une erreur, donc `null`, qu'on traite comme 0.
-    const lu = await api.getProperty("sid", "int64").catch(() => null);
-    const courant = lu ?? 0;
-    // ⚠️ La visibilité reste posée même quand la piste ne change pas : c'est un
-    // réglage distinct, qu'un média précédent a pu laisser à `no`.
-    if (courant === id) {
-      if (id !== 0) await api.command("set", ["sub-visibility", "yes"]).catch(() => {});
-      return;
-    }
-    console.debug("[mpv] setSubtitleTrack", id, "(courant", courant, ")");
+    console.debug("[mpv] setSubtitleTrack", id);
     try {
       if (id === 0) {
         await api.command("set", ["sid", "no"]);

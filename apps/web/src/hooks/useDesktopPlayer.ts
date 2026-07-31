@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  defaultMpvState, getMpvApi, isWindows,
+  defaultMpvState, getMpvApi,
   type MpvState, type PlayOptions,
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
@@ -107,25 +107,12 @@ export function useDesktopPlayer() {
       }
     }, watchdogMs);
 
-    // Wake-up cold start : réservé au DIRECT PLAY, et à WINDOWS. Sur un HLS
+    // Wake-up cold start (Windows) : réservé au DIRECT PLAY. Sur un HLS
     // transcodé encore en cours d'ouverture, ce seek forcé tombait PENDANT
     // le seek initial `start=+pos` et coinçait le demuxer → jamais de
     // playback-restart (écran noir, pas de son). Jamais de nudge sur .m3u8.
-    //
-    // ⚠️ La garde de PLATEFORME manquait, et elle coûtait un micro-chargement à
-    // chaque lecture sur macOS. Ce nudge répare le démarrage à froid de la
-    // fenêtre ENFANT Win32 — un cas qui n'existe pas ailleurs : sur macOS mpv a
-    // sa propre fenêtre et son propre pipeline. Il est annulé dès
-    // `playback-restart` (`useMpvLifecycle`), mais macOS affiche une image
-    // AVANT d'émettre cet évènement : le seek partait donc sur une lecture déjà
-    // à l'écran, et un seek sur un flux réseau, c'est un rebuffer. Signalé
-    // comme « la vidéo se lance, puis un second chargement ».
-    //
-    // Le filet ne disparaît pas : le watchdog ci-dessus reste armé, et c'est
-    // lui — avec son retry `loadfile` complet — qui rattrape un pipeline
-    // réellement muet. Le nudge n'était qu'un gain de latence.
     if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
-    if (!isHls && isWindows()) {
+    if (!isHls) {
       wakeupRef.current = setTimeout(() => {
         wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
         getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
