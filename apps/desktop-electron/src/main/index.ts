@@ -58,20 +58,29 @@ const TAURI_IDENTIFIER = "com.tentacle.media";
  * l'application des dizaines de fois, et refaire le parcours à la souris à
  * chaque essai finissait par décider de ce qu'on testait.
  *
- * ⚠️ Jamais dans un paquet livré : la reprise vit dans `dev/autoWatch.tsx`, que
- * le build de production n'embarque pas — le paramètre n'y serait qu'une
- * curiosité dans la barre d'adresse.
+ * ⚠️ `autowatch` jamais dans un paquet livré : la reprise vit dans
+ * `dev/autoWatch.tsx`, que le build de production n'embarque pas — le paramètre
+ * n'y serait qu'une curiosité dans la barre d'adresse. `debugpanel`, lui, passe
+ * même en paquet : voir plus bas.
  */
 function routeDeDepart(): string {
-  if (app.isPackaged) return "";
   const parametres: string[] = [];
-  const cible = process.env["TENTACLE_AUTOWATCH"];
-  if (cible !== undefined && cible !== "") {
-    parametres.push(`autowatch=${encodeURIComponent(cible)}`);
+  if (!app.isPackaged) {
+    const cible = process.env["TENTACLE_AUTOWATCH"];
+    if (cible !== undefined && cible !== "") {
+      parametres.push(`autowatch=${encodeURIComponent(cible)}`);
+    }
   }
   // `TENTACLE_DEBUG_PANEL=1` ouvre le panneau de diagnostic d'office : juger le
   // rendu demande de relancer sans cesse, et le rouvrir à la main à chaque fois
   // finit par décider de ce qu'on observe.
+  //
+  // ⚠️ Y COMPRIS EN PAQUET. Le paquet qu'on instrumente (`package:macos:debug`)
+  // est un miroir de prod : `app.isPackaged` y est vrai, et la garde d'ensemble
+  // rendait donc la variable inopérante précisément là où elle sert — seul le
+  // bouton DEBUG restait, à ouvrir à la main. Aucun risque pour un paquet
+  // livré : le panneau n'existe dans le bundle que si `__PLAYER_DEBUG__` est
+  // vrai (figé au build par `TENTACLE_DEBUG=1`), sinon le paramètre est inerte.
   if (process.env["TENTACLE_DEBUG_PANEL"] === "1") parametres.push("debugpanel=1");
   return parametres.length === 0 ? "" : `?${parametres.join("&")}`;
 }
