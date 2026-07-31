@@ -18,13 +18,15 @@
  *
  * # Le lecteur, et pourquoi il vient d'ailleurs
  *
- * ⚠️ En développement, la coquille emprunte la libmpv de Homebrew — **GPL**, et
- * hors de question dans un paquet. Les dylibs livrées sont celles que
+ * Les dylibs livrées sont celles que
  * `apps/desktop/scripts/build-mpv-lgpl-macos.sh` recompile en **LGPL** (mpv sans
  * `gpl=true`, FFmpeg sans `--enable-gpl`, ni x264 ni x265) — exactement la chaîne
  * déjà validée par Apple pour le paquet Tauri. On les reçoit par `--lib`,
  * universelles, et on les pose dans `Contents/Frameworks` : Apple refuse du code
  * exécutable sous `Resources`, et c'est là que `libmpvPath()` les cherche.
+ *
+ * Le développement charge la MÊME chaîne, depuis `apps/desktop/src-tauri/lib`
+ * (`mpvLib.ts`) : la mpv de Homebrew est GPL et n'est plus qu'un repli explicite.
  *
  *   node scripts/package-macos.mjs --lib <dossier de dylibs> [options]
  *

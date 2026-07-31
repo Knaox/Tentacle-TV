@@ -14,7 +14,7 @@
  */
 
 import koffi from "koffi";
-import { libmpvPath } from "./mpvFfi";
+import { libmpvPath } from "./mpvLib";
 
 /** Types de `mpv_render_param` (`render.h`). */
 export const PARAM = {

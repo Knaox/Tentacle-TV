@@ -32,108 +32,7 @@
  */
 
 import koffi from "koffi";
-import { app } from "electron";
-import { existsSync } from "node:fs";
-import path from "node:path";
-
-/** Nom du fichier de bibliothèque, selon le système. */
-const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib";
-
-/**
- * Emplacement de la bibliothèque mpv, empaquetée ou en développement.
- *
- * # Le paquet macOS cherche dans `Frameworks`, et nulle part ailleurs
- *
- * Les dylibs livrées sont celles que `build-mpv-lgpl-macos.sh` recompile en
- * **LGPL** — mpv sans `gpl=true`, FFmpeg sans `--enable-gpl`, ni x264 ni x265.
- * Apple refuse du code exécutable sous `Resources`, elles vivent donc dans
- * `Contents/Frameworks` (`package-macos.mjs`), à côté de leurs dépendances qui
- * se retrouvent par `@loader_path`.
- *
- * ⚠️ Le repli Homebrew ne vaut QUE pour le développement : cette mpv est **GPL**,
- * et un paquet qui la chargerait serait indistribuable. Un paquet dont les
- * dylibs manquent doit donc échouer bruyamment plutôt que se rattraper sur elle.
- *
- * # Le cas macOS en développement
- *
- * On vise Homebrew par défaut : c'est ce que le proto a validé, et c'est déjà
- * relié au chargeur Vulkan et à MoltenVK du système.
- *
- * ⚠️ Une note de la phase 1 disait que la **mpv 0.40** du dépôt — celle qui est
- * LIVRÉE — ne savait pas faire de HDR sur macOS. C'est FAUX du chemin
- * qu'emprunte la coquille : cette mesure portait sur le contexte `macvk`
- * (Vulkan). Relevé le 2026-07-30 sur le paquet, une lecture HDR en cours :
- * headroom EDR de l'écran à **8,48** pour un potentiel de 16 — la plage étendue
- * est bien obtenue, et l'utilisateur la trouve meilleure qu'avec la 0.41 de
- * Homebrew. La 0.41 déposée à côté (`libmpv.dylib`) reste orpheline : ses
- * dépendances (FFmpeg 62.x, rubberband, libarchive) ne sont pas dans `lib/`.
- *
- * `TENTACLE_MPV_LIB` permet d'en essayer une autre sans toucher au code : un
- * chemin, ou le mot **`livree`** pour viser la chaîne LGPL vendorée — celle que
- * le paquet embarque. C'est la seule façon d'éprouver en développement ce que
- * l'utilisateur recevra vraiment, panneau de diagnostic compris (`pnpm dev:mpv-livree`).
- */
-/**
- * Dit au chargeur Vulkan où trouver son pilote, dans le paquet.
- *
- * ⚠️ Sans cela, un paquet livré ne montre AUCUNE image. `libvulkan.1.dylib` ne se
- * lie pas à MoltenVK : elle le cherche à l'exécution dans un fichier ICD, dont
- * les emplacements par défaut sont système (`/opt/homebrew/etc/vulkan/icd.d`,
- * `/usr/local/share/vulkan/icd.d`) — tous hors du bac à sable. Le chargeur
- * n'énumère alors aucun périphérique, `gpu-context=macvk` échoue, et mpv n'ouvre
- * jamais sa fenêtre : le fichier se charge, le son sort, l'image jamais.
- * Diagnostiqué le 2026-07-30, journal du paquet à l'appui — « fenetre mpv
- * introuvable apres 10 s ».
- *
- * `VK_DRIVER_FILES` est le nom actuel, `VK_ICD_FILENAMES` celui que les chargeurs
- * plus anciens lisent : on pose les deux, et jamais par-dessus un réglage venu de
- * l'environnement, qui appartient à celui qui déboguait.
- *
- * ⚠️ Le fichier vit dans `Resources`, et NON à côté de la dylib qu'il désigne :
- * `Contents/Frameworks` est réservé au code signable, et un fichier de données y
- * fait échouer la signature du paquet entier.
- */
-function declarerPiloteVulkan(): void {
-  const icd = path.join(process.resourcesPath, "MoltenVK_icd.json");
-  if (!existsSync(icd)) return;
-  for (const cle of ["VK_DRIVER_FILES", "VK_ICD_FILENAMES"]) {
-    if (process.env[cle] === undefined || process.env[cle] === "") process.env[cle] = icd;
-  }
-}
-
-export function libmpvPath(): string {
-  const choisi = process.env["TENTACLE_MPV_LIB"];
-  // La chaîne LGPL du dépôt : exactement les dylibs que `package-macos.mjs`
-  // copie dans `Contents/Frameworks`, chargées depuis leur dossier d'origine —
-  // elles se retrouvent entre elles par `@loader_path`, où qu'elles soient.
-  if (choisi === "livree") {
-    return path.resolve(__dirname, "../../../../desktop/src-tauri/lib", NOM_LIB);
-  }
-  if (choisi !== undefined && choisi !== "") return choisi;
-
-  if (process.platform === "darwin") {
-    // `resourcesPath` = `Contents/Resources` ; les dylibs sont un cran plus haut.
-    const cadres = path.join(process.resourcesPath, "..", "Frameworks");
-    if (app.isPackaged) {
-      declarerPiloteVulkan();
-      return path.join(cadres, NOM_LIB);
-    }
-    return "/opt/homebrew/lib/libmpv.2.dylib";
-  }
-
-  if (process.platform !== "win32") {
-    // Aucune autre plateforme ne sort d'Electron : Linux reste sur Tauri, et un
-    // chemin inventé ici ne serait jamais éprouvé.
-    throw new Error(`Aucune libmpv connue pour ${process.platform} — définir TENTACLE_MPV_LIB.`);
-  }
-
-  const packaged = path.join(process.resourcesPath, "lib", NOM_LIB);
-  if (app.isPackaged && existsSync(packaged)) return packaged;
-
-  // En développement on emprunte la DLL déjà vendorée par l'app Tauri plutôt
-  // que d'en dupliquer 95 Mo dans le dépôt.
-  return path.resolve(__dirname, "../../../../desktop/src-tauri/lib/libmpv-2.dll");
-}
+import { libmpvPath } from "./mpvLib";
 
 /** Formats de propriété mpv (`client.h`). */
 export const FORMAT = {
@@ -240,7 +139,13 @@ let cache: MpvApi | null = null;
 
 /** La libmpv chargée. Lève si elle est introuvable — l'appelant décide. */
 export function mpvApi(): MpvApi {
-  if (cache === null) cache = lier(koffi.load(libmpvPath()));
+  if (cache !== null) return cache;
+  const chemin = libmpvPath();
+  // Tracé ICI et non dans `libmpvPath()`, qui a deux appelants : la ligne dirait
+  // deux fois la même chose. C'est le seul témoin de la chaîne réellement jouée,
+  // et la première chose à lire quand le rendu ou le HDR surprend.
+  console.info(`[mpv] bibliothèque : ${chemin}`);
+  cache = lier(koffi.load(chemin));
   return cache;
 }
 
