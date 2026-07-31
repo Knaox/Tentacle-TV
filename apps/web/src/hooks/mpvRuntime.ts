@@ -261,7 +261,18 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     // Use keyframe seeking by default (hr-seek breaks HLS segment boundaries)
     "hr-seek": "default",
     cache: "yes",
-    "demuxer-max-bytes": "150MiB",
+    // ⚠️ C'est un PLAFOND EN OCTETS, et c'est lui qui bornait la réserve sur
+    // les gros contenus — pas le débit. `demuxer-readahead-secs` vise 30 s,
+    // mais 150 MiB ne représentent que ~12 s d'un 4K à 100 Mb/s, et ~9 s d'un
+    // remux UHD à 128 Mb/s : la barre de chargement restait courte et la
+    // réserve mince, là précisément où la moindre irrégularité coûte cher. Un
+    // film léger (15 Mb/s), lui, atteignait ses 30 s sans jamais approcher le
+    // plafond — d'où un défaut qui ne se voyait QUE sur les contenus lourds.
+    //
+    // 512 MiB tient les 30 s visées jusqu'à ~140 Mb/s. C'est un plafond, pas
+    // une réservation : mpv n'alloue que ce qu'il garde, donc une lecture
+    // légère continue de tenir dans quelques dizaines de mégaoctets.
+    "demuxer-max-bytes": "512MiB",
     "demuxer-max-back-bytes": "75MiB",
     // Ce que mpv exige d'avoir en réserve pour (re)partir. Il sert deux fois :
     // c'est le seuil du remplissage initial (via `cache-pause-initial`, plus
@@ -270,7 +281,12 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
     // seuil et rendormait la lecture aussitôt repartie ; au-delà de 5 s, c'est
     // le chargement lui-même qui devient long. Le remplissage, lui, continue
     // jusqu'à `demuxer-readahead-secs` — on ne l'attend pas pour lancer l'image.
-    "cache-pause-wait": 5,
+    //
+    // Le coût de cette réserve n'est PAS de huit secondes : c'est
+    // `8 × bitrate ÷ débit`. Sur un film léger servi par un réseau local, elle
+    // est remplie en une fraction de seconde et ne se voit pas ; c'est sur les
+    // gros contenus qu'elle se paie, et c'est là qu'elle sert.
+    "cache-pause-wait": 8,
     // ⚠️ mpv se REMPLIT avant de lancer l'image, au lieu de démarrer dès qu'il
     // en a une. C'est le défaut que son propre manuel décrit à cette option :
     //
