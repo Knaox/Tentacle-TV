@@ -3,6 +3,7 @@ import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { findMpvTrack, nativeSubUrl } from "../components/player/mpvTrackMapping";
 import { isSideCarIndex } from "./localPlaybackTrackSources";
+import { aidDemandeCourant, sidDemandeCourant } from "./mpvTrackIntent";
 import type { MpvState, MpvTrack } from "./useDesktopPlayer";
 
 const DBG = "[DesktopPlayer]";
@@ -82,6 +83,19 @@ export function useMpvTrackSync({
     }
   }, [subtitleTracks, addSubtitle, setSubtitleTrack, loadedExternalSubs]);
 
+  /**
+   * Piste externe déjà chargée ET déjà sélectionnée : rien à renvoyer.
+   *
+   * `addSubtitle` relit la track-list pour connaître le sid attribué, ce qui
+   * change `state.tracks`, ce qui redéclenche cet effet — qui reposait alors
+   * `sid` à chaque tour. Or chaque pose de piste fait jeter à mpv tout son
+   * cache (mpv#8422).
+   */
+  const externeDejaPosee = useCallback((jfIndex: number) => {
+    const sid = loadedExternalSubs.current.get(jfIndex);
+    return sid != null && sid === sidDemandeCourant();
+  }, [loadedExternalSubs]);
+
   /** Sous-titre bitmap (PGS…) ? → burn-in serveur, rien à faire côté mpv. */
   const isBitmapSub = useCallback((jfIndex: number) => {
     const codec = subtitleTracks.find((t) => t.index === jfIndex)?.codec;
@@ -144,7 +158,7 @@ export function useMpvTrackSync({
     // because mpv's aid persists across loadfile: if the previous direct play file
     // had aid=3 (e.g. Japanese), the new HLS stream has no track 3 → no audio.
     if (!isDirectPlay) {
-      if (state.audioTrack !== 1) setAudioTrack(1);
+      if (state.audioTrack !== 1 && aidDemandeCourant() !== 1) setAudioTrack(1);
       return;
     }
     let mpvId: number | null = null;
@@ -162,7 +176,7 @@ export function useMpvTrackSync({
     }
     console.debug(DBG, "pref apply audio", { currentAudio, mpvId, currentMpv: state.audioTrack,
       hasMpvTracks: mpvAudio.length > 0, jfLangs: audioTracks.map(t => t.lang), mpvLangs: mpvAudio.map(t => t.lang) });
-    if (mpvId != null && mpvId !== state.audioTrack) setAudioTrack(mpvId);
+    if (mpvId != null && mpvId !== state.audioTrack && mpvId !== aidDemandeCourant()) setAudioTrack(mpvId);
   }, [currentAudio, mpvAudio, fileLoaded, ready, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Apply subtitle preference from parent ──
@@ -171,7 +185,10 @@ export function useMpvTrackSync({
     if (currentSubtitle == null) {
       // Même garde que pour l'audio : sans sous-titres, cet effet posait
       // `sid=no` après CHAQUE première image, alors que sid valait déjà `no`.
-      if (state.subtitleTrack !== 0) {
+      // L'intention en plus de l'état observé : `sid = no` remonte en
+      // MPV_FORMAT_NONE, donc `null`, et le handler garde alors la valeur
+      // précédente — l'état observé peut mentir sur ce cas précis.
+      if (state.subtitleTrack !== 0 && sidDemandeCourant() !== 0) {
         console.debug(DBG, "pref apply subtitle: disable (null)");
         setSubtitleTrack(0);
       }
@@ -180,13 +197,15 @@ export function useMpvTrackSync({
 
     // Side-car local : toujours par sub-add (voir handleSubtitleChange).
     if (isSideCarIndex(currentSubtitle)) {
-      void selectExternalSub(currentSubtitle);
+      if (!externeDejaPosee(currentSubtitle)) void selectExternalSub(currentSubtitle);
       return;
     }
 
     if (!isDirectPlay) {
       // Transcode : externe natif systématique (voir handleSubtitleChange).
-      if (!isBitmapSub(currentSubtitle)) void selectExternalSub(currentSubtitle);
+      if (!isBitmapSub(currentSubtitle) && !externeDejaPosee(currentSubtitle)) {
+        void selectExternalSub(currentSubtitle);
+      }
       return;
     }
 
@@ -196,9 +215,7 @@ export function useMpvTrackSync({
       console.debug(DBG, "pref apply subtitle (embedded)", { currentSubtitle, mpvId, currentMpv: state.subtitleTrack,
         jfLangs: subtitleTracks.map(t => t.lang), mpvLangs: mpvSubs.map(t => t.lang), mpvIds: mpvSubs.map(t => t.id) });
       if (mpvId != null) {
-        // `sub-visibility` n'a pas à être reposé au passage : rien ne le met
-        // jamais à `no` dans l'app, et son défaut mpv est `yes`.
-        if (mpvId !== state.subtitleTrack) setSubtitleTrack(mpvId);
+        if (mpvId !== state.subtitleTrack && mpvId !== sidDemandeCourant()) setSubtitleTrack(mpvId);
         return;
       }
     }
@@ -219,7 +236,7 @@ export function useMpvTrackSync({
     //    ci-dessus écarte déjà ce cas, celle-ci l'avait oublié. Ces pistes-là,
     //    mpv les lit de toute façon en interne.
     if (state.tracks.length === 0 || isBitmapSub(currentSubtitle)) return;
-    void selectExternalSub(currentSubtitle);
+    if (!externeDejaPosee(currentSubtitle)) void selectExternalSub(currentSubtitle);
   }, [currentSubtitle, mpvSubs, fileLoaded, ready, isDirectPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleAudioChange, handleSubtitleChange };

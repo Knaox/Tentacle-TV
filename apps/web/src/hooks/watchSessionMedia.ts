@@ -49,6 +49,10 @@ export function buildSubtitleTracks(
       url: client.getSubtitleUrl(itemId, mediaSourceId, s.Index),
       lang: s.Language?.toLowerCase(),
       codec: s.Codec?.toLowerCase(),
+      // Le serveur le sait, et personne ne le remontait : une piste externe
+      // n'existe pas dans la track-list de mpv. La compter décalait le rang de
+      // toutes les internes suivantes.
+      external: s.IsExternal === true,
     }));
 }
 

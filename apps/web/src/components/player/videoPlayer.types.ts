@@ -10,6 +10,13 @@ export interface SubtitleTrack {
   codec?: string;
   /** Piste forcée — connue des side-cars locaux (leur nom de fichier la porte). */
   forced?: boolean;
+  /**
+   * Sous-titre EXTERNE au conteneur (fichier séparé côté serveur, side-car
+   * local). Il n'est PAS dans la track-list de mpv : jamais adressable par
+   * `sid`, il passe par `sub-add` — et il ne compte pas dans le rang
+   * positionnel des pistes internes.
+   */
+  external?: boolean;
 }
 export interface AudioTrack { index: number; label: string; lang?: string }
 

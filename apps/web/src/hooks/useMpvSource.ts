@@ -1,5 +1,6 @@
 import { useEffect, useState, type MutableRefObject } from "react";
 import type { MpvState, PlayOptions } from "./useDesktopPlayer";
+import { isSideCarIndex } from "./localPlaybackTrackSources";
 import { tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
@@ -22,8 +23,41 @@ interface UseMpvSourceOptions {
   hasStartedRef: MutableRefObject<boolean>;
   loadedExternalSubs: MutableRefObject<Map<number, number>>;
   audioTracks: { index: number }[];
+  subtitleTracks: { index: number; external?: boolean }[];
   currentAudio: number;
   currentSubtitle: number | null;
+}
+
+/**
+ * `sid` à poser AVANT le `loadfile`, quand la track-list de mpv n'existe pas
+ * encore. Rang parmi les sous-titres INTERNES au conteneur, +1 : mpv numérote
+ * les siens par type à partir de 1, dans l'ordre du démuxeur, et Jellyfin lit
+ * le même conteneur — en lecture directe le fichier est servi tel quel.
+ *
+ * Rend `0` (« no ») plutôt que `undefined` dans tous les cas non mappables :
+ * `sid` PERSISTE d'un `loadfile` à l'autre, et ne rien poser laisserait soit
+ * une valeur héritée, soit l'autosélection de mpv choisir une piste qu'on
+ * remplacerait aussitôt — c'est ce remplacement, après l'ouverture, qui fait
+ * jeter à mpv tout son cache (mpv#8422).
+ *
+ * Un sous-titre bitmap interne (PGS) est traité comme les autres : mpv le rend
+ * nativement, c'est une piste du conteneur comme une autre.
+ */
+export function sidAvantOuverture(
+  subtitleTracks: { index: number; external?: boolean }[],
+  currentSubtitle: number | null,
+  isDirectPlay: boolean,
+): number {
+  // Aucun sous-titre demandé.
+  if (currentSubtitle == null) return 0;
+  // Transcode : les renditions VTT du manifeste ne sont pas rendues par mpv et
+  // le burn-in est déjà dans l'image. Poser `no` empêche une autosélection.
+  if (!isDirectPlay) return 0;
+  // Side-car local et externe serveur : absents du conteneur → `sub-add`.
+  if (isSideCarIndex(currentSubtitle)) return 0;
+  const internes = subtitleTracks.filter((t) => t.external !== true);
+  const pos = internes.findIndex((t) => t.index === currentSubtitle);
+  return pos < 0 ? 0 : pos + 1;
 }
 
 /**
@@ -35,7 +69,7 @@ export function useMpvSource({
   play, onStarted, onProgress, onSeekComplete,
   lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
   hasStartedRef, loadedExternalSubs,
-  audioTracks, currentAudio, currentSubtitle,
+  audioTracks, subtitleTracks, currentAudio, currentSubtitle,
 }: UseMpvSourceOptions) {
   const [sourceChanging, setSourceChanging] = useState(false);
   // State (not ref!) — transitioning to true triggers preference effect re-runs
@@ -91,10 +125,7 @@ export function useMpvSource({
       // poser explicitement, un aid=3 hérité d'un direct play laissant le flux
       // HLS sans audio.
       audioTrack: isDirectPlay ? (aPos >= 0 ? aPos + 1 : undefined) : 1,
-      // Seul le cas « aucun sous-titre » se décide sans la track-list, et c'est
-      // le plus fréquent. Une piste demandée reste à l'effet de préférence, qui
-      // sait la faire correspondre par la langue.
-      subtitleTrack: currentSubtitle == null ? 0 : undefined,
+      subtitleTrack: sidAvantOuverture(subtitleTracks, currentSubtitle, isDirectPlay),
     });
     loadedExternalSubs.current.clear();
     // State transition triggers preference effects in the NEXT render

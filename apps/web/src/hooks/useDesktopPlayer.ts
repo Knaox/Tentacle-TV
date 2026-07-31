@@ -5,6 +5,7 @@ import {
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
+import { noterAid, noterSid, oublierPistesDemandees } from "./mpvTrackIntent";
 import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
@@ -82,7 +83,13 @@ export function useDesktopPlayer() {
     setMediaReady(false);
     // Purge des restes du fichier précédent (un eof=true collé afficherait
     // l'écran de fin dès le chargement du nouveau média).
-    setState((prev) => ({ ...prev, eof: false, playing: false }));
+    // `tracks` compris : sur un rebuild de source (qualité, burn-in), la
+    // track-list du fichier PRÉCÉDENT survivait, et le premier passage des
+    // effets de préférence calculait un mapping par langue depuis une liste
+    // périmée — donc une commande de piste juste après la première image, et
+    // le cache de mpv jeté avec (mpv#8422). Vide, la liste force le repli
+    // positionnel, qui coïncide avec ce qu'on vient de poser avant l'ouverture.
+    setState((prev) => ({ ...prev, eof: false, playing: false, tracks: [] }));
 
     const isHls = options.url.includes(".m3u8");
     wtLog("mpv", `play() attempt=${attempt} ${isHls ? "HLS/transcode" : "direct"}`, {
@@ -178,14 +185,23 @@ export function useDesktopPlayer() {
       // pendingTracks, sur playback-restart — réinitialisait la chaîne audio et
       // resynchronisait par un seek interne : mpv jetait son cache et la barre
       // de chargement retombait à zéro juste après le démarrage.
+      // Nouveau média : ce qu'on avait demandé pour le précédent n'a plus cours.
+      oublierPistesDemandees();
       if (options.audioTrack != null && options.audioTrack > 0) {
         tracerCommande("set aid (avant ouverture)", String(options.audioTrack));
-        await api.command("set", ["aid", String(options.audioTrack)]).catch((e) => console.warn("[mpv] set aid:", e));
+        // Noté seulement si la commande a ABOUTI : un `set` refusé ne doit pas
+        // laisser croire à une intention posée, sans quoi la correction
+        // ultérieure serait avalée.
+        await api.command("set", ["aid", String(options.audioTrack)])
+          .then(() => noterAid(options.audioTrack as number))
+          .catch((e) => console.warn("[mpv] set aid:", e));
       }
       if (options.subtitleTrack != null) {
         const sid = options.subtitleTrack === 0 ? "no" : String(options.subtitleTrack);
         tracerCommande("set sid (avant ouverture)", sid);
-        await api.command("set", ["sid", sid]).catch((e) => console.warn("[mpv] set sid:", e));
+        await api.command("set", ["sid", sid])
+          .then(() => noterSid(options.subtitleTrack as number))
+          .catch((e) => console.warn("[mpv] set sid:", e));
       }
       // Nouveau média : la réserve du précédent n'a plus cours. À remettre à
       // zéro EXPLICITEMENT, maintenant qu'un `null` ne l'écrase plus.

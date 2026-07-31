@@ -1,6 +1,7 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
+import { noterAid, noterSid } from "./mpvTrackIntent";
 import { tracerCommande } from "./startupTrace";
 import { invoke, isElectronShell, listen } from "../desktop/bridge";
 
@@ -72,7 +73,12 @@ export function useMpvCommands({
     tracerCommande("set aid", String(id));
     // Use command("set") with string value — setProperty("aid", number)
     // fails because the plugin sends MPV_FORMAT_DOUBLE but mpv expects MPV_FORMAT_INT64.
-    try { await api.command("set", ["aid", String(id)]); }
+    //
+    // ⚠️ AUCUNE garde ici : c'est le chemin du choix explicite de l'utilisateur
+    // (handleAudioChange). Filtrer à cet endroit avalerait une sélection
+    // légitime — l'erreur exacte qui avait valu son revert à 7dd496ce. La
+    // déduplication vit dans les effets de PRÉFÉRENCE, pas ici.
+    try { await api.command("set", ["aid", String(id)]); noterAid(id); }
     catch (e) { console.error("[mpv] setAudioTrack failed:", e); }
   }, []);
   const setSubtitleTrack = useCallback(async (id: number) => {
@@ -81,12 +87,11 @@ export function useMpvCommands({
     console.debug("[mpv] setSubtitleTrack", id);
     tracerCommande("set sid", id === 0 ? "no" : String(id));
     try {
-      if (id === 0) {
-        await api.command("set", ["sid", "no"]);
-      } else {
-        await api.command("set", ["sid", String(id)]);
-        await api.command("set", ["sub-visibility", "yes"]).catch(() => {});
-      }
+      // `sub-visibility` n'est plus reposé au passage : rien dans l'app ne le
+      // met jamais à `no`, son défaut mpv est `yes`, et c'était une commande de
+      // plus dans la fenêtre où chacune coûte le cache entier.
+      await api.command("set", ["sid", id === 0 ? "no" : String(id)]);
+      noterSid(id);
     } catch (e) { console.error("[mpv] setSubtitleTrack failed:", e); }
   }, []);
   const setVolume = useCallback(async (v: number) => {
@@ -179,7 +184,11 @@ export function useMpvCommands({
       if (select) {
         await api.setProperty("sub-visibility", true).catch(() => {});
         const sid = await api.getProperty("sid", "int64").catch(() => null);
-        return typeof sid === "number" ? sid : null;
+        // Le sid attribué par mpv devient l'intention courante : sans ça,
+        // l'effet de préférence — que la relecture de track-list ci-dessus
+        // redéclenche — reposait `sid` à chaque tour.
+        if (typeof sid === "number") { noterSid(sid); return sid; }
+        return null;
       }
     } catch (e) {
       console.error("[mpv] sub-add failed:", e);
