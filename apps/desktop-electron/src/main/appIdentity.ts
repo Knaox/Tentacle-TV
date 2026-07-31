@@ -19,10 +19,21 @@
  * `scripts/nom-dev-macos.mjs` — rejoué à chaque `pnpm dev`, donc insensible à une
  * réinstallation. Vérifié à l'écran.
  *
- * # L'icône du Dock
+ * # L'icône du Dock — EN DÉVELOPPEMENT SEULEMENT
  *
- * Elle vient du paquet elle aussi. On la remplace à l'exécution — c'est le seul
- * moyen, et il n'existe que sur macOS (`app.dock`).
+ * Elle vient du paquet elle aussi, et c'est très bien ainsi : depuis macOS 26,
+ * le système MASQUE l'icône du paquet en squircle et lui ajoute son liseré, le
+ * traitement que reçoivent toutes les autres icônes du Dock.
+ *
+ * ⚠️ Une icône posée à l'exécution ÉCHAPPE à ce traitement : `applicationIconImage`
+ * est affichée telle quelle, sans masque et sans liseré, donc elle remplit toute
+ * la tuile et paraît plus grosse que ses voisines. C'est le « moins Apple »
+ * constaté depuis la 1.17 — belle icône application fermée, autre icône
+ * application ouverte. Le paquet livré porte déjà le bon `electron.icns`, jeu de
+ * tailles complet : il n'y a rien à corriger, seulement à ne pas l'écraser.
+ *
+ * En développement le paquet est `Electron.app`, dont l'icône est l'atome bleu.
+ * Là, et là seulement, la remplacer vaut mieux que la subir.
  *
  * # Ce qui reste celui d'Electron en développement
  *
@@ -58,6 +69,12 @@ export function appliquerIdentiteSysteme(): void {
   });
 
   if (process.platform !== "darwin" || icone === null) return;
+
+  // ⚠️ Le paquet garde l'icône de son bundle, et c'est TOUT L'INTÉRÊT : macOS 26
+  // la masque en squircle et lui pose son liseré, comme aux autres. La poser ici
+  // court-circuiterait ce traitement — voir l'en-tête. Le panneau « À propos »,
+  // lui, garde son `iconPath` : il affiche une image, pas une tuile de Dock.
+  if (app.isPackaged) return;
 
   const image = nativeImage.createFromPath(icone);
   // Une image vide voudrait dire que le fichier a bougé ou changé de format :
