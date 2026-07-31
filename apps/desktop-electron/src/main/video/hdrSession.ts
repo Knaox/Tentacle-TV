@@ -190,7 +190,13 @@ export function terminer(): void {
 /** Applique la préférence de la page. Éteinte en vol, elle rend l'écran. */
 export function autoriserBascule(on: boolean): void {
   autorisee = on;
-  console.info(`[tentacle] HDR : bascule automatique ${on ? "autorisee" : "refusee"}`);
+  // Journalisé là seulement où la bascule existe : `displayHdr` ne parle qu'à
+  // Windows. Sur macOS la ligne se répétait à chaque montage du lecteur et se
+  // lisait comme « pas de HDR », alors qu'elle ne dit rien de la lecture — le
+  // HDR y passe par mpv et la couche Metal, pas par un mode d'écran.
+  if (process.platform === "win32") {
+    console.info(`[tentacle] HDR : bascule automatique ${on ? "autorisee" : "refusee"}`);
+  }
   // L'utilisateur qui décoche s'attend à voir l'effet tout de suite, pas à
   // devoir arrêter le film.
   if (!on) terminer();
