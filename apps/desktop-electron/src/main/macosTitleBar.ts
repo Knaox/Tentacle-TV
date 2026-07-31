@@ -46,6 +46,28 @@ export const HAUTEUR_BANDEAU = 38;
 const FEUX = { x: 16, y: 13 } as const;
 
 /**
+ * De combien la fenêtre de mpv passe SOUS le bandeau, en points.
+ *
+ * ⚠️ Sans ce recouvrement, on voit les COINS ARRONDIS de la fenêtre de mpv en
+ * plein milieu de la nôtre. Elle est titrée — `cadreSansLisere` ne lui retire
+ * son cadre qu'en plein écran — et AppKit arrondit toute fenêtre titrée. Tant
+ * qu'elle couvrait le cadre entier, ses coins coïncidaient avec les nôtres et ne
+ * se voyaient pas ; calée sous une bande, ils apparaissent. Le liseré d'AppKit
+ * du bord supérieur passe dessous avec eux.
+ *
+ * 16 est un MAJORANT du rayon des coins de macOS 26. `NSWindow` n'expose aucun
+ * moyen de le lire, et masquer un peu plus que nécessaire ne coûte rien : c'est
+ * du noir sous une bande opaque. Le centrage vertical de l'image bouge de 8
+ * points, invisible.
+ *
+ * ⚠️ Écarté : passer la fenêtre en `borderless` et lui reposer un `cornerRadius`
+ * sur les seuls coins du bas. Trois lignes, mais `masksToBounds` sur l'hôte de
+ * la `CAMetalLayer` peut faire perdre le headroom EDR silencieusement (voir
+ * `macosEdr.ts`). On ne troque pas un risque sur le HDR contre un coin.
+ */
+const RECOUVREMENT = 16;
+
+/**
  * Ce que macOS ajoute à la fabrication de la fenêtre.
  *
  * Rendu en bloc plutôt qu'épelé sur place : les trois options ne se comprennent
@@ -59,6 +81,9 @@ export function optionsCadreMacos(): Record<string, unknown> {
 /**
  * Le retrait haut que la vidéo doit laisser au bandeau.
  *
+ * Moins que la hauteur de la bande, exprès : la fenêtre de mpv passe dessous de
+ * `RECOUVREMENT` points, et y laisse ses coins arrondis.
+ *
  * ⚠️ Nul en plein écran : la bande y est démontée par la page, et une vidéo qui
  * garderait le retrait laisserait une bande noire en haut de l'écran.
  *
@@ -69,5 +94,6 @@ export function optionsCadreMacos(): Record<string, unknown> {
 export function retraitBandeau(host: BrowserWindow): number {
   if (process.platform !== "darwin") return 0;
   if (host.isDestroyed()) return 0;
-  return host.isFullScreen() || host.isSimpleFullScreen() ? 0 : HAUTEUR_BANDEAU;
+  if (host.isFullScreen() || host.isSimpleFullScreen()) return 0;
+  return HAUTEUR_BANDEAU - RECOUVREMENT;
 }
