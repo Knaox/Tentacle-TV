@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  defaultMpvState, getMpvApi,
+  defaultMpvState, getMpvApi, isWindows as estWindows,
   type MpvState, type PlayOptions,
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
@@ -116,22 +116,30 @@ export function useDesktopPlayer() {
     // le seek initial `start=+pos` et coinçait le demuxer → jamais de
     // playback-restart (écran noir, pas de son). Jamais de nudge sur .m3u8.
     //
-    // ⚠️ Et jamais non plus PENDANT que mpv se remplit. Depuis
-    // `cache-pause-initial`, mpv attend délibérément d'avoir de quoi tenir
-    // avant de lancer l'image : `playback-restart` arrive donc plusieurs
-    // secondes après le loadfile, et ce délai d'annulation de 600 ms — calibré
-    // quand la première image sortait aussitôt — était devenu systématiquement
-    // trop court. Le seek tombait au milieu du remplissage et jetait ce que mpv
-    // venait d'accumuler : un chargement, l'image, puis un second chargement.
-    // On repousse tant que `paused-for-cache` est vrai. Le filet reste entier
-    // pour ce qu'il vise — un pipeline réellement FIGÉ, qui lui ne bufferise
-    // pas — et le watchdog ci-dessus borne l'attente dans tous les cas.
+    // ⚠️ WINDOWS UNIQUEMENT, et sur un pipeline réellement figé.
+    //
+    // Ce nudge répare une fenêtre ENFANT Win32 qui n'émet pas toujours
+    // `playback-restart` (cf. 6c39b06c). Il n'a jamais rien réparé ailleurs, et
+    // depuis `cache-pause-initial` il fait activement du mal : mpv retient
+    // désormais l'image jusqu'à avoir sa réserve, donc le seek tombait dans le
+    // remplissage et jetait tout — mesuré, cache à 7 s puis 0 à l'instant où
+    // l'image sort. Le repousser pendant `paused-for-cache` a même empiré les
+    // choses : il tirait alors précisément à la fin du remplissage, dans
+    // l'intervalle qui précède l'annulation par `playback-restart`.
+    //
+    // Deuxième garde, pour Windows : un cache qui BOUGE prouve que mpv lit des
+    // données. Le pipeline que ce nudge vise, lui, est immobile — cache stable,
+    // rien qui avance. On ne réveille donc que ce qui dort vraiment.
+    //
+    // Ailleurs, le watchdog ci-dessus reste le filet : il fait un vrai retry de
+    // loadfile, seul moyen de récupérer un demuxer resté muet.
     if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
-    if (!isHls) {
+    if (!isHls && estWindows()) {
       const armerReveil = () => {
+        const cacheAuDepart = bufferedRef.current;
         wakeupRef.current = setTimeout(() => {
           wakeupRef.current = null;
-          if (bufferingRef.current) { armerReveil(); return; }
+          if (bufferingRef.current || bufferedRef.current !== cacheAuDepart) { armerReveil(); return; }
           wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
           tracerCommande("seek de réveil", "+50 ms");
           getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
