@@ -26,6 +26,8 @@ interface UseMpvSourceOptions {
   subtitleTracks: { index: number; external?: boolean }[];
   currentAudio: number;
   currentSubtitle: number | null;
+  /** Fichier téléchargé, lu depuis le disque. */
+  isLocalPlayback: boolean;
 }
 
 /**
@@ -69,7 +71,7 @@ export function useMpvSource({
   play, onStarted, onProgress, onSeekComplete,
   lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
   hasStartedRef, loadedExternalSubs,
-  audioTracks, subtitleTracks, currentAudio, currentSubtitle,
+  audioTracks, subtitleTracks, currentAudio, currentSubtitle, isLocalPlayback,
 }: UseMpvSourceOptions) {
   const [sourceChanging, setSourceChanging] = useState(false);
   // State (not ref!) — transitioning to true triggers preference effect re-runs
@@ -117,7 +119,22 @@ export function useMpvSource({
     // instant. C'est le repli qu'utilise déjà useMpvTrackSync quand elle
     // manque ; si l'ordre ne coïncide pas, l'effet de préférence corrige au
     // retour de la liste — un reset au lieu de zéro, jamais plus qu'avant.
-    const aPos = audioTracks.findIndex((t) => t.index === currentAudio);
+    // ⚠️ RIEN AVANT L'OUVERTURE EN LECTURE LOCALE, et c'est délibéré.
+    //
+    // Le mapping y est structurellement peu fiable : les pistes affichées
+    // valent le DTO Jellyfin dès qu'il existe (useLocalPlaybackTracks), or le
+    // fichier téléchargé peut être une variante allégée qui n'a pas les mêmes
+    // pistes — et hors ligne il n'y a pas de DTO du tout. On posait donc une
+    // sélection calculée sur la mauvaise liste, que la préférence locale ne
+    // pouvait plus corriger derrière : `mpvTrackIntent` la prenait pour une
+    // intention déjà satisfaite.
+    //
+    // Et il n'y a rien à y gagner : ce qu'on évite ici, c'est le vidage du
+    // cache de mpv au changement de piste (mpv#8422). Sur un fichier posé sur
+    // le disque, ce cache se reconstitue instantanément — le flush est gratuit.
+    // Les préférences s'appliquent donc après l'ouverture, comme avant, quand
+    // les pistes RÉELLES du fichier sont connues.
+    const aPos = isLocalPlayback ? -1 : audioTracks.findIndex((t) => t.index === currentAudio);
     play({
       url: src,
       startPosition: startPos,
@@ -125,7 +142,9 @@ export function useMpvSource({
       // poser explicitement, un aid=3 hérité d'un direct play laissant le flux
       // HLS sans audio.
       audioTrack: isDirectPlay ? (aPos >= 0 ? aPos + 1 : undefined) : 1,
-      subtitleTrack: sidAvantOuverture(subtitleTracks, currentSubtitle, isDirectPlay),
+      subtitleTrack: isLocalPlayback
+        ? undefined
+        : sidAvantOuverture(subtitleTracks, currentSubtitle, isDirectPlay),
     });
     loadedExternalSubs.current.clear();
     // State transition triggers preference effects in the NEXT render

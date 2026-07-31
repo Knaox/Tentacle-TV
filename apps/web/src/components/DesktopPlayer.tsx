@@ -163,8 +163,9 @@ export function DesktopPlayer({
     play, onStarted, onProgress, onSeekComplete,
     lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
     hasStartedRef, loadedExternalSubs,
-    // Pour poser les pistes AVANT l'ouverture du fichier (cf. useMpvSource).
-    audioTracks, subtitleTracks, currentAudio, currentSubtitle,
+    // Pour poser les pistes AVANT l'ouverture du fichier (cf. useMpvSource) —
+    // jamais en lecture locale, où les pistes réelles ne sont connues qu'après.
+    audioTracks, subtitleTracks, currentAudio, currentSubtitle, isLocalPlayback,
   });
 
   // Badge central, déclaré APRÈS `useMpvSource` : un rechargement de source fait
