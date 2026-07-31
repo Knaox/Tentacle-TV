@@ -6,10 +6,20 @@
  * Aucune modification d'`apps/web` — `useAutoUpdate` et `updateCheckers` sont
  * déjà écrits pour ce contrat.
  *
- * **Windows uniquement, et c'est voulu.** Sur macOS les mises à jour
- * appartiennent à l'App Store : ne rien enregistrer laisse `supportsAppUpdates()`
- * à faux, donc la bannière absente — le comportement juste, obtenu sans une
- * ligne de conditionnel côté page.
+ * **Windows uniquement, et c'est voulu** — mais PAS pour la raison qu'on
+ * pourrait croire.
+ *
+ * ⚠️ Ce fichier a longtemps affirmé que macOS ne devait rien afficher, et que
+ * l'absence de commande y suffisait. C'était le BUG, pas le comportement juste :
+ * la pop-up ne s'affichait jamais sur macOS alors que tout ce qu'il lui faut
+ * existe — un manifeste à lire et une fiche App Store à ouvrir.
+ *
+ * `supportsAppUpdates()` (`apps/web/src/desktop/capabilities.ts`) court-circuite
+ * désormais l'inventaire des commandes quand le canal de distribution est
+ * `appstore` : sur macOS la mise à jour n'est pas une commande native mais un
+ * `fetch` et un `openExternal`, et il n'y a donc rien à enregistrer ici. Les
+ * commandes ci-dessous restent ce qu'elles ont toujours été : la voie WinRT du
+ * Microsoft Store, qui n'a pas d'équivalent ailleurs.
  */
 
 import { shell } from "electron";
