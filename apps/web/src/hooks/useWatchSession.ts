@@ -94,7 +94,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const resumeApplied = useRef(false);
 
   // Web: server-driven stream selection via PlaybackInfo
-  const pbInfo = usePlaybackInfo();
+  // `isDesktop` vaut ici « c'est mpv qui lira » : WatchDesktop n'est monté que
+  // derrière `supportsMpv()`, et le repli web repasse par WatchWeb (isDesktop
+  // faux) — le profil suit donc toujours le lecteur réellement à l'œuvre.
+  const pbInfo = usePlaybackInfo(isDesktop);
 
   useEffect(() => {
     setStartTicks(0); setQualityKey("original"); setSubtitleIndex(null); setPrefsReady(false);
