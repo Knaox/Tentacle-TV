@@ -74,10 +74,15 @@ export function fmt(r: Rect): string {
  * fenêtre qui retrouverait sa barre de titre serait servie correctement sans
  * qu'une ligne change.
  */
-export function cibleVideo(host: BrowserWindow, parent: unknown): Rect {
+export function cibleVideo(host: BrowserWindow, parent: unknown, retraitHaut = 0): Rect {
   const cadre: Rect = msg.rect(parent, "frame");
   const pageCouvreLeCadre = host.getBounds().height === host.getContentBounds().height;
-  return pageCouvreLeCadre ? cadre : msg.contentRect(parent, cadre);
+  const base = pageCouvreLeCadre ? cadre : msg.contentRect(parent, cadre);
+  if (retraitHaut <= 0) return base;
+  // ⚠️ Coordonnées AppKit : l'origine est en BAS à gauche, donc `y + height` est
+  // le bord HAUT. Retrancher à la hauteur en laissant `y` fait descendre ce bord
+  // — c'est bien le haut qu'on libère. Déplacer `y` libérerait le bas.
+  return { ...base, height: base.height - retraitHaut };
 }
 
 /**

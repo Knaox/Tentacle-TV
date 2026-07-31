@@ -47,6 +47,15 @@ export interface ElectronBridge {
    * par `desktop/capabilities.ts` plutôt que de la lire directement.
    */
   readonly capabilities: readonly string[];
+  /**
+   * Hauteur, en points, du bandeau que la page doit dessiner elle-même.
+   *
+   * Zéro partout où la fenêtre garde son vrai cadre — Windows, et le web. Sur
+   * macOS la barre de titre est retirée à la fabrication : les feux de
+   * circulation se poseraient sur le contenu, et rien ne permettrait de
+   * déplacer la fenêtre. Voir `hostChrome.ts`.
+   */
+  readonly titleBarHeight?: number;
   /** Ouvre une URL dans le navigateur du système. */
   openExternal(url: string): Promise<void>;
   /** Sélecteur de dossier natif. `null` si l'utilisateur annule. */

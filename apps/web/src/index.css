@@ -54,31 +54,52 @@
     letter-spacing: -0.018em;
   }
 
-  /* La barre de navigation tient lieu de barre de titre.
+  /* Le bandeau de fenêtre, quand la page tient lieu de barre de titre.
    *
    * ⚠️ Sur la coquille Electron macOS, la fenêtre est fabriquée
    * `titleBarStyle: "hidden"` et `transparent: true` : aucune décoration, donc
-   * rien à saisir. Et comme rien dans la page ne déclarait de zone de
-   * déplacement, la fenêtre ne pouvait pas être bougée tant qu'elle était
-   * ACTIVE — il fallait passer à une autre application pour que macOS accepte
-   * de la déplacer par un clic-glisser. Signalé, et vrai depuis le début de la
-   * coquille.
+   * rien à saisir — et les feux de circulation se posent sur le CONTENU.
    *
-   * `[data-hote-sans-cadre]` est posé par `main.tsx`, et uniquement là où c'est
-   * le cas : `app-region` CONSOMME les clics, et Windows garde son cadre natif.
+   * La barre de navigation a d'abord servi de poignée, et c'était insuffisant :
+   * `app-region` consomme les clics, il fallait donc rendre en `no-drag` tout ce
+   * qui s'y clique — liens, recherche, boutons — et il ne restait presque plus
+   * rien à saisir. Rien du tout dans le lecteur, qui n'a pas de barre. La
+   * fenêtre ne se déplaçait pas tant qu'elle était ACTIVE. C'est `HostTitleBar`
+   * qui rend maintenant une vraie bande, sans rien de cliquable dedans.
    *
-   * La règle `no-drag` n'est pas un détail : sans elle, la zone de déplacement
-   * avalerait les liens, la recherche et les boutons de la barre. Elle vise ce
-   * qui se clique, pas une liste de composants — un bouton ajouté demain sera
-   * couvert sans qu'on y pense. */
-  [data-hote-sans-cadre] header[data-host-chrome^="topbar"] {
+   * `[data-hote-bandeau]` et `--hote-bandeau` sont posés par ce composant, et
+   * uniquement là où la fenêtre n'a pas son cadre : Windows garde le sien. */
+  /* Repli : `HostTitleBar` pose la vraie valeur en même temps que l'attribut,
+   * mais un `calc()` dont la variable ne résout pas est INVALIDE — la règle
+   * entière tomberait, et avec elle la hauteur du lecteur. */
+  :root {
+    --hote-bandeau: 0px;
+  }
+
+  [data-hote-bandeau] .bandeau-hote {
     -webkit-app-region: drag;
   }
 
-  [data-hote-sans-cadre]
-    header[data-host-chrome^="topbar"]
-    :is(a, button, input, select, textarea, label, [role="button"], [tabindex]) {
-    -webkit-app-region: no-drag;
+  /* Le contenu commence SOUS la bande. Les éléments en position fixe, eux, se
+   * repèrent sur la fenêtre et ignorent ce remplissage : la barre de navigation
+   * descend donc par sa propre règle (`TopNav`). */
+  [data-hote-bandeau] body {
+    padding-top: var(--hote-bandeau);
+  }
+
+  /* Sur cette coquille, « la hauteur de l'écran » signifie la fenêtre MOINS sa
+   * bande. Surcharger les deux utilitaires ici plutôt que page par page n'est
+   * pas un raccourci : le lecteur, la fiche média, l'écran de connexion et les
+   * catalogues hors ligne s'en servent tous, et une page ajoutée demain sera
+   * servie sans qu'on y pense. Sans cela, `100vh` sous un `body` décalé déborde
+   * d'exactement la hauteur de la bande — une barre de défilement sur le
+   * lecteur. */
+  [data-hote-bandeau] .h-screen {
+    height: calc(100vh - var(--hote-bandeau));
+  }
+
+  [data-hote-bandeau] .min-h-screen {
+    min-height: calc(100vh - var(--hote-bandeau));
   }
 
   /* Scrollbar custom — track + corner OBLIGATOIREMENT opaques.

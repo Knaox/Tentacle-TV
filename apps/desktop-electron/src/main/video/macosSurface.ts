@@ -29,6 +29,7 @@ import {
 import { attacherSousLaPage, cadreSansLisere, reordonnerSousLaPage } from "./macosChildWindow";
 import { guetterEdr, oublierEdr } from "./macosEdr";
 import { cibleVideo, poserCadre } from "./macosFrame";
+import { retraitBandeau } from "../macosTitleBar";
 import { decrireMontage, etatALaDecouverte } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
@@ -233,7 +234,10 @@ export class MacosSurface implements VideoSurface {
   }
 
   private cible(): Rect {
-    return cibleVideo(this.host, this.parent);
+    // Le bandeau d'hôte est peint par la page, et la vidéo doit lui laisser sa
+    // place — sinon elle passe DESSOUS, et une bande opaque mange le haut de
+    // l'image au lieu de la border. Nul en plein écran, où la page le démonte.
+    return cibleVideo(this.host, this.parent, retraitBandeau(this.host));
   }
 
   /**

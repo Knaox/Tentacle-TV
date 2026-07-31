@@ -42,8 +42,12 @@ export function TopNav({ showSearch = true }: TopNavProps) {
   return (
     <header
       data-host-chrome="topbar"
-      className="fixed inset-x-0 top-0 z-40 h-[68px]"
+      className="fixed inset-x-0 z-40 h-[68px]"
       style={{
+        // Sous le bandeau d'hôte, quand il y en a un : une position fixe se
+        // repère sur la FENÊTRE, le remplissage du `body` ne la décale pas.
+        // Vaut `0px` partout ailleurs (`index.css`).
+        top: "var(--hote-bandeau)",
         // Transition sur la SEULE bordure, qui apparaît sur un seuil : son
         // fondu est réel. Elle suit le token `--border-subtle` — un blanc en
         // dur dessinait un liseré incongru sur fond clair.

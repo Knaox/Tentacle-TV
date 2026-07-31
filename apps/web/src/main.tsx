@@ -42,7 +42,7 @@ import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installerSondeReseau } from "./dev/networkProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
-import { surfaceAvecAlpha } from "./lib/ombreSurVideo";
+import { HostTitleBar } from "./desktop/HostTitleBar";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -263,24 +263,15 @@ installAnimationAudit();
 // le singleton de l'adaptateur, il n'a besoin d'aucun contexte.
 // `__PLAYER_DEBUG__` est faux dans tout build livré — la branche et son import
 // disparaissent alors du bundle.
-/**
- * Marque la racine quand la fenêtre n'a AUCUNE décoration à elle.
- *
- * ⚠️ Sur la coquille Electron macOS, la fenêtre est fabriquée
- * `titleBarStyle: "hidden"` et `transparent: true` : il n'y a donc ni barre de
- * titre ni bord à saisir, et rien dans la page ne déclarait de zone de
- * déplacement. La fenêtre ne pouvait pas être bougée tant qu'elle était ACTIVE —
- * il fallait passer à une autre application pour que macOS accepte de la
- * déplacer par un clic-glisser. Le CSS qui répare cela est dans `index.css`
- * (`-webkit-app-region`), et il ne doit s'appliquer que là : `app-region`
- * consomme les clics, et Windows garde son cadre natif.
- */
-if (surfaceAvecAlpha()) document.documentElement.dataset["hoteSansCadre"] = "oui";
-
 const debugLecteur = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    {/* Le cadre de fenêtre, là où la page doit le dessiner elle-même. Monté à la
+        racine, HORS des fournisseurs : il ne lit aucun contexte, et il doit
+        exister sur TOUTES les pages — le lecteur et la fiche média sont servis
+        hors de `AppLayout`. Rend `null` partout où la fenêtre a un vrai cadre. */}
+    <HostTitleBar />
     {debugLecteur}
     <QueryClientProvider client={queryClient}>
       <ThemeProvider backendUrl={backendUrl}>

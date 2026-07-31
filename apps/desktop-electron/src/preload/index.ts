@@ -36,6 +36,20 @@ const version = argValue("--tentacle-version=");
 const platform = argValue("--tentacle-platform=");
 
 /**
+ * Hauteur du bandeau d'hôte que la page doit dessiner, en points.
+ *
+ * Zéro partout où la fenêtre garde son vrai cadre. La valeur vient de
+ * `main/macosTitleBar.ts`, seule à la connaître : elle place aussi les feux de
+ * circulation et retranche à la fenêtre de mpv, et les trois doivent s'accorder
+ * au point près. `Number.isFinite` écarte une valeur absente ou tordue plutôt
+ * que de propager un `NaN` jusqu'à une hauteur CSS.
+ */
+const titleBarHeight = ((): number => {
+  const brut = Number(argValue("--tentacle-titlebar="));
+  return Number.isFinite(brut) && brut > 0 ? brut : 0;
+})();
+
+/**
  * Commandes réellement branchées côté principal.
  *
  * Gelées ici : la page ne doit pas pouvoir y ajouter un nom pour débloquer une
@@ -113,6 +127,7 @@ contextBridge.exposeInMainWorld("tentacle", {
   version,
   platform: assertPlatform(platform),
   capabilities,
+  titleBarHeight,
 
   openExternal(url: string): Promise<void> {
     // Le filtrage des schémas est fait côté principal, jamais ici : une liste

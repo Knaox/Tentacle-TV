@@ -9,6 +9,7 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { windowIconPath } from "./appIcon";
+import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
 import { lockNavigation } from "./security";
 import {
   basculer as basculerPleinEcran,
@@ -139,7 +140,11 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     // voit le BUREAU à travers. C'est le liseré parasite constaté au bord de
     // l'overlay. Avec ce style, page et cadre coïncident : 1280x800 des deux
     // côtés, et `MacosSurface` cale la vidéo sur le cadre entier.
-    ...(process.platform === "darwin" ? { transparent: true, titleBarStyle: "hidden" } : {}),
+    //
+    // Ce que ce style ne fait PAS, c'est retirer les feux de circulation : ils
+    // se retrouvent sur le contenu, et c'est la page qui doit leur rendre une
+    // bande. Voir `macosTitleBar.ts`, qui porte aussi leur position.
+    ...optionsCadreMacos(),
     backgroundColor: "#000000",
     show: false,
     webPreferences: {
@@ -155,6 +160,10 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         `--tentacle-version=${app.getVersion()}`,
         `--tentacle-platform=${process.platform}`,
         `--tentacle-commands=${commands.join(",")}`,
+        // Zéro hors macOS : la page ne dessine alors aucun bandeau, la fenêtre
+        // ayant son vrai cadre. Une constante en double côté web finirait par
+        // diverger de celle qui place les feux et retranche à la vidéo.
+        `--tentacle-titlebar=${process.platform === "darwin" ? HAUTEUR_BANDEAU : 0}`,
       ],
     },
   });
