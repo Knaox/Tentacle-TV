@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" /></a>
-  <img src="https://img.shields.io/badge/version-1.0.0-8b5cf6" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.11.0-8b5cf6" alt="Version" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white" alt="Node" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
@@ -31,12 +31,12 @@
 | Platform | Status | Download | Technology |
 |----------|--------|----------|------------|
 | **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Self-hosted | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Tauri v2 + native mpv player |
-| **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Tauri v2 + native mpv player |
+| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + native mpv player |
+| **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + native mpv player |
 | **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Tauri v2 + native mpv player |
 | **iOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
-| **Android** | ![Beta](https://img.shields.io/badge/Beta-f59e0b?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /> test fermé</a> | React Native + Expo |
-| **Android TV** | ![Beta](https://img.shields.io/badge/Beta-f59e0b?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /> tentacletv.app</a> | React Native + ExoPlayer/Media3 |
+| **Android** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
+| **Android TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + ExoPlayer/Media3 |
 | **Apple TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) |
 
 <details>
@@ -45,12 +45,12 @@
 | Plateforme | Statut | Téléchargement | Technologie |
 |------------|--------|----------------|-------------|
 | **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Auto-hébergé | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/ch/app/tentacle-tv/id6760205634?l=fr-FR"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Tauri v2 + lecteur mpv natif |
-| **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Tauri v2 + lecteur mpv natif |
+| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + lecteur mpv natif |
+| **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + lecteur mpv natif |
 | **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Tauri v2 + lecteur mpv natif |
 | **iOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
-| **Android** | ![Bêta](https://img.shields.io/badge/B%C3%AAta-f59e0b?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /> test fermé</a> | React Native + Expo |
-| **Android TV** | ![Bêta](https://img.shields.io/badge/B%C3%AAta-f59e0b?style=flat-square) | <a href="https://tentacletv.app/"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /> tentacletv.app</a> | React Native + ExoPlayer/Media3 |
+| **Android** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
+| **Android TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + ExoPlayer/Media3 |
 | **Apple TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) |
 
 </details>
@@ -367,23 +367,21 @@ If your CORS config is broken or partially missing, the web client detects the f
 [Tentacle:Playback] { mode: "Transcode", transport: "proxy", directStreamingConfigured: true, … }
 ```
 
-The `directStreamingConfigured: true` confirms the admin toggle stays ON; `transport: "proxy"` confirms the per-session fallback engaged. Native apps (Tauri desktop, mobile, Android TV) are unaffected — they have no CORS and continue full-direct.
+The `directStreamingConfigured: true` confirms the admin toggle stays ON; `transport: "proxy"` confirms the per-session fallback engaged. Native apps (desktop, mobile, TV) are unaffected — they have no CORS and continue full-direct.
 
 ---
 
 ## Desktop App
 
-The desktop app wraps the web client with [Tauri v2](https://v2.tauri.app/) and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos).
+The desktop app wraps the web client — [Electron](https://www.electronjs.org/) on Windows and macOS, [Tauri v2](https://v2.tauri.app/) on Linux — and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos).
 
 ### Installation
 
-Download the latest installer from [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases):
-
 | OS | Format | Source |
 |----|--------|--------|
-| Windows | `.msi` / `.exe` (NSIS) | [Microsoft Store](https://apps.microsoft.com/detail/9NKHL0T84245) |
+| Windows | MSIX | [Microsoft Store](https://apps.microsoft.com/detail/9NKHL0T84245) |
 | macOS | App Store | [App Store](https://apps.apple.com/app/id6760205634) |
-| Linux | `.deb` · `.rpm` · `.AppImage` | [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases) (tag `linux-v*`) |
+| Linux | `.deb` · `.rpm` · `.AppImage` · `.pkg.tar.zst` | [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases) (tag `desktop-v*`) |
 
 ### Linux
 
@@ -578,8 +576,9 @@ pnpm docker:reset   # Full teardown + rebuild (deletes data!)
 apps/
   web/             React 19 + Vite 6 + Tailwind CSS (main web client)
   backend/         Fastify 5 + Prisma 6 + MariaDB (API server)
-  desktop/         Tauri v2 (wraps web build for native desktop)
-  mobile/          Expo 52 + React Native (coming soon)
+  desktop/         Tauri v2 (wraps web build for Linux desktop)
+  desktop-electron/ Electron (same web build for Windows and macOS)
+  mobile/          Expo 52 + React Native (iOS + Android)
   tv/              React Native for Android TV (ExoPlayer/Media3)
 
 packages/
@@ -603,7 +602,7 @@ docs/              Plugin registry documentation
                            │
 ┌─────────────┐            │            ┌─────────────────┐
 │ Desktop App │────────────┘       ┌───▶│ Jellyfin Server │
-│  (Tauri v2) │                    │    └─────────────────┘
+│ (mpv native)│                    │    └─────────────────┘
 └─────────────┘            ▲───────┘
                            │
                      /api/jellyfin/*
@@ -663,7 +662,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | Layer | Technology |
 |-------|------------|
 | Web Frontend | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
-| Desktop | Tauri v2 (Rust), mpv native player |
+| Desktop | Electron (Windows, macOS) · Tauri v2 / Rust (Linux), mpv native player |
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |

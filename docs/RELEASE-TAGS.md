@@ -35,6 +35,26 @@ git push origin main desktop-v1.12.0
 ```
 
 Le fichier **`Tentacle Deploy.html`** (hors repo) génère cette commande complète.
+
+### Après promotion d'une release Play (geste MANUEL)
+
+Le site `tentacletv.app` affiche les versions **publiées**, lues dans
+`updates/store-versions.json`. Les blocs Apple et desktop y sont tenus par la CI et par
+le veilleur ASC (`store-watch.yml`) ; **les deux blocs Play, non** — `tv.yml`/`mobile.yml`
+publient en `status: draft` sur une piste de tests fermés, donc « publié » n'est pas
+déductible d'un run. Quand tu promeus une release dans la Play Console, reporte le
+numéro à la main :
+
+```bash
+# updates/store-versions.json → playMobile.version (Android) / playTv.version (Android TV)
+git add updates/store-versions.json
+git commit -m "chore(update): manifeste Play 1.1.0 (promue en tests fermés)"
+git push origin main
+```
+
+Sans ce geste, le site continue d'annoncer l'ancienne version — c'est exactement
+comme ça qu'il avait fossilisé.
+
 **Re-livrer une même version** (nouveau build, ex. rejet store ou tag déjà pris) :
 tag avec suffixe `-rN` — ex. `tv-v1.0.0-r1` — version marketing inchangée, build
 auto-incrémenté, Release GitHub complète. Alternative sans Release GitHub :
@@ -118,6 +138,3 @@ Scripts : `.github/scripts/release-notes.mjs` (CLI — `--changelog changelogs/t
 > macOS embarque libmpv/FFmpeg recompilés **LGPL** (sandbox App Store). Détails build :
 > `apps/desktop/scripts/build-mpv-lgpl-macos.sh`. Voir aussi `docs/RELEASE.md`.
 > Conformité chiffrement déclarée exemptée (`ITSAppUsesNonExemptEncryption=false`).
-> ⚠️ L'APK Android TV GitHub est désormais **release-signed** et packagé
-> `com.tentacletv.mobile` : les installs sideload antérieures (`com.tentacletv`,
-> debug) doivent être désinstallées/réinstallées une fois.

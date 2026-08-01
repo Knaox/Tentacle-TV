@@ -113,7 +113,7 @@ cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
 - Release GitHub `desktop-vX.Y.Z` + `SHA256SUMS` + manifeste auto-update commité
   sur `main` par le job `manifest`.
 
-### Android TV (Play Console + APK sideload)
+### Android TV (Play Console uniquement)
 
 - **MÊME app Play que le mobile** : `applicationId com.tentacletv.mobile`
   (namespace Kotlin inchangé `com.tentacletv`). AAB signé avec le **keystore
@@ -123,10 +123,8 @@ cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
   env `PLAY_TV_TRACK` dans `tv.yml`), release en **draft** → promotion manuelle.
   Prérequis console (une fois) : form factor TV activé sur la fiche
   `com.tentacletv.mobile` + accès du compte de service à l'app.
-- APK GitHub (`tv-v*` + `tv-latest`) conservé pour le site `tentacletv.app` et le
-  code Downloader — désormais **release-signed** : les installs sideload
-  antérieures (`com.tentacletv`, debug) se réinstallent une fois.
-- Sans secrets keystore, l'APK retombe en debug-signed et l'upload Play est sauté.
+- **Plus d'APK GitHub ni de `tv-latest`** : la distribution passe uniquement par la
+  piste Play. L'AAB est archivé en artefact du run, rien n'est publié sur GitHub.
 
 ### Apple TV (tvOS)
 
@@ -138,10 +136,9 @@ cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
 
 ### Doc d'installation utilisateur (Android TV / Shield)
 
-1. **Paramètres → Sécurité & restrictions → Sources inconnues** : autoriser.
-2. Installer **Downloader** (AFTVnews) depuis le Play Store.
-3. Saisir le lien direct de l'APK (affiché sur `tentacletv.app` ou dans la Release GitHub).
-4. Télécharger puis **installer**.
+Plus de sideload : l'app s'installe depuis le Play Store, sur la fiche
+`com.tentacletv.mobile` (form factor TV). Les testeurs passent par le lien d'opt-in
+de la piste de tests fermés « Alpha », puis installent depuis le Play Store de la TV.
 
 ## URLs utiles
 

@@ -10,9 +10,17 @@
 /** Un asset Linux (nom de fichier de la Release + son SHA256 pour vérif intégrité). */
 export interface LinuxUpdateAsset { name: string; sha256: string }
 
+/** Une fiche Play (mobile ou TV) : version RÉELLEMENT en ligne, tenue à la main — la
+ *  CI publie en `draft` sur une piste de tests fermés, d'où l'impossibilité de la
+ *  déduire d'un run. Consommé par le site vitrine, pas par l'app (Play met à jour
+ *  seul, il n'y a aucune pop-up de mise à jour à alimenter). */
+export interface PlayTrackVersion { version: string; packageName?: string; track?: string }
+
 export interface StoreVersionsManifest {
   macAppStore?: { version: string; appId?: string; notes?: { fr?: string; en?: string } };
   microsoftStore?: { version: string; notes?: { fr?: string; en?: string } };
+  playMobile?: PlayTrackVersion;
+  playTv?: PlayTrackVersion;
   /** Auto-updater Linux (aucun store) : version + assets par format sur la
    *  Release `<tag>`. Maintenu par le workflow release-linux.yml. */
   linux?: {
