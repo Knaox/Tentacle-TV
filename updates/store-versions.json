@@ -15,6 +15,18 @@
       "en": "• New interface: reworked home banner, posters with a glowing edge and a highlight that follows the cursor\n• Episode hover preview: the thumbnail unfolds a panel with playback, synopsis, rating, runtime, quality and progress\n• A series' Play button now starts the episode to resume, or the first one if you are beginning it\n• Animated detail opening: the poster you clicked travels to its place on the page, which preloads on hover\n• Revised media page: an episode's artwork finally uses the right format, clearer actions, and the page opens on the banner instead of jumping to the episode list\n• Library filters as dropdown menus (sort, searchable genres, year, rating, platforms): the grid stays visible while filtering\n• Framed banner: its colours spill out of the frame as a glow that follows the artwork and its zoom, on the home page and the media page alike\n• Episode hover: no more jolt when the preview opens — it now continues the thumbnail instead of stacking on top of it\n• The preview opens on every card: when there is no room below, or when the card touches the edge of the row, the information settles onto the card itself as a translucent veil rather than spilling out\n• The preview follows its card as you scroll instead of vanishing, and regains its full unfold as soon as there is room again\n• Rows settle on whole cards: no more card cut in half at the edge of the carousel"
     }
   },
+  "playMobile": {
+    "$comment": "Version Android (téléphone/tablette) RÉELLEMENT en ligne sur la fiche Play. NON maintenu par la CI : tv.yml/mobile.yml publient en `status: draft` sur une piste de tests fermés, donc « publié » n'est pas déductible d'un run — ce bloc se met à jour À LA MAIN au moment où la release est promue dans la Play Console (cf. docs/RELEASE-TAGS.md). Ne PAS le déduire de versions.json → mobile, qui porte l'intention et non la publication.",
+    "version": "1.0.0",
+    "packageName": "com.tentacletv.mobile",
+    "track": "alpha"
+  },
+  "playTv": {
+    "$comment": "Version Android TV en ligne. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. Mêmes règles de mise à jour manuelle que playMobile.",
+    "version": "1.0.0",
+    "packageName": "com.tentacletv.mobile",
+    "track": "tv:Alpha"
+  },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/release-linux.yml (job « manifest ») à chaque release linux-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
     "version": "1.17.0",
