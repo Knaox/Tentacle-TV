@@ -92,7 +92,12 @@ export async function startImpersonation(userId: string): Promise<void> {
   );
 
   // Le cache persisté de la home appartient à l'admin — il ne doit pas
-  // s'hydrater dans la session impersonée (et inversement à la sortie).
+  // s'hydrater dans la session impersonée. Cet effacement ne suffit PAS à lui
+  // seul : le persister sauvegarde sur `pagehide`, donc la navigation qui suit
+  // réécrit aussitôt le cache en mémoire. Ce qui protège vraiment est
+  // l'étiquette de propriétaire posée sur la sauvegarde (`owner`,
+  // `queryPersister.ts`), qui interdit de rendre à un compte ce qu'un autre a
+  // produit. On efface quand même : autant ne pas laisser traîner la place.
   localStorage.removeItem(QUERY_CACHE_KEY);
   window.location.assign("/");
 }

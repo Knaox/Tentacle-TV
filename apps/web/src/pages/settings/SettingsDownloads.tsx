@@ -1,7 +1,7 @@
 /**
  * Réglages > Téléchargements (desktop uniquement, invisible sans droit ni
- * contenu). Emplacement de stockage : affiché partout, MODIFIABLE hors build
- * Mac App Store (sandbox sans entitlement fichiers — décision v1) et
+ * contenu). Emplacement de stockage : affiché partout, MODIFIABLE hors macOS
+ * (bac à sable Mac App Store, sans entitlement fichiers — décision v1) et
  * uniquement quand aucun téléchargement n'existe (pas de migration auto).
  */
 
@@ -9,7 +9,8 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { isTauriApp } from "../../main";
+import { desktopPlatform, isDesktopApp } from "../../desktop/bridge";
+import { pickFolder } from "../../desktop/bridge";
 import { isAppStoreBuild } from "../../hooks/mpvRuntime";
 import { getDownloadsRoot, setDownloadsRoot } from "../../downloads/api";
 import { formatBytes } from "../../downloads/presets";
@@ -26,21 +27,26 @@ export function SettingsDownloads() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!isTauriApp) return;
+    if (!isDesktopApp()) return;
     void getDownloadsRoot().then(setRoot);
   }, []);
 
-  if (!isTauriApp || !visible) return <Navigate to="/settings" replace />;
+  if (!isDesktopApp() || !visible) return <Navigate to="/settings" replace />;
 
-  const canPickFolder = !isAppStoreBuild();
+  // ⚠️ macOS n'offre PAS le choix, quelle que soit la coquille : l'application
+  // y est distribuée par le Mac App Store, donc en bac à sable, et le dossier
+  // de téléchargement est celui que le système lui accorde. `isAppStoreBuild()`
+  // ne suffit pas — il est faux en développement, où le bouton apparaissait
+  // alors qu'il ne peut rien donner. L'emplacement reste AFFICHÉ, en lecture
+  // seule : le masquer laisserait l'utilisateur sans savoir où vont ses films.
+  const canPickFolder = !isAppStoreBuild() && desktopPlatform() !== "macos";
 
   const handleChange = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const picked = await open({ directory: true, multiple: false });
-      if (typeof picked === "string" && picked) {
+      const picked = await pickFolder();
+      if (picked) {
         const result = await setDownloadsRoot(picked);
         if (result.ok) {
           setRoot(result.path);
@@ -48,8 +54,22 @@ export function SettingsDownloads() {
           show("success", t("locationChanged"));
         } else if (result.code === "root-not-empty") {
           show("error", t("locationLocked"));
+        } else if (result.code === "root-not-writable") {
+          // La cause système est AFFICHÉE quand le natif la donne. Sans elle,
+          // un refus dans un paquet livré se réduisait à « pas accessible en
+          // écriture », sans recours — alors que l'accès contrôlé aux dossiers
+          // de Windows, une ACL et un volume en lecture seule appellent trois
+          // gestes différents.
+          show(
+            "error",
+            result.detail
+              ? t("locationNotWritableWhy", { reason: result.detail })
+              : t("locationNotWritable"),
+          );
         } else {
-          show("error", t("locationNotWritable"));
+          // `unknown` n'est PAS un problème d'écriture : le dire l'était déjà
+          // trop souvent. Un canal absent ou un rejet inattendu se distingue.
+          show("error", t("locationFailed"));
         }
       }
     } finally {
@@ -62,7 +82,7 @@ export function SettingsDownloads() {
       <section className="rounded-xl border border-line-subtle bg-surface-1 p-4">
         <h3 className="text-sm font-semibold text-content-primary">{t("storageLocation")}</h3>
         <p className="mt-1 break-all text-xs text-content-tertiary">{root ?? "…"}</p>
-        {canPickFolder && (
+        {canPickFolder ? (
           <div className="mt-3">
             <button
               type="button"
@@ -76,6 +96,12 @@ export function SettingsDownloads() {
               {t("locationHint")}
             </p>
           </div>
+        ) : (
+          desktopPlatform() === "macos" && (
+            <p className="mt-2 text-[11px] leading-relaxed text-content-quaternary">
+              {t("locationFixedBySystem")}
+            </p>
+          )
         )}
       </section>
 

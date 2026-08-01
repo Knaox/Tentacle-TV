@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
@@ -28,15 +28,32 @@ interface EpisodeCardProps {
    * on retombe alors sur le `clamp` responsive.
    */
   width?: number | null;
+  /**
+   * Décalage de la cascade d'entrée, en ms. `null` = pas d'animation.
+   * Accordé par la rangée à sa PREMIÈRE fenêtre seulement (cf. `PosterCard`).
+   */
+  entranceDelay?: number | null;
+  /** Signale à la rangée quelle carte est survolée, pour l'épingler dans sa fenêtre. */
+  onHoverIndex?: (index: number | null) => void;
 }
 
 /**
  * Vignette 16:9 des rangées « Reprendre » et « Prochains épisodes ».
- * Même cadre de survol que l'affiche 2:3 (`CardFrame`) : liseré dégradé, halo
- * de curseur, lift — avec une amplitude réduite, la carte étant plus large.
+ * Même cadre de survol que l'affiche 2:3 (`CardFrame`) : élévation et lift, avec
+ * une amplitude réduite, la carte étant plus large.
  * Le clic lance la lecture ; la fiche détail passe par « Plus d'infos ».
+ *
+ * `memo` pour la même raison que `PosterCard` : la rangée est fenêtrée et se
+ * re-rend à chaque carte franchie.
  */
-export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProps) {
+export const EpisodeCard = memo(function EpisodeCard({
+  item,
+  index,
+  size = "md",
+  width,
+  entranceDelay = null,
+  onHoverIndex,
+}: EpisodeCardProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
@@ -82,11 +99,19 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
       className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
       style={{
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
-        animation: "fadeSlideUp 0.34s ease both",
-        animationDelay: `${Math.min(index * 40, 400)}ms`,
+        animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
+        animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
+        // Au-dessus des voisines pendant le survol : sans cela l'ombre
+        // d'élévation est recouverte par la carte suivante (cf. `PosterCard`).
+        zIndex: hovered ? 2 : undefined,
       }}
-      onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); preview.handlers.onMouseEnter(); }}
-      onMouseLeave={() => { setHovered(false); preview.handlers.onMouseLeave(); }}
+      onMouseEnter={() => {
+        setHovered(true);
+        onHoverIndex?.(index);
+        prefetchDetailRoute();
+        preview.handlers.onMouseEnter();
+      }}
+      onMouseLeave={() => { setHovered(false); onHoverIndex?.(null); preview.handlers.onMouseLeave(); }}
       onClick={handleClick}
       {...ctx.contextHandlers}
     >
@@ -116,7 +141,11 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         suppressLift={preview.panelActive}
         concealed={preview.open}
         aspect="aspect-video"
-        lift={{ scale: 1.03, y: -5 }}
+        // Amplitude plus faible que l'affiche : la vignette est bien plus large,
+        // et le débord latéral vaut `largeur × (échelle − 1) / 2`. À 1920 px elle
+        // fait ~443 px, donc 8,9 px de débord par côté — il reste 3,1 px dans la
+        // gouttière de 12 px. `1.045` n'en laisserait que 2 : c'est le plafond.
+        lift={{ scale: 1.04, y: -7 }}
       >
         {/* Pas de zoom interne quand le panneau prend le relais : il peindrait
             la même image à un autre cadrage, d'où le recul brutal ressenti à
@@ -164,7 +193,19 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
         {!watched && <CardProgressBar percent={progress} border />}
       </CardFrame>
 
-      <div className="mt-2.5 px-0.5">
+      {/* Le bloc titre s'efface sous le panneau, comme la vignette (cf.
+          `concealed` dans `CardFrame`) : le panneau couvre TOUTE la carte et
+          porte déjà ce titre. Les laisser tous deux visibles donnait le même
+          texte à quelques pixels d'écart, et c'est ce qui faisait lire le survol
+          comme mal cadré. `opacity` et non un démontage : la boîte garde sa
+          place, donc aucun reflow de la rangée. */}
+      <div
+        className="mt-2.5 px-0.5"
+        style={{
+          opacity: preview.open ? 0 : 1,
+          transition: "opacity var(--duration-base) var(--ease-out)",
+        }}
+      >
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{seriesName}</h3>
         {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
       </div>
@@ -191,4 +232,4 @@ export function EpisodeCard({ item, index, size = "md", width }: EpisodeCardProp
       )}
     </div>
   );
-}
+});

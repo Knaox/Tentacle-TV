@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useTrickplay } from "./useTrickplay";
+import { useHoverEscape } from "./useHoverGuard";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 interface UseDesktopSeekbarArgs {
@@ -13,6 +14,14 @@ interface UseDesktopSeekbarArgs {
   effectiveMpvOffset: MutableRefObject<number>;
   seek: (pos: number) => Promise<void>;
   setPause: (paused: boolean) => Promise<void>;
+  /**
+   * Prévient le badge central que la bascule de pause qui suit vient d'ICI.
+   *
+   * La pause du glissement est un détail de mise en œuvre, pas une intention :
+   * sans cet avertissement, chercher un passage dans un film affichait un badge
+   * « pause » puis un badge « lecture » en pleine image (cf. `usePlaybackFlash`).
+   */
+  ignorerProchaineBascule?: () => void;
 }
 
 /**
@@ -22,6 +31,7 @@ interface UseDesktopSeekbarArgs {
  */
 export function useDesktopSeekbar({
   dur, paused, isDirectPlay, item, mediaSourceId, localItemId, effectiveMpvOffset, seek, setPause,
+  ignorerProchaineBascule,
 }: UseDesktopSeekbarArgs) {
   const seekBarRef = useRef<HTMLDivElement>(null);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
@@ -46,7 +56,13 @@ export function useDesktopSeekbar({
     e.preventDefault();
     isDragging.current = true;
     wasPlayingBeforeDrag.current = !paused;
-    if (!paused) setPause(true);
+    // L'armement va de pair avec l'appel : une pause qu'on ne demande pas ne
+    // doit pas laisser d'armement en attente, sinon c'est la pause SUIVANTE —
+    // celle de l'utilisateur — qui serait avalée.
+    if (!paused) {
+      ignorerProchaineBascule?.();
+      setPause(true);
+    }
     const pct = pctFromEvent(e as unknown as MouseEvent);
     setDragProgress(pct);
     const target = pct * dur;
@@ -69,7 +85,12 @@ export function useDesktopSeekbar({
       setDragProgress(null);
       const target = pct * dur;
       seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
-      if (wasPlayingBeforeDrag.current) setPause(false);
+      // La reprise non plus n'est pas une intention : c'est le retour à l'état
+      // d'avant le glissement.
+      if (wasPlayingBeforeDrag.current) {
+        ignorerProchaineBascule?.();
+        setPause(false);
+      }
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
@@ -103,10 +124,24 @@ export function useDesktopSeekbar({
     });
   }, [dur]);
 
+  /**
+   * Éteint la vignette de survol. Pas pendant un glissement : la barre ne fait
+   * que six pixels, et le curseur en sort constamment quand on scrube.
+   */
+  const endHover = useCallback(() => {
+    if (!isDragging.current) setHoverTime(null);
+  }, []);
+
+  // Le `onMouseLeave` de la barre était la SEULE porte de sortie du survol, sur
+  // une cible de six pixels de haut : qu'il soit manqué une fois — curseur
+  // sorti par le bas de la fenêtre, passé sur un autre écran, application
+  // défocalisée — et la vignette restait allumée. Constaté à l'écran.
+  useHoverEscape(seekBarRef, hoverTime !== null, endHover);
+
   return {
     seekBarRef, dragProgress, isDragging,
     hoverTime, hoverX, barWidth, setHoverTime, setBarWidth,
-    onScrubStart, onBarMouseMove,
+    onScrubStart, onBarMouseMove, endHover,
     trickplay, trickplayFrame,
   };
 }

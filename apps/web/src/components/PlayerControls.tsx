@@ -129,9 +129,9 @@ export function PlayerControls({
     setHoverX(touch.clientX - (barRef.current?.getBoundingClientRect().left ?? 0));
   }, [getPctFromEvent, duration]);
 
-  useScrubListeners({
+  const { endHover } = useScrubListeners({
     isScrubbing, scrubPct, thumbRef, barRef, duration, getPctFromEvent,
-    setScrubbing, setHoverTime, setHoverX, onSeek,
+    setScrubbing, setHoverTime, setHoverX, onSeek, hoverActive: hoverTime !== null,
   });
 
   const handleBarHover = useCallback((e: React.MouseEvent) => {
@@ -202,7 +202,7 @@ export function PlayerControls({
           className="group/bar relative mb-3 h-1.5 cursor-pointer rounded-full bg-white/20 transition-all hover:h-2.5"
           onMouseDown={handleScrubStart} onTouchStart={handleTouchScrubStart} onMouseMove={handleBarHover}
           onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}
-          onMouseLeave={() => { if (!isScrubbing.current) setHoverTime(null); }}
+          onMouseLeave={endHover}
           role="slider" aria-label={t("player:seekbar", "Seek")} aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(currentTime)}>
           <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${buffered * 100}%` }} />
           {/* Remplissage rose, repris de la bannière et des cartes

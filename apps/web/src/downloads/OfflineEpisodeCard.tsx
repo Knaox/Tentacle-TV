@@ -10,8 +10,11 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
+import { CardProgressBar } from "../components/cards/CardProgressBar";
+import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
+import { watchStateOf } from "./offlineGroups";
 
 interface OfflineEpisodeCardProps {
   entry: DownloadEntry;
@@ -24,9 +27,10 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
   onSelect,
   onPlay,
 }: OfflineEpisodeCardProps) {
-  const { t } = useTranslation("downloads");
+  const { t } = useTranslation(["downloads", "common"]);
   const rootReady = useDownloadsRootReady();
   const [failed, setFailed] = useState(false);
+  const { watched, percent } = watchStateOf(entry);
   const url = rootReady ? localResourceUrl(`meta/${entry.itemId}/primary.jpg`) : null;
 
   const title = entry.title ?? entry.itemId;
@@ -78,6 +82,12 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
         </button>
+
+        {/* Coche OU barre, jamais les deux — même règle qu'en ligne. La barre
+            porte sa bordure : elle est posée sur un scrim déjà sombre. */}
+        {watched
+          ? <CardWatchedBadge label={t("common:watched")} />
+          : <CardProgressBar percent={percent} border />}
       </div>
 
       {runtime && <p className="mt-1 px-0.5 text-[11px] text-content-quaternary">{runtime}</p>}

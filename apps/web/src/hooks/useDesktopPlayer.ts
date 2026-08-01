@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  defaultMpvState, getMpvApi,
+  defaultMpvState, getMpvApi, isWindows as estWindows,
   type MpvState, type PlayOptions,
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
+import { noterAid, noterSid, oublierPistesDemandees } from "./mpvTrackIntent";
+import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 // Ré-exports de compatibilité — de nombreux modules importent la détection de
@@ -36,7 +38,6 @@ export function useDesktopPlayer() {
     fileLoadedRef.current = v;
     setFileLoadedState(v);
   }, []);
-  const pendingTracks = useRef<{ aid?: number; sid?: number } | null>(null);
   // Watchdog : si playback-restart n'est pas émis après un loadfile, UN retry
   // complet puis erreur visible (voir play()).
   const playbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,13 +50,16 @@ export function useDesktopPlayer() {
   // High-frequency refs — synced to React state via throttle timer
   const positionRef = useRef(0);
   const bufferedRef = useRef(0);
+  // Miroir synchrone de `paused-for-cache` : le nudge s'exécute dans un timer,
+  // hors rendu React, et ne peut donc pas lire `state.buffering`.
+  const bufferingRef = useRef(false);
   // Diagnostic : horodatage du dernier loadfile — mesure loadfile→restart.
   const loadfileAtRef = useRef(0);
 
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setError, setFileLoaded, setMediaReady,
-    positionRef, bufferedRef, mutedRef, fileLoadedRef, pendingTracks,
+    positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
   });
 
@@ -79,7 +83,13 @@ export function useDesktopPlayer() {
     setMediaReady(false);
     // Purge des restes du fichier précédent (un eof=true collé afficherait
     // l'écran de fin dès le chargement du nouveau média).
-    setState((prev) => ({ ...prev, eof: false, playing: false }));
+    // `tracks` compris : sur un rebuild de source (qualité, burn-in), la
+    // track-list du fichier PRÉCÉDENT survivait, et le premier passage des
+    // effets de préférence calculait un mapping par langue depuis une liste
+    // périmée — donc une commande de piste juste après la première image, et
+    // le cache de mpv jeté avec (mpv#8422). Vide, la liste force le repli
+    // positionnel, qui coïncide avec ce qu'on vient de poser avant l'ouverture.
+    setState((prev) => ({ ...prev, eof: false, playing: false, tracks: [] }));
 
     const isHls = options.url.includes(".m3u8");
     wtLog("mpv", `play() attempt=${attempt} ${isHls ? "HLS/transcode" : "direct"}`, {
@@ -99,6 +109,7 @@ export function useDesktopPlayer() {
       playbackWatchdogRef.current = null;
       if (attempt === 1) {
         wtLog("mpv", `WATCHDOG: playback-restart absent après ${watchdogMs / 1000}s — retry loadfile`, { url: options.url.substring(0, 110) });
+        tracerCommande("WATCHDOG — retry loadfile", `${watchdogMs / 1000} s sans playback-restart`);
         void play(options, 2);
       } else {
         wtLog("mpv", "WATCHDOG: playback-restart absent après retry — flux en échec (setError → fallback web)");
@@ -111,13 +122,37 @@ export function useDesktopPlayer() {
     // transcodé encore en cours d'ouverture, ce seek forcé tombait PENDANT
     // le seek initial `start=+pos` et coinçait le demuxer → jamais de
     // playback-restart (écran noir, pas de son). Jamais de nudge sur .m3u8.
+    //
+    // ⚠️ WINDOWS UNIQUEMENT, et sur un pipeline réellement figé.
+    //
+    // Ce nudge répare une fenêtre ENFANT Win32 qui n'émet pas toujours
+    // `playback-restart` (cf. 6c39b06c). Il n'a jamais rien réparé ailleurs, et
+    // depuis `cache-pause-initial` il fait activement du mal : mpv retient
+    // désormais l'image jusqu'à avoir sa réserve, donc le seek tombait dans le
+    // remplissage et jetait tout — mesuré, cache à 7 s puis 0 à l'instant où
+    // l'image sort. Le repousser pendant `paused-for-cache` a même empiré les
+    // choses : il tirait alors précisément à la fin du remplissage, dans
+    // l'intervalle qui précède l'annulation par `playback-restart`.
+    //
+    // Deuxième garde, pour Windows : un cache qui BOUGE prouve que mpv lit des
+    // données. Le pipeline que ce nudge vise, lui, est immobile — cache stable,
+    // rien qui avance. On ne réveille donc que ce qui dort vraiment.
+    //
+    // Ailleurs, le watchdog ci-dessus reste le filet : il fait un vrai retry de
+    // loadfile, seul moyen de récupérer un demuxer resté muet.
     if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
-    if (!isHls) {
-      wakeupRef.current = setTimeout(() => {
-        wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
-        getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
-        wakeupRef.current = null;
-      }, 600);
+    if (!isHls && estWindows()) {
+      const armerReveil = () => {
+        const cacheAuDepart = bufferedRef.current;
+        wakeupRef.current = setTimeout(() => {
+          wakeupRef.current = null;
+          if (bufferingRef.current || bufferedRef.current !== cacheAuDepart) { armerReveil(); return; }
+          wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
+          tracerCommande("seek de réveil", "+50 ms");
+          getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
+        }, 600);
+      };
+      armerReveil();
     }
     try {
       // La propriété `pause` de mpv PERSISTE entre les loadfile : un rebuild
@@ -133,17 +168,48 @@ export function useDesktopPlayer() {
       } else {
         // Reset start property so the stream starts from its natural beginning
         // (important for transcoded streams where position is baked into the URL)
-        await api.command("set", ["start", "no"]).catch((e) => console.warn("[mpv] reset start:", e));
+        //
+        // ⚠️ `none`, et surtout PAS `no`. `--start` attend un temps relatif, dont
+        // la valeur « aucune » s'écrit `none` ; `no` ne s'analyse pas, la
+        // commande rend MPV_ERROR_COMMAND (-12), et le `.catch` ci-dessous
+        // avalait l'échec. La remise à zéro n'avait donc JAMAIS lieu : après une
+        // reprise à 30:00, le média suivant lancé depuis le début repartait à
+        // 30:00. Mesuré sur le libmpv du dépôt :
+        //   set start no   -> -12, start vaut toujours "+1800"
+        //   set start none ->   0, start vaut "none"
+        await api.command("set", ["start", "none"]).catch((e) => console.warn("[mpv] reset start:", e));
       }
-      const tracks: { aid?: number; sid?: number } = {};
+      // Pistes AVANT le loadfile, comme `start` et `pause` : `aid`/`sid`
+      // persistent d'un fichier à l'autre, donc mpv ouvre celui-ci déjà sur la
+      // bonne piste. Les appliquer APRÈS la première image — ce que faisait
+      // pendingTracks, sur playback-restart — réinitialisait la chaîne audio et
+      // resynchronisait par un seek interne : mpv jetait son cache et la barre
+      // de chargement retombait à zéro juste après le démarrage.
+      // Nouveau média : ce qu'on avait demandé pour le précédent n'a plus cours.
+      oublierPistesDemandees();
       if (options.audioTrack != null && options.audioTrack > 0) {
-        tracks.aid = options.audioTrack;
+        tracerCommande("set aid (avant ouverture)", String(options.audioTrack));
+        // Noté seulement si la commande a ABOUTI : un `set` refusé ne doit pas
+        // laisser croire à une intention posée, sans quoi la correction
+        // ultérieure serait avalée.
+        await api.command("set", ["aid", String(options.audioTrack)])
+          .then(() => noterAid(options.audioTrack as number))
+          .catch((e) => console.warn("[mpv] set aid:", e));
       }
       if (options.subtitleTrack != null) {
-        tracks.sid = options.subtitleTrack;
+        const sid = options.subtitleTrack === 0 ? "no" : String(options.subtitleTrack);
+        tracerCommande("set sid (avant ouverture)", sid);
+        await api.command("set", ["sid", sid])
+          .then(() => noterSid(options.subtitleTrack as number))
+          .catch((e) => console.warn("[mpv] set sid:", e));
       }
-      pendingTracks.current = Object.keys(tracks).length > 0 ? tracks : null;
+      // Nouveau média : la réserve du précédent n'a plus cours. À remettre à
+      // zéro EXPLICITEMENT, maintenant qu'un `null` ne l'écrase plus.
+      bufferedRef.current = 0;
       loadfileAtRef.current = Date.now();
+      ouvrirDemarrage(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
+        options.startPosition != null && options.startPosition > 0
+          ? `${options.startPosition.toFixed(0)} s` : "début"}`);
       await api.command("loadfile", [options.url]);
       setError(null);
     } catch (e) {

@@ -1,12 +1,14 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isElectronShell } from "../desktop/bridge";
+import { surfaceOpaque, surfaceTransparente } from "../lib/surfaceLecteur";
 import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
 import { queryTrackList } from "./mpvTrackList";
 import {
-  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri, isWindows,
+  awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
+import { LABEL_BUFFERING, tracerDemarrage } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 export interface MpvLifecycleCtx {
@@ -17,9 +19,10 @@ export interface MpvLifecycleCtx {
   setMediaReady: (v: boolean) => void;
   positionRef: MutableRefObject<number>;
   bufferedRef: MutableRefObject<number>;
+  /** Miroir synchrone de `paused-for-cache` — lu par le nudge de réveil. */
+  bufferingRef: MutableRefObject<boolean>;
   mutedRef: MutableRefObject<boolean>;
   fileLoadedRef: MutableRefObject<boolean>;
-  pendingTracks: MutableRefObject<{ aid?: number; sid?: number } | null>;
   playbackWatchdogRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   wakeupRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   loadfileAtRef: MutableRefObject<number>;
@@ -38,7 +41,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const unlisteners: (() => void)[] = [];
     const {
       setState, setReady, setError, setFileLoaded, setMediaReady,
-      positionRef, bufferedRef, mutedRef, fileLoadedRef, pendingTracks,
+      positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
       playbackWatchdogRef, wakeupRef, loadfileAtRef,
     } = ctx;
 
@@ -55,29 +58,35 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       if (!loaded || cancelled || !api) return;
 
       try {
-        // Render API custom sur macOS ET Linux (mpv dessine dans notre surface
-        // GL, pas de fenêtre native → pas d'options d'embarquement `--wid`).
-        const renderApi = isMacOS() || isLinux();
+        // Render API custom sur macOS ET Linux SOUS TAURI (mpv dessine dans
+        // notre surface GL, pas de fenêtre native).
+        //
+        // ⚠️ La coquille Electron macOS est le cas contraire, et il ne se
+        // devine pas depuis le système seul : mpv y crée SA fenêtre, qu'on
+        // attache sous la nôtre. C'est même ce qu'on veut — c'est cette
+        // fenêtre qui porte la couche Metal, donc tout le HDR. La distinction
+        // porte sur la COQUILLE, pas sur la plateforme.
+        const renderApi = !isElectronShell() && (isMacOS() || isLinux());
         await withTimeout(api.init({
           initialOptions: buildMpvInitOptions(renderApi),
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
         if (cancelled) return;
-        if (isWindows()) {
-          // La webview cesse de peindre son fond — sans quoi la fenêtre enfant
-          // de mpv, placée dessous, resterait invisible. Hors lecture elle est
-          // OPAQUE, et la fenêtre avec elle : une fenêtre transparente en
-          // permanence sortait Windows du chemin de présentation opaque et
-          // faisait scintiller chaque transition (cf. `mpv_window.rs`).
+        if (isElectronShell()) {
+          // La page cesse de peindre son fond — voir `surfaceLecteur.ts`, qui
+          // dit aussi ce que ce geste ne fait PAS.
           //
-          // Attendu, et posé AVANT `ready` : c'est `ready` qui rend la page
-          // transparente à son tour, et l'ordre inverse laisserait voir le fond
-          // de la webview le temps d'une image ou deux.
-          await invoke("player_surface_transparent", { on: true })
-            .catch((e) => console.warn("[mpv] surface transparente refusée", e));
-          // mpv vient de créer sa fenêtre vidéo enfant sur son propre thread. On
-          // la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
+          // ⚠️ SAUF sur macOS, où c'est la coquille qui le fait, au moment où
+          // elle attache la fenêtre de mpv. mpv n'y crée sa fenêtre qu'au premier
+          // `loadfile` (`force-window=no`, sans quoi il n'y a pas de HDR) : le
+          // demander ici ouvrait un intervalle — celui de l'ouverture du flux —
+          // où la page ne peignait plus et où mpv n'avait rien à montrer. On
+          // voyait le bureau au travers, d'où le clignotement à chaque film.
+          if (!isMacOS()) await surfaceTransparente();
+          // mpv vient de créer sa fenêtre vidéo sur son propre thread. Windows :
+          // on la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
           // puisse jamais geler la file d'entrée partagée avec le thread UI.
+          // macOS : déjà fait à l'attachement, l'appel n'est qu'un rappel.
           invoke("mpv_harden_child_window").catch(() => {});
         }
         setReady(true);
@@ -105,9 +114,21 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
             case "time-pos":
               positionRef.current = (event.data as number | null) ?? positionRef.current;
               return; // ref only — no setState
-            case "demuxer-cache-duration":
-              bufferedRef.current = (event.data as number | null) ?? 0;
+            case "demuxer-cache-duration": {
+              // ⚠️ `null` veut dire INDISPONIBLE, pas « cache vide ». mpv rend
+              // M_PROPERTY_UNAVAILABLE dès que sa fenêtre temporelle n'est pas
+              // exploitable (`ts_duration < 0`) — ce qui arrive à chaque
+              // transition de lecture, donc précisément quand l'image démarre.
+              // Le pont traduit fidèlement (FORMAT.NONE → null, mpvDrain.ts) ;
+              // c'est ici que la lacune devenait un zéro, et ce zéro se lisait
+              // comme un cache jeté : barre de chargement qui retombe, réserve
+              // apparemment perdue, et un pré-remplissage déclenché pour rien.
+              // Rien n'était jeté. `time-pos`, juste au-dessus, garde déjà sa
+              // dernière valeur pour la même raison.
+              const cache = event.data as number | null;
+              if (cache != null) bufferedRef.current = cache;
               return; // ref only — no setState
+            }
             default:
               break;
           }
@@ -162,8 +183,11 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               case "paused-for-cache": {
                 // data=null quand aucun média chargé (entre deux loadfile) → false.
                 const buffering = (event.data as boolean | null) ?? false;
+                bufferingRef.current = buffering;
                 if (prev.buffering !== buffering) {
                   wtLog("mpv", `paused-for-cache → ${buffering}`, { pos: positionRef.current.toFixed(1), cacheS: bufferedRef.current.toFixed(1) });
+                  tracerDemarrage(buffering ? LABEL_BUFFERING : "cache reconstitué",
+                    `cache ${bufferedRef.current.toFixed(1)} s`);
                 }
                 return { ...prev, buffering };
               }
@@ -171,6 +195,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 const seeking = (event.data as boolean | null) ?? false;
                 if (prev.seeking !== seeking) {
                   wtLog("mpv", `seeking → ${seeking}`, { pos: positionRef.current.toFixed(1) });
+                  tracerDemarrage(seeking ? "seeking" : "seek terminé",
+                    `pos ${positionRef.current.toFixed(1)} s`);
                 }
                 return { ...prev, seeking };
               }
@@ -200,6 +226,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         switch (event.event) {
           case "file-loaded": {
             wtLog("mpv", "file-loaded", { sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1 });
+            tracerDemarrage("file-loaded");
             // Réapplique le volume/mute persistés à CHAQUE média — filet de
             // sécurité si le restore post-init a été perdu (course à l'init,
             // vue sur Linux). Avant la 1re frame audio → transparent.
@@ -242,6 +269,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1,
               pos: positionRef.current.toFixed(1),
             });
+            tracerDemarrage("playback-restart (première image)",
+              `cache ${bufferedRef.current.toFixed(1)} s`);
             // playback-restart reçu : on annule les watchdogs
             if (playbackWatchdogRef.current) {
               clearTimeout(playbackWatchdogRef.current);
@@ -270,21 +299,12 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               if (!cancelled && p !== null) setState((prev) => ({ ...prev, paused: p }));
             }).catch(() => {});
 
-            // Apply deferred audio/subtitle track selections NOW (mpv is ready)
-            const tracks = pendingTracks.current;
-            if (tracks) {
-              console.debug("[mpv] playback-restart: applying pending tracks", tracks);
-              pendingTracks.current = null;
-              if (tracks.aid != null) api.command("set", ["aid", String(tracks.aid)]).catch((e) => console.error("[mpv] set aid failed:", e));
-              if (tracks.sid != null) {
-                if (tracks.sid === 0) {
-                  api.command("set", ["sid", "no"]).catch((e) => console.error("[mpv] set sid=no failed:", e));
-                } else {
-                  api.command("set", ["sid", String(tracks.sid)]).catch((e) => console.error("[mpv] set sid failed:", e));
-                  api.command("set", ["sub-visibility", "yes"]).catch(() => {});
-                }
-              }
-            }
+            // Les pistes ne s'appliquent PLUS ici. Elles partent avant le
+            // loadfile (cf. play()) : `aid`/`sid` persistent d'un fichier à
+            // l'autre, donc mpv ouvre déjà sur la bonne. Les poser à cet
+            // instant — la première image vient de sortir — réinitialisait la
+            // chaîne audio et resynchronisait par un seek interne : le cache
+            // était jeté et un micro-chargement s'affichait aussitôt.
 
             // Signal that mpv is ready to accept property changes
             // (preference effects in DesktopPlayer depend on this)
@@ -333,7 +353,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       // que la page soit redevenue opaque. C'est le bon sens. L'inverse ne
       // coûterait de toute façon qu'un fond noir ; ce sont les deux
       // TRANSPARENTS en même temps qui laisseraient voir le bureau.
-      if (isWindows()) invoke("player_surface_transparent", { on: false }).catch(() => {});
+      surfaceOpaque();
       const api = getMpvApi();
       setPendingDestroy(api ? api.destroy().catch(() => {}) : Promise.resolve());
     };

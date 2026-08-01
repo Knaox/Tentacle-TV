@@ -5,6 +5,7 @@
 import { buildPluginTailwindConfigScript, buildPluginThemeStyle } from "./pluginIframe/buildPluginTheme";
 import { buildPluginBridgeScript, buildPluginBootstrapScript } from "./pluginIframe/buildPluginBridge";
 import type { PluginHostEnv } from "./pluginIframe/buildPluginBridge";
+import { isDesktopApp, isTauriShell } from "../desktop/bridge";
 
 interface BuildPluginHtmlParams {
   backendUrl: string;
@@ -32,11 +33,12 @@ export function buildPluginHtml({
   const safeDepsCode = sharedDepsCode.replace(/<\/script/gi, "<\\/script");
   const safeTailwindCode = tailwindCode.replace(/<\/script/gi, "<\\/script");
 
-  // Environnement hôte exposé aux plugins (iframe sandboxée = aucun accès à
-  // window parent ni à __TAURI_INTERNALS__). Permet de répliquer les
+  // Environnement hôte exposé aux plugins (iframe sandboxée = aucun accès à la
+  // window parente ni aux marqueurs du shell). Permet de répliquer les
   // comportements plateforme du core (ex: trailers YouTube sur macOS DMG).
   const hostEnv: PluginHostEnv = {
-    tauri: typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
+    tauri: isTauriShell(),
+    desktop: isDesktopApp(),
     mac: typeof navigator !== "undefined" && /mac/i.test(navigator.userAgent),
     prod: import.meta.env.PROD,
     backendUrl,

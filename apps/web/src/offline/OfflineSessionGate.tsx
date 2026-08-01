@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth, useUserId } from "@tentacle-tv/api-client";
 import { useNavigate } from "react-router-dom";
-import { isTauriApp } from "../main";
+import { supportsOfflineSession } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { getCachedSession } from "./offlineSession";
 import { probeNow } from "./connectivityStore";
@@ -27,7 +27,7 @@ export function OfflineSessionGate() {
   const [expired, setExpired] = useState(false);
 
   useEffect(() => {
-    if (!isTauriApp || !userId || !offline) {
+    if (!supportsOfflineSession() || !userId || !offline) {
       setExpired(false);
       return;
     }
@@ -40,7 +40,7 @@ export function OfflineSessionGate() {
     };
   }, [userId, offline]);
 
-  if (!isTauriApp || !offline || !expired) return null;
+  if (!supportsOfflineSession() || !offline || !expired) return null;
 
   const handleLogout = () => {
     // onSettled : la purge locale doit aboutir même si l'appel réseau de

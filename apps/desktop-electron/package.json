@@ -1,0 +1,47 @@
+{
+  "name": "@tentacle-tv/desktop-electron",
+  "version": "1.20.3",
+  "private": true,
+  "//productName": "Nom lu par Electron pour app.getName() : barre de menus macOS, panneau A propos, nom du paquet.",
+  "productName": "Tentacle TV",
+  "description": "Tentacle TV desktop (Electron) — Windows et macOS",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build:main": "tsc -p tsconfig.json",
+    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --target=node22 --external:electron --outfile=dist/preload/index.js",
+    "build:ts": "pnpm build:main && pnpm build:preload",
+    "build:web": "cross-env TENTACLE_SHELL=electron pnpm --filter @tentacle-tv/web build",
+    "build:web:debug": "cross-env TENTACLE_SHELL=electron TENTACLE_DEBUG=1 pnpm --filter @tentacle-tv/web build",
+    "build:web:appstore": "cross-env TENTACLE_SHELL=electron VITE_DIST_CHANNEL=appstore pnpm --filter @tentacle-tv/web build",
+    "//build:web:appstore:debug": "Le build du Store, mais avec __PLAYER_DEBUG__ vrai. NE JAMAIS TAGUER un paquet qui en sort : la CI utilise build:appstore, sans le drapeau (cf. 959f7f90).",
+    "build:web:appstore:debug": "cross-env TENTACLE_SHELL=electron VITE_DIST_CHANNEL=appstore TENTACLE_DEBUG=1 pnpm --filter @tentacle-tv/web build",
+    "build": "pnpm build:web && pnpm build:ts",
+    "build:appstore": "pnpm build:web:appstore && pnpm build:ts",
+    "package": "pnpm build && node scripts/package.mjs",
+    "package:macos": "pnpm build:appstore && node scripts/package-macos.mjs",
+    "//package:macos:debug": "Le paquet macOS a l identique — canal appstore, dylibs LGPL, MoltenVK vendoree, entitlements, signature — mais instrumente : panneau de diagnostic, sonde reseau, __tentacleSimulateUpdate(). Pour juger sur la vraie chaine ce que le dev ne montre pas (ombre de fenetre, lisere, icone du Dock). Args apres -- : pnpm package:macos:debug -- --arch arm64 --lib \"$PWD/apps/desktop/src-tauri/lib\"",
+    "package:macos:debug": "pnpm build:web:appstore:debug && pnpm build:ts && node scripts/package-macos.mjs",
+    "nom:dev": "node scripts/nom-dev-macos.mjs",
+    "dev": "pnpm nom:dev && pnpm build:web:debug && pnpm build:ts && electron .",
+    "//dev:mpv-livree": "Alias : sur macOS le dev vise DEJA la chaine LGPL livree (0.40). Conserve pour la forcer explicitement, et pour la memoire des doigts.",
+    "dev:mpv-livree": "cross-env TENTACLE_MPV_LIB=livree pnpm dev",
+    "//dev:mpv-homebrew": "Le dev sur la mpv 0.41 de Homebrew (GPL) et le MoltenVK du systeme — pour comparer, ou tant que la chaine livree n est pas construite (apps/desktop/scripts/build-mpv-lgpl-macos.sh).",
+    "dev:mpv-homebrew": "cross-env TENTACLE_MPV_LIB=homebrew pnpm dev",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
+  },
+  "dependencies": {
+    "@tentacle-tv/web": "workspace:*",
+    "koffi": "^3.1.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.4",
+    "@types/node": "^22.10.0",
+    "cross-env": "^10.1.0",
+    "electron": "^43.2.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}

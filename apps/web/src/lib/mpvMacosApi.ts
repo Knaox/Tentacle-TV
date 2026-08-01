@@ -2,8 +2,7 @@
  * macOS mpv adapter — provides the same API surface as tauri-plugin-libmpv-api
  * but calls our custom Rust commands (mpv render API) instead of the plugin.
  */
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { invoke, listen, type Unlisten as UnlistenFn } from "../desktop/bridge";
 
 // Re-export compatible types so useDesktopPlayer works unchanged
 export type MpvObservableProperty = readonly [string, string, ...unknown[]];

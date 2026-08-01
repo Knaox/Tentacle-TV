@@ -1,4 +1,5 @@
-import { backendUrl, isTauriApp } from "../main";
+import { backendUrl } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 
 export const BACKEND = backendUrl;
 
@@ -11,7 +12,7 @@ export const hdrs = (): Record<string, string> => {
 
 /** credentials option: use cookies on web, nothing on desktop (token is in header) */
 export const creds = (): RequestCredentials | undefined =>
-  isTauriApp ? undefined : "include";
+  isDesktopApp() ? undefined : "include";
 
 /**
  * Tokens visuels admin alignés sur le MASTER design-system.

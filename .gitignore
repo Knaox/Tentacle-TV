@@ -10,6 +10,7 @@ Builds/
 scripts/
 !apps/backend/scripts/
 !apps/desktop/scripts/
+!apps/desktop-electron/scripts/
 !.github/scripts/
 !apps/tv/ios/scripts/
 .next/

@@ -1,6 +1,25 @@
-import type { MutableRefObject, RefObject } from "react";
+import type { RefObject } from "react";
 import { TrickplayPreview } from "../TrickplayPreview";
+import { ombreSurVideo } from "../../lib/ombreSurVideo";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
+
+/**
+ * L'ombre de la pastille — la DERNIÈRE du lecteur à ne pas passer par
+ * `ombreSurVideo`, et celle qu'on regarde le plus.
+ *
+ * La classe `shadow` de Tailwind est une ombre FLOUE. Sur la surface à canal
+ * alpha de macOS, son dégradé sort quasi opaque au lieu de s'estomper (voir
+ * `ombreSurVideo.ts`) : une auréole sombre suivait donc le curseur pendant tout
+ * le scrub, à l'endroit exact où l'on regarde.
+ *
+ * La valeur complète est `boxShadow.DEFAULT` de Tailwind mot pour mot : Windows
+ * et le web restent identiques au pixel. Là où la surface a un alpha, rien —
+ * une pastille blanche sur la barre rose n'a besoin d'aucun détachement.
+ */
+const OMBRE_PASTILLE = ombreSurVideo(
+  "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+  "none",
+);
 
 type SeekbarApi = ReturnType<typeof useDesktopSeekbar>;
 
@@ -19,9 +38,9 @@ interface DesktopSeekbarProps {
  */
 export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSeekbarProps) {
   const {
-    seekBarRef, dragProgress, isDragging,
-    hoverTime, hoverX, barWidth, setHoverTime, setBarWidth,
-    onScrubStart, onBarMouseMove, trickplay, trickplayFrame,
+    seekBarRef, dragProgress,
+    hoverTime, hoverX, barWidth, setBarWidth,
+    onScrubStart, onBarMouseMove, endHover, trickplay, trickplayFrame,
   } = seekbar;
 
   return (
@@ -30,13 +49,16 @@ export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSee
       onMouseDown={onScrubStart}
       onMouseMove={onBarMouseMove}
       onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}
-      onMouseLeave={() => { if (!(isDragging as MutableRefObject<boolean>).current) setHoverTime(null); }}>
+      onMouseLeave={endHover}>
       {/* Buffer bar */}
       <div className="absolute h-full rounded-full bg-white/10" style={{ width: `${bufProg * 100}%` }} />
       {/* Progress bar — rose de la bannière (`--progress-fill`), même couleur
           que la barre des cartes et du lecteur web. */}
       <div className="relative h-full rounded-full" style={{ width: `${displayProgress * 100}%`, background: "var(--progress-fill)" }}>
-        <div className={`absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow transition-opacity ${dragProgress != null ? "opacity-100" : "opacity-0 group-hover/bar:opacity-100"}`} />
+        <div
+          className={`absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-opacity ${dragProgress != null ? "opacity-100" : "opacity-0 group-hover/bar:opacity-100"}`}
+          style={{ boxShadow: OMBRE_PASTILLE }}
+        />
       </div>
       <TrickplayPreview
         visible={hoverTime !== null}

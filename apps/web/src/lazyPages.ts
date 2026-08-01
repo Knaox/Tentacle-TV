@@ -41,7 +41,7 @@ export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ d
 export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
 export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
 export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));
-export const OfflineSeasonView = lazy(() => import("./downloads/OfflineSeasonView").then((m) => ({ default: m.OfflineSeasonView })));
+export const OfflineSeriesView = lazy(() => import("./downloads/OfflineSeriesView").then((m) => ({ default: m.OfflineSeriesView })));
 export const SettingsDownloads = lazy(() => import("./pages/settings/SettingsDownloads").then((m) => ({ default: m.SettingsDownloads })));
 export const SettingsData = lazy(() => import("./pages/settings/SettingsData").then((m) => ({ default: m.SettingsData })));
 export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));

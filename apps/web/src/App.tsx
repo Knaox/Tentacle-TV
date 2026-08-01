@@ -26,12 +26,12 @@ import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { DownloadsEvents } from "./downloads/DownloadsEvents";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
-import { isTauriApp } from "./main";
+import { isDesktopApp } from "./desktop/bridge";
 import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, OfflineCatalog, OfflineSeasonView, AdminDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 
@@ -104,7 +104,7 @@ export function App() {
   );
   // Desktop app: need server URL before anything else
   const [needsServerUrl, setNeedsServerUrl] = useState(
-    isTauriApp && !localStorage.getItem("tentacle_server_url")
+    isDesktopApp() && !localStorage.getItem("tentacle_server_url")
   );
   // Statut du setup + démarrage optimiste desktop (cf. useSetupStatus).
   const { setupRequired, backendDown, setSetupRequired } = useSetupStatus(needsServerUrl);
@@ -179,8 +179,12 @@ export function App() {
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}
-      {/* Reprise auto de la dernière lecture (dev only, URL ?autowatch=1) */}
-      {import.meta.env.DEV && <AutoWatchHarness />}
+      {/* Reprise auto d'une lecture (dev only, URL ?autowatch=<itemId>).
+          `__PLAYER_DEBUG__` aussi : la coquille Electron sert un build Vite de
+          PRODUCTION même en développement, où `import.meta.env.DEV` est faux —
+          sans cette porte, l'outil n'existait sur aucune des deux coquilles de
+          bureau, celles-là mêmes pour lesquelles il a été écrit. */}
+      {(import.meta.env.DEV || __PLAYER_DEBUG__) && <AutoWatchHarness />}
       {/* Compteur d'images (dev only) — éliminé du build de production. */}
       {import.meta.env.DEV && frameMeterEnabled() && <FrameMeter />}
       <Suspense fallback={<PageSpinner />}>
@@ -205,9 +209,10 @@ export function App() {
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
-            {/* Saison téléchargée : contenu 100 % local, donc accessible aussi
-                en ligne (le retour navigateur fonctionne normalement). */}
-            <Route path="offline/season/:groupKey" element={<OfflineSeasonView />} />
+            {/* Série téléchargée : contenu 100 % local, donc accessible aussi
+                en ligne (le retour navigateur fonctionne normalement). Le
+                choix de la saison se fait dans la page. */}
+            <Route path="offline/series/:seriesKey" element={<OfflineSeriesView />} />
 
             <Route path="support" element={onlineOnly(<Support />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
@@ -295,7 +300,7 @@ export function App() {
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
           remplace le blocage — l'app reste utilisable sur le contenu local. */}
-      {!isTauriApp && <OfflineBanner />}
+      {!isDesktopApp() && <OfflineBanner />}
       </WatchTogetherProvider>
     </ToastProvider>
   );

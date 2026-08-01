@@ -44,6 +44,26 @@ export interface PersistStorage {
 export interface PersisterOptions {
   /** Préfixes de query keys à persister (ex: ["resume-items", "latest-items"]). */
   whitelist: readonly string[];
+  /**
+   * À QUI appartiennent ces données. Le cache n'est rendu qu'au compte qui l'a
+   * produit ; une sauvegarde étiquetée autrement est ignorée.
+   *
+   * # Pourquoi une étiquette, et pas un simple effacement
+   *
+   * Ce persister sauvegarde aussi sur `beforeunload` et `pagehide`. Un code qui
+   * change de compte efface donc le stockage puis navigue — et la navigation
+   * déclenche aussitôt une sauvegarde du cache EN MÉMOIRE, qui appartient encore
+   * au compte qu'on quitte. C'est ce qui faisait qu'un admin sorti du mode
+   * impersonation retrouvait les reprises de lecture de l'autre.
+   *
+   * L'étiquette est lue AU MOMENT DE L'ATTACHE, pas à la sauvegarde : elle
+   * désigne le compte dont les données sont en mémoire, et celles-ci ne
+   * changent jamais d'identité sans un rechargement complet de la page.
+   *
+   * Laisser à `undefined` désactive la vérification (comportement d'origine,
+   * conservé pour les clients à compte unique).
+   */
+  owner?: string | null;
   /** Clé de stockage. */
   storageKey?: string;
   /** Intervalle de sauvegarde en ms. Défaut 10s. */
@@ -57,6 +77,34 @@ export interface PersisterOptions {
 interface PersistedEntry {
   data: unknown;
   dataUpdatedAt: number;
+}
+
+/** Contenu du stockage : les données, et le compte à qui elles appartiennent. */
+interface PersistedPayload {
+  owner: string | null;
+  entries: Record<string, PersistedEntry>;
+}
+
+/**
+ * Lit le stockage, format hérité compris.
+ *
+ * L'ancien format était la carte d'entrées NUE. Ses clés sont toujours des
+ * tableaux JSON (`["resume-items"]`), donc aucune ne peut se confondre avec
+ * `entries` : la détection est sûre. Une sauvegarde héritée n'a pas de
+ * propriétaire connu — elle sera donc écartée dès qu'on en exige un, au prix
+ * d'un seul démarrage à froid.
+ */
+function readPayload(raw: string): PersistedPayload | null {
+  const parsed: unknown = JSON.parse(raw);
+  if (parsed === null || typeof parsed !== "object") return null;
+  const candidate = parsed as { owner?: unknown; entries?: unknown };
+  if (candidate.entries !== null && typeof candidate.entries === "object") {
+    return {
+      owner: typeof candidate.owner === "string" ? candidate.owner : null,
+      entries: candidate.entries as Record<string, PersistedEntry>,
+    };
+  }
+  return { owner: null, entries: parsed as Record<string, PersistedEntry> };
 }
 
 const DEFAULT_KEY = "tentacle_query_cache_v1";
@@ -75,9 +123,16 @@ export async function hydrateQueryClient(
   try {
     const raw = await Promise.resolve(storage.getItem(key));
     if (!raw) return;
-    const parsed = JSON.parse(raw) as Record<string, PersistedEntry>;
+    const payload = readPayload(raw);
+    if (payload === null) return;
+    // Le cache d'un autre compte n'est pas une donnée périmée à rafraîchir :
+    // c'est le contenu de quelqu'un d'autre. On le jette, sans discuter.
+    if (opts.owner !== undefined && payload.owner !== opts.owner) {
+      try { await Promise.resolve(storage.removeItem(key)); } catch { /* ignore */ }
+      return;
+    }
     const now = Date.now();
-    for (const [keyJson, entry] of Object.entries(parsed)) {
+    for (const [keyJson, entry] of Object.entries(payload.entries)) {
       if (!entry || typeof entry !== "object") continue;
       if (now - (entry.dataUpdatedAt ?? 0) > maxAge) continue;
       try {
@@ -105,6 +160,11 @@ export function attachQueryPersister(
   const key = opts.storageKey ?? DEFAULT_KEY;
   const interval = opts.saveInterval ?? DEFAULT_INTERVAL;
   const maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES;
+  // Figé ici, et pas relu à chaque sauvegarde : il désigne le compte dont les
+  // données sont EN MÉMOIRE. Le relire à la sauvegarde donnerait la réponse
+  // exactement fausse — au `pagehide` d'une sortie d'impersonation, le compte
+  // courant est déjà redevenu l'admin alors que le cache est celui de l'autre.
+  const owner = opts.owner ?? null;
 
   const save = async (): Promise<void> => {
     try {
@@ -144,14 +204,17 @@ export function attachQueryPersister(
       // cold start instantané, silencieusement.
       candidates.sort((a, b) => b.entry.dataUpdatedAt - a.entry.dataUpdatedAt);
       const out: Record<string, PersistedEntry> = {};
-      let total = 2; // les accolades englobantes
+      // L'enveloppe compte dans le budget : sur tvOS il vaut le plafond de
+      // NSUserDefaults, pas une marge de confort.
+      let total = JSON.stringify({ owner, entries: {} }).length;
       for (const c of candidates) {
         if (total + c.cost > maxBytes) continue; // trop gros : on tente les suivants, plus petits
         out[c.keyJson] = c.entry;
         total += c.cost;
       }
 
-      await Promise.resolve(storage.setItem(key, JSON.stringify(out)));
+      const payload: PersistedPayload = { owner, entries: out };
+      await Promise.resolve(storage.setItem(key, JSON.stringify(payload)));
     } catch {
       // Sauvegarde best-effort — silencieux en cas d'erreur
     }

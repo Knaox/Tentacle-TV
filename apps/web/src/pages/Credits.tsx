@@ -15,12 +15,18 @@ export function Credits() {
     { name: "TanStack Query", url: "https://tanstack.com/query", desc: t("about:techTanStackQuery") },
     { name: "React Router", url: "https://reactrouter.com", desc: t("about:techReactRouter") },
     { name: "Fastify", url: "https://fastify.dev", desc: t("about:techFastify") },
+    // Deux coquilles de bureau : Windows et macOS tournent sous Electron, Linux
+    // reste sur Tauri. Les deux sont donc créditées, chacune avec sa portée.
+    { name: "Electron", url: "https://electronjs.org", desc: t("about:techElectron") },
     { name: "Tauri", url: "https://tauri.app", desc: t("about:techTauri") },
     { name: "Expo", url: "https://expo.dev", desc: t("about:techExpo") },
     { name: "React Native", url: "https://reactnative.dev", desc: t("about:techReactNative") },
     { name: "ExoPlayer / Media3", url: "https://developer.android.com/media/media3/exoplayer", desc: t("about:techExoPlayer") },
     { name: "mpv", url: "https://mpv.io", desc: t("about:techMpv") },
     { name: "FFmpeg", url: "https://ffmpeg.org", desc: t("about:techFFmpeg") },
+    // Livré dans le paquet macOS : mpv y rend par Vulkan, que MoltenVK traduit
+    // vers Metal. Sans lui, aucune image — voir `THIRD-PARTY-LICENSES.md`.
+    { name: "MoltenVK", url: "https://github.com/KhronosGroup/MoltenVK", desc: t("about:techMoltenVK") },
     { name: "VoidTV", url: "https://github.com/hritwikjohri/VoidTV-for-jellyfin", desc: t("about:techVoidTV") },
   ], [t]);
 

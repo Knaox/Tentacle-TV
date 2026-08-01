@@ -29,8 +29,8 @@
  * `content-visibility` implique `contain: paint`, qui interdit aux descendants
  * de peindre hors de la boîte. C'est précisément le cas de la racine d'une carte
  * de rangée : au survol, l'ombre d'élévation (`--elev-card-hover`, décalée de
- * 20 px et diffusée sur 50) déborde largement sous la carte, et le lift la
- * soulève encore de six pixels. Tout cela serait rogné net au bord de l'affiche
+ * 22 px et diffusée sur 44) déborde largement sous la carte, et le lift la
+ * soulève encore de huit pixels. Tout cela serait rogné net au bord de l'affiche
  * — la carte visée se retrouverait posée à plat, sans l'ombre qui la détache.
  * D'où la granularité retenue : la RANGÉE entière, dont le scroller réserve
  * déjà de quoi laisser passer ce débord, et jamais la carte. */
@@ -67,11 +67,15 @@
   }
 }
 
-/* Une cellule de grille (bibliothèque, collections, listes).
- * Ces grilles montent parfois plusieurs centaines d'éléments d'un coup, dont
- * une douzaine à l'écran : c'est le cas où le gain est le plus net. La largeur
- * est imposée par la grille, seule la hauteur a besoin d'une réserve. */
-.render-tile {
-  content-visibility: auto;
-  contain-intrinsic-height: auto 320px;
-}
+/* `.render-tile` a été RETIRÉE — plus aucune grille ne monte de cellule hors
+ * écran, donc plus rien dont la peinture serait à élider.
+ *
+ * Elle servait à la grille des collections, la seule qui montait tout d'un coup
+ * (plusieurs centaines de cellules pour une douzaine à l'écran). Élider leur
+ * peinture ne libérait pourtant ni les images décodées, ni les observateurs, ni
+ * les abonnements au cache : la grille est désormais virtualisée comme celle de
+ * la bibliothèque, et les cellules hors écran n'existent plus du tout.
+ *
+ * Si une future grille non virtualisée en avait besoin, se souvenir que
+ * `content-visibility` implique `contain: paint` — donc jamais sur la racine
+ * d'une carte, dont l'ombre de survol déborde (cf. l'avertissement plus haut). */

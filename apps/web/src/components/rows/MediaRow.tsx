@@ -8,7 +8,9 @@ import { RowHeader } from "./RowHeader";
 import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
 import { useRowCardWidth } from "./useRowCardWidth";
+import { useRowWindow } from "./useRowWindow";
 import { useHoverMount } from "../../hooks/useHoverMount";
+import { useInViewport } from "../../hooks/useInViewport";
 
 export type CardVariant = "poster" | "episode";
 
@@ -26,8 +28,15 @@ interface MediaRowProps {
 }
 
 /**
- * Horizontal scrolling row of media cards. Replacement for `MediaCarousel`.
- * Lazy-renders cards only after the row enters the viewport.
+ * Rangée de cartes à défilement horizontal.
+ *
+ * Seules les cartes VISIBLES sont montées, plus trois de part et d'autre : le
+ * reste est remplacé par deux cales de la largeur exacte qu'il occuperait (cf.
+ * `rowWindow`, `useRowWindow`). Et quand la rangée sort de l'écran, la fenêtre se
+ * vide entièrement. Avant cela, l'accueil montait ~124 cartes et n'en démontait
+ * jamais aucune — un coût en O(catalogue), qui grandissait avec le nombre de
+ * bibliothèques du serveur. Il est désormais en O(écran) : ~44 cartes, quel que
+ * soit le catalogue.
  */
 export function MediaRow({ title, items, variant = "poster", animDelay = 0, href, posterImageMode }: MediaRowProps) {
   const { t } = useTranslation("common");
@@ -37,6 +46,39 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   // Largeur calée sur la rangée : un nombre entier de cartes la remplit
   // exactement, plus aucune n'est tronquée au bord droit.
   const cardWidth = useRowCardWidth(scrollRef, variant);
+  // Porte de rangée. `useInViewport` porte SON propre ref — d'où le `div.relative`
+  // plus bas plutôt que `rowRef`, déjà pris par l'observateur d'entrée. 400 px de
+  // marge : la rangée se remplit avant d'être à l'écran.
+  const nearby = useInViewport<HTMLDivElement>("400px");
+  const track = useRowWindow({
+    scrollRef,
+    count: items.length,
+    cardWidth,
+    onScreen: nearby.visible,
+  });
+  const { range } = track;
+  /**
+   * La cascade d'entrée ne joue qu'UNE fois par rangée.
+   *
+   * Chaque carte porte un `animationDelay` tiré de son index. Laissé en place, il
+   * ferait attendre 360 ms à une carte remontée à l'index 9 — donc une rangée qui
+   * clignote en cascade à chaque défilement, à chaque retour à l'écran. Le sursis
+   * couvre la plus longue cascade (400 ms de décalage + 340 ms d'animation) pour
+   * ne pas l'interrompre en vol.
+   */
+  const stagger = useRef(true);
+  useEffect(() => {
+    if (!stagger.current || range.end < range.start) return;
+    const id = setTimeout(() => { stagger.current = false; }, 760);
+    return () => clearTimeout(id);
+  }, [range.start, range.end]);
+
+  // Le même évènement de défilement sert aux deux : l'état des flèches et la
+  // fenêtre de cartes. La seconde coalesce déjà ses lectures du DOM par image.
+  const handleScroll = useCallback(() => {
+    onScroll();
+    track.onScroll();
+  }, [onScroll, track]);
   // Survol de la rangée — ne sert qu'à MONTER les zones de défilement. Elles
   // portent un `backdrop-filter` et il y en a jusqu'à deux par rangée : les
   // laisser à `opacity: 0` sur une dizaine de rangées revenait à entretenir
@@ -93,7 +135,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
     >
       <RowHeader title={title} href={href} />
 
-      <div className="relative">
+      <div ref={nearby.ref} className="relative">
         <RowScrollControls
           canLeft={canScrollLeft}
           canRight={canScrollRight}
@@ -104,10 +146,16 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
 
         {/* pt/pb : marge de débordement pour le survol des cartes — `overflow-x:
             auto` force un `overflow-y` calculé, qui rogne au bord de la boîte de
-            rembourrage. Portés de 12/16 à 24 px pour laisser passer le HALO de
-            ciblage (24 px de débord) : en deçà, il se coupait net en haut et en
-            bas et redevenait un rectangle. On reste loin du pb-12 essayé
-            autrefois, qui creusait un vide disgracieux entre les rangées.
+            rembourrage. Le budget vers le HAUT se calcule : croissance d'échelle
+            (317 px d'affiche × 0,06 / 2 = 9,5 px) + lift (8 px) + portée haute
+            du débord de lumière de l'élévation (8 px) = 25,5 px. `pt-6` (24 px)
+            coupait donc net les derniers pixels de la lueur, ce qui produisait
+            exactement ce qu'on cherche à éviter : un trait horizontal. `pt-8`
+            (32 px) laisse 6,5 px de marge ; `pt-7` n'en laisserait que 2,5, et
+            la moindre retouche d'amplitude repasserait dessous. Compensé par le
+            `mb-1` de `RowHeader` : l'écart titre → cartes ne bouge pas.
+            Vers le BAS il n'y a rien à réserver : la portée basse (30 px) tombe
+            sur le bloc titre, à l'intérieur de la racine de la carte.
             Le panneau d'aperçu, lui, est portalisé : il ne déborde pas d'ici.
 
             `row-dim` porté par le SCROLLER et non par la <section> : sur la
@@ -124,24 +172,54 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
             autres. */}
         <div
           ref={scrollRef}
-          onScroll={onScroll}
-          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-6 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
+          onScroll={handleScroll}
+          className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
-          {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
-              un carrousel (ex. doublon de bibliothèque) — un Id seul provoque
-              des clés dupliquées React (enfants omis/dupliqués). */}
-          {visible && items.map((item, i) =>
-            variant === "episode" ? (
-              <EpisodeCard key={`${item.Id}-${i}`} item={item} index={i} width={cardWidth} />
-            ) : (
-              <PosterCard
-                key={`${item.Id}-${i}`}
-                item={item}
-                index={i}
-                posterImageMode={posterImageMode}
-                width={cardWidth}
-              />
-            ),
+          {visible && (
+            <>
+              {/* Cales : elles tiennent la géométrie de la piste à la place des
+                  cartes non montées, au pixel près — `scrollWidth` est identique
+                  avec ou sans fenêtrage, donc les flèches et les bornes du
+                  panneau d'aperçu restent justes et `scrollLeft` ne saute pas.
+                  PAS de `snap-start` : un vide n'est pas un point d'accroche. */}
+              {range.padStart > 0 && (
+                <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />
+              )}
+
+              {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
+                  un carrousel (ex. doublon de bibliothèque) — un Id seul provoque
+                  des clés dupliquées React (enfants omis/dupliqués). L'index est
+                  celui de la LISTE, pas de la fenêtre : c'est ce qui garde les clés
+                  stables quand la fenêtre glisse. */}
+              {items.slice(range.start, range.end + 1).map((item, offset) => {
+                const i = range.start + offset;
+                const entrance = stagger.current ? Math.min(i * 40, 400) : null;
+                return variant === "episode" ? (
+                  <EpisodeCard
+                    key={`${item.Id}-${i}`}
+                    item={item}
+                    index={i}
+                    width={cardWidth}
+                    entranceDelay={entrance}
+                    onHoverIndex={track.setHoveredIndex}
+                  />
+                ) : (
+                  <PosterCard
+                    key={`${item.Id}-${i}`}
+                    item={item}
+                    index={i}
+                    posterImageMode={posterImageMode}
+                    width={cardWidth}
+                    entranceDelay={entrance}
+                    onHoverIndex={track.setHoveredIndex}
+                  />
+                );
+              })}
+
+              {range.padEnd > 0 && (
+                <div aria-hidden style={{ width: range.padEnd, flexShrink: 0 }} />
+              )}
+            </>
           )}
         </div>
       </div>

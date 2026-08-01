@@ -23,6 +23,14 @@ export default {
   updateRestarting: "Redémarrage de l'application...",
   updateReleaseNotes: "Notes de mise à jour",
   restartHint: "L'application va redémarrer pour appliquer la mise à jour",
+  // Le Microsoft Store télécharge et installe lui-même, et ne dit pas où il en
+  // est : on annonce l'activité sans inventer de pourcentage.
+  downloadingByStore: "Téléchargement par le Microsoft Store…",
+  // Codes d'erreur de la coquille, traduits (ils s'affichaient tels quels).
+  updateStorePageOpened: "Le Microsoft Store a été ouvert : la mise à jour s'y poursuit.",
+  updateStoreUnavailable: "Le Microsoft Store n'a pas répondu. Réessayez plus tard, ou mettez à jour depuis le Store.",
+  updateNoLongerAvailable: "La mise à jour n'est plus en attente — vous êtes peut-être déjà à jour.",
+  updateInstallRefused: "L'installation n'a pas abouti. Elle peut être reprise depuis le Microsoft Store.",
   // Suppression
   deleteAll: "Tout supprimer",
   confirmDeleteAll: "Etes-vous sur ? Cette action est irreversible.",

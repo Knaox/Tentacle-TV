@@ -8,8 +8,8 @@
 
 - Node.js >= 20
 - pnpm >= 10
-- Rust stable
-- Tauri CLI (`pnpm add -Dg @tauri-apps/cli`)
+- Rust stable + Tauri CLI (`pnpm add -Dg @tauri-apps/cli`) — **Linux** uniquement.
+  Windows et macOS sortent d’Electron et n’en ont plus besoin.
 
 ## 1. Préparer une release
 
@@ -23,8 +23,11 @@
   dans tous les artefacts (tauri.conf, Info.plist, versionName…).
 - Les numéros de build (CFBundleVersion / versionCode) sont **auto-incrémentés**
   par la CI — plus rien à gérer.
-- Optionnel (builds desktop locaux) : garder `apps/desktop/src-tauri/tauri.conf.json`,
-  `Cargo.toml` et `apps/desktop/package.json` alignés sur `versions.json → desktop`.
+- Optionnel (builds desktop locaux) : garder `apps/desktop-electron/package.json`
+  (Electron — Windows, macOS) et `apps/desktop/src-tauri/tauri.conf.json`,
+  `Cargo.toml`, `apps/desktop/package.json` (Tauri — Linux) alignés sur
+  `versions.json → desktop`. La CI, elle, injecte la version dans le paquet
+  Electron avant l’empaquetage.
 - Remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`).
 
 ### Commit et tag
@@ -82,30 +85,52 @@ raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
 
 ### macOS (App Store)
 
+- Coquille : **Electron** (`apps/desktop-electron`), comme Windows — même web build,
+  même libmpv piloté par koffi.
 - libmpv + FFmpeg recompilés **LGPL** (`build-mpv-lgpl-macos.sh`), sandbox,
   bundle `com.tentacle.mobile` (fiche partagée avec iOS/tvOS, app id `6760205634`).
-- Version injectée par `--config` depuis `versions.json` ; CFBundleVersion = build
-  auto (croissant global — exigence Apple 90061 réglée à vie).
-- MAJ in-app = ouverture App Store (pas d'auto-update). Attributions LGPL :
+- Version injectée par `--version` depuis `versions.json` (elle atterrit dans le
+  `package.json` embarqué, donc dans `app.getVersion()` — c'est elle que la
+  détection de MAJ compare au manifeste) ; CFBundleVersion = build auto (croissant
+  global — exigence Apple 90061 réglée à vie).
+- MAJ in-app = ouverture App Store (pas d'auto-update ; le paquet `mas` d'Electron
+  n'embarque pas Squirrel). Attributions LGPL :
   `apps/desktop/THIRD-PARTY-LICENSES.md` + À propos → Crédits.
+- Deux jobs : `mac-libs` compile mpv/FFmpeg LGPL **par architecture** (et récolte
+  le binaire natif koffi de son arch, indisponible ailleurs), `mac-package` fusionne
+  au `lipo`, empaquette en universel, signe et envoie.
 
-Test local LGPL sans certs :
+> ⚠️ Deux réglages du packaging ont un coût s'ils sautent, et il ne se voit
+> qu'après l'envoi : `osxUniversal.x64ArchFiles` (sans quoi la fusion universelle
+> refuse les `koffi.node` mono-architecture) et `preAutoEntitlements: false` (sans
+> quoi osx-sign ajoute `application-groups`, absent du profil de provisionnement —
+> build inéligible). Voir les commentaires de `package-macos.mjs`.
+
+Test local (paquet universel non distribuable, signature ad hoc) :
 ```bash
-bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
-cd apps/desktop && VITE_DIST_CHANNEL=appstore pnpm tauri dev
+bash apps/desktop/scripts/build-mpv-lgpl-macos.sh    # dylibs LGPL de l'arch hôte
+cd apps/desktop-electron
+pnpm build:appstore
+node scripts/package-macos.mjs --lib ../desktop/src-tauri/lib --arch arm64
 ```
 
 ### Windows (Microsoft Store)
 
+- Construit par **Electron** depuis la 1.20.0 (`apps/desktop-electron`), plus par
+  Tauri : pas de chaîne Rust dans ce job. Même libmpv, piloté par koffi.
 - MSIX **non signé** (`makeappx`) — le Store signe. Identité
   `DamienROUGE.Tentacle` (`apps/desktop/msix/Package.appxmanifest`, patché
   `Version="X.Y.Z.0"` par la CI).
+- Essai local du paquet : `pnpm --filter @tentacle-tv/desktop-electron package`,
+  puis lancer `apps/desktop-electron/release/Tentacle TV-win32-x64/Tentacle TV.exe`.
 - Soumission API automatique (`msstore-submit.mjs`) : clone de la dernière
   soumission publiée, notes FR/EN depuis `changelogs/desktop.md`, publication
   immédiate. ⚠️ version strictement supérieure à la publiée.
 
 ### Linux
 
+- Coquille : **Tauri v2** (`apps/desktop`) — seule plateforme encore sur Tauri
+  (chaîne Rust + WebKitGTK requises).
 - Runner ubuntu-22.04 (glibc/webkit anciens = compat large), `.deb`/`.rpm`/AppImage
   + repackage pacman (`.pkg.tar.zst`) dans un conteneur Arch.
 - libmpv chargé au runtime (dlopen) ; deps déclarées par les paquets
@@ -147,4 +172,5 @@ de la piste de tests fermés « Alpha », puis installent depuis le Play Store d
 - [Microsoft Partner Center](https://partner.microsoft.com/dashboard)
 - [Google Play Console](https://play.google.com/console)
 - [App Store Connect](https://appstoreconnect.apple.com)
-- [Tauri v2 Documentation](https://v2.tauri.app)
+- [Tauri v2 Documentation](https://v2.tauri.app) (coquille Linux)
+- [Electron Documentation](https://www.electronjs.org/docs/latest) (coquilles Windows et macOS)

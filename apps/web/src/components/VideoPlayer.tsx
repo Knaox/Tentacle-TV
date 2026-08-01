@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { SkipBadge } from "./SkipBadge";
+import { PlaybackBadge } from "./PlaybackBadge";
+import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
@@ -60,6 +62,11 @@ export function VideoPlayer({
     if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
     return 1;
   });
+  // `volume` vaut 0 dès que le son est coupé — `handleToggleMute` le pose
+  // lui-même, il n'y a donc pas d'état muet séparé à tenir.
+  // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
+  // `onSeek` sans toucher à la lecture), il n'a donc rien à faire taire.
+  const { flash: playbackFlash } = usePlaybackFlash(!playing, volume === 0);
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -254,6 +261,10 @@ export function VideoPlayer({
       />
 
       <SkipBadge flash={skipFlash} />
+
+      {/* Bascule lecture/pause, d'où qu'elle vienne — barre d'espace, clic,
+          tap sur mobile. */}
+      <PlaybackBadge flash={playbackFlash} />
 
       <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
         <PlayerControls

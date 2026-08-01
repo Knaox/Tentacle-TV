@@ -1,11 +1,28 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaSource } from "@tentacle-tv/shared";
+import type { DeviceProfile } from "@tentacle-tv/shared";
 import { buildBrowserDeviceProfile } from "../lib/browserDeviceProfile";
 import { buildMacOSDeviceProfile } from "../lib/macosDeviceProfile";
-import { isTauri, isMacOS } from "./useDesktopPlayer";
+import { buildMpvDeviceProfile } from "../lib/mpvDeviceProfile";
+import { isMacOS } from "./useDesktopPlayer";
+import { isTauriShell } from "../desktop/bridge";
 
 const DBG = "[Tentacle:PlaybackInfo]";
+
+/**
+ * Le profil décrit QUI LIT, et mpv ne lit pas comme un navigateur : lui envoyer
+ * les capacités de Chromium faisait remuxer en HLS tout MKV — donc tout contenu
+ * lourd — pour un lecteur qui l'aurait ouvert tel quel.
+ *
+ * Hors du hook : `fetchPlaybackInfo` est mémoïsé, et une fonction refermée sur
+ * le rendu s'y serait figée.
+ */
+function construireProfil(lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number): DeviceProfile {
+  if (lecteurNatif) return buildMpvDeviceProfile(bitrate);
+  if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate);
+  return buildBrowserDeviceProfile(bitrate);
+}
 
 export interface PlaybackInfoState {
   /** Full stream URL (direct play or TranscodingUrl from server) */
@@ -24,7 +41,13 @@ export interface PlaybackInfoState {
   isLoading: boolean;
 }
 
-export function usePlaybackInfo() {
+/**
+ * @param lecteurNatif Vrai quand c'est mpv qui lira, faux pour le lecteur web.
+ *   La distinction ne peut pas se déduire de la plateforme : le repli web
+ *   (`Watch.tsx`, `forceWeb`) tourne dans la même application de bureau, et lui
+ *   servir un profil mpv le laisserait avec un MKV qu'il ne sait pas ouvrir.
+ */
+export function usePlaybackInfo(lecteurNatif = false) {
   const client = useJellyfinClient();
   const userId = useUserId();
   const fetchId = useRef(0);
@@ -39,10 +62,19 @@ export function usePlaybackInfo() {
     isLoading: false,
   });
 
-  const isMacOSTauri = isTauri() && isMacOS();
+  // ⚠️ `isTauri()` est en réalité `isDesktopApp()` : il répond OUI sous Electron
+  // aussi. Sans `isTauriShell()`, la coquille Electron macOS réclamait donc à
+  // Jellyfin un PlaybackInfo taillé pour AVFoundation — ce que la WKWebView de
+  // Tauri sait lire — alors que c'est **mpv** qui lit. Le serveur renvoyait une
+  // source inexploitable par le lecteur, `loadfile` n'était jamais appelé, et
+  // l'écran de chargement tournait indéfiniment.
+  //
+  // Le défaut ne pouvait pas se voir sous Windows : `isMacOS()` y est faux, donc
+  // c'est le profil navigateur — le bon pour mpv — qui servait déjà.
+  const isMacOSTauri = isTauriShell() && isMacOS();
   const deviceProfile = useMemo(
-    () => isMacOSTauri ? buildMacOSDeviceProfile() : buildBrowserDeviceProfile(),
-    [isMacOSTauri],
+    () => construireProfil(lecteurNatif, isMacOSTauri),
+    [lecteurNatif, isMacOSTauri],
   );
   const fetchPlaybackInfo = useCallback(async (opts: {
     itemId: string;
@@ -61,7 +93,7 @@ export function usePlaybackInfo() {
 
     try {
       let profile = opts.maxStreamingBitrate != null
-        ? (isMacOSTauri ? buildMacOSDeviceProfile(opts.maxStreamingBitrate) : buildBrowserDeviceProfile(opts.maxStreamingBitrate))
+        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate)
         : deviceProfile;
       // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
       // returns a TranscodingUrl with the correct audio track selected server-side.

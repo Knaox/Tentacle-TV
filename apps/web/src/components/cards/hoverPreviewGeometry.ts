@@ -3,6 +3,19 @@ export interface AnchorRect {
   left: number;
   width: number;
   height: number;
+  /**
+   * Hauteur de la carte ENTIÈRE — visuel plus bloc titre —, quand elle diffère
+   * de `height`, qui ne mesure que le visuel.
+   *
+   * Sert à la seule disposition `overlay` : le panneau y couvrait la hauteur de
+   * l'image, si bien que le titre et la durée de la carte restaient visibles
+   * dessous alors que le voile d'informations les répétait quelques pixels plus
+   * haut. Le survol ne se posait donc pas sur toute la carte.
+   *
+   * Optionnel, et `height` en tient lieu par défaut : c'est ce qui permet aux
+   * mesures d'un visuel seul de rester des mesures valides.
+   */
+  outerHeight?: number;
 }
 
 /**
@@ -40,6 +53,19 @@ export interface PreviewRect {
 
 /** Marge minimale entre le panneau et le haut / bas de la fenêtre. */
 const EDGE_MARGIN = 16;
+/**
+ * Tolérance sub-pixel avant de déclarer qu'une carte dépasse de sa rangée.
+ *
+ * `useRowCardWidth` divise la zone de contenu en un nombre ENTIER de cartes :
+ * la première commence donc exactement sur le bord de padding, celui-là même
+ * qui sert de borne. Sans tolérance, un écart de deux dix-millièmes de pixel
+ * entre deux `getBoundingClientRect()` — 55,9998 contre 56 — suffisait à
+ * déclarer un débordement, donc à basculer la carte de tête en disposition
+ * superposée et à lui appliquer un rognage de 0,0002 px. Le survol de la
+ * première (et de la dernière) carte changeait ainsi de forme sans raison
+ * visible, au hasard des arrondis.
+ */
+const OVERFLOW_EPSILON = 0.5;
 /**
  * Bornes horizontales dans lesquelles le panneau doit tenir, en coordonnées de
  * fenêtre. Calculées par l'appelant à partir de la rangée réelle : elles
@@ -92,9 +118,11 @@ export function previewOverflow(
 ): { left: number; right: number } {
   const minX = bounds ? bounds.left : EDGE_MARGIN;
   const maxX = bounds ? bounds.right : viewportWidth - EDGE_MARGIN;
+  const left = minX - anchor.left;
+  const right = anchor.left + anchor.width - maxX;
   return {
-    left: Math.max(0, minX - anchor.left),
-    right: Math.max(0, anchor.left + anchor.width - maxX),
+    left: left > OVERFLOW_EPSILON ? left : 0,
+    right: right > OVERFLOW_EPSILON ? right : 0,
   };
 }
 
@@ -167,26 +195,28 @@ export function computePreviewRect(
   const rect: PreviewRect = { top: anchor.top, left: anchor.left, width, direction };
   if (direction === "down") return rect;
 
-  // Confiné à la carte : même hauteur, et rogné exactement comme elle l'est par
-  // la rangée. Sans ce rognage, le panneau — portalisé hors du conteneur qui
-  // rogne la carte — révélerait une partie que la carte ne montre pas, et
-  // passerait par-dessus les flèches de défilement.
+  // Confiné à la carte : TOUTE la carte, bloc titre compris (`outerHeight`), et
+  // rogné exactement comme elle l'est par la rangée. Sans ce rognage, le panneau
+  // — portalisé hors du conteneur qui rogne la carte — révélerait une partie que
+  // la carte ne montre pas, et passerait par-dessus les flèches de défilement.
   return {
     ...rect,
-    height: anchor.height,
+    height: anchor.outerHeight ?? anchor.height,
     clip: overflow.left > 0 || overflow.right > 0 ? overflow : undefined,
   };
 }
 
 /**
  * Origine de l'animation d'ouverture, en pourcentages du panneau : le zoom part
- * du centre de la VIGNETTE. En `overlay` la vignette EST le panneau, l'origine
- * est donc son centre ; en `down` elle n'occupe que le haut, et un centre
- * géométrique ferait dériver l'image au fil du déroulé du tiroir.
+ * toujours du centre de la VIGNETTE, jamais du centre géométrique du panneau —
+ * celui-ci porte en plus un tiroir (`down`) ou une bande de titre (`overlay`),
+ * et l'image dériverait au fil de l'ouverture.
  */
 export function previewOrigin(anchor: AnchorRect, rect: PreviewRect): string {
-  if (rect.direction === "overlay") return "50% 50%";
-  const height = estimatePreviewHeight(rect.width);
+  const height =
+    rect.direction === "overlay"
+      ? (rect.height ?? anchor.height)
+      : estimatePreviewHeight(rect.width);
   const y = ((anchor.top + anchor.height / 2 - rect.top) / height) * 100;
   return `50% ${clamp(y, 0, 100)}%`;
 }

@@ -5,7 +5,7 @@ export default {
   downloads: "Téléchargements",
   help: "Aide",
   pairDevice: "Jumeler la TV",
-  preferences: "Préférences",
+  preferences: "Paramètres du compte",
   about: "À propos",
   admin: "Administration",
   logout: "Déconnexion",

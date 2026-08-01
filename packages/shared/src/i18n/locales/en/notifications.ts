@@ -23,6 +23,11 @@ export default {
   updateRestarting: "Restarting the app...",
   updateReleaseNotes: "Release notes",
   restartHint: "The app will restart to apply the update",
+  downloadingByStore: "Downloading via the Microsoft Store…",
+  updateStorePageOpened: "The Microsoft Store has been opened: the update continues there.",
+  updateStoreUnavailable: "The Microsoft Store did not respond. Try again later, or update from the Store.",
+  updateNoLongerAvailable: "The update is no longer pending — you may already be up to date.",
+  updateInstallRefused: "The installation did not complete. It can be resumed from the Microsoft Store.",
   // Deletion
   deleteAll: "Delete all",
   confirmDeleteAll: "Are you sure? This cannot be undone.",

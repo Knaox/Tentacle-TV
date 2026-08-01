@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { isTauriApp } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { DownloadDialog } from "./DownloadDialog";
 import { useDownloadsVisibility } from "./useDownloadState";
 
@@ -16,7 +16,7 @@ export function SeasonDownloadAction({ episodes }: { episodes: MediaItem[] }) {
   const { canDownload } = useDownloadsVisibility();
   const [open, setOpen] = useState(false);
 
-  if (!isTauriApp || !canDownload || episodes.length === 0) return null;
+  if (!supportsDownloads() || !canDownload || episodes.length === 0) return null;
 
   return (
     <>

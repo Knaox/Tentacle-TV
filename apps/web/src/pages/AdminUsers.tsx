@@ -49,8 +49,8 @@ export function AdminUsers() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [pendingId, setPendingId] = useState<string | null>(null);
-  // Confirmation maison : window.confirm() ne s'affiche pas dans les WKWebView
-  // Tauri (desktop macOS).
+  // Confirmation maison : window.confirm() ne s'affiche pas dans les webviews
+  // Tauri (WebKitGTK sous Linux, WKWebView sur l'ancien desktop macOS).
   const [confirmTarget, setConfirmTarget] = useState<AdminUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selfId = currentUserId();

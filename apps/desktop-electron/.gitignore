@@ -1,0 +1,7 @@
+dist/
+node_modules/
+release/
+release-macos/
+# Outils d'essai qui ne doivent PAS partir en production. Ce qui est commité
+# ici ne sait produire que du paquet de release : voir `scripts/package.mjs`.
+local/

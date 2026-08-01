@@ -1,4 +1,4 @@
-/* ── Cartes média : grain de bord, élévation, géométrie du survol ────────
+/* ── Cartes média : élévation et géométrie du survol ─────────────────────
  *
  * Les RÈGLES des cartes. Leurs tokens — couleurs, géométries, intensités —
  * vivent dans surfaces.css avec ceux des bannières et des rangées : c'est là
@@ -9,66 +9,31 @@
  * fini par être corrigé, et les commentaires ci-dessous disent lequel. Ils
  * valent d'être lus avant d'y toucher. */
 
-/* ── Grain de bord des cartes ────────────────────────────────────────────
- * Texture RÉELLE (le même `feTurbulence` que `.noise-texture`), pas un dégradé
- * plaqué : c'est la « texture sans tricher ». Masquée en ANNEAU par la technique
- * `mask-composite: exclude` — deux masques, l'un limité à la boîte de contenu
- * (l'intérieur, retiré), l'autre plein ; leur exclusion ne garde que la bande de
- * `padding`, soit le pourtour. Le grain n'apparaît donc qu'au bord, jamais au
- * centre de l'affiche.
- *
- * Dupliqué et non `.noise-texture` réutilisée : celle-ci est masquée en thème
- * clair (`scrims.css`), or le relief doit vivre dans les DEUX thèmes. */
-.card-grain {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  border-radius: inherit;
-  padding: 4px;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-out);
-}
-
-.card-grain[data-on="true"] {
-  opacity: var(--card-grain-opacity);
-}
-
-/* Le calque n'est MONTÉ que pendant le survol — il porte une texture et un
- * double masque composé en `exclude`, qui impose au moteur une rastérisation
- * hors écran. Le laisser sur les cent cartes de l'accueil à `opacity: 0`
- * revenait à entretenir cent de ces passes pour rien.
- *
- * Le montage supprime l'état précédent d'où une transition pourrait partir :
- * sans cette règle, le grain apparaîtrait d'un coup au lieu de se fondre.
- * `@starting-style` rend ce départ au moteur (Safari 17.5+, Chrome 117+,
- * Firefox 129+) ; ailleurs il apparaît net, sans rien casser. */
-@starting-style {
-  .card-grain[data-on="true"] {
-    opacity: 0;
-  }
-}
-
-/* ── Géométrie du survol des affiches ───────────────────────────────────
+/* ── Géométrie du survol ────────────────────────────────────────────────
  * `transform` ET `opacity` sont déclarés ICI, en une seule `transition`.
  * Les répartir entre une classe Tailwind (`transition-transform`) et cette
  * feuille produirait deux `transition-property` concurrentes : la dernière
- * dans l'ordre source gagne et l'autre est purement perdue. */
+ * dans l'ordre source gagne et l'autre est purement perdue.
+ *
+ * `--ease-out` et non `--ease-spring` : cette dernière est une courbe à
+ * DÉPASSEMENT (1.56), et un dépassement même léger se lit comme de l'agitation
+ * quand il se répète à chaque carte traversée — c'est exactement l'arbitrage
+ * déjà tranché pour le panneau d'aperçu (cf. CardHoverPreview). Une carte est
+ * un objet lourd qui monte et s'arrête, pas un jouet à ressort.
+ *
+ * Un seul tempo pour le déplacement ET les ombres, `--duration-base` : la
+ * préférence « animations réduites » le met à 0 ms, donc elle est respectée par
+ * construction, sans `!important` ni valeur en dur à rattraper. */
 .media-tile {
   /* Rayon sans `overflow` : rien n'est rogné, mais les ombres des deux calques
    * d'élévation ci-dessous épousent les coins de l'affiche. */
   border-radius: var(--radius-lg);
   transition:
-    transform var(--duration-base) var(--ease-spring),
+    transform var(--duration-base) var(--ease-out),
     opacity var(--duration-base) var(--ease-out);
 }
 
-/* ── Élévation des cartes : deux calques en fondu, jamais une ombre animée ──
+/* ── Élévation : deux calques en fondu, jamais une ombre animée ─────────
  *
  * `box-shadow` ne se compose PAS : l'animer repeint, image par image, une
  * boîte qui déborde d'environ soixante-dix pixels sous la carte — plus de deux
@@ -81,13 +46,54 @@
  * Ici les deux ombres existent en permanence sur des calques distincts, et
  * seule leur OPACITÉ change — ce que le compositeur sait faire sans repeindre.
  *
- * Répartition imposée par l'ordre de peinture, pour rester fidèle au rendu
- * d'origine où l'ombre était portée par `.card-spotlight` :
+ * Répartition imposée par l'ordre de peinture :
  *   ::before → ombre de repos, peinte avant les enfants ;
  *   ::after  → ombre de survol, peinte APRÈS eux.
  *
- * Durée et courbe reprises telles quelles de l'ancienne classe Tailwind
- * (`duration-300` + `ease` par défaut), pour que le tempo ne bouge pas. */
+ * ── La recette de `--elev-card-hover`, et pourquoi elle n'a plus de liseré
+ *
+ * Il y avait un `0 0 0 1px rgba(255,255,255,.08)` dans ce token, un
+ * `inset 0 0 0 1px` dans un biseau, un anneau violet sur le panneau d'aperçu et
+ * un cadre de bruit fractal de 4 px : quatre contours coïncidents. Ils avaient
+ * pourtant une raison d'être. `--surface-0` vaut `#000000` : une ombre
+ * `rgba(0,0,0,.7)` posée sur du noir pur n'ajoute RIEN, et le liseré était donc
+ * la seule chose qui détachait vraiment la carte.
+ *
+ * Les deux causes sont traitées ailleurs, et il faut les connaître avant de
+ * juger les valeurs ci-dessous :
+ *   1. la carte survolée passe en `z-index: 2` (PosterCard, EpisodeCard) —
+ *      sans quoi son ombre est recouverte par la carte suivante, qui est un
+ *      frère plus tardif, et le relief se lit à plat de trois côtés sur quatre ;
+ *   2. le scroller de rangée réserve de quoi laisser passer le débord vers le
+ *      haut (`pt-8` dans MediaRow) — 25,5 px demandés, la carte étant à la fois
+ *      soulevée et agrandie.
+ *
+ * Couche 1, la lumière clé. `dy 22px` pour un lift de 8 px : une ombre portée
+ * voyage plus loin que l'objet quand la source est haute et devant. `blur 44`
+ * = 2 × dy, le rapport d'une source ÉTENDUE (une fenêtre) et non ponctuelle ;
+ * c'est ce rapport qui fait la différence entre une profondeur crédible et une
+ * tache. `spread -14` rentre la pénombre sous la carte : la portée latérale
+ * tombe à `blur/2 + spread` = 8 px, donc sous le `gap` de 12 px d'une rangée —
+ * l'ombre d'une carte ne touche jamais sa voisine. Vers le haut elle est nulle,
+ * cohérent avec une lumière venue d'en haut.
+ *
+ * Couche 2, l'ambiante — INVERSÉE en thème sombre. Sur `#000000` un terme
+ * d'occlusion ambiante n'a plus rien à assombrir : il est nul par construction.
+ * On le retourne donc en DÉBORD DE LUMIÈRE, blanc à 0,1 sans décalage, diffusé
+ * sur 16 px. Un dégradé de 8 px de part et d'autre du bord ne peut pas se lire
+ * comme un contour — c'est toute la différence avec le trait net de 1 px qu'il
+ * remplace. Aucune couleur de marque : c'est la lumière qui désigne la carte
+ * visée, pas un cadre coloré.
+ *
+ * En thème CLAIR l'encre suffit et les deux couches restent des ombres : la
+ * clé passe de 0,14 à 0,30 d'alpha — ce doublement est exactement ce qui
+ * compense le liseré retiré, l'ancienne paire n'étant lisible que grâce à lui —
+ * plus une vraie couche de contact (6 px de portée), qui fait la différence
+ * entre « posée sur » et « flottant au-dessus ».
+ *
+ * L'état de REPOS ne change pas (`--elev-1`) : en clair c'est déjà une ombre de
+ * contact, si bien que le fondu croisé se lit comme « l'ombre de contact lâche
+ * prise, une ombre portée apparaît » — un décollement. */
 .media-tile::before,
 .media-tile::after {
   content: "";
@@ -95,7 +101,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--duration-base) var(--ease-out);
 }
 
 .media-tile::before {
@@ -116,28 +122,13 @@
   opacity: 1;
 }
 
-/* Biseau de relief — inset, donc il DOIT rester sous l'affiche.
- *
- * Une ombre `inset` se peint après le fond mais avant les descendants ; or
- * l'image couvre toute la boîte, sur exactement la même géométrie. Le biseau
- * n'est donc visible que par la frange sub-pixel des quatre coins arrondis.
- * Le porter au-dessus de l'image ferait apparaître un liseré aujourd'hui
- * masqué : `::before` est le seul emplacement neutre, peint avant le
- * conteneur de `CardImage` par simple ordre d'arbre. */
-.card-spotlight::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: var(--card-edge-bevel);
-  opacity: 0;
-  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.media-tile[data-hovered="true"] .card-spotlight::before {
-  opacity: 1;
-}
+/* PAS de `will-change: transform` sur cette classe, et le chiffre vaut d'être
+ * écrit : une affiche de 211 × 317 px logiques fait 1,07 Mo de texture GPU à
+ * DPR 2, soit ~130 Mo immobilisés en permanence sur les cartes de l'accueil,
+ * pour un survol qui n'en concerne qu'une à la fois. C'est de surcroît inutile —
+ * un élément dont le `transform` est en cours de transition est DÉJÀ promu par
+ * le moteur pour la durée de celle-ci. Le seul `will-change` justifié du survol
+ * est celui du panneau d'aperçu : une instance, montée à l'ouverture. */
 
 /* PAS de mise en retrait des voisins au survol d'une rangée (règle
  * `.row-dim` retirée). L'effet « salle obscure » était joli à l'arrêt, mais

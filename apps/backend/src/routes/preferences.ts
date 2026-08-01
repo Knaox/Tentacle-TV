@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
+import { registerResolveRoute } from "./preferences.resolve";
 
 const upsertSchema = z.object({
   libraryId: z.string().min(1),
@@ -10,98 +11,20 @@ const upsertSchema = z.object({
   subtitleMode: z.enum(["none", "always", "forced", "signs"]).default("none"),
 });
 
-// Language alias groups — ISO 639-1 (2-letter), ISO 639-2/B and /T (3-letter), display names.
-// Jellyfin uses inconsistent language codes; this ensures robust matching.
-const LANG_GROUPS: string[][] = [
-  ["fr", "fre", "fra", "french", "français", "francais"],
-  ["en", "eng", "english"],
-  ["ja", "jp", "jpn", "jap", "japanese", "japonais"],
-  ["de", "ger", "deu", "german", "allemand"],
-  ["es", "spa", "spanish", "espagnol"],
-  ["it", "ita", "italian", "italien"],
-  ["pt", "por", "portuguese", "portugais"],
-  ["ru", "rus", "russian", "russe"],
-  ["ko", "kor", "korean", "coréen"],
-  ["zh", "chi", "zho", "chinese", "chinois"],
-  ["ar", "ara", "arabic", "arabe"],
-  ["pl", "pol", "polish", "polonais"],
-  ["nl", "dut", "nld", "dutch", "néerlandais"],
-  ["cs", "cze", "ces", "czech", "tchèque"],
-  ["hi", "hin", "hindi"],
-  ["th", "tha", "thai"],
-  ["sv", "swe", "swedish", "suédois"],
-  ["no", "nor", "nob", "nno", "norwegian", "norvégien"],
-  ["fi", "fin", "finnish", "finnois"],
-  ["tr", "tur", "turkish", "turc"],
-  ["hu", "hun", "hungarian", "hongrois"],
-  ["ro", "ron", "rum", "romanian", "roumain"],
-  ["el", "gre", "ell", "greek", "grec"],
-  ["da", "dan", "danish", "danois"],
-  ["he", "heb", "hebrew", "hébreu"],
-  ["vi", "vie", "vietnamese", "vietnamien"],
-  ["id", "ind", "indonesian", "indonésien"],
-  ["ms", "may", "msa", "malay", "malais"],
-  ["uk", "ukr", "ukrainian", "ukrainien"],
-  ["bg", "bul", "bulgarian", "bulgare"],
-  ["hr", "hrv", "croatian", "croate"],
-  ["sr", "srp", "scc", "serbian", "serbe"],
-  ["ca", "cat", "catalan"],
-  ["ta", "tam", "tamil", "tamoul"],
-  ["te", "tel", "telugu", "télougou"],
-  ["fa", "per", "fas", "persian", "persan"],
-  ["sk", "slo", "slk", "slovak", "slovaque"],
-  ["sl", "slv", "slovenian", "slovène"],
-  ["lt", "lit", "lithuanian", "lituanien"],
-  ["lv", "lav", "latvian", "letton"],
-  ["et", "est", "estonian", "estonien"],
-  ["ml", "mal", "malayalam"],
-  ["bn", "ben", "bengali"],
-  ["ur", "urd", "urdu"],
-  ["tl", "fil", "tagalog", "filipino"],
-];
-
-const ALIAS_MAP = new Map<string, Set<string>>();
-for (const group of LANG_GROUPS) {
-  const s = new Set(group);
-  for (const code of group) ALIAS_MAP.set(code, s);
-}
-
-function langMatches(trackLang: string | undefined, prefLang: string): boolean {
-  if (!trackLang) return false;
-  const tl = trackLang.toLowerCase();
-  const pl = prefLang.toLowerCase();
-  if (tl === pl) return true;
-  const group = ALIAS_MAP.get(pl);
-  return group?.has(tl) ?? false;
-}
-
-/** Split a variant-aware language code: "fre-vff" → ["fre", "vff"], "jpn" → ["jpn", null]. */
-function parseVariant(code: string): [string, string | null] {
-  const idx = code.indexOf("-");
-  if (idx < 0) return [code, null];
-  return [code.substring(0, idx), code.substring(idx + 1)];
-}
-
 /**
- * Variant alias patterns — matches variant tags against common title patterns.
- * Jellyfin track titles may use full names ("Français (France)") instead of tags ("VFF").
+ * Langues retenues pour UN contenu (film ou épisode).
+ *
+ * `itemId` et non `libraryId` : ces lignes vivent dans leur propre table, pour
+ * que `GET /api/preferences` continue de rendre la seule liste des
+ * bibliothèques — la page Préférences et le cache hors ligne la lisent, et une
+ * ligne par épisode regardé l'aurait fait grossir sans bornes.
  */
-const VARIANT_ALIASES: Record<string, string[]> = {
-  vff: ["vff", "france", "français (france)", "french (france)", "vf "],
-  vfq: ["vfq", "québec", "quebec", "québécois", "quebecois", "canada", "canadien", "français (canada)", "french (canada)"],
-  vfi: ["vfi", "international"],
-  vf: ["vf"],
-};
-
-function variantMatchesTitle(title: string | undefined, variant: string): boolean {
-  if (!title) return false;
-  const lower = title.toLowerCase();
-  const aliases = VARIANT_ALIASES[variant.toLowerCase()];
-  if (aliases) {
-    return aliases.some((alias) => lower.includes(alias));
-  }
-  return lower.includes(variant.toLowerCase());
-}
+const itemUpsertSchema = z.object({
+  itemId: z.string().min(1).max(255),
+  audioLang: z.string().max(10).nullable().optional(),
+  subtitleLang: z.string().max(10).nullable().optional(),
+  subtitleMode: z.enum(["none", "always", "forced", "signs"]).default("none"),
+});
 
 export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -148,6 +71,81 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     });
 
     return { language };
+  });
+
+  // ── Préférences PAR CONTENU ──────────────────────────────────────────
+  // Enregistrées automatiquement par le lecteur dès que l'utilisateur change de
+  // piste, et relues en priorité au visionnage suivant du même contenu (cf.
+  // `preferences.resolve.ts`).
+
+  /**
+   * GET /api/preferences/items — photo pour le mode hors ligne.
+   *
+   * BORNÉE aux deux cents plus récentes, comme le miroir local qui la consomme :
+   * une entrée par contenu regardé grandit sans fin, et cette réponse est
+   * demandée à chaque retour en ligne. Au-delà, la carte n'apporte plus rien —
+   * on ne revient pas sur un épisode vu il y a deux cents titres en s'attendant à
+   * retrouver sa piste.
+   */
+  app.get("/items", async (request) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+
+    return prisma.itemTrackPreference.findMany({
+      where: { jellyfinUserId: user.userId },
+      orderBy: { updatedAt: "desc" },
+      take: 200,
+      select: { itemId: true, audioLang: true, subtitleLang: true, subtitleMode: true },
+    });
+  });
+
+  // GET /api/preferences/item/:itemId
+  app.get("/item/:itemId", async (request, reply) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+    const { itemId } = request.params as { itemId: string };
+
+    const pref = await prisma.itemTrackPreference.findUnique({
+      where: { jellyfinUserId_itemId: { jellyfinUserId: user.userId, itemId } },
+    });
+
+    if (!pref) return reply.status(404).send({ message: "No preference found" });
+    return pref;
+  });
+
+  // PUT /api/preferences/item
+  app.put("/item", async (request) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+    const body = itemUpsertSchema.parse(request.body);
+    const langs = {
+      audioLang: body.audioLang ?? null,
+      subtitleLang: body.subtitleLang ?? null,
+      subtitleMode: body.subtitleMode,
+    };
+
+    return prisma.itemTrackPreference.upsert({
+      where: { jellyfinUserId_itemId: { jellyfinUserId: user.userId, itemId: body.itemId } },
+      create: { jellyfinUserId: user.userId, itemId: body.itemId, ...langs },
+      update: langs,
+    });
+  });
+
+  // DELETE /api/preferences/item/:itemId — revenir aux préférences de série puis
+  // de bibliothèque pour ce contenu.
+  app.delete("/item/:itemId", async (request, reply) => {
+    const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
+    const { itemId } = request.params as { itemId: string };
+
+    try {
+      await prisma.itemTrackPreference.delete({
+        where: { jellyfinUserId_itemId: { jellyfinUserId: user.userId, itemId } },
+      });
+      return { success: true };
+    } catch {
+      return reply.status(404).send({ message: "Preference not found" });
+    }
   });
 
   // GET /api/preferences/:libraryId — Get preference for a specific library
@@ -223,139 +221,5 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // POST /api/preferences/resolve — Resolve best tracks for a media item
-  const resolveSchema = z.object({
-    libraryId: z.string().min(1),
-    libraryIds: z.array(z.string()).optional(),
-    audioTracks: z.array(z.object({
-      index: z.number(),
-      language: z.string().optional(),
-      isDefault: z.boolean().optional(),
-      title: z.string().optional(),
-    })).default([]),
-    subtitleTracks: z.array(z.object({
-      index: z.number(),
-      language: z.string().optional(),
-      isForced: z.boolean().optional(),
-      title: z.string().optional(),
-    })).default([]),
-  });
-
-  app.post("/resolve", async (request, reply) => {
-    let body: z.infer<typeof resolveSchema>;
-    try {
-      body = resolveSchema.parse(request.body);
-    } catch (err) {
-      return reply.status(400).send({ message: "Invalid request body", error: String(err) });
-    }
-    const prisma = getPrisma();
-    const user = (request as any).user as JellyfinUser;
-
-    // Try exact match first, then any of the provided IDs, then any user preference
-    const candidates = [body.libraryId, ...(body.libraryIds ?? [])].filter(Boolean);
-    let pref = null;
-
-    for (const lid of candidates) {
-      pref = await prisma.libraryPreference.findUnique({
-        where: { jellyfinUserId_libraryId: { jellyfinUserId: user.userId, libraryId: lid } },
-      });
-      if (pref) break;
-    }
-
-    // No fallback — if none of the candidate IDs match a stored preference,
-    // return defaults. The frontend now sends all ancestor IDs, so a match
-    // should always occur if the user has set preferences for that library.
-
-    // No preference set — use defaults
-    if (!pref) {
-      return {
-        audioIndex: body.audioTracks.find((t) => t.isDefault)?.index ?? body.audioTracks[0]?.index ?? null,
-        subtitleIndex: null,
-      };
-    }
-
-    // Resolve audio: prefer matching language, fallback to default.
-    // Supports variant codes like "fre-vff" or "fre-vfq" — splits into base lang + variant tag.
-    let audioIndex = body.audioTracks.find((t) => t.isDefault)?.index ?? body.audioTracks[0]?.index ?? null;
-    if (pref.audioLang) {
-      const [baseLang, variant] = parseVariant(pref.audioLang);
-      // Match by language code first, then by title (some servers have empty Language field)
-      const langGroup = ALIAS_MAP.get(baseLang.toLowerCase());
-      const allAliases = langGroup ? [...langGroup] : [baseLang.toLowerCase()];
-      let langCandidates = body.audioTracks.filter((t) => langMatches(t.language, baseLang));
-      if (langCandidates.length === 0) {
-        // Fallback: match language aliases in track title
-        langCandidates = body.audioTracks.filter((t) =>
-          t.title && allAliases.some((alias) => t.title!.toLowerCase().includes(alias))
-        );
-      }
-      app.log.info({ baseLang, variant, prefAudioLang: pref.audioLang,
-        candidates: langCandidates.map((t) => ({ idx: t.index, lang: t.language, title: t.title })),
-      }, "[resolve] audio matching");
-      if (variant && langCandidates.length > 0) {
-        const variantMatch = langCandidates.find((t) => variantMatchesTitle(t.title, variant));
-        app.log.info({ variant, matchedIndex: variantMatch?.index ?? null, fallbackIndex: langCandidates[0].index }, "[resolve] variant match");
-        audioIndex = variantMatch?.index ?? langCandidates[0].index;
-      } else if (langCandidates.length > 0) {
-        audioIndex = langCandidates[0].index;
-      }
-    }
-
-    // Resolve subtitle based on mode
-    // -1 = explicitly disable subtitles (tells Jellyfin not to auto-select)
-    // null = no preference set
-    // IsForced est parfois absent des MediaStreams → heuristique sur le titre.
-    const isForcedTrack = (t: { isForced?: boolean; title?: string }) =>
-      !!t.isForced || /\bforc(ed|é)e?s?\b/i.test(t.title ?? "");
-    let subtitleIndex: number | null = null;
-    if (pref.subtitleMode === "none") {
-      subtitleIndex = -1;
-    } else if (pref.subtitleMode === "forced") {
-      // Pistes forcées : langue de sous-titres préférée → langue de la piste
-      // audio choisie → n'importe laquelle. (Avant : uniquement la langue
-      // préférée, et rien si subtitleLang absent → quasi jamais sélectionnées.)
-      const inPrefLang = pref.subtitleLang
-        ? body.subtitleTracks.filter((t) => isForcedTrack(t) && langMatches(t.language, pref.subtitleLang!))
-        : [];
-      const audioLang = body.audioTracks.find((t) => t.index === audioIndex)?.language;
-      const inAudioLang = audioLang
-        ? body.subtitleTracks.filter((t) => isForcedTrack(t) && langMatches(t.language, audioLang))
-        : [];
-      const anyForced = body.subtitleTracks.filter(isForcedTrack);
-      const pick = inPrefLang[0] ?? inAudioLang[0] ?? anyForced[0];
-      subtitleIndex = pick ? pick.index : -1;
-      app.log.info({
-        inPrefLang: inPrefLang.length, inAudioLang: inAudioLang.length,
-        anyForced: anyForced.length, picked: subtitleIndex,
-      }, "[resolve] forced subtitles");
-    } else if (pref.subtitleLang) {
-      const subLangGroup = ALIAS_MAP.get(pref.subtitleLang.toLowerCase());
-      const subAliases = subLangGroup ? [...subLangGroup] : [pref.subtitleLang.toLowerCase()];
-      let subs = body.subtitleTracks.filter((t) => langMatches(t.language, pref.subtitleLang!));
-      if (subs.length === 0) {
-        subs = body.subtitleTracks.filter((t) =>
-          t.title && subAliases.some((alias) => t.title!.toLowerCase().includes(alias))
-        );
-      }
-      const nonForced = subs.filter((t) => !isForcedTrack(t));
-      const forced = subs.filter(isForcedTrack);
-
-      if (pref.subtitleMode === "signs") {
-        const signs = subs.find((t) =>
-          t.title?.toLowerCase().includes("sign") ||
-          t.title?.toLowerCase().includes("songs")
-        );
-        if (signs) subtitleIndex = signs.index;
-        else if (forced.length > 0) subtitleIndex = forced[0].index;
-        else subtitleIndex = -1;
-      } else if (pref.subtitleMode === "always") {
-        // Prefer non-forced (full) subs; only use forced as last resort
-        if (nonForced.length > 0) subtitleIndex = nonForced[0].index;
-        else if (forced.length > 0) subtitleIndex = forced[0].index;
-        else subtitleIndex = -1;
-      }
-    }
-
-    return { audioIndex, subtitleIndex };
-  });
+  registerResolveRoute(app);
 };

@@ -24,6 +24,9 @@ export type { SkipSegments, RawSkipSources, MediaSegmentsResponse, PluginSegment
 // Library language/subtitle preferences
 export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";
+// Langues retenues par contenu (film, épisode) — prioritaires sur la série et la bibliothèque
+export { useItemTrackPreference, useSetItemTrackPreference, useDeleteItemTrackPreference } from "./hooks/usePreferences";
+export type { ItemTrackPreference } from "./hooks/usePreferences";
 
 // Support tickets
 export { useCreateTicket, useMyTickets, useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, setTicketsBackendUrl } from "./hooks/useTickets";

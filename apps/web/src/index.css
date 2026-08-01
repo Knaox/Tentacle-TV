@@ -26,6 +26,19 @@
      * devient invalide et la fenetre laisse voir le BUREAU. Le repli garantit
      * qu'on retombe au pire sur du noir, jamais sur du vide. */
     background: var(--surface-0, #000000);
+
+    /* La PAGE ne défile jamais horizontalement. Signalé sur Windows et macOS :
+     * dans une bibliothèque, un geste latéral au trackpad désaxait tout le
+     * contenu vers la gauche — barre de navigation comprise — et rien ne le
+     * ramenait. Ce n'est pas un défilement voulu : les rangées de médias ont
+     * chacune le leur, à l'intérieur (`overflow-x-auto`), et elles ne sont pas
+     * affectées.
+     *
+     * `clip` et NON `hidden` : `hidden` ferait de `body` un conteneur de
+     * défilement, ce qui casse `position: sticky` chez ses descendants — la
+     * barre de navigation et les en-têtes de section en dépendent. `clip`
+     * rogne sans rien rendre défilable. */
+    overflow-x: clip;
   }
 
   body {
@@ -39,6 +52,54 @@
 
   h1, h2, h3, h4 {
     letter-spacing: -0.018em;
+  }
+
+  /* Le bandeau de fenêtre, quand la page tient lieu de barre de titre.
+   *
+   * ⚠️ Sur la coquille Electron macOS, la fenêtre est fabriquée
+   * `titleBarStyle: "hidden"` et `transparent: true` : aucune décoration, donc
+   * rien à saisir — et les feux de circulation se posent sur le CONTENU.
+   *
+   * La barre de navigation a d'abord servi de poignée, et c'était insuffisant :
+   * `app-region` consomme les clics, il fallait donc rendre en `no-drag` tout ce
+   * qui s'y clique — liens, recherche, boutons — et il ne restait presque plus
+   * rien à saisir. Rien du tout dans le lecteur, qui n'a pas de barre. La
+   * fenêtre ne se déplaçait pas tant qu'elle était ACTIVE. C'est `HostTitleBar`
+   * qui rend maintenant une vraie bande, sans rien de cliquable dedans.
+   *
+   * `[data-hote-bandeau]` et `--hote-bandeau` sont posés par ce composant, et
+   * uniquement là où la fenêtre n'a pas son cadre : Windows garde le sien. */
+  /* Repli : `HostTitleBar` pose la vraie valeur en même temps que l'attribut,
+   * mais un `calc()` dont la variable ne résout pas est INVALIDE — la règle
+   * entière tomberait, et avec elle la hauteur du lecteur. */
+  :root {
+    --hote-bandeau: 0px;
+  }
+
+  [data-hote-bandeau] .bandeau-hote {
+    -webkit-app-region: drag;
+  }
+
+  /* Le contenu commence SOUS la bande. Les éléments en position fixe, eux, se
+   * repèrent sur la fenêtre et ignorent ce remplissage : la barre de navigation
+   * descend donc par sa propre règle (`TopNav`). */
+  [data-hote-bandeau] body {
+    padding-top: var(--hote-bandeau);
+  }
+
+  /* Sur cette coquille, « la hauteur de l'écran » signifie la fenêtre MOINS sa
+   * bande. Surcharger les deux utilitaires ici plutôt que page par page n'est
+   * pas un raccourci : le lecteur, la fiche média, l'écran de connexion et les
+   * catalogues hors ligne s'en servent tous, et une page ajoutée demain sera
+   * servie sans qu'on y pense. Sans cela, `100vh` sous un `body` décalé déborde
+   * d'exactement la hauteur de la bande — une barre de défilement sur le
+   * lecteur. */
+  [data-hote-bandeau] .h-screen {
+    height: calc(100vh - var(--hote-bandeau));
+  }
+
+  [data-hote-bandeau] .min-h-screen {
+    min-height: calc(100vh - var(--hote-bandeau));
   }
 
   /* Scrollbar custom — track + corner OBLIGATOIREMENT opaques.
@@ -195,6 +256,15 @@ video::cue {
   to { transform: translate3d(100%, 0, 0); }
 }
 
+/* Barre de progression dont l'avancement est INCONNU (téléchargement piloté par
+ * le Microsoft Store, cf. UpdateModal). En `transform` seul : `width` ou
+ * `background-position` remettraient une mise en page ou une peinture par image,
+ * et une boucle infinie est le pire endroit pour cela. */
+@keyframes indeterminateSweep {
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(300%, 0, 0); }
+}
+
 /* Crying tentacle animations (kept) */
 @keyframes tentacle-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 @keyframes tentacle-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
@@ -204,6 +274,16 @@ video::cue {
 @keyframes tentacle-look { 0%, 40%, 100% { transform: translateX(0); } 10% { transform: translateX(-3px); } 25% { transform: translateX(3px); } }
 @keyframes tentacle-tremble { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(1px); } 75% { transform: translateY(-1px); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Bascule lecture/pause du lecteur — voir `PlaybackBadge`. `transform` et
+   `opacity` UNIQUEMENT : l'élément est centré et plein écran, et tout autre
+   propriété animée y ferait repeindre le viewport entier à chaque image. */
+@keyframes playbackFlash {
+  0%   { opacity: 0; transform: scale(0.82); }
+  22%  { opacity: 1; transform: scale(1); }
+  62%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
 
 /* Reflet diagonal pour le badge 4K — utilisé par PremiumQualityBadges. */
 @keyframes qualityShine {
