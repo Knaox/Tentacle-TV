@@ -16,7 +16,10 @@ export function RowHeader({ title, href }: RowHeaderProps) {
   const { t } = useTranslation("common");
 
   return (
-    <div className="row-gutter mb-3 flex items-center gap-2.5">
+    // `mb-1` et non `mb-3` : le scroller de `MediaRow` a besoin de `pt-8` pour
+    // laisser passer le débord du survol, et ces 8 px de moins ici gardent
+    // l'écart titre → cartes exactement où il était (36 px).
+    <div className="row-gutter mb-1 flex items-center gap-2.5">
       <span
         aria-hidden
         className="h-5 w-[3px] flex-shrink-0 rounded-full transition-all duration-300 group-hover/row:h-7 motion-reduce:transition-none"

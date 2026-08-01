@@ -1,9 +1,13 @@
 /**
  * Catalogue local — page d'accueil du mode Hors ligne (desktop).
- * Films en affiches verticales, épisodes REGROUPÉS par saison (une affiche de
- * série par saison, « Rick et Morty · Saison 1 ») ouvrant la vue saison.
- * Images servies depuis le disque par le serveur loopback.
- * Seuls les téléchargements COMPLETS et lisibles du compte sont montrés.
+ *
+ * Films en affiches verticales, épisodes regroupés par SÉRIE : une carte
+ * « Rick et Morty », qui ouvre la série et laisse choisir la saison. Une série
+ * de six saisons occupait sinon six cartes côte à côte — c'est la série qu'on
+ * cherche, la saison ne vient qu'après.
+ *
+ * Images servies depuis le disque. Seuls les téléchargements COMPLETS et
+ * lisibles du compte sont montrés.
  */
 
 import { useMemo, useState } from "react";
@@ -13,9 +17,30 @@ import type { DownloadEntry } from "./api";
 import { useDownloadsList } from "./useDownloadState";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
-import { groupOfflineEntries, seasonGroupMatches, type OfflineSeasonGroup } from "./offlineGroups";
+import { RevealCell, RevealScope } from "../components/grid/RevealCell";
+import {
+  groupOfflineEntries,
+  groupSeasonsBySeries,
+  groupWatchState,
+  seasonLabel,
+  seriesGroupMatches,
+  watchStateOf,
+  type OfflineSeriesGroup,
+} from "./offlineGroups";
 
 type Filter = "all" | "movies" | "series";
+
+/**
+ * Hauteur réservée à une cellule d'affiche avant son premier passage — affiche
+ * 2:3 plus son bloc titre, pour la colonne la plus étroite du catalogue. Elle ne
+ * décide que du premier positionnement de la barre de défilement : dès qu'une
+ * cellule a été montée, c'est sa hauteur réelle qui est retenue.
+ */
+const POSTER_CELL_HEIGHT = 260;
+/** Bloc titre sous l'affiche — deux lignes plus la marge. */
+const POSTER_TEXT_HEIGHT = 48;
+/** Cellules montées d'emblée, pour qu'aucune case ne soit vide au premier rendu. */
+const EAGER_CELLS = 12;
 
 export function OfflineCatalog() {
   const { t } = useTranslation(["downloads", "nav", "common"]);
@@ -27,15 +52,16 @@ export function OfflineCatalog() {
 
   const complete = useMemo(() => entries.filter((e) => e.status === "complete"), [entries]);
   const { movies, seasons } = useMemo(() => groupOfflineEntries(complete), [complete]);
+  const series = useMemo(() => groupSeasonsBySeries(seasons), [seasons]);
 
   const needle = search.trim().toLowerCase();
   const shownMovies = useMemo(
     () => (filter === "series" ? [] : movies.filter((m) => (m.title ?? "").toLowerCase().includes(needle))),
     [movies, filter, needle],
   );
-  const shownSeasons = useMemo(
-    () => (filter === "movies" ? [] : seasons.filter((s) => seasonGroupMatches(s, needle))),
-    [seasons, filter, needle],
+  const shownSeries = useMemo(
+    () => (filter === "movies" ? [] : series.filter((s) => seriesGroupMatches(s, needle))),
+    [series, filter, needle],
   );
 
   return (
@@ -85,33 +111,41 @@ export function OfflineCatalog() {
             {t("downloads:offlineEmptyMessage")}
           </p>
         </div>
-      ) : shownMovies.length === 0 && shownSeasons.length === 0 ? (
+      ) : shownMovies.length === 0 && shownSeries.length === 0 ? (
         <div className="mt-20 flex flex-col items-center text-center">
           <p className="text-sm font-medium text-content-secondary">{t("common:noResults")}</p>
           <p className="mt-1 text-xs text-content-quaternary">{t("common:noResultsHint")}</p>
         </div>
       ) : (
-        <div className="mt-8 space-y-10">
-          {shownMovies.length > 0 && (
-            <Section title={t("downloads:sectionMovies")}>
-              {shownMovies.map((movie) => (
-                <OfflinePosterCard
-                  key={movie.id}
-                  title={movie.title ?? movie.itemId}
-                  imageCandidates={[`meta/${movie.itemId}/primary.jpg`]}
-                  onClick={() => setSelected(movie)}
-                />
-              ))}
-            </Section>
-          )}
-          {shownSeasons.length > 0 && (
-            <Section title={t("downloads:sectionSeries")}>
-              {shownSeasons.map((group) => (
-                <SeasonCard key={group.key} group={group} onOpen={() => navigate(`/offline/season/${encodeURIComponent(group.key)}`)} />
-              ))}
-            </Section>
-          )}
-        </div>
+        // Un seul observateur pour les deux sections : le catalogue local n'est
+        // pas borné (il grandit avec le disque), et chaque affiche pèse une
+        // image décodée de ~540 Ko. Les cellules gardent leur place, seul leur
+        // contenu est démonté hors du champ.
+        <RevealScope>
+          <div className="mt-8 space-y-10">
+            {shownMovies.length > 0 && (
+              <Section title={t("downloads:sectionMovies")}>
+                {shownMovies.map((movie, i) => (
+                  <RevealCell key={movie.id} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
+                    <MovieCard entry={movie} onOpen={() => setSelected(movie)} />
+                  </RevealCell>
+                ))}
+              </Section>
+            )}
+            {shownSeries.length > 0 && (
+              <Section title={t("downloads:sectionSeries")}>
+                {shownSeries.map((group, i) => (
+                  <RevealCell key={group.key} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
+                    <SeriesCard
+                      group={group}
+                      onOpen={() => navigate(`/offline/series/${encodeURIComponent(group.key)}`)}
+                    />
+                  </RevealCell>
+                ))}
+              </Section>
+            )}
+          </div>
+        </RevealScope>
       )}
 
       {selected && <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} />}
@@ -128,15 +162,33 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function SeasonCard({ group, onOpen }: { group: OfflineSeasonGroup; onOpen: () => void }) {
+function MovieCard({ entry, onOpen }: { entry: DownloadEntry; onOpen: () => void }) {
+  const { watched, percent } = watchStateOf(entry);
+  return (
+    <OfflinePosterCard
+      title={entry.title ?? entry.itemId}
+      imageCandidates={[`meta/${entry.itemId}/primary.jpg`]}
+      watched={watched}
+      percent={percent}
+      onClick={onOpen}
+    />
+  );
+}
+
+function SeriesCard({ group, onOpen }: { group: OfflineSeriesGroup; onOpen: () => void }) {
   const { t } = useTranslation("downloads");
-  const label = group.seasonNumber != null
-    ? t("downloads:seasonLabel", { num: group.seasonNumber })
-    : t("downloads:seasonUnknown");
+  // Une seule saison : son numéro est plus parlant que « 1 saison ».
+  const label =
+    group.seasons.length === 1
+      ? seasonLabel(t, group.seasons[0].seasonNumber)
+      : t("downloads:seasonsCount", { count: group.seasons.length });
+  // Série vue = TOUS ses épisodes téléchargés le sont.
+  const { watched } = groupWatchState(group.seasons.flatMap((s) => s.episodes));
   return (
     <OfflinePosterCard
       title={group.seriesName}
-      subtitle={label}
+      subtitle={`${label} · ${t("downloads:episodesCount", { count: group.episodeCount })}`}
+      watched={watched}
       // Affiche verticale de la série ; à défaut (téléchargement hérité non
       // encore réparé), la vignette de l'épisode plutôt que rien.
       imageCandidates={[

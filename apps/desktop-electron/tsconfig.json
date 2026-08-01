@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "declaration": false
+  },
+  "include": ["src/**/*.ts"],
+  // Les tests et leurs fixtures sont typés, mais ils ne partent pas dans
+  // `dist/` — donc pas non plus dans le paquet livré. C'est
+  // `tsconfig.typecheck.json` qui les regarde.
+  //
+  // ⚠️ Le PRELOAD est exclu de l'émission, et ce n'est pas un détail.
+  //
+  // Il est produit par esbuild `--bundle` (`build:preload`), parce qu'il doit
+  // être auto-suffisant : chargé dans un contexte isolé, il n'a aucun moyen de
+  // résoudre `require("../main/channels")`. Or `tsc` compilait le même fichier
+  // vers le même chemin, en modules CommonJS non résolus — et selon l'ordre des
+  // scripts, ÉCRASAIT le bundle.
+  //
+  // La panne qui en résulte est muette et totale : « Unable to load preload
+  // script », donc pas de `window.tentacle`, donc la page se croit sur le web —
+  // ni lecteur, ni téléchargements, ni mises à jour. Rien dans l'interface ne
+  // dit pourquoi. Un simple `pnpm build:main` suffisait à la provoquer.
+  "exclude": ["src/**/*.test.ts", "src/**/testkit.ts", "src/preload/**"]
+}

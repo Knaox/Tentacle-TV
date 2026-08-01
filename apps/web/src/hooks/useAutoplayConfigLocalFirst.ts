@@ -14,6 +14,36 @@ function readCache(): AutoplayConfig {
   return DEFAULTS;
 }
 
+function writeCache(config: AutoplayConfig): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(config));
+  } catch {
+    /* quota localStorage : le défaut fera l'affaire */
+  }
+}
+
+/**
+ * Photographie la config auto-play pour l'hors-ligne, HORS du lecteur.
+ *
+ * Le hook ci-dessous n'écrit son cache que sur une lecture en STREAMING : un
+ * poste qui ne lit que des téléchargements n'aurait donc jamais la valeur du
+ * serveur et resterait au repli — un `MaxResumePct` réglé à 85 ferait diverger
+ * l'hors-ligne de l'en-ligne, alors que c'est précisément ce seuil qui décide
+ * qu'un épisode est vu (localPlaybackProgress).
+ *
+ * Appelée à chaque passage en ligne, là où l'on photographie déjà le reste
+ * (OfflineSessionSync). La lecture locale, elle, reste à zéro réseau.
+ */
+export async function refreshAutoplayConfigCache(backendBase: string): Promise<void> {
+  try {
+    const res = await fetch(`${backendBase}/api/config/autoplay`);
+    if (!res.ok) return;
+    writeCache((await res.json()) as AutoplayConfig);
+  } catch {
+    /* backend injoignable : on garde la photo précédente */
+  }
+}
+
 /**
  * Config auto-play LOCALE D'ABORD : en lecture locale, aucun fetch ni poll —
  * dernier état connu du serveur (localStorage, écrit à chaque succès), défauts
@@ -27,11 +57,7 @@ export function useAutoplayConfigLocalFirst(
   const { data } = useAutoplayConfig(active && !isLocalPlayback, { enabled: !isLocalPlayback });
   useEffect(() => {
     if (!data) return;
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch {
-      /* quota localStorage : le défaut fera l'affaire */
-    }
+    writeCache(data);
   }, [data]);
   const cached = useMemo(() => (isLocalPlayback ? readCache() : null), [isLocalPlayback]);
   if (isLocalPlayback) return cached ?? DEFAULTS;

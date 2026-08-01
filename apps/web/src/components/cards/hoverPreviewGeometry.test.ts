@@ -72,6 +72,21 @@ describe("dépassement des bornes de rangée", () => {
       right: 0,
     });
   });
+
+  it("ignore l'écart sub-pixel de la carte de tête", () => {
+    // `useRowCardWidth` divise la rangée en un nombre ENTIER de cartes : la
+    // première commence exactement sur la borne. Deux mesures DOM de la même
+    // arête peuvent malgré tout différer de quelques dix-millièmes de pixel, et
+    // cela suffisait à basculer la carte en superposition avec un rognage
+    // invisible — le survol changeait de forme au hasard des arrondis.
+    expect(previewOverflow(card({ left: 55.9998 }), VIEWPORT.width, BOUNDS)).toEqual({
+      left: 0,
+      right: 0,
+    });
+    // Un débordement réel, même d'un seul pixel, reste rapporté : la tolérance
+    // absorbe l'arrondi, pas le rognage.
+    expect(previewOverflow(card({ left: 1031 }), VIEWPORT.width, BOUNDS).right).toBe(1);
+  });
 });
 
 describe("disposition", () => {
@@ -90,6 +105,17 @@ describe("disposition", () => {
     // Confiné à la carte : même hauteur, donc rien qui dépasse.
     expect(rect.height).toBe(194);
     expect(rect.top).toBe(628);
+  });
+
+  it("couvre la carte ENTIÈRE en superposition, bloc titre compris", () => {
+    // 194 px d'image + 50 px de titre et de durée. Le panneau couvrait la seule
+    // image : la carte gardait son titre visible sous un voile qui le répétait.
+    const rect = computePreviewRect(card({ top: 628, outerHeight: 244 }), VIEWPORT, BOUNDS);
+    expect(rect.direction).toBe("overlay");
+    expect(rect.height).toBe(244);
+    // L'origine du zoom reste le centre de l'IMAGE (97 px sur 244), pas celui du
+    // panneau : sinon l'image dériverait à l'ouverture.
+    expect(previewOrigin(card({ top: 628, outerHeight: 244 }), rect)).toBe("50% 39.75409836065574%");
   });
 
   it("passe en superposition ET se rogne comme la carte au bord de la rangée", () => {

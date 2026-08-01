@@ -6,9 +6,10 @@ import { Dropdown } from "./ui/Dropdown";
 import { AVATAR_RING_STYLE, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
 import { useToast } from "../contexts/ToastContext";
-import { isTauriApp } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
+import { useOfflineMode } from "../offline/useOfflineMode";
 
 /**
  * Bouton avatar + dropdown menu pour le desktop (TopNav).
@@ -26,6 +27,7 @@ export function UserAvatarMenu() {
   const { logout } = useAuth();
   const { name, initial, isAdmin } = getUserInfo();
   const connectivity = useConnectivity();
+  const offline = useOfflineMode();
   const { avatarSrc, onAvatarError, avatarVersion, uploading, upload } = useAvatarUpload();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -50,7 +52,7 @@ export function UserAvatarMenu() {
   // Bascule manuelle hors ligne : desktop uniquement, et seulement quand tout
   // va bien (hors ligne, la pastille du TopNav porte déjà l'action inverse).
   const goOffline =
-    isTauriApp && connectivity.state === "online"
+    isDesktopApp() && connectivity.state === "online"
       ? () => {
           close();
           setManualOffline(true);
@@ -63,6 +65,7 @@ export function UserAvatarMenu() {
     navigate: navigateTo,
     handleLogout,
     goOffline,
+    offline,
   });
 
   // `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis sur

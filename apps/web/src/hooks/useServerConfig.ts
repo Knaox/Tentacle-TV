@@ -1,4 +1,5 @@
 import { useSyncExternalStore, useCallback } from "react";
+import { isDesktopApp } from "../desktop/bridge";
 
 const JELLYFIN_KEY = "tentacle_jellyfin_url";
 const BACKEND_KEY = "tentacle_backend_url";
@@ -6,21 +7,20 @@ const BACKEND_KEY = "tentacle_backend_url";
 const listeners = new Set<() => void>();
 function notify() { listeners.forEach((cb) => cb()); }
 
-/** Detect Tauri desktop environment */
-const isTauriEnv = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-
 /** Read saved server URLs (or env defaults) */
 function getSnapshot() {
   const envJellyfin = import.meta.env.VITE_JELLYFIN_URL || "";
   const envBackend = import.meta.env.VITE_BACKEND_URL || "";
   const savedJellyfin = localStorage.getItem(JELLYFIN_KEY);
   const savedBackend = localStorage.getItem(BACKEND_KEY);
-  // In Tauri desktop, require explicit config (don't fall back to env vars
-  // meant for web dev — the desktop app may connect to a different server)
-  const jellyfin = isTauriEnv
+  // Sur le bureau, exiger une configuration explicite (ne pas retomber sur les
+  // variables d'environnement du développement web — l'app de bureau se
+  // connecte peut-être à un autre serveur).
+  const desktop = isDesktopApp();
+  const jellyfin = desktop
     ? savedJellyfin || ""
     : savedJellyfin || envJellyfin;
-  const backend = isTauriEnv
+  const backend = desktop
     ? savedBackend || ""
     : savedBackend || envBackend;
   return { jellyfinUrl: jellyfin, backendUrl: backend, configured: !!jellyfin };

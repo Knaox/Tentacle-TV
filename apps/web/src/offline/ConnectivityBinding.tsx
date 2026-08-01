@@ -10,11 +10,13 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserId } from "@tentacle-tv/api-client";
-import { backendUrl, isTauriApp } from "../main";
+import { backendUrl } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { reportPossibleOutage } from "./connectivityStore";
 import { drainReportQueue } from "./resync";
 import { refreshLibraryPrefsCache } from "./localTrackPrefs";
+import { refreshItemTracksCache } from "./localItemTracks";
 import { flushPendingInterfaceLanguage, flushPendingPrefs } from "./pendingPrefs";
 
 const RECONNECT_DEBOUNCE_MS = 5_000;
@@ -74,7 +76,7 @@ export function ConnectivityBinding() {
   // en SQLite et ne touche au réseau que si elle contient quelque chose.
   const bootDrainedRef = useRef(false);
   useEffect(() => {
-    if (!isTauriApp || !userId || bootDrainedRef.current) return;
+    if (!supportsDownloads() || !userId || bootDrainedRef.current) return;
     bootDrainedRef.current = true;
     void drainReportQueue(userId).catch(() => {
       /* la file reste en place, retentée au prochain retour en ligne */
@@ -100,7 +102,7 @@ export function ConnectivityBinding() {
     let cancelled = false;
     const run = async () => {
       const uid = userIdRef.current;
-      if (isTauriApp && uid) {
+      if (supportsDownloads() && uid) {
         try {
           await drainReportQueue(uid);
         } catch {
@@ -113,6 +115,7 @@ export function ConnectivityBinding() {
         await flushPendingPrefs(uid, backendUrl);
         await flushPendingInterfaceLanguage(backendUrl);
         void refreshLibraryPrefsCache(uid, backendUrl);
+        void refreshItemTracksCache(uid, backendUrl);
       }
       if (cancelled) return;
       queryClient.invalidateQueries({ queryKey: ["resume-items"] });

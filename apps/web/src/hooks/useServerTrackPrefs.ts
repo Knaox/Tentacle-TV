@@ -63,7 +63,10 @@ export function useServerTrackPrefs({
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     const sTracks = streams.filter((s) => s.Type === "Subtitle")
       .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
-    resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, audioTracks: aTracks, subtitleTracks: sTracks }, {
+    // `itemId` en premier : le backend s'arrête au premier niveau trouvé, donc le
+    // choix fait la dernière fois qu'on a regardé CE contenu bat la saison, la
+    // série et la bibliothèque (cf. `preferences.resolve.ts`).
+    resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, itemId: item.Id, audioTracks: aTracks, subtitleTracks: sTracks }, {
       onSuccess: (result) => {
         if (result.audioIndex != null && !audioOverrideRef.current) {
           if (isDesktop) {

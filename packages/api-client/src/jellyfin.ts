@@ -83,6 +83,20 @@ export class JellyfinClient {
   }
   getDirectStreaming() { return this.directStreaming; }
 
+  /**
+   * Voie native pour la télémétrie de lecture, posée par l'hôte s'il en a une.
+   *
+   * Vide partout sauf sur la coquille Electron, où le `fetch` du moteur web est
+   * refusé par le CORS depuis l'origine applicative. Voir `playbackTransport`.
+   */
+  nativeSessionPost?: (
+    baseUrl: string,
+    path: string,
+    token: string,
+    authHeader: string,
+    body: string,
+  ) => Promise<number>;
+
   setOnDirectStreamingFail(cb: () => void) { this.directStreamingFailCallback = cb; }
 
   /** Report a direct streaming media failure. After DS_ERROR_THRESHOLD consecutive

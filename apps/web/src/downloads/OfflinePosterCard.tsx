@@ -6,6 +6,9 @@
  */
 
 import { memo, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { CardProgressBar } from "../components/cards/CardProgressBar";
+import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 
 interface OfflinePosterCardProps {
@@ -13,6 +16,9 @@ interface OfflinePosterCardProps {
   subtitle?: string;
   /** Chemins RELATIFS à la racine, essayés dans l'ordre. */
   imageCandidates: string[];
+  /** Progression LOCALE (`watchStateOf`) : hors ligne, aucun DTO serveur. */
+  watched?: boolean;
+  percent?: number | null;
   onClick: () => void;
 }
 
@@ -20,8 +26,11 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
   title,
   subtitle,
   imageCandidates,
+  watched = false,
+  percent = null,
   onClick,
 }: OfflinePosterCardProps) {
+  const { t } = useTranslation("common");
   const rootReady = useDownloadsRootReady();
   const [attempt, setAttempt] = useState(0);
 
@@ -38,7 +47,9 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
       className="group/card text-left transition-transform duration-200 hover:scale-[1.03]"
       title={subtitle ? `${title} · ${subtitle}` : title}
     >
-      <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line-subtle">
+      {/* `relative` : la coche et la barre se posent dans ce cadre, pas dans
+          le bouton — sinon la barre passerait sous le titre. */}
+      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line-subtle">
         {url ? (
           <img
             src={url}
@@ -52,6 +63,8 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
             {title}
           </div>
         )}
+        {/* Coche OU barre, jamais les deux — même règle qu'en ligne. */}
+        {watched ? <CardWatchedBadge label={t("common:watched")} /> : <CardProgressBar percent={percent} />}
       </div>
       <p className="mt-1.5 truncate text-xs font-medium text-content-secondary group-hover/card:text-content-primary">
         {title}

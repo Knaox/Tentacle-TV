@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { isTauriApp } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { probeNow, setManualOffline } from "./connectivityStore";
 
@@ -53,7 +53,7 @@ export function ConnectivityChip() {
     if (!offline) setOpen(false);
   }, [offline]);
 
-  if (!isTauriApp || !offline) return null;
+  if (!isDesktopApp() || !offline) return null;
   const manual = snap.state === "offline-manual";
 
   return (

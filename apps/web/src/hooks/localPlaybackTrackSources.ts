@@ -85,6 +85,7 @@ export function buildLocalSubtitleTracks(
       url: "",
       lang: t.lang ?? undefined,
       codec: t.codec ?? undefined,
+      external: false, // interne au conteneur — le filtre ci-dessus le garantit
     }));
 
   const sideCars: SubtitleTrack[] = sideCarFiles.flatMap((file) => {
@@ -101,6 +102,7 @@ export function buildLocalSubtitleTracks(
       lang: parsed.lang,
       codec: parsed.format,
       forced: parsed.forced,
+      external: true, // fichier séparé, chargé par sub-add
     }];
   });
 

@@ -7,15 +7,15 @@ interface CardFrameProps {
   /** Amplitude du lift — la vignette 16:9 étant plus large, elle monte moins. */
   lift?: { scale: number; y: number };
   /**
-   * Le liseré et le halo répondent au survol, mais la carte NE BOUGE PAS.
+   * L'élévation répond au survol, mais la carte NE BOUGE PAS.
    *
    * Réservé aux cartes dont un panneau d'aperçu prend le relais : c'est lui qui
    * porte le lift. Sans ce mode, la carte se soulevait dès l'entrée du curseur
    * puis retombait d'un coup à l'ouverture du panneau — deux mouvements
    * contradictoires en moins de deux dixièmes de seconde, ressentis comme une
-   * saccade. Ici le liseré donne une réponse INSTANTANÉE au survol (donc pas
-   * d'impression de latence pendant le délai d'ouverture) et le seul
-   * déplacement visible est celui du panneau.
+   * saccade. Ici le fondu croisé des deux calques d'ombre donne une réponse
+   * INSTANTANÉE au survol (donc pas d'impression de latence pendant le délai
+   * d'ouverture) et le seul déplacement visible est celui du panneau.
    */
   suppressLift?: boolean;
   /**
@@ -38,28 +38,32 @@ interface CardFrameProps {
 
 /**
  * Cadre de survol commun à toutes les cartes média — la signature visuelle du
- * catalogue, définie à UN seul endroit :
- *
- *  1. un RELIEF de bord au survol : un biseau lumineux (`--card-edge-bevel`,
- *     filet clair en haut, ombre en bas) plus un grain de pourtour
- *     (`.card-grain`) ;
- *  2. un lift à ressort et une élévation qui passe à `--elev-card-hover`.
+ * catalogue, définie à UN seul endroit : la carte SORT de la page. Un lift
+ * (elle monte et grandit) et une élévation qui passe à `--elev-card-hover`,
+ * deux couches d'ombre en fondu croisé. Rien de plus, et surtout AUCUN contour.
  *
  * Le `transform` vit sur le conteneur EXTÉRIEUR pour que tout bouge ensemble.
  *
- * Il a existé DEUX halos de lumière, retirés ensemble : un halo de ciblage qui
- * reprenait l'affiche floutée derrière la carte, et une tache blanche qui
+ * Trois traits de 1 px et un cadre de bruit fractal ont vécu ici, tous retirés
+ * ensemble : ils se lisaient comme un contour au lieu de donner de la
+ * profondeur. Leur raison d'être n'était pourtant pas décorative — sur un fond
+ * noir pur, l'ancienne ombre était invisible et le liseré faisait tout le
+ * travail. Deux correctifs structurels la rendent enfin visible, et ils sont
+ * indissociables de ce cadre : la carte survolée passe au-dessus de ses
+ * voisines (`z-index`, posé par PosterCard et EpisodeCard — sans quoi l'ombre
+ * est recouverte par la carte suivante) et le scroller de rangée réserve de
+ * quoi laisser passer son débord vers le haut. Le détail de la recette est
+ * dans theme/cards.css.
+ *
+ * Avant eux, DEUX halos de lumière avaient déjà disparu : un halo de ciblage
+ * qui reprenait l'affiche floutée derrière la carte, et une tache blanche qui
  * suivait le curseur. Le premier obligeait à monter, sur CHACUNE des ~108
- * cartes de l'accueil, une seconde image portant `filter: blur()` et un masque
- * — une surface filtrée par carte, en permanence, plus une dérive en boucle
- * infinie sur la carte visée. À eux deux, ils faisaient du simple survol d'une
- * carte le poste le plus cher de l'interface. Le relief de bord et l'élévation
- * suffisent à désigner la carte visée.
+ * cartes de l'accueil, une seconde image portant `filter: blur()` et un masque.
  */
 export function CardFrame({
   hovered,
   aspect,
-  lift = { scale: 1.04, y: -6 },
+  lift = { scale: 1.06, y: -8 },
   suppressLift = false,
   concealed = false,
   children,
@@ -75,10 +79,10 @@ export function CardFrame({
       // recadrait alors le visuel pendant tout le trajet.
       data-card-visual
       // `data-hovered` pilote les DEUX calques d'élévation, portés par les
-      // pseudo-éléments de `.media-tile` (cf. surfaces.css). L'ombre n'est plus
-      // transitionnée : `box-shadow` est la seule propriété non composable de
-      // tout le survol, et l'animer repeignait ~470 000 pixels dix-huit fois de
-      // suite, sur une boîte qui se met à l'échelle en même temps — le
+      // pseudo-éléments de `.media-tile` (cf. theme/cards.css). L'ombre n'est
+      // pas transitionnée : `box-shadow` est la seule propriété non composable
+      // de tout le survol, et l'animer repeignait ~470 000 pixels dix-huit fois
+      // de suite, sur une boîte qui se met à l'échelle en même temps — le
       // compositeur ne pouvait donc même pas réutiliser sa texture.
       data-hovered={hovered}
       className="media-tile relative motion-reduce:!transform-none"
@@ -87,21 +91,11 @@ export function CardFrame({
         opacity: concealed ? 0 : 1,
       }}
     >
-      {/* `card-spotlight` ne porte plus de halo — le nom lui reste parce que
-          c'est elle qui porte le BISEAU de relief, via son `::before`
-          (surfaces.css). */}
-      <div className={`card-spotlight relative ${aspect} overflow-hidden rounded-[var(--radius-lg)]`}>
+      {/* La boîte image. Elle ne porte plus aucun effet de bord : la classe
+          `card-spotlight` a disparu avec le biseau qu'elle portait, et le grain
+          de pourtour avec elle. */}
+      <div className={`relative ${aspect} overflow-hidden rounded-[var(--radius-lg)]`}>
         {children}
-        {/* Grain de pourtour, révélé au survol — la « texture » du relief. En
-            dernier enfant, au-dessus de l'image ; masqué en anneau, il ne
-            couvre que le bord.
-            MONTÉ au survol, jamais laissé à `opacity: 0` : ce calque porte une
-            texture SVG et surtout un DOUBLE masque composé en `exclude`, ce qui
-            impose au moteur une rastérisation hors écran. La garder sur chacune
-            des cent cartes de l'accueil, en permanence et pour rien, revenait à
-            entretenir cent de ces passes. Même raison que les pastilles méta
-            (cf. components/media/CardMetaOverlay.tsx). */}
-        {hovered && <div aria-hidden data-on className="card-grain" />}
       </div>
     </div>
   );

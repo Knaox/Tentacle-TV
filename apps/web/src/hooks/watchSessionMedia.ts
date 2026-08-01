@@ -1,4 +1,5 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/player/videoPlayer.types";
 
@@ -48,7 +49,35 @@ export function buildSubtitleTracks(
       url: client.getSubtitleUrl(itemId, mediaSourceId, s.Index),
       lang: s.Language?.toLowerCase(),
       codec: s.Codec?.toLowerCase(),
+      // Le serveur le sait, et personne ne le remontait : une piste externe
+      // n'existe pas dans la track-list de mpv. La compter décalait le rang de
+      // toutes les internes suivantes.
+      external: s.IsExternal === true,
     }));
+}
+
+/**
+ * Où reprendre la lecture, en secondes — `undefined` pour repartir du début.
+ *
+ * Deux règles, dans cet ordre :
+ *
+ * 1. **Un fichier local déjà vu repart de zéro.** C'est ce que fait Jellyfin
+ *    lui-même : marquer une vidéo vue remet sa position à 0. Sans cette règle,
+ *    un épisode vu mais non supprimé — l'auto-suppression était désactivée, ou
+ *    son délai n'est pas échu — rouvrait à trois secondes de la fin.
+ * 2. Sinon, la position la plus avancée des deux. Une lecture faite hors ligne,
+ *    pas encore resynchronisée, doit gagner sur celle du serveur.
+ *
+ * Sans lecture locale (web, streaming), seule la seconde règle s'applique :
+ * `localSource` y est toujours nul.
+ */
+export function resumeStartSeconds(
+  serverTicks: number | undefined,
+  localSource: { positionTicks: number; played: boolean } | null,
+): number | undefined {
+  if (localSource?.played) return undefined;
+  const ticks = Math.max(serverTicks ?? 0, localSource?.positionTicks ?? 0);
+  return ticks > 0 ? ticks / TICKS_PER_SECOND : undefined;
 }
 
 /** Chaîne de repli pour toujours avoir une bannière quand l'item est chargé :

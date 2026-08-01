@@ -31,15 +31,24 @@ if (only && only !== "mac" && only !== "ms") {
   process.exit(1);
 }
 
-const notesFor = (format) => {
-  const n = loadNotes({ changelog, version, format });
+const notesFor = (format, channel) => {
+  const n = loadNotes({ changelog, channel, version, format });
   if (!n || (!n.fr && !n.en)) return null;
   return { fr: n.fr ?? n.en ?? "", en: n.en ?? n.fr ?? "" };
 };
 
-const asc = notesFor("asc"); // Mac App Store (limite 4000) — sert aussi au bloc linux
+// Mac App Store (limite 4000). CANAL « mac » : un bloc « ## [mac-X.Y.Z] »
+// remplace le bloc nu pour Apple seul, et `extractSection` replie dessus s'il
+// n'existe pas. Sans ce canal, la pop-up de mise à jour macOS annonçait les
+// notes NEUTRES — celles de Windows et Linux — alors que le fichier en portait
+// une version faite pour Apple. C'est déjà ce que fait `asc-release-notes.mjs`
+// (CHANNEL=mac) pour les notes envoyées à App Store Connect : les deux chemins
+// doivent dire la même chose.
+const ascMac = notesFor("asc", "mac");
+// Le bloc linux, lui, prend les notes NEUTRES (même limite de 4000).
+const asc = notesFor("asc");
 const msstore = notesFor("msstore"); // Microsoft Store (limite 1500)
-if (!asc || !msstore) {
+if (!asc || !msstore || !ascMac) {
   console.error(`Bloc « ## [${version}] » introuvable (ou vide) dans ${changelog}`);
   process.exit(1);
 }
@@ -48,7 +57,7 @@ const path = "updates/store-versions.json";
 const json = JSON.parse(readFileSync(path, "utf8"));
 const touched = [];
 if (only !== "ms") {
-  json.macAppStore = { ...(json.macAppStore ?? {}), version, notes: asc };
+  json.macAppStore = { ...(json.macAppStore ?? {}), version, notes: ascMac };
   touched.push("macAppStore");
 }
 if (only !== "mac") {
@@ -57,4 +66,8 @@ if (only !== "mac") {
   touched.push("microsoftStore", "linux.notes");
 }
 writeFileSync(path, JSON.stringify(json, null, 2) + "\n");
-console.log(`blocs ${touched.join(" + ")} → v${version} (notes FR ${asc.fr.length}c / EN ${asc.en.length}c)`);
+console.log(
+  `blocs ${touched.join(" + ")} → v${version}`
+  + ` (mac FR ${ascMac.fr.length}c / EN ${ascMac.en.length}c`
+  + ` · neutre FR ${asc.fr.length}c / EN ${asc.en.length}c)`,
+);

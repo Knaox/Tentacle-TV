@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Droits des processus d'aide d'Electron (rendu, GPU, greffon).
+
+  Un processus d'aide ne redéclare rien : il HÉRITE du bac à sable du processus
+  principal. Lui recopier les droits du parent est une erreur classique — Apple
+  refuse alors le paquet, parce qu'un enfant sandboxé qui redéclare des droits ne
+  peut plus être relié au profil du parent.
+
+  ⚠️ Mesuré : y ajouter `com.apple.security.application-groups` (que le parent,
+  lui, exige) fait mourir les processus GPU et réseau en boucle
+  (`exit_code=5`) — l'application s'ouvre et ne peint jamais.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <key>com.apple.security.inherit</key>
+  <true/>
+  <!-- Le bac à sable s'hérite, la permission de compiler à l'exécution NON : les
+       droits `cs.*` sont des attributs de la signature de CHAQUE binaire. Le
+       processus de rendu fait tourner V8 comme le principal, et sans ce droit il
+       meurt de la même façon — cette fois sur une page blanche. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+</dict>
+</plist>

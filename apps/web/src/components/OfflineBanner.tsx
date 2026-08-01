@@ -4,7 +4,7 @@ import { useAuth } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "./CryingTentacle";
 import { useServerReachable } from "../hooks/useServerReachable";
-import { isTauriApp } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 
 interface OfflineBannerProps {
   /** Si true, recharge la page quand le serveur revient (mode backendDown initial) */
@@ -84,7 +84,7 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
         >
           {t("offlineLogout")}
         </button>
-        {isTauriApp && (
+        {isDesktopApp() && (
           <button
             onClick={handleChangeServer}
             className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-line-strong bg-fill-subtle px-7 py-3 text-sm font-semibold text-content-secondary backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-fill-soft active:scale-[0.98]"

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
+import { invoke } from "../desktop/bridge";
 import type { MpvState } from "./useDesktopPlayer";
 
 const DBG = "[DesktopPlayer]";
 
-// Module-level invoke cache — available immediately in cleanup, no async import needed
-let cachedInvoke: ((cmd: string) => Promise<unknown>) | null = null;
-import("@tauri-apps/api/core").then(({ invoke }) => { cachedInvoke = invoke; }).catch(() => {});
+// Le pont est importé statiquement : plus besoin du cache d'`invoke` qui
+// existait pour que le nettoyage n'ait pas à attendre un import dynamique.
 
 interface UseDesktopAutoNextArgs {
   state: MpvState;
@@ -62,7 +62,7 @@ export function useDesktopAutoNext({
    * Ces 50 ms n'attendaient rien, elles ne faisaient que figer l'interface.
    */
   const leaveFullscreenScope = useCallback(async () => {
-    try { await cachedInvoke?.("player_fullscreen_leave"); } catch { /* on navigue quand même */ }
+    try { await invoke("player_fullscreen_leave"); } catch { /* on navigue quand même */ }
   }, []);
 
   const goBack = useCallback(async () => {
@@ -142,7 +142,7 @@ export function useDesktopAutoNext({
       // déjà la destination.
       // (goBack/goToDetail ferment déjà la session pour les vraies sorties.)
       if (!window.location.pathname.startsWith("/watch/")) {
-        cachedInvoke?.("player_fullscreen_leave")?.catch(() => {});
+        void invoke("player_fullscreen_leave").catch(() => {});
       }
       // NOTE: do NOT call stop() here — useDesktopPlayer's own cleanup effect
       // handles mpv destruction and feeds the pendingDestroy gate so the next

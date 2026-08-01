@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
@@ -25,6 +25,17 @@ interface PosterCardProps {
    * on retombe alors sur le `clamp` responsive.
    */
   width?: number | null;
+  /**
+   * Décalage de la cascade d'entrée, en ms. `null` = pas d'animation du tout.
+   *
+   * La rangée ne l'accorde qu'à sa PREMIÈRE fenêtre. Depuis que les cartes hors
+   * champ sont démontées, une carte qui revient à l'écran se remonte : garder le
+   * décalage la ferait attendre jusqu'à 360 ms avant d'apparaître, et la rangée
+   * clignoterait en cascade à chaque défilement.
+   */
+  entranceDelay?: number | null;
+  /** Signale à la rangée quelle carte est survolée, pour l'épingler dans sa fenêtre. */
+  onHoverIndex?: (index: number | null) => void;
 }
 
 /**
@@ -39,13 +50,20 @@ interface PosterCardProps {
  * les contraintes de bord d'écran et de flèches de rangée le poussent
  * latéralement, alors que la carte, elle, ne bouge pas. Le survol des affiches
  * reste donc INTERNE (`PosterTile`), là où le désalignement est impossible.
+ *
+ * `memo` : la rangée est fenêtrée, donc elle se re-rend chaque fois que sa
+ * fenêtre glisse — soit une fois par carte franchie. Sans cette barrière, les
+ * dix cartes montées se reconstruiraient alors qu'une seule entre réellement.
+ * Toutes les props sont stables (`index` est celui de la liste, invariant).
  */
-export function PosterCard({
+export const PosterCard = memo(function PosterCard({
   item,
   index,
   size = "md",
   posterImageMode = "auto",
   width,
+  entranceDelay = null,
+  onHoverIndex,
 }: PosterCardProps) {
   const navigate = useNavigate();
   const client = useJellyfinClient();
@@ -90,11 +108,19 @@ export function PosterCard({
       className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
         width: width != null ? `${width}px` : `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
-        animation: "fadeSlideUp 0.34s ease both",
-        animationDelay: `${Math.min(index * 40, 400)}ms`,
+        animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
+        animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
+        // La carte survolée passe AU-DESSUS de ses voisines. Sans cela son ombre
+        // d'élévation est recouverte du côté droit par la carte suivante — un
+        // frère plus tardif, donc peint après elle : le relief se lisait à plat
+        // de trois côtés sur quatre, et c'est ce qui a longtemps obligé à
+        // compenser par un liseré de 1 px. `2` et pas plus : les flèches de
+        // défilement de la rangée sont en `z-30` et doivent rester cliquables.
+        // Aucun reflow — `z-index` n'entre pas dans la mise en page.
+        zIndex: hovered ? 2 : undefined,
       }}
-      onMouseEnter={() => { setHovered(true); prefetchDetailRoute(); }}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => { setHovered(true); onHoverIndex?.(index); prefetchDetailRoute(); }}
+      onMouseLeave={() => { setHovered(false); onHoverIndex?.(null); }}
       onClick={handleClick}
       {...ctx.contextHandlers}
     >
@@ -131,4 +157,4 @@ export function PosterCard({
       )}
     </div>
   );
-}
+});

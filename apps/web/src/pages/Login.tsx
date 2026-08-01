@@ -3,7 +3,8 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
 import { GlassCard } from "@tentacle-tv/ui";
-import { isTauriApp, backendUrl } from "../main";
+import { backendUrl } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 
 const CTA_PRIMARY =
@@ -139,7 +140,7 @@ export function Login() {
                 </Link>
               </p>
 
-              {isTauriApp && (
+              {isDesktopApp() && (
                 <button
                   onClick={() => changeServer.mutate(undefined, { onSettled: () => window.location.reload() })}
                   className="mt-5 w-full text-center text-xs font-medium text-content-quaternary transition-colors hover:text-content-tertiary"

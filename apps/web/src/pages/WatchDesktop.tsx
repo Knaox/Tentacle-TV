@@ -14,6 +14,7 @@ import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandl
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
+import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
@@ -53,6 +54,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     localSource,
     positionRef,
     durationSeconds: jellyfinDuration,
+    // Le même seuil que la bannière « épisode suivant » : hors ligne, un
+    // épisode passe « vu » à l'instant précis où il passerait vu en ligne.
+    maxResumePct,
     stopPromiseRef: lastStopPromiseRef,
   });
 
@@ -79,6 +83,10 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   // Épisode : case « Appliquer à cette série » (préférence de langues par série).
   const applyToSeries = useApplyToSeries({
+    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef,
+  });
+  // Et, sans rien à cocher, mémorisation du choix pour CE contenu — film compris.
+  useRememberItemTracks({
     item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef,
   });
 

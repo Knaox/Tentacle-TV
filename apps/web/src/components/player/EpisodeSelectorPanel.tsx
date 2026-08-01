@@ -48,7 +48,7 @@ export function EpisodeSelectorPanel({
     // chaque changement forçait une recopie de la région et une passe de flou
     // de 24 px sur 26 rem par 65 vh. Même arbitrage que le panneau d'aperçu
     // des cartes (cf. theme/surfaces.css).
-    <motion.div
+    <motion.div data-panneau-detache
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}

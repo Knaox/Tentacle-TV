@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { isTauriApp } from "../main";
+import { isDesktopApp } from "../desktop/bridge";
 import { reportPossibleOutage } from "../offline/connectivityStore";
 
 const SETUP_DONE_KEY = "tentacle_setup_done";
@@ -51,7 +51,7 @@ export interface SetupStatus {
 export function useSetupStatus(needsServerUrl: boolean): SetupStatus {
   // Desktop déjà installé : on tranche AVANT le premier render — plus de spinner.
   const [setupRequired, setSetupRequired] = useState<boolean | null>(() =>
-    isTauriApp && readSetupDone() ? false : null,
+    isDesktopApp() && readSetupDone() ? false : null,
   );
   const [backendDown, setBackendDown] = useState(false);
 
@@ -60,20 +60,20 @@ export function useSetupStatus(needsServerUrl: boolean): SetupStatus {
       setSetupRequired(false);
       return;
     }
-    const base = isTauriApp ? localStorage.getItem("tentacle_server_url") || "" : "";
+    const base = isDesktopApp() ? localStorage.getItem("tentacle_server_url") || "" : "";
     // Desktop : UNE tentative bornée à 4 s — un boot hors ligne ne doit pas
     // bloquer ~10 s sur les retries web ; le mode Hors ligne prend le relais
     // (reportPossibleOutage → sonde immédiate → pastille + session locale).
-    const maxAttempts = isTauriApp ? 1 : 5;
+    const maxAttempts = isDesktopApp() ? 1 : 5;
     let attempts = 0;
     let cancelled = false;
 
     const check = () => {
       const controller = new AbortController();
-      const timeoutId = isTauriApp
+      const timeoutId = isDesktopApp()
         ? setTimeout(() => controller.abort(), DESKTOP_TIMEOUT_MS)
         : null;
-      fetch(`${base}/api/setup/status`, isTauriApp ? { signal: controller.signal } : undefined)
+      fetch(`${base}/api/setup/status`, isDesktopApp() ? { signal: controller.signal } : undefined)
         .then((r) => {
           if (r.status >= 500) throw new Error(`backend ${r.status}`);
           return r.json();
@@ -94,7 +94,7 @@ export function useSetupStatus(needsServerUrl: boolean): SetupStatus {
             return;
           }
           // Backend injoignable — pas de wizard de setup.
-          if (isTauriApp) {
+          if (isDesktopApp()) {
             setSetupRequired(false);
             reportPossibleOutage();
           } else {

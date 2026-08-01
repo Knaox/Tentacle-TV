@@ -19,6 +19,15 @@ interface HoverPreviewBodyProps {
   cardImageUrl: string;
   /** Sens de déploiement du tiroir, résolu par la géométrie du panneau. */
   direction: PreviewDirection;
+  /**
+   * Hauteur du VISUEL, en pixels — disposition superposée uniquement.
+   *
+   * Le panneau y couvre désormais la carte ENTIÈRE, bloc titre compris. La
+   * vignette, elle, doit garder la hauteur de la seule image : la laisser
+   * remplir le panneau la recadrerait dans une boîte plus haute que celle d'où
+   * elle vient (`object-cover`), et l'ouverture ne serait plus invisible.
+   */
+  visualHeight?: number;
   onNavigate: () => void;
 }
 
@@ -46,6 +55,7 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
   item,
   cardImageUrl,
   direction,
+  visualHeight,
   onNavigate,
 }: HoverPreviewBodyProps) {
   const { t } = useTranslation("common");
@@ -122,9 +132,17 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
    * maintient le lien avec le média — un aplat opaque aurait juste remplacé la
    * vignette par une fiche. Le flou porte sur un cinquième de carte, sans
    * commune mesure avec le `backdrop-filter` plein panneau qu'il a fallu retirer.
+   *
+   * Ancré sur le PANNEAU et non sur la vignette : le panneau couvre la carte
+   * entière, bloc titre compris, et c'est depuis le bas de la carte que le voile
+   * doit remonter. Posé dans la vignette, il s'arrêtait au bas de l'IMAGE et
+   * laissait une bande nue sous elle, à l'endroit précis où la carte affiche
+   * encore son titre — d'où l'impression d'un survol qui ne se pose pas sur
+   * toute la carte.
    */
   const infoOverlay = (
     <motion.div
+      key="veil"
       className="absolute inset-x-0 bottom-0 z-[5]"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -160,15 +178,17 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
   );
 
   // Vignette cliquable = LECTURE (le bloc d'infos, lui, mène à la fiche).
-  // En `overlay` elle occupe TOUTE la hauteur du panneau — donc exactement la
-  // carte — au lieu d'imposer son ratio 16:9 : la carte est déjà en 16:9, et
-  // laisser les deux le calculer chacun de leur côté produisait un écart d'un
-  // pixel selon les arrondis.
+  // En `overlay`, hauteur MESURÉE de l'image de la carte plutôt que son ratio
+  // 16:9 : la carte est déjà en 16:9, et laisser les deux le calculer chacun de
+  // leur côté produisait un écart d'un pixel selon les arrondis. Ce n'est plus
+  // `h-full` depuis que le panneau couvre aussi le bloc titre — la vignette y
+  // serait étirée, donc recadrée.
   const visual = (
     <div
       key="visual"
       data-preview-visual
-      className={`relative w-full cursor-pointer overflow-hidden ${overlay ? "h-full" : "aspect-video"}`}
+      className={`relative w-full cursor-pointer overflow-hidden ${overlay ? "" : "aspect-video"}`}
+      style={overlay ? { height: visualHeight ?? "100%" } : undefined}
       role="button"
       aria-label={`${t("common:play")} — ${title}`}
       onClick={go(playPath)}
@@ -217,7 +237,6 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
       )}
 
       {overlay && cornerActions}
-      {overlay && infoOverlay}
 
       {/* Progression reprise de la carte : le panneau la masquait en se
           superposant, l'utilisateur perdait de vue où il en était. */}
@@ -255,6 +274,7 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
   return (
     <>
       {visual}
+      {overlay && infoOverlay}
       {!overlay && drawer}
     </>
   );

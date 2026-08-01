@@ -44,6 +44,23 @@ export interface LibraryPreference {
   subtitleMode: "none" | "always" | "forced" | "signs";
 }
 
+/**
+ * Langues retenues pour UN contenu — un film, un épisode.
+ *
+ * Sa propre table côté serveur, et sa propre clé de cache : elle bat la
+ * préférence de saison, de série et de bibliothèque au moment de résoudre les
+ * pistes, mais elle ne doit surtout pas se mêler à la liste des préférences de
+ * bibliothèque, que la page Préférences et le cache hors ligne lisent en entier.
+ */
+export interface ItemTrackPreference {
+  id: string;
+  jellyfinUserId: string;
+  itemId: string;
+  audioLang: string | null;
+  subtitleLang: string | null;
+  subtitleMode: "none" | "always" | "forced" | "signs";
+}
+
 export interface TrackResolution {
   audioIndex: number | null;
   subtitleIndex: number | null;
@@ -112,12 +129,62 @@ export function useResolveMediaTracks() {
     mutationFn: async (data: {
       libraryId: string;
       libraryIds?: string[];
+      /** Contenu en cours : sa préférence propre bat toutes les autres. */
+      itemId?: string;
       audioTracks: Array<{ index: number; language?: string; isDefault?: boolean; title?: string }>;
       subtitleTracks: Array<{ index: number; language?: string; isForced?: boolean; title?: string }>;
     }) => prefFetch<TrackResolution>("/resolve", {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  });
+}
+
+// ---------- Langues retenues par contenu ----------
+
+export function useItemTrackPreference(itemId: string | undefined) {
+  return useQuery({
+    queryKey: ["item-track-preference", itemId],
+    queryFn: () => prefFetch<ItemTrackPreference>(`/item/${itemId}`),
+    enabled: !!itemId,
+    staleTime: 5 * 60_000,
+    // 404 = aucune préférence pour ce contenu. C'est un état normal, pas une
+    // panne : inutile de le réessayer.
+    retry: false,
+  });
+}
+
+export function useSetItemTrackPreference() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      itemId: string;
+      audioLang?: string | null;
+      subtitleLang?: string | null;
+      subtitleMode?: "none" | "always" | "forced" | "signs";
+    }) => prefFetch<ItemTrackPreference>("/item", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+    // Le cache de CE contenu est écrit directement, sans invalidation : la
+    // sauvegarde est silencieuse et se produit en pleine lecture — un refetch
+    // n'apprendrait rien de plus que ce qu'on vient d'écrire.
+    onSuccess: (pref) => {
+      qc.setQueryData(["item-track-preference", pref.itemId], pref);
+    },
+  });
+}
+
+export function useDeleteItemTrackPreference() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (itemId: string) => prefFetch(`/item/${itemId}`, { method: "DELETE" }),
+    // Même parade que pour les préférences de bibliothèque : TanStack v5
+    // CONSERVE l'ancien `data` quand le refetch échoue, et ici il échoue par
+    // construction (404 après suppression).
+    onSuccess: (_data, itemId) => {
+      qc.setQueryData(["item-track-preference", itemId], null);
+    },
   });
 }
 

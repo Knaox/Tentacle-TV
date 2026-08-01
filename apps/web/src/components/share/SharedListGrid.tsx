@@ -1,6 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { SharedListItem } from "@tentacle-tv/api-client";
+import { RevealCell, RevealScope } from "../grid/RevealCell";
+
+/** Affiche 2:3 plus son bloc titre — hauteur réservée avant premier passage. */
+const CELL_HEIGHT = 260;
 
 interface Props {
   items: SharedListItem[];
@@ -29,11 +33,21 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
   const openDetail = (id: string) => navigate(`/share/${token}/${id}`);
 
   return (
+    // Une liste partagée n'est pas bornée : le contenu des cellules hors du
+    // champ est démonté, leur place est gardée (cf. `RevealCell`).
+    <RevealScope>
     <div className="grid grid-cols-2 gap-2.5 xs:grid-cols-3 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const isSel = selected.has(item.Id);
         return (
-          <div key={item.Id} className="group relative overflow-hidden rounded-xl bg-tentacle-surface">
+          <RevealCell
+            key={item.Id}
+            minHeight={CELL_HEIGHT}
+            aspect={2 / 3}
+            textHeight={48}
+            eager={index < 12}
+            className="group relative overflow-hidden rounded-xl bg-tentacle-surface"
+          >
             <button
               type="button"
               onClick={() => openDetail(item.Id)}
@@ -65,9 +79,10 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
                 </svg>
               </button>
             )}
-          </div>
+          </RevealCell>
         );
       })}
     </div>
+    </RevealScope>
   );
 }

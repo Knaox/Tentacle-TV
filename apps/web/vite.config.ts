@@ -18,14 +18,47 @@ const desktopVersion = versions.desktop ?? webVersion;
 // (VITE_DIST_CHANNEL=appstore) → bascule la détection de MAJ vers l'App Store.
 const distChannel = process.env.VITE_DIST_CHANNEL ?? "";
 
+/**
+ * Retire la balise CSP d'`index.html` pour le build Electron.
+ *
+ * Cette balise est héritée de Tauri — on y lit encore `http://ipc.localhost`
+ * et `ipc:`. Sous Electron, la politique arrive par EN-TÊTE HTTP depuis le
+ * processus principal, et deux politiques qui coexistent s'appliquent par
+ * INTERSECTION : la plus stricte de chaque directive gagne. L'en-tête, écrit
+ * pour ce moteur, se retrouvait donc borné par une politique écrite pour un
+ * autre — sans que rien ne le signale.
+ *
+ * Conditionné à `TENTACLE_SHELL=electron` : les builds Tauri et web sortent
+ * identiques à l'octet près. L'app Tauri livre encore macOS et Linux, et sa
+ * CSP à elle vit dans `tauri.conf.json`.
+ */
+function stripCspMetaForElectron() {
+  return {
+    name: "tentacle-strip-csp-meta",
+    transformIndexHtml(html: string): string {
+      if (process.env.TENTACLE_SHELL !== "electron") return html;
+      return html.replace(
+        /\s*<meta\s+http-equiv="Content-Security-Policy"[^>]*>/i,
+        "",
+      );
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), stripCspMetaForElectron()],
   define: {
     __APP_VERSION_WEB__: JSON.stringify(webVersion),
     __APP_VERSION_DESKTOP__: JSON.stringify(desktopVersion),
     // Version serveur MINIMALE requise par ce client (bannière de compat admin).
     __MIN_SERVER_VERSION__: JSON.stringify(versions.minServer ?? "1.3.0"),
     __DIST_CHANNEL__: JSON.stringify(distChannel),
+    // Panneau de diagnostic du lecteur. L'app Electron sert un build de
+    // PRODUCTION même en développement — `import.meta.env.DEV` y vaut donc
+    // faux et ne peut pas servir de garde. On passe par un drapeau explicite,
+    // posé par `build:web:debug` et par lui seul : aucun build livré ne
+    // l'active, et le panneau disparaît alors du bundle.
+    __PLAYER_DEBUG__: JSON.stringify(process.env.TENTACLE_DEBUG === "1"),
   },
   // Load .env files from monorepo root (where .env and .env.production live)
   envDir: resolve(__dirname, "../.."),

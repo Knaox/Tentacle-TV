@@ -11,5 +11,5 @@ export const DEFAULT_SHADOW_TOKENS: ShadowTokens = {
   elev2: "0 8px 24px rgba(0, 0, 0, 0.55)",
   elev3: "0 16px 48px rgba(0, 0, 0, 0.7)",
   cardHover:
-    "0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+    "0 22px 44px -14px rgba(0, 0, 0, 0.9), 0 0 16px rgba(255, 255, 255, 0.1)",
 };

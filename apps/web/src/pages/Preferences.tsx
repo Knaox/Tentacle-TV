@@ -8,6 +8,7 @@ import { clearPendingInterfaceLanguage, markInterfaceLanguagePending, queuePendi
 import { useOfflineMode } from "../offline/useOfflineMode";
 import { PageTransition } from "../components/PageTransition";
 import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
+import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -192,6 +193,12 @@ export function Preferences() {
               <option key={lang.code} value={lang.code}>{lang.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Bascule HDR de l'écran — ne se rend que sur un bureau Windows doté
+            du lecteur natif, le composant s'efface ailleurs. */}
+        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5 empty:hidden">
+          <HdrAutoToggle />
         </div>
 
         {!offline && !libraries && (

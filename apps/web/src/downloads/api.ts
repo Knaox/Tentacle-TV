@@ -6,15 +6,50 @@
  * `tentacle-local` (voir `localResourceUrl`).
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "../hooks/mpvRuntime";
+import { invoke, listen } from "../desktop/bridge";
+import { supportsDownloads } from "../desktop/bridge";
+
+export type SetRootCode = "root-not-empty" | "root-not-writable" | "unknown";
 
 export type SetRootResult =
   | { ok: true; path: string }
-  | { ok: false; code: "root-not-empty" | "root-not-writable" | "unknown" };
+  | { ok: false; code: SetRootCode; detail?: string };
+
+const ROOT_CODES = ["root-not-empty", "root-not-writable"] as const;
+
+/**
+ * Code d'erreur stable, quelle que soit la coquille.
+ *
+ * ⚠️ Les deux coquilles ne rejettent PAS la même chose. Tauri rend une chaîne
+ * nue (`Err("root-not-empty".into())`), Electron un objet `Error` dont le
+ * message est préfixé par le canal :
+ *
+ *   Error invoking remote method 'tentacle:downloads_set_root': Error: root-not-writable: EPERM D:\Films
+ *
+ * Ne tester que `typeof error === "string"` — ce que faisait ce fichier, écrit
+ * du temps où Tauri était seul — rendait donc TOUJOURS `unknown` sur Electron,
+ * et l'interface affichait « ce dossier n'est pas accessible en écriture »
+ * quelle que soit la vraie raison, y compris quand des téléchargements
+ * existaient. Un refus devenait indiagnosticable.
+ *
+ * On cherche donc le code PARTOUT dans le message, et on garde ce qui le suit :
+ * c'est la cause système (`EPERM`, `EACCES`, `EROFS`…), seule information utile
+ * quand le journal du processus principal ne va nulle part — un paquet MSIX ou
+ * une app du Mac App Store n'ont pas de console.
+ */
+export function readRootError(error: unknown): { code: SetRootCode; detail?: string } {
+  const raw = typeof error === "string" ? error : error instanceof Error ? error.message : "";
+  for (const code of ROOT_CODES) {
+    const at = raw.indexOf(code);
+    if (at < 0) continue;
+    const detail = raw.slice(at + code.length).replace(/^\s*:\s*/, "").trim();
+    return detail === "" ? { code } : { code, detail };
+  }
+  return { code: "unknown" };
+}
 
 export async function getDownloadsRoot(): Promise<string | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<string>("downloads_get_root");
   } catch {
@@ -23,22 +58,18 @@ export async function getDownloadsRoot(): Promise<string | null> {
 }
 
 export async function setDownloadsRoot(path: string): Promise<SetRootResult> {
-  if (!isTauri()) return { ok: false, code: "unknown" };
+  if (!supportsDownloads()) return { ok: false, code: "unknown" };
   try {
     const normalized = await invoke<string>("downloads_set_root", { path });
     return { ok: true, path: normalized };
   } catch (error) {
-    const message = typeof error === "string" ? error : "";
-    if (message === "root-not-empty" || message === "root-not-writable") {
-      return { ok: false, code: message };
-    }
-    return { ok: false, code: "unknown" };
+    return { ok: false, ...readRootError(error) };
   }
 }
 
 /** Octets libres sur le volume de la racine de téléchargements. */
 export async function getDiskFree(): Promise<number | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<number>("downloads_disk_free");
   } catch {
@@ -48,7 +79,7 @@ export async function getDiskFree(): Promise<number | null> {
 
 /** Octets occupés par les téléchargements (partiels compris). */
 export async function getDiskUsage(): Promise<number | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<number>("downloads_disk_usage");
   } catch {
@@ -92,6 +123,9 @@ export interface DownloadEntry {
   autoDeleteDelayMinutes: number;
   /** Échéance de suppression (epoch secondes) — posée quand l'item est vu. */
   deleteScheduledAt: number | null;
+  /** Progression locale de ce compte : coche « vu » et barre des vignettes. */
+  played: boolean;
+  positionTicks: number;
 }
 
 export interface SubtitleSideCarInput {
@@ -134,7 +168,7 @@ export interface EnqueueOutcome {
 
 /** Démarre/rafraîchit le moteur (credentials en mémoire côté Rust, jamais persistés). */
 export async function engineStart(serverUrl: string, token: string): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_engine_start", { serverUrl, token });
   } catch {
@@ -148,30 +182,35 @@ export async function enqueueDownloads(
   token: string,
   items: EnqueueItemInput[],
 ): Promise<EnqueueOutcome | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<EnqueueOutcome>("downloads_enqueue", { userId, serverUrl, token, items });
-  } catch {
+  } catch (error) {
+    // `console.error` et non `log` : le build de production supprime `log`,
+    // `debug` et `info` (`pure` dans `vite.config.ts`). C'est le SEUL appel
+    // natif dont l'échec est visible par l'utilisateur — « Impossible de lancer
+    // le téléchargement » — et il ne disait pas pourquoi.
+    console.error("[downloads] mise en file refusee :", error);
     return null;
   }
 }
 
 export async function pauseDownload(fileId: number): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_pause", { fileId });
   } catch { /* no-op */ }
 }
 
 export async function resumeDownload(fileId: number): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_resume", { fileId });
   } catch { /* no-op */ }
 }
 
 export async function cancelDownload(fileId: number): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_cancel", { fileId });
   } catch { /* no-op */ }
@@ -183,7 +222,7 @@ export interface DeleteOutcome {
 }
 
 export async function deleteDownload(userId: string, fileId: number): Promise<DeleteOutcome | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<DeleteOutcome>("downloads_delete", { userId, fileId });
   } catch {
@@ -192,7 +231,7 @@ export async function deleteDownload(userId: string, fileId: number): Promise<De
 }
 
 export async function listDownloads(userId: string): Promise<DownloadEntry[]> {
-  if (!isTauri()) return [];
+  if (!supportsDownloads()) return [];
   try {
     return await invoke<DownloadEntry[]>("downloads_list", { userId });
   } catch {
@@ -204,7 +243,7 @@ export async function downloadStateForItem(
   userId: string,
   itemId: string,
 ): Promise<DownloadEntry | null> {
-  if (!isTauri()) return null;
+  if (!supportsDownloads()) return null;
   try {
     return await invoke<DownloadEntry | null>("downloads_state_for_item", { userId, itemId });
   } catch {
@@ -218,7 +257,7 @@ export async function setAutoDeleteAfterWatch(
   enabled: boolean,
   delayMinutes: number,
 ): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsDownloads()) return;
   try {
     await invoke("downloads_set_auto_delete", { userId, fileId, enabled, delayMinutes });
   } catch { /* no-op */ }
@@ -228,7 +267,7 @@ export async function setAutoDeleteAfterWatch(
  *  de se terminer (exempté de la garde « lecture active » — couvre le délai
  *  0 « immédiatement » au démontage du lecteur). */
 export async function purgeDueDownloads(itemId?: string): Promise<number> {
-  if (!isTauri()) return 0;
+  if (!supportsDownloads()) return 0;
   try {
     return await invoke<number>("downloads_purge_due", { itemId: itemId ?? null });
   } catch {
@@ -244,8 +283,7 @@ export interface DownloadProgressEvent {
 
 /** Abonnement aux changements d'état (invalider les listes). */
 export async function onDownloadsChanged(callback: () => void): Promise<() => void> {
-  if (!isTauri()) return () => undefined;
-  const { listen } = await import("@tauri-apps/api/event");
+  if (!supportsDownloads()) return () => undefined;
   return listen("downloads://changed", callback);
 }
 
@@ -253,7 +291,6 @@ export async function onDownloadsChanged(callback: () => void): Promise<() => vo
 export async function onDownloadsProgress(
   callback: (event: DownloadProgressEvent) => void,
 ): Promise<() => void> {
-  if (!isTauri()) return () => undefined;
-  const { listen } = await import("@tauri-apps/api/event");
+  if (!supportsDownloads()) return () => undefined;
   return listen<DownloadProgressEvent>("downloads://progress", (event) => callback(event.payload));
 }

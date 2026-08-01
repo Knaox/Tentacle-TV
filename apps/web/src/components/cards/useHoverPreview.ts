@@ -9,14 +9,15 @@ import { pointerStillOn } from "../../hooks/useHoverGuard";
  * Délai d'ouverture : assez long pour que traverser une rangée n'ouvre pas dix
  * panneaux d'affilée, assez court pour ne pas se ressentir comme une attente.
  *
- * Le réglage s'est joué entre deux écueils opposés. À 90 ms le panneau
- * surgissait sous le curseur, le survol devenait nerveux ; à 170 ms le délai
- * devenait perceptible et l'ouverture semblait traîner. 110 ms tient, MAIS à
- * une condition : que la carte réponde INSTANTANÉMENT au survol par ailleurs
- * (son liseré, cf. `suppressLift` dans CardFrame). Sans ce retour immédiat,
- * n'importe quelle valeur non nulle se lit comme de la latence.
+ * Il a valu 110 ms, à une condition posée noir sur blanc : que la carte réponde
+ * INSTANTANÉMENT au survol par ailleurs. Ce retour immédiat était son liseré, et
+ * le liseré a disparu avec le contour des cartes. Le fondu croisé d'élévation
+ * l'a remplacé — il répond bien dès l'entrée du curseur, mais une ombre qui
+ * s'allume se remarque moins qu'un trait, et les 110 ms se sont remis à se
+ * sentir. 70 ms : la traversée d'une rangée n'ouvre toujours rien (le seuil
+ * utile est autour de 50 ms), et l'attente n'est plus perceptible.
  */
-const OPEN_DELAY_MS = 110;
+const OPEN_DELAY_MS = 70;
 /** Sursis à la sortie : le temps que le curseur traverse vers le panneau. */
 const CLOSE_GRACE_MS = 220;
 /** En deçà, l'écran n'a pas la place d'un panneau agrandi. */
@@ -220,6 +221,7 @@ export function useHoverPreview(disabled = false): HoverPreview {
         setAnchor((prev) =>
           prev && prev.top === next.top && prev.left === next.left
             && prev.width === next.width && prev.height === next.height
+            && prev.outerHeight === next.outerHeight
             ? prev
             : next,
         );

@@ -5,7 +5,7 @@ export default {
   downloads: "Downloads",
   help: "Help",
   pairDevice: "Pair TV",
-  preferences: "Preferences",
+  preferences: "Account settings",
   about: "About",
   admin: "Administration",
   logout: "Sign out",

@@ -60,19 +60,29 @@ export function nativeSubUrl(url: string, codec?: string): string {
 
 // ── Language-based mapping: Jellyfin index → MPV track ID ──
 
-/** Find the MPV track that best matches a Jellyfin track by language, then position fallback. */
+/**
+ * Find the MPV track that best matches a Jellyfin track by language, then position fallback.
+ *
+ * ⚠️ Les pistes EXTERNES au conteneur sont écartées d'abord. Elles n'existent
+ * pas dans la track-list de mpv : les compter décalait le rang de toutes les
+ * internes suivantes, et une externe DEMANDÉE se voyait substituer une interne
+ * de même langue — mauvaise piste à l'écran, plus un `set sid` inutile qui fait
+ * jeter à mpv tout son cache (bug amont, mpv#8422). Rendre `null` est la bonne
+ * réponse : l'appelant sait alors qu'il faut passer par `sub-add`.
+ */
 export function findMpvTrack(
   jfIndex: number,
-  jfTracks: { index: number; lang?: string }[],
+  jfTracks: { index: number; lang?: string; external?: boolean }[],
   mpvTracks: MpvTrack[],
 ): number | null {
-  const jfPos = jfTracks.findIndex((t) => t.index === jfIndex);
+  const internes = jfTracks.filter((t) => t.external !== true);
+  const jfPos = internes.findIndex((t) => t.index === jfIndex);
   if (jfPos < 0) return null;
-  const jfLang = jfTracks[jfPos].lang;
+  const jfLang = internes[jfPos].lang;
 
   // 1. Try language match (handles all ISO 639 variants)
   if (jfLang) {
-    const sameJfBefore = jfTracks.slice(0, jfPos).filter((t) => langMatch(t.lang, jfLang)).length;
+    const sameJfBefore = internes.slice(0, jfPos).filter((t) => langMatch(t.lang, jfLang)).length;
     const langMatches = mpvTracks.filter((t) => langMatch(t.lang, jfLang));
     if (sameJfBefore < langMatches.length) return langMatches[sameJfBefore].id;
     if (langMatches.length > 0) return langMatches[0].id;

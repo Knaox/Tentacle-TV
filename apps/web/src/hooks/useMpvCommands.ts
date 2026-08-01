@@ -1,6 +1,9 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
+import { noterAid, noterSid } from "./mpvTrackIntent";
+import { tracerCommande } from "./startupTrace";
+import { invoke, isElectronShell, listen } from "../desktop/bridge";
 
 /**
  * Commandes de contrôle mpv (pause/seek/pistes/volume/vitesse/plein écran) +
@@ -8,14 +11,19 @@ import { queryTrackList } from "./mpvTrackList";
  * Extraction mécanique de useDesktopPlayer — logique inchangée.
  */
 
+// Aucun de nos shells ne peut compter sur le `stop-screensaver` de mpv.
+//
 // macOS et Linux : Render API (vo=libmpv) → mpv n'a AUCUNE fenêtre native, son
-// `stop-screensaver` est inopérant. On gère l'anti-veille nous-mêmes côté Rust :
-// IOPMAssertion sur macOS (macos/sleep_assertion.rs), inhibiteurs D-Bus
-// ScreenSaver/SessionManager/PowerManagement + logind sur Linux
-// (linux/sleep_inhibit.rs). Windows n'en a pas besoin : mpv y possède sa propre
-// fenêtre (--wid) et applique stop-screensaver (SetThreadExecutionState).
+// `stop-screensaver` n'a rien à quoi s'accrocher. On gère l'anti-veille
+// nous-mêmes côté Rust : IOPMAssertion sur macOS (macos/sleep_assertion.rs),
+// inhibiteurs D-Bus ScreenSaver/SessionManager/PowerManagement + logind sur
+// Linux (linux/sleep_inhibit.rs).
+//
+// Windows : mpv a bien sa fenêtre (--wid), mais c'est une fenêtre ENFANT, et le
+// système n'envoie SC_SCREENSAVE/SC_MONITORPOWER qu'à la fenêtre de premier
+// plan. La coquille Electron pose donc un powerSaveBlocker (main/powerSave.ts).
 function needsKeepAwake(): boolean {
-  return isTauri() && (isMacOS() || isLinux());
+  return isElectronShell() || (isTauri() && (isMacOS() || isLinux()));
 }
 
 export function useMpvCommands({
@@ -32,11 +40,10 @@ export function useMpvCommands({
     if (!needsKeepAwake()) return;
     const shouldKeepAwake = state.playing && !state.paused;
     let cancelled = false;
-    import("@tauri-apps/api/core").then(({ invoke }) => {
-      if (cancelled) return;
-      const cmd = shouldKeepAwake ? "prevent_display_sleep_start" : "prevent_display_sleep_stop";
-      invoke(cmd).catch((e) => console.warn(`[mpv] ${cmd} failed:`, e));
-    }).catch(() => {});
+    const cmd = shouldKeepAwake ? "prevent_display_sleep_start" : "prevent_display_sleep_stop";
+    void invoke(cmd).catch((e) => {
+      if (!cancelled) console.warn(`[mpv] ${cmd} failed:`, e);
+    });
     return () => { cancelled = true; };
   }, [state.playing, state.paused]);
 
@@ -45,36 +52,46 @@ export function useMpvCommands({
   useEffect(() => {
     return () => {
       if (!needsKeepAwake()) return;
-      import("@tauri-apps/api/core").then(({ invoke }) => {
-        invoke("prevent_display_sleep_stop").catch(() => {});
-      }).catch(() => {});
+      void invoke("prevent_display_sleep_stop").catch(() => {});
     };
   }, []);
 
   const togglePause = useCallback(async () => { getMpvApi()?.command("cycle", ["pause"]).catch(() => {}); }, []);
   const setPause = useCallback(async (paused: boolean) => { getMpvApi()?.setProperty("pause", paused).catch(() => {}); }, []);
-  const seek = useCallback(async (pos: number) => { getMpvApi()?.command("seek", [pos, "absolute"]).catch(() => {}); }, []);
-  const seekRelative = useCallback(async (off: number) => { getMpvApi()?.command("seek", [off, "relative"]).catch(() => {}); }, []);
+  const seek = useCallback(async (pos: number) => {
+    tracerCommande("seek absolu", `${pos.toFixed(1)} s`);
+    getMpvApi()?.command("seek", [pos, "absolute"]).catch(() => {});
+  }, []);
+  const seekRelative = useCallback(async (off: number) => {
+    tracerCommande("seek relatif", `${off > 0 ? "+" : ""}${off} s`);
+    getMpvApi()?.command("seek", [off, "relative"]).catch(() => {});
+  }, []);
   const setAudioTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
     console.debug("[mpv] setAudioTrack", id);
+    tracerCommande("set aid", String(id));
     // Use command("set") with string value — setProperty("aid", number)
     // fails because the plugin sends MPV_FORMAT_DOUBLE but mpv expects MPV_FORMAT_INT64.
-    try { await api.command("set", ["aid", String(id)]); }
+    //
+    // ⚠️ AUCUNE garde ici : c'est le chemin du choix explicite de l'utilisateur
+    // (handleAudioChange). Filtrer à cet endroit avalerait une sélection
+    // légitime — l'erreur exacte qui avait valu son revert à 7dd496ce. La
+    // déduplication vit dans les effets de PRÉFÉRENCE, pas ici.
+    try { await api.command("set", ["aid", String(id)]); noterAid(id); }
     catch (e) { console.error("[mpv] setAudioTrack failed:", e); }
   }, []);
   const setSubtitleTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
     console.debug("[mpv] setSubtitleTrack", id);
+    tracerCommande("set sid", id === 0 ? "no" : String(id));
     try {
-      if (id === 0) {
-        await api.command("set", ["sid", "no"]);
-      } else {
-        await api.command("set", ["sid", String(id)]);
-        await api.command("set", ["sub-visibility", "yes"]).catch(() => {});
-      }
+      // `sub-visibility` n'est plus reposé au passage : rien dans l'app ne le
+      // met jamais à `no`, son défaut mpv est `yes`, et c'était une commande de
+      // plus dans la fenêtre où chacune coûte le cache entier.
+      await api.command("set", ["sid", id === 0 ? "no" : String(id)]);
+      noterSid(id);
     } catch (e) { console.error("[mpv] setSubtitleTrack failed:", e); }
   }, []);
   const setVolume = useCallback(async (v: number) => {
@@ -104,7 +121,6 @@ export function useMpvCommands({
 
   const toggleFullscreen = useCallback(async () => {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
       const isFs = await invoke<boolean>("toggle_fullscreen");
       setState((prev) => ({ ...prev, fullscreen: isFs }));
     } catch (e) {
@@ -134,12 +150,10 @@ export function useMpvCommands({
     let unlisten: (() => void) | undefined;
     (async () => {
       try {
-        const { invoke } = await import("@tauri-apps/api/core");
         const fs = await invoke<boolean>("player_fullscreen_enter");
         if (!cancelled) setState((prev) => ({ ...prev, fullscreen: fs }));
       } catch { /* hors Tauri ou commande indisponible */ }
       try {
-        const { listen } = await import("@tauri-apps/api/event");
         const un = await listen<boolean>("window://fullscreen", (e) => {
           if (!cancelled) setState((prev) => ({ ...prev, fullscreen: e.payload }));
         });
@@ -170,7 +184,11 @@ export function useMpvCommands({
       if (select) {
         await api.setProperty("sub-visibility", true).catch(() => {});
         const sid = await api.getProperty("sid", "int64").catch(() => null);
-        return typeof sid === "number" ? sid : null;
+        // Le sid attribué par mpv devient l'intention courante : sans ça,
+        // l'effet de préférence — que la relecture de track-list ci-dessus
+        // redéclenche — reposait `sid` à chaque tour.
+        if (typeof sid === "number") { noterSid(sid); return sid; }
+        return null;
       }
     } catch (e) {
       console.error("[mpv] sub-add failed:", e);

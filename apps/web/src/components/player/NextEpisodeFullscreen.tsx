@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
+import { ombreSurVideo } from "../../lib/ombreSurVideo";
 
 interface NextEpisodeFullscreenProps {
   /** Secondes restantes avant lecture auto (piloté par le lecteur). */
@@ -127,7 +128,14 @@ export function NextEpisodeFullscreen({
           {/* Vignette de l'épisode suivant */}
           <div
             className="relative w-full shrink-0 overflow-hidden rounded-xl sm:w-72"
-            style={{ boxShadow: "0 16px 44px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb),0.25)" }}
+            style={{
+              // Flou retiré là où la surface a un canal alpha : il y sort en
+              // aplat et masque la vidéo. Voir `lib/ombreSurVideo.ts`.
+              boxShadow: ombreSurVideo(
+                "0 16px 44px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb),0.25)",
+                "0 0 0 1px rgba(var(--brand-rgb),0.25)",
+              ),
+            }}
           >
             <div className="aspect-[16/9] w-full" style={{ background: "var(--surface-1)" }}>
               {episodeThumbUrl && (

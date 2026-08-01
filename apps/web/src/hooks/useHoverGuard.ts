@@ -98,3 +98,57 @@ export function useHoverGuard(
     };
   }, [active, ref, onLeave]);
 }
+
+/**
+ * Même garde, pour un survol qui doit MOURIR quand le curseur s'en va.
+ *
+ * `useHoverGuard` surveille le défilement — il n'y en a pas dans un lecteur. Ce
+ * qui manque là-bas, c'est une seconde porte de sortie : la barre de
+ * progression fait **six pixels** de haut et son `onMouseLeave` est le seul à
+ * éteindre la vignette de survol. Qu'il soit manqué une fois — le curseur sort
+ * de la fenêtre par le bas, passe sur un autre écran, ou l'application perd le
+ * focus — et la vignette reste allumée jusqu'au prochain passage sur la barre.
+ * Constaté à l'écran : vignette figée à 4:00 alors que la lecture était à 0:49.
+ *
+ * Trois signaux, parce qu'aucun ne couvre les trois cas à lui seul :
+ *
+ *  - **`pointermove`** partout : le curseur a bougé, on redemande simplement au
+ *    document ce qu'il y a dessous. C'est le cas courant.
+ *  - **`mouseleave` du document** : il a quitté la fenêtre — plus aucun
+ *    `pointermove` n'arrivera, donc le premier signal ne peut pas jouer.
+ *  - **`blur` de la fenêtre** : bascule vers une autre application, ou vers un
+ *    autre écran, sans passer par le document.
+ *
+ * Le `onMouseLeave` de l'élément reste en place : il est le chemin normal et
+ * immédiat, celui-ci n'est qu'un filet.
+ */
+export function useHoverEscape(
+  ref: React.RefObject<HTMLElement | null>,
+  active: boolean,
+  onLeave: () => void,
+): void {
+  useEffect(() => {
+    if (!active) return;
+    let frame = 0;
+    const revalider = (): void => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (!pointerStillOn(ref.current)) onLeave();
+      });
+    };
+    // Sortir de la fenêtre ou en perdre le focus ne laisse RIEN à interroger :
+    // `pointerStillOn` rendrait `true` sur la dernière position connue, qui est
+    // justement celle qu'on quitte. Ces deux-là éteignent donc sans demander.
+    const partir = (): void => onLeave();
+
+    window.addEventListener("pointermove", revalider, { passive: true, capture: true });
+    document.addEventListener("mouseleave", partir);
+    window.addEventListener("blur", partir);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", revalider, true);
+      document.removeEventListener("mouseleave", partir);
+      window.removeEventListener("blur", partir);
+    };
+  }, [active, ref, onLeave]);
+}

@@ -8,9 +8,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useUserId } from "@tentacle-tv/api-client";
-import { isTauriApp } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { getDiskFree, getDiskUsage, listDownloads, downloadStateForItem, type DownloadEntry } from "./api";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
+import { REQUETE_LOCALE } from "../offline/localQuery";
 
 export const DOWNLOADS_LIST_QUERY_KEY = "downloads-list";
 export const DOWNLOAD_STATE_QUERY_KEY = "download-state";
@@ -21,8 +22,9 @@ export function useDownloadsList(): DownloadEntry[] {
   const query = useQuery({
     queryKey: [DOWNLOADS_LIST_QUERY_KEY, userId],
     queryFn: () => listDownloads(userId as string),
-    enabled: isTauriApp && !!userId,
+    enabled: supportsDownloads() && !!userId,
     staleTime: 5_000,
+    ...REQUETE_LOCALE,
   });
   return query.data ?? [];
 }
@@ -32,8 +34,9 @@ export function useItemDownloadState(itemId: string | undefined): DownloadEntry 
   const query = useQuery({
     queryKey: [DOWNLOAD_STATE_QUERY_KEY, userId, itemId],
     queryFn: () => downloadStateForItem(userId as string, itemId as string),
-    enabled: isTauriApp && !!userId && !!itemId,
+    enabled: supportsDownloads() && !!userId && !!itemId,
     staleTime: 5_000,
+    ...REQUETE_LOCALE,
   });
   return query.data ?? null;
 }
@@ -50,8 +53,9 @@ export function useDiskInfo(): DiskInfo {
       freeBytes: await getDiskFree(),
       usedBytes: await getDiskUsage(),
     }),
-    enabled: isTauriApp,
+    enabled: supportsDownloads(),
     staleTime: 10_000,
+    ...REQUETE_LOCALE,
   });
   return query.data ?? { freeBytes: null, usedBytes: null };
 }
@@ -78,7 +82,7 @@ export function useDownloadsVisibility(): DownloadsVisibility {
   const { capabilities } = useDownloadCapabilities();
   const list = useDownloadsList();
   const hasContent = list.length > 0;
-  if (!isTauriApp) {
+  if (!supportsDownloads()) {
     return { visible: false, canDownload: false, canLight: false, hasContent: false };
   }
   return {

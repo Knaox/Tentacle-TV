@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
+import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
 import { resolveBridgeUrl } from "./pluginIframe/resolveBridgeUrl";
 import { openExternal } from "../lib/openExternal";
@@ -287,7 +288,12 @@ export function PluginIframe({
     bundleFetched.current = false;
   }, [bundleUrl, pluginPath]);
 
-  if (deps.status === "loading") {
+  // Où monter le document : en ligne partout, sur une origine dédiée sous
+  // Electron — dont la politique de sécurité refuse les scripts inline de la
+  // page. Voir `desktop/pluginDocument.ts`.
+  const mount = usePluginMount(pluginId, htmlContent);
+
+  if (deps.status === "loading" || mount === null) {
     return <PluginLoader lang={lang} />;
   }
 
@@ -301,7 +307,7 @@ export function PluginIframe({
     <>
       <iframe
         ref={iframeRef}
-        srcDoc={htmlContent!}
+        {...mount}
         sandbox="allow-scripts"
         title={`plugin-${pluginId}`}
         className="h-full w-full border-0"

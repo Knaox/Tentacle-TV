@@ -1,0 +1,8 @@
+{
+  "$comment": "Pilote Vulkan du DÉVELOPPEMENT — voir src/main/video/mpvLib.ts. Désigne la MoltenVK vendorée (celle que le paquet embarque) plutôt que celle de Homebrew, sans quoi le dev composerait avec un autre pilote que la production. `library_path` est RELATIF à ce fichier : c'est la règle du chargeur Khronos, et le paquet en dépend déjà (package-macos.mjs écrit le même fichier avec ../Frameworks). Ce dossier ne part dans aucun paquet.",
+  "file_format_version": "1.0.0",
+  "ICD": {
+    "library_path": "../../desktop/src-tauri/lib/libMoltenVK.dylib",
+    "api_version": "1.2.0"
+  }
+}

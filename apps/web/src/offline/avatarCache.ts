@@ -5,12 +5,12 @@
  * critique — un échec ne doit rien casser.
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "../hooks/mpvRuntime";
+import { invoke } from "../desktop/bridge";
+import { supportsOfflineSession } from "../desktop/bridge";
 
 /** Data URL réutilisable directement en `src`, ou null. */
 export async function getCachedAvatar(userId: string): Promise<string | null> {
-  if (!isTauri()) return null;
+  if (!supportsOfflineSession()) return null;
   try {
     const base64 = await invoke<string | null>("avatar_cache_get", { userId });
     return base64 ? `data:image/jpeg;base64,${base64}` : null;
@@ -28,7 +28,7 @@ export async function getCachedAvatar(userId: string): Promise<string | null> {
  * coûte donc rien de plus que la lecture d'un fichier local.
  */
 export async function cacheAvatarFrom(userId: string, url: string): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsOfflineSession()) return;
   try {
     const response = await fetch(url);
     if (!response.ok) return;

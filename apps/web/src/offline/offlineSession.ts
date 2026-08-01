@@ -4,8 +4,8 @@
  * côté Rust — ici, de simples wrappers typés et silencieux hors Tauri.
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "../hooks/mpvRuntime";
+import { invoke } from "../desktop/bridge";
+import { supportsOfflineSession } from "../desktop/bridge";
 
 export interface CachedSession {
   profileJson: string;
@@ -16,7 +16,7 @@ export interface CachedSession {
 }
 
 export async function getCachedSession(userId: string): Promise<CachedSession | null> {
-  if (!isTauri()) return null;
+  if (!supportsOfflineSession()) return null;
   try {
     return await invoke<CachedSession | null>("session_cache_get", { userId });
   } catch {
@@ -29,7 +29,7 @@ export async function saveCachedSession(
   profileJson: string,
   policyJson?: string | null,
 ): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsOfflineSession()) return;
   try {
     await invoke("session_cache_set", {
       userId,
@@ -42,7 +42,7 @@ export async function saveCachedSession(
 }
 
 export async function clearCachedSession(userId: string): Promise<void> {
-  if (!isTauri()) return;
+  if (!supportsOfflineSession()) return;
   try {
     await invoke("session_cache_clear", { userId });
   } catch {

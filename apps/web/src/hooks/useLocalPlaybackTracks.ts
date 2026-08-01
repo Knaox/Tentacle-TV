@@ -20,6 +20,7 @@ import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import type { MpvTrack } from "./useDesktopPlayer";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import { prefForLibrary } from "../offline/localTrackPrefs";
+import { itemTracksFor } from "../offline/localItemTracks";
 import {
   buildLocalAudioTracks,
   buildLocalSubtitleTracks,
@@ -39,6 +40,11 @@ interface Options {
   /** Side-cars téléchargés — seuls sous-titres de la variante Allégée. */
   localSubtitleFiles: LocalSubtitleFile[];
   localLibraryId: string | null;
+  /**
+   * Contenu en cours : son choix de langues propre bat celui de la bibliothèque,
+   * comme côté serveur (`preferences.resolve.ts`).
+   */
+  itemId?: string | null;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
   /** Clé de source : réinitialise l'application des préférences. */
@@ -56,7 +62,7 @@ function baseLang(lang: string | undefined): string | undefined {
 export function useLocalPlaybackTracks({
   isLocalPlayback, fileLoaded, ready,
   audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
-  localLibraryId, onAudioChange, onSubtitleChange, sourceKey,
+  localLibraryId, itemId, onAudioChange, onSubtitleChange, sourceKey,
 }: Options): { displayAudio: AudioTrack[]; displaySubs: SubtitleTrack[] } {
   const userId = useUserId();
   const { t, i18n } = useTranslation("player");
@@ -91,7 +97,11 @@ export function useLocalPlaybackTracks({
     if (!isLocalPlayback || !fileLoaded || !ready || !userId) return;
     if (displayAudio.length === 0 && displaySubs.length === 0) return;
     if (appliedForSource.current === sourceKey) return;
-    const cached = prefForLibrary(userId, localLibraryId);
+    // Le contenu d'abord, la bibliothèque ensuite — même ordre de priorité que
+    // la résolution serveur. Sans cela, un titre disponible hors connexion
+    // oubliait le choix de langue fait la dernière fois qu'on l'a regardé.
+    const propre = itemTracksFor(itemId);
+    const cached = propre ?? prefForLibrary(userId, localLibraryId);
     if (!cached) return;
     appliedForSource.current = sourceKey;
 
@@ -99,7 +109,7 @@ export function useLocalPlaybackTracks({
     // l'identique en ligne et hors ligne.
     const pref: LibraryPreference = {
       jellyfinUserId: userId,
-      libraryId: cached.libraryId,
+      libraryId: localLibraryId ?? "",
       audioLang: cached.audioLang,
       subtitleLang: cached.subtitleLang,
       subtitleMode: cached.subtitleMode,
@@ -124,7 +134,7 @@ export function useLocalPlaybackTracks({
     if (audioIndex != null) onAudioChange(audioIndex);
     onSubtitleChange(subtitleIndex);
   }, [isLocalPlayback, fileLoaded, ready, userId, displayAudio, displaySubs,
-      mpvAudio, localLibraryId, sourceKey, onAudioChange, onSubtitleChange]);
+      mpvAudio, localLibraryId, itemId, sourceKey, onAudioChange, onSubtitleChange]);
 
   return { displayAudio, displaySubs };
 }

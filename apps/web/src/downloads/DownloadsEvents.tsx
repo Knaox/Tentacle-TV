@@ -7,7 +7,7 @@
 
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { isTauriApp } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { onDownloadsChanged, onDownloadsProgress } from "./api";
 import { updateProgress } from "./progressStore";
 import {
@@ -20,7 +20,7 @@ export function DownloadsEvents() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!isTauriApp) return;
+    if (!supportsDownloads()) return;
     let disposed = false;
     const unsubs: Array<() => void> = [];
 

@@ -31,6 +31,15 @@ interface BuildItemsOptions {
   extended?: boolean;
   /** Bascule manuelle en mode hors ligne (desktop Tauri, uniquement en ligne). */
   goOffline?: () => void;
+  /**
+   * Mode hors ligne actif : les entrées que le routeur refuse sont retirées.
+   *
+   * Proposer une destination qui renvoie aussitôt à l'accueil est pire que ne
+   * rien proposer — l'utilisateur croit à une panne. La liste ci-dessous suit
+   * EXACTEMENT les routes marquées `onlineOnly` dans `App.tsx` : administration,
+   * jumelage et aide. Préférences, à propos et crédits restent atteignables.
+   */
+  offline?: boolean;
 }
 
 export function getUserInfo(): UserInfo {
@@ -52,16 +61,20 @@ export function getUserInfo(): UserInfo {
  * Aide → Crédits (mobile uniquement) → séparateur → Déconnexion.
  */
 export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
-  const { t, isAdmin, navigate, handleLogout, extended, goOffline } = opts;
+  const { t, isAdmin, navigate, handleLogout, extended, goOffline, offline } = opts;
   const items: UserMenuItem[] = [
     { key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") },
   ];
-  if (isAdmin) {
+  if (isAdmin && !offline) {
     items.push({ key: "admin", label: t("admin"), icon: <AdminIcon />, action: () => navigate("/admin") });
   }
-  items.push({ key: "pair", label: t("pairDevice"), icon: <PairIcon />, action: () => navigate("/pair-device") });
+  if (!offline) {
+    items.push({ key: "pair", label: t("pairDevice"), icon: <PairIcon />, action: () => navigate("/pair-device") });
+  }
   items.push({ key: "about", label: t("about"), icon: <InfoIcon />, action: () => navigate("/about") });
-  items.push({ key: "help", label: t("help"), icon: <HelpIcon />, action: () => navigate("/support") });
+  if (!offline) {
+    items.push({ key: "help", label: t("help"), icon: <HelpIcon />, action: () => navigate("/support") });
+  }
   if (extended) {
     items.push({ key: "credits", label: t("credits"), icon: <CreditsIcon />, action: () => navigate("/credits") });
   }

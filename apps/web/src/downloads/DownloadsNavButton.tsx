@@ -6,7 +6,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { isTauriApp } from "../main";
+import { supportsDownloads } from "../desktop/bridge";
 import { useDownloadsList, useDownloadsVisibility } from "./useDownloadState";
 
 const ACTIVE = new Set(["queued", "downloading"]);
@@ -17,7 +17,7 @@ export function DownloadsNavButton() {
   const { visible } = useDownloadsVisibility();
   const entries = useDownloadsList();
 
-  if (!isTauriApp || !visible) return null;
+  if (!supportsDownloads() || !visible) return null;
   const hasActive = entries.some((entry) => ACTIVE.has(entry.status));
 
   return (

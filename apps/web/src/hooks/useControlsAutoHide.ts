@@ -28,6 +28,24 @@ export function useControlsAutoHide(playing: boolean): {
     hideTimer.current = setTimeout(attemptHide, 3000);
   }, [playing]);
 
+  /**
+   * ⚠️ Toute bascule lecture/pause réarme le minuteur, y compris au CLAVIER.
+   *
+   * Sans cela, appuyer sur Espace pour reprendre laissait les contrôles à
+   * l'écran indéfiniment : `scheduleHide` n'était rappelé que par un mouvement
+   * de souris, et le minuteur précédent ne pouvait pas rattraper — `attemptHide`
+   * ne masque QUE pendant la lecture et ne se reprogramme pas quand elle est
+   * arrêtée, si bien qu'une pause le laisse expirer pour rien. Il fallait aller
+   * cliquer dans l'overlay pour qu'il consente à disparaître. Signalé sur
+   * Windows comme sur macOS.
+   *
+   * Sans condition sur l'état : `scheduleHide` réaffiche les contrôles puis les
+   * masque après trois secondes *si la lecture tourne*. Une pause les laisse
+   * donc affichés — le retour visuel qu'on attend d'un lecteur — et une reprise
+   * les efface d'elle-même.
+   */
+  useEffect(() => { scheduleHide(); }, [playing, scheduleHide]);
+
   useEffect(() => registerControlsWaker(scheduleHide), [scheduleHide]);
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 

@@ -42,11 +42,25 @@ export function boundsFor(card: HTMLElement | null): PreviewBounds | undefined {
  * s'aligne alors sur le HAUT, commun aux deux boîtes. Dès qu'il se déroule vers
  * le haut, c'est le BAS qui sert d'ancre, et la vignette du panneau atterrissait
  * une cinquantaine de pixels trop bas.
+ *
+ * `outerHeight` mesure malgré tout la carte ENTIÈRE, bloc titre compris : la
+ * disposition superposée s'en sert pour couvrir toute la carte, alors que la
+ * vignette du panneau garde, elle, la hauteur du seul visuel — sans quoi
+ * l'image serait recadrée dans une boîte plus haute que celle d'où elle vient.
  */
 export function visualRect(card: HTMLElement): AnchorRect {
   const el = card.querySelector<HTMLElement>("[data-card-visual]") ?? card;
   const r = el.getBoundingClientRect();
-  return { top: r.top, left: r.left, width: r.width, height: r.height };
+  const outer = card.getBoundingClientRect();
+  return {
+    top: r.top,
+    left: r.left,
+    width: r.width,
+    height: r.height,
+    // Mesuré depuis le HAUT du visuel : la racine peut commencer plus haut (un
+    // rembourrage), et c'est bien la distance visuel → bas de carte qui compte.
+    outerHeight: Math.max(r.height, outer.bottom - r.top),
+  };
 }
 
 /**

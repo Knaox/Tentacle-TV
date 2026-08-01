@@ -6,8 +6,11 @@
 # AUTO-INCRÉMENTÉ : minutes écoulées depuis 2024-01-01 UTC — strictement
 # croissant, jamais réutilisé (exigence App Store Connect).
 #
+# Coquilles de bureau : Electron (Windows, macOS) — Tauri v2 (Linux uniquement).
+#
 # Jobs indépendants (un échec Apple ne bloque pas Linux, etc.) :
-#   • mac-*        → app universelle (arm64+x86_64) LGPL sandbox → App Store / TestFlight
+#   • mac-*        → app Electron universelle (arm64+x86_64), dylibs mpv/FFmpeg
+#     LGPL vendorées, bac à sable → App Store / TestFlight
 #   • windows-store → MSIX non signé (makeappx) → soumission API Microsoft Store
 #   • linux/arch/manifest → .deb/.rpm/AppImage/.pkg.tar.zst → Release GitHub
 #     `desktop-vX.Y.Z` + manifeste d'auto-update (updates/store-versions.json)
@@ -76,21 +79,24 @@ jobs:
           echo "Desktop ${VERSION} (build ${BUILD}, submit=${SUBMIT})"
           { echo "version=$VERSION"; echo "build=$BUILD"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
 
-  # ── macOS App Store ──────────────────────────────────────────────────────
-  # 1) Build par architecture : dylibs LGPL + app Tauri (sandbox, sans private-api)
-  mac-build:
+  # ── macOS App Store (Electron) ───────────────────────────────────────────
+  # 1) Chaîne LGPL par architecture : dylibs mpv/FFmpeg + paquet natif de koffi.
+  #    Plus aucune chaîne Rust ici : la coquille macOS sort d'Electron, comme
+  #    Windows. Ce qui reste par architecture, c'est ce qui se COMPILE : mpv et
+  #    FFmpeg (~1 h par runner), donc les deux tournent en parallèle.
+  mac-libs:
     needs: version
     if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'macos'
-    name: macOS build (${{ matrix.label }})
+    name: macOS libs LGPL (${{ matrix.label }})
     strategy:
       fail-fast: true
       matrix:
         include:
           - os: macos-latest
-            target: aarch64-apple-darwin
+            arch: arm64
             label: Apple Silicon
           - os: macos-15-intel
-            target: x86_64-apple-darwin
+            arch: x64
             label: Intel
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -98,57 +104,58 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - uses: pnpm/action-setup@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
 
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
+      # mpv sans `gpl=true`, FFmpeg sans `--enable-gpl`, ni x264 ni x265 : la
+      # LECTURE est intacte (les encodeurs GPL ne servent qu'à encoder) et le
+      # script échoue de lui-même si un composant GPL ou un symbole `_lzma_*`
+      # s'invite. C'est la chaîne déjà validée par Apple.
       - name: Build LGPL libmpv/FFmpeg
         run: bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
 
-      # Override version (versions.json) + ad-hoc sign (signature Apple au job package).
-      - name: Build Tauri app (App Store config)
-        env:
-          VITE_DIST_CHANNEL: appstore
+      # Le binaire natif de koffi n'existe QUE pour l'architecture du runner :
+      # `pnpm install` n'installe pas le paquet de l'autre (contrainte `cpu` du
+      # paquet). C'est donc ici qu'on le récolte — le paquet universel a besoin
+      # des deux, sans quoi la lecture meurt sur la moitié des machines.
+      - name: Rassembler dylibs + paquet natif koffi
         run: |
-          cd apps/desktop
-          pnpm tauri build \
-            --config src-tauri/tauri.appstore.conf.json \
-            --config '{"version":"${{ needs.version.outputs.version }}","bundle":{"macOS":{"signingIdentity":"-"}}}' \
-            --target ${{ matrix.target }} \
-            --bundles app
+          mkdir -p sortie/lib
+          cp apps/desktop/src-tauri/lib/*.dylib sortie/lib/
+          cp -R "node_modules/@koromix/koffi-darwin-${{ matrix.arch }}" sortie/koffi-pkg
 
-      - name: Tar .app
-        run: |
-          cd "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos"
-          tar -czf "$RUNNER_TEMP/app-${{ matrix.target }}.tar.gz" "Tentacle TV.app"
-
-      - name: Upload .app artifact
+      - name: Upload libs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-${{ matrix.target }}
-          path: ${{ runner.temp }}/app-${{ matrix.target }}.tar.gz
+          name: mac-libs-${{ matrix.arch }}
+          path: sortie
           if-no-files-found: error
+          retention-days: 5
 
-  # 2) Fusion universelle + signature App Store + .pkg + upload + notes
+  # 2) Paquet Electron universel + signature App Store + .pkg + envoi + notes
   mac-package:
-    needs: [version, mac-build]
+    needs: [version, mac-libs]
     if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'macos'
     name: macOS universal package + submit
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 24 et non 20 : la coquille s'appuie sur `node:sqlite`, et sa
+          # compilation comme l'empaquetage tournent sous ce Node-là.
+          node-version: 24
+      - uses: pnpm/action-setup@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
 
       - name: Import signing certificates + provisioning profile
         env:
@@ -170,20 +177,42 @@ jobs:
           echo "$PROFILE" | base64 --decode > /tmp/embedded.provisionprofile
           rm -f /tmp/app.p12 /tmp/pkg.p12
 
-      - name: Extract per-arch .app bundles
+      # Une dylib mono-architecture dans un paquet universel ne se voit pas au
+      # build : elle se voit au premier film, sur l'autre moitié du parc.
+      - name: Fusionner les dylibs LGPL (arm64 ⊕ x86_64)
         run: |
-          mkdir -p arm64 x86_64
-          tar -xzf artifacts/app-aarch64-apple-darwin/app-aarch64-apple-darwin.tar.gz -C arm64
-          tar -xzf artifacts/app-x86_64-apple-darwin/app-x86_64-apple-darwin.tar.gz -C x86_64
+          bash apps/desktop-electron/scripts/lipo-libs.sh \
+            artifacts/mac-libs-arm64/lib \
+            artifacts/mac-libs-x64/lib \
+            /tmp/lib-universal
 
-      - name: Build universal package
+      # Le runner est en Apple Silicon : le paquet natif koffi x86_64 n'y est pas
+      # installable, il vient du runner Intel.
+      - name: Poser le paquet natif koffi x86_64
         run: |
-          bash apps/desktop/scripts/package-appstore-universal.sh \
-            "arm64/Tentacle TV.app" \
-            "x86_64/Tentacle TV.app" \
-            /tmp/embedded.provisionprofile \
-            "$SIGN_APP" "$SIGN_PKG" \
-            "${{ needs.version.outputs.build }}"
+          rm -rf node_modules/@koromix/koffi-darwin-x64
+          cp -R artifacts/mac-libs-x64/koffi-pkg node_modules/@koromix/koffi-darwin-x64
+
+      # `build:appstore` = build web avec `VITE_DIST_CHANNEL=appstore` (donc la
+      # détection de MAJ passe par le manifeste du dépôt et l'ouverture de la
+      # fiche App Store) + compilation de la coquille.
+      - name: Build web (canal App Store) + coquille
+        run: pnpm --filter @tentacle-tv/desktop-electron build:appstore
+
+      # `--version` écrit la version DANS le paquet livré : c'est elle que rend
+      # `app.getVersion()`, donc celle que la détection de mise à jour compare au
+      # manifeste `updates/store-versions.json`. `--build` = CFBundleVersion.
+      - name: Empaqueter, signer, .pkg
+        run: |
+          node apps/desktop-electron/scripts/package-macos.mjs \
+            --lib /tmp/lib-universal \
+            --arch universal \
+            --version "${{ needs.version.outputs.version }}" \
+            --build "${{ needs.version.outputs.build }}" \
+            --sign "$SIGN_APP" \
+            --pkg-sign "$SIGN_PKG" \
+            --profile /tmp/embedded.provisionprofile \
+            --pkg-out "$GITHUB_WORKSPACE/Tentacle-TV.pkg"
 
       - name: Upload .pkg artifact
         uses: actions/upload-artifact@v4
@@ -244,6 +273,12 @@ jobs:
         run: node .github/scripts/asc-attach-build.mjs
 
   # ── Microsoft Store (MSIX) ───────────────────────────────────────────────
+  # Windows sort d'ELECTRON depuis la 1.20.0, macOS l'a rejoint — seul Linux
+  # reste sur Tauri.
+  # Ce job n'a donc plus de chaîne Rust : le lecteur reste le même libmpv,
+  # piloté par koffi. Le MSIX, lui, ne change pas d'identité (Name + Publisher
+  # inchangés), ce qui préserve la mise à jour et le conteneur de données de
+  # l'utilisateur — donc sa session et ses films téléchargés.
   windows-store:
     needs: version
     if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'windows'
@@ -255,56 +290,58 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 24 et non 20 : la coquille Electron s'appuie sur `node:sqlite`, et
+          # le script d'empaquetage tourne sous ce Node-là.
+          node-version: 24
 
       - uses: pnpm/action-setup@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            apps/desktop/src-tauri/target
-          key: cargo-store-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
-          restore-keys: cargo-store-
 
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      - name: Injecter la version (versions.json) dans tauri.conf.json
-        # PAS de JSON inline en --config ici : pwsh→pnpm→cmd mange les guillemets
-        # internes sous Windows (tauri reçoit `{version:x}` invalide — vécu au
-        # run 1.12.2). On patche le fichier, comme le job Linux ; sans quoi l'exe
-        # embarque la version stale et « À propos » (getVersion) l'affiche.
+      - name: Injecter la version (versions.json) dans le paquet Electron
+        # « À propos » lit `app.getVersion()`, c'est-à-dire la version du
+        # package.json EMBARQUÉ. Sans ce patch, l'exe livré annonce la version
+        # du dépôt au lieu de celle du tag. Même geste que côté Tauri, où la
+        # version vivait dans `tauri.conf.json`.
         shell: pwsh
-        run: node -e "const f='apps/desktop/src-tauri/tauri.conf.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
+        run: node -e "const f='apps/desktop-electron/package.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
 
-      - name: Build app (exe dans target/release)
-        working-directory: apps/desktop
-        run: pnpm tauri build --bundles nsis
+      - name: Build + empaquetage Electron
+        # `pnpm package` enchaîne le build web, la compilation de la coquille et
+        # `@electron/packager`. Sortie : un dossier `Tentacle TV.exe` +
+        # `resources/`, exactement ce que `makeappx` attend.
+        working-directory: apps/desktop-electron
+        run: pnpm package
 
       - name: Assemble MSIX payload + manifest versionné
         shell: pwsh
         run: |
           $ver = "${{ needs.version.outputs.version }}"
           $stage = Join-Path $env:RUNNER_TEMP "msixstage"
+          Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          $rel = "apps\desktop\src-tauri\target\release"
-          Copy-Item "$rel\tentacle-desktop.exe" (Join-Path $stage "Tentacle TV.exe")
-          if (Test-Path "$rel\WebView2Loader.dll") { Copy-Item "$rel\WebView2Loader.dll" $stage }
-          New-Item -ItemType Directory -Force -Path (Join-Path $stage "lib") | Out-Null
-          Copy-Item "apps\desktop\src-tauri\lib\*.dll" (Join-Path $stage "lib") -ErrorAction SilentlyContinue
+
+          # Le paquet Electron est repris EN ENTIER : l'exe, mais aussi les
+          # locales, les .pak et les DLL de Chromium. En oublier une donne un
+          # paquet qui s'installe et ne démarre pas.
+          $paquet = "apps\desktop-electron\release\Tentacle TV-win32-x64"
+          if (-not (Test-Path (Join-Path $paquet "Tentacle TV.exe"))) {
+            throw "Sortie d'empaquetage introuvable : $paquet"
+          }
+
+          Copy-Item (Join-Path $paquet "*") $stage -Recurse -Force
+
+          # Tuiles du Store : inchangées, elles appartiennent au manifeste.
           Copy-Item "apps\desktop\msix\Assets" (Join-Path $stage "Assets") -Recurse
           $m = Get-Content "apps\desktop\msix\Package.appxmanifest" -Raw
           $m = $m -creplace '\bVersion="[\d\.]+"', ('Version="' + $ver + '.0"')
           Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
+
           "STAGE=$stage" >> $env:GITHUB_ENV
           "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
           Write-Host "Payload assemblé pour version $ver.0"
-          Get-ChildItem $stage -Recurse | Select-Object FullName, Length
+          Get-ChildItem $stage | Select-Object Name, Length
 
       - name: Pack MSIX (makeappx, non signé)
         shell: pwsh

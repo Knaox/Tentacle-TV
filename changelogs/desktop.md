@@ -14,6 +14,84 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.20.3]
+### FR
+- Corrections d'anomalies mineures
+### EN
+- Minor issues fixed
+
+## [mac-1.20.3]
+### FR
+- Cette version fait passer l'application macOS sur une nouvelle base technique, déjà en service sur Windows. Le lecteur vidéo, vos données et vos réglages sont inchangés : rien à réinstaller, rien à reconfigurer
+- HDR véritable : sur un écran compatible, l'image est transmise telle quelle au lieu d'être ramenée en couleurs standard, et l'écran passe en HDR le temps du film
+- La vidéo en plein écran occupe enfin tout l'écran : plus de bandes noires sur les bords, ni de barre de menus qui reste visible quand on part d'une fenêtre agrandie
+- Sur plusieurs écrans, le plein écran reste sur l'écran où se trouve la fenêtre au lieu de partir chez le voisin
+- La fenêtre retrouve une vraie barre : on la déplace en la saisissant, et les commandes de fenêtre ne débordent plus sur le contenu
+- La lecture démarre d'une traite : l'image n'apparaît plus avant que de quoi la tenir soit prêt
+- Interface améliorée : les affiches et les vignettes se détachent nettement de la page au survol, et leurs informations apparaissent sans attendre
+- Mémoire optimisée : l'application ne garde en mémoire que ce qui est réellement à l'écran, quelle que soit la taille de votre catalogue
+- Mode hors ligne repensé : ses propres menus, un catalogue rangé par série, et seuls les titres disponibles sans connexion vous sont proposés
+- Le catalogue hors ligne montre où vous en êtes : coche sur ce qui est vu, barre sur ce qui est en cours. Un titre déjà vu se relance depuis le début
+- Sélection multiple dans votre bibliothèque hors ligne : retirer ou relancer plusieurs titres d'un coup
+- Ce que vous regardez hors ligne remonte sur votre serveur au retour du réseau : position et épisodes vus
+- La préparation d'un titre pour le hors ligne se poursuit quand vous passez sur autre chose, et l'ordinateur ne s'endort plus en cours de route. S'il s'endort quand même, elle reprend d'elle-même au réveil
+- Fermer l'application pendant une préparation hors ligne demande confirmation, au lieu de l'interrompre sans un mot
+- Corrections d'anomalies mineures
+### EN
+- This version moves the macOS app to a new technical foundation, already in use on Windows. The video player, your data and your settings are unchanged: nothing to reinstall, nothing to set up again
+- True HDR: on a compatible display the picture is passed through as-is instead of being flattened to standard colours, and the screen switches to HDR for the length of the film
+- A video in fullscreen finally fills the whole screen: no more black bars around the edges, and no menu bar left showing when starting from a maximised window
+- With several displays, fullscreen stays on the screen the window is on instead of jumping to the neighbour
+- The window has a proper title bar again: grab it to move the window, and the window controls no longer sit on top of the content
+- Playback starts in one go: the picture no longer appears before there is enough buffered to keep it running
+- Improved interface: posters and thumbnails now lift cleanly off the page on hover, and their details appear without delay
+- Optimised memory: the app only keeps on hand what is actually on screen, however large your catalogue
+- Reworked offline mode: its own menus, a catalogue grouped by series, and only the titles available without a connection are offered
+- The offline catalogue shows where you stand: a tick on what is watched, a bar on what is in progress. A title already watched restarts from the beginning
+- Multiple selection in your offline library: remove or restart several titles at once
+- What you watch offline syncs back to your server when the network returns: position and watched episodes
+- Preparing a title for offline use keeps going when you switch to something else, and the computer no longer falls asleep partway through. Should it sleep anyway, it resumes on its own when it wakes
+- Closing the app while a title is being prepared for offline use now asks for confirmation instead of cutting it off without a word
+- Minor issues fixed
+
+## [1.20.2]
+### FR
+- Interface améliorée : les affiches et les vignettes se détachent nettement de la page au survol, et leurs informations apparaissent sans attendre
+- Corrections d'anomalies mineures
+- Mémoire optimisée : l'application ne garde en mémoire que ce qui est réellement à l'écran, quelle que soit la taille de votre catalogue
+### EN
+- Improved interface: posters and thumbnails now lift cleanly off the page on hover, and their details appear without delay
+- Minor issues fixed
+- Optimised memory: the app only keeps on hand what is actually on screen, however large your catalogue
+
+## [1.20.1]
+### FR
+- La vidéo en plein écran occupe enfin tout l'écran : plus de bandes noires sur les bords, ni de barre des tâches qui reste visible quand on part d'une fenêtre agrandie
+- Sur plusieurs écrans, le plein écran reste sur l'écran où se trouve la fenêtre au lieu de partir chez le voisin
+- Vos téléchargements continuent quand vous passez sur autre chose, et l'ordinateur ne s'endort plus au milieu d'un transfert. S'il s'endort quand même, ils repartent tout seuls au réveil
+- Fermer l'application pendant un téléchargement demande confirmation, au lieu de l'interrompre sans un mot
+### EN
+- A video in fullscreen finally fills the whole screen: no more black bars around the edges, and no taskbar left showing when starting from a maximised window
+- With several displays, fullscreen stays on the screen the window is on instead of jumping to the neighbour
+- Your downloads keep going when you switch to something else, and the computer no longer falls asleep in the middle of a transfer. Should it sleep anyway, they resume on their own when it wakes
+- Closing the app during a download now asks for confirmation instead of cutting it off without a word
+
+## [1.20.0]
+### FR
+- La version Windows repose désormais sur Electron : le lecteur, vos données et vos réglages sont inchangés, rien à réinstaller
+- HDR véritable : sur un écran compatible, l'image est transmise telle quelle au lieu d'être ramenée en couleurs standard, et l'écran passe en HDR le temps du film
+- Navigation hors ligne repensée : ses propres menus, un catalogue rangé par série, et seuls les titres disponibles vous sont proposés
+- Le catalogue hors ligne montre où vous en êtes : coche sur ce qui est vu, barre sur ce qui est en cours. Un titre déjà vu se relance depuis le début
+- Sélection multiple dans votre bibliothèque hors ligne : retirer ou relancer plusieurs titres d'un coup
+- Ce que vous regardez hors ligne remonte sur votre serveur au retour du réseau : position et épisodes vus
+### EN
+- The Windows version now runs on Electron: the video player, your data and your settings are unchanged — nothing to reinstall, nothing to set up again
+- True HDR: on a compatible display the picture is passed through as-is instead of being flattened to standard colours, and the screen switches to HDR for the length of the film
+- Reworked offline navigation: its own menus, a catalogue grouped by series, and only the titles actually available are offered
+- The offline catalogue shows where you stand: a tick on what is watched, a bar on what is in progress. A title already watched restarts from the beginning
+- Multiple selection in your offline library: remove or restart several titles at once
+- What you watch offline syncs back to your server when the network returns: position and watched episodes
+
 ## [1.17.1]
 ### FR
 - Windows : plus de scintillement à l'ouverture d'une fiche depuis la recherche, ni au retour d'une vidéo vers sa fiche — la fenêtre reste opaque en dehors de la lecture, et ne devient transparente que le temps du film

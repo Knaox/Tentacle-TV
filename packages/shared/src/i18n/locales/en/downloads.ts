@@ -87,6 +87,18 @@ export default {
   offlineEmptyTitle: "No offline content",
   offlineEmptyMessage:
     "No playable download on this device for this account. The full catalog will come back as soon as the server responds.",
+  selectMode: "Select",
+  selectCancel: "Cancel selection",
+  selectAll: "Select all",
+  selectNone: "Deselect all",
+  selectedCount_one: "{{count}} selected",
+  selectedCount_other: "{{count}} selected",
+  bulkAutoDelete: "Auto-delete for selection",
+  bulkDelete: "Delete selection",
+  bulkDeleteConfirmTitle_one: "Delete {{count}} download?",
+  bulkDeleteConfirmTitle_other: "Delete {{count}} downloads?",
+  bulkDeleteConfirmMessage:
+    "The files will be removed from this device. Other accounts that downloaded them keep their copy.",
   emptyTitle: "No downloads",
   emptyMessage:
     "Movies and episodes downloaded from their pages will appear here, ready to watch offline.",
@@ -103,9 +115,13 @@ export default {
   changeLocation: "Change location…",
   locationHint:
     "Only changeable while no downloads are present. New downloads will go to the chosen folder.",
+  locationFixedBySystem:
+    "On macOS the location is set by the system and cannot be changed.",
   locationChanged: "Location updated.",
   locationLocked: "Not possible: downloads already exist. Delete them first.",
   locationNotWritable: "This folder is not writable.",
+  locationNotWritableWhy: "This folder is not writable ({{reason}}).",
+  locationFailed: "Changing the location failed.",
   spaceTitle: "Disk space",
 
   seasonLabel: "Season {{num}}",
@@ -115,4 +131,7 @@ export default {
   episodesCount_other: "{{count}} episodes",
   episodePlay: "Play episode",
   seasonNotFound: "This season is no longer downloaded.",
+  seasonsCount_one: "{{count}} season",
+  seasonsCount_other: "{{count}} seasons",
+  seriesNotFound: "This series is no longer downloaded.",
 } as const;
