@@ -43,9 +43,24 @@ export const canPlayEac3 = () => supportsAudioCodec("ec-3");
 export const canPlayFlac = () => supportsAudioCodec("flac");
 export const canPlayOpus = () => supportsAudioCodec("opus");
 
-/** HEVC Main 10 — prérequis de toute lecture HDR (10 bits par composante). */
+/**
+ * HEVC Main 10 — prérequis de toute lecture HDR (10 bits par composante).
+ *
+ * Sondé au NIVEAU 4.0 (`L120`), et non 5.1 : ce qu'on cherche à savoir ici,
+ * c'est si le moteur décode le profil 10 bits, pas jusqu'à quelle résolution.
+ * Le niveau est un axe séparé, déjà déclaré à Jellyfin par `CONDITIONS_HEVC`
+ * (`VideoLevel <= 183`).
+ *
+ * La sonde demandait `L153` — soit 5.1 — quand celle du Main 8 bits juste
+ * au-dessus se contente de `L150`. Un décodeur plafonné à 5.0 en 10 bits
+ * répondait donc « je sais faire du HEVC » et « je ne sais pas faire du
+ * 10 bits », et la liste des plages dynamiques retombait à `Unknown|SDR` : un
+ * tone mapping serveur, donc un ré-encodage 4K, sur un fichier de niveau 5.0
+ * que le moteur savait lire. jellyfin-web sonde le HEVC à `L120` pour la même
+ * raison.
+ */
 export const canPlayHevcMain10 = () =>
-  supportsVideoCodec("hvc1.2.4.L153.B0") || supportsVideoCodec("hev1.2.4.L153.B0");
+  supportsVideoCodec("hvc1.2.4.L120.B0") || supportsVideoCodec("hev1.2.4.L120.B0");
 
 /**
  * Plages dynamiques déclarées à Jellyfin (`VideoRangeType`), d'après la SEULE
