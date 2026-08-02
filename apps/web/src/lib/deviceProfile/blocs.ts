@@ -71,7 +71,20 @@ export const PROFIL_AUDIO_6_CANAUX: CodecProfile = {
   ],
 };
 
-/** HLS en segments TS — le repli universel des navigateurs. */
+/**
+ * HLS en segments TS — le repli universel des navigateurs.
+ *
+ * `BreakOnNonKeyFrames` y est faux pour la raison mesurée sur le fMP4 (cf.
+ * `profilHlsFmp4`) : à vrai, il oblige le serveur à savoir couper hors image
+ * clé, donc à en fabriquer, donc à recompresser. Ce profil ne sert que si le
+ * HEVC n'est pas décodable, mais y laisser le drapeau, c'était garder une mine
+ * pour toute source H.264 que Jellyfin aurait pu se contenter de remuxer.
+ *
+ * `MinSegments` à 1 (et non 2) : c'est le nombre de segments que Jellyfin
+ * encode AVANT de servir le manifeste. Un de moins, c'est autant de gagné sur
+ * le délai « clic → première image ». Même valeur que jellyfin-web hors
+ * iOS/macOS.
+ */
 export function profilHlsTs(videoCodec: string, audioCodec: string): TranscodingProfile {
   return {
     Container: "ts",
@@ -81,8 +94,8 @@ export function profilHlsTs(videoCodec: string, audioCodec: string): Transcoding
     Protocol: "hls",
     Context: "Streaming",
     MaxAudioChannels: "6",
-    MinSegments: 2,
-    BreakOnNonKeyFrames: true,
+    MinSegments: 1,
+    BreakOnNonKeyFrames: false,
     CopyTimestamps: true,
   };
 }
@@ -96,8 +109,9 @@ export function profilHlsTs(videoCodec: string, audioCodec: string): Transcoding
  * demande au serveur de pouvoir découper un segment n'importe où — donc de
  * fabriquer des images clés, donc de recompresser. Comparaison ffmpeg sur le
  * même fichier : avec, `-codec:v:0 hevc_qsv -g:v:0 72 -keyint_min:v:0 72`
- * à 4,7× le temps réel ; sans, `-codec:v:0 copy` à 60×. jellyfin-web ne le
- * pose que sur son profil TS, jamais sur le fMP4 — pour cette raison exacte.
+ * à 4,7× le temps réel ; sans, `-codec:v:0 copy` à 60×. C'est cette mesure qui
+ * tranche — jellyfin-web, lui, pose le drapeau sur SES DEUX profils, avec une
+ * valeur calculée à partir du moteur (`hlsBreakOnNonKeyFrames`).
  *
  * Le prix : les segments s'alignent sur les images clés de la source (6 s au
  * lieu de 3), donc une granularité de recherche un peu plus grossière. Sans
