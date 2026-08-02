@@ -73,19 +73,26 @@ export function profilHlsTs(videoCodec: string, audioCodec: string): Transcoding
   };
 }
 
-/** HLS en fMP4 — AVFoundation exige ce conteneur pour le HEVC, le TS ne passe pas. */
-export const PROFIL_HLS_FMP4: TranscodingProfile = {
-  Container: "mp4",
-  Type: "Video",
-  VideoCodec: "hevc,h264",
-  AudioCodec: "aac,ac3,eac3",
-  Protocol: "hls",
-  Context: "Streaming",
-  MaxAudioChannels: "6",
-  MinSegments: 2,
-  BreakOnNonKeyFrames: true,
-  CopyTimestamps: true,
-};
+/**
+ * HLS en fMP4 — le seul conteneur qui permette au serveur de COPIER une vidéo
+ * HEVC au lieu de la ré-encoder. AVFoundation l'exige (le TS ne passe pas), et
+ * il convient tout autant à hls.js, qui lit le fMP4 directement par MSE. C'est
+ * donc le profil à déclarer dès que le moteur décode le HEVC, quel qu'il soit.
+ */
+export function profilHlsFmp4(videoCodec: string, audioCodec: string): TranscodingProfile {
+  return {
+    Container: "mp4",
+    Type: "Video",
+    VideoCodec: videoCodec,
+    AudioCodec: audioCodec,
+    Protocol: "hls",
+    Context: "Streaming",
+    MaxAudioChannels: "6",
+    MinSegments: 2,
+    BreakOnNonKeyFrames: true,
+    CopyTimestamps: true,
+  };
+}
 
 /** Transcodage audio seul. */
 export const PROFIL_AUDIO_SEUL: TranscodingProfile = {
