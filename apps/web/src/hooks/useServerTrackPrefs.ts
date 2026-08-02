@@ -9,7 +9,7 @@
  * préférences depuis le cache local — zéro bande passante.
  */
 
-import { useEffect, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { useResolveMediaTracks } from "@tentacle-tv/api-client";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import { necessiteIncrustation } from "./useWebPlaybackFallbacks";
@@ -45,8 +45,16 @@ export function useServerTrackPrefs({
   setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
 }: Options): void {
   const resolveTracks = useResolveMediaTracks();
+  // « La requête est partie », à distinguer de « les préférences sont
+  // appliquées ». Les deux étaient confondues dans `prefsApplied`, et un
+  // /resolve en échec laissait donc le client croire que ses préférences
+  // avaient été honorées : la garde du démarrage tombait, et un écart
+  // transitoire de piste audio suffisait à forcer un transcodage. Porte
+  // l'identifiant du média, donc se réarme tout seul au changement d'épisode.
+  const demandeEnvoyee = useRef<string | null>(null);
   useEffect(() => {
-    if (prefsApplied.current || streams.length === 0 || !item) return;
+    if (streams.length === 0 || !item) return;
+    if (demandeEnvoyee.current === item.Id || prefsApplied.current) return;
     if (isLocalPlayback) {
       // Lecture locale : useLocalPlaybackTracks applique les préférences
       // depuis le cache — ce chemin serveur est neutralisé (zéro réseau).
@@ -60,7 +68,7 @@ export function useServerTrackPrefs({
     const ancestorIds = (ancestors ?? []).map((a) => a.Id);
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) { setPrefsReady(true); return; }
-    prefsApplied.current = true;
+    demandeEnvoyee.current = item.Id;
     const aTracks = streams.filter((s) => s.Type === "Audio")
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     const sTracks = streams.filter((s) => s.Type === "Subtitle")
@@ -70,6 +78,8 @@ export function useServerTrackPrefs({
     // série et la bibliothèque (cf. `preferences.resolve.ts`).
     resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, itemId: item.Id, audioTracks: aTracks, subtitleTracks: sTracks }, {
       onSuccess: (result) => {
+        // Ici seulement : les préférences ont vraiment été résolues.
+        prefsApplied.current = true;
         if (result.audioIndex != null && !audioOverrideRef.current) {
           if (isDesktop) {
             // Desktop: check if new audio changes direct play status
