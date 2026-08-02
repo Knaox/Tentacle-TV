@@ -212,6 +212,13 @@ export function usePlaybackInfo(lecteurNatif = false) {
         mode: verdict.mode,
         reencodage: verdict.reencodageVideo,
         raisons: verdict.raisons,
+        // Plage dynamique : la valeur BRUTE du serveur face à ce qu'on déclare.
+        // Jellyfin sérialise `VideoRangeType` tantôt en nom, tantôt en index —
+        // et c'est ce nom, côté serveur, qu'il compare à notre liste pour
+        // décider s'il peut copier l'image. Sans les deux sous les yeux, on en
+        // est réduit à deviner.
+        plageSource: fluxVideo?.VideoRangeType,
+        plagesDeclarees: plagesDynamiquesSupportees().join("|"),
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
