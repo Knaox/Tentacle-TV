@@ -6,6 +6,7 @@ import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
+import { evaluerLecture } from "./playbackVerdict";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 
@@ -189,10 +190,24 @@ export function usePlaybackInfo(lecteurNatif = false) {
 
       // Synthetic log so users can see at a glance, in DevTools, whether
       // Direct Streaming is engaged and which decode path is used.
+      //
+      // `mode` vient de `evaluerLecture` et non des deux booléens ci-dessus :
+      // ceux-ci disent ce que le fichier PERMET, pas ce que le serveur a fait.
+      // Seul le verdict distingue un remux — image copiée, son converti, ce
+      // qu'on vise — d'un ré-encodage, ce qu'on traque. `reencodage` est le
+      // critère d'acceptation du chantier : il doit rester faux.
       const transport = ds && url.startsWith(ds.mediaBaseUrl) ? "direct" : "proxy";
-      const mode = directPlay ? "DirectPlay" : directStream ? "DirectStream" : "Transcode";
+      const verdict = evaluerLecture({
+        supportsDirectPlay: ms.SupportsDirectPlay,
+        supportsDirectStream: ms.SupportsDirectStream,
+        transcodingUrl: ms.TranscodingUrl,
+        transcodeReasons: ms.TranscodeReasons,
+        codecVideoSource: ms.MediaStreams?.find((s) => s.Type === "Video")?.Codec,
+      });
       console.log("[Tentacle:Playback]", {
-        mode,
+        mode: verdict.mode,
+        reencodage: verdict.reencodageVideo,
+        raisons: verdict.raisons,
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
