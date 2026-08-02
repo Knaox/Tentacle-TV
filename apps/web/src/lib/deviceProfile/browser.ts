@@ -1,25 +1,16 @@
 import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile } from "@tentacle-tv/shared";
 import {
   CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  profilHlsTs, SOUS_TITRES_BITMAP, SOUS_TITRES_TEXTE,
+  profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE, type OptionsProfilWeb,
 } from "./blocs";
 import {
   canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
   canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, estChromium, IS_NATIVE_HLS,
 } from "./codecs";
 
-export interface OptionsProfilNavigateur {
-  /**
-   * Un MKV annoncé en lecture directe n'a rien donné pendant cette session :
-   * on retire la déclaration pour que Jellyfin reparte en remux. Drapeau tenu
-   * par `usePlaybackInfo`, en mémoire seulement.
-   */
-  mkvNonFiable?: boolean;
-}
-
 export function buildBrowserDeviceProfile(
   maxBitrate?: number,
-  options?: OptionsProfilNavigateur,
+  options?: OptionsProfilWeb,
 ): DeviceProfile {
   const videoCodecs: string[] = [];
   if (canPlayH264()) videoCodecs.push("h264");
@@ -102,6 +93,6 @@ export function buildBrowserDeviceProfile(
     DirectPlayProfiles: directPlayProfiles,
     TranscodingProfiles: transcodingProfiles,
     CodecProfiles: codecProfiles,
-    SubtitleProfiles: [...SOUS_TITRES_TEXTE, ...SOUS_TITRES_BITMAP],
+    SubtitleProfiles: [...SOUS_TITRES_TEXTE, ...sousTitresBitmap(options?.pgsClientIndisponible)],
   };
 }

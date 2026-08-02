@@ -9,6 +9,7 @@ import {
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
+import { useWebPlaybackFallbacks } from "./useWebPlaybackFallbacks";
 import { useDesktopSource, mapSubtitlesToLocal } from "./useDesktopSource";
 import { useLocalSource } from "./useLocalSource";
 import { useLocalFirstMedia } from "./useLocalFirstMedia";
@@ -104,6 +105,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // derrière `supportsMpv()`, et le repli web repasse par WatchWeb (isDesktop
   // faux) — le profil suit donc toujours le lecteur réellement à l'œuvre.
   const pbInfo = usePlaybackInfo(isDesktop);
+  // mpv lit les sous-titres image nativement ; le rendu canvas (libpgs) ne
+  // concerne que le lecteur web, et s'efface dès qu'il a échoué une fois.
+  const pgsClientOk = !isDesktop && !pbInfo.pgsClientIndisponible;
 
   useEffect(() => {
     setStartTicks(0); setQualityKey("original"); setSubtitleIndex(null); setPrefsReady(false);
@@ -184,7 +188,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // Neutralisée en lecture locale (résolution locale, zéro réseau).
   useServerTrackPrefs({
     item, streams, ancestors, isDesktop, isLocalPlayback, quality, defaultAudio,
-    supportsNativeAudioTracks, checkAudioTranscode,
+    supportsNativeAudioTracks, checkAudioTranscode, pgsClientOk,
     prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
     setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
   });
@@ -226,20 +230,11 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // mpv handles seeking client-side via startPositionSeconds.
   const streamOffset = isDesktop ? 0 : pbInfo.streamOffset;
 
-  // Filet de la lecture directe MKV (cf. lib/deviceProfile/browser.ts). Le
-  // rattrapage n'est proposé que s'il y a matière à rattraper : un MKV, sur le
-  // lecteur web, dont la lecture directe n'a pas encore été disqualifiée.
-  // Partout ailleurs il vaut `undefined`, donc la garde des trois secondes
-  // n'est pas même armée — un mp4 lent à charger ne risque rien.
-  const signalerMkvNonFiable = pbInfo.signalerMkvNonFiable;
-  const handleDirectPlayNonFiable = useCallback((seconds: number) => {
-    if (seconds > 0) setStartTicks(Math.floor(seconds * TICKS_PER_SECOND));
-    signalerMkvNonFiable();
-  }, [signalerMkvNonFiable]);
-  const conteneurLu = (pbInfo.mediaSource?.Container ?? mediaSource?.Container)?.toLowerCase();
-  const onDirectPlayNonFiable = !isDesktop && conteneurLu === "mkv" && !pbInfo.mkvNonFiable
-    ? handleDirectPlayNonFiable
-    : undefined;
+  // Filets du lecteur web : lecture directe MKV et rendu PGS client.
+  const { onDirectPlayNonFiable, pgsSubtitleUrl, signalerEchecPgs } = useWebPlaybackFallbacks({
+    isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
+    positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
+  });
 
   // Diagnostic : chaque (re)construction d'URL de stream, avec la session
   // Jellyfin associée (le transcode ffmpeg est lié à DeviceId+PlaySessionId).
@@ -295,6 +290,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
     streamUrl, streamOffset, onDirectPlayNonFiable,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,

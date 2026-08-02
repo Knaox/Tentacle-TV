@@ -6,7 +6,8 @@ import { TICKS_PER_SECOND, formatDuration, formatEpisodeCode } from "@tentacle-t
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
-import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
+import { useWatchSession } from "../hooks/useWatchSession";
+import { necessiteIncrustation } from "../hooks/useWebPlaybackFallbacks";
 import { isMacOS } from "../hooks/useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
@@ -29,6 +30,7 @@ export function WatchWeb() {
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
@@ -119,7 +121,9 @@ export function WatchWeb() {
     subtitleOverrideRef.current = true;
     if (idx != null) {
       const sub = streams.find((s: JfStream) => s.Type === "Subtitle" && s.Index === idx);
-      if (BURN_IN_SUBTITLE_CODECS.test(sub?.Codec ?? "")) {
+      // Un PGS rendu côté client reste une piste ordinaire : pas d'incrustation,
+      // donc pas de ré-encodage de l'image pour un sous-titre.
+      if (necessiteIncrustation(sub?.Codec, pgsClientOk)) {
         const ticks = getPositionTicks();
         if (ticks > 0) setStartTicks(ticks);
         setBurnInSubtitleIndex(idx);
@@ -133,7 +137,7 @@ export function WatchWeb() {
       setBurnInSubtitleIndex(undefined);
     }
     setSubtitleIndex(idx);
-  }, [streams, getPositionTicks, burnInSubtitleIndex, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
+  }, [streams, getPositionTicks, burnInSubtitleIndex, pgsClientOk, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
 
   const handleQualityChange = useCallback((key: QualityKey) => {
     const ticks = getPositionTicks();
@@ -228,6 +232,7 @@ export function WatchWeb() {
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           onDirectPlayNonFiable={onDirectPlayNonFiable}
+          pgsSubtitleUrl={pgsSubtitleUrl} onPgsEchec={signalerEchecPgs}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}

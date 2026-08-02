@@ -58,8 +58,10 @@ export function useWebPlaybackInfoFetch({
       maxStreamingBitrate: quality ?? undefined,
       forceTranscode,
     });
-    // `mkvNonFiable` EST une dépendance de rendu : c'est lui, et lui seul, qui
-    // relance la requête après un repli. Passer par `startTicks` ne suffirait
-    // pas — l'échec survient à 0 s, où la position ne change pas.
-  }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality, pbInfo.mkvNonFiable]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Les deux drapeaux de repli SONT des dépendances de rendu : ce sont eux,
+    // et eux seuls, qui relancent la requête après un échec. Passer par
+    // `startTicks` ne suffirait pas — l'échec MKV survient à 0 s, où la
+    // position ne change pas.
+  }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality,
+    pbInfo.mkvNonFiable, pbInfo.pgsClientIndisponible]); // eslint-disable-line react-hooks/exhaustive-deps
 }

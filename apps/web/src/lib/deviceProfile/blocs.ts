@@ -11,6 +11,30 @@ import type { CodecProfile, ProfileCondition, SubtitleProfile, TranscodingProfil
 
 export const DEBIT_MUSIQUE = 384_000;
 
+/**
+ * Capacités que la session a pu perdre en cours de route. Les deux drapeaux
+ * sont levés par un ÉCHEC observé, jamais par précaution : sous-déclarer ses
+ * capacités, c'est perdre la lecture directe.
+ */
+export interface OptionsProfilWeb {
+  /**
+   * Un MKV annoncé en lecture directe n'a rien donné — on le retire pour que
+   * Jellyfin reparte en remux. Drapeau tenu par `usePlaybackInfo`, en mémoire.
+   */
+  mkvNonFiable?: boolean;
+  /**
+   * Le rendu PGS côté client a échoué (chargement ou décodage) : on repasse le
+   * format en `Encode`, donc à l'incrustation serveur. Le prix est un
+   * transcodage vidéo, et c'est pourquoi il n'arrive qu'après un vrai échec.
+   */
+  pgsClientIndisponible?: boolean;
+}
+
+/** Sous-titres image, selon que le client sait décoder le PGS ou non. */
+export function sousTitresBitmap(pgsClientIndisponible?: boolean): SubtitleProfile[] {
+  return pgsClientIndisponible ? SOUS_TITRES_BITMAP : SOUS_TITRES_BITMAP_PGS_CLIENT;
+}
+
 /** H264 : niveau maximal (51 en Chromium, 52 sous AVFoundation) et 16 trames de référence. */
 export function conditionsH264(niveauMax: string): ProfileCondition[] {
   return [
@@ -99,6 +123,21 @@ export const SOUS_TITRES_TEXTE_HLS: SubtitleProfile[] = [
 /** Sous-titres image : incrustés par le serveur, donc ré-encodage de l'image. */
 export const SOUS_TITRES_BITMAP: SubtitleProfile[] = [
   { Format: "pgssub", Method: "Encode" },
+  { Format: "dvdsub", Method: "Encode" },
+  { Format: "dvbsub", Method: "Encode" },
+];
+
+/**
+ * Variante des lecteurs web : le PGS passe en piste séparée, Jellyfin sert
+ * alors un `.sup` que `PgsSubtitleOverlay` décode et dessine sur un canvas.
+ * C'était la première cause de transcodage vidéo — un sous-titre image
+ * obligeait à ré-encoder toute l'image pour l'y incruster.
+ *
+ * VOBSUB et DVB restent en `Encode` : libpgs ne lit que le PGS, et les
+ * déclarer externes les rendrait invisibles.
+ */
+export const SOUS_TITRES_BITMAP_PGS_CLIENT: SubtitleProfile[] = [
+  { Format: "pgssub", Method: "External" },
   { Format: "dvdsub", Method: "Encode" },
   { Format: "dvbsub", Method: "Encode" },
 ];
