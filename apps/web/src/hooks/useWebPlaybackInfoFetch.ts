@@ -41,5 +41,8 @@ export function useWebPlaybackInfoFetch({
       maxStreamingBitrate: quality ?? 42_000_000,
       forceTranscode,
     });
-  }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality]); // eslint-disable-line react-hooks/exhaustive-deps
+    // `mkvNonFiable` EST une dépendance de rendu : c'est lui, et lui seul, qui
+    // relance la requête après un repli. Passer par `startTicks` ne suffirait
+    // pas — l'échec survient à 0 s, où la position ne change pas.
+  }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality, pbInfo.mkvNonFiable]); // eslint-disable-line react-hooks/exhaustive-deps
 }

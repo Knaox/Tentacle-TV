@@ -28,7 +28,7 @@ export function WatchWeb() {
     qualityKey, setQualityKey, sourceQuality, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
-    isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
+    isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
@@ -226,6 +226,7 @@ export function WatchWeb() {
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
+          onDirectPlayNonFiable={onDirectPlayNonFiable}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
