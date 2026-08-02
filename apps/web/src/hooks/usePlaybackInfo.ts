@@ -2,9 +2,9 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
-import { buildBrowserDeviceProfile } from "../lib/browserDeviceProfile";
-import { buildMacOSDeviceProfile } from "../lib/macosDeviceProfile";
-import { buildMpvDeviceProfile } from "../lib/mpvDeviceProfile";
+import {
+  buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
+} from "../lib/deviceProfile";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 
