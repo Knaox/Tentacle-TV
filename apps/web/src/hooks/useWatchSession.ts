@@ -10,6 +10,7 @@ import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
 import { useWebPlaybackFallbacks } from "./useWebPlaybackFallbacks";
+import { useDefaultTracks } from "./useDefaultTracks";
 import { useDesktopSource, mapSubtitlesToLocal } from "./useDesktopSource";
 import { useLocalSource } from "./useLocalSource";
 import { useLocalFirstMedia } from "./useLocalFirstMedia";
@@ -117,20 +118,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (!isDesktop) pbInfo.reset();
   }, [itemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (streams.length > 0 && !audioOverrideRef.current && !prefsApplied.current) {
-      const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
-        ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
-      setAudioIndex(defAudio);
-    }
-  }, [streams]);
-
-  useEffect(() => {
-    if (streams.length > 0 && !prefsApplied.current && !subtitleOverrideRef.current) {
-      const defSub = streams.find((s) => s.Type === "Subtitle" && s.IsDefault)?.Index ?? null;
-      if (defSub != null) setSubtitleIndex(defSub);
-    }
-  }, [streams]);
+  useDefaultTracks({
+    streams, audioOverrideRef, subtitleOverrideRef, prefsApplied,
+    setAudioIndex, setSubtitleIndex,
+  });
 
   // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
   // sur un fichier peut disparaître sur le suivant. Sans ce repli, la clé
@@ -202,11 +193,20 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     return () => clearTimeout(timer);
   }, [prefsReady, streams.length, item, isLoading]);
 
+  // Filets du lecteur web : lecture directe MKV et rendu PGS client. Déclaré
+  // AVANT la requête, qui dépend de son compteur de relance.
+  const {
+    onDirectPlayNonFiable, pgsSubtitleUrl, signalerEchecPgs, relanceLecture, relancerLecture,
+  } = useWebPlaybackFallbacks({
+    isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
+    positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
+  });
+
   // ── Web: fetch PlaybackInfo when params change (extraction — cf. hook) ──
   useWebPlaybackInfoFetch({
     isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
     burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
-    prefsApplied, audioOverrideRef,
+    prefsApplied, audioOverrideRef, relanceLecture,
   });
 
   // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
@@ -229,12 +229,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // Desktop: no streamOffset — StartTimeTicks stripped from HLS URLs (Jellyfin 10.10+ compat),
   // mpv handles seeking client-side via startPositionSeconds.
   const streamOffset = isDesktop ? 0 : pbInfo.streamOffset;
-
-  // Filets du lecteur web : lecture directe MKV et rendu PGS client.
-  const { onDirectPlayNonFiable, pgsSubtitleUrl, signalerEchecPgs } = useWebPlaybackFallbacks({
-    isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
-    positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
-  });
 
   // Diagnostic : chaque (re)construction d'URL de stream, avec la session
   // Jellyfin associée (le transcode ffmpeg est lié à DeviceId+PlaySessionId).
@@ -290,7 +284,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
     streamUrl, streamOffset, onDirectPlayNonFiable,
-    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,

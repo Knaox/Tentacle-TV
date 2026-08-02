@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import {
   BURN_IN_SUBTITLE_CODECS, PGS_SUBTITLE_CODECS, TICKS_PER_SECOND,
@@ -44,6 +44,16 @@ export function useWebPlaybackFallbacks({
   isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
   positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
 }: Options) {
+  // Relance inconditionnelle du PlaybackInfo.
+  //
+  // Les deux filets misaient sur un changement d'état pour repartir — le
+  // drapeau MKV, la position de reprise. Aucun des deux ne suffit : l'échec
+  // survient à 0 s, où `setStartTicks(0)` ne change rien et où React ne rejoue
+  // donc rien. Le lecteur restait alors sur un spinner que plus rien ne
+  // relevait. Un compteur, lui, change toujours.
+  const [relanceLecture, setRelanceLecture] = useState(0);
+  const relancerLecture = useCallback(() => setRelanceLecture((n) => n + 1), []);
+
   // ── Filet de la lecture directe MKV (cf. lib/deviceProfile/browser.ts) ──
   // Le rattrapage n'est proposé que s'il y a matière à rattraper : un MKV, sur
   // le lecteur web, dont la lecture directe n'a pas encore été disqualifiée.
@@ -53,7 +63,8 @@ export function useWebPlaybackFallbacks({
   const handleDirectPlayNonFiable = useCallback((seconds: number) => {
     if (seconds > 0) setStartTicks(Math.floor(seconds * TICKS_PER_SECOND));
     signalerMkvNonFiable();
-  }, [signalerMkvNonFiable, setStartTicks]);
+    relancerLecture();
+  }, [signalerMkvNonFiable, setStartTicks, relancerLecture]);
   const conteneurLu = (pbInfo.mediaSource?.Container ?? mediaSource?.Container)?.toLowerCase();
   const onDirectPlayNonFiable = !isDesktop && conteneurLu === "mkv" && !pbInfo.mkvNonFiable
     ? handleDirectPlayNonFiable
@@ -90,5 +101,7 @@ export function useWebPlaybackFallbacks({
     onDirectPlayNonFiable,
     pgsSubtitleUrl,
     signalerEchecPgs: pbInfo.signalerPgsClientIndisponible,
+    relanceLecture,
+    relancerLecture,
   };
 }

@@ -7,6 +7,11 @@ interface Options {
   prefsApplied: MutableRefObject<boolean>;
   /** L'utilisateur a explicitement choisi une piste audio dans le sélecteur. */
   audioOverrideRef: MutableRefObject<boolean>;
+  /**
+   * Compteur de relance des filets. Il ne sert qu'à une chose : garantir qu'une
+   * requête repart, même quand rien d'autre n'a bougé (échec à 0 s).
+   */
+  relanceLecture: number;
   isDesktop: boolean;
   prefsReady: boolean;
   itemId: string | undefined;
@@ -28,7 +33,7 @@ interface Options {
 export function useWebPlaybackInfoFetch({
   isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
   burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
-  prefsApplied, audioOverrideRef,
+  prefsApplied, audioOverrideRef, relanceLecture,
 }: Options): void {
   useEffect(() => {
     if (isDesktop || !prefsReady || !itemId) return;
@@ -63,5 +68,5 @@ export function useWebPlaybackInfoFetch({
     // `startTicks` ne suffirait pas — l'échec MKV survient à 0 s, où la
     // position ne change pas.
   }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality,
-    pbInfo.mkvNonFiable, pbInfo.pgsClientIndisponible]); // eslint-disable-line react-hooks/exhaustive-deps
+    pbInfo.mkvNonFiable, pbInfo.pgsClientIndisponible, relanceLecture]); // eslint-disable-line react-hooks/exhaustive-deps
 }
