@@ -1,8 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, type MutableRefObject } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { usePlaybackInfo } from "./usePlaybackInfo";
 
 interface Options {
+  /** Préférences de pistes du serveur appliquées (cf. useServerTrackPrefs). */
+  prefsApplied: MutableRefObject<boolean>;
+  /** L'utilisateur a explicitement choisi une piste audio dans le sélecteur. */
+  audioOverrideRef: MutableRefObject<boolean>;
   isDesktop: boolean;
   prefsReady: boolean;
   itemId: string | undefined;
@@ -24,6 +28,7 @@ interface Options {
 export function useWebPlaybackInfoFetch({
   isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
   burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
+  prefsApplied, audioOverrideRef,
 }: Options): void {
   useEffect(() => {
     if (isDesktop || !prefsReady || !itemId) return;
@@ -31,7 +36,15 @@ export function useWebPlaybackInfoFetch({
     const ticks = startTicks > 0 ? startTicks : resumeTicks;
     // Edge/Chrome: no native audioTracks API — if user wants non-default audio,
     // force server-side audio selection (remux/transcode) instead of direct play.
-    const forceTranscode = !supportsNativeAudioTracks && audioIndex !== defaultAudio;
+    //
+    // Encore faut-il que quelqu'un ait DEMANDÉ cette piste : préférences du
+    // serveur appliquées, ou choix explicite dans le sélecteur. Sans cette
+    // garde, le premier rendu compare un `audioIndex` resté à sa valeur
+    // d'initialisation avec un `defaultAudio` fraîchement résolu par l'arrivée
+    // des `MediaStreams`, et sacrifie le DirectPlay du démarrage pour un écart
+    // qui n'existe pas — l'effet de réconciliation le comble au rendu suivant.
+    const pisteDemandee = prefsApplied.current || audioOverrideRef.current;
+    const forceTranscode = pisteDemandee && !supportsNativeAudioTracks && audioIndex !== defaultAudio;
     pbInfo.fetchPlaybackInfo({
       itemId,
       mediaSourceId,
