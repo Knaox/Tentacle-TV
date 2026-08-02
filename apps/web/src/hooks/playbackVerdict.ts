@@ -33,7 +33,7 @@ export interface Verdict {
 }
 
 /** Jellyfin 10.9+ rend un tableau ; les versions antérieures, une chaîne. */
-export function normaliserRaisons(brut?: string[] | string): string[] {
+export function normaliserRaisons(brut?: string[] | string | false): string[] {
   if (!brut) return [];
   const liste = Array.isArray(brut) ? brut : brut.split(",");
   return liste.map((r) => r.trim()).filter(Boolean);
@@ -42,6 +42,18 @@ export function normaliserRaisons(brut?: string[] | string): string[] {
 function lireParam(url: string, nom: string): string | undefined {
   const m = new RegExp(`[?&]${nom}=([^&]*)`, "i").exec(url);
   return m ? decodeURIComponent(m[1]) : undefined;
+}
+
+/**
+ * Jellyfin ne renseigne pas toujours `TranscodeReasons` sur le `MediaSource`
+ * — mesuré vide sur 10.10 — mais il le recopie systématiquement dans la query
+ * de la `TranscodingUrl`. Sans ce repli, le verdict perdait sa meilleure
+ * source d'information au moment même où elle comptait.
+ */
+function raisonsDe(e: EntreeVerdict): string[] {
+  const declarees = normaliserRaisons(e.transcodeReasons);
+  if (declarees.length > 0) return declarees;
+  return normaliserRaisons(e.transcodingUrl && lireParam(e.transcodingUrl, "TranscodeReasons"));
 }
 
 function imageRecompressee(
@@ -65,7 +77,7 @@ function imageRecompressee(
 }
 
 export function evaluerLecture(e: EntreeVerdict): Verdict {
-  const raisons = normaliserRaisons(e.transcodeReasons);
+  const raisons = raisonsDe(e);
 
   if (e.supportsDirectPlay && !e.transcodingUrl) {
     return { mode: "DirectPlay", raisons, reencodageVideo: false };
