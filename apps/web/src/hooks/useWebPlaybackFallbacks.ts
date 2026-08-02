@@ -72,14 +72,19 @@ export function useWebPlaybackFallbacks({
   // Repli : le rendu client a échoué, l'incrustation serveur reprend la main.
   // C'est le seul chemin qui rétablit un transcodage vidéo — il n'est emprunté
   // qu'après un échec réel, jamais par précaution.
+  //
+  // `isDesktop` d'abord : là-bas `pgsClientOk` est faux non pas par échec mais
+  // parce que mpv rend les PGS lui-même. Sans cette garde, choisir un
+  // sous-titre image sous mpv aurait déclenché une incrustation serveur —
+  // exactement le transcodage que ce chantier supprime.
   useEffect(() => {
-    if (pgsClientOk || subtitleIndex == null) return;
+    if (isDesktop || pgsClientOk || subtitleIndex == null) return;
     const s = streams.find((st) => st.Type === "Subtitle" && st.Index === subtitleIndex);
     if (!s || !PGS_SUBTITLE_CODECS.test(s.Codec ?? "")) return;
     if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     setBurnInSubtitleIndex(subtitleIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pgsClientOk, subtitleIndex]);
+  }, [isDesktop, pgsClientOk, subtitleIndex]);
 
   return {
     onDirectPlayNonFiable,
