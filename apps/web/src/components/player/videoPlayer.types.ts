@@ -53,6 +53,14 @@ export interface VideoPlayerProps {
    * seulement quand un repli est possible ; son absence désarme la garde.
    */
   onDirectPlayNonFiable?: (seconds: number) => void;
+  /**
+   * Piste PGS à dessiner côté client (`.sup`), au lieu de la faire incruster
+   * par le serveur. `null` quand aucune piste image n'est active : l'overlay
+   * n'est alors pas monté du tout.
+   */
+  pgsSubtitleUrl?: string | null;
+  /** Le décodage PGS a échoué : rendre la main à l'incrustation serveur. */
+  onPgsEchec?: () => void;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   nextEpisodeTitle?: string;

@@ -1,7 +1,7 @@
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  PROFIL_HLS_FMP4, profilHlsTs, SOUS_TITRES_BITMAP, SOUS_TITRES_TEXTE_HLS,
+  PROFIL_HLS_FMP4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE_HLS, type OptionsProfilWeb,
 } from "./blocs";
 
 /**
@@ -19,7 +19,10 @@ import {
  * - FLAC, ALAC, AC3, EAC3 in DirectPlay audio
  * - No WebM/VP9 (AVFoundation doesn't support it)
  */
-export function buildMacOSDeviceProfile(maxBitrate?: number): DeviceProfile {
+export function buildMacOSDeviceProfile(
+  maxBitrate?: number,
+  options?: OptionsProfilWeb,
+): DeviceProfile {
   return {
     // Plus bas que le profil navigateur (150 Mb/s) : AVFoundation décode en
     // matériel, et la WKWebView n'a pas la marge de hls.js sur les pointes de
@@ -45,6 +48,6 @@ export function buildMacOSDeviceProfile(maxBitrate?: number): DeviceProfile {
       { Type: "Video", Codec: "hevc", Conditions: CONDITIONS_HEVC },
       PROFIL_AUDIO_6_CANAUX,
     ],
-    SubtitleProfiles: [...SOUS_TITRES_TEXTE_HLS, ...SOUS_TITRES_BITMAP],
+    SubtitleProfiles: [...SOUS_TITRES_TEXTE_HLS, ...sousTitresBitmap(options?.pgsClientIndisponible)],
   };
 }

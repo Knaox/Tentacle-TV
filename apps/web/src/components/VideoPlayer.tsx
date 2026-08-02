@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
@@ -17,6 +18,8 @@ import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { useUpNextCard } from "./player/useUpNextCard";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
+import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
+import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
@@ -28,6 +31,7 @@ export function VideoPlayer({
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable,
+  pgsSubtitleUrl, onPgsEchec,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   autoplayNextEnabled = true, maxResumePct = 90,
@@ -91,11 +95,6 @@ export function VideoPlayer({
   const waitingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const seekTargetRef = useRef<number | null>(null);
   const seekStallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // Touch gestures : swipe horizontal pour seek (-10s / +30s), tap simple pour play/pause.
-  // Le scrubber a son propre `onTouchStart` qui stopPropagation, donc pas de collision.
-  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
-  const SWIPE_THRESHOLD_PX = 50;
-  const SWIPE_MAX_DURATION_MS = 600;
 
   const { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted } = useVideoSource({
     videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
@@ -140,7 +139,16 @@ export function VideoPlayer({
     if (v?.webkitEnterFullscreen) v.webkitEnterFullscreen();
   }, []);
 
-  useNativeMediaTracks({ videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
+  const swipe = usePlayerSwipe(skipBy, userInteractedRef);
+
+  // Seules les pistes TEXTE deviennent des <track> : un sous-titre image n'a
+  // pas de VTT à charger, et la correspondance index → textTracks doit rester
+  // exacte des deux côtés (cf. useNativeMediaTracks).
+  const pistesTexte = useMemo(
+    () => subtitleTracks.filter((t) => !BURN_IN_SUBTITLE_CODECS.test(t.codec ?? "")),
+    [subtitleTracks],
+  );
+  useNativeMediaTracks({ videoRef, src, subtitleTracks: pistesTexte, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -214,29 +222,7 @@ export function VideoPlayer({
         togglePlay();
       }}
       onDoubleClick={toggleFullscreen}
-      onTouchStart={(e) => {
-        userInteractedRef.current = true;
-        const t = e.touches[0];
-        if (t) touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-      }}
-      onTouchEnd={(e) => {
-        const start = touchStartRef.current;
-        touchStartRef.current = null;
-        if (!start) return;
-        const t = e.changedTouches[0];
-        if (!t) return;
-        const dx = t.clientX - start.x;
-        const dy = t.clientY - start.y;
-        const dt = Date.now() - start.t;
-        // Reconnaît un swipe horizontal franc — pas un drag lent ni un tap.
-        if (dt > SWIPE_MAX_DURATION_MS) return;
-        if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
-        if (Math.abs(dx) <= Math.abs(dy)) return; // composante verticale dominante = scroll
-        e.preventDefault();
-        e.stopPropagation();
-        if (dx > 0) skipBy(30);
-        else skipBy(-10);
-      }}
+      {...swipe}
       // Toile du lecteur (letterboxing derrière la vidéo) → bg-black
       // volontairement en dur dans les deux thèmes clair/sombre.
       className={`relative flex h-screen w-screen items-center justify-center bg-black ${showControls ? "" : "cursor-none"}`}>
@@ -244,10 +230,19 @@ export function VideoPlayer({
         {...videoEvents}
         crossOrigin={useNativeHls ? undefined : "anonymous"}
       >
-        {subtitleTracks.map((t) => (
+        {pistesTexte.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
         ))}
       </video>
+
+      {/* Sous-titres image décodés ici plutôt qu'incrustés par le serveur —
+          monté uniquement quand une piste PGS est active (règle GPU). */}
+      {pgsSubtitleUrl && onPgsEchec && (
+        <PgsSubtitleOverlay
+          videoRef={videoRef} supUrl={pgsSubtitleUrl}
+          timeOffsetRef={effectiveOffsetRef} onEchec={onPgsEchec}
+        />
+      )}
 
       <VideoPlayerOverlays
         loading={loading} playing={playing} showPlayButton={showPlayButton} policyMuted={policyMuted}

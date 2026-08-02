@@ -14,6 +14,17 @@ export const TICKS_PER_MINUTE = TICKS_PER_SECOND * 60;
 export const BURN_IN_SUBTITLE_CODECS = /^(pgssub|dvdsub|dvbsub|hdmv_pgs_subtitle|pgs)$/i;
 
 /**
+ * Parmi les sous-titres image, ceux que le client web sait décoder lui-même
+ * (libpgs, canvas superposé) — donc SANS incrustation serveur, donc sans
+ * ré-encodage de l'image.
+ *
+ * VOBSUB (`dvdsub`) et DVB (`dvbsub`) n'en sont pas : ce sont d'autres formats,
+ * que libpgs ne lit pas. Les déclarer décodables les rendrait simplement
+ * invisibles — ils restent incrustés par le serveur.
+ */
+export const PGS_SUBTITLE_CODECS = /^(pgssub|hdmv_pgs_subtitle|pgs)$/i;
+
+/**
  * Convert Jellyfin RunTimeTicks to a human-readable duration string.
  * Handles edge cases (null, 0, absurdly large values).
  */

@@ -12,7 +12,7 @@
 import { useEffect, type MutableRefObject } from "react";
 import { useResolveMediaTracks } from "@tentacle-tv/api-client";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
-import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
+import { necessiteIncrustation } from "./useWebPlaybackFallbacks";
 
 interface Options {
   item: MediaItem | undefined;
@@ -25,6 +25,8 @@ interface Options {
   defaultAudio: number;
   supportsNativeAudioTracks: boolean;
   checkAudioTranscode?: (codec: string, channels: number) => boolean;
+  /** Le rendu PGS client est disponible : pas d'incrustation serveur à prévoir. */
+  pgsClientOk: boolean;
   prefsApplied: MutableRefObject<boolean>;
   resumeApplied: MutableRefObject<boolean>;
   audioOverrideRef: MutableRefObject<boolean>;
@@ -38,7 +40,7 @@ interface Options {
 
 export function useServerTrackPrefs({
   item, streams, ancestors, isDesktop, isLocalPlayback, quality, defaultAudio,
-  supportsNativeAudioTracks, checkAudioTranscode,
+  supportsNativeAudioTracks, checkAudioTranscode, pgsClientOk,
   prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
   setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
 }: Options): void {
@@ -90,7 +92,9 @@ export function useServerTrackPrefs({
           setSubtitleIndex(idx);
           if (idx != null) {
             const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === idx);
-            if (sub && BURN_IN_SUBTITLE_CODECS.test(sub.Codec ?? "")) setBurnInSubtitleIndex(idx);
+            // Un PGS rendu côté client n'a pas à être incrusté : l'incrustation
+            // coûterait un ré-encodage complet de l'image, dès le démarrage.
+            if (sub && necessiteIncrustation(sub.Codec, pgsClientOk)) setBurnInSubtitleIndex(idx);
           }
         }
         setPrefsReady(true);

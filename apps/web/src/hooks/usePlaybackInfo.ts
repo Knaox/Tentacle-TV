@@ -4,6 +4,7 @@ import type { MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
+  type OptionsProfilWeb,
 } from "../lib/deviceProfile";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
@@ -19,11 +20,13 @@ const DBG = "[Tentacle:PlaybackInfo]";
  * le rendu s'y serait figée.
  */
 function construireProfil(
-  lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number, mkvNonFiable?: boolean,
+  lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number, options?: OptionsProfilWeb,
 ): DeviceProfile {
+  // mpv lit tout, y compris les sous-titres image : aucune capacité à lui
+  // retirer, les drapeaux de repli ne concernent que les lecteurs web.
   if (lecteurNatif) return buildMpvDeviceProfile(bitrate);
-  if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate);
-  return buildBrowserDeviceProfile(bitrate, { mkvNonFiable });
+  if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate, options);
+  return buildBrowserDeviceProfile(bitrate, options);
 }
 
 export interface PlaybackInfoState {
@@ -81,14 +84,23 @@ export function usePlaybackInfo(lecteurNatif = false) {
   // repayer trois secondes d'attente à chaque fois. En mémoire uniquement :
   // rien n'est écrit sur le disque, un rechargement de page remet à zéro.
   const [mkvNonFiable, setMkvNonFiable] = useState(false);
+  const [pgsClientIndisponible, setPgsClientIndisponible] = useState(false);
   const signalerMkvNonFiable = useCallback(() => {
     console.warn(DBG, "lecture directe MKV muette — desactivee pour la session");
     setMkvNonFiable(true);
   }, []);
+  const signalerPgsClientIndisponible = useCallback(() => {
+    console.warn(DBG, "rendu PGS client en echec — incrustation serveur pour la session");
+    setPgsClientIndisponible(true);
+  }, []);
+  const optionsProfil = useMemo<OptionsProfilWeb>(
+    () => ({ mkvNonFiable, pgsClientIndisponible }),
+    [mkvNonFiable, pgsClientIndisponible],
+  );
 
   const deviceProfile = useMemo(
-    () => construireProfil(lecteurNatif, isMacOSTauri, undefined, mkvNonFiable),
-    [lecteurNatif, isMacOSTauri, mkvNonFiable],
+    () => construireProfil(lecteurNatif, isMacOSTauri, undefined, optionsProfil),
+    [lecteurNatif, isMacOSTauri, optionsProfil],
   );
   const fetchPlaybackInfo = useCallback(async (opts: {
     itemId: string;
@@ -107,7 +119,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
 
     try {
       let profile = opts.maxStreamingBitrate != null
-        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate, mkvNonFiable)
+        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate, optionsProfil)
         : deviceProfile;
       // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
       // returns a TranscodingUrl with the correct audio track selected server-side.
@@ -191,7 +203,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
       console.error(DBG, "PlaybackInfo failed", err);
       setState((prev) => ({ ...prev, isLoading: false }));
     }
-  }, [client, userId, deviceProfile, mkvNonFiable]);
+  }, [client, userId, deviceProfile, optionsProfil]);
 
   const reset = useCallback(() => {
     ++fetchId.current; // Invalidate in-flight fetches
@@ -201,5 +213,10 @@ export function usePlaybackInfo(lecteurNatif = false) {
     });
   }, []);
 
-  return { ...state, mkvNonFiable, signalerMkvNonFiable, fetchPlaybackInfo, reset };
+  return {
+    ...state,
+    mkvNonFiable, signalerMkvNonFiable,
+    pgsClientIndisponible, signalerPgsClientIndisponible,
+    fetchPlaybackInfo, reset,
+  };
 }
