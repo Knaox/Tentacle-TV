@@ -8,7 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import type { QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { CheckIcon } from "./icons/TVIcons";
@@ -27,6 +27,8 @@ export interface TVTrackSelectorProps {
   selectedAudio: number;
   selectedSubtitle: number;
   qualityKey?: QualityKey;
+  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
+  qualityPresets?: readonly QualityPreset[];
   sourceQuality?: SourceQuality;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
@@ -43,7 +45,7 @@ const TRACK_ITEM_HEIGHT = 52; // paddingVertical 14*2 + text ~24
 
 export function TVTrackSelector({
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
-  qualityKey, sourceQuality,
+  qualityKey, qualityPresets, sourceQuality,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onClose, onInteraction,
   disableBackHandler = false,
 }: TVTrackSelectorProps) {
@@ -158,6 +160,7 @@ export function TVTrackSelector({
           {onSelectQuality && qualityKey && (
             <TVQualitySection
               qualityKey={qualityKey}
+              qualityPresets={qualityPresets}
               sourceQuality={sourceQuality}
               onSelectQuality={onSelectQuality}
               onInteraction={onInteraction}

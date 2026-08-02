@@ -14,6 +14,7 @@ export default {
   disabled: "Désactivé",
   quality: "Qualité",
   original: "Original",
+  quality1080pHigh: "1080p Haut",
   quality1080p: "1080p",
   quality720p: "720p",
   quality480p: "480p",

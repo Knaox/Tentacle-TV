@@ -1,10 +1,13 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
   usePlaybackReporting, useIntroSkipper, useEpisodeNavigation,
 } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds, QUALITY_PRESETS, findPreset } from "@tentacle-tv/shared";
-import type { MediaStream as JfStream, MediaSource, QualityKey } from "@tentacle-tv/shared";
+import {
+  TICKS_PER_SECOND, ticksToSeconds,
+  construireEchelleQualite, trouverPreset, presetEstPropose,
+} from "@tentacle-tv/shared";
+import type { MediaStream as JfStream, MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import {
   buildStreamUrl, buildTextTracks, detectBurnIn, isBitmapSub,
   buildPlatformDeviceProfile, extractActualStartTicks,
@@ -13,8 +16,7 @@ import {
 
 const DBG = "[Tentacle:Playback]";
 
-export { QUALITY_PRESETS };
-export type { QualityKey, TextTrackEntry };
+export type { QualityKey, QualityPreset, TextTrackEntry };
 
 export interface PlaybackState {
   streamUrl: string | null;
@@ -63,6 +65,9 @@ export function usePlayerPlayback(itemId: string) {
     [item],
   );
   const mediaSourceId = item?.MediaSources?.[0]?.Id ?? itemId;
+  // Paliers calculés d'après la source : jamais au-dessus de son débit ni de
+  // sa définition (cf. construireEchelleQualite).
+  const qualityPresets = useMemo(() => construireEchelleQualite(item?.MediaSources?.[0]), [item]);
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const episodeNav = useEpisodeNavigation(item);
@@ -82,7 +87,7 @@ export function usePlayerPlayback(itemId: string) {
     const currentFetch = ++fetchIdRef.current;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    const preset = findPreset(qualityKey);
+    const preset = trouverPreset(qualityKey, qualityPresets);
     const bitrate = opts?.maxBitrate ?? preset.bitrate ?? 0;
     const maxWidth = opts?.maxWidth ?? preset.width ?? 0;
     const maxHeight = opts?.maxHeight ?? preset.height ?? 0;
@@ -144,7 +149,13 @@ export function usePlayerPlayback(itemId: string) {
       console.error(DBG, "PlaybackInfo failed", err);
       setState((prev) => ({ ...prev, isLoading: false, error: "Playback error" }));
     }
-  }, [client, userId, itemId, mediaSourceId, qualityKey]);
+  }, [client, userId, itemId, mediaSourceId, qualityKey, qualityPresets]);
+
+  // Garde-fou : l'échelle dépend de la source, un palier peut disparaître d'un
+  // média à l'autre. Retomber sur « Originale » plutôt que sur une clé fantôme.
+  useEffect(() => {
+    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
+  }, [qualityPresets, qualityKey]);
 
   const reporting = usePlaybackReporting({
     itemId, mediaSourceId,
@@ -181,7 +192,7 @@ export function usePlayerPlayback(itemId: string) {
 
   const changeQuality = useCallback((key: QualityKey) => {
     setQualityKey(key);
-    const preset = findPreset(key);
+    const preset = trouverPreset(key, qualityPresets);
     const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
     fetchPlaybackInfo({
       maxBitrate: preset.bitrate ?? 0,
@@ -189,7 +200,7 @@ export function usePlayerPlayback(itemId: string) {
       maxHeight: preset.height ?? 0,
       startTimeTicks: startTicks > 0 ? startTicks : undefined,
     });
-  }, [fetchPlaybackInfo]);
+  }, [fetchPlaybackInfo, qualityPresets]);
 
   const retry = useCallback(() => {
     const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
@@ -216,7 +227,7 @@ export function usePlayerPlayback(itemId: string) {
   return {
     item, ancestors, streams, mediaSourceId, jellyfinDuration,
     ...state,
-    audioIndex, subtitleIndex, qualityKey, positionRef,
+    audioIndex, subtitleIndex, qualityKey, qualityPresets, positionRef,
     audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, skipSegments, reporting,
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,

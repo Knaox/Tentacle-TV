@@ -17,7 +17,7 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
-import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
@@ -31,6 +31,7 @@ interface DesktopPlayerProps {
   audioTracks?: AudioTrack[]; subtitleTracks?: SubtitleTrack[];
   currentAudio: number; currentSubtitle: number | null; currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
+  qualityPresets?: readonly QualityPreset[];
   onAudioChange: (index: number) => void; onSubtitleChange: (index: number | null) => void;
   /** Absent en lecture locale : le sélecteur de qualité est alors masqué. */
   onQualityChange?: (key: QualityKey) => void;
@@ -75,7 +76,7 @@ interface DesktopPlayerProps {
 export function DesktopPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   audioTracks = [], subtitleTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   onAudioChange, onSubtitleChange, onQualityChange,
   isLocalPlayback = false, offline = false, localLibraryId = null,
   localSubtitleFiles = EMPTY_SUBTITLE_FILES,
@@ -281,7 +282,7 @@ export function DesktopPlayer({
         // mpv : ses mises à jour passent par l'IPC, donc elles arrivent après —
         // le menu montrait brièvement la piste précédente.
         curAudio={currentAudio} curSub={currentSubtitle}
-        currentQuality={currentQuality} sourceQuality={sourceQuality}
+        currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
         hasSettings={hasSettings} hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
         dur={dur} actualPos={actualPos} displayProgress={displayProgress} bufProg={bufProg}
         seekbar={seekbar}

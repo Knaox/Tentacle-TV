@@ -2,7 +2,10 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemAncestors, useJellyfinClient, useEpisodeNavigation } from "@tentacle-tv/api-client";
-import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
+import {
+  ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality,
+  construireEchelleQualite, trouverPreset, presetEstPropose,
+} from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
@@ -82,7 +85,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const [audioIndex, setAudioIndex] = useState<number>(defaultAudio);
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
-  const qualityPreset = findPreset(qualityKey);
+  // Les paliers dépendent de la source : proposer un transcodage plus lourd
+  // que l'original serait absurde (cf. construireEchelleQualite).
+  const qualityPresets = useMemo(() => construireEchelleQualite(mediaSource), [mediaSource]);
+  const qualityPreset = trouverPreset(qualityKey, qualityPresets);
   const quality = qualityPreset.bitrate; // legacy bitrate ref (null = Original/direct)
   const [startTicks, setStartTicks] = useState<number>(0);
   const [prefsReady, setPrefsReady] = useState(false);
@@ -121,6 +127,14 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
       if (defSub != null) setSubtitleIndex(defSub);
     }
   }, [streams]);
+
+  // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
+  // sur un fichier peut disparaître sur le suivant. Sans ce repli, la clé
+  // survivrait sans correspondance — sélecteur sans sélection visible, et un
+  // débit rendu par `trouverPreset` qui ne serait plus celui affiché.
+  useEffect(() => {
+    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
+  }, [qualityPresets, qualityKey]);
 
   // Desktop: client-side playback mode computation
   const selectedAudioStream = streams.find((s) => s.Type === "Audio" && s.Index === audioIndex);
@@ -275,7 +289,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality,
+    qualityKey, setQualityKey, sourceQuality, qualityPresets,
     startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
