@@ -188,6 +188,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   useWebPlaybackInfoFetch({
     isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
     burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
+    prefsApplied, audioOverrideRef,
   });
 
   // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
