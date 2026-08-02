@@ -208,15 +208,15 @@ export function useVideoSource({
           // Disable DS for this session (admin config stays ON) and ask the
           // parent to re-fetch PlaybackInfo, which will now go through the
           // same-origin proxy at /api/jellyfin/* (no CORS).
+          //
+          // Ce chemin ne sert plus qu'au serveur qui autorise `PlaybackInfo`
+          // mais pas `/Videos` : quand les deux sont refuses, le verrou est
+          // deja pose par `getPlaybackInfo` et l'URL est arrivee en proxy.
           if (
             data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
             jfClient.getDirectStreaming()
           ) {
-            console.warn(
-              DBG,
-              "manifestLoadError on direct streaming — disabling DS for this session and falling back to proxy",
-            );
-            jfClient.setDirectStreaming(null);
+            jfClient.signalerDirectStreamingBloque("manifeste HLS direct refuse");
             // `failsafe` conservé : hls.js est détruit juste après, plus aucun
             // événement ne viendra de l'élément vidéo. Si la relance échoue,
             // c'est lui — et lui seul — qui sortira du spinner.
