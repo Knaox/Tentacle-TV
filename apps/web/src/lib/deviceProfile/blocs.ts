@@ -88,10 +88,20 @@ export function profilHlsTs(videoCodec: string, audioCodec: string): Transcoding
 }
 
 /**
- * HLS en fMP4 — le seul conteneur qui permette au serveur de COPIER une vidéo
- * HEVC au lieu de la ré-encoder. AVFoundation l'exige (le TS ne passe pas), et
- * il convient tout autant à hls.js, qui lit le fMP4 directement par MSE. C'est
- * donc le profil à déclarer dès que le moteur décode le HEVC, quel qu'il soit.
+ * HLS en fMP4 — le seul conteneur qui permette au serveur de COPIER la vidéo
+ * au lieu de la ré-encoder. AVFoundation l'exige (le TS ne passe pas), et il
+ * convient tout autant à hls.js, qui lit le fMP4 directement par MSE.
+ *
+ * ⚠️ `BreakOnNonKeyFrames` est FAUX ici, et c'est tout l'enjeu. À vrai, il
+ * demande au serveur de pouvoir découper un segment n'importe où — donc de
+ * fabriquer des images clés, donc de recompresser. Comparaison ffmpeg sur le
+ * même fichier : avec, `-codec:v:0 hevc_qsv -g:v:0 72 -keyint_min:v:0 72`
+ * à 4,7× le temps réel ; sans, `-codec:v:0 copy` à 60×. jellyfin-web ne le
+ * pose que sur son profil TS, jamais sur le fMP4 — pour cette raison exacte.
+ *
+ * Le prix : les segments s'alignent sur les images clés de la source (6 s au
+ * lieu de 3), donc une granularité de recherche un peu plus grossière. Sans
+ * commune mesure avec un ré-encodage 4K permanent.
  */
 export function profilHlsFmp4(videoCodec: string, audioCodec: string): TranscodingProfile {
   return {
@@ -102,8 +112,8 @@ export function profilHlsFmp4(videoCodec: string, audioCodec: string): Transcodi
     Protocol: "hls",
     Context: "Streaming",
     MaxAudioChannels: "6",
-    MinSegments: 2,
-    BreakOnNonKeyFrames: true,
+    MinSegments: 1,
+    BreakOnNonKeyFrames: false,
     CopyTimestamps: true,
   };
 }
