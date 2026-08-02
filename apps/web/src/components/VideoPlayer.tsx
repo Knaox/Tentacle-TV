@@ -24,7 +24,7 @@ export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 export function VideoPlayer({
   src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable,
@@ -274,6 +274,7 @@ export function VideoPlayer({
           title={title} subtitle={subtitle}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality} sourceQuality={sourceQuality}
+          qualityPresets={qualityPresets}
           hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
           onTogglePlay={togglePlay} onSeek={handleSeek} onSkip={skipBy}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}

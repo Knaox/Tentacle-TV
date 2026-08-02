@@ -1,4 +1,4 @@
-import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
@@ -35,6 +35,8 @@ export interface VideoPlayerProps {
   currentSubtitle: number | null;
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
+  /** Paliers de qualité calculés d'après la source (cf. construireEchelleQualite). */
+  qualityPresets?: readonly QualityPreset[];
   isDirectPlay?: boolean;
   streamOffset?: number;
   /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */

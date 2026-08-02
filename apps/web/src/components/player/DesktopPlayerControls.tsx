@@ -12,7 +12,7 @@ import {
 } from "../PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./videoPlayer.types";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
-import type { MediaItem, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
 
@@ -36,6 +36,7 @@ interface DesktopPlayerControlsProps {
   curSub: number | null;
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
+  qualityPresets?: readonly QualityPreset[];
   hasSettings: boolean;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
@@ -84,7 +85,7 @@ const SANS_ALPHA = !surfaceAvecAlpha();
  */
 export function DesktopPlayerControls({
   visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item,
-  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality,
+  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality, qualityPresets,
   hasSettings, hasNextEpisode, hasPreviousEpisode,
   dur, actualPos, displayProgress, bufProg, seekbar,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
@@ -145,7 +146,7 @@ export function DesktopPlayerControls({
               <TrackSelector
                 audioTracks={displayAudio} subtitleTracks={displaySubs}
                 currentAudio={curAudio} currentSubtitle={curSub}
-                currentQuality={currentQuality} sourceQuality={sourceQuality}
+                currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
                 onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
                 onQualityChange={onQualityChange}
                 applyToSeries={applyToSeries}

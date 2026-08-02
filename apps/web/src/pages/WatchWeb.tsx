@@ -25,7 +25,7 @@ export function WatchWeb() {
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality, qualityPresets, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
@@ -217,6 +217,7 @@ export function WatchWeb() {
           startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
+          qualityPresets={qualityPresets}
           onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
           onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}

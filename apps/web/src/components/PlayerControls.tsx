@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
-import type { MediaItem, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
 import { TrackSelector } from "./TrackSelector";
 import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
@@ -32,6 +32,7 @@ export interface PlayerControlsProps {
   currentSubtitle: number | null;
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
+  qualityPresets?: readonly QualityPreset[];
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   onTogglePlay: () => void;
@@ -59,7 +60,7 @@ export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
   item, mediaSourceId,
   title, subtitle, audioTracks, subtitleTracks,
-  currentAudio, currentSubtitle, currentQuality, sourceQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   hasNextEpisode, hasPreviousEpisode,
   onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
@@ -181,7 +182,7 @@ export function PlayerControls({
             <TrackSelector
               audioTracks={audioTracks} subtitleTracks={subtitleTracks}
               currentAudio={currentAudio} currentSubtitle={currentSubtitle}
-              currentQuality={currentQuality} sourceQuality={sourceQuality}
+              currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
               onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={onQualityChange}
               applyToSeries={applyToSeries}
               onClose={() => setShowSettings(false)}

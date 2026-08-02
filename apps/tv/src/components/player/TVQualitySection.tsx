@@ -2,7 +2,7 @@ import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   QUALITY_PRESETS, formatBitrateMbps,
-  type QualityKey, type SourceQuality,
+  type QualityKey, type QualityPreset, type SourceQuality,
 } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { CheckIcon } from "../icons/TVIcons";
@@ -12,6 +12,8 @@ const QUALITY_ITEM_HEIGHT = 52;
 
 export interface TVQualitySectionProps {
   qualityKey: QualityKey;
+  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
+  qualityPresets?: readonly QualityPreset[];
   sourceQuality?: SourceQuality;
   onSelectQuality: (key: QualityKey) => void;
   onInteraction?: () => void;
@@ -25,7 +27,7 @@ export interface TVQualitySectionProps {
  * - Presets transcodés : nom + chip Mbps (30 / 10 / 4)
  */
 export function TVQualitySection({
-  qualityKey, sourceQuality, onSelectQuality, onInteraction,
+  qualityKey, qualityPresets = QUALITY_PRESETS, sourceQuality, onSelectQuality, onInteraction,
   makeOnFocus, scrollOffsetStart,
 }: TVQualitySectionProps) {
   const { t } = useTranslation("player");
@@ -40,7 +42,7 @@ export function TVQualitySection({
         {t("quality")}
       </Text>
 
-      {QUALITY_PRESETS.map((preset, i) => {
+      {qualityPresets.map((preset, i) => {
         const isOriginal = preset.key === "original";
         const active = qualityKey === preset.key;
         const suffix = isOriginal && sourceQuality?.resolution ? `— ${sourceQuality.resolution}` : null;
