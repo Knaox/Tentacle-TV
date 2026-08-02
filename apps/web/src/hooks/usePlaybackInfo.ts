@@ -211,7 +211,9 @@ export function usePlaybackInfo(lecteurNatif = false) {
       console.log("[Tentacle:Playback]", {
         mode: verdict.mode,
         reencodage: verdict.reencodageVideo,
-        raisons: verdict.raisons,
+        // Jointes plutôt qu'en tableau : un `Array(1)` replié dans la console
+        // ne dit rien, et c'est précisément la valeur qu'on vient y chercher.
+        raisons: verdict.raisons.join(",") || "(aucune)",
         // Plage dynamique : la valeur BRUTE du serveur face à ce qu'on déclare.
         // Jellyfin sérialise `VideoRangeType` tantôt en nom, tantôt en index —
         // et c'est ce nom, côté serveur, qu'il compare à notre liste pour
@@ -222,7 +224,13 @@ export function usePlaybackInfo(lecteurNatif = false) {
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
-        url: url.length > 80 ? `${url.slice(0, 80)}…` : url,
+        // URL COMPLÈTE, jeton masqué. C'est elle, et elle seule, qui porte les
+        // paramètres que le serveur relira pour décider de copier l'image :
+        // `hevc-rangetype`, `hevc-profile`, `hevc-level`, `hevc-videobitdepth`,
+        // `VideoBitrate`, `TranscodeReasons` (cf. `EncodingHelper
+        // .CanStreamCopyVideo`, qui lit tout depuis la requête). La tronquer à
+        // 80 caractères revenait à jeter la seule trace exploitable.
+        url: url.replace(/([?&])(api_key|apikey)=[^&]*/gi, "$1api_key=***"),
       });
     } catch (err) {
       if (fetchId.current !== currentFetch) return;
