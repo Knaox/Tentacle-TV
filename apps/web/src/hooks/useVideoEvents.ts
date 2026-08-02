@@ -144,6 +144,13 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       // MEDIA_ERR_DECODE / MEDIA_ERR_SRC_NOT_SUPPORTED : ce client ne peut
       // pas lire ce média (Watch Together : ne pas geler le groupe).
       if (err && (err.code === 3 || err.code === 4)) a.onFatalError?.();
+      // Rendre la main tout de suite. L'élément vidéo vient d'échouer, aucun
+      // événement ne viendra plus : laisser tourner le spinner jusqu'aux 15 s
+      // du failsafe — ou pour toujours si un repli l'a désarmé — donnait un
+      // écran noir muet, sans rien à quoi se raccrocher.
+      a.sourceChangingRef.current = false;
+      a.setLoading(false);
+      a.setShowPlayButton(true);
     },
     onEnded: () => {
       if (a.autoplayNextEnabled && a.hasNextEpisode && a.autoPlayCountdown === null) a.startAutoPlay();

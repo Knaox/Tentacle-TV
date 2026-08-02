@@ -113,7 +113,9 @@ export function useVideoSource({
       ? setTimeout(() => {
           if (!sourceChangingRef.current) return;
           console.warn(DBG, "lecture directe muette a 0 ms — repli en remux");
-          clearTimeout(failsafe);
+          // Le `failsafe` reste ARMÉ : si la source de repli n'arrive jamais,
+          // il rendra la main à l'utilisateur au lieu de laisser un spinner
+          // que plus rien ne relève. L'annuler ici supprimait le dernier filet.
           sourceChangingRef.current = false;
           onDirectPlayNonFiable(currentTimeRef.current);
         }, GARDE_DIRECT_PLAY_MS)
@@ -215,7 +217,9 @@ export function useVideoSource({
               "manifestLoadError on direct streaming — disabling DS for this session and falling back to proxy",
             );
             jfClient.setDirectStreaming(null);
-            clearTimeout(failsafe);
+            // `failsafe` conservé : hls.js est détruit juste après, plus aucun
+            // événement ne viendra de l'élément vidéo. Si la relance échoue,
+            // c'est lui — et lui seul — qui sortira du spinner.
             sourceChangingRef.current = false;
             hls.destroy();
             hlsRef.current = null;

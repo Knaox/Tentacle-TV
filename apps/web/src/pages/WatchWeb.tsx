@@ -30,7 +30,7 @@ export function WatchWeb() {
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
-    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
@@ -146,10 +146,17 @@ export function WatchWeb() {
   }, [getPositionTicks, setStartTicks, setQualityKey]);
 
   // HLS seek fallback: kill old transcode, PlaybackInfo re-fetches with new position.
+  //
+  // `relancerLecture` n'est pas une précaution : ce callback sert AUSSI de
+  // rattrapage au repli CORS de `useVideoSource`, qui le déclenche à la
+  // position 0 alors que `startTicks` vaut déjà 0. Sans compteur, React ne
+  // rejouait rien, hls.js venait d'être détruit, et la lecture ne démarrait
+  // jamais — le « parfois ça ne se lance pas » du premier démarrage.
   const handleSeekRequest = useCallback((targetSeconds: number) => {
     if (!isDirectPlay) killTranscode();
     setStartTicks(Math.floor(targetSeconds * TICKS_PER_SECOND));
-  }, [isDirectPlay, killTranscode, setStartTicks]);
+    relancerLecture();
+  }, [isDirectPlay, killTranscode, setStartTicks, relancerLecture]);
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
