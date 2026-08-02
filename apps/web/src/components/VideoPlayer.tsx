@@ -198,9 +198,13 @@ export function VideoPlayer({
       // Toile du lecteur (letterboxing derrière la vidéo) → bg-black
       // volontairement en dur dans les deux thèmes clair/sombre.
       className={`relative flex h-screen w-screen items-center justify-center bg-black ${showControls ? "" : "cursor-none"}`}>
+      {/* Pas de `crossOrigin` : l'attribut ferait exiger le CORS sur l'URL de
+          lecture directe, servie par le serveur Jellyfin — donc hors origine et
+          sans en-tête. Rien n'en a besoin ici : les pistes VTT et le `.sup` PGS
+          passent par le proxy, même origine, et personne ne dessine la vidéo
+          dans un canvas. */}
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}
-        crossOrigin={useNativeHls ? undefined : "anonymous"}
       >
         {pistesTexte.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
