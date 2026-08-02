@@ -43,6 +43,57 @@ export const canPlayEac3 = () => supportsAudioCodec("ec-3");
 export const canPlayFlac = () => supportsAudioCodec("flac");
 export const canPlayOpus = () => supportsAudioCodec("opus");
 
+/** HEVC Main 10 — prérequis de toute lecture HDR (10 bits par composante). */
+export const canPlayHevcMain10 = () =>
+  supportsVideoCodec("hvc1.2.4.L153.B0") || supportsVideoCodec("hev1.2.4.L153.B0");
+
+/**
+ * Plages dynamiques que ce client sait AFFICHER, au vocabulaire de Jellyfin
+ * (`VideoRangeType`).
+ *
+ * Sans cette déclaration, Jellyfin suppose un écran SDR et convertit toute
+ * source HDR : un `tonemap_opencl` qui impose de RECOMPRESSER l'image entière,
+ * en 8 bits, sur une source qui n'avait rien demandé. Mesuré sur un Dolby
+ * Vision 8.1 dont la seule raison de transcodage annoncée était l'audio — car
+ * cette décision-là n'apparaît dans AUCUN `TranscodeReasons`.
+ *
+ * `DOVI` nu n'est jamais déclaré : le profil 5 n'a pas de couche de base
+ * lisible sans décodeur Dolby Vision. Les profils 8.x, eux, portent une base
+ * HDR10/HLG/SDR standard que le navigateur affiche telle quelle — d'où les
+ * seules variantes `DOVIWith*`.
+ *
+ * `Unknown` est inclus à dessein : un fichier mal sondé ne doit pas perdre sa
+ * lecture directe sur une condition que le serveur ne sait pas évaluer.
+ */
+export function plagesDynamiquesSupportees(): string[] {
+  const plages = ["Unknown", "SDR"];
+  if (!canPlayHevcMain10() || !ecranHdr()) return plages;
+  return [...plages, "HDR10", "HDR10Plus", "HLG", "DOVIWithHDR10", "DOVIWithHDR10Plus", "DOVIWithHLG", "DOVIWithSDR"];
+}
+
+/**
+ * L'écran affiche-t-il le HDR ? Réponse VERROUILLÉE dès qu'elle est positive.
+ *
+ * Mesuré : fenêtre masquée, Chromium dégrade ses réponses — `screen` rapporte
+ * `0x0`, `colorDepth` retombe de 30 à 24 bits et `(dynamic-range: high)` passe
+ * à faux, sur le MÊME écran qui répondait vrai l'instant d'avant. Or le profil
+ * se construit au moment du PlaybackInfo, qui peut très bien tomber pendant
+ * que la fenêtre est en arrière-plan.
+ *
+ * L'asymétrie des conséquences tranche : oublier le HDR coûte un ré-encodage
+ * complet de l'image sur le serveur, le garder à tort coûte une image un peu
+ * délavée sur un écran SDR. On retient donc la meilleure observation de la
+ * session, et un rechargement de page repart de zéro.
+ */
+let hdrDejaVu = false;
+function ecranHdr(): boolean {
+  if (hdrDejaVu) return true;
+  if (typeof matchMedia === "undefined") return false;
+  hdrDejaVu = matchMedia("(dynamic-range: high)").matches
+    || matchMedia("(video-dynamic-range: high)").matches;
+  return hdrDejaVu;
+}
+
 /**
  * Moteur Chromium — la seule marque qu'on ait besoin de reconnaître ici.
  *

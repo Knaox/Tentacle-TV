@@ -6,7 +6,8 @@ import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
-import { evaluerLecture } from "./playbackVerdict";
+import { plagesDynamiquesSupportees } from "../lib/deviceProfile/codecs";
+import { evaluerLecture, sourceEstHdr } from "./playbackVerdict";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 
@@ -197,12 +198,15 @@ export function usePlaybackInfo(lecteurNatif = false) {
       // qu'on vise — d'un ré-encodage, ce qu'on traque. `reencodage` est le
       // critère d'acceptation du chantier : il doit rester faux.
       const transport = ds && url.startsWith(ds.mediaBaseUrl) ? "direct" : "proxy";
+      const fluxVideo = ms.MediaStreams?.find((s) => s.Type === "Video");
       const verdict = evaluerLecture({
         supportsDirectPlay: ms.SupportsDirectPlay,
         supportsDirectStream: ms.SupportsDirectStream,
         transcodingUrl: ms.TranscodingUrl,
         transcodeReasons: ms.TranscodeReasons,
-        codecVideoSource: ms.MediaStreams?.find((s) => s.Type === "Video")?.Codec,
+        codecVideoSource: fluxVideo?.Codec,
+        sourceHdr: sourceEstHdr(fluxVideo),
+        clientAccepteHdr: plagesDynamiquesSupportees().length > 2, // au-delà de Unknown+SDR
       });
       console.log("[Tentacle:Playback]", {
         mode: verdict.mode,

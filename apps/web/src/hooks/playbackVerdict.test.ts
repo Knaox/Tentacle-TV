@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluerLecture, normaliserRaisons } from "./playbackVerdict";
+import { evaluerLecture, normaliserRaisons, sourceEstHdr } from "./playbackVerdict";
 
 /** URL de transcodage minimale, telle que Jellyfin la renvoie. */
 const urlHls = (videoCodec: string) =>
@@ -87,6 +87,52 @@ describe("evaluerLecture", () => {
       .toBe("DirectStream");
     expect(evaluerLecture({ supportsDirectPlay: false, supportsDirectStream: false }).mode)
       .toBe("Transcode");
+  });
+});
+
+describe("tone mapping HDR", () => {
+  // Cas réel : Dolby Vision 8.1, seule raison annoncée « AudioCodecNotSupported »,
+  // et ffmpeg lançait pourtant `hevc_qsv` avec un filtre `tonemap_opencl`.
+  const dolbyVision = {
+    supportsDirectPlay: false, supportsDirectStream: false,
+    transcodingUrl: `${urlHls("hevc,h264")}&TranscodeReasons=AudioCodecNotSupported`,
+    codecVideoSource: "hevc", sourceHdr: true,
+  };
+
+  it("dénonce le ré-encodage quand le client n'affiche pas le HDR", () => {
+    const v = evaluerLecture({ ...dolbyVision, clientAccepteHdr: false });
+    expect(v.mode).toBe("Transcode");
+    expect(v.reencodageVideo).toBe(true);
+    expect(v.raisons).toContain("ToneMappingHdrVersSdr");
+  });
+
+  it("laisse passer le remux quand le client affiche le HDR", () => {
+    const v = evaluerLecture({ ...dolbyVision, clientAccepteHdr: true });
+    expect(v.mode).toBe("Remux");
+    expect(v.raisons).not.toContain("ToneMappingHdrVersSdr");
+  });
+
+  it("n'invente pas de tone mapping sur une source SDR", () => {
+    const v = evaluerLecture({ ...dolbyVision, sourceHdr: false, clientAccepteHdr: false });
+    expect(v.mode).toBe("Remux");
+  });
+});
+
+describe("sourceEstHdr", () => {
+  it("reconnaît le HDR quelle que soit la sérialisation de VideoRangeType", () => {
+    expect(sourceEstHdr({ VideoRangeType: 9 })).toBe(true);
+    expect(sourceEstHdr({ VideoRangeType: "HDR10" })).toBe(true);
+    expect(sourceEstHdr({ DvProfile: 8 })).toBe(true);
+    expect(sourceEstHdr({ Hdr10PlusPresentFlag: true })).toBe(true);
+  });
+
+  it("ne prend ni SDR ni Unknown pour du HDR", () => {
+    expect(sourceEstHdr({ VideoRangeType: 1 })).toBe(false);
+    expect(sourceEstHdr({ VideoRangeType: 0 })).toBe(false);
+    expect(sourceEstHdr({ VideoRangeType: "SDR" })).toBe(false);
+    expect(sourceEstHdr({ VideoRangeType: "Unknown" })).toBe(false);
+    expect(sourceEstHdr({})).toBe(false);
+    expect(sourceEstHdr(undefined)).toBe(false);
   });
 });
 

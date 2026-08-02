@@ -49,6 +49,20 @@ export const CONDITIONS_HEVC: ProfileCondition[] = [
   { Condition: "LessThanEqual", Property: "RefFrames", Value: "16", IsRequired: false },
 ];
 
+/**
+ * Plages dynamiques affichables. Condition décisive : c'est elle, et non les
+ * `TranscodeReasons`, qui évite à Jellyfin de convertir le HDR en SDR — une
+ * conversion qui recompresse l'image entière (cf. `plagesDynamiquesSupportees`).
+ */
+export function conditionPlageDynamique(plages: string[]): ProfileCondition {
+  return {
+    Condition: "EqualsAny",
+    Property: "VideoRangeType",
+    Value: plages.join("|"),
+    IsRequired: false,
+  };
+}
+
 /** Audio : 6 canaux au plus (hors codecs surround spécifiques). */
 export const PROFIL_AUDIO_6_CANAUX: CodecProfile = {
   Type: "VideoAudio",
