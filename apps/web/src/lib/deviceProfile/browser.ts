@@ -1,11 +1,13 @@
 import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile } from "@tentacle-tv/shared";
 import {
-  CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
+  conditionPlageDynamique, CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE,
+  PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
   profilHlsFmp4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE, type OptionsProfilWeb,
 } from "./blocs";
 import {
   canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
   canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, estChromium,
+  plagesDynamiquesSupportees,
 } from "./codecs";
 
 export function buildBrowserDeviceProfile(
@@ -89,7 +91,10 @@ export function buildBrowserDeviceProfile(
     { Type: "Video", Codec: "h264", Conditions: conditionsH264("51") },
   ];
   if (canPlayHevc()) {
-    codecProfiles.push({ Type: "Video", Codec: "hevc", Conditions: CONDITIONS_HEVC });
+    codecProfiles.push({
+      Type: "Video", Codec: "hevc",
+      Conditions: [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())],
+    });
   }
   codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
 

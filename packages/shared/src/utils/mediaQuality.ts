@@ -90,9 +90,22 @@ function sourceResolutionFromWidth(width?: number): SourceResolution | null {
   return "SD";
 }
 
+/**
+ * `VideoRangeType` en chaîne comparable. Jellyfin le sérialise en ENTIER sur
+ * certains points d'entrée : on ne devine pas l'index d'énumération, on rend
+ * une chaîne vide et on laisse les autres indices (DvProfile, HDR10+) parler.
+ */
+function texteDePlage(stream?: MediaStream): string {
+  const plage = stream?.VideoRangeType;
+  return typeof plage === "string" ? plage.toUpperCase() : "";
+}
+
 function detectDolbyVision(stream?: MediaStream): boolean {
   if (!stream) return false;
-  const range = stream.VideoRangeType?.toUpperCase() ?? "";
+  // `DvProfile` est renseigné même quand la plage arrive en entier — c'est le
+  // signal le plus fiable, et le seul disponible sur certains points d'entrée.
+  if (stream.DvProfile != null) return true;
+  const range = texteDePlage(stream);
   // Jellyfin uses DOVI / DOLBYVISION / "DOVI HDR10" depending on the source.
   return range.includes("DOVI") || range.includes("DOLBY");
 }
@@ -236,7 +249,7 @@ export function extractMediaQuality(item: MediaItem | undefined | null): MediaQu
   const video = streams.find((s) => s.Type === "Video");
   const audio = streams.find((s) => s.Type === "Audio" && s.IsDefault) ?? streams.find((s) => s.Type === "Audio");
 
-  const range = video?.VideoRangeType?.toUpperCase() ?? "SDR";
+  const range = texteDePlage(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
   const isDolbyVision = detectDolbyVision(video);
   const vcodec = video?.Codec?.toLowerCase() ?? "";
   const acodec = audio?.Codec?.toLowerCase() ?? "";
@@ -272,7 +285,7 @@ export function extractSourceQuality(item: MediaItem | undefined | null): Source
   const video = streams.find((s) => s.Type === "Video");
   const audio = streams.find((s) => s.Type === "Audio" && s.IsDefault) ?? streams.find((s) => s.Type === "Audio");
 
-  const range = video?.VideoRangeType?.toUpperCase() ?? "SDR";
+  const range = texteDePlage(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
   const isDolbyVision = detectDolbyVision(video);
 
   return {

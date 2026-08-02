@@ -127,7 +127,14 @@ export interface MediaStream {
   BitRate?: number;
   Channels?: number;
   SampleRate?: number;
-  VideoRangeType?: string;
+  /**
+   * Plage dynamique (`SDR`, `HDR10`, `DOVIWithHDR10`…). ⚠️ Jellyfin la sérialise
+   * en CHAÎNE sur certains points d'entrée et en ENTIER (index d'énumération)
+   * sur d'autres — ne jamais comparer sa valeur brute à un littéral.
+   */
+  VideoRangeType?: string | number;
+  /** HDR10+ présent dans le flux (métadonnées dynamiques). */
+  Hdr10PlusPresentFlag?: boolean;
   /** Profil Dolby Vision (5, 7, 8…) — sert à router : P7 double couche = mur tvOS. */
   DvProfile?: number;
   DvBlSignalCompatibilityId?: number;

@@ -1,8 +1,10 @@
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  profilHlsFmp4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE_HLS, type OptionsProfilWeb,
+  conditionPlageDynamique, profilHlsFmp4, profilHlsTs, sousTitresBitmap,
+  SOUS_TITRES_TEXTE_HLS, type OptionsProfilWeb,
 } from "./blocs";
+import { plagesDynamiquesSupportees } from "./codecs";
 
 /**
  * Device profile for macOS Tauri (WKWebView / AVFoundation).
@@ -45,7 +47,8 @@ export function buildMacOSDeviceProfile(
     ],
     CodecProfiles: [
       { Type: "Video", Codec: "h264", Conditions: conditionsH264("52") },
-      { Type: "Video", Codec: "hevc", Conditions: CONDITIONS_HEVC },
+      { Type: "Video", Codec: "hevc",
+        Conditions: [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())] },
       PROFIL_AUDIO_6_CANAUX,
     ],
     SubtitleProfiles: [...SOUS_TITRES_TEXTE_HLS, ...sousTitresBitmap(options?.pgsClientIndisponible)],

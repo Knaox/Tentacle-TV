@@ -50,7 +50,10 @@ export function remuxEligible(a: {
     ?? a.streams.find((s) => s.Type === "Audio");
   const acodec = (aud?.Codec ?? "").toLowerCase();
   const audioOk = acodec === "" || /^(aac|ac-?3|e-?ac-?3|ec-?3|alac|mp3|flac|opus)$/.test(acodec);
-  const range = (vstream?.VideoRangeType ?? "").toUpperCase();
+  // `VideoRangeType` arrive parfois en entier selon le point d'entrée Jellyfin ;
+  // seule la forme chaîne est exploitable ici, `DvProfile` prend le relais.
+  const plage = vstream?.VideoRangeType;
+  const range = (typeof plage === "string" ? plage : "").toUpperCase();
   const isHdrOrDv = (vstream?.DvProfile ?? 0) > 0 || /HDR|PQ|HLG|DOVI|DOLBY/.test(range);
   const needRemux = !nativeContainer || !audioOk || isHdrOrDv;
   return !a.forceTranscode && !a.isTranscodingQuality && a.burnInIndex < 0 && !isDvP7
@@ -78,7 +81,10 @@ export async function startLocalRemux(a: {
   // n'a pas d'élément Colour) → badge correct. videoDynamicRange empirique tvOS 18 (vérifié
   // device) : Dolby Vision=3, HDR10/HLG=4, SDR=1 (force la redescente).
   const vstream = a.streams.find((s) => s.Type === "Video");
-  const range = (vstream?.VideoRangeType ?? "").toUpperCase();
+  // `VideoRangeType` arrive parfois en entier selon le point d'entrée Jellyfin ;
+  // seule la forme chaîne est exploitable ici, `DvProfile` prend le relais.
+  const plage = vstream?.VideoRangeType;
+  const range = (typeof plage === "string" ? plage : "").toUpperCase();
   const isDV = (vstream?.DvProfile ?? 0) > 0 || range.includes("DOVI") || range.includes("DOLBY");
   const dyn = isDV ? 3 : (range.includes("HDR") || range.includes("PQ") || range.includes("HLG")) ? 4 : 1;
   // Hints de SECOURS pour le natif : si MediaStream.Index ne résout pas une piste

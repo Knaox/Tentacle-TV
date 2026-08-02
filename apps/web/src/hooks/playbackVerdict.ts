@@ -23,6 +23,28 @@ export interface EntreeVerdict {
   transcodeReasons?: string[] | string;
   /** Codec de la piste vidéo source, pour comparer avec le codec de sortie. */
   codecVideoSource?: string;
+  /** La source est HDR / Dolby Vision (cf. `sourceEstHdr`). */
+  sourceHdr?: boolean;
+  /** Le profil a déclaré savoir afficher le HDR. */
+  clientAccepteHdr?: boolean;
+}
+
+/**
+ * La source porte-t-elle une plage dynamique étendue ?
+ *
+ * ⚠️ `VideoRangeType` arrive tantôt en chaîne, tantôt en index d'énumération
+ * selon le point d'entrée Jellyfin — d'où la double lecture. `0` et `1` valent
+ * `Unknown` et `SDR` dans toutes les versions ; au-delà, c'est du HDR.
+ */
+export function sourceEstHdr(
+  stream: { VideoRangeType?: string | number; DvProfile?: number; Hdr10PlusPresentFlag?: boolean } | undefined,
+): boolean {
+  if (!stream) return false;
+  if (stream.DvProfile != null || stream.Hdr10PlusPresentFlag) return true;
+  const plage = stream.VideoRangeType;
+  if (typeof plage === "number") return plage > 1;
+  if (typeof plage === "string") return !/^(sdr|unknown)$/i.test(plage.trim());
+  return false;
 }
 
 export interface Verdict {
@@ -91,8 +113,18 @@ export function evaluerLecture(e: EntreeVerdict): Verdict {
     };
   }
 
-  const reencodageVideo = imageRecompressee(
+  // Le tone mapping HDR→SDR n'apparaît dans AUCUN `TranscodeReasons` : Jellyfin
+  // le décide APRÈS avoir choisi de transcoder, dès que la plage dynamique de
+  // la source n'est pas déclarée par le client. C'est pourtant un ré-encodage
+  // complet — vécu sur un Dolby Vision 8.1 dont seul l'audio était en cause, et
+  // que le verdict a d'abord annoncé « Remux » à tort.
+  const toneMapping = !!e.sourceHdr && e.clientAccepteHdr === false;
+  const reencodageVideo = toneMapping || imageRecompressee(
     lireParam(e.transcodingUrl, "VideoCodec"), e.codecVideoSource, raisons,
   );
-  return { mode: reencodageVideo ? "Transcode" : "Remux", raisons, reencodageVideo };
+  return {
+    mode: reencodageVideo ? "Transcode" : "Remux",
+    raisons: toneMapping ? [...raisons, "ToneMappingHdrVersSdr"] : raisons,
+    reencodageVideo,
+  };
 }
