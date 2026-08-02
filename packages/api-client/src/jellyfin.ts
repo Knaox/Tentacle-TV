@@ -229,8 +229,16 @@ export class JellyfinClient {
       StartTimeTicks: String(options.startTimeTicks ?? 0),
       IsPlayback: "true",
       AutoOpenLiveStream: "true",
-      MaxStreamingBitrate: String(options.maxStreamingBitrate ?? 42_000_000),
     };
+    // Aucun plafond par défaut : sans valeur explicite, c'est le
+    // `MaxStreamingBitrate` du DeviceProfile qui fait foi (150 Mb/s sur le
+    // navigateur, 120 sur mobile et TV, 400 sous mpv). Le défaut de 42 Mb/s
+    // qui régnait ici s'appliquait à toute lecture en qualité « Originale » et
+    // transcodait le moindre remux Blu-ray 4K — codecs parfaitement
+    // compatibles — sur le seul critère du débit.
+    if (options.maxStreamingBitrate) {
+      q.MaxStreamingBitrate = String(options.maxStreamingBitrate);
+    }
     if (options.mediaSourceId) q.MediaSourceId = options.mediaSourceId;
     if (options.audioStreamIndex != null) q.AudioStreamIndex = String(options.audioStreamIndex);
     if (options.subtitleStreamIndex != null) q.SubtitleStreamIndex = String(options.subtitleStreamIndex);

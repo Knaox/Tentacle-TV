@@ -51,7 +51,11 @@ export function useWebPlaybackInfoFetch({
       audioStreamIndex: audioIndex,
       subtitleStreamIndex: burnInSubtitleIndex,
       startTimeTicks: ticks > 0 ? ticks : undefined,
-      maxStreamingBitrate: quality ?? 42_000_000,
+      // « Originale » = aucun plafond. `quality` y vaut `null` (le preset
+      // n'a pas de bitrate) : le laisser indéfini rend la main au
+      // `MaxStreamingBitrate` du profil. Les paliers choisis par
+      // l'utilisateur, eux, imposent bien leur débit — c'est leur raison d'être.
+      maxStreamingBitrate: quality ?? undefined,
       forceTranscode,
     });
     // `mkvNonFiable` EST une dépendance de rendu : c'est lui, et lui seul, qui
