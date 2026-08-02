@@ -1,7 +1,7 @@
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  PROFIL_HLS_FMP4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE_HLS, type OptionsProfilWeb,
+  profilHlsFmp4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE_HLS, type OptionsProfilWeb,
 } from "./blocs";
 
 /**
@@ -39,8 +39,8 @@ export function buildMacOSDeviceProfile(
       { Container: "flac", Type: "Audio" },
     ],
     TranscodingProfiles: [
-      PROFIL_HLS_FMP4,
-      profilHlsTs("h264", "aac"),
+      profilHlsFmp4("hevc,h264", "aac,ac3,eac3"),
+      profilHlsTs("h264", "aac,ac3,eac3"),
       PROFIL_AUDIO_SEUL,
     ],
     CodecProfiles: [

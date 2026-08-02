@@ -4,8 +4,13 @@
 
 const testVideo = typeof document !== "undefined" ? document.createElement("video") : null;
 
-/** Safari-only: native HLS support. False on Chrome/Brave/Firefox/Edge. */
-export const IS_NATIVE_HLS = testVideo?.canPlayType("application/vnd.apple.mpegurl") !== "";
+// Il y avait ici un `IS_NATIVE_HLS` fondé sur
+// `canPlayType("application/vnd.apple.mpegurl")`, censé ne reconnaître que
+// Safari. Chromium y répond « maybe » — mesuré dans la coquille Electron — et
+// le drapeau retirait alors le seul profil de transcodage HEVC à des moteurs
+// qui en avaient besoin : une piste audio non décodable, un simple AC3, faisait
+// ré-encoder toute l'image. Le profil fMP4 conclut les deux chemins de lecture
+// à la fois (cf. `profilHlsFmp4`), la distinction n'a donc plus lieu d'être.
 
 export function supportsVideoCodec(codec: string, container = "mp4"): boolean {
   if (typeof MediaSource !== "undefined" && MediaSource.isTypeSupported) {

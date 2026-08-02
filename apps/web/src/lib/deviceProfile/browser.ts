@@ -1,11 +1,11 @@
 import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile } from "@tentacle-tv/shared";
 import {
   CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE, type OptionsProfilWeb,
+  profilHlsFmp4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE, type OptionsProfilWeb,
 } from "./blocs";
 import {
   canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
-  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, estChromium, IS_NATIVE_HLS,
+  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, estChromium,
 } from "./codecs";
 
 export function buildBrowserDeviceProfile(
@@ -65,16 +65,23 @@ export function buildBrowserDeviceProfile(
   }
 
   // ── Transcoding profiles ──
-  // HLS with h264+aac — universal browser fallback
-  const transcodingProfiles: TranscodingProfile[] = [profilHlsTs("h264", "aac")];
+  // Le conteneur TS ne transporte légalement que l'AAC et les Dolby ; le fMP4
+  // accepte tout ce que le moteur décode.
+  const audioTs = ["aac", ...audioCodecs.filter((c) => c === "ac3" || c === "eac3")].join(",");
+  const audioFmp4 = audioCodecStr || "aac";
 
-  // HEVC in HLS: only for browsers using hls.js/MSE (Chrome/Brave/Firefox/Edge).
-  // Safari native HLS requires fMP4 segments for HEVC — TS segments don't work.
-  // IS_NATIVE_HLS is true only on Safari → this profile is skipped there.
-  if (canPlayHevc() && !IS_NATIVE_HLS) {
-    transcodingProfiles.push(profilHlsTs("hevc,h264", audioCodecStr || "aac"));
+  // fMP4 EN PREMIER quand le HEVC est décodable : c'est le seul conteneur qui
+  // permette au serveur de COPIER une vidéo HEVC. Sans lui, le seul profil
+  // restant impose du H.264, et la moindre piste audio non décodable — un AC3,
+  // un DTS — fait ré-encoder toute l'image pour une raison qui n'a rien de
+  // visuel. Il vaut pour les deux chemins de lecture : hls.js lit le fMP4
+  // directement par MSE, et AVFoundation l'exige.
+  const transcodingProfiles: TranscodingProfile[] = [];
+  if (canPlayHevc()) {
+    transcodingProfiles.push(profilHlsFmp4("hevc,h264", audioFmp4));
   }
-
+  // Repli universel : segments TS en H.264, que tout navigateur sait lire.
+  transcodingProfiles.push(profilHlsTs("h264", audioTs));
   transcodingProfiles.push(PROFIL_AUDIO_SEUL);
 
   // ── Codec profiles (constraints) ──
