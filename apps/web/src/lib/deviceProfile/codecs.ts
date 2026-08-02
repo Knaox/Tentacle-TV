@@ -48,50 +48,46 @@ export const canPlayHevcMain10 = () =>
   supportsVideoCodec("hvc1.2.4.L153.B0") || supportsVideoCodec("hev1.2.4.L153.B0");
 
 /**
- * Plages dynamiques que ce client sait AFFICHER, au vocabulaire de Jellyfin
- * (`VideoRangeType`).
+ * Plages dynamiques déclarées à Jellyfin (`VideoRangeType`), d'après la SEULE
+ * capacité qui entre en jeu : le moteur sait-il décoder du 10 bits.
  *
- * Sans cette déclaration, Jellyfin suppose un écran SDR et convertit toute
- * source HDR : un `tonemap_opencl` qui impose de RECOMPRESSER l'image entière,
- * en 8 bits, sur une source qui n'avait rien demandé. Mesuré sur un Dolby
- * Vision 8.1 dont la seule raison de transcodage annoncée était l'audio — car
- * cette décision-là n'apparaît dans AUCUN `TranscodeReasons`.
+ * Ce que Jellyfin fait de cette liste : une condition `EqualsAny` sur le profil
+ * HEVC. Si la plage de la source n'y figure pas, il déclare
+ * `VideoRangeTypeNotSupported` et convertit — un `tonemap` qui RECOMPRESSE
+ * l'image entière, en 8 bits, sur une source qui n'avait rien demandé.
+ *
+ * Il y avait ici une garde sur l'écran (`matchMedia("(dynamic-range: high)")`).
+ * Elle confondait deux questions qui n'ont rien à voir : le tone mapping est un
+ * ré-encodage SERVEUR, la plage de l'écran est une affaire de rendu CLIENT, que
+ * Chromium traite lui-même à la composition. Sur un écran SDR — le cas courant
+ * sous Windows — la garde ramenait la liste à `Unknown|SDR` et condamnait donc
+ * toute source HDR10, HLG ou Dolby Vision à un transcodage 4K permanent, pour
+ * une image que le navigateur aurait de toute façon su afficher.
+ *
+ * jellyfin-web tranche pareil, par un autre chemin : son `supportsHdr10()` est
+ * un test de MOTEUR (`browser.chrome && !browser.mobile`), jamais d'affichage.
  *
  * `DOVI` nu n'est jamais déclaré : le profil 5 n'a pas de couche de base
  * lisible sans décodeur Dolby Vision. Les profils 8.x, eux, portent une base
  * HDR10/HLG/SDR standard que le navigateur affiche telle quelle — d'où les
- * seules variantes `DOVIWith*`.
+ * seules variantes `DOVIWith*`. C'est le seul point où l'on va plus loin que
+ * jellyfin-web, qui les réserve à Tizen et webOS.
  *
  * `Unknown` est inclus à dessein : un fichier mal sondé ne doit pas perdre sa
  * lecture directe sur une condition que le serveur ne sait pas évaluer.
+ *
+ * Fonction pure — c'est elle qui est testée (`codecs.test.ts`), le sondage du
+ * moteur restant hors de portée d'un test sans DOM.
  */
-export function plagesDynamiquesSupportees(): string[] {
+export function plagesDynamiques(hevcMain10: boolean): string[] {
   const plages = ["Unknown", "SDR"];
-  if (!canPlayHevcMain10() || !ecranHdr()) return plages;
+  if (!hevcMain10) return plages;
   return [...plages, "HDR10", "HDR10Plus", "HLG", "DOVIWithHDR10", "DOVIWithHDR10Plus", "DOVIWithHLG", "DOVIWithSDR"];
 }
 
-/**
- * L'écran affiche-t-il le HDR ? Réponse VERROUILLÉE dès qu'elle est positive.
- *
- * Mesuré : fenêtre masquée, Chromium dégrade ses réponses — `screen` rapporte
- * `0x0`, `colorDepth` retombe de 30 à 24 bits et `(dynamic-range: high)` passe
- * à faux, sur le MÊME écran qui répondait vrai l'instant d'avant. Or le profil
- * se construit au moment du PlaybackInfo, qui peut très bien tomber pendant
- * que la fenêtre est en arrière-plan.
- *
- * L'asymétrie des conséquences tranche : oublier le HDR coûte un ré-encodage
- * complet de l'image sur le serveur, le garder à tort coûte une image un peu
- * délavée sur un écran SDR. On retient donc la meilleure observation de la
- * session, et un rechargement de page repart de zéro.
- */
-let hdrDejaVu = false;
-function ecranHdr(): boolean {
-  if (hdrDejaVu) return true;
-  if (typeof matchMedia === "undefined") return false;
-  hdrDejaVu = matchMedia("(dynamic-range: high)").matches
-    || matchMedia("(video-dynamic-range: high)").matches;
-  return hdrDejaVu;
+/** Plages dynamiques de CE moteur, telles qu'envoyées dans le DeviceProfile. */
+export function plagesDynamiquesSupportees(): string[] {
+  return plagesDynamiques(canPlayHevcMain10());
 }
 
 /**
