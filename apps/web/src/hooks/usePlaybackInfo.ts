@@ -224,14 +224,22 @@ export function usePlaybackInfo(lecteurNatif = false) {
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
-        // URL COMPLÈTE, jeton masqué. C'est elle, et elle seule, qui porte les
-        // paramètres que le serveur relira pour décider de copier l'image :
-        // `hevc-rangetype`, `hevc-profile`, `hevc-level`, `hevc-videobitdepth`,
-        // `VideoBitrate`, `TranscodeReasons` (cf. `EncodingHelper
-        // .CanStreamCopyVideo`, qui lit tout depuis la requête). La tronquer à
-        // 80 caractères revenait à jeter la seule trace exploitable.
-        url: url.replace(/([?&])(api_key|apikey)=[^&]*/gi, "$1api_key=***"),
       });
+      // Sur SA PROPRE ligne, en chaîne nue : la console replie les objets, et
+      // c'est justement le champ le plus long qu'elle cache derrière son « … ».
+      //
+      // Cette URL porte tout ce que le serveur relira pour décider de copier
+      // l'image ou de la recompresser — `hevc-rangetype`, `hevc-profile`,
+      // `hevc-level`, `hevc-videobitdepth`, `VideoBitrate`, `MaxFramerate`,
+      // `TranscodeReasons`. `EncodingHelper.CanStreamCopyVideo` ne lit pas le
+      // DeviceProfile : il ne lit que ces paramètres-là. Réservée au
+      // transcodage — en lecture directe il n'y a rien à diagnostiquer.
+      if (!directPlay) {
+        console.log(
+          "[Tentacle:Playback] url →",
+          url.replace(/([?&])(api_key|apikey)=[^&]*/gi, "$1api_key=***"),
+        );
+      }
     } catch (err) {
       if (fetchId.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);
