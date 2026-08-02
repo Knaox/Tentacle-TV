@@ -62,6 +62,18 @@ describe("evaluerLecture", () => {
       .toBe("Transcode");
   });
 
+  it("lit les raisons dans l'URL quand le MediaSource ne les porte pas", () => {
+    // Cas réel (Jellyfin 10.10) : `TranscodeReasons` absent de la réponse
+    // PlaybackInfo, mais présent dans la query de la TranscodingUrl.
+    const v = evaluerLecture({
+      supportsDirectPlay: false, supportsDirectStream: false,
+      transcodingUrl: `${urlHls("hevc,h264")}&TranscodeReasons=AudioCodecNotSupported`,
+      codecVideoSource: "hevc",
+    });
+    expect(v.raisons).toEqual(["AudioCodecNotSupported"]);
+    expect(v.mode).toBe("Remux");
+  });
+
   it("suppose le pire quand rien ne permet de trancher", () => {
     const v = evaluerLecture({
       supportsDirectPlay: false, supportsDirectStream: false, transcodingUrl: "/videos/x/master.m3u8",
