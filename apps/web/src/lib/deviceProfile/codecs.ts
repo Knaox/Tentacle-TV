@@ -32,6 +32,33 @@ export function canPlayContainer(mime: string): boolean {
   return testVideo?.canPlayType(mime) !== "";
 }
 
+// ── Décodage NATIF (`<video src>`) — la question des DirectPlayProfiles ──
+//
+// MSE et le décodeur natif ne répondent PAS la même chose, et c'est décisif :
+// Chrome sous Windows décode l'E-AC3 nativement (`canPlayType` → « probably »)
+// mais le refuse en MSE (`isTypeSupported` → faux). Servir la liste MSE aux
+// DirectPlayProfiles retire donc l'E-AC3 d'un MKV que le navigateur aurait
+// ouvert tel quel — Jellyfin n'a plus d'autre choix que le remux HLS, avec
+// tout ce qui s'ensuit. jellyfin-web tient les deux listes séparées pour cette
+// raison exacte (`videoAudioCodecs` face à `hlsInFmp4VideoAudioCodecs`).
+const natifVideo = (codec: string, container = "mp4") =>
+  testVideo != null && testVideo.canPlayType(`video/${container}; codecs="${codec}"`) !== "";
+const natifAudio = (codec: string) =>
+  testVideo != null && testVideo.canPlayType(`audio/mp4; codecs="${codec}"`) !== "";
+
+export const natifH264 = () => natifVideo("avc1.640029");
+export const natifHevc = () => natifVideo("hvc1.1.6.L120.B0") || natifVideo("hev1.1.6.L120.B0");
+export const natifVp9  = () => natifVideo("vp9", "webm") || natifVideo("vp09.00.51.08", "webm");
+export const natifAv1  = () => natifVideo("av01.0.15M.10");
+export const natifAac  = () => natifAudio("mp4a.40.2");
+export const natifMp3  = () => natifAudio("mp4a.69") || natifAudio("mp4a.6B");
+export const natifAc3  = () => natifAudio("ac-3");
+export const natifEac3 = () => natifAudio("ec-3");
+export const natifFlac = () => natifAudio("flac");
+export const natifOpus = () => natifAudio("opus");
+
+// ── Décodage par MSE (hls.js) — la question des TranscodingProfiles ──
+
 export const canPlayH264 = () => supportsVideoCodec("avc1.640029");
 export const canPlayHevc = () => supportsVideoCodec("hev1.1.6.L150.B0") || supportsVideoCodec("hvc1.1.6.L150.B0");
 export const canPlayVp9  = () => supportsVideoCodec("vp09.00.51.08", "webm") || supportsVideoCodec("vp09.00.51.08");
@@ -60,7 +87,8 @@ export const canPlayOpus = () => supportsAudioCodec("opus");
  * raison.
  */
 export const canPlayHevcMain10 = () =>
-  supportsVideoCodec("hvc1.2.4.L120.B0") || supportsVideoCodec("hev1.2.4.L120.B0");
+  supportsVideoCodec("hvc1.2.4.L120.B0") || supportsVideoCodec("hev1.2.4.L120.B0")
+  || natifVideo("hvc1.2.4.L120.B0") || natifVideo("hev1.2.4.L120.B0");
 
 /**
  * Plages dynamiques déclarées à Jellyfin (`VideoRangeType`), d'après la SEULE
