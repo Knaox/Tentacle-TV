@@ -24,6 +24,8 @@ interface UseVideoEventsArgs {
   hasNextEpisode?: boolean;
   autoPlayCountdown: number | null;
   setPlaying: (v: boolean) => void;
+  /** Pendant réactif de `hasStartedRef` — cf. VideoPlayer. */
+  setADemarre: (v: boolean) => void;
   setLoading: (v: boolean) => void;
   setShowPlayButton: (v: boolean) => void;
   setBuffered: (v: number) => void;
@@ -91,7 +93,9 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       wtLog("web-video", "event play", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       a.sourceChangingRef.current = false;
       a.setPlaying(true); a.setLoading(false); a.setShowPlayButton(false);
-      if (!a.hasStartedRef.current) { a.hasStartedRef.current = true; a.onStarted?.(); }
+      if (!a.hasStartedRef.current) {
+        a.hasStartedRef.current = true; a.setADemarre(true); a.onStarted?.();
+      }
       a.onPlayStateChange?.(false);
     },
     onPause: () => {
