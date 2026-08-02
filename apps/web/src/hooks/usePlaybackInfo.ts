@@ -18,10 +18,12 @@ const DBG = "[Tentacle:PlaybackInfo]";
  * Hors du hook : `fetchPlaybackInfo` est mémoïsé, et une fonction refermée sur
  * le rendu s'y serait figée.
  */
-function construireProfil(lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number): DeviceProfile {
+function construireProfil(
+  lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number, mkvNonFiable?: boolean,
+): DeviceProfile {
   if (lecteurNatif) return buildMpvDeviceProfile(bitrate);
   if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate);
-  return buildBrowserDeviceProfile(bitrate);
+  return buildBrowserDeviceProfile(bitrate, { mkvNonFiable });
 }
 
 export interface PlaybackInfoState {
@@ -72,9 +74,21 @@ export function usePlaybackInfo(lecteurNatif = false) {
   // Le défaut ne pouvait pas se voir sous Windows : `isMacOS()` y est faux, donc
   // c'est le profil navigateur — le bon pour mpv — qui servait déjà.
   const isMacOSTauri = isTauriShell() && isMacOS();
+
+  // Hors de `state` : `reset()` le vide à chaque changement d'épisode, alors
+  // que la disqualification du MKV vaut pour toute la session. Un moteur qui a
+  // échoué une fois échouerait sur l'épisode suivant, et rien ne sert de lui
+  // repayer trois secondes d'attente à chaque fois. En mémoire uniquement :
+  // rien n'est écrit sur le disque, un rechargement de page remet à zéro.
+  const [mkvNonFiable, setMkvNonFiable] = useState(false);
+  const signalerMkvNonFiable = useCallback(() => {
+    console.warn(DBG, "lecture directe MKV muette — desactivee pour la session");
+    setMkvNonFiable(true);
+  }, []);
+
   const deviceProfile = useMemo(
-    () => construireProfil(lecteurNatif, isMacOSTauri),
-    [lecteurNatif, isMacOSTauri],
+    () => construireProfil(lecteurNatif, isMacOSTauri, undefined, mkvNonFiable),
+    [lecteurNatif, isMacOSTauri, mkvNonFiable],
   );
   const fetchPlaybackInfo = useCallback(async (opts: {
     itemId: string;
@@ -93,7 +107,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
 
     try {
       let profile = opts.maxStreamingBitrate != null
-        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate)
+        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate, mkvNonFiable)
         : deviceProfile;
       // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
       // returns a TranscodingUrl with the correct audio track selected server-side.
@@ -177,7 +191,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
       console.error(DBG, "PlaybackInfo failed", err);
       setState((prev) => ({ ...prev, isLoading: false }));
     }
-  }, [client, userId, deviceProfile]);
+  }, [client, userId, deviceProfile, mkvNonFiable]);
 
   const reset = useCallback(() => {
     ++fetchId.current; // Invalidate in-flight fetches
@@ -187,5 +201,5 @@ export function usePlaybackInfo(lecteurNatif = false) {
     });
   }, []);
 
-  return { ...state, fetchPlaybackInfo, reset };
+  return { ...state, mkvNonFiable, signalerMkvNonFiable, fetchPlaybackInfo, reset };
 }

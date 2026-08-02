@@ -5,10 +5,22 @@ import {
 } from "./blocs";
 import {
   canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
-  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, IS_NATIVE_HLS,
+  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, estChromium, IS_NATIVE_HLS,
 } from "./codecs";
 
-export function buildBrowserDeviceProfile(maxBitrate?: number): DeviceProfile {
+export interface OptionsProfilNavigateur {
+  /**
+   * Un MKV annoncé en lecture directe n'a rien donné pendant cette session :
+   * on retire la déclaration pour que Jellyfin reparte en remux. Drapeau tenu
+   * par `usePlaybackInfo`, en mémoire seulement.
+   */
+  mkvNonFiable?: boolean;
+}
+
+export function buildBrowserDeviceProfile(
+  maxBitrate?: number,
+  options?: OptionsProfilNavigateur,
+): DeviceProfile {
   const videoCodecs: string[] = [];
   if (canPlayH264()) videoCodecs.push("h264");
   if (canPlayHevc()) videoCodecs.push("hevc");
@@ -28,13 +40,26 @@ export function buildBrowserDeviceProfile(maxBitrate?: number): DeviceProfile {
 
   // ── Direct play profiles ──
   // ONLY list containers the browser can play natively via <video src>.
-  // MKV is NOT supported natively by any browser — it falls through to
-  // DirectStream (remux to HLS via ffmpeg -c copy, nearly free).
   const directPlayProfiles: DirectPlayProfile[] = [];
   if (videoCodecs.length > 0) {
     directPlayProfiles.push(
       { Container: "mp4,m4v", Type: "Video", VideoCodec: videoCodecStr, AudioCodec: audioCodecStr },
     );
+    // Le MKV, lui, n'est lisible que par Chromium — mais il l'est vraiment :
+    // WebM étant du Matroska, le démuxeur est déjà embarqué, et jellyfin-web
+    // le déclare depuis sa PR #2289. C'est le gain de démarrage principal :
+    // sans cette ligne, tout MKV part en DirectStream, donc en remux HLS
+    // produit à la demande par ffmpeg, avec la latence que ça coûte.
+    //
+    // Le repli est assuré par `useVideoSource` : Chromium ouvre parfois un MKV
+    // qu'il ne sait pas démuxer sans émettre la moindre erreur — écran noir
+    // figé (jellyfin-web #7651). Trois secondes de silence lèvent alors
+    // `mkvNonFiable` et cette entrée disparaît pour le reste de la session.
+    if (estChromium() && !options?.mkvNonFiable) {
+      directPlayProfiles.push(
+        { Container: "mkv", Type: "Video", VideoCodec: videoCodecStr, AudioCodec: audioCodecStr },
+      );
+    }
     if (canPlayContainer("video/webm") && canPlayVp9()) {
       directPlayProfiles.push({ Container: "webm", Type: "Video", VideoCodec: "vp9", AudioCodec: "opus,vorbis" });
     }

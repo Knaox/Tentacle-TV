@@ -211,6 +211,21 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // mpv handles seeking client-side via startPositionSeconds.
   const streamOffset = isDesktop ? 0 : pbInfo.streamOffset;
 
+  // Filet de la lecture directe MKV (cf. lib/deviceProfile/browser.ts). Le
+  // rattrapage n'est proposé que s'il y a matière à rattraper : un MKV, sur le
+  // lecteur web, dont la lecture directe n'a pas encore été disqualifiée.
+  // Partout ailleurs il vaut `undefined`, donc la garde des trois secondes
+  // n'est pas même armée — un mp4 lent à charger ne risque rien.
+  const signalerMkvNonFiable = pbInfo.signalerMkvNonFiable;
+  const handleDirectPlayNonFiable = useCallback((seconds: number) => {
+    if (seconds > 0) setStartTicks(Math.floor(seconds * TICKS_PER_SECOND));
+    signalerMkvNonFiable();
+  }, [signalerMkvNonFiable]);
+  const conteneurLu = (pbInfo.mediaSource?.Container ?? mediaSource?.Container)?.toLowerCase();
+  const onDirectPlayNonFiable = !isDesktop && conteneurLu === "mkv" && !pbInfo.mkvNonFiable
+    ? handleDirectPlayNonFiable
+    : undefined;
+
   // Diagnostic : chaque (re)construction d'URL de stream, avec la session
   // Jellyfin associée (le transcode ffmpeg est lié à DeviceId+PlaySessionId).
   useEffect(() => {
@@ -264,7 +279,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
-    streamUrl, streamOffset,
+    streamUrl, streamOffset, onDirectPlayNonFiable,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,

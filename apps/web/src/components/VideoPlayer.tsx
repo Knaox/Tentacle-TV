@@ -27,7 +27,7 @@ export function VideoPlayer({
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onProgress, onStarted, onSeekRequest, onSeekComplete,
+  onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   autoplayNextEnabled = true, maxResumePct = 90,
@@ -101,7 +101,7 @@ export function VideoPlayer({
     videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
     effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
     seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
-    lastKnownPositionRef, currentTimeRef, onSeekRequest,
+    lastKnownPositionRef, currentTimeRef, onSeekRequest, onDirectPlayNonFiable,
   });
 
   const currentTime = effectiveOffsetRef.current + displayTime;

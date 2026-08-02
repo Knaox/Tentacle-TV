@@ -14,6 +14,15 @@ const HAS_NATIVE_HLS = typeof document !== "undefined"
  *  canplaythrough fires when the browser has decoded enough audio+video. */
 const BUFFER_GATE_TIMEOUT = 8_000;
 
+/**
+ * Filet de la lecture directe : Chromium accepte parfois un conteneur qu'il ne
+ * sait pas démuxer et se fige sur une image noire, sans erreur ni événement —
+ * le mode d'échec de jellyfin-web #7651. Trois secondes de silence valent donc
+ * échec, très en amont du `failsafe` de 15 s qui, lui, se contente d'afficher
+ * un bouton de lecture à un utilisateur déjà perdu.
+ */
+const GARDE_DIRECT_PLAY_MS = 3_000;
+
 function attemptPlay(v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void) {
   // Respecte le mute choisi par l'utilisateur (persisté) — sinon un changement
   // d'épisode/média rétablirait le son (gênant à 2 players sur une machine).
@@ -45,13 +54,19 @@ interface UseVideoSourceOptions {
   lastKnownPositionRef: MutableRefObject<number>;
   currentTimeRef: MutableRefObject<number>;
   onSeekRequest?: (seconds: number) => void;
+  /**
+   * Rattrapage d'une lecture directe muette. Fourni UNIQUEMENT quand il y a
+   * quelque chose à rattraper — un conteneur à risque, pas encore disqualifié.
+   * Son absence désarme la garde : un mp4 lent à charger ne déclenche rien.
+   */
+  onDirectPlayNonFiable?: (seconds: number) => void;
 }
 
 export function useVideoSource({
   videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
   effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
   seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
-  lastKnownPositionRef, currentTimeRef, onSeekRequest,
+  lastKnownPositionRef, currentTimeRef, onSeekRequest, onDirectPlayNonFiable,
 }: UseVideoSourceOptions) {
   const hlsRef = useRef<Hls | null>(null);
   const jfClient = useJellyfinClient();
@@ -119,8 +134,23 @@ export function useVideoSource({
       }
     }, 15_000);
 
+    // Même schéma que le repli CORS plus bas : on désactive la capacité fautive
+    // pour la session, puis on demande au parent de relancer la lecture. Ici le
+    // parent refait un PlaybackInfo sans le MKV, Jellyfin répond en remux, et
+    // l'utilisateur ne voit qu'un démarrage un peu plus lent.
+    const gardeDirectPlay = isDirectPlay && !isHlsUrl && onDirectPlayNonFiable
+      ? setTimeout(() => {
+          if (!sourceChangingRef.current) return;
+          console.warn(DBG, "lecture directe muette a 0 ms — repli en remux");
+          clearTimeout(failsafe);
+          sourceChangingRef.current = false;
+          onDirectPlayNonFiable(currentTimeRef.current);
+        }, GARDE_DIRECT_PLAY_MS)
+      : undefined;
+
     const onReady = () => {
       clearTimeout(failsafe);
+      clearTimeout(gardeDirectPlay);
       const ptsOffset = containerPtsOffsetRef.current;
       // jellyfin-web pattern: explicit seek for frame-accurate positioning.
       // For HLS initial load: startPosition is segment-boundary accurate — good enough,
@@ -270,6 +300,7 @@ export function useVideoSource({
 
     return () => {
       clearTimeout(failsafe);
+      clearTimeout(gardeDirectPlay);
       clearTimeout(bufferGateTimer);
       clearTimeout(seekStallTimer.current);
       v.removeEventListener("loadedmetadata", onReady);

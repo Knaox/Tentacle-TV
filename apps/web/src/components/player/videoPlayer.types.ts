@@ -46,6 +46,11 @@ export interface VideoPlayerProps {
   onStarted?: () => void;
   onSeekRequest?: (seconds: number) => void;
   onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /**
+   * La lecture directe n'a rien produit — conteneur accepté puis muet. Fourni
+   * seulement quand un repli est possible ; son absence désarme la garde.
+   */
+  onDirectPlayNonFiable?: (seconds: number) => void;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   nextEpisodeTitle?: string;
