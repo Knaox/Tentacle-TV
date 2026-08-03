@@ -10,6 +10,8 @@ export default {
   confirm: "Confirm",
   loading: "Loading...",
   error: "Error",
+  contentErrorTitle: "Couldn't load your content",
+  contentErrorMessage: "The server is responding, but your media couldn't be retrieved. This is usually a temporary hiccup.",
   success: "Success",
   search: "Search",
   searchPlaceholder: "Search...",

@@ -3,13 +3,25 @@ import { useLibraries } from "@tentacle-tv/api-client";
 import { LibraryGrid } from "../components/LibraryGrid";
 import { LibraryHero } from "../components/library/LibraryHero";
 import { PageTransition } from "../components/PageTransition";
+import { ContentErrorState } from "../components/ContentErrorState";
 
 export function Library() {
   const { libraryId } = useParams<{ libraryId: string }>();
-  const { data: libraries } = useLibraries();
+  const { data: libraries, isError } = useLibraries();
   const library = libraries?.find((l) => l.Id === libraryId);
 
   if (!libraryId) return null;
+
+  // Sans la liste des bibliothèques, le hero n'a ni nom ni type : la page se
+  // rendait sous un titre vide plutôt que de signaler l'échec.
+  if (isError && !libraries) {
+    return (
+      <PageTransition>
+        <ContentErrorState />
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       {/* Le hero remonte sous la barre de navigation, qui flotte alors
