@@ -95,7 +95,17 @@ function viser(direction: Direction): boolean {
   if (!depart) return viserPremier();
 
   const racine = conteneurPiegeant() ?? document;
-  const candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
+  let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
+
+  // Un déplacement horizontal reste dans sa rangée. Sans cela, la dernière
+  // carte d'une piste voit à sa droite les éléments des rangées voisines — la
+  // géométrie ne dit rien de l'appartenance — et le focus part au hasard, ce
+  // qu'aucune interface de salon ne fait.
+  const piste = estHorizontale(direction) ? depart.closest("[data-tv-piste]") : null;
+  if (piste) {
+    candidats = candidats.filter((candidat) => piste.contains(candidat.element));
+  }
+
   const choisi = meilleur(
     boiteDepuisRectangle(depart.getBoundingClientRect()),
     candidats,

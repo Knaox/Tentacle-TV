@@ -37,8 +37,17 @@ export function substitutionModules(table: Record<string, string>): Plugin {
       const remplacement = table[chemin];
       if (!remplacement) return null;
 
+      const cible = await this.resolve(remplacement, importateur, { ...options, skipSelf: true });
+
+      // Le remplacement a le droit d'importer l'original — c'est même tout
+      // l'intérêt : un composant téléviseur enveloppe celui du web au lieu de
+      // le recopier. Sans cette garde, cet import se substituerait à lui-même
+      // et la résolution bouclerait, sur un `vite build` qui part sans jamais
+      // rendre la main ni dire pourquoi.
+      if (cible && cible.id.split("?")[0] === importateur.split("?")[0]) return null;
+
       declenchees.add(chemin);
-      return this.resolve(remplacement, importateur, { ...options, skipSelf: true });
+      return cible;
     },
 
     buildEnd() {
