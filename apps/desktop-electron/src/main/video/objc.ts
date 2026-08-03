@@ -17,10 +17,9 @@
  *
  * # Une porte par architecture
  *
- * arm64 n'a ni `objc_msgSend_stret` ni `_fpret` : tout y passe par
- * `objc_msgSend` ; x86_64 EXIGE le premier quand une méthode rend une `NSRect`
- * (cf. `MSG_RECT`). Il faut de plus UNE signature par forme d'appel, l'ABI
- * variadique de C n'étant pas devinable.
+ * arm64 n'a ni `objc_msgSend_stret` ni `_fpret` ; x86_64 EXIGE le premier quand
+ * une méthode rend une `NSRect` (cf. `MSG_RECT`). Il faut de plus UNE signature
+ * par forme d'appel, l'ABI variadique de C n'étant pas devinable.
  *
  * ⚠️ **macOS uniquement** : `koffi.load` s'exécute à l'import.
  */
