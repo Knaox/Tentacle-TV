@@ -12,6 +12,7 @@ import websocket from "@fastify/websocket";
 
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
 import { detectAppState, getAppState } from "./services/configStore";
+import { ensureInstallId } from "./services/jellyfinIdentity";
 
 import { setupRoutes } from "./routes/setup";
 import { authRoutes } from "./routes/auth";
@@ -273,6 +274,12 @@ async function main() {
     if (connected) {
       console.log("[DB] Connected successfully");
       await detectAppState();
+      // Identifiant d'installation résolu au démarrage : `mediaBrowserAuthHeader`
+      // le lit de façon synchrone. Échec non bloquant — il sera réessayé au
+      // premier chemin async qui en a besoin (login, setup, provisionnement).
+      await ensureInstallId().catch((err) => {
+        console.warn("[Identity] install id unavailable at boot:", err?.message ?? err);
+      });
     } else {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }

@@ -19,7 +19,7 @@
  */
 
 import { getJellyfinUrl } from "./configStore";
-import { BACKEND_VERSION } from "./version";
+import { buildAuthHeader, deviceIdForSync } from "./jellyfinIdentity";
 
 export interface DownloadPolicySnapshot {
   enableContentDownloading: boolean;
@@ -46,9 +46,18 @@ export function normalizeGuid(id: string): string {
   return id.replace(/-/g, "").toLowerCase();
 }
 
-/** Schéma d'auth pérenne (les X-Emby-* sont dépréciés depuis JF 10.11). */
+/** Schéma d'auth pérenne (les X-Emby-* sont dépréciés depuis JF 10.11).
+ *  Variante synchrone de l'identifiant : ces appels portent un token DÉJÀ
+ *  obtenu, ils ne s'authentifient pas, donc ne déclenchent aucune révocation
+ *  côté Jellyfin — l'identifiant d'installation n'y sert qu'à ne pas mélanger
+ *  deux serveurs Tentacle dans la liste d'appareils. */
 export function mediaBrowserAuthHeader(token: string): string {
-  return `MediaBrowser Token="${token}", Client="Tentacle Server", Device="Tentacle Backend", DeviceId="tentacle-backend", Version="${BACKEND_VERSION}"`;
+  return buildAuthHeader({
+    client: "Tentacle Server",
+    device: "Tentacle Backend",
+    deviceId: deviceIdForSync("backend"),
+    token,
+  });
 }
 
 /** Vide le cache (tests). */
