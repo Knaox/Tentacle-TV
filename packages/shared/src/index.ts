@@ -9,6 +9,7 @@ export * from "./types/websocket";
 export * from "./types/watchTogether";
 export * from "./constants";
 export * from "./subtitles/vtt";
+export * from "./subtitles/sanitize";
 export * from "./watchState";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
