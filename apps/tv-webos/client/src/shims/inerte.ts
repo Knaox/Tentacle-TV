@@ -17,3 +17,15 @@ export function DownloadsEngineBoot(): null {
 export function DownloadsEvents(): null {
   return null;
 }
+
+/**
+ * Le bouton de téléchargement de la fiche média.
+ *
+ * Il s'efface déjà de lui-même sans le droit Jellyfin correspondant, mais son
+ * import tirait tout l'arbre des téléchargements dans le graphe de la fiche.
+ * Le rendre inerte ici le sort du bundle, et supprime au passage la question de
+ * savoir ce qu'un bouton de téléchargement ferait sur une dalle.
+ */
+export function DetailDownloadAction(): null {
+  return null;
+}

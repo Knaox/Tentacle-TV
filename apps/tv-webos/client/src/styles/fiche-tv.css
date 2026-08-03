@@ -1,0 +1,47 @@
+/* La fiche média.
+ *
+ * Inventaire de ce qui est atteignable, et de ce qui ne devrait pas l'être.
+ *
+ * **Gardés** : le retour de la bannière, le lien vers la série depuis un
+ * épisode, « Voir plus » du synopsis, Lecture, Bande-annonce, Favori, Ma liste,
+ * Vu, les onglets de saison, « Marquer la saison vue », les tuiles d'extras et
+ * les cartes des rangées. Chacun mène quelque part.
+ *
+ * **Retirés ailleurs qu'ici**, parce que le retrait est structurel et pas
+ * cosmétique : le bouton de visionnage synchronisé et le contrôle de vitesse
+ * disparaissent par le shim qui les alimente ; le téléchargement par la table
+ * de substitution. Un bouton mort dans un parcours de D-pad coûte un appui à
+ * chaque passage, et laisse croire que la télécommande ne répond pas.
+ *
+ * **La distribution** ne contient aucun élément focusable — que des `<div>` et
+ * des `<p>`. Rien à faire : elle se traverse d'un coup, ce qui est exactement
+ * ce qu'on veut d'une liste qu'on ne fait que lire.
+ *
+ * Reste la taille. Les actions circulaires font 44 px : une cible de souris.
+ * Sur une dalle, c'est aussi la hauteur d'un anneau de focus, et deux boutons
+ * voisins finissent par se toucher.
+ */
+
+/* Les actions circulaires de la fiche. `h-11 w-11` = 44 px chez Tailwind ; on
+   ne peut pas viser la classe utilitaire elle-même sans toucher tous les
+   ronds de l'application, d'où le passage par le conteneur d'actions. */
+.mt-6.flex.flex-wrap.items-center button {
+  min-height: 56px;
+}
+
+.mt-6.flex.flex-wrap.items-center button.h-11 {
+  width: 56px;
+  height: 56px;
+}
+
+/* Le bouton de retour de la bannière est posé sur l'affiche : l'anneau de
+   focus doit y rester visible, donc la surface sous lui reste sombre même au
+   repos. La passe verre a retiré son flou d'arrière-plan. */
+.absolute.left-4.top-4 {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Les tuiles d'extras et les onglets de saison : mêmes cibles que le reste. */
+.group\/extra {
+  min-height: 56px;
+}
