@@ -85,14 +85,33 @@ export default defineConfig({
     target: ["chrome53"],
     sourcemap: false,
     emptyOutDir: true,
+    // Seuil assumé, pas contourné. Le fragment d'entrée pèse environ 600 ko
+    // une fois transpilé pour SystemJS : c'est le code applicatif partagé par
+    // tous les écrans — routeur, disposition, client d'API, thème —, que
+    // découper ne ferait que fragmenter sans rien retirer du démarrage.
+    //
+    // C'est aussi le point à mesurer en premier sur un appareil réel : sur le
+    // processeur d'un téléviseur de 2018, c'est l'analyse de ce fragment qui
+    // décide du délai avant le premier écran. Si le délai est intenable, le
+    // levier n'est pas le découpage mais le socle — Chrome 79 supprimerait
+    // SystemJS et une partie de core-js.
+    chunkSizeWarningLimit: 700,
     // Le découpage du client web isole `framer-motion` dans son propre
     // fragment ; ici il est remplacé par un shim de quelques lignes, et le
     // fragment ne vaudrait plus qu'une requête HTTP pour rien.
+    //
+    // En revanche l'internationalisation et les icônes sont sorties du
+    // fragment d'entrée, ce que le client web ne fait pas : sur le processeur
+    // d'une dalle, c'est le temps d'analyse du JavaScript qui décide de la
+    // durée avant le premier écran, et un fragment de six cents kilo-octets
+    // s'y analyse en secondes, pas en millisecondes.
     rollupOptions: {
       output: {
         manualChunks: {
           "vendor-react": ["react", "react-dom", "react-router-dom"],
           "vendor-query": ["@tanstack/react-query"],
+          "vendor-i18n": ["i18next", "react-i18next"],
+          "vendor-icones": ["lucide-react"],
         },
       },
     },
