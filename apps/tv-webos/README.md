@@ -6,8 +6,18 @@ client est celui de `apps/web`, recompilé pour le moteur d'un téléviseur.
 ## Deux morceaux qui ne voyagent pas ensemble
 
 **La coquille** (`shell/`) est le paquet IPK installé sur le téléviseur. Une
-page en JavaScript ES5, sans build : elle demande l'adresse du serveur, relève
-les capacités matérielles de la dalle, puis navigue vers `<serveur>/tv/`.
+page en JavaScript ES5, sans build. Elle affiche un code de jumelage à quatre
+caractères obtenu du relais Cloudflare, attend qu'un appareil déjà connecté le
+valide, puis navigue vers le serveur dont le relais lui a rendu l'adresse.
+
+**Il n'y a rien à saisir sur le téléviseur.** C'est tout l'intérêt du relais :
+il rend l'adresse du serveur en même temps que le jeton. C'est aussi pourquoi
+l'écran de jumelage vit dans la coquille et non dans le client — celui-ci est
+servi par le serveur qu'il s'agit précisément de trouver.
+
+Le jeton est transmis au client par le **fragment** d'URL, jamais par la chaîne
+de requête : c'est un JWT sans expiration, donc un secret de longue durée, et
+un fragment n'atteint ni les journaux d'accès ni les en-têtes `Referer`.
 
 **Le client** (`client/`) est une variante de build de `apps/web`. Il n'est
 **pas** dans le paquet : le serveur Tentacle le sert sur `/tv`.
