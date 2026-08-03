@@ -130,6 +130,11 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "downloads/DownloadsEngineBoot.tsx")]: resolve(CLIENT, "shims/inerte.ts"),
   [resolve(WEB, "downloads/DownloadsEvents.tsx")]: resolve(CLIENT, "shims/inerte.ts"),
 
+  // Le bouton de téléchargement de la fiche s'efface déjà sans le droit
+  // Jellyfin, mais son import tirait tout l'arbre des téléchargements dans le
+  // graphe de la fiche média.
+  [resolve(WEB, "downloads/DetailDownloadAction.tsx")]: resolve(CLIENT, "shims/inerte.ts"),
+
   // Outils de développement montés à la racine par `App.tsx`.
   [resolve(WEB, "dev/soakPlayer.tsx")]: resolve(CLIENT, "shims/harnaisDev.ts"),
   [resolve(WEB, "dev/autoWatch.tsx")]: resolve(CLIENT, "shims/harnaisDev.ts"),
