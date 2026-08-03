@@ -29,4 +29,7 @@ export default {
   pin: "Épingler",
   unpin: "Désépingler",
   credits: "Crédits",
+  railLabel: "Navigation principale",
+  railHint: "Maintenir OK pour masquer une entrée",
+  railShowAll: "Tout afficher",
 } as const;

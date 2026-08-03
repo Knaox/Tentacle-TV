@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useEntreesRail, entreeActive } from "./entreesRail";
 import { RailEntree } from "./RailEntree";
 
@@ -23,6 +24,7 @@ import { RailEntree } from "./RailEntree";
  */
 export function RailTv() {
   const { pathname } = useLocation();
+  const { t } = useTranslation("nav");
   const entrees = useEntreesRail();
   const active = entreeActive(entrees, pathname);
   const [deploye, setDeploye] = useState(false);
@@ -49,7 +51,7 @@ export function RailTv() {
     <nav
       className="rail-tv"
       data-deploye={deploye}
-      aria-label="Navigation principale"
+      aria-label={t("railLabel")}
       onFocus={surFocus}
       onBlur={surBlur}
     >
@@ -65,6 +67,14 @@ export function RailTv() {
           </li>
         ))}
       </ul>
+
+      {/* Le geste ne se devine pas, et un rail qu'on ne sait pas tailler reste
+          tel qu'on l'a reçu. L'indice n'apparaît qu'au déploiement, et sa place
+          est réservée dans les deux états : la géométrie sur laquelle le moteur
+          de navigation vient de calculer ne doit pas bouger sous lui. */}
+      <p className="rail-indice" data-deploye={deploye}>
+        {t("railHint")}
+      </p>
     </nav>
   );
 }
