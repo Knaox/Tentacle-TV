@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
@@ -35,12 +35,18 @@ export function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login.mutate({ username, password }, { onSuccess: () => navigate(redirectTo, { replace: true }) });
+    login.mutate({ username, password }, {
+      onSuccess: () => {
+        // Le drapeau est consommé ICI, et pas au démontage de l'écran : sous
+        // StrictMode, le nettoyage d'effet du montage simulé l'effaçait avant
+        // même le premier rendu visible, et l'utilisateur atterrissait sur un
+        // écran de connexion sans explication. La reconnexion réussie est de
+        // toute façon le seul moment où le message n'a plus lieu d'être.
+        setSessionExpired(false);
+        navigate(redirectTo, { replace: true });
+      },
+    });
   };
-
-  // Le drapeau est consommé au démontage : il a dit pourquoi l'utilisateur est
-  // ici, il ne doit pas resurgir sur une visite volontaire de /login.
-  useEffect(() => () => setSessionExpired(false), []);
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
