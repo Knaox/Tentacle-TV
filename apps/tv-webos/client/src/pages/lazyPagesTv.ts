@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { EcranIndisponible } from "./ecranIndisponible";
 import { EcranNonJumele } from "../ui/ecrans/EcranNonJumele";
+import { EcranCompteTv } from "../ui/reglages/EcranCompteTv";
 
 /**
  * Les écrans que le téléviseur embarque, et ceux qu'il n'embarque pas.
@@ -64,7 +65,13 @@ export const DownloadsPage = Indisponible;
 export const OfflineCatalog = Indisponible;
 export const OfflineSeriesView = Indisponible;
 export const SettingsDownloads = Indisponible;
-export const SettingsData = Indisponible;
+
+// `/settings/data` sert d'adresse à la section Compte du téléviseur. Les routes
+// sont déclarées dans `App.tsx`, qu'on ne modifie pas ; l'identifiant d'une
+// section de réglages n'est affiché nulle part sur une dalle, et l'écran
+// d'économie de données faisait de toute façon partie des indisponibles. On
+// reprend sa place plutôt que d'ajouter une route à un fichier partagé.
+export const SettingsData = EcranCompteTv;
 
 // Partage et assistance : demandent une saisie de texte suivie.
 export const SharedListView = Indisponible;
