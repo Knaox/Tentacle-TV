@@ -68,6 +68,14 @@ describe("buildAuthHeader", () => {
     expect(header).not.toContain('Token="vole"');
   });
 
+  // Défense en profondeur : les appelants passent tous par buildDeviceId, qui
+  // encode déjà. Cette garde couvre le futur appelant qui l'oublierait.
+  it("empêche une injection d'en-tête par un DeviceId brut", () => {
+    const header = buildAuthHeader({ device: "Web", deviceId: 'x", Token="vole' });
+    expect(header).not.toContain('Token="vole"');
+    expect(header.match(/"/g)?.length).toBe(8); // 4 paires, aucun guillemet en trop
+  });
+
   it("retire les caractères non-ASCII des libellés", () => {
     const header = buildAuthHeader({ device: "Café", deviceId: "tentacle-abc-web" });
     expect(header).toMatch(/^[\x20-\x7E]+$/);

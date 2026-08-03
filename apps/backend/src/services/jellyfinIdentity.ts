@@ -118,13 +118,21 @@ function asciiLabel(value: string): string {
   return value.replace(/[^\x20-\x7E]/g, "").replace(/"/g, "");
 }
 
+/** Alphabet d'un identifiant : celui que produit `encodeURIComponent`, espaces
+ *  exclus. Redondant avec `buildDeviceId` pour les appelants d'aujourd'hui, et
+ *  c'est le but — un futur appelant qui passerait une valeur brute venue du
+ *  client ne doit pas pouvoir refermer le guillemet et greffer un `Token="…"`. */
+function asciiId(value: string): string {
+  return value.replace(/[^A-Za-z0-9%._~!*'()-]/g, "");
+}
+
 /** En-tête `MediaBrowser …`, schéma d'auth pérenne (les X-Emby-* sont dépréciés
  *  depuis Jellyfin 10.11). Source unique des quatre gabarits qui coexistaient. */
 export function buildAuthHeader({ device, deviceId, client, token }: AuthHeaderParts): string {
   const parts = [
     `MediaBrowser Client="${asciiLabel(client ?? "Tentacle TV")}"`,
     `Device="${asciiLabel(device)}"`,
-    `DeviceId="${deviceId}"`,
+    `DeviceId="${asciiId(deviceId)}"`,
     `Version="${BACKEND_VERSION}"`,
   ];
   if (token) parts.push(`Token="${token}"`);
