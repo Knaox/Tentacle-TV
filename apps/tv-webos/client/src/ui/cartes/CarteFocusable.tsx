@@ -1,6 +1,8 @@
-import { useCallback, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { captureDetailOrigin } from "@/components/detail/detailTransition";
+import { CardMetaOverlay } from "@/components/media/CardMetaOverlay";
 import { creerAppuiLong } from "../../focus/appuiLong";
 
 /**
@@ -21,7 +23,19 @@ import { creerAppuiLong } from "../../focus/appuiLong";
  * - **un ancêtre stylable au focus**, ce qui permet d'écrire le bloc méta sans
  *   `:has()` — refusé par la garde de compatibilité ;
  * - **l'épinglage dans le fenêtrage**, sans lequel la carte active serait
- *   démontée sous le focus au premier balayage rapide.
+ *   démontée sous le focus au premier balayage rapide ;
+ * - **les métadonnées au focus** — 4K, HDR, Dolby Vision, langues.
+ *
+ * Ce dernier point mérite son explication. `CardMetaOverlay` existe déjà et
+ * fait exactement ce qu'il faut, mais les cartes du web ne le montent qu'au
+ * SURVOL : sur une dalle, `hovered` ne passe jamais à vrai, et la feuille
+ * téléviseur achève ce qui resterait. On le monte donc ici, et **uniquement
+ * pendant que la carte a le focus** — c'est la première règle de coût du
+ * projet : ce qui n'est pas affiché ne doit rien consommer. Une rangée de
+ * quarante cartes ne compose qu'un seul bloc de pastilles à la fois.
+ *
+ * Aucune requête de plus : `MediaSources` est déjà demandé par tous les hooks
+ * d'accueil et de catalogue, précisément pour ces pastilles.
  */
 
 interface ProprietesCarteFocusable {
@@ -31,6 +45,8 @@ interface ProprietesCarteFocusable {
   largeur: number | null;
   /** Identifiant de l'item, pour la navigation du maintien. */
   itemId: string;
+  /** L'item complet, pour les pastilles montées au focus. */
+  item?: MediaItem;
   /** Un maintien ouvre-t-il la fiche ? Faux sur une affiche, dont l'appui
    *  court ouvre déjà la fiche — on n'invente pas un second geste. */
   maintienOuvreFiche: boolean;
@@ -43,12 +59,14 @@ export function CarteFocusable({
   index,
   largeur,
   itemId,
+  item,
   maintienOuvreFiche,
   onIndexActif,
   children,
 }: ProprietesCarteFocusable) {
   const racine = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [focalisee, setFocalisee] = useState(false);
 
   /**
    * L'appui court rejoue un vrai clic sur la carte enveloppée.
@@ -86,8 +104,12 @@ export function CarteFocusable({
     [actionCourte, actionLongue, maintienOuvreFiche],
   );
 
-  const surFocus = useCallback(() => onIndexActif(index), [index, onIndexActif]);
+  const surFocus = useCallback(() => {
+    setFocalisee(true);
+    onIndexActif(index);
+  }, [index, onIndexActif]);
   const surBlur = useCallback(() => {
+    setFocalisee(false);
     appui.onBlur();
     onIndexActif(null);
   }, [appui, onIndexActif]);
@@ -108,6 +130,13 @@ export function CarteFocusable({
       onBlur={surBlur}
     >
       {children}
+      {/* Monté au focus seulement, et démonté au blur : une passe de
+          composition par carte visitée, jamais quarante en permanence. */}
+      {focalisee && item && (
+        <span className="carte-tv-meta">
+          <CardMetaOverlay item={item} density="compact" />
+        </span>
+      )}
     </div>
   );
 }
