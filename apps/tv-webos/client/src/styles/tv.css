@@ -1,17 +1,105 @@
 /* Feuille de la cible téléviseur.
  *
- * Elle reprend celle du client web — mêmes jetons, mêmes composants, mêmes
- * classes — puis pose ce qui diffère sur une dalle de salon. Le gros du travail
- * de compatibilité ne se fait pas ici mais dans `build/postcss/`, sur la
- * feuille déjà générée par Tailwind : c'est là que vivent `:where()`,
- * `display: grid` et `aspect-ratio`, qu'aucun fichier source n'écrit.
+ * Chargée après `index.css`, la feuille du client web : mêmes jetons, mêmes
+ * composants, mêmes classes. On ne redéfinit ici que ce qu'une distance de
+ * trois mètres change.
  *
- * La police n'est PAS importée depuis Google Fonts, contrairement à
- * `apps/web/src/index.css` : un serveur Tentacle sur un réseau local sans accès
- * extérieur ne la servirait jamais, le premier rendu attendrait pour rien, et
- * le repli sur la police système décalerait toute l'échelle typographique. Les
- * fichiers auto-hébergés arrivent avec le thème.
+ * Le gros du travail de compatibilité ne se fait pas dans ce fichier mais dans
+ * `config/postcss/`, sur la feuille déjà produite par Tailwind : c'est là que
+ * vivent `:where()`, `display: grid` et `aspect-ratio`, qu'aucune source
+ * n'écrit.
  */
 
-/* Surfaces opaques, échelle 10-foot, anneau de focus et zone d'overscan
- * arrivent à la phase du thème. */
+@import "./tokens-tv.css";
+@import "./focus.css";
+
+/* ── Police ───────────────────────────────────────────────────────────────
+ *
+ * `apps/web/src/index.css` charge Inter depuis Google Fonts ; la passe
+ * `importsDistants` a retiré cet import. Un serveur Tentacle sur un réseau
+ * local sans accès extérieur ne l'aurait jamais résolu — le premier tracé
+ * aurait attendu pour rien avant de retomber sur la police système.
+ *
+ * On ne la remplace pas par un fichier auto-hébergé : « LG Smart UI » est la
+ * police du système, dessinée pour être lue de loin, déjà présente sur la
+ * dalle, et elle ne coûte pas un octet. C'est un meilleur choix qu'Inter ici,
+ * pas un pis-aller. */
+:root {
+  --tv-police: "LG Smart UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html,
+body {
+  font-family: var(--tv-police);
+}
+
+/* ── Overscan ─────────────────────────────────────────────────────────────
+ *
+ * Une dalle rogne jusqu'à 5 % de chaque bord, sans que rien ne permette de
+ * savoir combien. `apps/web` prévoit ce retrait avec `env(safe-area-inset-*)`,
+ * que le moteur d'un téléviseur ne renseigne pas : on le pose ici.
+ *
+ * Posé sur la racine de l'application plutôt que sur un conteneur de page :
+ * `AppLayout` n'expose aucun marqueur stable, et s'accrocher à l'une de ses
+ * classes utilitaires ferait dépendre la mise en page du téléviseur d'un
+ * détail de style du client web.
+ *
+ * Les éléments en position fixe — barre de navigation, calques — ne sont pas
+ * concernés par ce retrait : ils portent déjà leurs propres marges, calculées
+ * pour ne pas coller aux bords. */
+#root {
+  box-sizing: border-box;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x);
+}
+
+/* ── Échelle ──────────────────────────────────────────────────────────────
+ *
+ * Le client web est dessiné pour être lu à cinquante centimètres. À trois
+ * mètres, la même page demande environ 1,4 fois sa taille — un facteur validé
+ * par les recommandations d'interface des plateformes de salon, pas une
+ * préférence.
+ *
+ * Appliqué sur la taille de police racine plutôt que sur chaque classe : tout
+ * ce qui est exprimé en `rem` suit, c'est-à-dire l'essentiel de ce que produit
+ * Tailwind — tailles de texte, marges, écarts, rayons. Les quelques valeurs en
+ * pixels ne suivent pas, et c'est acceptable : ce sont des bordures et des
+ * traits, qui n'ont pas à grandir. */
+html {
+  font-size: 22.4px; /* 16 × 1,4 */
+}
+
+/* ── Mouvement ────────────────────────────────────────────────────────────
+ *
+ * framer-motion est remplacé par un shim inerte : les fondus d'apparition
+ * qu'il jouait n'existent plus. On en réintroduit un seul, en CSS pur, sur le
+ * conteneur de page — celui qui évite qu'un changement d'écran se fasse par
+ * saut sec.
+ *
+ * `opacity` uniquement : sur un processeur graphique de téléviseur, tout ce
+ * qui déclenche une peinture par image coûte cher, et une page entière qui se
+ * repeint à chaque image se voit. */
+@keyframes tv-apparition {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+#root > * {
+  animation: tv-apparition 180ms ease-out both;
+}
+
+/* Le focus déplace la carte au premier plan. `transform` seul : c'est la seule
+ * propriété, avec `opacity`, qu'un compositeur sait animer sans repeindre. */
+a:focus .media-tile,
+button:focus .media-tile,
+.media-tile:focus {
+  transform: scale(1.06);
+  z-index: 2;
+}
+
+/* Rien n'est prévu ici pour les commandes de défilement des rangées : elles
+ * sont montées à la demande par `useHoverMount`, et sur une dalle il n'y a
+ * pas de survol — elles n'entrent jamais dans le document. */

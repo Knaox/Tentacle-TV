@@ -1,0 +1,61 @@
+/* L'anneau de focus — l'élément d'interface le plus important d'un téléviseur.
+ *
+ * Il n'y a ni curseur ni doigt : à tout instant, la seule chose qui dit où
+ * l'on se trouve est cet anneau. S'il disparaît une seule fois, l'appareil
+ * devient impilotable — l'utilisateur appuie au hasard jusqu'à retrouver un
+ * repère.
+ *
+ * D'où trois partis pris.
+ *
+ * `:focus` et non `:focus-visible` : la passe PostCSS a converti l'un en
+ * l'autre. Sur une dalle, la distinction n'a pas d'objet, et un polyfill
+ * masquerait l'anneau après une remise au point programmée — précisément le
+ * moment où l'on vient de perdre l'élément des yeux.
+ *
+ * `outline` et non `box-shadow` : l'outline ne participe pas à la mise en
+ * page, ne peut pas être rognée par un `overflow: hidden` parent, et ne coûte
+ * aucune passe de composition supplémentaire. Une carte fenêtrée qui vient
+ * d'être montée porte donc son anneau immédiatement, sans reflux.
+ *
+ * Aucune transition : l'anneau doit être là à l'image où le focus arrive. Un
+ * fondu de 150 ms est agréable sur un bureau, il donne l'impression d'un
+ * appareil qui traîne quand chaque appui sur la télécommande le rejoue. */
+
+:root {
+  --tv-anneau-epaisseur: 4px;
+  --tv-anneau-ecart: 3px;
+}
+
+/* Sélecteur volontairement large : tout ce qui peut recevoir le focus doit le
+ * montrer, y compris les éléments rendus focusables par un `tabindex` posé par
+ * un composant partagé.
+ *
+ * `!important` est ici délibéré, et c'est le seul endroit du portage où il
+ * l'est. `apps/web` neutralise l'anneau natif à de nombreux endroits — champs,
+ * boutons, cartes — parce qu'il y porte le focus autrement : une bordure qui
+ * change de teinte, une ombre qui s'épaissit. Ces signaux sont lisibles à
+ * cinquante centimètres, pas à trois mètres. Or les utilitaires qui les posent
+ * (`focus:outline-none`, `focus:ring-*`) ont une spécificité supérieure à
+ * `:focus` et gagneraient. Les surcharger un par un supposerait de connaître
+ * la liste, qui change à chaque écran ajouté ; l'anneau, lui, ne peut pas se
+ * permettre de disparaître une seule fois. */
+:focus {
+  outline: var(--tv-anneau-epaisseur) solid var(--border-focus) !important;
+  outline-offset: var(--tv-anneau-ecart) !important;
+}
+
+/* Trois exceptions, qui reçoivent le focus sans être des cibles : la racine du
+ * document au chargement, et les conteneurs rendus focusables uniquement pour
+ * être visés par programme. Un anneau autour de l'écran entier n'apprend
+ * rien. */
+body:focus,
+#root:focus,
+[tabindex="-1"]:focus {
+  outline: none !important;
+}
+
+/* Sur une carte, l'anneau entoure le lien entier — affiche, titre et
+ * métadonnées. Le porter sur la seule boîte de l'affiche demanderait de
+ * neutraliser celui du lien, donc un `:has()` que Chrome 53 ne connaît pas
+ * (il arrive avec Chrome 105). L'anneau englobant est un peu plus large que
+ * nécessaire, mais il désigne sans ambiguïté, et c'est ce qu'on lui demande. */
