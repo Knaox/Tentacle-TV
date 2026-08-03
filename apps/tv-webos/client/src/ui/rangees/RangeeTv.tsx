@@ -77,6 +77,15 @@ export function MediaRow({
   useEffect(() => {
     const element = rowRef.current;
     if (!element) return;
+    // Sans observateur, la porte reste ouverte plutôt que fermée : une rangée
+    // qui ne s'affiche jamais est un défaut bien pire qu'une rangée montée trop
+    // tôt. Les autres appelants du dépôt prennent la même précaution ; celui-ci
+    // l'avait oubliée, et un moteur plus ancien que le socle aurait levé dans
+    // un effet — donc perdu l'écran entier.
+    if (typeof IntersectionObserver !== "function") {
+      setVisible(true);
+      return;
+    }
     const observateur = new IntersectionObserver(
       ([entree]) => entree.isIntersecting && setVisible(true),
       { threshold: 0.1 },

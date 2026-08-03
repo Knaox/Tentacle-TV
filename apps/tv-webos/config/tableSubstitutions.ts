@@ -79,6 +79,13 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "components/hero/HeroIndicators.tsx")]:
     resolve(CLIENT, "ui/heros/JaugeBanniereTv.tsx"),
 
+  // `LibraryGrid` pose ses colonnes en style EN LIGNE, invisible aux passes
+  // PostCSS comme à la garde de compatibilité : le build passe, et la grille
+  // s'effondre sur la dalle. Ce hook est le seul endroit d'où la largeur est
+  // déjà connue — il la publie, la feuille `grille-tv.css` fait le reste, et le
+  // composant de 258 lignes n'est pas forké pour une déclaration.
+  [resolve(WEB, "hooks/useItemsPerRow.ts")]: resolve(CLIENT, "ui/grille/colonnesTv.ts"),
+
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.

@@ -1,13 +1,21 @@
-interface ProprietesJauge {
-  count: number;
-  index: number;
-  durationMs: number;
-  onSelect: (index: number) => void;
-  onPrev: () => void;
-  onNext: () => void;
-  onPause: () => void;
-  onResume: () => void;
-}
+import type { ComponentProps } from "react";
+import type { HeroIndicators as JaugeWeb } from "@/components/hero/HeroIndicators";
+
+/**
+ * Le contrat vient de l'original, il n'est pas récrit.
+ *
+ * Il l'était, et il avait divergé sans bruit : ce composant lisait `index` là
+ * où la bannière passe `activeIndex`. Aucune pastille n'était donc jamais
+ * active, et la jauge de progression ne se remplissait pas. Rien ne pouvait le
+ * signaler — la substitution est un greffon Vite, et `tsc` type-vérifie
+ * l'appelant contre le vrai composant.
+ *
+ * Importer le type de l'original ferme cette porte : l'import est effacé à la
+ * compilation, donc il ne déclenche pas la substitution, mais `tsc` le résout
+ * par l'alias `@/*` et vérifie l'accord. Une propriété renommée dans `apps/web`
+ * casse désormais le typecheck, pas la dalle.
+ */
+type ProprietesJauge = ComponentProps<typeof JaugeWeb>;
 
 /**
  * Les indicateurs de la bannière, en lecture seule.
@@ -29,7 +37,7 @@ interface ProprietesJauge {
  * une animation continue : rien ne tourne en boucle tant que la bannière ne
  * change pas.
  */
-export function HeroIndicators({ count, index, durationMs }: ProprietesJauge) {
+export function HeroIndicators({ count, activeIndex, durationMs }: ProprietesJauge) {
   if (count <= 1) return null;
 
   return (
@@ -42,14 +50,18 @@ export function HeroIndicators({ count, index, durationMs }: ProprietesJauge) {
           key={position}
           className="block h-1 overflow-hidden rounded-full transition-all duration-500"
           style={{
-            width: position === index ? 44 : 14,
+            width: position === activeIndex ? 44 : 14,
             background:
-              position === index
+              position === activeIndex
                 ? "linear-gradient(90deg, var(--brand), var(--brand-accent))"
                 : "var(--on-media-muted)",
             boxShadow:
-              position === index ? "0 0 14px rgba(var(--brand-rgb), 0.6)" : undefined,
-            transitionDuration: position === index ? `${durationMs}ms` : undefined,
+              position === activeIndex ? "0 0 14px rgba(var(--brand-rgb), 0.6)" : undefined,
+            // `durationMs` est facultatif chez l'original : sans lui, la
+            // pastille prend sa largeur à la durée de la classe, pas en
+            // « undefinedms ».
+            transitionDuration:
+              position === activeIndex && durationMs ? `${durationMs}ms` : undefined,
           }}
         />
       ))}

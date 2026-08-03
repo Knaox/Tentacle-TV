@@ -1,0 +1,33 @@
+/**
+ * La grille de bibliothèque, rendue en flexbox.
+ *
+ * `LibraryGrid` pose ses colonnes en style EN LIGNE — `gridTemplateColumns` et
+ * `gap` — que les passes PostCSS ne voient pas et que Chrome 53 ignore. La
+ * classe `.grid` est bien devenue `display: flex; flex-wrap: wrap`, mais ses
+ * enfants n'ont plus ni largeur ni écart.
+ *
+ * La largeur vient de `ui/grille/colonnesTv.ts`, qui la publie sur le conteneur
+ * marqué. Elle est calculée avec la même formule que la hauteur de ligne du
+ * virtualiseur : les deux doivent rester d'accord.
+ *
+ * `:not([class*="grid-cols-"])` écarte le squelette de chargement, dont les
+ * colonnes viennent de vraies classes Tailwind — la passe de grille leur a déjà
+ * généré leurs largeurs, et les écraser ici les casserait.
+ *
+ * L'écart est une marge à droite, compensée par une marge négative sur le
+ * conteneur : c'est la seule façon d'obtenir n cartes par ligne sans qu'un
+ * écart de trop fasse passer la dernière à la ligne suivante. Même stratégie
+ * que la passe des écarts, appliquée ici à la main puisque la déclaration
+ * d'origine n'est pas dans la feuille.
+ */
+
+[data-tv-grille] .grid:not([class*="grid-cols-"]) {
+  margin-right: calc(-1 * var(--tv-grille-ecart, 16px));
+}
+
+[data-tv-grille] .grid:not([class*="grid-cols-"]) > * {
+  width: var(--tv-grille-carte, 180px);
+  flex: 0 0 auto;
+  margin-right: var(--tv-grille-ecart, 16px);
+  margin-bottom: var(--tv-grille-ecart, 16px);
+}
