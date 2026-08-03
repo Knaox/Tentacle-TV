@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAuthHeader, buildDeviceId } from "./jellyfinIdentity";
+import { buildAuthHeader, buildDeviceId, buildOpaqueDiscriminant } from "./jellyfinIdentity";
 
 describe("buildDeviceId", () => {
   it("est stable pour un même couple installation / appareil", () => {
@@ -37,6 +37,49 @@ describe("buildDeviceId", () => {
   it("neutralise un discriminant contenant un guillemet", () => {
     const id = buildDeviceId("a1b2c3d4e5f6", "web", 'evil" Device="x');
     expect(id).not.toContain('"');
+  });
+});
+
+describe("buildOpaqueDiscriminant", () => {
+  const SECRET = "secret-d-instance";
+
+  it("est stable pour un même couple appareil / compte", () => {
+    const a = buildOpaqueDiscriminant(SECRET, ["uuid-navigateur", "damien"]);
+    const b = buildOpaqueDiscriminant(SECRET, ["uuid-navigateur", "damien"]);
+    expect(a).toBe(b);
+  });
+
+  // LE test du vecteur de déconnexion ciblée : un utilisateur qui rejoue
+  // l'appareil d'un autre ne doit pas retomber sur l'identifiant de sa victime,
+  // sans quoi Jellyfin révoquerait la session de celle-ci.
+  it("sépare deux comptes rejouant le MÊME appareil", () => {
+    const victime = buildOpaqueDiscriminant(SECRET, ["uuid-de-la-victime", "victime"]);
+    const attaquant = buildOpaqueDiscriminant(SECRET, ["uuid-de-la-victime", "attaquant"]);
+    expect(attaquant).not.toBe(victime);
+  });
+
+  it("sépare deux appareils d'un même compte", () => {
+    const pc = buildOpaqueDiscriminant(SECRET, ["uuid-pc", "damien"]);
+    const portable = buildOpaqueDiscriminant(SECRET, ["uuid-portable", "damien"]);
+    expect(pc).not.toBe(portable);
+  });
+
+  it("n'est pas reproductible sans le secret du serveur", () => {
+    const avec = buildOpaqueDiscriminant(SECRET, ["uuid", "damien"]);
+    const sans = buildOpaqueDiscriminant("autre-secret", ["uuid", "damien"]);
+    expect(avec).not.toBe(sans);
+  });
+
+  // Sans séparateur, ("ab","c") et ("a","bc") donneraient le même haché — donc
+  // un compte nommé « c » pourrait viser l'appareil « ab » d'un compte « bc ».
+  it("ne confond pas deux découpages de la même concaténation", () => {
+    expect(buildOpaqueDiscriminant(SECRET, ["ab", "c"]))
+      .not.toBe(buildOpaqueDiscriminant(SECRET, ["a", "bc"]));
+  });
+
+  it("produit un identifiant hexadécimal court et ASCII", () => {
+    const d = buildOpaqueDiscriminant(SECRET, ["uuid", "Mélissa"]);
+    expect(d).toMatch(/^[0-9a-f]{16}$/);
   });
 });
 
