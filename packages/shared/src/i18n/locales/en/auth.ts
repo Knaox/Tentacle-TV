@@ -7,6 +7,7 @@ export default {
   signingIn: "Signing in...",
   invalidCredentials: "Invalid credentials",
   loginFailed: "Login failed",
+  sessionExpired: "Your session has expired. Sign in again to continue.",
   tryDemo: "Try the demo",
   loadingDemo: "Loading demo...",
   haveInviteKey: "Have an invite key?",

@@ -23,7 +23,6 @@ import {
   setShareLinkBackendUrl,
   setWsBackendUrl,
   setWatchTogetherBackendUrl,
-  notifyUserChange,
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
@@ -38,6 +37,7 @@ import { ThemeProvider } from "./theme";
 import { isDesktopApp, isTauriShell } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { getBackendBase } from "./lib/backendBase";
+import { installSessionGuard } from "./auth/sessionGuard";
 import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installerSondeReseau } from "./dev/networkProbe";
@@ -176,37 +176,6 @@ if (savedToken) {
   jellyfinClient.setAccessToken(savedToken);
 }
 
-// On 401 — try refresh before logging out (avoids disconnect on Jellyfin restart).
-// Web uses httpOnly cookies so the cookie is sent automatically.
-// Deux tentatives espacées de 5 s : un 401 isolé pendant un redémarrage
-// Jellyfin ne doit pas suffire à purger la session (symétrique du retry TV).
-jellyfinClient.setOnAuthExpired(async () => {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, 5000));
-    try {
-      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-      if (res.ok) {
-        jellyfinClient.resetAuthState();
-        return;
-      }
-      if (res.status !== 401) return; // 503 / server error — keep session
-    } catch { return; } // Network error — keep session
-  }
-
-  // 401 confirmed twice — token truly expired, logout
-  jellyfinClient.setAccessToken(null);
-  storage.removeItem("tentacle_token");
-  storage.removeItem("tentacle_user");
-  notifyUserChange();
-});
-
-// Proactive cookie refresh for long-running tabs (renew well before 90-day expiry)
-setInterval(async () => {
-  try {
-    await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-  } catch { /* silent — next request will trigger reactive refresh */ }
-}, 12 * 60 * 60 * 1000);
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -220,6 +189,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Vitalité de la session : verdict sur 401, revalidation au retour sur
+// l'onglet, refresh proactif. Posé APRÈS le QueryClient — la purge doit vider
+// son cache. Cf. auth/sessionGuard.
+installSessionGuard({ client: jellyfinClient, storage, queryClient });
 
 // Cold start instantané : hydrate le cache depuis localStorage avant le premier
 // render — la home affichera ses données précédentes pendant que les refetchs

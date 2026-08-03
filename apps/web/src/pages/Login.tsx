@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
@@ -6,6 +6,7 @@ import { GlassCard } from "@tentacle-tv/ui";
 import { backendUrl } from "../main";
 import { isDesktopApp } from "../desktop/bridge";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
+import { setSessionExpired, useSessionExpired } from "../auth/sessionState";
 
 const CTA_PRIMARY =
   "inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
@@ -23,6 +24,7 @@ export function Login() {
   const [searchParams] = useSearchParams();
   const { t } = useTranslation("auth");
   const { login, changeServer } = useAuth();
+  const sessionExpired = useSessionExpired();
 
   // Destination après connexion : ?redirect=/share/... (chemin interne only),
   // sinon accueil. Garde-fou : on n'autorise qu'un chemin relatif.
@@ -35,6 +37,10 @@ export function Login() {
     e.preventDefault();
     login.mutate({ username, password }, { onSuccess: () => navigate(redirectTo, { replace: true }) });
   };
+
+  // Le drapeau est consommé au démontage : il a dit pourquoi l'utilisateur est
+  // ici, il ne doit pas resurgir sur une visite volontaire de /login.
+  useEffect(() => () => setSessionExpired(false), []);
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +74,15 @@ export function Login() {
           </h1>
           <p className="text-sm text-content-tertiary">{t("signInSubtitle")}</p>
         </div>
+
+        {sessionExpired && !showForgot && (
+          <div
+            role="status"
+            className="mb-4 rounded-lg border border-line-subtle bg-fill-subtle px-4 py-3 text-sm text-content-secondary"
+          >
+            {t("sessionExpired")}
+          </div>
+        )}
 
         <GlassCard className="p-6">
           {showForgot ? (
