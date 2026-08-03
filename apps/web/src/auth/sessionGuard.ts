@@ -1,0 +1,110 @@
+import type { QueryClient } from "@tanstack/react-query";
+import type { JellyfinClient, StorageAdapter } from "@tentacle-tv/api-client";
+import { notifyUserChange } from "@tentacle-tv/api-client";
+import { getBackendBase } from "../lib/backendBase";
+import { setSessionExpired } from "./sessionState";
+
+/**
+ * Vitalité de la session web. Extrait de `main.tsx`.
+ *
+ * Principe : le client ne décide JAMAIS seul qu'une session est morte. Il
+ * demande un verdict à /api/auth/refresh, qui tranche en interrogeant Jellyfin.
+ * Un refus explicite (401) est le seul motif de déconnexion ; tout le reste —
+ * Jellyfin en redémarrage, réseau coupé, backend injoignable — conserve la
+ * session. C'est ce qui distingue « expirée » de « momentanément indisponible ».
+ */
+
+export type SessionVerdict = "ok" | "expired" | "unreachable";
+
+/** Deux tentatives espacées de 5 s : un 401 isolé pendant un redémarrage de
+ *  Jellyfin ne doit pas suffire à purger la session (symétrique du retry TV). */
+const CONFIRM_ATTEMPTS = 2;
+const CONFIRM_DELAY_MS = 5000;
+
+/** Refresh proactif pour les onglets laissés ouverts : refait glisser le cookie
+ *  bien avant son échéance. */
+const PROACTIVE_INTERVAL_MS = 12 * 60 * 60 * 1000;
+
+/** Anti-rafale sur la revalidation au retour de focus (alt-tab répétés). */
+const FOCUS_THROTTLE_MS = 60 * 1000;
+
+/**
+ * Demande un verdict au backend et refait glisser le cookie au passage.
+ *
+ * L'URL est ABSOLUE, et c'est essentiel : en relatif, l'application de bureau
+ * résout `/api/...` contre son origine applicative, dont le repli monopage
+ * répond `index.html` en HTTP 200. Le verdict était alors « ok » quoi qu'il
+ * arrive, et une session morte ne mourait jamais — l'utilisateur restait
+ * « connecté » devant des pages qui ne chargeaient pas. Le contrôle du corps
+ * de la réponse ci-dessous est la seconde ceinture contre ce même piège.
+ */
+export async function revalidateSession(): Promise<SessionVerdict> {
+  try {
+    const res = await fetch(`${getBackendBase()}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (res.status === 401) return "expired";
+    if (!res.ok) return "unreachable";
+
+    const body = await res.json().catch(() => null);
+    return body && typeof body === "object" && "AccessToken" in body ? "ok" : "unreachable";
+  } catch {
+    return "unreachable";
+  }
+}
+
+export interface SessionGuardDeps {
+  client: JellyfinClient;
+  storage: StorageAdapter;
+  queryClient: QueryClient;
+}
+
+export function installSessionGuard({ client, storage, queryClient }: SessionGuardDeps): void {
+  /** Purge locale. Pas de navigation impérative : le garde de routes d'App.tsx
+   *  redirige de lui-même dès que `tentacle_user` disparaît. */
+  const endSession = () => {
+    client.setAccessToken(null);
+    storage.removeItem("tentacle_token");
+    storage.removeItem("tentacle_user");
+    // Sans ce vidage, le cache persisté rejouerait les données du compte mort
+    // sur l'écran de connexion puis au compte suivant.
+    queryClient.clear();
+    setSessionExpired(true);
+    notifyUserChange();
+  };
+
+  client.setOnAuthExpired(async () => {
+    for (let attempt = 0; attempt < CONFIRM_ATTEMPTS; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, CONFIRM_DELAY_MS));
+      const verdict = await revalidateSession();
+      if (verdict === "ok") {
+        client.resetAuthState();
+        return;
+      }
+      if (verdict === "unreachable") return; // panne passagère : on garde la session
+    }
+    endSession();
+  });
+
+  // Revalidation au retour sur l'onglet. C'est le vrai filet : indépendante du
+  // compteur de 401, elle constate l'expiration dès que l'utilisateur revient,
+  // avant qu'il ne tombe sur une page vide. Et comme chaque passage refait
+  // glisser le cookie, la session ne meurt pas tant qu'il revient — symétrique
+  // du réveil `AppState "active"` du mobile.
+  let lastFocusCheck = 0;
+  const onFocus = () => {
+    if (document.visibilityState === "hidden") return;
+    if (!storage.getItem("tentacle_user")) return; // déjà déconnecté : rien à valider
+    const now = Date.now();
+    if (now - lastFocusCheck < FOCUS_THROTTLE_MS) return;
+    lastFocusCheck = now;
+    void revalidateSession().then((verdict) => {
+      if (verdict === "expired") endSession();
+    });
+  };
+  document.addEventListener("visibilitychange", onFocus);
+  window.addEventListener("focus", onFocus);
+
+  setInterval(() => { void revalidateSession(); }, PROACTIVE_INTERVAL_MS);
+}

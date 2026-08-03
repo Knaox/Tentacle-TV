@@ -7,6 +7,7 @@ export default {
   signingIn: "Connexion...",
   invalidCredentials: "Identifiants invalides",
   loginFailed: "Connexion échouée",
+  sessionExpired: "Votre session a expiré. Reconnectez-vous pour continuer.",
   tryDemo: "Essayer la démo",
   loadingDemo: "Chargement de la démo...",
   haveInviteKey: "Vous avez une clé d'invitation ?",
