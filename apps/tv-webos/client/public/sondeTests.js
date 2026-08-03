@@ -128,6 +128,7 @@
       { cle: "AbortSignal.timeout (103)", sonde: presence(global.AbortSignal && typeof global.AbortSignal.timeout === "function") },
       { cle: "ResizeObserver (64)", sonde: presence(typeof global.ResizeObserver === "function") },
       { cle: "IntersectionObserver (51)", sonde: presence(typeof global.IntersectionObserver === "function") },
+      { cle: "entry.isIntersecting (58)", sonde: attributIntersection() },
       { cle: "Intl.DisplayNames (81)", sonde: presence(global.Intl && typeof global.Intl.DisplayNames === "function") },
       /* Couverts par core-js — verifies pour confirmer que le polyfill charge. */
       { cle: "Object.entries (54)", sonde: presence(typeof Object.entries === "function") },
@@ -139,6 +140,41 @@
       { cle: "globalThis (71)", sonde: presence(typeof global.globalThis !== "undefined") },
       { cle: "modules ES (61)", sonde: presence("noModule" in document.createElement("script")) },
       { cle: "Worker depuis blob", sonde: workerDepuisBlob() }
+    ];
+  }
+
+  /* L'observateur d'intersection est arrive en Chrome 51, mais `isIntersecting`
+   * n'a ete ajoute a la spec qu'en Chrome 58. Entre les deux, l'attribut vaut
+   * `undefined` — donc faux — alors que toutes les gardes `typeof
+   * IntersectionObserver === "function"` passent et qu'aucun repli ne se
+   * declenche. Sur un socle Chrome 53, c'est la difference entre un accueil
+   * peuple et un accueil vide. */
+  function attributIntersection() {
+    var Entree = global.IntersectionObserverEntry;
+    if (typeof Entree !== "function") return ko("IntersectionObserverEntry absent");
+    return "isIntersecting" in Entree.prototype
+      ? ok("present")
+      : ko("ABSENT — il faut lire intersectionRatio > 0");
+  }
+
+  /* Ce que la plateforme offre a une application tierce, cote voix et cote
+   * sortie. Les valeurs sont brutes : on veut savoir ce qui existe, pas ce
+   * qu'on aimerait qui existe. */
+  function voixEtPlateforme() {
+    var palm = global.PalmSystem || {};
+    var webos = global.webOS || {};
+    return [
+      { cle: "webkitSpeechRecognition", sonde: presence(typeof global.webkitSpeechRecognition === "function") },
+      { cle: "SpeechRecognition", sonde: presence(typeof global.SpeechRecognition === "function") },
+      { cle: "speechSynthesis (synthese)", sonde: presence(!!global.speechSynthesis) },
+      { cle: "webOS.service.request", sonde: presence(webos.service && typeof webos.service.request === "function") },
+      { cle: "PalmSystem.platformBack", sonde: presence(typeof palm.platformBack === "function") },
+      { cle: "webOS.platformBack", sonde: presence(typeof webos.platformBack === "function") },
+      { cle: "PalmSystem.deviceInfo", sonde: presence(typeof palm.deviceInfo === "string") },
+      /* Une saisie focalisee doit faire monter le clavier systeme : c'est le
+       * seul chemin de dictee documente. Rien ne le sonde depuis le script —
+       * seul l'oeil tranche. La ligne est ici pour qu'on pense a regarder. */
+      { cle: "clavier systeme au focus", sonde: info("a constater : le champ ci-dessous doit l'ouvrir") }
     ];
   }
 
@@ -164,6 +200,7 @@
       return [
         { titre: "Environnement", lignes: environnement() },
         { titre: "API JavaScript", lignes: apisJs() },
+        { titre: "Voix et plateforme", lignes: voixEtPlateforme() },
         { titre: "CSS", lignes: apisCss() },
         { titre: "Codecs", lignes: typesMedia() }
       ];
