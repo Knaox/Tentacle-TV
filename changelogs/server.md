@@ -11,6 +11,16 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.2]
+### FR
+- L'identité d'un appareil est désormais scellée par le serveur. Depuis la 1.12.1 elle était fournie par l'application : un utilisateur du serveur qui connaissait l'appareil d'un autre pouvait s'en servir pour le déconnecter. Aucun accès à son compte n'était possible, mais la gêne était réelle
+- Renforcement au passage de la construction des en-têtes envoyés au serveur multimédia
+- Vos sessions en cours ne sont pas interrompues par cette mise à jour
+### EN
+- A device's identity is now sealed by the server. Since 1.12.1 it was supplied by the app: a user of your server who knew someone else's device could use it to sign them out. No access to their account was possible, but the nuisance was real
+- Hardened header construction towards the media server along the way
+- Your current sessions are not interrupted by this update
+
 ## [1.12.1]
 ### FR
 - Deux serveurs Tentacle branchés sur la même médiathèque Jellyfin ne se déconnectent plus l'un l'autre. Se connecter au second ne coupait pas seulement la session du premier : il fallait s'y reconnecter à chaque aller-retour
