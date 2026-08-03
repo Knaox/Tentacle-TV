@@ -11,6 +11,22 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.1]
+### FR
+- Deux serveurs Tentacle branchés sur la même médiathèque Jellyfin ne se déconnectent plus l'un l'autre. Se connecter au second ne coupait pas seulement la session du premier : il fallait s'y reconnecter à chaque aller-retour
+- Se déconnecter d'un appareil ne ferme plus la session des autres. Chaque navigateur, chaque ordinateur a désormais sa propre session, visible et révocable individuellement depuis Jellyfin
+- Une session expirée ramène à l'écran de connexion en expliquant pourquoi. L'application restait jusqu'ici « connectée » devant des pages qui ne chargeaient jamais, sans rien dire
+- La session est revérifiée au retour sur l'onglet, et repart pour un tour : elle ne s'éteint pas tant que vous revenez de temps en temps
+- Un serveur multimédia qui redémarre ne déconnecte toujours pas : seul un refus explicite met fin à une session
+- Quand rien ne se charge alors que le serveur répond, la page le dit et propose de réessayer, au lieu de rester vide
+### EN
+- Two Tentacle servers pointing at the same Jellyfin library no longer sign each other out. Signing in to the second didn't just end the first one's session: you had to sign in again on every switch
+- Signing out on one device no longer ends the session on the others. Every browser and every computer now has its own session, individually visible and revocable from Jellyfin
+- An expired session takes you back to the sign-in screen and says why. Until now the app stayed "signed in" in front of pages that never loaded, without a word
+- The session is rechecked when you return to the tab, and renewed on the spot: it won't lapse as long as you come back now and then
+- A media server restarting still doesn't sign you out: only an explicit refusal ends a session
+- When nothing loads although the server is responding, the page says so and offers to retry, instead of staying blank
+
 ## [1.12.0]
 ### FR
 - Vitesse de lecture réglable, de 0,5× à 4× : un bouton compteur dans la barre du lecteur, sur le web comme sur l'application de bureau
