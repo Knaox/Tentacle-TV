@@ -22,55 +22,80 @@ import { BACKEND_VERSION } from "./version";
  */
 
 const INSTALL_ID_KEY = "install_id";
+const DEVICE_SECRET_KEY = "device_id_secret";
+
+/** Sépare les composantes hachées. Le caractère nul ne peut apparaître dans
+ *  aucune d'elles, ce qui écarte les collisions par concaténation ambiguë :
+ *  sans lui, ("ab", "c") et ("a", "bc") donneraient le même identifiant. */
+const PART_SEPARATOR = "\u0000";
 
 export type IdentityKind = "web" | "setup" | "provisioning" | "backend";
 
 /** Mémoïsation de la PROMESSE (pas de la valeur) : deux appels concurrents au
- *  démarrage ne doivent pas générer deux identifiants concurrents. */
-let installIdPromise: Promise<string> | null = null;
-let installIdCache: string | null = null;
+ *  démarrage ne doivent pas générer deux valeurs concurrentes. */
+const promises = new Map<string, Promise<string>>();
+const values = new Map<string, string>();
 
 /**
- * Identifiant d'installation, persisté dans `server_config`. Créé à la première
- * demande, stable ensuite pour toute la vie de la base.
+ * Valeur aléatoire persistée dans `server_config`. Créée à la première demande,
+ * stable ensuite pour toute la vie de la base.
  *
  * La lecture tape la base DIRECTEMENT plutôt que `getConfigValue` : le cache de
  * `configStore` n'est hydraté que par `detectAppState()`, et lire trop tôt
- * renverrait `undefined` — on générerait alors un nouvel identifiant qui
- * écraserait celui du serveur. C'est exactement le piège documenté pour
+ * renverrait `undefined` — on générerait alors une nouvelle valeur qui
+ * écraserait celle du serveur. C'est exactement le piège documenté pour
  * `jwt_secret` (cf. `scripts/confirm-device-code.ts`). L'écriture, elle, passe
  * par `setConfigValue` pour garder le cache cohérent.
  */
-export async function ensureInstallId(): Promise<string> {
-  if (installIdCache) return installIdCache;
-  if (!installIdPromise) {
-    installIdPromise = resolveInstallId().catch((err) => {
-      installIdPromise = null; // base indisponible : réessayer au prochain appel
+async function ensurePersistedRandom(key: string, bytes: number, label: string): Promise<string> {
+  const cached = values.get(key);
+  if (cached) return cached;
+
+  let pending = promises.get(key);
+  if (!pending) {
+    pending = resolvePersistedRandom(key, bytes, label).catch((err) => {
+      promises.delete(key); // base indisponible : réessayer au prochain appel
       throw err;
     });
+    promises.set(key, pending);
   }
-  return installIdPromise;
+  return pending;
 }
 
-async function resolveInstallId(): Promise<string> {
+async function resolvePersistedRandom(key: string, bytes: number, label: string): Promise<string> {
   const prisma = getPrisma();
-  const existing = await prisma.serverConfig.findUnique({ where: { key: INSTALL_ID_KEY } });
+  const existing = await prisma.serverConfig.findUnique({ where: { key } });
   if (existing?.value) {
-    installIdCache = existing.value;
+    values.set(key, existing.value);
     return existing.value;
   }
 
-  const generated = crypto.randomBytes(6).toString("hex");
-  await setConfigValue(INSTALL_ID_KEY, generated);
-  installIdCache = generated;
-  console.log(`[Identity] install id generated and persisted — ${generated}`);
+  const generated = crypto.randomBytes(bytes).toString("hex");
+  await setConfigValue(key, generated);
+  values.set(key, generated);
+  // L'identifiant d'installation n'est pas secret (il part dans le DeviceId) — on
+  // le journalise pour pouvoir relier une entrée Jellyfin à un serveur. Le secret
+  // de hachage, lui, ne doit JAMAIS apparaître dans les logs.
+  const trace = key === INSTALL_ID_KEY ? ` — ${generated}` : "";
+  console.log(`[Identity] ${label} generated and persisted${trace}`);
   return generated;
+}
+
+/** Identifiant d'installation — public, il figure en clair dans le DeviceId. */
+export async function ensureInstallId(): Promise<string> {
+  return ensurePersistedRandom(INSTALL_ID_KEY, 6, "install id");
+}
+
+/** Clé de hachage des discriminants fournis par le client. SECRÈTE : c'est elle
+ *  qui empêche un utilisateur de fabriquer le DeviceId d'un autre. */
+function ensureDeviceSecret(): Promise<string> {
+  return ensurePersistedRandom(DEVICE_SECRET_KEY, 32, "device id secret");
 }
 
 /** Vide la mémoïsation (tests). */
 export function resetInstallIdCache(): void {
-  installIdPromise = null;
-  installIdCache = null;
+  promises.clear();
+  values.clear();
 }
 
 /**
@@ -87,9 +112,36 @@ export function buildDeviceId(installId: string, kind: IdentityKind, discriminan
   return discriminant ? `${base}-${encodeURIComponent(discriminant)}` : base;
 }
 
-/** DeviceId complet, identifiant d'installation résolu au passage. */
+/** DeviceId complet, identifiant d'installation résolu au passage. Pour les
+ *  discriminants que le SERVEUR choisit (nom d'un compte à provisionner, par
+ *  exemple) : ils restent lisibles dans le dashboard Jellyfin. */
 export async function deviceIdFor(kind: IdentityKind, discriminant?: string): Promise<string> {
   return buildDeviceId(await ensureInstallId(), kind, discriminant);
+}
+
+/** Discriminant opaque : HMAC-SHA256 tronqué à 64 bits. PURE, testable sans base. */
+export function buildOpaqueDiscriminant(secret: string, parts: string[]): string {
+  return crypto
+    .createHmac("sha256", secret)
+    .update(parts.join(PART_SEPARATOR))
+    .digest("hex")
+    .slice(0, 16);
+}
+
+/**
+ * DeviceId dont le discriminant vient (au moins en partie) du CLIENT.
+ *
+ * Le hachage par une clé secrète propre au serveur est ce qui empêche un
+ * utilisateur authentifié de fabriquer le DeviceId d'un autre : Jellyfin révoque
+ * tous les tokens portant un DeviceId donné dès qu'un autre compte s'y
+ * authentifie, si bien qu'un identifiant devinable offrirait une déconnexion
+ * ciblée à qui connaîtrait l'appareil de sa victime. Le compte fait partie des
+ * composantes hachées, précisément pour que deux comptes ne puissent jamais
+ * retomber sur le même identifiant.
+ */
+export async function deviceIdForOpaque(kind: IdentityKind, ...parts: string[]): Promise<string> {
+  const [installId, secret] = await Promise.all([ensureInstallId(), ensureDeviceSecret()]);
+  return buildDeviceId(installId, kind, buildOpaqueDiscriminant(secret, parts));
 }
 
 /**
@@ -99,7 +151,7 @@ export async function deviceIdFor(kind: IdentityKind, discriminant?: string): Pr
  * (appelé au démarrage, dans `index.ts`).
  */
 export function deviceIdForSync(kind: IdentityKind, discriminant?: string): string {
-  return buildDeviceId(installIdCache ?? "unset", kind, discriminant);
+  return buildDeviceId(values.get(INSTALL_ID_KEY) ?? "unset", kind, discriminant);
 }
 
 export interface AuthHeaderParts {

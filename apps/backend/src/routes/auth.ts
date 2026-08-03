@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getJellyfinUrl } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { verifyImpersonationToken } from "../services/jwt";
-import { buildAuthHeader, deviceIdFor } from "../services/jellyfinIdentity";
+import { buildAuthHeader, deviceIdForOpaque } from "../services/jellyfinIdentity";
 import { authPasswordRoutes } from "./authPassword";
 import { authAccountRoutes } from "./authAccount";
 import { authRefreshRoutes } from "./authRefresh";
@@ -37,11 +37,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      // Une session Jellyfin par (installation, appareil) — cf. jellyfinIdentity.
-      // Le nom du compte n'entre PAS dans l'identifiant : deux comptes vivants
-      // en même temps sur une même instance n'est pas un cas d'usage, et
-      // basculer de l'un à l'autre révoque proprement le token abandonné.
-      const deviceId = await deviceIdFor("web", body.deviceId ?? body.username);
+      // Une session Jellyfin par (installation, appareil, compte) — cf.
+      // jellyfinIdentity. L'appareil vient du CLIENT, d'où le hachage par une
+      // clé secrète du serveur : sans lui, quiconque connaîtrait l'appareil
+      // d'un autre pourrait, en le rejouant ici, faire révoquer sa session par
+      // Jellyfin. Le compte est haché avec, pour que deux comptes ne retombent
+      // jamais sur le même identifiant.
+      const deviceId = await deviceIdForOpaque("web", body.deviceId ?? body.username, body.username);
       const authHeader = buildAuthHeader({ device: "Web", deviceId });
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
