@@ -1,0 +1,278 @@
+/* Le lecteur du téléviseur.
+ *
+ * Écrit pour Chrome 53 : pas de `gap` en flexbox — les écarts sont des marges
+ * posées à la main —, pas de `clamp()`, pas de `:has()`, pas de
+ * `backdrop-filter`. Les panneaux sont OPAQUES, ce qui est de toute façon plus
+ * lisible qu'un voile posé sur une image en mouvement.
+ *
+ * Une précaution sur les écarts : ne jamais mélanger une marge posée ici avec
+ * une classe `gap-*` de Tailwind sur le même conteneur. La passe des écarts
+ * produit `.flex.gap-N > *`, dont la spécificité écrase une marge sur un enfant
+ * direct.
+ *
+ * ── L'overscan ──
+ *
+ * `#root` porte un retrait de 64 × 36 px pour la zone que la dalle rogne. Le
+ * lecteur, lui, rend sa racine en `w-screen h-screen` : cent pour cent de la
+ * FENÊTRE dans une boîte de contenu amputée de 128 px. L'image démarrait donc
+ * décalée de 64 px et débordait d'autant à droite — de travers, sans que rien
+ * ne le signale. Le lecteur est la seule page en plein cadre : le retrait passe
+ * de la page à l'habillage.
+ */
+
+html[data-tv-lecteur] #root {
+  padding: 0;
+}
+
+/* ── L'habillage ──────────────────────────────────────────────────────── */
+
+.osd-tv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x);
+  box-sizing: border-box;
+}
+
+.osd-tv-haut {
+  flex-shrink: 0;
+}
+
+.osd-tv-titre {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+}
+
+.osd-tv-sous-titre {
+  margin: 6px 0 0 0;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+}
+
+.osd-tv-bas {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ── La rangée de transport ───────────────────────────────────────────── */
+
+.osd-tv-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.osd-tv-transport > * {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.osd-tv-bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  transition: transform 160ms ease-out, background-color 160ms ease-out;
+}
+
+.osd-tv-bouton:focus {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.1);
+}
+
+.osd-tv-bouton-principal {
+  width: 84px;
+  height: 84px;
+}
+
+.osd-tv-saut {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* ── La barre de progression ──────────────────────────────────────────── */
+
+.barre-tv {
+  display: flex;
+  align-items: center;
+}
+
+.barre-tv-temps {
+  flex: 0 0 auto;
+  width: 96px;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.86);
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.barre-tv-piste {
+  position: relative;
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.barre-tv-tampon,
+.barre-tv-lu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.barre-tv-tampon {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.barre-tv-lu {
+  background: var(--brand);
+}
+
+.barre-tv-pastille,
+.barre-tv-fantome {
+  position: absolute;
+  top: 50%;
+  border-radius: 999px;
+}
+
+.barre-tv-pastille {
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  background: var(--brand);
+}
+
+/* Le curseur fantôme est blanc cerclé de la couleur de marque : il doit se
+   distinguer de la position réelle d'un coup d'œil, sans qu'on ait à lire les
+   chiffres. */
+.barre-tv-fantome {
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  margin-left: -11px;
+  background: #ffffff;
+  border: 3px solid var(--brand);
+  box-sizing: border-box;
+}
+
+/* ── Le déplacement dans le flux ──────────────────────────────────────── */
+
+.scrub-tv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x);
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.scrub-tv-haut {
+  display: flex;
+  align-items: center;
+}
+
+.scrub-tv-titre {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.scrub-tv-palier {
+  margin-left: 20px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.scrub-tv-bas {
+  flex-shrink: 0;
+}
+
+.scrub-tv-horodatage {
+  margin: 0 0 16px 0;
+  text-align: center;
+  font-size: 64px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
+}
+
+.scrub-tv-indices {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 0 0;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.scrub-tv-indices > span {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+/* ── Les panneaux ─────────────────────────────────────────────────────── */
+
+.panneau-tv {
+  position: absolute;
+  right: 0;
+  bottom: 96px;
+  width: 460px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-dropdown);
+  box-shadow: var(--elev-3);
+}
+
+/* Le panneau du web est dessiné pour une souris : cibles de 32 px, texte de
+   14. En descendance simple, ce que Chrome 53 traite sans effort. */
+.panneau-tv button {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+.panneau-tv-bascule {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: none;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 19px;
+}
+
+.panneau-tv-bascule[data-actif="true"] {
+  color: var(--brand-light);
+}

@@ -104,6 +104,17 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "hooks/useNativeHlsPreference.ts")]:
     resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
 
+  // La barre de contrôle du web est une rangée de cibles de 44 px, un curseur
+  // de volume révélé au survol, du plein écran et de l'incrustation d'image :
+  // aucune de ces décisions ne survit à trois mètres. Ce qu'on remplace est du
+  // dessin — le seek reste celui de `useSmartSeek`, câblé par les propriétés.
+  [resolve(WEB, "components/PlayerControls.tsx")]: resolve(CLIENT, "lecture/ControlesTv.tsx"),
+
+  // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
+  // réarmé que par un mouvement de souris — une télécommande n'en produit pas,
+  // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.
+  [resolve(WEB, "hooks/useControlsAutoHide.ts")]: resolve(CLIENT, "lecture/masquageAutoTv.ts"),
+
   // Hôte des plugins : une iframe qui charge un bundle distant.
   [resolve(WEB, "components/PluginIframe.tsx")]: resolve(CLIENT, "shims/pluginIframe.ts"),
 

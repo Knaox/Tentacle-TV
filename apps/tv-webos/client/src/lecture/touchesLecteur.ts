@@ -1,4 +1,5 @@
 import { lireIntention, type TransportCommande } from "../focus/touches";
+import { lecteurTvActif } from "./etatLecteurTv";
 
 /**
  * Les touches de transport de la télécommande.
@@ -14,6 +15,13 @@ import { lireIntention, type TransportCommande } from "../focus/touches";
  * lui-même piloté par cet élément, et tout ce qui l'observe — barre de
  * progression, télémétrie de lecture, reprise — écoute ses événements. Une
  * pause déclenchée ici est donc vue exactement comme un clic sur le bouton.
+ *
+ * **Il se tait quand le lecteur du téléviseur est monté.** Celui-ci passe par
+ * `useSmartSeek`, qui sait suivre un transcodage HLS — veilleur de calage, puis
+ * reconstruction d'URL si le flux ne rattrape pas. Écrire `currentTime` en dur,
+ * comme ici, court-circuite tout cela : sur un flux transcodé, le déplacement
+ * n'arrive nulle part. Le module reste installé pour toute vidéo hors lecteur ;
+ * il n'y en a aucune aujourd'hui, mais la règle vaut pour demain.
  */
 
 /** Pas de déplacement des touches d'avance et de retour, en secondes. */
@@ -23,6 +31,7 @@ export function installerTouchesLecteur(): () => void {
   const surTouche = (evenement: KeyboardEvent) => {
     const intention = lireIntention(evenement);
     if (!intention || intention.type !== "transport") return;
+    if (lecteurTvActif()) return;
 
     const video = document.querySelector("video");
     if (!video) return;

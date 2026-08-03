@@ -4,6 +4,7 @@ import { boiteDepuisRectangle, meilleur } from "./geometrie";
 import { amenerEnVue, defilerAveuglement } from "./defilement";
 import { reviserApresMontage } from "./attente";
 import { pointeurActif, surveillerCurseur } from "./curseur";
+import { navigationOsdActive } from "../lecture/etatLecteurTv";
 
 /**
  * Navigation spatiale à la télécommande.
@@ -20,9 +21,12 @@ import { pointeurActif, surveillerCurseur } from "./curseur";
  * déplacement du focus. En capturant, le moteur voit l'événement avant elles
  * et l'arrête net.
  *
- * Le lecteur fait exception : `usePlayerHotkeys` y traite les flèches comme un
- * déplacement dans le flux, ce qui est exactement le comportement attendu
- * d'une télécommande. Le moteur s'y suspend au lieu de s'y imposer.
+ * Le lecteur fait exception, mais à moitié : quand ses commandes sont
+ * déployées, ce sont des boutons comme les autres et le moteur les parcourt
+ * sans qu'on écrive une ligne. Le reste du temps — habillage masqué, ou
+ * curseur fantôme en cours —, les flèches appartiennent au déplacement dans le
+ * flux, et le moteur se retire. La condition se lit dans l'état du lecteur,
+ * jamais dans le chemin seul.
  */
 
 /** Route sur laquelle le moteur laisse la main aux raccourcis du lecteur. */
@@ -36,7 +40,7 @@ export function installerMoteurFocus(): () => void {
 
   const surTouche = (evenement: KeyboardEvent) => {
     if (pointeurActif()) return;
-    if (surLecteur()) return;
+    if (moteurSuspendu()) return;
 
     const intention = lireIntention(evenement);
     if (!intention || intention.type !== "deplacer") return;
@@ -74,6 +78,11 @@ function saisieEnCours(cible: EventTarget | null): boolean {
 
 function surLecteur(): boolean {
   return window.location.pathname.startsWith(`/tv${CHEMIN_LECTEUR}`);
+}
+
+/** Le moteur ne rend la main que lorsque les commandes du lecteur sont là. */
+function moteurSuspendu(): boolean {
+  return surLecteur() && !navigationOsdActive();
 }
 
 /**
