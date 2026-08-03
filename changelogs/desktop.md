@@ -14,31 +14,6 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
-## [1.20.5]
-### FR
-- Vitesse de lecture réglable, de 0,5× à 4× : un bouton compteur dans la barre du lecteur
-- Les sous-titres n'affichent plus leur code de mise en forme. Un texte prévu en haut de l'image y est réellement placé, au lieu d'apparaître précédé de « {\an8} »
-- L'image n'est plus recompressée quand l'ordinateur sait déjà la lire : les fichiers 4K HDR et Dolby Vision sont transmis tels quels, et le serveur cesse de les ré-encoder en permanence
-- Disparition d'un plafond de débit de 42 Mb/s qui n'aurait jamais dû exister : un disque Blu-ray 4K n'est plus converti au seul motif qu'il est trop détaillé
-- Le démarrage d'une vidéo ne passe plus par un écran noir : une seule attente, puis l'image
-- Les paliers de qualité proposés sont calculés d'après le fichier lu : plus de « 1080p 30 Mb/s » offert sur une source qui n'en fait que 12
-### EN
-- Adjustable playback speed, from 0.5× to 4×: a speedometer button in the player bar
-- Subtitles no longer show their formatting codes. Text meant for the top of the picture is actually placed there, instead of appearing prefixed with "{\an8}"
-- The picture is no longer re-compressed when the computer can already play it: 4K HDR and Dolby Vision files are passed through as-is, and the server stops re-encoding them permanently
-- A 42 Mb/s bitrate ceiling that should never have existed is gone: a 4K Blu-ray disc is no longer converted purely for being too detailed
-- Starting a video no longer goes through a black screen: one wait, then the picture
-- The quality steps on offer are worked out from the file being played: no more "1080p 30 Mb/s" offered on a source that only runs at 12
-
-<!-- Bloc rapatrié de la branche release/desktop-v1.20.4, jamais fusionnée dans
-     main : la 1.20.4 a bien été publiée (build du 02/08/2026) mais ses notes
-     n'existaient que là. Archive. -->
-## [1.20.4]
-### FR
-- Correction d'un plantage au lancement d'une vidéo sur les Mac à processeur Intel
-### EN
-- Fixed a crash when starting a video on Intel-based Macs
-
 ## [1.20.3]
 ### FR
 - Corrections d'anomalies mineures

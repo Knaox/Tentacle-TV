@@ -1,7 +1,4 @@
 import type { DeviceProfile } from "@tentacle-tv/shared";
-import {
-  DEBIT_MUSIQUE, PROFIL_AUDIO_SEUL, profilHlsTs, SOUS_TITRES_BITMAP, SOUS_TITRES_TEXTE,
-} from "./blocs";
 
 /**
  * Profil de périphérique du lecteur NATIF — celui de mpv, pas d'un navigateur.
@@ -54,7 +51,7 @@ export function buildMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     // fournit alors `maxBitrate`.
     MaxStreamingBitrate: maxBitrate ?? 400_000_000,
     MaxStaticBitrate: 400_000_000,
-    MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
+    MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: [
       { Container: CONTENEURS, Type: "Video", VideoCodec: CODECS_VIDEO, AudioCodec: CODECS_AUDIO },
       { Container: "mp3", Type: "Audio" },
@@ -68,13 +65,31 @@ export function buildMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     // débit bridé par le sélecteur de qualité, ou un sous-titre bitmap à
     // incruster. `hevc` autorisé, mpv le lit aussi bien que h264.
     TranscodingProfiles: [
-      profilHlsTs("hevc,h264", "aac,ac3,eac3"),
-      PROFIL_AUDIO_SEUL,
+      {
+        Container: "ts", Type: "Video", VideoCodec: "hevc,h264",
+        AudioCodec: "aac,ac3,eac3", Protocol: "hls", Context: "Streaming",
+        MaxAudioChannels: "6", MinSegments: 2,
+        BreakOnNonKeyFrames: true, CopyTimestamps: true,
+      },
+      {
+        Container: "mp4", Type: "Audio", AudioCodec: "aac",
+        Protocol: "hls", Context: "Streaming", MaxAudioChannels: "6",
+      },
     ],
     CodecProfiles: [],
     // Inchangés par rapport au profil navigateur : le rendu des sous-titres a
     // sa propre logique côté application (incrustation serveur pour les
     // bitmaps, pistes natives pour le reste), et ce n'est pas le sujet ici.
-    SubtitleProfiles: [...SOUS_TITRES_TEXTE, ...SOUS_TITRES_BITMAP],
+    SubtitleProfiles: [
+      { Format: "vtt", Method: "External" },
+      { Format: "ass", Method: "External" },
+      { Format: "ssa", Method: "External" },
+      { Format: "srt", Method: "External" },
+      { Format: "sub", Method: "External" },
+      { Format: "subrip", Method: "External" },
+      { Format: "pgssub", Method: "Encode" },
+      { Format: "dvdsub", Method: "Encode" },
+      { Format: "dvbsub", Method: "Encode" },
+    ],
   };
 }

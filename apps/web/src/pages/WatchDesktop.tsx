@@ -24,7 +24,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality, qualityPresets, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
@@ -210,7 +210,6 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
         currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
-        qualityPresets={qualityPresets}
         onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
         /* Lecture locale : le fichier EST la source — changer la « qualité »
            n'a aucun sens, le sélecteur est retiré (TrackSelector le masque

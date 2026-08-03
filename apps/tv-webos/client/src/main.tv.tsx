@@ -29,7 +29,9 @@ import { installerGardeSessionTv } from "./auth/gardeSessionTv";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
 import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
+import { memoriserProfondeurHistorique } from "./auth/retourCoquille";
 import { installerMoteurFocus, amorcerFocus } from "./focus/moteur";
+import { installerRetour } from "./focus/retour";
 import { installerTouchesLecteur } from "./lecture/touchesLecteur";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
@@ -63,6 +65,11 @@ lireCapacitesTeleviseur();
 // requête : un jeton d'appareil est un JWT sans expiration, donc un secret de
 // longue durée, et un fragment n'atteint ni les journaux ni le `Referer`.
 consommerJumelage();
+
+// Avant toute navigation : c'est la profondeur d'ici qui dit de combien de
+// crans il faudra remonter pour retrouver la coquille, le jour où l'on oublie
+// le jumelage. `consommerJumelage` a fait un `replaceState`, qui n'empile pas.
+memoriserProfondeurHistorique();
 
 const langueSauvee = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: langueSauvee });
@@ -110,13 +117,21 @@ const jellyfinClient = new JellyfinClient(
   __APP_VERSION_WEB__,
 );
 
-// PAS de cookie : l'authentification vient du jumelage, qui rend un jeton
-// d'appareil et n'installe rien. Laisser `useCredentials` à vrai aurait un
-// effet qu'on ne voit pas venir — `buildStreamUrl` et `buildSubtitleUrl`
-// omettent alors `api_key` en comptant sur ce cookie, et chaque flux comme
-// chaque sous-titre partirait anonyme.
-jellyfinClient.useCredentials = false;
+// L'authentification vient du jumelage quand il y en a un, du cookie sinon.
+//
+// Les deux réglages répondent à la même question et ne peuvent pas diverger :
+// `buildStreamUrl` et `buildSubtitleUrl` n'ajoutent `api_key` que lorsque
+// `useCredentials` est faux, en comptant sur le cookie dans le cas contraire.
+// Figer `useCredentials` à faux sans jeton produisait donc des URL portant un
+// `api_key` vide, et privait au passage `fetchWithRetry` de la condition qui
+// arme la revalidation de session.
+//
+// Avec un jeton d'appareil, rien ne change : pas de cookie, `api_key` partout.
+// Sans jeton — au navigateur de développement, ou pour un compte déjà connecté
+// par cookie — le client redevient utilisable, sans rien retirer au chemin du
+// jumelage.
 const jetonJumelage = jetonAppareil();
+jellyfinClient.useCredentials = !jetonJumelage;
 if (jetonJumelage) jellyfinClient.setAccessToken(jetonJumelage);
 
 const queryClient = new QueryClient({
@@ -164,6 +179,9 @@ attachQueryPersister(queryClient, stockagePersistant, {
 // focus initial, lui, attend que le premier écran soit monté.
 installerMoteurFocus();
 amorcerFocus();
+
+// La touche Retour, que le moteur décodait sans que personne l'écoute.
+installerRetour();
 
 // Touches de transport de la télécommande. Le client web ne les connaît pas :
 // il n'a jamais eu affaire qu'à un clavier, où elles n'existent pas.

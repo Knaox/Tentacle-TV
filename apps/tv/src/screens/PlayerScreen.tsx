@@ -234,7 +234,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Pont vers la route MODALE Réglages/Qualité.
   const { handleCloseSettings } = useTVSettingsBridge({
     audioTracksList, subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
-    qualityKey: quality.qualityKey, qualityPresets: quality.qualityPresets, sourceQuality: p.sourceQuality,
+    qualityKey: quality.qualityKey, sourceQuality: p.sourceQuality,
     handleAudioChange: p.handleAudioChange, handleSubtitleChange: p.handleSubtitleChange, handleQualityChange,
     showOverlay: controls.showOverlay, setShowSettings, showSettingsRef, bumpOsdFocus,
   });

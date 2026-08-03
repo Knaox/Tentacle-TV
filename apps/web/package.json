@@ -25,7 +25,6 @@
     "framer-motion": "^11.15.0",
     "hls.js": "^1.6.15",
     "i18next": "^25.8.13",
-    "libpgs": "^0.8.1",
     "lucide-react": "^0.577.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

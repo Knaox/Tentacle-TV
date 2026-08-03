@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
-import { type QualityKey, type QualityPreset } from "../hooks/usePlayerPlayback";
+import { type QualityKey } from "../hooks/usePlayerPlayback";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { CenterControls } from "./player/CenterControls";
 import { SkipIndicator } from "./player/SkipIndicator";
@@ -34,8 +34,6 @@ interface Props {
   selectedAudio: number;
   selectedSubtitle: number;
   qualityKey: QualityKey;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
-  qualityPresets: readonly QualityPreset[];
   introSegment?: SegmentTimestamps | null;
   creditsSegment?: SegmentTimestamps | null;
   nextEpisode?: MediaItem | null;
@@ -57,7 +55,7 @@ interface Props {
 
 export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
-  audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets,
+  audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey,
   introSegment, creditsSegment, nextEpisode, previousEpisode,
   item, mediaSourceId,
   onPlayPause, onSeek, onBack,
@@ -251,7 +249,6 @@ export function MobilePlayerOverlay({
         selectedAudio={selectedAudio}
         selectedSubtitle={selectedSubtitle}
         qualityKey={qualityKey}
-        qualityPresets={qualityPresets}
         sourceQuality={sourceQuality}
         onSelectAudio={onSelectAudio}
         onSelectSubtitle={onSelectSubtitle}

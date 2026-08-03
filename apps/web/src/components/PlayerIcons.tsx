@@ -26,13 +26,3 @@ export function PrevEpIcon() { return <svg className="h-5 w-5 text-white" fill="
 export function NextEpIcon() { return <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>; }
 export function PipIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2" /><rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor" opacity="0.3" /><rect x="12" y="9" width="8" height="6" rx="1" /></svg>; }
 export function EpisodesIcon() { return <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h11M4 12h11M4 18h7" /><path d="M16 10.5l5 3-5 3z" fill="currentColor" stroke="none" /></svg>; }
-/** Compteur de vitesse : cadran, graduations et aiguille — le réglage de vitesse de lecture. */
-export function SpeedIcon() {
-  return (
-    <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <circle cx="12" cy="12" r="9" />
-      <path strokeLinecap="round" d="M12 12l4.2-2.8" />
-      <path strokeLinecap="round" d="M12 3v1.6M21 12h-1.6M3 12h1.6M5.64 5.64l1.13 1.13M18.36 5.64l-1.13 1.13" />
-    </svg>
-  );
-}

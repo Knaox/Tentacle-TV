@@ -2,12 +2,9 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
-import {
-  buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
-  type OptionsProfilWeb,
-} from "../lib/deviceProfile";
-import { plagesDynamiquesSupportees } from "../lib/deviceProfile/codecs";
-import { evaluerLecture, sourceEstHdr } from "./playbackVerdict";
+import { buildBrowserDeviceProfile } from "../lib/browserDeviceProfile";
+import { buildMacOSDeviceProfile } from "../lib/macosDeviceProfile";
+import { buildMpvDeviceProfile } from "../lib/mpvDeviceProfile";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 
@@ -21,14 +18,10 @@ const DBG = "[Tentacle:PlaybackInfo]";
  * Hors du hook : `fetchPlaybackInfo` est mémoïsé, et une fonction refermée sur
  * le rendu s'y serait figée.
  */
-function construireProfil(
-  lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number, options?: OptionsProfilWeb,
-): DeviceProfile {
-  // mpv lit tout, y compris les sous-titres image : aucune capacité à lui
-  // retirer, les drapeaux de repli ne concernent que les lecteurs web.
+function construireProfil(lecteurNatif: boolean, isMacOSTauri: boolean, bitrate?: number): DeviceProfile {
   if (lecteurNatif) return buildMpvDeviceProfile(bitrate);
-  if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate, options);
-  return buildBrowserDeviceProfile(bitrate, options);
+  if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate);
+  return buildBrowserDeviceProfile(bitrate);
 }
 
 export interface PlaybackInfoState {
@@ -79,30 +72,9 @@ export function usePlaybackInfo(lecteurNatif = false) {
   // Le défaut ne pouvait pas se voir sous Windows : `isMacOS()` y est faux, donc
   // c'est le profil navigateur — le bon pour mpv — qui servait déjà.
   const isMacOSTauri = isTauriShell() && isMacOS();
-
-  // Hors de `state` : `reset()` le vide à chaque changement d'épisode, alors
-  // que la disqualification du MKV vaut pour toute la session. Un moteur qui a
-  // échoué une fois échouerait sur l'épisode suivant, et rien ne sert de lui
-  // repayer trois secondes d'attente à chaque fois. En mémoire uniquement :
-  // rien n'est écrit sur le disque, un rechargement de page remet à zéro.
-  const [mkvNonFiable, setMkvNonFiable] = useState(false);
-  const [pgsClientIndisponible, setPgsClientIndisponible] = useState(false);
-  const signalerMkvNonFiable = useCallback(() => {
-    console.warn(DBG, "lecture directe MKV muette — desactivee pour la session");
-    setMkvNonFiable(true);
-  }, []);
-  const signalerPgsClientIndisponible = useCallback(() => {
-    console.warn(DBG, "rendu PGS client en echec — incrustation serveur pour la session");
-    setPgsClientIndisponible(true);
-  }, []);
-  const optionsProfil = useMemo<OptionsProfilWeb>(
-    () => ({ mkvNonFiable, pgsClientIndisponible }),
-    [mkvNonFiable, pgsClientIndisponible],
-  );
-
   const deviceProfile = useMemo(
-    () => construireProfil(lecteurNatif, isMacOSTauri, undefined, optionsProfil),
-    [lecteurNatif, isMacOSTauri, optionsProfil],
+    () => construireProfil(lecteurNatif, isMacOSTauri),
+    [lecteurNatif, isMacOSTauri],
   );
   const fetchPlaybackInfo = useCallback(async (opts: {
     itemId: string;
@@ -121,7 +93,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
 
     try {
       let profile = opts.maxStreamingBitrate != null
-        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate, optionsProfil)
+        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate)
         : deviceProfile;
       // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
       // returns a TranscodingUrl with the correct audio track selected server-side.
@@ -191,61 +163,21 @@ export function usePlaybackInfo(lecteurNatif = false) {
 
       // Synthetic log so users can see at a glance, in DevTools, whether
       // Direct Streaming is engaged and which decode path is used.
-      //
-      // `mode` vient de `evaluerLecture` et non des deux booléens ci-dessus :
-      // ceux-ci disent ce que le fichier PERMET, pas ce que le serveur a fait.
-      // Seul le verdict distingue un remux — image copiée, son converti, ce
-      // qu'on vise — d'un ré-encodage, ce qu'on traque. `reencodage` est le
-      // critère d'acceptation du chantier : il doit rester faux.
       const transport = ds && url.startsWith(ds.mediaBaseUrl) ? "direct" : "proxy";
-      const fluxVideo = ms.MediaStreams?.find((s) => s.Type === "Video");
-      const verdict = evaluerLecture({
-        supportsDirectPlay: ms.SupportsDirectPlay,
-        supportsDirectStream: ms.SupportsDirectStream,
-        transcodingUrl: ms.TranscodingUrl,
-        transcodeReasons: ms.TranscodeReasons,
-        codecVideoSource: fluxVideo?.Codec,
-        sourceHdr: sourceEstHdr(fluxVideo),
-        clientAccepteHdr: plagesDynamiquesSupportees().length > 2, // au-delà de Unknown+SDR
-      });
+      const mode = directPlay ? "DirectPlay" : directStream ? "DirectStream" : "Transcode";
       console.log("[Tentacle:Playback]", {
-        mode: verdict.mode,
-        reencodage: verdict.reencodageVideo,
-        // Jointes plutôt qu'en tableau : un `Array(1)` replié dans la console
-        // ne dit rien, et c'est précisément la valeur qu'on vient y chercher.
-        raisons: verdict.raisons.join(",") || "(aucune)",
-        // Plage dynamique : la valeur BRUTE du serveur face à ce qu'on déclare.
-        // Jellyfin sérialise `VideoRangeType` tantôt en nom, tantôt en index —
-        // et c'est ce nom, côté serveur, qu'il compare à notre liste pour
-        // décider s'il peut copier l'image. Sans les deux sous les yeux, on en
-        // est réduit à deviner.
-        plageSource: fluxVideo?.VideoRangeType,
-        plagesDeclarees: plagesDynamiquesSupportees().join("|"),
+        mode,
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
+        url: url.length > 80 ? `${url.slice(0, 80)}…` : url,
       });
-      // Sur SA PROPRE ligne, en chaîne nue : la console replie les objets, et
-      // c'est justement le champ le plus long qu'elle cache derrière son « … ».
-      //
-      // Cette URL porte tout ce que le serveur relira pour décider de copier
-      // l'image ou de la recompresser — `hevc-rangetype`, `hevc-profile`,
-      // `hevc-level`, `hevc-videobitdepth`, `VideoBitrate`, `MaxFramerate`,
-      // `TranscodeReasons`. `EncodingHelper.CanStreamCopyVideo` ne lit pas le
-      // DeviceProfile : il ne lit que ces paramètres-là. Réservée au
-      // transcodage — en lecture directe il n'y a rien à diagnostiquer.
-      if (!directPlay) {
-        console.log(
-          "[Tentacle:Playback] url →",
-          url.replace(/([?&])(api_key|apikey)=[^&]*/gi, "$1api_key=***"),
-        );
-      }
     } catch (err) {
       if (fetchId.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);
       setState((prev) => ({ ...prev, isLoading: false }));
     }
-  }, [client, userId, deviceProfile, optionsProfil]);
+  }, [client, userId, deviceProfile]);
 
   const reset = useCallback(() => {
     ++fetchId.current; // Invalidate in-flight fetches
@@ -255,10 +187,5 @@ export function usePlaybackInfo(lecteurNatif = false) {
     });
   }, []);
 
-  return {
-    ...state,
-    mkvNonFiable, signalerMkvNonFiable,
-    pgsClientIndisponible, signalerPgsClientIndisponible,
-    fetchPlaybackInfo, reset,
-  };
+  return { ...state, fetchPlaybackInfo, reset };
 }

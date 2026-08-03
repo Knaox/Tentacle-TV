@@ -19,6 +19,11 @@ import { jetonAppareil } from "../amorce/jetonFragment";
  * la signature puis la non-révocation en base. Il suffit de le lui passer là
  * où il le lit.
  *
+ * Reste le cas symétrique, celui d'un client sans jeton : au navigateur de
+ * développement, ou pour un compte déjà connecté par cookie. Le garde y reprend
+ * le chemin web — `credentials: "include"`, pas de corps. Refuser d'emblée
+ * revenait à purger une session parfaitement valide avant le premier écran.
+ *
  * Le reste de la logique est celle du client web, et pour la même raison : le
  * client ne décide jamais seul qu'une session est morte. Un refus explicite
  * est le seul motif de déconnexion ; une panne réseau n'en est pas un.
@@ -41,14 +46,23 @@ interface StockageSession {
 
 export async function revaliderSession(): Promise<VerdictSession> {
   const jeton = jetonAppareil();
-  if (!jeton) return "expiree";
 
   try {
     const reponse = await fetch("/api/auth/refresh", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Le corps, et non l'en-tête : c'est là que le backend regarde.
-      body: JSON.stringify({ token: jeton }),
+      // Deux chemins pour une seule question : y a-t-il un jeton d'appareil ?
+      //
+      // Avec, le backend le lit dans le corps — jamais dans l'en-tête. Sans,
+      // il lit son cookie, et c'est le seul cas où le client tourne hors d'un
+      // téléviseur, pour un compte déjà connecté. Poster `{ token: null }`
+      // revenait à lui demander de refuser, puis à prendre ce refus pour une
+      // expiration : la session était purgée avant même le premier écran.
+      ...(jeton
+        ? {
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: jeton }),
+          }
+        : { credentials: "include" as const }),
     });
 
     if (reponse.status === 401) return "expiree";
