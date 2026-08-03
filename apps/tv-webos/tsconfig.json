@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["../web/src/*"]
+    }
+  },
+  "include": ["client/src", "build"],
+  "exclude": ["node_modules", "client/dist", "shell"]
+}

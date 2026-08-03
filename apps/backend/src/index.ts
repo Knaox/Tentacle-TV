@@ -4,12 +4,10 @@ import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import compress from "@fastify/compress";
 import rateLimit from "@fastify/rate-limit";
-import fastifyStatic from "@fastify/static";
-import { resolve } from "path";
-import { existsSync } from "fs";
 import { ZodError } from "zod";
 import websocket from "@fastify/websocket";
 
+import { enregistrerClientsStatiques } from "./static/clientsStatiques";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
@@ -237,21 +235,7 @@ async function main() {
   // ── Jellyfin proxy (all Jellyfin API calls go through here) ──
   await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
 
-  // ── Serve frontend static files in production ──
-  const webDistPath = resolve(__dirname, "../../web/dist");
-  if (existsSync(webDistPath)) {
-    await app.register(fastifyStatic, {
-      root: webDistPath,
-      prefix: "/",
-    });
-    // SPA fallback: serve index.html for all non-API routes
-    app.setNotFoundHandler(async (request, reply) => {
-      if (request.url.startsWith("/api/")) {
-        return reply.status(404).send({ message: "Not found" });
-      }
-      return reply.sendFile("index.html");
-    });
-  }
+  await enregistrerClientsStatiques(app);
 
   // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
   const dbUrl = getDatabaseUrl();
