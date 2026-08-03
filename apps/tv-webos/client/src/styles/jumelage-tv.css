@@ -1,0 +1,61 @@
+/* L'écran « non jumelé », composé comme la coquille à laquelle il ramène.
+ *
+ * Les deux écrans se suivent dans le temps : l'un dit que le jumelage est
+ * perdu, l'autre en affiche un nouveau code. Ils ne doivent pas donner
+ * l'impression de changer d'application au passage — d'où la même composition,
+ * les mêmes graisses, le même overscan et le même anneau de focus.
+ *
+ * Ici les jetons du thème sont disponibles : contrairement à la coquille, ce
+ * fichier est compilé avec le client.
+ */
+
+.ecran-jumelage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.ecran-jumelage-sur-titre {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brand-light);
+}
+
+.ecran-jumelage-bloc {
+  max-width: 900px;
+}
+
+.ecran-jumelage-titre {
+  margin: 0 0 20px 0;
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.ecran-jumelage-texte {
+  margin: 0 0 32px 0;
+  max-width: 820px;
+  font-size: 22px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.ecran-jumelage-action {
+  padding: 18px 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+}

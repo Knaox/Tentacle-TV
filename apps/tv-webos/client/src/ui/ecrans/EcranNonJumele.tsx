@@ -22,19 +22,20 @@ export function EcranNonJumele() {
     revenirALaCoquille();
   }, []);
 
+  // Même composition que la coquille, à laquelle ce bouton ramène : sur-titre
+  // discret en haut, sujet à hauteur de regard, action en pilule. Les deux
+  // écrans se suivent — ils ne doivent pas donner l'impression de changer
+  // d'application au passage.
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-16 text-center">
-      <h1 className="text-4xl font-semibold text-content-primary">{t("tvNonJumeleTitre")}</h1>
-      <p className="max-w-3xl text-xl leading-relaxed text-content-secondary">
-        {t("tvNonJumeleTexte")}
-      </p>
-      <button
-        type="button"
-        onClick={revenirAuJumelage}
-        className="rounded-full bg-cta-primary-bg px-12 py-5 text-xl font-bold text-cta-primary-text"
-      >
-        {t("tvNonJumeleAction")}
-      </button>
+    <div className="ecran-jumelage">
+      <p className="ecran-jumelage-sur-titre">Tentacle TV</p>
+      <div className="ecran-jumelage-bloc">
+        <h1 className="ecran-jumelage-titre">{t("tvNonJumeleTitre")}</h1>
+        <p className="ecran-jumelage-texte">{t("tvNonJumeleTexte")}</p>
+        <button type="button" onClick={revenirAuJumelage} className="ecran-jumelage-action">
+          {t("tvNonJumeleAction")}
+        </button>
+      </div>
     </div>
   );
 }
