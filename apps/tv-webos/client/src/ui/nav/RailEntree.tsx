@@ -1,5 +1,8 @@
-import { Link } from "react-router-dom";
-import { Search, Home, Bookmark, Heart, Library, Settings } from "lucide-react";
+import { useCallback, useMemo, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Home, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
+import { creerAppuiLong } from "../../focus/appuiLong";
+import { useEpinglageRail } from "./epinglageTv";
 import type { EntreeRail, IconeRail } from "./entreesRail";
 
 /**
@@ -13,6 +16,13 @@ import type { EntreeRail, IconeRail } from "./entreesRail";
  * Le libellé n'est pas retiré du document au repli : il est masqué par
  * `opacity` et `clip`, ce qui le laisse lisible aux lecteurs d'écran et évite
  * un reflux de mise en page au déploiement.
+ *
+ * **Le maintien de OK retire l'entrée du rail.** C'est le même geste que sur
+ * une carte, et il reste un `<a href>` : le moteur de navigation le recense
+ * comme n'importe quel lien, et `aria-current` continue de dire où l'on est.
+ * L'activation native d'Entrée sur un lien est neutralisée par le
+ * `preventDefault` de `creerAppuiLong` — sans quoi le maintien navi­guerait ET
+ * masquerait.
  */
 
 const ICONES: Record<IconeRail, typeof Home> = {
@@ -22,6 +32,7 @@ const ICONES: Record<IconeRail, typeof Home> = {
   favoris: Heart,
   bibliotheque: Library,
   reglages: Settings,
+  restaurer: Eye,
 };
 
 interface ProprietesRailEntree {
@@ -32,13 +43,53 @@ interface ProprietesRailEntree {
 
 export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
   const Icone = ICONES[entree.icone];
+  const navigate = useNavigate();
+  const lien = useRef<HTMLAnchorElement>(null);
+  const epinglage = useEpinglageRail();
+
+  const actionCourte = useCallback(() => {
+    if (entree.restaure) {
+      epinglage.toutAfficher();
+      return;
+    }
+    navigate(entree.chemin);
+  }, [entree.chemin, entree.restaure, epinglage, navigate]);
+
+  /**
+   * Masquer l'entrée la retire du document, donc emporte le focus avec elle.
+   * On vise le voisin AVANT de basculer — le nœud survit au rendu, React le
+   * garde par sa clé — puis on lui donne le focus au tour de boucle suivant,
+   * quand la liste a été redessinée.
+   */
+  const actionLongue = useCallback(() => {
+    const item = lien.current?.closest("li");
+    const voisin = item?.nextElementSibling ?? item?.previousElementSibling ?? null;
+    const cible = voisin ? voisin.querySelector<HTMLElement>(".rail-entree") : null;
+
+    epinglage.basculer(entree.cle);
+    if (cible) window.setTimeout(() => cible.focus(), 0);
+  }, [entree.cle, epinglage]);
+
+  const appui = useMemo(
+    () =>
+      creerAppuiLong({
+        court: actionCourte,
+        long: entree.masquable ? actionLongue : undefined,
+      }),
+    [actionCourte, actionLongue, entree.masquable],
+  );
 
   return (
     <Link
+      ref={lien}
       to={entree.chemin}
       className="rail-entree"
       data-active={active}
+      data-masquable={entree.masquable || undefined}
       aria-current={active ? "page" : undefined}
+      onKeyDown={appui.onKeyDown}
+      onKeyUp={appui.onKeyUp}
+      onBlur={appui.onBlur}
     >
       <span className="rail-entree-icone" aria-hidden>
         <Icone size={26} strokeWidth={2} />

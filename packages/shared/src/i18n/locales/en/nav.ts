@@ -29,4 +29,7 @@ export default {
   pin: "Pin",
   unpin: "Unpin",
   credits: "Credits",
+  railLabel: "Main navigation",
+  railHint: "Hold OK to hide an entry",
+  railShowAll: "Show all",
 } as const;

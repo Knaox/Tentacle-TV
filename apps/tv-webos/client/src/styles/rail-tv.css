@@ -65,6 +65,37 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  /* Place réservée à l'indice, dans les DEUX états. Le rail ne doit pas
+     redistribuer ses entrées au déploiement : le moteur de navigation vient
+     de calculer sa géométrie dessus. */
+  padding-bottom: 44px;
+  box-sizing: border-box;
+}
+
+/* L'indice du geste de masquage. Absolu pour ne peser sur rien, et révélé par
+   la seule opacité — la largeur du rail est déjà une transition, il n'en faut
+   pas une seconde. */
+.rail-indice {
+  position: absolute;
+  left: var(--tv-overscan-x);
+  /* Une largeur, pas un `right` : calée sur le rail DÉPLOYÉ, elle ne change pas
+     avec lui. Sinon le texte se replie sur six pixels quand le rail l'est, et
+     se déchire en colonne — invisible, mais rien ne justifie de faire calculer
+     ça au moteur à chaque transition. */
+  width: calc(var(--rail-largeur-deploye) - var(--tv-overscan-x) - 20px);
+  bottom: 12px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--rail-duree) ease-out;
+}
+
+.rail-indice[data-deploye="true"] {
+  opacity: 0.62;
 }
 
 /* Les réglages ferment la liste, écartés des entrées de navigation courante :
