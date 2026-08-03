@@ -1,0 +1,70 @@
+import { useCallback, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { useEntreesRail, entreeActive } from "./entreesRail";
+import { RailEntree } from "./RailEntree";
+
+/**
+ * Navigation principale du téléviseur.
+ *
+ * Un rail d'icônes en permanence à gauche, qui se déploie et nomme ses
+ * destinations dès que le focus y entre. C'est le patron des interfaces de
+ * salon, et il tient à deux propriétés :
+ *
+ * - **il est toujours là**, donc on sait qu'il existe et par où y aller — une
+ *   navigation qu'il faut deviner est une navigation qu'on n'utilise pas ;
+ * - **il passe par-dessus**, il ne pousse pas. Décaler le contenu à chaque
+ *   entrée du focus ferait bouger toutes les rangées, c'est-à-dire la
+ *   géométrie sur laquelle le moteur de navigation vient de calculer.
+ *
+ * Le déploiement est piloté par `onFocus`/`onBlur` React et **non** par
+ * `:focus-within` : cette pseudo-classe arrive avec Chrome 60 et la garde de
+ * compatibilité la refuse. Les événements de focus remontent dans le système
+ * synthétique de React, un seul gestionnaire sur le conteneur suffit donc.
+ */
+export function RailTv() {
+  const { pathname } = useLocation();
+  const entrees = useEntreesRail();
+  const active = entreeActive(entrees, pathname);
+  const [deploye, setDeploye] = useState(false);
+  const sortie = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const surFocus = useCallback(() => {
+    if (sortie.current !== null) clearTimeout(sortie.current);
+    setDeploye(true);
+  }, []);
+
+  /**
+   * Le repli attend un tour de boucle.
+   *
+   * Passer d'une entrée à l'autre produit un `blur` immédiatement suivi d'un
+   * `focus` : replier sur le premier ferait clignoter le rail à chaque
+   * déplacement vertical.
+   */
+  const surBlur = useCallback(() => {
+    if (sortie.current !== null) clearTimeout(sortie.current);
+    sortie.current = setTimeout(() => setDeploye(false), 0);
+  }, []);
+
+  return (
+    <nav
+      className="rail-tv"
+      data-deploye={deploye}
+      aria-label="Navigation principale"
+      onFocus={surFocus}
+      onBlur={surBlur}
+    >
+      {/* Voile qui assombrit le contenu au déploiement. `aria-hidden` et sans
+          événements : il ne doit ni recevoir le focus ni intercepter un clic
+          du pointeur de la télécommande. */}
+      <span className="rail-voile" data-deploye={deploye} aria-hidden />
+
+      <ul className="rail-liste">
+        {entrees.map((entree) => (
+          <li key={entree.cle}>
+            <RailEntree entree={entree} active={entree.cle === active} deploye={deploye} />
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}

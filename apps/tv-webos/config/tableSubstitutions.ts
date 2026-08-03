@@ -66,6 +66,12 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "components/rows/MediaRow.tsx")]: resolve(CLIENT, "ui/rangees/RangeeTv.tsx"),
   [resolve(WEB, "components/LibraryGridCard.tsx")]: resolve(CLIENT, "ui/cartes/CarteGrilleTv.tsx"),
 
+  // La barre horizontale du web oblige à traverser tout l'écran pour changer
+  // de section, et sa barre d'onglets mobile se déclenche sous 768 px. Le
+  // téléviseur navigue par un rail latéral, toujours présent et déployé au
+  // focus.
+  [resolve(WEB, "components/AppLayout.tsx")]: resolve(CLIENT, "ui/DispositionTv.tsx"),
+
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
