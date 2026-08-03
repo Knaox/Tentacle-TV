@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyUserChange } from "@tentacle-tv/api-client";
-import { oublierJumelage, revenirALaCoquille } from "../../auth/retourCoquille";
+import { oublierJumelage, rendreLaMainAuTeleviseur } from "../../auth/retourCoquille";
 
 /**
  * Le compte, et la sortie.
@@ -58,7 +58,11 @@ export function EcranCompteTv() {
     oublierJumelage();
     queryClient.clear();
     notifyUserChange();
-    revenirALaCoquille();
+    // Puis on quitte, pour que la relance reparte de la coquille et de son
+    // code. Au navigateur, où la plateforme ne sait pas quitter, l'appel est
+    // sans effet : la purge suffit à renvoyer sur l'écran « non jumelé », qui
+    // explique la marche à suivre.
+    rendreLaMainAuTeleviseur();
   }, [confirme, queryClient]);
 
   const compte = nomDuCompte();

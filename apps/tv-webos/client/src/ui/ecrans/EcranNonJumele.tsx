@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { oublierJumelage, revenirALaCoquille } from "../../auth/retourCoquille";
+import { plateformePeutQuitter, quitterVersLaCoquille } from "../../auth/retourCoquille";
 
 /**
  * L'écran qu'on voit quand l'appareil n'est plus jumelé.
@@ -10,29 +10,30 @@ import { oublierJumelage, revenirALaCoquille } from "../../auth/retourCoquille";
  * dans la coquille — celle-ci parle au relais sans connaître l'adresse du
  * serveur, ce que le client ne peut pas faire puisqu'il en est servi.
  *
- * On y arrive dans un seul cas : le jeton a été révoqué ou le stockage vidé.
- * Le retour passe par `retourCoquille`, qui sait de combien de crans remonter —
- * un `history.back()` nu ne suffisait qu'au premier écran.
+ * **Le bouton dit maintenant ce qu'il fait.** Il annonçait « Revenir au
+ * jumelage » et tentait de remonter l'historique jusqu'à la coquille ; faute
+ * d'y parvenir, il rendait la main à la plateforme — ce qui ferme
+ * l'application. On voyait donc la page se fermer après avoir demandé à revenir
+ * quelque part. Le client ne PEUT pas ramener à l'écran de code : seule une
+ * relance y revient. Le bouton quitte donc, et l'écran explique la relance.
+ *
+ * Il n'est rendu que là où la plateforme sait quitter. Au navigateur de
+ * développement il n'apparaît pas : un bouton sans effet est pire qu'un bouton
+ * absent, on le vise, on appuie, et on conclut que rien ne répond.
+ *
+ * Cet écran vit hors de la disposition — la garde de routes le monte à la place
+ * de la connexion — donc il n'hérite d'aucun des fonds de l'application. Les
+ * motifs sont remontés ici : le dégradé ambiant de la disposition, la barre
+ * d'accent des en-têtes de bibliothèque, et le bouton principal de la fiche.
  */
 export function EcranNonJumele() {
   const { t } = useTranslation("pairing");
+  const peutQuitter = plateformePeutQuitter();
 
-  const revenirAuJumelage = useCallback(() => {
-    oublierJumelage();
-    revenirALaCoquille();
+  const quitter = useCallback(() => {
+    quitterVersLaCoquille();
   }, []);
 
-  // Même composition que la coquille, à laquelle ce bouton ramène : sur-titre
-  // discret en haut, sujet à hauteur de regard, action en pilule. Les deux
-  // écrans se suivent — ils ne doivent pas donner l'impression de changer
-  // d'application au passage.
-  // Cet écran vit hors de la disposition — la garde de routes le monte à la
-  // place de la connexion. Il n'hérite donc d'aucun des fonds de l'application,
-  // et c'est ce qui le faisait ressembler à une page d'erreur : un rectangle
-  // noir avec trois éléments posés dessus. On remonte ici les motifs que le
-  // reste du produit emploie, sans en inventer un seul — le dégradé ambiant de
-  // la disposition, la barre d'accent des en-têtes de bibliothèque, et le
-  // bouton principal blanc de la fiche média.
   return (
     <div className="ecran-jumelage">
       <div className="brand-ambient" aria-hidden />
@@ -43,9 +44,12 @@ export function EcranNonJumele() {
         </p>
         <h1 className="ecran-jumelage-titre">{t("tvNonJumeleTitre")}</h1>
         <p className="ecran-jumelage-texte">{t("tvNonJumeleTexte")}</p>
-        <button type="button" onClick={revenirAuJumelage} className="ecran-jumelage-action">
-          {t("tvNonJumeleAction")}
-        </button>
+        <p className="ecran-jumelage-texte">{t("tvNonJumeleRelance")}</p>
+        {peutQuitter && (
+          <button type="button" onClick={quitter} className="ecran-jumelage-action">
+            {t("tvQuitter")}
+          </button>
+        )}
       </div>
     </div>
   );

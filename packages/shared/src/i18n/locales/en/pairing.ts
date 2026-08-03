@@ -63,8 +63,13 @@ export default {
   pairingConfigureNow: "Configure now",
   tvNonJumeleTitre: "TV not paired",
   tvNonJumeleTexte:
-    "This device is no longer linked to your account. Go back to the pairing screen to show a new code, then confirm it from your phone or computer.",
-  tvNonJumeleAction: "Back to pairing",
+    "This device is no longer linked to your account.",
+  // The client cannot bring back the code screen: a page served over HTTP
+  // cannot navigate to `file://`. Only a relaunch does, and the button now
+  // says so instead of closing the app without warning.
+  tvNonJumeleRelance:
+    "Quit the app, then relaunch Tentacle TV from the TV menu: a new code will be shown.",
+  tvQuitter: "Quit the app",
 
   // "Account" section of the TV settings.
   tvCompteJumele: "Paired account",
@@ -73,5 +78,5 @@ export default {
   tvOublierTitre: "Forget this pairing",
   tvOublierConfirmer: "Confirm",
   tvOublierTexte:
-    "This TV will no longer be linked to your account and will return to the pairing screen, where a new code will be shown.",
+    "This TV will no longer be linked to your account and the app will close. Relaunch it to show a new code.",
 } as const;
