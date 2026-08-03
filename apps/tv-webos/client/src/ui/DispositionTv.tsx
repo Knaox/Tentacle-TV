@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { RailTv } from "./nav/RailTv";
+import { EcranRechercheTv } from "./recherche/EcranRechercheTv";
 
 /**
  * Disposition du client téléviseur.
@@ -30,6 +31,13 @@ export function AppLayout() {
       <div className="pl-[var(--rail-largeur-repli)]">
         <Outlet />
       </div>
+
+      {/* La recherche est une surcouche, pas une route : `App.tsx` n'est pas
+          modifié, et le client web ne fait pas autrement — la sienne est un
+          portail ouvert par un raccourci. Montée ici plutôt que dans le rail,
+          elle survit à un changement d'écran et ne dépend pas de qui l'a
+          ouverte. Elle ne rend rien tant qu'elle est fermée. */}
+      <EcranRechercheTv />
     </div>
   );
 }

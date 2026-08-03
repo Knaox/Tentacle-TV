@@ -42,6 +42,8 @@ export interface EntreeRail {
   masquable: boolean;
   /** Rend le rail à son état complet au lieu de naviguer. */
   restaure?: boolean;
+  /** Ouvre la surcouche de recherche au lieu de naviguer. */
+  cherche?: boolean;
 }
 
 export function useEntreesRail(): EntreeRail[] {
@@ -54,9 +56,14 @@ export function useEntreesRail(): EntreeRail[] {
       {
         cle: "recherche",
         libelle: t("search"),
-        chemin: "/recherche",
+        // Le chemin n'est pas une destination : il n'existe aucune route de
+        // recherche, ni ici ni sur le web. L'entrée reste un `<a href>` pour
+        // que le moteur de navigation la recense comme les autres, et son
+        // activation ouvre la surcouche.
+        chemin: "/",
         icone: "recherche",
         masquable: false,
+        cherche: true,
       },
       { cle: "accueil", libelle: t("home"), chemin: "/", icone: "accueil", masquable: false },
     ];
@@ -120,7 +127,7 @@ export function useEntreesRail(): EntreeRail[] {
 /** L'entrée active, au chemin courant. */
 export function entreeActive(entrees: EntreeRail[], chemin: string): string | null {
   for (const entree of entrees) {
-    if (entree.restaure) continue;
+    if (entree.restaure || entree.cherche) continue;
     if (entree.chemin === "/") {
       if (chemin === "/") return entree.cle;
       continue;

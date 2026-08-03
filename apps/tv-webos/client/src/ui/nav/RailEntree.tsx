@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Home, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
 import { creerAppuiLong } from "../../focus/appuiLong";
+import { ouvrirRecherche } from "../recherche/etatRecherche";
 import { useEpinglageRail } from "./epinglageTv";
 import type { EntreeRail, IconeRail } from "./entreesRail";
 
@@ -48,12 +49,16 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
   const epinglage = useEpinglageRail();
 
   const actionCourte = useCallback(() => {
+    if (entree.cherche) {
+      ouvrirRecherche();
+      return;
+    }
     if (entree.restaure) {
       epinglage.toutAfficher();
       return;
     }
     navigate(entree.chemin);
-  }, [entree.chemin, entree.restaure, epinglage, navigate]);
+  }, [entree.chemin, entree.cherche, entree.restaure, epinglage, navigate]);
 
   /**
    * Masquer l'entrée la retire du document, donc emporte le focus avec elle.
@@ -87,6 +92,14 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
       data-active={active}
       data-masquable={entree.masquable || undefined}
       aria-current={active ? "page" : undefined}
+      /* Le pointeur de la Magic Remote passe par le clic, pas par les touches :
+         sans cette interception, viser « Rechercher » suivrait le `href` au lieu
+         d'ouvrir la surcouche. Tout passe par la même action, quelle que soit
+         l'entrée employée. */
+      onClick={(evenement) => {
+        evenement.preventDefault();
+        actionCourte();
+      }}
       onKeyDown={appui.onKeyDown}
       onKeyUp={appui.onKeyUp}
       onBlur={appui.onBlur}
