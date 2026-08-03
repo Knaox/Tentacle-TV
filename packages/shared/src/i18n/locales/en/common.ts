@@ -180,4 +180,7 @@ export default {
   markSeasonUnwatched: "Mark season unwatched",
   loadingMore: "Loading...",
   loadingPlugin: "Loading {{label}}...",
+  tvIndisponibleTitre: "Not available on TV",
+  tvIndisponibleTexte:
+    "This section needs a keyboard and a close-up screen. Open Tentacle TV on a computer, phone or tablet to use it.",
 } as const;

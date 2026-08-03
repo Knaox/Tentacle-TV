@@ -180,4 +180,10 @@ export default {
   markSeasonUnwatched: "Saison non vue",
   loadingMore: "Chargement...",
   loadingPlugin: "Chargement de {{label}}...",
+  // Écrans volontairement absents du client téléviseur — administration,
+  // téléchargements, partage, assistance. Leur route existe encore, un lien
+  // interne peut y mener : mieux vaut expliquer qu'afficher une page vide.
+  tvIndisponibleTitre: "Indisponible sur le téléviseur",
+  tvIndisponibleTexte:
+    "Cette section demande un clavier et un écran de près. Ouvrez Tentacle TV sur un ordinateur, un téléphone ou une tablette pour y accéder.",
 } as const;

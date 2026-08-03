@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Résolution unique : le téléviseur redimensionne lui-même vers la dalle. -->
+    <meta name="viewport" content="width=1920, initial-scale=1" />
+    <title>Tentacle TV</title>
+    <!--
+      Politique de sécurité de la variante téléviseur.
+
+      `worker-src blob:` est indispensable : le rendu des sous-titres PGS passe
+      par libpgs, qui instancie son démultiplexeur depuis un blob. Sans cette
+      directive, le worker est refusé, le rendu client échoue, et la
+      négociation retombe sur une incrustation côté serveur — c'est-à-dire un
+      transcodage complet là où la dalle n'avait qu'à décoder.
+
+      `connect-src` reste en `'self'` : le client est servi par le serveur
+      Tentacle, tout passe par le proxy same-origin.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:"
+    />
+    <script>
+      /* Le thème avant le premier tracé, comme sur le web : sans cela la page
+         apparaît en clair puis bascule en sombre, ce qui se voit d'autant plus
+         sur une grande dalle. */
+      (function () {
+        try {
+          var mode = localStorage.getItem("tentacle_theme_mode") || "auto";
+          var sombre =
+            mode === "dark" ||
+            (mode === "auto" &&
+              (!window.matchMedia ||
+                !window.matchMedia("(prefers-color-scheme: light)").matches));
+          document.documentElement.setAttribute("data-theme", sombre ? "dark" : "light");
+          document.documentElement.style.background = sombre ? "#000000" : "#F4F4F7";
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.style.background = "#000000";
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-tentacle-bg text-content-primary antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tv.tsx"></script>
+  </body>
+</html>
