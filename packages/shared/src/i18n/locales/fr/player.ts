@@ -13,6 +13,7 @@ export default {
   seriesPreferenceCleared: "Préférence de langues retirée pour cette série",
   disabled: "Désactivé",
   quality: "Qualité",
+  speed: "Vitesse de lecture",
   original: "Original",
   quality1080pHigh: "1080p Haut",
   quality1080p: "1080p",

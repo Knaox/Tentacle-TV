@@ -3,6 +3,7 @@ export * from "./types/auth";
 export * from "./utils/trickplay";
 export * from "./utils/mediaQuality";
 export * from "./utils/qualityLadder";
+export * from "./utils/playbackRates";
 export * from "./utils/episodeCode";
 export * from "./types/websocket";
 export * from "./types/watchTogether";

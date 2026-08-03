@@ -107,6 +107,18 @@ export function VideoPlayer({
     if (v.paused) v.play().catch(() => {}); else v.pause();
   }, []);
 
+  // Vitesse de lecture. `defaultPlaybackRate` est posé EN PLUS de
+  // `playbackRate` : la spec remet playbackRate à defaultPlaybackRate au
+  // chargement de chaque nouvelle ressource, donc sans lui le taux choisi
+  // serait perdu à la moindre reconstruction de source (changement de qualité,
+  // repli CORS, seek qui relance le transcodage).
+  const appliquerVitesse = useCallback((taux: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.playbackRate = taux;
+    v.defaultPlaybackRate = taux;
+  }, []);
+
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
@@ -252,7 +264,7 @@ export function VideoPlayer({
           onToggleFullscreen={toggleFullscreen} onBack={() => { markPlayerExit(); navigate(-1); }}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
-          applyToSeries={applyToSeries}
+          applyToSeries={applyToSeries} onPlaybackRateChange={appliquerVitesse}
         />
       </div>
 

@@ -7,6 +7,7 @@ import { TrackSelector } from "./TrackSelector";
 import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
 import { formatDuration } from "./playerControls/utils";
 import { PlayerProgressBar } from "./playerControls/PlayerProgressBar";
+import { PlaybackRateControl } from "./playerControls/PlaybackRateControl";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon,
   GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, PipIcon, EpisodesIcon,
@@ -48,6 +49,8 @@ export interface PlayerControlsProps {
   onPreviousEpisode?: () => void;
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */
   applyToSeries?: ApplyToSeriesControl;
+  /** Applique la vitesse de lecture sur l'élément vidéo. */
+  onPlaybackRateChange?: (taux: number) => void;
 }
 
 // Contrôles superposés à la vidéo (top/bottom bar en dégradé vers transparent)
@@ -56,13 +59,13 @@ export interface PlayerControlsProps {
 // panneaux détachés à fond quasi-opaque, pas posés sur la vidéo.)
 export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
-  item, mediaSourceId,
+  item, itemId, mediaSourceId,
   title, subtitle, audioTracks, subtitleTracks,
   currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   hasNextEpisode, hasPreviousEpisode,
   onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onNextEpisode, onPreviousEpisode, applyToSeries,
+  onNextEpisode, onPreviousEpisode, applyToSeries, onPlaybackRateChange,
 }: PlayerControlsProps) {
   const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
@@ -155,6 +158,12 @@ export function PlayerControls({
             <span className="hidden whitespace-nowrap text-xs text-white/60 xs:inline sm:text-sm">{formatDuration(currentTime)} / {formatDuration(duration)}</span>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            {onPlaybackRateChange && (
+              <PlaybackRateControl
+                appliquer={onPlaybackRateChange} cleReset={itemId}
+                classeBouton="p-2.5 sm:p-2"
+              />
+            )}
             {isEpisode && (
               <button
                 onClick={() => { setShowEpisodes((p) => !p); setShowSettings(false); }}
