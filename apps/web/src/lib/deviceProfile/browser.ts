@@ -25,16 +25,17 @@ import {
  * retire NOTRE contribution au profil, morceau par morceau, pour voir laquelle
  * débloque la copie. Il se pose depuis la console et vaut pour la session :
  *
- *   localStorage.setItem("tentacle_diag_profil", "canaux-2")     // 2 canaux, comme jellyfin-web
+ *   localStorage.setItem("tentacle_diag_profil", "calque-jf")    // calque de jellyfin-web
+ *   localStorage.setItem("tentacle_diag_profil", "canaux-2")     // 2 canaux (mesuré sans effet)
  *   localStorage.setItem("tentacle_diag_profil", "sans-plage")   // sans VideoRangeType
  *   localStorage.setItem("tentacle_diag_profil", "sans-hevc")    // sans le profil HEVC entier
  *   localStorage.setItem("tentacle_diag_profil", "sans-audio6")  // sans la limite 6 canaux
  *   localStorage.removeItem("tentacle_diag_profil")              // profil normal
  *
- * `canaux-2` est la piste du moment : sur CE fichier, jellyfin-web obtient
- * `-codec:v:0 copy` en demandant `-ac 2`, nous obtenons `hevc_qsv` en demandant
- * `-ac 6`. Tout le reste de sa ligne ffmpeg (pas de `-hwaccel`, `-hls_time 6`,
- * `-bsf:v hevc_mp4toannexb`) découle de la copie, pas l'inverse.
+ * Déjà éliminés par la mesure ou par le code de Jellyfin 10.11 : le HDR et le
+ * tone mapping, la plage dynamique, les contraintes HEVC, le nombre de canaux
+ * audio, `BreakOnNonKeyFrames` (il ne pilote que `-noaccurate_seek`) et
+ * `CopyTimestamps` (il ne pilote que le PTS des sous-titres).
  *
  * Rien d'autre ne doit bouger entre deux essais : c'est une comparaison.
  */
@@ -146,13 +147,27 @@ export function buildBrowserDeviceProfile(
   transcodingProfiles.push(profilHlsTs("h264", audioTs));
   transcodingProfiles.push(PROFIL_AUDIO_SEUL);
 
-  // Diagnostic : jellyfin-web réclame 2 canaux (`-ac 2`) là où nous en
-  // réclamons 6, et c'est la dernière différence de REQUÊTE entre son ffmpeg
-  // qui copie l'image et le nôtre qui la recompresse.
+  // Diagnostic « canaux-2 » : ramène la demande à 2 canaux. MESURÉ SANS EFFET —
+  // les arguments audio de ffmpeg deviennent identiques à ceux de jellyfin-web
+  // (`-ac 2 -ab 256000 -af volume=2`) et l'image reste recompressée.
   if (diagnosticProfil() === "canaux-2") {
     for (let i = 0; i < transcodingProfiles.length; i++) {
       transcodingProfiles[i] = { ...transcodingProfiles[i], MaxAudioChannels: "2" };
     }
+  }
+  // Diagnostic « calque-jf » : un seul profil de transcodage, écrit de la main
+  // de jellyfin-web (browserDeviceProfile.js), sans `CopyTimestamps` ni aucun
+  // CodecProfile. C'est la reproduction la plus fidèle de sa requête qu'on
+  // puisse faire sans avoir son URL sous les yeux — et donc le test qui borne
+  // le problème : si la copie apparaît ici, la cause est dans l'écart qui
+  // reste ; sinon elle est hors du DeviceProfile.
+  if (diagnosticProfil() === "calque-jf") {
+    transcodingProfiles.length = 0;
+    transcodingProfiles.push({
+      Container: "mp4", Type: "Video", VideoCodec: "hevc,h264", AudioCodec: "aac",
+      Protocol: "hls", Context: "Streaming",
+      MaxAudioChannels: "2", MinSegments: 1, BreakOnNonKeyFrames: true,
+    });
   }
 
   // ── Codec profiles (constraints) ──
@@ -176,9 +191,11 @@ export function buildBrowserDeviceProfile(
       Type: "VideoAudio",
       Conditions: [{ Condition: "LessThanEqual", Property: "AudioChannels", Value: "2", IsRequired: false }],
     });
-  } else if (diag !== "sans-audio6") {
+  } else if (diag !== "sans-audio6" && diag !== "calque-jf") {
     codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
   }
+  // Le calque de jellyfin-web n'envoie AUCUNE contrainte de codec.
+  if (diag === "calque-jf") codecProfiles.length = 0;
 
   return {
     MaxStreamingBitrate: maxBitrate ?? 150_000_000,
