@@ -34,6 +34,8 @@
       font-family: "LG Smart UI", Helvetica, Arial, sans-serif;
       color: #A78BFA; margin-bottom: 10px;
     }
+    /* Le releve de touche tient sur trois lignes : keyCode, code, repeat. */
+    #touche { white-space: pre-line; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -46,6 +48,14 @@
   <div class="touches">
     <div class="entete">Derniere touche</div>
     <div id="touche">appuyez sur une touche de la telecommande</div>
+    <!-- Le clavier systeme doit monter de lui-meme quand ce champ prend le
+         focus, et le micro de la Magic Remote doit y dicter. Rien ne le sonde
+         depuis le script : c'est la seule verification qui se fait a l'oeil. -->
+    <div class="entete" style="margin-top:16px">Clavier systeme</div>
+    <input id="saisie" type="text" placeholder="OK ici doit ouvrir le clavier"
+           style="width:100%;box-sizing:border-box;padding:10px 12px;font-size:19px;
+                  background:#0A0A0F;color:#FFF;border:2px solid #2A2A34" />
+    <div id="dictee" style="font-size:16px;color:rgba(255,255,255,0.55);margin-top:8px">&nbsp;</div>
   </div>
 
   <script src="sondeTests.js" charset="utf-8"></script>

@@ -110,9 +110,35 @@
     document.addEventListener("keydown", function (evenement) {
       var code = evenement.keyCode;
       var nom = NOMS_TOUCHES[code] || "inconnue";
-      zone.textContent = "keyCode " + code + "  —  " + nom;
+      /* `code` et `repeat` autant que `keyCode` : le lecteur du client web lit
+       * `e.code`, et si la telecommande le renseigne, chaque fleche declenche
+       * AUSSI son saut dans le flux. La cadence de repetition, elle, cale la
+       * detection du maintien. */
+      zone.textContent =
+        "keyCode " + code + "  —  " + nom +
+        "\ncode " + (evenement.code || "(vide)") +
+        "   repeat " + (evenement.repeat ? "oui" : "non");
       /* Retour : on laisse le comportement par defaut, la sonde n'est pas une
        * application a part entiere et doit rester quittable. */
+    });
+  }
+
+  /* Le clavier systeme : ce que la saisie recoit, d'ou qu'elle vienne — frappe
+   * a la telecommande ou dictee au micro. Un texte qui apparait sans qu'aucun
+   * `keydown` ne passe est la signature de la dictee. */
+  function installerReleveSaisie() {
+    var champ = document.getElementById("saisie");
+    var zone = document.getElementById("dictee");
+    if (!champ || !zone) return;
+    var frappes = 0;
+    champ.addEventListener("keydown", function () { frappes++; });
+    champ.addEventListener("input", function () {
+      zone.textContent =
+        "recu : « " + champ.value + " »   —   " + frappes + " frappe(s) observee(s)";
+    });
+    champ.addEventListener("focus", function () {
+      frappes = 0;
+      zone.textContent = "champ focalise — le clavier systeme doit s'ouvrir";
     });
   }
 
@@ -151,6 +177,8 @@
     ajouter([{ cle: "maintien de OK", sonde: { etat: "info", valeur: "maintenez OK trois secondes" } }]);
     global.SondeDalle.installerReleveMaintien(ajouter);
     global.SondeDalle.sonderRelais(ajouter);
+    global.SondeDalle.mesurerBoiteObservateur(ajouter);
+    global.SondeDalle.sonderServicesVocaux(ajouter);
   }
 
   function demarrer() {
@@ -162,6 +190,7 @@
     rendreMesuresDalle(rapport);
     rendreInfoAppareil(rapport);
     installerReleveTouches();
+    installerReleveSaisie();
 
     var date = new Date();
     document.getElementById("horodatage").textContent =
