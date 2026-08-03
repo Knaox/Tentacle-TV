@@ -63,8 +63,15 @@ export default {
   pairingConfigureNow: "Configurer maintenant",
   tvNonJumeleTitre: "Téléviseur non jumelé",
   tvNonJumeleTexte:
-    "Cet appareil n'est plus associé à votre compte. Revenez à l'écran de jumelage pour afficher un nouveau code, puis validez-le depuis votre téléphone ou votre ordinateur.",
-  tvNonJumeleAction: "Revenir au jumelage",
+    "Cet appareil n'est plus associé à votre compte.",
+  // Le client ne peut pas ramener à l'écran de code : une page servie en HTTP
+  // ne navigue pas vers `file://`. Seule une relance y revient, et le bouton
+  // le dit désormais au lieu de fermer l'application sans prévenir.
+  // Espace insécable avant le deux-points : sans elle, il passe seul à la ligne
+  // suivante dès que la mesure du texte tombe mal.
+  tvNonJumeleRelance:
+    "Quittez l'application, puis relancez Tentacle TV depuis le menu du téléviseur : un nouveau code s'affichera.",
+  tvQuitter: "Quitter l'application",
 
   // Section « Compte » des réglages du téléviseur.
   tvCompteJumele: "Compte jumelé",
@@ -73,5 +80,5 @@ export default {
   tvOublierTitre: "Oublier ce jumelage",
   tvOublierConfirmer: "Confirmer l'oubli",
   tvOublierTexte:
-    "Ce téléviseur cessera d'être associé à votre compte et reviendra à l'écran de jumelage, où un nouveau code sera affiché.",
+    "Ce téléviseur cessera d'être associé à votre compte et l'application se fermera. Relancez-la pour afficher un nouveau code.",
 } as const;

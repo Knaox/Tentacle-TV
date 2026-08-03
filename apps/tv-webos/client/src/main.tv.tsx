@@ -29,7 +29,6 @@ import { installerGardeSessionTv } from "./auth/gardeSessionTv";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
 import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
-import { memoriserProfondeurHistorique } from "./auth/retourCoquille";
 import { installerMoteurFocus, amorcerFocus } from "./focus/moteur";
 import { installerRetour } from "./focus/retour";
 import { installerTouchesLecteur } from "./lecture/touchesLecteur";
@@ -65,11 +64,6 @@ lireCapacitesTeleviseur();
 // requête : un jeton d'appareil est un JWT sans expiration, donc un secret de
 // longue durée, et un fragment n'atteint ni les journaux ni le `Referer`.
 consommerJumelage();
-
-// Avant toute navigation : c'est la profondeur d'ici qui dit de combien de
-// crans il faudra remonter pour retrouver la coquille, le jour où l'on oublie
-// le jumelage. `consommerJumelage` a fait un `replaceState`, qui n'empile pas.
-memoriserProfondeurHistorique();
 
 const langueSauvee = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: langueSauvee });

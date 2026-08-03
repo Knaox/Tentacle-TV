@@ -1,44 +1,31 @@
 /**
- * Quitter le jumelage : oublier ce qu'on en sait, puis revenir à la coquille.
+ * Oublier le jumelage, et quitter.
  *
- * Sur un téléviseur, « se déconnecter » ne veut pas dire « revenir à un écran
- * de mot de passe » — il n'y en a pas. Cela veut dire oublier ce jumelage-ci et
- * rendre la main à la coquille, qui redemandera un code au relais.
+ * Sur un téléviseur, « se déconnecter » ne veut pas dire « revenir à un écran de
+ * mot de passe » — il n'y en a pas. Cela veut dire oublier ce jumelage-ci et
+ * revenir à l'écran de code de la coquille.
  *
- * **La coquille est dans l'historique, et c'est le seul chemin.** Elle navigue
- * vers le client en `location.href` et non en `replace` (`shell/js/shell.js`),
- * précisément pour rester derrière nous ; une page servie en HTTP ne peut pas
- * naviguer vers `file://`, donc l'historique est la seule porte.
+ * **Or le client ne peut pas y ramener, et il a fallu s'y résoudre.** Une page
+ * servie en HTTP ne peut pas naviguer vers `file://`. Restait l'historique,
+ * puisque la coquille y reste — mais on ne peut pas savoir de combien de crans
+ * remonter : le compte devient faux dès que l'utilisateur a reculé une fois, et
+ * rien ne permet d'inspecter une entrée d'une autre origine pour vérifier qu'on
+ * est arrivé.
  *
- * Reste à savoir de combien de crans remonter. `history.back()` seul ne suffit
- * pas : la garde de routes navigue en `replace`, mais tout le reste de
- * l'application empile — un écran de plus visité, c'est un cran de plus à
- * défaire. On mémorise donc la profondeur de la pile à l'arrivée, et on remonte
- * l'écart plus un.
+ * La version précédente tentait ce calcul et, s'il ne changeait pas de
+ * document, appelait `platformBack()` en filet. Deux erreurs. Elle reposait sur
+ * une hypothèse jamais vérifiée — qu'on peut traverser d'`http://` vers
+ * `file://` sur ce moteur. Et surtout, elle faisait d'un FILET l'action la plus
+ * destructrice possible : sur une dalle, `platformBack()` à la racine ferme
+ * l'application. L'utilisateur voyait la page se fermer sans comprendre.
  *
- * Ce compte peut être faux : l'utilisateur a pu reculer entre-temps, et la pile
- * d'un téléviseur laissé allumé des heures peut avoir été tronquée. D'où le
- * filet — si l'on est toujours sur la même page après un court délai, on rend
- * la main à la plateforme. Relancer l'application repart de la coquille, ce qui
- * est exactement le résultat cherché.
+ * Un filet ne doit jamais être plus destructeur que ce qu'il rattrape. On ne
+ * devine donc plus : quitter est le seul chemin qui mène réellement au code, et
+ * c'est désormais ce que le bouton annonce. Relancer l'application repart de la
+ * coquille, qui redemande un code au relais.
  */
 
-/** Le temps qu'on laisse à `history.go` pour changer de document. */
-const DELAI_VERIFICATION_MS = 400;
-
-let profondeurDepart: number | null = null;
-
-/**
- * À appeler une fois au démarrage, avant toute navigation.
- *
- * Appelée deux fois, elle garde la première valeur : ce qui compte est la
- * profondeur à l'arrivée sur le client, pas celle du moment où on la relit.
- */
-export function memoriserProfondeurHistorique(): void {
-  if (profondeurDepart === null) profondeurDepart = window.history.length;
-}
-
-/** Efface le jumelage mémorisé. N'a pas d'effet sur la navigation. */
+/** Le jumelage mémorisé est effacé. Sans effet sur la navigation. */
 export function oublierJumelage(): void {
   try {
     localStorage.removeItem("tentacle_token");
@@ -48,20 +35,42 @@ export function oublierJumelage(): void {
   }
 }
 
+interface PontPlateforme {
+  webOS?: { platformBack?: () => void };
+  PalmSystem?: { platformBack?: () => void };
+}
+
+function pont(): PontPlateforme {
+  return window as unknown as PontPlateforme;
+}
+
+/**
+ * La plateforme sait-elle nous rendre la main ?
+ *
+ * Faux au navigateur de développement, et c'est ce qui permet de n'y afficher
+ * aucun bouton qui ne ferait rien — la même discipline que partout ailleurs :
+ * une cible qui ne mène nulle part coûte un appui à chaque passage et laisse
+ * croire que la télécommande ne répond pas.
+ */
+export function plateformePeutQuitter(): boolean {
+  const global = pont();
+  return (
+    typeof global.webOS?.platformBack === "function" ||
+    typeof global.PalmSystem?.platformBack === "function"
+  );
+}
+
 /**
  * Rend la main au gestionnaire d'applications du téléviseur.
  *
  * `PalmSystem` est injecté dans toute page de l'application, y compris après la
  * navigation vers le serveur — c'est ce sur quoi `amorce/webosGlobals.ts`
- * compte déjà pour lire les capacités de la dalle. `webOS.platformBack` n'existe
- * que si la bibliothèque du SDK a été déposée dans la coquille ; les deux font
- * le même travail.
+ * compte déjà pour lire les capacités de la dalle. `webOS.platformBack`
+ * n'existe que si la bibliothèque du SDK a été déposée dans la coquille ; les
+ * deux font le même travail.
  */
 export function rendreLaMainAuTeleviseur(): void {
-  const global = window as unknown as {
-    webOS?: { platformBack?: () => void };
-    PalmSystem?: { platformBack?: () => void };
-  };
+  const global = pont();
   if (typeof global.webOS?.platformBack === "function") {
     global.webOS.platformBack();
     return;
@@ -71,22 +80,8 @@ export function rendreLaMainAuTeleviseur(): void {
   }
 }
 
-/**
- * Remonte jusqu'à la coquille.
- *
- * Le minuteur de vérification meurt avec le document quand la navigation
- * aboutit — c'est ce qui le rend inoffensif dans le cas nominal, et utile dans
- * l'autre.
- */
-export function revenirALaCoquille(): void {
-  const longueur = window.history.length;
-  const pas = profondeurDepart === null ? 1 : longueur - profondeurDepart + 1;
-
-  if (pas > 0 && pas < longueur) {
-    window.history.go(-pas);
-    window.setTimeout(rendreLaMainAuTeleviseur, DELAI_VERIFICATION_MS);
-    return;
-  }
-
+/** Oublie le jumelage, puis quitte — dans cet ordre, et sans détour. */
+export function quitterVersLaCoquille(): void {
+  oublierJumelage();
   rendreLaMainAuTeleviseur();
 }
