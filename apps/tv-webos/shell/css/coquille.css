@@ -4,9 +4,14 @@
  * dalle — le même parti que le client, pour que le passage de l'un à l'autre
  * ne change pas d'échelle sous les yeux.
  *
- * Aucune primitive postérieure à Chrome 38 : la coquille doit s'afficher même
- * sur un téléviseur bien plus ancien que le socle du client, sans quoi
- * l'appareil ne pourrait même pas expliquer pourquoi il ne fonctionne pas.
+ * **Mêmes valeurs que le client, écrites à la main.** Les variables CSS
+ * arrivent en Chrome 49 et cette feuille doit s'afficher bien avant : le violet
+ * de marque, les surfaces et les rayons sont donc recopiés en littéral. C'est
+ * le seul endroit du portage où une valeur de thème est dupliquée, et c'est
+ * assumé — une coquille qui ne s'affiche pas ne peut même pas expliquer
+ * pourquoi l'appareil ne fonctionne pas.
+ *
+ * Aucune primitive postérieure à Chrome 38.
  */
 
 html, body {
@@ -20,79 +25,117 @@ html, body {
   overflow: hidden;
 }
 
-/* Marge d'overscan : les téléviseurs rognent jusqu'à 5 % de chaque bord. */
-.cadre {
-  padding: 40px 64px;
-  box-sizing: border-box;
-  height: 100%;
+/* Le halo de marque du client, ramené à ce qu'une coquille peut se permettre :
+   un dégradé radial figé, aucune animation, aucune image. */
+body:after {
+  content: "";
+  position: fixed;
+  top: -30%;
+  left: -10%;
+  width: 70%;
+  height: 90%;
+  background: radial-gradient(closest-side, rgba(139, 92, 246, 0.20), rgba(139, 92, 246, 0));
+  pointer-events: none;
 }
 
+/* Marge d'overscan : les téléviseurs rognent jusqu'à 5 % de chaque bord.
+   Mêmes valeurs que le client — 64 en largeur, 36 en hauteur. */
+.cadre {
+  position: relative;
+  z-index: 1;
+  padding: 36px 64px;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Le nom du produit est un sur-titre, pas le sujet de l'écran : il se pose en
+   haut, discret, et laisse la place au code. */
 .titre {
-  font-size: 34px;
+  position: absolute;
+  top: 36px;
+  left: 64px;
+  font-size: 20px;
   font-weight: 700;
-  margin: 0 0 40px 0;
-  color: #8B5CF6;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin: 0;
+  color: #A78BFA;
+}
+
+.etape {
+  max-width: 900px;
 }
 
 .titre-etape {
-  font-size: 40px;
+  font-size: 46px;
   font-weight: 700;
-  margin: 0 0 28px 0;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px 0;
   color: #FFFFFF;
 }
 
 .legende {
   font-size: 22px;
-  line-height: 1.5;
-  margin: 0 0 24px 0;
+  line-height: 1.55;
+  margin: 0 0 32px 0;
   max-width: 820px;
   color: rgba(255, 255, 255, 0.78);
 }
 
 .rebours {
-  font-size: 20px;
+  font-size: 19px;
   margin: 0;
   color: rgba(255, 255, 255, 0.52);
 }
 
-/* Les quatre caractères du code, assez grands pour être recopiés de loin sur
-   un téléphone sans avoir à se lever. */
+/* Les caractères du code sont le sujet de l'écran : assez grands pour être
+   recopiés depuis un canapé, sur un fond qui les détache de l'arrière-plan
+   sans les enfermer dans une boîte. */
 .code-cases {
-  margin: 0 0 32px 0;
+  margin: 0 0 36px 0;
 }
 
 .code-case {
   display: inline-block;
-  width: 96px;
-  height: 128px;
-  line-height: 128px;
+  width: 108px;
+  height: 140px;
+  line-height: 140px;
   margin-right: 20px;
   text-align: center;
   font-family: "Courier New", monospace;
-  font-size: 72px;
+  font-size: 84px;
   font-weight: 700;
   color: #FFFFFF;
-  background: #16161C;
-  border: 3px solid #2A2A34;
-  border-radius: 12px;
+  background: #14141A;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
 }
 
+/* Le bouton reprend la forme du client : une pilule pleine, en violet de
+   marque, sans bordure au repos. */
 .bouton {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   padding: 18px 44px;
   margin-right: 20px;
   color: #FFFFFF;
   background: #8B5CF6;
-  border: 3px solid transparent;
-  border-radius: 8px;
+  border: 0;
+  border-radius: 999px;
   outline: none;
   cursor: pointer;
 }
 
 /* L'anneau de focus est la seule chose qui dise où l'on se trouve : il n'a pas
-   le droit de disparaître, ni d'attendre une transition. */
+   le droit de disparaître, ni d'attendre une transition. Mêmes épaisseur et
+   écart que la feuille du client — quatre pixels, décalés de trois — pour que
+   le geste se lise pareil des deux côtés de la navigation. */
 .bouton:focus {
-  border-color: #FFFFFF;
+  outline: 4px solid #8B5CF6;
+  outline-offset: 3px;
   background: #A78BFA;
 }
