@@ -12,37 +12,6 @@ import {
   plagesDynamiquesSupportees,
 } from "./codecs";
 
-/**
- * ⚠️ INTERRUPTEUR DE DIAGNOSTIC — TEMPORAIRE, à retirer dès la cause trouvée.
- *
- * Un fichier reste ré-encodé (`hevc_qsv`) alors que Jellyfin ne déclare qu'une
- * raison AUDIO (`TranscodeReasons=AudioCodecNotSupported`) et que toutes les
- * gardes de `EncodingHelper.CanStreamCopyVideo`, relues sur `release-10.11.z`
- * et confrontées à l'URL réellement émise, passent. Le tone mapping a été
- * écarté par un A/B serveur : coupé, l'image est encore recompressée.
- *
- * La déduction est donc épuisée ; il reste la bissection. Ce commutateur
- * retire NOTRE contribution au profil, morceau par morceau, pour voir laquelle
- * débloque la copie. Il se pose depuis la console et vaut pour la session :
- *
- *   localStorage.setItem("tentacle_diag_profil", "calque-jf")    // calque de jellyfin-web
- *   localStorage.setItem("tentacle_diag_profil", "canaux-2")     // 2 canaux (mesuré sans effet)
- *   localStorage.setItem("tentacle_diag_profil", "sans-plage")   // sans VideoRangeType
- *   localStorage.setItem("tentacle_diag_profil", "sans-hevc")    // sans le profil HEVC entier
- *   localStorage.setItem("tentacle_diag_profil", "sans-audio6")  // sans la limite 6 canaux
- *   localStorage.removeItem("tentacle_diag_profil")              // profil normal
- *
- * Déjà éliminés par la mesure ou par le code de Jellyfin 10.11 : le HDR et le
- * tone mapping, la plage dynamique, les contraintes HEVC, le nombre de canaux
- * audio, `BreakOnNonKeyFrames` (il ne pilote que `-noaccurate_seek`) et
- * `CopyTimestamps` (il ne pilote que le PTS des sous-titres).
- *
- * Rien d'autre ne doit bouger entre deux essais : c'est une comparaison.
- */
-export function diagnosticProfil(): string | null {
-  try { return localStorage.getItem("tentacle_diag_profil"); } catch { return null; }
-}
-
 export function buildBrowserDeviceProfile(
   maxBitrate?: number,
   options?: OptionsProfilWeb,
@@ -147,31 +116,6 @@ export function buildBrowserDeviceProfile(
   transcodingProfiles.push(profilHlsTs("h264", audioTs));
   transcodingProfiles.push(PROFIL_AUDIO_SEUL);
 
-  // Diagnostic « canaux-2 » : ramène la demande à 2 canaux. MESURÉ SANS EFFET —
-  // les arguments audio de ffmpeg deviennent identiques à ceux de jellyfin-web
-  // (`-ac 2 -ab 256000 -af volume=2`) et l'image reste recompressée.
-  if (diagnosticProfil() === "canaux-2") {
-    for (let i = 0; i < transcodingProfiles.length; i++) {
-      transcodingProfiles[i] = { ...transcodingProfiles[i], MaxAudioChannels: "2" };
-    }
-  }
-  // Diagnostic « calque-jf » : le profil de transcodage de jellyfin-web, aux
-  // valeurs relevées dans SON URL de transcodage sur ce fichier — plus une
-  // reconstitution à l'aveugle, un calque.
-  //
-  //   VideoCodec=av1,hevc,h264,vp9   AudioCodec=aac,opus,flac
-  //   TranscodingMaxAudioChannels=2  MinSegments=1
-  //   BreakOnNonKeyFrames=False      (pas de CopyTimestamps)
-  if (diagnosticProfil() === "calque-jf") {
-    transcodingProfiles.length = 0;
-    transcodingProfiles.push({
-      Container: "mp4", Type: "Video",
-      VideoCodec: "av1,hevc,h264,vp9", AudioCodec: "aac,opus,flac",
-      Protocol: "hls", Context: "Streaming",
-      MaxAudioChannels: "2", MinSegments: 1, BreakOnNonKeyFrames: false,
-    });
-  }
-
   // ── Codec profiles (constraints) ──
   const codecProfiles: CodecProfile[] = [
     { Type: "Video", Codec: "h264", Conditions: conditionsH264("51") },
@@ -179,36 +123,13 @@ export function buildBrowserDeviceProfile(
   // Dès que le HEVC est lisible par L'UN des deux chemins : ces conditions
   // gouvernent aussi bien la copie en transcodage que la lecture directe du
   // MKV (Jellyfin les évalue dans les deux cas, cf. `GetCompatibilityVideoCodec`).
-  const diag = diagnosticProfil();
-  if ((canPlayHevc() || natifHevc()) && diag !== "sans-hevc") {
+  if (canPlayHevc() || natifHevc()) {
     codecProfiles.push({
       Type: "Video", Codec: "hevc",
-      Conditions: diag === "sans-plage"
-        ? [...CONDITIONS_HEVC]
-        : [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())],
+      Conditions: [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())],
     });
   }
-  if (diag === "canaux-2") {
-    codecProfiles.push({
-      Type: "VideoAudio",
-      Conditions: [{ Condition: "LessThanEqual", Property: "AudioChannels", Value: "2", IsRequired: false }],
-    });
-  } else if (diag !== "sans-audio6" && diag !== "calque-jf") {
-    codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
-  }
-  // Le calque de jellyfin-web ne garde qu'UNE contrainte : la plage dynamique,
-  // et SANS les variantes Dolby Vision — c'est elle qui, paradoxalement, lui
-  // vaut la copie. En ne déclarant pas `DOVIWithHDR10Plus`, il fait entrer
-  // Jellyfin dans la branche « retirer les métadonnées HDR dynamiques » de
-  // `CanStreamCopyVideo` ; ffmpeg sait strip le RPU Dolby Vision, donc la copie
-  // est autorisée. Nous, en la déclarant, nous sautons cette branche.
-  if (diag === "calque-jf") {
-    codecProfiles.length = 0;
-    codecProfiles.push({
-      Type: "Video", Codec: "hevc",
-      Conditions: [conditionPlageDynamique(["SDR", "HDR10", "HDR10Plus", "HLG"])],
-    });
-  }
+  codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
 
   return {
     MaxStreamingBitrate: maxBitrate ?? 150_000_000,
