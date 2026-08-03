@@ -66,4 +66,18 @@ de toute façon — `deviceInfo` et `platformBack` fonctionnent dans les deux ca
 
 Sont exclus du bundle, pas masqués : l'administration, Watch Together, les
 téléchargements et le mode hors-ligne, le partage, les tickets, et le système
-de plugins. Les routes correspondantes n'existent pas dans cette variante.
+de plugins. Les routes correspondantes existent toujours — `App.tsx` n'est pas
+touché — mais mènent à un écran d'explication, et le code des écrans concernés
+n'est jamais compilé. Vérifiable dans `client/dist/assets` : aucun fragment
+`Admin*`, `Downloads*`, `Offline*`, `Shared*`.
+
+## Saisie de texte
+
+Rien n'est codé pour le clavier virtuel, et rien ne doit l'être : webOS
+l'affiche de lui-même dès qu'un `<input>` reçoit le focus, et le referme à la
+validation. Les champs du client web fonctionnent donc tels quels.
+
+Le moteur de focus laisse gauche et droite au curseur de saisie tant qu'un
+champ est actif, et garde haut et bas — c'est par eux qu'on en sort. Sans
+cette distinction, entrer dans un formulaire à la télécommande serait un aller
+sans retour.
