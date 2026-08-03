@@ -14,6 +14,7 @@
 @import "./focus.css";
 @import "./rail-tv.css";
 @import "./banniere-tv.css";
+@import "./cartes-tv.css";
 
 /* ── Police ───────────────────────────────────────────────────────────────
  *
@@ -98,14 +99,9 @@ body {
   animation: tv-apparition 180ms ease-out both;
 }
 
-/* Le focus déplace la carte au premier plan. `transform` seul : c'est la seule
- * propriété, avec `opacity`, qu'un compositeur sait animer sans repeindre. */
-a:focus .media-tile,
-button:focus .media-tile,
-.media-tile:focus {
-  transform: scale(1.06);
-  z-index: 2;
-}
+/* L'agrandissement au focus vit dans `cartes-tv.css`, porté par l'enveloppe
+ * focusable. Le poser aussi sur `.media-tile` le composerait avec celui de
+ * l'enveloppe — 1,08 × 1,06 — et la carte sauterait au lieu de se soulever. */
 
 /* Rien n'est prévu ici pour les commandes de défilement des rangées : elles
  * sont montées à la demande par `useHoverMount`, et sur une dalle il n'y a

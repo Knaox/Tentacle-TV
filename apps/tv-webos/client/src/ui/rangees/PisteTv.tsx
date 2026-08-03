@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useCallback, useState, type RefObject } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "@/components/cards/PosterCard";
 import { EpisodeCard } from "@/components/cards/EpisodeCard";
@@ -39,8 +39,22 @@ export function PisteTv({
   onIndexActif,
   onScroll,
 }: ProprietesPiste) {
+  // Le focus est-il dans cette piste ? C'est ce qui permet d'atténuer les
+  // cartes voisines de celle qu'on désigne — et seulement dans la rangée
+  // concernée, les autres gardant leur pleine opacité.
+  const [focusInterne, setFocusInterne] = useState(false);
+
+  const surIndex = useCallback(
+    (index: number | null) => {
+      setFocusInterne(index !== null);
+      onIndexActif(index);
+    },
+    [onIndexActif],
+  );
+
   return (
     <div
+      data-focus-interne={focusInterne}
       ref={scrollRef}
       onScroll={onScroll}
       // Le moteur de navigation s'en sert pour confiner les déplacements
@@ -75,7 +89,7 @@ export function PisteTv({
             // Sur une affiche, l'appui court ouvre déjà la fiche : un maintien
             // qui ferait la même chose n'apprendrait rien.
             maintienOuvreFiche={variante === "episode"}
-            onIndexActif={onIndexActif}
+            onIndexActif={surIndex}
           >
             {variante === "episode" ? (
               <EpisodeCard item={item} index={index} width={largeurCarte} />
