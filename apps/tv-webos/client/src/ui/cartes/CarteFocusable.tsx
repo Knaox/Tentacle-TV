@@ -4,6 +4,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { captureDetailOrigin } from "@/components/detail/detailTransition";
 import { CardMetaOverlay } from "@/components/media/CardMetaOverlay";
 import { creerAppuiLong } from "../../focus/appuiLong";
+import { relacherItem, viserItem } from "./itemFocalise";
 
 /**
  * Rend une carte du client web atteignable à la télécommande.
@@ -106,10 +107,12 @@ export function CarteFocusable({
 
   const surFocus = useCallback(() => {
     setFocalisee(true);
+    if (item) viserItem(item);
     onIndexActif(index);
-  }, [index, onIndexActif]);
+  }, [index, item, onIndexActif]);
   const surBlur = useCallback(() => {
     setFocalisee(false);
+    relacherItem();
     appui.onBlur();
     onIndexActif(null);
   }, [appui, onIndexActif]);
