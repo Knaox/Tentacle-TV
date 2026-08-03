@@ -1,0 +1,19 @@
+{
+  "id": "com.tentacletv.webos",
+  "version": "1.0.0",
+  "vendor": "Tentacle TV",
+  "type": "web",
+  "main": "index.html",
+  "title": "Tentacle TV",
+  "appDescription": "Client Tentacle TV pour se connecter a un serveur Tentacle et lire sa mediatheque.",
+  "icon": "images/icon-80.png",
+  "largeIcon": "images/icon-130.png",
+  "bgImage": "images/splash.png",
+  "splashBackground": "images/splash.png",
+  "bgColor": "#000000",
+  "iconColor": "#8B5CF6",
+  "disableBackHistoryAPI": true,
+  "supportPortraitMode": false,
+  "resolution": "1920x1080",
+  "requiredMemory": 256
+}

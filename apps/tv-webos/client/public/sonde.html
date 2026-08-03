@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, initial-scale=1" />
+  <title>Tentacle TV — sonde webOS</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; background: #000; color: #FFF;
+      font-family: "LG Smart UI", Helvetica, Arial, sans-serif;
+    }
+    .cadre { padding: 48px 80px; }
+    h1 { font-size: 40px; margin: 0 0 8px 0; color: #8B5CF6; }
+    .sous-titre { font-size: 20px; color: rgba(255,255,255,0.55); margin: 0 0 32px 0; }
+    h2 {
+      font-size: 24px; margin: 32px 0 12px 0; color: #A78BFA;
+      border-bottom: 2px solid #2A2A34; padding-bottom: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 19px; }
+    td { padding: 7px 12px 7px 0; vertical-align: top; }
+    td.cle { width: 420px; color: rgba(255,255,255,0.66); }
+    td.val { font-family: "Courier New", monospace; word-break: break-all; }
+    .ok { color: #4ADE80; }
+    .ko { color: #F87171; }
+    .neutre { color: rgba(255,255,255,0.86); }
+    .colonnes { display: block; }
+    .touches {
+      position: fixed; right: 0; bottom: 0; width: 460px;
+      background: #16161C; border-top: 3px solid #8B5CF6;
+      border-left: 3px solid #8B5CF6; padding: 20px 28px;
+      font-size: 20px; font-family: "Courier New", monospace;
+    }
+    .touches .entete {
+      font-family: "LG Smart UI", Helvetica, Arial, sans-serif;
+      color: #A78BFA; margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cadre">
+    <h1>Tentacle TV — sonde webOS</h1>
+    <p class="sous-titre" id="horodatage"></p>
+    <div id="rapport" class="colonnes"></div>
+  </div>
+
+  <div class="touches">
+    <div class="entete">Derniere touche</div>
+    <div id="touche">appuyez sur une touche de la telecommande</div>
+  </div>
+
+  <script src="sondeTests.js" charset="utf-8"></script>
+  <script src="sonde.js" charset="utf-8"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+# Tentacle TV — client LG webOS
+
+Neuvième cible du dépôt. Elle ne contient **aucun composant d'interface** : le
+client est celui de `apps/web`, recompilé pour le moteur d'un téléviseur.
+
+## Deux morceaux qui ne voyagent pas ensemble
+
+**La coquille** (`shell/`) est le paquet IPK installé sur le téléviseur. Une
+page en JavaScript ES5, sans build : elle demande l'adresse du serveur, relève
+les capacités matérielles de la dalle, puis navigue vers `<serveur>/tv/`.
+
+**Le client** (`client/`) est une variante de build de `apps/web`. Il n'est
+**pas** dans le paquet : le serveur Tentacle le sert sur `/tv`.
+
+C'est le modèle du client webOS de Jellyfin, à une différence près : Jellyfin
+charge un serveur tiers dans une `<iframe>`, nous naviguons en top-level vers
+notre propre serveur. Le cookie de session du backend étant `sameSite: "strict"`
+et helmet posant `X-Frame-Options: SAMEORIGIN`, un cadre dont le document racine
+est `file://` ne pourrait de toute façon pas s'authentifier.
+
+**Conséquence pratique : mettre à jour le serveur met à jour le téléviseur.** Un
+IPK n'est à re-soumettre au Content Store que pour l'icône, le titre, le splash,
+l'identifiant, ou le comportement de la coquille.
+
+## Socle
+
+Chrome 53 — webOS 4.0, téléviseurs 2018 et plus. Ce n'est pas la cible par
+défaut de Vite, et rien dans `apps/web` n'a été écrit pour elle : l'écart est
+comblé mécaniquement, par `@vitejs/plugin-legacy` côté JavaScript et par le
+plugin PostCSS de `build/postcss/` côté CSS. Aucun composant partagé n'est
+forké, et `build/postcss/gardeCompat.ts` fait échouer le build si une primitive
+trop récente réapparaît dans la feuille finale.
+
+## Commandes
+
+```bash
+pnpm --filter @tentacle-tv/tv-webos build       # la variante servie par le serveur
+pnpm --filter @tentacle-tv/tv-webos ipk         # le paquet de la coquille
+pnpm --filter @tentacle-tv/tv-webos emu:install # ares-install sur l'émulateur
+pnpm --filter @tentacle-tv/tv-webos emu:launch
+```
+
+La version du paquet vient de `versions.json` (champ `webos`) ; `scripts/ipk.mjs`
+la reporte dans `appinfo.json` pour que les deux ne puissent pas diverger.
+
+## La sonde
+
+`/tv/sonde.html` est servie par le backend **avant même le premier build** — le
+serveur bascule sur `client/public` tant que `client/dist` n'existe pas. Elle
+relève ce que le moteur du téléviseur sait réellement faire : API JavaScript
+présentes, primitives CSS acceptées, codecs déclarés par `canPlayType` et par
+`MediaSource`, capacités remontées par `deviceInfo`, et les `keyCode` de la
+télécommande.
+
+C'est le premier endroit où regarder quand un modèle se comporte autrement que
+les autres.
+
+## webOSTV.js
+
+La bibliothèque du SDK LG n'est pas versionnée ici. Déposez-la dans
+`shell/js/webOSTV.js` pour activer l'API officielle. En son absence, la coquille
+lit directement `window.PalmSystem`, que le gestionnaire d'applications injecte
+de toute façon — `deviceInfo` et `platformBack` fonctionnent dans les deux cas.
+
+## Ce qui ne va pas sur un téléviseur
+
+Sont exclus du bundle, pas masqués : l'administration, Watch Together, les
+téléchargements et le mode hors-ligne, le partage, les tickets, et le système
+de plugins. Les routes correspondantes n'existent pas dans cette variante.

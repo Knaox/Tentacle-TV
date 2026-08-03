@@ -1,0 +1,138 @@
+/* Rendu de la sonde et releve des touches de la telecommande.
+ *
+ * ES5 strict, aucune dependance. Cette page est servie par le serveur Tentacle
+ * sur /tv/sonde.html : elle repond en une installation a ce que le portage
+ * devrait sinon decouvrir ecran par ecran. Elle reste dans le paquet apres le
+ * portage — c'est le premier endroit ou regarder quand un modele se comporte
+ * autrement que les autres. */
+
+(function (global) {
+  "use strict";
+
+  /* Les codes propres aux telecommandes LG. Les autres touches sont affichees
+   * telles quelles : le releve sert justement a completer cette table. */
+  var NOMS_TOUCHES = {
+    13: "OK",
+    37: "gauche", 38: "haut", 39: "droite", 40: "bas",
+    403: "rouge", 404: "vert", 405: "jaune", 406: "bleu",
+    412: "retour rapide", 413: "stop", 415: "lecture",
+    417: "avance rapide", 19: "pause", 461: "retour",
+    457: "info"
+  };
+
+  function cellule(texte, classe) {
+    var td = document.createElement("td");
+    td.className = classe;
+    td.appendChild(document.createTextNode(texte));
+    return td;
+  }
+
+  function classePourEtat(etat) {
+    if (etat === "ok") return "val ok";
+    if (etat === "ko") return "val ko";
+    return "val neutre";
+  }
+
+  function rendreSection(section) {
+    var titre = document.createElement("h2");
+    titre.appendChild(document.createTextNode(section.titre));
+
+    var table = document.createElement("table");
+    for (var i = 0; i < section.lignes.length; i++) {
+      var ligne = section.lignes[i];
+      var tr = document.createElement("tr");
+      tr.appendChild(cellule(ligne.cle, "cle"));
+      tr.appendChild(cellule(ligne.sonde.valeur, classePourEtat(ligne.sonde.etat)));
+      table.appendChild(tr);
+    }
+
+    var bloc = document.createDocumentFragment();
+    bloc.appendChild(titre);
+    bloc.appendChild(table);
+    return bloc;
+  }
+
+  /* Les capacites materielles arrivent par deux chemins : l'API officielle si
+   * webOSTV.js est charge, sinon le parametre `tvinfo` pose par la coquille.
+   * La sonde affiche ce qu'elle a obtenu, et par quel chemin — c'est ce qui
+   * permet de savoir si le client pourra construire un DeviceProfile juste. */
+  function lireInfoAppareil(auResultat) {
+    var parametre = /[?&]tvinfo=([^&]+)/.exec(global.location.search);
+    if (parametre) {
+      try {
+        auResultat("parametre d'URL", JSON.parse(decodeURIComponent(parametre[1])));
+        return;
+      } catch (e) {
+        /* Parametre illisible : on tente l'API. */
+      }
+    }
+    if (global.webOS && typeof global.webOS.deviceInfo === "function") {
+      global.webOS.deviceInfo(function (donnees) {
+        auResultat("webOS.deviceInfo()", donnees);
+      });
+      return;
+    }
+    if (global.PalmSystem && global.PalmSystem.deviceInfo) {
+      try {
+        auResultat("PalmSystem.deviceInfo", JSON.parse(global.PalmSystem.deviceInfo));
+        return;
+      } catch (e) {
+        /* Illisible. */
+      }
+    }
+    auResultat(null, null);
+  }
+
+  function rendreInfoAppareil(rapport) {
+    lireInfoAppareil(function (origine, donnees) {
+      var lignes = [];
+      if (!donnees) {
+        lignes.push({
+          cle: "deviceInfo",
+          sonde: { etat: "ko", valeur: "indisponible — ni API, ni parametre d'URL" }
+        });
+      } else {
+        lignes.push({ cle: "origine", sonde: { etat: "ok", valeur: origine } });
+        for (var cle in donnees) {
+          if (!Object.prototype.hasOwnProperty.call(donnees, cle)) continue;
+          lignes.push({
+            cle: cle,
+            sonde: { etat: "info", valeur: String(donnees[cle]) }
+          });
+        }
+      }
+      rapport.appendChild(rendreSection({ titre: "Televiseur", lignes: lignes }));
+    });
+  }
+
+  function installerReleveTouches() {
+    var zone = document.getElementById("touche");
+    document.addEventListener("keydown", function (evenement) {
+      var code = evenement.keyCode;
+      var nom = NOMS_TOUCHES[code] || "inconnue";
+      zone.textContent = "keyCode " + code + "  —  " + nom;
+      /* Retour : on laisse le comportement par defaut, la sonde n'est pas une
+       * application a part entiere et doit rester quittable. */
+    });
+  }
+
+  function demarrer() {
+    var rapport = document.getElementById("rapport");
+    var sections = global.SondesWebos.sections();
+    for (var i = 0; i < sections.length; i++) {
+      rapport.appendChild(rendreSection(sections[i]));
+    }
+    rendreInfoAppareil(rapport);
+    installerReleveTouches();
+
+    var date = new Date();
+    document.getElementById("horodatage").textContent =
+      "releve du " + date.toISOString() + "  —  " + global.location.href;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", demarrer);
+  } else {
+    demarrer();
+  }
+})(window);
