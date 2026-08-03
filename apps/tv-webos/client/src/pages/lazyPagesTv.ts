@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { EcranIndisponible } from "./ecranIndisponible";
+import { EcranNonJumele } from "../ui/ecrans/EcranNonJumele";
 
 /**
  * Les écrans que le téléviseur embarque, et ceux qu'il n'embarque pas.
@@ -21,8 +22,10 @@ const Indisponible = EcranIndisponible;
 /* -- Périmètre du téléviseur -- */
 
 export const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
-export const Login = lazy(() => import("@/pages/Login").then((m) => ({ default: m.Login })));
-export const Register = lazy(() => import("@/pages/Register").then((m) => ({ default: m.Register })));
+// Pas de connexion sur un téléviseur : l'authentification vient du jumelage,
+// qui se fait dans la coquille. On n'y arrive que si le jeton a été révoqué.
+export const Login = EcranNonJumele;
+export const Register = EcranNonJumele;
 export const Watch = lazy(() => import("@/pages/Watch").then((m) => ({ default: m.Watch })));
 export const MediaDetail = lazy(() => import("@/pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 export const Library = lazy(() => import("@/pages/Library").then((m) => ({ default: m.Library })));

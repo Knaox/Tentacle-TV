@@ -25,9 +25,10 @@ import {
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { App } from "@/App";
 import { ThemeProvider } from "@/theme";
-import { installSessionGuard } from "@/auth/sessionGuard";
+import { installerGardeSessionTv } from "./auth/gardeSessionTv";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
+import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
 import { installerMoteurFocus, amorcerFocus } from "./focus/moteur";
 import { installerTouchesLecteur } from "./lecture/touchesLecteur";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
@@ -58,12 +59,18 @@ installerPolyfills();
 // lecture — et pour retirer `?tvinfo=` de l'URL avant que le routeur la voie.
 lireCapacitesTeleviseur();
 
+// Le jumelage arrive de la coquille dans le fragment d'URL, jamais dans la
+// requête : un jeton d'appareil est un JWT sans expiration, donc un secret de
+// longue durée, et un fragment n'atteint ni les journaux ni le `Referer`.
+consommerJumelage();
+
 const langueSauvee = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: langueSauvee });
 
 // Le client est servi par le serveur Tentacle lui-même : même origine, donc
-// adresse vide et appels relatifs. Le proxy Jellyfin et les cookies de session
-// sont same-site, exactement comme sur le web.
+// adresse vide et appels relatifs. Le proxy Jellyfin est same-origin ;
+// l'authentification, elle, passe par le jeton du jumelage et non par un
+// cookie — voir plus bas.
 const backendUrl = "";
 setPreferencesBackendUrl(backendUrl);
 setTicketsBackendUrl(backendUrl);
@@ -103,9 +110,14 @@ const jellyfinClient = new JellyfinClient(
   __APP_VERSION_WEB__,
 );
 
-// Même origine que le backend : le cookie httpOnly part tout seul, et le jeton
-// n'a jamais à transiter par le stockage local.
-jellyfinClient.useCredentials = true;
+// PAS de cookie : l'authentification vient du jumelage, qui rend un jeton
+// d'appareil et n'installe rien. Laisser `useCredentials` à vrai aurait un
+// effet qu'on ne voit pas venir — `buildStreamUrl` et `buildSubtitleUrl`
+// omettent alors `api_key` en comptant sur ce cookie, et chaque flux comme
+// chaque sous-titre partirait anonyme.
+jellyfinClient.useCredentials = false;
+const jetonJumelage = jetonAppareil();
+if (jetonJumelage) jellyfinClient.setAccessToken(jetonJumelage);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -119,7 +131,7 @@ const queryClient = new QueryClient({
   },
 });
 
-installSessionGuard({ client: jellyfinClient, storage, queryClient });
+installerGardeSessionTv({ client: jellyfinClient, storage, queryClient });
 
 const stockagePersistant = {
   getItem: (cle: string) => localStorage.getItem(cle),
