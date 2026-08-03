@@ -56,6 +56,16 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // ce qui retire réellement leur code du bundle, sans toucher au routeur.
   [resolve(WEB, "lazyPages.ts")]: resolve(CLIENT, "pages/lazyPagesTv.ts"),
 
+  // Les cartes du client web sont des `<div onClick>` sans `tabIndex` : elles
+  // sont invisibles au moteur de navigation, et c'était le défaut numéro un —
+  // sur vingt-sept éléments atteignables de l'accueil, aucun n'était une
+  // carte. On substitue la RANGÉE et la carte de grille, qui enveloppent les
+  // cartes du web sans les recopier. `ContinueWatchingRow` important la
+  // rangée, l'accueil, la bibliothèque, la liste, les favoris et les extras de
+  // fiche basculent d'un coup.
+  [resolve(WEB, "components/rows/MediaRow.tsx")]: resolve(CLIENT, "ui/rangees/RangeeTv.tsx"),
+  [resolve(WEB, "components/LibraryGridCard.tsx")]: resolve(CLIENT, "ui/cartes/CarteGrilleTv.tsx"),
+
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
