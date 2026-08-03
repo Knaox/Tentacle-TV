@@ -275,7 +275,7 @@ export function DesktopPlayer({
 
       <DesktopPlayerControls
         visible={showControls} state={state} title={title} subtitle={subtitle}
-        isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item}
+        isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item} itemId={itemId}
         useLocalEpisodes={offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
         // L'état REACT fait foi pour la surbrillance du sélecteur, pas celui de
@@ -290,7 +290,7 @@ export function DesktopPlayer({
         setShowSettings={setShowSettings} setShowEpisodes={setShowEpisodes}
         closePanels={{ settings: () => setShowSettings(false), episodes: () => setShowEpisodes(false) }}
         goBack={goBack} togglePause={togglePause} skipBy={skipBy}
-        toggleMute={toggleMute} setVolume={setVolume} toggleFullscreen={toggleFullscreen}
+        toggleMute={toggleMute} setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
         handleAudioChange={handleAudioChange} handleSubtitleChange={handleSubtitleChange}
         onQualityChange={onQualityChange} applyToSeries={applyToSeries}
         onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
