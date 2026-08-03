@@ -61,6 +61,11 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
   [resolve(WEB, "lib/deviceProfile/browser.ts")]: resolve(CLIENT, "lecture/profilWebos.ts"),
 
+  // Le HLS est toujours confié au moteur : la puce de la dalle décode le
+  // manifeste, là où le client web a besoin de hls.js.
+  [resolve(WEB, "hooks/useNativeHlsPreference.ts")]:
+    resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
+
   // Hôte des plugins : une iframe qui charge un bundle distant.
   [resolve(WEB, "components/PluginIframe.tsx")]: resolve(CLIENT, "shims/pluginIframe.ts"),
 
