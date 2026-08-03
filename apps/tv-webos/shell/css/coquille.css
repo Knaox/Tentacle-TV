@@ -1,7 +1,13 @@
-/* Coquille IPK — feuille autonome, sans dependance au theme du client.
- * Tout est dimensionne pour une lecture a trois metres sur 1920x1080.
- * Aucune primitive posterieure a Chrome 38 : la coquille doit s'afficher
- * meme sur un televiseur bien plus ancien que le socle du client. */
+/* Coquille IPK — feuille autonome, sans dépendance au thème du client.
+ *
+ * Dimensionnée pour un canevas de 1280, que le téléviseur agrandit vers sa
+ * dalle — le même parti que le client, pour que le passage de l'un à l'autre
+ * ne change pas d'échelle sous les yeux.
+ *
+ * Aucune primitive postérieure à Chrome 38 : la coquille doit s'afficher même
+ * sur un téléviseur bien plus ancien que le socle du client, sans quoi
+ * l'appareil ne pourrait même pas expliquer pourquoi il ne fonctionne pas.
+ */
 
 html, body {
   margin: 0;
@@ -14,74 +20,68 @@ html, body {
   overflow: hidden;
 }
 
+/* Marge d'overscan : les téléviseurs rognent jusqu'à 5 % de chaque bord. */
 .cadre {
-  /* Marge d'overscan : les televiseurs rognent jusqu'a 5 % des bords. */
-  padding: 90px 160px;
+  padding: 40px 64px;
   box-sizing: border-box;
   height: 100%;
 }
 
 .titre {
-  font-size: 56px;
+  font-size: 34px;
   font-weight: 700;
-  margin: 0 0 48px 0;
+  margin: 0 0 40px 0;
   color: #8B5CF6;
 }
 
-.legende {
-  font-size: 30px;
-  line-height: 1.4;
+.titre-etape {
+  font-size: 40px;
+  font-weight: 700;
   margin: 0 0 28px 0;
-  color: rgba(255, 255, 255, 0.86);
+  color: #FFFFFF;
 }
 
-.aide {
+.legende {
   font-size: 22px;
   line-height: 1.5;
-  margin: 40px 0 0 0;
-  color: rgba(255, 255, 255, 0.52);
-  max-width: 1100px;
-}
-
-.erreur {
-  font-size: 26px;
-  line-height: 1.4;
   margin: 0 0 24px 0;
-  padding: 20px 28px;
-  color: #FFFFFF;
-  background: #7F1D1D;
-  border-radius: 8px;
-  max-width: 1200px;
+  max-width: 820px;
+  color: rgba(255, 255, 255, 0.78);
 }
 
-.champ {
-  display: block;
-  width: 1100px;
-  max-width: 100%;
-  font-size: 34px;
-  padding: 22px 28px;
+.rebours {
+  font-size: 20px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+/* Les quatre caractères du code, assez grands pour être recopiés de loin sur
+   un téléphone sans avoir à se lever. */
+.code-cases {
+  margin: 0 0 32px 0;
+}
+
+.code-case {
+  display: inline-block;
+  width: 96px;
+  height: 128px;
+  line-height: 128px;
+  margin-right: 20px;
+  text-align: center;
+  font-family: "Courier New", monospace;
+  font-size: 72px;
+  font-weight: 700;
   color: #FFFFFF;
   background: #16161C;
   border: 3px solid #2A2A34;
-  border-radius: 8px;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.champ:focus {
-  border-color: #8B5CF6;
-  background: #1E1E26;
-}
-
-.rangee {
-  margin-top: 32px;
+  border-radius: 12px;
 }
 
 .bouton {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 600;
-  padding: 20px 52px;
-  margin-right: 24px;
+  padding: 18px 44px;
+  margin-right: 20px;
   color: #FFFFFF;
   background: #8B5CF6;
   border: 3px solid transparent;
@@ -90,17 +90,9 @@ html, body {
   cursor: pointer;
 }
 
+/* L'anneau de focus est la seule chose qui dise où l'on se trouve : il n'a pas
+   le droit de disparaître, ni d'attendre une transition. */
 .bouton:focus {
   border-color: #FFFFFF;
   background: #A78BFA;
-}
-
-.bouton-discret {
-  background: #16161C;
-  border-color: #2A2A34;
-}
-
-.bouton-discret:focus {
-  background: #1E1E26;
-  border-color: #FFFFFF;
 }

@@ -2,34 +2,22 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=1920, initial-scale=1" />
+  <meta name="viewport" content="width=1280, initial-scale=1" />
   <title>Tentacle TV</title>
   <link rel="stylesheet" href="css/coquille.css" type="text/css" />
   <script src="js/webOSTV.js" charset="utf-8"></script>
   <script src="js/stockage.js" charset="utf-8"></script>
   <script src="js/infoAppareil.js" charset="utf-8"></script>
+  <script src="js/relais.js" charset="utf-8"></script>
+  <script src="js/vueJumelage.js" charset="utf-8"></script>
+  <script src="js/etatsJumelage.js" charset="utf-8"></script>
   <script src="js/shell.js" charset="utf-8"></script>
 </head>
 <body>
   <div class="cadre">
     <h1 class="titre">Tentacle TV</h1>
-
-    <div id="etape-serveur" class="etape">
-      <p id="legende" class="legende"></p>
-      <p id="erreur" class="erreur" style="display: none;">&nbsp;</p>
-      <input type="url" id="adresse" class="champ" tabindex="0"
-             placeholder="http://192.168.1.10:3001" autocomplete="off" />
-      <div class="rangee">
-        <button type="button" id="connecter" class="bouton" tabindex="1"></button>
-        <button type="button" id="oublier" class="bouton bouton-discret" tabindex="2"
-                style="display: none;"></button>
-      </div>
-      <p id="aide" class="aide"></p>
-    </div>
-
-    <div id="etape-attente" class="etape" style="display: none;">
-      <p id="attente" class="legende"></p>
-    </div>
+    <!-- Rempli par `vueJumelage.js` : code, compte à rebours, ou message. -->
+    <div id="etape-jumelage" class="etape"></div>
   </div>
 
   <script>window.demarrerCoquille();</script>
