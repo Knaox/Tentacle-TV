@@ -52,20 +52,25 @@ body {
   padding: var(--tv-overscan-y) var(--tv-overscan-x);
 }
 
-/* ── Échelle ──────────────────────────────────────────────────────────────
+/* ── Plancher typographique ───────────────────────────────────────────────
  *
- * Le client web est dessiné pour être lu à cinquante centimètres. À trois
- * mètres, la même page demande environ 1,4 fois sa taille — un facteur validé
- * par les recommandations d'interface des plateformes de salon, pas une
- * préférence.
+ * L'échelle est portée par le canevas 1280 déclaré dans `index.html` : le
+ * téléviseur agrandit de ×1,5, et tout suit — y compris les pixels et les
+ * styles en ligne, ce qu'un agrandissement de la police racine ne savait pas
+ * faire.
  *
- * Appliqué sur la taille de police racine plutôt que sur chaque classe : tout
- * ce qui est exprimé en `rem` suit, c'est-à-dire l'essentiel de ce que produit
- * Tailwind — tailles de texte, marges, écarts, rayons. Les quelques valeurs en
- * pixels ne suivent pas, et c'est acceptable : ce sont des bordures et des
- * traits, qui n'ont pas à grandir. */
-html {
-  font-size: 22.4px; /* 16 × 1,4 */
+ * Restent les tailles que `apps/web` fixe en dur pour des libellés secondaires.
+ * À 1280 puis ×1,5, un `text-[10px]` fait 15 px physiques, soit environ 0,25°
+ * à trois mètres — sous le seuil de lecture confortable. On les relève à 14 px
+ * de canevas, donc 21 px physiques.
+ *
+ * La liste est fermée et vérifiable :
+ *   grep -rn 'text-\[10px\]\|text-\[11px\]\|text-xs' apps/web/src | wc -l */
+.text-\[10px\],
+.text-\[11px\],
+.text-xs {
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 /* ── Mouvement ────────────────────────────────────────────────────────────

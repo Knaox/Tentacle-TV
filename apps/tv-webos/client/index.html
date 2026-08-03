@@ -2,8 +2,22 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <!-- Résolution unique : le téléviseur redimensionne lui-même vers la dalle. -->
-    <meta name="viewport" content="width=1920, initial-scale=1" />
+    <!--
+      Canevas 1280×720, agrandi ×1,5 par le téléviseur vers sa dalle 1080p.
+
+      C'est la mise à l'échelle du client, et elle ne se fait pas autrement.
+      Agrandir la police racine ne met à l'échelle que les `rem` : les cent
+      trente-quatre classes en pixels d'`apps/web` ne suivent pas, les styles
+      en ligne non plus, et les media queries continuent d'évaluer contre la
+      largeur réelle — la bibliothèque sortait huit affiches par rangée avec du
+      texte agrandi, et la barre de navigation rendait son contenu hors écran.
+
+      En composant à 1280, tout suit d'un coup : rem, pixels, vh, bordures,
+      images, styles en ligne, et les rectangles que le moteur de focus mesure.
+      Les composants d'`apps/web` se retrouvent dans la configuration d'un
+      portable à 1280 — celle pour laquelle ils ont été écrits.
+    -->
+    <meta name="viewport" content="width=1280, initial-scale=1" />
     <title>Tentacle TV</title>
     <!--
       Politique de sécurité de la variante téléviseur.

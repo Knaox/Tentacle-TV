@@ -12,15 +12,18 @@ import type { Config } from "tailwindcss";
  */
 
 /**
- * 1920 px de large tombe dans `2xl` (1536 px), le dernier palier de Tailwind.
- * `LibraryGrid` y demande huit affiches par rangée : lisible sur un moniteur
- * de bureau, illisible sur un téléviseur de salon. Le palier `tv` donne un
- * point d'accroche au-delà, que la feuille TV utilise pour revenir à une
- * densité tenable.
+ * Aucun palier ajouté, et c'est le résultat du canevas 1280.
+ *
+ * Le client composait à 1920, donc dans `2xl` (1536 px) : `LibraryGrid` y
+ * demandait huit affiches par rangée, illisibles à trois mètres. Un palier
+ * `tv` au-delà de `2xl` n'aurait fait que rattraper le symptôme.
+ *
+ * À 1280, `2xl` cesse simplement de s'appliquer : la grille retombe sur `xl`
+ * et sort six colonnes, sans qu'aucune règle nouvelle soit écrite. Les
+ * composants d'`apps/web` se disposent comme sur un portable — ce pour quoi
+ * ils ont été dessinés.
  */
-const PALIERS_TV = {
-  tv: "1600px",
-};
+const PALIERS_TV = {};
 
 /**
  * Le flou d'arrière-plan est retiré du bundle téléviseur — il n'arrive qu'à
