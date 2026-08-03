@@ -21,7 +21,7 @@ import {
 import { requireAdmin } from "../middleware/auth";
 import { injectCorsHosts } from "../services/jellyfinCors";
 import { restartJellyfinWs } from "../services/jellyfinWs";
-import { BACKEND_VERSION } from "../services/version";
+import { buildAuthHeader, deviceIdFor } from "../services/jellyfinIdentity";
 
 /**
  * Guard: if the app is already running (setup completed), require admin auth.
@@ -207,7 +207,10 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
     try {
       // Authenticate via Jellyfin
       const authUrl = `${jellyfinUrl}/Users/AuthenticateByName`;
-      const authHeader = `MediaBrowser Client="Tentacle TV", Device="Setup", DeviceId="tentacle-setup", Version="${BACKEND_VERSION}"`;
+      // Identifiant propre à cette installation : "tentacle-setup" était une
+      // constante globale, donc configurer un second serveur Tentacle sur le
+      // même Jellyfin révoquait le token de setup du premier.
+      const authHeader = buildAuthHeader({ device: "Setup", deviceId: await deviceIdFor("setup") });
       app.log.info({ jellyfinUrl, authUrl, username: body.username }, "create-admin: authenticating");
 
       const authRes = await fetch(authUrl, {

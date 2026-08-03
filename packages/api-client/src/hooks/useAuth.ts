@@ -19,7 +19,15 @@ export function useAuth() {
           const res = await fetch(`${baseUrl}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: credentials.username, password: credentials.password }),
+            // deviceId : le backend en fait l'identité d'appareil présentée à
+            // Jellyfin. Sans lui, toutes les sessions d'un même compte
+            // partagent un seul appareil côté Jellyfin — et se déconnectent
+            // les unes les autres au moindre logout.
+            body: JSON.stringify({
+              username: credentials.username,
+              password: credentials.password,
+              deviceId: client.getDeviceId(),
+            }),
             credentials: "include",
           });
           if (!res.ok) {

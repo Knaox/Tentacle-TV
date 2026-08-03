@@ -4,7 +4,7 @@ import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
-import { BACKEND_VERSION } from "../services/version";
+import { buildAuthHeader, deviceIdFor } from "../services/jellyfinIdentity";
 import { authPasswordRoutes } from "./authPassword";
 
 // Durée du cookie web : 400 jours = plafond imposé par Chrome. Le refresh
@@ -21,6 +21,11 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
+  // Appareil du client (UUID rangé dans son stockage local, donc un par
+  // navigateur et par origine). Optionnel : les clients antérieurs ne
+  // l'envoient pas, on retombe alors sur le nom du compte. Le format est
+  // contraint car la valeur finit dans un en-tête HTTP.
+  deviceId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
 });
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
@@ -36,13 +41,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      // DeviceId ASCII-safe : le nom d'utilisateur peut contenir des caractères
-      // non-ASCII (ex. "Mélissa"). Or les en-têtes HTTP doivent être ASCII —
-      // Kestrel (serveur de Jellyfin) rejette sinon la requête avec un 400, ce
-      // qui se traduisait par un faux "Identifiants invalides". On encode donc
-      // le username (déterministe, unique par utilisateur, toujours ASCII).
-      const deviceId = `tentacle-server-${encodeURIComponent(body.username)}`;
-      const authHeader = `MediaBrowser Client="Tentacle TV", Device="Server", DeviceId="${deviceId}", Version="${BACKEND_VERSION}"`;
+      // Une session Jellyfin par (installation, appareil) — cf. jellyfinIdentity.
+      // Le nom du compte n'entre PAS dans l'identifiant : deux comptes vivants
+      // en même temps sur une même instance n'est pas un cas d'usage, et
+      // basculer de l'un à l'autre révoque proprement le token abandonné.
+      const deviceId = await deviceIdFor("web", body.deviceId ?? body.username);
+      const authHeader = buildAuthHeader({ device: "Web", deviceId });
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
         headers: {

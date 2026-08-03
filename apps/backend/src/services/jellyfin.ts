@@ -1,5 +1,5 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
-import { BACKEND_VERSION } from "./version";
+import { buildAuthHeader, deviceIdFor } from "./jellyfinIdentity";
 
 interface JellyfinUserResponse {
   Id: string;
@@ -28,8 +28,10 @@ export async function authenticateJellyfinUser(
     throw new Error("Jellyfin n'est pas configuré");
   }
 
-  const deviceId = `tentacle-provisioning-${encodeURIComponent(username)}`;
-  const authHeader = `MediaBrowser Client="Tentacle TV", Device="Provisioning", DeviceId="${deviceId}", Version="${BACKEND_VERSION}"`;
+  const authHeader = buildAuthHeader({
+    device: "Provisioning",
+    deviceId: await deviceIdFor("provisioning", username),
+  });
   const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
     method: "POST",
     headers: {
