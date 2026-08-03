@@ -7,7 +7,6 @@ import {
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
 import { plagesDynamiquesSupportees } from "../lib/deviceProfile/codecs";
-import { diagnosticProfil } from "../lib/deviceProfile/browser";
 import { evaluerLecture, sourceEstHdr } from "./playbackVerdict";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
@@ -225,9 +224,6 @@ export function usePlaybackInfo(lecteurNatif = false) {
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
-        // Quel profil a réellement servi — sans quoi deux essais de la
-        // bissection sont indiscernables dans le journal.
-        diagnostic: diagnosticProfil() ?? "(aucun)",
       });
       // Sur SA PROPRE ligne, en chaîne nue : la console replie les objets, et
       // c'est justement le champ le plus long qu'elle cache derrière son « … ».
