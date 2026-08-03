@@ -348,7 +348,6 @@ export function PlayerScreen({ itemId }: Props) {
         selectedAudio={pb.audioIndex}
         selectedSubtitle={pb.subtitleIndex}
         qualityKey={pb.qualityKey}
-        qualityPresets={pb.qualityPresets}
         introSegment={pb.skipSegments.intro}
         creditsSegment={pb.skipSegments.credits}
         nextEpisode={pb.episodeNav.nextEpisode}

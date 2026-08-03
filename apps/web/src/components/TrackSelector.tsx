@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
   QUALITY_PRESETS, formatBitrateMbps,
-  type QualityKey, type QualityPreset, type SourceQuality,
+  type QualityKey, type SourceQuality,
 } from "@tentacle-tv/shared";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
 
@@ -19,8 +19,6 @@ interface TrackSelectorProps {
   currentQuality: QualityKey;
   /** Qualité de la source détectée depuis les MediaStreams. */
   sourceQuality?: SourceQuality;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
-  qualityPresets?: readonly QualityPreset[];
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
   onQualityChange?: (key: QualityKey) => void;
@@ -32,7 +30,6 @@ interface TrackSelectorProps {
 export function TrackSelector({
   audioTracks, subtitleTracks,
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
-  qualityPresets = QUALITY_PRESETS,
   onAudioChange, onSubtitleChange, onQualityChange, onClose, applyToSeries,
 }: TrackSelectorProps) {
   const { t } = useTranslation("player");
@@ -86,7 +83,7 @@ export function TrackSelector({
 
         {onQualityChange && (
           <Section title={t("player:quality")}>
-            {qualityPresets.map((preset) => (
+            {QUALITY_PRESETS.map((preset) => (
               <QualityOption
                 key={preset.key}
                 presetKey={preset.key}

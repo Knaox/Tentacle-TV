@@ -65,34 +65,24 @@ export function registerResolveRoute(app: FastifyInstance): void {
 
     let pref: TrackPreference | null = null;
 
-    // Une base incomplète ou momentanément indisponible ne doit pas faire
-    // échouer la résolution : sans préférence, le client retombe proprement sur
-    // les pistes par défaut du fichier. Un 500, lui, coûte bien plus cher — le
-    // client considère alors ses préférences comme appliquées et peut y perdre
-    // la lecture directe (cf. `useServerTrackPrefs`).
-    try {
-      // 1) Le contenu lui-même.
-      if (body.itemId) {
-        pref = await prisma.itemTrackPreference.findUnique({
-          where: { jellyfinUserId_itemId: { jellyfinUserId: user.userId, itemId: body.itemId } },
-        });
-        if (pref) app.log.info({ itemId: body.itemId }, "[resolve] préférence propre au contenu");
-      }
+    // 1) Le contenu lui-même.
+    if (body.itemId) {
+      pref = await prisma.itemTrackPreference.findUnique({
+        where: { jellyfinUserId_itemId: { jellyfinUserId: user.userId, itemId: body.itemId } },
+      });
+      if (pref) app.log.info({ itemId: body.itemId }, "[resolve] préférence propre au contenu");
+    }
 
-      // 2) Saison, série, ancêtres, bibliothèque — le premier trouvé gagne. Pas de
-      // repli au-delà : le client envoie tous les ancêtres, donc une préférence
-      // existante est forcément dans la liste.
-      if (!pref) {
-        for (const lid of [body.libraryId, ...(body.libraryIds ?? [])].filter(Boolean)) {
-          pref = await prisma.libraryPreference.findUnique({
-            where: { jellyfinUserId_libraryId: { jellyfinUserId: user.userId, libraryId: lid } },
-          });
-          if (pref) break;
-        }
+    // 2) Saison, série, ancêtres, bibliothèque — le premier trouvé gagne. Pas de
+    // repli au-delà : le client envoie tous les ancêtres, donc une préférence
+    // existante est forcément dans la liste.
+    if (!pref) {
+      for (const lid of [body.libraryId, ...(body.libraryIds ?? [])].filter(Boolean)) {
+        pref = await prisma.libraryPreference.findUnique({
+          where: { jellyfinUserId_libraryId: { jellyfinUserId: user.userId, libraryId: lid } },
+        });
+        if (pref) break;
       }
-    } catch (err) {
-      app.log.warn({ err }, "[resolve] préférences illisibles — repli sur les pistes par défaut");
-      pref = null;
     }
 
     if (!pref) {

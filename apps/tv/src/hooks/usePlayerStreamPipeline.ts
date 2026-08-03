@@ -51,11 +51,10 @@ export function usePlayerStreamPipeline(args: {
     resetPrefsAppliedRef, resetLoadedRef,
   } = s;
 
-  const mediaSource = item?.MediaSources?.[0];
-
-  const quality = useTVPlaybackQuality(mediaSource);
+  const quality = useTVPlaybackQuality();
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
+  const mediaSource = item?.MediaSources?.[0];
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = useMemo(() => mediaSource?.MediaStreams ?? [], [mediaSource]);
 

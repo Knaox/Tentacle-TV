@@ -26,9 +26,9 @@ import {
  *
  * La vérification était conditionnée à la présence d'un `checksum` dans
  * l'entrée de registre : une entrée sans empreinte installait donc du code
- * SANS AUCUN contrôle, alors que la documentation du dépôt annonce la
- * vérification comme acquise. Un greffon s'exécute côté serveur
- * (`pluginHasServerModule`) et côté page : c'est du code, pas de la donnée.
+ * SANS AUCUN contrôle, alors que `CLAUDE.md` annonce la vérification comme
+ * acquise. Un greffon s'exécute côté serveur (`pluginHasServerModule`) et côté
+ * page : c'est du code, pas de la donnée.
  *
  * Rétrocompatible, et vérifié avant d'être écrit plutôt qu'espéré : les 29
  * versions publiées de Seer portent une empreinte, la CI la calcule

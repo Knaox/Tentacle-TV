@@ -9,10 +9,10 @@
  * préférences depuis le cache local — zéro bande passante.
  */
 
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useEffect, type MutableRefObject } from "react";
 import { useResolveMediaTracks } from "@tentacle-tv/api-client";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
-import { necessiteIncrustation } from "./useWebPlaybackFallbacks";
+import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 
 interface Options {
   item: MediaItem | undefined;
@@ -25,8 +25,6 @@ interface Options {
   defaultAudio: number;
   supportsNativeAudioTracks: boolean;
   checkAudioTranscode?: (codec: string, channels: number) => boolean;
-  /** Le rendu PGS client est disponible : pas d'incrustation serveur à prévoir. */
-  pgsClientOk: boolean;
   prefsApplied: MutableRefObject<boolean>;
   resumeApplied: MutableRefObject<boolean>;
   audioOverrideRef: MutableRefObject<boolean>;
@@ -40,21 +38,13 @@ interface Options {
 
 export function useServerTrackPrefs({
   item, streams, ancestors, isDesktop, isLocalPlayback, quality, defaultAudio,
-  supportsNativeAudioTracks, checkAudioTranscode, pgsClientOk,
+  supportsNativeAudioTracks, checkAudioTranscode,
   prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
   setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
 }: Options): void {
   const resolveTracks = useResolveMediaTracks();
-  // « La requête est partie », à distinguer de « les préférences sont
-  // appliquées ». Les deux étaient confondues dans `prefsApplied`, et un
-  // /resolve en échec laissait donc le client croire que ses préférences
-  // avaient été honorées : la garde du démarrage tombait, et un écart
-  // transitoire de piste audio suffisait à forcer un transcodage. Porte
-  // l'identifiant du média, donc se réarme tout seul au changement d'épisode.
-  const demandeEnvoyee = useRef<string | null>(null);
   useEffect(() => {
-    if (streams.length === 0 || !item) return;
-    if (demandeEnvoyee.current === item.Id || prefsApplied.current) return;
+    if (prefsApplied.current || streams.length === 0 || !item) return;
     if (isLocalPlayback) {
       // Lecture locale : useLocalPlaybackTracks applique les préférences
       // depuis le cache — ce chemin serveur est neutralisé (zéro réseau).
@@ -68,7 +58,7 @@ export function useServerTrackPrefs({
     const ancestorIds = (ancestors ?? []).map((a) => a.Id);
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) { setPrefsReady(true); return; }
-    demandeEnvoyee.current = item.Id;
+    prefsApplied.current = true;
     const aTracks = streams.filter((s) => s.Type === "Audio")
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     const sTracks = streams.filter((s) => s.Type === "Subtitle")
@@ -78,8 +68,6 @@ export function useServerTrackPrefs({
     // série et la bibliothèque (cf. `preferences.resolve.ts`).
     resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, itemId: item.Id, audioTracks: aTracks, subtitleTracks: sTracks }, {
       onSuccess: (result) => {
-        // Ici seulement : les préférences ont vraiment été résolues.
-        prefsApplied.current = true;
         if (result.audioIndex != null && !audioOverrideRef.current) {
           if (isDesktop) {
             // Desktop: check if new audio changes direct play status
@@ -102,9 +90,7 @@ export function useServerTrackPrefs({
           setSubtitleIndex(idx);
           if (idx != null) {
             const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === idx);
-            // Un PGS rendu côté client n'a pas à être incrusté : l'incrustation
-            // coûterait un ré-encodage complet de l'image, dès le démarrage.
-            if (sub && necessiteIncrustation(sub.Codec, pgsClientOk)) setBurnInSubtitleIndex(idx);
+            if (sub && BURN_IN_SUBTITLE_CODECS.test(sub.Codec ?? "")) setBurnInSubtitleIndex(idx);
           }
         }
         setPrefsReady(true);

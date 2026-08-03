@@ -5,7 +5,6 @@ import { EpisodeSelectorPanel } from "./EpisodeSelectorPanel";
 import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
-import { PlaybackRateControl } from "../playerControls/PlaybackRateControl";
 import { surfaceAvecAlpha } from "../../lib/ombreSurVideo";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
@@ -13,7 +12,7 @@ import {
 } from "../PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./videoPlayer.types";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
-import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
 
@@ -31,14 +30,12 @@ interface DesktopPlayerControlsProps {
    *  « zéro réseau » ne vaut que pour la lecture passive. */
   useLocalEpisodes: boolean;
   item?: MediaItem;
-  itemId?: string;
   displayAudio: AudioTrack[];
   displaySubs: SubtitleTrack[];
   curAudio: number;
   curSub: number | null;
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
-  qualityPresets?: readonly QualityPreset[];
   hasSettings: boolean;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
@@ -57,8 +54,6 @@ interface DesktopPlayerControlsProps {
   skipBy: (delta: number) => void;
   toggleMute: () => void;
   setVolume: (v: number) => void;
-  /** Vitesse de lecture mpv (propriété `speed`). */
-  setSpeed: (v: number) => void;
   toggleFullscreen: () => void;
   handleAudioChange: (index: number) => void;
   handleSubtitleChange: (index: number | null) => void;
@@ -88,12 +83,12 @@ const SANS_ALPHA = !surfaceAvecAlpha();
  * ce sont des panneaux détachés, pas posés sur la vidéo.)
  */
 export function DesktopPlayerControls({
-  visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item, itemId,
-  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality, qualityPresets,
+  visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item,
+  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality,
   hasSettings, hasNextEpisode, hasPreviousEpisode,
   dur, actualPos, displayProgress, bufProg, seekbar,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
-  goBack, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
+  goBack, togglePause, skipBy, toggleMute, setVolume, toggleFullscreen,
   handleAudioChange, handleSubtitleChange, onQualityChange, applyToSeries,
   onNextEpisode, onPreviousEpisode,
 }: DesktopPlayerControlsProps) {
@@ -150,7 +145,7 @@ export function DesktopPlayerControls({
               <TrackSelector
                 audioTracks={displayAudio} subtitleTracks={displaySubs}
                 currentAudio={curAudio} currentSubtitle={curSub}
-                currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
+                currentQuality={currentQuality} sourceQuality={sourceQuality}
                 onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
                 onQualityChange={onQualityChange}
                 applyToSeries={applyToSeries}
@@ -213,7 +208,6 @@ export function DesktopPlayerControls({
               <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <PlaybackRateControl appliquer={setSpeed} cleReset={itemId} classeBouton="p-2" />
               {isEpisode && (
                 <button
                   onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}

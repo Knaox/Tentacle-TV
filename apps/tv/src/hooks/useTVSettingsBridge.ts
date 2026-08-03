@@ -20,7 +20,6 @@ export function useTVSettingsBridge(args: {
   audioIndex: SettingsPanelProps["selectedAudio"];
   subtitleIndex: SettingsPanelProps["selectedSubtitle"];
   qualityKey: SettingsPanelProps["qualityKey"];
-  qualityPresets: SettingsPanelProps["qualityPresets"];
   sourceQuality: SettingsPanelProps["sourceQuality"];
   handleAudioChange: SettingsPanelProps["onSelectAudio"];
   handleSubtitleChange: SettingsPanelProps["onSelectSubtitle"];
@@ -32,7 +31,7 @@ export function useTVSettingsBridge(args: {
 }) {
   const {
     audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
-    qualityKey, qualityPresets, sourceQuality, handleAudioChange, handleSubtitleChange, handleQualityChange,
+    qualityKey, sourceQuality, handleAudioChange, handleSubtitleChange, handleQualityChange,
     showOverlay, setShowSettings, showSettingsRef, bumpOsdFocus,
   } = args;
 
@@ -46,7 +45,6 @@ export function useTVSettingsBridge(args: {
       selectedAudio: audioIndex,
       selectedSubtitle: subtitleIndex,
       qualityKey: qualityKey,
-      qualityPresets,
       sourceQuality,
       onSelectAudio: handleAudioChange,
       onSelectSubtitle: handleSubtitleChange,
@@ -55,7 +53,7 @@ export function useTVSettingsBridge(args: {
       onInteraction: showOverlay,
     });
     return () => setSettingsPanelProps(null);
-  }, [audioTracksList, subtitleTracksList, audioIndex, subtitleIndex, qualityKey, qualityPresets,
+  }, [audioTracksList, subtitleTracksList, audioIndex, subtitleIndex, qualityKey,
     sourceQuality, handleAudioChange, handleSubtitleChange, handleQualityChange, showOverlay]);
 
   // Fermeture de la modale (ESC natif OU bouton Fermer → démontage de la route)

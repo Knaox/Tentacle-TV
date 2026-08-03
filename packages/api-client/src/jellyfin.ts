@@ -1,8 +1,12 @@
-import { APP_NAME, APP_VERSION } from "@tentacle-tv/shared";
-import type { PlaybackInfoResponse } from "@tentacle-tv/shared";
+import {
+  APP_NAME,
+  APP_VERSION,
+  JELLYFIN_AUTH_HEADER,
+  JELLYFIN_TOKEN_HEADER,
+} from "@tentacle-tv/shared";
+import type { DeviceProfile, PlaybackInfoResponse } from "@tentacle-tv/shared";
 import type { StorageAdapter, UuidGenerator } from "./storage";
-import { DirectStreamingState } from "./jellyfin/types";
-import { fetchPlaybackInfo, type PlaybackInfoOptions } from "./jellyfin/playbackInfo";
+import { DirectStreamingState, JellyfinError, buildQuery } from "./jellyfin/types";
 import {
   buildImageUrl,
   buildStreamUrl,
@@ -30,13 +34,6 @@ export class JellyfinClient {
   private directStreamingErrors = 0;
   private directStreamingFailCallback?: () => void;
   private static readonly DS_ERROR_THRESHOLD = 3;
-  /**
-   * Ce navigateur ne peut PAS joindre le serveur média en direct : verrou de
-   * session, posé sur constat (cf. `signalerDirectStreamingBloque`). Il survit
-   * aux resynchronisations de la config admin, sans quoi celle-ci rallumerait
-   * aussitôt un chemin dont on vient de mesurer qu'il ne passe pas.
-   */
-  private directStreamingBloque = false;
   private _isLoggingIn = false;
   // Seuil à 5 (et non 3) pour absorber les 401 transitoires (Jellyfin qui rotate
   // ses tokens, glitches DNS, redémarrage serveur de quelques secondes) sans
@@ -81,36 +78,10 @@ export class JellyfinClient {
   getBaseUrl() { return this.baseUrl; }
 
   setDirectStreaming(config: DirectStreamingState | null) {
-    if (config && this.directStreamingBloque) return;
     this.directStreaming = config;
     if (config) this.directStreamingErrors = 0;
   }
   getDirectStreaming() { return this.directStreaming; }
-
-  /**
-   * Le direct est inatteignable depuis cette origine — typiquement un serveur
-   * Jellyfin sans en-tête CORS. On coupe pour toute la session.
-   *
-   * Sans ce verrou, chaque lecture repayait la découverte : le `PlaybackInfo`
-   * direct échouait puis repartait en proxy MAIS laissait `directStreaming`
-   * actif, l'URL de stream se construisait donc encore sur le serveur média,
-   * hls.js se cassait sur le manifeste, et le lecteur redemandait un
-   * `PlaybackInfo` complet. Deux allers-retours et un rechargement visible, à
-   * chaque démarrage.
-   *
-   * On ne déclenche PAS `directStreamingFailCallback` ici : il invalide la
-   * config admin, dont la resynchronisation rallumerait le direct.
-   *
-   * Le prix d'une erreur réseau passagère prise pour un refus est faible : le
-   * proxy sert tout, et un rechargement de page repart de zéro.
-   */
-  signalerDirectStreamingBloque(raison: string) {
-    if (this.directStreamingBloque) return;
-    this.directStreamingBloque = true;
-    this.directStreaming = null;
-    this.directStreamingErrors = 0;
-    console.warn("[Tentacle:DirectStreaming] coupe pour la session —", raison);
-  }
 
   /**
    * Voie native pour la télémétrie de lecture, posée par l'hôte s'il en a une.
@@ -239,16 +210,64 @@ export class JellyfinClient {
    *  When direct streaming is active, sends directly to Jellyfin so the
    *  transcode session uses the user's token (not the admin API key).
    *  Falls back to the same-origin proxy on CORS / network error. */
-  getPlaybackInfo(itemId: string, options: PlaybackInfoOptions): Promise<PlaybackInfoResponse> {
-    return fetchPlaybackInfo(
-      {
-        directStreaming: this.directStreaming,
-        getAuthHeader: (t) => this.getAuthHeader(t),
-        signalerDirectBloque: (raison) => this.signalerDirectStreamingBloque(raison),
-        viaProxy: (path, init) => this.fetch<PlaybackInfoResponse>(path, init),
-      },
-      itemId,
-      options,
-    );
+  async getPlaybackInfo(
+    itemId: string,
+    options: {
+      userId: string;
+      deviceProfile: DeviceProfile;
+      mediaSourceId?: string;
+      audioStreamIndex?: number;
+      subtitleStreamIndex?: number;
+      startTimeTicks?: number;
+      maxStreamingBitrate?: number;
+      maxWidth?: number;
+      maxHeight?: number;
+    }
+  ): Promise<PlaybackInfoResponse> {
+    const q: Record<string, string> = {
+      UserId: options.userId,
+      StartTimeTicks: String(options.startTimeTicks ?? 0),
+      IsPlayback: "true",
+      AutoOpenLiveStream: "true",
+      MaxStreamingBitrate: String(options.maxStreamingBitrate ?? 42_000_000),
+    };
+    if (options.mediaSourceId) q.MediaSourceId = options.mediaSourceId;
+    if (options.audioStreamIndex != null) q.AudioStreamIndex = String(options.audioStreamIndex);
+    if (options.subtitleStreamIndex != null) q.SubtitleStreamIndex = String(options.subtitleStreamIndex);
+    if (options.maxWidth) q.MaxWidth = String(options.maxWidth);
+    if (options.maxHeight) q.MaxHeight = String(options.maxHeight);
+
+    const path = `/Items/${itemId}/PlaybackInfo?${buildQuery(q)}`;
+    const body = JSON.stringify({ DeviceProfile: options.deviceProfile });
+
+    // Direct streaming: call Jellyfin directly so the transcode session
+    // (and all HLS segment URLs) use the user's token, not the admin API key.
+    // Wrapped in try/catch: Safari/iOS blocks CORS preflight → fall back to proxy.
+    if (this.directStreaming) {
+      try {
+        const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
+        const res = await fetch(`${mediaBaseUrl}${path}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            [JELLYFIN_AUTH_HEADER]: this.getAuthHeader(jellyfinToken),
+            [JELLYFIN_TOKEN_HEADER]: jellyfinToken,
+          },
+          body,
+        });
+        if (!res.ok) throw new JellyfinError(res.status, res.statusText, path);
+        const text = res.status === 204 ? "" : await res.text();
+        return text ? JSON.parse(text) : (undefined as unknown as PlaybackInfoResponse);
+      } catch (e) {
+        if (e instanceof JellyfinError) throw e;
+        // CORS preflight blocked (Safari/iOS) — fall back to proxy
+        console.warn(
+          "[Tentacle:PlaybackInfo] direct call failed, falling back to proxy:",
+          (e as Error)?.message ?? e,
+        );
+      }
+    }
+
+    return this.fetch<PlaybackInfoResponse>(path, { method: "POST", body });
   }
 }

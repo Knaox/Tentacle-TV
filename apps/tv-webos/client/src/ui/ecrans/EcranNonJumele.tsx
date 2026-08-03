@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { oublierJumelage, revenirALaCoquille } from "../../auth/retourCoquille";
 
 /**
  * L'écran qu'on voit quand l'appareil n'est plus jumelé.
@@ -10,20 +11,15 @@ import { useTranslation } from "react-i18next";
  * serveur, ce que le client ne peut pas faire puisqu'il en est servi.
  *
  * On y arrive dans un seul cas : le jeton a été révoqué ou le stockage vidé.
- * Le retour se fait par l'historique, seul chemin possible vers la coquille —
- * une page servie en HTTP ne peut pas naviguer vers `file://`.
+ * Le retour passe par `retourCoquille`, qui sait de combien de crans remonter —
+ * un `history.back()` nu ne suffisait qu'au premier écran.
  */
 export function EcranNonJumele() {
   const { t } = useTranslation("pairing");
 
   const revenirAuJumelage = useCallback(() => {
-    try {
-      localStorage.removeItem("tentacle_token");
-      localStorage.removeItem("tentacle_user");
-    } catch {
-      // Stockage indisponible : la coquille regénérera un code de toute façon.
-    }
-    window.history.back();
+    oublierJumelage();
+    revenirALaCoquille();
   }, []);
 
   return (

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { formatBitrateMbps, type SourceQuality } from "@tentacle-tv/shared";
-import type { QualityKey, QualityPreset } from "../../hooks/usePlayerPlayback";
+import { QUALITY_PRESETS, type QualityKey } from "../../hooks/usePlayerPlayback";
 import { PlayerPopupMenu } from "./PlayerPopupMenu";
 
 interface Track { index: number; label: string }
@@ -13,8 +13,6 @@ interface Props {
   selectedAudio: number;
   selectedSubtitle: number;
   qualityKey: QualityKey;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
-  qualityPresets: readonly QualityPreset[];
   sourceQuality: SourceQuality;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
@@ -27,7 +25,7 @@ interface Props {
  *  pour garder MobilePlayerOverlay sous 300 lignes. */
 export function PlayerSettingsMenus({
   showSettings, showSubtitles, audioTracks, subtitleTracks,
-  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, sourceQuality,
+  selectedAudio, selectedSubtitle, qualityKey, sourceQuality,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onCloseSettings, onCloseSubtitles,
 }: Props) {
@@ -46,7 +44,7 @@ export function PlayerSettingsMenus({
           }] : []),
           {
             title: t("quality").toUpperCase(),
-            options: qualityPresets.map((p) => {
+            options: QUALITY_PRESETS.map((p) => {
               const isOriginal = p.key === "original";
               const badges = isOriginal ? [
                 ...(sourceQuality.isDolbyVision ? [{ label: "DV", tone: "purple" as const }] : []),
