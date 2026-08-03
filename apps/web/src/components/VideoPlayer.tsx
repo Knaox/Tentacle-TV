@@ -21,6 +21,7 @@ import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
 import { usePlayerVolume } from "../hooks/usePlayerVolume";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
+import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
@@ -156,6 +157,9 @@ export function VideoPlayer({
     [subtitleTracks],
   );
   useNativeMediaTracks({ videoRef, src, subtitleTracks: pistesTexte, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
+  // VTT de la piste active, débarrassé du balisage ASS que Jellyfin laisse
+  // fuiter dans le texte des cues (« {\an8} » affiché tel quel).
+  const urlSousTitreAssaini = useSanitizedSubtitles({ pistes: pistesTexte, selection: currentSubtitle, src });
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -218,8 +222,15 @@ export function VideoPlayer({
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}
       >
+        {/* Tous les <track> restent montés, sélectionnés ou non : la
+            correspondance index → textTracks de useNativeMediaTracks se fait
+            par POSITION, en omettre un décalerait toutes les suivantes.
+            Seule la piste active porte une `src` — le navigateur ne charge de
+            toute façon que celle dont le `mode` n'est pas `disabled`, et
+            l'attendre évite d'afficher une seconde le fichier brut. */}
         {pistesTexte.map((t) => (
-          <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
+          <track key={`${src}-${t.index}`} kind="subtitles" label={t.label}
+            src={t.index === currentSubtitle ? (urlSousTitreAssaini ?? undefined) : undefined} />
         ))}
       </video>
 
