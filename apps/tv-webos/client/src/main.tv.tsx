@@ -28,6 +28,7 @@ import { ThemeProvider } from "@/theme";
 import { installSessionGuard } from "@/auth/sessionGuard";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
+import { installerMoteurFocus, amorcerFocus } from "./focus/moteur";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -144,6 +145,12 @@ attachQueryPersister(queryClient, stockagePersistant, {
   whitelist: HOME_PERSIST_WHITELIST,
   owner: proprietaireCache,
 });
+
+// Navigation à la télécommande. Installée avant le rendu : le moteur écoute
+// le document en capture, il n'a besoin d'aucun composant pour exister. Le
+// focus initial, lui, attend que le premier écran soit monté.
+installerMoteurFocus();
+amorcerFocus();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
