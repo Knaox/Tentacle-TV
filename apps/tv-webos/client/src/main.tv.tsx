@@ -29,6 +29,7 @@ import { installSessionGuard } from "@/auth/sessionGuard";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
 import { installerMoteurFocus, amorcerFocus } from "./focus/moteur";
+import { installerTouchesLecteur } from "./lecture/touchesLecteur";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -151,6 +152,10 @@ attachQueryPersister(queryClient, stockagePersistant, {
 // focus initial, lui, attend que le premier écran soit monté.
 installerMoteurFocus();
 amorcerFocus();
+
+// Touches de transport de la télécommande. Le client web ne les connaît pas :
+// il n'a jamais eu affaire qu'à un clavier, où elles n'existent pas.
+installerTouchesLecteur();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -8,8 +8,7 @@ import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession } from "../hooks/useWatchSession";
 import { necessiteIncrustation } from "../hooks/useWebPlaybackFallbacks";
-import { isMacOS } from "../hooks/useDesktopPlayer";
-import { isTauriShell } from "../desktop/bridge";
+import { preferNativeHls } from "../hooks/useNativeHlsPreference";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
@@ -37,11 +36,9 @@ export function WatchWeb() {
     skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
 
-  // Le HLS natif est celui de WEBKIT. `isTauri()` répondant OUI sous Electron
-  // aussi, la coquille Electron macOS l'activait — alors que son moteur est
-  // Chromium, qui n'a pas de HLS natif et a besoin de hls.js. Même piège que
-  // dans `usePlaybackInfo`, et invisible sous Windows où `isMacOS()` est faux.
-  const useNativeHls = isTauriShell() && isMacOS();
+  // Décidé par `useNativeHlsPreference` : les coquilles dont le décodage passe
+  // par le matériel répondent oui, sans que ce fichier ait à les connaître.
+  const useNativeHls = preferNativeHls();
 
   const { reportStart, updatePosition, reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
