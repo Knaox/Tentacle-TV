@@ -72,6 +72,13 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // focus.
   [resolve(WEB, "components/AppLayout.tsx")]: resolve(CLIENT, "ui/DispositionTv.tsx"),
 
+  // Les pastilles d'indicateur de la bannière sont des boutons de quatre pixels
+  // de haut, posés sur le trajet du D-pad entre la bannière et la première
+  // rangée. Viser une pastille n'apporte rien qu'un appui sur gauche ou droite
+  // ne fasse déjà : elles restent affichées, mais cessent d'être des cibles.
+  [resolve(WEB, "components/hero/HeroIndicators.tsx")]:
+    resolve(CLIENT, "ui/heros/JaugeBanniereTv.tsx"),
+
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.

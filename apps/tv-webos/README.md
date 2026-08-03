@@ -91,3 +91,27 @@ Le moteur de focus laisse gauche et droite au curseur de saisie tant qu'un
 champ est actif, et garde haut et bas — c'est par eux qu'on en sort. Sans
 cette distinction, entrer dans un formulaire à la télécommande serait un aller
 sans retour.
+
+## Ce qui est atteignable, et pourquoi
+
+Sur l'accueil, le D-pad ne rencontre que trois familles de cibles : les entrées
+du rail, les deux appels à l'action de la bannière avec ses trois actions
+rapides, et les cartes. Rien d'autre.
+
+Ce qui a été retiré du parcours l'a été pour une raison précise, pas par
+principe. Les pastilles d'indicateur de la bannière étaient cinq boutons de
+quatre pixels de haut posés entre elle et la première rangée : il fallait les
+traverser une par une pour descendre, et les viser n'apportait rien qu'un appui
+sur gauche ou droite ne fasse déjà. Les actions rapides d'une carte
+demanderaient un niveau de navigation à l'intérieur de la carte, ce qui rendrait
+chaque déplacement horizontal ambigu — elles restent sur la fiche. Et la
+`<section>` de rangée, focusable sur le web pour y capter les flèches, était un
+rectangle pleine largeur qui remportait systématiquement le score « vers le
+bas » : un trou noir sans anneau pour le signaler.
+
+Trois règles gouvernent les déplacements. Un mouvement horizontal reste dans sa
+rangée tant qu'il y a une carte à atteindre, et cède au bout de la piste pour
+qu'on puisse rejoindre la navigation. Le rail ne s'atteint que par la gauche —
+il couvre toute la hauteur, et sans cela « bas » y remonterait au lieu de
+descendre d'une rangée. Et il est écarté du focus initial : arriver sur un écran
+avec le focus dans la navigation oblige à le déplacer avant même de regarder.
