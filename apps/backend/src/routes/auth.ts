@@ -1,22 +1,17 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { getPrisma } from "../services/db";
-import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
+import { getJellyfinUrl } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
-import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
+import { verifyImpersonationToken } from "../services/jwt";
 import { buildAuthHeader, deviceIdFor } from "../services/jellyfinIdentity";
 import { authPasswordRoutes } from "./authPassword";
+import { authAccountRoutes } from "./authAccount";
+import { authRefreshRoutes } from "./authRefresh";
+import { clearSessionCookie, setSessionCookie } from "./authCookie";
 
-// Durée du cookie web : 400 jours = plafond imposé par Chrome. Le refresh
-// proactif (12h côté web) refait glisser cette fenêtre à chaque utilisation →
-// la session n'expire jamais en pratique.
-const COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
-
-const registerSchema = z.object({
-  inviteKey: z.string().min(1),
-  username: z.string().min(3).max(50),
-  password: z.string().min(6),
-});
+/** Session : ouverture, sortie d'impersonation, fermeture. Le cycle de vie du
+ *  compte vit dans `authAccount.ts`, la revalidation dans `authRefresh.ts` et le
+ *  mot de passe dans `authPassword.ts` (limite 300 lignes par fichier). */
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -29,8 +24,9 @@ const loginSchema = z.object({
 });
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-  // Changement de mot de passe Jellyfin (fichier dédié — limite 300L).
   await app.register(authPasswordRoutes);
+  await app.register(authAccountRoutes);
+  await app.register(authRefreshRoutes);
 
   /** POST /api/auth/login — Authenticate via Jellyfin, return token + user. */
   app.post("/login", { config: { rateLimit: { max: 5, timeWindow: 60000 } } }, async (request, reply) => {
@@ -64,18 +60,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const data = await res.json();
 
       // Set httpOnly cookie for web clients (XSS-proof token storage)
-      reply.setCookie("tentacle_token", data.AccessToken, {
-        httpOnly: true,
-        // `auto` plutôt que `NODE_ENV` : le drapeau Secure suit alors le PROTOCOLE
-        // réel de la requête (Fastify tourne en `trustProxy`, donc
-        // `X-Forwarded-Proto` est honoré). `NODE_ENV` n'était posé nulle part —
-        // ni Dockerfile, ni docker-compose, ni entrypoint — ce cookie de session
-        // partait donc SANS Secure en production.
-        secure: "auto",
-        sameSite: "strict",
-        path: "/",
-        maxAge: COOKIE_MAX_AGE,
-      });
+      setSessionCookie(reply, data.AccessToken);
 
       return {
         AccessToken: data.AccessToken,
@@ -84,218 +69,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       };
     } catch {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
-    }
-  });
-
-  /** POST /api/auth/register — Create a Jellyfin user with an invite key. */
-  app.post("/register", { config: { rateLimit: { max: 3, timeWindow: 60000 } } }, async (request, reply) => {
-    const body = registerSchema.parse(request.body);
-    const prisma = getPrisma();
-    const jellyfinUrl = getJellyfinUrl();
-    const apiKey = getJellyfinApiKey();
-
-    if (!jellyfinUrl || !apiKey) {
-      return reply.status(503).send({ message: "Jellyfin non configuré" });
-    }
-
-    // 1. Validate invite key
-    const invite = await prisma.inviteKey.findUnique({
-      where: { key: body.inviteKey },
-    });
-
-    if (!invite) {
-      return reply.status(400).send({ message: "Clé d'invitation invalide" });
-    }
-    if (invite.currentUses >= invite.maxUses) {
-      return reply.status(400).send({ message: "Clé d'invitation épuisée" });
-    }
-    if (invite.expiresAt && invite.expiresAt < new Date()) {
-      return reply.status(400).send({ message: "Clé d'invitation expirée" });
-    }
-
-    // 2. Create user on Jellyfin
-    let jellyfinUser: { Id: string; Name: string };
-    try {
-      const createRes = await fetch(`${jellyfinUrl}/Users/New`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Emby-Token": apiKey },
-        body: JSON.stringify({ Name: body.username }),
-      });
-      if (!createRes.ok) throw new Error(await createRes.text());
-      jellyfinUser = await createRes.json();
-
-      await fetch(`${jellyfinUrl}/Users/${jellyfinUser.Id}/Password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Emby-Token": apiKey },
-        body: JSON.stringify({ NewPw: body.password, ResetPassword: false }),
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Échec de création du compte";
-      return reply.status(500).send({ message: msg });
-    }
-
-    // 3. Mark invite key as used
-    await prisma.$transaction([
-      prisma.inviteKey.update({
-        where: { id: invite.id },
-        data: { currentUses: { increment: 1 } },
-      }),
-      prisma.inviteUsage.create({
-        data: {
-          inviteKeyId: invite.id,
-          jellyfinUserId: jellyfinUser.Id,
-          username: body.username,
-        },
-      }),
-    ]);
-
-    return reply.status(201).send({
-      message: "Compte créé avec succès",
-      userId: jellyfinUser.Id,
-    });
-  });
-
-  /** DELETE /api/auth/account — Delete user account (Jellyfin + Tentacle DB). */
-  app.delete("/account", { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = (request as any).user as { userId: string; username: string; isAdmin: boolean };
-
-    // Prevent admin self-deletion
-    if (user.isAdmin) {
-      return reply.status(403).send({
-        message: "Les administrateurs ne peuvent pas supprimer leur propre compte",
-      });
-    }
-
-    const jellyfinUrl = getJellyfinUrl();
-    const apiKey = getJellyfinApiKey();
-
-    if (!jellyfinUrl || !apiKey) {
-      return reply.status(503).send({ message: "Jellyfin non configuré" });
-    }
-
-    // 1. Delete user from Jellyfin
-    try {
-      const res = await fetch(`${jellyfinUrl}/Users/${user.userId}`, {
-        method: "DELETE",
-        headers: { "X-Emby-Token": apiKey },
-      });
-      if (!res.ok && res.status !== 404) {
-        throw new Error(`Jellyfin responded with ${res.status}`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Échec de suppression Jellyfin";
-      return reply.status(500).send({ message: msg });
-    }
-
-    // 2. Clean up Tentacle DB data
-    const prisma = getPrisma();
-    try {
-      await prisma.$transaction([
-        prisma.libraryPreference.deleteMany({ where: { jellyfinUserId: user.userId } }),
-        prisma.pairedDevice.deleteMany({ where: { jellyfinUserId: user.userId } }),
-        prisma.notification.deleteMany({ where: { jellyfinUserId: user.userId } }),
-        prisma.inviteUsage.deleteMany({ where: { jellyfinUserId: user.userId } }),
-      ]);
-      // Delete ticket messages then tickets (cascade handles messages)
-      const tickets = await prisma.supportTicket.findMany({
-        where: { jellyfinUserId: user.userId },
-        select: { id: true },
-      });
-      if (tickets.length > 0) {
-        await prisma.supportTicket.deleteMany({ where: { jellyfinUserId: user.userId } });
-      }
-    } catch {
-      // Non-blocking: Jellyfin user is already deleted
-    }
-
-    reply.clearCookie("tentacle_token", { path: "/" });
-    return { success: true, message: "Compte supprimé" };
-  });
-
-  /** POST /api/auth/refresh — Verify token validity + renew cookie. */
-  app.post("/refresh", { config: { rateLimit: { max: 20, timeWindow: 60000 } } }, async (request, reply) => {
-    const body = (request.body as { token?: string } | undefined);
-    const token = body?.token
-      || (request as any).cookies?.tentacle_token;
-
-    if (!token) {
-      return reply.status(401).send({ message: "Token manquant" });
-    }
-
-    // JWT d'appareil appairé (TV) : Jellyfin ne connaît pas ces tokens — les
-    // lui soumettre renvoyait systématiquement 401 et déconnectait la TV (qui
-    // n'a pas de credentials pour se reconnecter). On valide localement :
-    // signature + appareil non révoqué en DB. Token renvoyé tel quel
-    // (idempotent, pas de rotation de hash).
-    if (token.split(".").length === 3) {
-      // Token d'impersonation : validation locale (signature + expiration).
-      // Jellyfin ne connaît pas ce JWT — le lui soumettre renverrait 401 et
-      // éjecterait l'admin du mode impersonation sur un simple refresh.
-      const impersonation = await verifyImpersonationToken(token);
-      if (impersonation) {
-        return {
-          AccessToken: token,
-          User: { Id: impersonation.userId, Name: impersonation.username },
-        };
-      }
-
-      const payload = await verifyDeviceToken(token);
-      if (payload) {
-        try {
-          const prisma = getPrisma();
-          const device = await prisma.pairedDevice.findUnique({
-            where: { tokenHash: hashToken(token) },
-          });
-          if (!device) {
-            return reply.status(401).send({ message: "Appareil révoqué" });
-          }
-          return {
-            AccessToken: token,
-            User: { Id: payload.userId, Name: payload.username },
-          };
-        } catch {
-          return reply.status(503).send({ message: "Base de données indisponible" });
-        }
-      }
-      // JWT illisible (signature invalide) → on laisse Jellyfin trancher
-      // ci-dessous : certains tokens Jellyfin pourraient contenir des points.
-    }
-
-    const jellyfinUrl = getJellyfinUrl();
-    if (!jellyfinUrl) {
-      return reply.status(503).send({ message: "Jellyfin non configuré" });
-    }
-
-    try {
-      const res = await fetch(`${jellyfinUrl}/Users/Me`, {
-        headers: { "X-Emby-Token": token },
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (!res.ok) {
-        // Seul un refus explicite invalide le token. Un 5xx (Jellyfin en
-        // redémarrage/maintenance) ne doit JAMAIS déconnecter les clients.
-        if (res.status === 401 || res.status === 403) {
-          return reply.status(401).send({ message: "Token invalide" });
-        }
-        return reply.status(503).send({ message: "Jellyfin indisponible" });
-      }
-
-      const user = await res.json();
-
-      // Renew httpOnly cookie
-      reply.setCookie("tentacle_token", token, {
-        httpOnly: true,
-        secure: "auto", // cf. le commentaire du premier setCookie
-        sameSite: "strict",
-        path: "/",
-        maxAge: COOKIE_MAX_AGE,
-      });
-
-      return { AccessToken: token, User: user };
-    } catch {
-      // Jellyfin unreachable — don't invalidate the token
-      return reply.status(503).send({ message: "Impossible de contacter Jellyfin" });
     }
   });
 
@@ -321,14 +94,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return { success: true };
     }
 
-    reply.setCookie("tentacle_token", adminToken, {
-      httpOnly: true,
-      secure: "auto", // cf. le commentaire du premier setCookie
-      sameSite: "strict",
-      path: "/",
-      maxAge: COOKIE_MAX_AGE,
-    });
-    reply.clearCookie("tentacle_admin_token", { path: "/" });
+    setSessionCookie(reply, adminToken);
+    clearSessionCookie(reply, "tentacle_admin_token");
     return { success: true };
   });
 
@@ -351,62 +118,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    reply.clearCookie("tentacle_token", { path: "/" });
+    clearSessionCookie(reply);
     return { success: true };
-  });
-
-  /** POST /api/auth/password-reset-request — Create a support ticket for password reset. */
-  const resetRequestSchema = z.object({ username: z.string().min(1) });
-
-  app.post("/password-reset-request", {
-    config: { rateLimit: { max: 3, timeWindow: 3_600_000 } },
-  }, async (request, reply) => {
-    const { username } = resetRequestSchema.parse(request.body);
-    const jellyfinUrl = getJellyfinUrl();
-    const apiKey = getJellyfinApiKey();
-
-    // Always respond 200 to avoid leaking user existence
-    const successResponse = { message: "Demande enregistrée" };
-
-    if (!jellyfinUrl || !apiKey) {
-      return reply.send(successResponse);
-    }
-
-    try {
-      const res = await fetch(`${jellyfinUrl}/Users`, {
-        headers: { "X-Emby-Token": apiKey },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!res.ok) return reply.send(successResponse);
-
-      const users = (await res.json()) as { Id: string; Name: string }[];
-      const match = users.find(
-        (u) => u.Name.toLowerCase() === username.toLowerCase()
-      );
-      if (!match) return reply.send(successResponse);
-
-      const prisma = getPrisma();
-      await prisma.supportTicket.create({
-        data: {
-          jellyfinUserId: match.Id,
-          username: match.Name,
-          subject: "Réinitialisation de mot de passe",
-          category: "account",
-          status: "open",
-          messages: {
-            create: {
-              jellyfinUserId: match.Id,
-              username: match.Name,
-              isAdmin: false,
-              body: `L'utilisateur ${match.Name} demande une réinitialisation de son mot de passe.`,
-            },
-          },
-        },
-      });
-
-      return reply.send(successResponse);
-    } catch {
-      return reply.send(successResponse);
-    }
   });
 };
