@@ -186,4 +186,8 @@ export default {
   tvIndisponibleTitre: "Indisponible sur le téléviseur",
   tvIndisponibleTexte:
     "Cette section demande un clavier et un écran de près. Ouvrez Tentacle TV sur un ordinateur, un téléphone ou une tablette pour y accéder.",
+
+  // Écran de recherche du téléviseur.
+  rechercheTvDictee: "Appuyez sur le micro de la télécommande pour dicter",
+  rechercheTvVide: "Saisissez un titre pour lancer la recherche.",
 } as const;

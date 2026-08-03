@@ -183,4 +183,8 @@ export default {
   tvIndisponibleTitre: "Not available on TV",
   tvIndisponibleTexte:
     "This section needs a keyboard and a close-up screen. Open Tentacle TV on a computer, phone or tablet to use it.",
+
+  // TV search screen.
+  rechercheTvDictee: "Press the microphone on the remote to dictate",
+  rechercheTvVide: "Type a title to start searching.",
 } as const;
