@@ -102,3 +102,36 @@
 .carte-tv-meta [class*="rounded-"] {
   background-color: rgba(10, 10, 15, 0.92);
 }
+
+/* ── L'affiche de la carte visée, en fond d'écran ────────────────────────
+ *
+ * Sous tout le contenu et sous le rail, au-dessus du seul dégradé de marque.
+ * `pointer-events: none` : le pointeur de la Magic Remote doit le traverser.
+ *
+ * Le fondu est une animation et non une transition : le fond est REMONTÉ à
+ * chaque changement d'item — c'est le seul moyen d'obtenir une entrée en
+ * douceur sans tenir deux calques, le shim de framer-motion ne différant aucun
+ * démontage. Opacité seule, rien à repeindre. */
+:root {
+  --fond-focus-opacite: 0.42;
+}
+
+.fond-focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  pointer-events: none;
+  animation: fond-focus-entree 420ms ease-out both;
+}
+
+@keyframes fond-focus-entree {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
