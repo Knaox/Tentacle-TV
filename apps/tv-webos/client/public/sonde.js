@@ -116,12 +116,50 @@
     });
   }
 
+  /**
+   * Les trois mesures qui ne peuvent se faire que sur la dalle.
+   *
+   * Rendues dans une section qui se réécrit : le maintien de OK et la réponse
+   * du relais arrivent après le premier tracé, et le lecteur doit les voir
+   * apparaître sans recharger.
+   */
+  function rendreMesuresDalle(rapport) {
+    var section = document.createElement("div");
+    rapport.appendChild(section);
+
+    var lignes = global.SondeDalle.canevas();
+    var redessiner = function () {
+      section.innerHTML = "";
+      section.appendChild(rendreSection({ titre: "Mesures sur la dalle", lignes: lignes }));
+    };
+    redessiner();
+
+    var ajouter = function (nouvelles) {
+      for (var i = 0; i < nouvelles.length; i++) {
+        var remplace = false;
+        for (var j = 0; j < lignes.length; j++) {
+          if (lignes[j].cle === nouvelles[i].cle) {
+            lignes[j] = nouvelles[i];
+            remplace = true;
+          }
+        }
+        if (!remplace) lignes.push(nouvelles[i]);
+      }
+      redessiner();
+    };
+
+    ajouter([{ cle: "maintien de OK", sonde: { etat: "info", valeur: "maintenez OK trois secondes" } }]);
+    global.SondeDalle.installerReleveMaintien(ajouter);
+    global.SondeDalle.sonderRelais(ajouter);
+  }
+
   function demarrer() {
     var rapport = document.getElementById("rapport");
     var sections = global.SondesWebos.sections();
     for (var i = 0; i < sections.length; i++) {
       rapport.appendChild(rendreSection(sections[i]));
     }
+    rendreMesuresDalle(rapport);
     rendreInfoAppareil(rapport);
     installerReleveTouches();
 
