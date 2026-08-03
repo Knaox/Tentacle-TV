@@ -79,3 +79,26 @@
 .carte-tv .hover-reveal {
   display: none;
 }
+
+/* ── Les métadonnées de la carte focalisée ───────────────────────────────
+ *
+ * 4K, HDR, Dolby Vision, langues : ce que l'interface d'Android TV montre sous
+ * le focus, et que le client web réserve au survol. Le bloc est monté par
+ * `CarteFocusable` pendant la durée du focus seulement — la feuille ne fait ici
+ * que le placer et le rendre lisible.
+ *
+ * Les pastilles portent un `backdrop-filter` que la passe verre a retiré : sans
+ * flou, leur fond à 55 % laisse passer une affiche claire et le texte devient
+ * illisible. On remonte l'opacité plutôt que de réécrire le composant. */
+.carte-tv-meta {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.carte-tv-meta [class*="rounded-"] {
+  background-color: rgba(10, 10, 15, 0.92);
+}

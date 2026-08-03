@@ -86,6 +86,7 @@ export function PisteTv({
             index={index}
             largeur={largeurCarte}
             itemId={item.Id}
+            item={item}
             // Sur une affiche, l'appui court ouvre déjà la fiche : un maintien
             // qui ferait la même chose n'apprendrait rien.
             maintienOuvreFiche={variante === "episode"}
