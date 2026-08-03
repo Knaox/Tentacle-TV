@@ -81,6 +81,52 @@ touché — mais mènent à un écran d'explication, et le code des écrans conc
 n'est jamais compilé. Vérifiable dans `client/dist/assets` : aucun fragment
 `Admin*`, `Downloads*`, `Offline*`, `Shared*`.
 
+## Ce que la dalle ne dit pas, et que rien ne signale
+
+Trois défauts n'apparaissent qu'à l'exécution sur un vrai téléviseur, et aucun
+n'est visible au navigateur ni au build. Ils sont corrigés, mais le motif se
+répétera : **tout ce qui est écrit en style EN LIGNE échappe aux passes PostCSS
+comme à la garde de compatibilité.**
+
+- `IntersectionObserverEntry.isIntersecting` n'existe pas avant Chrome 58,
+  quand l'observateur, lui, est là depuis Chrome 51. Toutes les gardes du dépôt
+  testent le constructeur, qui répond oui. `amorce/polyfillObservateurs.ts` pose
+  l'accesseur manquant sur le prototype — un geste qui répare les sept
+  appelants, sans toucher `apps/web`.
+- `LibraryGrid` pose ses colonnes en style en ligne. Le hook de mesure est
+  substitué (`ui/grille/colonnesTv.ts`) et publie la largeur de carte en
+  variable ; `styles/grille-tv.css` fait le reste.
+- Les titres de bannière et de bibliothèque fixent leur taille en `clamp()`, en
+  ligne. Le repli est dans `styles/tv.css`, sans `!important` : là où `clamp()`
+  est compris, la déclaration en ligne l'emporte d'elle-même.
+
+Une divergence de contrat est du même ordre : `tsc` ne connaît pas les
+substitutions. Un remplaçant qui recopie les propriétés de son original à la
+main est libre de diverger en silence — c'est arrivé à la jauge de bannière.
+Importer le type de l'original (`import type`, effacé à la compilation, résolu
+par `tsc`) ferme cette porte. `ui/heros/JaugeBanniereTv.tsx` et
+`lecture/ControlesTv.tsx` le font.
+
+## Le lecteur
+
+`lecture/ControlesTv.tsx` remplace la barre de contrôle du web, et
+`lecture/masquageAutoTv.ts` son auto-masquage — c'est la seule prise sur
+l'enveloppe qui rend les commandes invisibles. Le reste du lecteur est celui
+d'`apps/web` : le déplacement passe toujours par `useSmartSeek`, seul chemin
+qui sache suivre un transcodage HLS.
+
+**À qui appartient une touche se déduit de l'état, jamais de l'ordre des
+écouteurs.** `stopPropagation` n'empêche pas les autres écouteurs du même nœud
+de tirer dans la même phase : trois cohabitent, et c'est le mode du lecteur
+(`lecture/etatLecteurTv.ts`) qui tranche. Commandes déployées, les flèches sont
+au moteur de focus, qui parcourt des boutons comme partout ailleurs. Sinon
+elles entrent dans le déplacement du flux.
+
+Le curseur fantôme est le modèle d'`apps/tv`, transposé : la position avance
+seule, la vidéo reste en pause, **aucun déplacement n'est appliqué avant
+confirmation**. OK confirme, Retour annule, sept secondes d'inactivité annulent
+aussi. `lecture/machineScrub.test.ts` vérifie ce qui ne se voit pas.
+
 ## Saisie de texte
 
 Rien n'est codé pour le clavier virtuel, et rien ne doit l'être : webOS
@@ -108,6 +154,19 @@ chaque déplacement horizontal ambigu — elles restent sur la fiche. Et la
 `<section>` de rangée, focusable sur le web pour y capter les flèches, était un
 rectangle pleine largeur qui remportait systématiquement le score « vers le
 bas » : un trou noir sans anneau pour le signaler.
+
+Le rail montre **tout** par défaut — recherche, accueil, listes, toutes les
+bibliothèques, réglages — et l'on retire ce dont on ne veut pas, par un maintien
+de OK. C'est l'inverse de `usePinnedNav`, dont le défaut vide convient à une
+barre horizontale où la place manque, et qui laissait un téléviseur neuf devant
+trois entrées. La liste d'exclusion vit dans `ui/nav/epinglageTv.ts` ; « Tout
+afficher » n'apparaît qu'une fois quelque chose masqué, pour que le geste ne
+soit pas une porte à sens unique.
+
+La recherche est une **surcouche**, pas une route : `App.tsx` n'est pas
+modifié, et le client web ne fait pas autrement — la sienne est un portail
+ouvert par un raccourci. La touche Retour la referme avant de reculer d'un
+écran, par la pile de consommateurs de `focus/retour.ts`.
 
 Trois règles gouvernent les déplacements. Un mouvement horizontal reste dans sa
 rangée tant qu'il y a une carte à atteindre, et cède au bout de la piste pour
