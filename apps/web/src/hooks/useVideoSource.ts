@@ -3,7 +3,7 @@ import Hls from "hls.js";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 
 import {
-  attemptPlay, BUFFER_GATE_TIMEOUT, GARDE_DIRECT_PLAY_MS, HAS_NATIVE_HLS,
+  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, GARDE_DIRECT_PLAY_MS, HAS_NATIVE_HLS,
 } from "./videoSourceHelpers";
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -160,35 +160,10 @@ export function useVideoSource({
       // hls.js: works on Chrome/Brave/Firefox/Edge (MSE) AND Safari 17.1+ (ManagedMediaSource).
       // Since hls.js v1.5, Hls.isSupported() returns true on Safari 17.1+ via ManagedMediaSource
       // → full buffer control, seeking, quality selection — same as Chrome.
-      const hls = new Hls({
-        enableWorker: true,
-        startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
-        lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
-        // Les sous-titres sont des <track> VTT sidecar gérés par React
-        // (useNativeMediaTracks) : hls.js ne doit ni créer ni piloter de
-        // TextTracks natifs — sinon il écrase les modes des pistes manuelles
-        // (hls.js #4032) et les sous-titres disparaissent en transcode.
-        renderTextTracksNatively: false,
-        backBufferLength: Infinity,    // VOD: keep all played segments — instant backward seek
-        maxBufferLength: 30,          // buffer 30s ahead for smooth playback
-        maxMaxBufferLength: 120,      // allow up to 120s buffer for sustained streaming
-        startFragPrefetch: true,      // prefetch next fragment during current load
-        // A/V sync: fix audio desync with transcoded streams (fMP4/TS segments).
-        // stretchShortVideoTrack extends the last audio frame to fill micro-gaps between segments.
-        // maxAudioFramesDrift forces audio resync when drift exceeds 1 frame.
-        // forceKeyFrameOnDiscontinuity forces keyframe at discontinuity points (seek, segment switch).
-        stretchShortVideoTrack: true,
-        maxAudioFramesDrift: 1,
-        forceKeyFrameOnDiscontinuity: true,
-        fragLoadPolicy: {
-          default: {
-            maxTimeToFirstByteMs: 20_000,
-            maxLoadTimeMs: 60_000,
-            timeoutRetry: { maxNumRetry: 5, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
-            errorRetry: { maxNumRetry: 8, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
-          },
-        },
-      });
+      // Configuration extraite (cf. `configHls`) : c'est elle qui porte
+      // `videoPreference.preferHDR`, le réglage qui décide de la copie ou du
+      // ré-encodage de l'image côté serveur.
+      const hls = new Hls(configHls(seekTo));
       hlsRef.current = hls;
       // HLS play timing:
       // - Source change (audio/quality switch): play immediately on MANIFEST_PARSED
