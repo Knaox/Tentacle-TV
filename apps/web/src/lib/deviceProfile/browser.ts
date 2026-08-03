@@ -25,10 +25,16 @@ import {
  * retire NOTRE contribution au profil, morceau par morceau, pour voir laquelle
  * débloque la copie. Il se pose depuis la console et vaut pour la session :
  *
+ *   localStorage.setItem("tentacle_diag_profil", "canaux-2")     // 2 canaux, comme jellyfin-web
  *   localStorage.setItem("tentacle_diag_profil", "sans-plage")   // sans VideoRangeType
  *   localStorage.setItem("tentacle_diag_profil", "sans-hevc")    // sans le profil HEVC entier
  *   localStorage.setItem("tentacle_diag_profil", "sans-audio6")  // sans la limite 6 canaux
  *   localStorage.removeItem("tentacle_diag_profil")              // profil normal
+ *
+ * `canaux-2` est la piste du moment : sur CE fichier, jellyfin-web obtient
+ * `-codec:v:0 copy` en demandant `-ac 2`, nous obtenons `hevc_qsv` en demandant
+ * `-ac 6`. Tout le reste de sa ligne ffmpeg (pas de `-hwaccel`, `-hls_time 6`,
+ * `-bsf:v hevc_mp4toannexb`) découle de la copie, pas l'inverse.
  *
  * Rien d'autre ne doit bouger entre deux essais : c'est une comparaison.
  */
@@ -140,6 +146,15 @@ export function buildBrowserDeviceProfile(
   transcodingProfiles.push(profilHlsTs("h264", audioTs));
   transcodingProfiles.push(PROFIL_AUDIO_SEUL);
 
+  // Diagnostic : jellyfin-web réclame 2 canaux (`-ac 2`) là où nous en
+  // réclamons 6, et c'est la dernière différence de REQUÊTE entre son ffmpeg
+  // qui copie l'image et le nôtre qui la recompresse.
+  if (diagnosticProfil() === "canaux-2") {
+    for (let i = 0; i < transcodingProfiles.length; i++) {
+      transcodingProfiles[i] = { ...transcodingProfiles[i], MaxAudioChannels: "2" };
+    }
+  }
+
   // ── Codec profiles (constraints) ──
   const codecProfiles: CodecProfile[] = [
     { Type: "Video", Codec: "h264", Conditions: conditionsH264("51") },
@@ -156,7 +171,14 @@ export function buildBrowserDeviceProfile(
         : [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())],
     });
   }
-  if (diag !== "sans-audio6") codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
+  if (diag === "canaux-2") {
+    codecProfiles.push({
+      Type: "VideoAudio",
+      Conditions: [{ Condition: "LessThanEqual", Property: "AudioChannels", Value: "2", IsRequired: false }],
+    });
+  } else if (diag !== "sans-audio6") {
+    codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
+  }
 
   return {
     MaxStreamingBitrate: maxBitrate ?? 150_000_000,
