@@ -11,10 +11,10 @@ Builds/
 scripts/
 !apps/backend/scripts/
 !apps/desktop/scripts/
-# La cible webOS range sa configuration de build dans `build/` et ses outils
-# dans `scripts/` — deux noms exclus plus haut. Sans ces exceptions, toute la
-# chaîne de compilation du client téléviseur serait invisible pour git.
-!apps/tv-webos/build/
+# La cible webOS range ses outils dans `scripts/`, un nom exclu juste au-dessus.
+# Sa configuration de compilation vit dans `config/` et non `build/` : ce
+# dernier est réexclu plus bas par un bloc auto-généré, où une exception ne
+# survivrait pas à la prochaine régénération.
 !apps/tv-webos/scripts/
 !apps/desktop-electron/scripts/
 !.github/scripts/

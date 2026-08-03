@@ -27,8 +27,8 @@ l'identifiant, ou le comportement de la coquille.
 Chrome 53 — webOS 4.0, téléviseurs 2018 et plus. Ce n'est pas la cible par
 défaut de Vite, et rien dans `apps/web` n'a été écrit pour elle : l'écart est
 comblé mécaniquement, par `@vitejs/plugin-legacy` côté JavaScript et par le
-plugin PostCSS de `build/postcss/` côté CSS. Aucun composant partagé n'est
-forké, et `build/postcss/gardeCompat.ts` fait échouer le build si une primitive
+plugin PostCSS de `config/postcss/` côté CSS. Aucun composant partagé n'est
+forké, et `config/postcss/gardeCompat.ts` fait échouer le build si une primitive
 trop récente réapparaît dans la feuille finale.
 
 ## Commandes

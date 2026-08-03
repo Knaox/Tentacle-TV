@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Client LG webOS — coquille IPK + variante de build servie par le serveur Tentacle",
   "scripts": {
-    "build": "vite build --config build/vite.config.ts",
+    "build": "vite build --config config/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "ipk": "node scripts/ipk.mjs",
     "emu:install": "node scripts/emulateur.mjs install",
@@ -24,7 +24,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-legacy": "^6.0.0",
+    "@vitejs/plugin-legacy": "^6.1.1",
     "@vitejs/plugin-react": "^4.3.0",
     "@webos-tools/cli": "^3.0.0",
     "autoprefixer": "^10.4.20",

@@ -10,6 +10,6 @@
       "@/*": ["../web/src/*"]
     }
   },
-  "include": ["client/src", "build"],
+  "include": ["client/src", "config"],
   "exclude": ["node_modules", "client/dist", "shell"]
 }

@@ -1,0 +1,17 @@
+/* Feuille de la cible téléviseur.
+ *
+ * Elle reprend celle du client web — mêmes jetons, mêmes composants, mêmes
+ * classes — puis pose ce qui diffère sur une dalle de salon. Le gros du travail
+ * de compatibilité ne se fait pas ici mais dans `build/postcss/`, sur la
+ * feuille déjà générée par Tailwind : c'est là que vivent `:where()`,
+ * `display: grid` et `aspect-ratio`, qu'aucun fichier source n'écrit.
+ *
+ * La police n'est PAS importée depuis Google Fonts, contrairement à
+ * `apps/web/src/index.css` : un serveur Tentacle sur un réseau local sans accès
+ * extérieur ne la servirait jamais, le premier rendu attendrait pour rien, et
+ * le repli sur la police système décalerait toute l'échelle typographique. Les
+ * fichiers auto-hébergés arrivent avec le thème.
+ */
+
+/* Surfaces opaques, échelle 10-foot, anneau de focus et zone d'overscan
+ * arrivent à la phase du thème. */
