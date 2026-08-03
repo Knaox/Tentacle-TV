@@ -65,4 +65,13 @@ export default {
   tvNonJumeleTexte:
     "Cet appareil n'est plus associé à votre compte. Revenez à l'écran de jumelage pour afficher un nouveau code, puis validez-le depuis votre téléphone ou votre ordinateur.",
   tvNonJumeleAction: "Revenir au jumelage",
+
+  // Section « Compte » des réglages du téléviseur.
+  tvCompteJumele: "Compte jumelé",
+  tvServeur: "Serveur",
+  tvVersion: "Version",
+  tvOublierTitre: "Oublier ce jumelage",
+  tvOublierConfirmer: "Confirmer l'oubli",
+  tvOublierTexte:
+    "Ce téléviseur cessera d'être associé à votre compte et reviendra à l'écran de jumelage, où un nouveau code sera affiché.",
 } as const;

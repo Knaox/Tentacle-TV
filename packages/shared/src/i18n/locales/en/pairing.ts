@@ -65,4 +65,13 @@ export default {
   tvNonJumeleTexte:
     "This device is no longer linked to your account. Go back to the pairing screen to show a new code, then confirm it from your phone or computer.",
   tvNonJumeleAction: "Back to pairing",
+
+  // "Account" section of the TV settings.
+  tvCompteJumele: "Paired account",
+  tvServeur: "Server",
+  tvVersion: "Version",
+  tvOublierTitre: "Forget this pairing",
+  tvOublierConfirmer: "Confirm",
+  tvOublierTexte:
+    "This TV will no longer be linked to your account and will return to the pairing screen, where a new code will be shown.",
 } as const;

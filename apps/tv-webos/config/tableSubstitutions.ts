@@ -79,6 +79,14 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "components/hero/HeroIndicators.tsx")]:
     resolve(CLIENT, "ui/heros/JaugeBanniereTv.tsx"),
 
+  // Deux des cinq sections de réglages ouvraient l'écran « Indisponible » :
+  // leurs écrans ne sont pas compilés ici. Une section qui mène à une
+  // explication d'absence n'est pas une section. La liste est ramenée à trois,
+  // dont une nouvelle qui recueille ce que la barre du haut emportait avec elle
+  // — « À propos », et la déconnexion.
+  [resolve(WEB, "components/settings/SettingsLayout.tsx")]:
+    resolve(CLIENT, "ui/reglages/ReglagesTv.tsx"),
+
   // `LibraryGrid` pose ses colonnes en style EN LIGNE, invisible aux passes
   // PostCSS comme à la garde de compatibilité : le build passe, et la grille
   // s'effondre sur la dalle. Ce hook est le seul endroit d'où la largeur est
