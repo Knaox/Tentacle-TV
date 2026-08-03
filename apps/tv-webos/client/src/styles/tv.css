@@ -18,6 +18,7 @@
 @import "./grille-tv.css";
 @import "./recherche-tv.css";
 @import "./lecteur-tv.css";
+@import "./bibliotheque-tv.css";
 
 /* ── Police ───────────────────────────────────────────────────────────────
  *
@@ -77,6 +78,24 @@ body {
 .text-xs {
   font-size: 14px;
   line-height: 1.45;
+}
+
+/* ── Les titres que `clamp()` laissait nus ────────────────────────────────
+ *
+ * La bannière d'accueil et l'en-tête de bibliothèque fixent leur taille de
+ * titre en style EN LIGNE, avec `clamp()` — Chrome 79. Les passes PostCSS ne
+ * lisent que la feuille produite : elles ne voient pas un attribut `style`, et
+ * la garde de compatibilité laisse donc passer le build sans un mot. Sur la
+ * dalle, la déclaration est simplement invalide, donc ignorée : le titre d'une
+ * bibliothèque s'affichait à la taille héritée, seize pixels au milieu d'une
+ * affiche plein écran.
+ *
+ * La règle n'a PAS besoin d'`!important`, et c'est ce qui la rend sûre : là où
+ * `clamp()` est compris, la déclaration en ligne l'emporte et rien ne change ;
+ * là où il ne l'est pas, il ne reste que celle-ci. */
+h1.text-on-media-primary {
+  font-size: 46px;
+  line-height: 1.08;
 }
 
 /* ── Mouvement ────────────────────────────────────────────────────────────

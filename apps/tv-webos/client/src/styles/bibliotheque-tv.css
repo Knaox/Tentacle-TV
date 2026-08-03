@@ -1,0 +1,50 @@
+/* La page bibliothèque.
+ *
+ * Les filtres sont déjà atteignables : les pastilles de statut et les
+ * déclencheurs de menu sont de vrais `<button>`, et les lignes des menus des
+ * `button[role="menuitemcheckbox"]` — le moteur de navigation les recense sans
+ * qu'on écrive une ligne. Ce qui manquait était la taille : un menu dessiné
+ * pour une souris tient dans 260 px avec des lignes de 26.
+ *
+ * Deux commandes méritent une note, parce qu'elles fonctionnent pour une
+ * raison qui n'est pas évidente. Le curseur de note et les champs d'année sont
+ * des `<input>` : le moteur laisse gauche et droite au curseur de saisie tant
+ * qu'un champ est actif, et garde haut et bas pour en sortir. Un `type="range"`
+ * répond donc nativement aux flèches horizontales, et on en sort par le haut.
+ * C'est la règle écrite pour les formulaires qui rend ces deux-là utilisables ;
+ * elle n'a pas été pensée pour eux, mais elle est juste.
+ *
+ * Ce qui reste ouvert : un menu déployé ne piège pas le focus — il porte
+ * `role="menu"` et le recensement ne confine que les `role="dialog"`. Le D-pad
+ * peut donc en sortir par le bas et atteindre les cartes derrière. Le corriger
+ * demanderait de forker le composant de menu ; à voir sur la dalle si le défaut
+ * se remarque.
+ */
+
+/* Les menus déroulants, à la taille d'un salon. En descendance simple : le
+   sélecteur `[role="menu"]` n'appartient qu'à ces panneaux. */
+[role="menu"] {
+  min-width: 340px;
+}
+
+[role="menu"] button {
+  min-height: 46px;
+  font-size: 18px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* La coche d'une ligne suivait la taille du texte : à 14 px elle disparaît. */
+[role="menu"] button > span:first-child {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Le champ de recherche interne à un menu (genres, studios) et les champs
+   d'année : même gabarit que les lignes, sinon la frappe se fait à l'aveugle. */
+[role="menu"] input,
+[role="menu"] + input {
+  min-height: 44px;
+  font-size: 18px;
+}
