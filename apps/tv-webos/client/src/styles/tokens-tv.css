@@ -1,0 +1,87 @@
+/* Jetons du téléviseur — ce que la distance de lecture change.
+ *
+ * Posés APRÈS `index.css`, donc après `theme/tokens.css` : mêmes noms, mêmes
+ * rôles, valeurs adaptées. Rien n'est ajouté au vocabulaire du thème, ce qui
+ * garde le contrat vérifié par `packages/theme/src/css/cssVars.test.ts` intact.
+ *
+ * Le thème du serveur peut encore surcharger ces valeurs à l'exécution — le
+ * fournisseur écrit ses variables sur `:root` en style en ligne, qui l'emporte
+ * sur toute feuille. C'est voulu : un téléviseur doit suivre le thème choisi
+ * par l'utilisateur, il n'a pas à en imposer un autre.
+ */
+
+:root {
+  /* ── Surfaces opaques ─────────────────────────────────────────────────
+   *
+   * Sur le web, ces surfaces sont translucides parce qu'un flou d'arrière-plan
+   * les rend lisibles. Ce flou n'arrive qu'avec Chrome 76, et la passe
+   * `verre` l'a retiré : sans opacité, une barre de navigation ou un menu
+   * contextuel laisserait voir l'affiche nette qui passe dessous. À trois
+   * mètres, plus rien n'est lisible.
+   *
+   * L'alpha ne descend jamais sous 1 : le compositeur d'un téléviseur paie
+   * chaque couche transparente, et il n'y a rien à gagner à en laisser. */
+  --glass-tint: #14141a;
+  --glass-tint-strong: #0a0a12;
+  --glass-panel: #0a0a0a;
+  --glass-backdrop: rgba(0, 0, 0, 0.86);
+
+  --surface-modal: #0f0f15;
+  --surface-dropdown: #14141a;
+  --surface-sheet: #0f0f15;
+  --surface-toolbar: #14141a;
+  --surface-overlay: rgba(0, 0, 0, 0.86);
+
+  /* ── Bordures ─────────────────────────────────────────────────────────
+   *
+   * Relevées : une bordure à 8 % d'opacité disparaît sur une dalle vue de
+   * loin, et c'est elle qui sépare une carte de son voisin. */
+  --border-subtle: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.32);
+  --border-focus: rgba(var(--brand-rgb), 1);
+
+  /* ── Ombres franches ──────────────────────────────────────────────────
+   *
+   * Portées plus loin et plus denses. Une ombre douce ne se voit pas de loin ;
+   * ce qui se voit, c'est le décollement — et c'est lui qui dit quelle carte
+   * porte le focus. */
+  --elev-1: 0 6px 18px rgba(0, 0, 0, 0.6);
+  --elev-2: 0 12px 36px rgba(0, 0, 0, 0.72);
+  --elev-3: 0 24px 64px rgba(0, 0, 0, 0.85);
+
+  /* ── Rayons ───────────────────────────────────────────────────────────
+   *
+   * Agrandis proportionnellement aux surfaces : un rayon de 4 px sur une carte
+   * de 300 px de large ne se lit pas comme un arrondi mais comme un défaut. */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+
+  /* ── Zone d'overscan ──────────────────────────────────────────────────
+   *
+   * Un téléviseur rogne jusqu'à 5 % de chaque bord, et rien ne permet de
+   * savoir combien. Ce retrait remplace `env(safe-area-inset-*)`, que le
+   * moteur d'une dalle ne renseigne pas. */
+  --tv-overscan-x: 64px;
+  --tv-overscan-y: 36px;
+}
+
+/* Le thème clair reste possible — certains préfèrent une dalle moins sombre
+ * en plein jour — mais ses surfaces doivent être opaques pour les mêmes
+ * raisons. */
+:root[data-theme="light"] {
+  --glass-tint: #ffffff;
+  --glass-tint-strong: #f4f4f7;
+  --glass-panel: #ffffff;
+  --glass-backdrop: rgba(0, 0, 0, 0.5);
+
+  --surface-modal: #ffffff;
+  --surface-dropdown: #ffffff;
+  --surface-sheet: #ffffff;
+  --surface-toolbar: #f4f4f7;
+
+  --border-subtle: rgba(0, 0, 0, 0.16);
+  --border-strong: rgba(0, 0, 0, 0.3);
+}

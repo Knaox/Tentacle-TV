@@ -99,6 +99,11 @@ export const SELECTEURS_INTERDITS: PrimitiveInterdite[] = [
       "la règle entière tombe ; sur le preflight, les boutons reprennent le style natif du moteur",
   },
   { nom: ":is(", depuis: 88, consequence: "la règle entière tombe" },
+  {
+    nom: ":has(",
+    depuis: 105,
+    consequence: "la règle entière tombe — et rien ne le signale à l'écran",
+  },
 ];
 
 /** `display: grid` reste détectable séparément : c'est une valeur, pas une propriété. */

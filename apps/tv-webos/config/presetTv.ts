@@ -43,11 +43,20 @@ const FLOU_NEUTRALISE = {
   "3xl": "0",
 };
 
+/**
+ * La police du système webOS, dessinée pour être lue de loin et déjà présente
+ * sur la dalle. Le preset partagé demande Inter, que `apps/web` charge depuis
+ * Google Fonts — un serveur sur réseau local sans accès extérieur ne l'aurait
+ * jamais servie, et la passe `importsDistants` a retiré cet import.
+ */
+const POLICE_TV = ['"LG Smart UI"', '"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"];
+
 export const presetTv: Partial<Config> = {
   theme: {
     extend: {
       screens: PALIERS_TV,
       backdropBlur: FLOU_NEUTRALISE,
+      fontFamily: { sans: POLICE_TV },
     },
   },
 };
