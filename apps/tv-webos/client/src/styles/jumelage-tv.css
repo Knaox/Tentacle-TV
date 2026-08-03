@@ -1,12 +1,27 @@
-/* L'écran « non jumelé », composé comme la coquille à laquelle il ramène.
+/* L'écran « non jumelé ».
  *
- * Les deux écrans se suivent dans le temps : l'un dit que le jumelage est
- * perdu, l'autre en affiche un nouveau code. Ils ne doivent pas donner
- * l'impression de changer d'application au passage — d'où la même composition,
- * les mêmes graisses, le même overscan et le même anneau de focus.
+ * C'est celui qu'on voit quand le jeton d'appareil a été révoqué ou le stockage
+ * vidé — et, en développement, celui qui accueille toute route protégée sans
+ * session. Il vit HORS de la disposition : la garde de routes le monte à la
+ * place de la connexion, donc il n'hérite ni du rail, ni du dégradé ambiant, ni
+ * d'aucun des fonds de l'application. C'est ce qui le faisait ressembler à une
+ * page d'erreur de routeur : un rectangle noir avec trois éléments posés
+ * dessus.
  *
- * Ici les jetons du thème sont disponibles : contrairement à la coquille, ce
- * fichier est compilé avec le client.
+ * On n'invente aucun motif. Les trois viennent du produit :
+ *
+ *   - `.brand-ambient` est le dégradé de fond de l'application, rendu tel quel
+ *     par `DispositionTv` sur tous les autres écrans ;
+ *   - la barre d'accent verticale est celle des en-têtes de bibliothèque, même
+ *     dégradé et même halo ;
+ *   - le bouton est le CTA principal du produit — une pilule BLANCHE à texte
+ *     noir, celle de « Lecture » sur la fiche média. C'est `--cta-primary-bg`
+ *     qui le dit ; une pilule violette aurait été une invention locale, et le
+ *     violet reste ce dont on souligne, pas ce dont on remplit.
+ *
+ * Composition alignée sur celle de la coquille, à laquelle ce bouton ramène :
+ * les deux écrans se suivent dans le temps et ne doivent pas donner
+ * l'impression de changer d'application au passage.
  */
 
 .ecran-jumelage {
@@ -15,47 +30,66 @@
   flex-direction: column;
   justify-content: center;
   min-height: 100vh;
-}
-
-.ecran-jumelage-sur-titre {
-  position: absolute;
-  top: 0;
-  left: 0;
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--brand-light);
+  overflow: hidden;
 }
 
 .ecran-jumelage-bloc {
-  max-width: 900px;
+  position: relative;
+  z-index: 1;
+  max-width: 940px;
+}
+
+/* Le sur-titre et sa barre : le nom du produit situe l'écran sans lui disputer
+   la vedette. Aligné sur la ligne de base du texte, comme dans les en-têtes. */
+.ecran-jumelage-sur-titre {
+  display: flex;
+  align-items: center;
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--on-media-secondary, rgba(255, 255, 255, 0.72));
+}
+
+.ecran-jumelage-barre {
+  display: block;
+  width: 3px;
+  height: 26px;
+  margin-right: 14px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--brand-light), var(--brand-accent));
+  box-shadow: 0 0 12px rgba(var(--brand-rgb), 0.6);
 }
 
 .ecran-jumelage-titre {
   margin: 0 0 20px 0;
-  font-size: 46px;
+  font-size: 56px;
   font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  line-height: 1.06;
+  letter-spacing: -0.028em;
   color: var(--text-primary);
 }
 
 .ecran-jumelage-texte {
-  margin: 0 0 32px 0;
-  max-width: 820px;
-  font-size: 22px;
+  margin: 0 0 40px 0;
+  max-width: 780px;
+  font-size: 23px;
   line-height: 1.55;
   color: var(--text-secondary);
 }
 
+/* Le CTA du produit. L'élévation lui donne le décollement que le reste de
+   l'application donne à ses boutons pleins ; sans elle, une pastille posée à
+   plat sur un fond noir. */
 .ecran-jumelage-action {
-  padding: 18px 44px;
-  border: 0;
+  padding: 20px 48px;
+  border: 1px solid var(--cta-primary-border);
   border-radius: 999px;
-  background: var(--brand);
-  color: #ffffff;
-  font-size: 22px;
+  background: var(--cta-primary-bg);
+  color: var(--cta-primary-fg);
+  box-shadow: var(--elev-2);
+  font-size: 23px;
   font-weight: 700;
 }

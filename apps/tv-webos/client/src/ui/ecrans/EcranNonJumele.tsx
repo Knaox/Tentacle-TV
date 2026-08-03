@@ -26,10 +26,21 @@ export function EcranNonJumele() {
   // discret en haut, sujet à hauteur de regard, action en pilule. Les deux
   // écrans se suivent — ils ne doivent pas donner l'impression de changer
   // d'application au passage.
+  // Cet écran vit hors de la disposition — la garde de routes le monte à la
+  // place de la connexion. Il n'hérite donc d'aucun des fonds de l'application,
+  // et c'est ce qui le faisait ressembler à une page d'erreur : un rectangle
+  // noir avec trois éléments posés dessus. On remonte ici les motifs que le
+  // reste du produit emploie, sans en inventer un seul — le dégradé ambiant de
+  // la disposition, la barre d'accent des en-têtes de bibliothèque, et le
+  // bouton principal blanc de la fiche média.
   return (
     <div className="ecran-jumelage">
-      <p className="ecran-jumelage-sur-titre">Tentacle TV</p>
+      <div className="brand-ambient" aria-hidden />
       <div className="ecran-jumelage-bloc">
+        <p className="ecran-jumelage-sur-titre">
+          <span className="ecran-jumelage-barre" aria-hidden />
+          Tentacle TV
+        </p>
         <h1 className="ecran-jumelage-titre">{t("tvNonJumeleTitre")}</h1>
         <p className="ecran-jumelage-texte">{t("tvNonJumeleTexte")}</p>
         <button type="button" onClick={revenirAuJumelage} className="ecran-jumelage-action">
