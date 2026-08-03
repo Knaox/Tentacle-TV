@@ -23,7 +23,19 @@ export interface FetchWithRetryState {
   authRefreshInProgress: boolean;
 }
 
-const AUTH_EXPIRE_THRESHOLD = 5;
+/* Nombre de 401 CONSÉCUTIFS avant de demander un verdict à `onAuthExpired`.
+ *
+ * Ce seuil ne protège de rien : ce n'est pas lui qui décide de déconnecter,
+ * c'est `onAuthExpired`, qui interroge /api/auth/refresh (lequel tranche en
+ * consultant Jellyfin) et ne purge la session qu'après DEUX refus confirmés à
+ * 5 s d'intervalle. Le seuil ne fait que retarder cette consultation.
+ *
+ * Il était à 5, et c'était nuisible : le compteur est remis à zéro par toute
+ * réponse 200 (plus bas), y compris celles servies par le cache du proxy
+ * (Views 5 min, Latest 30 s…). Une session morte pouvait donc alterner
+ * indéfiniment 401 et 200-depuis-le-cache sans jamais atteindre 5 d'affilée —
+ * l'utilisateur restait « connecté » devant des pages vides. */
+const AUTH_EXPIRE_THRESHOLD = 2;
 /* Timeout par requête : sans ça, un Jellyfin qui « pend » (TCP ouvert, aucune
  * réponse) laisse le fetch en attente INDÉFINIE → query bloquée en loading.
  * IMPORTANT : on N'utilise PAS AbortController/signal (passer un signal au
