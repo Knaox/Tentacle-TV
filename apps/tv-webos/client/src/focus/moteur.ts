@@ -28,6 +28,9 @@ import { pointeurActif, surveillerCurseur } from "./curseur";
 /** Route sur laquelle le moteur laisse la main aux raccourcis du lecteur. */
 const CHEMIN_LECTEUR = "/watch";
 
+/** La navigation latérale, qui obéit à des règles d'accès particulières. */
+const SELECTEUR_RAIL = ".rail-tv";
+
 export function installerMoteurFocus(): () => void {
   const arreterCurseur = surveillerCurseur();
 
@@ -101,9 +104,24 @@ function viser(direction: Direction): boolean {
   // carte d'une piste voit à sa droite les éléments des rangées voisines — la
   // géométrie ne dit rien de l'appartenance — et le focus part au hasard, ce
   // qu'aucune interface de salon ne fait.
+  // Un déplacement horizontal reste dans sa rangée — tant qu'il y a une carte
+  // à atteindre. Au bout de la piste, on n'immobilise pas le focus : « gauche »
+  // depuis la première carte doit pouvoir rejoindre la navigation, sans quoi
+  // il n'y aurait aucun moyen d'y retourner.
   const piste = estHorizontale(direction) ? depart.closest("[data-tv-piste]") : null;
   if (piste) {
-    candidats = candidats.filter((candidat) => piste.contains(candidat.element));
+    const dansLaPiste = candidats.filter((candidat) => piste.contains(candidat.element));
+    const depuis = boiteDepuisRectangle(depart.getBoundingClientRect());
+    if (meilleur(depuis, dansLaPiste, direction)) candidats = dansLaPiste;
+  }
+
+  // Le rail ne s'atteint que par la gauche. Il couvre toute la hauteur de
+  // l'écran : sans cette règle, « bas » depuis une carte y remonte au lieu de
+  // descendre d'une rangée, parce que la géométrie seule y voit un candidat
+  // parfaitement valable. On sort du contenu vers la navigation par un geste
+  // délibéré, jamais par accident.
+  if (!depart.closest(SELECTEUR_RAIL) && direction !== "gauche") {
+    candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
   }
 
   const choisi = meilleur(
@@ -124,7 +142,12 @@ function viser(direction: Direction): boolean {
  */
 function viserPremier(): boolean {
   const racine = conteneurPiegeant() ?? document;
-  const candidats = recenser(racine);
+  const tous = recenser(racine);
+  // Le contenu d'abord : arriver sur un écran avec le focus dans la navigation
+  // demande de le déplacer avant même de commencer à regarder. Le rail se
+  // rejoint par la gauche quand on en a besoin.
+  const horsRail = tous.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
+  const candidats = horsRail.length > 0 ? horsRail : tous;
   if (candidats.length === 0) return false;
 
   // Le plus haut, puis le plus à gauche : l'ordre de lecture.

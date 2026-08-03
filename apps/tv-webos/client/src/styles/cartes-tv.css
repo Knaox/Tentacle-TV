@@ -1,0 +1,81 @@
+/* L'état de focus d'une carte.
+ *
+ * Il n'existait pas. `useHoverPreview` exige `(hover: hover) and (pointer:
+ * fine)` : sur une dalle il ne se déclenche jamais, et le panneau d'aperçu du
+ * web n'a jamais été monté une seule fois. On ne le répare pas — on le
+ * remplace par quelque chose qui n'a pas les mêmes besoins.
+ *
+ * Ce que la carte focalisée montre : son titre complet, son année, sa
+ * progression. Rien de plus. Le synopsis, la note et les pistes demandent de
+ * lire, et lire se fait sur la fiche — pas en parcourant une rangée. Un
+ * panneau riche à chaque déplacement du focus coûterait aussi un montage par
+ * carte franchie, sur un processeur qui n'en a pas les moyens.
+ *
+ * Tout est en CSS, et seuls `transform` et `opacity` sont animés : ce sont les
+ * deux propriétés qu'un compositeur traite sans repeindre. Les durées tiennent
+ * dans la fenêtre de 150 à 300 ms — en deçà le mouvement ne se lit pas, au-delà
+ * l'appareil paraît lent quand chaque appui le rejoue.
+ */
+
+:root {
+  --carte-focus-echelle: 1.08;
+  --carte-focus-duree: 180ms;
+}
+
+/* L'enveloppe focusable ne dessine rien : elle porte le mouvement, pour que la
+   carte du web garde son propre rendu intact. */
+.carte-tv {
+  transition: transform var(--carte-focus-duree) ease-out;
+  transform-origin: center bottom;
+}
+
+.carte-tv:focus {
+  transform: scale(var(--carte-focus-echelle));
+  /* Au-dessus de ses voisines, sinon l'agrandissement passe dessous. */
+  z-index: 3;
+  /* L'anneau est déjà posé par `focus.css` ; il suit l'agrandissement. */
+}
+
+/* Le titre et les métadonnées sous l'affiche : tronqués au repos, entiers au
+   focus. C'est le seul endroit où l'on gagne à en dire plus, et il ne coûte
+   rien tant que le focus n'y est pas. */
+.carte-tv .row-dim-card h3 {
+  transition: color var(--carte-focus-duree) ease-out;
+}
+
+.carte-tv:focus .row-dim-card h3 {
+  color: var(--text-primary);
+  /* `white-space` et `overflow` reviennent à leur valeur initiale : le titre
+     complet s'affiche sur deux lignes au lieu d'être coupé. */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Les voisines s'effacent. Pas de flou — irrécupérable sur un processeur
+   graphique de dalle, et retiré du bundle de toute façon — mais une opacité,
+   qui suffit à désigner sans masquer. */
+[data-tv-piste] .carte-tv {
+  opacity: 1;
+  transition: opacity var(--carte-focus-duree) ease-out,
+    transform var(--carte-focus-duree) ease-out;
+}
+
+[data-tv-piste][data-focus-interne="true"] .carte-tv {
+  opacity: 0.55;
+}
+
+[data-tv-piste][data-focus-interne="true"] .carte-tv:focus {
+  opacity: 1;
+}
+
+/* Ce qui n'apporte rien sur une dalle et qu'on retire du chemin du regard.
+ *
+ * Les actions rapides — vu, favori, ma liste — apparaissent au survol dans la
+ * carte du web. Sur un téléviseur elles ne peuvent pas être atteintes sans
+ * ajouter un niveau de navigation à l'intérieur d'une carte, ce qui rendrait
+ * chaque déplacement horizontal ambigu. Elles restent accessibles depuis la
+ * fiche, où elles ont la place d'exister. */
+.carte-tv .hover-reveal {
+  display: none;
+}
