@@ -155,18 +155,20 @@ export function buildBrowserDeviceProfile(
       transcodingProfiles[i] = { ...transcodingProfiles[i], MaxAudioChannels: "2" };
     }
   }
-  // Diagnostic « calque-jf » : un seul profil de transcodage, écrit de la main
-  // de jellyfin-web (browserDeviceProfile.js), sans `CopyTimestamps` ni aucun
-  // CodecProfile. C'est la reproduction la plus fidèle de sa requête qu'on
-  // puisse faire sans avoir son URL sous les yeux — et donc le test qui borne
-  // le problème : si la copie apparaît ici, la cause est dans l'écart qui
-  // reste ; sinon elle est hors du DeviceProfile.
+  // Diagnostic « calque-jf » : le profil de transcodage de jellyfin-web, aux
+  // valeurs relevées dans SON URL de transcodage sur ce fichier — plus une
+  // reconstitution à l'aveugle, un calque.
+  //
+  //   VideoCodec=av1,hevc,h264,vp9   AudioCodec=aac,opus,flac
+  //   TranscodingMaxAudioChannels=2  MinSegments=1
+  //   BreakOnNonKeyFrames=False      (pas de CopyTimestamps)
   if (diagnosticProfil() === "calque-jf") {
     transcodingProfiles.length = 0;
     transcodingProfiles.push({
-      Container: "mp4", Type: "Video", VideoCodec: "hevc,h264", AudioCodec: "aac",
+      Container: "mp4", Type: "Video",
+      VideoCodec: "av1,hevc,h264,vp9", AudioCodec: "aac,opus,flac",
       Protocol: "hls", Context: "Streaming",
-      MaxAudioChannels: "2", MinSegments: 1, BreakOnNonKeyFrames: true,
+      MaxAudioChannels: "2", MinSegments: 1, BreakOnNonKeyFrames: false,
     });
   }
 
@@ -194,8 +196,19 @@ export function buildBrowserDeviceProfile(
   } else if (diag !== "sans-audio6" && diag !== "calque-jf") {
     codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
   }
-  // Le calque de jellyfin-web n'envoie AUCUNE contrainte de codec.
-  if (diag === "calque-jf") codecProfiles.length = 0;
+  // Le calque de jellyfin-web ne garde qu'UNE contrainte : la plage dynamique,
+  // et SANS les variantes Dolby Vision — c'est elle qui, paradoxalement, lui
+  // vaut la copie. En ne déclarant pas `DOVIWithHDR10Plus`, il fait entrer
+  // Jellyfin dans la branche « retirer les métadonnées HDR dynamiques » de
+  // `CanStreamCopyVideo` ; ffmpeg sait strip le RPU Dolby Vision, donc la copie
+  // est autorisée. Nous, en la déclarant, nous sautons cette branche.
+  if (diag === "calque-jf") {
+    codecProfiles.length = 0;
+    codecProfiles.push({
+      Type: "Video", Codec: "hevc",
+      Conditions: [conditionPlageDynamique(["SDR", "HDR10", "HDR10Plus", "HLG"])],
+    });
+  }
 
   return {
     MaxStreamingBitrate: maxBitrate ?? 150_000_000,
