@@ -1,4 +1,5 @@
 import { lireIntention } from "./touches";
+import { conteneurPiegeant } from "./candidats";
 import { markPlayerExit } from "@/components/detail/detailTransition";
 import { rendreLaMainAuTeleviseur } from "../auth/retourCoquille";
 
@@ -28,6 +29,9 @@ export type ConsommateurRetour = () => boolean;
 const CHEMINS_RACINE = ["/tv", "/tv/"];
 
 const pile: ConsommateurRetour[] = [];
+
+/** Garde de réentrance pour le renvoi d'Échap aux dialogues. */
+let renvoiEnCours = false;
 
 /**
  * Inscrit un preneur de la touche Retour. Rend sa fonction de retrait.
@@ -63,6 +67,8 @@ function reculer(): void {
     if (pile[position]()) return;
   }
 
+  if (fermerConteneurPiegeant()) return;
+
   if (surEcranRacine()) {
     rendreLaMainAuTeleviseur();
     return;
@@ -72,6 +78,45 @@ function reculer(): void {
   // rejouer sa transition d'ouverture au retour, alors qu'on en revient.
   if (surLecteur()) markPlayerExit();
   window.history.back();
+}
+
+/**
+ * Referme un dialogue qui n'a inscrit aucun consommateur — en lui envoyant
+ * Échap, la convention du web.
+ *
+ * Les écrans que nous écrivons s'inscrivent à la pile. Ceux d'`apps/web` ne
+ * peuvent pas : ils ignorent l'existence du téléviseur, et c'est bien ainsi.
+ * Or plusieurs sont atteignables — la bande-annonce d'un extra ouvre une
+ * `Modal`, une carte de grille un menu contextuel. Sans cette étape, Retour
+ * reculait d'un écran EN LAISSANT la modale ouverte par-dessus le précédent.
+ *
+ * Pire : cet écouteur consomme aussi Échap (keyCode 27), en capture sur le
+ * document. `Modal` et `Sheet` écoutent, eux, sur la fenêtre en phase de
+ * remontée — que `stopPropagation` coupe. **Échap avait donc cessé de fermer
+ * les modales**, y compris au clavier. On répare les deux d'un geste.
+ *
+ * On n'essaie pas de deviner le bouton de fermeture : `conteneurPiegeant` rend
+ * l'élément, pas son affordance. Rejouer la touche que ces composants écoutent
+ * déjà est le seul moyen qui ne suppose rien de leur structure interne.
+ *
+ * L'événement synthétique ne porte pas de `keyCode`, donc `lireIntention` ne le
+ * reconnaît pas et notre propre écouteur le laisse passer. Le drapeau ferme
+ * malgré tout la boucle, pour le jour où la table des touches lira `key`.
+ */
+function fermerConteneurPiegeant(): boolean {
+  if (renvoiEnCours) return false;
+  const piege = conteneurPiegeant();
+  if (!piege) return false;
+
+  renvoiEnCours = true;
+  try {
+    piege.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+    );
+  } finally {
+    renvoiEnCours = false;
+  }
+  return true;
 }
 
 function surEcranRacine(): boolean {
