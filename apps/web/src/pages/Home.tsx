@@ -14,6 +14,7 @@ import { HeroBillboard } from "../components/hero/HeroBillboard";
 import { MediaRow } from "../components/rows/MediaRow";
 import { ContinueWatchingRow } from "../components/rows/ContinueWatchingRow";
 import { PageTransition } from "../components/PageTransition";
+import { ContentErrorState } from "../components/ContentErrorState";
 import { useNearViewport } from "../hooks/useNearViewport";
 import { useDataSaverActive } from "../offline/useDataSaver";
 
@@ -22,18 +23,30 @@ export function Home() {
   const wsToken = client.getAccessToken() || localStorage.getItem("tentacle_token");
   useHomeWebSocket({ token: wsToken });
   const { t } = useTranslation("common");
-  const { data: featured, isLoading: featuredLoading } = useFeaturedItems();
+  const { data: featured, isLoading: featuredLoading, isError: featuredError } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
   const { data: nextUp } = useNextUp();
   const { data: watchlist } = useWatchlist();
   const { data: watchedItems } = useWatchedItems();
-  const { data: libraries } = useLibraries();
+  const { data: libraries, isError: librariesError } = useLibraries();
 
   // Hero: prioritize resume items (quick resume), fallback to featured
   const heroItems = resumeItems && resumeItems.length > 0
     ? resumeItems.slice(0, 5)
     : featured ?? [];
   const heroLoading = featuredLoading && !resumeItems;
+
+  // Les deux requêtes qui portent la page : sans bibliothèques NI mise en avant,
+  // il ne reste rien à afficher. On le DIT, au lieu de rendre une page vide qui
+  // ressemble à une bibliothèque sans contenu.
+  const nothingLoaded = librariesError && featuredError && !resumeItems?.length;
+  if (nothingLoaded) {
+    return (
+      <PageTransition>
+        <ContentErrorState />
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>

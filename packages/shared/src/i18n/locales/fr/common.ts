@@ -10,6 +10,8 @@ export default {
   confirm: "Confirmer",
   loading: "Chargement...",
   error: "Erreur",
+  contentErrorTitle: "Impossible de charger le contenu",
+  contentErrorMessage: "Le serveur répond, mais vos médias n'ont pas pu être récupérés. Cela vient souvent d'une interruption passagère.",
   success: "Succès",
   search: "Rechercher",
   searchPlaceholder: "Rechercher...",
