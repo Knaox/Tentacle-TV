@@ -25,3 +25,32 @@
 /* Les flèches de défilement de la bannière sont montées au survol — elles
    n'entrent jamais dans le document sur une dalle. Le rail des indicateurs,
    lui, reste : il dit combien de mises en avant existent et où l'on en est. */
+
+/* ── Le fondu entre deux mises en avant ──────────────────────────────────
+ *
+ * `HeroBackdrop` s'appuyait sur `AnimatePresence` pour faire coexister l'image
+ * sortante et l'entrante une seconde deux durant. Sous le shim, ce composant
+ * est un fragment : il ne diffère aucun démontage, l'ancienne image disparaît
+ * net et la nouvelle apparaît sèchement.
+ *
+ * On ne le rétablit pas — on fait mieux pour cette cible. L'image est keyée sur
+ * l'identifiant de l'item : changer de diapositive remonte donc un ÉLÉMENT
+ * neuf, et une animation posée dessus rejoue par construction. La nouvelle
+ * entre en fondu par-dessus le voile permanent du cadre, et à aucun moment deux
+ * images plein écran ne sont composées ensemble — ce que le commentaire du
+ * composant web appelle « le moment le plus cher de toute l'application ».
+ *
+ * Opacité seule : rien à repeindre, et l'animation ne tourne pas en boucle.
+ * Elle joue une fois par diapositive, puis s'arrête d'elle-même. */
+[data-hero-frame] img {
+  animation: banniere-tv-fondu 700ms ease-out both;
+}
+
+@keyframes banniere-tv-fondu {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
