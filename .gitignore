@@ -129,3 +129,6 @@ local.properties
 # Artefacts de build Gradle locaux (churn binaire a chaque build)
 apps/tv/android/.gradle/
 apps/mobile/android/.gradle/
+
+# Consignes de dev locales, hors depot
+CLAUDE.md
