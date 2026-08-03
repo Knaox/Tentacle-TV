@@ -61,4 +61,8 @@ export default {
   pairingUnavailable: "Jumeler TV est indisponible, cette option doit être activée par l'administrateur.",
   pairingUnavailableAdmin: "Veuillez d'abord renseigner « URL publique du serveur Tentacle TV » pour activer le jumelage TV.",
   pairingConfigureNow: "Configurer maintenant",
+  tvNonJumeleTitre: "Téléviseur non jumelé",
+  tvNonJumeleTexte:
+    "Cet appareil n'est plus associé à votre compte. Revenez à l'écran de jumelage pour afficher un nouveau code, puis validez-le depuis votre téléphone ou votre ordinateur.",
+  tvNonJumeleAction: "Revenir au jumelage",
 } as const;
