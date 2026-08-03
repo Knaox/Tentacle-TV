@@ -13,7 +13,9 @@ export default {
   seriesPreferenceCleared: "Series language preference removed",
   disabled: "Disabled",
   quality: "Quality",
+  speed: "Playback speed",
   original: "Original",
+  quality1080pHigh: "1080p High",
   quality1080p: "1080p",
   quality720p: "720p",
   quality480p: "480p",
@@ -47,4 +49,8 @@ export default {
   close: "Close",
   loading: "Loading…",
   loadingMedia: "Loading {{title}}…",
+  // Appelees avec un defaut litteral anglais par `PlayerControls` du web ;
+  // la rangee de transport du televiseur, elle, les lit sans repli.
+  play: "Play",
+  pause: "Pause",
 } as const;
