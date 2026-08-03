@@ -11,6 +11,30 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.0]
+### FR
+- Vitesse de lecture réglable, de 0,5× à 4× : un bouton compteur dans la barre du lecteur, sur le web comme sur l'application de bureau
+- Les sous-titres n'affichent plus leur code de mise en forme. Un texte prévu en haut de l'image y est réellement placé, au lieu d'apparaître précédé de « {\an8} »
+- L'image n'est plus recompressée quand votre appareil sait déjà la lire : les fichiers 4K HDR et Dolby Vision sont transmis tels quels, et le serveur cesse de les ré-encoder en permanence
+- Les fichiers MKV se lisent directement dans le navigateur, sans conversion préalable — l'essentiel d'une médiathèque était jusqu'ici converti sans raison
+- Disparition d'un plafond de débit de 42 Mb/s qui n'aurait jamais dû exister : un disque Blu-ray 4K n'est plus converti au seul motif qu'il est trop détaillé
+- Le démarrage d'une vidéo ne passe plus par un écran noir ni par un bouton Lecture à cliquer : une seule attente, puis l'image
+- Les sous-titres image sont dessinés par l'application. Le serveur n'a plus à ré-encoder le film entier pour les incruster, ce qu'un simple changement de piste suffisait à déclencher
+- Les paliers de qualité proposés sont calculés d'après le fichier lu : plus de « 1080p 30 Mb/s » offert sur une source qui n'en fait que 12
+- Une préférence de langue que le serveur ne parvient pas à enregistrer ne dégrade plus la qualité de la lecture
+- Version serveur minimale requise par les clients portée à 1.12.0
+### EN
+- Adjustable playback speed, from 0.5× to 4×: a speedometer button in the player bar, on the web and in the desktop app
+- Subtitles no longer show their formatting codes. Text meant for the top of the picture is actually placed there, instead of appearing prefixed with "{\an8}"
+- The picture is no longer re-compressed when your device can already play it: 4K HDR and Dolby Vision files are passed through as-is, and the server stops re-encoding them permanently
+- MKV files play directly in the browser, with no prior conversion — until now most of a library was being converted for no reason
+- A 42 Mb/s bitrate ceiling that should never have existed is gone: a 4K Blu-ray disc is no longer converted purely for being too detailed
+- Starting a video no longer goes through a black screen or a Play button to click: one wait, then the picture
+- Image-based subtitles are drawn by the app. The server no longer has to re-encode the whole film to burn them in, which merely switching track was enough to trigger
+- The quality steps on offer are worked out from the file being played: no more "1080p 30 Mb/s" offered on a source that only runs at 12
+- A language preference the server fails to save no longer degrades playback quality
+- Minimum server version required by clients raised to 1.12.0
+
 ## [1.11.0]
 ### FR
 - Correctifs de sécurité
