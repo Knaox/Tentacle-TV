@@ -1,0 +1,27 @@
+/* La bannière, à la hauteur d'un écran de salon.
+ *
+ * Le client web lui donne 76 % de la hauteur visible. Sur un moniteur, la
+ * première rangée affleure sous le pli et l'on comprend qu'il y a autre chose
+ * dessous. Sur un canevas de 720, elle tombait à `y = 618` : rien ne dépassait,
+ * et rien n'indiquait qu'on pouvait descendre — le défaut qu'on répare ici.
+ *
+ * 62 % laisse la première rangée entamer l'écran d'une centaine de pixels.
+ * C'est l'amorce que toutes les interfaces de salon ménagent : elle ne montre
+ * pas le contenu, elle montre qu'il y en a.
+ *
+ * Sélecteurs d'attribut, spécificité (0,1,0) comme les utilitaires qu'ils
+ * remplacent, et cette feuille est chargée après : pas de `!important`.
+ */
+
+[data-hero-frame] {
+  height: 62vh;
+}
+
+/* Le bloc de texte remonte d'autant, sinon il se décolle du bas du cadre. */
+[data-hero-frame] .max-w-xl {
+  max-width: 46rem;
+}
+
+/* Les flèches de défilement de la bannière sont montées au survol — elles
+   n'entrent jamais dans le document sur une dalle. Le rail des indicateurs,
+   lui, reste : il dit combien de mises en avant existent et où l'on en est. */

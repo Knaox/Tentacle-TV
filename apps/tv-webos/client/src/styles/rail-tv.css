@@ -1,0 +1,121 @@
+/* Le rail de navigation.
+ *
+ * Écrit pour Chrome 53 au premier jet : ni `:focus-within` (Chrome 60), ni
+ * `:has()` (105), ni `gap` en flexbox (84), ni `inset` en raccourci (87). Le
+ * déploiement est porté par un attribut que React écrit, la garde de
+ * compatibilité refuserait tout le reste.
+ *
+ * Seuls `transform` et `opacity` sont animés : ce sont les deux propriétés
+ * qu'un compositeur sait traiter sans repeindre, et le rail couvre toute la
+ * hauteur de l'écran.
+ */
+
+:root {
+  --rail-largeur-repli: 90px;
+  --rail-largeur-deploye: 360px;
+  --rail-duree: 220ms;
+}
+
+.rail-tv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 40;
+  width: var(--rail-largeur-repli);
+  /* Le rail est `fixed` : il ignore le retrait d'overscan posé sur `#root` et
+     se retrouverait dans la zone que la dalle rogne. Les icônes sont donc
+     insérées de la même valeur. */
+  padding-top: var(--tv-overscan-y);
+  padding-bottom: var(--tv-overscan-y);
+  padding-left: var(--tv-overscan-x);
+  box-sizing: border-box;
+  background: linear-gradient(90deg, var(--surface-0) 0%, var(--surface-0) 55%, transparent 100%);
+  transition: width var(--rail-duree) ease-out;
+}
+
+.rail-tv[data-deploye="true"] {
+  width: var(--rail-largeur-deploye);
+  background: linear-gradient(90deg, var(--surface-1) 0%, var(--surface-0) 78%, transparent 100%);
+}
+
+/* Voile d'assombrissement du contenu. Étendu au-delà du rail pour couvrir
+   l'écran ; l'opacité seule est animée. */
+.rail-voile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background: var(--surface-0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--rail-duree) ease-out;
+}
+
+.rail-voile[data-deploye="true"] {
+  opacity: 0.72;
+}
+
+.rail-liste {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Les réglages ferment la liste, écartés des entrées de navigation courante :
+   ce n'est pas une destination qu'on visite en parcourant. */
+.rail-liste > li:last-child {
+  margin-top: auto;
+}
+
+.rail-entree {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  margin-bottom: 8px;
+  padding-left: 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--rail-duree) ease-out, background-color var(--rail-duree) ease-out;
+}
+
+.rail-entree[data-active="true"] {
+  color: var(--text-primary);
+  background-color: var(--fill-soft);
+}
+
+.rail-entree:focus {
+  color: var(--text-primary);
+  background-color: var(--fill-strong);
+}
+
+.rail-entree-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  flex-shrink: 0;
+}
+
+/* Le libellé reste dans le document au repli — il est lu par les technologies
+   d'assistance, et le laisser en place évite un reflux au déploiement. */
+.rail-entree-libelle {
+  margin-left: 16px;
+  font-size: 20px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity var(--rail-duree) ease-out, transform var(--rail-duree) ease-out;
+}
+
+.rail-entree-libelle[data-deploye="true"] {
+  opacity: 1;
+  transform: translateX(0);
+}
