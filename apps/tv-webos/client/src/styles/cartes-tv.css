@@ -112,11 +112,16 @@
  * chaque changement d'item — c'est le seul moyen d'obtenir une entrée en
  * douceur sans tenir deux calques, le shim de framer-motion ne différant aucun
  * démontage. Opacité seule, rien à repeindre. */
-/* Un tiers d'opacité, comme `AmbientConfig.imageOpacity` sur Android TV et
- * Apple TV. Assez pour reconnaître le film, assez peu pour que les titres et
- * les affiches posés dessus gardent leur contraste. */
+/* Assez clair pour reconnaître le film.
+ *
+ * `AmbientConfig.imageOpacity` vaut 0,32 sur Android TV — mais là-bas l'image
+ * est seule sur un fond profond, alors qu'ici elle passe sous un dégradé
+ * d'atténuation ET sous le dégradé de marque de la page. Les trois cumulés
+ * rendaient l'image quasi noire. On monte l'image et on allège le voile :
+ * c'est le RÉSULTAT composé qui doit ressembler à la référence, pas chaque
+ * valeur prise isolément. */
 :root {
-  --fond-focus-opacite: 0.32;
+  --fond-focus-opacite: 0.55;
 }
 
 .fond-focus {
@@ -127,13 +132,15 @@
   bottom: 0;
   z-index: 0;
   pointer-events: none;
-  /* 350 ms, la durée de fondu croisé d'`apps/tv` : le fond suit la sélection
-     sans traîner derrière elle. */
-  animation: fond-focus-entree 350ms ease-out both;
 }
 
 /* L'image, NETTE. Pas de `filter`, pas de mise à l'échelle : le Backdrop est
-   demandé à 1280 de large, c'est exactement le canevas. */
+   demandé à 1280 de large, c'est exactement le canevas.
+ *
+ * Elle entre en fondu à son CHARGEMENT et non au montage du calque — sans quoi
+ * l'animation courait pendant que l'image était encore en vol, et l'image
+ * surgissait d'un coup une fois le fondu terminé. 350 ms, la durée de fondu
+ * croisé d'`apps/tv` : le fond suit la sélection sans traîner derrière elle. */
 .fond-focus-image {
   position: absolute;
   top: 0;
@@ -141,13 +148,20 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 350ms ease-out;
+}
+
+.fond-focus-image[data-charge="true"] {
   opacity: var(--fond-focus-opacite);
 }
 
-/* Le dégradé d'atténuation, repris de `TVAmbientBackdrop` : 0,55 en haut,
-   0,70 à mi-hauteur, la couleur de fond en bas. C'est lui qui rend le texte
-   lisible — pas un flou. Il descend jusqu'au fond opaque pour que les rangées
-   basses ne se détachent pas sur une image. */
+/* Le dégradé d'atténuation. C'est lui qui rend le texte lisible — pas un flou.
+ *
+ * Allégé par rapport au scrim d'`apps/tv` (0,55 / 0,70) : là-bas il travaille
+ * seul, ici il se cumule au dégradé de marque de la page. Il reste dense EN
+ * BAS, où les rangées de cartes ont besoin d'un fond calme, et s'efface en haut
+ * où l'image est justement ce qu'on veut voir. */
 .fond-focus-voile {
   position: absolute;
   top: 0;
@@ -156,17 +170,8 @@
   bottom: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.7) 55%,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.5) 55%,
     var(--surface-0) 100%
   );
-}
-
-@keyframes fond-focus-entree {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }

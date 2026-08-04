@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { useItemFocalise } from "../cartes/itemFocalise";
@@ -54,8 +55,41 @@ export function FondFocusTv() {
 
   return (
     <div className="fond-focus" key={item.Id} aria-hidden>
-      <img className="fond-focus-image" src={url} alt="" />
+      <ImageDeFond url={url} />
       <span className="fond-focus-voile" />
     </div>
+  );
+}
+
+/**
+ * L'image n'apparaît qu'une fois CHARGÉE.
+ *
+ * Poser le fondu sur le conteneur le faisait courir pendant que l'image était
+ * encore en vol : quand elle arrivait, l'animation était finie et elle
+ * surgissait d'un coup. `apps/tv` traite exactement ce point — son commentaire
+ * dit que sans cela « le fond paraît en retard sur la sélection » — en ne
+ * déclenchant le fondu croisé que sur `onLoad`. On fait pareil.
+ *
+ * La référence de rappel, plutôt qu'un `useEffect`, pour le cas de l'image
+ * DÉJÀ en cache : elle est alors `complete` avant que React n'ait posé son
+ * gestionnaire, `onLoad` ne part jamais, et le fond resterait invisible. C'est
+ * le mode de panne classique de ce motif.
+ */
+function ImageDeFond({ url }: { url: string }) {
+  const [charge, setCharge] = useState(false);
+
+  const rattacher = useCallback((element: HTMLImageElement | null) => {
+    if (element?.complete && element.naturalWidth > 0) setCharge(true);
+  }, []);
+
+  return (
+    <img
+      ref={rattacher}
+      className="fond-focus-image"
+      data-charge={charge}
+      src={url}
+      alt=""
+      onLoad={() => setCharge(true)}
+    />
   );
 }
