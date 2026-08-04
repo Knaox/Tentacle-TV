@@ -71,6 +71,20 @@
   right: calc(-1 * var(--tv-overscan-x));
 }
 
+/* La base opaque de la bannière laisse passer le fond.
+ *
+ * `LibraryHero` pose un aplat `bg-surface-0` sous son image, en repli pour le
+ * cas où celle-ci manque. Il est invisible tant que la page est noire — mais
+ * depuis que le décor de la carte visée occupe le fond, cet aplat le masque sur
+ * toute la hauteur de la bannière, et le décor ne reparaît qu'en dessous : d'où
+ * un trait horizontal net sur toute la largeur, à mi-écran.
+ *
+ * L'aplat devient transparent. Il ne servait qu'au cas sans image, et ce cas-là
+ * a désormais mieux : le décor du fond. */
+.-bottom-\[200px\] > .bg-surface-0 {
+  background-color: transparent;
+}
+
 /* Pas de dégradé noir sur la gauche.
  *
  * Il y en a eu un, ajouté pour protéger la lisibilité des icônes du rail par
