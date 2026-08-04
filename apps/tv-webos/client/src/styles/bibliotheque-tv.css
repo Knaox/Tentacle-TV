@@ -71,21 +71,24 @@
   right: calc(-1 * var(--tv-overscan-x));
 }
 
-/* Le dégradé qui rend le rail lisible par-dessus l'image, repris de
-   `TVHeroBackdrop` : opaque au bord, transparent à 72 % de la largeur. Sans
-   lui, les icônes blanches du rail se poseraient sur n'importe quoi. */
+/* Le dégradé qui rend le rail lisible par-dessus l'image.
+ *
+ * Resserré : il couvrait 60 % de la largeur en partant d'un noir opaque, ce qui
+ * masquait plus de la moitié de l'affiche pour protéger une colonne d'icônes de
+ * 154 px. On ne protège que ce qui en a besoin — la largeur du rail, plus de
+ * quoi s'éteindre — et l'image reste visible partout ailleurs. */
 .-bottom-\[200px\]::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
-  width: 60%;
+  width: 32%;
   pointer-events: none;
   background: linear-gradient(
     90deg,
-    var(--surface-0) 0%,
-    rgba(0, 0, 0, 0.55) 32%,
-    transparent 72%
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.4) 45%,
+    transparent 100%
   );
 }
