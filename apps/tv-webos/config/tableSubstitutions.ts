@@ -66,6 +66,12 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "components/rows/MediaRow.tsx")]: resolve(CLIENT, "ui/rangees/RangeeTv.tsx"),
   [resolve(WEB, "components/LibraryGridCard.tsx")]: resolve(CLIENT, "ui/cartes/CarteGrilleTv.tsx"),
 
+  // Ma liste et Favoris passaient au travers : leur carte n'est ni la rangée ni
+  // la grille de bibliothèque. Mesuré sur `/tv/favorites`, cinq focusables hors
+  // rail — retour et filtres — et zéro carte, pour une carte affichée.
+  [resolve(WEB, "components/collection/CollectionGridCard.tsx")]:
+    resolve(CLIENT, "ui/cartes/CarteCollectionTv.tsx"),
+
   // La barre horizontale du web oblige à traverser tout l'écran pour changer
   // de section, et sa barre d'onglets mobile se déclenche sous 768 px. Le
   // téléviseur navigue par un rail latéral, toujours présent et déployé au

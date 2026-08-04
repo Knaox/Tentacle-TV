@@ -67,23 +67,38 @@ export function recenser(racine: ParentNode = document): Candidat[] {
 }
 
 /**
- * Un ancêtre invisible rend son contenu invisible — pas ses styles.
+ * Une enveloppe invisible rend son contenu invisible — pas ses styles.
  *
- * `opacity` et `pointer-events` ne s'héritent pas au sens de la cascade : un
- * bouton marqué `pointer-events-auto` dans une enveloppe à `opacity: 0` a bien,
- * lui, une opacité calculée de 1. `estAtteignable` le déclarait donc
- * atteignable, et le D-pad s'y posait — anneau invisible, utilisateur perdu.
- * Le cas n'est pas théorique : c'est exactement `CardMoreInfoButton`, monté sur
- * chaque vignette d'épisode.
+ * `opacity` ne s'hérite pas au sens de la cascade : un bouton marqué
+ * `pointer-events-auto` dans une enveloppe à `opacity: 0` a bien, lui, une
+ * opacité calculée de 1. `estAtteignable` le déclarait donc atteignable, et le
+ * D-pad s'y posait — anneau invisible, utilisateur perdu. Le cas n'est pas
+ * théorique : c'est `CardMoreInfoButton`, monté sur chaque vignette d'épisode.
  *
- * La remontée s'arrête au `<body>` : au-delà, il n'y a plus de mise en page.
+ * **La remontée s'arrête à la structure**, et c'est essentiel. Remonter jusqu'au
+ * `<body>` faisait dépendre la navigation de l'animation d'entrée de page —
+ * `tv.css` pose `#root > * { animation: tv-apparition 180ms both }`, dont l'état
+ * initial est une opacité nulle. Pendant ces 180 ms, plus aucune carte n'était
+ * atteignable : appuyer sur une flèche juste après avoir changé d'écran ne
+ * faisait rien. On ne cherche pas une page cachée — le moteur ne tourne pas sur
+ * une page cachée — mais une COMMANDE cachée dans sa carte. La question s'arrête
+ * donc au bord de la carte.
  */
+const BORNES_STRUCTURE = "[data-tv-carte],[data-tv-piste],[data-tv-grille]";
+
 function ancetresVisibles(
   element: HTMLElement,
   cache: Map<Element, CSSStyleDeclaration>,
 ): boolean {
+  // Hors d'une carte, d'une piste ou d'une grille, il n'y a rien à examiner :
+  // le chrome de page ne dissimule pas ses commandes derrière une enveloppe
+  // transparente, et remonter plus haut ne rencontrerait que les calques de
+  // transition de la page.
+  const borne = element.closest(BORNES_STRUCTURE);
+  if (!borne) return true;
+
   let parent = element.parentElement;
-  while (parent && parent !== document.body) {
+  while (parent) {
     let style = cache.get(parent);
     if (!style) {
       style = window.getComputedStyle(parent);
@@ -91,6 +106,7 @@ function ancetresVisibles(
     }
     if (style.opacity === "0") return false;
     if (style.visibility === "hidden") return false;
+    if (parent === borne) return true;
     parent = parent.parentElement;
   }
   return true;
