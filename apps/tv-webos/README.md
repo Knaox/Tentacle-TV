@@ -32,6 +32,25 @@ est `file://` ne pourrait de toute façon pas s'authentifier.
 IPK n'est à re-soumettre au Content Store que pour l'icône, le titre, le splash,
 l'identifiant, ou le comportement de la coquille.
 
+## Servi en production, et à qui
+
+Les deux chemins de production construisent la variante et la servent : le
+`Dockerfile` la bâtit puis copie `client/dist` dans l'image, et le hook
+`deploy/post-receive` la bâtit dans le répertoire source d'où tourne déjà le
+backend. Nginx ne fait plus tomber `/tv` dans son repli monopage — il proxifie
+vers le backend, qui est le seul à décider.
+
+**En production, `/tv` n'est servi qu'à un téléviseur.** Le signal est
+l'en-tête `User-Agent` : `Web0S` — avec un zéro, pas la lettre O. Dit
+franchement, un filtre d'agent n'est pas un contrôle d'accès, c'est une adresse
+qu'on ne donne pas. Rien de sensible n'en dépend, le client exigeant de toute
+façon un jeton d'appareil ou un cookie de session. Ce qu'il évite est qu'un
+ordinateur tombé sur l'adresse reçoive une interface dessinée pour une dalle.
+
+Hors production le filtre est ouvert sans condition, et `TENTACLE_TV_OUVERT=1`
+rend le même service sur un serveur — la variable est lue à chaque requête, pas
+au démarrage. Tout tient dans `apps/backend/src/static/agentTeleviseur.ts`.
+
 ## Socle
 
 Chrome 53 — webOS 4.0, téléviseurs 2018 et plus. Ce n'est pas la cible par
@@ -80,6 +99,50 @@ de plugins. Les routes correspondantes existent toujours — `App.tsx` n'est pas
 touché — mais mènent à un écran d'explication, et le code des écrans concernés
 n'est jamais compilé. Vérifiable dans `client/dist/assets` : aucun fragment
 `Admin*`, `Downloads*`, `Offline*`, `Shared*`.
+
+## Les réglages
+
+Trois sections : **Compte**, **Lecture**, **À propos**. Les adresses sont
+recyclées plutôt qu'ajoutées — `App.tsx` est partagé et ne bouge pas,
+l'identifiant d'une section n'est affiché nulle part sur une dalle, et
+`pages/lazyPagesTv.tsx` est le seul endroit à connaître la correspondance
+(`data` → Compte, `playback` → Lecture, `appearance` → À propos, `security` →
+redirection).
+
+**Apparence est partie parce qu'elle n'avait plus rien à régler.** Un
+téléviseur n'a pas de réglage système clair/sombre à suivre :
+`prefers-color-scheme` n'y est pas renseigné, et le mode clair n'a aucun emploi
+dans une pièce dont on a baissé la lumière. Le thème est figé au point de
+passage unique — `theme/colorScheme.ts` est substitué par
+`shims/themeSombre.ts`, ce qui couvre `useThemeMode`, `ThemeProvider` et
+l'écran qui l'exposait. **Sécurité** demande de la saisie suivie et se fait
+depuis un téléphone en une minute.
+
+Lecture remplace `pages/Preferences.tsx` : mêmes hooks, même stockage serveur,
+mêmes codes ISO 639-2/B — seule la mise en page change. Les `<select>` natifs
+deviennent des boutons qui ouvrent `PanneauChoixTv`, une surcouche qui déclare
+`role="dialog"` : c'est ce rôle, et lui seul, qui fait confiner le déplacement
+par `focus/candidats.ts`.
+
+## Un piège de mise en page, propre à cette cible
+
+La passe des écarts remplace `gap` par des marges : un demi-écart sur chaque
+enfant, et une marge NÉGATIVE du même demi-écart sur le conteneur. Deux
+conteneurs à écart imbriqués entrent alors en conflit — l'enfant est à la fois
+« élément à espacer » et « conteneur qui se rétracte », les deux règles ont la
+même spécificité, et la marge négative gagne. L'espacement extérieur disparaît.
+
+La discipline qui en découle : les blocs sont espacés par des marges posées sur
+des éléments NEUTRES, et `gap` ne sert qu'à l'intérieur d'eux. Un élément ne
+cumule jamais les deux rôles.
+
+Un cas voisin se paie en mise en page de grille : `LibraryGrid` pose son `gap`
+en style EN LIGNE, invisible aux passes. Sur Chrome 53 il ne fait rien et la
+marge de `grille-tv.css` est le seul écart ; sur un navigateur récent les deux
+s'ajoutent. `ui/grille/colonnesTv.ts` MESURE donc le moteur — un conteneur flex
+hors écran, deux enfants, un `gap` — plutôt que d'interroger `CSS.supports`,
+qui reconnaît la propriété dès Chrome 66 pour les grilles, dix-huit versions
+avant que la flexbox n'en fasse quoi que ce soit.
 
 ## Ce que la dalle ne dit pas, et que rien ne signale
 
@@ -174,3 +237,33 @@ qu'on puisse rejoindre la navigation. Le rail ne s'atteint que par la gauche —
 il couvre toute la hauteur, et sans cela « bas » y remonterait au lieu de
 descendre d'une rangée. Et il est écarté du focus initial : arriver sur un écran
 avec le focus dans la navigation oblige à le déplacer avant même de regarder.
+
+**Le pointeur déplace le focus, et ne fait rien d'autre.** Un téléviseur LG en a
+un — la Magic Remote le fait apparaître dès qu'on agite la télécommande. Le
+survol du client web reste éteint des deux côtés : les règles `:hover` sont
+retirées de la feuille, les gestionnaires `onMouseEnter` neutralisés par
+`shims/survolInerte.ts`. Ce que `focus/survolFocus.ts` ajoute n'est pas leur
+retour, c'est un moyen de plus de déplacer le focus — il n'y a toujours qu'un
+seul état, et la carte visée montre exactement ce qu'elle montre au D-pad. Les
+champs de saisie en sont exclus : webOS ouvre son clavier système au focus d'un
+`<input>`, et un pointeur qui traverse un champ de recherche ferait surgir un
+clavier plein écran que personne n'a demandé.
+
+## Le fond au focus
+
+Deux calques, jamais trois, et l'ancien tient l'écran jusqu'à ce que le nouveau
+soit chargé (`ui/heros/calquesFond.ts`, pur et testé). Trois défauts se
+ressemblaient à l'écran et n'avaient qu'une cause : un déplacement du focus est
+un `blur` suivi d'un `focus`, et l'effacement partait sur le premier. Le fond
+était donc démonté puis remonté entre CHAQUE carte — écran noir le temps de
+télécharger l'image, clignotement entre deux épisodes d'une même série qui
+partagent pourtant le même Backdrop, et apparition sèche au retour sur une
+carte déjà visitée. L'effacement est désormais différé de 120 ms et la visée
+suivante l'annule.
+
+L'opacité vit sur la COUCHE, pas sur les images : deux calques à 0,55
+superposés composent à 0,80, et le croisement se verrait comme un éclat à
+mi-course. Et le fondu est une ANIMATION, pas une transition — elle joue au
+montage de l'élément qui la porte, y compris quand l'image est déjà en cache,
+cas qu'une transition ne peut pas traiter puisque son état de départ et son
+état d'arrivée sont posés dans le même rendu.
