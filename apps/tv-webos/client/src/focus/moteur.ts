@@ -4,6 +4,7 @@ import { boiteDepuisRectangle, meilleur, surLaMemeLigne } from "./geometrie";
 import { amenerEnVue, defilerAveuglement } from "./defilement";
 import { reviserApresMontage } from "./attente";
 import { pointeurActif, surveillerCurseur } from "./curseur";
+import { surveillerSurvol } from "./survolFocus";
 import { navigationOsdActive } from "../lecture/etatLecteurTv";
 
 /**
@@ -37,6 +38,9 @@ const SELECTEUR_RAIL = ".rail-tv";
 
 export function installerMoteurFocus(): () => void {
   const arreterCurseur = surveillerCurseur();
+  // Le pointeur déplace le focus, sous la même condition de suspension que les
+  // flèches : ce qui vaut pour un mode d'entrée vaut pour l'autre.
+  const arreterSurvol = surveillerSurvol(moteurSuspendu);
 
   const surTouche = (evenement: KeyboardEvent) => {
     if (pointeurActif()) return;
@@ -61,6 +65,7 @@ export function installerMoteurFocus(): () => void {
 
   return () => {
     document.removeEventListener("keydown", surTouche, true);
+    arreterSurvol();
     arreterCurseur();
   };
 }

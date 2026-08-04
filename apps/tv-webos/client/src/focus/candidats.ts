@@ -12,7 +12,7 @@ import { boiteDepuisRectangle, type Boite } from "./geometrie";
  * l'utilisateur ne sait plus où il est.
  */
 
-const SELECTEUR_FOCUSABLE = [
+export const SELECTEUR_FOCUSABLE = [
   "a[href]",
   "button",
   "input",
@@ -156,6 +156,20 @@ function estAtteignable(element: HTMLElement): boolean {
   if (style.pointerEvents === "none") return false;
 
   return true;
+}
+
+/**
+ * Une cible isolée est-elle atteignable ? Même règle que le recensement.
+ *
+ * Le survol ne recense rien : il a déjà l'élément sous le pointeur et n'a
+ * qu'une question à poser à son sujet. Il la pose au même juge, sinon les deux
+ * modes d'entrée diraient des choses différentes du même bouton.
+ *
+ * Le cache est jetable, pour un seul élément — l'intérêt d'en tenir un ne
+ * commence qu'à la trentaine de candidats d'une rangée.
+ */
+export function cibleAtteignable(element: HTMLElement): boolean {
+  return estAtteignable(element) && ancetresVisibles(element, new Map());
 }
 
 /**
