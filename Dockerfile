@@ -9,6 +9,11 @@ WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/backend/package.json apps/backend/package.json
+# Client LG webOS : une variante de build d'apps/web, servie par ce serveur
+# sous /tv. Sans elle dans l'image, `existsSync(client/dist)` répond faux et
+# /tv retombe silencieusement sur l'index.html du client web — un téléviseur y
+# chargerait l'application de bureau.
+COPY apps/tv-webos/package.json apps/tv-webos/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/ui/package.json packages/ui/package.json
@@ -19,16 +24,23 @@ COPY patches/ patches/
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy source code (only web, backend, and shared packages)
+# Copy source code (web, backend, client téléviseur, and shared packages)
 COPY packages/ packages/
 COPY apps/web/ apps/web/
 COPY apps/backend/ apps/backend/
+COPY apps/tv-webos/ apps/tv-webos/
 COPY tsconfig.base.json tsconfig.base.json
 # Source unique des versions (BACKEND_VERSION + versions affichées par le web)
 COPY versions.json versions.json
 
 # Build frontend
 WORKDIR /app/apps/web
+RUN pnpm build
+
+# Build du client téléviseur. Il compile les sources d'apps/web avec sa propre
+# table de substitutions ; `config/postcss/gardeCompat.ts` fait échouer le build
+# si une primitive postérieure à Chrome 53 survit dans la feuille produite.
+WORKDIR /app/apps/tv-webos
 RUN pnpm build
 
 # Build backend — la clé Klipy (GIFs du chat WT) est GRAVÉE dans le code
@@ -81,6 +93,9 @@ COPY --from=base /app/apps/backend/data/shared-deps ./apps/backend/data/shared-d
 # so that image updates bring new shared-deps even when volume already exists
 COPY --from=base /app/apps/backend/data/shared-deps /app/shared-deps-seed
 COPY --from=base /app/apps/web/dist ./apps/web/dist
+# Le client téléviseur, à l'emplacement exact que `clientsStatiques.ts` résout
+# depuis `apps/backend/dist/static` : ../../../tv-webos/client/dist
+COPY --from=base /app/apps/tv-webos/client/dist ./apps/tv-webos/client/dist
 # versions.json à /app : lu par BACKEND_VERSION (dist/services → ../../../../)
 COPY --from=base /app/versions.json ./versions.json
 
