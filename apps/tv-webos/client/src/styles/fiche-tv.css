@@ -45,3 +45,33 @@
 .group\/extra {
   min-height: 56px;
 }
+
+/* ── La fiche occupe la page ──────────────────────────────────────────────
+ *
+ * Le titre et le synopsis sont bornés à `max-w-3xl`, soit 768 px. C'est la
+ * bonne mesure sur un écran de bureau, où une ligne de texte plus longue
+ * devient pénible à suivre du regard. Sur une dalle regardée à trois mètres,
+ * c'est l'inverse : la ligne est déjà courte en angle visuel, et la fiche
+ * paraissait flotter dans son coin.
+ *
+ * La largeur utile est de 966 px — 1280 moins le rail (90) moins l'overscan
+ * (128) moins le retrait de la fiche (96). On la prend.
+ *
+ * `!important` n'est pas une facilité : `max-w-3xl` est une classe utilitaire
+ * de même spécificité, et l'ordre des feuilles ne se décrète pas. */
+[data-detail-page] .max-w-3xl,
+.min-h-screen .max-w-3xl {
+  max-width: none !important;
+}
+
+/* La bannière de fiche dépassait l'écran.
+ *
+ * `h-[calc(64vh+260px)]` fait 721 px pour 720 de haut : la page s'ouvrait avec
+ * la bannière seule, et il fallait descendre pour trouver le moindre bouton.
+ * Le rapport a été réglé pour un navigateur, où l'on découvre une page en la
+ * faisant défiler ; à la télécommande, ce qui n'est pas à l'écran n'existe pas
+ * tant qu'on n'a pas appuyé. */
+.min-h-screen [class*="calc(64vh"],
+.min-h-screen [class*="calc(58vh"] {
+  height: 62vh;
+}

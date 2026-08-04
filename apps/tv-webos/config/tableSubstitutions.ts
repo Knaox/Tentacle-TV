@@ -117,6 +117,16 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // seule substitution les couvre.
   [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cartes/CadreCarteTv.tsx"),
 
+  // Le calque d'ouverture de la fiche est une chorégraphie écrite POUR
+  // framer-motion : le shim en écarte `initial`, `animate` et `transition`, et
+  // ce qui restait n'était pas une version dégradée mais une avarie — visuel en
+  // vol sans dimensions, copie du décor figée à `blur(12px)` faute de
+  // l'animation qui devait l'effacer, et une seconde de plein écran avant une
+  // disparition sèche. Ce qui le remplace existe déjà : `tv.css` anime
+  // `#root > *` en opacité sur 180 ms.
+  [resolve(WEB, "components/detail/DetailOpenOverlay.tsx")]:
+    resolve(CLIENT, "ui/fiche/CalqueOuvertureTv.tsx"),
+
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
