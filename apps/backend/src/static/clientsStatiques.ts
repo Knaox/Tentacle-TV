@@ -2,6 +2,11 @@ import { resolve, sep } from "path";
 import { existsSync } from "fs";
 import fastifyStatic from "@fastify/static";
 import type { FastifyInstance } from "fastify";
+import {
+  agentEstUnTeleviseur,
+  chemineVersLeClientTv,
+  clientTvOuvertATous,
+} from "./agentTeleviseur";
 
 /**
  * Service des clients construits : le client web à la racine, le client
@@ -13,8 +18,27 @@ import type { FastifyInstance } from "fastify";
  * rendent cette propriété vraie, et elles sont toutes posées ici : les bons
  * en-têtes de cache, un repli SPA cantonné à `/tv`, et une inscription qui ne
  * décore `sendFile` qu'une seule fois.
+ *
+ * S'y ajoute, en production, le filtre d'agent d'`agentTeleviseur.ts` : `/tv`
+ * n'est servi qu'à un téléviseur. Ce n'en est pas la protection — le module le
+ * dit franchement — mais l'assurance qu'un ordinateur ne se retrouve pas dans
+ * une interface de salon.
  */
 export async function enregistrerClientsStatiques(app: FastifyInstance): Promise<void> {
+  // Posé AVANT toute inscription : un hook de l'instance parente vaut pour les
+  // routes des plugins enregistrés ensuite, l'inverse n'étant pas vrai. C'est
+  // ce qui le fait porter à la fois sur les fichiers statiques et sur le repli
+  // monopage plus bas.
+  app.addHook("onRequest", async (request, reply) => {
+    const chemin = request.url.split("?")[0];
+    if (!chemineVersLeClientTv(chemin)) return;
+    if (clientTvOuvertATous()) return;
+    if (agentEstUnTeleviseur(request.headers["user-agent"])) return;
+    // 404 et non 403 : l'adresse ne doit pas se confirmer elle-même à qui la
+    // cherche. Un navigateur de bureau y voit une page qui n'existe pas.
+    return reply.status(404).send({ message: "Not found" });
+  });
+
   const cheminWeb = resolve(__dirname, "../../../web/dist");
   const webPresent = existsSync(cheminWeb);
   if (webPresent) {

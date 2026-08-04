@@ -7,6 +7,12 @@ dist
 apps/desktop
 apps/mobile
 apps/tv
+# `apps/tv-webos` entre dans l'image — le client téléviseur y est construit.
+# Seuls sont écartés le paquet IPK, qui ne concerne que le Content Store de LG,
+# et le build local : `dist` sans préfixe ne vaut qu'à la racine, et celui-ci
+# serait recopié pour être aussitôt écrasé par le build de l'image.
+apps/tv-webos/dist-ipk
+apps/tv-webos/client/dist
 .turbo
 .expo
 .next

@@ -61,6 +61,12 @@ echo "[5/6] Compilation..."
 pnpm build:web
 pnpm build:backend
 
+# Client LG webOS — variante de build d'apps/web, servie par le backend sous
+# /tv (Nginx y proxifie, cf. deploy/nginx-tentacle.conf). Elle reste dans le
+# répertoire source : `clientsStatiques.ts` la résout depuis apps/backend/dist,
+# et le backend tourne précisément depuis ici.
+pnpm --filter @tentacle-tv/tv-webos build
+
 # Déploiement frontend
 mkdir -p "$WEB_DIR"
 rm -rf "${WEB_DIR:?}"/*
