@@ -71,24 +71,13 @@
   right: calc(-1 * var(--tv-overscan-x));
 }
 
-/* Le dégradé qui rend le rail lisible par-dessus l'image.
+/* Pas de dégradé noir sur la gauche.
  *
- * Resserré : il couvrait 60 % de la largeur en partant d'un noir opaque, ce qui
- * masquait plus de la moitié de l'affiche pour protéger une colonne d'icônes de
- * 154 px. On ne protège que ce qui en a besoin — la largeur du rail, plus de
- * quoi s'éteindre — et l'image reste visible partout ailleurs. */
-.-bottom-\[200px\]::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 32%;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.82) 0%,
-    rgba(0, 0, 0, 0.4) 45%,
-    transparent 100%
-  );
-}
+ * Il y en a eu un, ajouté pour protéger la lisibilité des icônes du rail par
+ * analogie avec le scrim horizontal d'Apple TV. Mais Apple TV en a besoin parce
+ * que sa barre latérale est nue ; ici les icônes portent déjà leur propre
+ * traitement, et le dégradé ne faisait qu'éteindre le tiers gauche de l'affiche
+ * — celui qui porte le plus souvent le sujet. Une bannière de bibliothèque est
+ * UNE image : on la montre.
+ *
+ * L'image continue de déborder sous le rail (`left` négatif ci-dessus). */
