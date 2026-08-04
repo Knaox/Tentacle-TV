@@ -54,7 +54,7 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
 
   // Sort du graphe les écrans qui n'ont pas de sens sur un téléviseur. C'est
   // ce qui retire réellement leur code du bundle, sans toucher au routeur.
-  [resolve(WEB, "lazyPages.ts")]: resolve(CLIENT, "pages/lazyPagesTv.ts"),
+  [resolve(WEB, "lazyPages.ts")]: resolve(CLIENT, "pages/lazyPagesTv.tsx"),
 
   // Les cartes du client web sont des `<div onClick>` sans `tabIndex` : elles
   // sont invisibles au moteur de navigation, et c'était le défaut numéro un —
@@ -92,6 +92,13 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // — « À propos », et la déconnexion.
   [resolve(WEB, "components/settings/SettingsLayout.tsx")]:
     resolve(CLIENT, "ui/reglages/ReglagesTv.tsx"),
+
+  // L'apparence, figée en sombre. Ce module est le point de passage unique du
+  // schéma de couleurs — `useThemeMode`, `ThemeProvider` et la section
+  // Apparence en dépendent tous. Un téléviseur n'a pas de réglage système
+  // clair/sombre à suivre : `prefers-color-scheme` n'y est pas renseigné, et le
+  // mode clair n'a aucun emploi dans une pièce dont on a baissé la lumière.
+  [resolve(WEB, "theme/colorScheme.ts")]: resolve(CLIENT, "shims/themeSombre.ts"),
 
   // `LibraryGrid` pose ses colonnes en style EN LIGNE, invisible aux passes
   // PostCSS comme à la garde de compatibilité : le build passe, et la grille
