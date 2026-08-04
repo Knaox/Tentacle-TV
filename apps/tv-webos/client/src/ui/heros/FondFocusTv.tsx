@@ -53,8 +53,21 @@ export function FondFocusTv() {
   const idImage = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
   const url = client.getImageUrl(idImage, "Backdrop", { width: 1280, quality: 70 });
 
+  /**
+   * La clé est l'IMAGE, pas l'item.
+   *
+   * Elle valait `item.Id`, donc passer d'un épisode au suivant remontait le
+   * calque et rejouait le fondu — alors que les deux empruntent le Backdrop de
+   * la MÊME série et affichent donc exactement la même image. On voyait le fond
+   * disparaître puis revenir identique à lui-même, à chaque déplacement dans
+   * une rangée d'épisodes.
+   *
+   * Sur l'URL, React reconnaît le même élément et ne le remonte pas : l'image
+   * reste à l'écran, sans clignotement ni animation inutile. Deux titres
+   * différents ont des URL différentes et retrouvent, eux, le fondu normal.
+   */
   return (
-    <div className="fond-focus" key={item.Id} aria-hidden>
+    <div className="fond-focus" key={url} aria-hidden>
       <ImageDeFond url={url} />
       <span className="fond-focus-voile" />
     </div>

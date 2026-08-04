@@ -52,9 +52,16 @@
   text-overflow: clip;
 }
 
-/* Les voisines s'effacent. Pas de flou — irrécupérable sur un processeur
-   graphique de dalle, et retiré du bundle de toute façon — mais une opacité,
-   qui suffit à désigner sans masquer. */
+/* Les voisines s'effacent À PEINE.
+ *
+ * Elles descendaient à 0,55 : une rangée entière à demi éteinte pour désigner
+ * une carte. C'est trop cher payé — sur une dalle, la moitié de ce qu'on
+ * regarde n'a pas à s'éteindre pour qu'on sache où l'on est, et le catalogue
+ * doit rester lisible d'un coup d'œil pendant qu'on le parcourt.
+ *
+ * 0,92 suffit : l'écart se perçoit sans qu'aucune affiche ne devienne terne. Ce
+ * qui désigne vraiment, c'est l'anneau de focus et l'agrandissement de la carte
+ * visée. L'atténuation ne fait que les accompagner. */
 [data-tv-piste] .carte-tv {
   opacity: 1;
   transition: opacity var(--carte-focus-duree) ease-out,
@@ -62,7 +69,7 @@
 }
 
 [data-tv-piste][data-focus-interne="true"] .carte-tv {
-  opacity: 0.55;
+  opacity: 0.92;
 }
 
 [data-tv-piste][data-focus-interne="true"] .carte-tv:focus {
