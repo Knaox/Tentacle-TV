@@ -67,24 +67,27 @@
   --tv-overscan-x: 64px;
   --tv-overscan-y: 36px;
 
-  /* ── Halo d'affiche ───────────────────────────────────────────────────
+  /* ── Halo de bannière : NE PAS toucher au flou ────────────────────────
    *
-   * `HeroAmbilight` reprend l'affiche, la réduit à 128 px de large, la floute
-   * et l'étire derrière la bannière. Le flou est posé en style EN LIGNE par le
-   * composant : aucune passe PostCSS ne l'atteint — `passeVerre` ne retire que
-   * `backdrop-filter` — et les valeurs du client web arrivaient donc intactes
-   * sur la dalle.
+   * `--hero-ambilight-blur` a été baissé une fois, de 48 à 22 px, en croyant
+   * corriger « les fonds trop flous ». C'était une faute d'analyse : un même
+   * jeton servait à DEUX choses opposées.
    *
-   * Or elles ont été réglées pour un écran de bureau regardé à cinquante
-   * centimètres, où le halo est un accent périphérique. Sur une dalle de salon,
-   * la même image occupe deux mètres de large : 48 px de rayon sur une source
-   * déjà étirée dix fois, saturée à 1,7, ne laissaient plus rien de
-   * reconnaissable — juste une tache colorée.
+   * Le halo de bannière est une LUEUR. Il reprend l'image, la réduit, la floute
+   * et la laisse déborder tout autour du cadre — et c'est ce débordement qui
+   * fond le bord de la carte dans la page. Baisser le flou l'a rétréci sous la
+   * carte : la lueur a disparu et le cadre est apparu comme un rectangle noir
+   * posé là. Le halo doit rester très flou, c'est sa définition.
    *
-   * On garde le principe, on rend l'image lisible : moitié moins de flou, et
-   * une saturation qui cesse de virer. */
-  --hero-ambilight-blur: 22px;
-  --hero-ambilight-sat: 1.25;
+   * Le fond d'écran au focus, lui, est une IMAGE : il doit se reconnaître. Il ne
+   * passe plus par ce composant du tout — voir `ui/heros/FondFocusTv.tsx`, qui
+   * suit désormais le modèle d'Android TV et d'Apple TV : le Backdrop net,
+   * atténué par un dégradé, sans le moindre flou.
+   *
+   * Les valeurs du client web sont donc rétablies ici, explicitement, pour que
+   * personne ne refasse le même raccourci. */
+  --hero-ambilight-blur: 48px;
+  --hero-ambilight-sat: 1.7;
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre
