@@ -4,6 +4,7 @@ import { EcranIndisponible } from "./ecranIndisponible";
 import { EcranNonJumele } from "../ui/ecrans/EcranNonJumele";
 import { EcranCompteTv } from "../ui/reglages/EcranCompteTv";
 import { EcranAProposTv } from "../ui/reglages/EcranAProposTv";
+import { EcranLectureTv } from "../ui/reglages/EcranLectureTv";
 
 /**
  * Sécurité n'existe plus, mais son adresse reste déclarée dans `App.tsx` — et
@@ -73,6 +74,15 @@ export const SettingsData = EcranCompteTv;
 export const SettingsAppearance = EcranAProposTv;
 export const SettingsSecurity = RedirectionCompte;
 
+/**
+ * Lecture. Le contenu est celui de `pages/Preferences.tsx` — mêmes hooks,
+ * même stockage serveur — mais sa mise en page suppose une souris : six
+ * `<select>` natifs et un mode édition par bibliothèque. On la remplace, on ne
+ * la masque pas : le graphe hors ligne qu'elle tirait avec elle n'entre pas
+ * dans le bundle, et un téléviseur ne passe pas hors ligne, il s'éteint.
+ */
+export const Preferences = EcranLectureTv;
+
 /* -- Hors périmètre : le code n'est pas compilé -- */
 
 // Administration : gestion de serveur, à faire depuis un ordinateur.
@@ -100,6 +110,3 @@ export const Support = Indisponible;
 
 // Écrans pensés pour un téléphone.
 export const MobileProfile = Indisponible;
-
-// Ancienne page de préférences, déjà redirigée vers `/settings` par le routeur.
-export const Preferences = Indisponible;
