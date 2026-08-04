@@ -19,7 +19,10 @@
 
 :root {
   --rail-largeur-repli: 90px;
-  --rail-largeur-deploye: 360px;
+  /* Assez large pour le plus long libellé — « Paramètres du compte » finit à
+     400 px depuis le bord, et un libellé qui dépasse du panneau se lit sur
+     l'affiche qu'il y a derrière. */
+  --rail-largeur-deploye: 460px;
   --rail-duree: 220ms;
 }
 
@@ -29,8 +32,19 @@
   left: 0;
   bottom: 0;
   z-index: 40;
-  /* Figée. Le déploiement ne la touche plus. */
-  width: var(--rail-largeur-repli);
+  /* La largeur porte l'overscan EN PLUS de la colonne d'icônes.
+   *
+   * Elle valait `--rail-largeur-repli` avec `box-sizing: border-box` et 64 px de
+   * retrait à gauche : il ne restait que vingt-six pixels de contenu. L'icône,
+   * qui en fait quarante-quatre, débordait — et l'anneau de focus, lui, épousait
+   * les vingt-six pixels de l'entrée, donc se dessinait À CÔTÉ de l'icône. Le
+   * défaut existait déjà, mais l'élargissement à 360 px au focus le masquait :
+   * figer la largeur l'a mis au jour.
+   *
+   * `--rail-largeur-repli` désigne désormais la colonne UTILE, celle que le
+   * contenu de la page décale (`DispositionTv`). C'est la même valeur des deux
+   * côtés, donc rien ne peut plus diverger. */
+  width: calc(var(--rail-largeur-repli) + var(--tv-overscan-x));
   /* Le rail est `fixed` : il ignore le retrait d'overscan posé sur `#root` et
      se retrouverait dans la zone que la dalle rogne. Les icônes sont donc
      insérées de la même valeur. */
@@ -38,7 +52,15 @@
   padding-bottom: var(--tv-overscan-y);
   padding-left: var(--tv-overscan-x);
   box-sizing: border-box;
-  background: linear-gradient(90deg, var(--surface-0) 0%, var(--surface-0) 55%, transparent 100%);
+  /* AUCUN fond au repos.
+   *
+   * Le rail posait un dégradé opaque sur toute sa hauteur. Par-dessus une
+   * bannière plein cadre, cela redonnait exactement la bande noire qu'on venait
+   * de supprimer — le rail redevenait un mur à gauche de l'image. Android TV et
+   * Apple TV laissent leur barre latérale flotter SUR l'image ; la lisibilité
+   * vient du dégradé de la bannière elle-même, pas d'un aplat sous les icônes.
+   * Là où il n'y a pas d'image, le fond de page suffit. */
+  background: none;
   /* Les libellés débordent du rail : c'est le principe du panneau. */
   overflow: visible;
 }
@@ -57,10 +79,23 @@
   bottom: 0;
   width: var(--rail-largeur-deploye);
   z-index: -1;
-  background: linear-gradient(90deg, var(--surface-1) 0%, var(--surface-1) 62%, transparent 100%);
-  opacity: 0;
   pointer-events: none;
+  opacity: 0;
   transition: opacity var(--rail-duree) ease-out;
+  /* Opaque sur toute la colonne des libellés, puis fondu.
+   *
+   * La version précédente commençait son fondu à 62 % : les libellés les plus
+   * longs se retrouvaient sur du semi-transparent, et le contenu de la page
+   * apparaissait entre eux. Un panneau de navigation ouvert doit se lire sans
+   * concurrence — c'est l'un des rares moments où l'on masque délibérément ce
+   * qu'il y a derrière. */
+  background: linear-gradient(
+    90deg,
+    var(--surface-0) 0%,
+    var(--surface-0) 62%,
+    rgba(0, 0, 0, 0.86) 82%,
+    transparent 100%
+  );
 }
 
 .rail-panneau[data-deploye="true"] {
@@ -158,7 +193,8 @@
  * débord ne vole pas un clic au contenu qui passe dessous. */
 .rail-entree-libelle {
   position: absolute;
-  left: 68px;
+  /* Après l'icône : 12 px de retrait + 44 px d'icône + 16 px de respiration. */
+  left: 72px;
   font-size: 20px;
   font-weight: 600;
   opacity: 0;

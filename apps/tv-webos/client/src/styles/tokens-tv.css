@@ -88,6 +88,18 @@
    * personne ne refasse le même raccourci. */
   --hero-ambilight-blur: 48px;
   --hero-ambilight-sat: 1.7;
+
+  /* ── Le cadre de bannière n'existe pas sur une dalle ──────────────────
+   *
+   * `HeroBillboard` pose l'arrondi et l'anneau en STYLE EN LIGNE, en lisant ces
+   * deux jetons. Un style en ligne ne cède qu'à `!important` — mais il n'y a
+   * rien à forcer : il suffit de lui donner d'autres valeurs à lire.
+   *
+   * Une carte arrondie cerclée de violet suppose une fenêtre autour d'elle. Sur
+   * un téléviseur, la fenêtre EST l'écran : l'image va d'un bord à l'autre et
+   * l'anneau ne serait plus qu'un liseré le long du cadre de la dalle. */
+  --hero-frame-radius: 0px;
+  --hero-frame-ring: none;
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre
