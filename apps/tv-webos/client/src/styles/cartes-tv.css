@@ -124,24 +124,24 @@
   --fond-focus-opacite: 0.55;
 }
 
-/* Le fond au focus commence SOUS la bannière.
+/* Le fond au focus couvre TOUTE la page, bannière comprise.
  *
- * Il couvrait l'écran entier, y compris derrière la bannière — laquelle est une
- * carte, avec des gouttières. On voyait donc le décor de la carte visée
- * apparaître tout autour de la bannière, qui montre un autre titre : deux
- * images en concurrence, et une « sous-couche » bien visible.
+ * Il a été rentré sous la bannière un moment, pour éviter qu'on voie le décor
+ * de la carte visée autour d'une bannière montrant un autre titre. C'était la
+ * mauvaise réponse : elle créait une couture horizontale à mi-écran, donc
+ * exactement la SÉPARATION qu'il fallait supprimer.
  *
- * Le cas ne se pose pas sur Android TV parce que leur bannière occupe toute la
- * largeur : rien ne dépasse autour d'elle. Ici la bannière d'accueil est une
- * carte — c'est voulu, elle est le premier élément d'une liste — donc le fond
- * doit s'arrêter avant elle.
+ * Ce qui est voulu tient en une phrase : le fond occupe l'écran, la bannière et
+ * son halo se posent dessus, et les deux se mélangent. Rien ne les sépare — le
+ * halo déborde sur l'image de fond, ce qui est précisément ce qui les relie.
  *
- * `62vh` est exactement la hauteur de bannière posée par `banniere-tv.css` et
- * `fiche-tv.css` : l'ambiance commence donc pile où commencent les rangées,
- * c'est-à-dire là où le focus se trouve. */
+ * Deux conditions pour que ça tienne, et elles sont ailleurs : la `<section>`
+ * de bannière ne doit pas peindre d'aplat opaque (`banniere-tv.css`), et le
+ * fond reste sous le contenu — `z-index: 0` et un montage avant lui dans
+ * `DispositionTv`, sans quoi il recouvrirait la bannière au lieu de la porter. */
 .fond-focus {
   position: fixed;
-  top: 62vh;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
@@ -183,15 +183,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  /* Opaque au tout début, pour que la couture d'avec la bannière ne se voie
-     pas : l'image apparaît en montant depuis le haut au lieu d'être coupée
-     net. Puis on la laisse respirer, et on referme sur le fond de page en bas,
-     où les titres de rangée ont besoin de calme. */
+  /* Aucun palier opaque : le voile ne doit poser AUCUNE ligne. Il s'assombrit
+     doucement du haut vers le bas et ne se referme sur le fond de page que
+     tout en bas, où les titres de rangée ont besoin de calme. Un arrêt franc
+     où que ce soit se lirait comme une séparation entre le fond et ce qui est
+     posé dessus. */
   background: linear-gradient(
     180deg,
-    var(--surface-0) 0%,
-    rgba(0, 0, 0, 0.42) 14%,
-    rgba(0, 0, 0, 0.55) 60%,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.52) 58%,
     var(--surface-0) 100%
   );
 }
