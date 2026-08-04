@@ -156,6 +156,7 @@
   display: flex;
   align-items: center;
   height: 64px;
+  width: var(--rail-largeur-repli);
   margin-bottom: 8px;
   padding-left: 12px;
   border-radius: var(--radius-md);
@@ -165,6 +166,21 @@
   /* Aucune transition : `color` et `background-color` repeignent. Le changement
      d'état est instantané, ce qui est de toute façon la bonne réponse à un
      appui sur une télécommande — et l'anneau de focus, lui, est déjà là. */
+}
+
+/* Déployé, l'entrée englobe son libellé.
+ *
+ * L'anneau de focus est un `outline`, et un `outline` épouse la boîte de son
+ * élément : tant que l'entrée s'arrêtait à la colonne d'icônes, il encadrait
+ * l'icône et laissait le texte dehors — on visait « Mes favoris » et le cadre
+ * n'en désignait que le cœur. La cible, c'est l'entrée entière.
+ *
+ * Élargir ne remet rien en page : le rail garde sa largeur, la liste est une
+ * colonne — la largeur d'une entrée n'a d'effet sur aucune autre — et le
+ * débordement est permis (`overflow: visible`). Le changement est instantané,
+ * sans transition : une largeur ne s'anime pas. */
+.rail-tv[data-deploye="true"] .rail-entree {
+  width: calc(var(--rail-largeur-deploye) - var(--tv-overscan-x) - 64px);
 }
 
 .rail-entree[data-active="true"] {
