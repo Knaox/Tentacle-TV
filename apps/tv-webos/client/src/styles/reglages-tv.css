@@ -1,0 +1,130 @@
+/* Les réglages de lecture, à la télécommande.
+ *
+ * Tout ce qui se règle ici passe par des boutons et une surcouche de choix : le
+ * client web s'appuie sur des `<select>`, dont on ne maîtrise sur une dalle ni
+ * le focus, ni le retour, ni l'apparence.
+ *
+ * Aucune couleur n'est écrite en dur — les jetons de thème sont les mêmes que
+ * partout ailleurs, et le thème de marque de l'instance les redéfinit.
+ */
+
+/* ── La carte d'une bibliothèque ─────────────────────────────────────────── */
+
+.carte-reglage-tv {
+  border-radius: var(--hero-frame-radius);
+  box-shadow: var(--hero-frame-ring);
+  background: var(--surface-1);
+  padding: 24px 28px;
+}
+
+/* Un bouton de réglage dit DEUX choses : ce qu'il règle, et sa valeur. Le
+   libellé au-dessus en petit, la valeur en dessous en grand — même hiérarchie
+   que `PrefButton` d'`apps/tv`, et la même raison : à trois mètres, c'est le
+   contraste de taille qui désigne ce qu'on cherche. */
+.bouton-reglage-tv {
+  min-width: 220px;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--fill-subtle);
+  padding: 12px 18px;
+  transition: transform 180ms ease-out;
+}
+
+.bouton-reglage-tv:focus {
+  /* L'anneau de focus est posé par `focus.css` ; on n'ajoute que le mouvement,
+     et seulement du `transform` — le compositeur n'a alors rien à repeindre. */
+  transform: scale(1.04);
+}
+
+.bouton-reglage-tv-intitule {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.bouton-reglage-tv-valeur {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── La surcouche de choix ───────────────────────────────────────────────── */
+
+.panneau-choix-tv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  /* Un aplat, pas un flou : la passe verre retire les `backdrop-filter`, et un
+     flou plein écran serait de toute façon le calque le plus cher de
+     l'application sur un processeur de dalle. */
+  background: rgba(0, 0, 0, 0.72);
+  /* L'entrée est une animation d'opacité, jouée une fois. */
+  animation: panneau-choix-tv-entree 160ms ease-out both;
+}
+
+@keyframes panneau-choix-tv-entree {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panneau-choix-tv-boite {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  width: 520px;
+  max-height: 76%;
+  margin-left: -260px;
+  overflow-y: auto;
+  border-radius: var(--hero-frame-radius);
+  box-shadow: var(--hero-frame-ring);
+  background: var(--surface-1);
+  padding: 24px;
+}
+
+.panneau-choix-tv-titre {
+  margin-bottom: 16px;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.panneau-choix-tv-liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panneau-choix-tv-entree {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+/* La valeur en cours reste reconnaissable même quand le focus est ailleurs :
+   c'est le repère qui dit d'où l'on part. */
+.panneau-choix-tv-entree[data-actif="true"] {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.panneau-choix-tv-entree:focus {
+  background: var(--fill-subtle);
+  color: var(--text-primary);
+}
