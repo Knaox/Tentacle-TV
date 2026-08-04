@@ -89,6 +89,38 @@
   --hero-ambilight-blur: 48px;
   --hero-ambilight-sat: 1.7;
 
+  /* ── Les voiles de bannière, allégés ──────────────────────────────────
+   *
+   * Deux jetons du client web, réglés pour une bannière qui vit dans une page
+   * opaque. Sur la cible téléviseur, la bannière va d'un bord à l'autre et le
+   * décor de la carte visée occupe le fond : les mêmes valeurs y produisent une
+   * moitié gauche éteinte et une démarcation horizontale à mi-écran.
+   *
+   * Le voile DIAGONAL montait à 0,9 d'opacité au coin bas-gauche. Il protège le
+   * titre, mais à cette dose il efface le tiers gauche de l'affiche — celui qui
+   * porte le plus souvent le sujet. Ramené à 0,62 : le titre reste lisible et
+   * l'image redevient visible.
+   *
+   * Le fondu de PAGE terminait sur la couleur de page à PLEINE opacité. C'est
+   * lui qui coupait net la bannière : en dessous, le décor du fond reprenait, et
+   * la limite se lisait comme un trait sur toute la largeur. Il s'arrête
+   * désormais à 0,6 — la bannière s'éteint DANS le fond au lieu d'y buter, et
+   * les deux se mélangent, ce qui est le comportement voulu partout. */
+  --hero-scrim-diagonal: linear-gradient(
+    72deg,
+    rgba(var(--scrim-media-rgb), 0.62) 0%,
+    rgba(var(--scrim-media-rgb), 0.38) 26%,
+    rgba(var(--scrim-media-rgb), 0.14) 48%,
+    rgba(var(--scrim-media-rgb), 0.03) 66%,
+    transparent 78%
+  );
+
+  --hero-page-fade: linear-gradient(
+    180deg,
+    rgba(var(--scrim-page-rgb), 0) 0%,
+    rgba(var(--scrim-page-rgb), 0.3) 45%,
+    rgba(var(--scrim-page-rgb), 0.6) 100%
+  );
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre
