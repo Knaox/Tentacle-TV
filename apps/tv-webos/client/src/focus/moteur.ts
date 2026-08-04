@@ -76,8 +76,20 @@ function saisieEnCours(cible: EventTarget | null): boolean {
   return type !== "checkbox" && type !== "radio" && type !== "button" && type !== "submit";
 }
 
+/**
+ * Le préfixe doit s'arrêter à une frontière de segment.
+ *
+ * `startsWith("/tv/watch")` répondait vrai sur **`/tv/watchlist`** : le moteur
+ * s'y croyait dans le lecteur, se suspendait faute d'habillage à piloter, et
+ * Ma liste devenait entièrement impilotable — aucune flèche n'y faisait quoi que
+ * ce soit. Le défaut ne se voyait pas au premier essai : on arrive sur cet écran
+ * par le rail, dont les entrées gardent le focus, et tout semble normal jusqu'à
+ * ce qu'on tente d'en descendre.
+ */
 function surLecteur(): boolean {
-  return window.location.pathname.startsWith(`/tv${CHEMIN_LECTEUR}`);
+  const chemin = window.location.pathname;
+  const base = `/tv${CHEMIN_LECTEUR}`;
+  return chemin === base || chemin.startsWith(`${base}/`);
 }
 
 /** Le moteur ne rend la main que lorsque les commandes du lecteur sont là. */
