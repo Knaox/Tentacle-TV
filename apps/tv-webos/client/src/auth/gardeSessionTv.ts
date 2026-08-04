@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { notifyUserChange } from "@tentacle-tv/api-client";
-import { jetonAppareil } from "../amorce/jetonFragment";
+import { jetonDAppareil } from "../amorce/jetonFragment";
 
 /**
  * Vitalité de session, version appareil jumelé.
@@ -45,7 +45,11 @@ interface StockageSession {
 }
 
 export async function revaliderSession(): Promise<VerdictSession> {
-  const jeton = jetonAppareil();
+  // `jetonDAppareil` et non `jetonAppareil` : la même clé de stockage porte un
+  // JWT d'appareil après un jumelage, et un jeton Jellyfin après une connexion
+  // web. Le second, envoyé ici, se fait refuser — et ce refus était pris pour
+  // une expiration.
+  const jeton = jetonDAppareil();
 
   try {
     const reponse = await fetch("/api/auth/refresh", {

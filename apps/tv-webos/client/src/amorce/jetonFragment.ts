@@ -38,6 +38,29 @@ function effacerFragment(): void {
 }
 
 /**
+ * Ce qu'une session précédente laisse derrière elle, et que le jumelage
+ * n'écrase pas.
+ *
+ * `apps/tv` purge ces clés avant tout jumelage neuf, et son commentaire dit
+ * pourquoi : un jeton de flux direct hérité d'un autre serveur produit un 401
+ * sur la vidéo, longtemps après le jumelage, sans que rien ne relie les deux.
+ * La cible téléviseur n'a pas exactement le même problème — ici, la
+ * configuration de flux direct vient du serveur à chaque démarrage et
+ * `App.tsx` la réapplique — mais les clés PERSISTÉES, elles, survivent :
+ * `tentacle_jellyfin_url` est relu par `useServerConfig`, et un téléviseur
+ * rejumelé à un autre serveur continuerait de désigner l'ancien.
+ *
+ * On efface donc ce que la déconnexion du client web efface
+ * (`useAuth.logout`), moins les deux clés qu'on vient précisément d'écrire.
+ */
+const RESIDUS_DE_SESSION = [
+  "tentacle_jellyfin_token",
+  "tentacle_jellyfin_url",
+  "tentacle_credentials",
+  "tentacle_server_url",
+];
+
+/**
  * Consomme le jumelage s'il y en a un.
  *
  * La forme écrite dans `tentacle_user` est exactement celle qu'attend
@@ -50,6 +73,7 @@ export function consommerJumelage(): boolean {
   if (!recu) return false;
 
   try {
+    RESIDUS_DE_SESSION.forEach((cle) => localStorage.removeItem(cle));
     localStorage.setItem("tentacle_token", recu.jeton);
     localStorage.setItem("tentacle_user", JSON.stringify(recu.utilisateur));
   } catch {
@@ -68,4 +92,35 @@ export function jetonAppareil(): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Le jeton mémorisé, **si c'est bien un jeton d'appareil**.
+ *
+ * `tentacle_token` porte deux choses selon la manière dont la session est née.
+ * Le jumelage y met un **JWT d'appareil**, signé par le serveur. La connexion
+ * du client web — au navigateur de développement, ou pour un compte déjà
+ * connecté sur la même origine — y met un **jeton Jellyfin**, qui n'a rien à
+ * voir. Les deux sont des chaînes opaques, et rien dans la clé ne les
+ * distingue.
+ *
+ * La confusion se paie à un seul endroit, mais elle s'y paie cher :
+ * `revaliderSession()` renvoie le jeton à `/api/auth/refresh`, qui ne sait
+ * vérifier qu'un JWT. Avec un jeton Jellyfin il répond 401, le garde conclut à
+ * une session expirée et purge — une session web parfaitement valide se
+ * déconnecte toute seule, au premier 401 transitoire de Jellyfin.
+ *
+ * L'heuristique est celle qu'emploient déjà `routes/pair.ts` et
+ * `authRefresh.ts` côté serveur : un JWT a trois segments non vides séparés par
+ * des points. Un jeton Jellyfin n'en a pas.
+ */
+export function jetonDAppareil(): string | null {
+  const jeton = jetonAppareil();
+  return jeton && estUnJwt(jeton) ? jeton : null;
+}
+
+/** Trois segments non vides séparés par des points. Exporté pour être testé. */
+export function estUnJwt(jeton: string): boolean {
+  const segments = jeton.split(".");
+  return segments.length === 3 && segments.every((segment) => segment.length > 0);
 }
