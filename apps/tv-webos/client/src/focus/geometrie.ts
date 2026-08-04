@@ -103,6 +103,22 @@ function recouvre(depart: Boite, cible: Boite, direction: Direction): boolean {
     : cibleFin > departFin - TOLERANCE && cibleDebut > departDebut - TOLERANCE;
 }
 
+/**
+ * Deux boîtes sont-elles sur la même ligne visuelle ?
+ *
+ * Sert au confinement horizontal d'une grille : « droite » depuis la dernière
+ * carte d'une ligne ne doit pas descendre en diagonale sur la première de la
+ * suivante. Une piste horizontale se reconnaît à son conteneur, une ligne de
+ * grille n'a rien qui la désigne — seules les ordonnées la définissent.
+ *
+ * On compare les bords hauts, pas les centres : deux cartes d'une même ligne
+ * peuvent avoir des hauteurs différentes (un titre sur deux lignes), et c'est
+ * leur alignement en haut qui fait la ligne.
+ */
+export function surLaMemeLigne(a: Boite, b: Boite): boolean {
+  return Math.abs(a.haut - b.haut) <= TOLERANCE;
+}
+
 export interface CandidatNote<T> {
   element: T;
   score: number;

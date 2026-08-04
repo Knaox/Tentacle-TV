@@ -1,6 +1,6 @@
 import { lireIntention, estHorizontale, type Direction } from "./touches";
 import { recenser, conteneurPiegeant } from "./candidats";
-import { boiteDepuisRectangle, meilleur } from "./geometrie";
+import { boiteDepuisRectangle, meilleur, surLaMemeLigne } from "./geometrie";
 import { amenerEnVue, defilerAveuglement } from "./defilement";
 import { reviserApresMontage } from "./attente";
 import { pointeurActif, surveillerCurseur } from "./curseur";
@@ -109,35 +109,47 @@ function viser(direction: Direction): boolean {
   const racine = conteneurPiegeant() ?? document;
   let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
 
+  const depuis = boiteDepuisRectangle(depart.getBoundingClientRect());
+
   // Un déplacement horizontal reste dans sa rangée. Sans cela, la dernière
   // carte d'une piste voit à sa droite les éléments des rangées voisines — la
   // géométrie ne dit rien de l'appartenance — et le focus part au hasard, ce
   // qu'aucune interface de salon ne fait.
-  // Un déplacement horizontal reste dans sa rangée — tant qu'il y a une carte
-  // à atteindre. Au bout de la piste, on n'immobilise pas le focus : « gauche »
-  // depuis la première carte doit pouvoir rejoindre la navigation, sans quoi
-  // il n'y aurait aucun moyen d'y retourner.
-  const piste = estHorizontale(direction) ? depart.closest("[data-tv-piste]") : null;
-  if (piste) {
-    const dansLaPiste = candidats.filter((candidat) => piste.contains(candidat.element));
-    const depuis = boiteDepuisRectangle(depart.getBoundingClientRect());
-    if (meilleur(depuis, dansLaPiste, direction)) candidats = dansLaPiste;
+  //
+  // Dans une PISTE, le confinement se lève au bout : la piste défile, ce qui
+  // suit est atteint par `defilerAveuglement`. Dans une GRILLE, il ne se lève
+  // pas — une ligne de grille est une fin, et « droite » depuis la dernière
+  // carte ne doit pas descendre en diagonale sur la première de la suivante.
+  // Une grille n'ayant aucun conteneur par ligne, la ligne se reconnaît aux
+  // ordonnées.
+  if (estHorizontale(direction)) {
+    const piste = depart.closest("[data-tv-piste]");
+    if (piste) {
+      const dansLaPiste = candidats.filter((candidat) => piste.contains(candidat.element));
+      if (meilleur(depuis, dansLaPiste, direction)) candidats = dansLaPiste;
+    } else if (depart.closest("[data-tv-grille]")) {
+      candidats = candidats.filter((candidat) => surLaMemeLigne(depuis, candidat.boite));
+    }
   }
 
-  // Le rail ne s'atteint que par la gauche. Il couvre toute la hauteur de
-  // l'écran : sans cette règle, « bas » depuis une carte y remonte au lieu de
-  // descendre d'une rangée, parce que la géométrie seule y voit un candidat
-  // parfaitement valable. On sort du contenu vers la navigation par un geste
-  // délibéré, jamais par accident.
-  if (!depart.closest(SELECTEUR_RAIL) && direction !== "gauche") {
+  // Le rail s'atteint par la gauche, mais pas depuis le contenu.
+  //
+  // Il couvre toute la hauteur de l'écran : sans règle, « bas » depuis une carte
+  // y remonterait au lieu de descendre d'une rangée, la géométrie seule y voyant
+  // un candidat parfaitement valable. Et « gauche » depuis la première carte
+  // d'une rangée s'en échappait — on ne veut pas quitter le catalogue en
+  // longeant une ligne.
+  //
+  // La porte reste le chrome de la page : retour, filtres, onglets, champ de
+  // recherche. Ils sont déjà en haut à gauche, donc le geste ne change pas —
+  // Haut jusqu'au chrome, puis Gauche — et aucune touche n'est inventée.
+  const dansLeContenu = depart.closest("[data-tv-piste], [data-tv-grille]");
+  const railAtteignable = direction === "gauche" && !dansLeContenu;
+  if (!depart.closest(SELECTEUR_RAIL) && !railAtteignable) {
     candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
   }
 
-  const choisi = meilleur(
-    boiteDepuisRectangle(depart.getBoundingClientRect()),
-    candidats,
-    direction,
-  );
+  const choisi = meilleur(depuis, candidats, direction);
   if (!choisi) return false;
 
   donnerFocus(choisi.element);

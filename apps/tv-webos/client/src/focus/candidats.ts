@@ -39,9 +39,15 @@ export function recenser(racine: ParentNode = document): Candidat[] {
   const candidats: Candidat[] = [];
   const hauteurVue = window.innerHeight;
   const largeurVue = window.innerWidth;
+  // Les styles des ancêtres sont relus pour chaque candidat d'une même rangée.
+  // Le cache vit le temps d'un recensement — donc d'un appui sur la
+  // télécommande — et rend une trentaine d'appels là où il en faudrait quelques
+  // centaines, sur un processeur qui n'en a pas les moyens.
+  const styles = new Map<Element, CSSStyleDeclaration>();
 
   for (const noeud of racine.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE)) {
     if (!estAtteignable(noeud)) continue;
+    if (!ancetresVisibles(noeud, styles)) continue;
 
     const rectangle = noeud.getBoundingClientRect();
     if (rectangle.width === 0 || rectangle.height === 0) continue;
@@ -57,7 +63,61 @@ export function recenser(racine: ParentNode = document): Candidat[] {
     candidats.push({ element: noeud, boite: boiteDepuisRectangle(rectangle) });
   }
 
-  return candidats;
+  return sansEnveloppes(candidats);
+}
+
+/**
+ * Un ancêtre invisible rend son contenu invisible — pas ses styles.
+ *
+ * `opacity` et `pointer-events` ne s'héritent pas au sens de la cascade : un
+ * bouton marqué `pointer-events-auto` dans une enveloppe à `opacity: 0` a bien,
+ * lui, une opacité calculée de 1. `estAtteignable` le déclarait donc
+ * atteignable, et le D-pad s'y posait — anneau invisible, utilisateur perdu.
+ * Le cas n'est pas théorique : c'est exactement `CardMoreInfoButton`, monté sur
+ * chaque vignette d'épisode.
+ *
+ * La remontée s'arrête au `<body>` : au-delà, il n'y a plus de mise en page.
+ */
+function ancetresVisibles(
+  element: HTMLElement,
+  cache: Map<Element, CSSStyleDeclaration>,
+): boolean {
+  let parent = element.parentElement;
+  while (parent && parent !== document.body) {
+    let style = cache.get(parent);
+    if (!style) {
+      style = window.getComputedStyle(parent);
+      cache.set(parent, style);
+    }
+    if (style.opacity === "0") return false;
+    if (style.visibility === "hidden") return false;
+    parent = parent.parentElement;
+  }
+  return true;
+}
+
+/**
+ * Le plus intérieur gagne.
+ *
+ * Un conteneur focusable qui en contient un autre n'est jamais la cible voulue :
+ * sa boîte couvre celles de ses enfants, son désalignement est donc nul quel que
+ * soit le point de départ, et il remporte le score contre chacun d'eux. C'est ce
+ * qui faisait prendre au focus la bande entière d'un sélecteur de saison au lieu
+ * d'un onglet — `HorizontalScrollRow` pose `tabIndex={0}` sur son conteneur de
+ * défilement.
+ *
+ * `RangeeTv` documente le même défaut pour la `<section>` de `MediaRow` et le
+ * corrige à la main, en retirant l'attribut. Le traiter ici le corrige partout,
+ * y compris pour ce que personne n'a encore écrit.
+ */
+function sansEnveloppes(candidats: Candidat[]): Candidat[] {
+  if (candidats.length < 2) return candidats;
+  return candidats.filter(
+    (candidat) =>
+      !candidats.some(
+        (autre) => autre !== candidat && candidat.element.contains(autre.element),
+      ),
+  );
 }
 
 /** Visible, actif, et pas explicitement retiré du parcours. */

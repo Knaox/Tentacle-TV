@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { meilleur, noter, type Boite } from "./geometrie";
+import { meilleur, noter, surLaMemeLigne, type Boite } from "./geometrie";
 
 /**
  * Les cas qui décident si une navigation à la télécommande est agréable ou
@@ -92,5 +92,48 @@ describe("meilleur", () => {
     }));
 
     expect(meilleur(depart, rangeeBasse, "bas")?.element).toBe("x440");
+  });
+
+  it("descend droit même quand la colonne voisine est plus haute", () => {
+    // Une carte dont le titre tient sur deux lignes remonte le bord haut de sa
+    // voisine. « Bas » doit continuer de viser SA colonne, pas celle dont le
+    // bord se trouve être quelques pixels plus proche.
+    const depart = boite(440, 0, CARTE.l, CARTE.h);
+    const dessous = { element: "dessous", boite: boite(440, 340, CARTE.l, CARTE.h) };
+    const voisineHaute = { element: "voisine", boite: boite(660, 330, CARTE.l, CARTE.h) };
+
+    expect(meilleur(depart, [voisineHaute, dessous], "bas")?.element).toBe("dessous");
+  });
+});
+
+describe("surLaMemeLigne", () => {
+  it("reconnaît deux cartes alignées en haut", () => {
+    expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, CARTE.h))).toBe(
+      true,
+    );
+  });
+
+  it("tolère quelques pixels, comme le reste du module", () => {
+    // Les lignes d'une grille en flex ne sont pas alignées au pixel quand les
+    // cartes n'ont pas toutes la même hauteur de titre.
+    expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 343, CARTE.l, CARTE.h))).toBe(
+      true,
+    );
+  });
+
+  it("sépare deux lignes distinctes", () => {
+    // Le cas qui compte : « droite » depuis la dernière carte d'une ligne ne
+    // doit pas descendre en diagonale sur la première de la suivante.
+    expect(surLaMemeLigne(boite(880, 340, CARTE.l, CARTE.h), boite(0, 680, CARTE.l, CARTE.h))).toBe(
+      false,
+    );
+  });
+
+  it("compare les bords hauts et non les centres", () => {
+    // Deux cartes d'une même ligne dont l'une est plus haute restent sur la
+    // même ligne — leurs centres, eux, sont éloignés de 75 px.
+    expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, 450))).toBe(
+      true,
+    );
   });
 });
