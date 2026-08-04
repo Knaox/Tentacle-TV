@@ -112,8 +112,15 @@
  * chaque changement d'item — c'est le seul moyen d'obtenir une entrée en
  * douceur sans tenir deux calques, le shim de framer-motion ne différant aucun
  * démontage. Opacité seule, rien à repeindre. */
+/* L'opacité monte avec la lisibilité du halo.
+ *
+ * Elle valait 0,42 quand le flou d'ambilight était à 48 px : à cette
+ * dose-là, monter l'opacité n'aurait fait qu'éclaircir une tache. Le flou étant
+ * ramené à 22 px (`tokens-tv.css`), l'affiche redevient reconnaissable et il
+ * faut la montrer — sans quoi le fond ne dit plus ce qu'on est en train de
+ * viser, ce qui est précisément sa raison d'être. */
 :root {
-  --fond-focus-opacite: 0.42;
+  --fond-focus-opacite: 0.58;
 }
 
 .fond-focus {
