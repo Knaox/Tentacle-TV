@@ -103,6 +103,24 @@
   background-color: rgba(10, 10, 15, 0.92);
 }
 
+/* Pas d'ombre portée sur les cartes.
+ *
+ * `theme/cards.css` pose deux calques d'élévation en pseudo-éléments, dont
+ * celui du repos porte `0 6px 18px rgba(0,0,0,.6)`. Sur le client web, la page
+ * est sombre et unie : l'ombre y donne la profondeur qui détache la carte.
+ *
+ * Ici la page n'est plus unie — le décor de la carte visée l'occupe en entier.
+ * Une ombre sombre posée sur une affiche claire ne se lit pas comme de la
+ * profondeur mais comme un CADRE sale autour de chaque vignette, d'autant plus
+ * visible que le fond est lumineux.
+ *
+ * Ce qu'elle faisait, l'anneau de focus le fait mieux et seulement là où c'est
+ * utile : sur la carte visée. Les autres n'ont rien à signaler. */
+.carte-tv .media-tile::before,
+.carte-tv .media-tile::after {
+  box-shadow: none;
+}
+
 /* ── L'affiche de la carte visée, en fond d'écran ────────────────────────
  *
  * Sous tout le contenu et sous le rail, au-dessus du seul dégradé de marque.
