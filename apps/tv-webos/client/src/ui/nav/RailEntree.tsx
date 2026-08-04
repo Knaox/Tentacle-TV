@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Home, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
 import { creerAppuiLong } from "../../focus/appuiLong";
+import { amorcerFocus } from "../../focus/moteur";
 import { ouvrirRecherche } from "../recherche/etatRecherche";
 import { useEpinglageRail } from "./epinglageTv";
 import type { EntreeRail, IconeRail } from "./entreesRail";
@@ -48,6 +49,23 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
   const lien = useRef<HTMLAnchorElement>(null);
   const epinglage = useEpinglageRail();
 
+  /**
+   * Activer une entrée referme le rail.
+   *
+   * Il ne se repliait jamais : le repli n'a qu'une cause, un `blur` non suivi
+   * d'un `focus`, et il n'y en avait pas. `RailTv` vit hors de l'`<Outlet>`,
+   * donc la navigation ne le démonte pas ; le `<a>` survit à la réconciliation
+   * grâce à sa clé stable, `document.activeElement` ne change pas. On restait
+   * donc sur l'écran d'arrivée avec la navigation ouverte par-dessus.
+   *
+   * On rend donc la main explicitement, en deux temps. Le `blur` referme le
+   * rail immédiatement — c'est la partie qui doit être certaine. Puis
+   * `amorcerFocus` pose le focus sur le premier élément de l'écran d'arrivée,
+   * au tour de boucle suivant pour lui laisser le temps de se monter ; s'il
+   * n'est pas encore là, le focus reste sur le document et le premier appui sur
+   * une flèche l'y amènera de toute façon. Aucune des deux étapes ne dépend de
+   * l'autre pour que le rail se referme.
+   */
   const actionCourte = useCallback(() => {
     if (entree.cherche) {
       ouvrirRecherche();
@@ -58,6 +76,8 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
       return;
     }
     navigate(entree.chemin);
+    lien.current?.blur();
+    window.setTimeout(() => amorcerFocus(), 0);
   }, [entree.chemin, entree.cherche, entree.restaure, epinglage, navigate]);
 
   /**

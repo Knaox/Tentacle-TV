@@ -5,9 +5,16 @@
  * déploiement est porté par un attribut que React écrit, la garde de
  * compatibilité refuserait tout le reste.
  *
- * Seuls `transform` et `opacity` sont animés : ce sont les deux propriétés
- * qu'un compositeur sait traiter sans repeindre, et le rail couvre toute la
- * hauteur de l'écran.
+ * Seuls `transform` et `opacity` sont animés — et cette fois c'est vrai. La
+ * version précédente l'affirmait ici tout en transitionnant `width` sur un
+ * élément fixe pleine hauteur, plus `color` et `background-color` sur chaque
+ * entrée : trois propriétés qui repeignent, sur la seule surface de l'écran qui
+ * ne disparaît jamais.
+ *
+ * **La largeur est donc figée.** Ce qui s'ouvre est un PANNEAU posé à côté, qui
+ * entre en translation. Le rail ne change plus de taille, donc rien n'est remis
+ * en page derrière lui, et la géométrie sur laquelle le moteur de navigation
+ * vient de calculer reste vraie pendant toute la transition.
  */
 
 :root {
@@ -22,6 +29,7 @@
   left: 0;
   bottom: 0;
   z-index: 40;
+  /* Figée. Le déploiement ne la touche plus. */
   width: var(--rail-largeur-repli);
   /* Le rail est `fixed` : il ignore le retrait d'overscan posé sur `#root` et
      se retrouverait dans la zone que la dalle rogne. Les icônes sont donc
@@ -31,31 +39,32 @@
   padding-left: var(--tv-overscan-x);
   box-sizing: border-box;
   background: linear-gradient(90deg, var(--surface-0) 0%, var(--surface-0) 55%, transparent 100%);
-  transition: width var(--rail-duree) ease-out;
+  /* Les libellés débordent du rail : c'est le principe du panneau. */
+  overflow: visible;
 }
 
-.rail-tv[data-deploye="true"] {
-  width: var(--rail-largeur-deploye);
-  background: linear-gradient(90deg, var(--surface-1) 0%, var(--surface-0) 78%, transparent 100%);
-}
-
-/* Voile d'assombrissement du contenu. Étendu au-delà du rail pour couvrir
-   l'écran ; l'opacité seule est animée. */
-.rail-voile {
-  position: fixed;
+/* Le panneau déployé, posé DERRIÈRE les entrées.
+ *
+ * C'est la seule chose qui s'étend, et elle ne s'anime qu'en opacité — sa
+ * largeur est constante, seule sa présence change. Il remplace à la fois
+ * l'élargissement du rail et le voile d'assombrissement : ce dernier posait un
+ * aplat à 0,72 sur tout l'écran, ce qui éteignait le contenu au lieu de
+ * désigner la navigation. */
+.rail-panneau {
+  position: absolute;
   top: 0;
   left: 0;
-  right: 0;
   bottom: 0;
+  width: var(--rail-largeur-deploye);
   z-index: -1;
-  background: var(--surface-0);
+  background: linear-gradient(90deg, var(--surface-1) 0%, var(--surface-1) 62%, transparent 100%);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--rail-duree) ease-out;
 }
 
-.rail-voile[data-deploye="true"] {
-  opacity: 0.72;
+.rail-panneau[data-deploye="true"] {
+  opacity: 1;
 }
 
 .rail-liste {
@@ -104,7 +113,11 @@
   margin-top: auto;
 }
 
+/* La largeur reste celle du rail replié : c'est la zone cliquable, et elle ne
+   doit jamais recouvrir le contenu. Le libellé, lui, déborde — sans être
+   cliquable. `position: relative` lui sert d'origine. */
 .rail-entree {
+  position: relative;
   display: flex;
   align-items: center;
   height: 64px;
@@ -114,7 +127,9 @@
   color: var(--text-secondary);
   text-decoration: none;
   white-space: nowrap;
-  transition: color var(--rail-duree) ease-out, background-color var(--rail-duree) ease-out;
+  /* Aucune transition : `color` et `background-color` repeignent. Le changement
+     d'état est instantané, ce qui est de toute façon la bonne réponse à un
+     appui sur une télécommande — et l'anneau de focus, lui, est déjà là. */
 }
 
 .rail-entree[data-active="true"] {
@@ -136,14 +151,20 @@
 }
 
 /* Le libellé reste dans le document au repli — il est lu par les technologies
-   d'assistance, et le laisser en place évite un reflux au déploiement. */
+   d'assistance, et le laisser en place évite un reflux au déploiement.
+ *
+ * Sorti du flux : il déborde du rail replié au lieu de l'élargir, et c'est ce
+ * qui permet à la largeur d'être figée. `pointer-events: none` pour que ce
+ * débord ne vole pas un clic au contenu qui passe dessous. */
 .rail-entree-libelle {
-  margin-left: 16px;
+  position: absolute;
+  left: 68px;
   font-size: 20px;
   font-weight: 600;
   opacity: 0;
-  transform: translateX(-8px);
+  transform: translateX(-12px);
   transition: opacity var(--rail-duree) ease-out, transform var(--rail-duree) ease-out;
+  pointer-events: none;
 }
 
 .rail-entree-libelle[data-deploye="true"] {
