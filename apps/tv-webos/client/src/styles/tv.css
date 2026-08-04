@@ -61,6 +61,29 @@ body {
   padding: var(--tv-overscan-y) var(--tv-overscan-x);
 }
 
+/* ── L'enveloppe de page cesse de peindre du noir ─────────────────────────
+ *
+ * Chaque écran est enveloppé d'un `min-h-screen bg-surface-0` : un aplat noir
+ * opaque, qui est le fond de page du client web. Mais cette enveloppe vit à
+ * l'INTÉRIEUR du retrait d'overscan de `#root`, donc sa boîte s'arrête à 64 px
+ * de chaque bord — mesuré, 64 → 1208 sur un canevas de 1280.
+ *
+ * Tant que le fond de page était noir lui aussi, cela ne se voyait pas. Depuis
+ * que le décor de la carte visée occupe l'écran entier, l'image apparaît dans
+ * les 64 px de marge et disparaît au milieu : un grand rectangle sombre au
+ * centre de l'écran, aux bords adoucis par le dégradé du fond. C'est le
+ * « cadre flou qui empêche le débordement ».
+ *
+ * L'enveloppe devient transparente. Ce qui tient le fond derrière elle existe
+ * déjà : le dégradé de marque, le décor au focus, et la couleur du `<body>`
+ * quand il n'y a ni l'un ni l'autre.
+ *
+ * `.min-h-screen.bg-surface-0` est plus spécifique que l'utilitaire seul :
+ * l'ordre des feuilles n'entre pas en jeu. */
+.min-h-screen.bg-surface-0 {
+  background-color: transparent;
+}
+
 /* ── Plancher typographique ───────────────────────────────────────────────
  *
  * L'échelle est portée par le canevas 1280 déclaré dans `index.html` : le
