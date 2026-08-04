@@ -55,10 +55,10 @@ export function RailTv() {
       onFocus={surFocus}
       onBlur={surBlur}
     >
-      {/* Voile qui assombrit le contenu au déploiement. `aria-hidden` et sans
-          événements : il ne doit ni recevoir le focus ni intercepter un clic
-          du pointeur de la télécommande. */}
-      <span className="rail-voile" data-deploye={deploye} aria-hidden />
+      {/* Le panneau qui porte les libellés, posé derrière les entrées.
+          `aria-hidden` et sans événements : il ne doit ni recevoir le focus ni
+          intercepter un clic du pointeur de la télécommande. */}
+      <span className="rail-panneau" data-deploye={deploye} aria-hidden />
 
       <ul className="rail-liste">
         {entrees.map((entree) => (
