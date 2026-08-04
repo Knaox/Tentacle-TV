@@ -66,6 +66,25 @@
    * moteur d'une dalle ne renseigne pas. */
   --tv-overscan-x: 64px;
   --tv-overscan-y: 36px;
+
+  /* ── Halo d'affiche ───────────────────────────────────────────────────
+   *
+   * `HeroAmbilight` reprend l'affiche, la réduit à 128 px de large, la floute
+   * et l'étire derrière la bannière. Le flou est posé en style EN LIGNE par le
+   * composant : aucune passe PostCSS ne l'atteint — `passeVerre` ne retire que
+   * `backdrop-filter` — et les valeurs du client web arrivaient donc intactes
+   * sur la dalle.
+   *
+   * Or elles ont été réglées pour un écran de bureau regardé à cinquante
+   * centimètres, où le halo est un accent périphérique. Sur une dalle de salon,
+   * la même image occupe deux mètres de large : 48 px de rayon sur une source
+   * déjà étirée dix fois, saturée à 1,7, ne laissaient plus rien de
+   * reconnaissable — juste une tache colorée.
+   *
+   * On garde le principe, on rend l'image lisible : moitié moins de flou, et
+   * une saturation qui cesse de virer. */
+  --hero-ambilight-blur: 22px;
+  --hero-ambilight-sat: 1.25;
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre
