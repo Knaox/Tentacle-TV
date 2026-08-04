@@ -6,6 +6,7 @@ import { passeGrille } from "./passeGrille";
 import { passeEcarts } from "./passeEcarts";
 import { passeRatios } from "./passeRatios";
 import { passeVerre } from "./passeVerre";
+import { passeSurvol, survolsSurvivants } from "./passeSurvol";
 import { passeFonctionsMath } from "./passeFonctionsMath";
 import { passeNettoyage } from "./passeNettoyage";
 import { gardeCompat, formaterSurvivances } from "./gardeCompat";
@@ -29,8 +30,14 @@ import { gardeCompat, formaterSurvivances } from "./gardeCompat";
  *      écrit tant que la relation à l'écart est encore lisible.
  *   4. `ecarts` ensuite, pour traiter d'un même geste les flexbox d'origine et
  *      les grilles converties.
- *   5. `ratios`, `verre`, `fonctionsMath` et `nettoyage` sont indépendantes.
+ *   5. `ratios`, `verre`, `survol`, `fonctionsMath` et `nettoyage` sont
+ *      indépendantes.
  *   6. `gardeCompat` en dernier, lectrice : elle refuse ce qui a survécu.
+ *
+ * `survol` est la seule passe qui ne traite pas une primitive trop récente :
+ * `:hover` est parfaitement compris par Chrome 53, et c'est le problème. Elle
+ * est ici parce que c'est le seul endroit d'où l'on peut retirer les variantes
+ * de survol que Tailwind produit pour `apps/web`, sans toucher au client web.
  *
  * Le rapport imprimé en fin de build n'est pas décoratif. Une passe qui
  * rapporte zéro est le signal le plus important : soit la primitive a disparu
@@ -49,8 +56,26 @@ export function compatibiliteChrome53(): Plugin {
       passeEcarts(racine, contexte);
       passeRatios(racine, contexte);
       passeVerre(racine, contexte);
+      passeSurvol(racine, contexte);
       passeFonctionsMath(racine, contexte);
       passeNettoyage(racine, contexte);
+
+      // Auto-contrôle de la passe de survol : un reste ne signale pas une
+      // régression du client web — la passe les retire tous par construction —
+      // mais un défaut de son découpage de listes de sélecteurs.
+      const survols = survolsSurvivants(racine);
+      if (survols.length > 0) {
+        throw racine.error(
+          [
+            `${survols.length} règle(s) de survol ont échappé à la passe :`,
+            ...survols.slice(0, 10).map((selecteur) => `  ${selecteur}`),
+            "",
+            "Sur un téléviseur, le focus est la seule sélection. Voir",
+            "config/postcss/passeSurvol.ts.",
+          ].join("\n"),
+          { plugin: "tentacle-compat-chrome53" },
+        );
+      }
 
       const survivances = gardeCompat(racine);
       if (survivances.length > 0) {
