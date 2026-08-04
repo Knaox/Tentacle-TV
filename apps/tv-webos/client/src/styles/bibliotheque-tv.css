@@ -73,6 +73,23 @@
   bottom: 0;
   border-radius: var(--hero-frame-radius);
   box-shadow: var(--hero-frame-ring);
+  /* Au-DESSUS du halo. Les deux sont des frères en `absolute` dans la même
+     section, et c'est l'ordre du DOM qui décidait : le halo, monté après,
+     était peint par-dessus la carte. Voir la règle suivante. */
+  z-index: 1;
+}
+
+/* Le fondu de la bannière de bibliothèque, celui de l'accueil.
+ *
+ * `LibraryHero` confie son apparition à `motion.img` — `initial={{opacity: 0}}`
+ * puis `animate`. Sous le shim, ces propriétés sont écartées : l'image
+ * apparaissait donc sèchement, là où celle de l'accueil se fondait. Même
+ * animation, même durée, pour que les deux bannières se comportent pareil.
+ *
+ * L'image est keyée sur l'identifiant du backdrop : changer de bibliothèque
+ * monte un élément neuf, et l'animation rejoue par construction. */
+.-bottom-\[200px\] > img {
+  animation: banniere-tv-fondu 700ms ease-out both;
 }
 
 /* Le halo revient, et se comporte comme celui de l'accueil.
@@ -82,10 +99,20 @@
  * faisait que la voiler. Sur une carte, elle retrouve sa raison d'être : elle
  * déborde tout autour et c'est elle qui relie la carte au fond.
  *
- * On lui retire en revanche le traitement propre à `hero-glow` — masque vertical
- * et fusion `screen` — pour qu'elle soit le halo de l'accueil et non un second
- * effet. Sa boîte épouse celle de la carte, comme sur l'accueil où halo et cadre
- * partagent le même rectangle.
+ * **Encore fallait-il la mettre DERRIÈRE.** C'est la seule différence de fond
+ * entre les deux bannières, et elle est structurelle : `HeroBillboard` monte
+ * son halo AVANT la carte, qui le recouvre et n'en laisse dépasser que le flou
+ * tout autour ; `LibraryHero` le monte APRÈS sa boîte image, donc par-dessus.
+ * Sur le client web cela passe, la fusion `screen` et le masque vertical
+ * cantonnant son effet à la zone de raccord basse. Retirer ces deux
+ * traitements — ce qu'il faut faire pour obtenir le halo de l'accueil — laissait
+ * une copie floutée à 60 % posée à plat sur l'image nette : la bannière
+ * paraissait délavée, et c'est le défaut signalé.
+ *
+ * Un `z-index` remet les deux frères dans le bon ordre, sans toucher au
+ * composant. La boîte épouse celle de la carte, comme sur l'accueil où halo et
+ * cadre partagent le même rectangle : c'est le flou de 48 px qui déborde, pas
+ * la boîte.
  *
  * Le sélecteur sépare le halo de bibliothèque de celui de la fiche par la
  * hauteur qui l'accompagne — `44vh` ici, `58vh` là-bas. La fiche reste plein
@@ -97,7 +124,10 @@
   mask-image: none;
   left: var(--row-gutter-desktop);
   right: var(--row-gutter-desktop);
-  height: 48vh;
+  top: 68px;
+  bottom: 0;
+  height: auto;
+  z-index: 0;
 }
 
 /* Le titre rentre DANS la carte.
@@ -120,9 +150,14 @@
  *
  * On les laisse donc à leur colonne et on les descend sous la carte. La carte
  * redevient ce qu'elle est : un en-tête, avec le nom de la bibliothèque dedans,
- * et les commandes en dessous. */
+ * et les commandes en dessous.
+ *
+ * L'écart est passé de 16 à 28 px. À seize, le champ affleurait le bord de la
+ * carte et les deux se lisaient comme un seul bloc ; le halo, qui déborde
+ * précisément par là, n'avait plus où se poser. Vingt-huit suffisent à les
+ * séparer sans repousser la première rangée sous le pli. */
 .relative.z-10.-mt-10 {
-  margin-top: 16px;
+  margin-top: 28px;
 }
 
 /* La base opaque de la bannière laisse passer le fond.
