@@ -133,10 +133,11 @@
  * Sous tout le contenu et sous le rail, au-dessus du seul dégradé de marque.
  * `pointer-events: none` : le pointeur de la Magic Remote doit le traverser.
  *
- * Le fondu est une animation et non une transition : le fond est REMONTÉ à
- * chaque changement d'item — c'est le seul moyen d'obtenir une entrée en
- * douceur sans tenir deux calques, le shim de framer-motion ne différant aucun
- * démontage. Opacité seule, rien à repeindre. */
+ * Le fondu est une ANIMATION et non une transition, et c'est ce qui le fait
+ * jouer aussi sur une image déjà en cache : une animation part au montage de
+ * l'élément qui la porte, là où une transition n'a rien à interpoler quand
+ * l'état de départ et celui d'arrivée sont posés dans le même rendu. Opacité
+ * seule, rien à repeindre. */
 /* Assez clair pour reconnaître le film.
  *
  * `AmbientConfig.imageOpacity` vaut 0,32 sur Android TV — mais là-bas l'image
@@ -174,13 +175,33 @@
   pointer-events: none;
 }
 
+/* La couche porte l'opacité, les images se croisent DEDANS.
+ *
+ * Atténuer chaque image séparément ne marche pas pour un fondu croisé : deux
+ * calques à 0,55 superposés composent à 0,80, et le passage d'une affiche à
+ * l'autre se verrait comme un éclat à mi-course. Ici les deux images se
+ * relaient à pleine opacité — ce que l'une perd, l'autre le prend — puis la
+ * couche s'atténue d'un bloc. Le voile reste dehors : c'est lui qui rend le
+ * texte lisible, il n'a pas à pâlir avec l'image. */
+.fond-focus-couche {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: var(--fond-focus-opacite);
+}
+
 /* L'image, NETTE. Pas de `filter`, pas de mise à l'échelle : le Backdrop est
    demandé à 1280 de large, c'est exactement le canevas.
  *
  * Elle entre en fondu à son CHARGEMENT et non au montage du calque — sans quoi
- * l'animation courait pendant que l'image était encore en vol, et l'image
- * surgissait d'un coup une fois le fondu terminé. 350 ms, la durée de fondu
- * croisé d'`apps/tv` : le fond suit la sélection sans traîner derrière elle. */
+ * l'animation courrait pendant que l'image est encore en vol, et l'image
+ * surgirait d'un coup une fois le fondu terminé. 350 ms, la durée de fondu
+ * croisé d'`apps/tv` : le fond suit la sélection sans traîner derrière elle.
+ *
+ * Les calques s'empilent dans l'ordre du DOM, sans `z-index` : l'entrant est
+ * rendu en dernier, donc au-dessus, et monte par-dessus celui qu'il remplace. */
 .fond-focus-image {
   position: absolute;
   top: 0;
@@ -189,11 +210,36 @@
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 350ms ease-out;
 }
 
 .fond-focus-image[data-charge="true"] {
-  opacity: var(--fond-focus-opacite);
+  animation: fond-focus-entree 350ms ease-out both;
+}
+
+/* La sortie ne concerne qu'une image qu'on VOIT. Un calque qui s'efface avant
+   d'avoir chargé n'a rien à faire disparaître, et lui jouer une sortie le
+   rendrait visible une fraction de seconde pour rien. Il part au changement
+   suivant, sans avoir jamais été peint. */
+.fond-focus-image[data-charge="true"][data-sortant="true"] {
+  animation: fond-focus-sortie 260ms ease-out both;
+}
+
+@keyframes fond-focus-entree {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fond-focus-sortie {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* Le dégradé d'atténuation. C'est lui qui rend le texte lisible — pas un flou.
