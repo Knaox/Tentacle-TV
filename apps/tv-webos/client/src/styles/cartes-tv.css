@@ -112,15 +112,11 @@
  * chaque changement d'item — c'est le seul moyen d'obtenir une entrée en
  * douceur sans tenir deux calques, le shim de framer-motion ne différant aucun
  * démontage. Opacité seule, rien à repeindre. */
-/* L'opacité monte avec la lisibilité du halo.
- *
- * Elle valait 0,42 quand le flou d'ambilight était à 48 px : à cette
- * dose-là, monter l'opacité n'aurait fait qu'éclaircir une tache. Le flou étant
- * ramené à 22 px (`tokens-tv.css`), l'affiche redevient reconnaissable et il
- * faut la montrer — sans quoi le fond ne dit plus ce qu'on est en train de
- * viser, ce qui est précisément sa raison d'être. */
+/* Un tiers d'opacité, comme `AmbientConfig.imageOpacity` sur Android TV et
+ * Apple TV. Assez pour reconnaître le film, assez peu pour que les titres et
+ * les affiches posés dessus gardent leur contraste. */
 :root {
-  --fond-focus-opacite: 0.58;
+  --fond-focus-opacite: 0.32;
 }
 
 .fond-focus {
@@ -131,7 +127,39 @@
   bottom: 0;
   z-index: 0;
   pointer-events: none;
-  animation: fond-focus-entree 420ms ease-out both;
+  /* 350 ms, la durée de fondu croisé d'`apps/tv` : le fond suit la sélection
+     sans traîner derrière elle. */
+  animation: fond-focus-entree 350ms ease-out both;
+}
+
+/* L'image, NETTE. Pas de `filter`, pas de mise à l'échelle : le Backdrop est
+   demandé à 1280 de large, c'est exactement le canevas. */
+.fond-focus-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: var(--fond-focus-opacite);
+}
+
+/* Le dégradé d'atténuation, repris de `TVAmbientBackdrop` : 0,55 en haut,
+   0,70 à mi-hauteur, la couleur de fond en bas. C'est lui qui rend le texte
+   lisible — pas un flou. Il descend jusqu'au fond opaque pour que les rangées
+   basses ne se détachent pas sur une image. */
+.fond-focus-voile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.7) 55%,
+    var(--surface-0) 100%
+  );
 }
 
 @keyframes fond-focus-entree {

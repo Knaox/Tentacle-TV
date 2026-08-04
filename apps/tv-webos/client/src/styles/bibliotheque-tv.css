@@ -48,3 +48,44 @@
   min-height: 44px;
   font-size: 18px;
 }
+
+/* ── La bannière de bibliothèque va d'un bord à l'autre ───────────────────
+ *
+ * Elle s'arrêtait à 154 px du bord gauche — le retrait d'overscan (64) plus la
+ * gouttière du rail (90) — et laissait une bande noire verticale le long de la
+ * navigation. Sur une dalle, une image de titre qui commence après une bande
+ * noire ne se lit pas comme une marge : elle se lit comme une image mal cadrée.
+ *
+ * Android TV et Apple TV posent la leur en plein cadre, `SCREEN_W` exactement,
+ * et laissent la barre latérale passer PAR-DESSUS avec un dégradé qui protège
+ * la lisibilité (`TVHeroBackdrop` : un dégradé horizontal sur les 60 % de
+ * gauche). On fait pareil.
+ *
+ * Le sélecteur vise la boîte d'image de `LibraryHero`, reconnaissable à son
+ * débord bas de 200 px — le seul élément du client à porter cette classe. Ses
+ * voiles internes sont en `inset: 0` et suivent donc sans rien à changer. Le
+ * titre et les filtres, eux, sont dans le flux normal de la page : ils ne
+ * bougent pas. */
+.-bottom-\[200px\] {
+  left: calc(-1 * (var(--tv-overscan-x) + var(--rail-largeur-repli)));
+  right: calc(-1 * var(--tv-overscan-x));
+}
+
+/* Le dégradé qui rend le rail lisible par-dessus l'image, repris de
+   `TVHeroBackdrop` : opaque au bord, transparent à 72 % de la largeur. Sans
+   lui, les icônes blanches du rail se poseraient sur n'importe quoi. */
+.-bottom-\[200px\]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 60%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--surface-0) 0%,
+    rgba(0, 0, 0, 0.55) 32%,
+    transparent 72%
+  );
+}
