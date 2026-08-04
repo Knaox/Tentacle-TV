@@ -1,21 +1,36 @@
 import { SELECTEUR_FOCUSABLE, cibleAtteignable } from "./candidats";
 
 /**
- * Le pointeur déplace le focus — il ne fait rien d'autre.
+ * Le survol : capté avant React, et rendu au focus.
  *
- * Un téléviseur LG a un pointeur : la Magic Remote en fait apparaître un dès
- * qu'on agite la télécommande, et une souris branchée en donne un aussi. Sans
- * ce module, ce pointeur ne servait à rien d'autre qu'à cliquer : le survol
- * était éteint des deux côtés — les règles `:hover` retirées de la feuille par
- * la passe PostCSS, les gestionnaires `onMouseEnter` neutralisés par
- * `shims/survolInerte.ts` — et viser une carte à la main ne la désignait pas.
+ * Un téléviseur LG a un pointeur — la Magic Remote en fait apparaître un dès
+ * qu'on agite la télécommande, et une souris branchée en donne un aussi. Ce
+ * module en fait un moyen de déplacer le FOCUS, et il empêche tout le reste.
  *
- * **Ce n'est pas un retour du survol du client web**, et la distinction est
- * tout le sujet. Le survol du web ouvre un panneau d'aperçu, bascule
- * `data-hovered`, révèle des commandes : un second état visuel, concurrent du
- * focus. Ici il n'y a toujours qu'UN état — celui du focus — et le pointeur
- * devient un moyen de plus de le déplacer, au même titre qu'une flèche. Ce que
- * la carte montre alors est exactement ce qu'elle montre au D-pad.
+ * **Pourquoi il faut couper les événements et pas seulement les hooks.** Le
+ * survol du client web a été éteint par deux voies : la passe PostCSS retire
+ * les règles `:hover` de la feuille — il n'en reste aucune, c'est vérifiable —
+ * et `shims/survolInerte.ts` remplace `useHoverPreview`, `useHoverGuard` et
+ * `useHoverMount`. Ce n'était pas assez. Dix composants d'`apps/web` tiennent
+ * leur PROPRE état de survol, sans passer par aucun de ces hooks :
+ * `EpisodeCard` et `PosterCard` posent un `hovered` local qui écrit un
+ * `z-index` en style en ligne, `HorizontalScrollRow` et `MediaRow` suivent la
+ * carte survolée, `HeroBillboard` met sa rotation en pause. Les substituer un
+ * par un serait dix forks à maintenir, pour un défaut qui a une seule cause.
+ *
+ * Cette cause est que les événements de survol arrivent jusqu'à React. On les
+ * arrête donc avant : un écouteur en phase de CAPTURE sur `document` s'exécute
+ * avant que l'événement n'atteigne la racine React, et `stopPropagation` fait
+ * le reste. Aucun `onMouseEnter` du client web ne se déclenche plus, quel que
+ * soit le composant, y compris ceux qu'on n'a pas lus.
+ *
+ * `stopPropagation` et non `stopImmediatePropagation` : les autres écouteurs
+ * posés sur `document` — le mode pointeur de `curseur.ts`, notamment —
+ * continuent de recevoir ce qui leur revient. On coupe la descente vers l'arbre,
+ * pas le voisinage.
+ *
+ * **Ce qui reste actif : le clic.** `mousedown`, `mouseup` et `click` ne sont
+ * pas touchés. On retire la sélection au survol, pas le pointeur.
  *
  * `mouseover` et non `mousemove` : l'événement ne part qu'au changement
  * d'élément survolé. Balayer l'écran ne coûte donc pas un traitement par image,
@@ -50,7 +65,11 @@ function estUnChampDeSaisie(element: HTMLElement): boolean {
  * moments. Dupliquer la condition, c'est la laisser diverger.
  */
 export function surveillerSurvol(suspendu: () => boolean): () => void {
-  const surSurvol = (evenement: MouseEvent) => {
+  const surSurvol = (evenement: Event) => {
+    // Barré dans tous les cas, y compris quand le moteur est suspendu : le
+    // lecteur n'a pas plus besoin du survol du web que le reste, et son
+    // habillage est piloté par `lecture/masquageAutoTv.ts`.
+    evenement.stopPropagation();
     if (suspendu()) return;
 
     const cible = evenement.target;
@@ -70,9 +89,19 @@ export function surveillerSurvol(suspendu: () => boolean): () => void {
     focusable.focus();
   };
 
+  // Les trois autres n'ont rien à désigner : ils ne servent qu'à DÉFAIRE ce
+  // qu'un survol a fait, et il n'y a plus rien à défaire. On les barre pour que
+  // React ne synthétise ni `onMouseEnter` ni `onMouseLeave` — il les déduit de
+  // `mouseover` et `mouseout`, et `mouseenter`/`mouseleave` se propagent en
+  // capture même s'ils ne remontent pas.
+  const barrer = (evenement: Event) => evenement.stopPropagation();
+  const BARRES = ["mouseout", "mouseenter", "mouseleave"];
+
   document.addEventListener("mouseover", surSurvol, true);
+  BARRES.forEach((type) => document.addEventListener(type, barrer, true));
 
   return () => {
     document.removeEventListener("mouseover", surSurvol, true);
+    BARRES.forEach((type) => document.removeEventListener(type, barrer, true));
   };
 }
