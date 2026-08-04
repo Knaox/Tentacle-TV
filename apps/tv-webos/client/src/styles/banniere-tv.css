@@ -13,69 +13,22 @@
  * remplacent, et cette feuille est chargée après : pas de `!important`.
  */
 
-/* La bannière va d'un bord à l'autre.
+/* La bannière d'accueil reste une CARTE.
  *
- * Elle tenait dans un cadre de 942 px arrondi à 20 px, posé à 210 px du bord
- * gauche, avec un anneau violet en `box-shadow` — une carte flottant sur la
- * page. C'est le bon dessin pour un navigateur, où la fenêtre a elle-même des
- * bords. Sur une dalle, la fenêtre EST l'écran : un cadre arrondi au milieu du
- * noir se lit comme un rectangle posé là, et c'est exactement le « carré noir »
- * signalé. Android TV et Apple TV n'encadrent pas : l'image occupe l'écran et
- * la navigation flotte dessus.
+ * Elle a été mise en plein cadre un moment, par analogie avec les bibliothèques
+ * et la fiche. C'était une erreur de lecture : sur l'accueil, la bannière n'est
+ * pas le fond de l'écran, c'est le premier ÉLÉMENT d'une liste — la rangée qui
+ * la suit commence juste en dessous. Une carte posée sur la page, arrondie et
+ * cernée de sa lueur, dit cela ; une image plein écran dit « vous êtes dans une
+ * fiche ». Le client web fait exactement cette distinction, et elle vaut aussi
+ * à trois mètres.
  *
- * Les trois marges négatives annulent, dans l'ordre, la gouttière de rangée, la
- * colonne du rail et le retrait d'overscan. `width: auto` est indispensable :
- * avec le `w-full` d'origine, la largeur reste figée à 100 % et les marges ne
- * font que décaler la boîte au lieu de l'élargir. */
+ * D'où le maintien de `--hero-frame-radius` et `--hero-frame-ring` tels que le
+ * thème les définit, et du halo d'`HeroAmbilight` qui déborde tout autour. Les
+ * bannières de bibliothèque et de fiche, elles, vont bien d'un bord à l'autre —
+ * voir `bibliotheque-tv.css` et `fiche-tv.css`. */
 [data-hero-frame] {
   height: 62vh;
-  width: auto;
-  margin-top: calc(-1 * var(--tv-overscan-y));
-  margin-left: calc(
-    -1 * (var(--tv-overscan-x) + var(--rail-largeur-repli) + var(--row-gutter-desktop))
-  );
-  margin-right: calc(-1 * (var(--tv-overscan-x) + var(--row-gutter-desktop)));
-  border-radius: 0;
-  box-shadow: none;
-}
-
-/* Le dégradé qui rend le rail lisible par-dessus l'image.
- *
- * Même rôle que le scrim horizontal de `TVHeroBackdrop` sur Apple TV : sans
- * lui, des icônes blanches se poseraient sur un ciel clair. Il reste léger —
- * l'image est ce qu'on veut voir — et s'arrête bien avant le titre, qui a déjà
- * ses propres voiles. `z-index: 5` le place sous le bloc de contenu, qui est
- * en `z-10`. */
-[data-hero-frame]::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 42%;
-  z-index: 5;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.3) 38%,
-    transparent 70%
-  );
-}
-
-/* Le contenu ne suit PAS le débord : il garde sa place, à droite du rail.
- *
- * `px-4` distingue le bloc titre/actions des indicateurs, qui sont le seul
- * autre enfant en `z-10` du cadre. */
-[data-hero-frame] > .z-10.px-4 {
-  padding-left: calc(
-    var(--tv-overscan-x) + var(--rail-largeur-repli) + var(--row-gutter-desktop)
-  );
-}
-
-[data-hero-frame] > .z-10.flex {
-  right: calc(var(--tv-overscan-x) + var(--row-gutter-desktop));
-  bottom: calc(var(--tv-overscan-y) + 8px);
 }
 
 /* Le bloc de texte remonte d'autant, sinon il se décolle du bas du cadre. */

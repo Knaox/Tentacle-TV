@@ -64,14 +64,25 @@
   max-width: none !important;
 }
 
-/* La bannière de fiche dépassait l'écran.
+/* La bannière de fiche dépassait l'écran, et s'arrêtait aux marges.
  *
- * `h-[calc(64vh+260px)]` fait 721 px pour 720 de haut : la page s'ouvrait avec
- * la bannière seule, et il fallait descendre pour trouver le moindre bouton.
- * Le rapport a été réglé pour un navigateur, où l'on découvre une page en la
- * faisant défiler ; à la télécommande, ce qui n'est pas à l'écran n'existe pas
- * tant qu'on n'a pas appuyé. */
+ * Deux corrections sur la même boîte.
+ *
+ * La hauteur : `h-[calc(64vh+260px)]` fait 721 px pour 720 de haut. La page
+ * s'ouvrait sur la bannière seule et il fallait descendre pour trouver le
+ * moindre bouton — réglage de navigateur, où l'on découvre une page en la
+ * faisant défiler, alors qu'à la télécommande ce qui n'est pas à l'écran
+ * n'existe pas tant qu'on n'a pas appuyé.
+ *
+ * La largeur : contrairement à la bannière d'accueil, qui est une carte dans
+ * une liste, celle d'une fiche EST le fond de l'écran. Elle va donc d'un bord à
+ * l'autre, comme sur le client web et comme sur les bibliothèques. La fiche
+ * étant hors de la disposition à rail, il n'y a que le retrait d'overscan à
+ * annuler. */
 .min-h-screen [class*="calc(64vh"],
 .min-h-screen [class*="calc(58vh"] {
   height: 62vh;
+  top: calc(-1 * var(--tv-overscan-y));
+  left: calc(-1 * var(--tv-overscan-x));
+  right: calc(-1 * var(--tv-overscan-x));
 }
