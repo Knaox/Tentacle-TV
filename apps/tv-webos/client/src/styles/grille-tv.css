@@ -19,6 +19,12 @@
  * écart de trop fasse passer la dernière à la ligne suivante. Même stratégie
  * que la passe des écarts, appliquée ici à la main puisque la déclaration
  * d'origine n'est pas dans la feuille.
+ *
+ * **La marge vaut zéro là où le moteur sait faire lui-même.** `--tv-grille-ecart`
+ * est publié à 0 quand `gap` s'applique aux conteneurs flex, ce que le hook
+ * mesure plutôt que de le supposer. Sans cela les deux écarts s'ajoutent, la
+ * dernière carte de chaque ligne passe à la suivante, et comme les lignes sont
+ * virtualisées et posées en absolu, elle recouvre celle d'après.
  */
 
 [data-tv-grille] .grid:not([class*="grid-cols-"]) {

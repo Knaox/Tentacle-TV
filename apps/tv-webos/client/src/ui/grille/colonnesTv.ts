@@ -78,7 +78,51 @@ export function useItemsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
 function publier(element: HTMLElement, largeur: number, colonnes: number): void {
   const carte = colonnes > 0 ? (largeur - ECART * (colonnes - 1)) / colonnes : 0;
   element.style.setProperty("--tv-grille-carte", `${Math.max(0, Math.floor(carte))}px`);
-  element.style.setProperty("--tv-grille-ecart", `${ECART}px`);
+  // Zéro quand le moteur pose déjà l'écart lui-même : la marge s'y AJOUTERAIT.
+  element.style.setProperty("--tv-grille-ecart", `${gapFlexApplique() ? 0 : ECART}px`);
+}
+
+/**
+ * Le moteur applique-t-il `gap` à un conteneur flex ?
+ *
+ * Question qui n'a l'air de rien et qui décide de la mise en page entière.
+ * `LibraryGrid` pose `gap: 16` en style EN LIGNE, hors de portée des passes
+ * PostCSS comme de la garde de compatibilité. Sur Chrome 53 la déclaration est
+ * ignorée — `gap` n'arrive en flexbox qu'avec Chrome 84 — et la marge droite
+ * posée par `grille-tv.css` est le seul écart. Sur un navigateur récent, les
+ * DEUX s'appliquent : l'écart réel passe de 201 à 217 px, la cinquième carte ne
+ * tient plus sur sa ligne, elle passe à la suivante — et comme les lignes sont
+ * virtualisées et positionnées en absolu, elle vient RECOUVRIR la ligne d'après.
+ * C'est le chevauchement signalé dans la colonne de gauche.
+ *
+ * On ne peut pas trancher par `CSS.supports("gap", "1px")` : la propriété est
+ * reconnue dès Chrome 66 pour les grilles, dix-huit versions avant que la
+ * flexbox n'en fasse quoi que ce soit. La seule réponse fiable est la mesure —
+ * un conteneur flex hors écran, deux enfants, et on regarde ce qui les sépare.
+ *
+ * Faite une fois, retenue ensuite : le moteur ne change pas en cours de route.
+ */
+let gapFlex: boolean | null = null;
+
+function gapFlexApplique(): boolean {
+  if (gapFlex !== null) return gapFlex;
+
+  const sonde = document.createElement("div");
+  sonde.style.cssText =
+    "display:flex;flex-wrap:nowrap;gap:8px;position:absolute;top:-1000px;left:-1000px;visibility:hidden";
+  const premier = document.createElement("span");
+  const second = document.createElement("span");
+  premier.style.cssText = "width:20px;height:4px;flex:0 0 auto";
+  second.style.cssText = premier.style.cssText;
+  sonde.appendChild(premier);
+  sonde.appendChild(second);
+  document.body.appendChild(sonde);
+
+  const separation = second.getBoundingClientRect().left - premier.getBoundingClientRect().right;
+  sonde.parentNode?.removeChild(sonde);
+
+  gapFlex = separation > 4;
+  return gapFlex;
 }
 
 function largeurDeContenu(element: HTMLElement): number {
