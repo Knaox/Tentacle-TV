@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { TentacleLogo } from "@/components/ui/TentacleLogo";
 import { useEntreesRail, entreeActive } from "./entreesRail";
 import { RailEntree } from "./RailEntree";
 
@@ -59,6 +60,21 @@ export function RailTv() {
           `aria-hidden` et sans événements : il ne doit ni recevoir le focus ni
           intercepter un clic du pointeur de la télécommande. */}
       <span className="rail-panneau" data-deploye={deploye} aria-hidden />
+
+      {/* La marque, en haut du rail — c'est la place qu'elle occupe sur Android
+          TV, et la seule qui soit visible en permanence sans rien prendre au
+          contenu. Le poulpe seul quand le rail est replié, le nom en plus
+          quand le focus le déploie : il déborde alors sur le panneau, comme les
+          libellés des entrées.
+
+          Pas focusable, et ce n'est pas un oubli : il ne mène nulle part, et la
+          discipline du parcours veut qu'on ne vise que ce qui agit. */}
+      <div className="rail-marque">
+        <TentacleLogo size="md" variant="bare" />
+        <span className="rail-marque-nom" data-deploye={deploye}>
+          Tentacle TV
+        </span>
+      </div>
 
       <ul className="rail-liste">
         {entrees.map((entree) => (

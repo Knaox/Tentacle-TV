@@ -102,6 +102,49 @@
   opacity: 1;
 }
 
+/* ── La marque, en haut du rail ──────────────────────────────────────────
+ *
+ * Elle n'apparaissait nulle part dans l'interface, alors que le rail d'Android
+ * TV porte la sienne à cet endroit exact. C'est la seule place qui soit visible
+ * en permanence sans rien prendre au contenu.
+ *
+ * Absolue, et sa hauteur réservée dans la liste : le rail ne doit pas
+ * redistribuer ses entrées au déploiement — le moteur de navigation vient de
+ * calculer sa géométrie dessus. Même raison que pour l'indice, en bas.
+ *
+ * `pointer-events: none` : elle n'agit pas, et le pointeur de la télécommande
+ * doit la traverser pour atteindre ce qui est derrière. */
+.rail-marque {
+  position: absolute;
+  top: var(--tv-overscan-y);
+  left: var(--tv-overscan-x);
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding-left: 12px;
+  pointer-events: none;
+  /* Au-dessus du panneau déployé, comme les entrées. */
+  z-index: 1;
+}
+
+/* Le nom ne se montre qu'au déploiement, et il déborde alors sur le panneau —
+   exactement comme les libellés des entrées. Opacité seule : sa place est prise
+   dans les deux états, rien ne bouge sous le moteur de focus. */
+.rail-marque-nom {
+  margin-left: 14px;
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  opacity: 0;
+  transition: opacity var(--rail-duree) ease-out;
+}
+
+.rail-marque-nom[data-deploye="true"] {
+  opacity: 1;
+}
+
 .rail-liste {
   display: flex;
   flex-direction: column;
@@ -109,9 +152,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  /* Place réservée à l'indice, dans les DEUX états. Le rail ne doit pas
-     redistribuer ses entrées au déploiement : le moteur de navigation vient
-     de calculer sa géométrie dessus. */
+  /* Places réservées à la marque en haut et à l'indice en bas, dans les DEUX
+     états. Le rail ne doit pas redistribuer ses entrées au déploiement : le
+     moteur de navigation vient de calculer sa géométrie dessus. */
+  padding-top: 56px;
   padding-bottom: 44px;
   box-sizing: border-box;
 }
