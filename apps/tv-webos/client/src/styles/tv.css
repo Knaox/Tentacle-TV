@@ -84,6 +84,31 @@ body {
   background-color: transparent;
 }
 
+/* ── Le halo des bannières PLEIN CADRE est retiré ─────────────────────────
+ *
+ * `LibraryHero` et `DetailHero` posent, par-dessus leur image, une copie de
+ * celle-ci floutée à 48 px et affichée à 60 % d'opacité — c'est `HeroAmbilight`,
+ * marqué `hero-glow`. Sur le client web, la bannière est encadrée et cette copie
+ * déborde autour d'elle : elle fait une lueur, et c'est réussi.
+ *
+ * Ici, ces deux bannières vont d'un bord à l'autre. La copie floutée ne déborde
+ * donc plus de rien : elle se superpose à l'image nette et la voile. Pire, sa
+ * boîte est `inset-x-0`, c'est-à-dire bornée à la colonne de contenu — 154 à
+ * 1208 sur un canevas de 1280 — alors que l'image, elle, va de 0 à 1272. On
+ * voyait donc un grand rectangle flou aux bords francs, posé sur une image
+ * nette, et descendant de huit cents pixels sur la grille.
+ *
+ * On la retire. L'ambiance est déjà portée par l'image elle-même, en plein
+ * cadre et nette, et par le décor de la carte visée. C'est aussi une image
+ * floutée en moins à composer à chaque trame, ce que la règle de coût GPU du
+ * dépôt demande de traquer.
+ *
+ * La bannière d'ACCUEIL n'est pas concernée : son halo n'a pas cette classe, et
+ * elle en a besoin — c'est une carte, la lueur est ce qui la relie au fond. */
+.hero-glow {
+  display: none;
+}
+
 /* ── Plancher typographique ───────────────────────────────────────────────
  *
  * L'échelle est portée par le canevas 1280 déclaré dans `index.html` : le
