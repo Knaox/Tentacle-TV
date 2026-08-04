@@ -81,7 +81,17 @@
  * annuler. */
 .min-h-screen [class*="calc(64vh"],
 .min-h-screen [class*="calc(58vh"] {
-  height: 62vh;
+  /* Assez haute pour passer SOUS les actions.
+   *
+   * À 62vh — 446 px — l'image s'arrêtait au-dessus de « Reprendre » et de
+   * « Bande-annonce », qui se retrouvaient sur du noir : la fiche se coupait en
+   * deux. Sur le client web, le bloc titre/affiche/actions est posé SUR
+   * l'image, et c'est ce qui lui donne son unité.
+   *
+   * `calc(58vh + 260px)` est la formule du web pour les écrans étroits — 678 px
+   * ici, soit une soixantaine de pixels sous « Infos techniques » et toujours
+   * dans l'écran, là où la variante large en faisait 721 pour 720 de haut. */
+  height: calc(58vh + 260px);
   top: calc(-1 * var(--tv-overscan-y));
   left: calc(-1 * var(--tv-overscan-x));
   right: calc(-1 * var(--tv-overscan-x));

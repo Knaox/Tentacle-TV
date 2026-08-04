@@ -31,6 +31,24 @@
   height: 62vh;
 }
 
+/* La gouttière de la bannière cesse de peindre du noir.
+ *
+ * La `<section>` qui porte la carte peint `--surface-0` — un noir opaque — sur
+ * toute sa surface, y compris ses 56 px de gouttière. Entre le rail, qui
+ * s'arrête à 154, et la carte, qui commence à 210, cela dessinait un rectangle
+ * noir franc collé à la navigation : le « carré » signalé.
+ *
+ * Sur un navigateur le défaut n'existe pas, la page ayant exactement cette
+ * couleur. Ici, le fond porte le dégradé de marque et la lueur de la carte le
+ * traverse — un aplat opaque par-dessus coupe les deux net. La section est donc
+ * transparente : la carte garde son cadre et son halo, la page garde son fond.
+ *
+ * `section.bg-surface-0` ne désigne qu'elle : vérifié, une seule occurrence
+ * dans le document, les deux autres porteurs de la classe étant des `<div>`. */
+section.bg-surface-0 {
+  background: transparent;
+}
+
 /* Le bloc de texte remonte d'autant, sinon il se décolle du bas du cadre. */
 [data-hero-frame] .max-w-xl {
   max-width: 46rem;
