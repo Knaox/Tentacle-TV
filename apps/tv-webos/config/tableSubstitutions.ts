@@ -94,6 +94,23 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // composant de 258 lignes n'est pas forké pour une déclaration.
   [resolve(WEB, "hooks/useItemsPerRow.ts")]: resolve(CLIENT, "ui/grille/colonnesTv.ts"),
 
+  // Le survol, côté JavaScript. `passeSurvol` retire les règles `:hover` de la
+  // feuille ; ces trois hooks portent ce que le CSS ne peut pas atteindre — les
+  // gestionnaires `onMouseEnter` qui font basculer `data-hovered`, le panneau
+  // d'aperçu, et un écouteur `pointermove` global posé À L'IMPORT du module.
+  // Sur un téléviseur, le focus est la seule sélection ; le clic de la Magic
+  // Remote, lui, reste actif (`focus/curseur.ts`).
+  [resolve(WEB, "components/cards/useHoverPreview.ts")]: resolve(CLIENT, "shims/survolInerte.ts"),
+  [resolve(WEB, "hooks/useHoverGuard.ts")]: resolve(CLIENT, "shims/survolInerte.ts"),
+  [resolve(WEB, "hooks/useHoverMount.ts")]: resolve(CLIENT, "shims/survolInerte.ts"),
+
+  // Les deux calques d'élévation de `.media-tile` sont pilotés par l'ATTRIBUT
+  // `data-hovered`, hors de portée de toute passe CSS, et le lift est un
+  // `transform` en style en ligne. Le cadre étant le point de passage unique de
+  // toutes les cartes — affiches, vignettes, bibliothèque, collections — une
+  // seule substitution les couvre.
+  [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cartes/CadreCarteTv.tsx"),
+
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
