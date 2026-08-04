@@ -1,7 +1,19 @@
 import { lazy } from "react";
+import { Navigate } from "react-router-dom";
 import { EcranIndisponible } from "./ecranIndisponible";
 import { EcranNonJumele } from "../ui/ecrans/EcranNonJumele";
 import { EcranCompteTv } from "../ui/reglages/EcranCompteTv";
+import { EcranAProposTv } from "../ui/reglages/EcranAProposTv";
+
+/**
+ * Sécurité n'existe plus, mais son adresse reste déclarée dans `App.tsx` — et
+ * `SettingsAppearance` y est encore la cible d'une redirection hors ligne. On
+ * renvoie donc sur le Compte plutôt que d'y laisser un écran vide : une URL
+ * déclarée doit mener quelque part.
+ */
+function RedirectionCompte() {
+  return <Navigate to="/settings/data" replace />;
+}
 
 /**
  * Les écrans que le téléviseur embarque, et ceux qu'il n'embarque pas.
@@ -41,10 +53,25 @@ export const SettingsLayout = lazy(() =>
   import("@/components/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })));
 export const SettingsIndex = lazy(() =>
   import("@/components/settings/SettingsLayout").then((m) => ({ default: m.SettingsIndex })));
-export const SettingsAppearance = lazy(() =>
-  import("@/pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));
-export const SettingsSecurity = lazy(() =>
-  import("@/pages/settings/SettingsSecurity").then((m) => ({ default: m.SettingsSecurity })));
+
+/**
+ * Les trois sections du téléviseur, et les adresses qu'elles occupent.
+ *
+ * `App.tsx` déclare cinq routes de réglages et ne bouge pas ; c'est ici qu'on
+ * décide de ce qu'on met derrière. L'identifiant d'une section n'est affiché
+ * nulle part sur une dalle, et deux de ces routes n'avaient plus d'écran à
+ * montrer : on reprend leurs adresses plutôt que d'en ajouter à un fichier
+ * partagé pour une cible sur neuf.
+ *
+ *   `/settings/data`       → Compte      (l'écran d'économie de données était
+ *                                         de toute façon hors périmètre)
+ *   `/settings/playback`   → Lecture     (sa vraie adresse, cf. plus bas)
+ *   `/settings/appearance` → À propos    (l'apparence ne se règle plus)
+ *   `/settings/security`   → renvoie sur Compte
+ */
+export const SettingsData = EcranCompteTv;
+export const SettingsAppearance = EcranAProposTv;
+export const SettingsSecurity = RedirectionCompte;
 
 /* -- Hors périmètre : le code n'est pas compilé -- */
 
@@ -65,13 +92,6 @@ export const DownloadsPage = Indisponible;
 export const OfflineCatalog = Indisponible;
 export const OfflineSeriesView = Indisponible;
 export const SettingsDownloads = Indisponible;
-
-// `/settings/data` sert d'adresse à la section Compte du téléviseur. Les routes
-// sont déclarées dans `App.tsx`, qu'on ne modifie pas ; l'identifiant d'une
-// section de réglages n'est affiché nulle part sur une dalle, et l'écran
-// d'économie de données faisait de toute façon partie des indisponibles. On
-// reprend sa place plutôt que d'ajouter une route à un fichier partagé.
-export const SettingsData = EcranCompteTv;
 
 // Partage et assistance : demandent une saisie de texte suivie.
 export const SharedListView = Indisponible;

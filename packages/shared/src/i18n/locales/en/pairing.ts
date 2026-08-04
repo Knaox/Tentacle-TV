@@ -79,4 +79,7 @@ export default {
   tvOublierConfirmer: "Confirm",
   tvOublierTexte:
     "This TV will no longer be linked to your account and the app will close. Relaunch it to show a new code.",
+
+  // "About" section of the TV settings.
+  tvPlateforme: "Device",
 } as const;

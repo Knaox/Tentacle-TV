@@ -36,24 +36,17 @@
       content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:"
     />
     <script>
-      /* Le thème avant le premier tracé, comme sur le web : sans cela la page
-         apparaît en clair puis bascule en sombre, ce qui se voit d'autant plus
-         sur une grande dalle. */
-      (function () {
-        try {
-          var mode = localStorage.getItem("tentacle_theme_mode") || "auto";
-          var sombre =
-            mode === "dark" ||
-            (mode === "auto" &&
-              (!window.matchMedia ||
-                !window.matchMedia("(prefers-color-scheme: light)").matches));
-          document.documentElement.setAttribute("data-theme", sombre ? "dark" : "light");
-          document.documentElement.style.background = sombre ? "#000000" : "#F4F4F7";
-        } catch (e) {
-          document.documentElement.setAttribute("data-theme", "dark");
-          document.documentElement.style.background = "#000000";
-        }
-      })();
+      /* Le thème avant le premier tracé, et il n'y en a qu'un.
+         Un téléviseur n'a pas de réglage système clair/sombre à suivre, et une
+         interface de salon se regarde dans une pièce dont on a baissé la
+         lumière : le mode clair n'y a aucun emploi. Il est donc figé ici comme
+         il l'est dans le client (`shims/themeSombre.ts` remplace le store
+         d'apparence), et la section Apparence des réglages a disparu avec lui.
+         Poser l'attribut avant le premier tracé reste nécessaire : sans cela la
+         page apparaît en clair puis bascule, ce qui se voit d'autant plus sur
+         une grande dalle. */
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.style.background = "#000000";
     </script>
   </head>
   <body class="bg-tentacle-bg text-content-primary antialiased">

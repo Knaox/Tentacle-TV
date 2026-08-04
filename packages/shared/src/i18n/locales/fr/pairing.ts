@@ -81,4 +81,7 @@ export default {
   tvOublierConfirmer: "Confirmer l'oubli",
   tvOublierTexte:
     "Ce téléviseur cessera d'être associé à votre compte et l'application se fermera. Relancez-la pour afficher un nouveau code.",
+
+  // Section « À propos » des réglages du téléviseur.
+  tvPlateforme: "Appareil",
 } as const;

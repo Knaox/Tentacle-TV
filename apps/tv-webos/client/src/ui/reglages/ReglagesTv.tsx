@@ -1,53 +1,66 @@
 import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Palette, ShieldCheck, UserRound } from "lucide-react";
+import { Info, Play, UserRound } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 /**
  * Les réglages, ramenés à ce qu'un téléviseur peut offrir.
  *
- * La liste du client web en comptait cinq. Deux d'entre elles — Lecture et
- * Données — ouvraient l'écran « Indisponible » : leurs écrans ne sont pas
- * compilés dans ce bundle. Une section qui mène à une explication d'absence
- * n'est pas une section, c'est une cible qu'on vise pour rien, et la discipline
- * du parcours vaut ici comme ailleurs.
+ * Trois sections, et ce sont celles qu'on vient chercher sur une dalle :
  *
- * En reste trois. Apparence et Sécurité sont celles du web, inchangées. La
- * troisième est nouvelle : elle recueille ce que la barre du haut emportait
- * avec elle en disparaissant — « À propos », et surtout la déconnexion, qui sur
- * un téléviseur veut dire oublier ce jumelage et revenir à la coquille.
+ * - **Compte** — qui est connecté, et comment oublier ce jumelage. C'est ce que
+ *   la barre du haut emportait avec elle en disparaissant.
+ * - **Lecture** — la langue de l'interface, et par bibliothèque l'audio et les
+ *   sous-titres. Le seul réglage qu'on change vraiment, et qu'on changeait
+ *   jusqu'ici depuis un autre appareil.
+ * - **À propos** — la version, le serveur, l'appareil. Ce qu'on lit quand
+ *   quelque chose ne va pas.
  *
- * **Elle vit à `/settings/data`, et c'est délibéré.** Les routes sont déclarées
- * dans `App.tsx`, qu'on ne modifie pas ; l'identifiant d'une route de réglages
- * n'est affiché nulle part sur une dalle, et `SettingsData` était de toute
- * façon l'un des deux écrans indisponibles. On reprend sa place plutôt que
- * d'ajouter une route à un fichier partagé pour une cible sur neuf.
+ * Ce qui est parti, et pourquoi. **Apparence** proposait clair, sombre et auto :
+ * un téléviseur n'a pas de réglage système à suivre, `prefers-color-scheme` n'y
+ * est pas renseigné, et le mode clair n'a aucun emploi dans une pièce dont on a
+ * baissé la lumière. Le thème est figé (`shims/themeSombre.ts`) et la section
+ * n'a plus rien à régler. **Sécurité** regroupe un changement de mot de passe,
+ * une liste d'appareils jumelés et un changement de serveur : trois gestes qui
+ * demandent de la saisie suivie et qui se font depuis un ordinateur ou un
+ * téléphone, en une minute, plutôt qu'à la télécommande.
+ *
+ * **Les adresses sont recyclées, et c'est délibéré.** Les routes sont déclarées
+ * dans `App.tsx`, qu'on ne modifie pas ; l'identifiant d'une section de réglages
+ * n'est affiché nulle part sur une dalle. On reprend donc les adresses libérées
+ * plutôt que d'ajouter des routes à un fichier partagé pour une cible sur neuf :
+ * `data` porte le Compte, `appearance` porte À propos, `playback` est déjà la
+ * bonne adresse pour Lecture. Le tout se lit dans `pages/lazyPagesTv.ts`, qui
+ * est le seul endroit à connaître cette correspondance.
  */
 
 const TAILLE_ICONE = 17;
 
+/** L'adresse de la première section : c'est par elle qu'on entre. */
+const SECTION_INITIALE = "/settings/data";
+
 /**
  * `/settings` n'a rien à montrer de lui-même : le rail de sections est déjà
- * rendu par la coquille, et un panneau de détail vide n'apprend rien. On entre
- * donc par Apparence.
+ * rendu par la coquille, et un panneau de détail vide n'apprend rien.
  */
 export function SettingsIndex() {
-  return <Navigate to="/settings/appearance" replace />;
+  return <Navigate to={SECTION_INITIALE} replace />;
 }
 
 export function SettingsLayout() {
   const { t } = useTranslation("preferences");
+  const { t: tNav } = useTranslation("nav");
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   const sections = useMemo<SettingsShellSection[]>(
     () => [
-      { id: "appearance", label: t("sectionAppearance"), icon: <Palette size={TAILLE_ICONE} /> },
-      { id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={TAILLE_ICONE} /> },
       { id: "data", label: t("sectionAccount"), icon: <UserRound size={TAILLE_ICONE} /> },
+      { id: "playback", label: t("sectionPlayback"), icon: <Play size={TAILLE_ICONE} /> },
+      { id: "appearance", label: tNav("about"), icon: <Info size={TAILLE_ICONE} /> },
     ],
-    [t],
+    [t, tNav],
   );
 
   const identifiantActif = useMemo(() => {
