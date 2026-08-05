@@ -20,6 +20,16 @@ const PAS_AVEUGLE = 0.6;
 export function amenerEnVue(element: HTMLElement): void {
   const scroller = scrollerHorizontal(element);
   if (scroller) amenerDansScroller(element, scroller);
+
+  // Puis le conteneur qui défile VERTICALEMENT, s'il y en a un — un rail dont
+  // les entrées débordent, une liste d'options, un panneau de réglages.
+  //
+  // Sans cette étape, l'élément n'était amené en vue que par le comportement
+  // natif de `focus()` : il colle au bord, sans la marge que le reste du module
+  // s'impose, et sur une dalle qui rogne ses bords il peut rester invisible.
+  const vertical = scrollerVertical(element);
+  if (vertical) amenerDansScrollerVertical(element, vertical);
+
   amenerDansPage(element);
 }
 
@@ -39,6 +49,35 @@ export function scrollerHorizontal(element: HTMLElement): HTMLElement | null {
     courant = courant.parentElement;
   }
   return null;
+}
+
+/**
+ * Le conteneur à défilement vertical qui porte l'élément, s'il existe.
+ *
+ * Écrit à part de son homologue horizontal plutôt que paramétré : les deux
+ * lisent des propriétés différentes, et une fonction qui prend un axe en
+ * argument coûterait plus à lire qu'elle n'économise à écrire.
+ */
+export function scrollerVertical(element: HTMLElement): HTMLElement | null {
+  let courant: HTMLElement | null = element.parentElement;
+  while (courant && courant !== document.body) {
+    const style = window.getComputedStyle(courant);
+    const defile = style.overflowY === "auto" || style.overflowY === "scroll";
+    if (defile && courant.scrollHeight > courant.clientHeight + 1) return courant;
+    courant = courant.parentElement;
+  }
+  return null;
+}
+
+function amenerDansScrollerVertical(element: HTMLElement, scroller: HTMLElement): void {
+  const boiteElement = element.getBoundingClientRect();
+  const boiteScroller = scroller.getBoundingClientRect();
+
+  const debordeEnHaut = boiteElement.top - boiteScroller.top - MARGE;
+  const debordeEnBas = boiteElement.bottom - boiteScroller.bottom + MARGE;
+
+  if (debordeEnHaut < 0) scroller.scrollTop += debordeEnHaut;
+  else if (debordeEnBas > 0) scroller.scrollTop += debordeEnBas;
 }
 
 function amenerDansScroller(element: HTMLElement, scroller: HTMLElement): void {

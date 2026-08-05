@@ -199,7 +199,21 @@
   position: relative;
   display: flex;
   align-items: center;
+  /* Compressible, et c'est ce qui garde le rail dans la zone sûre.
+   *
+   * La colonne dispose de 548 px utiles une fois retirés l'overscan, la marque
+   * et l'indice. À 72 px par entrée — hauteur plus écart —, sept entrées
+   * tiennent. Un serveur qui expose six bibliothèques en compte onze, et les
+   * dernières, dont les Réglages qui ferment la liste, descendaient dans la
+   * bande que la dalle rogne.
+   *
+   * On ne fait PAS défiler la liste : `overflow-y` sur ce conteneur ferait
+   * calculer `overflow-x: auto` au navigateur — la règle de la spécification —
+   * et les libellés, qui débordent volontairement du rail, seraient rognés.
+   * Les entrées se resserrent donc, jusqu'à la hauteur de leur icône. */
+  flex: 0 1 auto;
   height: 64px;
+  min-height: 44px;
   width: var(--rail-largeur-repli);
   margin-bottom: 8px;
   padding-left: 12px;
