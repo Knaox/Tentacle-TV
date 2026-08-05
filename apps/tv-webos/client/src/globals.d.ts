@@ -15,6 +15,9 @@ declare const __MIN_SERVER_VERSION__: string;
 declare const __DIST_CHANNEL__: string;
 declare const __PLAYER_DEBUG__: boolean;
 
+/** Vrai seulement pour un build de diagnostic — voir `verif/surcoucheDebug.ts`. */
+declare const __TV_DEBUG__: boolean;
+
 interface ImportMetaEnv {
   readonly VITE_JELLYFIN_URL: string;
   readonly VITE_BACKEND_URL: string;
