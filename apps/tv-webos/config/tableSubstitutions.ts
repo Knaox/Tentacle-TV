@@ -147,6 +147,13 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // seule substitution les couvre.
   [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cartes/CadreCarteTv.tsx"),
 
+  // Les menus de filtres d'une bibliothèque : le rôle qui piège passe sur le
+  // panneau — années et note n'en avaient aucun, et le D-pad s'en échappait en
+  // les laissant déployés —, la largeur devient celle d'un salon, et l'on
+  // entre par l'option en cours.
+  [resolve(WEB, "components/library/FilterMenu.tsx")]:
+    resolve(CLIENT, "ui/bibliotheque/MenuFiltreTv.tsx"),
+
   // Le bloc d'actions de la fiche devient une ZONE du moteur de focus :
   // descendre depuis « Retour » ou les infos techniques atterrit sur
   // « Lecture »/« Reprendre », plus sur le trailer que l'ordonnée désignait.
