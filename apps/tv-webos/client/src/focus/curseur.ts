@@ -15,9 +15,17 @@
  * directionnel EST le signal que le pointeur a disparu : l'écoute de `keydown`
  * ci-dessous bascule en `dpad`, et la flèche suit son cours. Refuser la flèche
  * parce que le curseur était visible une milliseconde plus tôt laisserait
- * l'utilisateur devant une télécommande muette. Le survol, lui, se retire de
- * lui-même — `survolFocus.ts` ne fait rien quand l'élément visé a déjà le
- * focus.
+ * l'utilisateur devant une télécommande muette.
+ *
+ * **Le survol, lui, le consulte** — et l'affirmation contraire, qui figurait
+ * ici, était fausse. On lisait que « le survol se retire de lui-même, puisque
+ * `survolFocus.ts` ne fait rien quand l'élément visé a déjà le focus ». Cette
+ * garde ne couvre que le cas où le pointeur est DÉJÀ sur l'élément focalisé,
+ * pas celui où un AUTRE élément passe dessous. Or c'est précisément ce que
+ * fait un défilement : le navigateur refait son test de collision et émet un
+ * `mouseover` sur ce qui se trouve désormais sous un pointeur immobile, sans
+ * qu'on ait bougé la télécommande. Le focus partait alors ailleurs, dans le
+ * sens du défilement.
  */
 
 const ATTRIBUT = "data-tv-entree";
@@ -34,6 +42,17 @@ function poser(nouveau: Mode): void {
   if (mode === nouveau) return;
   mode = nouveau;
   document.documentElement.setAttribute(ATTRIBUT, nouveau);
+}
+
+/**
+ * Le pointeur est-il de la partie ?
+ *
+ * Lu par le survol, qui n'a de sens que dans ce mode. Le mode bascule en
+ * `dpad` sur le premier appui de touche, en capture — donc avant tout
+ * `mouseover` que le défilement provoqué par cet appui pourrait engendrer.
+ */
+export function pointeurActif(): boolean {
+  return mode === "pointeur";
 }
 
 /**
