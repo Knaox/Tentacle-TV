@@ -51,7 +51,7 @@ export function useTVPlayerEventHandlers(args: {
   endedRef?: React.MutableRefObject<boolean>;
 }) {
   const {
-    playerRef, paused,
+    paused,
     positionRef, pausedStateRef, displayTimeRef, bufferedTimeRef,
     lastDisplayUpdate, lastProgressTime, controlsCurrentTimeRef,
     setDisplayTime, setBufferedTime, setIsLoading,

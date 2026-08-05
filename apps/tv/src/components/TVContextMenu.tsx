@@ -7,7 +7,6 @@ import Animated, {
   Easing,
   interpolate,
 } from "react-native-reanimated";
-import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { Colors, Radius } from "../theme/colors";
@@ -45,7 +44,6 @@ export function TVContextMenu({ options, onClose }: TVContextMenuProps) {
 
   return (
     <View
-      // @ts-ignore — Android TV accessibility
       importantForAccessibility="yes"
       style={{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
@@ -71,7 +69,6 @@ export function TVContextMenu({ options, onClose }: TVContextMenuProps) {
         paddingVertical: 12,
         paddingHorizontal: 8,
       }, panelStyle]}>
-        {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
         <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight>
           {options.map((option, idx) => (
             <Focusable

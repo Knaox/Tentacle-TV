@@ -10,7 +10,6 @@ import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { useTVFocusGrab } from "../hooks/useTVFocusGrab";
 import { osdPlayPauseNodeRef } from "./player/focus/osdFocusBus";
-import { Colors } from "../theme/colors";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 interface TVSkipSegmentButtonProps {

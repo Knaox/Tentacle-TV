@@ -200,7 +200,7 @@ export const TVHeroContent = memo(function TVHeroContent({
         </Text>
       )}
 
-      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : redirige le focus
+      {/* @ts-expect-error — TVFocusGuideView (react-native-tvos) : redirige le focus
           ENTRANT (UP depuis le carrousel) vers le bouton « Reprendre ». */}
       <TVFocusGuideView
         autoFocus
