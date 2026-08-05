@@ -23,7 +23,6 @@ export function TVFocusBridgeRight() {
   if (Platform.OS !== "ios" || !railFocused || !target) return null;
 
   return (
-    // @ts-ignore — props TVFocusGuideView (react-native-tvos)
     <TVFocusGuideView
       destinations={[target]}
       // À droite du rail déployé (ne chevauche pas les items → n'interfère pas

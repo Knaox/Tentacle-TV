@@ -56,7 +56,6 @@ export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded }: TrailerPla
       paused={false}
       controls={false}
       resizeMode="contain"
-      // @ts-ignore — focusable existe sur react-native-tvos
       focusable={false}
       onLoad={() => onLoadEnd()}
       onError={() => onError()}

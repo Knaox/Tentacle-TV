@@ -195,7 +195,6 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
 
       {/* Sidebar panel */}
       <Animated.View
-        // @ts-ignore — Android TV accessibility
         importantForAccessibility={isVisible ? "auto" : "no-hide-descendants"}
         style={[
           {
@@ -210,7 +209,6 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
           sidebarStyle,
         ]}
       >
-        {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
         <TVFocusGuideView autoFocus trapFocusLeft trapFocusRight style={{ flex: 1 }}>
           <ScrollView
             contentContainerStyle={{ paddingVertical: 32, paddingHorizontal: 12 }}
@@ -237,7 +235,6 @@ export const Sidebar = memo(function Sidebar({ onNavigate, currentRoute, onClose
 
             {/* All navigation items — hide from focus graph when a modal is open */}
             <View
-              // @ts-ignore — Android TV accessibility
               importantForAccessibility={logoutModalVisible || changeServerModalVisible ? "no-hide-descendants" : "auto"}
             >
               {renderItem("Home", t("home"), <HomeIcon size={ICON_SIZE} color={ICON_COLOR} />, isVisible && !logoutModalVisible && !changeServerModalVisible)}

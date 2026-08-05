@@ -277,17 +277,13 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         paused={paused}
         muted={muted}
         // Pré-buffer (iOS/tvOS) : attendre de quoi jouer sans caler avant de démarrer (« son avant vidéo »)
-        // + garder ~10 s d'avance (moins de stalls). @ts-ignore : props iOS de react-native-video.
-        // @ts-ignore
+        // + garder ~10 s d'avance (moins de stalls). @ts-expect-error : props iOS de react-native-video.
         automaticallyWaitsToMinimizeStalling={true}
-        // @ts-ignore
         preferredForwardBufferDuration={10}
-        // @ts-ignore — focusable existe sur react-native-tvos ; la surface ne doit
         // jamais voler le focus de l'OSD.
         focusable={false}
         selectedAudioTrack={selectedAudioTrack}
         selectedTextTrack={selectedTextTrack}
-        // @ts-ignore — onTextTracks remonte les pistes (sideload + manifeste HLS)
         onTextTracks={handleTextTracks}
         progressUpdateInterval={progressInterval}
         onLoad={handleLoad}

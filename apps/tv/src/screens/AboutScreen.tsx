@@ -12,7 +12,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TV_PLATFORM_LABEL } from "../lib/platformLabel";
-import { Colors, Spacing, Typography, Radius } from "../theme/colors";
+import { Colors, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "About">;
 

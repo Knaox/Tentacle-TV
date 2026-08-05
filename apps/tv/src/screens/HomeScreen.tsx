@@ -23,7 +23,7 @@ import { TVEpisodeCard } from "../components/cards/TVEpisodeCard";
 import { TV_POSTER_WIDTH, TV_EPISODE_WIDTH } from "../components/cards/cardSizes";
 import { FocusableRow } from "../components/focus/FocusableRow";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
-import { Colors, Spacing, HeroConfig } from "../theme/colors";
+import { Spacing, HeroConfig } from "../theme/colors";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
@@ -185,7 +185,7 @@ function HomeScreenInner({ navigation }: Props) {
     <TVScreenFrame>
       {/* Ambient backdrop — sits behind everything, fades to focused item */}
       <TVAmbientBackdrop />
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos. `autoFocus`
+      {/* @ts-expect-error — TVFocusGuideView props from react-native-tvos. `autoFocus`
           garantit que le focus revient toujours sur un enfant focusable quand
           l'écran regagne le focus (retour d'un player figé qui avait perdu le
           focus) — sinon l'Accueil restait sans focus → blocage. */}

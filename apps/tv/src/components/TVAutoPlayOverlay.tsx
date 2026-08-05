@@ -51,7 +51,6 @@ export function TVAutoPlayOverlay({
 
   return (
     <Animated.View
-      // @ts-ignore — Android TV accessibility
       importantForAccessibility="yes"
       style={[{
         position: "absolute", bottom: 36, right: 36, width: 420,
@@ -101,7 +100,6 @@ export function TVAutoPlayOverlay({
       </View>
 
       {/* Méta + actions */}
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight
         style={{ paddingHorizontal: 18, paddingBottom: 14, paddingTop: 4 }}>
         {episodeLabel && (

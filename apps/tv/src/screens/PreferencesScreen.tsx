@@ -12,7 +12,7 @@ import { getLanguageDisplayName } from "../utils/languageNames";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { Colors, Spacing, Typography, Radius } from "../theme/colors";
+import { Colors, Typography, Radius } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preferences">;
 
@@ -47,10 +47,6 @@ interface ModalState {
   type: "audio" | "subtitleLang" | "subtitleMode";
   libraryId: string;
   currentValue: string | null;
-}
-
-function langKey(code: string) {
-  return `preferences:lang${code.charAt(0).toUpperCase()}${code.slice(1)}`;
 }
 
 export function PreferencesScreen({ navigation }: Props) {

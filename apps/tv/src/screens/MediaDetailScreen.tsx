@@ -24,7 +24,6 @@ import { TVExtrasRow } from "../components/detail/TVExtrasRow";
 import { TVMetaChips } from "../components/TVMetaChips";
 import { TVDetailActions } from "../components/detail/TVDetailActions";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { useTvTrailers } from "../hooks/useTvTrailers";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
 

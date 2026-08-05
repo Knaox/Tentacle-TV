@@ -6,7 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVPosterCard, TVPosterFrame, TVPosterMeta } from "../components/cards/TVPosterCard";
+import { TVPosterFrame, TVPosterMeta } from "../components/cards/TVPosterCard";
 import { Focusable } from "../components/focus/Focusable";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -165,7 +165,6 @@ export function LibraryScreen({ route, navigation }: Props) {
 
   return (
     <TVScreenFrame>
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
         <FlashList
           // Remonter la liste à CHAQUE changement de bibliothèque : sans `key`,
