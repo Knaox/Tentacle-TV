@@ -1,4 +1,5 @@
 import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie } from "./candidats";
+import { pointeurActif } from "./curseur";
 
 /**
  * Le survol : capté avant React, et rendu au focus.
@@ -56,6 +57,22 @@ export function surveillerSurvol(suspendu: () => boolean): () => void {
     // habillage est piloté par `lecture/masquageAutoTv.ts`.
     evenement.stopPropagation();
     if (suspendu()) return;
+
+    // Un `mouseover` n'est pas la preuve qu'on a bougé le pointeur.
+    //
+    // Après un défilement, le navigateur refait son test de collision et
+    // signale l'élément qui se trouve DÉSORMAIS sous un pointeur resté
+    // immobile. Le focus partait alors dans le sens du défilement, au lieu de
+    // rester où la flèche l'avait mis — et le défaut était asymétrique, donc
+    // incompréhensible à l'usage : en descendant le vol suivait l'intention,
+    // en remontant il la contredisait.
+    //
+    // Le mode d'entrée tranche sans rien supposer : `curseur.ts` bascule en
+    // `dpad` sur `keydown` EN CAPTURE, donc avant que le déplacement n'ait
+    // commencé, a fortiori avant le `mouseover` qu'il provoquera. Et un vrai
+    // pointeur qui vient se poser sur un élément a nécessairement traversé
+    // l'écran — donc émis `mousemove`, donc rétabli le mode.
+    if (!pointeurActif()) return;
 
     const cible = evenement.target;
     if (!(cible instanceof HTMLElement)) return;
