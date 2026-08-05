@@ -5,6 +5,7 @@ import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
 import { TentacleLogo } from "../ui/TentacleLogo";
+import { compterClicLogo } from "../easterEggs/logoEggStore";
 import { BrowseButton } from "./BrowseButton";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 import { ConnectivityChip } from "../../offline/ConnectivityChip";
@@ -65,6 +66,10 @@ export function TopNav({ showSearch = true }: TopNavProps) {
       <div className="nav-content flex h-full items-center gap-6 px-4 md:px-12">
         <Link
           to="/"
+          // Le compteur ne PRÉVIENT pas la navigation : le logo doit continuer
+          // de ramener à l'accueil comme tout le monde s'y attend. Les clics
+          // suivants tombent sur l'accueil, où revenir à l'accueil n'est rien.
+          onClick={compterClicLogo}
           className="flex flex-shrink-0 items-center gap-2.5 transition-opacity duration-200 hover:opacity-80"
           aria-label="Tentacle TV — Accueil"
         >
@@ -73,7 +78,7 @@ export function TopNav({ showSearch = true }: TopNavProps) {
             className="hidden text-base font-bold tracking-tight text-content-primary sm:inline"
             style={{ letterSpacing: "-0.02em" }}
           >
-            Tentacle
+            Tentacle TV
           </span>
         </Link>
 

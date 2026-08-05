@@ -17,10 +17,11 @@ import profile from "./profile";
 import disclaimer from "./disclaimer";
 import watchTogether from "./watchTogether";
 import downloads from "./downloads";
+import easterEggs from "./easterEggs";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, adminTheme, media, errors, profile, disclaimer,
-  watchTogether, downloads,
+  watchTogether, downloads, easterEggs,
 };
