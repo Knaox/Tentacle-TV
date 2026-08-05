@@ -41,12 +41,14 @@ import { wsRoutes } from "./routes/ws";
 import { watchTogetherRoutes } from "./routes/watchTogether";
 import { watchTogetherInviteRoutes } from "./routes/watchTogetherInvites";
 import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
+import { leaderboardRoutes } from "./routes/leaderboard";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
 import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
+import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
@@ -228,6 +230,7 @@ async function main() {
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherUsersRoutes, { prefix: "/api/watch-together" });
+  await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
 
@@ -302,8 +305,22 @@ async function main() {
     startNotificationPushWorker();
     startLibraryAddedNotifier();
     startAnnouncedPurge();
+    startWatchTime();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
+  }
+
+  // Premier arrêt propre du projet, et il ne sert qu'à ça : le collecteur de
+  // temps écrit à chaque relevé, donc au pire quinze secondes sont en jeu — mais
+  // rendre son bail permet à un redémarrage de reprendre la mesure aussitôt, au
+  // lieu d'attendre l'expiration.
+  app.addHook("onClose", async () => {
+    await stopWatchTime();
+  });
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    process.once(signal, () => {
+      void app.close().then(() => process.exit(0));
+    });
   }
 
   await app.listen({ port: PORT, host: HOST });

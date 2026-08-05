@@ -90,3 +90,41 @@ CREATE TABLE IF NOT EXISTS `announced_contents` (
   PRIMARY KEY (`contentKey`, `jellyfinUserId`),
   KEY `announced_contents_notifiedAt_idx` (`notifiedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Segments de visionnage MESURÉS par Tentacle (remplace le greffon Playback
+-- Reporting). Une ligne = une suite continue de lecture d'un titre sur une
+-- session. Le temps est échantillonné toutes les 15 s, jamais extrapolé.
+-- Voir schema.prisma > WatchSegment.
+CREATE TABLE IF NOT EXISTS `watch_segments` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `sessionKey` varchar(191) NOT NULL,
+  `itemId` varchar(64) NOT NULL,
+  `itemType` varchar(20) NOT NULL,
+  `itemName` varchar(500) NOT NULL,
+  `seriesId` varchar(64) NULL,
+  `seriesName` varchar(500) NULL,
+  `clientName` varchar(100) NULL,
+  `deviceName` varchar(191) NULL,
+  `seconds` int NOT NULL DEFAULT 0,
+  `runtimeSeconds` int NULL,
+  `startedAt` datetime(3) NOT NULL,
+  `lastSeenAt` datetime(3) NOT NULL,
+  `closedAt` datetime(3) NULL,
+  PRIMARY KEY (`id`),
+  KEY `watch_segments_jellyfinUserId_startedAt_idx` (`jellyfinUserId`, `startedAt`),
+  KEY `watch_segments_jellyfinUserId_seriesId_idx` (`jellyfinUserId`, `seriesId`),
+  KEY `watch_segments_startedAt_idx` (`startedAt`),
+  KEY `watch_segments_sessionKey_itemId_closedAt_idx` (`sessionKey`, `itemId`, `closedAt`),
+  KEY `watch_segments_closedAt_idx` (`closedAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Bail d'exclusivité du collecteur : une seule instance mesure à la fois, sinon
+-- deux backends sur la même base compteraient chacun le même visionnage.
+-- Voir schema.prisma > WatchTimeLease.
+CREATE TABLE IF NOT EXISTS `watch_time_lease` (
+  `id` varchar(32) NOT NULL,
+  `owner` varchar(64) NOT NULL,
+  `expiresAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
