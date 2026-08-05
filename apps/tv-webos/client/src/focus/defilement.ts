@@ -13,8 +13,11 @@ import { estHorizontale, sens, type Direction } from "./touches";
 /** Marge conservée entre l'élément visé et le bord, en pixels. */
 const MARGE = 96;
 
-/** Pas de défilement quand aucun voisin n'a été trouvé, en fraction d'écran. */
-const PAS_AVEUGLE = 0.6;
+/** Pas horizontal quand aucun voisin n'a été trouvé, en fraction de piste. */
+const PAS_HORIZONTAL = 0.6;
+
+/** Plafond du pas vertical, en fraction de la hauteur visible. */
+const PLAFOND_PAS_VERTICAL = 0.4;
 
 /** Fait entrer l'élément dans la zone visible, horizontalement puis verticalement. */
 export function amenerEnVue(element: HTMLElement): void {
@@ -101,26 +104,59 @@ function amenerDansPage(element: HTMLElement): void {
 }
 
 /**
- * Défile dans la direction demandée sans cible précise.
+ * Défile d'UN pas dans la direction, sans cible précise, et de façon révocable.
  *
  * Appelé quand aucun voisin n'a été trouvé — le cas le plus fréquent étant une
  * rangée vidée par le fenêtrage, dont les cartes ne sont pas montées et ne
  * peuvent donc pas être visées. Le défilement les fait apparaître, et le
  * moteur retente ensuite.
  *
- * Rend vrai si quelque chose a effectivement bougé : c'est ce qui permet au
- * moteur de savoir s'il vaut la peine d'attendre un nouveau montage.
+ * Deux différences avec l'ancien pas aveugle, chacune payée par un défaut vu à
+ * l'écran. Le pas VERTICAL vaut une rangée — la hauteur du point de départ
+ * plus la marge du module, plafonnée — et non 60 % d'écran : le grand pas
+ * faisait glisser la fenêtre de recensement de plusieurs rangées, et le
+ * rattrapage choisissait une carte lointaine, quand il ne démontait pas la
+ * carte focalisée elle-même. Et il vise le CONTENEUR à défilement vertical qui
+ * porte l'élément avant la fenêtre : dans une surcouche — recherche, panneau
+ * de choix —, c'est lui qui doit bouger, pas la page derrière.
+ *
+ * Rend une fonction d'ANNULATION qui restaure la position d'origine, ou `null`
+ * si rien ne peut défiler. C'est elle qui garantit la règle : un défilement
+ * qui n'a pas abouti à un déplacement du focus n'a jamais eu lieu.
  */
-export function defilerAveuglement(depuis: HTMLElement | null, direction: Direction): boolean {
+export function defilerParPas(
+  depuis: HTMLElement | null,
+  direction: Direction,
+): (() => void) | null {
   if (estHorizontale(direction)) {
     const scroller = depuis ? scrollerHorizontal(depuis) : null;
-    if (!scroller) return false;
+    if (!scroller) return null;
     const avant = scroller.scrollLeft;
-    scroller.scrollLeft += sens(direction) * scroller.clientWidth * PAS_AVEUGLE;
-    return scroller.scrollLeft !== avant;
+    scroller.scrollLeft += sens(direction) * scroller.clientWidth * PAS_HORIZONTAL;
+    if (scroller.scrollLeft === avant) return null;
+    return () => {
+      scroller.scrollLeft = avant;
+    };
+  }
+
+  const scroller = depuis ? scrollerVertical(depuis) : null;
+  const vue = scroller ? scroller.clientHeight : window.innerHeight;
+  const rangee = depuis ? depuis.getBoundingClientRect().height + MARGE : vue * PLAFOND_PAS_VERTICAL;
+  const pas = sens(direction) * Math.min(rangee, vue * PLAFOND_PAS_VERTICAL);
+
+  if (scroller) {
+    const avant = scroller.scrollTop;
+    scroller.scrollTop += pas;
+    if (scroller.scrollTop === avant) return null;
+    return () => {
+      scroller.scrollTop = avant;
+    };
   }
 
   const avant = window.pageYOffset;
-  window.scrollBy(0, sens(direction) * window.innerHeight * PAS_AVEUGLE);
-  return window.pageYOffset !== avant;
+  window.scrollBy(0, pas);
+  if (window.pageYOffset === avant) return null;
+  return () => {
+    window.scrollTo(window.pageXOffset, avant);
+  };
 }
