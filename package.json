@@ -10,6 +10,7 @@
     "dev:electron": "pnpm --filter @tentacle-tv/desktop-electron dev",
     "dev:mobile": "pnpm --filter @tentacle-tv/mobile start",
     "dev:tv": "pnpm --filter @tentacle-tv/tv start",
+    "dev:webos": "pnpm --filter @tentacle-tv/tv-webos dev",
     "build:web": "pnpm --filter @tentacle-tv/web build",
     "build:backend": "pnpm --filter @tentacle-tv/backend build",
     "build:desktop": "pnpm --filter @tentacle-tv/desktop build",

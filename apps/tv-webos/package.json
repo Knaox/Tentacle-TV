@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Client LG webOS — coquille IPK + variante de build servie par le serveur Tentacle",
   "scripts": {
+    "dev": "vite --config config/vite.config.ts",
     "build": "vite build --config config/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
