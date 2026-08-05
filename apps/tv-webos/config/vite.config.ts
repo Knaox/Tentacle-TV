@@ -72,6 +72,13 @@ export default defineConfig({
     // Le panneau de diagnostic du lecteur n'est jamais embarqué : il est
     // pensé pour une souris et pèse pour rien dans un bundle de téléviseur.
     __PLAYER_DEBUG__: JSON.stringify(false),
+    // La surcouche de vérification du focus. Figée à faux sauf demande
+    // explicite : l'élimination de code mort emporte alors l'appel
+    // d'installation, la surcouche et ses règles, et rien de tout cela ne pèse
+    // dans le fragment servi à un téléviseur.
+    //
+    //   TENTACLE_TV_DEBUG=1 pnpm --filter @tentacle-tv/tv-webos build
+    __TV_DEBUG__: JSON.stringify(process.env.TENTACLE_TV_DEBUG === "1"),
   },
 
   resolve: {

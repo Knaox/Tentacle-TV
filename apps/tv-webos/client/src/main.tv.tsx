@@ -182,6 +182,13 @@ installerRetour();
 // il n'a jamais eu affaire qu'à un clavier, où elles n'existent pas.
 installerTouchesLecteur();
 
+// Surcouche de vérification du focus — Ctrl+Maj+D. `__TV_DEBUG__` est figé à
+// faux par la configuration de build : l'import dynamique et tout ce qu'il tire
+// disparaissent du fragment servi à un téléviseur.
+if (__TV_DEBUG__) {
+  void import("./verif/surcoucheDebug").then((module) => module.installerSurcoucheDebug());
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

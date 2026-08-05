@@ -181,3 +181,24 @@ button[aria-label="Marquer comme vu"],
 button[aria-label="Marquer comme non vu"] {
   display: none;
 }
+
+/* ── La seule sortie visible de la fiche, ramenée dans la zone sûre ───────
+ *
+ * Le bouton « Retour » de la bannière est posé en `left-4 top-4` — seize
+ * pixels — dans un conteneur dont la règle ci-dessus ANNULE le retrait
+ * d'overscan pour que l'image aille d'un bord à l'autre. Il se retrouvait donc
+ * à 28 px du coin, pour une bande rognée qui va jusqu'à 64 en largeur et 36 en
+ * hauteur : sur un téléviseur qui coupe ses 5 %, la seule sortie visible de
+ * l'écran disparaît sous le cadre. Relevé par la surcouche de vérification.
+ *
+ * Huit pixels de plus que l'overscan : la place de l'anneau, qui se dessine
+ * hors de la boîte et serait rogné à son tour.
+ *
+ * Ciblé par ses classes utilitaires plutôt que par son libellé : celui-ci est
+ * traduit. Si `apps/web` change sa mise en place, la règle cesse simplement de
+ * s'appliquer et le bouton revient où il était — visible, mal placé, sans
+ * casse. */
+.min-h-screen button.absolute.left-4.top-4 {
+  left: calc(var(--tv-overscan-x) + 8px);
+  top: calc(var(--tv-overscan-y) + 8px);
+}
