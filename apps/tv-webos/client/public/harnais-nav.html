@@ -98,6 +98,18 @@
           Promise.resolve().then(() => rappel(performance.now()));
           return 0;
         };
+        // Même infirmité, même remède : un document privé du focus système
+        // n'émet AUCUN événement de focus — `document.activeElement` change,
+        // `focusin` ne part jamais, et les mémoires du moteur, qui s'écrivent
+        // sur cet événement, resteraient vides. On le synthétise après chaque
+        // prise de focus réussie, comme un navigateur visible l'aurait fait.
+        const focusNatif = HTMLElement.prototype.focus;
+        HTMLElement.prototype.focus = function (options) {
+          focusNatif.call(this, options);
+          if (document.activeElement === this) {
+            this.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+          }
+        };
       }
     </script>
     <script type="module">

@@ -5,6 +5,7 @@ import { surveillerRoute } from "./route";
 import { amorcerFocus, noterAppui, placementEnCours } from "./entree";
 import { elementActif } from "./actif";
 import { deplacer } from "./deplacement";
+import { invaliderContenu, retenirContenu } from "./zones";
 import { surveillerCurseur } from "./curseur";
 import { surveillerSurvol } from "./survolFocus";
 import { navigationOsdActive } from "../lecture/etatLecteurTv";
@@ -48,11 +49,16 @@ export function installerMoteurFocus(): () => void {
   // Toute arrivée du focus est notée, quelle qu'en soit l'origine — flèche,
   // pointeur, clic, ou restitution. Un seul écouteur délégué : les cartes vont
   // et viennent au gré du fenêtrage, et un abonnement par composant serait posé
-  // et retiré sans arrêt.
+  // et retiré sans arrêt. Deux mémoires s'alimentent ici : la clé de route,
+  // pour les retours d'écran, et la référence vivante du contenu, pour la
+  // sortie du rail — chacune filtre elle-même ce qui ne la regarde pas.
   const surArrivee = (evenement: FocusEvent) => {
     if (placementEnCours()) return;
     const cible = evenement.target;
-    if (cible instanceof HTMLElement) retenir(cible);
+    if (cible instanceof HTMLElement) {
+      retenir(cible);
+      retenirContenu(cible);
+    }
   };
   document.addEventListener("focusin", surArrivee, true);
 
@@ -99,9 +105,14 @@ export function installerMoteurFocus(): () => void {
   const INTERVALLE_GARDE_MS = 500;
   const garde = setInterval(rendreLeFocus, INTERVALLE_GARDE_MS);
 
-  // Changer d'écran repose le focus. Sans cela, le premier appui sur une flèche
-  // ne sert qu'à faire apparaître l'anneau.
-  const arreterRoute = surveillerRoute(() => amorcerFocus(true));
+  // Changer d'écran repose le focus — et invalide la référence vivante du
+  // contenu : la restituer sur le nouvel écran viserait un nœud démonté avec
+  // l'ancien. Sans la repose, le premier appui sur une flèche ne sert qu'à
+  // faire apparaître l'anneau.
+  const arreterRoute = surveillerRoute(() => {
+    invaliderContenu();
+    amorcerFocus(true);
+  });
 
   // Le mode d'entrée n'est PAS consulté ici, et c'est délibéré.
   //

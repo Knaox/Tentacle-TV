@@ -11,6 +11,13 @@ import {
 import { boiteDeNavigation } from "./mesure";
 import { defilerParPas } from "./defilement";
 import { reviserApresMontage } from "./attente";
+import {
+  SELECTEUR_RAIL,
+  dansLeRail,
+  entreeDuRail,
+  redirigerEntreeDeZone,
+  sortieDuRail,
+} from "./zones";
 
 /**
  * Le déplacement du focus : viser un voisin, défiler s'il n'est pas monté,
@@ -22,9 +29,6 @@ import { reviserApresMontage } from "./attente";
  * lisant un défaut — « pourquoi la touche n'a rien fait » se cherche là-bas,
  * « pourquoi le focus est parti LÀ » se cherche ici.
  */
-
-/** La navigation latérale, qui obéit à des règles d'accès particulières. */
-const SELECTEUR_RAIL = ".rail-tv";
 
 /**
  * Budget d'attente d'un montage après un pas de défilement.
@@ -80,7 +84,14 @@ export function viser(direction: Direction): boolean {
   const depart = elementActif();
   if (!depart) return viserPremier();
 
-  const racine = conteneurPiegeant() ?? document;
+  const piege = conteneurPiegeant();
+
+  // Le rail se navigue à part — sauf sous un dialogue, qui piège comme
+  // partout : ses entrées se parcourent de haut en bas, la droite rend au
+  // contenu ce qu'on lui avait pris, la gauche est le bord du monde.
+  if (!piege && dansLeRail(depart)) return viserDansLeRail(depart, direction);
+
+  const racine = piege ?? document;
   let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
 
   // La boîte de mise en page, pas celle du rendu : le départ est justement la
@@ -130,27 +141,60 @@ export function viser(direction: Direction): boolean {
     }
   }
 
-  // Le rail s'atteint par la gauche, mais pas depuis le contenu.
-  //
-  // Il couvre toute la hauteur de l'écran : sans règle, « bas » depuis une carte
-  // y remonterait au lieu de descendre d'une rangée, la géométrie seule y voyant
-  // un candidat parfaitement valable. Et « gauche » depuis la première carte
-  // d'une rangée s'en échappait — on ne veut pas quitter le catalogue en
-  // longeant une ligne.
-  //
-  // La porte reste le chrome de la page : retour, filtres, onglets, champ de
-  // recherche. Ils sont déjà en haut à gauche, donc le geste ne change pas —
-  // Haut jusqu'au chrome, puis Gauche — et aucune touche n'est inventée.
-  const dansLeContenu = depart.closest("[data-tv-piste], [data-tv-grille]");
-  const railAtteignable = direction === "gauche" && !dansLeContenu;
-  if (!depart.closest(SELECTEUR_RAIL) && !railAtteignable) {
-    candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
-  }
+  // Le rail n'est JAMAIS un candidat géométrique. Il couvre toute la hauteur
+  // de l'écran : sans cette règle, « bas » depuis une carte y remonterait au
+  // lieu de descendre d'une rangée, la géométrie seule y voyant un candidat
+  // parfaitement valable. On y ENTRE par la règle d'en dessous — gauche sans
+  // issue —, jamais par un score.
+  candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
 
   const choisi = meilleur(depuis, candidats, direction);
-  if (!choisi) return false;
+  if (!choisi) {
+    // « Gauche » sans voisin, c'est la demande du rail — depuis la première
+    // colonne d'une grille, le début d'une piste rembobinée, le chrome. La
+    // destination est l'écran COURANT, pas l'entrée la plus proche. Un
+    // dialogue ouvert garde son piège : on ne s'en évade pas vers le rail.
+    if (direction === "gauche" && !piege) {
+      const entree = entreeDuRail();
+      if (entree) {
+        donnerFocus(entree);
+        return true;
+      }
+    }
+    return false;
+  }
 
-  donnerFocus(choisi.element);
+  // À l'arrivée dans une zone déclarée, la destination l'emporte sur la
+  // géométrie — entrer par « Lecture », par la saison active. Les déplacements
+  // INTERNES à la zone ne sont pas redirigés, sans quoi elle serait un piège.
+  const redirige = redirigerEntreeDeZone(depart, choisi.element);
+  donnerFocus(redirige ?? choisi.element);
+  return true;
+}
+
+/**
+ * Les déplacements depuis le rail, tous consommés : le rail est une zone
+ * fermée. Haut et bas parcourent ses entrées — la géométrie voyait parfois
+ * mieux ailleurs et s'échappait en diagonale dans le contenu. La droite
+ * RESTITUE : l'élément qu'on avait en quittant le contenu, sinon ce que la
+ * mémoire de route retrouve, sinon l'entrée par défaut de l'écran. La gauche
+ * ne mène nulle part, et un pas de défilement n'y a pas sa place non plus.
+ */
+function viserDansLeRail(depart: HTMLElement, direction: Direction): boolean {
+  if (direction === "gauche") return true;
+
+  if (direction === "droite") {
+    const sortie = sortieDuRail();
+    if (sortie) donnerFocus(sortie);
+    return true;
+  }
+
+  const depuis = boiteDeNavigation(depart);
+  const candidats = recenser(document).filter(
+    (candidat) => candidat.element !== depart && dansLeRail(candidat.element),
+  );
+  const choisi = meilleur(depuis, candidats, direction);
+  if (choisi) donnerFocus(choisi.element);
   return true;
 }
 
