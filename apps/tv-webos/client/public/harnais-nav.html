@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1280, initial-scale=1" />
+    <title>Tentacle TV — harnais de navigation</title>
+    <!--
+      Harnais du moteur de focus, dans la lignée des sondes : une page servie
+      telle quelle, qui charge le VRAI moteur sur une géométrie factice mais
+      fidèle — rail fixe à gauche, chrome de page, grille cinq colonnes dont la
+      carte focalisée est agrandie comme sur la dalle, piste horizontale.
+
+      Ce qu'elle permet : dérouler des séquences de flèches et lire où le focus
+      atterrit, sans dépendre d'un serveur Jellyfin ni du chargement d'images —
+      donc aussi depuis un navigateur de test qui ne compose pas ses images.
+    -->
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { background: #14101f; color: #eee; font-family: sans-serif; }
+      :focus { outline: 3px solid #c084fc; outline-offset: 2px; }
+
+      .rail-tv {
+        position: fixed; top: 0; bottom: 0; left: 0; width: 90px;
+        display: flex; flex-direction: column; gap: 12px; padding: 24px 12px;
+        background: #1d1730; z-index: 40;
+      }
+      .rail-tv a { display: block; padding: 10px 8px; color: #cbc3e3; text-decoration: none; font-size: 13px; }
+      .rail-tv a[aria-current="page"] { color: #fff; font-weight: 700; }
+
+      main { margin-left: 110px; padding: 24px; }
+
+      .chrome { display: flex; gap: 12px; margin-bottom: 20px; }
+      .chrome button { padding: 10px 18px; border-radius: 999px; border: 1px solid #555; background: #241d3a; color: #eee; }
+
+      .grille { display: flex; flex-wrap: wrap; gap: 16px; max-width: 1000px; }
+      .grille [data-tv-carte] {
+        width: 180px; height: 260px; border-radius: 10px; background: #33294f;
+        display: flex; align-items: flex-end; padding: 8px; font-size: 13px;
+        transition: transform 180ms ease-out; transform-origin: center bottom;
+      }
+      .grille [data-tv-carte]:focus { transform: scale(1.08); }
+
+      .piste-section { margin-top: 28px; max-width: 1000px; }
+      .piste-section h2 { font-size: 15px; margin-bottom: 10px; }
+      [data-tv-piste] { display: flex; gap: 14px; overflow-x: auto; }
+      [data-tv-piste] [data-tv-carte] {
+        flex: 0 0 150px; height: 210px; border-radius: 10px; background: #2c3a52;
+        display: flex; align-items: flex-end; padding: 8px; font-size: 13px;
+        transition: transform 180ms ease-out; transform-origin: center bottom;
+      }
+      [data-tv-piste] [data-tv-carte]:focus { transform: scale(1.08); }
+    </style>
+  </head>
+  <body>
+    <nav class="rail-tv" aria-label="Navigation">
+      <a href="#recherche" data-rail="recherche">Rechercher</a>
+      <a href="#accueil" data-rail="accueil">Accueil</a>
+      <a href="#liste" data-rail="liste">Ma liste</a>
+      <a href="#films" data-rail="films" aria-current="page">Films</a>
+      <a href="#series" data-rail="series">Séries</a>
+      <a href="#reglages" data-rail="reglages">Réglages</a>
+    </nav>
+
+    <main>
+      <div class="chrome">
+        <button type="button" data-chrome="retour">← Retour</button>
+        <button type="button" data-chrome="filtre-tous">Tous</button>
+        <button type="button" data-chrome="filtre-genres">Genres</button>
+        <button type="button" data-chrome="filtre-annee">Année</button>
+      </div>
+
+      <div class="grille" data-harnais-grille></div>
+
+      <section class="piste-section">
+        <h2>Une piste horizontale</h2>
+        <div data-tv-piste data-harnais-piste></div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { installerMoteurFocus } from "/tv/src/focus/moteur.ts";
+      import { amorcerFocus } from "/tv/src/focus/entree.ts";
+
+      // La grille : 5 colonnes × 8 rangées, comme une bibliothèque. La colonne
+      // se lit dans le libellé (r3c2), c'est ce que les scénarios vérifient.
+      const grille = document.querySelector("[data-harnais-grille]");
+      for (let rangee = 0; rangee < 8; rangee++) {
+        for (let colonne = 0; colonne < 5; colonne++) {
+          const carte = document.createElement("div");
+          carte.setAttribute("role", "button");
+          carte.setAttribute("tabindex", "0");
+          carte.setAttribute("data-tv-carte", "");
+          carte.setAttribute("data-tv-cle", `g-r${rangee}c${colonne}`);
+          carte.textContent = `r${rangee}c${colonne}`;
+          grille.appendChild(carte);
+        }
+      }
+
+      const piste = document.querySelector("[data-harnais-piste]");
+      for (let index = 0; index < 12; index++) {
+        const carte = document.createElement("div");
+        carte.setAttribute("role", "button");
+        carte.setAttribute("tabindex", "0");
+        carte.setAttribute("data-tv-carte", "");
+        carte.setAttribute("data-tv-cle", `p-${index}`);
+        carte.textContent = `p${index}`;
+        piste.appendChild(carte);
+      }
+
+      installerMoteurFocus();
+      amorcerFocus(true);
+
+      // Pilotage depuis l'extérieur : un appui synthétique, et un relevé.
+      window.__appui = (key, keyCode) =>
+        document.dispatchEvent(new KeyboardEvent("keydown", { key, keyCode, bubbles: true, cancelable: true }));
+      window.__ou = () => {
+        const element = document.activeElement;
+        if (!element || element === document.body) return null;
+        const rect = element.getBoundingClientRect();
+        return {
+          cle: element.getAttribute("data-tv-cle") || element.getAttribute("data-rail")
+            || element.getAttribute("data-chrome") || element.tagName,
+          l: Math.round(rect.left),
+          t: Math.round(rect.top),
+          sy: Math.round(window.pageYOffset),
+        };
+      };
+      window.__pret = true;
+    </script>
+  </body>
+</html>
