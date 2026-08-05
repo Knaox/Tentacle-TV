@@ -1,9 +1,14 @@
 import { lireIntention, estHorizontale, type Direction } from "./touches";
-import { recenser, conteneurPiegeant } from "./candidats";
+import { recenser, conteneurPiegeant, estUnChampDeSaisie } from "./candidats";
+import { focusParDefaut } from "./defaut";
+import { retenir } from "./memoire";
+import { surveillerRoute } from "./route";
+import { amorcerFocus, noterAppui, placementEnCours } from "./entree";
+import { donnerFocus, elementActif } from "./actif";
 import { boiteDepuisRectangle, meilleur, surLaMemeLigne } from "./geometrie";
-import { amenerEnVue, defilerAveuglement } from "./defilement";
+import { defilerAveuglement } from "./defilement";
 import { reviserApresMontage } from "./attente";
-import { pointeurActif, surveillerCurseur } from "./curseur";
+import { surveillerCurseur } from "./curseur";
 import { surveillerSurvol } from "./survolFocus";
 import { navigationOsdActive } from "../lecture/etatLecteurTv";
 
@@ -42,8 +47,34 @@ export function installerMoteurFocus(): () => void {
   // flèches : ce qui vaut pour un mode d'entrée vaut pour l'autre.
   const arreterSurvol = surveillerSurvol(moteurSuspendu);
 
+  // Toute arrivée du focus est notée, quelle qu'en soit l'origine — flèche,
+  // pointeur, clic, ou restitution. Un seul écouteur délégué : les cartes vont
+  // et viennent au gré du fenêtrage, et un abonnement par composant serait posé
+  // et retiré sans arrêt.
+  const surArrivee = (evenement: FocusEvent) => {
+    if (placementEnCours()) return;
+    const cible = evenement.target;
+    if (cible instanceof HTMLElement) retenir(cible);
+  };
+  document.addEventListener("focusin", surArrivee, true);
+
+  // Changer d'écran repose le focus. Sans cela, le premier appui sur une flèche
+  // ne sert qu'à faire apparaître l'anneau.
+  const arreterRoute = surveillerRoute(() => amorcerFocus(true));
+
+  // Le mode d'entrée n'est PAS consulté ici, et c'est délibéré.
+  //
+  // On lisait `pointeurActif()` pour se mettre en veille tant que le curseur de
+  // la Magic Remote était visible. La condition ne pouvait pas être vraie :
+  // `surveillerCurseur` écoute `keydown` en capture et a été branché juste
+  // au-dessus, donc il a déjà basculé en `dpad` quand on arrive ici. Le test
+  // était mort — et le rétablir serait un défaut, pas un correctif. **Un appui
+  // directionnel est précisément le signal que le pointeur a disparu** : c'est
+  // ainsi que webOS traite la bascule, et refuser la flèche laisserait
+  // l'utilisateur devant une télécommande muette jusqu'à ce qu'il bouge la
+  // souris. Le survol, lui, se tait de son côté dès que le focus a changé.
   const surTouche = (evenement: KeyboardEvent) => {
-    if (pointeurActif()) return;
+    noterAppui();
     if (moteurSuspendu()) return;
 
     const intention = lireIntention(evenement);
@@ -54,7 +85,8 @@ export function installerMoteurFocus(): () => void {
     // bas, qu'un champ d'une seule ligne n'utilise pas, restent au moteur :
     // c'est par eux qu'on sort du champ. Sans cette distinction, entrer dans un
     // formulaire à la télécommande serait un aller sans retour.
-    if (estHorizontale(intention.direction) && saisieEnCours(evenement.target)) return;
+    const cible = evenement.target instanceof HTMLElement ? evenement.target : null;
+    if (estHorizontale(intention.direction) && estUnChampDeSaisie(cible)) return;
 
     evenement.preventDefault();
     evenement.stopPropagation();
@@ -65,20 +97,11 @@ export function installerMoteurFocus(): () => void {
 
   return () => {
     document.removeEventListener("keydown", surTouche, true);
+    document.removeEventListener("focusin", surArrivee, true);
+    arreterRoute();
     arreterSurvol();
     arreterCurseur();
   };
-}
-
-/** L'événement vient-il d'un champ où le curseur de texte se déplace ? */
-function saisieEnCours(cible: EventTarget | null): boolean {
-  const element = cible as HTMLElement | null;
-  if (!element) return false;
-  const balise = element.tagName;
-  if (balise === "TEXTAREA") return true;
-  if (balise !== "INPUT") return false;
-  const type = (element as HTMLInputElement).type;
-  return type !== "checkbox" && type !== "radio" && type !== "button" && type !== "submit";
 }
 
 /**
@@ -179,53 +202,8 @@ function viser(direction: Direction): boolean {
  * arrive précisément quand une rangée se vide.
  */
 function viserPremier(): boolean {
-  const racine = conteneurPiegeant() ?? document;
-  const tous = recenser(racine);
-  // Le contenu d'abord : arriver sur un écran avec le focus dans la navigation
-  // demande de le déplacer avant même de commencer à regarder. Le rail se
-  // rejoint par la gauche quand on en a besoin.
-  const horsRail = tous.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
-  const candidats = horsRail.length > 0 ? horsRail : tous;
-  if (candidats.length === 0) return false;
-
-  // Le plus haut, puis le plus à gauche : l'ordre de lecture.
-  let retenu = candidats[0];
-  for (const candidat of candidats) {
-    if (candidat.boite.haut < retenu.boite.haut - 4) retenu = candidat;
-    else if (
-      Math.abs(candidat.boite.haut - retenu.boite.haut) <= 4 &&
-      candidat.boite.gauche < retenu.boite.gauche
-    ) {
-      retenu = candidat;
-    }
-  }
-
-  donnerFocus(retenu.element);
+  const cible = focusParDefaut(conteneurPiegeant() ?? document);
+  if (!cible) return false;
+  donnerFocus(cible);
   return true;
-}
-
-function donnerFocus(element: HTMLElement): void {
-  element.focus();
-  amenerEnVue(element);
-}
-
-/** L'élément qui porte le focus, ou `null` si c'est le document lui-même. */
-function elementActif(): HTMLElement | null {
-  const actif = document.activeElement;
-  if (!actif || actif === document.body || actif === document.documentElement) return null;
-  return actif as HTMLElement;
-}
-
-/**
- * Pose le focus au chargement d'un écran, sans attendre un premier appui.
- *
- * Sans cela l'utilisateur voit une page sans anneau et doit appuyer une fois
- * « pour rien » — un défaut qui passe inaperçu au clavier et saute aux yeux à
- * la télécommande.
- */
-export function amorcerFocus(): void {
-  reviserApresMontage(() => {
-    if (elementActif()) return true;
-    return viserPremier();
-  });
 }

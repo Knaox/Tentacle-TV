@@ -129,11 +129,32 @@ describe("surLaMemeLigne", () => {
     );
   });
 
-  it("compare les bords hauts et non les centres", () => {
-    // Deux cartes d'une même ligne dont l'une est plus haute restent sur la
-    // même ligne — leurs centres, eux, sont éloignés de 75 px.
+  it("garde ensemble deux cartes de hauteurs différentes", () => {
+    // Un titre qui passe sur deux lignes allonge une carte. Elle reste sur la
+    // même ligne que sa voisine — leurs centres, eux, sont éloignés de 75 px.
     expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, 450))).toBe(
       true,
     );
+  });
+
+  it("garde sur la même ligne la carte agrandie par le focus", () => {
+    // Le défaut qui rendait les grilles impilotables. La carte visée est
+    // agrandie, et un `scale()` centré remonte son bord haut : mesuré sur une
+    // bibliothèque, 26 px d'écart, six fois l'ancienne tolérance. Plus aucune
+    // voisine n'était « sur la même ligne », la liste de candidats devenait
+    // vide, et gauche comme droite ne faisaient plus rien.
+    const voisine = boite(0, 0, 185, 328);
+    const focalisee = boite(194, -26, 200, 354);
+    expect(surLaMemeLigne(focalisee, voisine)).toBe(true);
+    expect(surLaMemeLigne(voisine, focalisee)).toBe(true);
+  });
+
+  it("ne fait pas mordre une carte agrandie sur la ligne suivante", () => {
+    // Le pendant du précédent, et la raison de ne pas simplement élargir la
+    // tolérance : l'agrandissement ne doit pas rendre voisine la ligne d'en
+    // dessous, sinon « droite » y redescendrait en diagonale.
+    const focalisee = boite(194, -26, 200, 354);
+    const ligneSuivante = boite(0, 346, 185, 328);
+    expect(surLaMemeLigne(focalisee, ligneSuivante)).toBe(false);
   });
 });

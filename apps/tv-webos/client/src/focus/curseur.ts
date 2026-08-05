@@ -7,12 +7,17 @@
  * commandes, épinglage de la carte survolée dans le fenêtrage des rangées.
  *
  * Deux systèmes se disputeraient alors le même état visuel — l'un désignant la
- * carte survolée, l'autre celle qui a le focus. Le moteur spatial se met donc
- * en veille tant que le pointeur est visible, et reprend la main dès qu'il
- * disparaît.
+ * carte survolée, l'autre celle qui a le focus. Ce module tient donc le mode
+ * d'entrée courant, et le publie en attribut sur `<html>` pour que la feuille
+ * TV puisse distinguer les deux.
  *
- * L'attribut posé sur `<html>` permet en outre à la feuille TV de distinguer
- * les deux modes si le besoin s'en présente.
+ * **Le mode ne commande rien au moteur, et ne doit pas le commander.** Un appui
+ * directionnel EST le signal que le pointeur a disparu : l'écoute de `keydown`
+ * ci-dessous bascule en `dpad`, et la flèche suit son cours. Refuser la flèche
+ * parce que le curseur était visible une milliseconde plus tôt laisserait
+ * l'utilisateur devant une télécommande muette. Le survol, lui, se retire de
+ * lui-même — `survolFocus.ts` ne fait rien quand l'élément visé a déjà le
+ * focus.
  */
 
 const ATTRIBUT = "data-tv-entree";
@@ -59,9 +64,4 @@ export function surveillerCurseur(): () => void {
     document.removeEventListener("mousemove", surMouvement);
     document.removeEventListener("keydown", surTouche, true);
   };
-}
-
-/** Vrai quand le pointeur est visible : le moteur spatial doit s'effacer. */
-export function pointeurActif(): boolean {
-  return mode === "pointeur";
 }

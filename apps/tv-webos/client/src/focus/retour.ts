@@ -50,6 +50,16 @@ export function inscrireRetour(consommateur: ConsommateurRetour): () => void {
 
 export function installerRetour(): () => void {
   const surTouche = (evenement: KeyboardEvent) => {
+    // Notre propre renvoi d'Échap doit ATTEINDRE le dialogue.
+    //
+    // Depuis que `touches.ts` lit aussi `key`, l'Échap synthétique émis par
+    // `fermerConteneurPiegeant` est reconnu comme un retour — et cet écouteur,
+    // qui capture sur le document, le consommerait avant que `Modal` ou `Sheet`
+    // ne le voient. On reculerait alors d'un écran en laissant la modale
+    // ouverte par-dessus le précédent : exactement le défaut que ce renvoi
+    // existe pour éviter.
+    if (renvoiEnCours) return;
+
     const intention = lireIntention(evenement);
     if (!intention || intention.type !== "retour") return;
 
@@ -99,9 +109,10 @@ function reculer(): void {
  * l'élément, pas son affordance. Rejouer la touche que ces composants écoutent
  * déjà est le seul moyen qui ne suppose rien de leur structure interne.
  *
- * L'événement synthétique ne porte pas de `keyCode`, donc `lireIntention` ne le
- * reconnaît pas et notre propre écouteur le laisse passer. Le drapeau ferme
- * malgré tout la boucle, pour le jour où la table des touches lira `key`.
+ * L'événement synthétique ne porte pas de `keyCode` — mais `lireIntention` lit
+ * désormais aussi `key`, et « Escape » y est un retour. Sans le drapeau, notre
+ * propre écouteur reprendrait donc l'événement au vol. C'est lui, et non la
+ * table des touches, qui garantit que le dialogue reçoit ce qu'on lui envoie.
  */
 function fermerConteneurPiegeant(): boolean {
   if (renvoiEnCours) return false;

@@ -1,4 +1,4 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable } from "./candidats";
+import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie } from "./candidats";
 
 /**
  * Le survol : capté avant React, et rendu au focus.
@@ -38,21 +38,6 @@ import { SELECTEUR_FOCUSABLE, cibleAtteignable } from "./candidats";
  */
 
 /**
- * Les champs de saisie sont exclus, et pour une raison qu'on ne voit pas au
- * navigateur : webOS ouvre son clavier système dès qu'un `<input>` reçoit le
- * focus. Un pointeur qui traverse un champ de recherche ferait donc surgir un
- * clavier plein écran que personne n'a demandé. On les laisse au clic et au
- * D-pad, qui sont des gestes intentionnels.
- */
-function estUnChampDeSaisie(element: HTMLElement): boolean {
-  const balise = element.tagName;
-  if (balise === "TEXTAREA" || balise === "SELECT") return true;
-  if (balise !== "INPUT") return false;
-  const type = (element as HTMLInputElement).type;
-  return type !== "checkbox" && type !== "radio" && type !== "button" && type !== "submit";
-}
-
-/**
  * Branche l'écoute et rend la fonction de débranchement.
  *
  * Un seul écouteur, délégué au document : une rangée de quarante cartes ne doit
@@ -78,6 +63,9 @@ export function surveillerSurvol(suspendu: () => boolean): () => void {
     const focusable = cible.closest<HTMLElement>(SELECTEUR_FOCUSABLE);
     if (!focusable) return;
     if (focusable === document.activeElement) return;
+    // Un pointeur qui traverse un champ de recherche ferait surgir le clavier
+    // système plein écran de webOS. On laisse les champs au clic et au D-pad,
+    // qui sont des gestes intentionnels — traverser n'en est pas un.
     if (estUnChampDeSaisie(focusable)) return;
 
     // Même juge que le recensement du D-pad. Il ne s'agit pas de prudence de

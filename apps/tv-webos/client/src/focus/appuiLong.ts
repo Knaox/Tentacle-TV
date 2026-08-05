@@ -38,6 +38,14 @@ export interface ActionsAppui {
 }
 
 interface EtatAppui {
+  /** La touche OK est enfoncée. **Suivi à part du minuteur**, et c'est le
+   *  correctif : quand aucune action longue n'est déclarée — une affiche, dont
+   *  l'appui court ouvre déjà la fiche — il n'y a pas de minuteur à armer. Le
+   *  déduire de `minuteurLong !== null` faisait donc croire à un relâchement
+   *  sans appui, et **tout OK maintenu plus d'une demi-seconde ne faisait
+   *  rien**. Sur une télécommande, tenir OK une demi-seconde est le geste
+   *  ordinaire, pas un cas limite. */
+  enfonce: boolean;
   minuteurLong: ReturnType<typeof setTimeout> | null;
   minuteurSilence: ReturnType<typeof setTimeout> | null;
   longDeclenche: boolean;
@@ -53,6 +61,7 @@ interface EtatAppui {
  */
 export function creerAppuiLong(actions: ActionsAppui) {
   const etat: EtatAppui = {
+    enfonce: false,
     minuteurLong: null,
     minuteurSilence: null,
     longDeclenche: false,
@@ -62,6 +71,7 @@ export function creerAppuiLong(actions: ActionsAppui) {
   function nettoyer(): void {
     if (etat.minuteurLong !== null) clearTimeout(etat.minuteurLong);
     if (etat.minuteurSilence !== null) clearTimeout(etat.minuteurSilence);
+    etat.enfonce = false;
     etat.minuteurLong = null;
     etat.minuteurSilence = null;
     etat.longDeclenche = false;
@@ -82,12 +92,12 @@ export function creerAppuiLong(actions: ActionsAppui) {
     onKeyDown(evenement: { keyCode: number; preventDefault(): void }): void {
       if (evenement.keyCode !== CODE_OK) {
         // Un déplacement pendant l'appui annule tout.
-        if (etat.minuteurLong !== null) nettoyer();
+        if (etat.enfonce) nettoyer();
         return;
       }
       evenement.preventDefault();
 
-      if (etat.minuteurLong !== null || etat.longDeclenche) {
+      if (etat.enfonce) {
         // Répétition automatique : elle ne relance rien, mais elle prouve que
         // la touche est toujours enfoncée.
         etat.aRepete = true;
@@ -95,21 +105,28 @@ export function creerAppuiLong(actions: ActionsAppui) {
         return;
       }
 
+      etat.enfonce = true;
+
+      // Le minuteur n'est armé que s'il y a un maintien à déclencher. Sans
+      // action longue, l'appui reste un appui court quelle que soit sa durée —
+      // c'est le relâchement qui le joue.
+      if (!actions.long) return;
+
       etat.minuteurLong = setTimeout(() => {
         etat.minuteurLong = null;
-        if (!actions.long) return;
         etat.longDeclenche = true;
-        actions.long();
+        actions.long?.();
       }, SEUIL_MS);
     },
 
     onKeyUp(evenement: { keyCode: number }): void {
       if (evenement.keyCode !== CODE_OK) return;
       const long = etat.longDeclenche;
-      const enCours = etat.minuteurLong !== null;
+      const enfonce = etat.enfonce;
       nettoyer();
-      // Rien à faire si le maintien a déjà agi ; sinon c'était un appui court.
-      if (!long && enCours) actions.court();
+      // Rien à faire si le maintien a déjà agi ; sinon c'était un appui court,
+      // long ou bref — la durée ne le distingue que lorsqu'un maintien existe.
+      if (enfonce && !long) actions.court();
     },
 
     /** À appeler sur `blur` : après une navigation, le `keyup` arriverait sur
