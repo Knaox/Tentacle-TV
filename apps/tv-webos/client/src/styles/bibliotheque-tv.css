@@ -14,19 +14,20 @@
  * C'est la règle écrite pour les formulaires qui rend ces deux-là utilisables ;
  * elle n'a pas été pensée pour eux, mais elle est juste.
  *
- * Ce qui reste ouvert : un menu déployé ne piège pas le focus — il porte
- * `role="menu"` et le recensement ne confine que les `role="dialog"`. Le D-pad
- * peut donc en sortir par le bas et atteindre les cartes derrière. Le corriger
- * demanderait de forker le composant de menu ; à voir sur la dalle si le défaut
- * se remarque.
+ * Un menu déployé piège désormais le focus, et les cinq le font : c'est
+ * `ui/bibliotheque/MenuFiltreTv.tsx` qui pose `role="menu"` sur le PANNEAU —
+ * années et note n'en portaient aucun — et le recensement confine ce rôle
+ * comme il confine un dialogue. On en sort par « haut » depuis la première
+ * ligne, ou par Retour.
  */
 
-/* Les menus déroulants, à la taille d'un salon. En descendance simple : le
-   sélecteur `[role="menu"]` n'appartient qu'à ces panneaux. */
-[role="menu"] {
-  min-width: 340px;
-}
-
+/* Les menus déroulants, à la taille d'un salon.
+ *
+ * La largeur se pose désormais par la propriété du composant, et non ici : le
+ * panneau a une largeur EN LIGNE et `overflow-hidden`, donc un `min-width`
+ * plus grand ne l'élargissait pas — il faisait déborder son contenu à
+ * l'intérieur, où il était coupé. Mesuré à quatre-vingts pixels perdus à
+ * droite, anneau de focus compris. */
 [role="menu"] button {
   min-height: 46px;
   font-size: 18px;
@@ -42,9 +43,10 @@
 }
 
 /* Le champ de recherche interne à un menu (genres, studios) et les champs
-   d'année : même gabarit que les lignes, sinon la frappe se fait à l'aveugle. */
-[role="menu"] input,
-[role="menu"] + input {
+   d'année : même gabarit que les lignes, sinon la frappe se fait à l'aveugle.
+   Une seconde règle visait ce champ en FRÈRE du rôle ; le rôle est désormais
+   sur le panneau, qui le contient, et la descendance suffit. */
+[role="menu"] input {
   min-height: 44px;
   font-size: 18px;
 }
