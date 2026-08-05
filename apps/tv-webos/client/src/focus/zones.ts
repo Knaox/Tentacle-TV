@@ -93,19 +93,31 @@ export function sortieDuRail(): HTMLElement | null {
   return focusParDefaut(document, horsRail);
 }
 
+/** Ce qu'une enveloppe du portage pose sur la cible d'entrée qu'elle a choisie. */
+export const ATTRIBUT_ENTREE = "data-tv-zone-entree";
+
 /**
  * La destination d'entrée d'une zone, du plus explicite au plus général.
  *
- * `data-tv-zone-entree` désigne ; `cta-primary` est l'appel à l'action du
- * système de design — « Lecture », « Reprendre » ; `aria-selected` est l'onglet
- * actif — la saison affichée ; `aria-current` est l'élément courant. Tous sont
- * déjà posés pour d'autres raisons : la zone n'invente rien, elle lit.
+ * `data-tv-zone-entree` est désigné par une enveloppe du portage, seule à
+ * savoir ce que sa zone veut voir viser ; `cta-primary` est l'appel à l'action
+ * du système de design — « Lecture », « Reprendre » ; `aria-selected` est
+ * l'onglet actif — la saison affichée ; `aria-current` est l'élément courant.
+ * Les trois derniers sont déjà posés pour d'autres raisons : la zone n'invente
+ * rien, elle lit.
+ *
+ * **Le dernier rang est un repli et pas un sélecteur** : le premier focusable
+ * de la zone, en ordre de document. Sans lui, une zone dont aucune marque n'a
+ * encore paru — les boutons d'une fiche arrivent avec leurs données — rendait
+ * la main à la géométrie, laquelle choisissait sur tout l'écran. Déclarer une
+ * zone garantit désormais un atterrissage à l'intérieur, toujours.
  */
 const CASCADE_ENTREE = [
-  "[data-tv-zone-entree]",
+  `[${ATTRIBUT_ENTREE}]`,
   '[class*="cta-primary"]',
   '[aria-selected="true"]',
   '[aria-current]:not([aria-current="false"])',
+  SELECTEUR_FOCUSABLE,
 ];
 
 /**
