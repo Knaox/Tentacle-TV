@@ -77,6 +77,7 @@ function reculer(): void {
     if (pile[position]()) return;
   }
 
+  if (fermerMenuDeploye()) return;
   if (fermerConteneurPiegeant()) return;
 
   if (surEcranRacine()) {
@@ -114,6 +115,30 @@ function reculer(): void {
  * propre écouteur reprendrait donc l'événement au vol. C'est lui, et non la
  * table des touches, qui garantit que le dialogue reçoit ce qu'on lui envoie.
  */
+/**
+ * Referme un menu déployé, en rejouant l'appui qui l'a ouvert.
+ *
+ * Les menus de filtres d'une bibliothèque — tri, genres, années, note,
+ * plateformes — n'inscrivent aucun consommateur et n'écoutent pas Échap. Retour
+ * reculait donc d'un écran EN LAISSANT le panneau déployé : on se retrouvait sur
+ * l'accueil avec un menu de la bibliothèque par-dessus. Mesuré.
+ *
+ * Le déclencheur se reconnaît à `aria-expanded="true"`, qu'il porte déjà pour
+ * les lecteurs d'écran — rien à ajouter dans `apps/web`, et rien qui dépende
+ * d'un libellé traduit. Le CLIQUER est ce qui referme le plus sûrement : c'est
+ * une bascule, elle sait se fermer elle-même, et le focus revient naturellement
+ * sur la pastille d'où l'on vient. Envoyer Échap supposerait un écouteur que ces
+ * menus n'ont pas.
+ */
+function fermerMenuDeploye(): boolean {
+  const declencheur = document.querySelector<HTMLElement>('[aria-expanded="true"]');
+  if (!declencheur) return false;
+
+  declencheur.click();
+  declencheur.focus();
+  return true;
+}
+
 function fermerConteneurPiegeant(): boolean {
   if (renvoiEnCours) return false;
   const piege = conteneurPiegeant();
