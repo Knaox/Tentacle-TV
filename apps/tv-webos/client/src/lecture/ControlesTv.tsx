@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerControlsProps } from "@/components/PlayerControls";
 import { inscrireRetour } from "../focus/retour";
 import { reviserApresMontage } from "../focus/attente";
+import { focusParDefaut } from "../focus/defaut";
 import { creerMachineScrub, type MachineScrub } from "./machineScrub";
 import { installerTouchesLecteurTv, type ActionsLecteurTv } from "./touchesLecteurTv";
 import {
@@ -131,12 +132,61 @@ export function PlayerControls(props: PlayerControlsProps) {
     [scrub],
   );
 
-  // Le focus n'est pas posé en entrant dans un écran : `amorcerFocus` n'est
-  // appelé qu'au démarrage de l'application. La rangée dépend de l'épisode
-  // suivant, qui arrive après une requête — d'où la révision après montage.
+  // L'habillage n'est pas un écran : le moteur ne repose pas le focus quand il
+  // apparaît, puisque la route ne change pas. La rangée dépend en outre de
+  // l'épisode suivant, qui arrive après une requête — d'où la révision après
+  // montage.
   const osd = useRef<HTMLDivElement>(null);
+
+  /** Ce qui a ouvert le panneau, pour lui rendre le focus en le refermant. */
+  const declencheurPanneau = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
-    if (etat.mode !== "osd" || etat.panneau !== "aucun") return;
+    if (etat.mode !== "osd") return;
+
+    if (etat.panneau !== "aucun") {
+      // Un panneau s'ouvre. On note d'où l'on vient, puis on entre dedans : le
+      // focus restait sinon sur le bouton qui l'a ouvert, hors du panneau, et
+      // le confinement calculait ses déplacements depuis un point extérieur.
+      const actif = document.activeElement;
+      if (actif instanceof HTMLElement && !actif.closest(".panneau-tv")) {
+        declencheurPanneau.current = actif;
+      }
+      reviserApresMontage(() => {
+        const panneau = document.querySelector<HTMLElement>(".panneau-tv");
+        if (!panneau) return false;
+        if (panneau.contains(document.activeElement)) return true;
+        // La ligne EN COURS d'abord : l'épisode qu'on regarde, la piste active.
+        // Sans cela, l'ordre de lecture désignait la croix de fermeture — la
+        // seule chose du panneau qu'on ne veuille pas viser en l'ouvrant.
+        //
+        // Par ARIA quand le web le déclare, et par `brand-accent-soft` sinon :
+        // c'est le jeton du système de design dont le panneau d'épisodes teinte
+        // sa ligne courante. Comme `cta-primary` ailleurs, c'est du vocabulaire
+        // de design, pas une classe utilitaire — et cela ne demande rien à
+        // `apps/web`.
+        const courante = panneau.querySelector<HTMLElement>(
+          '[aria-current]:not([aria-current="false"]),[aria-selected="true"],' +
+            '[aria-checked="true"],[class*="brand-accent-soft"]',
+        );
+        const cible = courante ?? focusParDefaut(panneau);
+        if (!cible) return false;
+        cible.focus();
+        return true;
+      });
+      return;
+    }
+
+    // Aucun panneau : soit on vient d'en refermer un — le focus revient alors à
+    // ce qui l'a ouvert, et non au centre de l'habillage —, soit l'habillage
+    // vient de paraître.
+    const declencheur = declencheurPanneau.current;
+    declencheurPanneau.current = null;
+    if (declencheur?.isConnected) {
+      declencheur.focus();
+      return;
+    }
+
     reviserApresMontage(() => {
       const racine = osd.current;
       if (!racine) return false;
