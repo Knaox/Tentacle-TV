@@ -1,19 +1,10 @@
-import { lireIntention, estHorizontale, type Direction } from "./touches";
-import { recenser, conteneurPiegeant, estUnChampDeSaisie } from "./candidats";
-import { focusParDefaut } from "./defaut";
+import { lireIntention, estHorizontale } from "./touches";
+import { estUnChampDeSaisie } from "./candidats";
 import { retenir } from "./memoire";
 import { surveillerRoute } from "./route";
 import { amorcerFocus, noterAppui, placementEnCours } from "./entree";
-import { donnerFocus, elementActif } from "./actif";
-import {
-  meilleur,
-  restreindreALaPremiereLigne,
-  surLaMemeColonne,
-  surLaMemeLigne,
-} from "./geometrie";
-import { boiteDeNavigation } from "./mesure";
-import { defilerAveuglement } from "./defilement";
-import { reviserApresMontage } from "./attente";
+import { elementActif } from "./actif";
+import { deplacer } from "./deplacement";
 import { surveillerCurseur } from "./curseur";
 import { surveillerSurvol } from "./survolFocus";
 import { navigationOsdActive } from "../lecture/etatLecteurTv";
@@ -39,13 +30,14 @@ import { navigationOsdActive } from "../lecture/etatLecteurTv";
  * curseur fantôme en cours —, les flèches appartiennent au déplacement dans le
  * flux, et le moteur se retire. La condition se lit dans l'état du lecteur,
  * jamais dans le chemin seul.
+ *
+ * Le calcul du déplacement lui-même — viser, défiler, viser à nouveau — vit
+ * dans `deplacement.ts` : ici se décide QUAND une touche appartient au
+ * déplacement, là-bas OÙ le focus va.
  */
 
 /** Route sur laquelle le moteur laisse la main aux raccourcis du lecteur. */
 const CHEMIN_LECTEUR = "/watch";
-
-/** La navigation latérale, qui obéit à des règles d'accès particulières. */
-const SELECTEUR_RAIL = ".rail-tv";
 
 export function installerMoteurFocus(): () => void {
   const arreterCurseur = surveillerCurseur();
@@ -174,111 +166,4 @@ function surLecteur(): boolean {
 /** Le moteur ne rend la main que lorsque les commandes du lecteur sont là. */
 function moteurSuspendu(): boolean {
   return surLecteur() && !navigationOsdActive();
-}
-
-/**
- * Un déplacement, en trois temps : viser, défiler si rien n'est visé, viser à
- * nouveau une fois les cartes montées.
- */
-function deplacer(direction: Direction): void {
-  if (viser(direction)) return;
-
-  // Aucun voisin : soit on est au bord, soit la cible n'est pas montée. Le
-  // fenêtrage des rangées vide une rangée entière dès qu'elle sort de l'écran,
-  // et une carte non montée ne peut pas recevoir le focus.
-  const depart = elementActif();
-  if (!defilerAveuglement(depart, direction)) return;
-
-  reviserApresMontage(() => viser(direction));
-}
-
-/** Cherche un voisin et lui donne le focus. Rend vrai s'il en a trouvé un. */
-function viser(direction: Direction): boolean {
-  const depart = elementActif();
-  if (!depart) return viserPremier();
-
-  const racine = conteneurPiegeant() ?? document;
-  let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
-
-  // La boîte de mise en page, pas celle du rendu : le départ est justement la
-  // carte agrandie par le focus, la pire à mesurer transformée.
-  const depuis = boiteDeNavigation(depart);
-
-  // Un déplacement horizontal reste dans sa rangée. Sans cela, la dernière
-  // carte d'une piste voit à sa droite les éléments des rangées voisines — la
-  // géométrie ne dit rien de l'appartenance — et le focus part au hasard, ce
-  // qu'aucune interface de salon ne fait.
-  //
-  // Dans une PISTE, le confinement se lève au bout : la piste défile, ce qui
-  // suit est atteint par `defilerAveuglement`. Dans une GRILLE, il ne se lève
-  // pas — une ligne de grille est une fin, et « droite » depuis la dernière
-  // carte ne doit pas descendre en diagonale sur la première de la suivante.
-  // Une grille n'ayant aucun conteneur par ligne, la ligne se reconnaît aux
-  // ordonnées.
-  if (estHorizontale(direction)) {
-    const piste = depart.closest("[data-tv-piste]");
-    if (piste) {
-      const dansLaPiste = candidats.filter((candidat) => piste.contains(candidat.element));
-      if (meilleur(depuis, dansLaPiste, direction)) candidats = dansLaPiste;
-    } else if (depart.closest("[data-tv-grille]")) {
-      candidats = candidats.filter((candidat) => surLaMemeLigne(depuis, candidat.boite));
-    }
-  } else {
-    // Un déplacement VERTICAL en grille descend dans sa colonne. La géométrie
-    // brute arbitrait sur tout l'écran — distance contre désalignement — et il
-    // suffisait d'une rangée absente du recensement pour partir en diagonale,
-    // deux rangées plus bas. La colonne d'abord ; si elle n'a pas de suite —
-    // dernière rangée incomplète —, la première ligne rencontrée, et la carte
-    // la moins désalignée y gagne. Si la grille n'offre plus rien dans cette
-    // direction, la géométrie générale reprend : le chrome au-dessus, la suite
-    // de la page en dessous restent atteignables.
-    const grille = depart.closest("[data-tv-grille]");
-    if (grille) {
-      const dansLaGrille = candidats.filter((candidat) => grille.contains(candidat.element));
-      const memeColonne = dansLaGrille.filter((candidat) =>
-        surLaMemeColonne(depuis, candidat.boite),
-      );
-      if (meilleur(depuis, memeColonne, direction)) {
-        candidats = memeColonne;
-      } else {
-        const premiereLigne = restreindreALaPremiereLigne(depuis, dansLaGrille, direction);
-        if (premiereLigne.length > 0) candidats = premiereLigne;
-      }
-    }
-  }
-
-  // Le rail s'atteint par la gauche, mais pas depuis le contenu.
-  //
-  // Il couvre toute la hauteur de l'écran : sans règle, « bas » depuis une carte
-  // y remonterait au lieu de descendre d'une rangée, la géométrie seule y voyant
-  // un candidat parfaitement valable. Et « gauche » depuis la première carte
-  // d'une rangée s'en échappait — on ne veut pas quitter le catalogue en
-  // longeant une ligne.
-  //
-  // La porte reste le chrome de la page : retour, filtres, onglets, champ de
-  // recherche. Ils sont déjà en haut à gauche, donc le geste ne change pas —
-  // Haut jusqu'au chrome, puis Gauche — et aucune touche n'est inventée.
-  const dansLeContenu = depart.closest("[data-tv-piste], [data-tv-grille]");
-  const railAtteignable = direction === "gauche" && !dansLeContenu;
-  if (!depart.closest(SELECTEUR_RAIL) && !railAtteignable) {
-    candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
-  }
-
-  const choisi = meilleur(depuis, candidats, direction);
-  if (!choisi) return false;
-
-  donnerFocus(choisi.element);
-  return true;
-}
-
-/**
- * Aucun élément actif : au premier appui après un chargement d'écran, ou
- * quand l'élément qui portait le focus a été démonté sous nos pieds — ce qui
- * arrive précisément quand une rangée se vide.
- */
-function viserPremier(): boolean {
-  const cible = focusParDefaut(conteneurPiegeant() ?? document);
-  if (!cible) return false;
-  donnerFocus(cible);
-  return true;
 }

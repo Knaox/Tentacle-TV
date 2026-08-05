@@ -32,7 +32,8 @@
       .chrome { display: flex; gap: 12px; margin-bottom: 20px; }
       .chrome button { padding: 10px 18px; border-radius: 999px; border: 1px solid #555; background: #241d3a; color: #eee; }
 
-      .grille { display: flex; flex-wrap: wrap; gap: 16px; max-width: 1000px; }
+      .grille { position: relative; max-width: 1000px; }
+      .grille .ligne { position: absolute; left: 0; display: flex; gap: 16px; }
       .grille [data-tv-carte] {
         width: 180px; height: 260px; border-radius: 10px; background: #33294f;
         display: flex; align-items: flex-end; padding: 8px; font-size: 13px;
@@ -40,7 +41,10 @@
       }
       .grille [data-tv-carte]:focus { transform: scale(1.08); }
 
-      .piste-section { margin-top: 28px; max-width: 1000px; }
+      /* Loin de la grille, à dessein : plus loin que la fenêtre de recensement
+         du moteur — atteindre la piste depuis la grille EXIGE le protocole
+         « défiler d'un pas, viser à nouveau ». */
+      .piste-section { margin-top: 500px; max-width: 1000px; }
       .piste-section h2 { font-size: 15px; margin-bottom: 10px; }
       [data-tv-piste] { display: flex; gap: 14px; overflow-x: auto; }
       [data-tv-piste] [data-tv-carte] {
@@ -75,19 +79,49 @@
         <h2>Une piste horizontale</h2>
         <div data-tv-piste data-harnais-piste></div>
       </section>
+
+      <!-- Du décor non focusable après le contenu : c'est lui qui donne à la
+           page une marge de défilement sans cible, le cas où un pas doit se
+           rendre. -->
+      <footer style="height: 400px"></footer>
     </main>
 
+    <script>
+      // Le navigateur de test pilote la page SANS l'afficher : les
+      // `requestAnimationFrame` n'y tirent jamais, et le rattrapage du moteur
+      // — viser à nouveau après un pas de défilement — resterait suspendu pour
+      // toujours. En page cachée, on les rejoue en microtâche : même sémantique
+      // « au prochain tour », sans dépendre d'un compositeur absent. Une page
+      // visible garde les vrais.
+      if (document.hidden) {
+        window.requestAnimationFrame = (rappel) => {
+          Promise.resolve().then(() => rappel(performance.now()));
+          return 0;
+        };
+      }
+    </script>
     <script type="module">
       import { installerMoteurFocus } from "/tv/src/focus/moteur.ts";
       import { amorcerFocus } from "/tv/src/focus/entree.ts";
 
       // La grille : 5 colonnes × 8 rangées, comme une bibliothèque — la
-      // dernière rangée est incomplète (3 cartes), comme presque toujours. La
-      // colonne se lit dans le libellé (r3c2), c'est ce que les scénarios
-      // vérifient.
+      // dernière rangée est incomplète (3 cartes), comme presque toujours, et
+      // VIRTUALISÉE comme la vraie : une rangée à plus de 600 px de la zone
+      // visible est démontée, ses cartes n'existent plus dans le document.
+      // C'est le terrain du protocole « viser, défiler d'un pas, viser à
+      // nouveau ». La colonne se lit dans le libellé (r3c2).
+      const RANGEES = 8;
+      const HAUTEUR_RANGEE = 276; // carte 260 + gouttière 16
+      const FENETRE_MONTAGE = 600;
       const grille = document.querySelector("[data-harnais-grille]");
-      for (let rangee = 0; rangee < 8; rangee++) {
-        const colonnes = rangee === 7 ? 3 : 5;
+      grille.style.height = `${RANGEES * HAUTEUR_RANGEE - 16}px`;
+      const lignes = new Map();
+
+      const monterLigne = (rangee) => {
+        const ligne = document.createElement("div");
+        ligne.className = "ligne";
+        ligne.style.top = `${rangee * HAUTEUR_RANGEE}px`;
+        const colonnes = rangee === RANGEES - 1 ? 3 : 5;
         for (let colonne = 0; colonne < colonnes; colonne++) {
           const carte = document.createElement("div");
           carte.setAttribute("role", "button");
@@ -95,9 +129,37 @@
           carte.setAttribute("data-tv-carte", "");
           carte.setAttribute("data-tv-cle", `g-r${rangee}c${colonne}`);
           carte.textContent = `r${rangee}c${colonne}`;
-          grille.appendChild(carte);
+          ligne.appendChild(carte);
         }
-      }
+        return ligne;
+      };
+
+      const virtualiser = () => {
+        const grilleTop = grille.offsetTop;
+        const hautVisible = window.pageYOffset - FENETRE_MONTAGE;
+        const basVisible = window.pageYOffset + window.innerHeight + FENETRE_MONTAGE;
+        for (let rangee = 0; rangee < RANGEES; rangee++) {
+          const haut = grilleTop + rangee * HAUTEUR_RANGEE;
+          const visible = haut + HAUTEUR_RANGEE > hautVisible && haut < basVisible;
+          const montee = lignes.has(rangee);
+          if (visible && !montee) {
+            const ligne = monterLigne(rangee);
+            lignes.set(rangee, ligne);
+            grille.appendChild(ligne);
+          } else if (!visible && montee) {
+            lignes.get(rangee).remove();
+            lignes.delete(rangee);
+          }
+        }
+      };
+      window.addEventListener("scroll", virtualiser, { passive: true });
+      // Une page que le navigateur de test n'affiche pas ne reçoit AUCUN
+      // événement de défilement — ils naissent dans le pipeline de rendu. Le
+      // battement périodique fait vivre la virtualisation quand même ; sur une
+      // page visible, l'événement fait le travail avant lui.
+      setInterval(virtualiser, 100);
+      virtualiser();
+      window.__virtualiser = virtualiser;
 
       const piste = document.querySelector("[data-harnais-piste]");
       for (let index = 0; index < 12; index++) {

@@ -21,8 +21,14 @@ export function elementActif(): HTMLElement | null {
  *
  * Les deux ne se séparent pas : un focus posé sur une carte hors écran est un
  * anneau qu'on ne voit pas, donc un utilisateur qui ne sait plus où il est.
+ *
+ * `preventScroll` retire au navigateur son défilement natif — alignement au
+ * bord, sans la marge que `amenerEnVue` s'impose. Chrome 53 ignore l'option et
+ * fait son saut ; `amenerEnVue` repasse immédiatement derrière et impose la
+ * même position finale, l'option n'est donc qu'un confort des navigateurs
+ * récents — dont celui où l'on met au point.
  */
 export function donnerFocus(element: HTMLElement): void {
-  element.focus();
+  element.focus({ preventScroll: true });
   amenerEnVue(element);
 }
