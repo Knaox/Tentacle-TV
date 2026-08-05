@@ -83,8 +83,17 @@ function routeCourante(): string {
  * pointeur, ou restitution. Les paramètres de requête sont volontairement hors
  * de la clé : changer un filtre de bibliothèque ne doit pas faire oublier la
  * carte qu'on regardait.
+ *
+ * **Le rail n'est jamais retenu.** La clé est unique par route : focaliser une
+ * entrée de navigation ÉCRASAIT la carte mémorisée, et le retour sur l'écran
+ * restituait le focus… dans le rail. Ce qu'on avait quitté, c'est le contenu ;
+ * le rail n'est qu'un couloir qu'on traverse. (Le littéral est volontairement
+ * local : l'importer de `zones.ts` refermerait un cycle, `zones` lisant déjà
+ * `retrouver` d'ici.)
  */
 export function retenir(element: HTMLElement): void {
+  if (element.closest(".rail-tv")) return;
+
   const cle = cleElement(element);
   if (!cle) return;
 
