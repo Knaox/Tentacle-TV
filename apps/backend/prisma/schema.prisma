@@ -265,6 +265,53 @@ model ShareLink {
   @@map("share_links")
 }
 
+// Un SEGMENT de visionnage : une suite continue de lecture d'UN titre sur UNE
+// session Jellyfin. Écrit et prolongé par le collecteur (services/watchTime),
+// qui remplace le greffon « Playback Reporting ».
+//
+// Le temps est MESURÉ par échantillonnage de GET /Sessions toutes les 15 s,
+// jamais extrapolé : une coupure du backend laisse un trou, elle n'invente rien.
+//
+// `clientName`, `deviceName` et `runtimeSeconds` sont là dès le départ bien que
+// rien ne les affiche encore — en production le schéma est appliqué par des
+// `CREATE TABLE IF NOT EXISTS` (core-init.sql), qui n'ajoutent JAMAIS une
+// colonne à une table déjà créée.
+model WatchSegment {
+  id             String    @id @default(cuid())
+  jellyfinUserId String    @db.VarChar(255)
+  sessionKey     String    @db.VarChar(191)
+  itemId         String    @db.VarChar(64)
+  itemType       String    @db.VarChar(20)
+  itemName       String    @db.VarChar(500)
+  seriesId       String?   @db.VarChar(64)
+  seriesName     String?   @db.VarChar(500)
+  clientName     String?   @db.VarChar(100)
+  deviceName     String?   @db.VarChar(191)
+  seconds        Int       @default(0)
+  runtimeSeconds Int?
+  startedAt      DateTime
+  lastSeenAt     DateTime
+  closedAt       DateTime?
+
+  @@index([jellyfinUserId, startedAt])
+  @@index([jellyfinUserId, seriesId])
+  @@index([startedAt])
+  @@index([sessionKey, itemId, closedAt])
+  @@index([closedAt])
+  @@map("watch_segments")
+}
+
+// Bail d'exclusivité du collecteur de temps : une seule instance mesure à la
+// fois. Sans lui, un `pnpm dev` oublié sur la même base doublerait
+// silencieusement tous les chiffres.
+model WatchTimeLease {
+  id        String   @id @db.VarChar(32)
+  owner     String   @db.VarChar(64)
+  expiresAt DateTime
+
+  @@map("watch_time_lease")
+}
+
 // NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
 // seer_user_settings) ne sont volontairement PAS déclarées ici. Elles sont
 // créées et migrées par le plugin lui-même (raw SQL, colonnes snake_case).

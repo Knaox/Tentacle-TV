@@ -2,6 +2,7 @@ import WebSocket from "ws";
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
+import { pokeWatchTime } from "./watchTime/collector";
 
 // Constantes de reconnexion
 const INITIAL_BACKOFF = 1_000;
@@ -51,6 +52,13 @@ function handleMessage(data: WebSocket.Data): void {
       case "PlaybackStopped":
         broadcastAll("continue_watching");
         broadcastAll("next_up");
+        pokeWatchTime();
+        break;
+      // Le contenu de ces messages n'est JAMAIS lu : ils ne servent que de
+      // sonnette au collecteur, qui va relever les sessions lui-même. Une
+      // mesure ne doit pas dépendre d'une source qui peut mentir ou manquer.
+      case "PlaybackProgress":
+        pokeWatchTime();
         break;
       case "ForceKeepAlive":
         if (ws?.readyState === WebSocket.OPEN) {
