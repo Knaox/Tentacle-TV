@@ -37,6 +37,22 @@ export const ATTRIBUT_DEFAUT = "data-tv-focus-defaut";
 const SELECTEUR_RAIL = ".rail-tv";
 const SELECTEUR_CONTENU = "[data-tv-piste], [data-tv-grille]";
 
+/**
+ * L'appel à l'action principal d'un écran.
+ *
+ * `cta-primary` est un jeton du système de design, pas une classe utilitaire :
+ * il désigne LE bouton qui fait ce pour quoi l'écran existe — « Lecture » ou
+ * « Reprendre » sur une fiche, sur la bannière d'accueil. S'y accrocher donne
+ * un focus par défaut juste sans écrire nulle part une table « route →
+ * sélecteur », qui obligerait le téléviseur à connaître les écrans du web et
+ * vieillirait à chaque refonte.
+ *
+ * Sans lui, l'ordre de lecture désignait le bouton « Retour » de la fiche : le
+ * plus haut, le plus à gauche, et la seule chose qu'on ne veuille pas viser en
+ * arrivant.
+ */
+const SELECTEUR_ACTION_PRINCIPALE = '[class*="cta-primary"]';
+
 export function focusParDefaut(
   racine: ParentNode = document,
   candidats: Candidat[] = recenser(racine),
@@ -66,6 +82,11 @@ export function ciblePreferee(
   const designe = candidats.find((candidat) => candidat.element.hasAttribute(ATTRIBUT_DEFAUT));
   if (designe) return designe.element;
 
+  const principale = candidats.find((candidat) =>
+    candidat.element.matches(SELECTEUR_ACTION_PRINCIPALE),
+  );
+  if (principale) return principale.element;
+
   const contenu = racine.querySelector(SELECTEUR_CONTENU);
   if (!contenu) return null;
 
@@ -79,6 +100,7 @@ export function ciblePreferee(
 /** L'élément est-il déjà une cible d'entrée légitime ? */
 export function estCiblePreferee(element: HTMLElement): boolean {
   if (element.hasAttribute(ATTRIBUT_DEFAUT)) return true;
+  if (element.matches(SELECTEUR_ACTION_PRINCIPALE)) return true;
   return element.hasAttribute("data-tv-carte") && !!element.closest(SELECTEUR_CONTENU);
 }
 

@@ -72,6 +72,20 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "components/collection/CollectionGridCard.tsx")]:
     resolve(CLIENT, "ui/cartes/CarteCollectionTv.tsx"),
 
+  // La liste d'épisodes était le seul endroit du catalogue où le D-pad ne
+  // pouvait rien viser : la ligne du web est un `<div onClick>` sans `tabIndex`,
+  // et le seul focusable qu'elle contenait était la pastille « marquer comme
+  // vu » — vingt pixels de côté, sans libellé. On ne pouvait pas lancer un
+  // épisode depuis la fiche d'une série.
+  //
+  // C'est la LISTE qui est substituée, pas la ligne : la nôtre importe
+  // `EpisodeRow` du web et l'enveloppe, donc la vignette, la progression, les
+  // pastilles de qualité et le synopsis restent les siens. Elle en profite pour
+  // ne pas compiler la sélection multiple, « marquer la saison comme vue » et
+  // les téléchargements, qui n'ont pas de sens à la télécommande.
+  [resolve(WEB, "components/EpisodeList.tsx")]:
+    resolve(CLIENT, "ui/episodes/ListeEpisodesTv.tsx"),
+
   // La barre horizontale du web oblige à traverser tout l'écran pour changer
   // de section, et sa barre d'onglets mobile se déclenche sous 768 px. Le
   // téléviseur navigue par un rail latéral, toujours présent et déployé au
