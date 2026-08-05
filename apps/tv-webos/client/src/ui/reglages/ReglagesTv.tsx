@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Info, Play, UserRound } from "lucide-react";
@@ -70,8 +70,50 @@ export function SettingsLayout() {
 
   const active = sections.find((section) => section.id === identifiantActif);
 
+  /**
+   * On entre les réglages par la SECTION AFFICHÉE, pas par la première action
+   * du panneau.
+   *
+   * Sans cela, l'ordre de lecture désignait « Oublier ce jumelage » : la liste
+   * des sections se monte après le contenu, et l'arrivée sur `/settings`
+   * enchaîne deux changements d'adresse — la redirection vers la première
+   * section — si bien que le marqueur `aria-current` de `SettingsShell` paraît
+   * une fois la fenêtre d'affinage refermée. Entrer un écran de réglages sur une
+   * action destructive n'est pas une option.
+   *
+   * On pose donc l'attribut nous-mêmes, dès que le bouton existe. C'est le
+   * mécanisme prévu — `defaut.ts` le lit en premier —, et il reste confiné à
+   * notre substitution : `apps/web` n'apprend rien.
+   */
+  const cadre = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bouton = cadre.current?.querySelector<HTMLElement>(
+      'button[aria-current]:not([aria-current="false"])',
+    );
+    if (!bouton) return;
+    bouton.setAttribute("data-tv-focus-defaut", "");
+
+    // Et on le vise, ici même.
+    //
+    // Le marqueur seul n'a pas suffi, et la raison est de mise en page : la
+    // liste des sections paraît APRÈS le contenu du panneau, une fois la
+    // fenêtre d'affinage du moteur déjà refermée. Plutôt que d'allonger cette
+    // fenêtre pour tout le monde — ce qui ferait sauter le focus une seconde
+    // après l'arrivée sur n'importe quel écran —, la section se désigne
+    // elle-même.
+    //
+    // Jamais au détriment de l'utilisateur : si le focus est déjà dans la
+    // liste, il y a été mis par lui, et on n'y touche pas. C'est aussi ce qui
+    // rend l'effet inoffensif quand il rejoue à chaque changement de section,
+    // puisqu'on arrive alors depuis le bouton d'à côté.
+    const liste = bouton.parentElement;
+    if (!liste?.contains(document.activeElement)) bouton.focus();
+
+    return () => bouton.removeAttribute("data-tv-focus-defaut");
+  }, [identifiantActif]);
+
   return (
-    <div className="pt-6">
+    <div className="pt-6" ref={cadre}>
       <SettingsShell
         sections={sections}
         activeId={identifiantActif}

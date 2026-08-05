@@ -44,6 +44,14 @@ import { donnerFocus, elementActif } from "./actif";
  */
 const BUDGET_ENTREE_MS = 3000;
 
+/**
+ * Durée pendant laquelle on tient l'écran précédent pour sortant.
+ *
+ * Le temps d'un rendu de React, pas davantage : au-delà, ce qui est encore là
+ * est là pour rester.
+ */
+const DUREE_SORTANT_MS = 500;
+
 /** Nombre d'appuis vus depuis le démarrage. Voir `noterAppui`. */
 let appuisVus = 0;
 
@@ -118,6 +126,19 @@ export function amorcerFocus(quitteUnEcran = false): void {
     // on retient tout ce qu'il expose pour ne pas le lui rendre.
     ecranSortant = new WeakSet(recenser(document).map((candidat) => candidat.element));
     elementActif()?.blur();
+
+    // **Et on l'oublie vite.** Cette liste ne sert qu'à franchir l'instant qui
+    // sépare le changement d'adresse du rendu de React ; au-delà, elle ment.
+    //
+    // Le cas qui l'a montré : arriver sur les réglages enchaîne DEUX
+    // changements d'adresse, la redirection vers la première section. Au
+    // second, l'écran des réglages est déjà monté — la photo le classait donc
+    // parmi les sortants, et sa liste de sections restait exclue jusqu'à
+    // l'épuisement du délai. Le focus gardait ce que l'ordre de lecture lui
+    // avait donné : « Oublier ce jumelage », une action destructive.
+    setTimeout(() => {
+      ecranSortant = null;
+    }, DUREE_SORTANT_MS);
   } else {
     ecranSortant = null;
   }
@@ -177,6 +198,18 @@ export function amorcerFocus(quitteUnEcran = false): void {
  */
 function poserFocusInitial(): boolean {
   const racine = conteneurPiegeant() ?? document;
+
+  // Un écran qui a DÉJÀ désigné sa cible d'entrée a raison contre nous, et
+  // avant tout le reste — y compris avant le filtre de l'écran sortant.
+  //
+  // Sans cette règle, les réglages perdaient la leur. Ils se désignent
+  // eux-mêmes, à la seule place d'où l'on sache quelle section est affichée ;
+  // mais l'arrivée enchaîne deux changements d'adresse, la seconde photographie
+  // un écran déjà monté, et la section s'en trouvait classée « sortante ». Notre
+  // pose la remplaçait alors par ce que l'ordre de lecture proposait — « Oublier
+  // ce jumelage », une action destructive.
+  const deja = elementActif();
+  if (deja && estCiblePreferee(deja) && cibleAtteignable(deja)) return true;
 
   const memorise = entrant(retrouver(racine));
   if (memorise) {
