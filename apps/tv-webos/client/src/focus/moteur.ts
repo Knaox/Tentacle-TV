@@ -5,7 +5,12 @@ import { retenir } from "./memoire";
 import { surveillerRoute } from "./route";
 import { amorcerFocus, noterAppui, placementEnCours } from "./entree";
 import { donnerFocus, elementActif } from "./actif";
-import { meilleur, surLaMemeLigne } from "./geometrie";
+import {
+  meilleur,
+  restreindreALaPremiereLigne,
+  surLaMemeColonne,
+  surLaMemeLigne,
+} from "./geometrie";
 import { boiteDeNavigation } from "./mesure";
 import { defilerAveuglement } from "./defilement";
 import { reviserApresMontage } from "./attente";
@@ -217,6 +222,28 @@ function viser(direction: Direction): boolean {
       if (meilleur(depuis, dansLaPiste, direction)) candidats = dansLaPiste;
     } else if (depart.closest("[data-tv-grille]")) {
       candidats = candidats.filter((candidat) => surLaMemeLigne(depuis, candidat.boite));
+    }
+  } else {
+    // Un déplacement VERTICAL en grille descend dans sa colonne. La géométrie
+    // brute arbitrait sur tout l'écran — distance contre désalignement — et il
+    // suffisait d'une rangée absente du recensement pour partir en diagonale,
+    // deux rangées plus bas. La colonne d'abord ; si elle n'a pas de suite —
+    // dernière rangée incomplète —, la première ligne rencontrée, et la carte
+    // la moins désalignée y gagne. Si la grille n'offre plus rien dans cette
+    // direction, la géométrie générale reprend : le chrome au-dessus, la suite
+    // de la page en dessous restent atteignables.
+    const grille = depart.closest("[data-tv-grille]");
+    if (grille) {
+      const dansLaGrille = candidats.filter((candidat) => grille.contains(candidat.element));
+      const memeColonne = dansLaGrille.filter((candidat) =>
+        surLaMemeColonne(depuis, candidat.boite),
+      );
+      if (meilleur(depuis, memeColonne, direction)) {
+        candidats = memeColonne;
+      } else {
+        const premiereLigne = restreindreALaPremiereLigne(depuis, dansLaGrille, direction);
+        if (premiereLigne.length > 0) candidats = premiereLigne;
+      }
     }
   }
 
