@@ -74,7 +74,24 @@ export function reviserApresMontage(tentative: Tentative, options: OptionsRevisi
     if (!termine) requestAnimationFrame(essayer);
   });
 
-  observateur.observe(document.body, { childList: true, subtree: true });
+  observateur.observe(document.body, {
+    childList: true,
+    subtree: true,
+    // Deux attributs, et deux seulement.
+    //
+    // Une cible d'entrée ne paraît pas toujours en même temps que son nœud :
+    // les réglages posent `data-tv-focus-defaut` sur la section affichée un
+    // instant après l'avoir montée, et `SettingsShell` écrit `aria-current` de
+    // la même façon. Sans les observer, la révision dormait — plus aucune
+    // mutation de structure ne venait la réveiller — et l'écran gardait le
+    // focus que l'ordre de lecture lui avait donné, en l'occurrence une action
+    // destructive.
+    //
+    // Un filtre, pas `attributes: true` : sur une dalle, se faire réveiller par
+    // chaque changement de classe d'une grille de deux cents cartes coûterait
+    // exactement ce que ce module cherche à économiser.
+    attributeFilter: ["data-tv-focus-defaut", "aria-current"],
+  });
   const minuteur = setTimeout(() => arreter(false), budgetMs);
 
   requestAnimationFrame(essayer);

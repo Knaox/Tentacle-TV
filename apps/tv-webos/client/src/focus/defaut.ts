@@ -87,6 +87,23 @@ export function ciblePreferee(
   );
   if (principale) return principale.element;
 
+  // Puis l'élément COURANT, quand l'écran en désigne un.
+  //
+  // `aria-current` est déjà là pour les lecteurs d'écran, et il dit exactement
+  // ce qu'on cherche : la section affichée, l'onglet actif, la page en cours.
+  // Sans cette règle, l'ordre de lecture décidait — et sur les réglages il
+  // désignait « Oublier ce jumelage », une action destructive, simplement parce
+  // que le panneau se montait avant la liste des sections.
+  //
+  // Le rail en est exclu comme partout : on n'entre jamais dans un écran par sa
+  // navigation.
+  const courante = candidats.find(
+    (candidat) =>
+      !candidat.element.closest(SELECTEUR_RAIL) &&
+      candidat.element.matches('[aria-current]:not([aria-current="false"])'),
+  );
+  if (courante) return courante.element;
+
   const contenu = racine.querySelector(SELECTEUR_CONTENU);
   if (!contenu) return null;
 
@@ -101,6 +118,12 @@ export function ciblePreferee(
 export function estCiblePreferee(element: HTMLElement): boolean {
   if (element.hasAttribute(ATTRIBUT_DEFAUT)) return true;
   if (element.matches(SELECTEUR_ACTION_PRINCIPALE)) return true;
+  if (
+    !element.closest(SELECTEUR_RAIL) &&
+    element.matches('[aria-current]:not([aria-current="false"])')
+  ) {
+    return true;
+  }
   return element.hasAttribute("data-tv-carte") && !!element.closest(SELECTEUR_CONTENU);
 }
 
