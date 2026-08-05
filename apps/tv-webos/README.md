@@ -94,6 +94,12 @@ afficher — `requestAnimationFrame` suspendus, événements de focus jamais ém
 C'est là que se rejouent les scénarios de navigation avant de toucher une
 dalle.
 
+Elles vivent dans `harnais/`, **hors du dossier public**, et sont servies par
+`config/servirHarnais.ts` — un greffon `apply: "serve"`, donc absent de la
+construction. Un banc d'essai n'a rien à faire sur le téléviseur de quelqu'un,
+et la garantie tient dans le cycle de vie du greffon, pas dans une règle de
+nettoyage qu'il faudrait penser à maintenir.
+
 ## webOSTV.js
 
 La bibliothèque du SDK LG n'est pas versionnée ici. Déposez-la dans
