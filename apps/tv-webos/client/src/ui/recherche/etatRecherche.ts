@@ -19,6 +19,21 @@ import { useSyncExternalStore } from "react";
 let ouverte = false;
 const auditeurs = new Set<() => void>();
 
+/**
+ * Ce qui avait le focus avant l'ouverture, pour le lui rendre en refermant.
+ *
+ * Une surcouche n'est pas un changement d'écran : le moteur ne repose donc pas
+ * le focus à sa fermeture, et plus rien n'en avait — mesuré, `activeElement`
+ * retombait sur `<body>`. Le premier appui sur une flèche renvoyait alors le
+ * focus au hasard du DOM au lieu de le rendre à l'entrée du rail d'où l'on
+ * venait.
+ *
+ * Retenu ici plutôt que dans `focus/memoire.ts` : celle-ci indexe par ROUTE, et
+ * l'ouverture d'une surcouche n'en change pas. Deux mécanismes pour deux
+ * questions différentes.
+ */
+let declencheur: HTMLElement | null = null;
+
 function notifier(): void {
   auditeurs.forEach((auditeur) => auditeur());
 }
@@ -36,6 +51,8 @@ function lireInstantane(): boolean {
 
 export function ouvrirRecherche(): void {
   if (ouverte) return;
+  const actif = document.activeElement;
+  declencheur = actif instanceof HTMLElement ? actif : null;
   ouverte = true;
   notifier();
 }
@@ -45,6 +62,17 @@ export function fermerRecherche(): boolean {
   if (!ouverte) return false;
   ouverte = false;
   notifier();
+
+  // Après le rendu qui démonte la surcouche : lui rendre le focus avant
+  // reviendrait à le poser sur un élément que React s'apprête à recouvrir.
+  const cible = declencheur;
+  declencheur = null;
+  if (cible && cible.isConnected) {
+    setTimeout(() => {
+      if (cible.isConnected) cible.focus();
+    }, 0);
+  }
+
   return true;
 }
 
