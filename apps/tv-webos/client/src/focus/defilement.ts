@@ -100,9 +100,21 @@ function segmentHorizontal(rectangle: DOMRect) {
 export function defilerParPas(
   depuis: HTMLElement | null,
   direction: Direction,
+  confineA: ParentNode | null = null,
 ): (() => void) | null {
+  const recevable = (scroller: HTMLElement | null): HTMLElement | null => {
+    if (!scroller) return null;
+    // Sous un conteneur piégeant, seul ce qui lui est INTÉRIEUR peut bouger.
+    // Sans cette règle, « bas » depuis la dernière ligne d'un menu de filtres
+    // faisait défiler la page DERRIÈRE le menu, deux fois, avant de tout
+    // rendre : huit dixièmes de seconde de tremblement pour un appui qui
+    // n'avait nulle part où aller.
+    if (confineA && !confineA.contains(scroller)) return null;
+    return scroller;
+  };
+
   if (estHorizontale(direction)) {
-    const scroller = depuis ? scrollerHorizontal(depuis) : null;
+    const scroller = recevable(depuis ? scrollerHorizontal(depuis) : null);
     if (!scroller) return null;
     const avant = scroller.scrollLeft;
     scroller.scrollLeft += sens(direction) * scroller.clientWidth * PAS_HORIZONTAL;
@@ -112,7 +124,11 @@ export function defilerParPas(
     };
   }
 
-  const scroller = depuis ? scrollerVertical(depuis) : null;
+  const scroller = recevable(depuis ? scrollerVertical(depuis) : null);
+  // La fenêtre n'est jamais intérieure à un piège : sous lui, il n'y a rien à
+  // faire défiler si le panneau lui-même ne défile pas.
+  if (!scroller && confineA) return null;
+
   const vue = scroller ? scroller.clientHeight : window.innerHeight;
   const rangee = depuis ? depuis.getBoundingClientRect().height + MARGE : vue * PLAFOND_PAS_VERTICAL;
   const pas = sens(direction) * Math.min(rangee, vue * PLAFOND_PAS_VERTICAL);

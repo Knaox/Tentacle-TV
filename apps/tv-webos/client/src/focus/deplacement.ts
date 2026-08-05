@@ -11,6 +11,7 @@ import {
 import { boiteDeNavigation } from "./mesure";
 import { defilerParPas } from "./defilement";
 import { reviserApresMontage } from "./attente";
+import { fermerMenuDeploye } from "./menuDeploye";
 import {
   SELECTEUR_RAIL,
   dansLeRail,
@@ -51,10 +52,15 @@ const BUDGET_PAS_MS = 400;
 export function deplacer(direction: Direction): void {
   if (viser(direction)) return;
 
+  // Un piège borne tout ce qui suit : rien de ce qui lui est extérieur ne doit
+  // bouger sous lui, et un menu déployé est le cas courant. Relu une fois et
+  // passé aux deux pas, plutôt que redemandé à chaque tentative.
+  const piege = conteneurPiegeant();
+
   // Aucun voisin : soit on est au bord, soit la cible n'est pas montée. Le
   // fenêtrage des rangées vide une rangée entière dès qu'elle sort de l'écran,
   // et une carte non montée ne peut pas recevoir le focus.
-  const annulerPremier = defilerParPas(elementActif(), direction);
+  const annulerPremier = defilerParPas(elementActif(), direction, piege);
   if (!annulerPremier) return;
 
   reviserApresMontage(() => viser(direction), {
@@ -63,7 +69,7 @@ export function deplacer(direction: Direction): void {
       // Un second pas absorbe une rangée plus haute que la moyenne ; au-delà,
       // il n'y a réellement rien, et l'on rend le terrain parcouru — dans
       // l'ordre inverse, chaque pas pouvant avoir touché un scroller différent.
-      const annulerSecond = defilerParPas(elementActif(), direction);
+      const annulerSecond = defilerParPas(elementActif(), direction, piege);
       if (!annulerSecond) {
         annulerPremier();
         return;
@@ -161,6 +167,17 @@ export function viser(direction: Direction): boolean {
         return true;
       }
     }
+
+    // « Haut » depuis le début d'un menu déployé le referme, et rend le focus
+    // à la pastille qui l'a ouvert. Sans cela, remonter au-delà de la première
+    // ligne ne faisait rien — la seule issue était Retour, qu'il fallait avoir
+    // deviné. Le geste est celui qu'on a déjà fait pour entrer, à l'envers.
+    //
+    // Un dialogue n'a pas de déclencheur `aria-expanded` : `fermerMenuDeploye`
+    // rend faux, et une modale reste ce qu'elle est — une surface dont on sort
+    // par Retour.
+    if (direction === "haut" && piege) return fermerMenuDeploye(piege);
+
     return false;
   }
 
