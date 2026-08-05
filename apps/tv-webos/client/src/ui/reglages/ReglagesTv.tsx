@@ -75,7 +75,12 @@ export function SettingsLayout() {
       <SettingsShell
         sections={sections}
         activeId={identifiantActif}
-        onSelect={(id) => navigate(`/settings/${id}`)}
+        // `replace` et non un empilement : sur une dalle, Retour doit QUITTER
+        // les réglages, pas remonter une à une les sections qu'on vient de
+        // parcourir. Trois sections visitées, c'était trois appuis pour revenir
+        // au catalogue — et rien à l'écran ne l'expliquait, puisque l'écran ne
+        // change pas d'aspect entre deux sections.
+        onSelect={(id) => navigate(`/settings/${id}`, { replace: true })}
         title={active ? active.label : t("settingsTitle")}
         description={undefined}
         onBack={() => navigate("/settings")}

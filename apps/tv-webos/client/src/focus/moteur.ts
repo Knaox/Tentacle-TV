@@ -58,6 +58,49 @@ export function installerMoteurFocus(): () => void {
   };
   document.addEventListener("focusin", surArrivee, true);
 
+  /**
+   * Le focus PERDU, et rendu.
+   *
+   * C'est la garantie de la première règle — il y a toujours exactement un
+   * élément focalisé — et elle ne pouvait pas tenir sans cela. Un élément
+   * focalisé peut disparaître sous nos pieds sans qu'aucune route ne change :
+   * la bannière d'accueil se re-rend quand ses données arrivent, React remplace
+   * le nœud du bouton, et le focus tombe sur `<body>`. Mesuré, l'accueil restait
+   * ainsi indéfiniment sans anneau après un démarrage à froid — la pose initiale
+   * avait pourtant réussi, quelques centaines de millisecondes plus tôt.
+   *
+   * Le report d'un tour de boucle est nécessaire : `focusout` part AVANT que le
+   * focus suivant ne soit posé, donc un déplacement ordinaire passerait ici pour
+   * une perte. Au tour suivant, `elementActif()` répond et l'on ne fait rien.
+   */
+  const rendreLeFocus = () => {
+    if (placementEnCours()) return;
+    if (elementActif()) return;
+    amorcerFocus();
+  };
+
+  const surPerte = () => setTimeout(rendreLeFocus, 0);
+  document.addEventListener("focusout", surPerte, true);
+
+  /**
+   * Le chien de garde de la première règle.
+   *
+   * `focusout` réagit vite, mais il ne réagit que si l'on nous prévient — et il
+   * y a au moins deux cas où personne ne prévient. React peut REMPLACER le nœud
+   * focalisé au lieu de le retirer, et le focus tombe alors sur `<body>` sans
+   * qu'aucun événement ne parte. Et un document qui n'a pas le focus système
+   * n'émet aucun événement de focus du tout, ce qui arrive sur une dalle chaque
+   * fois qu'une surcouche de la plateforme passe devant l'application.
+   *
+   * Une vérification par demi-seconde ferme ces cas sans rien supposer : c'est
+   * une lecture de propriété, la dépense la plus faible qu'on puisse imaginer,
+   * et elle ne fait quoi que ce soit que lorsque l'écran a réellement perdu son
+   * anneau. On préfère cette dépense-là à un écran de salon où la télécommande
+   * ne répond plus.
+   */
+  const INTERVALLE_GARDE_MS = 500;
+  const garde = setInterval(rendreLeFocus, INTERVALLE_GARDE_MS);
+
   // Changer d'écran repose le focus. Sans cela, le premier appui sur une flèche
   // ne sert qu'à faire apparaître l'anneau.
   const arreterRoute = surveillerRoute(() => amorcerFocus(true));
@@ -98,6 +141,8 @@ export function installerMoteurFocus(): () => void {
   return () => {
     document.removeEventListener("keydown", surTouche, true);
     document.removeEventListener("focusin", surArrivee, true);
+    document.removeEventListener("focusout", surPerte, true);
+    clearInterval(garde);
     arreterRoute();
     arreterSurvol();
     arreterCurseur();

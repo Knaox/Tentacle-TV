@@ -15,6 +15,9 @@
 :root {
   --recherche-carte: 200px;
   --recherche-ecart: 24px;
+  /* Épaisseur de l'anneau plus son écart, arrondis au pair supérieur : c'est
+     ce qu'il faut laisser hors de la boîte pour qu'il ne soit pas rogné. */
+  --recherche-anneau: 8px;
 }
 
 .recherche-tv {
@@ -62,10 +65,24 @@
   overflow-y: auto;
   /* La marge négative de la grille dépasse de la largeur d'un écart : sans
      cela, une barre de défilement horizontale apparaît pour vingt-quatre pixels
-     de vide. Le rognage tombe au-delà de la dernière carte, l'anneau de focus
-     n'est pas touché. */
+     de vide. */
   overflow-x: hidden;
   padding-top: 28px;
+  /* De la place pour l'anneau, RETIRÉE ensuite par une marge négative.
+   *
+   * Un `outline` se dessine hors de la boîte de son élément — c'est ce qui le
+   * rend insensible à la mise en page, et c'est aussi ce qui le rend rognable.
+   * Le commentaire ci-dessus affirmait que le rognage tombait au-delà de la
+   * dernière carte : c'est vrai à droite, et faux à gauche, où le bord du
+   * conteneur épouse celui de la première colonne. La carte visée y perdait donc
+   * tout son anneau — sept pixels d'épaisseur et d'écart.
+   *
+   * Le padding donne la place, la marge négative la reprend : rien ne bouge à
+   * l'écran, et l'anneau a de quoi se dessiner des deux côtés. */
+  padding-left: var(--recherche-anneau);
+  padding-right: var(--recherche-anneau);
+  margin-left: calc(-1 * var(--recherche-anneau));
+  margin-right: calc(-1 * var(--recherche-anneau));
 }
 
 .recherche-tv-message {

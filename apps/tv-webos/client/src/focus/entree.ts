@@ -51,6 +51,21 @@ let appuisVus = 0;
 let placementAutomatique = false;
 
 /**
+ * Relances restantes quand un écran n'a toujours rien à viser.
+ *
+ * Le démarrage à froid dépasse le délai de grâce : le moteur est installé avant
+ * même le premier rendu de React, et sur une dalle le catalogue peut mettre
+ * plusieurs secondes à répondre. Mesuré, l'accueil finissait sans anneau — la
+ * seule règle qu'on ne s'autorise jamais à enfreindre.
+ *
+ * On relance donc, borné. Quatre tours de trois secondes couvrent un démarrage
+ * lent sans jamais boucler : dès qu'un élément est focalisable, le compteur est
+ * remis à zéro et la chaîne s'arrête.
+ */
+const RELANCES_MAX = 3;
+let relances = 0;
+
+/**
  * Les éléments de l'écran qu'on vient de quitter.
  *
  * Le routeur change l'adresse AVANT que React ne rende l'écran suivant : à
@@ -127,12 +142,23 @@ export function amorcerFocus(quitteUnEcran = false): void {
         // Le sortant a eu tout le temps de disparaître : ce qui reste est
         // l'écran courant, quel qu'il soit.
         ecranSortant = null;
-        if (elementActif()) return;
+        if (elementActif()) {
+          relances = 0;
+          return;
+        }
         // La cible mémorisée n'est jamais reparue — liste vidée, élément
         // retiré, réseau muet. On renonce à elle plutôt que de laisser l'écran
         // sans anneau : c'est la règle qui prime sur toutes les autres.
         oublier();
-        poserFocusInitial();
+        if (poserFocusInitial()) {
+          relances = 0;
+          return;
+        }
+        // Rien à viser : l'écran n'a pas encore rendu quoi que ce soit
+        // d'atteignable. On rouvre un délai de grâce plutôt que d'abandonner.
+        if (relances >= RELANCES_MAX) return;
+        relances++;
+        amorcerFocus();
       },
     },
   );
