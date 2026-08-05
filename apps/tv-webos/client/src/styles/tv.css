@@ -118,16 +118,26 @@ body {
  * faire.
  *
  * Restent les tailles que `apps/web` fixe en dur pour des libellés secondaires.
- * À 1280 puis ×1,5, un `text-[10px]` fait 15 px physiques, soit environ 0,25°
- * à trois mètres — sous le seuil de lecture confortable. On les relève à 14 px
- * de canevas, donc 21 px physiques.
+ *
+ * **Le plancher se lit SUR LA DALLE, pas sur le canevas.** La convention des
+ * interfaces de salon — celle de LG comme celle de Google — donne 24 px à
+ * 1080p pour un corps de texte. Le canevas fait 1280 et la dalle l'agrandit de
+ * ×1,5 : 24 px physiques valent donc 16 px ici. Prendre la règle au pied de la
+ * lettre sur le canevas aurait grossi toute l'interface de moitié, exactement
+ * le reproche qu'on lui faisait par ailleurs.
+ *
+ * Mesuré avant : titres de carte et métadonnées rendaient 21 px physiques,
+ * sous le plancher. `text-sm` y entre pour cette raison — c'est lui que portent
+ * les titres de carte, et 14 px de canevas font 21 px de dalle tout autant
+ * qu'un `text-xs` relevé à 14.
  *
  * La liste est fermée et vérifiable :
- *   grep -rn 'text-\[10px\]\|text-\[11px\]\|text-xs' apps/web/src | wc -l */
+ *   grep -rn 'text-\[10px\]\|text-\[11px\]\|text-xs\|text-sm' apps/web/src */
 .text-\[10px\],
 .text-\[11px\],
-.text-xs {
-  font-size: 14px;
+.text-xs,
+.text-sm {
+  font-size: 16px;
   line-height: 1.45;
 }
 
