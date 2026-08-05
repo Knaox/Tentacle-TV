@@ -1,4 +1,11 @@
 import { estHorizontale, sens, type Direction } from "./touches";
+import { correction } from "./cadrage";
+import {
+  scrollerHorizontal,
+  scrollerVertical,
+  scrollersHorizontaux,
+  scrollersVerticaux,
+} from "./scrollers";
 
 /**
  * Amener un élément en vue, et faire défiler quand il n'y a pas de voisin.
@@ -8,6 +15,10 @@ import { estHorizontale, sens, type Direction } from "./touches";
  * l'appel devient `scrollIntoView(true)` — alignement en haut, saut brutal à
  * chaque déplacement du focus. Tout se fait donc par écriture directe de
  * `scrollLeft` et `scrollTop`, ce qui a le mérite d'être exact partout.
+ *
+ * Le calcul lui-même vit dans `cadrage.ts`, qui ne connaît que des segments :
+ * il est le même pour un axe ou l'autre, pour un conteneur ou pour la fenêtre,
+ * et il est testé.
  */
 
 /** Marge conservée entre l'élément visé et le bord, en pixels. */
@@ -19,88 +30,50 @@ const PAS_HORIZONTAL = 0.6;
 /** Plafond du pas vertical, en fraction de la hauteur visible. */
 const PLAFOND_PAS_VERTICAL = 0.4;
 
-/** Fait entrer l'élément dans la zone visible, horizontalement puis verticalement. */
+export { scrollerHorizontal, scrollerVertical };
+
+/**
+ * Fait entrer l'élément dans la zone visible, horizontalement puis verticalement.
+ *
+ * Toute la CHAÎNE des conteneurs est parcourue, du plus interne au plus
+ * externe, et l'élément est re-mesuré entre chaque : corriger le conteneur
+ * intérieur déplace l'élément, donc la correction du suivant a pu devenir
+ * nulle. Ne traiter que le premier laissait un résultat hors écran dès qu'il y
+ * avait deux niveaux — la liste de résultats dans le corps de la recherche.
+ */
 export function amenerEnVue(element: HTMLElement): void {
-  const scroller = scrollerHorizontal(element);
-  if (scroller) amenerDansScroller(element, scroller);
-
-  // Puis le conteneur qui défile VERTICALEMENT, s'il y en a un — un rail dont
-  // les entrées débordent, une liste d'options, un panneau de réglages.
-  //
-  // Sans cette étape, l'élément n'était amené en vue que par le comportement
-  // natif de `focus()` : il colle au bord, sans la marge que le reste du module
-  // s'impose, et sur une dalle qui rogne ses bords il peut rester invisible.
-  const vertical = scrollerVertical(element);
-  if (vertical) amenerDansScrollerVertical(element, vertical);
-
-  amenerDansPage(element);
-}
-
-/**
- * Le conteneur à défilement horizontal qui porte l'élément, s'il existe.
- *
- * C'est la piste d'une rangée. Le reconnaître importe : faire défiler la page
- * pour atteindre une carte située à droite ne servirait à rien, c'est la piste
- * qu'il faut déplacer.
- */
-export function scrollerHorizontal(element: HTMLElement): HTMLElement | null {
-  let courant: HTMLElement | null = element.parentElement;
-  while (courant && courant !== document.body) {
-    const style = window.getComputedStyle(courant);
-    const defile = style.overflowX === "auto" || style.overflowX === "scroll";
-    if (defile && courant.scrollWidth > courant.clientWidth + 1) return courant;
-    courant = courant.parentElement;
+  for (const scroller of scrollersHorizontaux(element)) {
+    const delta = correction(
+      segmentHorizontal(element.getBoundingClientRect()),
+      segmentHorizontal(scroller.getBoundingClientRect()),
+      MARGE,
+    );
+    if (delta !== 0) scroller.scrollLeft += delta;
   }
-  return null;
-}
 
-/**
- * Le conteneur à défilement vertical qui porte l'élément, s'il existe.
- *
- * Écrit à part de son homologue horizontal plutôt que paramétré : les deux
- * lisent des propriétés différentes, et une fonction qui prend un axe en
- * argument coûterait plus à lire qu'elle n'économise à écrire.
- */
-export function scrollerVertical(element: HTMLElement): HTMLElement | null {
-  let courant: HTMLElement | null = element.parentElement;
-  while (courant && courant !== document.body) {
-    const style = window.getComputedStyle(courant);
-    const defile = style.overflowY === "auto" || style.overflowY === "scroll";
-    if (defile && courant.scrollHeight > courant.clientHeight + 1) return courant;
-    courant = courant.parentElement;
+  for (const scroller of scrollersVerticaux(element)) {
+    const delta = correction(
+      segmentVertical(element.getBoundingClientRect()),
+      segmentVertical(scroller.getBoundingClientRect()),
+      MARGE,
+    );
+    if (delta !== 0) scroller.scrollTop += delta;
   }
-  return null;
+
+  const delta = correction(
+    segmentVertical(element.getBoundingClientRect()),
+    { debut: 0, fin: window.innerHeight },
+    MARGE,
+  );
+  if (delta !== 0) window.scrollBy(0, delta);
 }
 
-function amenerDansScrollerVertical(element: HTMLElement, scroller: HTMLElement): void {
-  const boiteElement = element.getBoundingClientRect();
-  const boiteScroller = scroller.getBoundingClientRect();
-
-  const debordeEnHaut = boiteElement.top - boiteScroller.top - MARGE;
-  const debordeEnBas = boiteElement.bottom - boiteScroller.bottom + MARGE;
-
-  if (debordeEnHaut < 0) scroller.scrollTop += debordeEnHaut;
-  else if (debordeEnBas > 0) scroller.scrollTop += debordeEnBas;
+function segmentVertical(rectangle: DOMRect) {
+  return { debut: rectangle.top, fin: rectangle.bottom };
 }
 
-function amenerDansScroller(element: HTMLElement, scroller: HTMLElement): void {
-  const boiteElement = element.getBoundingClientRect();
-  const boiteScroller = scroller.getBoundingClientRect();
-
-  const debordeAGauche = boiteElement.left - boiteScroller.left - MARGE;
-  const debordeADroite = boiteElement.right - boiteScroller.right + MARGE;
-
-  if (debordeAGauche < 0) scroller.scrollLeft += debordeAGauche;
-  else if (debordeADroite > 0) scroller.scrollLeft += debordeADroite;
-}
-
-function amenerDansPage(element: HTMLElement): void {
-  const boite = element.getBoundingClientRect();
-  const debordeEnHaut = boite.top - MARGE;
-  const debordeEnBas = boite.bottom - window.innerHeight + MARGE;
-
-  if (debordeEnHaut < 0) window.scrollBy(0, debordeEnHaut);
-  else if (debordeEnBas > 0) window.scrollBy(0, debordeEnBas);
+function segmentHorizontal(rectangle: DOMRect) {
+  return { debut: rectangle.left, fin: rectangle.right };
 }
 
 /**

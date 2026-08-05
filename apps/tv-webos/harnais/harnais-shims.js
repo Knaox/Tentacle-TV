@@ -28,6 +28,36 @@ if (document.hidden) {
   };
 }
 
+/**
+ * Rejouer le `focus()` de Chrome 53, que le navigateur de mise au point n'a
+ * plus. Deux différences, et ce sont elles qui produisaient le défaut le plus
+ * coûteux du portage :
+ *
+ *   - `preventScroll` n'existe pas et l'option est ignorée ;
+ *   - un élément PARTIELLEMENT visible est RECENTRÉ verticalement, là où un
+ *     moteur récent l'amène au plus court.
+ *
+ * Avec cette simulation active, un moteur qui ne reprend pas la main sur le
+ * cadrage fait redescendre l'anneau d'un demi-écran quand on remonte une
+ * liste. C'est exactement ce qu'on veut pouvoir constater ici plutôt qu'à
+ * trois mètres d'une dalle.
+ */
+window.__simulerChrome53 = () => {
+  const focusNatif = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function () {
+    focusNatif.call(this);
+    const rect = this.getBoundingClientRect();
+    const vue = window.innerHeight;
+    const entier = rect.top >= 0 && rect.bottom <= vue;
+    if (!entier && rect.height < vue) {
+      window.scrollBy(0, rect.top - (vue - rect.height) / 2);
+    }
+    if (document.hidden && document.activeElement === this) {
+      this.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    }
+  };
+};
+
 window.__appui = (key, keyCode) =>
   document.dispatchEvent(new KeyboardEvent("keydown", { key, keyCode, bubbles: true, cancelable: true }));
 
