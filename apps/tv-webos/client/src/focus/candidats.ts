@@ -1,4 +1,5 @@
-import { boiteDepuisRectangle, type Boite } from "./geometrie";
+import type { Boite } from "./geometrie";
+import { boiteDeNavigation } from "./mesure";
 
 /**
  * Ce que le D-pad peut atteindre.
@@ -60,7 +61,9 @@ export function recenser(racine: ParentNode = document): Candidat[] {
     if (rectangle.right < -largeurVue * marge) continue;
     if (rectangle.left > largeurVue * (1 + marge)) continue;
 
-    candidats.push({ element: noeud, boite: boiteDepuisRectangle(rectangle) });
+    // La boîte de NAVIGATION, débarrassée de l'agrandissement au focus : la
+    // fenêtre ci-dessus juge la position à l'écran, le rect brut lui suffit.
+    candidats.push({ element: noeud, boite: boiteDeNavigation(noeud, rectangle) });
   }
 
   return sansEnveloppes(candidats);

@@ -5,7 +5,8 @@ import { retenir } from "./memoire";
 import { surveillerRoute } from "./route";
 import { amorcerFocus, noterAppui, placementEnCours } from "./entree";
 import { donnerFocus, elementActif } from "./actif";
-import { boiteDepuisRectangle, meilleur, surLaMemeLigne } from "./geometrie";
+import { meilleur, surLaMemeLigne } from "./geometrie";
+import { boiteDeNavigation } from "./mesure";
 import { defilerAveuglement } from "./defilement";
 import { reviserApresMontage } from "./attente";
 import { surveillerCurseur } from "./curseur";
@@ -194,7 +195,9 @@ function viser(direction: Direction): boolean {
   const racine = conteneurPiegeant() ?? document;
   let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
 
-  const depuis = boiteDepuisRectangle(depart.getBoundingClientRect());
+  // La boîte de mise en page, pas celle du rendu : le départ est justement la
+  // carte agrandie par le focus, la pire à mesurer transformée.
+  const depuis = boiteDeNavigation(depart);
 
   // Un déplacement horizontal reste dans sa rangée. Sans cela, la dernière
   // carte d'une piste voit à sa droite les éléments des rangées voisines — la
