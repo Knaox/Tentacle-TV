@@ -72,6 +72,15 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "components/collection/CollectionGridCard.tsx")]:
     resolve(CLIENT, "ui/cartes/CarteCollectionTv.tsx"),
 
+  // Ma liste et Favoris : la sélection multiple et le partage quittent la
+  // cible. Le premier sortait TOUTES les cartes du parcours du D-pad dès qu'on
+  // y entrait ; le second ouvrait une modale qui confine le focus et n'offre
+  // aucun bouton de fermeture — un piège sans issue à la télécommande. Les deux
+  // pages du web ne sont que des compositions autour de `CollectionGrid`, et
+  // c'est cette composition qu'on refait, moins ce qui n'a pas sa place.
+  [resolve(WEB, "pages/Watchlist.tsx")]: resolve(CLIENT, "ui/collections/CollectionsTv.tsx"),
+  [resolve(WEB, "pages/Favorites.tsx")]: resolve(CLIENT, "ui/collections/CollectionsTv.tsx"),
+
   // La liste d'épisodes était le seul endroit du catalogue où le D-pad ne
   // pouvait rien viser : la ligne du web est un `<div onClick>` sans `tabIndex`,
   // et le seul focusable qu'elle contenait était la pastille « marquer comme

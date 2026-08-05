@@ -126,14 +126,46 @@ function ancetresVisibles(
  * corrige à la main, en retirant l'attribut. Le traiter ici le corrige partout,
  * y compris pour ce que personne n'a encore écrit.
  */
+/**
+ * Sauf quand l'enveloppe est, elle, un vrai contrôle.
+ *
+ * La règle du plus intérieur se retourne contre nous dans un cas précis : une
+ * pastille de filtre de bibliothèque est un `<button>` qui OUVRE son menu, et
+ * dès qu'un filtre est posé elle se met à contenir une petite affordance
+ * d'effacement — un `<span role="button" tabindex="0">` de seize pixels. Le
+ * plus intérieur l'emportait, et la pastille cessait d'être ouvrable : il ne
+ * restait qu'une cible minuscule qui efface.
+ *
+ * On départage donc par la NATURE. Un `<button>` ou un `<a>` est un contrôle à
+ * part entière, jamais un simple conteneur ; ce qu'il enveloppe est une
+ * affordance secondaire, et c'est elle qui cède. Dans tous les autres cas —
+ * un `<div>` de défilement, une `<section>` de rangée — l'enveloppe cède comme
+ * avant.
+ */
+const CONTROLES_NATIFS = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA"]);
+
+function estControleNatif(element: HTMLElement): boolean {
+  return CONTROLES_NATIFS.has(element.tagName);
+}
+
 function sansEnveloppes(candidats: Candidat[]): Candidat[] {
   if (candidats.length < 2) return candidats;
-  return candidats.filter(
-    (candidat) =>
-      !candidats.some(
-        (autre) => autre !== candidat && candidat.element.contains(autre.element),
-      ),
-  );
+
+  const ecartes = new Set<HTMLElement>();
+  for (const candidat of candidats) {
+    for (const autre of candidats) {
+      if (autre === candidat) continue;
+      if (!candidat.element.contains(autre.element)) continue;
+
+      if (estControleNatif(candidat.element) && !estControleNatif(autre.element)) {
+        ecartes.add(autre.element);
+      } else {
+        ecartes.add(candidat.element);
+      }
+    }
+  }
+
+  return candidats.filter((candidat) => !ecartes.has(candidat.element));
 }
 
 /** Visible, actif, et pas explicitement retiré du parcours. */
@@ -203,10 +235,16 @@ export function cibleAtteignable(element: HTMLElement): boolean {
  * D-pad s'échappe vers la page qui la porte, l'anneau passe derrière le calque
  * et devient invisible. Reconnue par son rôle, pas par un marqueur ajouté —
  * `role="dialog"` est déjà là pour les lecteurs d'écran.
+ *
+ * **Un menu déployé piège tout autant.** Les menus de filtres d'une
+ * bibliothèque déclarent `role="menu"` et leurs entrées `menuitemcheckbox` :
+ * sans cette reconnaissance, une flèche sortait du menu ouvert et repartait
+ * dans la grille, en laissant le panneau déployé par-dessus. Même rôle, même
+ * conséquence, même traitement.
  */
 export function conteneurPiegeant(): ParentNode | null {
   const dialogues = document.querySelectorAll<HTMLElement>(
-    '[role="dialog"],[role="alertdialog"],dialog[open]',
+    '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],dialog[open]',
   );
   for (let index = dialogues.length - 1; index >= 0; index--) {
     const dialogue = dialogues[index];
