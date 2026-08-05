@@ -179,6 +179,9 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
           <button
             key={opt.key}
             onClick={() => { props.onStatusChange(opt.value); props.onFavoriteChange(false); }}
+            // L'état actif ne se lisait que dans la teinte de la pastille : un
+            // lecteur d'écran ne pouvait pas dire quel filtre était posé.
+            aria-selected={props.filters.statusFilter === opt.value && !props.filters.isFavorite}
             className={chipCls(
               props.filters.statusFilter === opt.value && !props.filters.isFavorite,
             )}
@@ -188,6 +191,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
         ))}
         <button
           onClick={() => { props.onFavoriteChange(!props.filters.isFavorite); if (!props.filters.isFavorite) props.onStatusChange(null); }}
+          aria-selected={props.filters.isFavorite}
           className={`${chipCls(props.filters.isFavorite, "rose")} inline-flex items-center gap-1.5`}
         >
           <HeartIcon filled={props.filters.isFavorite} />
