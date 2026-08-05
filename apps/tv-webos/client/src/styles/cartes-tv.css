@@ -38,7 +38,11 @@
 
 /* Le titre et les métadonnées sous l'affiche : tronqués au repos, entiers au
    focus. C'est le seul endroit où l'on gagne à en dire plus, et il ne coûte
-   rien tant que le focus n'y est pas. */
+   rien tant que le focus n'y est pas.
+
+   Les cartes de Ma liste et des favoris ont leur propre règle, plus bas : le
+   web y emploie un `p` tronqué par `line-clamp`, une autre technique que le
+   `text-overflow` du `h3`, qui ne se déplie pas de la même façon. */
 .carte-tv .row-dim-card h3 {
   transition: color var(--carte-focus-duree) ease-out;
 }

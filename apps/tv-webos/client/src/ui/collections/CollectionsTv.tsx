@@ -50,7 +50,23 @@ function CollectionTv({
 
   return (
     <PageTransition>
-      <div className="min-h-screen pb-20">
+      {/* `relative z-10` n'est pas décoratif : c'est ce qui remet cette page
+          AU-DESSUS du décor de la carte visée.
+
+          `FondFocusTv` couvre l'écran en `position: fixed; z-index: 0`, et le
+          commentaire de `cartes-tv.css` supposait que cela suffisait à le
+          garder sous le contenu. C'est faux en CSS : dans une même pile, un
+          élément POSITIONNÉ à `z-index: 0` est peint après tout contenu
+          statique. Les cartes, qui sont `relative`, restaient donc devant —
+          mais le titre de la page et ses onglets, qui ne le sont pas,
+          passaient dessous, sous une image à 0,55 d'opacité et un voile qui
+          finit opaque. D'où « le focus d'une carte cache les filtres ».
+
+          L'accueil (`Home.tsx`) et les bibliothèques (`Library.tsx`) ont ce
+          conteneur depuis toujours ; ces deux pages-ci ne l'ont jamais eu, et
+          ce sont aussi les seules du parcours à n'avoir pas de bannière —
+          leur titre commence tout en haut, là où le décor est le plus dense. */}
+      <div className="collections-tv relative z-10 min-h-screen pb-20">
         <CollectionGrid
           title={titre}
           items={items}

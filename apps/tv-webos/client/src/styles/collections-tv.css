@@ -1,0 +1,40 @@
+/* ── Ma liste et Mes favoris ──────────────────────────────────────────────
+ *
+ * Ces deux pages sont les seules du parcours à n'avoir pas de bannière : leur
+ * titre et leurs onglets commencent tout en haut de l'écran, là où le décor de
+ * la carte visée est le plus dense. Elles ont donc leurs propres réglages, que
+ * `cartes-tv.css` — déjà long, et qui parle de cartes — n'a pas à porter.
+ *
+ * Le défaut principal ne se corrige pas ici mais dans `CollectionsTv.tsx`, qui
+ * pose `relative z-10` : sans ce conteneur positionné, le décor était peint
+ * par-dessus le titre et les filtres, qui sont du contenu statique. Ce qui
+ * suit traite ce que ce conteneur ne règle pas.
+ */
+
+/* Le titre d'une carte de collection est un `p` tronqué par `line-clamp`, là
+   où les rangées et les bibliothèques emploient un `h3` tronqué par
+   `text-overflow`. La règle de `cartes-tv.css` ne visait que la seconde : sous
+   le focus, ces titres-ci restaient gris et coupés.
+
+   Le dépliage se fait donc dans la technique du `line-clamp` — porter le
+   nombre de lignes à deux — et non par `overflow: visible`, qui ferait
+   déborder le titre entier sur la rangée du dessous. */
+.carte-tv p.line-clamp-1 {
+  transition: color var(--carte-focus-duree) ease-out;
+}
+
+.carte-tv:focus p.line-clamp-1 {
+  color: var(--text-primary);
+  -webkit-line-clamp: 2;
+}
+
+/* L'écart entre les onglets de filtre et la première rangée.
+ *
+ * Le web pose 24 px. Une carte focalisée grandit de 8 % avec son origine en
+ * bas, donc déborde vers le HAUT d'environ 26 px, auxquels s'ajoutent
+ * l'anneau et son décalage : la première rangée mordait sur les onglets et,
+ * portant un `z-index`, les recouvrait. La marge est portée à la hauteur du
+ * débord. */
+.collections-tv .mb-6 {
+  margin-bottom: 40px;
+}
