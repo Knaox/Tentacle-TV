@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { meilleur, noter, surLaMemeLigne, type Boite } from "./geometrie";
+import {
+  meilleur,
+  noter,
+  restreindreALaPremiereLigne,
+  surLaMemeColonne,
+  surLaMemeLigne,
+  type Boite,
+} from "./geometrie";
 
 /**
  * Les cas qui décident si une navigation à la télécommande est agréable ou
@@ -156,5 +163,63 @@ describe("surLaMemeLigne", () => {
     const focalisee = boite(194, -26, 200, 354);
     const ligneSuivante = boite(0, 346, 185, 328);
     expect(surLaMemeLigne(focalisee, ligneSuivante)).toBe(false);
+  });
+});
+
+describe("surLaMemeColonne", () => {
+  it("reconnaît deux cartes empilées", () => {
+    expect(surLaMemeColonne(boite(220, 0, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, CARTE.h))).toBe(
+      true,
+    );
+  });
+
+  it("sépare deux colonnes voisines malgré l'agrandissement au focus", () => {
+    // La carte focalisée déborde de ~7 px dans une gouttière de 16 : ses flancs
+    // mordent la colonne voisine sans jamais en recouvrir la moitié.
+    const focalisee = boite(212, -26, 200, 354);
+    const colonneVoisine = boite(421, 340, 185, 328);
+    expect(surLaMemeColonne(focalisee, colonneVoisine)).toBe(false);
+  });
+
+  it("garde ensemble deux cartes de largeurs différentes", () => {
+    expect(surLaMemeColonne(boite(220, 0, CARTE.l, CARTE.h), boite(200, 340, 260, CARTE.h))).toBe(
+      true,
+    );
+  });
+});
+
+describe("restreindreALaPremiereLigne", () => {
+  it("s'arrête à la rangée suivante quand la colonne est orpheline", () => {
+    // Dernière rangée incomplète : depuis la colonne 4, « bas » doit proposer
+    // la rangée d'en dessous — pas celle d'encore après, même mieux alignée.
+    const depart = boite(880, 0, CARTE.l, CARTE.h);
+    const rangeeIncomplete = [0, 220].map((x) => ({
+      element: `r1x${x}`,
+      boite: boite(x, 340, CARTE.l, CARTE.h),
+    }));
+    const rangeeLointaine = [880].map((x) => ({
+      element: `r2x${x}`,
+      boite: boite(x, 680, CARTE.l, CARTE.h),
+    }));
+
+    const retenus = restreindreALaPremiereLigne(
+      depart,
+      [...rangeeLointaine, ...rangeeIncomplete],
+      "bas",
+    );
+    expect(retenus.map((candidat) => candidat.element).sort()).toEqual(["r1x0", "r1x220"]);
+    expect(meilleur(depart, retenus, "bas")?.element).toBe("r1x220");
+  });
+
+  it("ne rend rien quand la direction est vide", () => {
+    const depart = boite(0, 680, CARTE.l, CARTE.h);
+    const auDessus = [{ element: "dessus", boite: boite(0, 340, CARTE.l, CARTE.h) }];
+    expect(restreindreALaPremiereLigne(depart, auDessus, "bas")).toEqual([]);
+  });
+
+  it("écarte ce qui recouvre le départ sur l'axe visé", () => {
+    const depart = boite(0, 0, CARTE.l, CARTE.h);
+    const memePlace = [{ element: "ici", boite: boite(10, 4, CARTE.l, CARTE.h) }];
+    expect(restreindreALaPremiereLigne(depart, memePlace, "bas")).toEqual([]);
   });
 });

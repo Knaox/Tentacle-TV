@@ -69,7 +69,7 @@
         <button type="button" data-chrome="filtre-annee">Année</button>
       </div>
 
-      <div class="grille" data-harnais-grille></div>
+      <div class="grille" data-tv-grille data-harnais-grille></div>
 
       <section class="piste-section">
         <h2>Une piste horizontale</h2>
@@ -81,11 +81,14 @@
       import { installerMoteurFocus } from "/tv/src/focus/moteur.ts";
       import { amorcerFocus } from "/tv/src/focus/entree.ts";
 
-      // La grille : 5 colonnes × 8 rangées, comme une bibliothèque. La colonne
-      // se lit dans le libellé (r3c2), c'est ce que les scénarios vérifient.
+      // La grille : 5 colonnes × 8 rangées, comme une bibliothèque — la
+      // dernière rangée est incomplète (3 cartes), comme presque toujours. La
+      // colonne se lit dans le libellé (r3c2), c'est ce que les scénarios
+      // vérifient.
       const grille = document.querySelector("[data-harnais-grille]");
       for (let rangee = 0; rangee < 8; rangee++) {
-        for (let colonne = 0; colonne < 5; colonne++) {
+        const colonnes = rangee === 7 ? 3 : 5;
+        for (let colonne = 0; colonne < colonnes; colonne++) {
           const carte = document.createElement("div");
           carte.setAttribute("role", "button");
           carte.setAttribute("tabindex", "0");

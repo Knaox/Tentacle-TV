@@ -136,6 +136,58 @@ export function surLaMemeLigne(a: Boite, b: Boite): boolean {
   return chevauchement * 2 > plusPetiteHauteur;
 }
 
+/**
+ * Deux boîtes sont-elles dans la même colonne visuelle ?
+ *
+ * Le miroir de `surLaMemeLigne`, pour le confinement VERTICAL d'une grille :
+ * « bas » descend dans sa colonne, jamais en diagonale. Même formulation par
+ * chevauchement — plus de la moitié de la plus petite des deux largeurs — et
+ * pour la même raison : elle survit à l'agrandissement de la carte focalisée,
+ * dont les flancs mordent la gouttière sans jamais recouvrir la moitié de la
+ * colonne voisine.
+ */
+export function surLaMemeColonne(a: Boite, b: Boite): boolean {
+  const chevauchement = Math.min(a.droite, b.droite) - Math.max(a.gauche, b.gauche);
+  if (chevauchement <= 0) return false;
+  const plusPetiteLargeur = Math.min(a.droite - a.gauche, b.droite - b.gauche);
+  return chevauchement * 2 > plusPetiteLargeur;
+}
+
+/**
+ * Ne garde que la première ligne rencontrée dans la direction.
+ *
+ * Le repli d'une colonne sans suite : la dernière rangée d'une grille est
+ * rarement complète, et « bas » depuis une colonne orpheline doit atterrir sur
+ * la rangée SUIVANTE — la carte la moins désalignée y fera l'affaire — mais
+ * jamais deux rangées plus loin, ce que la géométrie brute produisait dès que
+ * le score d'une carte lointaine mais alignée battait celui de la voisine.
+ *
+ * La ligne de référence est celle du candidat le plus proche dans la
+ * direction ; tout ce qui n'est pas sur sa ligne est écarté.
+ */
+export function restreindreALaPremiereLigne<T>(
+  depart: Boite,
+  candidats: Array<{ element: T; boite: Boite }>,
+  direction: Direction,
+): Array<{ element: T; boite: Boite }> {
+  let reference: Boite | null = null;
+  let plusPetiteAvance = Infinity;
+
+  for (const candidat of candidats) {
+    const distance = avance(depart, candidat.boite, direction);
+    if (distance < -TOLERANCE) continue;
+    if (recouvre(depart, candidat.boite, direction)) continue;
+    if (distance < plusPetiteAvance) {
+      plusPetiteAvance = distance;
+      reference = candidat.boite;
+    }
+  }
+
+  if (!reference) return [];
+  const ligne = reference;
+  return candidats.filter((candidat) => surLaMemeLigne(ligne, candidat.boite));
+}
+
 export interface CandidatNote<T> {
   element: T;
   score: number;
