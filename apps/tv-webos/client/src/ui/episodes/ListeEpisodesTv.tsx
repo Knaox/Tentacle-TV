@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import { EpisodeRow } from "@/components/EpisodeRow";
-import { RevealCell, RevealScope } from "@/components/grid/RevealCell";
 import { LigneEpisodeTv } from "./LigneEpisodeTv";
+import { donnerFocus } from "../../focus/actif";
 
 /**
  * Saisons et épisodes, pour une télécommande.
@@ -28,13 +28,22 @@ import { LigneEpisodeTv } from "./LigneEpisodeTv";
  * déjà — mais un conteneur simple laisse `amenerEnVue` faire défiler la bande
  * jusqu'à la saison visée, ce dont une série de six saisons a besoin.
  *
+ * **La révélation paresseuse est retirée, et c'est un correctif.** Le web
+ * enveloppe chaque ligne dans un `RevealCell` qui réserve une hauteur en
+ * attendant de monter son contenu. La réservation vaut 100 px là où une ligne
+ * en fait près de 125 : une ligne jamais montée qui se révèle AU-DESSUS du
+ * focus allonge donc le document en amont, et Chrome 53 n'a pas d'ancrage de
+ * défilement pour compenser — tout ce qui suit descend, focus compris. Le
+ * défaut ne se voyait qu'en remontant. Une saison compte dix à vingt-cinq
+ * lignes, quand `RevealCell` est taillé pour des grilles de plusieurs
+ * centaines de vignettes : on les monte toutes, la géométrie cesse de bouger
+ * sous les pieds du moteur, et un observateur d'intersection quitte au passage
+ * le graphe de la fiche.
+ *
  * **Changer de saison mène aux épisodes.** Valider un onglet pose le focus sur
  * le premier épisode de la saison choisie dès qu'il est monté : sans cela on
  * restait sur la bande, à devoir redescendre à la main après chaque changement.
  */
-
-/** Hauteur d'une ligne, réservée avant son premier passage. */
-const HAUTEUR_LIGNE = 100;
 
 interface ProprietesListeEpisodesTv {
   seriesId: string;
@@ -80,7 +89,9 @@ export function EpisodeList({
     if (episodesLoading || !episodes?.length) return;
     viserLePremier.current = false;
     const premiere = liste.current?.querySelector<HTMLElement>(".ligne-episode-tv");
-    premiere?.focus();
+    // Par le moteur, jamais `focus()` nu : sur la dalle, le focus natif
+    // recentre la ligne au lieu de la poser sous la bande des saisons.
+    if (premiere) donnerFocus(premiere);
   }, [episodes, episodesLoading]);
 
   const choisirSaison = useCallback((saisonId: string) => {
@@ -143,29 +154,25 @@ export function EpisodeList({
         </div>
       )}
 
-      <RevealScope>
-        <div className="space-y-3" ref={liste}>
-          {episodesLoading
-            ? Array.from({ length: 6 }).map((_, index) => <Shimmer key={index} height="100px" />)
-            : episodes?.map((episode, index) => (
-                <RevealCell key={episode.Id} minHeight={HAUTEUR_LIGNE} eager={index < 8}>
-                  <LigneEpisodeTv episodeId={episode.Id}>
-                    <EpisodeRow
-                      episode={episode}
-                      client={client}
-                      seriesId={seriesId}
-                      seasonId={selectedSeasonId}
-                      isSelecting={false}
-                      isSelected={false}
-                      isCurrent={episode.Id === currentEpisodeId}
-                      onToggleSelect={() => {}}
-                      onPlay={() => navigate(`/watch/${episode.Id}`)}
-                    />
-                  </LigneEpisodeTv>
-                </RevealCell>
-              ))}
-        </div>
-      </RevealScope>
+      <div className="space-y-3" ref={liste}>
+        {episodesLoading
+          ? Array.from({ length: 6 }).map((_, index) => <Shimmer key={index} height="100px" />)
+          : episodes?.map((episode) => (
+              <LigneEpisodeTv key={episode.Id} episodeId={episode.Id}>
+                <EpisodeRow
+                  episode={episode}
+                  client={client}
+                  seriesId={seriesId}
+                  seasonId={selectedSeasonId}
+                  isSelecting={false}
+                  isSelected={false}
+                  isCurrent={episode.Id === currentEpisodeId}
+                  onToggleSelect={() => {}}
+                  onPlay={() => navigate(`/watch/${episode.Id}`)}
+                />
+              </LigneEpisodeTv>
+            ))}
+      </div>
     </div>
   );
 }
