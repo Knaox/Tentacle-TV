@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Home, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
 import { creerAppuiLong } from "../../focus/appuiLong";
-import { amorcerFocus } from "../../focus/moteur";
+import { amorcerFocus } from "../../focus/entree";
 import { ouvrirRecherche } from "../recherche/etatRecherche";
 import { useEpinglageRail } from "./epinglageTv";
 import type { EntreeRail, IconeRail } from "./entreesRail";

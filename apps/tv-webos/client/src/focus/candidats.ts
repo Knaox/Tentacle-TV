@@ -159,6 +159,30 @@ function estAtteignable(element: HTMLElement): boolean {
 }
 
 /**
+ * Un champ où le curseur de texte se déplace.
+ *
+ * La question se pose à trois endroits qui doivent répondre pareil, sans quoi
+ * un champ se comporterait autrement selon qu'on l'atteint à la flèche, au
+ * pointeur ou à l'entrée d'un écran : le moteur laisse gauche et droite au
+ * curseur de saisie, le survol s'interdit d'y poser le focus, et le focus par
+ * défaut ne s'y pose jamais.
+ *
+ * Ce dernier point est propre au téléviseur et ne se voit pas au navigateur :
+ * **webOS ouvre son clavier système dès qu'un `<input>` reçoit le focus.** Un
+ * écran dont l'élément le plus haut à gauche est un champ de recherche
+ * accueillerait donc l'utilisateur avec un clavier plein écran que personne n'a
+ * demandé.
+ */
+export function estUnChampDeSaisie(element: HTMLElement | null): boolean {
+  if (!element) return false;
+  const balise = element.tagName;
+  if (balise === "TEXTAREA" || balise === "SELECT") return true;
+  if (balise !== "INPUT") return false;
+  const type = (element as HTMLInputElement).type;
+  return type !== "checkbox" && type !== "radio" && type !== "button" && type !== "submit";
+}
+
+/**
  * Une cible isolée est-elle atteignable ? Même règle que le recensement.
  *
  * Le survol ne recense rien : il a déjà l'élément sous le pointeur et n'a

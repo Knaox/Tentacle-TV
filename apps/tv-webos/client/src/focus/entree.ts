@@ -1,0 +1,241 @@
+import { conteneurPiegeant, cibleAtteignable, estUnChampDeSaisie, recenser } from "./candidats";
+import { ciblePreferee, estCiblePreferee, focusParDefaut } from "./defaut";
+import { aUneMemoire, oublier, retrouver } from "./memoire";
+import { reviserApresMontage } from "./attente";
+import { donnerFocus, elementActif } from "./actif";
+
+/**
+ * Où le focus se pose en ARRIVANT sur un écran.
+ *
+ * Distinct du déplacement, et pour une raison de fond : déplacer le focus est
+ * une réponse à un geste, le poser est une décision qu'on prend à la place de
+ * l'utilisateur. La première se juge à la géométrie, la seconde à ce que
+ * l'écran veut dire.
+ *
+ * Le défaut réparé ici se voyait partout : le focus initial n'était posé qu'au
+ * démarrage. Ouvrir une fiche, revenir, changer de bibliothèque — chaque écran
+ * suivant arrivait SANS anneau, `activeElement` retombé sur `<body>`, et le
+ * premier appui sur une flèche ne servait qu'à le faire apparaître. Un appui
+ * pour rien par écran, sur l'appareil où l'appui coûte le plus cher.
+ *
+ * **La pose se fait en deux temps**, parce que les données arrivent après le
+ * rendu. Une bibliothèque affiche ses filtres en un rendu et ses affiches après
+ * un aller-retour réseau : décider une seule fois, tout de suite, posait
+ * l'anneau sur le premier filtre. Décider une seule fois, plus tard, laissait
+ * l'écran sans anneau le temps du réseau. On fait donc les deux — au plus vite
+ * avec ce qui est là, puis on remonte vers la vraie cible dès qu'elle paraît.
+ *
+ * Ce second temps s'annule dès que l'utilisateur appuie sur quoi que ce soit :
+ * remonter le focus sous ses doigts serait pire que de l'avoir mal posé.
+ */
+
+/**
+ * Temps laissé aux données d'un écran pour arriver.
+ *
+ * Le budget d'un déplacement — 250 ms — attend un MONTAGE. Celui-ci attend un
+ * aller-retour RÉSEAU, ce qui n'est pas du même ordre : mesuré, une
+ * bibliothèque chargée à froid dépasse la seconde et demie avant d'afficher sa
+ * première affiche. Un budget d'une seconde expirait donc pile entre les deux,
+ * et l'écran restait sans anneau.
+ *
+ * Trois secondes ne sont pas une attente : rien ne bloque, l'anneau est déjà
+ * posé ailleurs, et l'utilisateur qui appuie annule tout. C'est un délai de
+ * grâce, pas une latence.
+ */
+const BUDGET_ENTREE_MS = 3000;
+
+/** Nombre d'appuis vus depuis le démarrage. Voir `noterAppui`. */
+let appuisVus = 0;
+
+/** Vrai pendant que le moteur pose lui-même le focus. Voir `placementEnCours`. */
+let placementAutomatique = false;
+
+/**
+ * Les éléments de l'écran qu'on vient de quitter.
+ *
+ * Le routeur change l'adresse AVANT que React ne rende l'écran suivant : à
+ * l'instant où l'on est prévenu, le document montre encore le précédent. Poser
+ * le focus dessus le placerait sur une carte démontée la fraction de seconde
+ * d'après, et l'écran finirait sans anneau — c'est exactement ce qu'on a
+ * observé, deux fois de suite et à deux niveaux différents.
+ *
+ * Retirer le focus au sortant ne suffit donc pas : il faut refuser de le lui
+ * rendre. On retient ses éléments, et on ne considère que ce qui n'en fait pas
+ * partie. **Le rail y figure aussi**, ce qui tombe bien : on ne veut jamais
+ * qu'il soit la cible d'entrée d'un écran.
+ *
+ * Une `WeakSet` : on ne veut retenir aucun de ces nœuds en vie.
+ */
+let ecranSortant: WeakSet<HTMLElement> | null = null;
+
+/**
+ * À appeler pour chaque touche reçue.
+ *
+ * Sert à une seule question, mais elle est décisive : l'utilisateur a-t-il pris
+ * la main pendant qu'on attendait le montage d'un écran ? Si oui, remonter le
+ * focus vers la cible d'entrée le lui arracherait des doigts.
+ */
+export function noterAppui(): void {
+  appuisVus++;
+}
+
+/**
+ * Vrai quand le focus qui vient de changer a été posé par le moteur.
+ *
+ * La mémoire enregistre où l'UTILISATEUR était, pas où nous avons deviné qu'il
+ * fallait commencer. Sans cette question, la pose provisoire d'un écran
+ * s'écrivait dans la mémoire de cet écran, et l'affinage y retrouvait sa propre
+ * supposition — le focus ne remontait donc jamais vers la vraie cible.
+ */
+export function placementEnCours(): boolean {
+  return placementAutomatique;
+}
+
+/**
+ * @param quitteUnEcran vrai quand on vient de changer de route, faux au
+ * démarrage. La distinction décide du sort du focus courant.
+ */
+export function amorcerFocus(quitteUnEcran = false): void {
+  const depart = appuisVus;
+
+  if (quitteUnEcran) {
+    // Le focus courant appartient à l'écran qu'on quitte : on le lui retire, et
+    // on retient tout ce qu'il expose pour ne pas le lui rendre.
+    ecranSortant = new WeakSet(recenser(document).map((candidat) => candidat.element));
+    elementActif()?.blur();
+  } else {
+    ecranSortant = null;
+  }
+
+  // Tout de suite, avec ce qui est déjà là : un écran sans anneau est le pire
+  // des cas, et il durerait aussi longtemps que le réseau.
+  reviserApresMontage(poserFocusInitial);
+
+  // Puis, le temps que les données arrivent.
+  reviserApresMontage(
+    () => {
+      if (appuisVus !== depart) return true;
+      return affinerFocus();
+    },
+    {
+      budgetMs: BUDGET_ENTREE_MS,
+      // Filet, et la règle qu'il fait tenir : il y a TOUJOURS exactement un
+      // élément focalisé. Un écran dont les données n'arrivent pas — réseau
+      // coupé, bibliothèque vide — perdrait sinon son anneau au démontage de
+      // l'écran précédent, et la télécommande n'aurait plus rien à déplacer.
+      auDelai: () => {
+        // Le sortant a eu tout le temps de disparaître : ce qui reste est
+        // l'écran courant, quel qu'il soit.
+        ecranSortant = null;
+        if (elementActif()) return;
+        // La cible mémorisée n'est jamais reparue — liste vidée, élément
+        // retiré, réseau muet. On renonce à elle plutôt que de laisser l'écran
+        // sans anneau : c'est la règle qui prime sur toutes les autres.
+        oublier();
+        poserFocusInitial();
+      },
+    },
+  );
+}
+
+/**
+ * La pose immédiate. Trois réponses, dans cet ordre, et l'ordre est le sujet :
+ *
+ * 1. **Ce qu'on avait quitté**, s'il se retrouve. Il passe en premier, sinon un
+ *    composant qui prend le focus de lui-même au montage gagnerait la course
+ *    contre la restitution.
+ * 2. **Ce qui a déjà le focus**, s'il est atteignable et n'est pas un champ de
+ *    saisie. Un écran qui désigne sa propre cible d'entrée est respecté ; un
+ *    `<input>` ne l'est pas, parce que webOS y ouvrirait son clavier système.
+ * 3. **Le focus par défaut de l'écran**, résolu par `defaut.ts`.
+ */
+function poserFocusInitial(): boolean {
+  const racine = conteneurPiegeant() ?? document;
+
+  const memorise = entrant(retrouver(racine));
+  if (memorise) {
+    poser(memorise);
+    return true;
+  }
+
+  const actif = elementActif();
+  if (actif && entrant(actif) && cibleAtteignable(actif) && !estUnChampDeSaisie(actif)) return true;
+
+  // Une trace existe, mais sa cible n'est pas encore montée. On ne pose RIEN :
+  // amener une carte par défaut en vue remettrait la grille en haut et
+  // détruirait le défilement restauré, si bien que la carte mémorisée ne serait
+  // jamais montée. L'affinage la posera, et le filet de fin de budget garantit
+  // que l'écran ne reste pas sans anneau.
+  if (aUneMemoire()) return true;
+
+  const defaut = focusParDefaut(racine, candidatsEntrants(racine));
+  if (!defaut) return false;
+  poser(defaut);
+  return true;
+}
+
+/** L'élément appartient-il à l'écran qui ARRIVE ? `null` passe au travers. */
+function entrant(element: HTMLElement | null): HTMLElement | null {
+  if (!element) return null;
+  if (ecranSortant !== null && ecranSortant.has(element)) return null;
+  return element;
+}
+
+function candidatsEntrants(racine: ParentNode) {
+  const tous = recenser(racine);
+  if (ecranSortant === null) return tous;
+  const restants = tous.filter((candidat) => !ecranSortant?.has(candidat.element));
+  // Tout appartient encore à l'écran sortant : rien n'est monté, on attend.
+  return restants;
+}
+
+/**
+ * Le second temps : remonter vers la cible d'entrée une fois les données là.
+ *
+ * Rend vrai quand il n'y a plus rien à attendre — soit qu'on ait placé le
+ * focus, soit qu'il soit déjà au bon endroit. Rend faux tant que la cible n'est
+ * pas montée, ce qui relance l'attente jusqu'à l'épuisement du budget.
+ */
+function affinerFocus(): boolean {
+  const racine = conteneurPiegeant() ?? document;
+  const actif = entrant(elementActif());
+
+  const memorise = entrant(retrouver(racine));
+  if (memorise) {
+    if (memorise !== actif) poser(memorise);
+    ecranSortant = null;
+    return true;
+  }
+
+  if (actif && estCiblePreferee(actif)) {
+    ecranSortant = null;
+    return true;
+  }
+
+  // Une trace existe et sa cible n'est pas encore montée : on ATTEND.
+  //
+  // Se rabattre ici sur la première carte serait une décision qui s'annule
+  // elle-même : l'amener en vue remet la grille en haut, la position restaurée
+  // est perdue, et la carte mémorisée — qui vit trois lignes plus bas — ne sera
+  // jamais montée ni retrouvée. Mesuré exactement ainsi : retour sur la
+  // bibliothèque, défilement ramené de 958 à 266, focus sur la première affiche
+  // au lieu de celle qu'on avait quittée.
+  if (aUneMemoire()) return false;
+
+  const preferee = ciblePreferee(racine, candidatsEntrants(racine));
+  if (!preferee) return false;
+
+  poser(preferee);
+  ecranSortant = null;
+  return true;
+}
+
+/** Pose le focus sans que la mémoire y voie un geste de l'utilisateur. */
+function poser(element: HTMLElement): void {
+  placementAutomatique = true;
+  try {
+    donnerFocus(element);
+  } finally {
+    placementAutomatique = false;
+  }
+}

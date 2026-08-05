@@ -40,6 +40,42 @@ const RETOUR = new Set([461, 27]);
 /** OK de la télécommande, et Entrée. */
 const VALIDATION = new Set([13]);
 
+/**
+ * Repli par le NOM de la touche, quand `keyCode` n'est pas renseigné.
+ *
+ * `keyCode` est déprécié depuis longtemps, et une source d'événements qui ne le
+ * remplit pas rend le moteur entièrement muet — les flèches redescendent alors
+ * aux gestionnaires du client web, qui déplacent le focus selon une logique qui
+ * n'est pas spatiale, et le déplacement paraît erratique. C'est exactement ce
+ * qui s'est produit au banc d'essai, où les événements portaient `keyCode: 0`.
+ *
+ * Le repli ne coûte rien et retire une panne entière du champ des possibles sur
+ * un modèle qu'on n'a pas pu tester. Il reste un repli : sur webOS, `keyCode`
+ * est renseigné et gagne, notamment pour les codes propres à la plateforme que
+ * `key` ne nomme pas.
+ *
+ * Les touches de transport ne sont reprises ici que lorsque le nom désigne la
+ * même commande, sans ambiguïté. `MediaPlayPause` en est absente : c'est une
+ * bascule, et la table ci-dessus distingue lecture et pause.
+ */
+const DIRECTIONS_PAR_NOM: Record<string, Direction> = {
+  ArrowUp: "haut",
+  ArrowDown: "bas",
+  ArrowLeft: "gauche",
+  ArrowRight: "droite",
+};
+
+const TRANSPORTS_PAR_NOM: Record<string, TransportCommande> = {
+  MediaPlay: "lecture",
+  MediaPause: "pause",
+  MediaStop: "arret",
+  MediaFastForward: "avance",
+  MediaRewind: "retour",
+};
+
+const VALIDATION_PAR_NOM = new Set(["Enter"]);
+const RETOUR_PAR_NOM = new Set(["Escape", "BrowserBack", "GoBack"]);
+
 export function lireIntention(evenement: KeyboardEvent): Intention | null {
   const code = evenement.keyCode;
 
@@ -50,6 +86,21 @@ export function lireIntention(evenement: KeyboardEvent): Intention | null {
   if (RETOUR.has(code)) return { type: "retour" };
 
   const commande = TRANSPORTS[code];
+  if (commande) return { type: "transport", commande };
+
+  return parLeNom(evenement.key);
+}
+
+function parLeNom(nom: string | undefined): Intention | null {
+  if (!nom) return null;
+
+  const direction = DIRECTIONS_PAR_NOM[nom];
+  if (direction) return { type: "deplacer", direction };
+
+  if (VALIDATION_PAR_NOM.has(nom)) return { type: "valider" };
+  if (RETOUR_PAR_NOM.has(nom)) return { type: "retour" };
+
+  const commande = TRANSPORTS_PAR_NOM[nom];
   if (commande) return { type: "transport", commande };
 
   return null;

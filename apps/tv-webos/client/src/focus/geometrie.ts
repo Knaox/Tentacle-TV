@@ -111,12 +111,29 @@ function recouvre(depart: Boite, cible: Boite, direction: Direction): boolean {
  * suivante. Une piste horizontale se reconnaît à son conteneur, une ligne de
  * grille n'a rien qui la désigne — seules les ordonnées la définissent.
  *
- * On compare les bords hauts, pas les centres : deux cartes d'une même ligne
- * peuvent avoir des hauteurs différentes (un titre sur deux lignes), et c'est
- * leur alignement en haut qui fait la ligne.
+ * **Ce n'est pas une comparaison de bords, et l'avoir cru rendait les grilles
+ * impilotables.** La version précédente exigeait des bords hauts distants de
+ * quatre pixels au plus. Or la carte qui porte le focus est AGRANDIE, et un
+ * `scale()` centré remonte son bord haut de la moitié de ce qu'il ajoute :
+ * mesuré sur une bibliothèque, la carte visée était à `haut = −26` quand ses
+ * voisines restaient à `0`. Plus aucune n'était « sur la même ligne », la liste
+ * de candidats devenait vide, et **gauche et droite ne faisaient plus rien** —
+ * on se retrouvait prisonnier d'une colonne, seuls haut et bas répondant.
+ *
+ * On teste donc un CHEVAUCHEMENT : deux boîtes sont sur la même ligne quand
+ * elles partagent plus de la moitié de la plus petite des deux hauteurs. Cette
+ * formulation survit à l'agrandissement, qui ne fait que grandir un
+ * chevauchement déjà total, et elle garde ce que la comparaison de bords
+ * cherchait à protéger — deux cartes de hauteurs différentes, parce qu'un titre
+ * passe sur deux lignes, restent sur la même ligne. Aucun seuil arbitraire :
+ * la moitié d'une hauteur est une quantité que la mise en page fournit
+ * elle-même, là où quatre pixels étaient un pari sur le rendu.
  */
 export function surLaMemeLigne(a: Boite, b: Boite): boolean {
-  return Math.abs(a.haut - b.haut) <= TOLERANCE;
+  const chevauchement = Math.min(a.bas, b.bas) - Math.max(a.haut, b.haut);
+  if (chevauchement <= 0) return false;
+  const plusPetiteHauteur = Math.min(a.bas - a.haut, b.bas - b.haut);
+  return chevauchement * 2 > plusPetiteHauteur;
 }
 
 export interface CandidatNote<T> {

@@ -29,7 +29,8 @@ import { installerGardeSessionTv } from "./auth/gardeSessionTv";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
 import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
-import { installerMoteurFocus, amorcerFocus } from "./focus/moteur";
+import { installerMoteurFocus } from "./focus/moteur";
+import { amorcerFocus } from "./focus/entree";
 import { installerRetour } from "./focus/retour";
 import { installerTouchesLecteur } from "./lecture/touchesLecteur";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
