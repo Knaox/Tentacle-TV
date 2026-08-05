@@ -31,6 +31,33 @@ export default defineConfig({
   base: "/tv/",
   envDir: DEPOT,
 
+  // Serveur de développement, et rien d'autre : la production ne le voit jamais.
+  //
+  // En production le backend sert lui-même cette variante — même origine, appels
+  // relatifs, cookie de session same-site. Ici les deux sont séparés, et le proxy
+  // rétablit cette origine unique : sans lui, le `/api/jellyfin` relatif de
+  // `shims/contexteApp.ts` partirait sur le port de Vite, où rien n'écoute.
+  //
+  // Un port distinct de celui du client web (5174) pour que les deux tournent
+  // ensemble : sur cette cible on compare en permanence ce que le téléviseur
+  // rend à ce que le navigateur rend.
+  //
+  // **Ce serveur ne remplace pas le build.** Les passes PostCSS de
+  // `config/postcss/` et `@vitejs/plugin-legacy` ne s'exécutent qu'à la
+  // construction : une primitive trop récente pour Chrome 53 passe ici sans un
+  // mot et fait échouer le build. Itérer ici, valider par `pnpm build`.
+  server: {
+    port: 5175,
+    strictPort: true,
+    host: "0.0.0.0",
+    proxy: {
+      // Déclaré avant `/api`, sinon la règle la plus large l'emporte et la
+      // connexion WebSocket est proxifiée en HTTP.
+      "/api/ws": { target: "ws://localhost:3001", ws: true },
+      "/api": { target: "http://localhost:3001", changeOrigin: true },
+    },
+  },
+
   plugins: [
     substitutionModules(FICHIERS_SUBSTITUES),
     react(),
