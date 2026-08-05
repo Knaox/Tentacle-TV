@@ -84,6 +84,16 @@ télécommande.
 C'est le premier endroit où regarder quand un modèle se comporte autrement que
 les autres.
 
+Deux pages voisines, `/tv/harnais-nav.html` et `/tv/harnais-fiche.html`,
+chargent le **vrai moteur de focus** sur des géométries factices mais
+discriminantes — grille virtualisée au scale de la dalle, rail, fiche dont
+chaque alignement donnerait tort à la géométrie brute. Elles se pilotent au
+clavier ou par `__appui()`/`__ou()` depuis une console, et
+`harnais-shims.js` compense les infirmités d'un navigateur qui pilote sans
+afficher — `requestAnimationFrame` suspendus, événements de focus jamais émis.
+C'est là que se rejouent les scénarios de navigation avant de toucher une
+dalle.
+
 ## webOSTV.js
 
 La bibliothèque du SDK LG n'est pas versionnée ici. Déposez-la dans
@@ -231,12 +241,21 @@ modifié, et le client web ne fait pas autrement — la sienne est un portail
 ouvert par un raccourci. La touche Retour la referme avant de reculer d'un
 écran, par la pile de consommateurs de `focus/retour.ts`.
 
-Trois règles gouvernent les déplacements. Un mouvement horizontal reste dans sa
-rangée tant qu'il y a une carte à atteindre, et cède au bout de la piste pour
-qu'on puisse rejoindre la navigation. Le rail ne s'atteint que par la gauche —
-il couvre toute la hauteur, et sans cela « bas » y remonterait au lieu de
-descendre d'une rangée. Et il est écarté du focus initial : arriver sur un écran
-avec le focus dans la navigation oblige à le déplacer avant même de regarder.
+Quatre règles gouvernent les déplacements. Un mouvement horizontal reste dans
+sa rangée tant qu'il y a une carte à atteindre, et cède au bout de la piste ;
+dans une grille, un mouvement vertical descend dans sa **colonne**, et une
+colonne sans suite s'arrête à la rangée d'après — jamais plus loin. Le rail
+n'est **jamais un candidat géométrique** — il couvre toute la hauteur, et sans
+cela « bas » y remonterait au lieu de descendre d'une rangée — : « gauche »
+sans voisin est sa porte, partout, et l'on y entre sur l'écran courant ;
+« droite » restitue l'élément de contenu qu'on avait quitté (`focus/zones.ts`,
+le vocabulaire des `destinations` d'Android TV transposé au DOM — même chose
+pour les zones de la fiche, qui entrent par « Lecture » et par la saison
+active). Il reste écarté du focus initial : arriver sur un écran avec le focus
+dans la navigation oblige à le déplacer avant même de regarder. Enfin, le
+défilement est une **conséquence** du focus : un pas d'une rangée quand la
+cible n'est pas montée, rendu intégralement si aucun focus n'aboutit — la page
+ne défile jamais seule.
 
 **Le pointeur déplace le focus, et ne fait rien d'autre.** Un téléviseur LG en a
 un — la Magic Remote le fait apparaître dès qu'on agite la télécommande. Le
