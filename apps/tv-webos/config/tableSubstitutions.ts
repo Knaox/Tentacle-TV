@@ -147,6 +147,19 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // seule substitution les couvre.
   [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cartes/CadreCarteTv.tsx"),
 
+  // Le bloc d'actions de la fiche devient une ZONE du moteur de focus :
+  // descendre depuis « Retour » ou les infos techniques atterrit sur
+  // « Lecture »/« Reprendre », plus sur le trailer que l'ordonnée désignait.
+  // L'enveloppe rend l'original tel quel.
+  [resolve(WEB, "components/detail/DetailActions.tsx")]:
+    resolve(CLIENT, "ui/fiche/ActionsFicheTv.tsx"),
+
+  // La rangée des extras : son conteneur de défilement gagne `data-tv-piste`
+  // — confinement horizontal, défilement suivi — et perd le `tabIndex` qui en
+  // faisait une grande cible sans anneau.
+  [resolve(WEB, "components/detail/ExtrasRow.tsx")]:
+    resolve(CLIENT, "ui/fiche/RangeeExtrasTv.tsx"),
+
   // Le calque d'ouverture de la fiche est une chorégraphie écrite POUR
   // framer-motion : le shim en écarte `initial`, `animate` et `transition`, et
   // ce qui restait n'était pas une version dégradée mais une avarie — visuel en

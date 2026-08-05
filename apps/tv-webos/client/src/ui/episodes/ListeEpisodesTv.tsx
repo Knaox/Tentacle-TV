@@ -59,6 +59,9 @@ export function EpisodeList({
   const liste = useRef<HTMLDivElement>(null);
   /** Une saison vient d'être validée : le premier épisode monté prend le focus. */
   const viserLePremier = useRef(false);
+  const bande = useRef<HTMLDivElement>(null);
+  /** La bande ne se cale sur la saison active qu'UNE fois, à l'arrivée. */
+  const bandeCalee = useRef(false);
 
   useEffect(() => {
     if (!seasons?.length || selectedSeasonId) return;
@@ -85,6 +88,25 @@ export function EpisodeList({
     setSelectedSeasonId(saisonId);
   }, []);
 
+  // Le calage initial de la bande : la saison active en vue, une seule fois.
+  //
+  // Une série reprise en saison 5 présélectionne l'onglet 5 — hors de la bande
+  // visible sur une longue série. Sans ce défilement, l'entrée de zone visait
+  // un onglet que l'écran ne montrait pas. Écriture directe de `scrollLeft`,
+  // jamais `scrollIntoView(options)` : Chrome 53 évalue l'objet comme un
+  // booléen et saute brutalement. La position se mesure par les rectangles —
+  // `offsetLeft` se rapporte au premier ancêtre positionné, pas au scroller.
+  useEffect(() => {
+    if (bandeCalee.current || !selectedSeasonId) return;
+    const conteneur = bande.current;
+    const actif = conteneur?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!conteneur || !actif) return;
+    bandeCalee.current = true;
+    const delta =
+      actif.getBoundingClientRect().left - conteneur.getBoundingClientRect().left - 24;
+    if (delta > 0) conteneur.scrollLeft += delta;
+  }, [selectedSeasonId, seasons]);
+
   return (
     <div className="px-4 md:px-8 py-4">
       {seasonsLoading ? (
@@ -94,7 +116,18 @@ export function EpisodeList({
           ))}
         </div>
       ) : (
-        <div className="saisons-tv" role="tablist" aria-label={t("common:seasons", "Saisons")}>
+        /* La bande est une PISTE — confinement horizontal, défilement suivi —
+           et une ZONE : y entrer transversalement vise l'onglet actif
+           (aria-selected), pas la pastille que l'abscisse du point de départ
+           désignait — la saison 4 sous « Infos techniques ». */
+        <div
+          className="saisons-tv"
+          role="tablist"
+          aria-label={t("common:seasons", "Saisons")}
+          data-tv-piste=""
+          data-tv-zone="saisons"
+          ref={bande}
+        >
           {seasons?.map((saison) => (
             <button
               key={saison.Id}
