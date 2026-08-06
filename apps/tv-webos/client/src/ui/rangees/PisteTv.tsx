@@ -1,4 +1,4 @@
-import { useCallback, useState, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "@/components/cards/PosterCard";
 import { EpisodeCard } from "@/components/cards/EpisodeCard";
@@ -15,6 +15,19 @@ import { CarteFocusable } from "../cartes/CarteFocusable";
  * Les cales gardent la géométrie de la piste à la place des cartes non
  * montées, au pixel près : `scrollWidth` est identique avec ou sans fenêtrage,
  * donc `scrollLeft` ne saute pas quand la fenêtre glisse sous le focus.
+ *
+ * **La géométrie a une seconde dimension, et elle manquait.** Une rangée qui
+ * sort de l'écran est VIDÉE — la porte de `useRowWindow` ferme après six
+ * dixièmes de seconde et `rowWindow` rend une plage sans carte, une cale de
+ * toute la largeur. Cette cale n'avait pas de hauteur : la rangée passait de
+ * ~370 px à la seule hauteur de ses gouttières. Sur un navigateur récent, le
+ * `contain-intrinsic-size` de `rendering.css` réservait la place et personne
+ * ne voyait rien ; sur la dalle, la passe de compatibilité RETIRE cette
+ * propriété, inconnue de Chrome 53. La page raccourcissait donc en descendant,
+ * et surtout se rallongeait AU-DESSUS du focus en remontant — sans ancrage de
+ * défilement en Chrome 53, le haut de page s'éloignait à mesure qu'on le
+ * cherchait. La piste garde désormais sa hauteur pleine, relevée pendant
+ * qu'elle était garnie.
  */
 
 export interface ProprietesPiste {
@@ -44,6 +57,20 @@ export function PisteTv({
   // concernée, les autres gardant leur pleine opacité.
   const [focusInterne, setFocusInterne] = useState(false);
 
+  // La hauteur pleine, relevée tant qu'il y a des cartes et rendue à la cale
+  // quand il n'y en a plus. Mesurée sur la piste ENTIÈRE, gouttières comprises
+  // : c'est la hauteur que la page perd, donc exactement celle qu'il faut lui
+  // rendre. Une réf plutôt qu'un état — la valeur n'est lue qu'au rendu qui
+  // vide la rangée, et un état déclencherait un rendu de plus par mesure.
+  const hauteurPleine = useRef(0);
+  const videe = plage.end < plage.start;
+
+  useLayoutEffect(() => {
+    if (videe) return;
+    const piste = scrollRef.current;
+    if (piste && piste.offsetHeight > 0) hauteurPleine.current = piste.offsetHeight;
+  }, [scrollRef, videe, largeurCarte, variante]);
+
   const surIndex = useCallback(
     (index: number | null) => {
       setFocusInterne(index !== null);
@@ -57,6 +84,7 @@ export function PisteTv({
       data-focus-interne={focusInterne}
       ref={scrollRef}
       onScroll={onScroll}
+      style={videe && hauteurPleine.current > 0 ? { minHeight: hauteurPleine.current } : undefined}
       // Le moteur de navigation s'en sert pour confiner les déplacements
       // horizontaux : arrivé au bout d'une rangée, « droite » ne doit pas
       // sauter dans une autre. C'est la convention de toutes les interfaces de
