@@ -78,12 +78,38 @@ function desalignement(depart: Boite, cible: Boite, direction: Direction): numbe
 }
 
 /**
+ * Le candidat a-t-il réellement progressé malgré un chevauchement des boîtes ?
+ *
+ * Des marges négatives font se chevaucher des voisines de mise en page — les
+ * lignes d'un menu de filtres se recouvrent de huit pixels, deux fois la
+ * tolérance, parce que la passe d'écarts PostCSS pose `margin: -4px` sur
+ * toute ligne qui est elle-même `flex gap-*`. Exiger un franchissement de
+ * bord strict les rendait inatteignables : chaque « bas » sautait la voisine
+ * pour la ligne d'après, et « haut », ne trouvant plus rien, refermait le
+ * menu — condamnant tout ce qui précède l'option cochée.
+ *
+ * Deux conditions, cumulées : les boîtes ne sont PAS sur la même ligne (ou
+ * colonne) visuelle — le juge par chevauchement de moitié, celui des grilles,
+ * qui continue d'écarter ce qui est « au même endroit » — et le CENTRE du
+ * candidat a franchi celui du départ dans la direction. Un voisin qui
+ * chevauche reste ainsi un voisin ; un élément superposé reste écarté.
+ */
+function progresseMalgreChevauchement(depart: Boite, cible: Boite, direction: Direction): boolean {
+  const [surLeMemeCran, centreDepart, centreCible] = estHorizontale(direction)
+    ? [surLaMemeColonne(depart, cible), depart.gauche + depart.droite, cible.gauche + cible.droite]
+    : [surLaMemeLigne(depart, cible), depart.haut + depart.bas, cible.haut + cible.bas];
+
+  if (surLeMemeCran) return false;
+  return sens(direction) === 1 ? centreCible > centreDepart : centreCible < centreDepart;
+}
+
+/**
  * Score d'un candidat : plus il est bas, meilleur il est.
  * `null` quand le candidat n'est pas dans la direction demandée.
  */
 export function noter(depart: Boite, cible: Boite, direction: Direction): number | null {
   const distance = avance(depart, cible, direction);
-  if (distance < -TOLERANCE) return null;
+  if (distance < -TOLERANCE && !progresseMalgreChevauchement(depart, cible, direction)) return null;
 
   // Un candidat qui recouvre le point de départ sur l'axe de déplacement est
   // écarté : il est « au même endroit », le focus n'aurait pas l'air de bouger.
@@ -174,8 +200,13 @@ export function restreindreALaPremiereLigne<T>(
   let plusPetiteAvance = Infinity;
 
   for (const candidat of candidats) {
+    // La même acceptation que `noter` : une voisine chevauchante est la
+    // première ligne, pas un candidat à sauter — sinon la bande de référence
+    // serait la ligne d'APRÈS, et la restriction reproduirait le saut.
     const distance = avance(depart, candidat.boite, direction);
-    if (distance < -TOLERANCE) continue;
+    if (distance < -TOLERANCE && !progresseMalgreChevauchement(depart, candidat.boite, direction)) {
+      continue;
+    }
     if (recouvre(depart, candidat.boite, direction)) continue;
     if (distance < plusPetiteAvance) {
       plusPetiteAvance = distance;

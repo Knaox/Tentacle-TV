@@ -63,6 +63,55 @@ describe("noter", () => {
   });
 });
 
+describe("noter — voisines chevauchantes", () => {
+  // Les lignes d'un menu de filtres : 46 px de haut pour un pas de 38 — la
+  // passe d'écarts PostCSS pose margin -4px sur toute ligne qui est
+  // elle-même flex gap-*, et les boîtes se chevauchent de 8 px, deux fois
+  // la tolérance. Cotes relevées sur la dalle.
+  const LIGNE = { l: 358, h: 46 };
+  const cochee = boite(562, 399, LIGNE.l, LIGNE.h);
+  const dessus = boite(562, 361, LIGNE.l, LIGNE.h);
+  const dessous = boite(562, 437, LIGNE.l, LIGNE.h);
+
+  it("accepte la voisine du dessous malgré le chevauchement", () => {
+    expect(noter(cochee, dessous, "bas")).toBe(0);
+  });
+
+  it("accepte la voisine du dessus malgré le chevauchement", () => {
+    // Le cas qui refermait le menu : « haut » depuis l'option cochée ne
+    // trouvait aucun candidat, et la première option restait inatteignable.
+    expect(noter(cochee, dessus, "haut")).toBe(0);
+  });
+
+  it("la voisine chevauchante bat la ligne d'après", () => {
+    const dApres = boite(562, 475, LIGNE.l, LIGNE.h);
+    const candidats = [
+      { element: "d-apres", boite: dApres },
+      { element: "voisine", boite: dessous },
+    ];
+    expect(meilleur(cochee, candidats, "bas")?.element).toBe("voisine");
+  });
+
+  it("n'accepte pas pour autant la voisine du mauvais côté", () => {
+    // Celle du dessus chevauche aussi — son centre n'a pas franchi celui du
+    // départ dans la direction, elle reste écartée de « bas ».
+    expect(noter(cochee, dessus, "bas")).toBeNull();
+  });
+
+  it("continue d'écarter ce qui est au même endroit", () => {
+    // Superposition franche (plus de la moitié) : ce n'est pas un voisin.
+    const presqueMemePlace = boite(562, 411, LIGNE.l, LIGNE.h);
+    expect(noter(cochee, presqueMemePlace, "bas")).toBeNull();
+  });
+
+  it("accepte le miroir horizontal — deux pastilles qui se mordent", () => {
+    const pastille = boite(100, 0, 120, 36);
+    const mordue = boite(212, 0, 120, 36);
+    expect(noter(pastille, mordue, "droite")).toBe(0);
+    expect(noter(mordue, pastille, "gauche")).toBe(0);
+  });
+});
+
 describe("meilleur", () => {
   it("descend dans la même colonne plutôt qu'en diagonale", () => {
     // Le piège classique d'une grille : la carte en diagonale a son coin plus
@@ -221,5 +270,17 @@ describe("restreindreALaPremiereLigne", () => {
     const depart = boite(0, 0, CARTE.l, CARTE.h);
     const memePlace = [{ element: "ici", boite: boite(10, 4, CARTE.l, CARTE.h) }];
     expect(restreindreALaPremiereLigne(depart, memePlace, "bas")).toEqual([]);
+  });
+
+  it("prend une voisine chevauchante comme première ligne", () => {
+    // Sans la même acceptation que `noter`, la bande de référence serait la
+    // ligne d'APRÈS la voisine à marge négative — et la restriction
+    // reproduirait le saut qu'elle est censée empêcher.
+    const cochee = boite(562, 399, 358, 46);
+    const voisine = { element: "voisine", boite: boite(562, 437, 358, 46) };
+    const dApres = { element: "d-apres", boite: boite(562, 475, 358, 46) };
+
+    const retenus = restreindreALaPremiereLigne(cochee, [dApres, voisine], "bas");
+    expect(retenus.map((candidat) => candidat.element)).toEqual(["voisine"]);
   });
 });
