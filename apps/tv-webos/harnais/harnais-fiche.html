@@ -65,7 +65,7 @@
       .voir-plus { display: block; height: 24px; padding: 0 10px; font-size: 13px;
                    border: none; background: none; color: #b8aed6; border-radius: 6px; }
 
-      [data-tv-zone="actions-fiche"] { display: flex; gap: 10px; align-items: center; margin-top: 13px; }
+      .actions { display: flex; gap: 10px; align-items: center; margin-top: 13px; }
       .cta-primary-harnais { height: 56px; padding: 0 32px; font-weight: 700; background: #eee; color: #222; }
       .secondaire { height: 56px; padding: 0 24px; }
       .ronde { width: 56px; height: 56px; flex-shrink: 0; }
@@ -103,11 +103,15 @@
 
       <div class="hero">
         <div class="poster"></div>
-        <div class="colonne">
+        <!-- La zone couvre la COLONNE, comme la pose l'enveloppe du portage :
+             entrer par Retour ou par les extras vise « Reprendre » (l'entrée
+             désignée), et « Voir plus » reste servi par la circulation
+             interne, que la garde anti-piège ne redirige jamais. -->
+        <div class="colonne" data-tv-zone="actions-fiche">
           <h1>Une série factice</h1>
           <button type="button" class="voir-plus" data-cle="voir-plus">Voir plus</button>
-          <div data-tv-zone="actions-fiche">
-            <button type="button" class="cta-primary-harnais cta-primary" data-cle="lecture">Reprendre S4 · E2</button>
+          <div class="actions">
+            <button type="button" class="cta-primary-harnais cta-primary" data-cle="lecture" data-tv-zone-entree>Reprendre S4 · E2</button>
             <button type="button" class="secondaire" data-cle="trailer">Bande-annonce</button>
             <button type="button" class="ronde" data-cle="favori">❤</button>
             <button type="button" class="ronde" data-cle="liste">🔖</button>
