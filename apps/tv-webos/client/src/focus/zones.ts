@@ -1,4 +1,4 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable, recenser } from "./candidats";
+import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie, recenser } from "./candidats";
 import { focusParDefaut } from "./defaut";
 import { retrouver } from "./memoire";
 
@@ -121,6 +121,36 @@ const CASCADE_ENTREE = [
 ];
 
 /**
+ * Où atterrir dans une zone, sans rien savoir d'où l'on vient.
+ *
+ * La cascade était enfermée dans `redirigerEntreeDeZone`, qui exige une
+ * arrivée géométrique et rend `null` dans trois cas qui n'ont aucun sens
+ * quand on OUVRE un panneau. Or c'est exactement la question qu'une enveloppe
+ * se pose alors : « où poser le focus dans ce menu qui vient de paraître ? »
+ *
+ * **Le dernier rang évite les champs de saisie, et c'est un correctif.** Le
+ * repli « premier focusable en ordre de document » désignait, dans le menu
+ * des genres, son champ de recherche — donc **un simple appui vers le bas
+ * faisait monter le clavier système webOS**, précisément le défaut que le
+ * focus par défaut documente avoir corrigé de son côté. Une préférence, pas
+ * un veto : le menu de la note n'offre qu'un curseur, et un curseur ne fait
+ * monter aucun clavier — mieux vaut y entrer que nulle part.
+ */
+export function destinationEntreeDeZone(zone: HTMLElement): HTMLElement | null {
+  for (const selecteur of CASCADE_ENTREE) {
+    const trouvees: HTMLElement[] = [];
+    for (const cible of zone.querySelectorAll<HTMLElement>(selecteur)) {
+      if (!cible.matches(SELECTEUR_FOCUSABLE)) continue;
+      if (!cibleAtteignable(cible)) continue;
+      if (!estUnChampDeSaisie(cible)) return cible;
+      trouvees.push(cible);
+    }
+    if (trouvees.length > 0) return trouvees[0];
+  }
+  return null;
+}
+
+/**
  * Redirige une arrivée TRANSVERSALE dans une zone vers sa destination.
  *
  * `null` quand il n'y a rien à rediriger : pas de zone, déplacement interne
@@ -136,12 +166,7 @@ export function redirigerEntreeDeZone(
   if (!zone) return null;
   if (depart && zone.contains(depart)) return null;
 
-  for (const selecteur of CASCADE_ENTREE) {
-    for (const cible of zone.querySelectorAll<HTMLElement>(selecteur)) {
-      if (!cible.matches(SELECTEUR_FOCUSABLE)) continue;
-      if (cible === arrivee) return null;
-      if (cibleAtteignable(cible)) return cible;
-    }
-  }
-  return null;
+  const cible = destinationEntreeDeZone(zone);
+  if (!cible || cible === arrivee) return null;
+  return cible;
 }
