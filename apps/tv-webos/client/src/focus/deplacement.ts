@@ -48,6 +48,14 @@ const BUDGET_PAS_MS = 400;
  * laissait la page partie et le focus resté, ou pire — la carte focalisée
  * démontée par le fenêtrage, et le focus rendu au premier venu du haut de
  * page.
+ *
+ * L'EXCEPTION, et elle est voulue : un pas qui a ACCOSTÉ — écrit jusqu'au
+ * bord du document — n'est pas rendu. Appuyer « haut » au premier élément
+ * d'une bibliothèque est une demande explicite : montrer ce qui précède — la
+ * bannière entière —, même si aucun focusable ne s'y trouve. La révocation
+ * transformait ce geste en aller-retour : la page sautait au bord puis
+ * revenait, huit dixièmes de seconde plus tard, comme si la barre refusait
+ * d'atteindre le bout. Le bord est une destination ; on y reste.
  */
 export function deplacer(direction: Direction): void {
   if (viser(direction)) return;
@@ -60,25 +68,27 @@ export function deplacer(direction: Direction): void {
   // Aucun voisin : soit on est au bord, soit la cible n'est pas montée. Le
   // fenêtrage des rangées vide une rangée entière dès qu'elle sort de l'écran,
   // et une carte non montée ne peut pas recevoir le focus.
-  const annulerPremier = defilerParPas(elementActif(), direction, piege);
-  if (!annulerPremier) return;
+  const premier = defilerParPas(elementActif(), direction, piege);
+  if (!premier) return;
 
   reviserApresMontage(() => viser(direction), {
     budgetMs: BUDGET_PAS_MS,
     auDelai: () => {
       // Un second pas absorbe une rangée plus haute que la moyenne ; au-delà,
       // il n'y a réellement rien, et l'on rend le terrain parcouru — dans
-      // l'ordre inverse, chaque pas pouvant avoir touché un scroller différent.
-      const annulerSecond = defilerParPas(elementActif(), direction, piege);
-      if (!annulerSecond) {
-        annulerPremier();
+      // l'ordre inverse, chaque pas pouvant avoir touché un scroller
+      // différent — sauf ce qui a accosté un bord.
+      const second = defilerParPas(elementActif(), direction, piege);
+      if (!second) {
+        if (!premier.accoste) premier.annuler();
         return;
       }
       reviserApresMontage(() => viser(direction), {
         budgetMs: BUDGET_PAS_MS,
         auDelai: () => {
-          annulerSecond();
-          annulerPremier();
+          if (second.accoste || premier.accoste) return;
+          second.annuler();
+          premier.annuler();
         },
       });
     },

@@ -1,5 +1,5 @@
 import { estHorizontale, sens, type Direction } from "./touches";
-import { correction } from "./cadrage";
+import { correction, type Mou } from "./cadrage";
 import {
   scrollerHorizontal,
   scrollerVertical,
@@ -47,6 +47,7 @@ export function amenerEnVue(element: HTMLElement): void {
       segmentHorizontal(element.getBoundingClientRect()),
       segmentHorizontal(scroller.getBoundingClientRect()),
       MARGE,
+      { avant: scroller.scrollLeft, apres: resteHorizontal(scroller) },
     );
     if (delta !== 0) scroller.scrollLeft += delta;
   }
@@ -56,14 +57,24 @@ export function amenerEnVue(element: HTMLElement): void {
       segmentVertical(element.getBoundingClientRect()),
       segmentVertical(scroller.getBoundingClientRect()),
       MARGE,
+      { avant: scroller.scrollTop, apres: resteVertical(scroller) },
     );
     if (delta !== 0) scroller.scrollTop += delta;
   }
+
+  // Un élément d'un calque FIXE ne suit pas la page : le « corriger » par la
+  // fenêtre écrivait un défilement que l'élément ignorait — le rail faisait
+  // glisser la page derrière lui de quelques pixels à CHAQUE focus, sans que
+  // rien ne converge jamais, en violation de la règle « la page ne défile pas
+  // sans que le focus bouge ». Ses conteneurs INTERNES, eux, viennent d'être
+  // servis : un panneau fixe qui défile intérieurement défile toujours.
+  if (dansUnCalqueFixe(element)) return;
 
   const delta = correction(
     segmentVertical(element.getBoundingClientRect()),
     { debut: 0, fin: window.innerHeight },
     MARGE,
+    mouDeLaFenetre(),
   );
   if (delta !== 0) window.scrollBy(0, delta);
 }
@@ -74,6 +85,35 @@ function segmentVertical(rectangle: DOMRect) {
 
 function segmentHorizontal(rectangle: DOMRect) {
   return { debut: rectangle.left, fin: rectangle.right };
+}
+
+/** Ce que la fenêtre peut encore défiler, de part et d'autre. */
+function mouDeLaFenetre(): Mou {
+  const avant = Math.max(0, window.pageYOffset);
+  const total = document.documentElement.scrollHeight - window.innerHeight;
+  return { avant, apres: Math.max(0, total - avant) };
+}
+
+function resteVertical(scroller: HTMLElement): number {
+  return Math.max(0, scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop);
+}
+
+function resteHorizontal(scroller: HTMLElement): number {
+  return Math.max(0, scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft);
+}
+
+function dansUnCalqueFixe(element: HTMLElement): boolean {
+  for (let courant: HTMLElement | null = element; courant; courant = courant.parentElement) {
+    if (getComputedStyle(courant).position === "fixed") return true;
+  }
+  return false;
+}
+
+/** Un pas de défilement : son annulation, et le fait qu'il ait ACCOSTÉ —
+ *  écrit jusqu'au bord, sans plus de mou au-delà. */
+export interface Pas {
+  annuler: () => void;
+  accoste: boolean;
 }
 
 /**
@@ -93,15 +133,19 @@ function segmentHorizontal(rectangle: DOMRect) {
  * porte l'élément avant la fenêtre : dans une surcouche — recherche, panneau
  * de choix —, c'est lui qui doit bouger, pas la page derrière.
  *
- * Rend une fonction d'ANNULATION qui restaure la position d'origine, ou `null`
- * si rien ne peut défiler. C'est elle qui garantit la règle : un défilement
- * qui n'a pas abouti à un déplacement du focus n'a jamais eu lieu.
+ * Rend le pas — son ANNULATION, qui restaure la position d'origine, et son
+ * ACCOSTAGE — ou `null` si rien ne peut défiler. L'annulation garantit la
+ * règle : un défilement qui n'a pas abouti à un déplacement du focus n'a
+ * jamais eu lieu. L'accostage en marque l'exception, décidée par l'appelant :
+ * un pas qui a touché le BORD du document répond à un appui explicite vers ce
+ * bord, et le bout de la page — bannière au-dessus du premier élément, pied
+ * sous le dernier — est une destination en soi.
  */
 export function defilerParPas(
   depuis: HTMLElement | null,
   direction: Direction,
   confineA: ParentNode | null = null,
-): (() => void) | null {
+): Pas | null {
   const recevable = (scroller: HTMLElement | null): HTMLElement | null => {
     if (!scroller) return null;
     // Sous un conteneur piégeant, seul ce qui lui est INTÉRIEUR peut bouger.
@@ -113,14 +157,26 @@ export function defilerParPas(
     return scroller;
   };
 
+  // Le pas se BORNE au mou restant, et un mou nul le refuse net. C'est la fin
+  // de l'aller-retour de bout de page : arrivé au bord — où le cadrage vient
+  // de coller le scroll —, l'appui suivant écrivait un pas que le navigateur
+  // clampait au maximum, la barre sautait au fond, puis la révocation la
+  // ramenait huit dixièmes de seconde plus tard. Un pas qui n'a nulle part où
+  // aller n'a pas à partir — et un pas qui écrit tout le mou a ACCOSTÉ.
   if (estHorizontale(direction)) {
     const scroller = recevable(depuis ? scrollerHorizontal(depuis) : null);
     if (!scroller) return null;
     const avant = scroller.scrollLeft;
-    scroller.scrollLeft += sens(direction) * scroller.clientWidth * PAS_HORIZONTAL;
+    const mou = sens(direction) === 1 ? resteHorizontal(scroller) : avant;
+    if (mou < 1) return null;
+    const pas = Math.min(scroller.clientWidth * PAS_HORIZONTAL, mou);
+    scroller.scrollLeft += sens(direction) * pas;
     if (scroller.scrollLeft === avant) return null;
-    return () => {
-      scroller.scrollLeft = avant;
+    return {
+      annuler: () => {
+        scroller.scrollLeft = avant;
+      },
+      accoste: pas >= mou,
     };
   }
 
@@ -131,21 +187,33 @@ export function defilerParPas(
 
   const vue = scroller ? scroller.clientHeight : window.innerHeight;
   const rangee = depuis ? depuis.getBoundingClientRect().height + MARGE : vue * PLAFOND_PAS_VERTICAL;
-  const pas = sens(direction) * Math.min(rangee, vue * PLAFOND_PAS_VERTICAL);
+  const plafonne = Math.min(rangee, vue * PLAFOND_PAS_VERTICAL);
 
   if (scroller) {
     const avant = scroller.scrollTop;
-    scroller.scrollTop += pas;
+    const mou = sens(direction) === 1 ? resteVertical(scroller) : avant;
+    if (mou < 1) return null;
+    const pas = Math.min(plafonne, mou);
+    scroller.scrollTop += sens(direction) * pas;
     if (scroller.scrollTop === avant) return null;
-    return () => {
-      scroller.scrollTop = avant;
+    return {
+      annuler: () => {
+        scroller.scrollTop = avant;
+      },
+      accoste: pas >= mou,
     };
   }
 
   const avant = window.pageYOffset;
-  window.scrollBy(0, pas);
+  const mouFenetre = sens(direction) === 1 ? mouDeLaFenetre().apres : mouDeLaFenetre().avant;
+  if (mouFenetre < 1) return null;
+  const pas = Math.min(plafonne, mouFenetre);
+  window.scrollBy(0, sens(direction) * pas);
   if (window.pageYOffset === avant) return null;
-  return () => {
-    window.scrollTo(window.pageXOffset, avant);
+  return {
+    annuler: () => {
+      window.scrollTo(window.pageXOffset, avant);
+    },
+    accoste: pas >= mouFenetre,
   };
 }
