@@ -26,6 +26,19 @@ export interface Segment {
 }
 
 /**
+ * Le MOU : ce qu'il reste à défiler de part et d'autre de la position
+ * courante. C'est la connaissance du bord de document que ce module n'avait
+ * pas — et sans elle, le scroll ne finissait JAMAIS à zéro ni au maximum :
+ * la correction pose l'élément à la marge et s'arrête là, donc tout ce qui
+ * précède le premier focusable — bannière, titre de section — restait coupé,
+ * d'exactement la marge, quel que soit le nombre d'appuis.
+ */
+export interface Mou {
+  avant: number;
+  apres: number;
+}
+
+/**
  * La marge réellement tenable des deux côtés.
  *
  * Sur une surcouche courte — un panneau de choix de trois lignes —, deux fois
@@ -51,15 +64,38 @@ function margeTenable(element: Segment, vue: Segment, demandee: number): number 
  * grand que la vue déborde des deux côtés : la marge tombe alors à zéro et
  * l'on aligne son DÉBUT, ce qu'on veut lire en premier — et surtout ce qui est
  * stable, là où corriger les deux bords tour à tour oscillerait.
+ *
+ * Avec un `mou`, la correction connaît les bords : elle s'y borne — écrire
+ * plus loin serait clampé par le navigateur, un état qu'on n'a pas calculé —
+ * et quand le reliquat après application tiendrait DANS la marge, elle le
+ * consomme et COLLE au bord. Poser le premier élément à la marge en laissant
+ * 40 px de bannière coupés au-dessus n'aide personne : l'accrochage rend le
+ * haut de page au premier focusable, le bas au dernier. Il ne s'arme que si
+ * l'on corrigeait déjà — jamais de défilement sans déplacement du focus — et
+ * il est stable : une fois collé, le mou de ce côté est nul, et la correction
+ * suivante rend zéro.
  */
-export function correction(element: Segment, vue: Segment, marge: number): number {
+export function correction(element: Segment, vue: Segment, marge: number, mou?: Mou): number {
   const utile = margeTenable(element, vue, marge);
 
   const manqueAuDebut = element.debut - utile - vue.debut;
-  if (manqueAuDebut < 0) return manqueAuDebut;
+  if (manqueAuDebut < 0) return versLeBord(manqueAuDebut, mou, marge);
 
   const depasseALaFin = element.fin + utile - vue.fin;
-  if (depasseALaFin > 0) return depasseALaFin;
+  if (depasseALaFin > 0) return versLeBord(depasseALaFin, mou, marge);
 
   return 0;
+}
+
+/** Borne un delta au mou disponible, et colle au bord quand le reliquat
+ *  tiendrait dans la marge. Sans mou, le delta ressort tel quel. */
+function versLeBord(delta: number, mou: Mou | undefined, marge: number): number {
+  if (!mou) return delta;
+
+  if (delta < 0) {
+    const borne = Math.max(delta, -mou.avant);
+    return mou.avant + borne <= marge ? -mou.avant : borne;
+  }
+  const borne = Math.min(delta, mou.apres);
+  return mou.apres - borne <= marge ? mou.apres : borne;
 }

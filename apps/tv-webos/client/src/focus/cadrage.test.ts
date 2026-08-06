@@ -77,3 +77,51 @@ describe("correction", () => {
     expect(carte.fin - delta).toBe(vue.fin - MARGE);
   });
 });
+
+describe("correction avec le mou — les bords du document", () => {
+  it("colle au début quand le reliquat tiendrait dans la marge", () => {
+    // Le défaut d'usage : la bannière au-dessus du premier focusable restait
+    // coupée de 40 px, quel que soit le nombre d'appuis vers le haut. Si
+    // corriger laisse moins d'une marge à défiler, autant tout rendre.
+    const ligne = segment(-5, 100);
+    expect(correction(ligne, VUE, MARGE, { avant: 150, apres: 5000 })).toBe(-150);
+  });
+
+  it("ne colle pas quand il reste plus d'une marge à défiler", () => {
+    const ligne = segment(-5, 100);
+    expect(correction(ligne, VUE, MARGE, { avant: 400, apres: 5000 })).toBe(-101);
+  });
+
+  it("se borne au mou disponible", () => {
+    // Écrire plus loin serait clampé par le navigateur — un état qu'on
+    // n'aurait pas calculé, et le clamp vaut collage : mou consommé.
+    const ligne = segment(-5, 100);
+    expect(correction(ligne, VUE, MARGE, { avant: 60, apres: 5000 })).toBe(-60);
+  });
+
+  it("colle à la fin, symétriquement", () => {
+    const ligne = segment(700, 100);
+    expect(correction(ligne, VUE, MARGE, { avant: 5000, apres: 200 })).toBe(200);
+    expect(correction(ligne, VUE, MARGE, { avant: 5000, apres: 400 })).toBe(176);
+    expect(correction(ligne, VUE, MARGE, { avant: 5000, apres: 100 })).toBe(100);
+  });
+
+  it("ne s'arme jamais sans correction : un élément cadré ne colle pas", () => {
+    // L'invariant du moteur : la page ne défile pas sans que le focus bouge.
+    // L'accrochage n'est qu'un prolongement d'une correction déjà décidée.
+    expect(correction(segment(200, 100), VUE, MARGE, { avant: 50, apres: 50 })).toBe(0);
+  });
+
+  it("est stable après un collage", () => {
+    // Une fois au bord, le mou de ce côté est nul : corriger encore rend zéro.
+    const ligne = segment(-5, 100);
+    const delta = correction(ligne, VUE, MARGE, { avant: 150, apres: 5000 });
+    const apres = { debut: ligne.debut - delta, fin: ligne.fin - delta };
+    expect(correction(apres, VUE, MARGE, { avant: 0, apres: 5150 })).toBe(0);
+  });
+
+  it("laisse le comportement historique sans mou", () => {
+    expect(correction(segment(-5, 100), VUE, MARGE)).toBe(-101);
+    expect(correction(segment(700, 100), VUE, MARGE)).toBe(176);
+  });
+});
