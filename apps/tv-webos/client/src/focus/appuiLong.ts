@@ -1,16 +1,27 @@
+import { estValidation } from "./touches";
+import { armerVerrouOk } from "./verrouTouche";
+
 /**
  * Appui court et maintien de OK.
  *
  * Sur une carte d'épisode, un appui bref lance la lecture et un maintien ouvre
  * la fiche — la convention d'Apple TV, celle que le geste rend naturelle.
  *
- * Trois partis pris.
+ * Quatre partis pris.
  *
  * **On déclenche AU SEUIL, pas au relâchement.** La fiche s'ouvre pendant qu'on
  * tient encore la touche : c'est ce qui donne la sensation d'un appareil qui
  * répond. Et cela supprime par construction la question « comment ne pas lancer
  * la lecture en relâchant après un maintien » — il n'y a plus rien à décider à
  * ce moment-là.
+ *
+ * **Une action longue arme le VERROU avant d'agir.** Déclencher au seuil a un
+ * revers : la touche encore tenue continue d'émettre, et ses répétitions
+ * atteignaient l'écran que l'action venait d'ouvrir — le bouton « Lecture »
+ * d'une fiche synthétise un `click` par Entrée, et le maintien TRAVERSAIT la
+ * fiche jusqu'au lecteur. Le `preventDefault` d'ici ne protège que l'élément
+ * de départ ; le verrou (`verrouTouche.ts`) avale OK au niveau de la fenêtre,
+ * d'un écran à l'autre, jusqu'au relâchement.
  *
  * **Le relâchement n'est pas garanti.** Certains modèles ne notifient pas de
  * `keyup`. On le déduit alors du silence : la répétition automatique s'arrête
@@ -21,6 +32,11 @@
  *
  * **Tout est annulé par un déplacement.** Une flèche pendant l'appui abandonne
  * les deux actions : l'utilisateur a changé d'avis, pas confirmé.
+ *
+ * OK se reconnaît par `estValidation` — le code, sinon le nom. Ne lire que
+ * `keyCode` prenait, au banc d'essai où il vaut zéro, chaque répétition
+ * d'Entrée pour un déplacement : la première annulait le maintien qu'elle
+ * était censée prouver.
  */
 
 /** Au-delà, c'est un maintien. En deçà de ~450 ms, un appui appuyé le
@@ -29,8 +45,6 @@ const SEUIL_MS = 550;
 
 /** Silence après lequel on considère la touche relâchée, faute de `keyup`. */
 const SILENCE_MS = 700;
-
-const CODE_OK = 13;
 
 export interface ActionsAppui {
   court: () => void;
@@ -89,8 +103,8 @@ export function creerAppuiLong(actions: ActionsAppui) {
   }
 
   return {
-    onKeyDown(evenement: { keyCode: number; preventDefault(): void }): void {
-      if (evenement.keyCode !== CODE_OK) {
+    onKeyDown(evenement: { keyCode?: number; key?: string; preventDefault(): void }): void {
+      if (!estValidation(evenement)) {
         // Un déplacement pendant l'appui annule tout.
         if (etat.enfonce) nettoyer();
         return;
@@ -115,12 +129,15 @@ export function creerAppuiLong(actions: ActionsAppui) {
       etat.minuteurLong = setTimeout(() => {
         etat.minuteurLong = null;
         etat.longDeclenche = true;
+        // Le verrou d'abord : si l'action navigue, la touche encore tenue ne
+        // doit rien atteindre du nouvel écran.
+        armerVerrouOk();
         actions.long?.();
       }, SEUIL_MS);
     },
 
-    onKeyUp(evenement: { keyCode: number }): void {
-      if (evenement.keyCode !== CODE_OK) return;
+    onKeyUp(evenement: { keyCode?: number; key?: string }): void {
+      if (!estValidation(evenement)) return;
       const long = etat.longDeclenche;
       const enfonce = etat.enfonce;
       nettoyer();

@@ -15,6 +15,7 @@ import { creerAppuiLong } from "./appuiLong";
  */
 
 const OK = { keyCode: 13, preventDefault: () => {} };
+const OK_PAR_NOM = { keyCode: 0, key: "Enter", preventDefault: () => {} };
 const FLECHE = { keyCode: 39, preventDefault: () => {} };
 
 describe("creerAppuiLong", () => {
@@ -122,5 +123,45 @@ describe("creerAppuiLong", () => {
     appui.onKeyUp(OK);
 
     expect(court).not.toHaveBeenCalled();
+  });
+
+  it("reconnaît Entrée par son nom quand keyCode vaut zéro", () => {
+    // La fragilité mesurée au banc d'essai : les événements y portent
+    // `keyCode: 0`, et ne lire que le code prenait chaque répétition d'Entrée
+    // pour un déplacement — la première annulait le maintien.
+    const court = vi.fn();
+    const long = vi.fn();
+    const appui = creerAppuiLong({ court, long });
+
+    appui.onKeyDown(OK_PAR_NOM);
+    appui.onKeyDown(OK_PAR_NOM);
+    vi.advanceTimersByTime(600);
+    appui.onKeyUp(OK_PAR_NOM);
+
+    expect(long).toHaveBeenCalledTimes(1);
+    expect(court).not.toHaveBeenCalled();
+  });
+
+  it("joue l'appui court par le nom aussi", () => {
+    const court = vi.fn();
+    const appui = creerAppuiLong({ court });
+
+    appui.onKeyDown(OK_PAR_NOM);
+    vi.advanceTimersByTime(120);
+    appui.onKeyUp(OK_PAR_NOM);
+
+    expect(court).toHaveBeenCalledTimes(1);
+  });
+
+  it("annule le maintien sur une flèche nommée sans keyCode", () => {
+    const court = vi.fn();
+    const long = vi.fn();
+    const appui = creerAppuiLong({ court, long });
+
+    appui.onKeyDown(OK_PAR_NOM);
+    appui.onKeyDown({ keyCode: 0, key: "ArrowRight", preventDefault: () => {} });
+    vi.advanceTimersByTime(1000);
+
+    expect(long).not.toHaveBeenCalled();
   });
 });
