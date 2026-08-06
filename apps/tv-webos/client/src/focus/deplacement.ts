@@ -41,6 +41,22 @@ import {
 const BUDGET_PAS_MS = 400;
 
 /**
+ * Le cycle en vol : ses révocations, et le numéro qui les périme.
+ *
+ * `deplacer` est appelé une fois par appui, et la répétition automatique d'une
+ * télécommande en produit une dizaine par seconde. Rien n'empêchait deux
+ * cycles de se chevaucher : chacun capturait sa position de départ, chacun
+ * armait ses minuteurs de 400 ms, et le dernier à s'exécuter restaurait une
+ * position devenue arbitraire. Mesuré sur l'accueil : la page atteignait bien
+ * le haut, puis redescendait de cent vingt et un pixels — la révocation d'un
+ * cycle antérieur, dont la position de référence datait d'avant les autres.
+ *
+ * Un nouvel appui périme donc les révocations pendantes : il adopte la
+ * position courante, quelle qu'elle soit, comme nouvelle référence.
+ */
+let cycleCourant = 0;
+
+/**
  * Un déplacement : viser, sinon défiler d'un pas et viser à nouveau une fois
  * les cartes montées — deux pas au plus, et TOUT est rendu si aucun focus
  * n'aboutit. La règle qu'on achète avec cette annulation : la page ne défile
@@ -58,6 +74,11 @@ const BUDGET_PAS_MS = 400;
  * d'atteindre le bout. Le bord est une destination ; on y reste.
  */
 export function deplacer(direction: Direction): void {
+  // Le numéro est pris AVANT toute chose : viser peut déplacer le focus, donc
+  // rendre caduque la révocation d'un pas antérieur qui n'avait rien donné.
+  const cycle = ++cycleCourant;
+  const perime = () => cycleCourant !== cycle;
+
   if (viser(direction)) return;
 
   // Un piège borne tout ce qui suit : rien de ce qui lui est extérieur ne doit
@@ -74,6 +95,7 @@ export function deplacer(direction: Direction): void {
   reviserApresMontage(() => viser(direction), {
     budgetMs: BUDGET_PAS_MS,
     auDelai: () => {
+      if (perime()) return;
       // Un second pas absorbe une rangée plus haute que la moyenne ; au-delà,
       // il n'y a réellement rien, et l'on rend le terrain parcouru — dans
       // l'ordre inverse, chaque pas pouvant avoir touché un scroller
@@ -86,6 +108,7 @@ export function deplacer(direction: Direction): void {
       reviserApresMontage(() => viser(direction), {
         budgetMs: BUDGET_PAS_MS,
         auDelai: () => {
+          if (perime()) return;
           if (second.accoste || premier.accoste) return;
           second.annuler();
           premier.annuler();

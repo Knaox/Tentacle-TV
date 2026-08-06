@@ -1,5 +1,7 @@
 import { estHorizontale, sens, type Direction } from "./touches";
 import { correction, type Mou } from "./cadrage";
+import { candidatAuDela, dansUnCalqueFixe } from "./audela";
+import { decider } from "./bordure";
 import {
   scrollerHorizontal,
   scrollerVertical,
@@ -102,13 +104,6 @@ function resteHorizontal(scroller: HTMLElement): number {
   return Math.max(0, scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft);
 }
 
-function dansUnCalqueFixe(element: HTMLElement): boolean {
-  for (let courant: HTMLElement | null = element; courant; courant = courant.parentElement) {
-    if (getComputedStyle(courant).position === "fixed") return true;
-  }
-  return false;
-}
-
 /** Un pas de défilement : son annulation, et le fait qu'il ait ACCOSTÉ —
  *  écrit jusqu'au bord, sans plus de mou au-delà. */
 export interface Pas {
@@ -140,6 +135,12 @@ export interface Pas {
  * un pas qui a touché le BORD du document répond à un appui explicite vers ce
  * bord, et le bout de la page — bannière au-dessus du premier élément, pied
  * sous le dernier — est une destination en soi.
+ *
+ * **Et quand il n'y a plus rien à révéler, on ne fait pas un pas : on rejoint
+ * le bord.** `bordure.ts` tranche entre les deux ; ce module ne fait que
+ * mesurer le mou, lui poser la question, et écrire. Le pas qui vient d'un
+ * « bord » est rendu ACCOSTÉ, ce qui suffit à le mettre hors de portée de la
+ * révocation — l'appelant n'a rien de plus à savoir.
  */
 export function defilerParPas(
   depuis: HTMLElement | null,
@@ -157,63 +158,106 @@ export function defilerParPas(
     return scroller;
   };
 
-  // Le pas se BORNE au mou restant, et un mou nul le refuse net. C'est la fin
-  // de l'aller-retour de bout de page : arrivé au bord — où le cadrage vient
-  // de coller le scroll —, l'appui suivant écrivait un pas que le navigateur
-  // clampait au maximum, la barre sautait au fond, puis la révocation la
-  // ramenait huit dixièmes de seconde plus tard. Un pas qui n'a nulle part où
-  // aller n'a pas à partir — et un pas qui écrit tout le mou a ACCOSTÉ.
-  if (estHorizontale(direction)) {
-    const scroller = recevable(depuis ? scrollerHorizontal(depuis) : null);
-    if (!scroller) return null;
+  const versLaFin = sens(direction) === 1;
+  const horizontal = estHorizontale(direction);
+
+  const scroller = recevable(
+    depuis ? (horizontal ? scrollerHorizontal(depuis) : scrollerVertical(depuis)) : null,
+  );
+  // La fenêtre n'est jamais intérieure à un piège : sous lui, il n'y a rien à
+  // faire défiler si le panneau lui-même ne défile pas. Et il n'y a pas de
+  // défilement horizontal de fenêtre : le rail est fixe, la page ne bouge pas
+  // latéralement.
+  if (!scroller && (confineA || horizontal)) return null;
+
+  // **Le bord ne concerne que la VERTICALE.** C'est là que le défaut se voit —
+  // une page dont on ne rejoint jamais le haut. Horizontalement, la question
+  // « reste-t-il un candidat à droite » se poserait au DOCUMENT alors que le
+  // mou est celui d'une piste : une rangée voisine répondrait pour elle. Les
+  // pistes gardent donc leur pas éprouvé, et leur bout reste affaire de
+  // révocation. Sous un piège, le bord d'un panneau n'est pas un bout de page.
+  const bordPossible =
+    !horizontal && !confineA && !!depuis && !dansUnCalqueFixe(depuis)
+      ? !candidatAuDela(depuis, versLaFin, true)
+      : false;
+
+  const vue = scroller
+    ? horizontal
+      ? scroller.clientWidth
+      : scroller.clientHeight
+    : window.innerHeight;
+
+  const decision = decider({
+    mou: mouDisponible(scroller, versLaFin, horizontal),
+    // Un pas horizontal ne se mesure pas à l'élément de départ mais à la
+    // piste : `Infinity` laisse le plafond décider seul, ce qu'il faisait déjà.
+    hauteurDepart: horizontal ? Number.POSITIVE_INFINITY : tailleDe(depuis, false),
+    vue,
+    marge: MARGE,
+    plafond: horizontal ? PAS_HORIZONTAL : PLAFOND_PAS_VERTICAL,
+    seuil: vue,
+    candidatAuDela: !bordPossible,
+  });
+  if (decision.type === "rien") return null;
+
+  const ecrit = decision.type === "bord" ? decision.delta : decision.pas;
+  const accoste = decision.type === "bord" || decision.accoste;
+  return ecrire(scroller, versLaFin ? ecrit : -ecrit, horizontal, accoste);
+}
+
+/** Ce qui reste à défiler dans la direction, sur le scroller ou la fenêtre. */
+function mouDisponible(
+  scroller: HTMLElement | null,
+  versLaFin: boolean,
+  horizontal: boolean,
+): number {
+  if (!scroller) {
+    const fenetre = mouDeLaFenetre();
+    return versLaFin ? fenetre.apres : fenetre.avant;
+  }
+  if (horizontal) return versLaFin ? resteHorizontal(scroller) : scroller.scrollLeft;
+  return versLaFin ? resteVertical(scroller) : scroller.scrollTop;
+}
+
+function tailleDe(element: HTMLElement | null, horizontal: boolean): number {
+  if (!element) return 0;
+  const boite = element.getBoundingClientRect();
+  return horizontal ? boite.width : boite.height;
+}
+
+/** Écrit le défilement et rend de quoi le rendre — ou `null` s'il n'a pas pris. */
+function ecrire(
+  scroller: HTMLElement | null,
+  delta: number,
+  horizontal: boolean,
+  accoste: boolean,
+): Pas | null {
+  if (!scroller) {
+    const avant = window.pageYOffset;
+    window.scrollBy(0, delta);
+    if (window.pageYOffset === avant) return null;
+    return { annuler: () => window.scrollTo(window.pageXOffset, avant), accoste };
+  }
+
+  if (horizontal) {
     const avant = scroller.scrollLeft;
-    const mou = sens(direction) === 1 ? resteHorizontal(scroller) : avant;
-    if (mou < 1) return null;
-    const pas = Math.min(scroller.clientWidth * PAS_HORIZONTAL, mou);
-    scroller.scrollLeft += sens(direction) * pas;
+    scroller.scrollLeft += delta;
     if (scroller.scrollLeft === avant) return null;
     return {
       annuler: () => {
         scroller.scrollLeft = avant;
       },
-      accoste: pas >= mou,
+      accoste,
     };
   }
 
-  const scroller = recevable(depuis ? scrollerVertical(depuis) : null);
-  // La fenêtre n'est jamais intérieure à un piège : sous lui, il n'y a rien à
-  // faire défiler si le panneau lui-même ne défile pas.
-  if (!scroller && confineA) return null;
-
-  const vue = scroller ? scroller.clientHeight : window.innerHeight;
-  const rangee = depuis ? depuis.getBoundingClientRect().height + MARGE : vue * PLAFOND_PAS_VERTICAL;
-  const plafonne = Math.min(rangee, vue * PLAFOND_PAS_VERTICAL);
-
-  if (scroller) {
-    const avant = scroller.scrollTop;
-    const mou = sens(direction) === 1 ? resteVertical(scroller) : avant;
-    if (mou < 1) return null;
-    const pas = Math.min(plafonne, mou);
-    scroller.scrollTop += sens(direction) * pas;
-    if (scroller.scrollTop === avant) return null;
-    return {
-      annuler: () => {
-        scroller.scrollTop = avant;
-      },
-      accoste: pas >= mou,
-    };
-  }
-
-  const avant = window.pageYOffset;
-  const mouFenetre = sens(direction) === 1 ? mouDeLaFenetre().apres : mouDeLaFenetre().avant;
-  if (mouFenetre < 1) return null;
-  const pas = Math.min(plafonne, mouFenetre);
-  window.scrollBy(0, sens(direction) * pas);
-  if (window.pageYOffset === avant) return null;
+  const avant = scroller.scrollTop;
+  scroller.scrollTop += delta;
+  if (scroller.scrollTop === avant) return null;
   return {
     annuler: () => {
-      window.scrollTo(window.pageXOffset, avant);
+      scroller.scrollTop = avant;
     },
-    accoste: pas >= mouFenetre,
+    accoste,
   };
 }
