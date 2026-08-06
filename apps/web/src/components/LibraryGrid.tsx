@@ -102,7 +102,12 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
     estimateSize,
-    overscan: 5,
+    // Cinq rangées de rab de chaque côté, c'était dix rangées de cartes montées
+    // en permanence — et, en défilement rapide, autant de rangées traversées
+    // qui réclamaient leurs affiches sans jamais avoir été regardées. Trois
+    // suffit à ne jamais laisser de trou (`CardImage` prend 400 px d'avance de
+    // son côté pour charger).
+    overscan: 3,
     scrollMargin,
   });
 

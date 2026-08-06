@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useInViewport } from "../../hooks/useInViewport";
+import { useNearViewport } from "../../hooks/useNearViewport";
 
 interface CardImageProps {
   src: string;
@@ -44,12 +45,34 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
   // trou blanc là où une image se charge.
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>();
 
+  // C'est NOUS qui décidons quand demander l'image, plus le navigateur.
+  //
+  // `loading="lazy"` reste posé plus bas, mais il ne suffisait pas : son seuil
+  // est celui du moteur, et il est TRÈS large — Chrome précharge jusqu'à plus
+  // d'un millier de pixels sous le pli. Sur une grille de bibliothèque, où
+  // chaque affiche est une requête au proxy, défiler vite demandait donc les
+  // vignettes de rangées jamais regardées, par centaines. De quoi épuiser la
+  // limite de débit du serveur en quelques secondes (cf. rateLimitPolicy.ts,
+  // côté backend, qui répare l'autre moitié du problème).
+  //
+  // 400 px, c'est un peu plus d'une rangée d'avance : assez pour que l'image
+  // soit prête quand elle arrive à l'écran en défilement normal, sans plus.
+  const { ref: nearRef, near } = useNearViewport<HTMLDivElement>("400px");
+
+  // Deux observateurs sur le MÊME élément — l'un dit « faut-il animer ? »,
+  // l'autre « faut-il charger ? ». Ils ne se confondent pas (cf. les deux
+  // hooks) et un seul nœud les porte.
+  const poserLaBoite = useCallback((el: HTMLDivElement | null) => {
+    boxRef.current = el;
+    nearRef.current = el;
+  }, [boxRef, nearRef]);
+
   return (
-    <div ref={boxRef} className={`relative h-full w-full overflow-hidden ${className ?? ""}`}>
+    <div ref={poserLaBoite} className={`relative h-full w-full overflow-hidden ${className ?? ""}`}>
       {!loaded && !errored && visible && (
         <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
       )}
-      {!errored && (
+      {!errored && near && (
         <img
           src={src}
           alt={alt}
